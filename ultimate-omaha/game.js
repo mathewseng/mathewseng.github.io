@@ -234,39 +234,51 @@ class UltimateOmahaGame {
             };
         });
 
-        // Step 2: Calculate pairwise transactions between all players
-        // For each pair, calculate what flows from player i to player j
-        for (let i = 0; i < results.length; i++) {
-            for (let j = i + 1; j < results.length; j++) {
-                const pi = results[i];
-                const pj = results[j];
+        // Step 2: Calculate payouts
+        if (results.length === 1) {
+            // Single player mode: play against the bank
+            const player = results[0];
+            if (player.qualifies) {
+                // Win: receive bet × multiplier from the bank
+                player.netResult = player.totalBet * player.totalMultiplier;
+            } else {
+                // Foul: lose bet to the bank
+                player.netResult = -player.totalBet;
+            }
+        } else {
+            // Multiplayer: pairwise transactions between all players
+            for (let i = 0; i < results.length; i++) {
+                for (let j = i + 1; j < results.length; j++) {
+                    const pi = results[i];
+                    const pj = results[j];
 
-                // Money flowing from j to i (positive = i receives from j)
-                let flowToI = 0;
+                    // Money flowing from j to i (positive = i receives from j)
+                    let flowToI = 0;
 
-                // If i qualifies, i receives i's bet × i's multiplier from j
-                if (pi.qualifies) {
-                    flowToI += pi.totalBet * pi.totalMultiplier;
+                    // If i qualifies, i receives i's bet × i's multiplier from j
+                    if (pi.qualifies) {
+                        flowToI += pi.totalBet * pi.totalMultiplier;
+                    }
+
+                    // If i fouls, i pays i's bet to j (negative flow to i)
+                    if (!pi.qualifies) {
+                        flowToI -= pi.totalBet;
+                    }
+
+                    // If j qualifies, j receives j's bet × j's multiplier from i (negative flow to i)
+                    if (pj.qualifies) {
+                        flowToI -= pj.totalBet * pj.totalMultiplier;
+                    }
+
+                    // If j fouls, j pays j's bet to i (positive flow to i)
+                    if (!pj.qualifies) {
+                        flowToI += pj.totalBet;
+                    }
+
+                    // Apply the net flow
+                    pi.netResult += flowToI;
+                    pj.netResult -= flowToI;
                 }
-
-                // If i fouls, i pays i's bet to j (negative flow to i)
-                if (!pi.qualifies) {
-                    flowToI -= pi.totalBet;
-                }
-
-                // If j qualifies, j receives j's bet × j's multiplier from i (negative flow to i)
-                if (pj.qualifies) {
-                    flowToI -= pj.totalBet * pj.totalMultiplier;
-                }
-
-                // If j fouls, j pays j's bet to i (positive flow to i)
-                if (!pj.qualifies) {
-                    flowToI += pj.totalBet;
-                }
-
-                // Apply the net flow
-                pi.netResult += flowToI;
-                pj.netResult -= flowToI;
             }
         }
 
@@ -287,10 +299,12 @@ class UltimateOmahaGame {
             net: r.netResult
         })));
 
-        // Verification: Total should sum to 0
-        const totalNet = results.reduce((sum, r) => sum + r.netResult, 0);
-        if (Math.abs(totalNet) > 0.001) {
-            console.error('Payout error: Total net result is not zero:', totalNet);
+        // Verification: Total should sum to 0 in multiplayer (not in single player vs bank)
+        if (results.length > 1) {
+            const totalNet = results.reduce((sum, r) => sum + r.netResult, 0);
+            if (Math.abs(totalNet) > 0.001) {
+                console.error('Payout error: Total net result is not zero:', totalNet);
+            }
         }
 
         this.lastResults = results;
