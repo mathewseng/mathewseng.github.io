@@ -10,9 +10,71 @@ class GameController {
         this.currentScreen = 'menu';
         this.myPlayerId = null;
         this.gameStarted = false;
+        
+        // Game log and chat
+        this.handNumber = 0;
+        this.lastPhase = null;
 
         this.setupEventListeners();
         this.setupMultiplayerCallbacks();
+        this.setupLogAndChat();
+        
+        // Check for session to reconnect
+        this.checkForReconnection();
+    }
+
+    /**
+     * Check if there's a session to reconnect to on page load
+     */
+    async checkForReconnection() {
+        if (!this.multiplayer.hasSession()) {
+            return;
+        }
+
+        const session = this.multiplayer.loadSession();
+        if (!session) return;
+
+        this.showToast('Reconnecting...', 'info');
+
+        try {
+            const result = await this.multiplayer.reconnect();
+            this.myPlayerId = result.peerId;
+
+            if (result.isHost) {
+                // Host reconnected
+                document.getElementById('room-code').textContent = result.roomCode;
+                document.getElementById('your-name').textContent = session.playerName;
+                document.getElementById('start-game-btn').classList.remove('hidden');
+                document.getElementById('host-controls').style.display = 'flex';
+                document.getElementById('waiting-message').classList.add('hidden');
+                
+                // If game was in progress, go to game screen
+                // Check both session and multiplayer for gameInProgress
+                if (session.gameInProgress || this.multiplayer.gameInProgress) {
+                    this.gameStarted = true;
+                    this.multiplayer.gameInProgress = true;
+                    this.showScreen('game');
+                    this.showToast('Reconnected as host! Waiting for players...', 'success');
+                } else {
+                    this.showScreen('lobby');
+                    this.showToast('Reconnected to lobby!', 'success');
+                }
+            } else {
+                // Client reconnected
+                document.getElementById('room-code').textContent = result.roomCode;
+                document.getElementById('your-name').textContent = session.playerName;
+                document.getElementById('start-game-btn').classList.add('hidden');
+                document.getElementById('host-controls').style.display = 'none';
+                document.getElementById('waiting-message').classList.remove('hidden');
+                
+                this.showScreen('lobby');
+                this.showToast('Reconnected!', 'success');
+            }
+        } catch (err) {
+            console.error('Reconnection failed:', err);
+            this.multiplayer.clearSession();
+            this.showToast('Could not reconnect: ' + err.message, 'error');
+        }
     }
 
     /**
@@ -34,11 +96,16 @@ class GameController {
     // ============ SETUP ============
 
     setupEventListeners() {
-        // Menu screen
-        document.getElementById('create-room-btn').addEventListener('click', () => this.createRoom());
-        document.getElementById('join-room-btn').addEventListener('click', () => this.joinRoom());
-        document.getElementById('room-code-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.joinRoom();
+        // Menu screen - combined start/join button
+        const startJoinBtn = document.getElementById('start-join-btn');
+        const roomCodeInput = document.getElementById('room-code-input');
+        
+        startJoinBtn.addEventListener('click', () => this.startOrJoinGame());
+        
+        // Update button text based on room code input
+        roomCodeInput.addEventListener('input', () => this.updateStartJoinButton());
+        roomCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.startOrJoinGame();
         });
 
         // Lobby screen
@@ -59,6 +126,34 @@ class GameController {
         });
     }
 
+    updateStartJoinButton() {
+        const roomCode = document.getElementById('room-code-input').value.trim();
+        const btn = document.getElementById('start-join-btn');
+        const btnText = btn.querySelector('.btn-text');
+        const btnIcon = btn.querySelector('.btn-icon');
+        
+        if (roomCode) {
+            btnText.textContent = 'Join Game';
+            btnIcon.textContent = '♦';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        } else {
+            btnText.textContent = 'Start Game';
+            btnIcon.textContent = '♠';
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+        }
+    }
+
+    startOrJoinGame() {
+        const roomCode = document.getElementById('room-code-input').value.trim();
+        if (roomCode) {
+            this.joinRoom();
+        } else {
+            this.createRoom();
+        }
+    }
+
     setupMultiplayerCallbacks() {
         this.multiplayer.onPlayerJoin = (players) => {
             this.updateLobbyPlayers(players);
@@ -69,12 +164,27 @@ class GameController {
             }
         };
 
-        this.multiplayer.onPlayerLeave = (playerId) => {
-            this.showToast(`A player has left`, 'info');
+        this.multiplayer.onPlayerLeave = (playerId, mayReconnect = false) => {
+            if (mayReconnect) {
+                this.showToast(`A player disconnected (may reconnect)`, 'info');
+            } else {
+                this.showToast(`A player has left`, 'info');
+            }
             this.updateLobbyPlayers(this.multiplayer.getAllPlayers());
 
-            if (this.currentScreen === 'game') {
+            // Don't remove player from game immediately if they may reconnect
+            if (this.currentScreen === 'game' && !mayReconnect) {
                 this.game.removePlayer(playerId);
+            }
+        };
+
+        this.multiplayer.onReconnected = (playerId) => {
+            this.showToast(`A player reconnected!`, 'success');
+            this.updateLobbyPlayers(this.multiplayer.getAllPlayers());
+            
+            // Send current game state to reconnected player
+            if (this.gameStarted && this.multiplayer.isHost) {
+                this.multiplayer.broadcastGameState(this.game.getGameState());
             }
         };
 
@@ -83,12 +193,18 @@ class GameController {
         };
 
         this.multiplayer.onConnected = (data) => {
-            this.showToast('Connected to room!', 'success');
+            if (data.reconnected) {
+                this.showToast('Reconnected to room!', 'success');
+            } else {
+                this.showToast('Connected to room!', 'success');
+            }
             
             // If game is in progress, show game screen and notify player they're queued
             if (data.gameInProgress) {
                 this.gameStarted = true;
-                this.showToast('Game in progress - you\'ll join next hand', 'info');
+                if (!data.reconnected) {
+                    this.showToast('Game in progress - you\'ll join next hand', 'info');
+                }
                 this.showScreen('game');
             }
         };
@@ -100,6 +216,324 @@ class GameController {
         this.multiplayer.onMessage = (fromPeerId, data) => {
             this.handleGameMessage(fromPeerId, data);
         };
+
+        this.multiplayer.onBecomeHost = (gameState) => {
+            this.handleBecomeHost(gameState);
+        };
+    }
+
+    // ============ GAME LOG & CHAT ============
+
+    setupLogAndChat() {
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                this.switchTab(tabId);
+            });
+        });
+
+        // Chat input
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-chat-btn');
+        
+        chatInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.sendChatMessage();
+        });
+        sendBtn?.addEventListener('click', () => this.sendChatMessage());
+
+        // Emoji picker
+        const emojiBtn = document.getElementById('emoji-picker-btn');
+        const emojiPicker = document.getElementById('emoji-picker');
+        
+        emojiBtn?.addEventListener('click', () => {
+            emojiPicker?.classList.toggle('hidden');
+        });
+
+        // Emoji selection
+        document.querySelectorAll('.emoji-option').forEach(emoji => {
+            emoji.addEventListener('click', () => {
+                const text = emoji.textContent;
+                if (chatInput) {
+                    chatInput.value += text;
+                    chatInput.focus();
+                }
+                emojiPicker?.classList.add('hidden');
+            });
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-picker-btn')) {
+                emojiPicker?.classList.add('hidden');
+            }
+        });
+    }
+
+    switchTab(tabId) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `${tabId}-tab`);
+        });
+    }
+
+    // ============ GAME LOG ============
+
+    addLogEntry(type, content, extraClass = '') {
+        const logContainer = document.getElementById('game-log');
+        if (!logContainer) return;
+
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type} ${extraClass}`.trim();
+        entry.innerHTML = content;
+        logContainer.appendChild(entry);
+
+        // Auto-scroll to bottom
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    logHandStart(baseBet, players) {
+        this.handNumber++;
+        const playerNames = players.map(p => {
+            const info = this.multiplayer.getPlayer(p.id);
+            return info?.name || 'Player';
+        }).join(', ');
+        
+        this.addLogEntry('hand-start', 
+            `<strong>═══ Hand #${this.handNumber} ═══</strong><br>` +
+            `Bet: ${this.formatCurrency(baseBet)} • Players: ${playerNames}`
+        );
+    }
+
+    logAction(playerId, action, amount) {
+        const playerInfo = this.multiplayer.getPlayer(playerId);
+        const name = playerInfo?.name || 'Player';
+        const isMe = playerId === this.myPlayerId;
+        
+        const actionClass = action === 'double' ? 'double' : '';
+        const actionText = action === 'check' ? 'checks' : `doubles to ${this.formatCurrency(amount)}`;
+        
+        this.addLogEntry('action', 
+            `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span> ` +
+            `<span class="action-type ${actionClass}">${actionText}</span>`
+        );
+    }
+
+    logBoardCards(boardNum, cards, phase) {
+        const cardTexts = cards.map(card => {
+            if (card.faceDown) return '🂠';
+            const formatted = Poker.formatCard(card);
+            const colorClass = formatted.isRed ? 'red' : 'black';
+            return `<span class="card-text ${colorClass}">${formatted.rank}${formatted.suit}</span>`;
+        }).join(' ');
+
+        const phaseName = phase === 'flop' ? 'Flop' : 'Turn/River';
+        this.addLogEntry('board', `Board ${boardNum} ${phaseName}: ${cardTexts}`);
+    }
+
+    logShowdown(results) {
+        this.addLogEntry('showdown', '<strong>─── Showdown ───</strong>');
+        
+        results.forEach(result => {
+            const playerInfo = this.multiplayer.getPlayer(result.playerId);
+            const name = playerInfo?.name || 'Player';
+            const isMe = result.playerId === this.myPlayerId;
+            
+            // Log their cards
+            const cardTexts = result.holeCards.map(card => {
+                const formatted = Poker.formatCard(card);
+                const colorClass = formatted.isRed ? 'red' : 'black';
+                return `<span class="card-text ${colorClass}">${formatted.rank}${formatted.suit}</span>`;
+            }).join(' ');
+            
+            this.addLogEntry('showdown', 
+                `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ${cardTexts}`
+            );
+            
+            // Log their result
+            const resultClass = result.netResult > 0 ? 'win' : (result.netResult < 0 ? 'lose' : 'push');
+            const handDesc = result.qualifies 
+                ? `${result.hand1.name} + ${result.hand2.name} (${result.totalMultiplier}×)`
+                : 'FOUL';
+            
+            this.addLogEntry('result', 
+                `  → ${handDesc}: ${this.formatCurrency(result.netResult, true)}`,
+                resultClass
+            );
+        });
+    }
+
+    logPnLSummary(players) {
+        this.addLogEntry('showdown', '<strong>─── PnL Summary ───</strong>');
+        
+        players.forEach(player => {
+            const playerInfo = this.multiplayer.getPlayer(player.id);
+            const name = playerInfo?.name || 'Player';
+            const isMe = player.id === this.myPlayerId;
+            const pnl = player.actualPnl || player.pnl;
+            const resultClass = pnl > 0 ? 'win' : (pnl < 0 ? 'lose' : 'push');
+            
+            this.addLogEntry('result', 
+                `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ` +
+                `${this.formatCurrency(pnl, true)} total`,
+                resultClass
+            );
+        });
+    }
+
+    // ============ CHAT ============
+
+    sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        if (!input) return;
+        
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Check for emoji-only message (for emoji blast effect)
+        const isEmojiOnly = /^[\p{Emoji}\s]+$/u.test(text) && text.length <= 4;
+
+        // Send to all players
+        if (this.multiplayer.isHost) {
+            // Host broadcasts
+            this.multiplayer.broadcast({
+                type: 'chat',
+                senderId: this.myPlayerId,
+                senderName: this.multiplayer.myName,
+                text: text,
+                timestamp: Date.now(),
+                isEmojiOnly
+            });
+            // Also show locally
+            this.addChatMessage(this.myPlayerId, this.multiplayer.myName, text, Date.now(), isEmojiOnly);
+        } else {
+            // Client sends to host to broadcast
+            this.multiplayer.sendToHost({
+                type: 'chat',
+                senderId: this.myPlayerId,
+                senderName: this.multiplayer.myName,
+                text: text,
+                timestamp: Date.now(),
+                isEmojiOnly
+            });
+            // Show locally immediately
+            this.addChatMessage(this.myPlayerId, this.multiplayer.myName, text, Date.now(), isEmojiOnly);
+        }
+
+        input.value = '';
+    }
+
+    addChatMessage(senderId, senderName, text, timestamp, isEmojiOnly = false) {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+
+        const isMe = senderId === this.myPlayerId;
+        const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const msg = document.createElement('div');
+        msg.className = `chat-message${isEmojiOnly ? ' emoji-blast' : ''}`;
+        
+        if (isEmojiOnly) {
+            msg.innerHTML = text;
+        } else {
+            msg.innerHTML = `
+                <span class="sender${isMe ? ' me' : ''}">${senderName}:</span>
+                <span class="text">${this.escapeHtml(text)}</span>
+                <span class="timestamp">${time}</span>
+            `;
+        }
+
+        container.appendChild(msg);
+        container.scrollTop = container.scrollHeight;
+
+        // Switch to chat tab if not visible and message from others
+        if (!isMe && !document.getElementById('chat-tab')?.classList.contains('active')) {
+            // Flash the chat tab to indicate new message
+            const chatTabBtn = document.querySelector('[data-tab="chat"]');
+            chatTabBtn?.classList.add('has-notification');
+            setTimeout(() => chatTabBtn?.classList.remove('has-notification'), 2000);
+        }
+    }
+
+    addSystemMessage(text) {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+
+        const msg = document.createElement('div');
+        msg.className = 'chat-message system';
+        msg.textContent = text;
+        container.appendChild(msg);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    /**
+     * Handle becoming the new host after host migration
+     */
+    handleBecomeHost(gameState) {
+        console.log('We are now the host!');
+        this.showToast('You are now the host!', 'success');
+        
+        // Restore game state if available
+        if (gameState) {
+            this.game.deserialize(this.convertGameStateToInternal(gameState));
+            this.gameStarted = gameState.phase !== 'waiting';
+            this.multiplayer.setGameInProgress(this.gameStarted);
+        }
+        
+        // Update UI to show host controls
+        document.getElementById('start-game-btn').classList.remove('hidden');
+        document.getElementById('host-controls').style.display = 'flex';
+        document.getElementById('waiting-message').classList.add('hidden');
+        
+        // Update room code display
+        document.getElementById('room-code').textContent = this.multiplayer.roomCode;
+        
+        // If game is in progress, show game screen
+        if (this.gameStarted) {
+            this.showScreen('game');
+            
+            // Show host showdown controls if at results
+            if (gameState && gameState.phase === 'results') {
+                document.getElementById('host-showdown-controls').classList.remove('hidden');
+                document.getElementById('waiting-next').classList.add('hidden');
+            }
+            
+            // Broadcast current state to all players
+            this.multiplayer.broadcastGameState(this.game.getGameState());
+        }
+        
+        // Log the host migration
+        this.addSystemMessage('You are now the host!');
+    }
+
+    /**
+     * Convert broadcast game state to internal game state format
+     */
+    convertGameStateToInternal(state) {
+        return {
+            players: state.players.map(p => ({
+                id: p.id,
+                pnl: p.actualPnl || p.pnl || 0,
+                startingPnl: p.pnl || 0,
+                holeCards: p.holeCards || [],
+                currentBet: p.currentBet || state.baseBet,
+                totalBet: p.totalBet || state.baseBet,
+                hasActed: p.hasActed || false
+            })),
+            queuedPlayers: state.queuedPlayers || [],
+            deck: [], // Deck is consumed, not needed for restoration
+            board1: state.board1 || [],
+            board2: state.board2 || [],
+            phase: state.phase || 'waiting',
+            baseBet: state.baseBet || 1,
+            actedThisRound: [],
+            lastResults: state.results || null
+        };
     }
 
     // ============ SCREEN MANAGEMENT ============
@@ -108,6 +542,12 @@ class GameController {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`${screenId}-screen`).classList.add('active');
         this.currentScreen = screenId;
+        
+        // Show room code in game screen
+        if (screenId === 'game') {
+            const roomCode = this.multiplayer.roomCode;
+            document.getElementById('game-room-code').textContent = roomCode;
+        }
     }
 
     // ============ LOADING STATES ============
@@ -128,17 +568,15 @@ class GameController {
         const name = document.getElementById('player-name').value.trim() || 'Host';
         this.multiplayer.myName = name;
 
-        const createBtn = document.getElementById('create-room-btn');
-        const joinBtn = document.getElementById('join-room-btn');
-        
-        this.setButtonLoading(createBtn, true);
-        joinBtn.disabled = true;
+        const btn = document.getElementById('start-join-btn');
+        this.setButtonLoading(btn, true);
 
         try {
             const result = await this.multiplayer.initPeer(true);
             this.myPlayerId = result.peerId;
 
             document.getElementById('room-code').textContent = this.multiplayer.roomCode;
+            document.getElementById('your-name').textContent = name;
             document.getElementById('start-game-btn').classList.remove('hidden');
             document.getElementById('host-controls').style.display = 'flex';
             document.getElementById('waiting-message').classList.add('hidden');
@@ -149,8 +587,7 @@ class GameController {
         } catch (err) {
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(createBtn, false);
-            joinBtn.disabled = false;
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -165,11 +602,8 @@ class GameController {
 
         this.multiplayer.myName = name;
 
-        const joinBtn = document.getElementById('join-room-btn');
-        const createBtn = document.getElementById('create-room-btn');
-        
-        this.setButtonLoading(joinBtn, true);
-        createBtn.disabled = true;
+        const btn = document.getElementById('start-join-btn');
+        this.setButtonLoading(btn, true);
 
         try {
             await this.multiplayer.initPeer(false, roomCode);
@@ -178,6 +612,7 @@ class GameController {
             await this.multiplayer.connectToRoom();
 
             document.getElementById('room-code').textContent = roomCode;
+            document.getElementById('your-name').textContent = name;
             document.getElementById('start-game-btn').classList.add('hidden');
             document.getElementById('host-controls').style.display = 'none';
             document.getElementById('waiting-message').classList.remove('hidden');
@@ -186,8 +621,7 @@ class GameController {
         } catch (err) {
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(joinBtn, false);
-            createBtn.disabled = false;
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -243,6 +677,14 @@ class GameController {
         this.gameStarted = true;
         this.multiplayer.setGameInProgress(true);
 
+        // Log hand start
+        this.logHandStart(baseBet, this.game.players);
+        this.multiplayer.broadcast({ 
+            type: 'hand_start_log',
+            baseBet,
+            players: this.game.players.map(p => ({ id: p.id }))
+        });
+
         this.multiplayer.broadcast({ type: 'start_game' });
         this.multiplayer.broadcastGameState(this.game.getGameState());
 
@@ -250,6 +692,37 @@ class GameController {
     }
 
     handleGameMessage(fromPeerId, data) {
+        // Handle chat for all players (host or client)
+        if (data.type === 'chat') {
+            // If we're host, relay to all other players
+            if (this.multiplayer.isHost) {
+                this.multiplayer.broadcast({
+                    type: 'chat',
+                    senderId: data.senderId,
+                    senderName: data.senderName,
+                    text: data.text,
+                    timestamp: data.timestamp,
+                    isEmojiOnly: data.isEmojiOnly
+                }, fromPeerId); // Exclude sender
+            }
+            // Show the message (unless it's our own)
+            if (data.senderId !== this.myPlayerId) {
+                this.addChatMessage(data.senderId, data.senderName, data.text, data.timestamp, data.isEmojiOnly);
+            }
+            return;
+        }
+
+        // Handle log messages for clients
+        if (data.type === 'action_log') {
+            this.logAction(data.playerId, data.action, data.amount);
+            return;
+        }
+        
+        if (data.type === 'hand_start_log') {
+            this.logHandStart(data.baseBet, data.players);
+            return;
+        }
+
         if (!this.multiplayer.isHost) {
             if (data.type === 'start_game') {
                 this.gameStarted = true;
@@ -263,6 +736,16 @@ class GameController {
             case 'action':
                 const result = this.game.processAction(data.playerId || fromPeerId, data.action);
                 if (result.success) {
+                    // Log the action
+                    const player = this.game.players.find(p => p.id === (data.playerId || fromPeerId));
+                    this.logAction(data.playerId || fromPeerId, data.action, player?.totalBet);
+                    // Broadcast action log to all
+                    this.multiplayer.broadcast({
+                        type: 'action_log',
+                        playerId: data.playerId || fromPeerId,
+                        action: data.action,
+                        amount: player?.totalBet
+                    });
                     this.multiplayer.broadcastGameState(this.game.getGameState());
                 } else {
                     this.multiplayer.sendToPeer(fromPeerId, {
@@ -281,6 +764,7 @@ class GameController {
                 if (this.gameStarted && this.game.phase !== 'waiting') {
                     this.game.queuePlayer(fromPeerId);
                     this.showToast(`${data.name || 'Player'} will join next hand`, 'info');
+                    this.addSystemMessage(`${data.name || 'Player'} joined and will play next hand`);
                     // Send current game state to the new player
                     this.multiplayer.sendToPeer(fromPeerId, {
                         type: 'game_state',
@@ -295,6 +779,16 @@ class GameController {
         if (this.multiplayer.isHost) {
             const result = this.game.processAction(this.myPlayerId, action);
             if (result.success) {
+                // Log the action
+                const player = this.game.players.find(p => p.id === this.myPlayerId);
+                this.logAction(this.myPlayerId, action, player?.totalBet);
+                // Broadcast action log to all
+                this.multiplayer.broadcast({
+                    type: 'action_log',
+                    playerId: this.myPlayerId,
+                    action: action,
+                    amount: player?.totalBet
+                });
                 this.multiplayer.broadcastGameState(this.game.getGameState());
             } else {
                 this.showToast(result.error, 'error');
@@ -318,12 +812,40 @@ class GameController {
         this.multiplayer.clearQueuedStatus();
         
         this.game.startHand();
+        
+        // Log hand start
+        this.logHandStart(this.game.baseBet, this.game.players);
+        this.multiplayer.broadcast({ 
+            type: 'hand_start_log',
+            baseBet: this.game.baseBet,
+            players: this.game.players.map(p => ({ id: p.id }))
+        });
+        
         this.multiplayer.broadcastGameState(this.game.getGameState());
     }
 
     // ============ UI UPDATES ============
 
     updateGameUI(state) {
+        // Log phase transitions
+        if (state.phase !== this.lastPhase) {
+            if (state.phase === 'flop') {
+                // Log flop cards
+                this.logBoardCards(1, state.board1, 'flop');
+                this.logBoardCards(2, state.board2, 'flop');
+            } else if (state.phase === 'results') {
+                // Log turn/river cards
+                this.logBoardCards(1, state.board1, 'results');
+                this.logBoardCards(2, state.board2, 'results');
+                // Log showdown results
+                if (state.results) {
+                    this.logShowdown(state.results);
+                    this.logPnLSummary(state.players);
+                }
+            }
+            this.lastPhase = state.phase;
+        }
+
         // Update boards
         this.updateBoard('board-1', state.board1);
         this.updateBoard('board-2', state.board2);
@@ -341,8 +863,8 @@ class GameController {
             document.getElementById('current-bet').textContent = this.formatCurrency(myPlayer.totalBet);
         }
 
-        // Update other players - pass results for showdown
-        this.updatePlayersArea(state.players, state.phase, state.results);
+        // Update other players - pass results for showdown and queued players
+        this.updatePlayersArea(state.players, state.phase, state.results, state.queuedPlayers);
 
         // Update action buttons
         this.updateActionButtons(state, myPlayer);
@@ -443,7 +965,7 @@ class GameController {
         return card;
     }
 
-    updatePlayersArea(players, phase, results = null) {
+    updatePlayersArea(players, phase, results = null, queuedPlayerIds = []) {
         const container = document.getElementById('players-area');
         container.innerHTML = '';
 
@@ -488,16 +1010,19 @@ class GameController {
                         </div>
                     `;
 
-                    // Show equation: bet × totalMultiplier → netResult
+                    // Show equation: bet × totalMultiplier = hand payout (not net PnL)
                     const payoutClass = playerResult.netResult >= 0 ? 'win' : 'lose';
+                    const handPayout = playerResult.qualifies 
+                        ? playerResult.totalBet * playerResult.totalMultiplier 
+                        : -playerResult.totalBet;
                     const equationText = playerResult.qualifies 
-                        ? `${this.formatCurrency(playerResult.totalBet)} × ${playerResult.totalMultiplier} → ${this.formatCurrency(playerResult.netResult, true)}`
-                        : `FOUL → ${this.formatCurrency(playerResult.netResult, true)}`;
+                        ? `${this.formatCurrency(playerResult.totalBet)} × ${playerResult.totalMultiplier} = ${this.formatCurrency(handPayout, true)}`
+                        : `FOUL = ${this.formatCurrency(handPayout, true)}`;
                     
                     resultHtml = `
                         ${cardsHtml}
                         ${handsHtml}
-                        <div class="payout-equation ${payoutClass}">${equationText}</div>
+                        <div class="payout-equation ${playerResult.qualifies ? 'win' : 'lose'}">${equationText}</div>
                         <div class="payout ${payoutClass}">PnL this hand: ${this.formatCurrency(playerResult.netResult, true)}</div>
                     `;
                 }
@@ -513,6 +1038,28 @@ class GameController {
 
             container.appendChild(div);
         });
+
+        // Show queued players (waiting for next hand)
+        if (queuedPlayerIds && queuedPlayerIds.length > 0) {
+            queuedPlayerIds.forEach(playerId => {
+                // Don't show if they're already in the active players list
+                if (players.some(p => p.id === playerId)) return;
+                
+                const playerInfo = this.multiplayer.getPlayer(playerId);
+                const isMe = playerId === this.myPlayerId;
+                const name = playerInfo ? playerInfo.name : (isMe ? 'You' : 'Player');
+                
+                const div = document.createElement('div');
+                div.className = 'player-box queued';
+                
+                div.innerHTML = `
+                    <div class="name">${this.escapeHtml(name)}${isMe ? ' (You)' : ''}</div>
+                    <div class="queued-status">⏳ Waiting for next hand</div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
     }
 
     updateActionButtons(state, myPlayer) {
@@ -610,14 +1157,18 @@ class GameController {
         const netClass = netPnl >= 0 ? 'win' : 'lose';
 
         const totalMult = (qualifies1 && qualifies2) ? mult1 * mult2 : 0;
+        const handPayout = (qualifies1 && qualifies2) 
+            ? myPlayer.totalBet * totalMult 
+            : -myPlayer.totalBet;
+        const equationClass = (qualifies1 && qualifies2) ? 'win' : 'lose';
         const equationText = (qualifies1 && qualifies2)
-            ? `${this.formatCurrency(myPlayer.totalBet)} × ${totalMult} → ${this.formatCurrency(netPnl, true)}`
-            : `FOUL → ${this.formatCurrency(netPnl, true)}`;
+            ? `${this.formatCurrency(myPlayer.totalBet)} × ${totalMult} = ${this.formatCurrency(handPayout, true)}`
+            : `FOUL = ${this.formatCurrency(handPayout, true)}`;
 
         resultsDiv.innerHTML = `
             <div class="my-hand-row ${qualifies1 ? 'qualified' : 'fouled'}">Board 1: ${hand1.name} (${mult1}×)</div>
             <div class="my-hand-row ${qualifies2 ? 'qualified' : 'fouled'}">Board 2: ${hand2.name} (${mult2}×)</div>
-            <div class="my-hand-equation ${netClass}">${equationText}</div>
+            <div class="my-hand-equation ${equationClass}">${equationText}</div>
             <div class="my-hand-total ${netClass}">PnL this hand: ${this.formatCurrency(netPnl, true)}</div>
         `;
     }

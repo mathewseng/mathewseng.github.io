@@ -292,23 +292,11 @@ input[type="text"]::placeholder {
     margin-bottom: var(--spacing-xl);
 }
 
-.join-section {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: center;
-    align-items: center;
-    margin-bottom: var(--spacing-xl);
-}
-
-.join-section input {
-    max-width: 250px;
+/* Room code input in menu */
+#room-code-input {
     text-transform: uppercase;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.15em;
     text-align: center;
-}
-
-.join-section .btn {
-    min-width: 130px;
 }
 
 /* Rules Preview */
@@ -370,6 +358,22 @@ input[type="text"]::placeholder {
     font-size: 1.8rem;
     color: var(--gold);
     margin-bottom: var(--spacing-md);
+}
+
+.you-are {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    color: var(--text-secondary);
+}
+
+.your-name {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--gold-light);
+    font-weight: 500;
 }
 
 .room-info {
@@ -538,6 +542,31 @@ input[type="number"]:focus {
     display: flex;
 }
 
+/* Game Header */
+.game-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-card);
+    border: 1px solid var(--felt-accent);
+    border-radius: 8px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.game-room-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.game-room-code {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--gold-light);
+    letter-spacing: 0.15em;
+}
 
 /* Boards Container - Stacked Vertically */
 .boards-container {
@@ -805,6 +834,20 @@ input[type="number"]:focus {
 
 .player-box .payout.lose {
     color: var(--danger);
+}
+
+/* Queued player (waiting for next hand) */
+.player-box.queued {
+    background: var(--bg-deep);
+    border: 1px dashed var(--felt-accent);
+    opacity: 0.8;
+}
+
+.player-box .queued-status {
+    font-size: 0.8rem;
+    color: var(--warning);
+    margin-top: var(--spacing-xs);
+    font-style: italic;
 }
 
 /* Player Hand Area */
@@ -1173,6 +1216,356 @@ input[type="number"]:focus {
 
 .toast.info {
     border-color: var(--gold);
+}
+
+/* ============ GAME LOG & CHAT ============ */
+.log-chat-container {
+    width: 100%;
+    max-width: 500px;
+    background: var(--bg-card);
+    border: 1px solid var(--felt-accent);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: var(--spacing-md);
+}
+
+.log-chat-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--felt-accent);
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: var(--spacing-md);
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.tab-btn.has-notification {
+    animation: notificationPulse 0.5s ease-in-out 3;
+}
+
+@keyframes notificationPulse {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(212, 175, 55, 0.2); }
+}
+
+.tab-content {
+    display: none;
+    height: 300px;
+    overflow-y: auto;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Game Log */
+.game-log {
+    padding: var(--spacing-md);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.log-entry {
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    animation: logFadeIn 0.3s ease-out;
+}
+
+@keyframes logFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.log-entry.hand-start {
+    color: var(--gold);
+    font-weight: 500;
+    border-top: 1px dashed var(--felt-accent);
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+}
+
+.log-entry.action {
+    color: var(--text-secondary);
+}
+
+.log-entry.action .player-name {
+    color: var(--gold-light);
+}
+
+.log-entry.action .action-type {
+    color: var(--success);
+}
+
+.log-entry.action .action-type.double {
+    color: var(--warning);
+}
+
+.log-entry.board {
+    color: var(--text-primary);
+}
+
+.log-entry.board .card-text {
+    font-weight: 500;
+}
+
+.log-entry.board .card-text.red {
+    color: var(--card-red);
+}
+
+.log-entry.board .card-text.black {
+    color: var(--text-primary);
+}
+
+.log-entry.showdown {
+    color: var(--text-secondary);
+}
+
+.log-entry.result {
+    font-weight: 500;
+}
+
+.log-entry.result.win {
+    color: var(--success);
+}
+
+.log-entry.result.lose {
+    color: var(--danger);
+}
+
+.log-entry.result.push {
+    color: var(--text-muted);
+}
+
+/* Chat */
+.chat-messages {
+    height: 150px;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+}
+
+.chat-message {
+    padding: var(--spacing-xs) 0;
+    animation: chatBubble 0.3s ease-out;
+}
+
+@keyframes chatBubble {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.chat-message .sender {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    margin-right: var(--spacing-xs);
+}
+
+.chat-message .sender.me {
+    color: var(--success);
+}
+
+.chat-message .text {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.chat-message .timestamp {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-left: var(--spacing-sm);
+}
+
+.chat-message.system {
+    font-style: italic;
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.chat-message.emoji-blast {
+    font-size: 2rem;
+    text-align: center;
+    animation: emojiBounce 0.5s ease-out;
+}
+
+@keyframes emojiBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+.chat-input-area {
+    display: flex;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    border-top: 1px solid var(--felt-accent);
+    background: var(--bg-deep);
+    position: relative;
+}
+
+.chat-input-area input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--felt-accent);
+    border-radius: 20px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+}
+
+.chat-input-area input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.chat-input-area input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-chat-send {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border: none;
+    border-radius: 20px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-chat-send:hover {
+    background: var(--gold-light);
+    transform: scale(1.05);
+}
+
+.emoji-picker-btn {
+    background: transparent;
+    border: 1px solid var(--felt-accent);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.emoji-picker-btn:hover {
+    border-color: var(--gold);
+    transform: scale(1.1);
+}
+
+.emoji-picker {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--felt-accent);
+    border-radius: 12px;
+    padding: var(--spacing-sm);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-xs);
+    box-shadow: var(--shadow-elevated);
+    z-index: 100;
+}
+
+.emoji-option {
+    padding: var(--spacing-xs);
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.emoji-option:hover {
+    background: var(--felt-accent);
+    transform: scale(1.2);
+}
+
+/* Quick chat shortcuts - poker slang */
+.quick-chat {
+    display: flex;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    overflow-x: auto;
+    border-top: 1px solid var(--felt-accent);
+}
+
+.quick-chat-btn {
+    background: var(--bg-deep);
+    border: 1px solid var(--felt-accent);
+    border-radius: 12px;
+    padding: 2px 8px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-chat-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+/* Scrollbar styling for log and chat */
+.game-log::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.game-log::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track {
+    background: var(--bg-deep);
+}
+
+.game-log::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
+    background: var(--felt-accent);
+    border-radius: 3px;
+}
+
+.game-log::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--gold-dark);
 }
 
 /* Utility Classes */

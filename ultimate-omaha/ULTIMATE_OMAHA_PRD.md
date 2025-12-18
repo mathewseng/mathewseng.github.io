@@ -67,9 +67,19 @@ Example: Flush (2×) on Board 1 + Boat (3×) on Board 2 = 6× total
 ## 3. Payout System (CRITICAL)
 
 ### 3.1 Core Principle
-This is a **player-vs-player** game with **no house/bank**. Money flows directly between players.
+- **Multiplayer (2+ players)**: Player-vs-player game. Money flows directly between players.
+- **Single Player**: Play against an imaginary **bank** for practice/testing.
 
-### 3.2 Payout Rules
+### 3.2 Single Player Mode (vs Bank)
+
+When playing solo, payouts come from/go to an imaginary bank:
+
+| Player Status | Result |
+|---------------|--------|
+| **Qualifies** | Win `bet × totalMultiplier` from the bank |
+| **Fouls** | Lose `bet` to the bank |
+
+### 3.3 Multiplayer Payout Rules
 
 **Both rules apply INDEPENDENTLY - they stack!**
 
@@ -85,7 +95,7 @@ This is a **player-vs-player** game with **no house/bank**. Money flows directly
 > `Loss to each opponent = player's bet`
 > `Total loss from this rule = bet × (number of other players)`
 
-### 3.3 How Transactions Work Between Two Players
+### 3.4 How Transactions Work Between Two Players
 
 For any pair of players (P1, P2), **multiple transactions can occur**:
 
@@ -96,7 +106,7 @@ For any pair of players (P1, P2), **multiple transactions can occur**:
 | Loses | Loses | P1 pays `P1.bet` to P2 **AND** P2 pays `P2.bet` to P1 |
 | Loses | Wins | P1 pays `P1.bet` to P2 (P1's loss) **AND** P2 gets `P2.bet × P2.mult` from P1 (P2's win) |
 
-### 3.4 Payout Calculation Algorithm
+### 3.5 Payout Calculation Algorithm
 
 ```javascript
 For each player P:
@@ -124,7 +134,7 @@ For each player P:
     P.pnl += netResult
 ```
 
-### 3.5 Examples
+### 3.6 Examples
 
 **Example 1: 3 Players - One Winner, Two Losers**
 - Player A: Wins with $4 payout (bet × multiplier = $4)
@@ -213,11 +223,14 @@ For each player P:
    - "Start Game" / "Leave Lobby" buttons
 
 3. **Game Screen**
+   - Room code header (always visible for sharing)
    - Two community boards (stacked vertically)
    - Player boxes showing: name, PnL, bet, status
+   - Queued players show "⏳ Waiting for next hand"
    - Current player's hole cards
    - Action area with Check/Double buttons
    - At showdown: host controls for next hand
+   - Game log and chat panel at bottom (tabbed)
 
 ### 4.2 Player Box Display
 
@@ -238,19 +251,45 @@ For each player P:
 │ PnL: $0             │
 │ Bet: $1             │
 │ [A♠][K♥][Q♦][J♣]   │  ← Hole cards
-│ Flush (2×)          │  ← Board 1 hand
-│ Boat (3×)           │  ← Board 2 hand
-│ 6× → +$10           │  ← Total multiplier & payout
+│ Flush (2×)          │  ← Board 1 hand + multiplier
+│ Boat (3×)           │  ← Board 2 hand + multiplier
+│ $1 × 6 → +$6        │  ← Equation: bet × totalMult → result
+│ PnL this hand: +$6  │  ← Net result for this hand
 └─────────────────────┘
 ```
 
-### 4.3 Number Formatting
+### 4.3 Board Result Display
+
+Below each community board at showdown:
+```
+Flush (2×) ✓          ← Hand name, multiplier, qualify status
+```
+- No "Your" prefix
+- Shows multiplier in parentheses
+- ✓ if qualifies, ✗ if fouls
+
+### 4.4 Your Hand Area at Showdown
+
+```
+┌─────────────────────────┐
+│      YOUR HAND          │
+│   [A♠][K♥][Q♦][J♣]     │
+│     PnL: $0             │
+├─────────────────────────┤
+│ Board 1: Flush (2×)     │
+│ Board 2: Boat (3×)      │
+│ $1 × 6 → +$6            │
+│ PnL this hand: +$6      │
+└─────────────────────────┘
+```
+
+### 4.5 Number Formatting
 - Always show `$` prefix
 - Only show decimals if not a whole number: `$1` not `$1.00`, but `$1.50` if needed
 - Negative numbers: `-$5` 
 - Positive with sign (for payouts): `+$5`
 
-### 4.4 Hand Names (Simplified)
+### 4.6 Hand Names (Simplified)
 | Internal Name | Display Name |
 |---------------|--------------|
 | HIGH_CARD | High Card |
@@ -263,6 +302,59 @@ For each player P:
 | FOUR_OF_A_KIND | Quads |
 | STRAIGHT_FLUSH | Straight Flush |
 | ROYAL_FLUSH | Royal Flush |
+
+### 4.7 Game Log & Chat
+
+A tabbed panel at the bottom of the game screen provides:
+
+**Game Log Tab** - Automatic logging of all game events:
+- Hand start (bet amount, players)
+- Player actions (check/double with amounts)
+- Board cards (flop, turn, river for both boards)
+- Showdown (all players' hole cards)
+- Hand results (each player's hand ranking, multiplier, payout)
+- PnL summary (running totals)
+
+```
+═══ Hand #1 ═══
+Bet: $1 • Players: Alice, Bob, Carol
+Alice checks
+Bob doubles to $2
+Carol checks
+Board 1 Flop: A♠ K♥ Q♦
+Board 2 Flop: 7♣ 8♣ 9♣
+Board 1 Turn/River: A♠ K♥ Q♦ J♠ T♣
+Board 2 Turn/River: 7♣ 8♣ 9♣ T♣ J♣
+─── Showdown ───
+Alice: A♥ K♠ Q♠ J♥
+  → Two Pair + Straight (2×): +$2
+Bob: 6♣ 5♣ 4♣ 3♣
+  → FOUL: -$2
+─── PnL Summary ───
+Alice: +$2 total
+Bob: -$2 total
+```
+
+**Chat Tab** - Real-time chat with features:
+- Text messaging with timestamps
+- Emoji picker with poker-themed emojis (♠️ ♥️ ♦️ ♣️ 🃏 💰 🔥)
+- Quick chat shortcuts (GG, NH, GL)
+- Emoji-only messages display larger with bounce animation
+- Notification pulse on tab when new message arrives
+- System messages for joins/reconnects
+
+**UI Layout:**
+```
+┌─────────────────────────────────┐
+│ [📋 Game Log] [💬 Chat]         │  ← Tabs
+├─────────────────────────────────┤
+│                                 │
+│   (Log entries or chat msgs)    │  ← Scrollable content
+│                                 │
+├─────────────────────────────────┤
+│ [Type a message...] [Send] [😀] │  ← Chat input (chat tab only)
+└─────────────────────────────────┘
+```
 
 ---
 
@@ -359,10 +451,141 @@ ultimate-omaha/
 - `actedThisRound: Set<playerId>` tracks who has acted
 
 ### 5.5 Mid-Game Joins
-- New players can join during a hand
-- They are queued (`queuedPlayers` array)
+- New players can join during a hand in progress
+- They are queued (`queuedPlayers` array in game state)
 - Added to game at start of next hand
-- UI shows "Joining next hand" badge
+- UI shows them with "⏳ Waiting for next hand" status
+- They can still see the current game state, chat, and game log
+- Room code is always visible at top of game screen for sharing
+
+### 5.6 Session Persistence & Reconnection
+
+Players can refresh the page without losing their connection.
+
+**How It Works:**
+
+1. **Session Storage**: When a player connects, their session info is saved to `sessionStorage`:
+   - `peerId` - Their PeerJS ID
+   - `roomCode` - The room they're in
+   - `playerName` - Their display name
+   - `isHost` - Whether they're the host
+   - `gameInProgress` - Whether a game is currently running
+   - `timestamp` - For expiration (1 hour)
+
+2. **On Page Load**: The app checks for an existing session and attempts to reconnect automatically.
+
+3. **Host Reconnection**: 
+   - Host reconnects using the same room code-based peer ID
+   - PeerJS allows this if the previous connection was dropped
+   - If `gameInProgress` was true, host goes directly to game screen
+   - Game state is restored from reconnecting clients' backups
+
+4. **Client Reconnection**:
+   - Client reconnects using the same peer ID they had before
+   - Host recognizes them via the `disconnectedPlayers` map
+   - Client sends their `lastFullGameState` backup to help restore host
+   - Client is restored to the game (not queued)
+
+5. **Disconnection Grace Period**: 
+   - When a player disconnects, host stores their info for 5 minutes
+   - If they reconnect within that time, they're restored
+   - After 5 minutes, they're considered fully left
+
+6. **Game State Sync**:
+   - `playerOrder` is sent with `player_list` and `player_joined` messages
+   - All clients track the same join order for host election
+   - `gameInProgress` is updated in session when game starts/ends
+
+**Session Lifecycle:**
+```
+Connect → Save Session → [Page Refresh] → Load Session → Reconnect → Restore
+    ↓
+Leave (intentional) → Clear Session
+```
+
+**Key Data Structures:**
+
+```javascript
+// sessionStorage: 'ultimateomaha_session'
+{
+    peerId: string,
+    roomCode: string,
+    playerName: string,
+    isHost: boolean,
+    gameInProgress: boolean,
+    timestamp: number
+}
+
+// MultiplayerManager.disconnectedPlayers (Map)
+peerId → {
+    id: string,
+    name: string,
+    isHost: boolean,
+    disconnectedAt: number  // for expiration
+}
+
+// MultiplayerManager.playerOrder (Array)
+[hostId, player1Id, player2Id, ...]  // Join order, host always first
+```
+
+### 5.7 Host Migration
+
+When the host disconnects or refreshes, the system first tries to reconnect, then migrates to another host if needed.
+
+**How It Works:**
+
+1. **Game State Backup**: Host broadcasts full (unfiltered) game state to all clients with every update. Clients store this as `lastFullGameState`. `playerOrder` is also synced.
+
+2. **Player Order Tracking**: Host maintains `playerOrder` array tracking join order (host first). Sent with `player_list` and `player_joined` messages.
+
+3. **Session Persistence**: `gameInProgress` flag is saved to session, allowing host to remember game was in progress after refresh.
+
+4. **Host Disconnection Detection**: When a client loses connection to the host:
+   - Client attempts to reconnect every 1 second for 5 attempts
+   - On each attempt, sends reconnect with game state backup
+   - If successful, connection is restored
+
+5. **Host Reconnection with State Restore**:
+   - If host refreshes, they come back with no game state
+   - First client to reconnect sends their `gameStateBackup`
+   - Host restores game from client's backup
+   - Game continues seamlessly
+
+6. **Host Election** (if host doesn't reconnect within 5 seconds):
+   - First player in `playerOrder` (excluding old host) becomes new host
+   - If that's us, we call `becomeNewHost()`
+   - Otherwise, we wait for the new host to connect
+
+7. **New Host Setup**:
+   - New host marks themselves as host
+   - Connects to all other players
+   - Sends `new_host_announcement` with game state
+   - Restores game from `lastFullGameState`
+   - Shows game screen, begins handling game logic
+
+**Host Migration Flow:**
+```
+Host Disconnects
+    ↓
+Clients detect (conn.on('close'))
+    ↓
+Attempt reconnect every 1s (5 times)
+    ↓
+If reconnect succeeds → Send gameStateBackup to host → Resume
+    ↓
+If no reconnect → initiateHostMigration()
+    ↓
+First eligible player → becomeNewHost()
+    ↓
+Connect to all peers, send new_host_announcement
+    ↓
+Restore game state, continue game
+```
+
+**Limitations:**
+- Brief interruption (~5 seconds) while migration occurs
+- If all clients disconnect simultaneously, game is lost
+- At least one client must have received a game state backup
 
 ---
 
@@ -471,8 +694,11 @@ Note: Rules 1+4 and Rules 2+3 are symmetric - what one player receives, another 
 6. **Different bet sizes** - Player who doubled pays/receives more
 
 ### 7.2 Edge Cases
-- Single player game
-- Player disconnects mid-hand
+- **Single player game** - Plays against bank (qualify = win bet×mult, foul = lose bet)
+- **Player disconnects mid-hand** - Stored for 5 min, can reconnect and resume
+- **Player refreshes page** - Auto-reconnects using stored session
+- **Host refreshes** - Reconnects with same room code, OR if too slow, another player becomes host
+- **Host leaves/crashes** - First other player becomes new host after 5 second timeout
 - All players have same hand
 - Player joins mid-hand (should be queued)
 
@@ -484,4 +710,10 @@ Note: Rules 1+4 and Rules 2+3 are symmetric - what one player receives, another 
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial implementation |
 | 1.1 | 2024-12-14 | Fixed payout algorithm, renamed Stack→PnL |
+| 1.2 | 2024-12-18 | Added single-player mode (vs bank), updated showdown UI with equation display |
+| 1.3 | 2024-12-18 | Added session persistence - players can refresh without disconnecting |
+| 1.4 | 2024-12-18 | Added host migration - if host leaves, another player becomes host automatically |
+| 1.5 | 2024-12-18 | Added game log and chat with emoji picker, notifications, and poker slang shortcuts |
+| 1.6 | 2024-12-18 | Room code displayed at top during game, improved mid-game join display, taller log/chat panel |
+| 1.7 | 2024-12-18 | Improved host migration: reconnect attempts before migration, game state backup from clients |
 
