@@ -353,6 +353,19 @@ class GameController {
         } else {
             document.getElementById('board-1-result').textContent = '';
             document.getElementById('board-2-result').textContent = '';
+            // Clear my hand results when not at showdown
+            const resultsDiv = document.querySelector('.my-hand-results');
+            if (resultsDiv) resultsDiv.remove();
+        }
+
+        // Hide "Your Bet:" at showdown
+        const currentBetInfo = document.querySelector('.current-bet-info');
+        if (currentBetInfo) {
+            if (state.phase === 'results') {
+                currentBetInfo.classList.add('hidden');
+            } else {
+                currentBetInfo.classList.remove('hidden');
+            }
         }
     }
 
@@ -464,27 +477,28 @@ class GameController {
                     }
                     cardsHtml += '</div>';
 
-                    // Show hands on each board
+                    // Show hands on each board (just name and multiplier)
                     const hand1Class = playerResult.hand1.qualifies ? 'qualified' : 'fouled';
                     const hand2Class = playerResult.hand2.qualifies ? 'qualified' : 'fouled';
                     
                     const handsHtml = `
                         <div class="player-hands">
-                            <div class="hand-result ${hand1Class}">${playerResult.hand1.name} ${playerResult.qualifies ? `(${playerResult.hand1.multiplier}×)` : ''}</div>
-                            <div class="hand-result ${hand2Class}">${playerResult.hand2.name} ${playerResult.qualifies ? `(${playerResult.hand2.multiplier}×)` : ''}</div>
+                            <div class="hand-result ${hand1Class}">${playerResult.hand1.name} (${playerResult.hand1.multiplier}×)</div>
+                            <div class="hand-result ${hand2Class}">${playerResult.hand2.name} (${playerResult.hand2.multiplier}×)</div>
                         </div>
                     `;
 
-                    // Show payout
+                    // Show equation: bet × totalMultiplier → netResult
                     const payoutClass = playerResult.netResult >= 0 ? 'win' : 'lose';
-                    const payoutText = playerResult.qualifies 
-                        ? `${playerResult.totalMultiplier}× → ${this.formatCurrency(playerResult.netResult, true)}`
+                    const equationText = playerResult.qualifies 
+                        ? `${this.formatCurrency(playerResult.totalBet)} × ${playerResult.totalMultiplier} → ${this.formatCurrency(playerResult.netResult, true)}`
                         : `FOUL → ${this.formatCurrency(playerResult.netResult, true)}`;
                     
                     resultHtml = `
                         ${cardsHtml}
                         ${handsHtml}
-                        <div class="payout ${payoutClass}">${payoutText}</div>
+                        <div class="payout-equation ${payoutClass}">${equationText}</div>
+                        <div class="payout ${payoutClass}">PnL this hand: ${this.formatCurrency(playerResult.netResult, true)}</div>
                     `;
                 }
             }
@@ -559,11 +573,53 @@ class GameController {
         const qualifies1 = Poker.doesHandQualify(hand1);
         const qualifies2 = Poker.doesHandQualify(hand2);
 
-        result1.textContent = `Your ${hand1.name} (${Poker.getMultiplier(hand1)}×) ${qualifies1 ? '✓' : '✗'}`;
+        const mult1 = Poker.getMultiplier(hand1);
+        const mult2 = Poker.getMultiplier(hand2);
+        const hand1Pnl = qualifies1 ? myPlayer.totalBet * mult1 : -myPlayer.totalBet;
+        const hand2Pnl = qualifies2 ? myPlayer.totalBet * mult2 : -myPlayer.totalBet;
+
+        result1.innerHTML = `${hand1.name} (${mult1}×) ${qualifies1 ? '✓' : '✗'}`;
         result1.className = `board-result ${qualifies1 ? 'qualified' : 'fouled'}`;
 
-        result2.textContent = `Your ${hand2.name} (${Poker.getMultiplier(hand2)}×) ${qualifies2 ? '✓' : '✗'}`;
+        result2.innerHTML = `${hand2.name} (${mult2}×) ${qualifies2 ? '✓' : '✗'}`;
         result2.className = `board-result ${qualifies2 ? 'qualified' : 'fouled'}`;
+
+        // Update the player-hand-area with total pnl this hand
+        this.updateMyHandResults(state, myPlayer, hand1, hand2, qualifies1, qualifies2);
+    }
+
+    updateMyHandResults(state, myPlayer, hand1, hand2, qualifies1, qualifies2) {
+        // Find or create the results container in player-hand-area
+        const handArea = document.querySelector('.player-hand-area');
+        let resultsDiv = handArea.querySelector('.my-hand-results');
+        
+        if (!resultsDiv) {
+            resultsDiv = document.createElement('div');
+            resultsDiv.className = 'my-hand-results';
+            handArea.appendChild(resultsDiv);
+        }
+
+        const mult1 = Poker.getMultiplier(hand1);
+        const mult2 = Poker.getMultiplier(hand2);
+        const hand1Pnl = qualifies1 ? myPlayer.totalBet * mult1 : -myPlayer.totalBet;
+        const hand2Pnl = qualifies2 ? myPlayer.totalBet * mult2 : -myPlayer.totalBet;
+
+        // Get actual net result from results
+        const myResult = state.results?.find(r => r.playerId === myPlayer.id);
+        const netPnl = myResult ? myResult.netResult : 0;
+        const netClass = netPnl >= 0 ? 'win' : 'lose';
+
+        const totalMult = (qualifies1 && qualifies2) ? mult1 * mult2 : 0;
+        const equationText = (qualifies1 && qualifies2)
+            ? `${this.formatCurrency(myPlayer.totalBet)} × ${totalMult} → ${this.formatCurrency(netPnl, true)}`
+            : `FOUL → ${this.formatCurrency(netPnl, true)}`;
+
+        resultsDiv.innerHTML = `
+            <div class="my-hand-row ${qualifies1 ? 'qualified' : 'fouled'}">Board 1: ${hand1.name} (${mult1}×)</div>
+            <div class="my-hand-row ${qualifies2 ? 'qualified' : 'fouled'}">Board 2: ${hand2.name} (${mult2}×)</div>
+            <div class="my-hand-equation ${netClass}">${equationText}</div>
+            <div class="my-hand-total ${netClass}">PnL this hand: ${this.formatCurrency(netPnl, true)}</div>
+        `;
     }
 
     // ============ RULES MODAL ============

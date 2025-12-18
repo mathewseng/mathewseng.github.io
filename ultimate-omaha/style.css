@@ -778,9 +778,23 @@ input[type="number"]:focus {
     color: var(--danger);
 }
 
+.player-box .payout-equation {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    margin-top: var(--spacing-xs);
+}
+
+.player-box .payout-equation.win {
+    color: var(--success);
+}
+
+.player-box .payout-equation.lose {
+    color: var(--danger);
+}
+
 .player-box .payout {
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     margin-top: var(--spacing-xs);
 }
@@ -840,6 +854,70 @@ input[type="number"]:focus {
     color: var(--text-secondary);
 }
 
+/* My hand results at showdown */
+.my-hand-results {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--felt-accent);
+    text-align: center;
+}
+
+.my-hand-row {
+    font-size: 0.85rem;
+    padding: var(--spacing-xs) 0;
+}
+
+.my-hand-row.qualified {
+    color: var(--success);
+}
+
+.my-hand-row.fouled {
+    color: var(--danger);
+}
+
+.my-hand-row .hand-pnl {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+.my-hand-equation {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    margin-top: var(--spacing-sm);
+}
+
+.my-hand-equation.win {
+    color: var(--success);
+}
+
+.my-hand-equation.lose {
+    color: var(--danger);
+}
+
+.my-hand-total {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: var(--spacing-xs);
+}
+
+.my-hand-total.win {
+    color: var(--success);
+}
+
+.my-hand-total.lose {
+    color: var(--danger);
+}
+
+/* Board result hand pnl inline */
+.board-result .hand-pnl-inline {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
 /* Action Area */
 .action-area {
     background: var(--bg-card);
@@ -851,10 +929,19 @@ input[type="number"]:focus {
 }
 
 .action-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position: relative;
     margin-bottom: var(--spacing-md);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-header .btn-icon-only {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .current-bet-info {
@@ -909,7 +996,7 @@ input[type="number"]:focus {
 }
 
 .host-showdown-controls input[type="number"] {
-    width: 80px;
+    width: 100px;
 }
 
 /* Queued player indicator */
