@@ -99,6 +99,7 @@ class EdgeTheDealerController {
         document.getElementById('clear-discards-btn').addEventListener('click', () => this.clearDiscards());
         document.getElementById('confirm-discards-btn').addEventListener('click', () => this.confirmDiscards());
         document.getElementById('next-hand-btn').addEventListener('click', () => this.startNextHand());
+        document.getElementById('quit-game-btn').addEventListener('click', () => this.quitGame());
         document.getElementById('rules-btn').addEventListener('click', () => this.showRules());
         document.getElementById('close-rules').addEventListener('click', () => this.hideRules());
 
@@ -337,9 +338,7 @@ class EdgeTheDealerController {
     }
 
     leaveLobby() {
-        this.multiplayer.leave();
-        this.showScreen('menu');
-        this.gameStarted = false;
+        this.leaveRoomAndReturnToMenu();
     }
 
     showScreen(screenId) {
@@ -350,6 +349,31 @@ class EdgeTheDealerController {
         if (screenId === 'game') {
             document.getElementById('game-room-code').textContent = this.multiplayer.roomCode;
         }
+    }
+
+    leaveRoomAndReturnToMenu() {
+        this.multiplayer.leave();
+        this.game.reset();
+        this.gameStarted = false;
+        this.currentState = null;
+        this.selectedDiscards.clear();
+        this.lastPhase = null;
+        this.lastDrawRound = 0;
+        this.handNumber = 0;
+
+        const gameLog = document.getElementById('game-log');
+        if (gameLog) gameLog.innerHTML = '';
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages) chatMessages.innerHTML = '';
+
+        this.showScreen('menu');
+    }
+
+    quitGame() {
+        const shouldQuit = window.confirm('Quit the current game and return to the main page?');
+        if (!shouldQuit) return;
+        this.leaveRoomAndReturnToMenu();
+        this.showToast('You left the game.', 'info');
     }
 
     // ============ GAME FLOW ============

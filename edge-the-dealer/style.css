@@ -1,5 +1,24 @@
 @import url("../ultimate-omaha/style.css");
 
+.game-header {
+    width: 100%;
+    max-width: 560px;
+    justify-content: space-between;
+}
+
+.game-room-info {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.btn-quit-game {
+    font-size: 0.72rem;
+    padding: 0.45rem 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 .dealer-area {
     background: linear-gradient(145deg, var(--felt-green) 0%, var(--bg-felt) 100%);
     border: 3px solid var(--gold-dark);
@@ -180,6 +199,16 @@
 }
 
 @media (max-width: 768px) {
+    .game-header {
+        max-width: 100%;
+        gap: var(--spacing-sm);
+    }
+
+    .btn-quit-game {
+        font-size: 0.66rem;
+        padding: 0.4rem 0.6rem;
+    }
+
     .dealer-area {
         max-width: 100%;
         padding: var(--spacing-md);
