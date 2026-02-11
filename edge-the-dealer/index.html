@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge the Dealer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Pro:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="ambient-bg"></div>
+
+        <!-- Main Menu Screen -->
+        <div id="menu-screen" class="screen active">
+            <div class="menu-content">
+                <h1 class="game-title">
+                    <span class="title-line">Edge the</span>
+                    <span class="title-line accent">Dealer</span>
+                </h1>
+                <p class="tagline">Lowest Winning Hand • Shared Dealer • Multi-Draw</p>
+
+                <div class="menu-section">
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
+                </div>
+
+                <div class="menu-section">
+                    <input type="text" id="room-code-input" placeholder="Room code" maxlength="6">
+                </div>
+
+                <div class="menu-buttons">
+                    <button id="start-join-btn" class="btn btn-primary">
+                        <span class="btn-icon">♠</span>
+                        <span class="btn-text">Start Game</span>
+                        <span class="btn-loader hidden"></span>
+                    </button>
+                </div>
+
+                <div class="rules-preview">
+                    <h3>Quick Rules</h3>
+                    <ul>
+                        <li>Players: 5 cards each. Dealer: 7 open cards.</li>
+                        <li>Discard 0-5 cards each draw round, then confirm.</li>
+                        <li>If anyone beats dealer, weakest such hand wins.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen">
+            <div class="lobby-content">
+                <div class="lobby-header">
+                    <h2>Game Lobby</h2>
+                    <div class="you-are">
+                        <span>You are:</span>
+                        <span id="your-name" class="your-name"></span>
+                    </div>
+                    <div class="room-info">
+                        <span class="room-label">Room Code:</span>
+                        <span id="room-code" class="room-code"></span>
+                        <button id="copy-code-btn" class="btn-icon-only" title="Copy code">📋</button>
+                    </div>
+                </div>
+
+                <div class="players-list">
+                    <h3>Players <span id="player-count">(0/9)</span></h3>
+                    <div id="lobby-players"></div>
+                </div>
+
+                <div class="lobby-settings" id="host-controls">
+                    <label>
+                        <span>Bet Amount:</span>
+                        <div class="bet-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" id="base-bet" value="1.00" min="0.01" step="0.01" placeholder="1.00">
+                        </div>
+                    </label>
+                    <label>
+                        <span>Draws Per Hand:</span>
+                        <select id="draw-count">
+                            <option value="1">Single Draw</option>
+                            <option value="2">Double Draw</option>
+                            <option value="3">Triple Draw</option>
+                            <option value="4">Quadruple Draw</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="lobby-actions">
+                    <button id="start-game-btn" class="btn btn-primary hidden">Start Game</button>
+                    <button id="leave-lobby-btn" class="btn btn-secondary">Leave Lobby</button>
+                </div>
+
+                <p id="waiting-message" class="waiting-msg">Waiting for host to start...</p>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <span class="game-room-label">Room:</span>
+                <span id="game-room-code" class="game-room-code"></span>
+            </div>
+
+            <!-- Dealer Cards -->
+            <div class="dealer-area">
+                <div class="dealer-label">Dealer (7 Cards)</div>
+                <div class="dealer-cards" id="dealer-cards">
+                    <div class="card-slot" data-slot="0"></div>
+                    <div class="card-slot" data-slot="1"></div>
+                    <div class="card-slot" data-slot="2"></div>
+                    <div class="card-slot" data-slot="3"></div>
+                    <div class="card-slot" data-slot="4"></div>
+                    <div class="card-slot" data-slot="5"></div>
+                    <div class="card-slot" data-slot="6"></div>
+                </div>
+                <div class="dealer-hand-result" id="dealer-hand-result"></div>
+            </div>
+
+            <!-- Players Area -->
+            <div class="players-area" id="players-area"></div>
+
+            <!-- Current Player's Hand -->
+            <div class="player-hand-area">
+                <div class="hand-label">Your Hand (Select cards to discard)</div>
+                <div class="hole-cards five-cards" id="hole-cards">
+                    <div class="card-slot hole" data-slot="0"></div>
+                    <div class="card-slot hole" data-slot="1"></div>
+                    <div class="card-slot hole" data-slot="2"></div>
+                    <div class="card-slot hole" data-slot="3"></div>
+                    <div class="card-slot hole" data-slot="4"></div>
+                </div>
+                <div class="discard-help" id="discard-help">Select 0-5 cards, then confirm.</div>
+                <div class="player-pnl">
+                    <span>PnL: </span>
+                    <span id="my-pnl">$0</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-area" id="action-area">
+                <div class="action-header">
+                    <div class="current-bet-info">
+                        <span>Your Bet: </span>
+                        <span id="current-bet">$0</span>
+                    </div>
+                    <button id="rules-btn" class="btn-icon-only" title="Rules">?</button>
+                </div>
+
+                <div class="draw-round-banner" id="draw-round-banner">Draw Round 1 of 1</div>
+
+                <div class="action-buttons" id="action-buttons">
+                    <button id="clear-discards-btn" class="btn btn-action btn-secondary">Clear</button>
+                    <button id="confirm-discards-btn" class="btn btn-action btn-raise">Confirm Discards</button>
+                </div>
+
+                <p id="waiting-draw" class="waiting-msg hidden">Waiting for other players to confirm...</p>
+
+                <!-- Host showdown controls -->
+                <div id="host-showdown-controls" class="host-showdown-controls hidden">
+                    <label>
+                        <span>Next Bet: $</span>
+                        <input type="number" id="next-bet" value="1.00" min="0.01" step="0.01">
+                    </label>
+                    <label>
+                        <span>Next Draws:</span>
+                        <select id="next-draw-count">
+                            <option value="1">Single</option>
+                            <option value="2">Double</option>
+                            <option value="3">Triple</option>
+                            <option value="4">Quadruple</option>
+                        </select>
+                    </label>
+                    <button id="next-hand-btn" class="btn btn-primary">Next Hand</button>
+                </div>
+                <p id="waiting-next" class="waiting-msg hidden">Waiting for host...</p>
+            </div>
+
+            <!-- Game Log & Chat -->
+            <div class="log-chat-container">
+                <div class="log-chat-tabs">
+                    <button class="tab-btn active" data-tab="game-log">📋 Game Log</button>
+                    <button class="tab-btn" data-tab="chat">💬 Chat</button>
+                </div>
+                <div class="tab-content active" id="game-log-tab">
+                    <div class="game-log" id="game-log"></div>
+                </div>
+                <div class="tab-content" id="chat-tab">
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
+                        <button id="send-chat-btn" class="btn btn-chat-send">Send</button>
+                        <div class="emoji-picker-btn" id="emoji-picker-btn">😀</div>
+                        <div class="emoji-picker hidden" id="emoji-picker">
+                            <span class="emoji-option">👍</span>
+                            <span class="emoji-option">👎</span>
+                            <span class="emoji-option">🎉</span>
+                            <span class="emoji-option">🔥</span>
+                            <span class="emoji-option">💰</span>
+                            <span class="emoji-option">😭</span>
+                            <span class="emoji-option">😎</span>
+                            <span class="emoji-option">🤑</span>
+                            <span class="emoji-option">♠️</span>
+                            <span class="emoji-option">♥️</span>
+                            <span class="emoji-option">♦️</span>
+                            <span class="emoji-option">♣️</span>
+                            <span class="emoji-option">🃏</span>
+                            <span class="emoji-option">GG</span>
+                            <span class="emoji-option">NH</span>
+                            <span class="emoji-option">GL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rules Modal -->
+        <div id="rules-modal" class="modal hidden">
+            <div class="modal-content">
+                <button class="modal-close" id="close-rules">&times;</button>
+                <h2>Edge the Dealer Rules</h2>
+
+                <div class="rules-section">
+                    <h3>Setup</h3>
+                    <ol>
+                        <li>Each player antes the same base bet and gets 5 cards.</li>
+                        <li>The dealer gets 7 open cards; everyone sees them.</li>
+                        <li>The dealer's hand is their best 5-card poker hand from the 7.</li>
+                    </ol>
+                </div>
+
+                <div class="rules-section">
+                    <h3>Draw Rounds</h3>
+                    <ol>
+                        <li>Host sets draw mode: Single / Double / Triple / Quadruple.</li>
+                        <li>In each draw round, pick 0-5 cards to discard, then confirm.</li>
+                        <li>All discards and replacements happen at once after everyone confirms.</li>
+                        <li>If deck runs out, all discards are reshuffled into the deck.</li>
+                    </ol>
+                </div>
+
+                <div class="rules-section">
+                    <h3>Who Wins?</h3>
+                    <p>All players are ranked by standard high poker hand strength.</p>
+                    <p>If one or more players beat the dealer, the winner is the <strong>lowest</strong> hand among those
+                        that beat the dealer.</p>
+                    <p>If nobody beats the dealer, the <strong>highest</strong> player hand wins.</p>
+                    <p>Ties split the pot equally.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast-container"></div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../ultimate-omaha/poker.js"></script>
+    <script src="../ultimate-omaha/multiplayer.js"></script>
+    <script src="game.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
