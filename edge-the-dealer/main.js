@@ -351,11 +351,30 @@ class EdgeTheDealerController {
         }
     }
 
-    leaveRoomAndReturnToMenu() {
-        this.multiplayer.leave();
+    leaveRoomAndReturnToMenu(options = {}) {
+        const hardReload = !!options.hardReload;
+
+        // Always clear storage and tear down networking, even if one step errors.
+        try {
+            this.multiplayer.leave();
+        } catch (err) {
+            console.error('Failed to fully leave multiplayer session:', err);
+        }
+        try {
+            this.multiplayer.clearSession();
+        } catch (err) {
+            console.error('Failed to clear multiplayer session:', err);
+        }
+        try {
+            sessionStorage.removeItem('ultimateomaha_session');
+        } catch (err) {
+            console.error('Failed to clear session storage key:', err);
+        }
+
         this.game.reset();
         this.gameStarted = false;
         this.currentState = null;
+        this.myPlayerId = null;
         this.selectedDiscards.clear();
         this.lastPhase = null;
         this.lastDrawRound = 0;
@@ -366,14 +385,27 @@ class EdgeTheDealerController {
         const chatMessages = document.getElementById('chat-messages');
         if (chatMessages) chatMessages.innerHTML = '';
 
+        if (hardReload) {
+            // Hard reload guarantees no lingering PeerJS/socket state as host.
+            window.location.replace(window.location.pathname + window.location.search);
+            return;
+        }
+
         this.showScreen('menu');
     }
 
     quitGame() {
         const shouldQuit = window.confirm('Quit the current game and return to the main page?');
         if (!shouldQuit) return;
-        this.leaveRoomAndReturnToMenu();
-        this.showToast('You left the game.', 'info');
+
+        const quitBtn = document.getElementById('quit-game-btn');
+        if (quitBtn) {
+            quitBtn.disabled = true;
+            quitBtn.textContent = 'Quitting...';
+        }
+
+        // Use hard reload for game quits to guarantee host session teardown.
+        this.leaveRoomAndReturnToMenu({ hardReload: true });
     }
 
     // ============ GAME FLOW ============
