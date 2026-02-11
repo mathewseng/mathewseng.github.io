@@ -662,6 +662,7 @@ class EdgeTheDealerController {
             }
 
             if (state.phase === 'results' && this.lastPhase !== 'results' && state.results) {
+                this.selectedDiscards.clear();
                 this.logShowdown(state);
                 this.logPnLSummary(state.players);
             }
@@ -733,7 +734,7 @@ class EdgeTheDealerController {
 
         slots.forEach((slot, i) => {
             slot.innerHTML = '';
-            slot.classList.remove('dealt', 'selected-discard', 'locked');
+            slot.classList.remove('dealt', 'selected-discard', 'locked', 'confirmed-discard');
 
             const card = displayCards[i];
             if (!card) return;
@@ -744,8 +745,11 @@ class EdgeTheDealerController {
                 slot.appendChild(cardEl);
             } else {
                 slot.appendChild(this.createCardElement(Poker.formatCard(card)));
-                if (canSelect && this.selectedDiscards.has(i)) {
+                if (this.selectedDiscards.has(i)) {
                     slot.classList.add('selected-discard');
+                    if (!canSelect) {
+                        slot.classList.add('confirmed-discard');
+                    }
                 }
             }
 
@@ -759,8 +763,8 @@ class EdgeTheDealerController {
         const help = document.getElementById('discard-help');
         if (this.currentState?.phase === 'draw') {
             help.textContent = canSelect
-                ? `Selected to discard: ${this.selectedDiscards.size}`
-                : 'Confirmed. Waiting for others...';
+                ? `Select cards to replace, then confirm. Selected: ${this.selectedDiscards.size}`
+                : `Confirmed ${this.selectedDiscards.size} discard${this.selectedDiscards.size === 1 ? '' : 's'} — waiting for others...`;
         } else {
             help.textContent = 'Showdown complete. Host starts the next hand.';
         }
@@ -854,7 +858,13 @@ class EdgeTheDealerController {
         const clearBtn = document.getElementById('clear-discards-btn');
         const confirmBtn = document.getElementById('confirm-discards-btn');
 
-        drawRoundBanner.textContent = `Draw Round ${state.currentDrawRound} of ${state.drawCount}`;
+        const drawLabel = state.phase === 'results'
+            ? 'Showdown'
+            : `Draw Round ${state.currentDrawRound} of ${state.drawCount}`;
+        drawRoundBanner.innerHTML = `
+            <span>${drawLabel}</span>
+            <span class="draw-meta">Deck: ${state.deckCount ?? 0} • Discards: ${state.discardCount ?? 0}</span>
+        `;
 
         if (state.phase === 'results') {
             actionButtons.classList.add('hidden');
@@ -887,6 +897,9 @@ class EdgeTheDealerController {
         const canAct = !!myPlayer && !myPlayer.hasConfirmed;
         clearBtn.disabled = !canAct || this.selectedDiscards.size === 0;
         confirmBtn.disabled = !canAct;
+        confirmBtn.textContent = canAct
+            ? `Confirm${this.selectedDiscards.size > 0 ? ` (${this.selectedDiscards.size})` : ''}`
+            : 'Confirmed';
         waitingDraw.classList.toggle('hidden', !myPlayer || !myPlayer.hasConfirmed);
     }
 
