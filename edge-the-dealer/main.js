@@ -619,7 +619,7 @@ class EdgeTheDealerController {
         }
 
         // Dealer cards and dealer hand
-        this.updateDealerCards(state.dealerCards || []);
+        this.updateDealerCards(state);
         this.updateDealerResult(state);
 
         // My player view
@@ -634,44 +634,26 @@ class EdgeTheDealerController {
         }
 
         // Everyone else
-        this.updatePlayersArea(state.players, state.phase, state.results, state.queuedPlayers, state.dealerBestHand);
+        this.updatePlayersArea(state.players, state.phase, state.results, state.queuedPlayers);
         this.updateActionButtons(state, myPlayer);
     }
 
-    updateDealerCards(cards) {
-        const container = document.getElementById('dealer-cards');
-        const slots = container.querySelectorAll('.card-slot');
-        slots.forEach(slot => {
-            slot.innerHTML = '';
-            slot.classList.remove('dealt');
-        });
-
-        cards.forEach((card, i) => {
-            const slot = slots[i];
-            if (!slot) return;
-            slot.innerHTML = '';
-
-            if (card.faceDown) {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card face-down';
-                slot.appendChild(cardEl);
-            } else {
-                slot.appendChild(this.createCardElement(Poker.formatCard(card)));
-            }
-            slot.classList.add('dealt');
-        });
+    updateDealerCards(state) {
+        const dealerGroups = this.getDealerCardGroupsFromState(state);
+        this.renderDealerRow('dealer-used-cards', dealerGroups.dealerUsedCards, false);
+        this.renderDealerRow('dealer-unused-cards', dealerGroups.dealerUnusedCards, true);
     }
 
     updateDealerResult(state) {
         const resultEl = document.getElementById('dealer-hand-result');
-        const cards = (state.dealerCards || []).filter(c => !c.faceDown);
-        if (cards.length < 5) {
+        const dealerGroups = this.getDealerCardGroupsFromState(state);
+        const dealerBest = dealerGroups.dealerBestHand;
+        if (!dealerBest) {
             resultEl.textContent = '';
             resultEl.classList.remove('result-mode');
             return;
         }
 
-        const dealerBest = this.evaluateBestFiveFromCards(cards);
         let modeText = '';
         if (state.phase === 'results') {
             modeText = state.resolutionType === 'lowest_beating_dealer'
@@ -691,12 +673,13 @@ class EdgeTheDealerController {
     updateHoleCards(cards, canSelect) {
         const container = document.getElementById('hole-cards');
         const slots = container.querySelectorAll('.card-slot');
+        const displayCards = this.sortCardsForDisplay(cards || []);
 
         slots.forEach((slot, i) => {
             slot.innerHTML = '';
             slot.classList.remove('dealt', 'selected-discard', 'locked');
 
-            const card = cards[i];
+            const card = displayCards[i];
             if (!card) return;
 
             if (card.faceDown) {
@@ -727,7 +710,7 @@ class EdgeTheDealerController {
         }
     }
 
-    updatePlayersArea(players, phase, results = null, queuedPlayerIds = [], dealerBestHand = null) {
+    updatePlayersArea(players, phase, results = null, queuedPlayerIds = []) {
         const container = document.getElementById('players-area');
         container.innerHTML = '';
 
@@ -751,8 +734,9 @@ class EdgeTheDealerController {
             } else if (results) {
                 const result = results.find(r => r.playerId === player.id);
                 if (result) {
+                    const sortedCards = this.sortCardsForDisplay(result.holeCards || []);
                     let cardsHtml = '<div class="player-cards">';
-                    result.holeCards.forEach(card => {
+                    sortedCards.forEach(card => {
                         const formatted = Poker.formatCard(card);
                         cardsHtml += `<div class="mini-card ${formatted.isRed ? 'red' : 'black'}">
                             <span class="rank">${formatted.rank}</span>
@@ -866,13 +850,17 @@ class EdgeTheDealerController {
         }
 
         const myResult = state.results.find(r => r.playerId === myPlayer.id);
-        const dealerCards = (state.dealerCards || []).filter(c => !c.faceDown);
-        if (!myResult || dealerCards.length < 5) {
+        if (!myResult) {
             resultsDiv.innerHTML = '';
             return;
         }
 
-        const dealerBest = this.evaluateBestFiveFromCards(dealerCards);
+        const dealerBest = state.dealerBestHand || this.getDealerCardGroupsFromState(state).dealerBestHand;
+        if (!dealerBest) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+
         const compareClass = myResult.beatsDealer ? 'qualified' : 'fouled';
         const netClass = myResult.netResult >= 0 ? 'win' : 'lose';
         const modeText = state.resolutionType === 'lowest_beating_dealer'
@@ -897,6 +885,108 @@ class EdgeTheDealerController {
         return card;
     }
 
+    renderDealerRow(containerId, cards, markUnused) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const slots = container.querySelectorAll('.card-slot');
+        slots.forEach((slot, index) => {
+            slot.innerHTML = '';
+            slot.classList.remove('dealt', 'unused-slot');
+
+            const card = cards[index];
+            if (!card) return;
+
+            if (card.faceDown) {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card face-down';
+                slot.appendChild(cardEl);
+            } else {
+                const cardEl = this.createCardElement(Poker.formatCard(card));
+                if (markUnused) {
+                    cardEl.classList.add('unused-card');
+                }
+                slot.appendChild(cardEl);
+            }
+
+            if (markUnused) {
+                slot.classList.add('unused-slot');
+            }
+            slot.classList.add('dealt');
+        });
+    }
+
+    getDealerCardGroupsFromState(state) {
+        const explicitUsed = Array.isArray(state.dealerUsedCards) ? state.dealerUsedCards : [];
+        const explicitUnused = Array.isArray(state.dealerUnusedCards) ? state.dealerUnusedCards : [];
+        const explicitBest = state.dealerBestHand || null;
+
+        if (explicitUsed.length > 0 || explicitUnused.length > 0) {
+            return {
+                dealerBestHand: explicitBest,
+                dealerUsedCards: this.sortCardsForDisplay(explicitUsed),
+                dealerUnusedCards: this.sortCardsForDisplay(explicitUnused)
+            };
+        }
+
+        const visibleCards = (state.dealerCards || []).filter(card => !card.faceDown);
+        if (visibleCards.length < 5) {
+            return {
+                dealerBestHand: null,
+                dealerUsedCards: [],
+                dealerUnusedCards: []
+            };
+        }
+
+        const dealerBestHand = explicitBest || this.evaluateBestFiveFromCards(visibleCards);
+        const usedCards = this.sortCardsForDisplay(dealerBestHand?.cards || []);
+        const usedIds = new Set(usedCards.map(card => Poker.getCardId(card)));
+        const unusedCards = this.sortCardsForDisplay(
+            visibleCards.filter(card => !usedIds.has(Poker.getCardId(card)))
+        );
+
+        return {
+            dealerBestHand,
+            dealerUsedCards: usedCards,
+            dealerUnusedCards: unusedCards
+        };
+    }
+
+    getSuitSortValue(suit) {
+        const suitOrder = { s: 3, h: 2, d: 1, c: 0 };
+        return suitOrder[suit] ?? -1;
+    }
+
+    sortCardsForDisplay(cards) {
+        if (!Array.isArray(cards)) return [];
+        const safeCards = cards.filter(card => card && typeof card === 'object');
+
+        const rankCounts = new Map();
+        safeCards.forEach(card => {
+            rankCounts.set(card.rank, (rankCounts.get(card.rank) || 0) + 1);
+        });
+
+        return [...safeCards].sort((a, b) => {
+            const countA = rankCounts.get(a.rank) || 0;
+            const countB = rankCounts.get(b.rank) || 0;
+            const groupedA = countA > 1;
+            const groupedB = countB > 1;
+
+            if (groupedA !== groupedB) {
+                return groupedA ? -1 : 1;
+            }
+
+            if (groupedA && groupedB && countA !== countB) {
+                return countB - countA;
+            }
+
+            const rankDiff = Poker.getRankValue(b.rank) - Poker.getRankValue(a.rank);
+            if (rankDiff !== 0) return rankDiff;
+
+            return this.getSuitSortValue(b.suit) - this.getSuitSortValue(a.suit);
+        });
+    }
+
     countDiscardSelection(selection) {
         if (!Array.isArray(selection)) return 0;
         const unique = new Set();
@@ -918,7 +1008,11 @@ class EdgeTheDealerController {
                 best = hand;
             }
         });
-        return best;
+        if (!best) return null;
+        return {
+            ...best,
+            cards: this.sortCardsForDisplay(best.cards || [])
+        };
     }
 
     // ============ LOGGING ============

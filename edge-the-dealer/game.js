@@ -35,6 +35,48 @@ class EdgeTheDealerGame {
         return Math.round((amount + Number.EPSILON) * 100) / 100;
     }
 
+    getSuitSortValue(suit) {
+        // High to low suit ordering for display.
+        const suitOrder = { s: 3, h: 2, d: 1, c: 0 };
+        return suitOrder[suit] ?? -1;
+    }
+
+    sortCardsForDisplay(cards) {
+        if (!Array.isArray(cards)) return [];
+        const safeCards = cards.filter(card => card && typeof card === 'object');
+
+        const rankCounts = new Map();
+        safeCards.forEach(card => {
+            rankCounts.set(card.rank, (rankCounts.get(card.rank) || 0) + 1);
+        });
+
+        return [...safeCards].sort((a, b) => {
+            const countA = rankCounts.get(a.rank) || 0;
+            const countB = rankCounts.get(b.rank) || 0;
+            const groupedA = countA > 1;
+            const groupedB = countB > 1;
+
+            // Put trips/pairs/quads first.
+            if (groupedA !== groupedB) {
+                return groupedA ? -1 : 1;
+            }
+
+            // Larger groups first (quads > trips > pairs).
+            if (groupedA && groupedB && countA !== countB) {
+                return countB - countA;
+            }
+
+            // Then by rank descending.
+            const rankDiff = Poker.getRankValue(b.rank) - Poker.getRankValue(a.rank);
+            if (rankDiff !== 0) {
+                return rankDiff;
+            }
+
+            // Then by suit descending.
+            return this.getSuitSortValue(b.suit) - this.getSuitSortValue(a.suit);
+        });
+    }
+
     initGame(playerIds, baseBet, drawCount = 1) {
         if (playerIds.length > this.maxPlayers) {
             throw new Error(`Edge the Dealer supports at most ${this.maxPlayers} active players`);
@@ -158,7 +200,7 @@ class EdgeTheDealerGame {
 
         // Deal all player cards first, then dealer cards.
         for (const player of this.players) {
-            player.holeCards = this.drawCards(5);
+            player.holeCards = this.sortCardsForDisplay(this.drawCards(5));
         }
         this.dealerCards = this.drawCards(7);
         this.dealerBestHand = this.evaluateBestFiveFromCards(this.dealerCards);
@@ -249,6 +291,7 @@ class EdgeTheDealerGame {
             for (const slot of plan.slots) {
                 plan.player.holeCards[slot] = this.drawOneCard();
             }
+            plan.player.holeCards = this.sortCardsForDisplay(plan.player.holeCards);
         }
 
         if (this.currentDrawRound < this.drawCount) {
@@ -276,6 +319,30 @@ class EdgeTheDealerGame {
             }
         }
         return best;
+    }
+
+    getDealerCardGroups() {
+        const visibleCards = (this.dealerCards || []).filter(card => !card.faceDown);
+        if (visibleCards.length < 5) {
+            return {
+                dealerBestHand: null,
+                dealerUsedCards: [],
+                dealerUnusedCards: []
+            };
+        }
+
+        const dealerBestHand = this.dealerBestHand || this.evaluateBestFiveFromCards(visibleCards);
+        const usedIds = new Set((dealerBestHand?.cards || []).map(card => Poker.getCardId(card)));
+        const dealerUsedCards = this.sortCardsForDisplay(dealerBestHand?.cards || []);
+        const dealerUnusedCards = this.sortCardsForDisplay(
+            visibleCards.filter(card => !usedIds.has(Poker.getCardId(card)))
+        );
+
+        return {
+            dealerBestHand,
+            dealerUsedCards,
+            dealerUnusedCards
+        };
     }
 
     evaluatePlayerHand(playerCards) {
@@ -377,6 +444,8 @@ class EdgeTheDealerGame {
     }
 
     getGameState() {
+        const dealerGroups = this.getDealerCardGroups();
+
         return {
             phase: this.phase,
             baseBet: this.baseBet,
@@ -393,12 +462,14 @@ class EdgeTheDealerGame {
             })),
             queuedPlayers: [...this.queuedPlayers],
             dealerCards: [...this.dealerCards],
-            dealerBestHand: this.phase === 'results' && this.dealerBestHand
+            dealerUsedCards: dealerGroups.dealerUsedCards.map(card => ({ ...card })),
+            dealerUnusedCards: dealerGroups.dealerUnusedCards.map(card => ({ ...card })),
+            dealerBestHand: dealerGroups.dealerBestHand
                 ? {
-                    name: this.dealerBestHand.name,
-                    rank: this.dealerBestHand.rank,
-                    value: [...this.dealerBestHand.value],
-                    cards: [...this.dealerBestHand.cards]
+                    name: dealerGroups.dealerBestHand.name,
+                    rank: dealerGroups.dealerBestHand.rank,
+                    value: [...dealerGroups.dealerBestHand.value],
+                    cards: this.sortCardsForDisplay(dealerGroups.dealerBestHand.cards || [])
                 }
                 : null,
             deckCount: this.deck.length,
@@ -438,7 +509,10 @@ class EdgeTheDealerGame {
     }
 
     deserialize(data) {
-        this.players = data.players || [];
+        this.players = (data.players || []).map(player => ({
+            ...player,
+            holeCards: this.sortCardsForDisplay(player.holeCards || [])
+        }));
         this.queuedPlayers = data.queuedPlayers || [];
         this.deck = data.deck || [];
         this.discardPile = data.discardPile || [];
