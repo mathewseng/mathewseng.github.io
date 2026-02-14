@@ -1,6 +1,6 @@
 /**
  * Edge the Dealer - Main Controller
- * Handles UI, state rendering, and multiplayer orchestration.
+ * Handles UI, state rendering, multiplayer orchestration, and QoL features.
  */
 
 class EdgeTheDealerController {
@@ -17,9 +17,20 @@ class EdgeTheDealerController {
         this.currentState = null;
         this.selectedDiscards = new Set();
 
+        // QoL state
+        this.streak = { type: null, count: 0 }; // 'win' | 'lose' | null
+        this.soundEnabled = false;
+        this.previousPnl = 0;
+        this.isAnimatingPnl = false;
+
+        // Swipe tracking
+        this.swipeState = { startY: 0, startX: 0, slot: null };
+
         this.setupEventListeners();
         this.setupMultiplayerCallbacks();
         this.setupLogAndChat();
+        this.setupCollapsibles();
+        this.setupSwipeGestures();
 
         this.checkForReconnection();
     }
@@ -48,7 +59,7 @@ class EdgeTheDealerController {
                     this.gameStarted = true;
                     this.multiplayer.gameInProgress = true;
                     this.showScreen('game');
-                    this.showToast('Reconnected as host! Waiting for players...', 'success');
+                    this.showToast('Reconnected as host!', 'success');
                 } else {
                     this.showScreen('lobby');
                     this.showToast('Reconnected to lobby!', 'success');
@@ -98,10 +109,13 @@ class EdgeTheDealerController {
         // Game controls
         document.getElementById('clear-discards-btn').addEventListener('click', () => this.clearDiscards());
         document.getElementById('confirm-discards-btn').addEventListener('click', () => this.confirmDiscards());
+        document.getElementById('keep-all-btn').addEventListener('click', () => this.keepAll());
+        document.getElementById('replace-all-btn').addEventListener('click', () => this.replaceAll());
         document.getElementById('next-hand-btn').addEventListener('click', () => this.startNextHand());
         document.getElementById('quit-game-btn').addEventListener('click', () => this.quitGame());
         document.getElementById('rules-btn').addEventListener('click', () => this.showRules());
         document.getElementById('close-rules').addEventListener('click', () => this.hideRules());
+        document.getElementById('sound-toggle-btn').addEventListener('click', () => this.toggleSound());
 
         // Card selection
         document.getElementById('hole-cards').addEventListener('click', (e) => {
@@ -110,6 +124,8 @@ class EdgeTheDealerController {
             const index = parseInt(slot.dataset.slot, 10);
             if (!Number.isInteger(index)) return;
             this.toggleDiscard(index);
+            this.triggerTapRipple(slot);
+            this.triggerHaptic();
         });
 
         // Close modal on backdrop click
@@ -209,6 +225,79 @@ class EdgeTheDealerController {
                 emojiPicker?.classList.add('hidden');
             }
         });
+    }
+
+    setupCollapsibles() {
+        document.querySelectorAll('.collapsible .section-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const collapsible = header.closest('.collapsible');
+                collapsible.classList.toggle('collapsed');
+            });
+        });
+    }
+
+    setupSwipeGestures() {
+        const holeCards = document.getElementById('hole-cards');
+        if (!holeCards) return;
+
+        holeCards.addEventListener('touchstart', (e) => {
+            const slot = e.target.closest('.card-slot');
+            if (!slot) return;
+            const touch = e.touches[0];
+            this.swipeState = {
+                startY: touch.clientY,
+                startX: touch.clientX,
+                slot: slot
+            };
+        }, { passive: true });
+
+        holeCards.addEventListener('touchend', (e) => {
+            if (!this.swipeState.slot) return;
+            const touch = e.changedTouches[0];
+            const deltaY = this.swipeState.startY - touch.clientY;
+            const deltaX = Math.abs(this.swipeState.startX - touch.clientX);
+
+            // Only trigger if vertical swipe is dominant and significant
+            if (Math.abs(deltaY) > 30 && Math.abs(deltaY) > deltaX) {
+                const index = parseInt(this.swipeState.slot.dataset.slot, 10);
+                if (!Number.isInteger(index)) return;
+
+                if (deltaY > 0 && !this.selectedDiscards.has(index)) {
+                    // Swipe up = select for discard
+                    this.toggleDiscard(index);
+                    this.triggerHaptic();
+                } else if (deltaY < 0 && this.selectedDiscards.has(index)) {
+                    // Swipe down = deselect
+                    this.toggleDiscard(index);
+                    this.triggerHaptic();
+                }
+            }
+
+            this.swipeState = { startY: 0, startX: 0, slot: null };
+        }, { passive: true });
+    }
+
+    // ============ QoL: HAPTIC & SOUND ============
+
+    triggerHaptic() {
+        if (navigator.vibrate) {
+            navigator.vibrate(8);
+        }
+    }
+
+    triggerTapRipple(slot) {
+        slot.classList.remove('tap-ripple');
+        // Force reflow to restart animation
+        void slot.offsetWidth;
+        slot.classList.add('tap-ripple');
+        setTimeout(() => slot.classList.remove('tap-ripple'), 400);
+    }
+
+    toggleSound() {
+        this.soundEnabled = !this.soundEnabled;
+        const btn = document.getElementById('sound-toggle-btn');
+        btn.textContent = this.soundEnabled ? '🔊' : '🔇';
+        btn.classList.toggle('active', this.soundEnabled);
     }
 
     // ============ MENU / LOBBY ============
@@ -354,22 +443,9 @@ class EdgeTheDealerController {
     leaveRoomAndReturnToMenu(options = {}) {
         const hardReload = !!options.hardReload;
 
-        // Always clear storage and tear down networking, even if one step errors.
-        try {
-            this.multiplayer.leave();
-        } catch (err) {
-            console.error('Failed to fully leave multiplayer session:', err);
-        }
-        try {
-            this.multiplayer.clearSession();
-        } catch (err) {
-            console.error('Failed to clear multiplayer session:', err);
-        }
-        try {
-            sessionStorage.removeItem('ultimateomaha_session');
-        } catch (err) {
-            console.error('Failed to clear session storage key:', err);
-        }
+        try { this.multiplayer.leave(); } catch (err) { console.error('Leave error:', err); }
+        try { this.multiplayer.clearSession(); } catch (err) { console.error('Clear session error:', err); }
+        try { sessionStorage.removeItem('ultimateomaha_session'); } catch (err) { console.error('Remove session key error:', err); }
 
         this.game.reset();
         this.gameStarted = false;
@@ -379,14 +455,18 @@ class EdgeTheDealerController {
         this.lastPhase = null;
         this.lastDrawRound = 0;
         this.handNumber = 0;
+        this.streak = { type: null, count: 0 };
+        this.previousPnl = 0;
 
         const gameLog = document.getElementById('game-log');
         if (gameLog) gameLog.innerHTML = '';
         const chatMessages = document.getElementById('chat-messages');
         if (chatMessages) chatMessages.innerHTML = '';
 
+        // Remove compact-solo mode
+        document.getElementById('game-screen').classList.remove('compact-solo');
+
         if (hardReload) {
-            // Hard reload guarantees no lingering PeerJS/socket state as host.
             window.location.replace(window.location.pathname + window.location.search);
             return;
         }
@@ -404,7 +484,6 @@ class EdgeTheDealerController {
             quitBtn.textContent = 'Quitting...';
         }
 
-        // Use hard reload for game quits to guarantee host session teardown.
         this.leaveRoomAndReturnToMenu({ hardReload: true });
     }
 
@@ -448,6 +527,7 @@ class EdgeTheDealerController {
         this.multiplayer.broadcastGameState(this.game.getGameState());
 
         this.showScreen('game');
+        this.updateCompactSoloMode();
     }
 
     startNextHand() {
@@ -480,6 +560,7 @@ class EdgeTheDealerController {
         });
 
         this.multiplayer.broadcastGameState(this.game.getGameState());
+        this.updateCompactSoloMode();
     }
 
     handleGameMessage(fromPeerId, data) {
@@ -579,6 +660,8 @@ class EdgeTheDealerController {
         }
     }
 
+    // ============ DISCARD ACTIONS ============
+
     confirmDiscards() {
         if (!this.currentState || this.currentState.phase !== 'draw') return;
         const myPlayer = this.currentState.players.find(p => p.id === this.myPlayerId);
@@ -586,6 +669,11 @@ class EdgeTheDealerController {
 
         const discards = Array.from(this.selectedDiscards).sort((a, b) => a - b);
         const discardCount = discards.length;
+
+        // Animate confirm button
+        const confirmBtn = document.getElementById('confirm-discards-btn');
+        confirmBtn.classList.add('ripple');
+        setTimeout(() => confirmBtn.classList.remove('ripple'), 500);
 
         if (this.multiplayer.isHost) {
             const stateBefore = this.game.getGameState();
@@ -634,6 +722,33 @@ class EdgeTheDealerController {
         this.updateGameUI(this.currentState);
     }
 
+    keepAll() {
+        if (!this.currentState || this.currentState.phase !== 'draw') return;
+        const myPlayer = this.currentState.players.find(p => p.id === this.myPlayerId);
+        if (!myPlayer || myPlayer.hasConfirmed) return;
+
+        // Clear all selections and confirm immediately
+        this.selectedDiscards.clear();
+        this.updateGameUI(this.currentState);
+        this.confirmDiscards();
+    }
+
+    replaceAll() {
+        if (!this.currentState || this.currentState.phase !== 'draw') return;
+        const myPlayer = this.currentState.players.find(p => p.id === this.myPlayerId);
+        if (!myPlayer || myPlayer.hasConfirmed) return;
+
+        // Select all 5 cards
+        this.selectedDiscards.clear();
+        const cards = myPlayer.holeCards || [];
+        for (let i = 0; i < cards.length; i++) {
+            if (cards[i] && !cards[i].faceDown) {
+                this.selectedDiscards.add(i);
+            }
+        }
+        this.updateGameUI(this.currentState);
+    }
+
     toggleDiscard(slotIndex) {
         if (!this.currentState || this.currentState.phase !== 'draw') return;
         const myPlayer = this.currentState.players.find(p => p.id === this.myPlayerId);
@@ -665,10 +780,18 @@ class EdgeTheDealerController {
                 this.selectedDiscards.clear();
                 this.logShowdown(state);
                 this.logPnLSummary(state.players);
+                this.updateStreakFromResults(state);
+                this.triggerWinnerCelebration(state);
             }
 
             if (this.lastPhase === 'results' && state.phase === 'draw') {
                 this.selectedDiscards.clear();
+                // Auto-scroll to hand area on new draw round
+                this.scrollToHand();
+            }
+
+            if (state.phase === 'draw' && this.lastPhase !== 'draw') {
+                this.scrollToHand();
             }
 
             this.lastPhase = state.phase;
@@ -683,17 +806,215 @@ class EdgeTheDealerController {
         const myPlayer = state.players.find(p => p.id === this.myPlayerId);
         if (myPlayer) {
             const displayPnl = state.phase === 'results' ? myPlayer.actualPnl : myPlayer.pnl;
-            document.getElementById('my-pnl').textContent = this.formatCurrency(displayPnl);
-            document.getElementById('my-pnl').style.color = displayPnl >= 0 ? 'var(--gold-light)' : 'var(--danger)';
+            this.animatePnl(displayPnl);
             document.getElementById('current-bet').textContent = this.formatCurrency(myPlayer.totalBet);
             this.updateHoleCards(myPlayer.holeCards, !myPlayer.hasConfirmed && state.phase === 'draw');
+            this.updateHandStrength(myPlayer, state);
+            this.updateDealerComparison(myPlayer, state);
             this.updateMyHandResults(state, myPlayer);
+            this.updateStreakDisplay();
         }
 
         // Everyone else
         this.updatePlayersArea(state.players, state.phase, state.results, state.queuedPlayers);
         this.updateActionButtons(state, myPlayer);
+        this.updateCompactSoloMode();
     }
+
+    // ============ QoL: LIVE HAND STRENGTH ============
+
+    updateHandStrength(myPlayer, state) {
+        const el = document.getElementById('hand-strength');
+        if (!el) return;
+
+        if (state.phase !== 'draw' && state.phase !== 'results') {
+            el.textContent = '';
+            return;
+        }
+
+        const cards = myPlayer.holeCards || [];
+        // Show hand strength for the cards you're keeping (not selected for discard)
+        const keptCards = cards.filter((card, i) => card && !card.faceDown && !this.selectedDiscards.has(i));
+
+        if (keptCards.length === 5) {
+            try {
+                const hand = Poker.evaluate5CardHand(keptCards);
+                el.textContent = hand.name;
+            } catch {
+                el.textContent = '';
+            }
+        } else if (keptCards.length > 0 && keptCards.length < 5) {
+            el.textContent = `${keptCards.length} card${keptCards.length === 1 ? '' : 's'} kept`;
+        } else if (this.selectedDiscards.size === 5) {
+            el.textContent = 'Replacing all';
+        } else {
+            el.textContent = '';
+        }
+    }
+
+    updateDealerComparison(myPlayer, state) {
+        const el = document.getElementById('dealer-comparison');
+        if (!el) return;
+
+        if (state.phase !== 'draw' && state.phase !== 'results') {
+            el.textContent = '';
+            el.className = 'dealer-comparison';
+            return;
+        }
+
+        const cards = myPlayer.holeCards || [];
+        const keptCards = cards.filter((card, i) => card && !card.faceDown && !this.selectedDiscards.has(i));
+
+        if (keptCards.length !== 5 || !state.dealerBestHand) {
+            el.textContent = '';
+            el.className = 'dealer-comparison';
+            return;
+        }
+
+        try {
+            const hand = Poker.evaluate5CardHand(keptCards);
+            const cmp = Poker.compareHands(hand, state.dealerBestHand);
+            if (cmp > 0) {
+                el.textContent = '✓ Beats Dealer';
+                el.className = 'dealer-comparison beats';
+            } else if (cmp === 0) {
+                el.textContent = '= Ties Dealer';
+                el.className = 'dealer-comparison beats';
+            } else {
+                el.textContent = '✗ Below Dealer';
+                el.className = 'dealer-comparison loses';
+            }
+        } catch {
+            el.textContent = '';
+            el.className = 'dealer-comparison';
+        }
+    }
+
+    // ============ QoL: ANIMATED PNL ============
+
+    animatePnl(targetValue) {
+        const el = document.getElementById('my-pnl');
+        if (!el) return;
+
+        el.style.color = targetValue >= 0 ? 'var(--gold-light)' : 'var(--danger)';
+
+        if (this.previousPnl !== targetValue) {
+            el.classList.remove('animating');
+            void el.offsetWidth;
+            el.classList.add('animating');
+            setTimeout(() => el.classList.remove('animating'), 500);
+        }
+
+        el.textContent = this.formatCurrency(targetValue);
+        this.previousPnl = targetValue;
+    }
+
+    // ============ QoL: STREAK TRACKING ============
+
+    updateStreakFromResults(state) {
+        if (!state.results) return;
+        const myResult = state.results.find(r => r.playerId === this.myPlayerId);
+        if (!myResult) return;
+
+        if (myResult.netResult > 0) {
+            if (this.streak.type === 'win') {
+                this.streak.count++;
+            } else {
+                this.streak = { type: 'win', count: 1 };
+            }
+        } else if (myResult.netResult < 0) {
+            if (this.streak.type === 'lose') {
+                this.streak.count++;
+            } else {
+                this.streak = { type: 'lose', count: 1 };
+            }
+        } else {
+            // Push/tie resets streak
+            this.streak = { type: null, count: 0 };
+        }
+    }
+
+    updateStreakDisplay() {
+        const el = document.getElementById('player-streak');
+        if (!el) return;
+
+        if (!this.streak.type || this.streak.count < 2) {
+            el.textContent = '';
+            el.className = 'player-streak';
+            return;
+        }
+
+        if (this.streak.type === 'win') {
+            el.textContent = `🔥 ${this.streak.count}W`;
+            el.className = 'player-streak win-streak';
+        } else {
+            el.textContent = `${this.streak.count}L`;
+            el.className = 'player-streak lose-streak';
+        }
+    }
+
+    // ============ QoL: COMPACT SOLO MODE ============
+
+    updateCompactSoloMode() {
+        const gameScreen = document.getElementById('game-screen');
+        if (!this.currentState) return;
+
+        const playerCount = this.currentState.players.length;
+        const queuedCount = (this.currentState.queuedPlayers || []).length;
+
+        if (playerCount <= 1 && queuedCount === 0) {
+            gameScreen.classList.add('compact-solo');
+        } else {
+            gameScreen.classList.remove('compact-solo');
+        }
+    }
+
+    // ============ QoL: AUTO-SCROLL ============
+
+    scrollToHand() {
+        const handArea = document.getElementById('player-hand-area');
+        if (handArea) {
+            setTimeout(() => {
+                handArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
+    }
+
+    // ============ QoL: WINNER CELEBRATION ============
+
+    triggerWinnerCelebration(state) {
+        if (!state.results) return;
+        const myResult = state.results.find(r => r.playerId === this.myPlayerId);
+        if (!myResult || !myResult.isWinner) return;
+
+        const celebration = document.getElementById('winner-celebration');
+        if (!celebration) return;
+
+        celebration.classList.remove('hidden');
+        celebration.classList.add('active');
+        celebration.innerHTML = '';
+
+        const colors = ['#57d6ff', '#a77dff', '#64f7a8', '#ffb347', '#ff6b8a', '#f4d03f'];
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = `${Math.random() * 100}%`;
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.animationDelay = `${Math.random() * 0.8}s`;
+            piece.style.animationDuration = `${1.5 + Math.random() * 1.5}s`;
+            piece.style.width = `${6 + Math.random() * 6}px`;
+            piece.style.height = `${6 + Math.random() * 6}px`;
+            celebration.appendChild(piece);
+        }
+
+        setTimeout(() => {
+            celebration.classList.add('hidden');
+            celebration.classList.remove('active');
+            celebration.innerHTML = '';
+        }, 3000);
+    }
+
+    // ============ DEALER CARDS ============
 
     updateDealerCards(state) {
         const dealerGroups = this.getDealerCardGroupsFromState(state);
@@ -714,18 +1035,20 @@ class EdgeTheDealerController {
         let modeText = '';
         if (state.phase === 'results') {
             modeText = state.resolutionType === 'lowest_beating_dealer'
-                ? 'Mode: Lowest hand above dealer wins'
-                : 'Mode: Nobody beat dealer - highest hand wins';
+                ? 'Lowest hand above dealer wins'
+                : 'Nobody beat dealer — highest hand wins';
             resultEl.classList.add('result-mode');
         } else {
             resultEl.classList.remove('result-mode');
         }
 
         resultEl.innerHTML = `
-            Dealer Best: <strong>${this.escapeHtml(dealerBest.name)}</strong>
+            Dealer: <strong>${this.escapeHtml(dealerBest.name)}</strong>
             ${modeText ? `<span class="mode-note">${this.escapeHtml(modeText)}</span>` : ''}
         `;
     }
+
+    // ============ HOLE CARDS ============
 
     updateHoleCards(cards, canSelect) {
         const container = document.getElementById('hole-cards');
@@ -738,6 +1061,9 @@ class EdgeTheDealerController {
 
             const card = displayCards[i];
             if (!card) return;
+
+            // Staggered deal animation
+            slot.style.setProperty('--deal-delay', `${i * 0.06}s`);
 
             if (card.faceDown) {
                 const cardEl = document.createElement('div');
@@ -763,12 +1089,16 @@ class EdgeTheDealerController {
         const help = document.getElementById('discard-help');
         if (this.currentState?.phase === 'draw') {
             help.textContent = canSelect
-                ? `Select cards to replace, then confirm. Selected: ${this.selectedDiscards.size}`
-                : `Confirmed ${this.selectedDiscards.size} discard${this.selectedDiscards.size === 1 ? '' : 's'} — waiting for others...`;
+                ? `Tap cards to replace. Selected: ${this.selectedDiscards.size} of 5`
+                : `Confirmed ${this.selectedDiscards.size} discard${this.selectedDiscards.size === 1 ? '' : 's'} — waiting...`;
+        } else if (this.currentState?.phase === 'results') {
+            help.textContent = 'Showdown complete.';
         } else {
-            help.textContent = 'Showdown complete. Host starts the next hand.';
+            help.textContent = '';
         }
     }
+
+    // ============ PLAYERS AREA ============
 
     updatePlayersArea(players, phase, results = null, queuedPlayerIds = []) {
         const container = document.getElementById('players-area');
@@ -782,6 +1112,7 @@ class EdgeTheDealerController {
 
             const playerBox = document.createElement('div');
             playerBox.className = `player-box ${player.hasConfirmed ? 'confirmed acted' : ''} ${phase === 'results' ? 'showdown' : ''}`;
+            playerBox.style.animationDelay = `${index * 0.05}s`;
 
             let detailsHtml = '';
             if (phase !== 'results') {
@@ -789,7 +1120,7 @@ class EdgeTheDealerController {
                     <div class="status ${player.hasConfirmed ? 'confirmed' : 'waiting'}">
                         ${player.hasConfirmed ? '✓ Confirmed' : '... Waiting'}
                     </div>
-                    <div class="discard-count">Selected discards: ${player.discardCount || 0}</div>
+                    <div class="discard-count">Discards: ${player.discardCount || 0}</div>
                 `;
             } else if (results) {
                 const result = results.find(r => r.playerId === player.id);
@@ -806,7 +1137,7 @@ class EdgeTheDealerController {
                     cardsHtml += '</div>';
 
                     const compareClass = result.beatsDealer ? 'beats' : 'misses';
-                    const compareText = result.beatsDealer ? 'Beats dealer' : 'Does not beat dealer';
+                    const compareText = result.beatsDealer ? '✓ Beats dealer' : '✗ Below dealer';
                     const payoutClass = result.netResult >= 0 ? 'win' : 'lose';
 
                     detailsHtml = `
@@ -814,7 +1145,7 @@ class EdgeTheDealerController {
                         <div class="hand-result-line"><strong>${this.escapeHtml(result.hand.name)}</strong></div>
                         <div class="dealer-compare ${compareClass}">${compareText}</div>
                         ${result.isWinner ? '<div class="winner-label">🏆 Winner</div>' : ''}
-                        <div class="payout ${payoutClass}">PnL this hand: ${this.formatCurrency(result.netResult, true)}</div>
+                        <div class="payout ${payoutClass}">${this.formatCurrency(result.netResult, true)}</div>
                     `;
                 }
             }
@@ -841,12 +1172,14 @@ class EdgeTheDealerController {
                 div.className = 'player-box queued';
                 div.innerHTML = `
                     <div class="name">${this.escapeHtml(name)}${isMe ? ' (You)' : ''}</div>
-                    <div class="queued-status">⏳ Waiting for next hand</div>
+                    <div class="queued-status">⏳ Joining next hand</div>
                 `;
                 container.appendChild(div);
             });
         }
     }
+
+    // ============ ACTION BUTTONS ============
 
     updateActionButtons(state, myPlayer) {
         const actionButtons = document.getElementById('action-buttons');
@@ -855,6 +1188,8 @@ class EdgeTheDealerController {
         const waitingDraw = document.getElementById('waiting-draw');
         const drawRoundBanner = document.getElementById('draw-round-banner');
 
+        const keepBtn = document.getElementById('keep-all-btn');
+        const replaceBtn = document.getElementById('replace-all-btn');
         const clearBtn = document.getElementById('clear-discards-btn');
         const confirmBtn = document.getElementById('confirm-discards-btn');
 
@@ -895,11 +1230,15 @@ class EdgeTheDealerController {
         actionButtons.classList.remove('hidden');
 
         const canAct = !!myPlayer && !myPlayer.hasConfirmed;
+        keepBtn.disabled = !canAct;
+        replaceBtn.disabled = !canAct;
         clearBtn.disabled = !canAct || this.selectedDiscards.size === 0;
         confirmBtn.disabled = !canAct;
+
         confirmBtn.textContent = canAct
             ? `Confirm${this.selectedDiscards.size > 0 ? ` (${this.selectedDiscards.size})` : ''}`
-            : 'Confirmed';
+            : 'Confirmed ✓';
+
         waitingDraw.classList.toggle('hidden', !myPlayer || !myPlayer.hasConfirmed);
     }
 
@@ -934,15 +1273,17 @@ class EdgeTheDealerController {
         const netClass = myResult.netResult >= 0 ? 'win' : 'lose';
         const modeText = state.resolutionType === 'lowest_beating_dealer'
             ? 'Lowest hand above dealer won'
-            : 'No one beat dealer - highest hand won';
+            : 'No one beat dealer — highest hand won';
 
         resultsDiv.innerHTML = `
             <div class="my-hand-row">Dealer: ${this.escapeHtml(dealerBest.name)}</div>
             <div class="my-hand-row ${compareClass}">You: ${this.escapeHtml(myResult.hand.name)} ${myResult.beatsDealer ? '✓' : '✗'}</div>
             <div class="my-hand-equation">${this.escapeHtml(modeText)}</div>
-            <div class="my-hand-total ${netClass}">PnL this hand: ${this.formatCurrency(myResult.netResult, true)}</div>
+            <div class="my-hand-total ${netClass}">This hand: ${this.formatCurrency(myResult.netResult, true)}</div>
         `;
     }
+
+    // ============ CARD RENDERING ============
 
     createCardElement(formattedCard) {
         const card = document.createElement('div');
@@ -965,6 +1306,9 @@ class EdgeTheDealerController {
 
             const card = cards[index];
             if (!card) return;
+
+            // Staggered deal delay
+            slot.style.setProperty('--deal-delay', `${index * 0.07}s`);
 
             if (card.faceDown) {
                 const cardEl = document.createElement('div');
@@ -1131,9 +1475,9 @@ class EdgeTheDealerController {
         }
 
         if (state.resolutionType === 'lowest_beating_dealer') {
-            this.addLogEntry('showdown', 'Result mode: Lowest hand that beat dealer wins');
+            this.addLogEntry('showdown', 'Mode: Lowest hand that beat dealer wins');
         } else {
-            this.addLogEntry('showdown', 'Result mode: Nobody beat dealer, highest hand wins');
+            this.addLogEntry('showdown', 'Mode: Nobody beat dealer, highest hand wins');
         }
 
         state.results.forEach(result => {
@@ -1142,7 +1486,7 @@ class EdgeTheDealerController {
             const isMe = result.playerId === this.myPlayerId;
 
             const cls = result.netResult > 0 ? 'win' : (result.netResult < 0 ? 'lose' : 'push');
-            const compareText = result.beatsDealer ? 'beats dealer' : 'misses dealer';
+            const compareText = result.beatsDealer ? 'beats dealer' : 'below dealer';
             this.addLogEntry(
                 'result',
                 `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ` +
