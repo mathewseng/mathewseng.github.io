@@ -431,6 +431,7 @@ function solveChartJS(config, trueCount) {
         version: "0.2.0-ev",
         rules: { ...config, trueCount },
         dealer: DEALER_VALUES.map(dealerLabel),
+        dealerBust: dealerBustModel(config, trueCount),
         rows,
         metrics: metricModel(config),
         legend: [
@@ -443,6 +444,17 @@ function solveChartJS(config, trueCount) {
             { code: "Rs", label: "Surrender if possible, otherwise stand" },
         ],
     };
+}
+
+function dealerBustModel(config, trueCount) {
+    return DEALER_VALUES.map((dealer) => {
+        const probs = rankProbabilities(config, trueCount, [dealer]);
+        const dist = dealerDistribution(dealer, config, probs);
+        return {
+            dealer: dealerLabel(dealer),
+            bust: dist.bust || 0,
+        };
+    });
 }
 
 function chartRow(kind, value, config, trueCount, cacheKey) {
@@ -1002,9 +1014,11 @@ function renderChart() {
         ? ["6", "5", "4", "3", "2", "7", "8", "9", "10", "A"]
         : state.chart.dealer;
 
+    const bustByDealer = new Map((state.chart.dealerBust || []).map((item) => [item.dealer, item.bust]));
     let html = "<thead><tr><th class='row-head'>Hand</th>";
     dealerOrder.forEach((dealer) => {
-        html += `<th>${dealer}</th>`;
+        const bust = bustByDealer.get(dealer) || 0;
+        html += `<th title="Dealer bust chance ${formatHeaderPercent(bust)}"><span class="dealer-card">${dealer}</span><span class="dealer-bust">${formatHeaderPercent(bust)}</span></th>`;
     });
     html += "</tr></thead><tbody>";
 
@@ -1067,7 +1081,9 @@ function cellButton(row, cell) {
 
 function renderLegend() {
     if (!state.chart?.legend) return;
+    const visibleActions = new Set(state.chart.rows.flatMap((row) => row.cells.map((cell) => cell.a)));
     $("legend-bar").innerHTML = state.chart.legend
+        .filter((item) => visibleActions.has(item.code))
         .map((item) => {
             const action = ACTIONS[item.code] || ACTIONS.H;
             return `<div class="legend-item"><span class="legend-code ${action.className}">${item.code}</span><span class="legend-label">${item.label}</span></div>`;
@@ -1261,6 +1277,11 @@ function formatSigned(value) {
 
 function formatPercent(value) {
     return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatHeaderPercent(value) {
+    const pct = value * 100;
+    return `${pct >= 10 ? pct.toFixed(0) : pct.toFixed(1)}%`;
 }
 
 function evColor(ev, gap) {

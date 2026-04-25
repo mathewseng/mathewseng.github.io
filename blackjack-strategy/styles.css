@@ -65,9 +65,9 @@ a {
 }
 
 .app-shell {
-    width: min(1760px, 100%);
+    width: min(1440px, 100%);
     margin: 0 auto;
-    padding: 16px;
+    padding: 14px;
 }
 
 .topbar {
@@ -417,10 +417,11 @@ input[type="range"]:focus-visible {
 }
 
 .toolbar-actions {
-    justify-content: flex-end;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(104px, 0.58fr) minmax(220px, 1.25fr) minmax(168px, 0.86fr) repeat(3, minmax(118px, 0.68fr));
     gap: 8px;
-    min-width: min(100%, 760px);
+    align-items: stretch;
+    min-width: 0;
 }
 
 .toolbar-select,
@@ -436,7 +437,7 @@ input[type="range"]:focus-visible {
 }
 
 .compact-select {
-    min-width: 170px;
+    min-width: 0;
 }
 
 .compact-select input[type="range"] {
@@ -454,7 +455,7 @@ input[type="range"]:focus-visible {
 
 .index-range {
     flex-wrap: wrap;
-    min-width: 260px;
+    min-width: 0;
 }
 
 .index-range > span {
@@ -501,7 +502,7 @@ input[type="range"]:focus-visible {
 
 .chart-scroll {
     overflow: auto;
-    max-height: min(72vh, 900px);
+    max-height: min(58vh, 620px);
     border: 1px solid var(--line);
     border-radius: 8px;
     background:
@@ -514,8 +515,9 @@ input[type="range"]:focus-visible {
 }
 
 .strategy-table {
-    width: 100%;
-    min-width: min(980px, 100%);
+    width: min(1080px, 100%);
+    min-width: 0;
+    margin: 0 auto;
     border-collapse: separate;
     border-spacing: 0;
     table-layout: fixed;
@@ -531,11 +533,32 @@ input[type="range"]:focus-visible {
     position: sticky;
     top: 0;
     z-index: 3;
-    height: 40px;
+    height: 34px;
     background: #20242a;
     color: var(--text);
     font-weight: 900;
     text-align: center;
+}
+
+.strategy-table th:not(.row-head) {
+    padding: 2px 3px;
+}
+
+.dealer-card,
+.dealer-bust {
+    display: block;
+    line-height: 1;
+}
+
+.dealer-card {
+    font-size: 0.98rem;
+}
+
+.dealer-bust {
+    margin-top: 2px;
+    color: var(--accent);
+    font-size: 0.58rem;
+    font-weight: 950;
 }
 
 .strategy-table .row-head {
@@ -558,22 +581,22 @@ input[type="range"]:focus-visible {
 }
 
 .strategy-table td {
-    height: 42px;
+    height: 34px;
     padding: 0;
     text-align: center;
 }
 
 .strategy-table.compact td,
 .strategy-table.compact th {
-    height: 32px;
+    height: 28px;
 }
 
 .action-cell {
     position: relative;
     width: 100%;
     height: 100%;
-    min-height: 42px;
-    padding: 3px;
+    min-height: 34px;
+    padding: 2px;
     border: 0;
     border-radius: 0;
     display: grid;
@@ -586,7 +609,7 @@ input[type="range"]:focus-visible {
 }
 
 .compact .action-cell {
-    min-height: 32px;
+    min-height: 28px;
 }
 
 .action-cell:hover,
@@ -598,7 +621,7 @@ input[type="range"]:focus-visible {
 }
 
 .action-code {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 950;
     line-height: 1;
     color: #fff;
@@ -606,7 +629,8 @@ input[type="range"]:focus-visible {
 }
 
 .compact .action-code {
-    font-size: 0.88rem;
+    font-size: 0.82rem;
+    transform: translateY(-2px);
 }
 
 .index-badge {
@@ -619,7 +643,7 @@ input[type="range"]:focus-visible {
     justify-content: center;
     gap: 1px;
     color: #fff;
-    font-size: 0.58rem;
+    font-size: 0.5rem;
     font-weight: 950;
     line-height: 1;
     pointer-events: none;
@@ -722,7 +746,7 @@ input[type="range"]:focus-visible {
 
 .legend-bar {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 6px;
     margin-top: 10px;
 }
@@ -731,7 +755,7 @@ input[type="range"]:focus-visible {
     display: grid;
     grid-template-columns: 38px 1fr;
     align-items: center;
-    min-height: 34px;
+    min-height: 30px;
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
@@ -750,7 +774,7 @@ input[type="range"]:focus-visible {
 .legend-label {
     padding: 0 8px;
     color: var(--muted);
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 760;
 }
 
@@ -1037,7 +1061,12 @@ input[type="range"] {
     }
 
     .toolbar-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         min-width: 0;
+    }
+
+    .index-range {
+        grid-column: 1 / -1;
     }
 }
 
@@ -1123,6 +1152,7 @@ input[type="range"] {
 
     .toolbar-actions {
         width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         justify-content: stretch;
     }
 
@@ -1152,7 +1182,7 @@ input[type="range"] {
     }
 
     .chart-scroll {
-        max-height: 68vh;
+        max-height: 54vh;
     }
 
     .strategy-table {
@@ -1160,8 +1190,16 @@ input[type="range"] {
     }
 
     .strategy-table th {
-        height: 36px;
+        height: 32px;
         font-size: 0.92rem;
+    }
+
+    .dealer-card {
+        font-size: 0.86rem;
+    }
+
+    .dealer-bust {
+        font-size: 0.48rem;
     }
 
     .strategy-table .row-head {
@@ -1169,16 +1207,25 @@ input[type="range"] {
     }
 
     .strategy-table td {
-        height: 40px;
+        height: 30px;
+    }
+
+    .strategy-table.compact td,
+    .strategy-table.compact th {
+        height: 26px;
     }
 
     .action-cell {
-        min-height: 40px;
+        min-height: 30px;
         padding: 2px;
     }
 
+    .compact .action-cell {
+        min-height: 26px;
+    }
+
     .action-code {
-        font-size: 0.9rem;
+        font-size: 0.78rem;
         transform: translateY(-3px);
     }
 
@@ -1187,7 +1234,7 @@ input[type="range"] {
         gap: 1px;
         max-height: 1.95em;
         overflow: hidden;
-        font-size: 0.49rem;
+        font-size: 0.4rem;
     }
 
     .legend-bar,
@@ -1252,32 +1299,49 @@ input[type="range"] {
     }
 
     .chart-scroll {
-        max-height: 66vh;
+        max-height: 51vh;
     }
 
     .strategy-table .row-head {
-        width: 40px;
+        width: 38px;
     }
 
     .strategy-table th {
-        height: 34px;
-        font-size: 0.82rem;
+        height: 30px;
+        font-size: 0.78rem;
+    }
+
+    .dealer-card {
+        font-size: 0.74rem;
+    }
+
+    .dealer-bust {
+        font-size: 0.4rem;
     }
 
     .strategy-table td {
-        height: 38px;
+        height: 28px;
+    }
+
+    .strategy-table.compact td,
+    .strategy-table.compact th {
+        height: 24px;
     }
 
     .action-cell {
-        min-height: 38px;
+        min-height: 28px;
+    }
+
+    .compact .action-cell {
+        min-height: 24px;
     }
 
     .action-code {
-        font-size: 0.82rem;
+        font-size: 0.72rem;
     }
 
     .index-badge {
-        font-size: 0.43rem;
+        font-size: 0.34rem;
     }
 }
 
