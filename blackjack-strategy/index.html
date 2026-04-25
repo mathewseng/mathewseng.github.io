@@ -199,7 +199,7 @@
                             <span>View</span>
                             <select id="view-mode">
                                 <option value="strategy">Strategy</option>
-                                <option value="ev">EV + probs</option>
+                                <option value="ev">EV</option>
                             </select>
                         </label>
                         <label class="mini-switch">
@@ -207,11 +207,11 @@
                             <span>Indices</span>
                         </label>
                         <div class="index-range" aria-label="Visible index range">
-                            <span>Index <strong id="index-range-value">-26 to 26</strong></span>
+                            <span>Index <strong id="index-range-value">-3 to +8</strong></span>
                             <div class="dual-slider">
-                                <input id="index-min-range" type="range" value="-26" min="-26" max="26" step="0.01"
+                                <input id="index-min-range" type="range" value="-3" min="-26" max="26" step="0.01"
                                     aria-label="Minimum index">
-                                <input id="index-max-range" type="range" value="26" min="-26" max="26" step="0.01"
+                                <input id="index-max-range" type="range" value="8" min="-26" max="26" step="0.01"
                                     aria-label="Maximum index">
                             </div>
                         </div>
@@ -226,10 +226,6 @@
                             <span>Rev 2-6</span>
                         </label>
                         <label class="mini-switch">
-                            <input id="compact-toggle" type="checkbox" checked>
-                            <span>Compact</span>
-                        </label>
-                        <label class="mini-switch">
                             <input id="colorblind-toggle" type="checkbox">
                             <span>Alt</span>
                         </label>
@@ -237,7 +233,7 @@
                 </div>
 
                 <div class="chart-scroll" id="chart-scroll">
-                    <table class="strategy-table" id="strategy-table" aria-label="Blackjack strategy chart"></table>
+                    <table class="strategy-table compact" id="strategy-table" aria-label="Blackjack strategy chart"></table>
                 </div>
 
                 <div class="legend-bar" id="legend-bar" aria-label="Action legend"></div>
@@ -390,6 +386,17 @@
                 </div>
             </section>
         </main>
+
+        <dialog class="dealer-modal" id="dealer-modal">
+            <div class="modal-card">
+                <button class="icon-button modal-close" id="dealer-modal-close" type="button"
+                    aria-label="Close dealer distribution">×</button>
+                <p class="eyebrow">Dealer outcome</p>
+                <h2 id="dealer-modal-title">Dealer 2</h2>
+                <div class="modal-meta" id="dealer-modal-meta"></div>
+                <div class="dealer-outcomes" id="dealer-modal-detail"></div>
+            </div>
+        </dialog>
 
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>

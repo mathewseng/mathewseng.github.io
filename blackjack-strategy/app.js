@@ -123,8 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
         $("show-indices-toggle").checked = sharedConfig.showIndices !== false;
         if (sharedConfig.viewMode) $("view-mode").value = sharedConfig.viewMode;
         if (sharedConfig.indexRange) {
-            $("index-min-range").value = String(sharedConfig.indexRange.min ?? -26);
-            $("index-max-range").value = String(sharedConfig.indexRange.max ?? 26);
+            $("index-min-range").value = String(sharedConfig.indexRange.min ?? -3);
+            $("index-max-range").value = String(sharedConfig.indexRange.max ?? 8);
         }
         if (Number.isFinite(sharedConfig.trueCount)) {
             state.countSource = "true";
@@ -133,6 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
     loadReport();
+    normalizeIndexRange();
     loadWasm().then(() => solveAndRender());
     renderHandTray();
     updateCountReadout();
@@ -166,11 +167,8 @@ function wireControls() {
         $(id).addEventListener("change", () => onRulesChanged());
     });
 
-    ["show-indices-toggle", "reverse-26-toggle", "compact-toggle", "colorblind-toggle"].forEach((id) => {
+    ["show-indices-toggle", "reverse-26-toggle", "colorblind-toggle"].forEach((id) => {
         $(id).addEventListener("change", () => {
-            if (id === "compact-toggle") {
-                $("strategy-table").classList.toggle("compact", $(id).checked);
-            }
             if (id === "colorblind-toggle") {
                 document.body.classList.toggle("colorblind", $(id).checked);
             }
@@ -287,6 +285,10 @@ function wireControls() {
     });
 
     $("copy-config").addEventListener("click", copyConfig);
+    $("dealer-modal-close").addEventListener("click", closeDealerModal);
+    $("dealer-modal").addEventListener("click", (event) => {
+        if (event.target === $("dealer-modal")) closeDealerModal();
+    });
 
     document.querySelectorAll(".mobile-tab").forEach((tab) => {
         tab.addEventListener("click", () => {
@@ -461,6 +463,7 @@ function chartRow(kind, value, config, trueCount, cacheKey) {
     return {
         id: `${kind}-${value}`,
         kind,
+        value,
         label: rowLabel(kind, value),
         cells: DEALER_VALUES.map((dealer) => chartCell(kind, value, dealer, config, trueCount, cacheKey)),
     };
@@ -498,6 +501,10 @@ function rowLabel(kind, value) {
 
 function dealerLabel(value) {
     return value === 11 ? "A" : String(value);
+}
+
+function dealerValueFromLabel(label) {
+    return label === "A" ? 11 : Number(label);
 }
 
 function round4(value) {
@@ -1005,7 +1012,7 @@ function renderChart() {
     if (!state.chart) return;
 
     const table = $("strategy-table");
-    table.classList.toggle("compact", $("compact-toggle").checked);
+    table.classList.add("compact");
     table.classList.toggle("ev-mode", $("view-mode").value === "ev");
     document.body.classList.toggle("colorblind", $("colorblind-toggle").checked);
     $("chart-panel").classList.toggle("index-hidden", !$("show-indices-toggle").checked);
@@ -1018,7 +1025,7 @@ function renderChart() {
     let html = "<thead><tr><th class='row-head'>Hand</th>";
     dealerOrder.forEach((dealer) => {
         const bust = bustByDealer.get(dealer) || 0;
-        html += `<th title="Dealer bust chance ${formatHeaderPercent(bust)}"><span class="dealer-card">${dealer}</span><span class="dealer-bust">${formatHeaderPercent(bust)}</span></th>`;
+        html += `<th><button class="dealer-head" type="button" data-dealer="${dealer}" title="Dealer outcome distribution for ${dealer}"><span class="dealer-card">${dealer}</span><span class="dealer-bust">${formatHeaderPercent(bust)}</span></button></th>`;
     });
     html += "</tr></thead><tbody>";
 
@@ -1038,19 +1045,30 @@ function renderChart() {
 
     table.querySelectorAll(".action-cell").forEach((button) => {
         button.addEventListener("click", () => {
-            state.selected = {
-                rowId: button.dataset.row,
-                rowLabel: button.dataset.rowLabel,
-                dealer: button.dataset.dealer,
-            };
-            showCellDetail(
-                state.chart.rows.find((row) => row.id === button.dataset.row),
-                JSON.parse(button.dataset.cell),
-            );
-            markSelectedCell();
+            const row = state.chart.rows.find((item) => item.id === button.dataset.row);
+            const cell = JSON.parse(button.dataset.cell);
+            selectChartHand(row, cell);
         });
     });
+    table.querySelectorAll(".dealer-head").forEach((button) => {
+        button.addEventListener("click", () => showDealerModal(button.dataset.dealer));
+    });
 
+    markSelectedCell();
+}
+
+function selectChartHand(row, cell) {
+    if (!row || !cell) return;
+    state.hand = representativeHand(row.kind, row.value);
+    state.dealer = dealerValueFromLabel(cell.dealer);
+    $("dealer-select").value = String(state.dealer);
+    state.selected = {
+        rowId: row.id,
+        rowLabel: row.label,
+        dealer: cell.dealer,
+    };
+    renderHandTray();
+    renderHandSolver();
     markSelectedCell();
 }
 
@@ -1086,9 +1104,21 @@ function renderLegend() {
         .filter((item) => visibleActions.has(item.code))
         .map((item) => {
             const action = ACTIONS[item.code] || ACTIONS.H;
-            return `<div class="legend-item"><span class="legend-code ${action.className}">${item.code}</span><span class="legend-label">${item.label}</span></div>`;
+            return `<div class="legend-item"><span class="legend-code ${action.className}">${item.code}</span><span class="legend-label">${legendLabel(item.code, item.label)}</span></div>`;
         })
         .join("");
+}
+
+function legendLabel(code, fallback) {
+    return {
+        H: "Hit",
+        S: "Stand",
+        D: "Double/H",
+        Ds: "Double/S",
+        P: "Split",
+        Rh: "Surrender/H",
+        Rs: "Surrender/S",
+    }[code] || fallback;
 }
 
 function renderHandTray() {
@@ -1221,6 +1251,39 @@ function renderProbabilityRows(cell) {
     </div>`;
 }
 
+function showDealerModal(dealerLabelValue) {
+    const dealer = dealerValueFromLabel(dealerLabelValue);
+    const config = collectConfig();
+    const trueCount = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
+    const probs = rankProbabilities(config, trueCount, [dealer]);
+    const dist = dealerDistribution(dealer, config, probs);
+    const outcomes = ["17", "18", "19", "20", "21", "bust"].map((key) => ({
+        key,
+        value: dist[key] || 0,
+    }));
+    const best = Math.max(...outcomes.map((item) => item.value), 0.001);
+
+    $("dealer-modal-title").textContent = `Dealer ${dealerLabelValue}`;
+    $("dealer-modal-meta").textContent = `TC ${trueCount.toFixed(2)} · ${deckLabel(config.decks)}D · ${config.h17 ? "H17" : "S17"}`;
+    $("dealer-modal-detail").innerHTML = outcomes
+        .map((item) => `<div class="dealer-outcome-row">
+            <span>${item.key === "bust" ? "Bust" : item.key}</span>
+            <span class="prob-track"><i style="width:${Math.max(2, (item.value / best) * 100).toFixed(1)}%"></i></span>
+            <strong>${formatPercent(item.value)}</strong>
+        </div>`)
+        .join("");
+
+    const dialog = $("dealer-modal");
+    if (dialog.showModal) dialog.showModal();
+    else dialog.setAttribute("open", "");
+}
+
+function closeDealerModal() {
+    const dialog = $("dealer-modal");
+    if (dialog.close) dialog.close();
+    else dialog.removeAttribute("open");
+}
+
 function refreshSelectedInspector() {
     if (!state.selected || !state.chart) return;
     const row = state.chart.rows.find((item) => item.id === state.selected.rowId);
@@ -1236,14 +1299,23 @@ function normalizeIndexRange() {
     $("index-max-range").value = String(max);
     $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
     $("index-decimals-value").textContent = String(indexDecimals());
+    const low = ((min + 26) / 52) * 100;
+    const high = ((max + 26) / 52) * 100;
+    const slider = document.querySelector(".dual-slider");
+    if (slider) {
+        slider.style.setProperty("--range-min", `${low}%`);
+        slider.style.setProperty("--range-max", `${high}%`);
+    }
+    $("index-min-range").style.zIndex = min > 18 ? "4" : "3";
+    $("index-max-range").style.zIndex = min > 18 ? "3" : "4";
 }
 
 function getIndexRange() {
     const min = Number($("index-min-range").value);
     const max = Number($("index-max-range").value);
     return {
-        min: Number.isFinite(min) ? Math.min(min, max) : -26,
-        max: Number.isFinite(max) ? Math.max(min, max) : 26,
+        min: Number.isFinite(min) ? Math.min(min, max) : -3,
+        max: Number.isFinite(max) ? Math.max(min, max) : 8,
     };
 }
 
@@ -1260,7 +1332,8 @@ function formatIndex(value) {
     const decimals = indexDecimals();
     const epsilon = 0.5 / (10 ** decimals);
     const normalized = Math.abs(Number(value)) < epsilon ? 0 : Number(value);
-    return normalized.toFixed(decimals);
+    const formatted = normalized.toFixed(decimals);
+    return normalized > 0 ? `+${formatted}` : formatted;
 }
 
 function formatIndexBadge(index) {
