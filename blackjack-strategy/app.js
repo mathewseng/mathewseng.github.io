@@ -383,6 +383,7 @@ async function loadWasm() {
 }
 
 async function loadReport() {
+    if (location.protocol === "file:") return;
     try {
         const response = await fetch("data/solver-report.json", { cache: "no-cache" });
         if (response.ok) {
@@ -1050,8 +1051,8 @@ function cellButton(row, cell) {
     const visibleIndices = (cell.indices || []).filter((index) => indexVisible(index.i));
     const badge = visibleIndices.length
         ? `<span class="index-badge">${visibleIndices
-            .map((index) => `${index.ia} ${index.idir === "gte" ? "≥" : "≤"} ${formatIndex(index.i)}`)
-            .join(" · ")}</span>`
+            .map((index) => `<span>${formatIndexBadge(index)}</span>`)
+            .join(" ")}</span>`
         : "";
     const payload = JSON.stringify(cell).replaceAll('"', "&quot;");
     const title = `${row.label} vs ${cell.dealer}: ${action.label}`;
@@ -1244,6 +1245,10 @@ function formatIndex(value) {
     const epsilon = 0.5 / (10 ** decimals);
     const normalized = Math.abs(Number(value)) < epsilon ? 0 : Number(value);
     return normalized.toFixed(decimals);
+}
+
+function formatIndexBadge(index) {
+    return `${index.ia}${index.idir === "gte" ? "≥" : "≤"}${formatIndex(index.i)}`;
 }
 
 function formatCount(value) {
