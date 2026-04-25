@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0d10">
+    <meta name="description"
+        content="Rules-aware blackjack strategy charts, Hi-Lo index deviations, and instant hand solving powered by a Rust WASM engine.">
+    <title>Blackjack Strategy Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-block">
+                <a class="home-link" href="/" aria-label="Home">MS</a>
+                <div>
+                    <p class="eyebrow">Rust strategy engine</p>
+                    <h1>Blackjack Strategy Lab</h1>
+                </div>
+            </div>
+
+            <div class="status-cluster" aria-live="polite">
+                <div class="metric-pill">
+                    <span>House edge</span>
+                    <strong id="metric-edge">--</strong>
+                </div>
+                <div class="metric-pill">
+                    <span>True count</span>
+                    <strong id="metric-true-count">0</strong>
+                </div>
+                <div class="metric-pill">
+                    <span>Solve</span>
+                    <strong id="metric-speed">--</strong>
+                </div>
+            </div>
+        </header>
+
+        <nav class="mobile-tabs" aria-label="Sections">
+            <button class="mobile-tab active" type="button" data-jump="rules-panel">Rules</button>
+            <button class="mobile-tab" type="button" data-jump="chart-panel">Chart</button>
+            <button class="mobile-tab" type="button" data-jump="solver-panel">Hand</button>
+            <button class="mobile-tab" type="button" data-jump="count-panel">Count</button>
+        </nav>
+
+        <main class="workspace">
+            <aside class="rules-panel surface" id="rules-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Configuration</p>
+                        <h2>Table rules</h2>
+                    </div>
+                    <button class="icon-button" id="reset-rules" type="button" title="Reset rules"
+                        aria-label="Reset rules">
+                        <span aria-hidden="true">↺</span>
+                    </button>
+                </div>
+
+                <label class="control-field">
+                    <span>Preset</span>
+                    <select id="preset-select">
+                        <option value="vegas">6D Vegas Strip</option>
+                        <option value="atlantic">8D Late Surrender</option>
+                        <option value="downtown">2D H17 Downtown</option>
+                        <option value="single">Single Deck S17</option>
+                        <option value="european">European No Hole Card</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </label>
+
+                <div class="control-field">
+                    <span>Decks</span>
+                    <div class="segmented" role="radiogroup" aria-label="Deck count">
+                        <label><input type="radio" name="decks" value="1"><span>1</span></label>
+                        <label><input type="radio" name="decks" value="2"><span>2</span></label>
+                        <label><input type="radio" name="decks" value="4"><span>4</span></label>
+                        <label><input type="radio" name="decks" value="5"><span>5</span></label>
+                        <label><input type="radio" name="decks" value="6" checked><span>6</span></label>
+                        <label><input type="radio" name="decks" value="8"><span>8</span></label>
+                    </div>
+                </div>
+
+                <div class="control-field">
+                    <span>Soft 17</span>
+                    <div class="segmented two-up" role="radiogroup" aria-label="Dealer soft 17 rule">
+                        <label><input type="radio" name="soft17" value="0" checked><span>Stand</span></label>
+                        <label><input type="radio" name="soft17" value="1"><span>Hit</span></label>
+                    </div>
+                </div>
+
+                <label class="control-field">
+                    <span>Double</span>
+                    <select id="double-rule">
+                        <option value="0">Any two cards</option>
+                        <option value="1">Hard 9 to 11</option>
+                        <option value="2">Hard 10 to 11</option>
+                        <option value="3">Hard / soft 9 to 11</option>
+                    </select>
+                </label>
+
+                <label class="control-field">
+                    <span>Dealer peek</span>
+                    <select id="peek-rule">
+                        <option value="0">Peek for blackjack</option>
+                        <option value="1">No hole-card peek</option>
+                        <option value="2">Peek on ace only</option>
+                        <option value="3">Playtech split-loss peek</option>
+                    </select>
+                </label>
+
+                <label class="control-field">
+                    <span>Surrender</span>
+                    <select id="surrender-rule">
+                        <option value="0">None</option>
+                        <option value="1">Late surrender</option>
+                        <option value="2">Early against 10</option>
+                        <option value="3">Full early surrender</option>
+                    </select>
+                </label>
+
+                <div class="toggle-grid">
+                    <label class="switch-line">
+                        <span>Double after split</span>
+                        <input id="das-toggle" type="checkbox" checked>
+                    </label>
+                    <label class="switch-line">
+                        <span>Hit split aces</span>
+                        <input id="hsa-toggle" type="checkbox">
+                    </label>
+                    <label class="switch-line">
+                        <span>Resplit aces</span>
+                        <input id="rsa-toggle" type="checkbox">
+                    </label>
+                    <label class="switch-line">
+                        <span>Apply count</span>
+                        <input id="apply-count-toggle" type="checkbox" checked>
+                    </label>
+                </div>
+
+                <div class="advanced-grid">
+                    <label class="control-field">
+                        <span>Resplits</span>
+                        <select id="resplit-rule">
+                            <option value="0">No resplits</option>
+                            <option value="3">To 3 hands</option>
+                            <option value="4">To 4 hands</option>
+                        </select>
+                    </label>
+
+                    <label class="control-field">
+                        <span>Charlie</span>
+                        <select id="charlie-rule">
+                            <option value="0">None</option>
+                            <option value="5">5-card</option>
+                            <option value="6">6-card</option>
+                            <option value="7">7-card</option>
+                        </select>
+                    </label>
+
+                    <label class="control-field">
+                        <span>Blackjack pays</span>
+                        <select id="blackjack-pay">
+                            <option value="0">3:2</option>
+                            <option value="1">6:5</option>
+                            <option value="2">2:1</option>
+                            <option value="3">1:1</option>
+                        </select>
+                    </label>
+
+                    <label class="control-field">
+                        <span>Optimization</span>
+                        <select id="optimization-rule">
+                            <option value="0">Per hand</option>
+                            <option value="1">Per wager</option>
+                            <option value="2">Two-tier</option>
+                        </select>
+                    </label>
+                </div>
+            </aside>
+
+            <section class="chart-panel surface" id="chart-panel">
+                <div class="chart-toolbar">
+                    <div>
+                        <p class="eyebrow">Strategy chart</p>
+                        <h2 id="chart-title">6D S17, DAS, Peek</h2>
+                    </div>
+                    <div class="toolbar-actions">
+                        <label class="mini-switch">
+                            <input id="show-indices-toggle" type="checkbox" checked>
+                            <span>Indices</span>
+                        </label>
+                        <label class="mini-switch">
+                            <input id="reverse-26-toggle" type="checkbox">
+                            <span>Reverse 2-6</span>
+                        </label>
+                        <label class="mini-switch">
+                            <input id="compact-toggle" type="checkbox">
+                            <span>Compact</span>
+                        </label>
+                        <label class="mini-switch">
+                            <input id="colorblind-toggle" type="checkbox">
+                            <span>Alt colors</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="chart-scroll" id="chart-scroll">
+                    <table class="strategy-table" id="strategy-table" aria-label="Blackjack strategy chart"></table>
+                </div>
+
+                <div class="legend-bar" id="legend-bar" aria-label="Action legend"></div>
+            </section>
+
+            <aside class="solver-panel surface" id="solver-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Instant hand solve</p>
+                        <h2>Decision</h2>
+                    </div>
+                    <button class="icon-button" id="clear-hand" type="button" title="Clear hand"
+                        aria-label="Clear hand">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+
+                <label class="control-field">
+                    <span>Dealer up card</span>
+                    <select id="dealer-select">
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">A</option>
+                    </select>
+                </label>
+
+                <div class="hand-tray" id="hand-tray" aria-label="Current player hand"></div>
+
+                <div class="card-pad" id="card-pad" aria-label="Add player card">
+                    <button type="button" data-card="2">2</button>
+                    <button type="button" data-card="3">3</button>
+                    <button type="button" data-card="4">4</button>
+                    <button type="button" data-card="5">5</button>
+                    <button type="button" data-card="6">6</button>
+                    <button type="button" data-card="7">7</button>
+                    <button type="button" data-card="8">8</button>
+                    <button type="button" data-card="9">9</button>
+                    <button type="button" data-card="10">10</button>
+                    <button type="button" data-card="11">A</button>
+                </div>
+
+                <div class="decision-card" id="decision-card">
+                    <span class="decision-code">--</span>
+                    <div>
+                        <strong id="decision-label">Add cards</strong>
+                        <p id="decision-detail">Select a dealer card and player hand.</p>
+                    </div>
+                </div>
+
+                <div class="cell-inspector" id="cell-inspector">
+                    <p class="eyebrow">Selected cell</p>
+                    <div id="cell-detail">Tap any chart cell for action, count index, and margin.</div>
+                </div>
+            </aside>
+
+            <section class="count-panel surface" id="count-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Hi-Lo</p>
+                        <h2>Count tracker</h2>
+                    </div>
+                    <button class="icon-button" id="undo-count" type="button" title="Undo count"
+                        aria-label="Undo count">
+                        <span aria-hidden="true">↶</span>
+                    </button>
+                </div>
+
+                <div class="count-readout">
+                    <div>
+                        <span>Running</span>
+                        <strong id="running-count">0</strong>
+                    </div>
+                    <div>
+                        <span>Decks left</span>
+                        <strong id="decks-left">6.00</strong>
+                    </div>
+                    <div>
+                        <span>Applied TC</span>
+                        <strong id="applied-count">0</strong>
+                    </div>
+                </div>
+
+                <label class="range-field">
+                    <span>Decks remaining</span>
+                    <input id="decks-remaining" type="range" min="0.25" max="6" step="0.25" value="6">
+                </label>
+
+                <label class="range-field">
+                    <span>Manual true count</span>
+                    <input id="manual-count" type="range" min="-10" max="10" step="1" value="0">
+                </label>
+
+                <div class="count-buttons" id="count-buttons">
+                    <button type="button" data-delta="1" data-label="2-6">2-6 <span>+1</span></button>
+                    <button type="button" data-delta="0" data-label="7-9">7-9 <span>0</span></button>
+                    <button type="button" data-delta="-1" data-label="10-A">10-A <span>-1</span></button>
+                </div>
+
+                <div class="count-actions">
+                    <button class="secondary-button" id="reset-count" type="button">Reset count</button>
+                    <button class="secondary-button" id="copy-config" type="button">Copy config</button>
+                </div>
+            </section>
+
+            <section class="report-panel surface" id="report-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Engine report</p>
+                        <h2>Metrics</h2>
+                    </div>
+                    <a class="icon-button" href="docs/SOLVER_REPORT.md" title="Open solver report"
+                        aria-label="Open solver report">↗</a>
+                </div>
+
+                <dl class="report-grid">
+                    <div>
+                        <dt>Player EV</dt>
+                        <dd id="report-player-edge">--</dd>
+                    </div>
+                    <div>
+                        <dt>Std dev / hand</dt>
+                        <dd id="report-stdev">--</dd>
+                    </div>
+                    <div>
+                        <dt>Rule combos</dt>
+                        <dd id="report-combos">--</dd>
+                    </div>
+                    <div>
+                        <dt>Cells solved</dt>
+                        <dd id="report-cells">--</dd>
+                    </div>
+                </dl>
+
+                <div class="report-links">
+                    <a href="data/solver-report.json">Benchmark JSON</a>
+                    <a href="solver/src/lib.rs">Rust source</a>
+                    <a href="docs/METRICS.md">Metrics notes</a>
+                </div>
+            </section>
+        </main>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <script src="app.js" defer></script>
+</body>
+
+</html>
