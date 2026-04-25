@@ -71,14 +71,22 @@
                 </label>
 
                 <div class="control-field">
-                    <span>Decks</span>
-                    <div class="segmented" role="radiogroup" aria-label="Deck count">
-                        <label><input type="radio" name="decks" value="1"><span>1</span></label>
-                        <label><input type="radio" name="decks" value="2"><span>2</span></label>
-                        <label><input type="radio" name="decks" value="4"><span>4</span></label>
-                        <label><input type="radio" name="decks" value="5"><span>5</span></label>
-                        <label><input type="radio" name="decks" value="6" checked><span>6</span></label>
-                        <label><input type="radio" name="decks" value="8"><span>8</span></label>
+                    <span>Decks <strong id="decks-value" class="inline-value">6</strong></span>
+                    <input id="decks-slider" class="tick-slider" type="range" min="1" max="9" step="1" value="6"
+                        list="deck-ticks" aria-label="Deck count">
+                    <datalist id="deck-ticks">
+                        <option value="1" label="1"></option>
+                        <option value="2" label="2"></option>
+                        <option value="3" label="3"></option>
+                        <option value="4" label="4"></option>
+                        <option value="5" label="5"></option>
+                        <option value="6" label="6"></option>
+                        <option value="7" label="7"></option>
+                        <option value="8" label="8"></option>
+                        <option value="9" label="∞"></option>
+                    </datalist>
+                    <div class="tick-labels" aria-hidden="true">
+                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>∞</span>
                     </div>
                 </div>
 
@@ -199,12 +207,20 @@
                             <span>Indices</span>
                         </label>
                         <div class="index-range" aria-label="Visible index range">
-                            <span>Index range</span>
-                            <input id="index-min" type="number" value="-10" min="-30" max="30" step="0.25"
-                                aria-label="Minimum index">
-                            <input id="index-max" type="number" value="10" min="-30" max="30" step="0.25"
-                                aria-label="Maximum index">
+                            <span>Index <strong id="index-range-value">-26 to 26</strong></span>
+                            <div class="dual-slider">
+                                <input id="index-min-range" type="range" value="-26" min="-26" max="26" step="0.01"
+                                    aria-label="Minimum index">
+                                <input id="index-max-range" type="range" value="26" min="-26" max="26" step="0.01"
+                                    aria-label="Maximum index">
+                            </div>
                         </div>
+                        <label class="toolbar-select compact-select">
+                            <span>Decimals</span>
+                            <input id="index-decimals" type="range" value="0" min="0" max="3" step="1"
+                                aria-label="Index decimals">
+                            <strong id="index-decimals-value">0</strong>
+                        </label>
                         <label class="mini-switch">
                             <input id="reverse-26-toggle" type="checkbox">
                             <span>Reverse 2-6</span>
@@ -313,12 +329,17 @@
 
                 <label class="range-field">
                     <span>Decks remaining</span>
-                    <input id="decks-remaining" type="range" min="0.25" max="6" step="0.25" value="6">
+                    <input id="decks-remaining" type="range" min="0.01" max="6" step="0.01" value="6">
                 </label>
 
                 <label class="range-field">
-                    <span>Manual true count</span>
-                    <input id="manual-count" type="range" min="-10" max="10" step="1" value="0">
+                    <span>Running count <strong id="running-count-value" class="inline-value">0</strong></span>
+                    <input id="running-count-slider" type="range" min="-100" max="100" step="1" value="0">
+                </label>
+
+                <label class="range-field">
+                    <span>True count <strong id="true-count-value" class="inline-value">0.00</strong></span>
+                    <input id="true-count-slider" type="range" min="-26" max="26" step="0.01" value="0">
                 </label>
 
                 <div class="count-buttons" id="count-buttons">

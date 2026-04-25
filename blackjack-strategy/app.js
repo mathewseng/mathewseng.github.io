@@ -18,6 +18,7 @@ const HARD_ROWS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const SOFT_ROWS = [2, 3, 4, 5, 6, 7, 8, 9];
 const PAIR_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const PROB_KEYS = ["4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "bust"];
+const INFINITE_DECKS = 99;
 
 const PRESETS = {
     vegas: {
@@ -100,15 +101,17 @@ const state = {
     hand: [10, 6],
     dealer: 10,
     runningCount: 0,
+    trueCount: 0,
     seenCards: 0,
     countHistory: [],
-    manualMode: true,
+    countSource: "true",
     wasmReady: false,
     applyingPreset: false,
     lastSolveMs: 0,
 };
 
 const analysisCache = new Map();
+const indexCache = new Map();
 
 document.addEventListener("DOMContentLoaded", () => {
     wireControls();
@@ -120,12 +123,13 @@ document.addEventListener("DOMContentLoaded", () => {
         $("show-indices-toggle").checked = sharedConfig.showIndices !== false;
         if (sharedConfig.viewMode) $("view-mode").value = sharedConfig.viewMode;
         if (sharedConfig.indexRange) {
-            $("index-min").value = String(sharedConfig.indexRange.min ?? -10);
-            $("index-max").value = String(sharedConfig.indexRange.max ?? 10);
+            $("index-min-range").value = String(sharedConfig.indexRange.min ?? -26);
+            $("index-max-range").value = String(sharedConfig.indexRange.max ?? 26);
         }
         if (Number.isFinite(sharedConfig.trueCount)) {
-            state.manualMode = true;
-            $("manual-count").value = String(Math.max(-10, Math.min(10, sharedConfig.trueCount)));
+            state.countSource = "true";
+            state.trueCount = clamp(sharedConfig.trueCount, -26, 26);
+            $("true-count-slider").value = String(state.trueCount);
         }
     }
     loadReport();
@@ -142,9 +146,11 @@ function wireControls() {
         }
     });
 
-    document.querySelectorAll("input[name='decks'], input[name='soft17']").forEach((input) => {
+    document.querySelectorAll("input[name='soft17']").forEach((input) => {
         input.addEventListener("change", () => onRulesChanged());
     });
+
+    $("decks-slider").addEventListener("input", () => onRulesChanged());
 
     [
         "double-rule",
@@ -172,8 +178,9 @@ function wireControls() {
         });
     });
 
-    ["view-mode", "index-min", "index-max"].forEach((id) => {
+    ["view-mode", "index-min-range", "index-max-range", "index-decimals"].forEach((id) => {
         $(id).addEventListener("input", () => {
+            normalizeIndexRange();
             renderChart();
             refreshSelectedInspector();
         });
@@ -219,13 +226,16 @@ function wireControls() {
         const button = event.target.closest("button[data-delta]");
         if (!button) return;
         const delta = Number(button.dataset.delta);
-        state.runningCount += delta;
+        state.runningCount = clamp(state.runningCount + delta, -100, 100);
         state.seenCards += 1;
         state.countHistory.push(delta);
-        state.manualMode = false;
+        state.countSource = "running";
+        $("running-count-slider").value = String(state.runningCount);
         const config = collectConfig();
-        const remaining = Math.max(0.25, (config.decks * 52 - state.seenCards) / 52);
-        $("decks-remaining").value = Math.min(config.decks, remaining).toFixed(2);
+        const deckCap = finiteDeckCount(config);
+        const remaining = deckCap ? Math.max(0.01, (deckCap * 52 - state.seenCards) / 52) : Number($("decks-remaining").value);
+        $("decks-remaining").value = Math.min(deckCap || 8, remaining).toFixed(2);
+        syncTrueFromRunning();
         updateCountReadout();
         solveAndRender();
     });
@@ -235,30 +245,43 @@ function wireControls() {
         if (last === undefined) return;
         state.runningCount -= last;
         state.seenCards = Math.max(0, state.seenCards - 1);
-        state.manualMode = false;
+        state.countSource = "running";
+        $("running-count-slider").value = String(state.runningCount);
+        syncTrueFromRunning();
         updateCountReadout();
         solveAndRender();
     });
 
     $("reset-count").addEventListener("click", () => {
         state.runningCount = 0;
+        state.trueCount = 0;
         state.seenCards = 0;
         state.countHistory = [];
-        state.manualMode = true;
-        $("manual-count").value = "0";
-        $("decks-remaining").value = collectConfig().decks;
+        state.countSource = "true";
+        $("running-count-slider").value = "0";
+        $("true-count-slider").value = "0";
+        $("decks-remaining").value = displayDeckCount(collectConfig().decks, 8);
         updateCountReadout();
         solveAndRender();
     });
 
     $("decks-remaining").addEventListener("input", () => {
-        state.manualMode = false;
+        if (state.countSource === "running") syncTrueFromRunning();
         updateCountReadout();
         solveAndRender();
     });
 
-    $("manual-count").addEventListener("input", () => {
-        state.manualMode = true;
+    $("running-count-slider").addEventListener("input", () => {
+        state.countSource = "running";
+        state.runningCount = Number($("running-count-slider").value);
+        syncTrueFromRunning();
+        updateCountReadout();
+        solveAndRender();
+    });
+
+    $("true-count-slider").addEventListener("input", () => {
+        state.countSource = "true";
+        state.trueCount = Number($("true-count-slider").value);
         updateCountReadout();
         solveAndRender();
     });
@@ -285,7 +308,7 @@ function onRulesChanged() {
 
 function setConfig(config) {
     state.applyingPreset = true;
-    document.querySelector(`input[name='decks'][value='${config.decks}']`).checked = true;
+    $("decks-slider").value = String(config.decks >= INFINITE_DECKS ? 9 : clamp(config.decks, 1, 8));
     document.querySelector(`input[name='soft17'][value='${config.h17}']`).checked = true;
     $("double-rule").value = String(config.doubleRule);
     $("peek-rule").value = String(config.peek);
@@ -303,8 +326,9 @@ function setConfig(config) {
 }
 
 function collectConfig() {
+    const rawDecks = Number($("decks-slider").value);
     return {
-        decks: Number(document.querySelector("input[name='decks']:checked").value),
+        decks: rawDecks >= 9 ? INFINITE_DECKS : rawDecks,
         h17: Number(document.querySelector("input[name='soft17']:checked").value),
         doubleRule: Number($("double-rule").value),
         das: $("das-toggle").checked ? 1 : 0,
@@ -319,13 +343,38 @@ function collectConfig() {
     };
 }
 
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, Number(value)));
+}
+
+function finiteDeckCount(config) {
+    return config.decks >= INFINITE_DECKS ? null : config.decks;
+}
+
+function deckLabel(decks) {
+    return decks >= INFINITE_DECKS ? "∞" : String(decks);
+}
+
+function displayDeckCount(decks, fallback = 6) {
+    return (decks >= INFINITE_DECKS ? fallback : decks).toFixed(2);
+}
+
+function syncTrueFromRunning() {
+    const decksLeft = Math.max(0.01, Number($("decks-remaining").value));
+    state.trueCount = clamp(state.runningCount / decksLeft, -26, 26);
+    $("true-count-slider").value = String(state.trueCount);
+}
+
 function clampDeckSlider() {
     const decks = collectConfig().decks;
+    const deckCap = finiteDeckCount({ decks });
     const slider = $("decks-remaining");
-    slider.max = String(decks);
-    if (Number(slider.value) > decks || state.seenCards === 0) {
-        slider.value = String(decks);
+    slider.max = String(deckCap || 8);
+    if (Number(slider.value) > Number(slider.max) || state.seenCards === 0) {
+        slider.value = displayDeckCount(decks, 8);
     }
+    $("decks-value").textContent = deckLabel(decks);
+    if (state.countSource === "running") syncTrueFromRunning();
 }
 
 async function loadWasm() {
@@ -407,20 +456,22 @@ function chartRow(kind, value, config, trueCount, cacheKey) {
 function chartCell(kind, value, dealer, config, trueCount, cacheKey) {
     const current = analyzeCell(kind, value, dealer, config, trueCount);
     const base = analyzeCell(kind, value, dealer, config, 0);
-    const index = deriveIndex(kind, value, dealer, config, base.best.code, cacheKey);
+    const indices = deriveIndexes(kind, value, dealer, config, base.best.code, cacheKey);
     const action = current.best.code;
-    const active = index && (index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i);
+    const activeIndex = indices.find((index) => index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i);
+    const primaryIndex = activeIndex || indices.find((index) => indexVisible(index.i)) || indices[0];
     return {
         dealer: dealerLabel(dealer),
         a: action,
         b: base.best.code,
         m: Math.round(current.margin * 1000),
-        x: Boolean(active),
+        x: Boolean(activeIndex),
         ev: round4(current.best.ev),
         gap: round4(current.margin),
         evs: Object.fromEntries(current.evs.map((item) => [item.code, round4(item.ev)])),
         probs: current.distribution,
-        ...(index || {}),
+        indices,
+        ...(primaryIndex || {}),
     };
 }
 
@@ -441,16 +492,25 @@ function round4(value) {
 }
 
 function roundCount(value) {
-    return Math.round(value * 4) / 4;
+    return Math.round(Number(value) * 1000) / 1000;
 }
 
-function rankProbabilities(trueCount) {
+function rankProbabilities(config, trueCount, deadCards = []) {
     const tilt = 0.075;
+    const finiteDecks = finiteDeckCount(config);
+    const dead = deadCards.reduce((counts, rank) => {
+        const normalized = rank === 11 ? 11 : Math.min(10, rank);
+        counts[normalized] = (counts[normalized] || 0) + 1;
+        return counts;
+    }, {});
     const weights = CARD_RANKS.map((rank) => {
         const tag = HI_LO_TAG[rank];
+        const base = finiteDecks
+            ? Math.max(0, finiteDecks * RANK_MULTIPLIER[rank] - (dead[rank] || 0))
+            : RANK_MULTIPLIER[rank];
         return {
             rank,
-            weight: RANK_MULTIPLIER[rank] * Math.exp(-tag * trueCount * tilt),
+            weight: base * Math.exp(-tag * trueCount * tilt),
         };
     });
     const total = weights.reduce((sum, item) => sum + item.weight, 0);
@@ -477,7 +537,8 @@ function analyzeCell(kind, value, dealer, config, trueCount) {
     const key = `${JSON.stringify(config)}|${roundCount(trueCount)}|${kind}|${value}|${dealer}`;
     if (analysisCache.has(key)) return analysisCache.get(key);
 
-    const probs = rankProbabilities(trueCount);
+    const deadCards = [...representativeHand(kind, value), dealer];
+    const probs = rankProbabilities(config, trueCount, deadCards);
     const dealerDist = dealerDistribution(dealer, config, probs);
     const initial = stateForRow(kind, value);
     const memo = new Map();
@@ -518,6 +579,94 @@ function analyzeCell(kind, value, dealer, config, trueCount) {
     };
     analysisCache.set(key, result);
     return result;
+}
+
+function representativeHand(kind, value) {
+    if (kind === "soft") return [11, value];
+    if (kind === "pair") return [value, value];
+    const hardHands = {
+        8: [5, 3],
+        9: [5, 4],
+        10: [6, 4],
+        11: [6, 5],
+        12: [10, 2],
+        13: [10, 3],
+        14: [10, 4],
+        15: [10, 5],
+        16: [10, 6],
+        17: [10, 7],
+    };
+    return hardHands[value] || [10, Math.max(2, value - 10)];
+}
+
+function analyzeActualHand(cards, dealer, config, trueCount) {
+    const normalizedCards = cards.map((card) => (card === 11 ? 11 : Math.min(10, card)));
+    const key = `${JSON.stringify(config)}|actual|${roundCount(trueCount)}|${normalizedCards.join("-")}|${dealer}`;
+    if (analysisCache.has(key)) return analysisCache.get(key);
+
+    const probs = rankProbabilities(config, trueCount, [...normalizedCards, dealer]);
+    const dealerDist = dealerDistribution(dealer, config, probs);
+    const initial = handStateFromCards(normalizedCards);
+    const memo = new Map();
+    const evs = [];
+
+    const stand = standEv(initial, dealerDist);
+    evs.push({ code: "S", ev: stand, label: ACTIONS.S.label, distribution: standDistribution(initial) });
+
+    const hit = hitEv(initial, dealerDist, config, probs, memo);
+    evs.push({ code: "H", ev: hit.ev, label: ACTIONS.H.label, distribution: hit.distribution });
+
+    const hardTotal = initial.total;
+    const lowTotal = normalizedCards.reduce((sum, card) => sum + (card === 11 ? 1 : card), 0);
+    const handKind = initial.soft > 0 ? "soft" : "hard";
+    if (normalizedCards.length === 2 && canDoubleJS(config, handKind, hardTotal, lowTotal)) {
+        const doubled = doubleEv(initial, dealerDist, config, probs);
+        const code = stand > hit.ev ? "Ds" : "D";
+        evs.push({ code, ev: doubled.ev, label: ACTIONS[code].label, distribution: doubled.distribution });
+    }
+
+    if (config.surrender !== 0 && normalizedCards.length === 2 && surrenderAllowedActual(initial, dealer, config)) {
+        const code = stand > hit.ev ? "Rs" : "Rh";
+        evs.push({ code, ev: -0.5, label: ACTIONS[code].label, distribution: { surrender: 1 } });
+    }
+
+    if (normalizedCards.length === 2 && normalizedCards[0] === normalizedCards[1]) {
+        const split = splitEv(normalizedCards[0], dealerDist, config, probs, memo);
+        evs.push({ code: "P", ev: split.ev, label: ACTIONS.P.label, distribution: split.distribution });
+    }
+
+    evs.sort((a, b) => b.ev - a.ev);
+    const best = evs[0];
+    const second = evs[1] || best;
+    const result = {
+        best,
+        evs,
+        margin: Math.max(0, best.ev - second.ev),
+        distribution: normalizeDistribution(best.distribution),
+    };
+    analysisCache.set(key, result);
+    return result;
+}
+
+function handStateFromCards(cards) {
+    let total = 0;
+    let soft = 0;
+    cards.forEach((card) => {
+        if (card === 11) {
+            total += 11;
+            soft += 1;
+        } else {
+            total += card;
+        }
+    });
+    return normalizeHand(total, soft, cards.length);
+}
+
+function surrenderAllowedActual(hand, dealer, config) {
+    if (config.surrender === 3) return dealer === 10 || dealer === 11;
+    if (config.surrender === 2) return dealer === 10;
+    if (config.surrender !== 1) return false;
+    return hand.total >= 14 && hand.total <= 17 && (dealer === 9 || dealer === 10 || dealer === 11);
 }
 
 function hardEquivalent(kind, value) {
@@ -714,27 +863,23 @@ function surrenderAllowed(kind, value, dealer, config) {
     return total >= 14 && total <= 17 && (dealer === 9 || dealer === 10 || dealer === 11);
 }
 
-function deriveIndex(kind, value, dealer, config, baseCode, cacheKey) {
-    const indexKey = `${cacheKey}|idx|${kind}|${value}|${dealer}|${baseCode}`;
-    if (analysisCache.has(indexKey)) return analysisCache.get(indexKey);
+function deriveIndexes(kind, value, dealer, config, baseCode, cacheKey) {
+    const indexKey = `${JSON.stringify(config)}|idx|${kind}|${value}|${dealer}|${baseCode}`;
+    if (indexCache.has(indexKey)) return indexCache.get(indexKey);
 
     const baseAnalysis = analyzeCell(kind, value, dealer, config, 0);
-    if (baseAnalysis.margin > 0.04) {
-        analysisCache.set(indexKey, null);
-        return null;
-    }
     const candidates = baseAnalysis.evs.filter((item) => canonicalCode(item.code) !== canonicalCode(baseCode));
     const crossings = [];
 
     candidates.forEach((candidate) => {
-        const lowDelta = actionDelta(kind, value, dealer, config, candidate.code, baseCode, -10);
-        const highDelta = actionDelta(kind, value, dealer, config, candidate.code, baseCode, 10);
+        const lowDelta = actionDelta(kind, value, dealer, config, candidate.code, baseCode, -26);
+        const highDelta = actionDelta(kind, value, dealer, config, candidate.code, baseCode, 26);
 
         if (highDelta > 0) {
             crossings.push({
                 alt: candidate.code,
                 idir: "gte",
-                threshold: refineIndexThreshold(kind, value, dealer, config, baseCode, candidate.code, 10, "gte"),
+                threshold: refineIndexThreshold(kind, value, dealer, config, baseCode, candidate.code, "gte", 0, 26),
             });
         }
 
@@ -742,32 +887,39 @@ function deriveIndex(kind, value, dealer, config, baseCode, cacheKey) {
             crossings.push({
                 alt: candidate.code,
                 idir: "lte",
-                threshold: refineIndexThreshold(kind, value, dealer, config, baseCode, candidate.code, -10, "lte"),
+                threshold: refineIndexThreshold(kind, value, dealer, config, baseCode, candidate.code, "lte", -26, 0),
             });
         }
     });
 
     if (!crossings.length) {
-        analysisCache.set(indexKey, null);
-        return null;
+        indexCache.set(indexKey, []);
+        return [];
     }
 
     crossings.sort((a, b) => Math.abs(a.threshold) - Math.abs(b.threshold));
-    const chosen = crossings[0];
-    const result = {
-        i: Number(chosen.threshold.toFixed(2)),
-        ia: chosen.alt,
-        idir: chosen.idir,
-        if: "EV",
-    };
-    analysisCache.set(indexKey, result);
+    const seen = new Set();
+    const result = crossings
+        .map((chosen) => ({
+            i: Number(chosen.threshold.toFixed(3)),
+            ia: chosen.alt,
+            idir: chosen.idir,
+            if: "EV",
+        }))
+        .filter((item) => {
+            const key = `${canonicalCode(item.ia)}|${item.idir}|${item.i.toFixed(2)}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    indexCache.set(indexKey, result);
     return result;
 }
 
-function refineIndexThreshold(kind, value, dealer, config, baseCode, altCode, _tc, direction) {
-    let low = -10;
-    let high = 10;
-    for (let i = 0; i < 12; i += 1) {
+function refineIndexThreshold(kind, value, dealer, config, baseCode, altCode, direction, lowCount, highCount) {
+    let low = lowCount;
+    let high = highCount;
+    for (let i = 0; i < 14; i += 1) {
         const mid = (low + high) / 2;
         const delta = actionDelta(kind, value, dealer, config, altCode, baseCode, mid);
         if (direction === "gte") {
@@ -827,7 +979,7 @@ function metricModel(config) {
 function renderChartTitle() {
     const config = collectConfig();
     const parts = [
-        `${config.decks}D`,
+        `${deckLabel(config.decks)}D`,
         config.h17 ? "H17" : "S17",
         config.das ? "DAS" : "NDAS",
         ["Peek", "No peek", "Ace peek", "Playtech"][config.peek],
@@ -895,10 +1047,12 @@ function cellButton(row, cell) {
         state.selected && state.selected.rowId === row.id && state.selected.dealer === cell.dealer
             ? " selected-cell"
             : "";
-    const badge =
-        cell.i === undefined || !indexVisible(cell.i)
-            ? ""
-            : `<span class="index-badge">${cell.ia} ${cell.idir === "gte" ? "≥" : "≤"} ${formatCount(cell.i)}</span>`;
+    const visibleIndices = (cell.indices || []).filter((index) => indexVisible(index.i));
+    const badge = visibleIndices.length
+        ? `<span class="index-badge">${visibleIndices
+            .map((index) => `${index.ia} ${index.idir === "gte" ? "≥" : "≤"} ${formatIndex(index.i)}`)
+            .join(" · ")}</span>`
+        : "";
     const payload = JSON.stringify(cell).replaceAll('"', "&quot;");
     const title = `${row.label} vs ${cell.dealer}: ${action.label}`;
     const evMarkup = evMode
@@ -959,20 +1113,36 @@ function renderHandSolver() {
 
     if (!row || !cell) return;
 
-    const action = ACTIONS[cell.a] || ACTIONS.H;
+    const config = collectConfig();
+    const trueCount = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
+    const actual = analyzeActualHand(state.hand, state.dealer, config, trueCount);
+    const actualCell = {
+        ...cell,
+        a: actual.best.code,
+        ev: round4(actual.best.ev),
+        gap: round4(actual.margin),
+        evs: Object.fromEntries(actual.evs.map((item) => [item.code, round4(item.ev)])),
+        probs: actual.distribution,
+    };
+    const action = ACTIONS[actualCell.a] || ACTIONS.H;
     const code = decision.querySelector(".decision-code");
     decision.className = `decision-card ${action.className}`;
-    code.textContent = cell.a;
+    code.textContent = actualCell.a;
     $("decision-label").textContent = action.label;
 
-    const indexText =
-        cell.i === undefined
-            ? "No listed Hi-Lo deviation."
-            : `${cell.ia} when TC ${cell.idir === "gte" ? ">=" : "<="} ${formatCount(cell.i)}${cell.x ? " (active)" : ""}.`;
-    $("decision-detail").textContent = `${row.label} vs ${dealerLabel}. EV ${formatSigned(cell.ev)}. ${indexText}`;
+    const visibleIndices = (actualCell.indices || []).filter((index) => indexVisible(index.i));
+    const indexText = visibleIndices.length
+        ? visibleIndices
+            .map((index) => {
+                const active = index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i;
+                return `${index.ia} when TC ${index.idir === "gte" ? ">=" : "<="} ${formatIndex(index.i)}${active ? " (active)" : ""}`;
+            })
+            .join("; ")
+        : "No listed Hi-Lo deviation.";
+    $("decision-detail").textContent = `${state.hand.map(cardLabel).join("")} vs ${dealerLabel}. EV ${formatSigned(actualCell.ev)} at TC ${trueCount.toFixed(2)}. ${indexText}`;
 
     state.selected = { rowId: row.id, rowLabel: row.label, dealer: dealerLabel };
-    showCellDetail(row, cell);
+    showCellDetail({ ...row, label: state.hand.map(cardLabel).join("") }, actualCell);
     markSelectedCell();
 }
 
@@ -980,10 +1150,12 @@ function showCellDetail(row, cell) {
     if (!row || !cell) return;
     const action = ACTIONS[cell.a] || ACTIONS.H;
     const base = ACTIONS[cell.b] || ACTIONS.H;
-    const index =
-        cell.i === undefined
-            ? "No index"
-            : `${cell.ia} ${cell.idir === "gte" ? ">=" : "<="} ${formatCount(cell.i)} (${cell.if}${cell.x ? ", active" : ""})`;
+    const visibleIndices = (cell.indices || []).filter((index) => indexVisible(index.i));
+    const index = visibleIndices.length
+        ? visibleIndices
+            .map((item) => `${item.ia} ${item.idir === "gte" ? ">=" : "<="} ${formatIndex(item.i)} (${item.if})`)
+            .join("; ")
+        : "No index in selected range";
     $("cell-detail").innerHTML = `
         <strong>${row.label} vs ${cell.dealer}</strong><br>
         ${action.label}. Base: ${base.label}. EV ${formatSigned(cell.ev)}. Decision gap ${cell.gap.toFixed(4)}. ${index}.
@@ -1040,26 +1212,38 @@ function refreshSelectedInspector() {
 }
 
 function normalizeIndexRange() {
-    const min = Number($("index-min").value);
-    const max = Number($("index-max").value);
-    if (Number.isFinite(min) && Number.isFinite(max) && min > max) {
-        $("index-min").value = String(max);
-        $("index-max").value = String(min);
-    }
+    let min = clamp($("index-min-range").value, -26, 26);
+    let max = clamp($("index-max-range").value, -26, 26);
+    if (min > max) [min, max] = [max, min];
+    $("index-min-range").value = String(min);
+    $("index-max-range").value = String(max);
+    $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
+    $("index-decimals-value").textContent = String(indexDecimals());
 }
 
 function getIndexRange() {
-    const min = Number($("index-min").value);
-    const max = Number($("index-max").value);
+    const min = Number($("index-min-range").value);
+    const max = Number($("index-max-range").value);
     return {
-        min: Number.isFinite(min) ? min : -10,
-        max: Number.isFinite(max) ? max : 10,
+        min: Number.isFinite(min) ? Math.min(min, max) : -26,
+        max: Number.isFinite(max) ? Math.max(min, max) : 26,
     };
 }
 
 function indexVisible(index) {
     const range = getIndexRange();
     return index >= range.min && index <= range.max;
+}
+
+function indexDecimals() {
+    return Math.round(clamp($("index-decimals").value, 0, 3));
+}
+
+function formatIndex(value) {
+    const decimals = indexDecimals();
+    const epsilon = 0.5 / (10 ** decimals);
+    const normalized = Math.abs(Number(value)) < epsilon ? 0 : Number(value);
+    return normalized.toFixed(decimals);
 }
 
 function formatCount(value) {
@@ -1126,7 +1310,7 @@ function renderMetrics() {
     if (!state.chart?.metrics) return;
     const metrics = state.chart.metrics;
     $("metric-edge").textContent = `${metrics.houseEdgePct.toFixed(3)}%`;
-    $("metric-true-count").textContent = $("apply-count-toggle").checked ? String(computeTrueCount().applied) : "Off";
+    $("metric-true-count").textContent = $("apply-count-toggle").checked ? computeTrueCount().exact.toFixed(2) : "Off";
     $("metric-speed").textContent = state.lastSolveMs ? `${state.lastSolveMs.toFixed(2)} ms` : "--";
     $("report-player-edge").textContent = `${metrics.playerEdgePct.toFixed(3)}%`;
     $("report-stdev").textContent = metrics.stdevPerHand.toFixed(3);
@@ -1144,18 +1328,19 @@ function updateCountReadout() {
     const tc = computeTrueCount();
     $("running-count").textContent = String(state.runningCount);
     $("decks-left").textContent = Number($("decks-remaining").value).toFixed(2);
-    $("applied-count").textContent = $("apply-count-toggle").checked ? String(tc.applied) : "Off";
-    $("metric-true-count").textContent = $("apply-count-toggle").checked ? String(tc.applied) : "Off";
+    $("running-count-value").textContent = String(state.runningCount);
+    $("true-count-value").textContent = tc.exact.toFixed(2);
+    $("applied-count").textContent = $("apply-count-toggle").checked ? tc.exact.toFixed(2) : "Off";
+    $("metric-true-count").textContent = $("apply-count-toggle").checked ? tc.exact.toFixed(2) : "Off";
+    $("running-count-slider").value = String(state.runningCount);
+    $("true-count-slider").value = String(state.trueCount);
+    $("index-decimals-value").textContent = String(indexDecimals());
+    $("index-range-value").textContent = `${formatIndex(getIndexRange().min)} to ${formatIndex(getIndexRange().max)}`;
 }
 
 function computeTrueCount() {
-    if (state.manualMode) {
-        const manual = Number($("manual-count").value);
-        return { exact: manual, applied: manual };
-    }
-    const decksLeft = Math.max(0.25, Number($("decks-remaining").value));
-    const exact = state.runningCount / decksLeft;
-    return { exact, applied: Math.trunc(exact) };
+    state.trueCount = clamp(Number($("true-count-slider").value || state.trueCount), -26, 26);
+    return { exact: state.trueCount, applied: state.trueCount };
 }
 
 function copyConfig() {

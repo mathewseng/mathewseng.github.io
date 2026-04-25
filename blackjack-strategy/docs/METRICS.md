@@ -34,7 +34,9 @@ The count tracker uses standard Hi-Lo tags:
 - `7` through `9`: 0
 - `10` through `A`: -1
 
-The chart applies the active true count directly. When the tracker is used, true count is `running count / decks remaining`. When the manual slider is used, that value is applied directly.
+The chart applies the active true count directly. The count panel has separate controls for running count and true count. When the running-count control or card buttons are used, true count is `running count / decks remaining`, with decks remaining rounded to 0.01 decks. When the true-count slider is used, that value is applied directly.
+
+Finite-deck probability weights remove known dead cards before EV is calculated. Chart rows remove a representative player hand plus the dealer upcard. The hand solver removes the exact selected player cards plus the dealer upcard, so a hand like `77` removes two sevens from the remaining shoe before action EVs are compared.
 
 ## EV View
 
@@ -50,4 +52,4 @@ Each cell stores the best EV, the EV gap to the second-best legal choice, all le
 
 ## Count Indexes
 
-Displayed indexes are calculated from EV crossover points. For each close decision, the engine compares the base action at true count 0 against alternate legal actions at count-adjusted card weights, then binary-refines the threshold where the alternate action becomes better. Index values are shown to two decimal places.
+Displayed indexes are calculated from EV crossover points. For each legal alternate action, the engine checks the full -26 to +26 range against the base action at true count 0, then binary-refines low-count and high-count crossovers. The UI can filter visible indexes with a dual min/max slider and round displayed index values from 0 to 3 decimal places.
