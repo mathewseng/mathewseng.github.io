@@ -10,6 +10,15 @@ const ACTIONS = {
     Rs: { label: "Surrender, otherwise stand", className: "action-Rs" },
 };
 
+const DEALER_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const CARD_RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const RANK_MULTIPLIER = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 4, 11: 1 };
+const HI_LO_TAG = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 0, 8: 0, 9: 0, 10: -1, 11: -1 };
+const HARD_ROWS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+const SOFT_ROWS = [2, 3, 4, 5, 6, 7, 8, 9];
+const PAIR_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const PROB_KEYS = ["4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "bust"];
+
 const PRESETS = {
     vegas: {
         decks: 6,
@@ -99,7 +108,7 @@ const state = {
     lastSolveMs: 0,
 };
 
-const decoder = new TextDecoder();
+const analysisCache = new Map();
 
 document.addEventListener("DOMContentLoaded", () => {
     wireControls();
@@ -109,6 +118,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sharedConfig) {
         $("reverse-26-toggle").checked = Boolean(sharedConfig.reverse26);
         $("show-indices-toggle").checked = sharedConfig.showIndices !== false;
+        if (sharedConfig.viewMode) $("view-mode").value = sharedConfig.viewMode;
+        if (sharedConfig.indexRange) {
+            $("index-min").value = String(sharedConfig.indexRange.min ?? -10);
+            $("index-max").value = String(sharedConfig.indexRange.max ?? 10);
+        }
         if (Number.isFinite(sharedConfig.trueCount)) {
             state.manualMode = true;
             $("manual-count").value = String(Math.max(-10, Math.min(10, sharedConfig.trueCount)));
@@ -155,6 +169,18 @@ function wireControls() {
                 document.body.classList.toggle("colorblind", $(id).checked);
             }
             renderChart();
+        });
+    });
+
+    ["view-mode", "index-min", "index-max"].forEach((id) => {
+        $(id).addEventListener("input", () => {
+            renderChart();
+            refreshSelectedInspector();
+        });
+        $(id).addEventListener("change", () => {
+            normalizeIndexRange();
+            renderChart();
+            refreshSelectedInspector();
         });
     });
 
@@ -303,28 +329,8 @@ function clampDeckSlider() {
 }
 
 async function loadWasm() {
-    try {
-        const response = await fetch("assets/blackjack_solver.wasm", { cache: "no-cache" });
-        if (!response.ok) throw new Error(`WASM ${response.status}`);
-        const bytes = await response.arrayBuffer();
-        const instance = await WebAssembly.instantiate(bytes, {});
-        state.wasm = instance.instance;
-        state.wasmReady = true;
-    } catch (error) {
-        console.info("WASM unavailable; JS fallback active", error);
-        state.wasmReady = false;
-        toast("WASM unavailable; JS fallback active");
-    }
-}
-
-async function loadFallbackChart() {
-    try {
-        const response = await fetch("data/fallback-chart.json");
-        state.chart = await response.json();
-        renderAll();
-    } catch (error) {
-        console.error(error);
-    }
+    state.wasm = null;
+    state.wasmReady = false;
 }
 
 async function loadReport() {
@@ -345,47 +351,11 @@ function solveAndRender() {
     cancelAnimationFrame(solveFrame);
     solveFrame = requestAnimationFrame(() => {
         const config = collectConfig();
-        const count = $("apply-count-toggle").checked ? computeTrueCount().applied : 0;
+        const count = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
         const start = performance.now();
-
-        if (!state.wasmReady || !state.wasm) {
-            state.chart = solveChartJS(config, count);
-            state.lastSolveMs = performance.now() - start;
-            renderAll();
-            return;
-        }
-
-        try {
-            const exports = state.wasm.exports;
-            const ptr = exports.solve_chart(
-                config.decks,
-                config.h17,
-                config.doubleRule,
-                config.das,
-                config.surrender,
-                config.peek,
-                config.resplitHands,
-                config.rsa,
-                config.hsa,
-                config.charlie,
-                config.blackjackPay,
-                config.optimization,
-                count,
-            );
-            const len = exports.last_result_len();
-            const bytes = new Uint8Array(exports.memory.buffer, ptr, len);
-            const json = decoder.decode(bytes);
-            exports.free_result(ptr, len);
-            state.chart = JSON.parse(json);
-            state.lastSolveMs = performance.now() - start;
-            renderAll();
-        } catch (error) {
-            console.info("WASM solve unavailable; JS fallback active", error);
-            state.wasmReady = false;
-            state.chart = solveChartJS(config, count);
-            state.lastSolveMs = performance.now() - start;
-            renderAll();
-        }
+        state.chart = solveChartJS(config, count);
+        state.lastSolveMs = performance.now() - start;
+        renderAll();
     });
 }
 
@@ -399,17 +369,18 @@ function renderAll() {
 }
 
 function solveChartJS(config, trueCount) {
-    const dealerValues = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const cacheKey = `${JSON.stringify(config)}|${roundCount(trueCount)}`;
+    analysisCache.clear();
     const rows = [
-        ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map((value) => chartRow("hard", value, config, trueCount)),
-        ...[2, 3, 4, 5, 6, 7, 8, 9].map((value) => chartRow("soft", value, config, trueCount)),
-        ...[2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((value) => chartRow("pair", value, config, trueCount)),
+        ...HARD_ROWS.map((value) => chartRow("hard", value, config, trueCount, cacheKey)),
+        ...SOFT_ROWS.map((value) => chartRow("soft", value, config, trueCount, cacheKey)),
+        ...PAIR_ROWS.map((value) => chartRow("pair", value, config, trueCount, cacheKey)),
     ];
 
     return {
-        version: "0.1.0-js",
+        version: "0.2.0-ev",
         rules: { ...config, trueCount },
-        dealer: dealerValues.map(dealerLabel),
+        dealer: DEALER_VALUES.map(dealerLabel),
         rows,
         metrics: metricModel(config),
         legend: [
@@ -424,41 +395,66 @@ function solveChartJS(config, trueCount) {
     };
 }
 
-function chartRow(kind, value, config, trueCount) {
-    const dealerValues = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+function chartRow(kind, value, config, trueCount, cacheKey) {
     return {
         id: `${kind}-${value}`,
         kind,
         label: rowLabel(kind, value),
-        cells: dealerValues.map((dealer) => chartCell(kind, value, dealer, config, trueCount)),
+        cells: DEALER_VALUES.map((dealer) => chartCell(kind, value, dealer, config, trueCount, cacheKey)),
     };
 }
 
-function chartCell(kind, value, dealer, config, trueCount) {
-    const base = baseDecision(kind, value, dealer, config);
-    const index = indexPlay(kind, value, dealer, config);
-    const active =
-        index &&
-        (index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i);
-    const action = active ? index.ia : base;
+function chartCell(kind, value, dealer, config, trueCount, cacheKey) {
+    const current = analyzeCell(kind, value, dealer, config, trueCount);
+    const base = analyzeCell(kind, value, dealer, config, 0);
+    const index = deriveIndex(kind, value, dealer, config, base.best.code, cacheKey);
+    const action = current.best.code;
+    const active = index && (index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i);
     return {
         dealer: dealerLabel(dealer),
         a: action,
-        b: base,
-        m: estimateMargin(action, kind, value, dealer, trueCount),
+        b: base.best.code,
+        m: Math.round(current.margin * 1000),
         x: Boolean(active),
+        ev: round4(current.best.ev),
+        gap: round4(current.margin),
+        evs: Object.fromEntries(current.evs.map((item) => [item.code, round4(item.ev)])),
+        probs: current.distribution,
         ...(index || {}),
     };
 }
 
 function rowLabel(kind, value) {
-    if (kind === "hard") return value === 8 ? "5-8" : value === 17 ? "17+" : String(value);
-    if (kind === "soft") return `A,${value}`;
-    return value === 11 ? "A,A" : `${value},${value}`;
+    if (kind === "hard") return String(value);
+    if (kind === "soft") return `A${value}`;
+    if (value === 11) return "AA";
+    if (value === 10) return "TT";
+    return `${value}${value}`;
 }
 
 function dealerLabel(value) {
     return value === 11 ? "A" : String(value);
+}
+
+function round4(value) {
+    return Math.round(value * 10000) / 10000;
+}
+
+function roundCount(value) {
+    return Math.round(value * 4) / 4;
+}
+
+function rankProbabilities(trueCount) {
+    const tilt = 0.075;
+    const weights = CARD_RANKS.map((rank) => {
+        const tag = HI_LO_TAG[rank];
+        return {
+            rank,
+            weight: RANK_MULTIPLIER[rank] * Math.exp(-tag * trueCount * tilt),
+        };
+    });
+    const total = weights.reduce((sum, item) => sum + item.weight, 0);
+    return weights.map((item) => ({ rank: item.rank, p: item.weight / total }));
 }
 
 function canDoubleJS(config, kind, hardTotal, lowTotal) {
@@ -477,143 +473,326 @@ function doubleStand(config, kind, hardTotal, lowTotal) {
     return canDoubleJS(config, kind, hardTotal, lowTotal) ? "Ds" : "S";
 }
 
-function baseDecision(kind, value, dealer, config) {
-    let action;
-    if (kind === "hard") action = baseHard(value, dealer, config);
-    if (kind === "soft") action = baseSoft(value, dealer, config);
-    if (kind === "pair") action = basePair(value, dealer, config);
-    action = applySurrenderJS(action, kind, value, dealer, config);
-    return applyPeekTaxJS(action, kind, value, dealer, config);
-}
+function analyzeCell(kind, value, dealer, config, trueCount) {
+    const key = `${JSON.stringify(config)}|${roundCount(trueCount)}|${kind}|${value}|${dealer}`;
+    if (analysisCache.has(key)) return analysisCache.get(key);
 
-function baseHard(total, dealer, config) {
-    if (total <= 8) return "H";
-    if (total === 9) {
-        return dealer >= 3 && dealer <= 6 ? doubleHit(config, "hard", 9, 9) : "H";
-    }
-    if (total === 10) {
-        return dealer >= 2 && dealer <= 9 ? doubleHit(config, "hard", 10, 10) : "H";
-    }
-    if (total === 11) {
-        return dealer <= 10 || (config.h17 && dealer === 11) ? doubleHit(config, "hard", 11, 11) : "H";
-    }
-    if (total === 12) return dealer >= 4 && dealer <= 6 ? "S" : "H";
-    if (total <= 16) return dealer >= 2 && dealer <= 6 ? "S" : "H";
-    return "S";
-}
+    const probs = rankProbabilities(trueCount);
+    const dealerDist = dealerDistribution(dealer, config, probs);
+    const initial = stateForRow(kind, value);
+    const memo = new Map();
+    const evs = [];
 
-function baseSoft(card, dealer, config) {
-    const low = card + 1;
-    const soft = card + 11;
-    if (card <= 3) return dealer >= 5 && dealer <= 6 ? doubleHit(config, "soft", soft, low) : "H";
-    if (card <= 5) return dealer >= 4 && dealer <= 6 ? doubleHit(config, "soft", soft, low) : "H";
-    if (card === 6) return dealer >= 3 && dealer <= 6 ? doubleHit(config, "soft", soft, low) : "H";
-    if (card === 7) {
-        if ((dealer >= 3 && dealer <= 6) || (config.optimization > 0 && dealer === 2)) {
-            return doubleStand(config, "soft", soft, low);
-        }
-        return dealer === 2 || dealer === 7 || dealer === 8 ? "S" : "H";
-    }
-    if (card === 8 && config.h17 && dealer === 6) return doubleStand(config, "soft", soft, low);
-    return "S";
-}
+    const stand = standEv(initial, dealerDist);
+    evs.push({ code: "S", ev: stand, label: ACTIONS.S.label, distribution: standDistribution(initial) });
 
-function basePair(card, dealer, config) {
-    if (card === 11) return "P";
-    if (card === 10) return "S";
-    if (card === 9) return (dealer >= 2 && dealer <= 6) || dealer === 8 || dealer === 9 ? "P" : "S";
-    if (card === 8) return "P";
-    if (card === 7) return dealer >= 2 && dealer <= 7 ? "P" : "H";
-    if (card === 6) return (dealer >= 3 && dealer <= 6) || (config.das && dealer === 2) ? "P" : "H";
-    if (card === 5) return dealer >= 2 && dealer <= 9 ? doubleHit(config, "hard", 10, 10) : "H";
-    if (card === 4) return config.das && dealer >= 5 && dealer <= 6 ? "P" : "H";
-    if (card === 2 || card === 3) {
-        return (dealer >= 4 && dealer <= 7) || (config.das && dealer >= 2 && dealer <= 3) ? "P" : "H";
-    }
-    return "H";
-}
+    const hit = hitEv(initial, dealerDist, config, probs, memo);
+    evs.push({ code: "H", ev: hit.ev, label: ACTIONS.H.label, distribution: hit.distribution });
 
-function applySurrenderJS(action, kind, value, dealer, config) {
-    if (config.surrender === 0) return action;
-    const hardTotal = kind === "hard" ? value : kind === "pair" ? value * 2 : 0;
-    const late =
-        (hardTotal === 16 && [9, 10, 11].includes(dealer)) ||
-        (hardTotal === 15 && (dealer === 10 || (config.h17 && dealer === 11))) ||
-        (config.h17 && hardTotal === 17 && dealer === 11) ||
-        (config.h17 && kind === "pair" && value === 8 && dealer === 11);
-    const earlyTen = hardTotal >= 14 && hardTotal <= 16 && dealer === 10;
-    const earlyFull = hardTotal >= 14 && hardTotal <= 17 && (dealer === 10 || dealer === 11);
-    const wants = config.surrender === 1 ? late : config.surrender === 2 ? earlyTen : earlyFull;
-    if (!wants) return action;
-    return action === "S" || action === "Ds" || action === "Rs" ? "Rs" : "Rh";
-}
+    const hardTotal = hardEquivalent(kind, value);
+    const lowTotal = kind === "soft" ? value + 1 : hardTotal;
+    if (canDoubleJS(config, kind, hardTotal, lowTotal)) {
+        const doubled = doubleEv(initial, dealerDist, config, probs);
+        const code = stand > hit.ev ? "Ds" : "D";
+        evs.push({ code, ev: doubled.ev, label: ACTIONS[code].label, distribution: doubled.distribution });
+    }
 
-function applyPeekTaxJS(action, kind, value, dealer, config) {
-    const risk =
-        config.peek === 1
-            ? dealer === 10 || dealer === 11
-            : config.peek === 2
-              ? dealer === 10
-              : config.peek === 3
-                ? dealer === 10 || dealer === 11
-                : false;
-    if (!risk) return action;
-    if (action === "D") return "H";
-    if (action === "Ds") return "S";
-    if (action === "P" && config.peek !== 3 && kind === "pair" && value === 8 && dealer >= 10) {
-        return config.surrender === 0 ? "H" : "Rh";
+    if (config.surrender !== 0 && surrenderAllowed(kind, value, dealer, config)) {
+        const code = stand > hit.ev ? "Rs" : "Rh";
+        evs.push({ code, ev: -0.5, label: ACTIONS[code].label, distribution: { surrender: 1 } });
     }
-    if (action === "P" && config.peek !== 3 && kind === "pair" && value !== 11 && dealer >= 10) {
-        return value === 10 ? "S" : "H";
-    }
-    return action;
-}
 
-function indexPlay(kind, value, dealer, config) {
-    const index = (i, ia, idir = "gte", family = "I18") => ({ i, ia, idir, if: family });
-    if (kind === "hard") {
-        if (value === 16 && dealer === 10 && config.surrender === 0) return index(0, "S");
-        if (value === 15 && dealer === 10 && config.surrender === 0) return index(4, "S");
-        if (value === 10 && dealer === 10 && canDoubleJS(config, "hard", 10, 10)) return index(4, "D");
-        if (value === 10 && dealer === 11 && canDoubleJS(config, "hard", 10, 10)) return index(4, "D");
-        if (value === 11 && dealer === 11 && canDoubleJS(config, "hard", 11, 11)) return index(1, "D");
-        if (value === 9 && dealer === 2 && canDoubleJS(config, "hard", 9, 9)) return index(1, "D");
-        if (value === 9 && dealer === 7 && canDoubleJS(config, "hard", 9, 9)) return index(3, "D");
-        if (value === 12 && dealer === 2) return index(3, "S");
-        if (value === 12 && dealer === 3) return index(2, "S");
-        if (value === 12 && dealer === 4) return index(-1, "H", "lte");
-        if (value === 12 && dealer === 5) return index(-2, "H", "lte");
-        if (value === 12 && dealer === 6) return index(-1, "H", "lte");
-        if (value === 13 && dealer === 2) return index(-1, "H", "lte");
-        if (value === 13 && dealer === 3) return index(-2, "H", "lte");
-        if (value === 14 && dealer === 10 && config.surrender !== 0) return index(3, "Rh", "gte", "Fab4");
-        if (value === 15 && dealer === 9 && config.surrender !== 0) return index(2, "Rh", "gte", "Fab4");
-        if (value === 15 && dealer === 11 && config.surrender !== 0 && config.h17) return index(1, "Rh", "gte", "Fab4");
-        if (value === 16 && dealer === 8 && config.surrender !== 0) return index(4, "Rh", "gte", "Fab4");
-    }
-    if (kind === "soft") {
-        if (value === 8 && dealer === 6 && canDoubleJS(config, "soft", 19, 9)) return index(1, "Ds", "gte", "Soft");
-        if (value === 7 && dealer === 2 && canDoubleJS(config, "soft", 18, 8)) return index(1, "Ds", "gte", "Soft");
-    }
     if (kind === "pair") {
-        if (value === 10 && dealer === 5) return index(5, "P");
-        if (value === 10 && dealer === 6) return index(4, "P");
-        if (value === 9 && dealer === 7 && config.optimization === 2) return index(3, "P", "gte", "Risk");
+        const split = splitEv(value, dealerDist, config, probs, memo);
+        evs.push({ code: "P", ev: split.ev, label: ACTIONS.P.label, distribution: split.distribution });
     }
-    return null;
+
+    evs.sort((a, b) => b.ev - a.ev);
+    const best = evs[0];
+    const second = evs[1] || best;
+    const result = {
+        best,
+        evs,
+        margin: Math.max(0, best.ev - second.ev),
+        distribution: normalizeDistribution(best.distribution),
+    };
+    analysisCache.set(key, result);
+    return result;
 }
 
-function estimateMargin(action, kind, value, dealer, trueCount) {
-    let score = 0;
-    const total = kind === "soft" ? value + 11 : kind === "pair" ? value * 2 : value;
-    if (action === "S" || action === "Rs") score = (total - Math.min(dealer, 10)) * 16;
-    if (action === "H" || action === "Rh") score = (17 - total) * 10 - Math.min(dealer, 10) * 3;
-    if (action === "D" || action === "Ds") score = 62 - Math.min(dealer, 10) * 4;
-    if (action === "P") {
-        const cardScore = value === 11 || value === 8 ? 84 : value === 9 || value === 7 ? 48 : [2, 3, 6].includes(value) ? 26 : 12;
-        score = cardScore - Math.min(dealer, 10) * 2;
+function hardEquivalent(kind, value) {
+    if (kind === "hard") return value;
+    if (kind === "soft") return value + 11;
+    return value * 2;
+}
+
+function stateForRow(kind, value) {
+    if (kind === "soft") return normalizeHand(value + 11, 1, 2);
+    if (kind === "pair") {
+        if (value === 11) return normalizeHand(12, 1, 2);
+        return normalizeHand(value * 2, 0, 2);
     }
-    return Math.max(-220, Math.min(220, score + trueCount * 4));
+    return normalizeHand(value, 0, 2);
+}
+
+function normalizeHand(total, softAces, cards) {
+    let adjustedTotal = total;
+    let adjustedSoft = softAces;
+    while (adjustedTotal > 21 && adjustedSoft > 0) {
+        adjustedTotal -= 10;
+        adjustedSoft -= 1;
+    }
+    return { total: adjustedTotal, soft: adjustedSoft, cards, bust: adjustedTotal > 21 };
+}
+
+function addRank(hand, rank) {
+    if (rank === 11) return normalizeHand(hand.total + 11, hand.soft + 1, hand.cards + 1);
+    return normalizeHand(hand.total + rank, hand.soft, hand.cards + 1);
+}
+
+function dealerDistribution(upcard, config, probs) {
+    const start = upcard === 11 ? { total: 11, soft: 1 } : { total: upcard, soft: 0 };
+    const conditioned = conditionHoleCards(upcard, config, probs);
+    const memo = new Map();
+    const dist = emptyDealerDistribution();
+
+    conditioned.forEach(({ rank, p }) => {
+        const afterHole = addDealerRank(start, rank);
+        mergeDistribution(dist, dealerDrawDistribution(afterHole.total, afterHole.soft, config, probs, memo), p);
+    });
+
+    return normalizeDistribution(dist);
+}
+
+function conditionHoleCards(upcard, config, probs) {
+    const shouldPeek =
+        config.peek === 0 ||
+        config.peek === 3 ||
+        (config.peek === 2 && upcard === 11);
+    if (!shouldPeek || (upcard !== 10 && upcard !== 11)) return probs;
+    const blockedRank = upcard === 11 ? 10 : 11;
+    const filtered = probs.filter((item) => item.rank !== blockedRank);
+    const total = filtered.reduce((sum, item) => sum + item.p, 0);
+    return filtered.map((item) => ({ rank: item.rank, p: item.p / total }));
+}
+
+function addDealerRank(hand, rank) {
+    let total = hand.total + (rank === 11 ? 11 : rank);
+    let soft = hand.soft + (rank === 11 ? 1 : 0);
+    while (total > 21 && soft > 0) {
+        total -= 10;
+        soft -= 1;
+    }
+    return { total, soft };
+}
+
+function dealerDrawDistribution(total, soft, config, probs, memo) {
+    if (total > 21) return { bust: 1 };
+    const shouldStand = total > 17 || (total === 17 && !(config.h17 && soft > 0));
+    if (shouldStand) return { [String(total)]: 1 };
+    const key = `${total}|${soft}`;
+    if (memo.has(key)) return memo.get(key);
+    const dist = emptyDealerDistribution();
+    probs.forEach(({ rank, p }) => {
+        const next = addDealerRank({ total, soft }, rank);
+        mergeDistribution(dist, dealerDrawDistribution(next.total, next.soft, config, probs, memo), p);
+    });
+    const normalized = normalizeDistribution(dist);
+    memo.set(key, normalized);
+    return normalized;
+}
+
+function standEv(hand, dealerDist) {
+    if (hand.bust) return -1;
+    let ev = 0;
+    Object.entries(dealerDist).forEach(([outcome, p]) => {
+        if (outcome === "bust") ev += p;
+        else {
+            const dealerTotal = Number(outcome);
+            ev += p * (hand.total > dealerTotal ? 1 : hand.total < dealerTotal ? -1 : 0);
+        }
+    });
+    return ev;
+}
+
+function hitEv(hand, dealerDist, config, probs, memo) {
+    const distribution = {};
+    let ev = 0;
+    probs.forEach(({ rank, p }) => {
+        const next = addRank(hand, rank);
+        const branch = continuation(next, dealerDist, config, probs, memo, false);
+        ev += p * branch.ev;
+        mergeDistribution(distribution, branch.distribution, p);
+    });
+    return { ev, distribution: normalizeDistribution(distribution) };
+}
+
+function doubleEv(hand, dealerDist, config, probs) {
+    const distribution = {};
+    let ev = 0;
+    probs.forEach(({ rank, p }) => {
+        const next = addRank(hand, rank);
+        const stand = next.bust ? -2 : 2 * standEv(next, dealerDist);
+        ev += p * stand;
+        mergeDistribution(distribution, next.bust ? { bust: 1 } : standDistribution(next), p);
+    });
+    return { ev, distribution: normalizeDistribution(distribution) };
+}
+
+function splitEv(pairRank, dealerDist, config, probs, memo) {
+    const distribution = {};
+    let perHandEv = 0;
+    probs.forEach(({ rank, p }) => {
+        const starting = addRank(splitSeed(pairRank), rank);
+        const branch =
+            pairRank === 11 && !config.hsa
+                ? { ev: standEv(starting, dealerDist), distribution: standDistribution(starting) }
+                : continuation(starting, dealerDist, config, probs, memo, Boolean(config.das));
+        perHandEv += p * branch.ev;
+        mergeDistribution(distribution, branch.distribution, p);
+    });
+    return { ev: perHandEv * 2, distribution: normalizeDistribution(distribution) };
+}
+
+function splitSeed(pairRank) {
+    if (pairRank === 11) return normalizeHand(11, 1, 1);
+    return normalizeHand(pairRank, 0, 1);
+}
+
+function continuation(hand, dealerDist, config, probs, memo, canDouble) {
+    if (hand.bust) return { ev: -1, distribution: { bust: 1 } };
+    if (config.charlie && hand.cards >= config.charlie) {
+        return { ev: 1, distribution: standDistribution(hand) };
+    }
+    const key = `${hand.total}|${hand.soft}|${hand.cards}|${canDouble ? 1 : 0}`;
+    if (memo.has(key)) return memo.get(key);
+
+    const stand = { code: "S", ev: standEv(hand, dealerDist), distribution: standDistribution(hand) };
+    const hit = hitEv(hand, dealerDist, config, probs, memo);
+    const choices = [{ code: "H", ev: hit.ev, distribution: hit.distribution }, stand];
+    if (canDouble && hand.cards === 2) {
+        const doubled = doubleEv(hand, dealerDist, config, probs);
+        choices.push({ code: stand.ev > hit.ev ? "Ds" : "D", ev: doubled.ev, distribution: doubled.distribution });
+    }
+
+    choices.sort((a, b) => b.ev - a.ev);
+    const best = choices[0];
+    memo.set(key, best);
+    return best;
+}
+
+function standDistribution(hand) {
+    if (hand.bust) return { bust: 1 };
+    return { [String(hand.total)]: 1 };
+}
+
+function emptyDealerDistribution() {
+    return { "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, bust: 0 };
+}
+
+function mergeDistribution(target, source, weight = 1) {
+    Object.entries(source).forEach(([key, value]) => {
+        target[key] = (target[key] || 0) + value * weight;
+    });
+}
+
+function normalizeDistribution(dist) {
+    const total = Object.values(dist).reduce((sum, value) => sum + value, 0);
+    if (!total) return dist;
+    const normalized = {};
+    Object.entries(dist).forEach(([key, value]) => {
+        if (value > 0.000001) normalized[key] = value / total;
+    });
+    return normalized;
+}
+
+function surrenderAllowed(kind, value, dealer, config) {
+    if (config.surrender === 3) return dealer === 10 || dealer === 11;
+    if (config.surrender === 2) return dealer === 10;
+    if (config.surrender !== 1) return false;
+    const total = hardEquivalent(kind, value);
+    return total >= 14 && total <= 17 && (dealer === 9 || dealer === 10 || dealer === 11);
+}
+
+function deriveIndex(kind, value, dealer, config, baseCode, cacheKey) {
+    const indexKey = `${cacheKey}|idx|${kind}|${value}|${dealer}|${baseCode}`;
+    if (analysisCache.has(indexKey)) return analysisCache.get(indexKey);
+
+    const baseAnalysis = analyzeCell(kind, value, dealer, config, 0);
+    if (baseAnalysis.margin > 0.04) {
+        analysisCache.set(indexKey, null);
+        return null;
+    }
+    const candidates = baseAnalysis.evs.filter((item) => canonicalCode(item.code) !== canonicalCode(baseCode));
+    const crossings = [];
+
+    candidates.forEach((candidate) => {
+        const lowDelta = actionDelta(kind, value, dealer, config, candidate.code, baseCode, -10);
+        const highDelta = actionDelta(kind, value, dealer, config, candidate.code, baseCode, 10);
+
+        if (highDelta > 0) {
+            crossings.push({
+                alt: candidate.code,
+                idir: "gte",
+                threshold: refineIndexThreshold(kind, value, dealer, config, baseCode, candidate.code, 10, "gte"),
+            });
+        }
+
+        if (lowDelta > 0) {
+            crossings.push({
+                alt: candidate.code,
+                idir: "lte",
+                threshold: refineIndexThreshold(kind, value, dealer, config, baseCode, candidate.code, -10, "lte"),
+            });
+        }
+    });
+
+    if (!crossings.length) {
+        analysisCache.set(indexKey, null);
+        return null;
+    }
+
+    crossings.sort((a, b) => Math.abs(a.threshold) - Math.abs(b.threshold));
+    const chosen = crossings[0];
+    const result = {
+        i: Number(chosen.threshold.toFixed(2)),
+        ia: chosen.alt,
+        idir: chosen.idir,
+        if: "EV",
+    };
+    analysisCache.set(indexKey, result);
+    return result;
+}
+
+function refineIndexThreshold(kind, value, dealer, config, baseCode, altCode, _tc, direction) {
+    let low = -10;
+    let high = 10;
+    for (let i = 0; i < 12; i += 1) {
+        const mid = (low + high) / 2;
+        const delta = actionDelta(kind, value, dealer, config, altCode, baseCode, mid);
+        if (direction === "gte") {
+            if (delta >= 0) high = mid;
+            else low = mid;
+        } else if (delta >= 0) low = mid;
+        else high = mid;
+    }
+    return direction === "gte" ? high : low;
+}
+
+function actionDelta(kind, value, dealer, config, altCode, baseCode, trueCount) {
+    const analysis = analyzeCell(kind, value, dealer, config, trueCount);
+    return evForCode(analysis, altCode) - evForCode(analysis, baseCode);
+}
+
+function evForCode(analysis, code) {
+    const match = analysis.evs.find((item) => canonicalCode(item.code) === canonicalCode(code));
+    return match ? match.ev : -Infinity;
+}
+
+function canonicalCode(code) {
+    if (code === "D" || code === "Ds") return "D";
+    if (code === "Rh" || code === "Rs") return "R";
+    return code;
 }
 
 function metricModel(config) {
@@ -662,6 +841,7 @@ function renderChart() {
 
     const table = $("strategy-table");
     table.classList.toggle("compact", $("compact-toggle").checked);
+    table.classList.toggle("ev-mode", $("view-mode").value === "ev");
     document.body.classList.toggle("colorblind", $("colorblind-toggle").checked);
     $("chart-panel").classList.toggle("index-hidden", !$("show-indices-toggle").checked);
 
@@ -709,19 +889,24 @@ function renderChart() {
 
 function cellButton(row, cell) {
     const action = ACTIONS[cell.a] || ACTIONS.H;
+    const evMode = $("view-mode").value === "ev";
     const active = cell.x ? " active-index" : "";
     const selected =
         state.selected && state.selected.rowId === row.id && state.selected.dealer === cell.dealer
             ? " selected-cell"
             : "";
     const badge =
-        cell.i === undefined
+        cell.i === undefined || !indexVisible(cell.i)
             ? ""
-            : `<span class="index-badge">${cell.ia} ${cell.idir === "gte" ? "≥" : "≤"} ${cell.i}</span>`;
+            : `<span class="index-badge">${cell.ia} ${cell.idir === "gte" ? "≥" : "≤"} ${formatCount(cell.i)}</span>`;
     const payload = JSON.stringify(cell).replaceAll('"', "&quot;");
     const title = `${row.label} vs ${cell.dealer}: ${action.label}`;
-    return `<button class="action-cell ${action.className}${active}${selected}" type="button" data-row="${row.id}" data-row-label="${row.label}" data-dealer="${cell.dealer}" data-cell="${payload}" title="${title}">
-        <span class="action-code">${cell.a}</span>${badge}
+    const evMarkup = evMode
+        ? `<span class="cell-ev">${formatSigned(cell.ev)}</span><span class="cell-gap">Δ ${cell.gap.toFixed(3)}</span>`
+        : "";
+    const style = evMode ? ` style="--cell-bg:${evColor(cell.ev, cell.gap)}"` : "";
+    return `<button class="action-cell ${action.className}${active}${selected}${evMode ? " ev-cell" : ""}" type="button" data-row="${row.id}" data-row-label="${row.label}" data-dealer="${cell.dealer}" data-cell="${payload}" title="${title}"${style}>
+        <span class="action-code">${cell.a}</span>${evMarkup}${badge}
     </button>`;
 }
 
@@ -783,8 +968,8 @@ function renderHandSolver() {
     const indexText =
         cell.i === undefined
             ? "No listed Hi-Lo deviation."
-            : `${cell.ia} when TC ${cell.idir === "gte" ? ">=" : "<="} ${cell.i}${cell.x ? " (active)" : ""}.`;
-    $("decision-detail").textContent = `${row.label} vs ${dealerLabel}. ${indexText}`;
+            : `${cell.ia} when TC ${cell.idir === "gte" ? ">=" : "<="} ${formatCount(cell.i)}${cell.x ? " (active)" : ""}.`;
+    $("decision-detail").textContent = `${row.label} vs ${dealerLabel}. EV ${formatSigned(cell.ev)}. ${indexText}`;
 
     state.selected = { rowId: row.id, rowLabel: row.label, dealer: dealerLabel };
     showCellDetail(row, cell);
@@ -798,8 +983,102 @@ function showCellDetail(row, cell) {
     const index =
         cell.i === undefined
             ? "No index"
-            : `${cell.ia} ${cell.idir === "gte" ? ">=" : "<="} ${cell.i} (${cell.if}${cell.x ? ", active" : ""})`;
-    $("cell-detail").innerHTML = `<strong>${row.label} vs ${cell.dealer}</strong><br>${action.label}. Base: ${base.label}. ${index}. Margin score: ${cell.m}.`;
+            : `${cell.ia} ${cell.idir === "gte" ? ">=" : "<="} ${formatCount(cell.i)} (${cell.if}${cell.x ? ", active" : ""})`;
+    $("cell-detail").innerHTML = `
+        <strong>${row.label} vs ${cell.dealer}</strong><br>
+        ${action.label}. Base: ${base.label}. EV ${formatSigned(cell.ev)}. Decision gap ${cell.gap.toFixed(4)}. ${index}.
+        ${renderEvRows(cell)}
+        ${renderProbabilityRows(cell)}
+    `;
+}
+
+function renderEvRows(cell) {
+    if (!cell.evs) return "";
+    const entries = Object.entries(cell.evs)
+        .map(([code, ev]) => ({ code, ev, label: ACTIONS[code]?.label || code }))
+        .sort((a, b) => b.ev - a.ev);
+    const best = entries[0]?.ev ?? 0;
+    const worst = entries[entries.length - 1]?.ev ?? best;
+    const range = Math.max(0.001, best - worst);
+    return `<div class="ev-breakdown">${entries
+        .map((item) => {
+            const width = 18 + ((item.ev - worst) / range) * 82;
+            return `<div class="ev-row">
+                <span class="ev-code">${item.code}</span>
+                <span class="ev-bar"><i style="width:${width.toFixed(1)}%;background:${evColor(item.ev, best - item.ev)}"></i></span>
+                <span class="ev-value">${formatSigned(item.ev)}</span>
+            </div>`;
+        })
+        .join("")}</div>`;
+}
+
+function renderProbabilityRows(cell) {
+    if (!cell.probs) return "";
+    const entries = PROB_KEYS
+        .filter((key) => (cell.probs[key] || 0) >= 0.002)
+        .map((key) => ({ key, value: cell.probs[key] || 0 }));
+    if (cell.probs.surrender) entries.push({ key: "surrender", value: cell.probs.surrender });
+    if (!entries.length) return "";
+
+    return `<div class="prob-breakdown">
+        <div class="prob-title">Final total distribution with perfect strategy</div>
+        ${entries
+            .map((item) => `<div class="prob-row">
+                <span>${item.key === "bust" ? "Bust" : item.key === "surrender" ? "Surrender" : item.key}</span>
+                <span class="prob-track"><i style="width:${(item.value * 100).toFixed(1)}%"></i></span>
+                <strong>${formatPercent(item.value)}</strong>
+            </div>`)
+            .join("")}
+    </div>`;
+}
+
+function refreshSelectedInspector() {
+    if (!state.selected || !state.chart) return;
+    const row = state.chart.rows.find((item) => item.id === state.selected.rowId);
+    const cell = row?.cells.find((item) => item.dealer === state.selected.dealer);
+    if (row && cell) showCellDetail(row, cell);
+}
+
+function normalizeIndexRange() {
+    const min = Number($("index-min").value);
+    const max = Number($("index-max").value);
+    if (Number.isFinite(min) && Number.isFinite(max) && min > max) {
+        $("index-min").value = String(max);
+        $("index-max").value = String(min);
+    }
+}
+
+function getIndexRange() {
+    const min = Number($("index-min").value);
+    const max = Number($("index-max").value);
+    return {
+        min: Number.isFinite(min) ? min : -10,
+        max: Number.isFinite(max) ? max : 10,
+    };
+}
+
+function indexVisible(index) {
+    const range = getIndexRange();
+    return index >= range.min && index <= range.max;
+}
+
+function formatCount(value) {
+    return Number(value).toFixed(2);
+}
+
+function formatSigned(value) {
+    return `${value >= 0 ? "+" : ""}${Number(value).toFixed(3)}`;
+}
+
+function formatPercent(value) {
+    return `${(value * 100).toFixed(1)}%`;
+}
+
+function evColor(ev, gap) {
+    const confidence = Math.min(1, Math.max(0, gap / 0.08));
+    if (Math.abs(ev) < 0.015) return `hsl(220 16% ${26 + confidence * 7}%)`;
+    if (ev > 0) return `hsl(158 70% ${22 + confidence * 10}%)`;
+    return `hsl(356 72% ${24 + confidence * 8}%)`;
 }
 
 function markSelectedCell() {
@@ -854,7 +1133,7 @@ function renderMetrics() {
     $("report-combos").textContent = metrics.combosSupported.toLocaleString();
     $("report-cells").textContent = metrics.cellsPerChart.toLocaleString();
 
-    if (state.report) {
+    if (state.report && state.lastSolveMs < 1) {
         $("metric-speed").textContent = `${state.lastSolveMs.toFixed(2)} ms / ${Math.round(
             state.report.chartsPerSecond,
         ).toLocaleString()} cps`;
@@ -885,6 +1164,8 @@ function copyConfig() {
         trueCount: computeTrueCount().applied,
         reverse26: $("reverse-26-toggle").checked,
         showIndices: $("show-indices-toggle").checked,
+        viewMode: $("view-mode").value,
+        indexRange: getIndexRange(),
     };
     const text = JSON.stringify(config, null, 2);
     if (navigator.clipboard?.writeText) {

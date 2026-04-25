@@ -1,1 +1,1 @@
-{"engine":"blackjack_solver","version":"0.1.0","iterations":25000,"elapsedMs":492.454,"avgChartUs":19.698,"chartsPerSecond":50766.2,"cellsPerSecond":14214538.8,"avgJsonBytes":16573,"wasmTarget":"wasm32-unknown-unknown","chartCells":280,"supportedRuleCombos":884736}
+{"engine":"blackjack_solver","version":"0.1.0","iterations":25000,"elapsedMs":504.159,"avgChartUs":20.166,"chartsPerSecond":49587.6,"cellsPerSecond":13884516.7,"avgJsonBytes":16550,"wasmTarget":"wasm32-unknown-unknown","chartCells":280,"supportedRuleCombos":884736}

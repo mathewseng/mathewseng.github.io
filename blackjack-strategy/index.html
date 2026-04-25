@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0b0d10">
     <meta name="description"
-        content="Rules-aware blackjack strategy charts, Hi-Lo index deviations, and instant hand solving powered by a Rust WASM engine.">
+        content="Rules-aware blackjack strategy charts, realtime EVs, Hi-Lo index deviations, and final-total probabilities.">
     <title>Blackjack Strategy Lab</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -17,7 +17,7 @@
             <div class="brand-block">
                 <a class="home-link" href="/" aria-label="Home">MS</a>
                 <div>
-                    <p class="eyebrow">Rust strategy engine</p>
+                    <p class="eyebrow">Realtime EV engine</p>
                     <h1>Blackjack Strategy Lab</h1>
                 </div>
             </div>
@@ -187,10 +187,24 @@
                         <h2 id="chart-title">6D S17, DAS, Peek</h2>
                     </div>
                     <div class="toolbar-actions">
+                        <label class="toolbar-select">
+                            <span>View</span>
+                            <select id="view-mode">
+                                <option value="strategy">Strategy</option>
+                                <option value="ev">EV + probs</option>
+                            </select>
+                        </label>
                         <label class="mini-switch">
                             <input id="show-indices-toggle" type="checkbox" checked>
                             <span>Indices</span>
                         </label>
+                        <div class="index-range" aria-label="Visible index range">
+                            <span>Index range</span>
+                            <input id="index-min" type="number" value="-10" min="-30" max="30" step="0.25"
+                                aria-label="Minimum index">
+                            <input id="index-max" type="number" value="10" min="-30" max="30" step="0.25"
+                                aria-label="Maximum index">
+                        </div>
                         <label class="mini-switch">
                             <input id="reverse-26-toggle" type="checkbox">
                             <span>Reverse 2-6</span>

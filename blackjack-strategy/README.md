@@ -33,6 +33,8 @@ cp target/wasm32-unknown-unknown/release/blackjack_solver.wasm ../assets/blackja
 - DAS, HSA, RSA, resplits, charlie bonuses, blackjack payout variants
 - Per-hand, per-wager, and two-tier optimization modes
 - Hi-Lo true count with common index deviations
+- EV/probability view with legal-action EVs, decision gap, and final-total/bust distributions
+- Count indexes calculated from EV crossover points and filterable by visible index range
 - Reverse 2-6 dealer-column order: `6 5 4 3 2 7 8 9 10 A`
 
 The app runs entirely in the browser. There is no server component.
