@@ -86,6 +86,7 @@ function loadSolver() {
 globalThis.__solverTest = {
     PRESETS,
     CARDS_PER_DECK_BY_RANK,
+    analyzeActualHand,
     analyzeCell,
     chartCell,
     deriveIndexes,
@@ -147,6 +148,18 @@ test("default index rounding shows the 16v10 crossover as 0, not +1", () => {
 
     solver.elements.get("index-decimals").value = "2";
     assert.match(solver.formatIndex(standIndex.i), /^\+0\.[0-4][0-9]$/);
+});
+
+test("single deck 77 vs dealer 10 removes player and dealer cards throughout EV recursion", () => {
+    const solver = loadSolver();
+    const config = { ...solver.PRESETS.single };
+    const actual = solver.analyzeActualHand([7, 7], 10, config, 0);
+    const chart = solver.analyzeCell("pair", 7, 10, config, 0);
+
+    assert.equal(actual.best.code, "S");
+    assert.equal(chart.best.code, "S");
+    assert.ok(solver.evForCode(actual, "S") > solver.evForCode(actual, "H"));
+    assert.ok(solver.evForCode(chart, "S") > solver.evForCode(chart, "H"));
 });
 
 test("full chart emits finite EVs, normalized probabilities, and bounded indexes", () => {

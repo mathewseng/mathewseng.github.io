@@ -14,6 +14,9 @@ const DEALER_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const CARD_RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const CARDS_PER_DECK_BY_RANK = { 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 16, 11: 4 };
 const HI_LO_TAG = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 0, 8: 0, 9: 0, 10: -1, 11: -1 };
+const COUNT_TILT = 0.075;
+const COMPOSITION_SOLVER_MAX_DECKS = 1;
+const COMPOSITION_RECHECK_MARGIN = 0.005;
 const HARD_ROWS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const SOFT_ROWS = [2, 3, 4, 5, 6, 7, 8, 9];
 const PAIR_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -605,10 +608,9 @@ function roundCount(value) {
 }
 
 function rankProbabilities(config, trueCount, deadCards = []) {
-    const tilt = 0.075;
     const finiteDecks = finiteDeckCount(config);
     const dead = deadCards.reduce((counts, rank) => {
-        const normalized = rank === 11 ? 11 : Math.min(10, rank);
+        const normalized = normalizeCardRank(rank);
         counts[normalized] = (counts[normalized] || 0) + 1;
         return counts;
     }, {});
@@ -619,7 +621,7 @@ function rankProbabilities(config, trueCount, deadCards = []) {
             : CARDS_PER_DECK_BY_RANK[rank];
         return {
             rank,
-            weight: base * Math.exp(-tag * trueCount * tilt),
+            weight: base * Math.exp(-tag * trueCount * COUNT_TILT),
         };
     });
     const total = weights.reduce((sum, item) => sum + item.weight, 0);
@@ -646,7 +648,29 @@ function analyzeCell(kind, value, dealer, config, trueCount) {
     const key = `${JSON.stringify(config)}|${roundCount(trueCount)}|${kind}|${value}|${dealer}`;
     if (analysisCache.has(key)) return analysisCache.get(key);
 
-    const deadCards = [...representativeHand(kind, value), dealer];
+    const approximate = analyzeCellApproximate(kind, value, dealer, config, trueCount);
+    if (!usesCompositionSolver(config) || approximate.margin > COMPOSITION_RECHECK_MARGIN) {
+        analysisCache.set(key, approximate);
+        return approximate;
+    }
+
+    const startingCards = representativeHand(kind, value);
+    const exact = analyzeCompositionHand(startingCards, dealer, config, trueCount);
+    if (exact) {
+        analysisCache.set(key, exact);
+        return exact;
+    }
+
+    analysisCache.set(key, approximate);
+    return approximate;
+}
+
+function analyzeCellApproximate(kind, value, dealer, config, trueCount) {
+    const key = `${JSON.stringify(config)}|approx|${roundCount(trueCount)}|${kind}|${value}|${dealer}`;
+    if (analysisCache.has(key)) return analysisCache.get(key);
+
+    const startingCards = representativeHand(kind, value);
+    const deadCards = [...startingCards, dealer];
     const probs = rankProbabilities(config, trueCount, deadCards);
     const dealerDist = dealerDistribution(dealer, config, probs);
     const initial = stateForRow(kind, value);
@@ -709,9 +733,15 @@ function representativeHand(kind, value) {
 }
 
 function analyzeActualHand(cards, dealer, config, trueCount) {
-    const normalizedCards = cards.map((card) => (card === 11 ? 11 : Math.min(10, card)));
+    const normalizedCards = cards.map(normalizeCardRank);
     const key = `${JSON.stringify(config)}|actual|${roundCount(trueCount)}|${normalizedCards.join("-")}|${dealer}`;
     if (analysisCache.has(key)) return analysisCache.get(key);
+
+    const exact = analyzeCompositionHand(normalizedCards, dealer, config, trueCount);
+    if (exact) {
+        analysisCache.set(key, exact);
+        return exact;
+    }
 
     const probs = rankProbabilities(config, trueCount, [...normalizedCards, dealer]);
     const dealerDist = dealerDistribution(dealer, config, probs);
@@ -755,6 +785,275 @@ function analyzeActualHand(cards, dealer, config, trueCount) {
     };
     analysisCache.set(key, result);
     return result;
+}
+
+function analyzeCompositionHand(cards, dealer, config, trueCount) {
+    if (!usesCompositionSolver(config)) return null;
+
+    const normalizedCards = cards.map(normalizeCardRank);
+    const counts = visibleDeckCounts(config, [...normalizedCards, dealer]);
+    if (!counts) return null;
+
+    const scenarios = initialDealerScenarios(counts, dealer, config, trueCount);
+    if (!scenarios.length) return null;
+
+    const initial = handStateFromCards(normalizedCards);
+    const memo = { dealer: new Map(), player: new Map() };
+    const evs = [];
+
+    const stand = standEvExact(initial, dealer, scenarios, config, trueCount, memo);
+    evs.push({ code: "S", ev: stand, label: ACTIONS.S.label, distribution: standDistribution(initial) });
+
+    const hit = hitEvExact(initial, dealer, scenarios, config, trueCount, memo);
+    evs.push({ code: "H", ev: hit.ev, label: ACTIONS.H.label, distribution: hit.distribution });
+
+    const hardTotal = initial.total;
+    const lowTotal = normalizedCards.reduce((sum, card) => sum + (card === 11 ? 1 : card), 0);
+    const handKind = initial.soft > 0 ? "soft" : "hard";
+    if (normalizedCards.length === 2 && canDoubleJS(config, handKind, hardTotal, lowTotal)) {
+        const doubled = doubleEvExact(initial, dealer, scenarios, config, trueCount, memo);
+        const code = stand > hit.ev ? "Ds" : "D";
+        evs.push({ code, ev: doubled.ev, label: ACTIONS[code].label, distribution: doubled.distribution });
+    }
+
+    if (config.surrender !== 0 && normalizedCards.length === 2 && surrenderAllowedActual(initial, dealer, config)) {
+        const code = stand > hit.ev ? "Rs" : "Rh";
+        evs.push({ code, ev: -0.5, label: ACTIONS[code].label, distribution: { surrender: 1 } });
+    }
+
+    if (normalizedCards.length === 2 && normalizedCards[0] === normalizedCards[1]) {
+        const split = splitEvExact(normalizedCards[0], dealer, scenarios, config, trueCount, memo);
+        evs.push({ code: "P", ev: split.ev, label: ACTIONS.P.label, distribution: split.distribution });
+    }
+
+    evs.sort((a, b) => b.ev - a.ev);
+    const best = evs[0];
+    const second = evs[1] || best;
+    return {
+        best,
+        evs,
+        margin: Math.max(0, best.ev - second.ev),
+        distribution: normalizeDistribution(best.distribution),
+    };
+}
+
+function usesCompositionSolver(config) {
+    const decks = finiteDeckCount(config);
+    return Boolean(decks && decks <= COMPOSITION_SOLVER_MAX_DECKS);
+}
+
+function normalizeCardRank(rank) {
+    return rank === 11 ? 11 : Math.min(10, Number(rank));
+}
+
+function visibleDeckCounts(config, visibleCards) {
+    const decks = finiteDeckCount(config);
+    if (!decks) return null;
+    const counts = {};
+    CARD_RANKS.forEach((rank) => {
+        counts[rank] = decks * CARDS_PER_DECK_BY_RANK[rank];
+    });
+    for (const card of visibleCards) {
+        const rank = normalizeCardRank(card);
+        counts[rank] -= 1;
+        if (counts[rank] < 0) return null;
+    }
+    return counts;
+}
+
+function initialDealerScenarios(counts, dealer, config, trueCount) {
+    const blockedRank = blockedDealerHoleRank(dealer, config);
+    const draws = weightedDraws(counts, trueCount, (rank) => rank !== blockedRank);
+    return normalizeScenarios(
+        draws.map(({ rank, p }) => ({
+            w: p,
+            hole: rank,
+            counts: removeCountRank(counts, rank),
+        })),
+    );
+}
+
+function blockedDealerHoleRank(dealer, config) {
+    const shouldPeek =
+        config.peek === 0 ||
+        config.peek === 3 ||
+        (config.peek === 2 && dealer === 11);
+    if (!shouldPeek) return null;
+    if (dealer === 10) return 11;
+    if (dealer === 11) return 10;
+    return null;
+}
+
+function weightedDraws(counts, trueCount, filter = () => true) {
+    const draws = [];
+    let total = 0;
+    CARD_RANKS.forEach((rank) => {
+        if (counts[rank] <= 0 || !filter(rank)) return;
+        const weight = counts[rank] * Math.exp(-HI_LO_TAG[rank] * trueCount * COUNT_TILT);
+        if (weight <= 0) return;
+        draws.push({ rank, weight });
+        total += weight;
+    });
+    if (!total) return [];
+    return draws.map((item) => ({ rank: item.rank, p: item.weight / total }));
+}
+
+function removeCountRank(counts, rank) {
+    const next = { ...counts };
+    next[rank] = Math.max(0, next[rank] - 1);
+    return next;
+}
+
+function countTotal(counts) {
+    return CARD_RANKS.reduce((sum, rank) => sum + counts[rank], 0);
+}
+
+function countKey(counts) {
+    return CARD_RANKS.map((rank) => counts[rank]).join(",");
+}
+
+function normalizeScenarios(scenarios) {
+    const merged = new Map();
+    scenarios.forEach((scenario) => {
+        if (!scenario || scenario.w <= 0) return;
+        const key = `${scenario.hole}|${countKey(scenario.counts)}`;
+        const current = merged.get(key);
+        if (current) current.w += scenario.w;
+        else merged.set(key, { ...scenario, counts: { ...scenario.counts } });
+    });
+    const total = [...merged.values()].reduce((sum, scenario) => sum + scenario.w, 0);
+    if (!total) return [];
+    return [...merged.values()]
+        .sort((a, b) => a.hole - b.hole || countKey(a.counts).localeCompare(countKey(b.counts)))
+        .map((scenario) => ({ ...scenario, w: scenario.w / total }));
+}
+
+function scenarioKey(scenarios) {
+    return scenarios
+        .map((scenario) => `${scenario.hole}:${scenario.w.toFixed(8)}:${countKey(scenario.counts)}`)
+        .join("|");
+}
+
+function drawTransitionsFromScenarios(scenarios, trueCount) {
+    const buckets = new Map();
+    scenarios.forEach((scenario) => {
+        if (countTotal(scenario.counts) <= 0) return;
+        weightedDraws(scenario.counts, trueCount).forEach(({ rank, p }) => {
+            const bucket = buckets.get(rank) || [];
+            bucket.push({
+                w: scenario.w * p,
+                hole: scenario.hole,
+                counts: removeCountRank(scenario.counts, rank),
+            });
+            buckets.set(rank, bucket);
+        });
+    });
+
+    return [...buckets.entries()]
+        .map(([rank, bucket]) => {
+            const p = bucket.reduce((sum, scenario) => sum + scenario.w, 0);
+            return { rank, p, scenarios: normalizeScenarios(bucket) };
+        })
+        .filter((item) => item.p > 0 && item.scenarios.length)
+        .sort((a, b) => a.rank - b.rank);
+}
+
+function standEvExact(hand, dealer, scenarios, config, trueCount, memo) {
+    if (hand.bust) return -1;
+    return scenarios.reduce((ev, scenario) => {
+        const start = dealer === 11 ? { total: 11, soft: 1 } : { total: dealer, soft: 0 };
+        const afterHole = addDealerRank(start, scenario.hole);
+        const dist = dealerDrawDistributionExact(afterHole.total, afterHole.soft, scenario.counts, config, trueCount, memo.dealer);
+        return ev + scenario.w * standEv(hand, dist);
+    }, 0);
+}
+
+function hitEvExact(hand, dealer, scenarios, config, trueCount, memo) {
+    const distribution = {};
+    let ev = 0;
+    drawTransitionsFromScenarios(scenarios, trueCount).forEach(({ rank, p, scenarios: nextScenarios }) => {
+        const next = addRank(hand, rank);
+        const branch = continuationExact(next, dealer, nextScenarios, config, trueCount, memo, false);
+        ev += p * branch.ev;
+        mergeDistribution(distribution, branch.distribution, p);
+    });
+    return { ev, distribution: normalizeDistribution(distribution) };
+}
+
+function doubleEvExact(hand, dealer, scenarios, config, trueCount, memo) {
+    const distribution = {};
+    let ev = 0;
+    drawTransitionsFromScenarios(scenarios, trueCount).forEach(({ rank, p, scenarios: nextScenarios }) => {
+        const next = addRank(hand, rank);
+        const stand = next.bust ? -2 : 2 * standEvExact(next, dealer, nextScenarios, config, trueCount, memo);
+        ev += p * stand;
+        mergeDistribution(distribution, next.bust ? { bust: 1 } : standDistribution(next), p);
+    });
+    return { ev, distribution: normalizeDistribution(distribution) };
+}
+
+function splitEvExact(pairRank, dealer, scenarios, config, trueCount, memo) {
+    const distribution = {};
+    let perHandEv = 0;
+    drawTransitionsFromScenarios(scenarios, trueCount).forEach(({ rank, p, scenarios: nextScenarios }) => {
+        const starting = addRank(splitSeed(pairRank), rank);
+        const branch =
+            pairRank === 11 && !config.hsa
+                ? {
+                    ev: standEvExact(starting, dealer, nextScenarios, config, trueCount, memo),
+                    distribution: standDistribution(starting),
+                }
+                : continuationExact(starting, dealer, nextScenarios, config, trueCount, memo, Boolean(config.das));
+        perHandEv += p * branch.ev;
+        mergeDistribution(distribution, branch.distribution, p);
+    });
+    return { ev: perHandEv * 2, distribution: normalizeDistribution(distribution) };
+}
+
+function continuationExact(hand, dealer, scenarios, config, trueCount, memo, canDouble) {
+    if (hand.bust) return { ev: -1, distribution: { bust: 1 } };
+    if (config.charlie && hand.cards >= config.charlie) {
+        return { ev: 1, distribution: standDistribution(hand) };
+    }
+    const key = `${hand.total}|${hand.soft}|${hand.cards}|${canDouble ? 1 : 0}|${scenarioKey(scenarios)}`;
+    if (memo.player.has(key)) return memo.player.get(key);
+
+    const stand = {
+        code: "S",
+        ev: standEvExact(hand, dealer, scenarios, config, trueCount, memo),
+        distribution: standDistribution(hand),
+    };
+    const hit = hitEvExact(hand, dealer, scenarios, config, trueCount, memo);
+    const choices = [{ code: "H", ev: hit.ev, distribution: hit.distribution }, stand];
+    if (canDouble && hand.cards === 2) {
+        const doubled = doubleEvExact(hand, dealer, scenarios, config, trueCount, memo);
+        choices.push({ code: stand.ev > hit.ev ? "Ds" : "D", ev: doubled.ev, distribution: doubled.distribution });
+    }
+
+    choices.sort((a, b) => b.ev - a.ev);
+    const best = choices[0];
+    memo.player.set(key, best);
+    return best;
+}
+
+function dealerDrawDistributionExact(total, soft, counts, config, trueCount, memo) {
+    if (total > 21) return { bust: 1 };
+    const shouldStand = total > 17 || (total === 17 && !(config.h17 && soft > 0));
+    if (shouldStand) return { [String(total)]: 1 };
+    const key = `${total}|${soft}|${countKey(counts)}`;
+    if (memo.has(key)) return memo.get(key);
+    const dist = emptyDealerDistribution();
+    weightedDraws(counts, trueCount).forEach(({ rank, p }) => {
+        const next = addDealerRank({ total, soft }, rank);
+        mergeDistribution(
+            dist,
+            dealerDrawDistributionExact(next.total, next.soft, removeCountRank(counts, rank), config, trueCount, memo),
+            p,
+        );
+    });
+    const normalized = normalizeDistribution(dist);
+    memo.set(key, normalized);
+    return normalized;
 }
 
 function handStateFromCards(cards) {
@@ -976,7 +1275,7 @@ function deriveIndexes(kind, value, dealer, config, baseCode, cacheKey) {
     const indexKey = `${JSON.stringify(config)}|idx|${kind}|${value}|${dealer}|${baseCode}`;
     if (indexCache.has(indexKey)) return indexCache.get(indexKey);
 
-    const baseAnalysis = analyzeCell(kind, value, dealer, config, 0);
+    const baseAnalysis = analyzeCellApproximate(kind, value, dealer, config, 0);
     const candidates = baseAnalysis.evs.filter((item) => canonicalCode(item.code) !== canonicalCode(baseCode));
     const crossings = [];
 
@@ -1041,7 +1340,7 @@ function refineIndexThreshold(kind, value, dealer, config, baseCode, altCode, di
 }
 
 function actionDelta(kind, value, dealer, config, altCode, baseCode, trueCount) {
-    const analysis = analyzeCell(kind, value, dealer, config, trueCount);
+    const analysis = analyzeCellApproximate(kind, value, dealer, config, trueCount);
     return evForCode(analysis, altCode) - evForCode(analysis, baseCode);
 }
 
