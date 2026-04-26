@@ -16,7 +16,8 @@ const CARDS_PER_DECK_BY_RANK = { 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4,
 const HI_LO_TAG = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 0, 8: 0, 9: 0, 10: -1, 11: -1 };
 const COUNT_TILT = 0.075;
 const COMPOSITION_SOLVER_MAX_DECKS = 1;
-const COMPOSITION_RECHECK_MARGIN = 0.005;
+const COMPOSITION_RECHECK_MARGIN = 0.001;
+const CONFIG_SOLVE_DEBOUNCE_MS = 1000;
 const HARD_ROWS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const SOFT_ROWS = [2, 3, 4, 5, 6, 7, 8, 9];
 const PAIR_ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -120,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     wireControls();
     const sharedConfig = applyHashConfig();
     const initialPreset = $("preset-select").value;
-    setConfig(PRESETS[initialPreset] || PRESETS.vegas);
+    setConfig(PRESETS[initialPreset] || PRESETS.vegas, { immediate: true });
     if (sharedConfig) {
         $("reverse-26-toggle").checked = Boolean(sharedConfig.reverse26);
         $("show-indices-toggle").checked = sharedConfig.showIndices !== false;
@@ -155,8 +156,8 @@ function wireControls() {
     });
 
     ["decks-slider", "decks-input"].forEach((id) => {
-        $(id).addEventListener("input", () => onDeckCountChanged(id));
-        $(id).addEventListener("change", () => onDeckCountChanged(id));
+        $(id).addEventListener("input", (event) => onDeckCountChanged(id, event.type));
+        $(id).addEventListener("change", (event) => onDeckCountChanged(id, event.type));
     });
 
     [
@@ -191,15 +192,15 @@ function wireControls() {
         "index-decimals",
         "index-decimals-input",
     ].forEach((id) => {
-        $(id).addEventListener("input", () => {
-            syncSourcePair(id);
-            normalizeIndexRange();
+        $(id).addEventListener("input", (event) => {
+            if (!syncSourcePair(id, event.type)) return;
+            normalizeIndexRange({ sourceId: id, editing: event.type === "input" });
             renderChart();
             refreshSelectedInspector();
             updateCountReadout();
         });
         $(id).addEventListener("change", () => {
-            syncSourcePair(id);
+            if (!syncSourcePair(id, "change")) return;
             normalizeIndexRange();
             renderChart();
             refreshSelectedInspector();
@@ -253,7 +254,7 @@ function wireControls() {
         setPairedControl("decks-remaining", "decks-remaining-input", Math.min(deckCap || 8, remaining), 2);
         syncTrueFromRunning();
         updateCountReadout();
-        solveAndRender();
+        scheduleSolveAndRender();
     });
 
     $("undo-count").addEventListener("click", () => {
@@ -265,7 +266,7 @@ function wireControls() {
         setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
         syncTrueFromRunning();
         updateCountReadout();
-        solveAndRender();
+        scheduleSolveAndRender();
     });
 
     $("reset-count").addEventListener("click", () => {
@@ -278,22 +279,22 @@ function wireControls() {
         setPairedControl("true-count-slider", "true-count-input", 0, countInputDecimals());
         setPairedControl("decks-remaining", "decks-remaining-input", displayDeckCount(collectConfig().decks, 8), 2);
         updateCountReadout();
-        solveAndRender();
+        scheduleSolveAndRender();
     });
 
     ["decks-remaining", "decks-remaining-input"].forEach((id) => {
-        $(id).addEventListener("input", () => onDecksRemainingChanged(id));
-        $(id).addEventListener("change", () => onDecksRemainingChanged(id));
+        $(id).addEventListener("input", (event) => onDecksRemainingChanged(id, event.type));
+        $(id).addEventListener("change", (event) => onDecksRemainingChanged(id, event.type));
     });
 
     ["running-count-slider", "running-count-input"].forEach((id) => {
-        $(id).addEventListener("input", () => onRunningCountChanged(id));
-        $(id).addEventListener("change", () => onRunningCountChanged(id));
+        $(id).addEventListener("input", (event) => onRunningCountChanged(id, event.type));
+        $(id).addEventListener("change", (event) => onRunningCountChanged(id, event.type));
     });
 
     ["true-count-slider", "true-count-input"].forEach((id) => {
-        $(id).addEventListener("input", () => onTrueCountChanged(id));
-        $(id).addEventListener("change", () => onTrueCountChanged(id));
+        $(id).addEventListener("input", (event) => onTrueCountChanged(id, event.type));
+        $(id).addEventListener("change", (event) => onTrueCountChanged(id, event.type));
     });
 
     $("copy-config").addEventListener("click", copyConfig);
@@ -311,39 +312,51 @@ function wireControls() {
     });
 }
 
-function onDeckCountChanged(sourceId) {
-    const value = Math.round(clampNumberFrom(sourceId, 6, 1, 9));
-    setPairedControl("decks-slider", "decks-input", value, 0);
+function onDeckCountChanged(sourceId, eventType = "input") {
+    if (eventType === "input" && isPendingNumberInput(sourceId)) return;
+    const value = Math.round(readControlNumber(sourceId, Number($("decks-slider").value) || 6, 1, 9));
+    setPairedControl("decks-slider", "decks-input", value, 0, {
+        preserveInputId: eventType === "input" ? sourceId : null,
+    });
     onRulesChanged();
 }
 
-function onDecksRemainingChanged(sourceId) {
+function onDecksRemainingChanged(sourceId, eventType = "input") {
+    if (eventType === "input" && isPendingNumberInput(sourceId)) return;
     const max = Number($("decks-remaining").max || 8);
-    const value = clampNumberFrom(sourceId, max, 0.01, max);
-    setPairedControl("decks-remaining", "decks-remaining-input", value, 2);
+    const value = readControlNumber(sourceId, Number($("decks-remaining").value) || max, 0.01, max);
+    setPairedControl("decks-remaining", "decks-remaining-input", value, 2, {
+        preserveInputId: eventType === "input" ? sourceId : null,
+    });
     if (state.countSource === "running") syncTrueFromRunning();
     updateCountReadout();
-    solveAndRender();
+    scheduleSolveAndRender();
 }
 
-function onRunningCountChanged(sourceId) {
+function onRunningCountChanged(sourceId, eventType = "input") {
+    if (eventType === "input" && isPendingNumberInput(sourceId)) return;
     state.countSource = "running";
-    state.runningCount = Math.round(clampNumberFrom(sourceId, state.runningCount, -100, 100));
-    setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
+    state.runningCount = Math.round(readControlNumber(sourceId, state.runningCount, -100, 100));
+    setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0, {
+        preserveInputId: eventType === "input" ? sourceId : null,
+    });
     syncTrueFromRunning();
     updateCountReadout();
-    solveAndRender();
+    scheduleSolveAndRender();
 }
 
-function onTrueCountChanged(sourceId) {
+function onTrueCountChanged(sourceId, eventType = "input") {
+    if (eventType === "input" && isPendingNumberInput(sourceId)) return;
     state.countSource = "true";
-    state.trueCount = clampNumberFrom(sourceId, state.trueCount, -26, 26);
-    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
+    state.trueCount = readControlNumber(sourceId, state.trueCount, -26, 26);
+    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals(), {
+        preserveInputId: eventType === "input" ? sourceId : null,
+    });
     updateCountReadout();
-    solveAndRender();
+    scheduleSolveAndRender();
 }
 
-function syncSourcePair(sourceId) {
+function syncSourcePair(sourceId, eventType = "input") {
     const pairs = {
         "index-min-range": ["index-min-range", "index-min-input"],
         "index-min-input": ["index-min-range", "index-min-input"],
@@ -353,12 +366,17 @@ function syncSourcePair(sourceId) {
         "index-decimals-input": ["index-decimals", "index-decimals-input"],
     };
     const pair = pairs[sourceId];
-    if (!pair) return;
+    if (!pair) return true;
+    if (eventType === "input" && isPendingNumberInput(sourceId)) return false;
     const decimals = sourceId.includes("decimals") ? 0 : indexDecimals();
+    const fallback = Number($(pair[0]).value) || 0;
     const value = sourceId.includes("decimals")
-        ? Math.round(clampNumberFrom(sourceId, 0, 0, 3))
-        : clampNumberFrom(sourceId, 0, -26, 26);
-    setPairedControl(pair[0], pair[1], value, decimals);
+        ? Math.round(readControlNumber(sourceId, fallback, 0, 3))
+        : readControlNumber(sourceId, fallback, -26, 26);
+    setPairedControl(pair[0], pair[1], value, decimals, {
+        preserveInputId: eventType === "input" ? sourceId : null,
+    });
+    return true;
 }
 
 function onRulesChanged() {
@@ -367,10 +385,10 @@ function onRulesChanged() {
     }
     clampDeckSlider();
     updateCountReadout();
-    solveAndRender();
+    scheduleSolveAndRender();
 }
 
-function setConfig(config) {
+function setConfig(config, options = {}) {
     state.applyingPreset = true;
     setPairedControl("decks-slider", "decks-input", config.decks >= INFINITE_DECKS ? 9 : clamp(config.decks, 1, 8), 0);
     document.querySelector(`input[name='soft17'][value='${config.h17}']`).checked = true;
@@ -386,7 +404,8 @@ function setConfig(config) {
     $("rsa-toggle").checked = Boolean(config.rsa);
     clampDeckSlider();
     state.applyingPreset = false;
-    solveAndRender();
+    if (options.immediate) solveAndRender();
+    else scheduleSolveAndRender();
 }
 
 function collectConfig() {
@@ -412,17 +431,30 @@ function clamp(value, min, max) {
 }
 
 function clampNumberFrom(id, fallback, min, max) {
-    const parsed = Number($(id).value);
+    return readControlNumber(id, fallback, min, max);
+}
+
+function readControlNumber(id, fallback, min, max) {
+    const control = $(id);
+    const raw = control?.value?.trim() ?? "";
+    const parsed = raw === "" ? NaN : Number(raw);
     return clamp(Number.isFinite(parsed) ? parsed : fallback, min, max);
 }
 
-function setPairedControl(rangeId, inputId, value, decimals = null) {
+function isPendingNumberInput(id) {
+    const control = $(id);
+    if (!control || control.type !== "number") return false;
+    const raw = control.value.trim();
+    return ["", "-", "+", ".", "-.", "+."].includes(raw) || !Number.isFinite(Number(raw));
+}
+
+function setPairedControl(rangeId, inputId, value, decimals = null, options = {}) {
     const range = $(rangeId);
     const input = $(inputId);
     const numeric = Number(value);
     const formatted = decimals === null ? String(numeric) : numeric.toFixed(decimals);
-    if (range) range.value = formatted;
-    if (input) input.value = formatted;
+    if (range && options.preserveInputId !== rangeId) range.value = formatted;
+    if (input && options.preserveInputId !== inputId) input.value = formatted;
 }
 
 function precisionStep(decimals) {
@@ -453,7 +485,9 @@ function displayDeckCount(decks, fallback = 6) {
 function syncTrueFromRunning() {
     const decksLeft = Math.max(0.01, Number($("decks-remaining").value));
     state.trueCount = clamp(state.runningCount / decksLeft, -26, 26);
-    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
+    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals(), {
+        preserveInputId: document.activeElement?.id,
+    });
 }
 
 function clampDeckSlider() {
@@ -461,13 +495,14 @@ function clampDeckSlider() {
     const deckCap = finiteDeckCount({ decks });
     const slider = $("decks-remaining");
     const input = $("decks-remaining-input");
+    const activeId = document.activeElement?.id;
     slider.max = String(deckCap || 8);
     input.max = String(deckCap || 8);
     if (Number(slider.value) > Number(slider.max) || state.seenCards === 0) {
-        setPairedControl("decks-remaining", "decks-remaining-input", displayDeckCount(decks, 8), 2);
+        setPairedControl("decks-remaining", "decks-remaining-input", displayDeckCount(decks, 8), 2, { preserveInputId: activeId });
     }
     $("decks-value").textContent = deckLabel(decks);
-    setPairedControl("decks-slider", "decks-input", decks >= INFINITE_DECKS ? 9 : decks, 0);
+    setPairedControl("decks-slider", "decks-input", decks >= INFINITE_DECKS ? 9 : decks, 0, { preserveInputId: activeId });
     if (state.countSource === "running") syncTrueFromRunning();
 }
 
@@ -490,8 +525,20 @@ async function loadReport() {
 }
 
 let solveFrame = 0;
+let solveTimer = 0;
+
+function scheduleSolveAndRender(delay = CONFIG_SOLVE_DEBOUNCE_MS) {
+    clearTimeout(solveTimer);
+    $("metric-speed").textContent = "Queued";
+    solveTimer = setTimeout(() => {
+        solveTimer = 0;
+        solveAndRender();
+    }, delay);
+}
 
 function solveAndRender() {
+    clearTimeout(solveTimer);
+    solveTimer = 0;
     cancelAnimationFrame(solveFrame);
     solveFrame = requestAnimationFrame(() => {
         const config = collectConfig();
@@ -592,10 +639,12 @@ function rowLabel(kind, value) {
 }
 
 function dealerLabel(value) {
+    if (value === 10) return "T";
     return value === 11 ? "A" : String(value);
 }
 
 function dealerValueFromLabel(label) {
+    if (label === "T") return 10;
     return label === "A" ? 11 : Number(label);
 }
 
@@ -1406,7 +1455,7 @@ function renderChart() {
     $("chart-panel").classList.toggle("index-hidden", !$("show-indices-toggle").checked);
 
     const dealerOrder = $("reverse-26-toggle").checked
-        ? ["6", "5", "4", "3", "2", "7", "8", "9", "10", "A"]
+        ? ["6", "5", "4", "3", "2", "7", "8", "9", "T", "A"]
         : state.chart.dealer;
 
     const bustByDealer = new Map((state.chart.dealerBust || []).map((item) => [item.dealer, item.bust]));
@@ -1542,9 +1591,9 @@ function renderHandSolver() {
         return;
     }
 
-    const dealerLabel = state.dealer === 11 ? "A" : String(state.dealer);
+    const dealerLabelText = dealerLabel(state.dealer);
     const row = state.chart.rows.find((item) => item.id === result.rowId);
-    const cell = row?.cells.find((item) => item.dealer === dealerLabel);
+    const cell = row?.cells.find((item) => item.dealer === dealerLabelText);
 
     if (!row || !cell) return;
 
@@ -1574,9 +1623,9 @@ function renderHandSolver() {
             })
             .join("; ")
         : "No listed Hi-Lo deviation.";
-    $("decision-detail").textContent = `${state.hand.map(cardLabel).join("")} vs ${dealerLabel}. EV ${formatSigned(actualCell.ev)} at TC ${trueCount.toFixed(2)}. ${indexText}`;
+    $("decision-detail").textContent = `${state.hand.map(cardLabel).join("")} vs ${dealerLabelText}. EV ${formatSigned(actualCell.ev)} at TC ${trueCount.toFixed(2)}. ${indexText}`;
 
-    state.selected = { rowId: row.id, rowLabel: row.label, dealer: dealerLabel };
+    state.selected = { rowId: row.id, rowLabel: row.label, dealer: dealerLabelText };
     showCellDetail({ ...row, label: state.hand.map(cardLabel).join("") }, actualCell);
     markSelectedCell();
 }
@@ -1679,15 +1728,16 @@ function refreshSelectedInspector() {
     if (row && cell) showCellDetail(row, cell);
 }
 
-function normalizeIndexRange() {
+function normalizeIndexRange(options = {}) {
     updatePrecisionSteps();
     const decimals = indexDecimals();
     let min = roundToDecimals(clamp($("index-min-range").value, -26, 26), decimals);
     let max = roundToDecimals(clamp($("index-max-range").value, -26, 26), decimals);
     if (min > max) [min, max] = [max, min];
-    setPairedControl("index-min-range", "index-min-input", min, decimals);
-    setPairedControl("index-max-range", "index-max-input", max, decimals);
-    setPairedControl("index-decimals", "index-decimals-input", decimals, 0);
+    const preserveInputId = options.editing ? options.sourceId : null;
+    setPairedControl("index-min-range", "index-min-input", min, decimals, { preserveInputId });
+    setPairedControl("index-max-range", "index-max-input", max, decimals, { preserveInputId });
+    setPairedControl("index-decimals", "index-decimals-input", decimals, 0, { preserveInputId });
     $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
     $("index-decimals-value").textContent = String(indexDecimals());
     const low = ((min + 26) / 52) * 100;
@@ -1806,6 +1856,7 @@ function classifyHand(cards) {
 }
 
 function cardLabel(card) {
+    if (card === 10) return "T";
     return card === 11 ? "A" : String(card);
 }
 
@@ -1830,17 +1881,20 @@ function renderMetrics() {
 function updateCountReadout() {
     updatePrecisionSteps();
     const tc = computeTrueCount();
+    const activeId = document.activeElement?.id;
     $("running-count").textContent = String(state.runningCount);
     $("decks-left").textContent = Number($("decks-remaining").value).toFixed(2);
-    $("decks-remaining-input").value = Number($("decks-remaining").value).toFixed(2);
+    if (activeId !== "decks-remaining-input") {
+        $("decks-remaining-input").value = Number($("decks-remaining").value).toFixed(2);
+    }
     $("running-count-value").textContent = String(state.runningCount);
     $("true-count-value").textContent = formatCount(tc.exact);
     $("applied-count").textContent = $("apply-count-toggle").checked ? formatCount(tc.exact) : "Off";
     $("metric-true-count").textContent = $("apply-count-toggle").checked ? formatCount(tc.exact) : "Off";
-    setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
-    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
+    setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0, { preserveInputId: activeId });
+    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals(), { preserveInputId: activeId });
     $("index-decimals-value").textContent = String(indexDecimals());
-    setPairedControl("index-decimals", "index-decimals-input", indexDecimals(), 0);
+    setPairedControl("index-decimals", "index-decimals-input", indexDecimals(), 0, { preserveInputId: activeId });
     $("index-range-value").textContent = `${formatIndex(getIndexRange().min)} to ${formatIndex(getIndexRange().max)}`;
 }
 
