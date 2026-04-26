@@ -178,10 +178,11 @@ h2 {
     grid-template-columns: minmax(500px, 1fr) minmax(220px, 250px) minmax(220px, 250px) minmax(260px, 320px);
     grid-template-areas:
         "chart solver count rules"
+        "settings settings settings settings"
         "report report report report";
     gap: 8px;
     margin-top: 8px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .surface {
@@ -200,8 +201,7 @@ h2 {
     grid-area: chart;
     min-width: 0;
     overflow: hidden;
-    position: sticky;
-    top: 72px;
+    position: static;
 }
 
 .solver-panel {
@@ -214,6 +214,11 @@ h2 {
     min-width: 0;
 }
 
+.chart-settings-panel {
+    grid-area: settings;
+    min-width: 0;
+}
+
 .report-panel {
     grid-area: report;
     min-width: 0;
@@ -223,6 +228,7 @@ h2 {
 .chart-panel,
 .solver-panel,
 .count-panel,
+.chart-settings-panel,
 .report-panel {
     padding: 4px;
     border-radius: var(--radius);
@@ -1227,30 +1233,41 @@ input[type="range"] {
 }
 
 @media (min-width: 1241px) {
+    .chart-panel,
+    .solver-panel,
+    .count-panel,
+    .rules-panel {
+        height: clamp(560px, calc(100vh - 184px), 900px);
+        min-height: 0;
+    }
+
+    .chart-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
     .chart-toolbar {
-        grid-template-columns: 1fr;
-        align-items: start;
+        grid-template-columns: max-content minmax(0, 1fr);
+        align-items: center;
         gap: 5px;
-        margin-bottom: 4px;
+        margin-bottom: 0;
     }
 
     .toolbar-actions {
-        grid-template-columns: minmax(100px, 0.9fr) minmax(74px, 0.7fr) minmax(124px, 1fr) minmax(70px, 0.65fr);
+        grid-template-columns: minmax(130px, 0.8fr) minmax(110px, 0.55fr) minmax(420px, 2.3fr) minmax(180px, 0.9fr) minmax(110px, 0.55fr) minmax(90px, 0.5fr);
     }
 
     .index-range {
-        grid-column: 1 / -1;
+        grid-column: auto;
     }
 
     .solver-panel,
     .count-panel,
     .rules-panel {
-        max-height: calc(100vh - 84px);
         overflow: auto;
         scrollbar-color: rgba(0, 184, 155, 0.42) transparent;
     }
 
-    .chart-panel .eyebrow,
     .solver-panel .eyebrow,
     .count-panel .eyebrow,
     .rules-panel .eyebrow {
@@ -1269,10 +1286,23 @@ input[type="range"] {
         margin-bottom: 5px;
     }
 
+    .chart-heading {
+        flex: 0 0 auto;
+    }
+
     .chart-scroll {
         --chart-cell-h: clamp(14px, 1.75vh, 19px);
         --chart-cell-w: clamp(21px, 2.6vh, 28.5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1 1 auto;
+        min-height: 0;
         padding: 4px;
+    }
+
+    .legend-bar {
+        flex: 0 0 auto;
     }
 
     .strategy-table .row-head {
@@ -1405,6 +1435,7 @@ input[type="range"] {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         grid-template-areas:
             "chart chart"
+            "settings settings"
             "rules solver"
             "count count"
             "report report";
@@ -1487,6 +1518,7 @@ input[type="range"] {
         grid-template-columns: 1fr;
         grid-template-areas:
             "chart"
+            "settings"
             "solver"
             "count"
             "rules"
@@ -1497,6 +1529,7 @@ input[type="range"] {
     .chart-panel,
     .solver-panel,
     .count-panel,
+    .chart-settings-panel,
     .report-panel {
         padding: 8px;
         scroll-margin-top: 58px;
@@ -1682,6 +1715,7 @@ input[type="range"] {
     .rules-panel,
     .solver-panel,
     .count-panel,
+    .chart-settings-panel,
     .report-panel {
         padding: 6px;
     }
