@@ -175,12 +175,10 @@ h2 {
 
 .workspace {
     display: grid;
-    grid-template-columns: minmax(520px, 1fr) minmax(310px, 380px);
+    grid-template-columns: minmax(500px, 1fr) minmax(220px, 250px) minmax(220px, 250px) minmax(260px, 320px);
     grid-template-areas:
-        "chart rules"
-        "chart solver"
-        "chart count"
-        "chart report";
+        "chart solver count rules"
+        "report report report report";
     gap: 8px;
     margin-top: 8px;
     align-items: start;
@@ -1228,7 +1226,181 @@ input[type="range"] {
     text-align: right;
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 1241px) {
+    .chart-toolbar {
+        grid-template-columns: 1fr;
+        align-items: start;
+        gap: 5px;
+        margin-bottom: 4px;
+    }
+
+    .toolbar-actions {
+        grid-template-columns: minmax(100px, 0.9fr) minmax(74px, 0.7fr) minmax(124px, 1fr) minmax(70px, 0.65fr);
+    }
+
+    .index-range {
+        grid-column: 1 / -1;
+    }
+
+    .solver-panel,
+    .count-panel,
+    .rules-panel {
+        max-height: calc(100vh - 84px);
+        overflow: auto;
+        scrollbar-color: rgba(0, 184, 155, 0.42) transparent;
+    }
+
+    .chart-panel .eyebrow,
+    .solver-panel .eyebrow,
+    .count-panel .eyebrow,
+    .rules-panel .eyebrow {
+        display: none;
+    }
+
+    #chart-title,
+    .solver-panel h2,
+    .count-panel h2,
+    .rules-panel h2 {
+        font-size: 0.95rem;
+    }
+
+    .panel-heading {
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .chart-scroll {
+        --chart-cell-h: clamp(14px, 1.75vh, 19px);
+        --chart-cell-w: clamp(21px, 2.6vh, 28.5px);
+        padding: 4px;
+    }
+
+    .strategy-table .row-head {
+        width: 32px;
+        font-size: 0.62rem;
+    }
+
+    .dealer-card {
+        font-size: 0.58rem;
+    }
+
+    .dealer-bust {
+        margin-top: 1px;
+        font-size: 0.3rem;
+    }
+
+    .action-code {
+        font-size: 0.48rem;
+    }
+
+    .index-badge {
+        font-size: 0.2rem;
+    }
+
+    .legend-bar {
+        margin-top: 4px;
+    }
+
+    .legend-item {
+        min-height: 20px;
+        grid-template-columns: 24px max-content;
+    }
+
+    .legend-label {
+        padding: 0 6px;
+        font-size: 0.58rem;
+    }
+
+    .solver-panel .control-field,
+    .count-panel .range-field,
+    .rules-panel .control-field,
+    .rules-panel .range-field {
+        gap: 5px;
+        margin-bottom: 9px;
+    }
+
+    .toggle-grid {
+        gap: 6px;
+        margin: 9px 0;
+    }
+
+    .advanced-grid {
+        gap: 7px;
+    }
+
+    .switch-line {
+        min-height: 34px;
+        padding: 6px 9px;
+    }
+
+    .card-pad {
+        gap: 5px;
+        margin-bottom: 10px;
+    }
+
+    .card-pad button,
+    .count-buttons button,
+    .secondary-button {
+        min-height: 34px;
+    }
+
+    .hand-tray {
+        min-height: 46px;
+        margin-bottom: 8px;
+        padding: 6px;
+    }
+
+    .hand-card {
+        width: 34px;
+        height: 42px;
+    }
+
+    .decision-card {
+        grid-template-columns: 48px 1fr;
+        gap: 8px;
+        padding: 9px;
+    }
+
+    .decision-code {
+        min-height: 48px;
+        font-size: 1.3rem;
+    }
+
+    .cell-inspector {
+        margin-top: 9px;
+        padding-top: 9px;
+    }
+
+    .ev-breakdown,
+    .prob-breakdown {
+        gap: 5px;
+        margin-top: 8px;
+    }
+
+    .ev-row,
+    .prob-row {
+        grid-template-columns: 30px minmax(0, 1fr) 48px;
+        gap: 6px;
+        font-size: 0.72rem;
+    }
+
+    .count-readout {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .count-readout > div {
+        padding: 7px 8px;
+    }
+
+    .count-buttons {
+        gap: 6px;
+        margin: 10px 0;
+    }
+}
+
+@media (max-width: 1240px) {
     .workspace {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         grid-template-areas:
