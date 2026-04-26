@@ -72,8 +72,12 @@
 
                 <div class="control-field">
                     <span>Decks <strong id="decks-value" class="inline-value">6</strong></span>
-                    <input id="decks-slider" class="tick-slider" type="range" min="1" max="9" step="1" value="6"
-                        list="deck-ticks" aria-label="Deck count">
+                    <div class="range-input-row">
+                        <input id="decks-slider" class="tick-slider" type="range" min="1" max="9" step="1" value="6"
+                            list="deck-ticks" aria-label="Deck count">
+                        <input id="decks-input" class="number-box" type="number" min="1" max="9" step="1" value="6"
+                            aria-label="Deck count number" title="Use 9 for infinite decks">
+                    </div>
                     <datalist id="deck-ticks">
                         <option value="1" label="1"></option>
                         <option value="2" label="2"></option>
@@ -214,11 +218,19 @@
                                 <input id="index-max-range" type="range" value="8" min="-26" max="26" step="0.01"
                                     aria-label="Maximum index">
                             </div>
+                            <div class="number-pair">
+                                <label>Low <input id="index-min-input" class="number-box" type="number" value="-3"
+                                        min="-26" max="26" step="1" aria-label="Minimum index number"></label>
+                                <label>High <input id="index-max-input" class="number-box" type="number" value="8"
+                                        min="-26" max="26" step="1" aria-label="Maximum index number"></label>
+                            </div>
                         </div>
                         <label class="toolbar-select compact-select">
                             <span>Decimals</span>
                             <input id="index-decimals" type="range" value="0" min="0" max="3" step="1"
                                 aria-label="Index decimals">
+                            <input id="index-decimals-input" class="number-box tiny" type="number" value="0" min="0"
+                                max="3" step="1" aria-label="Index decimal places number">
                             <strong id="index-decimals-value">0</strong>
                         </label>
                         <label class="mini-switch">
@@ -325,17 +337,29 @@
 
                 <label class="range-field">
                     <span>Decks remaining</span>
-                    <input id="decks-remaining" type="range" min="0.01" max="6" step="0.01" value="6">
+                    <div class="range-input-row">
+                        <input id="decks-remaining" type="range" min="0.01" max="6" step="0.01" value="6">
+                        <input id="decks-remaining-input" class="number-box" type="number" min="0.01" max="6"
+                            step="0.01" value="6.00" aria-label="Decks remaining number">
+                    </div>
                 </label>
 
                 <label class="range-field">
                     <span>Running count <strong id="running-count-value" class="inline-value">0</strong></span>
-                    <input id="running-count-slider" type="range" min="-100" max="100" step="1" value="0">
+                    <div class="range-input-row">
+                        <input id="running-count-slider" type="range" min="-100" max="100" step="1" value="0">
+                        <input id="running-count-input" class="number-box" type="number" min="-100" max="100"
+                            step="1" value="0" aria-label="Running count number">
+                    </div>
                 </label>
 
                 <label class="range-field">
                     <span>True count <strong id="true-count-value" class="inline-value">0.00</strong></span>
-                    <input id="true-count-slider" type="range" min="-26" max="26" step="0.01" value="0">
+                    <div class="range-input-row">
+                        <input id="true-count-slider" type="range" min="-26" max="26" step="0.01" value="0">
+                        <input id="true-count-input" class="number-box" type="number" min="-26" max="26"
+                            step="1" value="0" aria-label="True count number">
+                    </div>
                 </label>
 
                 <div class="count-buttons" id="count-buttons">

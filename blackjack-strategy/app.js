@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (Number.isFinite(sharedConfig.trueCount)) {
             state.countSource = "true";
             state.trueCount = clamp(sharedConfig.trueCount, -26, 26);
-            $("true-count-slider").value = String(state.trueCount);
+            setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
         }
     }
     loadReport();
@@ -151,7 +151,10 @@ function wireControls() {
         input.addEventListener("change", () => onRulesChanged());
     });
 
-    $("decks-slider").addEventListener("input", () => onRulesChanged());
+    ["decks-slider", "decks-input"].forEach((id) => {
+        $(id).addEventListener("input", () => onDeckCountChanged(id));
+        $(id).addEventListener("change", () => onDeckCountChanged(id));
+    });
 
     [
         "double-rule",
@@ -176,16 +179,28 @@ function wireControls() {
         });
     });
 
-    ["view-mode", "index-min-range", "index-max-range", "index-decimals"].forEach((id) => {
+    [
+        "view-mode",
+        "index-min-range",
+        "index-max-range",
+        "index-min-input",
+        "index-max-input",
+        "index-decimals",
+        "index-decimals-input",
+    ].forEach((id) => {
         $(id).addEventListener("input", () => {
+            syncSourcePair(id);
             normalizeIndexRange();
             renderChart();
             refreshSelectedInspector();
+            updateCountReadout();
         });
         $(id).addEventListener("change", () => {
+            syncSourcePair(id);
             normalizeIndexRange();
             renderChart();
             refreshSelectedInspector();
+            updateCountReadout();
         });
     });
 
@@ -228,11 +243,11 @@ function wireControls() {
         state.seenCards += 1;
         state.countHistory.push(delta);
         state.countSource = "running";
-        $("running-count-slider").value = String(state.runningCount);
+        setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
         const config = collectConfig();
         const deckCap = finiteDeckCount(config);
         const remaining = deckCap ? Math.max(0.01, (deckCap * 52 - state.seenCards) / 52) : Number($("decks-remaining").value);
-        $("decks-remaining").value = Math.min(deckCap || 8, remaining).toFixed(2);
+        setPairedControl("decks-remaining", "decks-remaining-input", Math.min(deckCap || 8, remaining), 2);
         syncTrueFromRunning();
         updateCountReadout();
         solveAndRender();
@@ -244,7 +259,7 @@ function wireControls() {
         state.runningCount -= last;
         state.seenCards = Math.max(0, state.seenCards - 1);
         state.countSource = "running";
-        $("running-count-slider").value = String(state.runningCount);
+        setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
         syncTrueFromRunning();
         updateCountReadout();
         solveAndRender();
@@ -256,32 +271,26 @@ function wireControls() {
         state.seenCards = 0;
         state.countHistory = [];
         state.countSource = "true";
-        $("running-count-slider").value = "0";
-        $("true-count-slider").value = "0";
-        $("decks-remaining").value = displayDeckCount(collectConfig().decks, 8);
+        setPairedControl("running-count-slider", "running-count-input", 0, 0);
+        setPairedControl("true-count-slider", "true-count-input", 0, countInputDecimals());
+        setPairedControl("decks-remaining", "decks-remaining-input", displayDeckCount(collectConfig().decks, 8), 2);
         updateCountReadout();
         solveAndRender();
     });
 
-    $("decks-remaining").addEventListener("input", () => {
-        if (state.countSource === "running") syncTrueFromRunning();
-        updateCountReadout();
-        solveAndRender();
+    ["decks-remaining", "decks-remaining-input"].forEach((id) => {
+        $(id).addEventListener("input", () => onDecksRemainingChanged(id));
+        $(id).addEventListener("change", () => onDecksRemainingChanged(id));
     });
 
-    $("running-count-slider").addEventListener("input", () => {
-        state.countSource = "running";
-        state.runningCount = Number($("running-count-slider").value);
-        syncTrueFromRunning();
-        updateCountReadout();
-        solveAndRender();
+    ["running-count-slider", "running-count-input"].forEach((id) => {
+        $(id).addEventListener("input", () => onRunningCountChanged(id));
+        $(id).addEventListener("change", () => onRunningCountChanged(id));
     });
 
-    $("true-count-slider").addEventListener("input", () => {
-        state.countSource = "true";
-        state.trueCount = Number($("true-count-slider").value);
-        updateCountReadout();
-        solveAndRender();
+    ["true-count-slider", "true-count-input"].forEach((id) => {
+        $(id).addEventListener("input", () => onTrueCountChanged(id));
+        $(id).addEventListener("change", () => onTrueCountChanged(id));
     });
 
     $("copy-config").addEventListener("click", copyConfig);
@@ -299,6 +308,56 @@ function wireControls() {
     });
 }
 
+function onDeckCountChanged(sourceId) {
+    const value = Math.round(clampNumberFrom(sourceId, 6, 1, 9));
+    setPairedControl("decks-slider", "decks-input", value, 0);
+    onRulesChanged();
+}
+
+function onDecksRemainingChanged(sourceId) {
+    const max = Number($("decks-remaining").max || 8);
+    const value = clampNumberFrom(sourceId, max, 0.01, max);
+    setPairedControl("decks-remaining", "decks-remaining-input", value, 2);
+    if (state.countSource === "running") syncTrueFromRunning();
+    updateCountReadout();
+    solveAndRender();
+}
+
+function onRunningCountChanged(sourceId) {
+    state.countSource = "running";
+    state.runningCount = Math.round(clampNumberFrom(sourceId, state.runningCount, -100, 100));
+    setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
+    syncTrueFromRunning();
+    updateCountReadout();
+    solveAndRender();
+}
+
+function onTrueCountChanged(sourceId) {
+    state.countSource = "true";
+    state.trueCount = clampNumberFrom(sourceId, state.trueCount, -26, 26);
+    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
+    updateCountReadout();
+    solveAndRender();
+}
+
+function syncSourcePair(sourceId) {
+    const pairs = {
+        "index-min-range": ["index-min-range", "index-min-input"],
+        "index-min-input": ["index-min-range", "index-min-input"],
+        "index-max-range": ["index-max-range", "index-max-input"],
+        "index-max-input": ["index-max-range", "index-max-input"],
+        "index-decimals": ["index-decimals", "index-decimals-input"],
+        "index-decimals-input": ["index-decimals", "index-decimals-input"],
+    };
+    const pair = pairs[sourceId];
+    if (!pair) return;
+    const decimals = sourceId.includes("decimals") ? 0 : indexDecimals();
+    const value = sourceId.includes("decimals")
+        ? Math.round(clampNumberFrom(sourceId, 0, 0, 3))
+        : clampNumberFrom(sourceId, 0, -26, 26);
+    setPairedControl(pair[0], pair[1], value, decimals);
+}
+
 function onRulesChanged() {
     if (!state.applyingPreset) {
         $("preset-select").value = "custom";
@@ -310,7 +369,7 @@ function onRulesChanged() {
 
 function setConfig(config) {
     state.applyingPreset = true;
-    $("decks-slider").value = String(config.decks >= INFINITE_DECKS ? 9 : clamp(config.decks, 1, 8));
+    setPairedControl("decks-slider", "decks-input", config.decks >= INFINITE_DECKS ? 9 : clamp(config.decks, 1, 8), 0);
     document.querySelector(`input[name='soft17'][value='${config.h17}']`).checked = true;
     $("double-rule").value = String(config.doubleRule);
     $("peek-rule").value = String(config.peek);
@@ -349,6 +408,33 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, Number(value)));
 }
 
+function clampNumberFrom(id, fallback, min, max) {
+    const parsed = Number($(id).value);
+    return clamp(Number.isFinite(parsed) ? parsed : fallback, min, max);
+}
+
+function setPairedControl(rangeId, inputId, value, decimals = null) {
+    const range = $(rangeId);
+    const input = $(inputId);
+    const numeric = Number(value);
+    const formatted = decimals === null ? String(numeric) : numeric.toFixed(decimals);
+    if (range) range.value = formatted;
+    if (input) input.value = formatted;
+}
+
+function precisionStep(decimals) {
+    return decimals <= 0 ? 1 : Number(`0.${"0".repeat(decimals - 1)}1`);
+}
+
+function updatePrecisionSteps() {
+    const decimals = indexDecimals();
+    const step = precisionStep(decimals);
+    ["index-min-range", "index-max-range", "index-min-input", "index-max-input", "true-count-slider", "true-count-input"].forEach((id) => {
+        const control = $(id);
+        if (control) control.step = String(step);
+    });
+}
+
 function finiteDeckCount(config) {
     return config.decks >= INFINITE_DECKS ? null : config.decks;
 }
@@ -364,18 +450,21 @@ function displayDeckCount(decks, fallback = 6) {
 function syncTrueFromRunning() {
     const decksLeft = Math.max(0.01, Number($("decks-remaining").value));
     state.trueCount = clamp(state.runningCount / decksLeft, -26, 26);
-    $("true-count-slider").value = String(state.trueCount);
+    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
 }
 
 function clampDeckSlider() {
     const decks = collectConfig().decks;
     const deckCap = finiteDeckCount({ decks });
     const slider = $("decks-remaining");
+    const input = $("decks-remaining-input");
     slider.max = String(deckCap || 8);
+    input.max = String(deckCap || 8);
     if (Number(slider.value) > Number(slider.max) || state.seenCards === 0) {
-        slider.value = displayDeckCount(decks, 8);
+        setPairedControl("decks-remaining", "decks-remaining-input", displayDeckCount(decks, 8), 2);
     }
     $("decks-value").textContent = deckLabel(decks);
+    setPairedControl("decks-slider", "decks-input", decks >= INFINITE_DECKS ? 9 : decks, 0);
     if (state.countSource === "running") syncTrueFromRunning();
 }
 
@@ -1292,11 +1381,14 @@ function refreshSelectedInspector() {
 }
 
 function normalizeIndexRange() {
-    let min = clamp($("index-min-range").value, -26, 26);
-    let max = clamp($("index-max-range").value, -26, 26);
+    updatePrecisionSteps();
+    const decimals = indexDecimals();
+    let min = roundToDecimals(clamp($("index-min-range").value, -26, 26), decimals);
+    let max = roundToDecimals(clamp($("index-max-range").value, -26, 26), decimals);
     if (min > max) [min, max] = [max, min];
-    $("index-min-range").value = String(min);
-    $("index-max-range").value = String(max);
+    setPairedControl("index-min-range", "index-min-input", min, decimals);
+    setPairedControl("index-max-range", "index-max-input", max, decimals);
+    setPairedControl("index-decimals", "index-decimals-input", decimals, 0);
     $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
     $("index-decimals-value").textContent = String(indexDecimals());
     const low = ((min + 26) / 52) * 100;
@@ -1328,6 +1420,19 @@ function indexDecimals() {
     return Math.round(clamp($("index-decimals").value, 0, 3));
 }
 
+function countDecimals() {
+    return indexDecimals();
+}
+
+function countInputDecimals() {
+    return countDecimals();
+}
+
+function roundToDecimals(value, decimals) {
+    const factor = 10 ** decimals;
+    return Math.round(Number(value) * factor) / factor;
+}
+
 function formatIndex(value) {
     const decimals = indexDecimals();
     const epsilon = 0.5 / (10 ** decimals);
@@ -1341,7 +1446,7 @@ function formatIndexBadge(index) {
 }
 
 function formatCount(value) {
-    return Number(value).toFixed(2);
+    return Number(value).toFixed(countDecimals());
 }
 
 function formatSigned(value) {
@@ -1409,7 +1514,7 @@ function renderMetrics() {
     if (!state.chart?.metrics) return;
     const metrics = state.chart.metrics;
     $("metric-edge").textContent = `${metrics.houseEdgePct.toFixed(3)}%`;
-    $("metric-true-count").textContent = $("apply-count-toggle").checked ? computeTrueCount().exact.toFixed(2) : "Off";
+    $("metric-true-count").textContent = $("apply-count-toggle").checked ? formatCount(computeTrueCount().exact) : "Off";
     $("metric-speed").textContent = state.lastSolveMs ? `${state.lastSolveMs.toFixed(2)} ms` : "--";
     $("report-player-edge").textContent = `${metrics.playerEdgePct.toFixed(3)}%`;
     $("report-stdev").textContent = metrics.stdevPerHand.toFixed(3);
@@ -1424,16 +1529,19 @@ function renderMetrics() {
 }
 
 function updateCountReadout() {
+    updatePrecisionSteps();
     const tc = computeTrueCount();
     $("running-count").textContent = String(state.runningCount);
     $("decks-left").textContent = Number($("decks-remaining").value).toFixed(2);
+    $("decks-remaining-input").value = Number($("decks-remaining").value).toFixed(2);
     $("running-count-value").textContent = String(state.runningCount);
-    $("true-count-value").textContent = tc.exact.toFixed(2);
-    $("applied-count").textContent = $("apply-count-toggle").checked ? tc.exact.toFixed(2) : "Off";
-    $("metric-true-count").textContent = $("apply-count-toggle").checked ? tc.exact.toFixed(2) : "Off";
-    $("running-count-slider").value = String(state.runningCount);
-    $("true-count-slider").value = String(state.trueCount);
+    $("true-count-value").textContent = formatCount(tc.exact);
+    $("applied-count").textContent = $("apply-count-toggle").checked ? formatCount(tc.exact) : "Off";
+    $("metric-true-count").textContent = $("apply-count-toggle").checked ? formatCount(tc.exact) : "Off";
+    setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0);
+    setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals());
     $("index-decimals-value").textContent = String(indexDecimals());
+    setPairedControl("index-decimals", "index-decimals-input", indexDecimals(), 0);
     $("index-range-value").textContent = `${formatIndex(getIndexRange().min)} to ${formatIndex(getIndexRange().max)}`;
 }
 
