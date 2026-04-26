@@ -12,7 +12,7 @@ const ACTIONS = {
 
 const DEALER_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const CARD_RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-const RANK_MULTIPLIER = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 4, 11: 1 };
+const CARDS_PER_DECK_BY_RANK = { 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 16, 11: 4 };
 const HI_LO_TAG = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 0, 8: 0, 9: 0, 10: -1, 11: -1 };
 const HARD_ROWS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const SOFT_ROWS = [2, 3, 4, 5, 6, 7, 8, 9];
@@ -526,8 +526,8 @@ function rankProbabilities(config, trueCount, deadCards = []) {
     const weights = CARD_RANKS.map((rank) => {
         const tag = HI_LO_TAG[rank];
         const base = finiteDecks
-            ? Math.max(0, finiteDecks * RANK_MULTIPLIER[rank] - (dead[rank] || 0))
-            : RANK_MULTIPLIER[rank];
+            ? Math.max(0, finiteDecks * CARDS_PER_DECK_BY_RANK[rank] - (dead[rank] || 0))
+            : CARDS_PER_DECK_BY_RANK[rank];
         return {
             rank,
             weight: base * Math.exp(-tag * trueCount * tilt),

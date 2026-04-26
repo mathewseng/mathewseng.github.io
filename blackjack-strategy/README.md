@@ -23,6 +23,14 @@ cargo run --release --bin blackjack_solver_cli -- chart > ../data/fallback-chart
 cp target/wasm32-unknown-unknown/release/blackjack_solver.wasm ../assets/blackjack_solver.wasm
 ```
 
+## Tests
+
+```sh
+node --test blackjack-strategy/tests/solver-regression.test.mjs
+```
+
+The regression suite validates physical-card dead-card removal, normalized EV/probability output, bounded index generation, and the Hi-Lo `16 vs 10` crossover that should round to `0` by default.
+
 ## Supported controls
 
 - Decks: slider ticks for 1 through 8 decks plus infinite-deck mode
