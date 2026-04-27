@@ -620,6 +620,7 @@ input[type="range"]:focus-visible {
 .chart-scroll {
     --chart-cell-h: 23px;
     --chart-cell-w: 34px;
+    --chart-row-head-w: 42px;
     overflow: visible;
     max-height: none;
     border: 1px solid var(--line);
@@ -676,7 +677,7 @@ input[type="range"]:focus-visible {
 }
 
 .strategy-table .row-head {
-    width: 42px;
+    width: var(--chart-row-head-w);
     background: #242627;
     color: var(--text);
     font-weight: 900;
@@ -1291,14 +1292,23 @@ input[type="range"] {
     }
 
     .chart-scroll {
-        --chart-cell-h: clamp(14px, 1.75vh, 19px);
-        --chart-cell-w: clamp(21px, 2.6vh, 28.5px);
+        --chart-row-head-w: clamp(34px, 6.2cqh, 48px);
+        container-type: size;
         display: flex;
         align-items: center;
         justify-content: center;
         flex: 1 1 auto;
         min-height: 0;
+        overflow: hidden;
         padding: 4px;
+    }
+
+    .strategy-table {
+        --chart-cell-h: calc((100cqh - 14px) / 30);
+        --chart-cell-w: min(
+            calc(var(--chart-cell-h) * 1.5),
+            calc((100cqw - var(--chart-row-head-w) - 4px) / 10)
+        );
     }
 
     .legend-bar {
@@ -1306,7 +1316,6 @@ input[type="range"] {
     }
 
     .strategy-table .row-head {
-        width: 32px;
         font-size: 0.62rem;
     }
 
@@ -1525,6 +1534,15 @@ input[type="range"] {
             "report";
     }
 
+    .chart-panel {
+        display: flex;
+        flex-direction: column;
+        height: calc(100svh - 156px);
+        min-height: 560px;
+        max-height: 760px;
+        overflow: hidden;
+    }
+
     .rules-panel,
     .chart-panel,
     .solver-panel,
@@ -1589,18 +1607,33 @@ input[type="range"] {
     }
 
     .chart-scroll {
-        --chart-cell-h: 18px;
-        --chart-cell-w: 27px;
+        --chart-row-head-w: clamp(32px, 9cqw, 42px);
+        container-type: size;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1 1 auto;
+        min-height: 0;
         max-height: none;
+        overflow: hidden;
+        padding: 3px;
     }
 
     .strategy-table {
-        width: auto;
+        --chart-cell-h: calc((100cqh - 14px) / 30);
+        width: 100%;
+        max-width: 100%;
         min-width: 0;
     }
 
+    .strategy-table th:not(.row-head),
+    .strategy-table td {
+        width: auto;
+        max-width: none;
+    }
+
     .strategy-table th {
-        height: 20px;
+        height: var(--chart-cell-h);
         font-size: 0.7rem;
     }
 
@@ -1613,7 +1646,7 @@ input[type="range"] {
     }
 
     .strategy-table .row-head {
-        width: 36px;
+        font-size: 0.68rem;
     }
 
     .strategy-table td {
@@ -1721,17 +1754,15 @@ input[type="range"] {
     }
 
     .chart-scroll {
-        --chart-cell-h: 15px;
-        --chart-cell-w: 22px;
         max-height: none;
     }
 
     .strategy-table .row-head {
-        width: 32px;
+        font-size: 0.62rem;
     }
 
     .strategy-table th {
-        height: 18px;
+        height: var(--chart-cell-h);
         font-size: 0.62rem;
     }
 
