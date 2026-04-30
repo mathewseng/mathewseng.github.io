@@ -29,7 +29,7 @@ The chart engine emits a rules-aware strategy chart with:
 
 - Hard totals, soft totals, and pair rows
 - Rule modifiers for S17/H17, double restrictions, DAS, surrender, no-peek variants, HSA, charlies, and count-adjusted card weights
-- Hi-Lo count deviations displayed from source-calibrated published index tables, with the raw EV crossover engine retained for diagnostics/regression checks
+- Hi-Lo count deviations calculated from EV crossover points with a Hi-Lo-constrained shoe model, plus optional published index groups for comparison
 - Current true-count application, with each indexed cell retaining the base play, active deviation play, EVs, margin, and final-total distribution
 
 The house edge and variance figures are modeled estimates intended for comparison between rule sets. The chart decisions are deterministic and realtime, but they are not a licensed casino audit or a full composition-dependent finite-deck EV proof.

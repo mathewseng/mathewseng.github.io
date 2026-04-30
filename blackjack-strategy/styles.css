@@ -355,6 +355,10 @@ input[type="range"]:focus-visible {
     text-align: right;
 }
 
+.number-box[type="number"] {
+    padding: 0 7px;
+}
+
 .count-panel .number-box:focus {
     text-align: left;
 }
@@ -536,6 +540,8 @@ input[type="range"]:focus-visible {
 
 .compact-select {
     min-width: 0;
+    display: grid;
+    grid-template-columns: max-content minmax(54px, 1fr) 42px;
 }
 
 .compact-select input[type="range"] {

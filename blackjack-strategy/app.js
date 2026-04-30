@@ -14,7 +14,6 @@ const DEALER_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const CARD_RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const CARDS_PER_DECK_BY_RANK = { 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 16, 11: 4 };
 const HI_LO_TAG = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 0, 8: 0, 9: 0, 10: -1, 11: -1 };
-const COUNT_TILT = 0.075;
 const COMPOSITION_SOLVER_MAX_DECKS = 1;
 const COMPOSITION_RECHECK_MARGIN = 0.001;
 const CONFIG_SOLVE_DEBOUNCE_MS = 1000;
@@ -792,7 +791,7 @@ function evForCellAction(cell, code) {
 
 function indexesForCell(kind, value, dealer, config, generatedIndices) {
     const group = currentIndexGroup();
-    if (group === "custom") return customIndexesForCell(kind, value, dealer, config);
+    if (group === "custom") return generatedIndices;
 
     return STANDARD_INDEXES
         .filter((item) => item.groups.includes(group))
@@ -804,27 +803,6 @@ function indexesForCell(kind, value, dealer, config, generatedIndices) {
             idir: item.idir,
             if: groupLabel(group),
         }));
-}
-
-function customIndexesForCell(kind, value, dealer, config) {
-    const groups = config.h17 ? ["bjaH17"] : ["jackaceMdS17", "bjaS17"];
-    const seen = new Set();
-    const indexes = [];
-    STANDARD_INDEXES.forEach((item) => {
-        if (!groups.some((group) => item.groups.includes(group))) return;
-        if (item.kind !== kind || item.value !== value || item.dealer !== dealer) return;
-        if (item.requiresSurrender && config.surrender === 0) return;
-        const key = `${canonicalCode(item.ia)}|${item.idir}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        indexes.push({
-            i: item.i,
-            ia: item.ia,
-            idir: item.idir,
-            if: config.h17 ? "BJA H17" : "Source",
-        });
-    });
-    return indexes;
 }
 
 function currentIndexGroup() {
@@ -879,18 +857,68 @@ function rankProbabilities(config, trueCount, deadCards = []) {
         counts[normalized] = (counts[normalized] || 0) + 1;
         return counts;
     }, {});
-    const weights = CARD_RANKS.map((rank) => {
-        const tag = HI_LO_TAG[rank];
-        const base = finiteDecks
+    const counts = {};
+    CARD_RANKS.forEach((rank) => {
+        counts[rank] = finiteDecks
             ? Math.max(0, finiteDecks * CARDS_PER_DECK_BY_RANK[rank] - (dead[rank] || 0))
             : CARDS_PER_DECK_BY_RANK[rank];
-        return {
-            rank,
-            weight: base * Math.exp(-tag * trueCount * COUNT_TILT),
-        };
     });
+    return probabilitiesFromCounts(counts, trueCount);
+}
+
+function probabilitiesFromCounts(counts, trueCount) {
+    const weights = hiLoWeightedRanks(counts, trueCount);
     const total = weights.reduce((sum, item) => sum + item.weight, 0);
+    if (!total) return [];
     return weights.map((item) => ({ rank: item.rank, p: item.weight / total }));
+}
+
+function hiLoWeightedRanks(counts, trueCount) {
+    const totalCards = countTotal(counts);
+    if (!totalCards) return [];
+    const baseMean = CARD_RANKS.reduce((sum, rank) => sum + (counts[rank] || 0) * HI_LO_TAG[rank], 0) / totalCards;
+    const targetMean = clampTagMean(baseMean - Number(trueCount || 0) / 52, counts);
+    const lambda = solveHiLoLambda(counts, targetMean);
+    return CARD_RANKS
+        .filter((rank) => (counts[rank] || 0) > 0)
+        .map((rank) => ({
+            rank,
+            weight: counts[rank] * Math.exp(lambda * HI_LO_TAG[rank]),
+        }));
+}
+
+function clampTagMean(targetMean, counts) {
+    const availableTags = CARD_RANKS.filter((rank) => (counts[rank] || 0) > 0).map((rank) => HI_LO_TAG[rank]);
+    const min = Math.min(...availableTags);
+    const max = Math.max(...availableTags);
+    return clamp(targetMean, min + 1e-9, max - 1e-9);
+}
+
+function solveHiLoLambda(counts, targetMean) {
+    const naturalMean = weightedTagMean(counts, 0);
+    if (Math.abs(naturalMean - targetMean) < 1e-12) return 0;
+    let low = -30;
+    let high = 30;
+    for (let i = 0; i < 80; i += 1) {
+        const mid = (low + high) / 2;
+        const mean = weightedTagMean(counts, mid);
+        if (mean < targetMean) low = mid;
+        else high = mid;
+    }
+    return (low + high) / 2;
+}
+
+function weightedTagMean(counts, lambda) {
+    let weightedTag = 0;
+    let total = 0;
+    CARD_RANKS.forEach((rank) => {
+        const count = counts[rank] || 0;
+        if (count <= 0) return;
+        const weight = count * Math.exp(lambda * HI_LO_TAG[rank]);
+        weightedTag += weight * HI_LO_TAG[rank];
+        total += weight;
+    });
+    return total ? weightedTag / total : 0;
 }
 
 function canDoubleJS(config, kind, hardTotal, lowTotal) {
@@ -1150,15 +1178,12 @@ function blockedDealerHoleRank(dealer, config) {
 }
 
 function weightedDraws(counts, trueCount, filter = () => true) {
-    const draws = [];
-    let total = 0;
+    const filteredCounts = {};
     CARD_RANKS.forEach((rank) => {
-        if (counts[rank] <= 0 || !filter(rank)) return;
-        const weight = counts[rank] * Math.exp(-HI_LO_TAG[rank] * trueCount * COUNT_TILT);
-        if (weight <= 0) return;
-        draws.push({ rank, weight });
-        total += weight;
+        filteredCounts[rank] = counts[rank] > 0 && filter(rank) ? counts[rank] : 0;
     });
+    const draws = hiLoWeightedRanks(filteredCounts, trueCount);
+    const total = draws.reduce((sum, item) => sum + item.weight, 0);
     if (!total) return [];
     return draws.map((item) => ({ rank: item.rank, p: item.weight / total }));
 }
@@ -1966,7 +1991,7 @@ function normalizeIndexRange(options = {}) {
     syncIndexRangeControls({ preserveInputId });
     setPairedControl("index-decimals", "index-decimals-input", decimals, 0, { preserveInputId });
     $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
-    $("index-decimals-value").textContent = String(indexDecimals());
+    setTextIfPresent("index-decimals-value", String(indexDecimals()));
 }
 
 function syncIndexRangeControls(options = {}) {
@@ -1981,7 +2006,7 @@ function syncIndexRangeControls(options = {}) {
     if (preserveInputId !== "index-min-input") $("index-min-input").value = min.toFixed(decimals);
     if (preserveInputId !== "index-max-input") $("index-max-input").value = max.toFixed(decimals);
     $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
-    $("index-decimals-value").textContent = String(decimals);
+    setTextIfPresent("index-decimals-value", String(decimals));
     const low = ((sliderMin + 5) / 15) * 100;
     const high = ((sliderMax + 5) / 15) * 100;
     const slider = document.querySelector(".dual-slider");
@@ -2141,9 +2166,14 @@ function updateCountReadout() {
     $("metric-true-count").textContent = $("apply-count-toggle").checked ? formatCount(tc.exact) : "Off";
     setPairedControl("running-count-slider", "running-count-input", state.runningCount, 0, { preserveInputId: activeId });
     setPairedControl("true-count-slider", "true-count-input", state.trueCount, countInputDecimals(), { preserveInputId: activeId });
-    $("index-decimals-value").textContent = String(indexDecimals());
+    setTextIfPresent("index-decimals-value", String(indexDecimals()));
     setPairedControl("index-decimals", "index-decimals-input", indexDecimals(), 0, { preserveInputId: activeId });
     $("index-range-value").textContent = `${formatIndex(getIndexRange().min)} to ${formatIndex(getIndexRange().max)}`;
+}
+
+function setTextIfPresent(id, value) {
+    const element = $(id);
+    if (element) element.textContent = value;
 }
 
 function computeTrueCount() {

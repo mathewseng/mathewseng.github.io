@@ -89,6 +89,7 @@ function loadSolver() {
 globalThis.__solverTest = {
     PRESETS,
     CARDS_PER_DECK_BY_RANK,
+    HI_LO_TAG,
     analyzeActualHand,
     analyzeCell,
     chartCell,
@@ -132,10 +133,10 @@ test("hard 16 vs dealer 10 crosses from hit to stand just above true count zero"
     assert.equal(base.best.code, "H");
     assert.ok(standIndex, "expected a stand deviation index");
     assert.ok(standIndex.i > 0, `expected positive threshold, got ${standIndex.i}`);
-    assert.ok(standIndex.i < 0.5, `expected threshold below +0.5, got ${standIndex.i}`);
+    assert.ok(standIndex.i < 1.25, `expected threshold near +1 with representative dead cards, got ${standIndex.i}`);
 
-    const below = solver.analyzeCell("hard", 16, 10, config, 0.25);
-    const above = solver.analyzeCell("hard", 16, 10, config, 0.5);
+    const below = solver.analyzeCell("hard", 16, 10, config, 0.5);
+    const above = solver.analyzeCell("hard", 16, 10, config, 1.25);
     assert.equal(below.best.code, "H");
     assert.equal(above.best.code, "S");
     assert.ok(solver.evForCode(below, "S") - solver.evForCode(below, "H") < 0);
@@ -160,47 +161,47 @@ test("published index groups expose source-verified Hi-Lo deviations", () => {
     assert.equal(JSON.stringify(tenVsAce.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["D", 3, "gte"]]));
 });
 
-test("custom index display is source-calibrated instead of raw EV-tilt output", () => {
+test("custom index display is calculated from Hi-Lo constrained EV crossovers", () => {
     const solver = loadSolver();
     const config = { ...solver.PRESETS.vegas };
     solver.elements.get("index-group").value = "custom";
 
-    const rawBase = solver.analyzeCell("hard", 15, 10, config, 0);
-    const raw = solver
-        .deriveIndexes("hard", 15, 10, config, rawBase.best.code, "raw-mismatch")
-        .find((item) => item.ia === "S" && item.idir === "gte");
-    assert.ok(raw.i < 2, `expected the old modeled crossover to be visibly wrong, got ${raw.i}`);
+    const tc4Probs = solver.rankProbabilities(config, 4, []);
+    const tc4MeanTag = tc4Probs.reduce((sum, item) => sum + item.p * solver.HI_LO_TAG[item.rank], 0);
+    nearly(tc4MeanTag, -4 / 52, 1e-10);
 
-    const displayed15 = solver.indexesForCell("hard", 15, 10, config, []);
-    assert.equal(JSON.stringify(displayed15.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 4, "gte"]]));
+    const displayed15 = solver.chartCell("hard", 15, 10, config, 0, "custom-15").indices;
+    const stand15 = displayed15.find((item) => item.ia === "S" && item.idir === "gte");
+    assert.ok(stand15.i > 4 && stand15.i < 4.8, `expected calculated 15vT index near +4, got ${stand15.i}`);
 
-    const displayed16 = solver.indexesForCell("hard", 16, 10, config, []);
-    assert.equal(JSON.stringify(displayed16.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 0, "gte"]]));
+    const displayed16 = solver.chartCell("hard", 16, 10, config, 0, "custom-16").indices;
+    const stand16 = displayed16.find((item) => item.ia === "S" && item.idir === "gte");
+    assert.ok(stand16.i > 0.5 && stand16.i < 1.25, `expected composition-aware 16vT index near +1, got ${stand16.i}`);
 
     const surrenderHidden = solver.indexesForCell("hard", 15, 9, config, []);
     assert.equal(surrenderHidden.some((item) => item.ia === "Rh"), false);
 
     const row15 = { id: "hard-15", kind: "hard", value: 15, label: "15" };
-    const cell15T = solver.chartCell("hard", 15, 10, config, 0, "source-calibrated-action");
+    const cell15T = solver.chartCell("hard", 15, 10, config, 0, "calculated-action");
     solver.elements.get("true-count-slider").value = "2";
     assert.equal(solver.displayActionForCell(row15, cell15T), "H");
-    solver.elements.get("true-count-slider").value = "4";
+    solver.elements.get("true-count-slider").value = "4.5";
     assert.equal(solver.displayActionForCell(row15, cell15T), "S");
 });
 
-test("default index rounding shows the 16v10 crossover as 0, not +1", () => {
+test("index decimals expose high-precision calculated crossovers", () => {
     const solver = loadSolver();
     const config = { ...solver.PRESETS.vegas };
-    const base = solver.analyzeCell("hard", 16, 10, config, 0);
+    const base = solver.analyzeCell("hard", 15, 10, config, 0);
     const standIndex = solver
-        .deriveIndexes("hard", 16, 10, config, base.best.code, "rounding")
+        .deriveIndexes("hard", 15, 10, config, base.best.code, "precision")
         .find((item) => item.ia === "S" && item.idir === "gte");
 
     solver.elements.get("index-decimals").value = "0";
-    assert.equal(solver.formatIndex(standIndex.i), "0");
+    assert.equal(solver.formatIndex(standIndex.i), "+4");
 
     solver.elements.get("index-decimals").value = "2";
-    assert.match(solver.formatIndex(standIndex.i), /^\+0\.[0-4][0-9]$/);
+    assert.match(solver.formatIndex(standIndex.i), /^\+4\.[0-9]{2}$/);
 });
 
 test("single deck 77 vs dealer 10 removes player and dealer cards throughout EV recursion", () => {

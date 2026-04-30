@@ -42,7 +42,7 @@ The regression suite validates physical-card dead-card removal, normalized EV/pr
 - Per-hand, per-wager, and two-tier optimization modes
 - Separate Hi-Lo running-count and true-count sliders, with decks-left precision to 0.01 decks
 - EV/probability view with legal-action EVs, decision gap, and final-total/bust distributions
-- Count indexes source-calibrated in Custom mode, plus explicit published Hi-Lo groups such as Illustrious 18, Fab 4, Sweet 16, Catch 20, Catch 22, BJA S17/H17, and JackAce MD S17
+- Count indexes calculated in Custom mode with a Hi-Lo-constrained shoe model, plus explicit published Hi-Lo groups such as Illustrious 18, Fab 4, Sweet 16, Catch 20, Catch 22, BJA S17/H17, and JackAce MD S17
 - Index slider defaults to -5 through +10, with number boxes that can accept wider manual values, and displayable index precision from 0 to 3 decimals
 - Finite-deck EVs remove the visible player hand and dealer upcard before calculating draw probabilities
 - Reverse 2-6 dealer-column order: `6 5 4 3 2 7 8 9 T A`
