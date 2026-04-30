@@ -166,7 +166,7 @@ test("published index groups expose source-verified Hi-Lo deviations", () => {
     assert.equal(JSON.stringify(soft19H17.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 0, "lte"]]));
 });
 
-test("custom index display is calculated from Hi-Lo constrained EV crossovers", () => {
+test("custom index display anchors published cells while retaining raw EV crossovers", () => {
     const solver = loadSolver();
     const config = { ...solver.PRESETS.vegas };
     solver.elements.get("index-group").value = "custom";
@@ -177,11 +177,13 @@ test("custom index display is calculated from Hi-Lo constrained EV crossovers", 
 
     const displayed15 = solver.chartCell("hard", 15, 10, config, 0, "custom-15").indices;
     const stand15 = displayed15.find((item) => item.ia === "S" && item.idir === "gte");
-    assert.ok(stand15.i > 4 && stand15.i < 4.8, `expected calculated 15vT index near +4, got ${stand15.i}`);
+    assert.equal(stand15.i, 4);
+    assert.ok(stand15.raw > 4 && stand15.raw < 4.8, `expected raw 15vT crossover near +4, got ${stand15.raw}`);
 
     const displayed16 = solver.chartCell("hard", 16, 10, config, 0, "custom-16").indices;
     const stand16 = displayed16.find((item) => item.ia === "S" && item.idir === "gte");
-    assert.ok(stand16.i > 0.5 && stand16.i < 1.25, `expected composition-aware 16vT index near +1, got ${stand16.i}`);
+    assert.equal(stand16.i, 0);
+    assert.ok(stand16.raw > 0.5 && stand16.raw < 1.25, `expected raw 16vT crossover near +1, got ${stand16.raw}`);
 
     const surrenderHidden = solver.indexesForCell("hard", 15, 9, config, []);
     assert.equal(surrenderHidden.some((item) => item.ia === "Rh"), false);
@@ -190,8 +192,13 @@ test("custom index display is calculated from Hi-Lo constrained EV crossovers", 
     const cell15T = solver.chartCell("hard", 15, 10, config, 0, "calculated-action");
     solver.elements.get("true-count-slider").value = "2";
     assert.equal(solver.displayActionForCell(row15, cell15T), "H");
-    solver.elements.get("true-count-slider").value = "4.5";
+    solver.elements.get("true-count-slider").value = "4";
     assert.equal(solver.displayActionForCell(row15, cell15T), "S");
+
+    const row16 = { id: "hard-16", kind: "hard", value: 16, label: "16" };
+    const cell16T = solver.chartCell("hard", 16, 10, config, 0, "calculated-action-16");
+    solver.elements.get("true-count-slider").value = "0";
+    assert.equal(solver.displayActionForCell(row16, cell16T), "S");
 });
 
 test("index decimals expose high-precision calculated crossovers", () => {

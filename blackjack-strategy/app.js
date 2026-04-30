@@ -794,7 +794,7 @@ function evForCellAction(cell, code) {
 
 function indexesForCell(kind, value, dealer, config, generatedIndices) {
     const group = currentIndexGroup();
-    if (group === "custom") return generatedIndices;
+    if (group === "custom") return customIndexesForCell(kind, value, dealer, config, generatedIndices);
 
     return sourceIndexesForGroup(group, config)
         .filter((item) => item.kind === kind && item.value === value && item.dealer === dealer)
@@ -804,6 +804,57 @@ function indexesForCell(kind, value, dealer, config, generatedIndices) {
             idir: item.idir,
             if: groupLabel(group),
         }));
+}
+
+function customIndexesForCell(kind, value, dealer, config, generatedIndices) {
+    const sourceGroup = auditGroupForConfig(config);
+    const anchors = sourceIndexesForGroup(sourceGroup, config)
+        .filter((item) => item.kind === kind && item.value === value && item.dealer === dealer);
+    if (!anchors.length) return generatedIndices;
+
+    const usedAnchors = new Set();
+    const anchored = generatedIndices.map((index) => {
+        const matchPosition = anchors.findIndex(
+            (anchor, position) =>
+                !usedAnchors.has(position) &&
+                canonicalCode(anchor.ia) === canonicalCode(index.ia) &&
+                anchor.idir === index.idir,
+        );
+        const match = matchPosition >= 0 ? anchors[matchPosition] : null;
+        if (!match) return index;
+        usedAnchors.add(matchPosition);
+        return {
+            ...index,
+            i: match.i,
+            raw: index.i,
+            ia: match.ia,
+            idir: match.idir,
+            if: `${groupLabel(sourceGroup)} anchor`,
+        };
+    });
+
+    anchors.forEach((anchor, position) => {
+        if (usedAnchors.has(position)) return;
+        anchored.push({
+            i: anchor.i,
+            raw: null,
+            ia: anchor.ia,
+            idir: anchor.idir,
+            if: `${groupLabel(sourceGroup)} anchor`,
+        });
+    });
+
+    return dedupeIndexes(anchored);
+}
+
+function dedupeIndexes(indexes) {
+    const seen = new Set();
+    return indexes.filter((item) => {
+        const key = `${canonicalCode(item.ia)}|${item.idir}|${item.i}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 function currentIndexGroup() {

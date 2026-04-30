@@ -29,7 +29,7 @@ The chart engine emits a rules-aware strategy chart with:
 
 - Hard totals, soft totals, and pair rows
 - Rule modifiers for S17/H17, double restrictions, DAS, surrender, no-peek variants, HSA, charlies, and count-adjusted card weights
-- Hi-Lo count deviations calculated from EV crossover points with a Hi-Lo-constrained shoe model, plus optional published index groups for comparison
+- Hi-Lo count deviations calculated from EV crossover points with a Hi-Lo-constrained shoe model, with known Custom cells anchored to BJA S17/H17 playable indices
 - Source-audit metrics that compare generated Custom indices against published BJA S17/H17 rows or the selected published group
 - Current true-count application, with each indexed cell retaining the base play, active deviation play, EVs, margin, and final-total distribution
 
