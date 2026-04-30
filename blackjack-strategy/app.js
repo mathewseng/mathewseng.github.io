@@ -97,6 +97,75 @@ const PRESETS = {
     },
 };
 
+const STANDARD_INDEXES = [
+    // Illustrious 18 / JackAce multi-deck S17 / BlackjackInfo text list.
+    standardIndex("hard", 16, 10, "S", 0, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 15, 10, "S", 4, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("pair", 10, 5, "P", 5, "gte", ["illustrious18", "i18Fab4", "catch22", "jackaceMdS17"]),
+    standardIndex("pair", 10, 6, "P", 4, "gte", ["illustrious18", "i18Fab4", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 10, 10, "D", 4, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 12, 3, "S", 2, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 12, 2, "S", 3, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 11, 11, "D", 1, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 9, 2, "D", 1, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 10, 11, "D", 4, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 9, 7, "D", 3, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 16, 9, "S", 5, "gte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 13, 2, "H", -1, "lte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 12, 4, "H", 0, "lte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 12, 5, "H", -2, "lte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 12, 6, "H", -1, "lte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+    standardIndex("hard", 13, 3, "H", -2, "lte", ["illustrious18", "i18Fab4", "sweet16", "catch20", "catch22", "jackaceMdS17"]),
+
+    // Common Catch 20 additions cited in counting discussions and Hi-Lo tables.
+    standardIndex("soft", 8, 5, "D", 2, "gte", ["catch20", "catch22"]),
+    standardIndex("soft", 8, 6, "D", 1, "gte", ["catch20", "catch22"]),
+    standardIndex("hard", 8, 5, "D", 4, "gte", ["catch20", "catch22"]),
+    standardIndex("hard", 8, 6, "D", 2, "gte", ["catch20", "catch22"]),
+
+    // Fab 4 late-surrender indices from JackAce / BlackjackInfo.
+    standardIndex("hard", 14, 10, "Rh", 3, "gte", ["fab4", "i18Fab4", "catch22", "jackaceMdS17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 10, "Rh", 0, "gte", ["fab4", "i18Fab4", "catch22", "jackaceMdS17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 9, "Rh", 2, "gte", ["fab4", "i18Fab4", "catch22", "jackaceMdS17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 11, "Rh", 1, "gte", ["fab4", "i18Fab4", "catch22", "jackaceMdS17"], { requiresSurrender: true }),
+
+    // Blackjack Apprenticeship S17/H17 public deviation PDFs.
+    standardIndex("pair", 10, 4, "P", 6, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("pair", 10, 5, "P", 5, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("pair", 10, 6, "P", 4, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("soft", 8, 4, "D", 3, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("soft", 8, 5, "D", 1, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("soft", 8, 6, "D", 1, "gte", ["bjaS17"]),
+    standardIndex("soft", 8, 6, "D", 0, "lte", ["bjaH17"]),
+    standardIndex("soft", 6, 2, "D", 1, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 16, 9, "S", 4, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 16, 10, "S", 0, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 16, 11, "S", 3, "gte", ["bjaH17"]),
+    standardIndex("hard", 15, 10, "S", 4, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 15, 11, "S", 5, "gte", ["bjaH17"]),
+    standardIndex("hard", 13, 2, "H", -1, "lte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 12, 2, "S", 3, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 12, 3, "S", 2, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 12, 4, "H", 0, "lte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 11, 11, "D", 1, "gte", ["bjaS17"]),
+    standardIndex("hard", 10, 10, "D", 4, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 10, 11, "D", 4, "gte", ["bjaS17"]),
+    standardIndex("hard", 10, 11, "D", 3, "gte", ["bjaH17"]),
+    standardIndex("hard", 9, 2, "D", 1, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 9, 7, "D", 3, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 8, 6, "D", 2, "gte", ["bjaS17", "bjaH17"]),
+    standardIndex("hard", 16, 8, "Rh", 4, "gte", ["bjaS17", "bjaH17"], { requiresSurrender: true }),
+    standardIndex("hard", 16, 9, "Rh", -1, "lte", ["bjaS17", "bjaH17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 9, "Rh", 2, "gte", ["bjaS17", "bjaH17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 10, "Rh", 0, "lte", ["bjaS17", "bjaH17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 11, "Rh", 2, "gte", ["bjaS17"], { requiresSurrender: true }),
+    standardIndex("hard", 15, 11, "Rh", -1, "gte", ["bjaH17"], { requiresSurrender: true }),
+];
+
+function standardIndex(kind, value, dealer, ia, i, idir, groups, options = {}) {
+    return { kind, value, dealer, ia, i, idir, groups, ...options };
+}
+
 const state = {
     wasm: null,
     chart: null,
@@ -112,6 +181,7 @@ const state = {
     wasmReady: false,
     applyingPreset: false,
     lastSolveMs: 0,
+    indexRange: { min: -5, max: 10 },
 };
 
 const analysisCache = new Map();
@@ -126,9 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
         $("reverse-26-toggle").checked = Boolean(sharedConfig.reverse26);
         $("show-indices-toggle").checked = sharedConfig.showIndices !== false;
         if (sharedConfig.viewMode) $("view-mode").value = sharedConfig.viewMode;
+        if (sharedConfig.indexGroup && $("index-group")) $("index-group").value = sharedConfig.indexGroup;
         if (sharedConfig.indexRange) {
-            $("index-min-range").value = String(sharedConfig.indexRange.min ?? -3);
-            $("index-max-range").value = String(sharedConfig.indexRange.max ?? 8);
+            state.indexRange.min = Number(sharedConfig.indexRange.min ?? -5);
+            state.indexRange.max = Number(sharedConfig.indexRange.max ?? 10);
         }
         if (Number.isFinite(sharedConfig.trueCount)) {
             state.countSource = "true";
@@ -185,6 +256,7 @@ function wireControls() {
 
     [
         "view-mode",
+        "index-group",
         "index-min-range",
         "index-max-range",
         "index-min-input",
@@ -206,6 +278,10 @@ function wireControls() {
             refreshSelectedInspector();
             updateCountReadout();
         });
+    });
+
+    document.querySelectorAll("[data-step-target]").forEach((button) => {
+        button.addEventListener("click", () => stepRangeControl(button));
     });
 
     $("reset-rules").addEventListener("click", () => {
@@ -321,6 +397,31 @@ function onDeckCountChanged(sourceId, eventType = "input") {
     onRulesChanged();
 }
 
+function stepRangeControl(button) {
+    const target = $(button.dataset.stepTarget);
+    if (!target) return;
+
+    const direction = Number(button.dataset.stepDir) || 1;
+    const step = Number(target.step) || 1;
+    const min = Number(target.min);
+    const max = Number(target.max);
+    const current = Number(target.value) || 0;
+    const precision = stepPrecision(step);
+    const next = roundToDecimals(
+        clamp(current + direction * step, Number.isFinite(min) ? min : -Infinity, Number.isFinite(max) ? max : Infinity),
+        precision,
+    );
+    target.value = String(next);
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    target.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function stepPrecision(step) {
+    const text = String(step);
+    if (!text.includes(".")) return 0;
+    return text.split(".")[1].length;
+}
+
 function onDecksRemainingChanged(sourceId, eventType = "input") {
     if (eventType === "input" && isPendingNumberInput(sourceId)) return;
     const max = Number($("decks-remaining").max || 8);
@@ -357,25 +458,37 @@ function onTrueCountChanged(sourceId, eventType = "input") {
 }
 
 function syncSourcePair(sourceId, eventType = "input") {
-    const pairs = {
-        "index-min-range": ["index-min-range", "index-min-input"],
-        "index-min-input": ["index-min-range", "index-min-input"],
-        "index-max-range": ["index-max-range", "index-max-input"],
-        "index-max-input": ["index-max-range", "index-max-input"],
-        "index-decimals": ["index-decimals", "index-decimals-input"],
-        "index-decimals-input": ["index-decimals", "index-decimals-input"],
-    };
-    const pair = pairs[sourceId];
+    if (sourceId === "index-group") return true;
+
+    if (sourceId.startsWith("index-min") || sourceId.startsWith("index-max")) {
+        if (eventType === "input" && isPendingNumberInput(sourceId)) return false;
+        const edge = sourceId.startsWith("index-min") ? "min" : "max";
+        const fallback = state.indexRange[edge];
+        const raw = $(sourceId)?.value?.trim() ?? "";
+        const parsed = raw === "" ? NaN : Number(raw);
+        if (!Number.isFinite(parsed)) return false;
+        state.indexRange[edge] = sourceId.endsWith("-range") ? clamp(parsed, -5, 10) : parsed;
+        if (state.indexRange.min > state.indexRange.max) {
+            if (edge === "min") state.indexRange.max = state.indexRange.min;
+            else state.indexRange.min = state.indexRange.max;
+        }
+        if (!Number.isFinite(state.indexRange[edge])) state.indexRange[edge] = fallback;
+        syncIndexRangeControls({ preserveInputId: eventType === "input" ? sourceId : null });
+        return true;
+    }
+
+    const pair = sourceId === "index-decimals" || sourceId === "index-decimals-input"
+        ? ["index-decimals", "index-decimals-input"]
+        : null;
     if (!pair) return true;
     if (eventType === "input" && isPendingNumberInput(sourceId)) return false;
-    const decimals = sourceId.includes("decimals") ? 0 : indexDecimals();
+    const decimals = 0;
     const fallback = Number($(pair[0]).value) || 0;
-    const value = sourceId.includes("decimals")
-        ? Math.round(readControlNumber(sourceId, fallback, 0, 3))
-        : readControlNumber(sourceId, fallback, -26, 26);
+    const value = Math.round(readControlNumber(sourceId, fallback, 0, 3));
     setPairedControl(pair[0], pair[1], value, decimals, {
         preserveInputId: eventType === "input" ? sourceId : null,
     });
+    normalizeIndexRange({ sourceId, editing: eventType === "input" });
     return true;
 }
 
@@ -478,6 +591,10 @@ function deckLabel(decks) {
     return decks >= INFINITE_DECKS ? "∞" : String(decks);
 }
 
+function deckValueLabel(decks) {
+    return decks >= INFINITE_DECKS ? "Infinity decks" : String(decks);
+}
+
 function displayDeckCount(decks, fallback = 6) {
     return (decks >= INFINITE_DECKS ? fallback : decks).toFixed(2);
 }
@@ -501,7 +618,7 @@ function clampDeckSlider() {
     if (Number(slider.value) > Number(slider.max) || state.seenCards === 0) {
         setPairedControl("decks-remaining", "decks-remaining-input", displayDeckCount(decks, 8), 2, { preserveInputId: activeId });
     }
-    $("decks-value").textContent = deckLabel(decks);
+    $("decks-value").textContent = deckValueLabel(decks);
     setPairedControl("decks-slider", "decks-input", decks >= INFINITE_DECKS ? 9 : decks, 0, { preserveInputId: activeId });
     if (state.countSource === "running") syncTrueFromRunning();
 }
@@ -611,7 +728,8 @@ function chartRow(kind, value, config, trueCount, cacheKey) {
 function chartCell(kind, value, dealer, config, trueCount, cacheKey) {
     const current = analyzeCell(kind, value, dealer, config, trueCount);
     const base = analyzeCell(kind, value, dealer, config, 0);
-    const indices = deriveIndexes(kind, value, dealer, config, base.best.code, cacheKey);
+    const generatedIndices = deriveIndexes(kind, value, dealer, config, base.best.code, cacheKey);
+    const indices = indexesForCell(kind, value, dealer, config, generatedIndices);
     const action = current.best.code;
     const activeIndex = indices.find((index) => index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i);
     const primaryIndex = activeIndex || indices.find((index) => indexVisible(index.i)) || indices[0];
@@ -628,6 +746,41 @@ function chartCell(kind, value, dealer, config, trueCount, cacheKey) {
         indices,
         ...(primaryIndex || {}),
     };
+}
+
+function indexesForCell(kind, value, dealer, config, generatedIndices) {
+    const group = currentIndexGroup();
+    if (group === "custom") return generatedIndices;
+
+    return STANDARD_INDEXES
+        .filter((item) => item.groups.includes(group))
+        .filter((item) => item.kind === kind && item.value === value && item.dealer === dealer)
+        .filter((item) => !item.requiresSurrender || config.surrender !== 0)
+        .map((item) => ({
+            i: item.i,
+            ia: item.ia,
+            idir: item.idir,
+            if: groupLabel(group),
+        }));
+}
+
+function currentIndexGroup() {
+    return $("index-group")?.value || "custom";
+}
+
+function groupLabel(group) {
+    return {
+        custom: "EV",
+        illustrious18: "I18",
+        fab4: "Fab 4",
+        i18Fab4: "I18 + Fab 4",
+        sweet16: "Sweet 16",
+        catch20: "Catch 20",
+        catch22: "Catch 22",
+        bjaS17: "BJA S17",
+        bjaH17: "BJA H17",
+        jackaceMdS17: "JackAce MD S17",
+    }[group] || "Index";
 }
 
 function rowLabel(kind, value) {
@@ -1619,7 +1772,7 @@ function renderHandSolver() {
         ? visibleIndices
             .map((index) => {
                 const active = index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i;
-                return `${index.ia} when TC ${index.idir === "gte" ? ">=" : "<="} ${formatIndex(index.i)}${active ? " (active)" : ""}`;
+                return `${formatIndexBadge(index)} ${index.idir === "gte" ? "and up" : "and below"}${active ? " (active)" : ""}`;
             })
             .join("; ")
         : "No listed Hi-Lo deviation.";
@@ -1637,7 +1790,7 @@ function showCellDetail(row, cell) {
     const visibleIndices = (cell.indices || []).filter((index) => indexVisible(index.i));
     const index = visibleIndices.length
         ? visibleIndices
-            .map((item) => `${item.ia} ${item.idir === "gte" ? ">=" : "<="} ${formatIndex(item.i)} (${item.if})`)
+            .map((item) => `${formatIndexBadge(item)} ${item.idir === "gte" ? "and up" : "and below"} (${item.if})`)
             .join("; ")
         : "No index in selected range";
     $("cell-detail").innerHTML = `
@@ -1731,32 +1884,47 @@ function refreshSelectedInspector() {
 function normalizeIndexRange(options = {}) {
     updatePrecisionSteps();
     const decimals = indexDecimals();
-    let min = roundToDecimals(clamp($("index-min-range").value, -26, 26), decimals);
-    let max = roundToDecimals(clamp($("index-max-range").value, -26, 26), decimals);
+    let min = roundToDecimals(state.indexRange.min, decimals);
+    let max = roundToDecimals(state.indexRange.max, decimals);
     if (min > max) [min, max] = [max, min];
+    state.indexRange = { min, max };
     const preserveInputId = options.editing ? options.sourceId : null;
-    setPairedControl("index-min-range", "index-min-input", min, decimals, { preserveInputId });
-    setPairedControl("index-max-range", "index-max-input", max, decimals, { preserveInputId });
+    syncIndexRangeControls({ preserveInputId });
     setPairedControl("index-decimals", "index-decimals-input", decimals, 0, { preserveInputId });
     $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
     $("index-decimals-value").textContent = String(indexDecimals());
-    const low = ((min + 26) / 52) * 100;
-    const high = ((max + 26) / 52) * 100;
+}
+
+function syncIndexRangeControls(options = {}) {
+    const decimals = indexDecimals();
+    const min = roundToDecimals(state.indexRange.min, decimals);
+    const max = roundToDecimals(state.indexRange.max, decimals);
+    const preserveInputId = options.preserveInputId;
+    const sliderMin = clamp(min, -5, 10);
+    const sliderMax = clamp(max, -5, 10);
+    if (preserveInputId !== "index-min-range") $("index-min-range").value = String(sliderMin);
+    if (preserveInputId !== "index-max-range") $("index-max-range").value = String(sliderMax);
+    if (preserveInputId !== "index-min-input") $("index-min-input").value = min.toFixed(decimals);
+    if (preserveInputId !== "index-max-input") $("index-max-input").value = max.toFixed(decimals);
+    $("index-range-value").textContent = `${formatIndex(min)} to ${formatIndex(max)}`;
+    $("index-decimals-value").textContent = String(decimals);
+    const low = ((sliderMin + 5) / 15) * 100;
+    const high = ((sliderMax + 5) / 15) * 100;
     const slider = document.querySelector(".dual-slider");
     if (slider) {
         slider.style.setProperty("--range-min", `${low}%`);
         slider.style.setProperty("--range-max", `${high}%`);
     }
-    $("index-min-range").style.zIndex = min > 18 ? "4" : "3";
-    $("index-max-range").style.zIndex = min > 18 ? "3" : "4";
+    $("index-min-range").style.zIndex = sliderMin > 7 ? "4" : "3";
+    $("index-max-range").style.zIndex = sliderMin > 7 ? "3" : "4";
 }
 
 function getIndexRange() {
-    const min = Number($("index-min-range").value);
-    const max = Number($("index-max-range").value);
+    const min = Number(state.indexRange.min);
+    const max = Number(state.indexRange.max);
     return {
-        min: Number.isFinite(min) ? Math.min(min, max) : -3,
-        max: Number.isFinite(max) ? Math.max(min, max) : 8,
+        min: Number.isFinite(min) ? Math.min(min, max) : -5,
+        max: Number.isFinite(max) ? Math.max(min, max) : 10,
     };
 }
 
@@ -1791,7 +1959,13 @@ function formatIndex(value) {
 }
 
 function formatIndexBadge(index) {
-    return `${index.ia}${index.idir === "gte" ? "≥" : "≤"}${formatIndex(index.i)}`;
+    return `${displayIndexAction(index.ia)}${formatIndex(index.i)}`;
+}
+
+function displayIndexAction(code) {
+    if (code === "D" || code === "Ds") return "D";
+    if (code === "Rh" || code === "Rs") return "R";
+    return code;
 }
 
 function formatCount(value) {
@@ -1910,6 +2084,7 @@ function copyConfig() {
         reverse26: $("reverse-26-toggle").checked,
         showIndices: $("show-indices-toggle").checked,
         viewMode: $("view-mode").value,
+        indexGroup: currentIndexGroup(),
         indexRange: getIndexRange(),
     };
     const text = JSON.stringify(config, null, 2);

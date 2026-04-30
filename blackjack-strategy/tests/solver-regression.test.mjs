@@ -48,8 +48,9 @@ function loadSolver() {
     }
 
     element("index-decimals").value = "0";
-    element("index-min-range").value = "-3";
-    element("index-max-range").value = "8";
+    element("index-min-range").value = "-5";
+    element("index-max-range").value = "10";
+    element("index-group").value = "custom";
 
     const document = {
         addEventListener() {},
@@ -92,8 +93,11 @@ globalThis.__solverTest = {
     deriveIndexes,
     evForCode,
     formatIndex,
+    formatIndexBadge,
+    indexesForCell,
     rankProbabilities,
     solveChartJS,
+    STANDARD_INDEXES,
 };`,
         context,
         { filename: APP_SOURCE.pathname },
@@ -133,6 +137,24 @@ test("hard 16 vs dealer 10 crosses from hit to stand just above true count zero"
     assert.equal(above.best.code, "S");
     assert.ok(solver.evForCode(below, "S") - solver.evForCode(below, "H") < 0);
     assert.ok(solver.evForCode(above, "S") - solver.evForCode(above, "H") > 0);
+});
+
+test("published index groups expose source-verified Hi-Lo deviations", () => {
+    const solver = loadSolver();
+    const config = { ...solver.PRESETS.vegas };
+    solver.elements.get("index-group").value = "illustrious18";
+
+    const hard16 = solver.indexesForCell("hard", 16, 10, config, []);
+    assert.equal(JSON.stringify(hard16.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 0, "gte"]]));
+    assert.equal(solver.formatIndexBadge(hard16[0]), "S0");
+
+    const hard12 = solver.indexesForCell("hard", 12, 4, config, []);
+    assert.equal(JSON.stringify(hard12.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["H", 0, "lte"]]));
+    assert.equal(solver.formatIndexBadge(hard12[0]), "H0");
+
+    solver.elements.get("index-group").value = "bjaH17";
+    const tenVsAce = solver.indexesForCell("hard", 10, 11, { ...config, h17: 1 }, []);
+    assert.equal(JSON.stringify(tenVsAce.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["D", 3, "gte"]]));
 });
 
 test("default index rounding shows the 16v10 crossover as 0, not +1", () => {

@@ -52,4 +52,6 @@ Each cell stores the best EV, the EV gap to the second-best legal choice, all le
 
 ## Count Indexes
 
-Displayed indexes are calculated from EV crossover points. For each legal alternate action, the engine checks the full -26 to +26 range against the base action at true count 0, then binary-refines low-count and high-count crossovers. The UI can filter visible indexes with a dual min/max slider and round displayed index values from 0 to 3 decimal places.
+In Custom mode, displayed indexes are calculated from EV crossover points. For each legal alternate action, the engine checks the full -26 to +26 range against the base action at true count 0, then binary-refines low-count and high-count crossovers.
+
+The Index Group menu can also show published Hi-Lo groups, including Illustrious 18, Fab 4, Sweet 16, Catch 20, Catch 22, BJA S17/H17, and JackAce MD S17. The visible range slider defaults to -5 through +10; the number boxes can be typed beyond that slider span when a wider filter is needed. Displayed index values can be rounded from 0 to 3 decimal places.
