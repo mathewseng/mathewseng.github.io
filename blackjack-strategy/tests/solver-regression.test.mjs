@@ -166,7 +166,7 @@ test("published index groups expose source-verified Hi-Lo deviations", () => {
     assert.equal(JSON.stringify(soft19H17.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 0, "lte"]]));
 });
 
-test("custom index display anchors published cells while retaining raw EV crossovers", () => {
+test("custom index display uses generated EV crossovers, not source-group anchors", () => {
     const solver = loadSolver();
     const config = { ...solver.PRESETS.vegas };
     solver.elements.get("index-group").value = "custom";
@@ -177,13 +177,15 @@ test("custom index display anchors published cells while retaining raw EV crosso
 
     const displayed15 = solver.chartCell("hard", 15, 10, config, 0, "custom-15").indices;
     const stand15 = displayed15.find((item) => item.ia === "S" && item.idir === "gte");
-    assert.equal(stand15.i, 4);
-    assert.ok(stand15.raw > 4 && stand15.raw < 4.8, `expected raw 15vT crossover near +4, got ${stand15.raw}`);
+    assert.ok(stand15.i > 4 && stand15.i < 4.8, `expected generated 15vT crossover near +4, got ${stand15.i}`);
+    assert.notEqual(stand15.i, 4, "Custom should not copy the published BJA/I18 integer anchor");
+    assert.equal(stand15.raw, undefined);
 
     const displayed16 = solver.chartCell("hard", 16, 10, config, 0, "custom-16").indices;
     const stand16 = displayed16.find((item) => item.ia === "S" && item.idir === "gte");
-    assert.equal(stand16.i, 0);
-    assert.ok(stand16.raw > 0.5 && stand16.raw < 1.25, `expected raw 16vT crossover near +1, got ${stand16.raw}`);
+    assert.ok(stand16.i > 0 && stand16.i < 1, `expected generated 16vT crossover below +1, got ${stand16.i}`);
+    assert.notEqual(stand16.i, 0, "Custom should not copy the published BJA/I18 integer anchor");
+    assert.equal(stand16.raw, undefined);
 
     const surrenderHidden = solver.indexesForCell("hard", 15, 9, config, []);
     assert.equal(surrenderHidden.some((item) => item.ia === "Rh"), false);
@@ -192,12 +194,14 @@ test("custom index display anchors published cells while retaining raw EV crosso
     const cell15T = solver.chartCell("hard", 15, 10, config, 0, "calculated-action");
     solver.elements.get("true-count-slider").value = "2";
     assert.equal(solver.displayActionForCell(row15, cell15T), "H");
-    solver.elements.get("true-count-slider").value = "4";
+    solver.elements.get("true-count-slider").value = "4.5";
     assert.equal(solver.displayActionForCell(row15, cell15T), "S");
 
     const row16 = { id: "hard-16", kind: "hard", value: 16, label: "16" };
     const cell16T = solver.chartCell("hard", 16, 10, config, 0, "calculated-action-16");
     solver.elements.get("true-count-slider").value = "0";
+    assert.equal(solver.displayActionForCell(row16, cell16T), "H");
+    solver.elements.get("true-count-slider").value = "1";
     assert.equal(solver.displayActionForCell(row16, cell16T), "S");
 });
 

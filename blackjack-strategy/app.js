@@ -794,7 +794,7 @@ function evForCellAction(cell, code) {
 
 function indexesForCell(kind, value, dealer, config, generatedIndices) {
     const group = currentIndexGroup();
-    if (group === "custom") return customIndexesForCell(kind, value, dealer, config, generatedIndices);
+    if (group === "custom") return generatedIndices;
 
     return sourceIndexesForGroup(group, config)
         .filter((item) => item.kind === kind && item.value === value && item.dealer === dealer)
@@ -804,57 +804,6 @@ function indexesForCell(kind, value, dealer, config, generatedIndices) {
             idir: item.idir,
             if: groupLabel(group),
         }));
-}
-
-function customIndexesForCell(kind, value, dealer, config, generatedIndices) {
-    const sourceGroup = auditGroupForConfig(config);
-    const anchors = sourceIndexesForGroup(sourceGroup, config)
-        .filter((item) => item.kind === kind && item.value === value && item.dealer === dealer);
-    if (!anchors.length) return generatedIndices;
-
-    const usedAnchors = new Set();
-    const anchored = generatedIndices.map((index) => {
-        const matchPosition = anchors.findIndex(
-            (anchor, position) =>
-                !usedAnchors.has(position) &&
-                canonicalCode(anchor.ia) === canonicalCode(index.ia) &&
-                anchor.idir === index.idir,
-        );
-        const match = matchPosition >= 0 ? anchors[matchPosition] : null;
-        if (!match) return index;
-        usedAnchors.add(matchPosition);
-        return {
-            ...index,
-            i: match.i,
-            raw: index.i,
-            ia: match.ia,
-            idir: match.idir,
-            if: `${groupLabel(sourceGroup)} anchor`,
-        };
-    });
-
-    anchors.forEach((anchor, position) => {
-        if (usedAnchors.has(position)) return;
-        anchored.push({
-            i: anchor.i,
-            raw: null,
-            ia: anchor.ia,
-            idir: anchor.idir,
-            if: `${groupLabel(sourceGroup)} anchor`,
-        });
-    });
-
-    return dedupeIndexes(anchored);
-}
-
-function dedupeIndexes(indexes) {
-    const seen = new Set();
-    return indexes.filter((item) => {
-        const key = `${canonicalCode(item.ia)}|${item.idir}|${item.i}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
 }
 
 function currentIndexGroup() {
@@ -1054,7 +1003,7 @@ function analyzeCell(kind, value, dealer, config, trueCount) {
     if (analysisCache.has(key)) return analysisCache.get(key);
 
     const approximate = analyzeCellApproximate(kind, value, dealer, config, trueCount);
-    if (!usesCompositionSolver(config) || approximate.margin > COMPOSITION_RECHECK_MARGIN) {
+    if (kind === "hard" || !usesCompositionSolver(config) || approximate.margin > COMPOSITION_RECHECK_MARGIN) {
         analysisCache.set(key, approximate);
         return approximate;
     }
@@ -1074,11 +1023,32 @@ function analyzeCellApproximate(kind, value, dealer, config, trueCount) {
     const key = `${JSON.stringify(config)}|approx|${roundCount(trueCount)}|${kind}|${value}|${dealer}`;
     if (analysisCache.has(key)) return analysisCache.get(key);
 
+    if (kind === "hard") {
+        const hands = hardTotalHands(value);
+        if (hands.length > 1) {
+            const result = analyzeHardTotalApproximate(hands, dealer, config, trueCount);
+            analysisCache.set(key, result);
+            return result;
+        }
+    }
+
     const startingCards = representativeHand(kind, value);
-    const deadCards = [...startingCards, dealer];
+    const result = analyzeStartingCardsApproximate(startingCards, dealer, config, trueCount, {
+        allowSplit: kind === "pair",
+    });
+    analysisCache.set(key, result);
+    return result;
+}
+
+function analyzeStartingCardsApproximate(cards, dealer, config, trueCount, options = {}) {
+    const normalizedCards = cards.map(normalizeCardRank);
+    const key = `${JSON.stringify(config)}|cards-approx|${roundCount(trueCount)}|${normalizedCards.join("-")}|${dealer}|${options.allowSplit ? 1 : 0}`;
+    if (analysisCache.has(key)) return analysisCache.get(key);
+
+    const deadCards = [...normalizedCards, dealer];
     const probs = rankProbabilities(config, trueCount, deadCards);
     const dealerDist = dealerDistribution(dealer, config, probs);
-    const initial = stateForRow(kind, value);
+    const initial = handStateFromCards(normalizedCards);
     const memo = new Map();
     const evs = [];
 
@@ -1088,21 +1058,22 @@ function analyzeCellApproximate(kind, value, dealer, config, trueCount) {
     const hit = hitEv(initial, dealerDist, config, probs, memo);
     evs.push({ code: "H", ev: hit.ev, label: ACTIONS.H.label, distribution: hit.distribution });
 
-    const hardTotal = hardEquivalent(kind, value);
-    const lowTotal = kind === "soft" ? value + 1 : hardTotal;
-    if (canDoubleJS(config, kind, hardTotal, lowTotal)) {
+    const hardTotal = initial.total;
+    const lowTotal = normalizedCards.reduce((sum, card) => sum + (card === 11 ? 1 : card), 0);
+    const handKind = initial.soft > 0 ? "soft" : "hard";
+    if (normalizedCards.length === 2 && canDoubleJS(config, handKind, hardTotal, lowTotal)) {
         const doubled = doubleEv(initial, dealerDist, config, probs);
         const code = stand > hit.ev ? "Ds" : "D";
         evs.push({ code, ev: doubled.ev, label: ACTIONS[code].label, distribution: doubled.distribution });
     }
 
-    if (config.surrender !== 0 && surrenderAllowed(kind, value, dealer, config)) {
+    if (config.surrender !== 0 && normalizedCards.length === 2 && surrenderAllowedActual(initial, dealer, config)) {
         const code = stand > hit.ev ? "Rs" : "Rh";
         evs.push({ code, ev: -0.5, label: ACTIONS[code].label, distribution: { surrender: 1 } });
     }
 
-    if (kind === "pair") {
-        const split = splitEv(value, dealerDist, config, probs, memo);
+    if (options.allowSplit && normalizedCards.length === 2 && normalizedCards[0] === normalizedCards[1]) {
+        const split = splitEv(normalizedCards[0], dealerDist, config, probs, memo);
         evs.push({ code: "P", ev: split.ev, label: ACTIONS.P.label, distribution: split.distribution });
     }
 
@@ -1117,6 +1088,93 @@ function analyzeCellApproximate(kind, value, dealer, config, trueCount) {
     };
     analysisCache.set(key, result);
     return result;
+}
+
+function analyzeHardTotalApproximate(hands, dealer, config, trueCount) {
+    const weighted = hands
+        .map((cards) => ({
+            weight: initialHandWeight(cards, dealer, config, trueCount),
+            analysis: analyzeStartingCardsApproximate(cards, dealer, config, trueCount, { allowSplit: false }),
+        }))
+        .filter((item) => item.weight > 0);
+    return combineWeightedAnalyses(weighted);
+}
+
+function combineWeightedAnalyses(weighted) {
+    const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+    if (!totalWeight) {
+        return {
+            best: { code: "H", ev: -Infinity, label: ACTIONS.H.label, distribution: {} },
+            evs: [],
+            margin: 0,
+            distribution: {},
+        };
+    }
+    const actionMap = new Map();
+
+    weighted.forEach(({ weight, analysis }) => {
+        analysis.evs.forEach((entry) => {
+            const key = canonicalCode(entry.code);
+            const target = actionMap.get(key) || { key, ev: 0, distribution: {} };
+            target.ev += entry.ev * weight;
+            mergeDistribution(target.distribution, entry.distribution || {}, weight);
+            actionMap.set(key, target);
+        });
+    });
+
+    const standEvValue = actionMap.has("S") ? actionMap.get("S").ev / totalWeight : -Infinity;
+    const hitEvValue = actionMap.has("H") ? actionMap.get("H").ev / totalWeight : -Infinity;
+    const evs = [...actionMap.values()].map((entry) => {
+        let code = entry.key;
+        if (entry.key === "D") code = standEvValue > hitEvValue ? "Ds" : "D";
+        if (entry.key === "R") code = standEvValue > hitEvValue ? "Rs" : "Rh";
+        const distribution = normalizeDistribution(
+            Object.fromEntries(Object.entries(entry.distribution).map(([key, value]) => [key, value / totalWeight])),
+        );
+        return {
+            code,
+            ev: entry.ev / totalWeight,
+            label: ACTIONS[code]?.label || code,
+            distribution,
+        };
+    });
+
+    evs.sort((a, b) => b.ev - a.ev);
+    const best = evs[0];
+    const second = evs[1] || best;
+    return {
+        best,
+        evs,
+        margin: Math.max(0, best.ev - second.ev),
+        distribution: normalizeDistribution(best.distribution),
+    };
+}
+
+function initialHandWeight(cards, dealer, config, trueCount) {
+    const [first, second] = cards.map(normalizeCardRank);
+    const firstDraw = rankProbabilities(config, trueCount, [dealer]);
+    const firstProb = rankProbability(firstDraw, first);
+    const secondGivenFirst = rankProbability(rankProbabilities(config, trueCount, [dealer, first]), second);
+    if (first === second) return firstProb * secondGivenFirst;
+
+    const secondProb = rankProbability(firstDraw, second);
+    const firstGivenSecond = rankProbability(rankProbabilities(config, trueCount, [dealer, second]), first);
+    return firstProb * secondGivenFirst + secondProb * firstGivenSecond;
+}
+
+function rankProbability(probs, rank) {
+    return probs.find((item) => item.rank === normalizeCardRank(rank))?.p || 0;
+}
+
+function hardTotalHands(total) {
+    const hands = [];
+    for (let first = 2; first <= 10; first += 1) {
+        for (let second = first; second <= 10; second += 1) {
+            if (first === second || first + second !== total) continue;
+            hands.push([first, second]);
+        }
+    }
+    return hands;
 }
 
 function representativeHand(kind, value) {
