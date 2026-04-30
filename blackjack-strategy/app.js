@@ -269,6 +269,7 @@ function wireControls() {
             normalizeIndexRange({ sourceId: id, editing: event.type === "input" });
             renderChart();
             refreshSelectedInspector();
+            renderHandSolver();
             updateCountReadout();
         });
         $(id).addEventListener("change", () => {
@@ -276,6 +277,7 @@ function wireControls() {
             normalizeIndexRange();
             renderChart();
             refreshSelectedInspector();
+            renderHandSolver();
             updateCountReadout();
         });
     });
@@ -743,9 +745,26 @@ function chartCell(kind, value, dealer, config, trueCount, cacheKey) {
         gap: round4(current.margin),
         evs: Object.fromEntries(current.evs.map((item) => [item.code, round4(item.ev)])),
         probs: current.distribution,
+        generatedIndices,
         indices,
         ...(primaryIndex || {}),
     };
+}
+
+function displayIndicesForCell(row, cell) {
+    if (!row || !cell) return [];
+    return indexesForCell(
+        row.kind,
+        row.value,
+        dealerValueFromLabel(cell.dealer),
+        collectConfig(),
+        cell.generatedIndices || cell.indices || [],
+    );
+}
+
+function hasActiveDisplayIndex(indices) {
+    const trueCount = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
+    return indices.some((index) => (index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i));
 }
 
 function indexesForCell(kind, value, dealer, config, generatedIndices) {
@@ -1665,18 +1684,19 @@ function selectChartHand(row, cell) {
 function cellButton(row, cell) {
     const action = ACTIONS[cell.a] || ACTIONS.H;
     const evMode = $("view-mode").value === "ev";
-    const active = cell.x ? " active-index" : "";
+    const displayIndices = displayIndicesForCell(row, cell);
+    const active = hasActiveDisplayIndex(displayIndices) ? " active-index" : "";
     const selected =
         state.selected && state.selected.rowId === row.id && state.selected.dealer === cell.dealer
             ? " selected-cell"
             : "";
-    const visibleIndices = (cell.indices || []).filter((index) => indexVisible(index.i));
+    const visibleIndices = displayIndices.filter((index) => indexVisible(index.i));
     const badge = visibleIndices.length
         ? `<span class="index-badge">${visibleIndices
             .map((index) => `<span>${formatIndexBadge(index)}</span>`)
             .join(" ")}</span>`
         : "";
-    const payload = JSON.stringify(cell).replaceAll('"', "&quot;");
+    const payload = JSON.stringify({ ...cell, indices: displayIndices, x: Boolean(active) }).replaceAll('"', "&quot;");
     const title = `${row.label} vs ${cell.dealer}: ${action.label}`;
     const evMarkup = evMode
         ? `<span class="cell-ev">${formatSigned(cell.ev)}</span><span class="cell-gap">Δ ${cell.gap.toFixed(3)}</span>`
@@ -1760,6 +1780,7 @@ function renderHandSolver() {
         gap: round4(actual.margin),
         evs: Object.fromEntries(actual.evs.map((item) => [item.code, round4(item.ev)])),
         probs: actual.distribution,
+        indices: displayIndicesForCell(row, cell),
     };
     const action = ACTIONS[actualCell.a] || ACTIONS.H;
     const code = decision.querySelector(".decision-code");
@@ -1787,7 +1808,7 @@ function showCellDetail(row, cell) {
     if (!row || !cell) return;
     const action = ACTIONS[cell.a] || ACTIONS.H;
     const base = ACTIONS[cell.b] || ACTIONS.H;
-    const visibleIndices = (cell.indices || []).filter((index) => indexVisible(index.i));
+    const visibleIndices = displayIndicesForCell(row, cell).filter((index) => indexVisible(index.i));
     const index = visibleIndices.length
         ? visibleIndices
             .map((item) => `${formatIndexBadge(item)} ${item.idir === "gte" ? "and up" : "and below"} (${item.if})`)

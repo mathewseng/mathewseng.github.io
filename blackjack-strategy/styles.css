@@ -587,16 +587,8 @@ input[type="range"]:focus-visible {
 }
 
 .dual-slider-wrap {
-    display: grid;
-    grid-template-columns: 24px minmax(0, 1fr) 24px;
-    gap: 5px;
-    align-items: center;
+    display: block;
     min-width: 0;
-}
-
-.dual-slider-wrap .range-stepper {
-    width: 24px;
-    height: 22px;
 }
 
 .dual-slider input[type="range"] {
@@ -821,7 +813,7 @@ input[type="range"]:focus-visible {
     justify-content: center;
     gap: 1px;
     color: #fff;
-    font-size: 0.46rem;
+    font-size: 0.69rem;
     font-weight: 950;
     line-height: 1;
     pointer-events: none;
@@ -1413,7 +1405,7 @@ input[type="range"] {
     }
 
     .index-badge {
-        font-size: 0.36rem;
+        font-size: 0.54rem;
     }
 
     .legend-bar {
@@ -1772,7 +1764,7 @@ input[type="range"] {
         gap: 1px;
         max-height: none;
         overflow: visible;
-        font-size: 0.34rem;
+        font-size: 0.51rem;
     }
 
     .report-grid {
@@ -1892,7 +1884,7 @@ input[type="range"] {
     }
 
     .index-badge {
-        font-size: 0.31rem;
+        font-size: 0.47rem;
     }
 }
 
