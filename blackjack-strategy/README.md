@@ -29,7 +29,7 @@ cp target/wasm32-unknown-unknown/release/blackjack_solver.wasm ../assets/blackja
 node --test blackjack-strategy/tests/solver-regression.test.mjs
 ```
 
-The regression suite validates physical-card dead-card removal, normalized EV/probability output, bounded index generation, and the Hi-Lo `16 vs 10` crossover that should round to `0` by default.
+The regression suite validates physical-card dead-card removal, normalized EV/probability output, bounded index generation, published Hi-Lo source rows, Custom-vs-source index audit deltas, and a representative matrix of rule/count settings.
 
 ## Supported controls
 
@@ -43,6 +43,7 @@ The regression suite validates physical-card dead-card removal, normalized EV/pr
 - Separate Hi-Lo running-count and true-count sliders, with decks-left precision to 0.01 decks
 - EV/probability view with legal-action EVs, decision gap, and final-total/bust distributions
 - Count indexes calculated in Custom mode with a Hi-Lo-constrained shoe model, plus explicit published Hi-Lo groups such as Illustrious 18, Fab 4, Sweet 16, Catch 20, Catch 22, BJA S17/H17, and JackAce MD S17
+- Compact index audit that compares generated Custom crossover points against the selected or rule-appropriate published source group
 - Index slider defaults to -5 through +10, with number boxes that can accept wider manual values, and displayable index precision from 0 to 3 decimals
 - Finite-deck EVs remove the visible player hand and dealer upcard before calculating draw probabilities
 - Reverse 2-6 dealer-column order: `6 5 4 3 2 7 8 9 T A`

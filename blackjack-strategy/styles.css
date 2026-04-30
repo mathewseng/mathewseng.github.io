@@ -661,6 +661,56 @@ input[type="range"]:focus-visible {
     height: 16px;
 }
 
+.index-audit {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.index-audit > div {
+    min-width: 0;
+    min-height: 34px;
+    padding: 5px 7px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #202223;
+}
+
+.index-audit span,
+.index-audit strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.index-audit span {
+    color: var(--muted);
+    font-size: 0.58rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.index-audit strong {
+    margin-top: 2px;
+    color: var(--text);
+    font-size: 0.74rem;
+    font-weight: 950;
+}
+
+.index-audit[data-status="good"] > div {
+    border-color: rgba(112, 185, 107, 0.34);
+}
+
+.index-audit[data-status="warn"] > div {
+    border-color: rgba(196, 128, 39, 0.42);
+}
+
+.index-audit[data-status="bad"] > div {
+    border-color: rgba(230, 82, 82, 0.42);
+}
+
 .chart-scroll {
     --chart-cell-h: 23px;
     --chart-cell-w: 34px;
@@ -1287,7 +1337,7 @@ input[type="range"] {
     }
 
     .workspace {
-        grid-template-columns: minmax(430px, 520px) minmax(250px, 1fr) minmax(250px, 1fr) minmax(290px, 1.15fr);
+        grid-template-columns: clamp(315px, calc((100svh - 140px) * 0.58), 430px) minmax(240px, 1fr) minmax(240px, 1fr) minmax(300px, 1.15fr);
         grid-template-rows: minmax(0, 1fr) auto;
         grid-template-areas:
             "chart solver count rules"
@@ -1629,8 +1679,8 @@ input[type="range"] {
     .chart-panel {
         display: flex;
         flex-direction: column;
-        height: 100svh;
-        min-height: 100svh;
+        height: calc(100svh - 112px);
+        min-height: calc(100svh - 112px);
         max-height: none;
         overflow: hidden;
     }
@@ -1686,6 +1736,10 @@ input[type="range"] {
         grid-column: 1 / -1;
         justify-content: space-between;
         min-width: 0;
+    }
+
+    .index-audit {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .toolbar-select select {

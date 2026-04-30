@@ -92,6 +92,7 @@ globalThis.__solverTest = {
     HI_LO_TAG,
     analyzeActualHand,
     analyzeCell,
+    buildIndexAudit,
     chartCell,
     deriveIndexes,
     displayActionForCell,
@@ -101,6 +102,7 @@ globalThis.__solverTest = {
     indexesForCell,
     rankProbabilities,
     solveChartJS,
+    sourceIndexesForGroup,
     STANDARD_INDEXES,
 };`,
         context,
@@ -159,6 +161,9 @@ test("published index groups expose source-verified Hi-Lo deviations", () => {
     solver.elements.get("index-group").value = "bjaH17";
     const tenVsAce = solver.indexesForCell("hard", 10, 11, { ...config, h17: 1 }, []);
     assert.equal(JSON.stringify(tenVsAce.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["D", 3, "gte"]]));
+
+    const soft19H17 = solver.indexesForCell("soft", 8, 6, { ...config, h17: 1 }, []);
+    assert.equal(JSON.stringify(soft19H17.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 0, "lte"]]));
 });
 
 test("custom index display is calculated from Hi-Lo constrained EV crossovers", () => {
@@ -204,6 +209,22 @@ test("index decimals expose high-precision calculated crossovers", () => {
     assert.match(solver.formatIndex(standIndex.i), /^\+4\.[0-9]{2}$/);
 });
 
+test("custom index audit compares generated EV indices to the active source group", () => {
+    const solver = loadSolver();
+    const config = { ...solver.PRESETS.vegas };
+    solver.elements.get("index-group").value = "custom";
+
+    const audit = solver.buildIndexAudit(config);
+    assert.equal(audit.group, "bjaS17");
+    assert.ok(audit.sourceCount >= 20, `expected a broad source set, got ${audit.sourceCount}`);
+    assert.ok(audit.matchedCount >= 18, `expected most source entries to map to generated indices, got ${audit.matchedCount}`);
+    assert.ok(audit.avgDelta < 1.25, `expected custom/source average delta under 1.25 TC, got ${audit.avgDelta}`);
+
+    const hard15 = audit.rows.find((row) => row.source.kind === "hard" && row.source.value === 15 && row.source.dealer === 10 && row.source.ia === "S");
+    assert.ok(hard15?.generated, "expected 15vT source row to have a generated comparison");
+    assert.ok(hard15.delta < 0.75, `expected 15vT to stay close to published +4, got delta ${hard15.delta}`);
+});
+
 test("single deck 77 vs dealer 10 removes player and dealer cards throughout EV recursion", () => {
     const solver = loadSolver();
     const config = { ...solver.PRESETS.single };
@@ -233,6 +254,45 @@ test("full chart emits finite EVs, normalized probabilities, and bounded indexes
                 assert.ok(index.i >= -26 && index.i <= 26, `${row.id} vs ${cell.dealer} index out of range`);
                 assert.ok(["gte", "lte"].includes(index.idir), `${row.id} vs ${cell.dealer} bad direction`);
                 assert.ok(["H", "S", "D", "Ds", "P", "Rh", "Rs"].includes(index.ia), `${row.id} vs ${cell.dealer} bad action`);
+            }
+        }
+    }
+});
+
+test("rules and count control matrix keeps representative EVs finite", () => {
+    const solver = loadSolver();
+    const base = { ...solver.PRESETS.vegas };
+    const configs = [
+        ...[1, 2, 3, 4, 5, 6, 7, 8, 99].map((decks) => ({ ...base, decks })),
+        ...[0, 1].map((h17) => ({ ...base, h17 })),
+        ...[0, 1, 2, 3].map((doubleRule) => ({ ...base, doubleRule })),
+        ...[0, 1, 2, 3].map((peek) => ({ ...base, peek })),
+        ...[0, 1, 2, 3].map((surrender) => ({ ...base, surrender })),
+        ...[0, 3, 4].map((resplitHands) => ({ ...base, resplitHands })),
+        ...[0, 1].map((das) => ({ ...base, das })),
+        ...[0, 1].map((hsa) => ({ ...base, hsa })),
+        ...[0, 1].map((rsa) => ({ ...base, rsa })),
+        ...[0, 5, 6, 7].map((charlie) => ({ ...base, charlie })),
+        ...[0, 1, 2, 3].map((blackjackPay) => ({ ...base, blackjackPay })),
+        ...[0, 1, 2].map((optimization) => ({ ...base, optimization })),
+    ];
+    const cells = [
+        ["hard", 8, 6],
+        ["hard", 12, 4],
+        ["hard", 16, 10],
+        ["soft", 8, 6],
+        ["pair", 7, 10],
+        ["pair", 10, 6],
+    ];
+
+    for (const config of configs) {
+        for (const trueCount of [-5, 0, 8]) {
+            for (const [kind, value, dealer] of cells) {
+                const result = solver.analyzeCell(kind, value, dealer, config, trueCount);
+                assert.ok(Number.isFinite(result.best.ev), `${JSON.stringify(config)} ${kind}-${value}v${dealer} TC ${trueCount} non-finite`);
+                assert.ok(result.best.ev >= -2 && result.best.ev <= 2, `${kind}-${value}v${dealer} EV out of bounds`);
+                const sum = Object.values(result.distribution || {}).reduce((total, value) => total + value, 0);
+                nearly(sum, 1, 1e-8);
             }
         }
     }

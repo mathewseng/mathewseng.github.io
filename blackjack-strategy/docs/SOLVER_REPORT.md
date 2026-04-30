@@ -30,6 +30,7 @@ The chart engine emits a rules-aware strategy chart with:
 - Hard totals, soft totals, and pair rows
 - Rule modifiers for S17/H17, double restrictions, DAS, surrender, no-peek variants, HSA, charlies, and count-adjusted card weights
 - Hi-Lo count deviations calculated from EV crossover points with a Hi-Lo-constrained shoe model, plus optional published index groups for comparison
+- Source-audit metrics that compare generated Custom indices against published BJA S17/H17 rows or the selected published group
 - Current true-count application, with each indexed cell retaining the base play, active deviation play, EVs, margin, and final-total distribution
 
 The house edge and variance figures are modeled estimates intended for comparison between rule sets. The chart decisions are deterministic and realtime, but they are not a licensed casino audit or a full composition-dependent finite-deck EV proof.
@@ -39,3 +40,9 @@ The house edge and variance figures are modeled estimates intended for compariso
 The UI feature scope was patterned after the public Beating Bonuses blackjack calculator and blackjack rule tables, especially the controls for decks, soft 17, double rules, peek rules, surrender, resplits, charlies, blackjack pay, and per-hand/per-wager optimization.
 
 Source: https://www.beatingbonuses.com/bjstrategy.php
+
+Published Hi-Lo deviation rows used for validation are cross-checked against:
+
+- https://www.blackjackapprenticeship.com/wp-content/uploads/2019/07/BJA_S17.pdf
+- https://www.blackjackapprenticeship.com/wp-content/uploads/2019/07/BJA_H17.pdf
+- https://wizardofodds.com/games/blackjack/card-counting/high-low/

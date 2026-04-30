@@ -135,7 +135,7 @@ const STANDARD_INDEXES = [
     standardIndex("soft", 8, 4, "D", 3, "gte", ["bjaS17", "bjaH17"]),
     standardIndex("soft", 8, 5, "D", 1, "gte", ["bjaS17", "bjaH17"]),
     standardIndex("soft", 8, 6, "D", 1, "gte", ["bjaS17"]),
-    standardIndex("soft", 8, 6, "D", 0, "lte", ["bjaH17"]),
+    standardIndex("soft", 8, 6, "S", 0, "lte", ["bjaH17"]),
     standardIndex("soft", 6, 2, "D", 1, "gte", ["bjaS17", "bjaH17"]),
     standardIndex("hard", 16, 9, "S", 4, "gte", ["bjaS17", "bjaH17"]),
     standardIndex("hard", 16, 10, "S", 0, "gte", ["bjaS17", "bjaH17"]),
@@ -269,6 +269,7 @@ function wireControls() {
             renderChart();
             refreshSelectedInspector();
             renderHandSolver();
+            renderIndexAudit();
             updateCountReadout();
         });
         $(id).addEventListener("change", () => {
@@ -277,6 +278,7 @@ function wireControls() {
             renderChart();
             refreshSelectedInspector();
             renderHandSolver();
+            renderIndexAudit();
             updateCountReadout();
         });
     });
@@ -674,6 +676,7 @@ function renderAll() {
     renderChart();
     renderLegend();
     renderHandSolver();
+    renderIndexAudit();
     renderMetrics();
 }
 
@@ -793,10 +796,8 @@ function indexesForCell(kind, value, dealer, config, generatedIndices) {
     const group = currentIndexGroup();
     if (group === "custom") return generatedIndices;
 
-    return STANDARD_INDEXES
-        .filter((item) => item.groups.includes(group))
+    return sourceIndexesForGroup(group, config)
         .filter((item) => item.kind === kind && item.value === value && item.dealer === dealer)
-        .filter((item) => !item.requiresSurrender || config.surrender !== 0)
         .map((item) => ({
             i: item.i,
             ia: item.ia,
@@ -807,6 +808,66 @@ function indexesForCell(kind, value, dealer, config, generatedIndices) {
 
 function currentIndexGroup() {
     return $("index-group")?.value || "custom";
+}
+
+function sourceIndexesForGroup(group, config) {
+    const seen = new Set();
+    return STANDARD_INDEXES
+        .filter((item) => item.groups.includes(group))
+        .filter((item) => !item.requiresSurrender || config.surrender !== 0)
+        .filter((item) => {
+            const key = `${item.kind}|${item.value}|${item.dealer}|${canonicalCode(item.ia)}|${item.idir}|${item.i}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+}
+
+function auditGroupForConfig(config) {
+    const selected = currentIndexGroup();
+    if (selected !== "custom") return selected;
+    return config.h17 ? "bjaH17" : "bjaS17";
+}
+
+function buildIndexAudit(config = collectConfig()) {
+    const group = auditGroupForConfig(config);
+    const sources = sourceIndexesForGroup(group, config);
+    const rows = sources.map((source) => {
+        const base = analyzeCellApproximate(source.kind, source.value, source.dealer, config, 0).best.code;
+        const generated = deriveIndexes(source.kind, source.value, source.dealer, config, base, `audit-${group}`);
+        const match = findComparableGeneratedIndex(source, generated);
+        return {
+            source,
+            generated: match,
+            delta: match ? Math.abs(match.i - source.i) : Infinity,
+        };
+    });
+    const matched = rows.filter((row) => Number.isFinite(row.delta));
+    const avgDelta = matched.length
+        ? matched.reduce((sum, row) => sum + row.delta, 0) / matched.length
+        : Infinity;
+    const worst = matched.reduce((current, row) => (row.delta > (current?.delta ?? -1) ? row : current), null);
+    return {
+        group,
+        sourceCount: sources.length,
+        matchedCount: matched.length,
+        avgDelta,
+        worst,
+        rows,
+    };
+}
+
+function findComparableGeneratedIndex(source, generated) {
+    const sourceAction = canonicalCode(source.ia);
+    const same = generated.find(
+        (item) => canonicalCode(item.ia) === sourceAction && item.idir === source.idir,
+    );
+    if (same) return same;
+
+    const oppositeDirection = source.idir === "gte" ? "lte" : "gte";
+    return generated.find(
+        (item) => item.idir === oppositeDirection && canonicalCode(item.ia) !== sourceAction,
+    );
 }
 
 function groupLabel(group) {
@@ -1800,6 +1861,27 @@ function legendLabel(code, fallback) {
         Rh: "Surrender/H",
         Rs: "Surrender/S",
     }[code] || fallback;
+}
+
+function renderIndexAudit() {
+    if (!$("audit-group") || !state.chart) return;
+    const audit = buildIndexAudit(collectConfig());
+    const finiteAvg = Number.isFinite(audit.avgDelta);
+    const worst = audit.worst;
+    const worstLabel = worst
+        ? `${rowLabel(worst.source.kind, worst.source.value)}v${dealerLabel(worst.source.dealer)} ${formatDelta(worst.delta)}`
+        : "--";
+    const status = !finiteAvg ? "bad" : audit.avgDelta <= 0.75 ? "good" : audit.avgDelta <= 1.25 ? "warn" : "bad";
+    $("index-audit").dataset.status = status;
+    $("audit-group").textContent = groupLabel(audit.group);
+    $("audit-matched").textContent = `${audit.matchedCount}/${audit.sourceCount}`;
+    $("audit-average").textContent = finiteAvg ? formatDelta(audit.avgDelta) : "--";
+    $("audit-worst").textContent = worstLabel;
+}
+
+function formatDelta(value) {
+    if (!Number.isFinite(value)) return "--";
+    return `Δ${Number(value).toFixed(value >= 10 ? 0 : 2)}`;
 }
 
 function renderHandTray() {
