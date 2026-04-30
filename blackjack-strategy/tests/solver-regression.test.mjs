@@ -51,6 +51,8 @@ function loadSolver() {
     element("index-min-range").value = "-5";
     element("index-max-range").value = "10";
     element("index-group").value = "custom";
+    element("apply-count-toggle").checked = true;
+    element("true-count-slider").value = "0";
 
     const document = {
         addEventListener() {},
@@ -91,6 +93,7 @@ globalThis.__solverTest = {
     analyzeCell,
     chartCell,
     deriveIndexes,
+    displayActionForCell,
     evForCode,
     formatIndex,
     formatIndexBadge,
@@ -155,6 +158,34 @@ test("published index groups expose source-verified Hi-Lo deviations", () => {
     solver.elements.get("index-group").value = "bjaH17";
     const tenVsAce = solver.indexesForCell("hard", 10, 11, { ...config, h17: 1 }, []);
     assert.equal(JSON.stringify(tenVsAce.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["D", 3, "gte"]]));
+});
+
+test("custom index display is source-calibrated instead of raw EV-tilt output", () => {
+    const solver = loadSolver();
+    const config = { ...solver.PRESETS.vegas };
+    solver.elements.get("index-group").value = "custom";
+
+    const rawBase = solver.analyzeCell("hard", 15, 10, config, 0);
+    const raw = solver
+        .deriveIndexes("hard", 15, 10, config, rawBase.best.code, "raw-mismatch")
+        .find((item) => item.ia === "S" && item.idir === "gte");
+    assert.ok(raw.i < 2, `expected the old modeled crossover to be visibly wrong, got ${raw.i}`);
+
+    const displayed15 = solver.indexesForCell("hard", 15, 10, config, []);
+    assert.equal(JSON.stringify(displayed15.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 4, "gte"]]));
+
+    const displayed16 = solver.indexesForCell("hard", 16, 10, config, []);
+    assert.equal(JSON.stringify(displayed16.map((item) => [item.ia, item.i, item.idir])), JSON.stringify([["S", 0, "gte"]]));
+
+    const surrenderHidden = solver.indexesForCell("hard", 15, 9, config, []);
+    assert.equal(surrenderHidden.some((item) => item.ia === "Rh"), false);
+
+    const row15 = { id: "hard-15", kind: "hard", value: 15, label: "15" };
+    const cell15T = solver.chartCell("hard", 15, 10, config, 0, "source-calibrated-action");
+    solver.elements.get("true-count-slider").value = "2";
+    assert.equal(solver.displayActionForCell(row15, cell15T), "H");
+    solver.elements.get("true-count-slider").value = "4";
+    assert.equal(solver.displayActionForCell(row15, cell15T), "S");
 });
 
 test("default index rounding shows the 16v10 crossover as 0, not +1", () => {

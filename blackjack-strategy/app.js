@@ -762,14 +762,37 @@ function displayIndicesForCell(row, cell) {
     );
 }
 
-function hasActiveDisplayIndex(indices) {
+function activeDisplayIndex(indices) {
     const trueCount = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
-    return indices.some((index) => (index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i));
+    return indices
+        .filter((index) => (index.idir === "gte" ? trueCount >= index.i : trueCount <= index.i))
+        .sort((a, b) => indexActionPriority(a.ia) - indexActionPriority(b.ia))[0];
+}
+
+function indexActionPriority(code) {
+    const canonical = canonicalCode(code);
+    if (canonical === "R") return 0;
+    if (canonical === "P") return 1;
+    if (canonical === "D") return 2;
+    return 3;
+}
+
+function displayActionForCell(row, cell, indices = displayIndicesForCell(row, cell), options = {}) {
+    const active = activeDisplayIndex(indices);
+    if (active) return active.ia;
+    if (indices.length || options.fallback !== "current") return cell.b || cell.a;
+    return cell.a;
+}
+
+function evForCellAction(cell, code) {
+    if (!cell.evs) return cell.ev;
+    const match = Object.entries(cell.evs).find(([action]) => canonicalCode(action) === canonicalCode(code));
+    return match ? Number(match[1]) : cell.ev;
 }
 
 function indexesForCell(kind, value, dealer, config, generatedIndices) {
     const group = currentIndexGroup();
-    if (group === "custom") return generatedIndices;
+    if (group === "custom") return customIndexesForCell(kind, value, dealer, config);
 
     return STANDARD_INDEXES
         .filter((item) => item.groups.includes(group))
@@ -781,6 +804,27 @@ function indexesForCell(kind, value, dealer, config, generatedIndices) {
             idir: item.idir,
             if: groupLabel(group),
         }));
+}
+
+function customIndexesForCell(kind, value, dealer, config) {
+    const groups = config.h17 ? ["bjaH17"] : ["jackaceMdS17", "bjaS17"];
+    const seen = new Set();
+    const indexes = [];
+    STANDARD_INDEXES.forEach((item) => {
+        if (!groups.some((group) => item.groups.includes(group))) return;
+        if (item.kind !== kind || item.value !== value || item.dealer !== dealer) return;
+        if (item.requiresSurrender && config.surrender === 0) return;
+        const key = `${canonicalCode(item.ia)}|${item.idir}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        indexes.push({
+            i: item.i,
+            ia: item.ia,
+            idir: item.idir,
+            if: config.h17 ? "BJA H17" : "Source",
+        });
+    });
+    return indexes;
 }
 
 function currentIndexGroup() {
@@ -1682,10 +1726,11 @@ function selectChartHand(row, cell) {
 }
 
 function cellButton(row, cell) {
-    const action = ACTIONS[cell.a] || ACTIONS.H;
     const evMode = $("view-mode").value === "ev";
     const displayIndices = displayIndicesForCell(row, cell);
-    const active = hasActiveDisplayIndex(displayIndices) ? " active-index" : "";
+    const displayAction = displayActionForCell(row, cell, displayIndices);
+    const action = ACTIONS[displayAction] || ACTIONS.H;
+    const active = activeDisplayIndex(displayIndices) ? " active-index" : "";
     const selected =
         state.selected && state.selected.rowId === row.id && state.selected.dealer === cell.dealer
             ? " selected-cell"
@@ -1696,20 +1741,21 @@ function cellButton(row, cell) {
             .map((index) => `<span>${formatIndexBadge(index)}</span>`)
             .join(" ")}</span>`
         : "";
-    const payload = JSON.stringify({ ...cell, indices: displayIndices, x: Boolean(active) }).replaceAll('"', "&quot;");
+    const displayEv = round4(evForCellAction(cell, displayAction));
+    const payload = JSON.stringify({ ...cell, a: displayAction, ev: displayEv, indices: displayIndices, x: Boolean(active) }).replaceAll('"', "&quot;");
     const title = `${row.label} vs ${cell.dealer}: ${action.label}`;
     const evMarkup = evMode
-        ? `<span class="cell-ev">${formatSigned(cell.ev)}</span><span class="cell-gap">Δ ${cell.gap.toFixed(3)}</span>`
+        ? `<span class="cell-ev">${formatSigned(displayEv)}</span><span class="cell-gap">Δ ${cell.gap.toFixed(3)}</span>`
         : "";
-    const style = evMode ? ` style="--cell-bg:${evColor(cell.ev, cell.gap)}"` : "";
+    const style = evMode ? ` style="--cell-bg:${evColor(displayEv, cell.gap)}"` : "";
     return `<button class="action-cell ${action.className}${active}${selected}${evMode ? " ev-cell" : ""}" type="button" data-row="${row.id}" data-row-label="${row.label}" data-dealer="${cell.dealer}" data-cell="${payload}" title="${title}"${style}>
-        <span class="action-code">${cell.a}</span>${evMarkup}${badge}
+        <span class="action-code">${displayAction}</span>${evMarkup}${badge}
     </button>`;
 }
 
 function renderLegend() {
     if (!state.chart?.legend) return;
-    const visibleActions = new Set(state.chart.rows.flatMap((row) => row.cells.map((cell) => cell.a)));
+    const visibleActions = new Set(state.chart.rows.flatMap((row) => row.cells.map((cell) => displayActionForCell(row, cell))));
     $("legend-bar").innerHTML = state.chart.legend
         .filter((item) => visibleActions.has(item.code))
         .map((item) => {
@@ -1773,14 +1819,18 @@ function renderHandSolver() {
     const config = collectConfig();
     const trueCount = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
     const actual = analyzeActualHand(state.hand, state.dealer, config, trueCount);
+    const displayIndices = displayIndicesForCell(row, cell);
+    const indexedAction = displayIndices.length
+        ? displayActionForCell(row, cell, displayIndices)
+        : actual.best.code;
     const actualCell = {
         ...cell,
-        a: actual.best.code,
-        ev: round4(actual.best.ev),
+        a: indexedAction,
+        ev: round4(evForCode(actual, indexedAction)),
         gap: round4(actual.margin),
         evs: Object.fromEntries(actual.evs.map((item) => [item.code, round4(item.ev)])),
         probs: actual.distribution,
-        indices: displayIndicesForCell(row, cell),
+        indices: displayIndices,
     };
     const action = ACTIONS[actualCell.a] || ACTIONS.H;
     const code = decision.querySelector(".decision-code");
@@ -1806,9 +1856,12 @@ function renderHandSolver() {
 
 function showCellDetail(row, cell) {
     if (!row || !cell) return;
-    const action = ACTIONS[cell.a] || ACTIONS.H;
+    const displayIndices = displayIndicesForCell(row, cell);
+    const displayAction = displayActionForCell(row, cell, displayIndices);
+    const displayEv = round4(evForCellAction(cell, displayAction));
+    const action = ACTIONS[displayAction] || ACTIONS.H;
     const base = ACTIONS[cell.b] || ACTIONS.H;
-    const visibleIndices = displayIndicesForCell(row, cell).filter((index) => indexVisible(index.i));
+    const visibleIndices = displayIndices.filter((index) => indexVisible(index.i));
     const index = visibleIndices.length
         ? visibleIndices
             .map((item) => `${formatIndexBadge(item)} ${item.idir === "gte" ? "and up" : "and below"} (${item.if})`)
@@ -1816,8 +1869,8 @@ function showCellDetail(row, cell) {
         : "No index in selected range";
     $("cell-detail").innerHTML = `
         <strong>${row.label} vs ${cell.dealer}</strong><br>
-        ${action.label}. Base: ${base.label}. EV ${formatSigned(cell.ev)}. Decision gap ${cell.gap.toFixed(4)}. ${index}.
-        ${renderEvRows(cell)}
+        ${action.label}. Base: ${base.label}. EV ${formatSigned(displayEv)}. Decision gap ${cell.gap.toFixed(4)}. ${index}.
+        ${renderEvRows({ ...cell, a: displayAction, ev: displayEv })}
         ${renderProbabilityRows(cell)}
     `;
 }
