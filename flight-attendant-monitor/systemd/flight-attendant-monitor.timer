@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Atlanta flight-attendant job monitor hourly
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=flight-attendant-monitor.service
+
+[Install]
+WantedBy=timers.target

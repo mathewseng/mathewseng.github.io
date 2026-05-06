@@ -1,0 +1,10 @@
+[Unit]
+Description=Atlanta flight-attendant job monitor
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/flight-attendant-monitor
+EnvironmentFile=-/opt/flight-attendant-monitor/.env
+ExecStart=/opt/flight-attendant-monitor/.venv/bin/python /opt/flight-attendant-monitor/monitor.py

@@ -1,0 +1,149 @@
+{
+  "match": {
+    "title_terms": [
+      "flight attendant",
+      "flight attendant trainee",
+      "cabin crew",
+      "cabin attendant",
+      "inflight crew",
+      "inflight crewmember",
+      "in-flight crew",
+      "in-flight crewmember"
+    ],
+    "exclude_title_terms": [
+      "recruiter",
+      "scheduler",
+      "supervisor",
+      "manager",
+      "instructor",
+      "analyst",
+      "coordinator",
+      "pilot",
+      "mechanic",
+      "technician",
+      "airport operations",
+      "customer service"
+    ]
+  },
+  "sources": [
+    {
+      "name": "Delta flight-attendant search",
+      "airline": "Delta Air Lines",
+      "type": "html",
+      "url": "https://delta.avature.net/en_US/careers/SearchJobs/?jobRecordsPerPage=20&jobOffset=0&search=flight%20attendant",
+      "official_info_url": "https://www.delta.com/us/en/careers/flight-attendant-careers",
+      "atl_base_airline": true,
+      "match_note": "Delta's official flight-attendant page lists Atlanta as a base; Delta's Avature search may challenge some servers."
+    },
+    {
+      "name": "Southwest career search",
+      "airline": "Southwest Airlines",
+      "type": "phenom",
+      "url": "https://careers.southwestair.com/us/en/search-results?keywords=flight%20attendant",
+      "base_url": "https://careers.southwestair.com/us/en/",
+      "official_info_url": "https://careers.southwestair.com/us/en/flight-attendants",
+      "atl_base_airline": true,
+      "match_note": "Southwest's official flight-attendant page lists Atlanta (ATL) as a crew base."
+    },
+    {
+      "name": "Frontier flight-attendant page",
+      "airline": "Frontier Airlines",
+      "type": "static_apply",
+      "url": "https://www.flyfrontier.com/careers/flight-attendant/",
+      "official_info_url": "https://www.flyfrontier.com/careers/flight-attendant/",
+      "default_title": "Flight Attendant",
+      "location": "Atlanta, GA is listed by Frontier as a flight-attendant base",
+      "apply_href_contains": [
+        "opportunitydetail"
+      ],
+      "apply_text_contains": [
+        "apply"
+      ],
+      "atl_base_airline": true,
+      "match_note": "Frontier publishes a dedicated flight-attendant apply page and lists Atlanta, GA as a base."
+    },
+    {
+      "name": "American flight-attendant search",
+      "airline": "American Airlines",
+      "type": "html",
+      "url": "https://jobs.aa.com/go/Flight-Attendants/2537300/",
+      "official_info_url": "https://jobs.aa.com/go/Flight-Attendants/2537300/",
+      "require_atlanta": true,
+      "job_href_contains": [
+        "/job/",
+        "job/"
+      ],
+      "match_note": "American is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    },
+    {
+      "name": "United flight-attendant search",
+      "airline": "United Airlines",
+      "type": "phenom",
+      "url": "https://careers.united.com/us/en/c/flight-attendant-jobs?s=1",
+      "base_url": "https://careers.united.com/us/en/",
+      "official_info_url": "https://careers.united.com/us/en/flight-attendant-information",
+      "require_atlanta": true,
+      "match_note": "United is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    },
+    {
+      "name": "Spirit job search",
+      "airline": "Spirit Airlines",
+      "type": "html",
+      "url": "https://careers.spirit.com/jobs?keywords=flight%20attendant",
+      "official_info_url": "https://careers.spirit.com/flight-attendants-more-go",
+      "require_atlanta": true,
+      "job_href_contains": [
+        "/jobs/",
+        "icims.com/jobs"
+      ],
+      "match_note": "Spirit is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    },
+    {
+      "name": "JetBlue RSS search",
+      "airline": "JetBlue",
+      "type": "rss",
+      "url": "https://careers.jetblue.com/services/rss/job/?locale=en_US&keywords=(flight%20attendant)",
+      "official_info_url": "https://careers.jetblue.com/",
+      "require_atlanta": true,
+      "match_note": "JetBlue is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    },
+    {
+      "name": "Endeavor Air iCIMS search",
+      "airline": "Endeavor Air",
+      "type": "html",
+      "url": "https://careers-endeavorair.icims.com/jobs/search?ss=1&searchKeyword=flight+attendant",
+      "official_info_url": "https://www.endeavorair.com/content/endeavor-air/en_us/careers/flight-attendants.html",
+      "require_atlanta": true,
+      "job_href_contains": [
+        "/jobs/",
+        "icims.com/jobs"
+      ],
+      "match_note": "Endeavor is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    },
+    {
+      "name": "Envoy Air iCIMS search",
+      "airline": "Envoy Air",
+      "type": "html",
+      "url": "https://careers-envoyair.icims.com/jobs/search?ss=1&searchRelation=keyword_all&searchCategory=8741",
+      "official_info_url": "https://www.envoyair.com/flight-attendants-landing-page/",
+      "require_atlanta": true,
+      "job_href_contains": [
+        "/jobs/",
+        "icims.com/jobs"
+      ],
+      "match_note": "Envoy is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    },
+    {
+      "name": "SkyWest flight-attendant category",
+      "airline": "SkyWest Airlines",
+      "type": "html",
+      "url": "https://jobs.skywest.com/skywest-airlines/jobs/categories/flight-attendant",
+      "official_info_url": "https://www.skywest.com/skywest-airline-jobs/career-guides/flight-attendant-jobs",
+      "require_atlanta": true,
+      "job_href_contains": [
+        "/jobs/"
+      ],
+      "match_note": "SkyWest is included for completeness, but alerts only if the posting itself mentions Atlanta/ATL."
+    }
+  ]
+}
