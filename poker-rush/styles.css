@@ -19,8 +19,8 @@
   --danger: #ff5c66;
   --shadow: 0 18px 70px rgba(0, 0, 0, 0.42);
   --radius: 8px;
-  --card-w: 92px;
-  --card-h: 128px;
+  --card-w: 124px;
+  --card-h: 172px;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -491,21 +491,24 @@ select {
 
 .mini-cards {
   display: flex;
-  gap: 5px;
+  gap: 6px;
 }
 
 .mini-card {
-  width: 34px;
-  height: 46px;
+  width: 40px;
+  height: 54px;
   display: grid;
   place-items: center;
-  border: 1px solid #3a4353;
-  border-radius: 5px;
-  background: #eef4ff;
-  color: #151923;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.16), transparent 24px),
+    linear-gradient(145deg, var(--card-face), var(--card-face-2));
+  color: #fff;
   font-weight: 950;
-  font-size: 0.82rem;
+  font-size: 1rem;
   position: relative;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
 }
 
 .mini-card::after,
@@ -540,30 +543,50 @@ select {
 
 .mini-card::after {
   position: absolute;
-  right: 4px;
-  bottom: 2px;
-  font-size: 0.68rem;
+  left: 4px;
+  top: 2px;
+  color: var(--suit-mark);
+  font-size: 0.78rem;
+  text-shadow: none;
 }
 
-[data-suit="H"],
+[data-suit="S"] {
+  --card-face: #5b5c5e;
+  --card-face-2: #47484a;
+  --card-border: #68696b;
+  --suit-mark: #2f3032;
+}
+
+[data-suit="H"] {
+  --card-face: #b60d07;
+  --card-face-2: #950905;
+  --card-border: #cc221a;
+  --suit-mark: #540503;
+}
+
 [data-suit="D"] {
-  --card-accent: #c8174e;
+  --card-face: #3647d7;
+  --card-face-2: #2937b7;
+  --card-border: #4d5df0;
+  --suit-mark: #15217e;
 }
 
-[data-suit="S"],
 [data-suit="C"] {
-  --card-accent: #121722;
+  --card-face: #08b535;
+  --card-face-2: #02952a;
+  --card-border: #18cb47;
+  --suit-mark: #00621b;
 }
 
-.mini-card[data-suit="H"],
-.mini-card[data-suit="D"],
-.playing-card[data-suit="H"],
-.playing-card[data-suit="D"] {
-  color: #c8174e;
+[data-suit="X"] {
+  --card-face: #d6a72f;
+  --card-face-2: #8f4fe8;
+  --card-border: #f2c75c;
+  --suit-mark: rgba(20, 20, 28, 0.52);
 }
 
 .table-surface {
-  min-height: 312px;
+  min-height: 386px;
   padding: 16px;
   display: grid;
   gap: 16px;
@@ -597,27 +620,29 @@ select {
 .hand {
   min-height: var(--card-h);
   display: grid;
-  grid-template-columns: repeat(7, minmax(74px, var(--card-w)));
+  grid-template-columns: repeat(7, minmax(92px, var(--card-w)));
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .playing-card {
   width: var(--card-w);
   height: var(--card-h);
-  border: 1px solid #f7fbff;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   background:
-    linear-gradient(145deg, #ffffff, #e9f0fb),
-    #f8fbff;
+    radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.16), transparent 42px),
+    linear-gradient(145deg, var(--card-face), var(--card-face-2));
   box-shadow:
-    0 13px 32px rgba(0, 0, 0, 0.25),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.42);
-  color: var(--card-accent);
-  padding: 8px;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+    0 16px 34px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -14px 24px rgba(0, 0, 0, 0.14);
+  color: #fff;
+  padding: 12px;
+  display: block;
   position: relative;
+  overflow: hidden;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.22);
   transition:
     transform 150ms ease,
     box-shadow 150ms ease,
@@ -630,8 +655,9 @@ select {
   transform: translateY(-8px);
   box-shadow:
     0 22px 46px rgba(0, 0, 0, 0.34),
-    0 0 0 2px rgba(69, 214, 255, 0.35),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.42);
+    0 0 0 2px rgba(69, 214, 255, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -14px 24px rgba(0, 0, 0, 0.14);
   outline: none;
 }
 
@@ -640,36 +666,48 @@ select {
 }
 
 .playing-card .rank {
-  font-size: 1.2rem;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 5.25rem;
   font-weight: 950;
-  line-height: 1;
+  line-height: 0.9;
+  letter-spacing: 0;
 }
 
 .playing-card .suit {
-  align-self: center;
-  justify-self: center;
-  font-size: 3rem;
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  color: var(--suit-mark);
+  font-size: 2.35rem;
   line-height: 1;
+  text-shadow: none;
 }
 
 .playing-card .hotkey {
-  justify-self: end;
-  width: 22px;
-  height: 22px;
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border-radius: 5px;
-  background: rgba(15, 19, 27, 0.12);
-  color: #4b5567;
-  font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.16);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.78rem;
   font-weight: 950;
+  text-shadow: none;
 }
 
 .playing-card[data-joker="true"] {
-  color: #181d29;
-  background:
-    linear-gradient(145deg, #fff7d9, #e9f7ff),
-    #f8fbff;
+  color: #fff;
+}
+
+.playing-card[data-joker="true"] .rank {
+  font-size: 4.35rem;
 }
 
 .playing-card[data-joker="true"] .suit::before {
@@ -707,12 +745,12 @@ select {
 
 .matrix-row {
   display: grid;
-  grid-template-columns: 34px repeat(13, minmax(34px, 1fr));
-  gap: 6px;
+  grid-template-columns: 34px repeat(13, minmax(46px, 1fr));
+  gap: 5px;
 }
 
 .matrix-row.jokers {
-  grid-template-columns: 34px repeat(4, 42px);
+  grid-template-columns: 34px repeat(4, 52px);
   justify-content: start;
 }
 
@@ -725,16 +763,21 @@ select {
 }
 
 .matrix-cell {
-  min-height: 38px;
-  border: 1px solid var(--line);
+  min-height: 58px;
+  border: 1px solid var(--card-border);
   border-radius: 6px;
-  background: #0c1017;
-  color: var(--muted);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.12), transparent 28px),
+    linear-gradient(145deg, var(--card-face), var(--card-face-2));
+  color: #fff;
   display: grid;
   place-items: center;
   position: relative;
-  font-size: 0.76rem;
+  font-size: 1.7rem;
   font-weight: 950;
+  line-height: 1;
+  opacity: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
   transition:
     background 160ms ease,
     border-color 160ms ease,
@@ -744,29 +787,30 @@ select {
 
 .matrix-cell .suit-dot {
   position: absolute;
-  right: 4px;
-  bottom: 2px;
-  font-size: 0.62rem;
-  color: currentColor;
+  left: 5px;
+  top: 3px;
+  font-size: 0.86rem;
+  color: var(--suit-mark);
+  text-shadow: none;
 }
 
 .matrix-cell.seen {
-  border-color: rgba(69, 214, 255, 0.42);
-  background: rgba(69, 214, 255, 0.1);
-  color: var(--text);
+  opacity: 1;
 }
 
 .matrix-cell.active {
-  border-color: rgba(189, 244, 107, 0.72);
-  background: rgba(189, 244, 107, 0.14);
-  color: var(--green);
+  border-color: rgba(189, 244, 107, 0.86);
+  box-shadow:
+    0 0 0 1px rgba(189, 244, 107, 0.55),
+    0 0 18px rgba(189, 244, 107, 0.18);
+  opacity: 1;
 }
 
 .matrix-cell.discarded {
-  border-color: rgba(143, 156, 175, 0.18);
-  background: #151821;
-  color: #626c7c;
+  border-color: rgba(143, 156, 175, 0.14);
+  color: rgba(255, 255, 255, 0.5);
   filter: grayscale(1);
+  opacity: 0.34;
 }
 
 .matrix-cell.scored {
@@ -775,10 +819,11 @@ select {
 
 .matrix-cell .count {
   position: absolute;
-  left: 3px;
-  bottom: 2px;
-  color: var(--dim);
-  font-size: 0.58rem;
+  right: 4px;
+  bottom: 3px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.64rem;
+  text-shadow: none;
 }
 
 .score-list {
@@ -955,8 +1000,8 @@ select {
 
 @media (max-width: 920px) {
   :root {
-    --card-w: 78px;
-    --card-h: 110px;
+    --card-w: 94px;
+    --card-h: 132px;
   }
 
   .table-header,
@@ -981,7 +1026,7 @@ select {
   }
 
   .matrix-row {
-    grid-template-columns: 30px repeat(13, 36px);
+    grid-template-columns: 30px repeat(13, 48px);
     overflow-x: auto;
   }
 
@@ -1042,9 +1087,22 @@ select {
     flex-direction: column;
   }
 
-  .playing-card .suit {
-    font-size: 2.35rem;
+  .table-surface {
+    min-height: 314px;
   }
+
+  .playing-card .rank {
+    font-size: 3.85rem;
+  }
+
+  .playing-card[data-joker="true"] .rank {
+    font-size: 3.15rem;
+  }
+
+  .playing-card .suit {
+    font-size: 1.8rem;
+  }
+}
 }
 
 @media (prefers-reduced-motion: reduce) {
