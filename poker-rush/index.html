@@ -120,6 +120,7 @@
           </div>
           <div class="header-actions">
             <button id="soundButton" class="small-button" type="button" aria-label="Toggle sound">SFX</button>
+            <button id="matrixToggleButton" class="small-button" type="button" aria-pressed="false">Matrix</button>
             <button id="newDailyButton" class="small-button" type="button">Daily</button>
             <button id="newRandomButton" class="small-button" type="button">Random</button>
             <button id="endGameButton" class="small-button danger" type="button">End</button>
@@ -145,7 +146,7 @@
         </section>
 
         <section class="lower-grid">
-          <div class="matrix-panel">
+          <div id="matrixPanel" class="matrix-panel" hidden>
             <div class="panel-head">
               <span>Card matrix</span>
               <strong id="uniqueSeenValue">0 unique</strong>

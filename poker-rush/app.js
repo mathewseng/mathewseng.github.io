@@ -16,6 +16,7 @@
     dailyButton: document.querySelector("#dailyButton"),
     randomButton: document.querySelector("#randomButton"),
     multiplayerButton: document.querySelector("#multiplayerButton"),
+    matrixToggleButton: document.querySelector("#matrixToggleButton"),
     newDailyButton: document.querySelector("#newDailyButton"),
     newRandomButton: document.querySelector("#newRandomButton"),
     instructionsButton: document.querySelector("#instructionsButton"),
@@ -38,6 +39,7 @@
     seedBadge: document.querySelector("#seedBadge"),
     modeBadge: document.querySelector("#modeBadge"),
     tableSurface: document.querySelector(".table-surface"),
+    matrixPanel: document.querySelector("#matrixPanel"),
     soundButton: document.querySelector("#soundButton"),
     endGameButton: document.querySelector("#endGameButton"),
     gameOver: document.querySelector("#gameOver"),
@@ -79,6 +81,7 @@
   let previousHandIds = [];
   let matrixCellsById = new Map();
   let matrixSignature = "";
+  let matrixVisible = false;
   let renderedScoreIds = new Set();
   let isResolving = false;
   let playMode = "single";
@@ -215,6 +218,15 @@
     isResolving = false;
   }
 
+  function setMatrixVisible(visible, { renderNow = true } = {}) {
+    matrixVisible = Boolean(visible);
+    els.gameView.classList.toggle("matrix-visible", matrixVisible);
+    els.matrixPanel.hidden = !matrixVisible;
+    els.matrixToggleButton.setAttribute("aria-pressed", String(matrixVisible));
+    els.matrixToggleButton.classList.toggle("is-active", matrixVisible);
+    if (matrixVisible && renderNow && game) renderMatrix({ force: true });
+  }
+
   function serializeView(view) {
     return {
       ...view,
@@ -283,6 +295,7 @@
     lastSeed = kind === "daily" ? dailySeed() : randomSeed();
     game = new PokerRushGame(readOptions(lastSeed));
     resetRenderState();
+    setMatrixVisible(false, { renderNow: false });
     els.lobby.hidden = true;
     els.gameView.hidden = false;
     els.gameOver.hidden = true;
@@ -513,6 +526,7 @@
   }
 
   function renderMatrix({ force = false } = {}) {
+    if (!matrixVisible) return;
     const baseDeck = createDeck(game.options.jokers);
     const nextSignature = baseDeck.map((card) => card.baseId).join("|");
     if (force || matrixSignature !== nextSignature) {
@@ -795,6 +809,7 @@
     lastSeed = seed;
     lastStartKind = "multiplayer";
     resetRenderState();
+    setMatrixVisible(false, { renderNow: false });
     els.lobby.hidden = true;
     els.gameView.hidden = false;
     els.gameOver.hidden = true;
@@ -963,6 +978,7 @@
     multiplayerGame = null;
     playMode = "single";
     game = null;
+    setMatrixVisible(false, { renderNow: false });
     els.gameOver.hidden = true;
     els.gameView.hidden = true;
     els.lobby.hidden = false;
@@ -985,6 +1001,7 @@
   els.multiplayerButton.addEventListener("click", openMultiplayerDialog);
   els.newDailyButton.addEventListener("click", () => startGame("daily"));
   els.newRandomButton.addEventListener("click", () => startGame("random"));
+  els.matrixToggleButton.addEventListener("click", () => setMatrixVisible(!matrixVisible));
   els.endGameButton.addEventListener("click", endCurrentGame);
   els.hostGameButton.addEventListener("click", () => {
     createHostInvite().catch((error) => setConnectionStatus(error.message));

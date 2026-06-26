@@ -523,6 +523,7 @@ select {
 }
 
 .score-meta {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -530,10 +531,15 @@ select {
 }
 
 .score-meta strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.94rem;
 }
 
 .score-meta span {
+  flex: 0 0 auto;
   color: var(--green);
   font-size: 0.82rem;
   font-weight: 900;
@@ -1134,12 +1140,21 @@ body {
   min-height: 0;
   display: grid;
   grid-template-areas:
-    "header header"
-    "table table"
-    "matrix scores";
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  grid-template-rows: 64px minmax(0, 1fr) 220px;
+    "header"
+    "table"
+    "scores";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 64px minmax(0, 1fr) 170px;
   gap: 10px;
+}
+
+.game-view.matrix-visible {
+  grid-template-areas:
+    "header"
+    "table"
+    "scores"
+    "matrix";
+  grid-template-rows: 64px minmax(0, 1fr) 150px 214px;
 }
 
 .table-header {
@@ -1181,7 +1196,7 @@ body {
 
 .header-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(48px, auto));
+  grid-template-columns: repeat(5, minmax(48px, auto));
 }
 
 .small-button {
@@ -1195,12 +1210,19 @@ body {
   color: #ffd1d5;
 }
 
+.small-button.is-active {
+  border-color: rgba(69, 214, 255, 0.7);
+  color: var(--text);
+  background: rgba(69, 214, 255, 0.14);
+}
+
 .table-surface {
   grid-area: table;
   min-height: 0;
   padding: 12px;
   grid-template-rows: auto minmax(0, 1fr) 24px;
   align-items: center;
+  overflow: visible;
 }
 
 .seed-row {
@@ -1217,7 +1239,7 @@ body {
   align-content: center;
   align-items: center;
   gap: clamp(6px, 1vw, 14px);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .playing-card {
@@ -1244,6 +1266,10 @@ body {
   min-height: 0;
   padding: 10px;
   overflow: hidden;
+}
+
+.matrix-panel[hidden] {
+  display: none;
 }
 
 .history-panel {
@@ -1290,13 +1316,30 @@ body {
   min-height: 0;
   padding: 10px;
   gap: 7px;
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
+}
+
+.score-strip .strip-title {
+  grid-row: 1;
+}
+
+.players-panel {
+  grid-row: 2;
+}
+
+.players-panel[hidden] + .scored-hands {
+  grid-row: 2 / 4;
+}
+
+.players-panel:not([hidden]) + .scored-hands {
+  grid-row: 3;
 }
 
 .scored-hands {
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-content: start;
   gap: 8px;
   overflow: hidden;
@@ -1312,6 +1355,7 @@ body {
 
 .score-card {
   min-width: 0;
+  min-height: 0;
   padding: 8px;
   gap: 6px;
   animation: none;
@@ -1330,13 +1374,18 @@ body {
 }
 
 .mini-cards {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
 }
 
 .mini-card {
-  width: 30px;
-  height: 40px;
-  font-size: 0.9rem;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 0.72;
+  min-width: 0;
+  font-size: clamp(0.7rem, 1.25vw, 0.9rem);
 }
 
 .score-list {
@@ -1369,11 +1418,19 @@ body {
     grid-template-areas:
       "header"
       "table"
+      "scores";
+    grid-template-columns: 1fr;
+    grid-template-rows: 112px minmax(0, 1fr) 146px;
+    gap: 8px;
+  }
+
+  .game-view.matrix-visible {
+    grid-template-areas:
+      "header"
+      "table"
       "scores"
       "matrix";
-    grid-template-columns: 1fr;
-    grid-template-rows: 112px minmax(0, 1fr) 118px 164px;
-    gap: 8px;
+    grid-template-rows: 112px minmax(0, 1fr) 128px 164px;
   }
 
   .table-header {
@@ -1402,12 +1459,13 @@ body {
 
   .header-actions {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
   }
 
   .small-button {
-    font-size: 0.84rem;
+    padding: 0 6px;
+    font-size: 0.76rem;
   }
 
   .table-surface {
@@ -1498,8 +1556,9 @@ body {
   }
 
   .mini-card {
-    width: 24px;
-    height: 32px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 0.72;
     font-size: 0.72rem;
     border-radius: 4px;
   }
@@ -1681,6 +1740,25 @@ body {
   .segmented.four,
   .segmented.five {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  .round-metrics {
+    gap: 4px;
+  }
+
+  .round-metrics > div {
+    padding: 5px 3px;
+  }
+
+  .metric-label {
+    font-size: 0.45rem;
+    letter-spacing: 0.04em;
+  }
+
+  .round-metrics strong {
+    font-size: 0.82rem;
   }
 }
 
