@@ -40,6 +40,42 @@ test("best scoring hand is selected from a seven-card hand", () => {
   );
 });
 
+test("best scoring hand breaks rank-equivalent ties by suit priority", () => {
+  const best = findBestScoringHand(cards(["AH", "AS", "KH", "KS", "QD", "JC", "TS"]));
+  assert.equal(best.evaluation.key, "straight");
+  assert.deepEqual(
+    best.cards.map((card) => card.baseId),
+    ["AS", "KS", "QD", "JC", "TS"],
+  );
+});
+
+test("hands are sorted by rank then suit after deal and scoring replacement", () => {
+  const game = new PokerRushGame({
+    seed: "sort-and-score",
+    now: 1,
+    handSize: 7,
+    discardMode: "bottom",
+    timeLimit: 0,
+    endMode: "discards",
+  });
+  game.hand = cards(["2C", "AS", "2S", "KH", "KD", "KC", "KS"]);
+  game.deck = cards(["9C", "8D", "7H", "4S", "3C"]);
+  game.scoredHands = [];
+  game.score = 0;
+  game.sortHand();
+  assert.deepEqual(
+    game.hand.map((card) => card.baseId),
+    ["AS", "KS", "KH", "KD", "KC", "2S", "2C"],
+  );
+  game.resolveScores();
+  assert.equal(game.scoredHands[0].evaluation.key, "four_kind");
+  assert.equal(game.hand.length, 7);
+  assert.deepEqual(
+    game.hand.map((card) => card.baseId),
+    ["9C", "8D", "7H", "4S", "3C", "2S", "2C"],
+  );
+});
+
 test("daily-style seeded games are deterministic for the same actions", () => {
   const options = {
     seed: "20260626",
@@ -117,4 +153,18 @@ test("time limit ends the game on tick", () => {
   timed.checkTime(17000);
   assert.equal(timed.status, "ended");
   assert.equal(timed.endReason, "Time expired");
+});
+
+test("manual end game sets a player-ended reason", () => {
+  const game = new PokerRushGame({
+    seed: "manual-end",
+    now: 1,
+    handSize: 7,
+    discardMode: "bottom",
+    timeLimit: 0,
+    endMode: "discards",
+  });
+  assert.equal(game.endGame(), true);
+  assert.equal(game.status, "ended");
+  assert.equal(game.endReason, "Ended by player");
 });

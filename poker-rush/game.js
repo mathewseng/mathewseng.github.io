@@ -14,6 +14,13 @@
     D: "Diamonds",
     C: "Clubs",
   };
+  const SUIT_PRIORITY = {
+    S: 4,
+    H: 3,
+    D: 2,
+    C: 1,
+    X: 0,
+  };
   const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   const RANK_VALUES = {
     "2": 2,
@@ -201,7 +208,7 @@
   function countBy(cards, field) {
     const counts = new Map();
     for (const card of cards) {
-      if (card.isJoker) continue;
+      if (!card || card.isJoker) continue;
       const key = card[field];
       counts.set(key, (counts.get(key) || 0) + 1);
     }
@@ -209,11 +216,11 @@
   }
 
   function jokerCount(cards) {
-    return cards.reduce((count, card) => count + (card.isJoker ? 1 : 0), 0);
+    return cards.reduce((count, card) => count + (card && card.isJoker ? 1 : 0), 0);
   }
 
   function naturalCards(cards) {
-    return cards.filter((card) => !card.isJoker);
+    return cards.filter((card) => card && !card.isJoker);
   }
 
   function hasDuplicateNaturalRanks(cards) {
@@ -340,15 +347,87 @@
     return (a.high || 0) - (b.high || 0);
   }
 
+  function compareVectors(a, b) {
+    const length = Math.max(a.length, b.length);
+    for (let i = 0; i < length; i += 1) {
+      const diff = (a[i] || 0) - (b[i] || 0);
+      if (diff) return diff;
+    }
+    return 0;
+  }
+
+  function rankTieVector(cards) {
+    return cards
+      .map((card) => (card && !card.isJoker ? card.value : 0))
+      .sort((a, b) => b - a);
+  }
+
+  function suitTieVector(cards) {
+    return cards
+      .slice()
+      .sort((a, b) => {
+        const valueDiff = (b && !b.isJoker ? b.value : 0) - (a && !a.isJoker ? a.value : 0);
+        if (valueDiff) return valueDiff;
+        return (SUIT_PRIORITY[b ? b.suit : "X"] || 0) - (SUIT_PRIORITY[a ? a.suit : "X"] || 0);
+      })
+      .map((card) => (card && !card.isJoker ? SUIT_PRIORITY[card.suit] || 0 : SUIT_PRIORITY.S));
+  }
+
+  function compareIndexPreference(a, b) {
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+      const left = a[i] ?? Infinity;
+      const right = b[i] ?? Infinity;
+      if (left !== right) return right - left;
+    }
+    return 0;
+  }
+
+  function compareCardsForHand(a, b) {
+    const rankDiff = (b && !b.isJoker ? b.value : 0) - (a && !a.isJoker ? a.value : 0);
+    if (rankDiff) return rankDiff;
+    return (SUIT_PRIORITY[b ? b.suit : "X"] || 0) - (SUIT_PRIORITY[a ? a.suit : "X"] || 0);
+  }
+
+  function sortCards(cards) {
+    return cards.filter(Boolean).slice().sort(compareCardsForHand);
+  }
+
+  function compareScoringCandidates(a, b) {
+    if (!b) return 1;
+    const evaluationCompare = compareEvaluations(a.evaluation, b.evaluation);
+    if (evaluationCompare) return evaluationCompare;
+
+    const rankCompare = compareVectors(a.rankTie, b.rankTie);
+    if (rankCompare) return rankCompare;
+
+    const suitCompare = compareVectors(a.suitTie, b.suitTie);
+    if (suitCompare) return suitCompare;
+
+    return compareIndexPreference(a.indexes, b.indexes);
+  }
+
   function findBestScoringHand(hand) {
-    if (!Array.isArray(hand) || hand.length < 5) return null;
+    if (!Array.isArray(hand)) return null;
+    const indexedHand = hand
+      .map((card, index) => ({ card, index }))
+      .filter(({ card }) => Boolean(card));
+    if (indexedHand.length < 5) return null;
     let best = null;
-    for (const indexes of combinations(hand.length, 5)) {
-      const cards = indexes.map((index) => hand[index]);
+    for (const comboIndexes of combinations(indexedHand.length, 5)) {
+      const entries = comboIndexes.map((index) => indexedHand[index]);
+      const indexes = entries.map((entry) => entry.index);
+      const cards = entries.map((entry) => entry.card);
       const evaluation = evaluateFive(cards);
       if (!evaluation) continue;
-      if (!best || compareEvaluations(evaluation, best.evaluation) > 0) {
-        best = { indexes, cards, evaluation };
+      const candidate = {
+        indexes,
+        cards,
+        evaluation,
+        rankTie: rankTieVector(cards),
+        suitTie: suitTieVector(cards),
+      };
+      if (!best || compareScoringCandidates(candidate, best) > 0) {
+        best = candidate;
       }
     }
     return best;
@@ -523,8 +602,13 @@
         this.hand.push(card);
         dealt += 1;
       }
+      this.sortHand();
       if (dealt) this.lastEvents.push({ type: "draw", count: dealt });
       return dealt;
+    }
+
+    sortHand() {
+      this.hand = sortCards(this.hand);
     }
 
     placeDiscard(card) {
@@ -552,7 +636,7 @@
       if (this.status !== "playing") {
         return { ok: false, reason: "Game is over" };
       }
-      if (index < 0 || index >= this.hand.length) {
+      if (index < 0 || index >= this.hand.length || !this.hand[index]) {
         return { ok: false, reason: "No card in that slot" };
       }
       this.checkTime();
@@ -563,14 +647,13 @@
         this.end("No cards left to draw");
         return { ok: false, reason: this.endReason };
       }
-      const [discarded] = this.hand.splice(index, 1);
+      const discarded = this.hand[index];
       const drawn = this.drawCard();
-      if (drawn) {
-        this.hand.splice(Math.min(index, this.hand.length), 0, drawn);
-      }
+      this.hand[index] = drawn;
       this.userDiscardCount += 1;
       this.markDiscarded(discarded);
       this.placeDiscard(discarded);
+      this.sortHand();
       this.lastEvents.push({ type: "discard", card: discarded, drawn });
       this.resolveScores();
       this.checkEnd();
@@ -582,30 +665,39 @@
       while (this.status === "playing") {
         const best = findBestScoringHand(this.hand);
         if (!best) break;
+        const sortedIndexes = best.indexes.slice().sort((a, b) => a - b);
         const removed = [];
-        for (const index of best.indexes.slice().sort((a, b) => b - a)) {
-          const [card] = this.hand.splice(index, 1);
-          removed.unshift(card);
+        const replacements = [];
+        for (const index of sortedIndexes) {
+          const card = this.hand[index];
+          removed.push(card);
           this.markScored(card);
         }
+        for (const index of sortedIndexes) {
+          const card = this.drawCard();
+          this.hand[index] = card;
+          replacements.push({ index, card });
+        }
+        this.sortHand();
         const sequence = this.scoredHands.length + 1;
         const record = {
           id: `${this.seed}:${sequence}:${best.evaluation.key}`,
           sequence,
           cards: removed,
+          indexes: sortedIndexes,
+          replacements,
           evaluation: best.evaluation,
           points: best.evaluation.points,
         };
         this.scoredHands.unshift(record);
         this.score += record.points;
         this.lastEvents.push({ type: "score", record });
-        this.dealToHand();
         scoredCount += 1;
         if (scoredCount > 200) {
           this.end("Scoring chain limit reached");
           break;
         }
-        if (this.hand.length < 5 && !this.canDraw()) break;
+        if (this.hand.filter(Boolean).length < 5 && !this.canDraw()) break;
       }
       return scoredCount;
     }
@@ -614,7 +706,7 @@
       if (this.options.discardMode === "infinite") {
         return this.baseDeck;
       }
-      return this.hand.concat(this.deck, this.discardPile);
+      return this.hand.filter(Boolean).concat(this.deck, this.discardPile);
     }
 
     uniqueSeenCount() {
@@ -662,7 +754,7 @@
           return true;
         }
       }
-      if (this.hand.length < 5 && !this.canDraw() && !findBestScoringHand(this.hand)) {
+      if (this.hand.filter(Boolean).length < 5 && !this.canDraw() && !findBestScoringHand(this.hand)) {
         this.end("No cards left to draw");
         return true;
       }
@@ -673,6 +765,13 @@
       this.status = "ended";
       this.endReason = reason;
       this.lastEvents.push({ type: "end", reason });
+    }
+
+    endGame() {
+      this.lastEvents = [];
+      if (this.status !== "playing") return false;
+      this.end("Ended by player");
+      return true;
     }
 
     snapshot() {
@@ -697,6 +796,7 @@
   return {
     SUITS,
     SUIT_NAMES,
+    SUIT_PRIORITY,
     RANKS,
     RANK_VALUES,
     VALUES_TO_RANK,
@@ -708,5 +808,6 @@
     evaluateFive,
     findBestScoringHand,
     normalizeOptions,
+    sortCards,
   };
 });

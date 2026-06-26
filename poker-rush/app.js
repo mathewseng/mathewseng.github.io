@@ -36,6 +36,7 @@
     modeBadge: document.querySelector("#modeBadge"),
     tableSurface: document.querySelector(".table-surface"),
     soundButton: document.querySelector("#soundButton"),
+    endGameButton: document.querySelector("#endGameButton"),
     gameOver: document.querySelector("#gameOver"),
     gameOverTitle: document.querySelector("#gameOverTitle"),
     gameOverSummary: document.querySelector("#gameOverSummary"),
@@ -62,6 +63,11 @@
   let timerId = null;
   let soundEnabled = true;
   let audioContext = null;
+  let previousHandIds = [];
+  let matrixCellsById = new Map();
+  let matrixSignature = "";
+  let renderedScoreIds = new Set();
+  let isResolving = false;
 
   function selectedValue(name) {
     const checked = els.optionsForm.querySelector(`[name="${name}"]:checked`);
@@ -176,11 +182,16 @@
     lastStartKind = kind;
     lastSeed = kind === "daily" ? dailySeed() : randomSeed();
     game = new PokerRushGame(readOptions(lastSeed));
+    previousHandIds = [];
+    matrixCellsById = new Map();
+    matrixSignature = "";
+    renderedScoreIds = new Set();
+    isResolving = false;
     els.lobby.hidden = true;
     els.gameView.hidden = false;
     els.gameOver.hidden = true;
     ensureAudio();
-    render();
+    render({ animateHand: true, forceMatrix: true, forceScores: true });
     startTimer();
     const scoreEvent = game.lastEvents.find((event) => event.type === "score");
     if (scoreEvent) {
@@ -206,12 +217,12 @@
     }, 100);
   }
 
-  function render() {
+  function render(options = {}) {
     if (!game) return;
     renderMetrics();
-    renderHand();
-    renderScores();
-    renderMatrix();
+    renderHand({ animateAll: Boolean(options.animateHand) });
+    renderScores({ force: Boolean(options.forceScores) });
+    renderMatrix({ force: Boolean(options.forceMatrix) });
     renderStatus();
     if (game.status !== "playing") showGameOver();
   }
@@ -230,33 +241,74 @@
     els.modeBadge.textContent = `${snapshot.options.handSize} cards · ${discardModeLabels[snapshot.options.discardMode]} · ${endModeLabels[snapshot.options.endMode]}`;
   }
 
-  function renderHand() {
-    const fragment = document.createDocumentFragment();
-    game.hand.forEach((card, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "playing-card";
-      button.dataset.suit = card.suit;
-      button.dataset.joker = String(card.isJoker);
-      button.setAttribute("aria-label", `Discard ${cardLabel(card)} in slot ${index + 1}`);
-      button.addEventListener("click", () => discardAt(index));
+  function createCardSlot(index) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "playing-card";
+    button.addEventListener("click", () => discardAt(index));
 
-      const rank = document.createElement("span");
-      rank.className = "rank";
-      rank.textContent = card.isJoker ? "JK" : card.rank;
+    const rank = document.createElement("span");
+    rank.className = "rank";
 
-      const suit = document.createElement("span");
-      suit.className = "suit";
-      suit.setAttribute("aria-hidden", "true");
+    const suit = document.createElement("span");
+    suit.className = "suit";
+    suit.setAttribute("aria-hidden", "true");
 
-      const hotkey = document.createElement("span");
-      hotkey.className = "hotkey";
-      hotkey.textContent = String(index + 1);
+    const hotkey = document.createElement("span");
+    hotkey.className = "hotkey";
+    hotkey.textContent = String(index + 1);
 
-      button.append(rank, suit, hotkey);
-      fragment.append(button);
-    });
-    els.hand.replaceChildren(fragment);
+    button.append(rank, suit, hotkey);
+    return button;
+  }
+
+  function ensureHandSlots(size) {
+    while (els.hand.children.length < size) {
+      els.hand.append(createCardSlot(els.hand.children.length));
+    }
+    while (els.hand.children.length > size) {
+      els.hand.lastElementChild.remove();
+    }
+    els.hand.style.setProperty("--hand-size", size);
+  }
+
+  function clearCardAnimation(button) {
+    button.classList.remove("is-new", "is-discarding");
+  }
+
+  function updateCardSlot(button, card, index) {
+    button.hidden = !card;
+    if (!card) return;
+    button.dataset.suit = card.suit;
+    button.dataset.joker = String(card.isJoker);
+    button.dataset.cardId = card.id;
+    button.setAttribute("aria-label", `Discard ${cardLabel(card)} in slot ${index + 1}`);
+    button.querySelector(".rank").textContent = card.isJoker ? "JK" : card.rank;
+    button.querySelector(".hotkey").textContent = String(index + 1);
+  }
+
+  function animateCardSlot(button, className) {
+    clearCardAnimation(button);
+    button.offsetHeight;
+    button.classList.add(className);
+    window.setTimeout(() => clearCardAnimation(button), 300);
+  }
+
+  function renderHand({ changedIndex = null, animateAll = false } = {}) {
+    const size = game.options.handSize;
+    ensureHandSlots(size);
+    for (let index = 0; index < size; index += 1) {
+      const card = game.hand[index] || null;
+      const button = els.hand.children[index];
+      const oldId = previousHandIds[index] || "";
+      const nextId = card ? card.id : "";
+      const changed = oldId !== nextId;
+      if (changed) updateCardSlot(button, card, index);
+      if (changed && (animateAll || changedIndex === index)) {
+        animateCardSlot(button, "is-new");
+      }
+    }
+    previousHandIds = Array.from({ length: size }, (_, index) => (game.hand[index] ? game.hand[index].id : ""));
   }
 
   function scoreCardsMarkup(record) {
@@ -273,16 +325,21 @@
     return wrapper;
   }
 
-  function renderScores() {
+  function renderScores({ force = false } = {}) {
     const hands = game.scoredHands;
+    const visibleHands = hands.slice(0, 4);
+    const nextSignature = visibleHands.map((record) => record.id).join("|");
+    if (!force && els.scoredHands.dataset.signature === nextSignature) return;
+
     els.scoreSummary.textContent = `${hands.length} ${hands.length === 1 ? "hand" : "hands"}`;
     els.pointsBreakdown.textContent = `${game.score} pts`;
 
     const stripFragment = document.createDocumentFragment();
-    hands.slice(0, 10).forEach((record) => {
+    visibleHands.forEach((record) => {
       const card = document.createElement("article");
       card.className = "score-card";
       card.dataset.rank = record.evaluation.key;
+      if (!renderedScoreIds.has(record.id)) card.classList.add("is-new");
 
       const meta = document.createElement("div");
       meta.className = "score-meta";
@@ -295,10 +352,17 @@
       card.append(meta, scoreCardsMarkup(record));
       stripFragment.append(card);
     });
+    if (!hands.length) {
+      const empty = document.createElement("div");
+      empty.className = "score-empty";
+      empty.textContent = "No scores yet";
+      stripFragment.append(empty);
+    }
     els.scoredHands.replaceChildren(stripFragment);
+    els.scoredHands.dataset.signature = nextSignature;
 
     const listFragment = document.createDocumentFragment();
-    hands.forEach((record) => {
+    visibleHands.forEach((record) => {
       const row = document.createElement("div");
       row.className = "score-row";
       const title = document.createElement("strong");
@@ -319,14 +383,27 @@
       listFragment.append(empty);
     }
     els.scoreList.replaceChildren(listFragment);
+    renderedScoreIds = new Set(hands.map((record) => record.id));
   }
 
-  function renderMatrix() {
+  function renderMatrix({ force = false } = {}) {
     const baseDeck = createDeck(game.options.jokers);
+    const nextSignature = baseDeck.map((card) => card.baseId).join("|");
+    if (force || matrixSignature !== nextSignature) {
+      buildMatrix(baseDeck);
+      matrixSignature = nextSignature;
+    }
     const activeIds = new Map();
-    game.hand.forEach((card) => activeIds.set(card.baseId, (activeIds.get(card.baseId) || 0) + 1));
+    game.hand.forEach((card) => {
+      if (card) activeIds.set(card.baseId, (activeIds.get(card.baseId) || 0) + 1);
+    });
+    baseDeck.forEach((card) => updateMatrixCell(card, activeIds));
+  }
+
+  function buildMatrix(baseDeck) {
     const byId = new Map(baseDeck.map((card) => [card.baseId, card]));
     const fragment = document.createDocumentFragment();
+    matrixCellsById = new Map();
 
     SUITS.forEach((suit) => {
       const row = document.createElement("div");
@@ -338,7 +415,7 @@
 
       RANKS.forEach((rank) => {
         const card = byId.get(`${rank}${suit}`);
-        row.append(matrixCell(card, activeIds));
+        row.append(createMatrixCell(card));
       });
       fragment.append(row);
     });
@@ -351,7 +428,7 @@
       label.textContent = "J";
       row.append(label);
       for (let i = 1; i <= game.options.jokers; i += 1) {
-        row.append(matrixCell(byId.get(`X${i}`), activeIds));
+        row.append(createMatrixCell(byId.get(`X${i}`)));
       }
       fragment.append(row);
     }
@@ -359,21 +436,13 @@
     els.cardMatrix.replaceChildren(fragment);
   }
 
-  function matrixCell(card, activeIds) {
+  function createMatrixCell(card) {
     const cell = document.createElement("div");
-    const seenCount = game.seenCounts.get(card.baseId) || 0;
-    const discardCount = game.discardedCounts.get(card.baseId) || 0;
-    const scoredCount = game.scoredCounts.get(card.baseId) || 0;
-    const activeCount = activeIds.get(card.baseId) || 0;
     cell.className = "matrix-cell";
     cell.dataset.suit = card.suit;
-    if (seenCount) cell.classList.add("seen");
-    if (discardCount && !activeCount) cell.classList.add("discarded");
-    if (scoredCount) cell.classList.add("scored");
-    if (activeCount) cell.classList.add("active");
-    cell.title = `${cardLabel(card)} · seen ${seenCount} · discarded ${discardCount}`;
 
     const rank = document.createElement("span");
+    rank.className = "matrix-rank";
     rank.textContent = card.isJoker ? `J${card.jokerIndex}` : card.rank;
     cell.append(rank);
 
@@ -383,13 +452,29 @@
       cell.append(suitDot);
     }
 
-    if (seenCount > 1 || discardCount > 1 || activeCount > 1) {
-      const count = document.createElement("span");
-      count.className = "count";
-      count.textContent = String(Math.max(seenCount, discardCount, activeCount));
-      cell.append(count);
-    }
+    const count = document.createElement("span");
+    count.className = "count";
+    cell.append(count);
+    matrixCellsById.set(card.baseId, cell);
     return cell;
+  }
+
+  function updateMatrixCell(card, activeIds) {
+    const cell = matrixCellsById.get(card.baseId);
+    if (!cell) return;
+    const seenCount = game.seenCounts.get(card.baseId) || 0;
+    const discardCount = game.discardedCounts.get(card.baseId) || 0;
+    const scoredCount = game.scoredCounts.get(card.baseId) || 0;
+    const activeCount = activeIds.get(card.baseId) || 0;
+    cell.classList.toggle("seen", Boolean(seenCount));
+    cell.classList.toggle("discarded", Boolean(discardCount && !activeCount));
+    cell.classList.toggle("scored", Boolean(scoredCount));
+    cell.classList.toggle("active", Boolean(activeCount));
+    cell.title = `${cardLabel(card)} · seen ${seenCount} · discarded ${discardCount}`;
+    const count = Math.max(seenCount, discardCount, activeCount);
+    const countEl = cell.querySelector(".count");
+    countEl.textContent = count > 1 ? String(count) : "";
+    countEl.hidden = count <= 1;
   }
 
   function renderStatus() {
@@ -417,15 +502,37 @@
   }
 
   function discardAt(index) {
-    if (!game || game.status !== "playing") return;
+    if (!game || game.status !== "playing" || isResolving) return;
+    const button = els.hand.children[index];
+    if (!button || button.hidden) return;
+    isResolving = true;
     playDiscardSound();
-    const result = game.discardCard(index);
-    const scoreEvent = result.events && result.events.find((event) => event.type === "score");
-    render();
-    if (scoreEvent) {
-      animateScore(scoreEvent.record.evaluation.key);
-      playScoreSound(scoreEvent.record.evaluation.key);
-    }
+    animateCardSlot(button, "is-discarding");
+    window.setTimeout(() => {
+      const result = game.discardCard(index);
+      const scoreEvents = result.events ? result.events.filter((event) => event.type === "score") : [];
+      renderMetrics();
+      renderHand();
+      if (scoreEvents.length) renderScores();
+      renderMatrix();
+      renderStatus();
+      if (game.status !== "playing") showGameOver();
+      scoreEvents.forEach((event, eventIndex) => {
+        window.setTimeout(() => {
+          animateScore(event.record.evaluation.key);
+          playScoreSound(event.record.evaluation.key);
+        }, eventIndex * 90);
+      });
+      isResolving = false;
+    }, 120);
+  }
+
+  function endCurrentGame() {
+    if (!game || game.status !== "playing") return;
+    game.endGame();
+    renderMetrics();
+    renderStatus();
+    showGameOver();
   }
 
   function animateScore(rank) {
@@ -480,6 +587,7 @@
   els.randomButton.addEventListener("click", () => startGame("random"));
   els.newDailyButton.addEventListener("click", () => startGame("daily"));
   els.newRandomButton.addEventListener("click", () => startGame("random"));
+  els.endGameButton.addEventListener("click", endCurrentGame);
   els.againButton.addEventListener("click", restartGame);
   els.backButton.addEventListener("click", backToLobby);
   els.soundButton.addEventListener("click", () => {
