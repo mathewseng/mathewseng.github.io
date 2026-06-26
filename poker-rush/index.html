@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090b10" />
+    <title>Poker Rush</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="lobby" class="lobby" aria-labelledby="gameTitle">
+        <div class="lobby-top">
+          <div class="logo-mark" aria-hidden="true">PR</div>
+          <button id="instructionsButton" class="icon-button" type="button" aria-label="Instructions">
+            <span aria-hidden="true">i</span>
+          </button>
+        </div>
+
+        <div class="title-stack">
+          <p class="eyebrow">Seeded poker sprint</p>
+          <h1 id="gameTitle">Poker Rush</h1>
+        </div>
+
+        <div class="main-actions" aria-label="Start game">
+          <button id="dailyButton" class="primary-action" type="button">
+            <span class="action-kicker">Play</span>
+            <span>Daily</span>
+          </button>
+          <button id="randomButton" class="primary-action alt" type="button">
+            <span class="action-kicker">Play</span>
+            <span>Random</span>
+          </button>
+        </div>
+
+        <details class="options-drawer">
+          <summary>Options</summary>
+          <form id="optionsForm" class="options-grid">
+            <fieldset>
+              <legend>Cards</legend>
+              <div class="segmented">
+                <label><input type="radio" name="handSize" value="5" /> <span>5</span></label>
+                <label><input type="radio" name="handSize" value="6" /> <span>6</span></label>
+                <label><input type="radio" name="handSize" value="7" checked /> <span>7</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Jokers</legend>
+              <div class="segmented five">
+                <label><input type="radio" name="jokers" value="0" checked /> <span>0</span></label>
+                <label><input type="radio" name="jokers" value="1" /> <span>1</span></label>
+                <label><input type="radio" name="jokers" value="2" /> <span>2</span></label>
+                <label><input type="radio" name="jokers" value="3" /> <span>3</span></label>
+                <label><input type="radio" name="jokers" value="4" /> <span>4</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Time</legend>
+              <div class="segmented four">
+                <label><input type="radio" name="timeLimit" value="15" /> <span>15s</span></label>
+                <label><input type="radio" name="timeLimit" value="30" /> <span>30s</span></label>
+                <label><input type="radio" name="timeLimit" value="60" checked /> <span>60s</span></label>
+                <label><input type="radio" name="timeLimit" value="0" /> <span>No limit</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Discards</legend>
+              <select name="discardMode">
+                <option value="bottom" selected>Bottom of deck</option>
+                <option value="pile">Discard pile, reshuffle</option>
+                <option value="random">Random in deck</option>
+                <option value="infinite">Infinite deck</option>
+              </select>
+            </fieldset>
+
+            <fieldset>
+              <legend>Ends</legend>
+              <select name="endMode">
+                <option value="no_scores" selected>No more scores possible</option>
+                <option value="discards">52 discards</option>
+                <option value="seen_count">52 plus jokers seen</option>
+                <option value="seen_all">Every card seen once</option>
+              </select>
+            </fieldset>
+          </form>
+        </details>
+      </section>
+
+      <section id="gameView" class="game-view" aria-label="Poker Rush table" hidden>
+        <header class="table-header">
+          <div class="score-box">
+            <span class="metric-label">Score</span>
+            <strong id="scoreValue">0</strong>
+          </div>
+          <div class="round-metrics">
+            <div>
+              <span class="metric-label">Time</span>
+              <strong id="timeValue">60.0</strong>
+            </div>
+            <div>
+              <span class="metric-label">Seen</span>
+              <strong id="seenValue">0/52</strong>
+            </div>
+            <div>
+              <span class="metric-label">Discards</span>
+              <strong id="discardValue">0</strong>
+            </div>
+            <div>
+              <span class="metric-label">Deck</span>
+              <strong id="deckValue">45</strong>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button id="soundButton" class="small-button" type="button" aria-label="Toggle sound">SFX</button>
+            <button id="newDailyButton" class="small-button" type="button">Daily</button>
+            <button id="newRandomButton" class="small-button" type="button">Random</button>
+          </div>
+        </header>
+
+        <section id="scoreStrip" class="score-strip" aria-live="polite">
+          <div class="strip-title">
+            <span>Scored hands</span>
+            <strong id="scoreSummary">0 hands</strong>
+          </div>
+          <div id="scoredHands" class="scored-hands"></div>
+        </section>
+
+        <section class="table-surface">
+          <div class="seed-row">
+            <span id="seedBadge" class="seed-badge"></span>
+            <span id="modeBadge" class="mode-badge"></span>
+          </div>
+          <div id="hand" class="hand" aria-label="Current hand"></div>
+          <div id="statusLine" class="status-line" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="lower-grid">
+          <div class="matrix-panel">
+            <div class="panel-head">
+              <span>Card matrix</span>
+              <strong id="uniqueSeenValue">0 unique</strong>
+            </div>
+            <div id="cardMatrix" class="card-matrix" aria-label="Seen and discarded cards"></div>
+          </div>
+
+          <div class="history-panel">
+            <div class="panel-head">
+              <span>Scores</span>
+              <strong id="pointsBreakdown">0 pts</strong>
+            </div>
+            <div id="scoreList" class="score-list"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="instructionsDialog" class="modal">
+      <form method="dialog">
+        <div class="modal-head">
+          <h2>Poker Rush</h2>
+          <button class="icon-button" value="close" aria-label="Close instructions" type="submit">x</button>
+        </div>
+        <div class="modal-body">
+          <p>Start with 5, 6, or 7 cards. Tap a card, click it, or press its number key to discard and draw.</p>
+          <p>Any 5-card straight-or-better hand scores immediately, clears from your hand, and refills from the deck.</p>
+          <ul>
+            <li>Straight, flush, full house: 1 point</li>
+            <li>Four of a kind: 3 points</li>
+            <li>Straight flush: 5 points</li>
+            <li>Royal flush: 10 points</li>
+          </ul>
+          <p>Daily games use your local date as the seed in YYYYMMDD format. Random games show the seed in the table header.</p>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="gameOver" class="game-over" hidden>
+      <div class="game-over-card">
+        <span class="metric-label">Game over</span>
+        <h2 id="gameOverTitle">Time expired</h2>
+        <p id="gameOverSummary"></p>
+        <div class="game-over-actions">
+          <button id="againButton" class="primary-action compact" type="button">Play Again</button>
+          <button id="backButton" class="small-button" type="button">Options</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./game.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
