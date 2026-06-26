@@ -32,6 +32,10 @@
             <span class="action-kicker">Play</span>
             <span>Random</span>
           </button>
+          <button id="multiplayerButton" class="primary-action multi" type="button">
+            <span class="action-kicker">Play</span>
+            <span>Multiplayer</span>
+          </button>
         </div>
 
         <details class="options-drawer">
@@ -127,6 +131,7 @@
             <span>Scored hands</span>
             <strong id="scoreSummary">0 hands</strong>
           </div>
+          <div id="playersPanel" class="players-panel" hidden></div>
           <div id="scoredHands" class="scored-hands"></div>
         </section>
 
@@ -177,6 +182,56 @@
           <p>Daily games use your local date as the seed in YYYYMMDD format. Random games show the seed in the table header.</p>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="multiplayerDialog" class="modal multiplayer-modal">
+      <form method="dialog">
+        <div class="modal-head">
+          <h2>Multiplayer</h2>
+          <button class="icon-button" value="close" aria-label="Close multiplayer" type="submit">x</button>
+        </div>
+      </form>
+      <div class="multiplayer-body">
+        <label class="field-label">
+          <span>Name</span>
+          <input id="playerNameInput" maxlength="18" value="Player" />
+        </label>
+
+        <div class="multiplayer-grid">
+          <section class="connect-panel">
+            <div class="connect-head">
+              <strong>Host</strong>
+              <button id="hostGameButton" class="small-button" type="button">Create</button>
+            </div>
+            <label class="field-label">
+              <span>Invite code</span>
+              <textarea id="inviteCode" readonly rows="5"></textarea>
+            </label>
+            <label class="field-label">
+              <span>Answer code</span>
+              <textarea id="answerCodeInput" rows="5"></textarea>
+            </label>
+            <button id="acceptAnswerButton" class="small-button" type="button">Connect</button>
+          </section>
+
+          <section class="connect-panel">
+            <div class="connect-head">
+              <strong>Join</strong>
+              <button id="joinGameButton" class="small-button" type="button">Answer</button>
+            </div>
+            <label class="field-label">
+              <span>Invite code</span>
+              <textarea id="joinInviteCode" rows="5"></textarea>
+            </label>
+            <label class="field-label">
+              <span>Answer code</span>
+              <textarea id="joinAnswerCode" readonly rows="5"></textarea>
+            </label>
+          </section>
+        </div>
+
+        <p id="connectionStatus" class="connection-status">Idle</p>
+      </div>
     </dialog>
 
     <div id="gameOver" class="game-over" hidden>

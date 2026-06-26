@@ -793,6 +793,343 @@
     }
   }
 
+  class PokerRushMultiplayerGame {
+    constructor(options = {}, players = []) {
+      const normalized = normalizeOptions(options);
+      if (normalized.discardMode === "bottom" || normalized.discardMode === "pile") {
+        normalized.discardMode = "random";
+      }
+      this.options = normalized;
+      this.seed = this.options.seed;
+      this.rng = createRng(this.seed);
+      this.instanceCounter = 0;
+      this.baseDeck = createDeck(this.options.jokers);
+      this.deck =
+        this.options.discardMode === "infinite"
+          ? []
+          : shuffle(
+              this.baseDeck.map((card) => cloneCard(card, this.nextInstanceId())),
+              this.rng,
+            );
+      this.players = players.map((player, index) => ({
+        id: player.id,
+        name: player.name || `Player ${index + 1}`,
+        index,
+        hand: [],
+        score: 0,
+        scoredHands: [],
+        discardCount: 0,
+        lastEvents: [],
+      }));
+      this.userDiscardCount = 0;
+      this.drawnCount = 0;
+      this.seenCounts = new Map();
+      this.discardedCounts = new Map();
+      this.scoredCounts = new Map();
+      this.status = "playing";
+      this.endReason = "";
+      this.startedAt = typeof this.options.now === "number" ? this.options.now : Date.now();
+      this.lastEvents = [];
+
+      for (const player of this.players) this.dealToPlayer(player);
+      this.resolveAllScores();
+      this.checkEnd();
+    }
+
+    nextInstanceId() {
+      this.instanceCounter += 1;
+      return this.instanceCounter;
+    }
+
+    playerById(playerId) {
+      return this.players.find((player) => player.id === playerId) || null;
+    }
+
+    drawIndexForPlayer(playerIndex) {
+      if (this.deck.length <= 1 || this.players.length <= 1) return 0;
+      if (playerIndex === 0) return 0;
+      if (this.players.length === 2 && playerIndex === 1) return this.deck.length - 1;
+      return Math.max(0, Math.min(this.deck.length - 1, Math.round((playerIndex / (this.players.length - 1)) * (this.deck.length - 1))));
+    }
+
+    canDraw() {
+      return this.options.discardMode === "infinite" || this.deck.length > 0;
+    }
+
+    freshRandomCard() {
+      return cloneCard(this.baseDeck[this.rng.int(this.baseDeck.length)], this.nextInstanceId());
+    }
+
+    drawCardForPlayer(playerIdOrIndex) {
+      if (this.options.discardMode === "infinite") {
+        const card = this.freshRandomCard();
+        this.markSeen(card);
+        return card;
+      }
+      if (!this.deck.length) return null;
+      const playerIndex =
+        typeof playerIdOrIndex === "number" ? playerIdOrIndex : this.playerById(playerIdOrIndex)?.index || 0;
+      const drawIndex = this.drawIndexForPlayer(playerIndex);
+      const [card] = this.deck.splice(drawIndex, 1);
+      if (card) this.markSeen(card);
+      return card || null;
+    }
+
+    markSeen(card) {
+      this.drawnCount += 1;
+      this.seenCounts.set(card.baseId, (this.seenCounts.get(card.baseId) || 0) + 1);
+    }
+
+    markDiscarded(card) {
+      this.discardedCounts.set(card.baseId, (this.discardedCounts.get(card.baseId) || 0) + 1);
+    }
+
+    markScored(card) {
+      this.scoredCounts.set(card.baseId, (this.scoredCounts.get(card.baseId) || 0) + 1);
+    }
+
+    sortPlayerHand(player) {
+      player.hand = sortCards(player.hand);
+    }
+
+    dealToPlayer(player) {
+      let dealt = 0;
+      while (player.hand.length < this.options.handSize && this.canDraw()) {
+        const card = this.drawCardForPlayer(player.id);
+        if (!card) break;
+        player.hand.push(card);
+        dealt += 1;
+      }
+      this.sortPlayerHand(player);
+      return dealt;
+    }
+
+    placeDiscard(card) {
+      if (this.options.discardMode === "infinite") return;
+      if (this.deck.length <= 2) {
+        this.deck.push(card);
+        return;
+      }
+      const insertAt = 1 + this.rng.int(this.deck.length - 1);
+      this.deck.splice(insertAt, 0, card);
+    }
+
+    discardCard(playerId, index) {
+      this.lastEvents = [];
+      for (const entry of this.players) entry.lastEvents = [];
+      const player = this.playerById(playerId);
+      if (!player) return { ok: false, reason: "Unknown player" };
+      if (this.status !== "playing") return { ok: false, reason: "Game is over" };
+      if (index < 0 || index >= player.hand.length || !player.hand[index]) {
+        return { ok: false, reason: "No card in that slot" };
+      }
+      this.checkTime();
+      if (this.status !== "playing") return { ok: false, reason: this.endReason };
+      if (!this.canDraw()) {
+        this.end("No cards left to draw");
+        return { ok: false, reason: this.endReason };
+      }
+
+      const discarded = player.hand[index];
+      const drawn = this.drawCardForPlayer(player.id);
+      player.hand[index] = drawn;
+      player.discardCount += 1;
+      this.userDiscardCount += 1;
+      this.markDiscarded(discarded);
+      this.placeDiscard(discarded);
+      this.sortPlayerHand(player);
+      const discardEvent = { type: "discard", playerId: player.id, card: discarded, drawn };
+      player.lastEvents.push(discardEvent);
+      this.lastEvents.push(discardEvent);
+      this.resolveScoresForPlayer(player);
+      this.checkEnd();
+      return { ok: true, discarded, drawn, events: player.lastEvents.slice() };
+    }
+
+    resolveAllScores() {
+      let count = 0;
+      for (const player of this.players) count += this.resolveScoresForPlayer(player);
+      return count;
+    }
+
+    resolveScoresForPlayer(player) {
+      let scoredCount = 0;
+      while (this.status === "playing") {
+        const best = findBestScoringHand(player.hand);
+        if (!best) break;
+        const sortedIndexes = best.indexes.slice().sort((a, b) => a - b);
+        const removed = [];
+        const replacements = [];
+        for (const index of sortedIndexes) {
+          const card = player.hand[index];
+          removed.push(card);
+          this.markScored(card);
+        }
+        for (const index of sortedIndexes) {
+          const card = this.drawCardForPlayer(player.id);
+          player.hand[index] = card;
+          replacements.push({ index, card });
+        }
+        this.sortPlayerHand(player);
+        const sequence = player.scoredHands.length + 1;
+        const record = {
+          id: `${this.seed}:${player.id}:${sequence}:${best.evaluation.key}`,
+          playerId: player.id,
+          playerName: player.name,
+          sequence,
+          cards: removed,
+          indexes: sortedIndexes,
+          replacements,
+          evaluation: best.evaluation,
+          points: best.evaluation.points,
+        };
+        player.scoredHands.unshift(record);
+        player.score += record.points;
+        const scoreEvent = { type: "score", playerId: player.id, record };
+        player.lastEvents.push(scoreEvent);
+        this.lastEvents.push(scoreEvent);
+        scoredCount += 1;
+        if (scoredCount > 200) {
+          this.end("Scoring chain limit reached");
+          break;
+        }
+        if (player.hand.filter(Boolean).length < 5 && !this.canDraw()) break;
+      }
+      return scoredCount;
+    }
+
+    accessibleCards() {
+      if (this.options.discardMode === "infinite") return this.baseDeck;
+      return this.players.flatMap((player) => player.hand.filter(Boolean)).concat(this.deck);
+    }
+
+    uniqueSeenCount() {
+      let count = 0;
+      for (const card of this.baseDeck) {
+        if ((this.seenCounts.get(card.baseId) || 0) > 0) count += 1;
+      }
+      return count;
+    }
+
+    checkTime(now = Date.now()) {
+      if (this.status !== "playing") return false;
+      if (!this.options.timeLimit) return false;
+      const elapsedSeconds = (now - this.startedAt) / 1000;
+      if (elapsedSeconds >= this.options.timeLimit) {
+        this.end("Time expired");
+        return true;
+      }
+      return false;
+    }
+
+    remainingSeconds(now = Date.now()) {
+      if (!this.options.timeLimit) return null;
+      return Math.max(0, this.options.timeLimit - (now - this.startedAt) / 1000);
+    }
+
+    checkEnd() {
+      if (this.status !== "playing") return true;
+      if (this.options.endMode === "discards" && this.userDiscardCount >= 52) {
+        this.end("Discard limit reached");
+        return true;
+      }
+      if (this.options.endMode === "seen_count" && this.drawnCount >= this.baseDeck.length) {
+        this.end("Seen-card limit reached");
+        return true;
+      }
+      if (this.options.endMode === "seen_all" && this.uniqueSeenCount() >= this.baseDeck.length) {
+        this.end("Every card has appeared");
+        return true;
+      }
+      if (this.options.endMode === "no_scores") {
+        const anyHandScore = this.players.some((player) => findBestScoringHand(player.hand));
+        if (!anyHandScore && !anyScorePossible(this.accessibleCards())) {
+          this.end("No more scoring hands are possible");
+          return true;
+        }
+      }
+      const anyPlayerCanPlay = this.players.some((player) => player.hand.filter(Boolean).length >= 5);
+      if (!anyPlayerCanPlay && !this.canDraw()) {
+        this.end("No cards left to draw");
+        return true;
+      }
+      return false;
+    }
+
+    end(reason) {
+      this.status = "ended";
+      this.endReason = reason;
+      const event = { type: "end", reason };
+      this.lastEvents.push(event);
+      for (const player of this.players) player.lastEvents.push(event);
+    }
+
+    endGame(playerId) {
+      this.lastEvents = [];
+      for (const player of this.players) player.lastEvents = [];
+      if (this.status !== "playing") return false;
+      const player = this.playerById(playerId);
+      this.end(player ? `Ended by ${player.name}` : "Ended by player");
+      return true;
+    }
+
+    viewForPlayer(playerId) {
+      const player = this.playerById(playerId) || this.players[0];
+      return {
+        options: { ...this.options },
+        seed: this.seed,
+        hand: player.hand.slice(),
+        deckCount: this.options.discardMode === "infinite" ? Infinity : this.deck.length,
+        discardPileCount: 0,
+        scoredHands: player.scoredHands.slice(),
+        score: player.score,
+        userDiscardCount: this.userDiscardCount,
+        drawnCount: this.drawnCount,
+        uniqueSeenCount: this.uniqueSeenCount(),
+        totalCards: this.baseDeck.length,
+        status: this.status,
+        endReason: this.endReason,
+        startedAt: this.startedAt,
+        seenCounts: new Map(this.seenCounts),
+        discardedCounts: new Map(this.discardedCounts),
+        scoredCounts: new Map(this.scoredCounts),
+        lastEvents: player.lastEvents.slice(),
+        multiplayer: true,
+        localPlayerId: player.id,
+        players: this.players.map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          score: entry.score,
+          discards: entry.discardCount,
+          scoredHands: entry.scoredHands.length,
+          isLocal: entry.id === player.id,
+        })),
+        snapshot() {
+          return {
+            options: { ...this.options },
+            seed: this.seed,
+            hand: this.hand.slice(),
+            deckCount: this.deckCount,
+            discardPileCount: this.discardPileCount,
+            scoredHands: this.scoredHands.slice(),
+            score: this.score,
+            userDiscardCount: this.userDiscardCount,
+            drawnCount: this.drawnCount,
+            uniqueSeenCount: this.uniqueSeenCount,
+            totalCards: this.totalCards,
+            status: this.status,
+            endReason: this.endReason,
+            players: this.players.slice(),
+          };
+        },
+        remainingSeconds(now = Date.now()) {
+          if (!this.options.timeLimit) return null;
+          return Math.max(0, this.options.timeLimit - (now - this.startedAt) / 1000);
+        },
+      };
+    }
+  }
+
   return {
     SUITS,
     SUIT_NAMES,
@@ -802,6 +1139,7 @@
     VALUES_TO_RANK,
     HAND_TYPES,
     PokerRushGame,
+    PokerRushMultiplayerGame,
     anyScorePossible,
     createDeck,
     createRng,

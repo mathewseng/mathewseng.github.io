@@ -3,6 +3,7 @@
 
   const {
     PokerRushGame,
+    PokerRushMultiplayerGame,
     RANKS,
     SUITS,
     createDeck,
@@ -14,6 +15,7 @@
     optionsForm: document.querySelector("#optionsForm"),
     dailyButton: document.querySelector("#dailyButton"),
     randomButton: document.querySelector("#randomButton"),
+    multiplayerButton: document.querySelector("#multiplayerButton"),
     newDailyButton: document.querySelector("#newDailyButton"),
     newRandomButton: document.querySelector("#newRandomButton"),
     instructionsButton: document.querySelector("#instructionsButton"),
@@ -26,6 +28,7 @@
     uniqueSeenValue: document.querySelector("#uniqueSeenValue"),
     scoreSummary: document.querySelector("#scoreSummary"),
     scoreStrip: document.querySelector("#scoreStrip"),
+    playersPanel: document.querySelector("#playersPanel"),
     scoredHands: document.querySelector("#scoredHands"),
     scoreList: document.querySelector("#scoreList"),
     pointsBreakdown: document.querySelector("#pointsBreakdown"),
@@ -42,6 +45,16 @@
     gameOverSummary: document.querySelector("#gameOverSummary"),
     againButton: document.querySelector("#againButton"),
     backButton: document.querySelector("#backButton"),
+    multiplayerDialog: document.querySelector("#multiplayerDialog"),
+    playerNameInput: document.querySelector("#playerNameInput"),
+    hostGameButton: document.querySelector("#hostGameButton"),
+    inviteCode: document.querySelector("#inviteCode"),
+    answerCodeInput: document.querySelector("#answerCodeInput"),
+    acceptAnswerButton: document.querySelector("#acceptAnswerButton"),
+    joinGameButton: document.querySelector("#joinGameButton"),
+    joinInviteCode: document.querySelector("#joinInviteCode"),
+    joinAnswerCode: document.querySelector("#joinAnswerCode"),
+    connectionStatus: document.querySelector("#connectionStatus"),
   };
 
   const discardModeLabels = {
@@ -68,20 +81,36 @@
   let matrixSignature = "";
   let renderedScoreIds = new Set();
   let isResolving = false;
+  let playMode = "single";
+  let multiplayerGame = null;
+  let localPlayerId = "host";
+  let hostPeerConnection = null;
+  let joinPeerConnection = null;
+  let hostChannel = null;
+  let joinChannel = null;
+  let hostPeers = new Map();
+  let pendingHostChannel = null;
+  let hostActionQueue = [];
+  let isProcessingHostActions = false;
+  let networkSeq = 0;
 
   function selectedValue(name) {
     const checked = els.optionsForm.querySelector(`[name="${name}"]:checked`);
     return checked ? checked.value : "";
   }
 
-  function readOptions(seed) {
+  function readOptions(seed, multiplayer = false) {
     const formData = new FormData(els.optionsForm);
+    let discardMode = String(formData.get("discardMode"));
+    if (multiplayer && (discardMode === "bottom" || discardMode === "pile")) {
+      discardMode = "random";
+    }
     return {
       seed,
       handSize: Number(selectedValue("handSize")),
       jokers: Number(selectedValue("jokers")),
       timeLimit: Number(selectedValue("timeLimit")),
-      discardMode: String(formData.get("discardMode")),
+      discardMode,
       endMode: String(formData.get("endMode")),
     };
   }
@@ -178,15 +207,82 @@
     return String(snapshot.deckCount);
   }
 
-  function startGame(kind) {
-    lastStartKind = kind;
-    lastSeed = kind === "daily" ? dailySeed() : randomSeed();
-    game = new PokerRushGame(readOptions(lastSeed));
+  function resetRenderState() {
     previousHandIds = [];
     matrixCellsById = new Map();
     matrixSignature = "";
     renderedScoreIds = new Set();
     isResolving = false;
+  }
+
+  function serializeView(view) {
+    return {
+      ...view,
+      seenCounts: Array.from(view.seenCounts || []),
+      discardedCounts: Array.from(view.discardedCounts || []),
+      scoredCounts: Array.from(view.scoredCounts || []),
+      deckCount: view.deckCount === Infinity ? "Infinity" : view.deckCount,
+    };
+  }
+
+  function hydrateView(raw) {
+    const view = {
+      ...raw,
+      deckCount: raw.deckCount === "Infinity" ? Infinity : raw.deckCount,
+      seenCounts: new Map(raw.seenCounts || []),
+      discardedCounts: new Map(raw.discardedCounts || []),
+      scoredCounts: new Map(raw.scoredCounts || []),
+      snapshot() {
+        return {
+          options: { ...this.options },
+          seed: this.seed,
+          hand: this.hand.slice(),
+          deckCount: this.deckCount,
+          discardPileCount: this.discardPileCount || 0,
+          scoredHands: this.scoredHands.slice(),
+          score: this.score,
+          userDiscardCount: this.userDiscardCount,
+          drawnCount: this.drawnCount,
+          uniqueSeenCount: this.uniqueSeenCount,
+          totalCards: this.totalCards,
+          status: this.status,
+          endReason: this.endReason,
+          players: this.players || [],
+        };
+      },
+      remainingSeconds(now = Date.now()) {
+        if (!this.options.timeLimit) return null;
+        return Math.max(0, this.options.timeLimit - (now - this.startedAt) / 1000);
+      },
+    };
+    return view;
+  }
+
+  function setGameView(view, options = {}) {
+    game = hydrateView(serializeView(view));
+    render(options);
+  }
+
+  function playScoreEvents(events = []) {
+    events
+      .filter((event) => event.type === "score")
+      .forEach((event, eventIndex) => {
+        window.setTimeout(() => {
+          animateScore(event.record.evaluation.key);
+          playScoreSound(event.record.evaluation.key);
+        }, eventIndex * 90);
+      });
+  }
+
+  function startGame(kind) {
+    closeMultiplayerConnections();
+    playMode = "single";
+    multiplayerGame = null;
+    localPlayerId = "solo";
+    lastStartKind = kind;
+    lastSeed = kind === "daily" ? dailySeed() : randomSeed();
+    game = new PokerRushGame(readOptions(lastSeed));
+    resetRenderState();
     els.lobby.hidden = true;
     els.gameView.hidden = false;
     els.gameOver.hidden = true;
@@ -208,7 +304,12 @@
     if (timerId) window.clearInterval(timerId);
     timerId = window.setInterval(() => {
       if (!game) return;
-      game.checkTime();
+      if (playMode === "host" && multiplayerGame) {
+        const ended = multiplayerGame.checkTime();
+        if (ended) broadcastMultiplayerState();
+      } else if (typeof game.checkTime === "function") {
+        game.checkTime();
+      }
       renderMetrics();
       if (game.status !== "playing") {
         showGameOver();
@@ -223,6 +324,7 @@
     renderHand({ animateAll: Boolean(options.animateHand) });
     renderScores({ force: Boolean(options.forceScores) });
     renderMatrix({ force: Boolean(options.forceMatrix) });
+    renderPlayers();
     renderStatus();
     if (game.status !== "playing") showGameOver();
   }
@@ -386,6 +488,30 @@
     renderedScoreIds = new Set(hands.map((record) => record.id));
   }
 
+  function renderPlayers() {
+    const players = game && game.players ? game.players : [];
+    els.playersPanel.hidden = !players.length;
+    if (!players.length) {
+      els.playersPanel.replaceChildren();
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    players.forEach((player) => {
+      const chip = document.createElement("div");
+      chip.className = "player-chip";
+      if (player.isLocal) chip.classList.add("is-local");
+      const name = document.createElement("strong");
+      name.textContent = player.name;
+      const score = document.createElement("span");
+      score.textContent = `${player.score} pts`;
+      const meta = document.createElement("small");
+      meta.textContent = `${player.scoredHands} hands · ${player.discards} discards`;
+      chip.append(name, score, meta);
+      fragment.append(chip);
+    });
+    els.playersPanel.replaceChildren(fragment);
+  }
+
   function renderMatrix({ force = false } = {}) {
     const baseDeck = createDeck(game.options.jokers);
     const nextSignature = baseDeck.map((card) => card.baseId).join("|");
@@ -501,6 +627,258 @@
     els.statusLine.textContent = "";
   }
 
+  function multiplayerName() {
+    return (els.playerNameInput.value || "Player").trim().slice(0, 18) || "Player";
+  }
+
+  function setConnectionStatus(text) {
+    els.connectionStatus.textContent = text;
+  }
+
+  function encodeSignal(value) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(value))));
+  }
+
+  function decodeSignal(value) {
+    return JSON.parse(decodeURIComponent(escape(atob(value.trim()))));
+  }
+
+  function createPeerConnection() {
+    return new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+  }
+
+  function waitForIceGathering(peerConnection) {
+    if (peerConnection.iceGatheringState === "complete") return Promise.resolve();
+    return new Promise((resolve) => {
+      const timeout = window.setTimeout(resolve, 1800);
+      peerConnection.addEventListener("icegatheringstatechange", () => {
+        if (peerConnection.iceGatheringState === "complete") {
+          window.clearTimeout(timeout);
+          resolve();
+        }
+      });
+    });
+  }
+
+  function sendChannel(channel, payload) {
+    if (channel && channel.readyState === "open") {
+      channel.send(JSON.stringify(payload));
+    }
+  }
+
+  function closeMultiplayerConnections() {
+    for (const channel of hostPeers.values()) channel.close();
+    hostPeers = new Map();
+    if (pendingHostChannel) pendingHostChannel.close();
+    if (hostChannel) hostChannel.close();
+    if (joinChannel) joinChannel.close();
+    if (hostPeerConnection) hostPeerConnection.close();
+    if (joinPeerConnection) joinPeerConnection.close();
+    hostPeerConnection = null;
+    joinPeerConnection = null;
+    hostChannel = null;
+    joinChannel = null;
+    pendingHostChannel = null;
+    hostActionQueue = [];
+    isProcessingHostActions = false;
+  }
+
+  function openMultiplayerDialog() {
+    closeMultiplayerConnections();
+    playMode = "setup";
+    els.inviteCode.value = "";
+    els.answerCodeInput.value = "";
+    els.joinInviteCode.value = "";
+    els.joinAnswerCode.value = "";
+    setConnectionStatus("Idle");
+    if (typeof els.multiplayerDialog.showModal === "function") {
+      els.multiplayerDialog.showModal();
+    }
+  }
+
+  async function createHostInvite() {
+    closeMultiplayerConnections();
+    setConnectionStatus("Creating invite");
+    localPlayerId = "host";
+    hostPeerConnection = createPeerConnection();
+    pendingHostChannel = hostPeerConnection.createDataChannel("poker-rush", { ordered: true });
+    setupHostChannel(pendingHostChannel);
+    const offer = await hostPeerConnection.createOffer();
+    await hostPeerConnection.setLocalDescription(offer);
+    await waitForIceGathering(hostPeerConnection);
+    els.inviteCode.value = encodeSignal(hostPeerConnection.localDescription);
+    setConnectionStatus("Invite ready");
+  }
+
+  async function createJoinAnswer() {
+    closeMultiplayerConnections();
+    setConnectionStatus("Creating answer");
+    localPlayerId = `p${randomSeed().slice(3, 9)}`;
+    joinPeerConnection = createPeerConnection();
+    joinPeerConnection.addEventListener("datachannel", (event) => {
+      joinChannel = event.channel;
+      setupJoinChannel(joinChannel);
+    });
+    await joinPeerConnection.setRemoteDescription(decodeSignal(els.joinInviteCode.value));
+    const answer = await joinPeerConnection.createAnswer();
+    await joinPeerConnection.setLocalDescription(answer);
+    await waitForIceGathering(joinPeerConnection);
+    els.joinAnswerCode.value = encodeSignal(joinPeerConnection.localDescription);
+    setConnectionStatus("Answer ready");
+  }
+
+  async function acceptJoinAnswer() {
+    if (!hostPeerConnection) return;
+    setConnectionStatus("Connecting");
+    await hostPeerConnection.setRemoteDescription(decodeSignal(els.answerCodeInput.value));
+  }
+
+  function setupHostChannel(channel) {
+    channel.addEventListener("open", () => {
+      setConnectionStatus("Peer connected");
+    });
+    channel.addEventListener("close", () => {
+      setConnectionStatus("Peer disconnected");
+    });
+    channel.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === "hello") {
+        const peerId = message.playerId || `p${hostPeers.size + 2}`;
+        channel.playerId = peerId;
+        hostPeers.set(peerId, channel);
+        sendChannel(channel, { type: "welcome", playerId: peerId });
+        startHostedMultiplayer(peerId, message.name || "Player 2");
+      } else if (message.type === "action") {
+        enqueueHostAction(channel.playerId, message);
+      }
+    });
+  }
+
+  function setupJoinChannel(channel) {
+    channel.addEventListener("open", () => {
+      setConnectionStatus("Connected");
+      sendChannel(channel, {
+        type: "hello",
+        playerId: localPlayerId,
+        name: multiplayerName(),
+      });
+    });
+    channel.addEventListener("close", () => {
+      setConnectionStatus("Disconnected");
+    });
+    channel.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === "welcome") {
+        localPlayerId = message.playerId;
+      } else if (message.type === "state") {
+        playMode = "peer";
+        applyRemoteState(message.view);
+      }
+    });
+  }
+
+  function startHostedMultiplayer(peerId, peerName) {
+    if (multiplayerGame) {
+      broadcastMultiplayerState();
+      return;
+    }
+    const seed = randomSeed();
+    const players = [
+      { id: "host", name: multiplayerName() || "Host" },
+      { id: peerId, name: peerName },
+    ];
+    multiplayerGame = new PokerRushMultiplayerGame(readOptions(seed, true), players);
+    playMode = "host";
+    localPlayerId = "host";
+    lastSeed = seed;
+    lastStartKind = "multiplayer";
+    resetRenderState();
+    els.lobby.hidden = true;
+    els.gameView.hidden = false;
+    els.gameOver.hidden = true;
+    if (els.multiplayerDialog.open) els.multiplayerDialog.close();
+    const hostView = multiplayerGame.viewForPlayer(localPlayerId);
+    setGameView(hostView, {
+      animateHand: true,
+      forceMatrix: true,
+      forceScores: true,
+    });
+    startTimer();
+    broadcastMultiplayerState();
+  }
+
+  function applyRemoteState(view) {
+    if (playMode !== "peer" || !game) resetRenderState();
+    isResolving = false;
+    els.lobby.hidden = true;
+    els.gameView.hidden = false;
+    els.gameOver.hidden = true;
+    if (els.multiplayerDialog.open) els.multiplayerDialog.close();
+    setGameView(view, { forceMatrix: true, forceScores: true });
+    playScoreEvents(game.lastEvents);
+    startTimer();
+  }
+
+  function broadcastMultiplayerState() {
+    if (!multiplayerGame) return;
+    const hostView = multiplayerGame.viewForPlayer(localPlayerId);
+    setGameView(hostView, {
+      forceMatrix: true,
+      forceScores: true,
+    });
+    playScoreEvents(hostView.lastEvents);
+    for (const [playerId, channel] of hostPeers.entries()) {
+      sendChannel(channel, {
+        type: "state",
+        view: serializeView(multiplayerGame.viewForPlayer(playerId)),
+      });
+    }
+  }
+
+  function enqueueHostAction(playerId, message) {
+    if (!playerId || !multiplayerGame) return;
+    hostActionQueue.push({
+      playerId,
+      message,
+      receivedAt: performance.now(),
+    });
+    if (isProcessingHostActions) return;
+    isProcessingHostActions = true;
+    window.setTimeout(processHostActions, 0);
+  }
+
+  function processHostActions() {
+    hostActionQueue.sort((a, b) => {
+      const timeDiff = a.receivedAt - b.receivedAt;
+      if (timeDiff) return timeDiff;
+      const leftPlayer = multiplayerGame.playerById(a.playerId)?.index || 0;
+      const rightPlayer = multiplayerGame.playerById(b.playerId)?.index || 0;
+      return leftPlayer - rightPlayer;
+    });
+    while (hostActionQueue.length) {
+      const action = hostActionQueue.shift();
+      if (action.message.action === "discard") {
+        multiplayerGame.discardCard(action.playerId, action.message.index);
+      } else if (action.message.action === "end") {
+        multiplayerGame.endGame(action.playerId);
+      }
+    }
+    isProcessingHostActions = false;
+    broadcastMultiplayerState();
+  }
+
+  function sendPeerAction(action) {
+    sendChannel(joinChannel, {
+      type: "action",
+      action: action.action,
+      index: action.index,
+      seq: ++networkSeq,
+      sentAt: performance.now(),
+    });
+  }
+
   function discardAt(index) {
     if (!game || game.status !== "playing" || isResolving) return;
     const button = els.hand.children[index];
@@ -508,6 +886,19 @@
     isResolving = true;
     playDiscardSound();
     animateCardSlot(button, "is-discarding");
+    if (playMode === "host") {
+      window.setTimeout(() => {
+        enqueueHostAction(localPlayerId, { action: "discard", index, seq: ++networkSeq });
+        isResolving = false;
+      }, 120);
+      return;
+    }
+    if (playMode === "peer") {
+      window.setTimeout(() => {
+        sendPeerAction({ action: "discard", index });
+      }, 120);
+      return;
+    }
     window.setTimeout(() => {
       const result = game.discardCard(index);
       const scoreEvents = result.events ? result.events.filter((event) => event.type === "score") : [];
@@ -517,18 +908,21 @@
       renderMatrix();
       renderStatus();
       if (game.status !== "playing") showGameOver();
-      scoreEvents.forEach((event, eventIndex) => {
-        window.setTimeout(() => {
-          animateScore(event.record.evaluation.key);
-          playScoreSound(event.record.evaluation.key);
-        }, eventIndex * 90);
-      });
+      playScoreEvents(scoreEvents);
       isResolving = false;
     }, 120);
   }
 
   function endCurrentGame() {
     if (!game || game.status !== "playing") return;
+    if (playMode === "host" && multiplayerGame) {
+      enqueueHostAction(localPlayerId, { action: "end", seq: ++networkSeq });
+      return;
+    }
+    if (playMode === "peer") {
+      sendPeerAction({ action: "end" });
+      return;
+    }
     game.endGame();
     renderMetrics();
     renderStatus();
@@ -565,6 +959,9 @@
 
   function backToLobby() {
     if (timerId) window.clearInterval(timerId);
+    closeMultiplayerConnections();
+    multiplayerGame = null;
+    playMode = "single";
     game = null;
     els.gameOver.hidden = true;
     els.gameView.hidden = true;
@@ -585,9 +982,19 @@
 
   els.dailyButton.addEventListener("click", () => startGame("daily"));
   els.randomButton.addEventListener("click", () => startGame("random"));
+  els.multiplayerButton.addEventListener("click", openMultiplayerDialog);
   els.newDailyButton.addEventListener("click", () => startGame("daily"));
   els.newRandomButton.addEventListener("click", () => startGame("random"));
   els.endGameButton.addEventListener("click", endCurrentGame);
+  els.hostGameButton.addEventListener("click", () => {
+    createHostInvite().catch((error) => setConnectionStatus(error.message));
+  });
+  els.joinGameButton.addEventListener("click", () => {
+    createJoinAnswer().catch((error) => setConnectionStatus(error.message));
+  });
+  els.acceptAnswerButton.addEventListener("click", () => {
+    acceptJoinAnswer().catch((error) => setConnectionStatus(error.message));
+  });
   els.againButton.addEventListener("click", restartGame);
   els.backButton.addEventListener("click", backToLobby);
   els.soundButton.addEventListener("click", () => {

@@ -170,7 +170,7 @@ h2 {
 
 .main-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -207,6 +207,13 @@ h2 {
   border-color: rgba(255, 92, 146, 0.42);
   background:
     linear-gradient(135deg, rgba(255, 92, 146, 0.18), rgba(244, 201, 93, 0.12)),
+    #141720;
+}
+
+.primary-action.multi {
+  border-color: rgba(159, 125, 255, 0.48);
+  background:
+    linear-gradient(135deg, rgba(159, 125, 255, 0.18), rgba(69, 214, 255, 0.12)),
     #141720;
 }
 
@@ -434,6 +441,49 @@ select {
   min-height: 70px;
   overflow-x: auto;
   scrollbar-color: var(--line) transparent;
+}
+
+.players-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.player-chip {
+  min-width: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: rgba(8, 9, 13, 0.34);
+  padding: 7px 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+}
+
+.player-chip.is-local {
+  border-color: rgba(189, 244, 107, 0.45);
+  background: rgba(189, 244, 107, 0.08);
+}
+
+.player-chip strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.player-chip span {
+  color: var(--green);
+  font-weight: 950;
+  font-size: 0.82rem;
+}
+
+.player-chip small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.66rem;
 }
 
 .score-card {
@@ -891,6 +941,73 @@ select {
   padding-left: 20px;
 }
 
+.multiplayer-modal {
+  width: min(860px, calc(100% - 28px));
+}
+
+.multiplayer-body {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.multiplayer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.connect-panel {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: rgba(8, 9, 13, 0.28);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.connect-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.field-label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.field-label input,
+.field-label textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #0f131b;
+  color: var(--text);
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.field-label textarea {
+  min-height: 86px;
+  resize: none;
+}
+
+.connection-status {
+  min-height: 20px;
+  color: var(--green);
+  font-weight: 850;
+}
+
 .game-over {
   position: fixed;
   inset: 0;
@@ -1093,11 +1210,12 @@ body {
 .hand {
   --hand-size: 7;
   min-height: 0;
-  align-self: center;
+  align-self: stretch;
   display: grid;
   grid-template-columns: repeat(var(--hand-size), minmax(0, var(--card-w)));
   justify-content: center;
   align-content: center;
+  align-items: center;
   gap: clamp(6px, 1vw, 14px);
   overflow: hidden;
 }
@@ -1171,7 +1289,7 @@ body {
   grid-area: scores;
   min-height: 0;
   padding: 10px;
-  gap: 8px;
+  gap: 7px;
   overflow: hidden;
 }
 
@@ -1182,6 +1300,14 @@ body {
   align-content: start;
   gap: 8px;
   overflow: hidden;
+}
+
+.players-panel {
+  gap: 6px;
+}
+
+.player-chip {
+  padding: 6px 7px;
 }
 
 .score-card {
@@ -1338,6 +1464,23 @@ body {
     gap: 6px;
   }
 
+  .players-panel {
+    gap: 5px;
+  }
+
+  .player-chip {
+    padding: 5px 6px;
+  }
+
+  .player-chip strong,
+  .player-chip span {
+    font-size: 0.68rem;
+  }
+
+  .player-chip small {
+    display: none;
+  }
+
   .score-card {
     padding: 6px;
   }
@@ -1428,6 +1571,54 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .multiplayer-modal {
+    width: calc(100% - 16px);
+  }
+
+  .multiplayer-body {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .multiplayer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .connect-panel {
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .connect-head {
+    gap: 6px;
+  }
+
+  .connect-head strong {
+    font-size: 0.78rem;
+  }
+
+  .field-label {
+    gap: 4px;
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+  }
+
+  .field-label input,
+  .field-label textarea {
+    padding: 7px;
+    font-size: 0.72rem;
+  }
+
+  .field-label textarea {
+    min-height: 48px;
+  }
+
+  .multiplayer-modal .small-button {
+    padding: 7px 9px;
+    font-size: 0.72rem;
+  }
+
   .primary-action {
     min-height: 92px;
   }
@@ -1490,6 +1681,26 @@ body {
   .segmented.four,
   .segmented.five {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-height: 740px) and (max-width: 640px) {
+  .multiplayer-modal .modal-head {
+    padding: 10px 12px;
+  }
+
+  .multiplayer-body {
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .connect-panel {
+    padding: 7px;
+    gap: 6px;
+  }
+
+  .field-label textarea {
+    min-height: 40px;
   }
 }
 

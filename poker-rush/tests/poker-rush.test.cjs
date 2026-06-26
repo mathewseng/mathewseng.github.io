@@ -3,6 +3,7 @@ const test = require("node:test");
 
 const {
   PokerRushGame,
+  PokerRushMultiplayerGame,
   anyScorePossible,
   createDeck,
   evaluateFive,
@@ -167,4 +168,96 @@ test("manual end game sets a player-ended reason", () => {
   assert.equal(game.endGame(), true);
   assert.equal(game.status, "ended");
   assert.equal(game.endReason, "Ended by player");
+});
+
+test("multiplayer forces compatible discard mode and deals sorted player hands", () => {
+  const game = new PokerRushMultiplayerGame(
+    {
+      seed: "multi-basic",
+      now: 1,
+      handSize: 5,
+      discardMode: "bottom",
+      timeLimit: 0,
+      endMode: "discards",
+    },
+    [
+      { id: "host", name: "Host" },
+      { id: "guest", name: "Guest" },
+    ],
+  );
+  assert.equal(game.options.discardMode, "random");
+  assert.equal(game.players.length, 2);
+  assert.equal(game.players[0].hand.length, 5);
+  assert.equal(game.players[1].hand.length, 5);
+  for (const player of game.players) {
+    const sorted = player.hand.slice().sort((a, b) => {
+      const rankDiff = b.value - a.value;
+      if (rankDiff) return rankDiff;
+      return { S: 4, H: 3, D: 2, C: 1 }[b.suit] - { S: 4, H: 3, D: 2, C: 1 }[a.suit];
+    });
+    assert.deepEqual(
+      player.hand.map((card) => card.baseId),
+      sorted.map((card) => card.baseId),
+    );
+  }
+});
+
+test("multiplayer draw positions spread players across the deck", () => {
+  const game = new PokerRushMultiplayerGame(
+    {
+      seed: "multi-draw",
+      now: 1,
+      handSize: 5,
+      discardMode: "random",
+      timeLimit: 0,
+      endMode: "discards",
+    },
+    [
+      { id: "p1", name: "One" },
+      { id: "p2", name: "Two" },
+      { id: "p3", name: "Three" },
+    ],
+  );
+  game.deck = cards(["AS", "KH", "QD", "JC", "TS"]);
+  assert.equal(game.drawCardForPlayer("p1").baseId, "AS");
+  assert.equal(game.drawCardForPlayer("p2").baseId, "JC");
+  assert.equal(game.drawCardForPlayer("p3").baseId, "TS");
+});
+
+test("multiplayer views are per-player and host discard updates shared state", () => {
+  const game = new PokerRushMultiplayerGame(
+    {
+      seed: "multi-view",
+      now: 1,
+      handSize: 5,
+      discardMode: "random",
+      timeLimit: 0,
+      endMode: "discards",
+    },
+    [
+      { id: "host", name: "Host" },
+      { id: "guest", name: "Guest" },
+    ],
+  );
+  game.players[0].hand = cards(["AS", "KH", "QD", "JC", "9S"]);
+  game.players[1].hand = cards(["8S", "7H", "6D", "5C", "4S"]);
+  game.deck = cards(["2C", "3D", "4H", "5S"]);
+  game.players.forEach((player) => game.sortPlayerHand(player));
+  const beforeGuest = game.viewForPlayer("guest");
+  assert.deepEqual(
+    beforeGuest.hand.map((card) => card.baseId),
+    ["8S", "7H", "6D", "5C", "4S"],
+  );
+  const result = game.discardCard("host", 0);
+  assert.equal(result.ok, true);
+  const hostView = game.viewForPlayer("host");
+  const guestView = game.viewForPlayer("guest");
+  assert.equal(hostView.players.length, 2);
+  assert.equal(guestView.players.length, 2);
+  assert.equal(hostView.userDiscardCount, 1);
+  assert.equal(guestView.userDiscardCount, 1);
+  assert.notDeepEqual(
+    hostView.hand.map((card) => card.baseId),
+    beforeGuest.hand.map((card) => card.baseId),
+  );
 });
