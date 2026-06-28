@@ -1,0 +1,1899 @@
+(function () {
+  "use strict";
+
+  const RANKS_DESC = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const RANKS_ASC = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
+  const RANK_VALUE = new Map(RANKS_ASC.map((rank, index) => [rank, index + 2]));
+  const RANK_LABEL = {
+    2: "2",
+    3: "3",
+    4: "4",
+    5: "5",
+    6: "6",
+    7: "7",
+    8: "8",
+    9: "9",
+    10: "T",
+    11: "J",
+    12: "Q",
+    13: "K",
+    14: "A",
+  };
+  const RANK_NAME = {
+    2: "twos",
+    3: "threes",
+    4: "fours",
+    5: "fives",
+    6: "sixes",
+    7: "sevens",
+    8: "eights",
+    9: "nines",
+    10: "tens",
+    11: "jacks",
+    12: "queens",
+    13: "kings",
+    14: "aces",
+  };
+  const SUITS = ["s", "h", "d", "c"];
+  const SUIT_SYMBOL = { s: "♠", h: "♥", d: "♦", c: "♣" };
+  const CATEGORY = {
+    HIGH: 0,
+    PAIR: 1,
+    TWO_PAIR: 2,
+    TRIPS: 3,
+    STRAIGHT: 4,
+    FLUSH: 5,
+    FULL_HOUSE: 6,
+    QUADS: 7,
+    STRAIGHT_FLUSH: 8,
+    FIVE_KIND: 9,
+  };
+  const SCENARIOS = [
+    { cards: 14, jokers: 0 },
+    { cards: 15, jokers: 0 },
+    { cards: 16, jokers: 0 },
+    { cards: 17, jokers: 0 },
+    { cards: 14, jokers: 2 },
+    { cards: 15, jokers: 2 },
+    { cards: 16, jokers: 2 },
+    { cards: 17, jokers: 2 },
+  ];
+  const TRAINER_CONFIGS = [
+    { cards: 14, jokers: 0 },
+    { cards: 15, jokers: 0 },
+    { cards: 16, jokers: 0 },
+    { cards: 17, jokers: 0 },
+    { cards: 14, jokers: 2 },
+    { cards: 15, jokers: 2 },
+    { cards: 16, jokers: 2 },
+    { cards: 17, jokers: 2 },
+  ];
+  const TRAINER_ROWS = [
+    { key: "top", label: "Top", size: 3 },
+    { key: "middle", label: "Middle", size: 5 },
+    { key: "back", label: "Back", size: 5 },
+    { key: "discard", label: "Discards", size: 0 },
+  ];
+
+  const comboCache = new Map();
+  const virtualDeck = buildVirtualDeck();
+  const state = {
+    cardCount: 14,
+    jokerCount: 0,
+    repeatRule: "pineapple",
+    fiveKindRule: "royal",
+    selected: [],
+    simAbort: false,
+    suppressInput: false,
+    trainer: {
+      mode: "daily",
+      scope: "single",
+      cardCount: 14,
+      jokerCount: 0,
+      activeRow: "top",
+      puzzles: [],
+      puzzleIndex: 0,
+      rows: createEmptyTrainerRows(),
+      results: [],
+      startedAt: 0,
+      elapsedMs: 0,
+      timerId: 0,
+      confirmed: false,
+      randomBase: "",
+    },
+  };
+
+  const els = {};
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("DOMContentLoaded", () => {
+      cacheElements();
+      bindEvents();
+      renderDeck();
+      renderSelected();
+      renderSimulationRows();
+      dealRandomHand();
+      solveCurrentHand();
+      startTrainerSet();
+    });
+  }
+
+  function cacheElements() {
+    Object.assign(els, {
+      metricPoints: document.querySelector("#metric-points"),
+      metricRepeat: document.querySelector("#metric-repeat"),
+      metricSpeed: document.querySelector("#metric-speed"),
+      selectedCount: document.querySelector("#selected-count"),
+      selectedCards: document.querySelector("#selected-cards"),
+      deckGrid: document.querySelector("#deck-grid"),
+      cardInput: document.querySelector("#card-input"),
+      handMessage: document.querySelector("#hand-message"),
+      solveHand: document.querySelector("#solve-hand"),
+      randomHand: document.querySelector("#random-hand"),
+      clearHand: document.querySelector("#clear-hand"),
+      repeatRule: document.querySelector("#repeat-rule"),
+      fiveKindRule: document.querySelector("#five-kind-rule"),
+      repeatBadge: document.querySelector("#repeat-badge"),
+      bestPoints: document.querySelector("#best-points"),
+      repeatPoints: document.querySelector("#repeat-points"),
+      legalBoards: document.querySelector("#legal-boards"),
+      boardStack: document.querySelector("#board-stack"),
+      solverMode: document.querySelector("#solver-mode"),
+      sampleCount: document.querySelector("#sample-count"),
+      runSim: document.querySelector("#run-sim"),
+      stopSim: document.querySelector("#stop-sim"),
+      simBody: document.querySelector("#sim-body"),
+      simStatus: document.querySelector("#sim-status"),
+      simProgress: document.querySelector("#sim-progress"),
+      trainerTitle: document.querySelector("#trainer-title"),
+      trainerTime: document.querySelector("#trainer-time"),
+      trainerProgress: document.querySelector("#trainer-progress"),
+      trainerNew: document.querySelector("#trainer-new"),
+      trainerSeed: document.querySelector("#trainer-seed"),
+      trainerConfig: document.querySelector("#trainer-config"),
+      trainerResultBadge: document.querySelector("#trainer-result-badge"),
+      trainerTray: document.querySelector("#trainer-tray"),
+      trainerRows: document.querySelector("#trainer-rows"),
+      trainerFillDiscards: document.querySelector("#trainer-fill-discards"),
+      trainerClear: document.querySelector("#trainer-clear"),
+      trainerConfirm: document.querySelector("#trainer-confirm"),
+      trainerNext: document.querySelector("#trainer-next"),
+      trainerMessage: document.querySelector("#trainer-message"),
+      trainerYourPoints: document.querySelector("#trainer-your-points"),
+      trainerMaxPoints: document.querySelector("#trainer-max-points"),
+      trainerResult: document.querySelector("#trainer-result"),
+      trainerShare: document.querySelector("#trainer-share"),
+      trainerCopy: document.querySelector("#trainer-copy"),
+    });
+  }
+
+  function bindEvents() {
+    document.querySelectorAll('input[name="card-count"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.cardCount = Number(input.value);
+        if (state.selected.length > state.cardCount) {
+          state.selected = state.selected.slice(0, state.cardCount);
+        }
+        renderSelected();
+      });
+    });
+
+    document.querySelectorAll('input[name="joker-count"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.jokerCount = Number(input.value);
+        trimUnavailableJokers();
+        renderDeck();
+        renderSelected();
+      });
+    });
+
+    els.repeatRule.addEventListener("change", () => {
+      state.repeatRule = els.repeatRule.value;
+      solveCurrentHand();
+    });
+
+    els.fiveKindRule.addEventListener("change", () => {
+      state.fiveKindRule = els.fiveKindRule.value;
+      solveCurrentHand();
+    });
+
+    els.solveHand.addEventListener("click", solveCurrentHand);
+    els.randomHand.addEventListener("click", () => {
+      dealRandomHand();
+      solveCurrentHand();
+    });
+    els.clearHand.addEventListener("click", () => {
+      state.selected = [];
+      renderSelected();
+      clearSolution("Deal or paste a Fantasyland hand to solve it.");
+    });
+
+    let inputTimer = 0;
+    els.cardInput.addEventListener("input", () => {
+      if (state.suppressInput) return;
+      window.clearTimeout(inputTimer);
+      inputTimer = window.setTimeout(parseInputCards, 260);
+    });
+
+    els.runSim.addEventListener("click", runSimulationMatrix);
+    els.stopSim.addEventListener("click", () => {
+      state.simAbort = true;
+      els.simStatus.textContent = "Stopping after the current sample.";
+    });
+
+    document.querySelectorAll('input[name="trainer-mode"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.trainer.mode = input.value;
+        startTrainerSet();
+      });
+    });
+
+    document.querySelectorAll('input[name="trainer-scope"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.trainer.scope = input.value;
+        document.querySelectorAll(".trainer-single-control").forEach((control) => {
+          control.hidden = state.trainer.scope === "all";
+        });
+        startTrainerSet();
+      });
+    });
+
+    document.querySelectorAll('input[name="trainer-card-count"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.trainer.cardCount = Number(input.value);
+        if (state.trainer.scope === "single") startTrainerSet();
+      });
+    });
+
+    document.querySelectorAll('input[name="trainer-joker-count"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.trainer.jokerCount = Number(input.value);
+        if (state.trainer.scope === "single") startTrainerSet();
+      });
+    });
+
+    document.querySelectorAll('input[name="trainer-target"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.trainer.activeRow = input.value;
+        renderTrainerBoard();
+      });
+    });
+
+    els.trainerNew.addEventListener("click", startTrainerSet);
+    els.trainerFillDiscards.addEventListener("click", fillTrainerDiscards);
+    els.trainerClear.addEventListener("click", clearTrainerSet);
+    els.trainerConfirm.addEventListener("click", confirmTrainerSet);
+    els.trainerNext.addEventListener("click", loadNextTrainerPuzzle);
+    els.trainerCopy.addEventListener("click", copyTrainerReport);
+  }
+
+  function trimUnavailableJokers() {
+    const allowed = new Set(buildDeckIds(state.jokerCount));
+    state.selected = state.selected.filter((id) => allowed.has(id));
+  }
+
+  function dealRandomHand() {
+    const deck = buildDeckIds(state.jokerCount);
+    shuffle(deck);
+    state.selected = deck.slice(0, state.cardCount);
+    renderSelected();
+  }
+
+  function parseInputCards() {
+    const parsed = parseCardList(els.cardInput.value, state.jokerCount);
+    if (parsed.ids.length) {
+      state.selected = parsed.ids.slice(0, state.cardCount);
+      renderSelected({ keepInput: true });
+    } else {
+      state.selected = [];
+      renderSelected({ keepInput: true });
+    }
+    if (parsed.errors.length) {
+      setMessage(parsed.errors.slice(0, 2).join(" "));
+    } else {
+      setMessage("");
+    }
+  }
+
+  function solveCurrentHand() {
+    if (state.selected.length < 13) {
+      setMessage("Select at least 13 cards.");
+      clearSolution("The solver needs at least 13 cards.");
+      return;
+    }
+
+    try {
+      const result = solveHand(state.selected, {
+        repeatRule: state.repeatRule,
+        fiveKindRule: state.fiveKindRule,
+      });
+      renderSolution(result);
+      setMessage(
+        result.best
+          ? `Solved ${state.selected.length} cards exactly.`
+          : "No legal OFC board found for this hand."
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || "Could not solve this hand.");
+      clearSolution("Solver error.");
+    }
+  }
+
+  function renderDeck() {
+    const selected = new Set(state.selected);
+    const frag = document.createDocumentFragment();
+
+    SUITS.forEach((suit) => {
+      RANKS_DESC.forEach((rank) => {
+        const id = `${rank}${suit}`;
+        frag.appendChild(createCardButton(id, selected.has(id)));
+      });
+    });
+
+    const jokerZone = document.createElement("div");
+    jokerZone.className = "joker-zone";
+    ["JK1", "JK2"].forEach((id, index) => {
+      const button = createCardButton(id, selected.has(id));
+      button.disabled = index >= state.jokerCount;
+      jokerZone.appendChild(button);
+    });
+    frag.appendChild(jokerZone);
+
+    els.deckGrid.replaceChildren(frag);
+  }
+
+  function createCardButton(id, isSelected) {
+    const card = cardFromId(id);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `card-button ${cardClass(card)}${isSelected ? " selected" : ""}`;
+    button.dataset.cardId = id;
+    button.innerHTML = `<span class="card-label">${cardLabel(card)}</span>`;
+    button.addEventListener("click", () => toggleCard(id));
+    return button;
+  }
+
+  function toggleCard(id) {
+    const existing = state.selected.indexOf(id);
+    if (existing >= 0) {
+      state.selected.splice(existing, 1);
+    } else if (state.selected.length < state.cardCount) {
+      state.selected.push(id);
+    } else {
+      setMessage(`Already at ${state.cardCount} cards.`);
+    }
+    renderDeck();
+    renderSelected();
+  }
+
+  function renderSelected(options = {}) {
+    const target = state.cardCount;
+    els.selectedCount.textContent = `${state.selected.length} / ${target} selected`;
+
+    const frag = document.createDocumentFragment();
+    state.selected.forEach((id) => {
+      const card = cardFromId(id);
+      const item = document.createElement("div");
+      item.className = `mini-card ${cardClass(card)}`;
+      item.innerHTML = `<span><span class="card-label">${cardLabel(card)}</span></span>`;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", `Remove ${id}`);
+      remove.addEventListener("click", () => {
+        state.selected = state.selected.filter((cardId) => cardId !== id);
+        renderDeck();
+        renderSelected();
+      });
+      item.appendChild(remove);
+      frag.appendChild(item);
+    });
+    els.selectedCards.replaceChildren(frag);
+    renderDeck();
+
+    if (!options.keepInput) {
+      state.suppressInput = true;
+      els.cardInput.value = state.selected.join(" ");
+      state.suppressInput = false;
+    }
+  }
+
+  function renderSolution(result) {
+    const best = result.best;
+    const bestRepeat = result.bestRepeat;
+    els.metricPoints.textContent = best ? String(best.points) : "--";
+    els.metricRepeat.textContent = bestRepeat ? "Yes" : "No";
+    els.metricSpeed.textContent = `${result.elapsedMs.toFixed(0)} ms`;
+    els.bestPoints.textContent = best ? String(best.points) : "--";
+    els.legalBoards.textContent = formatInteger(result.legalBoards);
+    els.repeatPoints.textContent = bestRepeat
+      ? best && bestRepeat.points < best.points
+        ? `${bestRepeat.points} (-${best.points - bestRepeat.points})`
+        : String(bestRepeat.points)
+      : "--";
+
+    els.repeatBadge.className = `repeat-badge ${bestRepeat ? "yes" : "no"}`;
+    els.repeatBadge.textContent = bestRepeat ? "Repeat" : "No repeat";
+
+    if (!best) {
+      clearSolution("No legal OFC board found.");
+      return;
+    }
+
+    const rows = [
+      { label: "Top", role: "top", candidate: best.top, className: "top-row" },
+      { label: "Middle", role: "middle", candidate: best.middle, className: "" },
+      { label: "Back", role: "back", candidate: best.back, className: "" },
+    ];
+
+    const frag = document.createDocumentFragment();
+    rows.forEach((row) => {
+      frag.appendChild(renderBoardRow(result.cards, row, result.options.repeatRule));
+    });
+
+    const discards = result.cards.filter((card, index) => (best.usedMask & (1 << index)) === 0);
+    const discardRow = document.createElement("div");
+    discardRow.className = "board-row";
+    discardRow.innerHTML = `<div class="row-head"><strong>Discards</strong><div class="row-meta"><span>${discards.length}</span></div></div>`;
+    const discardCards = document.createElement("div");
+    discardCards.className = "row-cards discard-row";
+    discards.forEach((card) => discardCards.appendChild(renderMiniCard(card, null)));
+    discardRow.appendChild(discardCards);
+    frag.appendChild(discardRow);
+
+    els.boardStack.replaceChildren(frag);
+  }
+
+  function renderBoardRow(cards, row, repeatRule) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "board-row";
+    const royalty = row.role === "top" ? row.candidate.royalty : row.candidate[row.role === "middle" ? "middleRoyalty" : "backRoyalty"];
+    const repeat = rowRepeats(row.role, row.candidate.eval, repeatRule);
+    wrapper.innerHTML = `
+      <div class="row-head">
+        <strong>${row.label}</strong>
+        <div class="row-meta">
+          <span>${row.candidate.eval.name}</span>
+          <span>${royalty} pts</span>
+          ${repeat ? "<span>repeat</span>" : ""}
+        </div>
+      </div>
+    `;
+
+    const cardGrid = document.createElement("div");
+    cardGrid.className = `row-cards ${row.className}`;
+    cardsForMask(cards, row.candidate.mask).forEach((card) => {
+      const assigned = row.candidate.eval.assignments ? row.candidate.eval.assignments.get(card.handIndex) : null;
+      cardGrid.appendChild(renderMiniCard(card, assigned));
+    });
+    wrapper.appendChild(cardGrid);
+
+    const note = jokerNote(cardsForMask(cards, row.candidate.mask), row.candidate.eval);
+    if (note) {
+      const noteEl = document.createElement("div");
+      noteEl.className = "row-note";
+      noteEl.textContent = note;
+      wrapper.appendChild(noteEl);
+    }
+    return wrapper;
+  }
+
+  function renderMiniCard(card, assigned) {
+    const item = document.createElement("div");
+    item.className = `mini-card ${cardClass(card)}`;
+    const label = card.joker && assigned ? `${cardLabel(card)}=${cardLabel(assigned)}` : cardLabel(card);
+    item.innerHTML = `<span><span class="card-label">${label}</span></span>`;
+    return item;
+  }
+
+  function jokerNote(rowCards, evalResult) {
+    if (!evalResult.assignments) return "";
+    const parts = rowCards
+      .filter((card) => card.joker)
+      .map((card) => {
+        const assigned = evalResult.assignments.get(card.handIndex);
+        return assigned ? `${card.id} = ${cardLabel(assigned)}` : "";
+      })
+      .filter(Boolean);
+    return parts.length ? parts.join(", ") : "";
+  }
+
+  function clearSolution(message) {
+    els.metricPoints.textContent = "--";
+    els.metricRepeat.textContent = "--";
+    els.metricSpeed.textContent = "--";
+    els.bestPoints.textContent = "--";
+    els.repeatPoints.textContent = "--";
+    els.legalBoards.textContent = "--";
+    els.repeatBadge.className = "repeat-badge";
+    els.repeatBadge.textContent = "--";
+    els.boardStack.innerHTML = `<div class="empty-state">${message}</div>`;
+  }
+
+  function setMessage(text) {
+    els.handMessage.textContent = text;
+  }
+
+  function startTrainerSet() {
+    stopTrainerTimer();
+    const trainer = state.trainer;
+    trainer.mode = getCheckedValue("trainer-mode", trainer.mode);
+    trainer.scope = getCheckedValue("trainer-scope", trainer.scope);
+    trainer.cardCount = Number(getCheckedValue("trainer-card-count", String(trainer.cardCount)));
+    trainer.jokerCount = Number(getCheckedValue("trainer-joker-count", String(trainer.jokerCount)));
+    document.querySelectorAll(".trainer-single-control").forEach((control) => {
+      control.hidden = trainer.scope === "all";
+    });
+
+    const configs =
+      trainer.scope === "all"
+        ? TRAINER_CONFIGS
+        : [{ cards: trainer.cardCount, jokers: trainer.jokerCount }];
+
+    trainer.randomBase =
+      trainer.mode === "random"
+        ? `R${Date.now().toString(36)}${Math.floor(Math.random() * 1e9).toString(36)}`
+        : "";
+
+    const dateKey = localDateKey();
+    trainer.puzzles = configs.map((config) => {
+      const seed =
+        trainer.mode === "daily"
+          ? `${dateKey}${config.cards}${config.jokers}`
+          : `${trainer.randomBase}${config.cards}${config.jokers}`;
+      return {
+        ...config,
+        seed,
+        dateKey,
+        ids: dealIdsSeeded(config.cards, config.jokers, seed),
+      };
+    });
+    trainer.results = [];
+    loadTrainerPuzzle(0);
+  }
+
+  function loadTrainerPuzzle(index) {
+    const trainer = state.trainer;
+    trainer.puzzleIndex = index;
+    trainer.rows = createEmptyTrainerRows();
+    trainer.activeRow = "top";
+    trainer.confirmed = false;
+    trainer.elapsedMs = 0;
+    setCheckedValue("trainer-target", "top");
+    clearTrainerResult();
+    startTrainerTimer();
+    renderTrainer();
+  }
+
+  function loadNextTrainerPuzzle() {
+    const next = state.trainer.puzzleIndex + 1;
+    if (next < state.trainer.puzzles.length) {
+      loadTrainerPuzzle(next);
+    }
+  }
+
+  function renderTrainer() {
+    const trainer = state.trainer;
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return;
+
+    els.trainerTitle.textContent = trainer.mode === "daily" ? "Daily puzzle" : "Random puzzle";
+    els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
+    els.trainerSeed.textContent =
+      trainer.mode === "daily" ? `Seed ${puzzle.seed}` : `Random ${trainer.randomBase}`;
+    els.trainerConfig.textContent = configText(puzzle);
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+    updateTrainerTimer();
+  }
+
+  function renderTrainerTray() {
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return;
+    const placed = new Set(getPlacedTrainerIds());
+    const frag = document.createDocumentFragment();
+    puzzle.ids.forEach((id) => {
+      if (placed.has(id)) return;
+      const card = cardFromId(id);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `card-button trainer-card ${cardClass(card)}`;
+      button.disabled = state.trainer.confirmed;
+      button.dataset.cardId = id;
+      button.innerHTML = `<span class="card-label">${cardLabel(card)}</span>`;
+      button.addEventListener("click", () => addTrainerCard(id));
+      frag.appendChild(button);
+    });
+    els.trainerTray.replaceChildren(frag);
+  }
+
+  function renderTrainerBoard() {
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return;
+    const frag = document.createDocumentFragment();
+    TRAINER_ROWS.forEach((rowDef) => {
+      const size = trainerRowSize(rowDef.key, puzzle);
+      const row = document.createElement("section");
+      row.className = `trainer-row ${state.trainer.activeRow === rowDef.key ? "active" : ""}`;
+      row.dataset.row = rowDef.key;
+
+      const head = document.createElement("button");
+      head.type = "button";
+      head.className = "trainer-row-head";
+      head.disabled = state.trainer.confirmed;
+      head.innerHTML = `<strong>${rowDef.label}</strong><span>${state.trainer.rows[rowDef.key].length}/${size}</span>`;
+      head.addEventListener("click", () => setTrainerActiveRow(rowDef.key));
+      row.appendChild(head);
+
+      const slots = document.createElement("div");
+      slots.className = `trainer-slots ${rowDef.key === "top" ? "top-row" : ""}`;
+      for (let index = 0; index < size; index += 1) {
+        const id = state.trainer.rows[rowDef.key][index];
+        const slot = document.createElement("div");
+        slot.className = `trainer-slot ${id ? "filled" : ""}`;
+        if (id) {
+          const card = cardFromId(id);
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `mini-card trainer-placed-card ${cardClass(card)}`;
+          button.disabled = state.trainer.confirmed;
+          button.innerHTML = `<span><span class="card-label">${cardLabel(card)}</span></span>`;
+          button.addEventListener("click", () => removeTrainerCard(rowDef.key, id));
+          slot.appendChild(button);
+        }
+        slots.appendChild(slot);
+      }
+      row.appendChild(slots);
+      frag.appendChild(row);
+    });
+    els.trainerRows.replaceChildren(frag);
+  }
+
+  function addTrainerCard(id) {
+    const trainer = state.trainer;
+    if (trainer.confirmed || getPlacedTrainerIds().includes(id)) return;
+    let rowKey = trainer.activeRow;
+    if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle())) {
+      const nextRow = nextTrainerRowWithSpace(rowKey);
+      if (!nextRow) {
+        els.trainerMessage.textContent = "All rows are full.";
+        return;
+      }
+      rowKey = nextRow;
+      setTrainerActiveRow(rowKey, { render: false });
+    }
+
+    trainer.rows[rowKey].push(id);
+    const nextRow = nextTrainerRowWithSpace(rowKey);
+    if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle()) && nextRow) {
+      setTrainerActiveRow(nextRow, { render: false });
+    }
+    els.trainerMessage.textContent = "";
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+  }
+
+  function removeTrainerCard(rowKey, id) {
+    const trainer = state.trainer;
+    if (trainer.confirmed) return;
+    trainer.rows[rowKey] = trainer.rows[rowKey].filter((cardId) => cardId !== id);
+    setTrainerActiveRow(rowKey, { render: false });
+    els.trainerMessage.textContent = "";
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+  }
+
+  function fillTrainerDiscards() {
+    const trainer = state.trainer;
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle || trainer.confirmed) return;
+    const discardSize = trainerRowSize("discard", puzzle);
+    const placed = new Set(getPlacedTrainerIds());
+    const remaining = puzzle.ids.filter((id) => !placed.has(id));
+    const open = discardSize - trainer.rows.discard.length;
+    trainer.rows.discard.push(...remaining.slice(0, Math.max(0, open)));
+    setTrainerActiveRow(nextTrainerRowWithSpace("discard") || "discard", { render: false });
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+  }
+
+  function clearTrainerSet() {
+    if (state.trainer.confirmed) return;
+    state.trainer.rows = createEmptyTrainerRows();
+    setTrainerActiveRow("top", { render: false });
+    els.trainerMessage.textContent = "";
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+  }
+
+  function confirmTrainerSet() {
+    const trainer = state.trainer;
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle || trainer.confirmed) return;
+    if (!trainerReady()) {
+      els.trainerMessage.textContent = "Set every row before confirming.";
+      return;
+    }
+
+    trainer.elapsedMs = now() - trainer.startedAt;
+    stopTrainerTimer();
+    trainer.confirmed = true;
+
+    const user = scoreTrainerRows(puzzle.ids, trainer.rows, {
+      fiveKindRule: state.fiveKindRule,
+    });
+    const optimal = solveHand(puzzle.ids, {
+      repeatRule: state.repeatRule,
+      fiveKindRule: state.fiveKindRule,
+    });
+    const maxPoints = optimal.best ? optimal.best.points : 0;
+    const correct = user.legal && user.points === maxPoints;
+    const result = {
+      mode: trainer.mode,
+      scope: trainer.scope,
+      seed: puzzle.seed,
+      dateKey: puzzle.dateKey,
+      cards: puzzle.cards,
+      jokers: puzzle.jokers,
+      ids: puzzle.ids.slice(),
+      rows: cloneTrainerRows(trainer.rows),
+      timeMs: trainer.elapsedMs,
+      points: user.points,
+      maxPoints,
+      correct,
+      legal: user.legal,
+      rowNames: user.rowNames,
+    };
+    trainer.results[trainer.puzzleIndex] = result;
+    renderTrainerResult(result);
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+  }
+
+  function renderTrainerResult(result) {
+    els.trainerYourPoints.textContent = String(result.points);
+    els.trainerMaxPoints.textContent = String(result.maxPoints);
+    els.trainerResult.textContent = result.correct ? "Max" : result.legal ? "Not max" : "Foul";
+    els.trainerResultBadge.className = `repeat-badge ${result.correct ? "yes" : "no"}`;
+    els.trainerResultBadge.textContent = result.correct ? "Correct" : result.legal ? "Missed" : "Foul";
+    els.trainerMessage.textContent = `${result.correct ? "Max royalties" : "Below max"} in ${formatTime(result.timeMs)}.`;
+    els.trainerShare.value = buildTrainerShare();
+    els.trainerCopy.disabled = !els.trainerShare.value;
+  }
+
+  function clearTrainerResult() {
+    els.trainerResultBadge.className = "repeat-badge";
+    els.trainerResultBadge.textContent = "Playing";
+    els.trainerYourPoints.textContent = "--";
+    els.trainerMaxPoints.textContent = "--";
+    els.trainerResult.textContent = "--";
+    els.trainerMessage.textContent = "";
+    els.trainerShare.value = "";
+    els.trainerCopy.disabled = true;
+    els.trainerNext.hidden = true;
+  }
+
+  function updateTrainerControls() {
+    const trainer = state.trainer;
+    const ready = trainerReady();
+    els.trainerConfirm.disabled = trainer.confirmed || !ready;
+    els.trainerFillDiscards.disabled = trainer.confirmed;
+    els.trainerClear.disabled = trainer.confirmed;
+    els.trainerNext.hidden = !trainer.confirmed || trainer.puzzleIndex >= trainer.puzzles.length - 1;
+    els.trainerNew.textContent = trainer.mode === "daily" ? "Load daily" : "Random";
+  }
+
+  function scoreTrainerRows(cardIds, rows, options = {}) {
+    const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
+    const topCards = rows.top.map((id) => cardById.get(id));
+    const middleCards = rows.middle.map((id) => cardById.get(id));
+    const backCards = rows.back.map((id) => cardById.get(id));
+    const fiveKindRule = options.fiveKindRule || "royal";
+    const topEval = evaluateBestTop(topCards);
+    const middleEval = evaluateBestFive(middleCards);
+    const backEval = evaluateBestFive(backCards);
+    const legal =
+      backEval.strength >= middleEval.strength &&
+      isTopLegalAgainstMiddle(topEval, middleEval);
+    const points = legal
+      ? topRoyalty(topEval) +
+        fiveRoyalty(middleEval, "middle", fiveKindRule) +
+        fiveRoyalty(backEval, "back", fiveKindRule)
+      : 0;
+    return {
+      legal,
+      points,
+      rowNames: {
+        top: topEval.name,
+        middle: middleEval.name,
+        back: backEval.name,
+      },
+    };
+  }
+
+  function isTopLegalAgainstMiddle(topEval, middleEval) {
+    if (middleEval.category >= CATEGORY.STRAIGHT) return true;
+    if (middleEval.category === CATEGORY.TRIPS) {
+      return topEval.category < CATEGORY.TRIPS || topEval.mainRank <= middleEval.mainRank;
+    }
+    if (middleEval.category === CATEGORY.TWO_PAIR) {
+      return topEval.category < CATEGORY.TRIPS;
+    }
+    if (middleEval.category === CATEGORY.PAIR) {
+      if (topEval.category === CATEGORY.HIGH) return true;
+      return topEval.category === CATEGORY.PAIR && topEval.mainRank <= middleEval.mainRank;
+    }
+    return topEval.category === CATEGORY.HIGH && topEval.strength <= middleEval.strength;
+  }
+
+  function buildTrainerShare() {
+    const trainer = state.trainer;
+    const results = trainer.results.filter(Boolean);
+    if (!results.length) return "";
+    const first = results[0];
+    if (first.mode === "daily") {
+      const title =
+        trainer.scope === "all"
+          ? `OFC Fantasyland Daily ${first.dateKey} All 8`
+          : `OFC Fantasyland Daily ${first.dateKey} ${configShort(first)}`;
+      return [title]
+        .concat(results.map((result) => `${configShort(result)} ${result.correct ? "✅" : "❌"} ${formatTime(result.timeMs)}`))
+        .join("\n");
+    }
+
+    const title =
+      trainer.scope === "all"
+        ? "OFC Fantasyland Random All 8"
+        : `OFC Fantasyland Random ${configShort(first)}`;
+    const blocks = results.map((result) =>
+      [
+        `${configShort(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
+        `Top: ${cardsToShare(result.rows.top)}`,
+        `Middle: ${cardsToShare(result.rows.middle)}`,
+        `Back: ${cardsToShare(result.rows.back)}`,
+        `Discards: ${cardsToShare(result.rows.discard)}`,
+      ].join("\n")
+    );
+    return [title].concat(blocks).join("\n\n");
+  }
+
+  async function copyTrainerReport() {
+    const text = els.trainerShare.value;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      els.trainerCopy.textContent = "Copied";
+      window.setTimeout(() => {
+        els.trainerCopy.textContent = "Copy report";
+      }, 1200);
+    } catch (error) {
+      els.trainerShare.focus();
+      els.trainerShare.select();
+      document.execCommand("copy");
+    }
+  }
+
+  function startTrainerTimer() {
+    stopTrainerTimer();
+    state.trainer.startedAt = now();
+    state.trainer.timerId = window.setInterval(updateTrainerTimer, 250);
+    updateTrainerTimer();
+  }
+
+  function stopTrainerTimer() {
+    if (state.trainer.timerId) {
+      window.clearInterval(state.trainer.timerId);
+      state.trainer.timerId = 0;
+    }
+  }
+
+  function updateTrainerTimer() {
+    if (!els.trainerTime) return;
+    const elapsed = state.trainer.confirmed
+      ? state.trainer.elapsedMs
+      : Math.max(0, now() - state.trainer.startedAt);
+    els.trainerTime.textContent = formatTime(elapsed);
+  }
+
+  function trainerReady() {
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return false;
+    return TRAINER_ROWS.every((row) => state.trainer.rows[row.key].length === trainerRowSize(row.key, puzzle));
+  }
+
+  function getPlacedTrainerIds() {
+    return TRAINER_ROWS.flatMap((row) => state.trainer.rows[row.key]);
+  }
+
+  function nextTrainerRowWithSpace(currentKey) {
+    const puzzle = getTrainerPuzzle();
+    const order = TRAINER_ROWS.map((row) => row.key);
+    const start = Math.max(0, order.indexOf(currentKey));
+    for (let step = 1; step <= order.length; step += 1) {
+      const key = order[(start + step) % order.length];
+      if (state.trainer.rows[key].length < trainerRowSize(key, puzzle)) return key;
+    }
+    return "";
+  }
+
+  function setTrainerActiveRow(key, options = {}) {
+    state.trainer.activeRow = key;
+    setCheckedValue("trainer-target", key);
+    if (options.render !== false) renderTrainerBoard();
+  }
+
+  function trainerRowSize(key, puzzle) {
+    if (key === "discard") return Math.max(0, puzzle.cards - 13);
+    const row = TRAINER_ROWS.find((entry) => entry.key === key);
+    return row ? row.size : 0;
+  }
+
+  function getTrainerPuzzle() {
+    return state.trainer.puzzles[state.trainer.puzzleIndex];
+  }
+
+  function createEmptyTrainerRows() {
+    return { top: [], middle: [], back: [], discard: [] };
+  }
+
+  function cloneTrainerRows(rows) {
+    return {
+      top: rows.top.slice(),
+      middle: rows.middle.slice(),
+      back: rows.back.slice(),
+      discard: rows.discard.slice(),
+    };
+  }
+
+  function getCheckedValue(name, fallback) {
+    const input = document.querySelector(`input[name="${name}"]:checked`);
+    return input ? input.value : fallback;
+  }
+
+  function setCheckedValue(name, value) {
+    const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (input) input.checked = true;
+  }
+
+  function configText(config) {
+    return `${config.cards} cards, ${config.jokers ? `${config.jokers} jokers` : "no jokers"}`;
+  }
+
+  function configShort(config) {
+    return `${config.cards}/${config.jokers}`;
+  }
+
+  function localDateKey() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}${month}${day}`;
+  }
+
+  function dealIdsSeeded(count, jokers, seed) {
+    const deck = buildDeckIds(jokers);
+    const rng = seededRandom(seed);
+    for (let index = deck.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(rng() * (index + 1));
+      [deck[index], deck[swapIndex]] = [deck[swapIndex], deck[index]];
+    }
+    return deck.slice(0, count);
+  }
+
+  function seededRandom(seed) {
+    return mulberry32(hashSeed(seed));
+  }
+
+  function hashSeed(seed) {
+    let hash = 1779033703 ^ seed.length;
+    for (let index = 0; index < seed.length; index += 1) {
+      hash = Math.imul(hash ^ seed.charCodeAt(index), 3432918353);
+      hash = (hash << 13) | (hash >>> 19);
+    }
+    hash = Math.imul(hash ^ (hash >>> 16), 2246822507);
+    hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
+    return (hash ^= hash >>> 16) >>> 0;
+  }
+
+  function mulberry32(seed) {
+    let value = seed >>> 0;
+    return function nextRandom() {
+      value += 0x6d2b79f5;
+      let result = Math.imul(value ^ (value >>> 15), 1 | value);
+      result ^= result + Math.imul(result ^ (result >>> 7), 61 | result);
+      return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function formatTime(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  function cardsToShare(ids) {
+    return ids.map(cardIdToShare).join(" ");
+  }
+
+  function cardIdToShare(id) {
+    if (id.startsWith("JK")) return "🃏";
+    const rank = id[0] === "T" ? "10" : id[0];
+    const suit = id[1].toLowerCase();
+    const suits = { s: "♠️", h: "♥️", d: "♦️", c: "♣️" };
+    return `${rank}${suits[suit]}`;
+  }
+
+  async function runSimulationMatrix() {
+    state.simAbort = false;
+    els.runSim.disabled = true;
+    els.stopSim.disabled = false;
+    els.simProgress.style.width = "0%";
+    renderSimulationRows();
+
+    const samples = Number(els.sampleCount.value);
+    const options = {
+      repeatRule: els.repeatRule.value,
+      fiveKindRule: els.fiveKindRule.value,
+    };
+    const solver = els.solverMode.value === "exact" ? solveHand : solveHandFast;
+    const modeLabel = els.solverMode.value === "exact" ? "exact" : "fast";
+    const totalsByKey = new Map();
+    const totalWork = SCENARIOS.length * samples;
+    let completed = 0;
+    const started = now();
+
+    try {
+      for (const scenario of SCENARIOS) {
+        const key = scenarioKey(scenario);
+        const totals = { points: 0, repeats: 0, repeatPoints: 0, samples: 0 };
+        totalsByKey.set(key, totals);
+
+        for (let i = 0; i < samples; i += 1) {
+          if (state.simAbort) {
+            els.simStatus.textContent = "Stopped.";
+            return;
+          }
+
+          const ids = dealIds(scenario.cards, scenario.jokers);
+          const result = solver(ids, options);
+          totals.samples += 1;
+          totals.points += result.best ? result.best.points : 0;
+          if (result.bestRepeat) {
+            totals.repeats += 1;
+            totals.repeatPoints += result.bestRepeat.points;
+          }
+
+          completed += 1;
+          if (i === samples - 1 || i % 2 === 1) {
+            updateSimulationRow(scenario, totals);
+            els.simProgress.style.width = `${Math.round((completed / totalWork) * 100)}%`;
+            els.simStatus.textContent = `${completed} / ${totalWork} ${modeLabel} samples`;
+            await yieldFrame();
+          }
+        }
+      }
+
+      const elapsed = ((now() - started) / 1000).toFixed(1);
+      els.simProgress.style.width = "100%";
+      els.simStatus.textContent = `Finished ${totalWork} ${modeLabel} samples in ${elapsed}s.`;
+    } finally {
+      els.runSim.disabled = false;
+      els.stopSim.disabled = true;
+      state.simAbort = false;
+    }
+  }
+
+  function renderSimulationRows() {
+    const frag = document.createDocumentFragment();
+    SCENARIOS.forEach((scenario) => {
+      const tr = document.createElement("tr");
+      tr.dataset.scenario = scenarioKey(scenario);
+      tr.innerHTML = `
+        <td>${scenario.cards}</td>
+        <td>${scenario.jokers ? "2 jokers" : "No jokers"}</td>
+        <td class="pending">--</td>
+        <td class="pending">--</td>
+        <td class="pending">--</td>
+        <td class="pending">0</td>
+      `;
+      frag.appendChild(tr);
+    });
+    els.simBody.replaceChildren(frag);
+  }
+
+  function updateSimulationRow(scenario, totals) {
+    const row = els.simBody.querySelector(`[data-scenario="${scenarioKey(scenario)}"]`);
+    if (!row) return;
+    const avg = totals.samples ? totals.points / totals.samples : 0;
+    const repeatPct = totals.samples ? totals.repeats / totals.samples : 0;
+    const repeatAvg = totals.repeats ? totals.repeatPoints / totals.repeats : 0;
+    row.children[2].textContent = avg.toFixed(2);
+    row.children[3].textContent = formatPct(repeatPct);
+    row.children[4].textContent = totals.repeats ? repeatAvg.toFixed(2) : "--";
+    row.children[5].textContent = String(totals.samples);
+    Array.from(row.children).forEach((cell) => cell.classList.remove("pending"));
+  }
+
+  function scenarioKey(scenario) {
+    return `${scenario.cards}-${scenario.jokers}`;
+  }
+
+  function solveHand(cardIds, options = {}) {
+    const repeatRule = options.repeatRule || "pineapple";
+    const fiveKindRule = options.fiveKindRule || "royal";
+    const started = now();
+    const cards = cardIds.map((id, handIndex) => ({ ...cardFromId(id), handIndex }));
+    const n = cards.length;
+    if (n < 13 || n > 17) {
+      throw new Error("OFC Fantasyland solver supports 13 to 17 cards.");
+    }
+
+    const combo = getComboCache(n);
+    const five = buildFiveCandidates(cards, combo.fiveMasks, fiveKindRule);
+    const top = buildTopCandidates(cards, combo.threeMasks);
+    const fiveStrength = five.map((candidate) => candidate.eval.strength);
+    const fiveMiddleRoyalty = five.map((candidate) => candidate.middleRoyalty);
+    const fiveBackRoyalty = five.map((candidate) => candidate.backRoyalty);
+    const topByMask = [];
+    top.forEach((candidate) => {
+      topByMask[candidate.mask] = candidate;
+    });
+    const topCache = [];
+    const fullMask = (1 << n) - 1;
+    let best = null;
+    let bestRepeat = null;
+    let legalBoards = 0;
+
+    for (let backIndex = 0; backIndex < combo.fiveMasks.length; backIndex += 1) {
+      const backStrength = fiveStrength[backIndex];
+      const backRoyalty = fiveBackRoyalty[backIndex];
+      const offsetStart = combo.disjointOffsets[backIndex];
+      const offsetEnd = combo.disjointOffsets[backIndex + 1];
+
+      for (let offset = offsetStart; offset < offsetEnd; offset += 1) {
+        const middleIndex = combo.disjointFive[offset];
+        const middleStrength = fiveStrength[middleIndex];
+        if (backStrength < middleStrength) continue;
+
+        const remainingMask = fullMask ^ combo.fiveMasks[backIndex] ^ combo.fiveMasks[middleIndex];
+        const topCandidate = getBestTopForMiddle(
+          remainingMask,
+          five[middleIndex].eval,
+          topByMask,
+          topCache
+        );
+        if (!topCandidate) continue;
+
+        legalBoards += 1;
+        const points = backRoyalty + fiveMiddleRoyalty[middleIndex] + topCandidate.royalty;
+        const repeats =
+          rowRepeats("top", topCandidate.eval, repeatRule) ||
+          rowRepeats("middle", five[middleIndex].eval, repeatRule) ||
+          rowRepeats("back", five[backIndex].eval, repeatRule);
+
+        const solution = {
+          points,
+          repeat: repeats,
+          top: topCandidate,
+          middle: five[middleIndex],
+          back: five[backIndex],
+          usedMask: topCandidate.mask | combo.fiveMasks[middleIndex] | combo.fiveMasks[backIndex],
+          tieStrength: backStrength + middleStrength + topCandidate.eval.strength,
+        };
+
+        if (isBetterSolution(solution, best)) best = solution;
+        if (repeats && isBetterSolution(solution, bestRepeat)) bestRepeat = solution;
+      }
+    }
+
+    return {
+      cards,
+      best,
+      bestRepeat,
+      legalBoards,
+      elapsedMs: now() - started,
+      options: { repeatRule, fiveKindRule },
+    };
+  }
+
+  function solveHandFast(cardIds, options = {}) {
+    const repeatRule = options.repeatRule || "pineapple";
+    const fiveKindRule = options.fiveKindRule || "royal";
+    const started = now();
+    const cards = cardIds.map((id, handIndex) => ({ ...cardFromId(id), handIndex }));
+    const n = cards.length;
+    if (n < 13 || n > 17) {
+      throw new Error("OFC Fantasyland solver supports 13 to 17 cards.");
+    }
+
+    const combo = getComboCache(n);
+    const five = buildFiveCandidates(cards, combo.fiveMasks, fiveKindRule);
+    const top = buildTopCandidates(cards, combo.threeMasks);
+    const fiveStrength = five.map((candidate) => candidate.eval.strength);
+    const fiveMiddleRoyalty = five.map((candidate) => candidate.middleRoyalty);
+    const fiveBackRoyalty = five.map((candidate) => candidate.backRoyalty);
+    const topByMask = [];
+    top.forEach((candidate) => {
+      topByMask[candidate.mask] = candidate;
+    });
+    const topCache = [];
+    const fullMask = (1 << n) - 1;
+    const backBeam = selectFiveBeam(five, "back", repeatRule);
+    const middleBeam = selectFiveBeam(five, "middle", repeatRule);
+    let best = null;
+    let bestRepeat = null;
+    let legalBoards = 0;
+
+    for (const backIndex of backBeam) {
+      const backMask = combo.fiveMasks[backIndex];
+      const backStrength = fiveStrength[backIndex];
+      const backRoyalty = fiveBackRoyalty[backIndex];
+
+      for (const middleIndex of middleBeam) {
+        const middleMask = combo.fiveMasks[middleIndex];
+        if (backMask & middleMask) continue;
+
+        const middleStrength = fiveStrength[middleIndex];
+        if (backStrength < middleStrength) continue;
+
+        const remainingMask = fullMask ^ backMask ^ middleMask;
+        const topCandidate = getBestTopForMiddle(
+          remainingMask,
+          five[middleIndex].eval,
+          topByMask,
+          topCache
+        );
+        if (!topCandidate) continue;
+
+        legalBoards += 1;
+        const points = backRoyalty + fiveMiddleRoyalty[middleIndex] + topCandidate.royalty;
+        const repeats =
+          rowRepeats("top", topCandidate.eval, repeatRule) ||
+          rowRepeats("middle", five[middleIndex].eval, repeatRule) ||
+          rowRepeats("back", five[backIndex].eval, repeatRule);
+
+        const solution = {
+          points,
+          repeat: repeats,
+          top: topCandidate,
+          middle: five[middleIndex],
+          back: five[backIndex],
+          usedMask: topCandidate.mask | middleMask | backMask,
+          tieStrength: backStrength + middleStrength + topCandidate.eval.strength,
+        };
+
+        if (isBetterSolution(solution, best)) best = solution;
+        if (repeats && isBetterSolution(solution, bestRepeat)) bestRepeat = solution;
+      }
+    }
+
+    if (!best) return solveHand(cardIds, options);
+
+    return {
+      cards,
+      best,
+      bestRepeat,
+      legalBoards,
+      elapsedMs: now() - started,
+      options: { repeatRule, fiveKindRule, mode: "fast" },
+    };
+  }
+
+  function selectFiveBeam(five, row, repeatRule) {
+    const limit = 320;
+    const selected = new Set();
+    const addTop = (scoreFn, count) => {
+      five
+        .map((candidate, index) => ({ index, score: scoreFn(candidate) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, count)
+        .forEach((entry) => selected.add(entry.index));
+    };
+
+    const royaltyOf = (candidate) => (row === "middle" ? candidate.middleRoyalty : candidate.backRoyalty);
+    addTop(
+      (candidate) =>
+        royaltyOf(candidate) * 100000 +
+        (rowRepeats(row, candidate.eval, repeatRule) ? 25000 : 0) +
+        candidate.eval.strength / 1e6,
+      limit
+    );
+    addTop((candidate) => candidate.eval.strength, Math.ceil(limit / 3));
+    addTop(
+      (candidate) =>
+        (rowRepeats(row, candidate.eval, repeatRule) ? 100000 : 0) +
+        royaltyOf(candidate) * 1000 +
+        candidate.eval.strength / 1e8,
+      Math.ceil(limit / 2)
+    );
+
+    return Array.from(selected);
+  }
+
+  function buildFiveCandidates(cards, masks, fiveKindRule) {
+    return masks.map((mask) => {
+      const rowCards = cardsForMask(cards, mask);
+      const evalResult = evaluateBestFive(rowCards);
+      return {
+        mask,
+        eval: evalResult,
+        middleRoyalty: fiveRoyalty(evalResult, "middle", fiveKindRule),
+        backRoyalty: fiveRoyalty(evalResult, "back", fiveKindRule),
+      };
+    });
+  }
+
+  function buildTopCandidates(cards, masks) {
+    return masks.map((mask) => {
+      const rowCards = cardsForMask(cards, mask);
+      const evalResult = evaluateBestTop(rowCards);
+      return {
+        mask,
+        eval: evalResult,
+        royalty: topRoyalty(evalResult),
+      };
+    });
+  }
+
+  function getBestTopForMiddle(remainingMask, middleEval, topByMask, topCache) {
+    let cache = topCache[remainingMask];
+    if (!cache) {
+      cache = buildTopOptionCache(remainingMask, topByMask);
+      topCache[remainingMask] = cache;
+    }
+
+    if (middleEval.category >= CATEGORY.STRAIGHT) return cache.any;
+    if (middleEval.category === CATEGORY.TRIPS) return cache.tripLimit[middleEval.mainRank] || null;
+    if (middleEval.category === CATEGORY.TWO_PAIR) return cache.noTrips || null;
+    if (middleEval.category === CATEGORY.PAIR) return cache.pairLimit[middleEval.mainRank] || null;
+
+    for (const candidate of cache.highs) {
+      if (candidate.eval.strength <= middleEval.strength) return candidate;
+    }
+    return null;
+  }
+
+  function buildTopOptionCache(mask, topByMask) {
+    const positions = bitPositions(mask);
+    const cache = {
+      any: null,
+      noTrips: null,
+      pairLimit: Array(15).fill(null),
+      tripLimit: Array(15).fill(null),
+      highs: [],
+    };
+
+    for (let a = 0; a < positions.length - 2; a += 1) {
+      for (let b = a + 1; b < positions.length - 1; b += 1) {
+        for (let c = b + 1; c < positions.length; c += 1) {
+          const topMask = (1 << positions[a]) | (1 << positions[b]) | (1 << positions[c]);
+          const candidate = topByMask[topMask];
+          if (!candidate) continue;
+          cache.any = betterTop(candidate, cache.any);
+
+          if (candidate.eval.category < CATEGORY.TRIPS) {
+            cache.noTrips = betterTop(candidate, cache.noTrips);
+          }
+
+          if (candidate.eval.category === CATEGORY.HIGH) {
+            cache.highs.push(candidate);
+            for (let rank = 2; rank <= 14; rank += 1) {
+              cache.pairLimit[rank] = betterTop(candidate, cache.pairLimit[rank]);
+              cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
+            }
+          } else if (candidate.eval.category === CATEGORY.PAIR) {
+            for (let rank = candidate.eval.mainRank; rank <= 14; rank += 1) {
+              cache.pairLimit[rank] = betterTop(candidate, cache.pairLimit[rank]);
+              cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
+            }
+          } else if (candidate.eval.category === CATEGORY.TRIPS) {
+            for (let rank = candidate.eval.mainRank; rank <= 14; rank += 1) {
+              cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
+            }
+          }
+        }
+      }
+    }
+
+    cache.highs.sort((a, b) => topSortValue(b) - topSortValue(a));
+    return cache;
+  }
+
+  function betterTop(candidate, current) {
+    if (!current) return candidate;
+    return topSortValue(candidate) > topSortValue(current) ? candidate : current;
+  }
+
+  function topSortValue(candidate) {
+    return candidate.royalty * 1e12 + candidate.eval.strength;
+  }
+
+  function isBetterSolution(candidate, current) {
+    if (!current) return true;
+    if (candidate.points !== current.points) return candidate.points > current.points;
+    if (candidate.repeat !== current.repeat) return candidate.repeat;
+    return candidate.tieStrength > current.tieStrength;
+  }
+
+  function rowRepeats(row, evalResult, rule) {
+    if (row === "top") return evalResult.category === CATEGORY.TRIPS;
+    if (row === "back") return evalResult.category >= CATEGORY.QUADS;
+    if (rule === "topback") return false;
+    if (rule === "tenpoint") return evalResult.category >= CATEGORY.FULL_HOUSE;
+    return evalResult.category >= CATEGORY.QUADS;
+  }
+
+  function topRoyalty(evalResult) {
+    if (evalResult.category === CATEGORY.PAIR && evalResult.mainRank >= 6) {
+      return evalResult.mainRank - 5;
+    }
+    if (evalResult.category === CATEGORY.TRIPS) {
+      return evalResult.mainRank + 8;
+    }
+    return 0;
+  }
+
+  function fiveRoyalty(evalResult, row, fiveKindRule) {
+    const middle = row === "middle";
+    switch (evalResult.category) {
+      case CATEGORY.TRIPS:
+        return middle ? 2 : 0;
+      case CATEGORY.STRAIGHT:
+        return middle ? 4 : 2;
+      case CATEGORY.FLUSH:
+        return middle ? 8 : 4;
+      case CATEGORY.FULL_HOUSE:
+        return middle ? 12 : 6;
+      case CATEGORY.QUADS:
+        return middle ? 20 : 10;
+      case CATEGORY.STRAIGHT_FLUSH:
+        if (evalResult.mainRank === 14) return middle ? 50 : 25;
+        return middle ? 30 : 15;
+      case CATEGORY.FIVE_KIND:
+        if (fiveKindRule === "royal") return middle ? 50 : 25;
+        if (fiveKindRule === "straightflush") return middle ? 30 : 15;
+        if (fiveKindRule === "quads") return middle ? 20 : 10;
+        return 0;
+      default:
+        return 0;
+    }
+  }
+
+  function evaluateBestFive(cards) {
+    return evaluateWithJokers(cards, evaluateConcreteFive);
+  }
+
+  function evaluateBestTop(cards) {
+    return evaluateWithJokers(cards, evaluateConcreteTop);
+  }
+
+  function evaluateWithJokers(cards, evaluator) {
+    const jokers = cards.filter((card) => card.joker);
+    const natural = cards.filter((card) => !card.joker);
+
+    if (jokers.length === 0) {
+      return evaluator(cards, null);
+    }
+
+    let best = null;
+    const consider = (replacements) => {
+      const concrete = natural.concat(replacements);
+      const evaluated = evaluator(concrete, null);
+      const assignments = new Map();
+      jokers.forEach((joker, index) => assignments.set(joker.handIndex, replacements[index]));
+      evaluated.assignments = assignments;
+      if (!best || evaluated.strength > best.strength) {
+        best = evaluated;
+      }
+    };
+
+    if (jokers.length === 1) {
+      for (const first of virtualDeck) consider([first]);
+    } else if (jokers.length === 2) {
+      for (const first of virtualDeck) {
+        for (const second of virtualDeck) {
+          consider([first, second]);
+        }
+      }
+    } else {
+      throw new Error("This solver supports up to two jokers.");
+    }
+
+    return best;
+  }
+
+  function evaluateConcreteFive(cards) {
+    const counts = rankCounts(cards);
+    const groups = Array.from(counts.entries())
+      .map(([rank, count]) => ({ rank: Number(rank), count }))
+      .sort((a, b) => b.count - a.count || b.rank - a.rank);
+    const uniqueRanks = Array.from(counts.keys()).map(Number);
+    const flush = cards.every((card) => card.suit === cards[0].suit);
+    const straightHigh = straightHighRank(uniqueRanks);
+
+    if (groups[0].count === 5) {
+      return makeEval(CATEGORY.FIVE_KIND, [groups[0].rank], `Five ${RANK_NAME[groups[0].rank]}`);
+    }
+
+    if (flush && straightHigh) {
+      const name = straightHigh === 14 ? "Royal flush" : `${rankLong(straightHigh)}-high straight flush`;
+      return makeEval(CATEGORY.STRAIGHT_FLUSH, [straightHigh], name);
+    }
+
+    if (groups[0].count === 4) {
+      const kicker = groups.find((group) => group.count === 1).rank;
+      return makeEval(CATEGORY.QUADS, [groups[0].rank, kicker], `Four ${RANK_NAME[groups[0].rank]}`);
+    }
+
+    if (groups[0].count === 3 && groups[1] && groups[1].count === 2) {
+      return makeEval(
+        CATEGORY.FULL_HOUSE,
+        [groups[0].rank, groups[1].rank],
+        `${rankLong(groups[0].rank)} full of ${RANK_NAME[groups[1].rank]}`
+      );
+    }
+
+    if (flush) {
+      const ranks = cards.map((card) => card.rank).sort(descNumber);
+      return makeEval(CATEGORY.FLUSH, ranks, `${rankLong(ranks[0])}-high flush`);
+    }
+
+    if (straightHigh) {
+      return makeEval(CATEGORY.STRAIGHT, [straightHigh], `${rankLong(straightHigh)}-high straight`);
+    }
+
+    if (groups[0].count === 3) {
+      const kickers = groups
+        .filter((group) => group.count === 1)
+        .map((group) => group.rank)
+        .sort(descNumber);
+      return makeEval(CATEGORY.TRIPS, [groups[0].rank].concat(kickers), `Three ${RANK_NAME[groups[0].rank]}`);
+    }
+
+    if (groups[0].count === 2 && groups[1] && groups[1].count === 2) {
+      const pairs = groups
+        .filter((group) => group.count === 2)
+        .map((group) => group.rank)
+        .sort(descNumber);
+      const kicker = groups.find((group) => group.count === 1).rank;
+      return makeEval(CATEGORY.TWO_PAIR, pairs.concat(kicker), `${rankLong(pairs[0])} and ${RANK_NAME[pairs[1]]}`);
+    }
+
+    if (groups[0].count === 2) {
+      const kickers = groups
+        .filter((group) => group.count === 1)
+        .map((group) => group.rank)
+        .sort(descNumber);
+      return makeEval(CATEGORY.PAIR, [groups[0].rank].concat(kickers), `Pair of ${RANK_NAME[groups[0].rank]}`);
+    }
+
+    const ranks = cards.map((card) => card.rank).sort(descNumber);
+    return makeEval(CATEGORY.HIGH, ranks, `${rankLong(ranks[0])}-high`);
+  }
+
+  function evaluateConcreteTop(cards) {
+    const counts = rankCounts(cards);
+    const groups = Array.from(counts.entries())
+      .map(([rank, count]) => ({ rank: Number(rank), count }))
+      .sort((a, b) => b.count - a.count || b.rank - a.rank);
+
+    if (groups[0].count === 3) {
+      return makeEval(CATEGORY.TRIPS, [groups[0].rank], `Three ${RANK_NAME[groups[0].rank]}`);
+    }
+
+    if (groups[0].count === 2) {
+      const kicker = groups.find((group) => group.count === 1).rank;
+      return makeEval(CATEGORY.PAIR, [groups[0].rank, kicker], `Pair of ${RANK_NAME[groups[0].rank]}`);
+    }
+
+    const ranks = cards.map((card) => card.rank).sort(descNumber);
+    return makeEval(CATEGORY.HIGH, ranks, `${rankLong(ranks[0])}-high`);
+  }
+
+  function makeEval(category, ranks, name) {
+    return {
+      category,
+      mainRank: ranks[0] || 0,
+      ranks,
+      name,
+      strength: encodeStrength(category, ranks),
+      assignments: null,
+    };
+  }
+
+  function encodeStrength(category, ranks) {
+    let value = category * 1e10;
+    const weights = [1e8, 1e6, 1e4, 1e2, 1];
+    for (let index = 0; index < weights.length; index += 1) {
+      value += (ranks[index] || 0) * weights[index];
+    }
+    return value;
+  }
+
+  function rankCounts(cards) {
+    const counts = new Map();
+    cards.forEach((card) => counts.set(card.rank, (counts.get(card.rank) || 0) + 1));
+    return counts;
+  }
+
+  function straightHighRank(ranks) {
+    const unique = Array.from(new Set(ranks)).sort(descNumber);
+    if (unique.length < 5) return 0;
+    const withWheel = unique.includes(14) ? unique.concat(1) : unique;
+    for (let index = 0; index <= withWheel.length - 5; index += 1) {
+      const high = withWheel[index];
+      let ok = true;
+      for (let step = 1; step < 5; step += 1) {
+        if (withWheel[index + step] !== high - step) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) return high === 5 ? 5 : high;
+    }
+    return 0;
+  }
+
+  function getComboCache(n) {
+    if (comboCache.has(n)) return comboCache.get(n);
+    const fiveMasks = generateMasks(n, 5);
+    const threeMasks = generateMasks(n, 3);
+    const disjointOffsets = new Uint32Array(fiveMasks.length + 1);
+    let total = 0;
+
+    for (let i = 0; i < fiveMasks.length; i += 1) {
+      disjointOffsets[i] = total;
+      for (let j = 0; j < fiveMasks.length; j += 1) {
+        if ((fiveMasks[i] & fiveMasks[j]) === 0) total += 1;
+      }
+    }
+    disjointOffsets[fiveMasks.length] = total;
+
+    const disjointFive = new Uint16Array(total);
+    let cursor = 0;
+    for (let i = 0; i < fiveMasks.length; i += 1) {
+      for (let j = 0; j < fiveMasks.length; j += 1) {
+        if ((fiveMasks[i] & fiveMasks[j]) === 0) {
+          disjointFive[cursor] = j;
+          cursor += 1;
+        }
+      }
+    }
+
+    const cache = { fiveMasks, threeMasks, disjointOffsets, disjointFive };
+    comboCache.set(n, cache);
+    return cache;
+  }
+
+  function generateMasks(n, k) {
+    const masks = [];
+    const walk = (start, left, mask) => {
+      if (left === 0) {
+        masks.push(mask);
+        return;
+      }
+      for (let index = start; index <= n - left; index += 1) {
+        walk(index + 1, left - 1, mask | (1 << index));
+      }
+    };
+    walk(0, k, 0);
+    return masks;
+  }
+
+  function bitPositions(mask) {
+    const positions = [];
+    let index = 0;
+    while (mask) {
+      if (mask & 1) positions.push(index);
+      mask >>= 1;
+      index += 1;
+    }
+    return positions;
+  }
+
+  function cardsForMask(cards, mask) {
+    const row = [];
+    for (let index = 0; index < cards.length; index += 1) {
+      if (mask & (1 << index)) row.push(cards[index]);
+    }
+    return row;
+  }
+
+  function parseCardList(text, jokerLimit) {
+    const tokens = text
+      .replace(/[,\n;]+/g, " ")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+    const ids = [];
+    const seen = new Set();
+    const errors = [];
+    let jokerSeen = 0;
+
+    tokens.forEach((token) => {
+      const id = parseCardToken(token, jokerSeen + 1);
+      if (!id) {
+        errors.push(`Skipped ${token}.`);
+        return;
+      }
+      if (id.startsWith("JK")) {
+        jokerSeen += 1;
+        if (jokerSeen > jokerLimit) {
+          errors.push(`Only ${jokerLimit} joker${jokerLimit === 1 ? "" : "s"} enabled.`);
+          return;
+        }
+      }
+      if (seen.has(id)) {
+        errors.push(`Duplicate ${id}.`);
+        return;
+      }
+      seen.add(id);
+      ids.push(id);
+    });
+
+    return { ids, errors };
+  }
+
+  function parseCardToken(raw, nextJokerNumber) {
+    const normalized = raw
+      .trim()
+      .toUpperCase()
+      .replace(/10/g, "T")
+      .replace(/[♠]/g, "S")
+      .replace(/[♥]/g, "H")
+      .replace(/[♦]/g, "D")
+      .replace(/[♣]/g, "C")
+      .replace(/[^A-Z0-9]/g, "");
+
+    if (/^(JOKER|JOK|JK|X|WILD)([12])?$/.test(normalized)) {
+      const explicit = normalized.match(/([12])$/);
+      return `JK${explicit ? explicit[1] : Math.min(nextJokerNumber, 2)}`;
+    }
+
+    const match = normalized.match(/^([AKQJT2-9])([SHDC])$/) || normalized.match(/^([SHDC])([AKQJT2-9])$/);
+    if (!match) return null;
+    if (SUITS.includes(match[2].toLowerCase())) return `${match[1]}${match[2].toLowerCase()}`;
+    return `${match[2]}${match[1].toLowerCase()}`;
+  }
+
+  function buildDeckIds(jokers) {
+    const ids = [];
+    SUITS.forEach((suit) => {
+      RANKS_DESC.forEach((rank) => ids.push(`${rank}${suit}`));
+    });
+    if (jokers >= 1) ids.push("JK1");
+    if (jokers >= 2) ids.push("JK2");
+    return ids;
+  }
+
+  function dealIds(count, jokers) {
+    const deck = buildDeckIds(jokers);
+    shuffle(deck);
+    return deck.slice(0, count);
+  }
+
+  function buildVirtualDeck() {
+    const deck = [];
+    SUITS.forEach((suit) => {
+      RANKS_ASC.forEach((rank) => {
+        deck.push({
+          id: `${rank}${suit}`,
+          rank: RANK_VALUE.get(rank),
+          suit,
+          joker: false,
+        });
+      });
+    });
+    return deck;
+  }
+
+  function cardFromId(id) {
+    if (id.startsWith("JK")) {
+      return { id, rank: 0, suit: "", joker: true };
+    }
+    const rank = id[0].toUpperCase();
+    const suit = id[1].toLowerCase();
+    return {
+      id: `${rank}${suit}`,
+      rank: RANK_VALUE.get(rank),
+      suit,
+      joker: false,
+    };
+  }
+
+  function cardLabel(card) {
+    if (card.joker) return "JK";
+    return `${RANK_LABEL[card.rank]}${SUIT_SYMBOL[card.suit]}`;
+  }
+
+  function cardSubLabel(card) {
+    if (card.joker) return card.id;
+    return card.id;
+  }
+
+  function cardClass(card) {
+    if (card.joker) return "joker";
+    return `suit-${card.suit}`;
+  }
+
+  function rankLong(rank) {
+    if (rank === 14) return "Ace";
+    if (rank === 13) return "King";
+    if (rank === 12) return "Queen";
+    if (rank === 11) return "Jack";
+    if (rank === 10) return "Ten";
+    return RANK_LABEL[rank];
+  }
+
+  function descNumber(a, b) {
+    return b - a;
+  }
+
+  function shuffle(items) {
+    for (let index = items.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+    }
+    return items;
+  }
+
+  function formatInteger(value) {
+    return new Intl.NumberFormat("en-US").format(value);
+  }
+
+  function formatPct(value) {
+    return `${(value * 100).toFixed(1)}%`;
+  }
+
+  function yieldFrame() {
+    return new Promise((resolve) => window.setTimeout(resolve, 0));
+  }
+
+  function now() {
+    if (typeof performance !== "undefined" && performance.now) return performance.now();
+    return Date.now();
+  }
+
+  if (typeof window !== "undefined") {
+    window.OFCSolverCore = {
+      solveHand,
+      solveHandFast,
+      parseCardList,
+      cardFromId,
+      evaluateBestFive,
+      evaluateBestTop,
+      topRoyalty,
+      fiveRoyalty,
+      dealIdsSeeded,
+      scoreTrainerRows,
+      isTopLegalAgainstMiddle,
+      cardIdToShare,
+    };
+  }
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      solveHand,
+      solveHandFast,
+      parseCardList,
+      cardFromId,
+      evaluateBestFive,
+      evaluateBestTop,
+      topRoyalty,
+      fiveRoyalty,
+      dealIdsSeeded,
+      scoreTrainerRows,
+      isTopLegalAgainstMiddle,
+      cardIdToShare,
+    };
+  }
+})();
