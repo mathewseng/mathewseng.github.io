@@ -1010,14 +1010,15 @@
 
   function startTrainerPointerDrag(event, id, sourceEl) {
     if (state.trainer.confirmed || (event.pointerType === "mouse" && event.button !== 0)) return;
+    const point = getTrainerPointerViewportPoint(event);
     state.trainer.drag = {
       id,
       sourceEl,
       pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      currentX: event.clientX,
-      currentY: event.clientY,
+      startX: point.x,
+      startY: point.y,
+      currentX: point.x,
+      currentY: point.y,
       active: false,
       ghost: null,
       overEl: null,
@@ -1038,40 +1039,29 @@
     const drag = state.trainer.drag;
     if (!drag || event.pointerId !== drag.pointerId) return;
 
-    const dx = event.clientX - drag.startX;
-    const dy = event.clientY - drag.startY;
+    const point = getTrainerPointerViewportPoint(event);
+    const dx = point.x - drag.startX;
+    const dy = point.y - drag.startY;
     if (!drag.active && Math.hypot(dx, dy) < 5) return;
 
-    drag.currentX = event.clientX;
-    drag.currentY = event.clientY;
-    if (!drag.active) activateTrainerPointerDrag(event);
-    updateTrainerDragGhost(event);
-    updateTrainerDragTarget(event);
+    drag.currentX = point.x;
+    drag.currentY = point.y;
+    if (!drag.active) activateTrainerPointerDrag(point);
+    updateTrainerDragGhost(point);
+    updateTrainerDragTarget(point);
     event.preventDefault();
   }
 
-  function activateTrainerPointerDrag(event) {
+  function activateTrainerPointerDrag(point) {
     const drag = state.trainer.drag;
     if (!drag || drag.active) return;
-    const rect = drag.sourceEl.getBoundingClientRect();
-    const ghost = drag.sourceEl.cloneNode(true);
-    ghost.removeAttribute("id");
-    ghost.removeAttribute("disabled");
-    if ("disabled" in ghost) ghost.disabled = false;
-    ghost.setAttribute("aria-hidden", "true");
-    ghost.tabIndex = -1;
-    ghost.classList.remove("drag-source-hidden");
-    ghost.classList.add("trainer-drag-ghost");
-    ghost.style.width = `${rect.width}px`;
-    ghost.style.height = `${rect.height}px`;
-    ghost.style.left = `${event.clientX}px`;
-    ghost.style.top = `${event.clientY}px`;
+    const ghost = createTrainerDragGhost(drag.id, drag.sourceEl, point);
     document.body.appendChild(ghost);
     drag.sourceEl.classList.add("drag-source-hidden");
     drag.active = true;
     drag.ghost = ghost;
     document.body.classList.add("trainer-dragging");
-    updateTrainerDragGhost(event);
+    updateTrainerDragGhost(point);
     window.requestAnimationFrame(() => {
       if (ghost.isConnected && !ghost.classList.contains("is-dropping")) {
         ghost.classList.add("is-lifted");
@@ -1079,19 +1069,34 @@
     });
   }
 
-  function updateTrainerDragGhost(event) {
-    const drag = state.trainer.drag;
-    if (!drag || !drag.ghost) return;
-    drag.currentX = event.clientX;
-    drag.currentY = event.clientY;
-    drag.ghost.style.left = `${event.clientX}px`;
-    drag.ghost.style.top = `${event.clientY}px`;
+  function createTrainerDragGhost(id, sourceEl, point) {
+    const rect = sourceEl.getBoundingClientRect();
+    const card = cardFromId(id);
+    const ghost = document.createElement("div");
+    ghost.className = `card-button trainer-card trainer-drag-ghost ${cardClass(card)}`;
+    ghost.dataset.cardId = id;
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.innerHTML = cardFaceHtml(card);
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.left = `${point.x}px`;
+    ghost.style.top = `${point.y}px`;
+    return ghost;
   }
 
-  function updateTrainerDragTarget(event) {
+  function updateTrainerDragGhost(point) {
+    const drag = state.trainer.drag;
+    if (!drag || !drag.ghost) return;
+    drag.currentX = point.x;
+    drag.currentY = point.y;
+    drag.ghost.style.left = `${point.x}px`;
+    drag.ghost.style.top = `${point.y}px`;
+  }
+
+  function updateTrainerDragTarget(point) {
     const drag = state.trainer.drag;
     if (!drag || !drag.active) return;
-    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const target = document.elementFromPoint(point.x, point.y);
     const overEl = target ? target.closest(".trainer-slot, #trainer-tray") : null;
     if (drag.overEl === overEl) return;
     clearTrainerPointerDragTarget();
@@ -1113,7 +1118,8 @@
 
     const wasActive = drag.active;
     if (wasActive) {
-      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const point = getTrainerPointerViewportPoint(event);
+      const target = document.elementFromPoint(point.x, point.y);
       const slot = target ? target.closest(".trainer-slot") : null;
       const bank = target ? target.closest("#trainer-tray") : null;
       const willMoveToSlot = !!(slot && slot.dataset.row && slot.dataset.index);
@@ -1137,6 +1143,15 @@
     }
 
     cleanupTrainerPointerDrag({ suppressClick: false, restoreSource: true });
+  }
+
+  function getTrainerPointerViewportPoint(event) {
+    const pageX = Number.isFinite(event.pageX) ? event.pageX : event.clientX + window.scrollX;
+    const pageY = Number.isFinite(event.pageY) ? event.pageY : event.clientY + window.scrollY;
+    return {
+      x: pageX - window.scrollX,
+      y: pageY - window.scrollY,
+    };
   }
 
   function cancelTrainerPointerDrag() {

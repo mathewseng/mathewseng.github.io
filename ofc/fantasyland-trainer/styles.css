@@ -576,9 +576,11 @@ h3 {
 
 .trainer-drag-ghost {
   position: fixed;
-  z-index: 10000;
+  z-index: 2147483647;
+  box-sizing: border-box;
   display: flex !important;
   opacity: 1 !important;
+  overflow: hidden;
   visibility: visible !important;
   pointer-events: none;
   touch-action: none;
@@ -807,6 +809,10 @@ select {
   overflow: hidden;
   padding: 0;
   text-align: center;
+}
+
+.card-button.trainer-drag-ghost {
+  position: fixed;
 }
 
 .card-corner {
