@@ -1187,24 +1187,23 @@
   function resolveTrainerDropSlot(target, id) {
     if (!target) return null;
     const directSlot = target.closest(".trainer-slot");
-    if (directSlot && directSlot.dataset.row && directSlot.dataset.index) return directSlot;
-
-    const row = target.closest(".trainer-row");
+    const row = directSlot ? directSlot.closest(".trainer-row") : target.closest(".trainer-row");
     if (!row || !row.dataset.row) return null;
-    const index = getTrainerRowSurfaceDropIndex(row.dataset.row, id);
+    const index = getTrainerResolvedRowDropIndex(row.dataset.row, id);
     if (index < 0) return null;
     return row.querySelector(`.trainer-slot[data-index="${index}"]`);
   }
 
-  function getTrainerRowSurfaceDropIndex(rowKey, id) {
+  function getTrainerResolvedRowDropIndex(rowKey, id) {
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return -1;
     const origin = findTrainerCardLocation(id);
-    if (origin && origin.rowKey === rowKey) return origin.index;
-
     const rowCards = state.trainer.rows[rowKey];
     const rowSize = trainerRowSize(rowKey, puzzle);
-    if (!rowCards || rowCards.length >= rowSize) return -1;
+    if (!rowCards) return -1;
+
+    if (origin && origin.rowKey === rowKey) return origin.index;
+    if (rowCards.length >= rowSize) return -1;
     return rowCards.length;
   }
 
@@ -1256,7 +1255,7 @@
 
     const handleEnd = (transitionEvent) => {
       if (transitionEvent.target !== ghost) return;
-      if (!["left", "top", "transform", "width", "height"].includes(transitionEvent.propertyName)) return;
+      if (!["left", "top"].includes(transitionEvent.propertyName)) return;
       finish();
     };
 
@@ -1264,14 +1263,16 @@
     ghost.classList.add("is-drop-animating");
     ghost.getBoundingClientRect();
     window.requestAnimationFrame(() => {
-      ghost.classList.add("is-dropping");
-      ghost.classList.remove("is-lifted");
-      ghost.style.width = `${rect.width}px`;
-      ghost.style.height = `${rect.height}px`;
-      ghost.style.left = `${targetX}px`;
-      ghost.style.top = `${targetY}px`;
+      window.requestAnimationFrame(() => {
+        ghost.classList.add("is-dropping");
+        ghost.classList.remove("is-lifted");
+        ghost.style.width = `${rect.width}px`;
+        ghost.style.height = `${rect.height}px`;
+        ghost.style.left = `${targetX}px`;
+        ghost.style.top = `${targetY}px`;
+      });
     });
-    window.setTimeout(finish, TRAINER_DROP_ANIMATION_MS + 60);
+    window.setTimeout(finish, TRAINER_DROP_ANIMATION_MS + 120);
   }
 
   function cancelTrainerPointerDrag() {
@@ -1352,7 +1353,8 @@
     clearTrainerDragOver(event);
     const id = getTrainerDragCardId(event);
     if (!id) return;
-    placeTrainerCardInSlot(id, rowKey, index);
+    const resolvedIndex = getTrainerResolvedRowDropIndex(rowKey, id);
+    placeTrainerCardInSlot(id, rowKey, resolvedIndex >= 0 ? resolvedIndex : index);
   }
 
   function getTrainerDragCardId(event) {
@@ -1371,6 +1373,7 @@
     if (targetId === id) return;
 
     const origin = findTrainerCardLocation(id);
+    if (targetId && !origin) return;
     if (targetId) {
       if (origin) trainer.rows[origin.rowKey][origin.index] = targetId;
       targetRow[index] = id;
