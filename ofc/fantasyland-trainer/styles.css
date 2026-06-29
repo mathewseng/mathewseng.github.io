@@ -727,14 +727,14 @@ h3 {
 }
 
 .trainer-controls .control-field:first-child .segmented label:first-child input:checked + span {
-  border-color: rgba(55, 217, 158, 0.9);
-  background: #22c783;
-  color: #061018;
+  border-color: rgba(74, 144, 226, 0.95);
+  background: #2f6fd0;
+  color: #ffffff;
 }
 
 .trainer-controls .control-field:first-child .segmented label:nth-child(2) input:checked + span {
-  border-color: rgba(74, 144, 226, 0.9);
-  background: #2f6fd0;
+  border-color: rgba(151, 92, 255, 0.95);
+  background: #7c3aed;
   color: #ffffff;
 }
 
@@ -2175,6 +2175,111 @@ kbd {
   .trainer-left,
   .trainer-board {
     padding: 5px;
+  }
+}
+
+.trainer-game {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "bank"
+    "board";
+}
+
+.trainer-report {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1001;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(720px, calc(100dvh - 32px));
+  display: none;
+  grid-template-rows: auto auto minmax(132px, 1fr) auto;
+  gap: 12px;
+  overflow: auto;
+  padding: 0;
+  border-color: rgba(205, 220, 238, 0.28);
+  background: #080e14;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.54);
+  transform: translate(-50%, -50%);
+}
+
+.trainer-panel.is-report-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.trainer-panel.is-report-open .trainer-report {
+  display: grid;
+}
+
+.trainer-report .trainer-score-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0 12px;
+}
+
+.trainer-report .score-tile {
+  min-width: 0;
+  min-height: 64px;
+  padding: 9px;
+}
+
+.trainer-report .score-tile span {
+  font-size: 0.64rem;
+}
+
+.trainer-report .share-field {
+  min-height: 0;
+}
+
+.trainer-report .share-field textarea {
+  min-height: 172px;
+  resize: none;
+}
+
+@media (max-width: 760px) {
+  .trainer-report {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    gap: 10px;
+  }
+
+  .trainer-report .report-head {
+    padding: 10px;
+  }
+
+  .trainer-report .trainer-score-grid {
+    gap: 6px;
+    padding: 0 10px;
+  }
+
+  .trainer-report .score-tile {
+    min-height: 58px;
+    padding: 7px 6px;
+  }
+
+  .trainer-report .score-tile span {
+    font-size: 0.56rem;
+  }
+
+  .trainer-report .score-tile strong {
+    font-size: 0.92rem;
+  }
+
+  .trainer-report .share-field {
+    padding: 0 10px;
+  }
+
+  .trainer-report .share-field textarea {
+    min-height: 200px;
+    font-size: 0.74rem;
+  }
+
+  #trainer-copy {
+    width: calc(100% - 20px);
+    margin: 0 10px 10px;
   }
 }
 

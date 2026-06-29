@@ -894,8 +894,22 @@
   }
 
   function handleTrainerHotkeys(event) {
-    if (shouldIgnoreTrainerHotkey(event)) return;
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
     const key = event.key.toLowerCase();
+    if (state.trainer.confirmed && state.trainer.reportOpen) {
+      if (key === "c") {
+        event.preventDefault();
+        copyTrainerReport();
+        return;
+      }
+      if (event.code === "Space") {
+        event.preventDefault();
+        closeTrainerReport();
+        return;
+      }
+    }
+
+    if (shouldIgnoreTrainerHotkey(event)) return;
     if (key === "1") {
       event.preventDefault();
       setTrainerActiveRow("top");
@@ -914,6 +928,9 @@
     } else if (key === "c") {
       event.preventDefault();
       clearTrainerSet();
+    } else if (event.code === "Space" && state.trainer.confirmed && !els.trainerNext.hidden) {
+      event.preventDefault();
+      loadNextTrainerPuzzle();
     } else if (event.code === "Space" && !els.trainerConfirm.disabled) {
       event.preventDefault();
       confirmTrainerSet();
@@ -921,7 +938,6 @@
   }
 
   function shouldIgnoreTrainerHotkey(event) {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return true;
     const target = event.target;
     if (!target) return false;
     return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
@@ -1311,10 +1327,10 @@
     const blocks = results.map((result) =>
       [
         `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
-        `Top: ${cardsToShare(result.rows.top)}`,
-        `Middle: ${cardsToShare(result.rows.middle)}`,
-        `Bottom: ${cardsToShare(result.rows.bottom)}`,
-        `Discards: ${cardsToShare(result.rows.discard)}`,
+        cardsToShare(result.rows.top),
+        cardsToShare(result.rows.middle),
+        cardsToShare(result.rows.bottom),
+        cardsToShare(result.rows.discard),
       ].join("\n")
     );
     return [title].concat(blocks).concat(TRAINER_SHARE_URL).join("\n\n");
@@ -1335,15 +1351,20 @@
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      els.trainerCopy.textContent = "Copied";
-      window.setTimeout(() => {
-        els.trainerCopy.textContent = "Copy report";
-      }, 1200);
+      showTrainerCopySuccess();
     } catch (error) {
       els.trainerShare.focus();
       els.trainerShare.select();
       document.execCommand("copy");
+      showTrainerCopySuccess();
     }
+  }
+
+  function showTrainerCopySuccess() {
+    els.trainerCopy.textContent = "Copied";
+    window.setTimeout(() => {
+      els.trainerCopy.innerHTML = "Copy report <kbd>C</kbd>";
+    }, 1200);
   }
 
   function startTrainerTimer() {
