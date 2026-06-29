@@ -46,7 +46,6 @@
     FULL_HOUSE: 6,
     QUADS: 7,
     STRAIGHT_FLUSH: 8,
-    FIVE_KIND: 9,
   };
   const SCENARIOS = [
     { cards: 14, jokers: 0 },
@@ -89,7 +88,7 @@
     cardCount: 14,
     jokerCount: 0,
     repeatRule: "pineapple",
-    fiveKindRule: "royal",
+    fiveKindRule: "none",
     selected: [],
     simAbort: false,
     suppressInput: false,
@@ -121,9 +120,6 @@
     document.addEventListener("DOMContentLoaded", () => {
       cacheElements();
       bindEvents();
-      renderDeck();
-      renderSelected();
-      renderSimulationRows();
       startTrainerSet();
     });
   }
@@ -197,39 +193,51 @@
       });
     });
 
-    els.repeatRule.addEventListener("change", () => {
-      state.repeatRule = els.repeatRule.value;
-      solveCurrentHand();
-    });
+    if (els.repeatRule) {
+      els.repeatRule.addEventListener("change", () => {
+        state.repeatRule = els.repeatRule.value;
+        solveCurrentHand();
+      });
+    }
 
-    els.fiveKindRule.addEventListener("change", () => {
-      state.fiveKindRule = els.fiveKindRule.value;
-      solveCurrentHand();
-    });
+    if (els.fiveKindRule) {
+      els.fiveKindRule.addEventListener("change", () => {
+        state.fiveKindRule = els.fiveKindRule.value;
+        solveCurrentHand();
+      });
+    }
 
-    els.solveHand.addEventListener("click", solveCurrentHand);
-    els.randomHand.addEventListener("click", () => {
-      dealRandomHand();
-      solveCurrentHand();
-    });
-    els.clearHand.addEventListener("click", () => {
-      state.selected = [];
-      renderSelected();
-      clearSolution("Deal or paste a Fantasyland hand to solve it.");
-    });
+    if (els.solveHand) els.solveHand.addEventListener("click", solveCurrentHand);
+    if (els.randomHand) {
+      els.randomHand.addEventListener("click", () => {
+        dealRandomHand();
+        solveCurrentHand();
+      });
+    }
+    if (els.clearHand) {
+      els.clearHand.addEventListener("click", () => {
+        state.selected = [];
+        renderSelected();
+        clearSolution("Deal or paste a Fantasyland hand to solve it.");
+      });
+    }
 
     let inputTimer = 0;
-    els.cardInput.addEventListener("input", () => {
-      if (state.suppressInput) return;
-      window.clearTimeout(inputTimer);
-      inputTimer = window.setTimeout(parseInputCards, 260);
-    });
+    if (els.cardInput) {
+      els.cardInput.addEventListener("input", () => {
+        if (state.suppressInput) return;
+        window.clearTimeout(inputTimer);
+        inputTimer = window.setTimeout(parseInputCards, 260);
+      });
+    }
 
-    els.runSim.addEventListener("click", runSimulationMatrix);
-    els.stopSim.addEventListener("click", () => {
-      state.simAbort = true;
-      els.simStatus.textContent = "Stopping after the current sample.";
-    });
+    if (els.runSim) els.runSim.addEventListener("click", runSimulationMatrix);
+    if (els.stopSim) {
+      els.stopSim.addEventListener("click", () => {
+        state.simAbort = true;
+        if (els.simStatus) els.simStatus.textContent = "Stopping after the current sample.";
+      });
+    }
 
     document.querySelectorAll('input[name="trainer-mode"]').forEach((input) => {
       input.addEventListener("change", () => {
@@ -328,6 +336,7 @@
   }
 
   function renderDeck() {
+    if (!els.deckGrid) return;
     const selected = new Set(state.selected);
     const frag = document.createDocumentFragment();
 
@@ -376,30 +385,39 @@
 
   function renderSelected(options = {}) {
     const target = state.cardCount;
-    els.selectedCount.textContent = `${state.selected.length} / ${target} selected`;
+    if (els.selectedCount) {
+      const jokerLabel = state.jokerCount === 1 ? "joker" : "jokers";
+      els.selectedCount.textContent =
+        state.selected.length === target
+          ? `${target} cards / ${state.jokerCount} ${jokerLabel}`
+          : `${state.selected.length} / ${target} selected`;
+    }
 
     const frag = document.createDocumentFragment();
+    const readOnly = options.readOnly || !els.solveHand;
     state.selected.forEach((id) => {
       const card = cardFromId(id);
       const item = document.createElement("div");
       item.className = `mini-card ${cardClass(card)}`;
       item.innerHTML = cardFaceHtml(card);
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "×";
-      remove.setAttribute("aria-label", `Remove ${id}`);
-      remove.addEventListener("click", () => {
-        state.selected = state.selected.filter((cardId) => cardId !== id);
-        renderDeck();
-        renderSelected();
-      });
-      item.appendChild(remove);
+      if (!readOnly) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "×";
+        remove.setAttribute("aria-label", `Remove ${id}`);
+        remove.addEventListener("click", () => {
+          state.selected = state.selected.filter((cardId) => cardId !== id);
+          renderDeck();
+          renderSelected();
+        });
+        item.appendChild(remove);
+      }
       frag.appendChild(item);
     });
-    els.selectedCards.replaceChildren(frag);
+    if (els.selectedCards) els.selectedCards.replaceChildren(frag);
     renderDeck();
 
-    if (!options.keepInput) {
+    if (!options.keepInput && els.cardInput) {
       state.suppressInput = true;
       els.cardInput.value = state.selected.join(" ");
       state.suppressInput = false;
@@ -509,16 +527,18 @@
     setOptionalText(els.metricPoints, "--");
     setOptionalText(els.metricRepeat, "--");
     setOptionalText(els.metricSpeed, "--");
-    els.bestPoints.textContent = "--";
-    els.repeatPoints.textContent = "--";
-    els.legalBoards.textContent = "--";
-    els.repeatBadge.className = "repeat-badge";
-    els.repeatBadge.textContent = "--";
-    els.boardStack.innerHTML = `<div class="empty-state">${message}</div>`;
+    setOptionalText(els.bestPoints, "--");
+    setOptionalText(els.repeatPoints, "--");
+    setOptionalText(els.legalBoards, "--");
+    if (els.repeatBadge) {
+      els.repeatBadge.className = "repeat-badge";
+      els.repeatBadge.textContent = "--";
+    }
+    if (els.boardStack) els.boardStack.innerHTML = `<div class="empty-state">${message}</div>`;
   }
 
   function setMessage(text) {
-    els.handMessage.textContent = text;
+    if (els.handMessage) els.handMessage.textContent = text;
   }
 
   function setOptionalText(element, text) {
@@ -595,6 +615,15 @@
     renderTrainerTray();
     updateTrainerControls();
     updateTrainerTimer();
+    syncSolverToTrainerPuzzle(puzzle);
+  }
+
+  function syncSolverToTrainerPuzzle(puzzle) {
+    state.cardCount = puzzle.cards;
+    state.jokerCount = puzzle.jokers;
+    state.selected = puzzle.ids.slice();
+    renderSelected({ keepInput: true, readOnly: true });
+    solveCurrentHand();
   }
 
   function renderTrainerTray() {
@@ -1176,7 +1205,7 @@
     const topCards = rows.top.map((id) => cardById.get(id));
     const middleCards = rows.middle.map((id) => cardById.get(id));
     const backCards = rows.back.map((id) => cardById.get(id));
-    const fiveKindRule = options.fiveKindRule || "royal";
+    const fiveKindRule = options.fiveKindRule || "none";
     const topEval = evaluateBestTop(topCards);
     const middleEval = evaluateBestFive(middleCards);
     const backEval = evaluateBestFive(backCards);
@@ -1431,6 +1460,7 @@
   }
 
   async function runSimulationMatrix() {
+    if (!els.runSim || !els.stopSim || !els.simProgress || !els.simBody) return;
     state.simAbort = false;
     els.runSim.disabled = true;
     els.stopSim.disabled = false;
@@ -1439,8 +1469,8 @@
 
     const samples = Number(els.sampleCount.value);
     const options = {
-      repeatRule: els.repeatRule.value,
-      fiveKindRule: els.fiveKindRule.value,
+      repeatRule: els.repeatRule ? els.repeatRule.value : state.repeatRule,
+      fiveKindRule: els.fiveKindRule ? els.fiveKindRule.value : state.fiveKindRule,
     };
     const solver = els.solverMode.value === "exact" ? solveHand : solveHandFast;
     const modeLabel = els.solverMode.value === "exact" ? "exact" : "fast";
@@ -1491,6 +1521,7 @@
   }
 
   function renderSimulationRows() {
+    if (!els.simBody) return;
     const frag = document.createDocumentFragment();
     SCENARIOS.forEach((scenario) => {
       const jokerLabel =
@@ -1514,6 +1545,7 @@
   }
 
   function updateSimulationRow(scenario, totals) {
+    if (!els.simBody) return;
     const row = els.simBody.querySelector(`[data-scenario="${scenarioKey(scenario)}"]`);
     if (!row) return;
     const avg = totals.samples ? totals.points / totals.samples : 0;
@@ -1534,7 +1566,7 @@
 
   function solveHand(cardIds, options = {}) {
     const repeatRule = options.repeatRule || "pineapple";
-    const fiveKindRule = options.fiveKindRule || "royal";
+    const fiveKindRule = options.fiveKindRule || "none";
     const started = now();
     const cards = cardIds.map((id, handIndex) => ({ ...cardFromId(id), handIndex }));
     const n = cards.length;
@@ -1614,7 +1646,7 @@
 
   function solveHandFast(cardIds, options = {}) {
     const repeatRule = options.repeatRule || "pineapple";
-    const fiveKindRule = options.fiveKindRule || "royal";
+    const fiveKindRule = options.fiveKindRule || "none";
     const started = now();
     const cards = cardIds.map((id, handIndex) => ({ ...cardFromId(id), handIndex }));
     const n = cards.length;
@@ -1867,11 +1899,6 @@
       case CATEGORY.STRAIGHT_FLUSH:
         if (evalResult.mainRank === 14) return middle ? 50 : 25;
         return middle ? 30 : 15;
-      case CATEGORY.FIVE_KIND:
-        if (fiveKindRule === "royal") return middle ? 50 : 25;
-        if (fiveKindRule === "straightflush") return middle ? 30 : 15;
-        if (fiveKindRule === "quads") return middle ? 20 : 10;
-        return 0;
       default:
         return 0;
     }
@@ -1894,6 +1921,8 @@
     }
 
     let best = null;
+    const occupied = new Set(natural.map((card) => card.id));
+    const available = virtualDeck.filter((card) => !occupied.has(card.id));
     const consider = (replacements) => {
       const concrete = natural.concat(replacements);
       const evaluated = evaluator(concrete, null);
@@ -1906,10 +1935,11 @@
     };
 
     if (jokers.length === 1) {
-      for (const first of virtualDeck) consider([first]);
+      for (const first of available) consider([first]);
     } else if (jokers.length === 2) {
-      for (const first of virtualDeck) {
-        for (const second of virtualDeck) {
+      for (const first of available) {
+        for (const second of available) {
+          if (second.id === first.id) continue;
           consider([first, second]);
         }
       }
@@ -1928,10 +1958,6 @@
     const uniqueRanks = Array.from(counts.keys()).map(Number);
     const flush = cards.every((card) => card.suit === cards[0].suit);
     const straightHigh = straightHighRank(uniqueRanks);
-
-    if (groups[0].count === 5) {
-      return makeEval(CATEGORY.FIVE_KIND, [groups[0].rank], `Five ${RANK_NAME[groups[0].rank]}`);
-    }
 
     if (flush && straightHigh) {
       const name = straightHigh === 14 ? "Royal flush" : `${rankLong(straightHigh)}-high straight flush`;

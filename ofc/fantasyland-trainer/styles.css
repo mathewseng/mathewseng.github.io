@@ -204,11 +204,8 @@ h3 {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 0.86fr) minmax(520px, 1.35fr) minmax(290px, 0.78fr);
-  grid-template-areas:
-    "hand result sim"
-    "deck result sim"
-    "rules rules sim";
+  grid-template-columns: minmax(280px, 0.72fr) minmax(520px, 1.28fr);
+  grid-template-areas: "hand result";
   gap: 8px;
   margin-top: 8px;
   align-items: start;
@@ -245,6 +242,20 @@ h3 {
 
 .assumptions-panel {
   grid-area: rules;
+}
+
+.solver-hand-meta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 .panel-heading {
@@ -756,6 +767,18 @@ select {
   padding: 10px 12px 12px;
 }
 
+.solver-current-cards {
+  grid-template-columns: repeat(auto-fit, minmax(46px, 64px));
+  align-content: start;
+  justify-content: start;
+  min-height: 0;
+}
+
+.solver-message {
+  min-height: 0;
+  padding-top: 0;
+}
+
 .card-button,
 .mini-card {
   container-type: inline-size;
@@ -1205,6 +1228,19 @@ kbd {
   padding: 8px;
 }
 
+.solver-drawer .result-panel .row-cards {
+  grid-template-columns: repeat(5, minmax(46px, 64px));
+  justify-content: start;
+}
+
+.solver-drawer .result-panel .row-cards.top-row {
+  grid-template-columns: repeat(3, minmax(46px, 64px));
+}
+
+.solver-drawer .result-panel .row-cards.discard-row {
+  grid-template-columns: repeat(auto-fit, minmax(46px, 64px));
+}
+
 @media (max-width: 1380px) {
   .trainer-game {
     grid-template-columns: minmax(0, 1fr) minmax(270px, 330px);
@@ -1214,12 +1250,8 @@ kbd {
   }
 
   .workspace {
-    grid-template-columns: minmax(310px, 0.9fr) minmax(440px, 1.1fr);
-    grid-template-areas:
-      "hand result"
-      "deck result"
-      "sim sim"
-      "rules rules";
+    grid-template-columns: minmax(280px, 0.75fr) minmax(440px, 1.25fr);
+    grid-template-areas: "hand result";
   }
 
   .rules-grid {
@@ -1314,10 +1346,7 @@ kbd {
     grid-template-columns: 1fr;
     grid-template-areas:
       "hand"
-      "result"
-      "deck"
-      "sim"
-      "rules";
+      "result";
   }
 
   .control-grid,
@@ -1368,6 +1397,7 @@ kbd {
   .app-shell:has(.solver-drawer[open]) {
     height: auto;
     min-height: 100dvh;
+    grid-template-rows: 52px auto auto;
     overflow: visible;
   }
 
@@ -2012,7 +2042,7 @@ kbd {
   }
 
   .workspace {
-    overflow: auto;
+    overflow: visible;
   }
 }
 

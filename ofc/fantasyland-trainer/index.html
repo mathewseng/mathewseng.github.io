@@ -10,7 +10,7 @@
     />
     <title>OFC Fantasyland Trainer</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260629q" />
+    <link rel="stylesheet" href="./styles.css?v=20260629r" />
   </head>
   <body>
     <div class="app-shell">
@@ -136,197 +136,55 @@
       <details class="solver-drawer">
         <summary>
           <span>Solver tools</span>
-          <strong>Open optimal solution, deck picker, and EV matrix</strong>
+          <strong>Current hand and optimal solution</strong>
         </summary>
 
         <main class="workspace">
-        <section class="surface hand-panel" aria-labelledby="hand-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Fantasyland hand</p>
-              <h2 id="hand-title">Cards</h2>
+          <section class="surface hand-panel" aria-labelledby="hand-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Current puzzle</p>
+                <h2 id="hand-title">Fantasyland hand</h2>
+              </div>
+              <span id="selected-count" class="solver-hand-meta">--</span>
             </div>
-            <div class="action-row tight">
-              <button id="random-hand" class="icon-button" type="button" title="Deal random hand" aria-label="Deal random hand">
-                <span aria-hidden="true">R</span>
-              </button>
-              <button id="clear-hand" class="icon-button" type="button" title="Clear hand" aria-label="Clear hand">
-                <span aria-hidden="true">C</span>
-              </button>
-            </div>
-          </div>
 
-          <div class="control-grid">
-            <div class="control-field">
-              <span>Cards</span>
-              <div class="segmented four-up" role="radiogroup" aria-label="Fantasyland card count">
-                <label><input type="radio" name="card-count" value="14" checked /><span>14</span></label>
-                <label><input type="radio" name="card-count" value="15" /><span>15</span></label>
-                <label><input type="radio" name="card-count" value="16" /><span>16</span></label>
-                <label><input type="radio" name="card-count" value="17" /><span>17</span></label>
+            <div id="selected-cards" class="selected-cards solver-current-cards" aria-label="Current hand cards"></div>
+            <div id="hand-message" class="inline-message solver-message" role="status" aria-live="polite"></div>
+          </section>
+
+          <section class="surface result-panel" aria-labelledby="result-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Optimal set</p>
+                <h2 id="result-title">Best board</h2>
+              </div>
+              <div id="repeat-badge" class="repeat-badge">--</div>
+            </div>
+
+            <div class="score-grid">
+              <div class="score-tile">
+                <span>Royalty points</span>
+                <strong id="best-points">--</strong>
+              </div>
+              <div class="score-tile">
+                <span>Best repeat line</span>
+                <strong id="repeat-points">--</strong>
+              </div>
+              <div class="score-tile">
+                <span>Legal boards</span>
+                <strong id="legal-boards">--</strong>
               </div>
             </div>
 
-            <div class="control-field">
-              <span>Wild jokers</span>
-              <div class="segmented three-up" role="radiogroup" aria-label="Joker count">
-                <label><input type="radio" name="joker-count" value="0" checked /><span>0</span></label>
-                <label><input type="radio" name="joker-count" value="1" /><span>1</span></label>
-                <label><input type="radio" name="joker-count" value="2" /><span>2</span></label>
-              </div>
+            <div class="board-stack" id="board-stack">
+              <div class="empty-state">Loading optimal solution.</div>
             </div>
-          </div>
-
-          <label class="control-field stacked">
-            <span>Paste cards</span>
-            <textarea id="card-input" rows="3" spellcheck="false" placeholder="As Kh Qh Jd Td 9c 9s 8d 7d 6d 5s 4s 3s JK1"></textarea>
-          </label>
-
-          <div class="selected-head">
-            <span id="selected-count">0 / 14 selected</span>
-            <button id="solve-hand" class="primary-button" type="button">Solve hand</button>
-          </div>
-          <div id="selected-cards" class="selected-cards" aria-label="Selected cards"></div>
-          <div id="hand-message" class="inline-message" role="status" aria-live="polite"></div>
-        </section>
-
-        <section class="surface result-panel" aria-labelledby="result-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Optimal set</p>
-              <h2 id="result-title">Best board</h2>
-            </div>
-            <div id="repeat-badge" class="repeat-badge">--</div>
-          </div>
-
-          <div class="score-grid">
-            <div class="score-tile">
-              <span>Royalty points</span>
-              <strong id="best-points">--</strong>
-            </div>
-            <div class="score-tile">
-              <span>Best repeat line</span>
-              <strong id="repeat-points">--</strong>
-            </div>
-            <div class="score-tile">
-              <span>Legal boards</span>
-              <strong id="legal-boards">--</strong>
-            </div>
-          </div>
-
-          <div class="board-stack" id="board-stack">
-            <div class="empty-state">Deal or paste a Fantasyland hand to solve it.</div>
-          </div>
-        </section>
-
-        <section class="surface deck-panel" aria-labelledby="deck-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Picker</p>
-              <h2 id="deck-title">Deck</h2>
-            </div>
-          </div>
-          <div id="deck-grid" class="deck-grid" aria-label="Card picker"></div>
-        </section>
-
-        <section class="surface sim-panel" aria-labelledby="sim-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Monte Carlo</p>
-              <h2 id="sim-title">14-17 card matrix</h2>
-            </div>
-            <div class="action-row">
-              <button id="run-sim" class="primary-button" type="button">Run</button>
-              <button id="stop-sim" class="secondary-button" type="button" disabled>Stop</button>
-            </div>
-          </div>
-
-          <div class="sim-controls">
-            <label class="control-field compact">
-              <span>Solver mode</span>
-              <select id="solver-mode">
-                <option value="fast" selected>Fast beam</option>
-                <option value="exact">Exact optimizer</option>
-              </select>
-            </label>
-            <label class="control-field compact">
-              <span>Samples per cell</span>
-              <select id="sample-count">
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="250">250</option>
-              </select>
-            </label>
-            <label class="control-field compact">
-              <span>Repeat rule</span>
-              <select id="repeat-rule">
-                <option value="pineapple" selected>Trips top or quads+ middle/back</option>
-                <option value="tenpoint">Trips top, boat+ middle, quads+ back</option>
-                <option value="topback">Trips top or quads+ back</option>
-              </select>
-            </label>
-            <label class="control-field compact">
-              <span>Five of a kind</span>
-              <select id="five-kind-rule">
-                <option value="royal" selected>Royal flush points</option>
-                <option value="straightflush">Straight flush points</option>
-                <option value="quads">Quads points</option>
-                <option value="none">No royalty</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="progress-shell" aria-hidden="true">
-            <div id="sim-progress" class="progress-bar"></div>
-          </div>
-          <table class="sim-table">
-            <thead>
-              <tr>
-                <th>Cards</th>
-                <th>Deck</th>
-                <th>Immediate EV</th>
-                <th>Repeat %</th>
-                <th>Recursive EV</th>
-                <th>Repeat avg</th>
-                <th>Samples</th>
-              </tr>
-            </thead>
-            <tbody id="sim-body"></tbody>
-          </table>
-          <p id="sim-status" class="inline-message">Ready. Fast beam is approximate; exact optimizer is full enumeration.</p>
-        </section>
-
-        <section class="surface assumptions-panel" aria-labelledby="rules-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Scoring</p>
-              <h2 id="rules-title">Royalty assumptions</h2>
-            </div>
-          </div>
-          <div class="rules-grid">
-            <div>
-              <h3>Top</h3>
-              <p>Pair 66-AA: 1-9. Trips 222-AAA: 10-22.</p>
-            </div>
-            <div>
-              <h3>Middle</h3>
-              <p>Trips 2, straight 4, flush 8, full house 12, quads 20, straight flush 30, royal 50.</p>
-            </div>
-            <div>
-              <h3>Back</h3>
-              <p>Straight 2, flush 4, full house 6, quads 10, straight flush 15, royal 25.</p>
-            </div>
-            <div>
-              <h3>Jokers</h3>
-              <p>Wild cards may complete any row, including five of a kind under the selected scoring rule.</p>
-            </div>
-          </div>
-        </section>
+          </section>
         </main>
       </details>
     </div>
 
-    <script src="./app.js?v=20260629q"></script>
+    <script src="./app.js?v=20260629r"></script>
   </body>
 </html>
