@@ -918,7 +918,7 @@
   }
 
   function startTrainerPointerDrag(event, id, sourceEl) {
-    if (state.trainer.confirmed || event.button > 0) return;
+    if (state.trainer.confirmed || (event.pointerType === "mouse" && event.button !== 0)) return;
     state.trainer.drag = {
       id,
       sourceEl,
@@ -929,6 +929,13 @@
       ghost: null,
       overEl: null,
     };
+    if (sourceEl.setPointerCapture) {
+      try {
+        sourceEl.setPointerCapture(event.pointerId);
+      } catch (error) {
+        // Some browsers release capture during fast touch gestures; document listeners still handle the drag.
+      }
+    }
     document.addEventListener("pointermove", moveTrainerPointerDrag);
     document.addEventListener("pointerup", finishTrainerPointerDrag);
     document.addEventListener("pointercancel", cancelTrainerPointerDrag);
@@ -953,14 +960,21 @@
     if (!drag || drag.active) return;
     const rect = drag.sourceEl.getBoundingClientRect();
     const ghost = drag.sourceEl.cloneNode(true);
+    ghost.removeAttribute("id");
+    ghost.removeAttribute("disabled");
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.tabIndex = -1;
     ghost.classList.remove("drag-source-hidden");
     ghost.classList.add("trainer-drag-ghost");
     ghost.style.width = `${rect.width}px`;
     ghost.style.height = `${rect.height}px`;
+    ghost.style.left = `${event.clientX}px`;
+    ghost.style.top = `${event.clientY}px`;
     document.body.appendChild(ghost);
     drag.sourceEl.classList.add("drag-source-hidden");
     drag.active = true;
     drag.ghost = ghost;
+    document.body.classList.add("trainer-dragging");
     updateTrainerDragGhost(event);
     window.requestAnimationFrame(() => ghost.classList.add("is-lifted"));
   }
@@ -1026,8 +1040,16 @@
     const drag = state.trainer.drag;
     if (!drag) return;
     clearTrainerPointerDragTarget();
+    if (drag.sourceEl && drag.sourceEl.releasePointerCapture) {
+      try {
+        drag.sourceEl.releasePointerCapture(drag.pointerId);
+      } catch (error) {
+        // Capture may already be released after pointercancel.
+      }
+    }
     if (drag.sourceEl) drag.sourceEl.classList.remove("drag-source-hidden");
     if (drag.ghost) drag.ghost.remove();
+    document.body.classList.remove("trainer-dragging");
     if (options.suppressClick) {
       state.trainer.dragClickBlock = { id: drag.id, until: now() + 450 };
     }

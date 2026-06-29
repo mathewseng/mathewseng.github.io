@@ -46,6 +46,11 @@ body {
   color: var(--text);
 }
 
+body.trainer-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
 button,
 select,
 textarea,
@@ -519,9 +524,14 @@ h3 {
 .trainer-drag-ghost {
   position: fixed;
   z-index: 10000;
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   pointer-events: none;
+  touch-action: none;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center;
+  will-change: left, top, transform;
   transition:
     transform 250ms ease-in-out,
     box-shadow 250ms ease-in-out;
@@ -1504,9 +1514,9 @@ kbd {
 
   .hand-side-controls {
     min-width: 0;
-    min-height: var(--trainer-card-height);
+    min-height: max(var(--trainer-card-height), 146px);
     display: grid;
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-rows: 44px repeat(2, minmax(46px, 1fr));
     gap: 6px;
   }
 
@@ -1533,20 +1543,20 @@ kbd {
     grid-row: 2 / 4;
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(46px, 1fr));
     gap: 6px;
     margin-top: 0;
   }
 
   .trainer-actions .primary-button,
   .trainer-actions .secondary-button {
-    min-height: 0;
+    min-height: 46px;
     font-size: 0.84rem;
   }
 
   .hand-side-controls .sort-actions,
   .hand-side-controls .sort-button {
-    min-height: 0;
+    min-height: 44px;
   }
 
 }
@@ -1786,9 +1796,9 @@ kbd {
 
   .hand-side-controls {
     min-width: 0;
-    min-height: var(--trainer-card-height);
+    min-height: max(var(--trainer-card-height), 134px);
     display: grid;
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-rows: 42px repeat(2, minmax(44px, 1fr));
     gap: 4px;
   }
 
@@ -1809,7 +1819,7 @@ kbd {
   }
 
   .sort-button {
-    min-height: 28px;
+    min-height: 38px;
     padding: 0 8px;
     font-size: 0.7rem;
   }
@@ -1893,7 +1903,7 @@ kbd {
     grid-row: 2 / 4;
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(44px, 1fr));
     gap: 4px;
     margin-top: 0;
   }
@@ -1901,7 +1911,7 @@ kbd {
   .trainer-actions .primary-button,
   .trainer-actions .secondary-button {
     padding: 0 8px;
-    min-height: 0;
+    min-height: 44px;
     font-size: 0.72rem;
   }
 
@@ -1975,18 +1985,18 @@ kbd {
     min-height: 0;
     display: grid;
     grid-template-columns: minmax(118px, 1.2fr) minmax(0, 1.7fr);
-    grid-template-rows: 34px;
+    grid-template-rows: 44px;
     gap: 5px;
   }
 
   .bank-toolbar {
-    min-height: 34px;
+    min-height: 44px;
   }
 
   .trainer-actions {
     grid-row: auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 34px;
+    grid-template-rows: 44px;
     gap: 5px;
   }
 
@@ -2002,14 +2012,11 @@ kbd {
   .trainer-actions .secondary-button {
     padding: 0 5px;
     font-size: 0.68rem;
+    min-height: 44px;
   }
 
-  kbd {
-    min-width: 1.35em;
-    height: 1.3em;
-    margin-left: 0.25em;
-    padding: 0 0.28em;
-    font-size: 0.68em;
+  .trainer-panel kbd {
+    display: none;
   }
 }
 
