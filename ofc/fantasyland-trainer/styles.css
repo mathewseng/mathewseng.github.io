@@ -586,8 +586,12 @@ h3 {
   touch-action: none;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center;
-  will-change: left, top, transform;
+  will-change: left, top, width, height, transform;
   transition:
+    left 250ms ease-in-out,
+    top 250ms ease-in-out,
+    width 250ms ease-in-out,
+    height 250ms ease-in-out,
     transform 250ms ease-in-out,
     box-shadow 250ms ease-in-out;
 }

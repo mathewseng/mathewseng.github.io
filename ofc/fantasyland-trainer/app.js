@@ -82,6 +82,7 @@
   ];
   const TRAINER_ROW_CYCLE = ["bottom", "middle", "top"];
   const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
+  const TRAINER_DROP_ANIMATION_MS = 250;
 
   const comboCache = new Map();
   const virtualDeck = buildVirtualDeck();
@@ -112,6 +113,7 @@
       sortMode: "rank",
       drag: null,
       dragClickBlock: null,
+      dropAnimating: false,
     },
   };
 
@@ -746,7 +748,7 @@
 
   function addTrainerCard(id) {
     const trainer = state.trainer;
-    if (trainer.confirmed || getPlacedTrainerIds().includes(id)) return;
+    if (trainer.confirmed || trainer.dropAnimating || getPlacedTrainerIds().includes(id)) return;
     let rowKey = trainer.activeRow;
     if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle())) {
       const nextRow = nextTrainerRowWithSpace(rowKey);
@@ -768,7 +770,7 @@
 
   function removeTrainerCard(rowKey, id) {
     const trainer = state.trainer;
-    if (trainer.confirmed) return;
+    if (trainer.confirmed || trainer.dropAnimating) return;
     trainer.rows[rowKey] = trainer.rows[rowKey].filter((cardId) => cardId !== id);
     setTrainerActiveRow(rowKey, { render: false });
     els.trainerMessage.textContent = "";
@@ -778,7 +780,7 @@
   }
 
   function clearTrainerSet() {
-    if (state.trainer.confirmed) return;
+    if (state.trainer.confirmed || state.trainer.dropAnimating) return;
     state.trainer.rows = createEmptyTrainerRows();
     setTrainerActiveRow("bottom", { render: false });
     els.trainerMessage.textContent = "";
@@ -790,7 +792,7 @@
   function confirmTrainerSet() {
     const trainer = state.trainer;
     const puzzle = getTrainerPuzzle();
-    if (!puzzle || trainer.confirmed) return;
+    if (!puzzle || trainer.confirmed || trainer.dropAnimating) return;
     if (!trainerReady()) {
       fillTrainerSetFromBankOrder(puzzle);
     }
@@ -1003,13 +1005,13 @@
   }
 
   function startTrainerDrag(event, id) {
-    if (state.trainer.confirmed || !event.dataTransfer) return;
+    if (state.trainer.confirmed || state.trainer.dropAnimating || !event.dataTransfer) return;
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", id);
   }
 
   function startTrainerPointerDrag(event, id, sourceEl) {
-    if (state.trainer.confirmed || (event.pointerType === "mouse" && event.button !== 0)) return;
+    if (state.trainer.confirmed || state.trainer.dropAnimating || (event.pointerType === "mouse" && event.button !== 0)) return;
     const point = getTrainerPointerViewportPoint(event);
     state.trainer.drag = {
       id,
@@ -1124,20 +1126,45 @@
       const bank = target ? target.closest("#trainer-tray") : null;
       const willMoveToSlot = !!(slot && slot.dataset.row && slot.dataset.index);
       const willMoveToBank = !!(bank && findTrainerCardLocation(drag.id));
-      cleanupTrainerPointerDrag({
-        suppressClick: true,
-        restoreSource: !willMoveToSlot && !willMoveToBank,
-      });
+      const ghost = drag.ghost;
+      const sourceEl = drag.sourceEl;
+      const sourceRect = sourceEl.getBoundingClientRect();
+      let dropRect = sourceRect;
+      let afterDrop = () => restoreTrainerDragSource(sourceEl, 0);
+      let restoreTarget = () => {};
 
       if (willMoveToSlot) {
-        placeTrainerCardInSlot(drag.id, slot.dataset.row, Number(slot.dataset.index));
+        const rowKey = slot.dataset.row;
+        const index = Number(slot.dataset.index);
+        const origin = findTrainerCardLocation(drag.id);
+        const sameSlot = !!origin && origin.rowKey === rowKey && origin.index === index;
+        dropRect = slot.getBoundingClientRect();
+        restoreTarget = hideTrainerDropTargetCard(slot, sourceEl);
+        afterDrop = () => {
+          restoreTarget();
+          if (sameSlot) {
+            restoreTrainerDragSource(sourceEl, 0);
+          } else {
+            placeTrainerCardInSlot(drag.id, rowKey, index);
+          }
+        };
       } else if (willMoveToBank) {
-        removeTrainerCardFromRows(drag.id);
-        els.trainerMessage.textContent = "";
-        renderTrainerBoard();
-        renderTrainerTray();
-        updateTrainerControls();
+        dropRect = getTrainerBankDropRect(drag.id, sourceRect);
+        afterDrop = () => {
+          removeTrainerCardFromRows(drag.id);
+          els.trainerMessage.textContent = "";
+          renderTrainerBoard();
+          renderTrainerTray();
+          updateTrainerControls();
+        };
       }
+
+      cleanupTrainerPointerDrag({
+        suppressClick: true,
+        restoreSource: false,
+        releaseGhost: false,
+      });
+      animateTrainerDropGhost(ghost, dropRect, afterDrop);
       event.preventDefault();
       return;
     }
@@ -1152,6 +1179,71 @@
       x: pageX - window.scrollX,
       y: pageY - window.scrollY,
     };
+  }
+
+  function getTrainerBankDropRect(id, fallbackRect) {
+    const bankTarget = Array.from(els.trainerTray.children).find((child) => child.dataset.cardId === id);
+    if (bankTarget) return bankTarget.getBoundingClientRect();
+
+    const trayRect = els.trainerTray.getBoundingClientRect();
+    return {
+      left: trayRect.left + (trayRect.width - fallbackRect.width) / 2,
+      top: trayRect.top + (trayRect.height - fallbackRect.height) / 2,
+      width: fallbackRect.width,
+      height: fallbackRect.height,
+    };
+  }
+
+  function hideTrainerDropTargetCard(slot, sourceEl) {
+    const targetCard = slot.querySelector(".trainer-placed-card");
+    if (!targetCard || targetCard === sourceEl) return () => {};
+    const wasHidden = targetCard.classList.contains("drag-source-hidden");
+    targetCard.classList.add("drag-source-hidden");
+    return () => {
+      if (!wasHidden && targetCard.isConnected) targetCard.classList.remove("drag-source-hidden");
+    };
+  }
+
+  function animateTrainerDropGhost(ghost, rect, afterDrop) {
+    if (!ghost || !rect) {
+      afterDrop();
+      return;
+    }
+
+    state.trainer.dropAnimating = true;
+    const targetX = rect.left + rect.width / 2;
+    const targetY = rect.top + rect.height / 2;
+    let finished = false;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      ghost.removeEventListener("transitionend", handleEnd);
+      state.trainer.dropAnimating = false;
+      try {
+        afterDrop();
+      } finally {
+        ghost.remove();
+      }
+    };
+
+    const handleEnd = (transitionEvent) => {
+      if (transitionEvent.target !== ghost) return;
+      if (!["left", "top", "transform", "width", "height"].includes(transitionEvent.propertyName)) return;
+      finish();
+    };
+
+    ghost.addEventListener("transitionend", handleEnd);
+    ghost.getBoundingClientRect();
+    window.requestAnimationFrame(() => {
+      ghost.classList.add("is-dropping");
+      ghost.classList.remove("is-lifted");
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.height = `${rect.height}px`;
+      ghost.style.left = `${targetX}px`;
+      ghost.style.top = `${targetY}px`;
+    });
+    window.setTimeout(finish, TRAINER_DROP_ANIMATION_MS + 60);
   }
 
   function cancelTrainerPointerDrag() {
@@ -1172,7 +1264,7 @@
     if (drag.sourceEl && (!drag.ghost || options.restoreSource !== false)) {
       restoreTrainerDragSource(drag.sourceEl, drag.ghost ? 250 : 0);
     }
-    if (drag.ghost) releaseTrainerDragGhost(drag.ghost);
+    if (drag.ghost && options.releaseGhost !== false) releaseTrainerDragGhost(drag.ghost);
     document.body.classList.remove("trainer-dragging");
     if (options.suppressClick) {
       state.trainer.dragClickBlock = { id: drag.id, until: now() + 450 };
