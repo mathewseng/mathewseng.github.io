@@ -2146,6 +2146,11 @@ kbd {
     gap: 5px;
   }
 
+  .trainer-actions:has(#trainer-next:not([hidden])) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 44px;
+  }
+
   .sort-actions,
   .sort-button,
   .trainer-actions .primary-button,
