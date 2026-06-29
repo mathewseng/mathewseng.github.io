@@ -398,7 +398,8 @@
 
     const frag = document.createDocumentFragment();
     const readOnly = options.readOnly || !els.solveHand;
-    state.selected.forEach((id) => {
+    const displayIds = state.selected.slice().sort((left, right) => compareTrainerCards(left, right, "rank"));
+    displayIds.forEach((id) => {
       const card = cardFromId(id);
       const item = document.createElement("div");
       item.className = `mini-card ${cardClass(card)}`;
