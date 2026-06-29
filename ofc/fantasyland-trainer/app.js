@@ -644,7 +644,8 @@
       head.type = "button";
       head.className = "trainer-row-head";
       head.disabled = state.trainer.confirmed;
-      head.innerHTML = `<strong>${rowDef.label} <kbd>${trainerRowHotkey(rowDef.key)}</kbd></strong><span>${state.trainer.rows[rowDef.key].length}/${size}</span>`;
+      head.setAttribute("aria-label", `${rowDef.label} row`);
+      head.innerHTML = `<strong>${rowDef.label} <kbd>${trainerRowHotkey(rowDef.key)}</kbd></strong>`;
       head.addEventListener("click", () => setTrainerActiveRow(rowDef.key));
       row.appendChild(head);
 
@@ -1238,7 +1239,7 @@
   function startTrainerTimer() {
     stopTrainerTimer();
     state.trainer.startedAt = now();
-    state.trainer.timerId = window.setInterval(updateTrainerTimer, 250);
+    state.trainer.timerId = window.setInterval(updateTrainerTimer, 10);
     updateTrainerTimer();
   }
 
@@ -1380,10 +1381,11 @@
   }
 
   function formatTime(ms) {
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    const totalHundredths = Math.max(0, Math.floor(ms / 10));
+    const minutes = Math.floor(totalHundredths / 6000);
+    const seconds = Math.floor((totalHundredths % 6000) / 100);
+    const hundredths = totalHundredths % 100;
+    return `${minutes}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`;
   }
 
   function cardsToShare(ids) {
