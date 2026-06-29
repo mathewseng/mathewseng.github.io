@@ -1397,7 +1397,7 @@ kbd {
   .app-shell:has(.solver-drawer[open]) {
     height: auto;
     min-height: 100dvh;
-    grid-template-rows: 52px auto auto;
+    grid-template-rows: 52px minmax(0, calc(100dvh - 126px)) auto;
     overflow: visible;
   }
 
@@ -1673,7 +1673,7 @@ kbd {
   .app-shell:has(.solver-drawer[open]) {
     height: auto;
     min-height: 100dvh;
-    grid-template-rows: 44px auto auto;
+    grid-template-rows: 44px minmax(0, calc(100dvh - 94px)) auto;
     overflow: visible;
   }
 

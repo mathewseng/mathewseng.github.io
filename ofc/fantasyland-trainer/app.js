@@ -457,7 +457,9 @@
       frag.appendChild(renderBoardRow(result.cards, row, result.options.repeatRule));
     });
 
-    const discards = result.cards.filter((card, index) => (best.usedMask & (1 << index)) === 0);
+    const discards = sortSolutionCards(
+      result.cards.filter((card, index) => (best.usedMask & (1 << index)) === 0)
+    );
     const discardRow = document.createElement("div");
     discardRow.className = "board-row";
     discardRow.innerHTML = `<div class="row-head"><strong>Discards</strong><div class="row-meta"><span>${discards.length}</span></div></div>`;
@@ -488,13 +490,17 @@
 
     const cardGrid = document.createElement("div");
     cardGrid.className = `row-cards ${row.className}`;
-    cardsForMask(cards, row.candidate.mask).forEach((card) => {
+    const rowCards = sortSolutionCards(
+      cardsForMask(cards, row.candidate.mask),
+      row.candidate.eval.assignments
+    );
+    rowCards.forEach((card) => {
       const assigned = row.candidate.eval.assignments ? row.candidate.eval.assignments.get(card.handIndex) : null;
       cardGrid.appendChild(renderMiniCard(card, assigned));
     });
     wrapper.appendChild(cardGrid);
 
-    const note = jokerNote(cardsForMask(cards, row.candidate.mask), row.candidate.eval);
+    const note = jokerNote(rowCards, row.candidate.eval);
     if (note) {
       const noteEl = document.createElement("div");
       noteEl.className = "row-note";
@@ -509,6 +515,22 @@
     item.className = `mini-card ${cardClass(card)}`;
     item.innerHTML = cardFaceHtml(card.joker && assigned ? assigned : card, card.joker && assigned ? "JK" : "");
     return item;
+  }
+
+  function sortSolutionCards(cards, assignments = null) {
+    return cards.slice().sort((left, right) => {
+      const leftDisplay = solutionDisplayCard(left, assignments);
+      const rightDisplay = solutionDisplayCard(right, assignments);
+      const rankDiff = (rightDisplay.rank || 0) - (leftDisplay.rank || 0);
+      if (rankDiff) return rankDiff;
+      const suitDiff = SUITS.indexOf(leftDisplay.suit) - SUITS.indexOf(rightDisplay.suit);
+      if (suitDiff) return suitDiff;
+      return left.id.localeCompare(right.id);
+    });
+  }
+
+  function solutionDisplayCard(card, assignments) {
+    return card.joker && assignments ? assignments.get(card.handIndex) || card : card;
   }
 
   function jokerNote(rowCards, evalResult) {
