@@ -588,6 +588,12 @@ h3 {
   transform-origin: center;
   will-change: left, top, width, height, transform;
   transition:
+    transform 250ms ease-in-out,
+    box-shadow 250ms ease-in-out;
+}
+
+.trainer-drag-ghost.is-drop-animating {
+  transition:
     left 250ms ease-in-out,
     top 250ms ease-in-out,
     width 250ms ease-in-out,

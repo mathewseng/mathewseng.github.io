@@ -1234,6 +1234,7 @@
     };
 
     ghost.addEventListener("transitionend", handleEnd);
+    ghost.classList.add("is-drop-animating");
     ghost.getBoundingClientRect();
     window.requestAnimationFrame(() => {
       ghost.classList.add("is-dropping");
