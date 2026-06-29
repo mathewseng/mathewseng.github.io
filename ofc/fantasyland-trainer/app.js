@@ -78,8 +78,9 @@
   const TRAINER_ROWS = [
     { key: "top", label: "Top", size: 3 },
     { key: "middle", label: "Middle", size: 5 },
-    { key: "back", label: "Back", size: 5 },
+    { key: "bottom", label: "Bottom", size: 5 },
   ];
+  const TRAINER_ROW_CYCLE = ["bottom", "middle", "top"];
   const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
 
   const comboCache = new Map();
@@ -97,7 +98,7 @@
       scope: "single",
       cardCount: 14,
       jokerCount: 0,
-      activeRow: "top",
+      activeRow: "bottom",
       puzzles: [],
       puzzleIndex: 0,
       rows: createEmptyTrainerRows(),
@@ -449,7 +450,7 @@
     const rows = [
       { label: "Top", role: "top", candidate: best.top, className: "top-row" },
       { label: "Middle", role: "middle", candidate: best.middle, className: "" },
-      { label: "Back", role: "back", candidate: best.back, className: "" },
+      { label: "Bottom", role: "back", candidate: best.back, className: "" },
     ];
 
     const frag = document.createDocumentFragment();
@@ -609,7 +610,7 @@
     const trainer = state.trainer;
     trainer.puzzleIndex = index;
     trainer.rows = createEmptyTrainerRows();
-    trainer.activeRow = "top";
+    trainer.activeRow = "bottom";
     trainer.confirmed = false;
     trainer.reportOpen = false;
     trainer.elapsedMs = 0;
@@ -758,10 +759,7 @@
     }
 
     trainer.rows[rowKey].push(id);
-    const nextRow = nextTrainerRowWithSpace(rowKey);
-    if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle()) && nextRow) {
-      setTrainerActiveRow(nextRow, { render: false });
-    }
+    advanceTrainerActiveRowIfFilled(rowKey);
     els.trainerMessage.textContent = "";
     renderTrainerBoard();
     renderTrainerTray();
@@ -782,7 +780,7 @@
   function clearTrainerSet() {
     if (state.trainer.confirmed) return;
     state.trainer.rows = createEmptyTrainerRows();
-    setTrainerActiveRow("top", { render: false });
+    setTrainerActiveRow("bottom", { render: false });
     els.trainerMessage.textContent = "";
     renderTrainerBoard();
     renderTrainerTray();
@@ -906,7 +904,7 @@
       setTrainerActiveRow("middle");
     } else if (key === "3") {
       event.preventDefault();
-      setTrainerActiveRow("back");
+      setTrainerActiveRow("bottom");
     } else if (key === "r") {
       event.preventDefault();
       setTrainerSortMode("rank");
@@ -984,7 +982,7 @@
     });
 
     const nextRow = TRAINER_ROWS.find((row) => state.trainer.rows[row.key].length < trainerRowSize(row.key, puzzle));
-    state.trainer.activeRow = nextRow ? nextRow.key : "back";
+    state.trainer.activeRow = nextRow ? nextRow.key : "bottom";
     els.trainerMessage.textContent = "";
   }
 
@@ -1232,6 +1230,7 @@
     }
 
     setTrainerActiveRow(rowKey, { render: false });
+    advanceTrainerActiveRowIfFilled(rowKey);
     els.trainerMessage.textContent = "";
     renderTrainerBoard();
     renderTrainerTray();
@@ -1256,18 +1255,18 @@
     const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
     const topCards = rows.top.map((id) => cardById.get(id));
     const middleCards = rows.middle.map((id) => cardById.get(id));
-    const backCards = rows.back.map((id) => cardById.get(id));
+    const bottomCards = rows.bottom.map((id) => cardById.get(id));
     const fiveKindRule = options.fiveKindRule || "none";
     const topEval = evaluateBestTop(topCards);
     const middleEval = evaluateBestFive(middleCards);
-    const backEval = evaluateBestFive(backCards);
+    const bottomEval = evaluateBestFive(bottomCards);
     const legal =
-      backEval.strength >= middleEval.strength &&
+      bottomEval.strength >= middleEval.strength &&
       isTopLegalAgainstMiddle(topEval, middleEval);
     const points = legal
       ? topRoyalty(topEval) +
         fiveRoyalty(middleEval, "middle", fiveKindRule) +
-        fiveRoyalty(backEval, "back", fiveKindRule)
+        fiveRoyalty(bottomEval, "back", fiveKindRule)
       : 0;
     return {
       legal,
@@ -1275,7 +1274,7 @@
       rowNames: {
         top: topEval.name,
         middle: middleEval.name,
-        back: backEval.name,
+        bottom: bottomEval.name,
       },
     };
   }
@@ -1314,7 +1313,7 @@
         `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
         `Top: ${cardsToShare(result.rows.top)}`,
         `Middle: ${cardsToShare(result.rows.middle)}`,
-        `Back: ${cardsToShare(result.rows.back)}`,
+        `Bottom: ${cardsToShare(result.rows.bottom)}`,
         `Discards: ${cardsToShare(result.rows.discard)}`,
       ].join("\n")
     );
@@ -1387,13 +1386,25 @@
 
   function nextTrainerRowWithSpace(currentKey) {
     const puzzle = getTrainerPuzzle();
-    const order = TRAINER_ROWS.map((row) => row.key);
+    const order = TRAINER_ROW_CYCLE;
     const start = Math.max(0, order.indexOf(currentKey));
     for (let step = 1; step <= order.length; step += 1) {
       const key = order[(start + step) % order.length];
       if (state.trainer.rows[key].length < trainerRowSize(key, puzzle)) return key;
     }
     return "";
+  }
+
+  function advanceTrainerActiveRowIfFilled(rowKey) {
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return;
+    if (state.trainer.rows[rowKey].length < trainerRowSize(rowKey, puzzle)) return;
+    setTrainerActiveRow(nextTrainerRowInCycle(rowKey), { render: false });
+  }
+
+  function nextTrainerRowInCycle(currentKey) {
+    const start = Math.max(0, TRAINER_ROW_CYCLE.indexOf(currentKey));
+    return TRAINER_ROW_CYCLE[(start + 1) % TRAINER_ROW_CYCLE.length];
   }
 
   function setTrainerActiveRow(key, options = {}) {
@@ -1412,14 +1423,14 @@
   }
 
   function createEmptyTrainerRows() {
-    return { top: [], middle: [], back: [], discard: [] };
+    return { top: [], middle: [], bottom: [], discard: [] };
   }
 
   function cloneTrainerRows(rows) {
     return {
       top: rows.top.slice(),
       middle: rows.middle.slice(),
-      back: rows.back.slice(),
+      bottom: rows.bottom.slice(),
       discard: rows.discard.slice(),
     };
   }
