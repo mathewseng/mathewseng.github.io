@@ -562,6 +562,7 @@ h3 {
   border-radius: var(--radius);
 }
 
+.trainer-card,
 .trainer-placed-card {
   width: 100%;
   min-height: auto;
@@ -592,6 +593,11 @@ h3 {
 .trainer-drag-ghost.is-lifted {
   transform: translate(-50%, -50%) scale(1.5);
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.48);
+}
+
+.trainer-drag-ghost.is-dropping {
+  transform: translate(-50%, -50%) scale(1);
+  box-shadow: none;
 }
 
 .trainer-actions {

@@ -1002,6 +1002,8 @@
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      currentX: event.clientX,
+      currentY: event.clientY,
       active: false,
       ghost: null,
       overEl: null,
@@ -1026,6 +1028,8 @@
     const dy = event.clientY - drag.startY;
     if (!drag.active && Math.hypot(dx, dy) < 5) return;
 
+    drag.currentX = event.clientX;
+    drag.currentY = event.clientY;
     if (!drag.active) activateTrainerPointerDrag(event);
     updateTrainerDragGhost(event);
     updateTrainerDragTarget(event);
@@ -1039,6 +1043,7 @@
     const ghost = drag.sourceEl.cloneNode(true);
     ghost.removeAttribute("id");
     ghost.removeAttribute("disabled");
+    if ("disabled" in ghost) ghost.disabled = false;
     ghost.setAttribute("aria-hidden", "true");
     ghost.tabIndex = -1;
     ghost.classList.remove("drag-source-hidden");
@@ -1053,12 +1058,18 @@
     drag.ghost = ghost;
     document.body.classList.add("trainer-dragging");
     updateTrainerDragGhost(event);
-    window.requestAnimationFrame(() => ghost.classList.add("is-lifted"));
+    window.requestAnimationFrame(() => {
+      if (ghost.isConnected && !ghost.classList.contains("is-dropping")) {
+        ghost.classList.add("is-lifted");
+      }
+    });
   }
 
   function updateTrainerDragGhost(event) {
     const drag = state.trainer.drag;
     if (!drag || !drag.ghost) return;
+    drag.currentX = event.clientX;
+    drag.currentY = event.clientY;
     drag.ghost.style.left = `${event.clientX}px`;
     drag.ghost.style.top = `${event.clientY}px`;
   }
@@ -1091,11 +1102,16 @@
       const target = document.elementFromPoint(event.clientX, event.clientY);
       const slot = target ? target.closest(".trainer-slot") : null;
       const bank = target ? target.closest("#trainer-tray") : null;
-      cleanupTrainerPointerDrag({ suppressClick: true });
+      const willMoveToSlot = !!(slot && slot.dataset.row && slot.dataset.index);
+      const willMoveToBank = !!(bank && findTrainerCardLocation(drag.id));
+      cleanupTrainerPointerDrag({
+        suppressClick: true,
+        restoreSource: !willMoveToSlot && !willMoveToBank,
+      });
 
-      if (slot && slot.dataset.row && slot.dataset.index) {
+      if (willMoveToSlot) {
         placeTrainerCardInSlot(drag.id, slot.dataset.row, Number(slot.dataset.index));
-      } else if (bank && findTrainerCardLocation(drag.id)) {
+      } else if (willMoveToBank) {
         removeTrainerCardFromRows(drag.id);
         els.trainerMessage.textContent = "";
         renderTrainerBoard();
@@ -1106,11 +1122,11 @@
       return;
     }
 
-    cleanupTrainerPointerDrag({ suppressClick: false });
+    cleanupTrainerPointerDrag({ suppressClick: false, restoreSource: true });
   }
 
   function cancelTrainerPointerDrag() {
-    cleanupTrainerPointerDrag({ suppressClick: false });
+    cleanupTrainerPointerDrag({ suppressClick: false, restoreSource: true });
   }
 
   function cleanupTrainerPointerDrag(options = {}) {
@@ -1124,8 +1140,10 @@
         // Capture may already be released after pointercancel.
       }
     }
-    if (drag.sourceEl) drag.sourceEl.classList.remove("drag-source-hidden");
-    if (drag.ghost) drag.ghost.remove();
+    if (drag.sourceEl && (!drag.ghost || options.restoreSource !== false)) {
+      restoreTrainerDragSource(drag.sourceEl, drag.ghost ? 250 : 0);
+    }
+    if (drag.ghost) releaseTrainerDragGhost(drag.ghost);
     document.body.classList.remove("trainer-dragging");
     if (options.suppressClick) {
       state.trainer.dragClickBlock = { id: drag.id, until: now() + 450 };
@@ -1134,6 +1152,18 @@
     document.removeEventListener("pointerup", finishTrainerPointerDrag);
     document.removeEventListener("pointercancel", cancelTrainerPointerDrag);
     state.trainer.drag = null;
+  }
+
+  function releaseTrainerDragGhost(ghost) {
+    ghost.classList.add("is-dropping");
+    ghost.classList.remove("is-lifted");
+    window.setTimeout(() => ghost.remove(), 260);
+  }
+
+  function restoreTrainerDragSource(sourceEl, delay) {
+    window.setTimeout(() => {
+      if (sourceEl.isConnected) sourceEl.classList.remove("drag-source-hidden");
+    }, delay);
   }
 
   function consumeTrainerDragClick(event, id) {
