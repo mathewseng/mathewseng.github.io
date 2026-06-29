@@ -2181,8 +2181,8 @@ kbd {
 .trainer-game {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
-    "bank"
-    "board";
+    "board"
+    "bank";
 }
 
 .trainer-report {
