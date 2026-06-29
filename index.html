@@ -3,18 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#05070b" />
+    <meta name="theme-color" content="#f6f7f9" />
+    <meta
+      name="description"
+      content="Project directory for Mathew Seng: browser tools, card games, music experiments, and small utility projects."
+    />
     <title>Mathew Seng Projects</title>
     <style>
       :root {
-        color-scheme: dark;
-        --bg: #05070b;
-        --surface: #0b1118;
-        --surface-2: #101923;
-        --line: rgba(193, 207, 224, 0.14);
-        --text: #eef5ff;
-        --muted: #93a3b8;
-        --accent: #37d99e;
+        color-scheme: light;
+        --page: #f6f7f9;
+        --ink: #15181d;
+        --muted: #626a73;
+        --soft: #8a929b;
+        --card: #ffffff;
+        --line: #d8dde3;
+        --line-strong: #bfc6ce;
+        --green: #13795b;
+        --blue: #2f65b8;
+        --red: #b1362f;
+        --gold: #9a6a10;
+        --violet: #6554b6;
+        --charcoal: #2c3137;
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
@@ -23,110 +33,756 @@
         box-sizing: border-box;
       }
 
+      html {
+        min-height: 100%;
+      }
+
       body {
         min-height: 100vh;
         margin: 0;
-        background: var(--bg);
-        color: var(--text);
+        background: var(--page);
+        color: var(--ink);
       }
 
-      main {
-        width: min(960px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 42px 0;
-      }
-
-      header {
-        margin-bottom: 22px;
+      a {
+        color: inherit;
       }
 
       p,
       h1,
-      h2 {
+      h2,
+      h3 {
         margin: 0;
       }
 
-      .eyebrow {
-        margin-bottom: 8px;
-        color: var(--accent);
-        font-size: 0.76rem;
+      .page-shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 44px;
+      }
+
+      .topbar {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        font-weight: 760;
+      }
+
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+        font-size: 0.82rem;
         font-weight: 850;
-        letter-spacing: 0.1em;
+      }
+
+      .repo-link {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+        font-size: 0.86rem;
+        font-weight: 740;
+        text-decoration: none;
+      }
+
+      .repo-link:hover,
+      .repo-link:focus-visible {
+        border-color: var(--ink);
+        outline: none;
+      }
+
+      .intro {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+        gap: 24px;
+        align-items: end;
+        padding: 24px 0 30px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .eyebrow {
+        margin-bottom: 10px;
+        color: var(--green);
+        font-size: 0.78rem;
+        font-weight: 850;
+        letter-spacing: 0;
         text-transform: uppercase;
       }
 
       h1 {
-        font-size: clamp(2rem, 5vw, 4rem);
-        line-height: 1;
+        max-width: 780px;
+        font-size: 3.7rem;
+        line-height: 0.98;
         letter-spacing: 0;
       }
 
-      .grid {
+      .intro-copy {
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.55;
+      }
+
+      .summary-panel {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        overflow: hidden;
+      }
+
+      .summary-panel div {
+        min-width: 0;
+        padding: 13px;
+      }
+
+      .summary-panel div + div {
+        border-left: 1px solid var(--line);
+      }
+
+      .summary-panel strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 1.25rem;
+        line-height: 1;
+      }
+
+      .summary-panel span {
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 760;
+      }
+
+      .section {
+        padding-top: 30px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .section-head h2 {
+        font-size: 1.05rem;
+        letter-spacing: 0;
+      }
+
+      .section-head p {
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .project-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
       }
 
-      a.card {
-        min-height: 132px;
+      .project-card {
+        min-height: 244px;
         display: grid;
-        align-content: space-between;
-        gap: 18px;
-        padding: 16px;
+        grid-template-rows: 86px minmax(0, 1fr);
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: var(--surface);
+        background: var(--card);
         color: inherit;
         text-decoration: none;
+        overflow: hidden;
       }
 
-      a.card:hover,
-      a.card:focus-visible {
-        border-color: rgba(55, 217, 158, 0.55);
-        background: var(--surface-2);
+      .project-card:hover,
+      .project-card:focus-visible {
+        border-color: var(--charcoal);
         outline: none;
       }
 
-      h2 {
-        font-size: 1.08rem;
+      .preview {
+        position: relative;
+        display: grid;
+        align-content: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        background: #eef1f4;
+        overflow: hidden;
       }
 
-      .card p {
+      .project-body {
+        display: grid;
+        gap: 14px;
+        align-content: space-between;
+        padding: 14px;
+      }
+
+      .project-title {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .project-title h3 {
+        font-size: 1.06rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+      }
+
+      .status {
+        flex: 0 0 auto;
+        padding: 4px 7px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 780;
+      }
+
+      .status.live {
+        border-color: rgba(19, 121, 91, 0.35);
+        color: var(--green);
+      }
+
+      .status.source {
+        border-color: rgba(47, 101, 184, 0.35);
+        color: var(--blue);
+      }
+
+      .status.legacy {
+        border-color: rgba(154, 106, 16, 0.35);
+        color: var(--gold);
+      }
+
+      .project-card p {
         color: var(--muted);
         font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .meta-row span {
+        padding: 4px 7px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 720;
+      }
+
+      .mini-cards,
+      .mini-grid,
+      .mini-table,
+      .mini-bars,
+      .mini-terminal,
+      .mini-board {
+        width: 100%;
+      }
+
+      .mini-cards {
+        display: flex;
+        gap: 6px;
+      }
+
+      .mini-card {
+        width: 34px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 1.18rem;
+        font-weight: 780;
+      }
+
+      .mini-card.spade {
+        background: #505050;
+      }
+
+      .mini-card.heart {
+        background: #a90800;
+      }
+
+      .mini-card.diamond {
+        background: #303fc6;
+      }
+
+      .mini-card.club {
+        background: #05a82b;
+      }
+
+      .mini-card.gold {
+        background: var(--gold);
+      }
+
+      .mini-table {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+      }
+
+      .mini-table span {
+        height: 12px;
+        border-radius: 3px;
+        background: #d8dde3;
+      }
+
+      .mini-table span:nth-child(3n) {
+        background: #9ec5b6;
+      }
+
+      .mini-table span:nth-child(4n) {
+        background: #b8c7e8;
+      }
+
+      .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 5px;
+      }
+
+      .mini-grid span {
+        height: 18px;
+        border-radius: 5px;
+        background: #d9dee6;
+      }
+
+      .mini-grid span:nth-child(2n) {
+        background: #bad6ca;
+      }
+
+      .mini-grid span:nth-child(5n) {
+        background: #e2c28f;
+      }
+
+      .mini-bars {
+        display: flex;
+        align-items: end;
+        gap: 5px;
+        height: 52px;
+      }
+
+      .mini-bars span {
+        flex: 1 1 auto;
+        min-width: 0;
+        border-radius: 5px 5px 0 0;
+        background: var(--violet);
+      }
+
+      .mini-bars span:nth-child(2n) {
+        background: var(--green);
+      }
+
+      .mini-terminal {
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        border-radius: 7px;
+        background: #20252b;
+      }
+
+      .mini-terminal span {
+        height: 7px;
+        border-radius: 999px;
+        background: #ccd4dd;
+      }
+
+      .mini-terminal span:nth-child(2) {
+        width: 72%;
+      }
+
+      .mini-terminal span:nth-child(3) {
+        width: 48%;
+        background: #8fcea8;
+      }
+
+      .mini-board {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+      }
+
+      .mini-board span {
+        height: 26px;
+        border-radius: 5px;
+        background: #242a31;
+      }
+
+      .mini-board span:nth-child(3n) {
+        background: var(--red);
+      }
+
+      .mini-board span:nth-child(4n) {
+        background: var(--blue);
+      }
+
+      .source-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .source-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        text-decoration: none;
+      }
+
+      .source-item:hover,
+      .source-item:focus-visible {
+        border-color: var(--charcoal);
+        outline: none;
+      }
+
+      .source-item h3 {
+        margin-bottom: 4px;
+        font-size: 1rem;
+      }
+
+      .source-item p {
+        color: var(--muted);
+        font-size: 0.88rem;
         line-height: 1.4;
+      }
+
+      .source-path {
+        color: var(--soft);
+        font-size: 0.76rem;
+        font-weight: 760;
+        white-space: nowrap;
+      }
+
+      footer {
+        margin-top: 34px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      @media (max-width: 920px) {
+        .intro {
+          grid-template-columns: 1fr;
+          align-items: start;
+        }
+
+        .project-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        h1 {
+          font-size: 3rem;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page-shell {
+          width: min(100% - 20px, 1180px);
+          padding-top: 14px;
+        }
+
+        .topbar,
+        .section-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .repo-link {
+          justify-content: flex-start;
+        }
+
+        h1 {
+          font-size: 2.35rem;
+        }
+
+        .summary-panel,
+        .project-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-panel div + div {
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+
+        .source-item {
+          grid-template-columns: 1fr;
+        }
+
+        .source-path {
+          white-space: normal;
+        }
       }
     </style>
   </head>
   <body>
-    <main>
-      <header>
-        <p class="eyebrow">Mathew Seng</p>
-        <h1>Projects</h1>
+    <main class="page-shell">
+      <nav class="topbar" aria-label="Main">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">MS</span>
+          <span>mathewseng.github.io</span>
+        </a>
+        <a class="repo-link" href="https://github.com/mathewseng/mathewseng.github.io">GitHub repository</a>
+      </nav>
+
+      <header class="intro">
+        <div>
+          <p class="eyebrow">Project directory</p>
+          <h1>Browser tools, card games, and small experiments.</h1>
+        </div>
+        <div>
+          <p class="intro-copy">
+            A clean index for the public projects in this repo. Most run directly in the browser; utility projects link to their source.
+          </p>
+          <div class="summary-panel" aria-label="Repository summary">
+            <div>
+              <strong>6</strong>
+              <span>live apps</span>
+            </div>
+            <div>
+              <strong>2</strong>
+              <span>source projects</span>
+            </div>
+            <div>
+              <strong>1</strong>
+              <span>legacy path</span>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <section class="grid" aria-label="Project directory">
-        <a class="card" href="/ofc/">
-          <h2>Open-face Chinese Poker</h2>
-          <p>Fantasyland trainer, solver tools, and EV matrix.</p>
-        </a>
-        <a class="card" href="/blackjack-strategy/">
-          <h2>Blackjack Strategy</h2>
-          <p>Strategy reference and practice tools.</p>
-        </a>
-        <a class="card" href="/poker-rush/">
-          <h2>Poker Rush</h2>
-          <p>Fast poker hand reading game.</p>
-        </a>
-        <a class="card" href="/edge-the-dealer/">
-          <h2>Edge the Dealer</h2>
-          <p>Table-game experiment and prototype.</p>
-        </a>
-        <a class="card" href="/ultimate-omaha/">
-          <h2>Ultimate Omaha</h2>
-          <p>Omaha game prototype.</p>
-        </a>
+      <section class="section" aria-labelledby="live-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Live pages</p>
+            <h2 id="live-title">Open in browser</h2>
+          </div>
+          <p>Static apps and game prototypes hosted from this repo.</p>
+        </div>
+
+        <div class="project-grid">
+          <a class="project-card" href="/ofc/">
+            <div class="preview" aria-hidden="true">
+              <div class="mini-cards">
+                <span class="mini-card spade">A</span>
+                <span class="mini-card heart">K</span>
+                <span class="mini-card diamond">Q</span>
+                <span class="mini-card club">J</span>
+              </div>
+            </div>
+            <div class="project-body">
+              <div>
+                <div class="project-title">
+                  <h3>OFC Tools</h3>
+                  <span class="status live">Live</span>
+                </div>
+                <p>Fantasyland trainer, solver tools, and EV matrix for open-face Chinese poker.</p>
+              </div>
+              <div class="meta-row">
+                <span>cards</span>
+                <span>trainer</span>
+                <span>solver</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project-card" href="/blackjack-strategy/">
+            <div class="preview" aria-hidden="true">
+              <div class="mini-table">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="project-body">
+              <div>
+                <div class="project-title">
+                  <h3>Blackjack Strategy Lab</h3>
+                  <span class="status live">Live</span>
+                </div>
+                <p>Browser strategy chart with EV views, rules controls, and count-index tooling.</p>
+              </div>
+              <div class="meta-row">
+                <span>blackjack</span>
+                <span>EV</span>
+                <span>WASM</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project-card" href="/microtonal-lab/">
+            <div class="preview" aria-hidden="true">
+              <div class="mini-bars">
+                <span style="height: 35%"></span>
+                <span style="height: 56%"></span>
+                <span style="height: 42%"></span>
+                <span style="height: 74%"></span>
+                <span style="height: 48%"></span>
+                <span style="height: 65%"></span>
+                <span style="height: 88%"></span>
+                <span style="height: 52%"></span>
+              </div>
+            </div>
+            <div class="project-body">
+              <div>
+                <div class="project-title">
+                  <h3>Microtonal Lab</h3>
+                  <span class="status live">Live</span>
+                </div>
+                <p>Interactive tuning explorer and browser instrument for equal, just, and world scales.</p>
+              </div>
+              <div class="meta-row">
+                <span>audio</span>
+                <span>tuning</span>
+                <span>canvas</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project-card" href="/poker-rush/">
+            <div class="preview" aria-hidden="true">
+              <div class="mini-grid">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="project-body">
+              <div>
+                <div class="project-title">
+                  <h3>Poker Rush</h3>
+                  <span class="status live">Live</span>
+                </div>
+                <p>Seeded poker sprint with daily, random, and multiplayer modes.</p>
+              </div>
+              <div class="meta-row">
+                <span>poker</span>
+                <span>daily</span>
+                <span>game</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project-card" href="/edge-the-dealer/">
+            <div class="preview" aria-hidden="true">
+              <div class="mini-board">
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="project-body">
+              <div>
+                <div class="project-title">
+                  <h3>Edge the Dealer</h3>
+                  <span class="status live">Live</span>
+                </div>
+                <p>Table-game prototype focused on quick decisions and compact play flow.</p>
+              </div>
+              <div class="meta-row">
+                <span>cards</span>
+                <span>prototype</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project-card" href="/ultimate-omaha/">
+            <div class="preview" aria-hidden="true">
+              <div class="mini-cards">
+                <span class="mini-card heart">A</span>
+                <span class="mini-card club">9</span>
+                <span class="mini-card diamond">8</span>
+                <span class="mini-card spade">7</span>
+                <span class="mini-card gold">5</span>
+              </div>
+            </div>
+            <div class="project-body">
+              <div>
+                <div class="project-title">
+                  <h3>Ultimate Omaha</h3>
+                  <span class="status live">Live</span>
+                </div>
+                <p>Omaha table-game prototype with local game logic and multiplayer files.</p>
+              </div>
+              <div class="meta-row">
+                <span>omaha</span>
+                <span>cards</span>
+              </div>
+            </div>
+          </a>
+        </div>
       </section>
+
+      <section class="section" aria-labelledby="utility-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Utilities and source</p>
+            <h2 id="utility-title">Repo projects</h2>
+          </div>
+          <p>Useful code that is not primarily a public browser page.</p>
+        </div>
+
+        <div class="source-list">
+          <a class="source-item" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/flight-attendant-monitor">
+            <div>
+              <h3>Atlanta Flight-Attendant Job Monitor</h3>
+              <p>Python monitor for ATL-based flight-attendant openings with source parsing and email reporting.</p>
+            </div>
+            <span class="source-path">flight-attendant-monitor/</span>
+          </a>
+
+          <a class="source-item" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/market-prediction">
+            <div>
+              <h3>Market Prediction</h3>
+              <p>Reserved project folder in the repo. Linked here so the directory reflects the repository honestly.</p>
+            </div>
+            <span class="source-path">market-prediction/</span>
+          </a>
+
+          <a class="source-item" href="/ofc-solver/">
+            <div>
+              <h3>Legacy OFC Solver Path</h3>
+              <p>Combined solver and trainer path kept for compatibility while the canonical OFC pages live under `/ofc/`.</p>
+            </div>
+            <span class="status legacy">Legacy</span>
+          </a>
+        </div>
+      </section>
+
+      <footer>
+        Built as static pages. No login, no build step, no backend for the public apps.
+      </footer>
     </main>
   </body>
 </html>
