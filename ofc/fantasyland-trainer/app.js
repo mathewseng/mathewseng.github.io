@@ -147,6 +147,7 @@
       repeatPoints: document.querySelector("#repeat-points"),
       legalBoards: document.querySelector("#legal-boards"),
       boardStack: document.querySelector("#board-stack"),
+      solutionDrawer: document.querySelector("#solution-drawer"),
       solverMode: document.querySelector("#solver-mode"),
       sampleCount: document.querySelector("#sample-count"),
       runSim: document.querySelector("#run-sim"),
@@ -876,6 +877,10 @@
     els.trainerClear.hidden = trainer.confirmed;
     els.trainerReportOpen.hidden = !trainer.confirmed || trainer.reportOpen;
     els.trainerNext.hidden = !trainer.confirmed || trainer.reportOpen || trainer.puzzleIndex >= trainer.puzzles.length - 1;
+    if (els.solutionDrawer) {
+      els.solutionDrawer.hidden = !trainer.confirmed;
+      if (!trainer.confirmed) els.solutionDrawer.open = false;
+    }
   }
 
   function openTrainerReport() {
