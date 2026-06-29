@@ -6,23 +6,22 @@
     <meta name="theme-color" content="#0b0d10" />
     <meta
       name="description"
-      content="Open-face Chinese poker Fantasyland solver and Monte Carlo repeat calculator."
+      content="Open-face Chinese poker Fantasyland royalty EV and repeat probability Monte Carlo calculator."
     />
-    <title>OFC Fantasyland Solver + Trainer</title>
+    <title>OFC Fantasyland EV Matrix</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./styles.css?v=20260629m" />
   </head>
-  <body>
+  <body class="ev-page">
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-block">
           <a class="home-link" href="/" aria-label="Home">MS</a>
           <div>
             <p class="eyebrow">Open-face Chinese poker</p>
-            <h1>OFC Fantasyland Solver + Trainer</h1>
+            <h1>OFC Fantasyland EV Matrix</h1>
           </div>
         </div>
-
       </header>
 
       <section class="surface trainer-panel" aria-labelledby="trainer-title">
@@ -126,7 +125,7 @@
         </div>
       </section>
 
-      <details class="solver-drawer">
+      <details class="solver-drawer" open>
         <summary>
           <span>Solver tools</span>
           <strong>Open optimal solution, deck picker, and EV matrix</strong>
@@ -226,7 +225,7 @@
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Monte Carlo</p>
-              <h2 id="sim-title">14-17 card matrix</h2>
+              <h2 id="sim-title">Fantasyland EV matrix</h2>
             </div>
             <div class="action-row">
               <button id="run-sim" class="primary-button" type="button">Run</button>
