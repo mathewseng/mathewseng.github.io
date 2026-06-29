@@ -548,8 +548,13 @@ h3 {
 }
 
 .trainer-slot.drag-over,
+.trainer-row.drag-over,
 .trainer-tray.drag-over {
   background: rgba(66, 230, 164, 0.08);
+}
+
+.trainer-row.drag-over {
+  border-color: rgba(66, 230, 164, 0.62);
 }
 
 .trainer-slot.drag-over {

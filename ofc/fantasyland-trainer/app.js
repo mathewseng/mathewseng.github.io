@@ -1099,7 +1099,10 @@
     const drag = state.trainer.drag;
     if (!drag || !drag.active) return;
     const target = document.elementFromPoint(point.x, point.y);
-    const overEl = target ? target.closest(".trainer-slot, #trainer-tray") : null;
+    const slot = resolveTrainerDropSlot(target, drag.id);
+    const bank = target ? target.closest("#trainer-tray") : null;
+    const row = slot && !target.closest(".trainer-slot") ? slot.closest(".trainer-row") : null;
+    const overEl = bank || row || slot;
     if (drag.overEl === overEl) return;
     clearTrainerPointerDragTarget();
     drag.overEl = overEl;
@@ -1122,7 +1125,7 @@
     if (wasActive) {
       const point = getTrainerPointerViewportPoint(event);
       const target = document.elementFromPoint(point.x, point.y);
-      const slot = target ? target.closest(".trainer-slot") : null;
+      const slot = resolveTrainerDropSlot(target, drag.id);
       const bank = target ? target.closest("#trainer-tray") : null;
       const willMoveToSlot = !!(slot && slot.dataset.row && slot.dataset.index);
       const willMoveToBank = !!(bank && findTrainerCardLocation(drag.id));
@@ -1179,6 +1182,30 @@
       x: pageX - window.scrollX,
       y: pageY - window.scrollY,
     };
+  }
+
+  function resolveTrainerDropSlot(target, id) {
+    if (!target) return null;
+    const directSlot = target.closest(".trainer-slot");
+    if (directSlot && directSlot.dataset.row && directSlot.dataset.index) return directSlot;
+
+    const row = target.closest(".trainer-row");
+    if (!row || !row.dataset.row) return null;
+    const index = getTrainerRowSurfaceDropIndex(row.dataset.row, id);
+    if (index < 0) return null;
+    return row.querySelector(`.trainer-slot[data-index="${index}"]`);
+  }
+
+  function getTrainerRowSurfaceDropIndex(rowKey, id) {
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return -1;
+    const origin = findTrainerCardLocation(id);
+    if (origin && origin.rowKey === rowKey) return origin.index;
+
+    const rowCards = state.trainer.rows[rowKey];
+    const rowSize = trainerRowSize(rowKey, puzzle);
+    if (!rowCards || rowCards.length >= rowSize) return -1;
+    return rowCards.length;
   }
 
   function getTrainerBankDropRect(id, fallbackRect) {
