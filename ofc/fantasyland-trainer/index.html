@@ -10,7 +10,7 @@
     />
     <title>OFC Fantasyland Trainer</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260629p" />
+    <link rel="stylesheet" href="./styles.css?v=20260629q" />
   </head>
   <body>
     <div class="app-shell">
@@ -90,6 +90,7 @@
                 <div class="trainer-actions">
                   <button id="trainer-clear" class="secondary-button" type="button">Clear set <kbd>C</kbd></button>
                   <button id="trainer-confirm" class="primary-button" type="button" disabled>Confirm <kbd>Space</kbd></button>
+                  <button id="trainer-report-open" class="secondary-button" type="button" hidden>Report</button>
                   <button id="trainer-next" class="primary-button" type="button" hidden>Next</button>
                 </div>
               </div>
@@ -102,6 +103,13 @@
           </section>
 
           <section class="trainer-report" aria-label="Share report">
+            <div class="report-head">
+              <div>
+                <span>Report</span>
+                <strong>Share result</strong>
+              </div>
+              <button id="trainer-report-close" class="report-close" type="button">Close</button>
+            </div>
             <div class="score-grid trainer-score-grid">
               <div class="score-tile">
                 <span>Your royalties</span>
@@ -118,7 +126,7 @@
             </div>
             <label class="control-field share-field">
               <span>Share</span>
-              <textarea id="trainer-share" rows="7" readonly spellcheck="false"></textarea>
+              <textarea id="trainer-share" rows="7" readonly spellcheck="false" wrap="off"></textarea>
             </label>
             <button id="trainer-copy" class="secondary-button" type="button" disabled>Copy report</button>
           </section>
@@ -319,6 +327,6 @@
       </details>
     </div>
 
-    <script src="./app.js?v=20260629p"></script>
+    <script src="./app.js?v=20260629q"></script>
   </body>
 </html>

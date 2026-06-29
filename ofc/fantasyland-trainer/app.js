@@ -81,6 +81,7 @@
     { key: "middle", label: "Middle", size: 5 },
     { key: "back", label: "Back", size: 5 },
   ];
+  const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
 
   const comboCache = new Map();
   const virtualDeck = buildVirtualDeck();
@@ -106,6 +107,7 @@
       elapsedMs: 0,
       timerId: 0,
       confirmed: false,
+      reportOpen: false,
       randomBase: "",
       sortMode: "rank",
       drag: null,
@@ -163,6 +165,8 @@
       trainerRows: document.querySelector("#trainer-rows"),
       trainerClear: document.querySelector("#trainer-clear"),
       trainerConfirm: document.querySelector("#trainer-confirm"),
+      trainerReportOpen: document.querySelector("#trainer-report-open"),
+      trainerReportClose: document.querySelector("#trainer-report-close"),
       trainerNext: document.querySelector("#trainer-next"),
       trainerMessage: document.querySelector("#trainer-message"),
       trainerYourPoints: document.querySelector("#trainer-your-points"),
@@ -260,6 +264,8 @@
 
     els.trainerClear.addEventListener("click", clearTrainerSet);
     els.trainerConfirm.addEventListener("click", confirmTrainerSet);
+    els.trainerReportOpen.addEventListener("click", openTrainerReport);
+    els.trainerReportClose.addEventListener("click", closeTrainerReport);
     els.trainerNext.addEventListener("click", loadNextTrainerPuzzle);
     els.trainerCopy.addEventListener("click", copyTrainerReport);
     els.trainerSortRank.addEventListener("click", () => setTrainerSortMode("rank"));
@@ -563,6 +569,7 @@
     trainer.rows = createEmptyTrainerRows();
     trainer.activeRow = "top";
     trainer.confirmed = false;
+    trainer.reportOpen = false;
     trainer.elapsedMs = 0;
     clearTrainerResult();
     startTrainerTimer();
@@ -749,6 +756,7 @@
     trainer.elapsedMs = now() - trainer.startedAt;
     stopTrainerTimer();
     trainer.confirmed = true;
+    trainer.reportOpen = true;
 
     const user = scoreTrainerRows(puzzle.ids, trainer.rows, {
       fiveKindRule: state.fiveKindRule,
@@ -792,9 +800,11 @@
     els.trainerMessage.textContent = `${result.correct ? "Max royalties" : "Below max"} in ${formatTime(result.timeMs)}.`;
     els.trainerShare.value = buildTrainerShare();
     els.trainerCopy.disabled = !els.trainerShare.value;
+    updateTrainerControls();
   }
 
   function clearTrainerResult() {
+    state.trainer.reportOpen = false;
     els.trainerYourPoints.textContent = "--";
     els.trainerMaxPoints.textContent = "--";
     els.trainerResult.textContent = "--";
@@ -807,9 +817,24 @@
   function updateTrainerControls() {
     const trainer = state.trainer;
     els.trainerPanel.classList.toggle("is-confirmed", trainer.confirmed);
+    els.trainerPanel.classList.toggle("is-report-open", trainer.confirmed && trainer.reportOpen);
     els.trainerConfirm.disabled = trainer.confirmed;
     els.trainerClear.disabled = trainer.confirmed;
-    els.trainerNext.hidden = !trainer.confirmed || trainer.puzzleIndex >= trainer.puzzles.length - 1;
+    els.trainerConfirm.hidden = trainer.confirmed;
+    els.trainerClear.hidden = trainer.confirmed;
+    els.trainerReportOpen.hidden = !trainer.confirmed || trainer.reportOpen;
+    els.trainerNext.hidden = !trainer.confirmed || trainer.reportOpen || trainer.puzzleIndex >= trainer.puzzles.length - 1;
+  }
+
+  function openTrainerReport() {
+    if (!state.trainer.confirmed) return;
+    state.trainer.reportOpen = true;
+    updateTrainerControls();
+  }
+
+  function closeTrainerReport() {
+    state.trainer.reportOpen = false;
+    updateTrainerControls();
   }
 
   function updateTrainerHandSizing(puzzle) {
@@ -1195,29 +1220,34 @@
     if (!results.length) return "";
     const first = results[0];
     if (first.mode === "daily") {
-      const title =
-        trainer.scope === "all"
-          ? `OFC Fantasyland Daily ${first.dateKey} All 12`
-          : `OFC Fantasyland Daily ${first.dateKey} ${configShort(first)}`;
+      const title = `OFC Fantasyland Daily ${formatDateKey(first.dateKey)}`;
       return [title]
-        .concat(results.map((result) => `${configShort(result)} ${result.correct ? "✅" : "❌"} ${formatTime(result.timeMs)}`))
+        .concat(results.map((result) => `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${formatTime(result.timeMs)}`))
+        .concat(TRAINER_SHARE_URL)
         .join("\n");
     }
 
-    const title =
-      trainer.scope === "all"
-        ? "OFC Fantasyland Random All 12"
-        : `OFC Fantasyland Random ${configShort(first)}`;
+    const title = "OFC Fantasyland Random";
     const blocks = results.map((result) =>
       [
-        `${configShort(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
+        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
         `Top: ${cardsToShare(result.rows.top)}`,
         `Middle: ${cardsToShare(result.rows.middle)}`,
         `Back: ${cardsToShare(result.rows.back)}`,
         `Discards: ${cardsToShare(result.rows.discard)}`,
       ].join("\n")
     );
-    return [title].concat(blocks).join("\n\n");
+    return [title].concat(blocks).concat(TRAINER_SHARE_URL).join("\n\n");
+  }
+
+  function formatDateKey(dateKey) {
+    const text = String(dateKey || "");
+    if (!/^\d{8}$/.test(text)) return text;
+    return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+  }
+
+  function configShareLabel(config) {
+    return `${config.cards} cards / ${config.jokers} ${config.jokers === 1 ? "joker" : "jokers"}`;
   }
 
   async function copyTrainerReport() {
