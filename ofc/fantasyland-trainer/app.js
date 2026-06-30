@@ -743,6 +743,15 @@
         slots.appendChild(slot);
       }
       row.appendChild(slots);
+
+      const summary = document.createElement("div");
+      const rowSummary = getTrainerRowSummary(rowDef.key, puzzle);
+      summary.className = "trainer-row-summary";
+      summary.innerHTML = `
+        <span>${rowSummary.label}</span>
+        <strong>${rowSummary.points} pts</strong>
+      `;
+      row.appendChild(summary);
       frag.appendChild(row);
     });
     els.trainerRows.replaceChildren(frag);
@@ -795,6 +804,11 @@
     const trainer = state.trainer;
     const puzzle = getTrainerPuzzle();
     if (!puzzle || trainer.confirmed || trainer.dropAnimating) return;
+    if (!getPlacedTrainerIds().length) {
+      els.trainerMessage.textContent = "Set at least one card first.";
+      updateTrainerControls();
+      return;
+    }
     if (!trainerReady()) {
       fillTrainerSetFromBankOrder(puzzle);
     }
@@ -869,9 +883,10 @@
 
   function updateTrainerControls() {
     const trainer = state.trainer;
+    const hasPlacedCards = getPlacedTrainerIds().length > 0;
     els.trainerPanel.classList.toggle("is-confirmed", trainer.confirmed);
     els.trainerPanel.classList.toggle("is-report-open", trainer.confirmed && trainer.reportOpen);
-    els.trainerConfirm.disabled = trainer.confirmed;
+    els.trainerConfirm.disabled = trainer.confirmed || !hasPlacedCards;
     els.trainerClear.disabled = trainer.confirmed;
     els.trainerConfirm.hidden = trainer.confirmed;
     els.trainerClear.hidden = trainer.confirmed;
@@ -1409,6 +1424,57 @@
     TRAINER_ROWS.forEach((row) => {
       state.trainer.rows[row.key] = state.trainer.rows[row.key].filter((cardId) => cardId !== id);
     });
+  }
+
+  function getTrainerRowSummary(rowKey, puzzle) {
+    const ids = state.trainer.rows[rowKey];
+    const size = trainerRowSize(rowKey, puzzle);
+    if (!ids.length) return { label: "No cards set", points: 0 };
+    if (ids.length < size) return { label: `Set ${ids.length}/${size} cards`, points: 0 };
+
+    const cardById = new Map(puzzle.ids.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
+    const cards = ids.map((id) => cardById.get(id)).filter(Boolean);
+    const evalResult = rowKey === "top" ? evaluateBestTop(cards) : evaluateBestFive(cards);
+    const points =
+      rowKey === "top"
+        ? topRoyalty(evalResult)
+        : fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
+    return {
+      label: formatTrainerHandName(evalResult, rowKey),
+      points,
+    };
+  }
+
+  function formatTrainerHandName(evalResult, rowKey) {
+    const rank = (index = 0) => RANK_LABEL[evalResult.ranks[index]] || "";
+    const repeatRank = (index, count) => rank(index).repeat(count);
+
+    if (rowKey === "top") {
+      if (evalResult.category === CATEGORY.TRIPS) return `Trip ${repeatRank(0, 3)}`;
+      if (evalResult.category === CATEGORY.PAIR) return `Pair ${repeatRank(0, 2)}`;
+      return `High Card ${rank()}`;
+    }
+
+    switch (evalResult.category) {
+      case CATEGORY.STRAIGHT_FLUSH:
+        return evalResult.mainRank === 14 ? "Royal Flush" : `Straight Flush ${rank()}-high`;
+      case CATEGORY.QUADS:
+        return `Quads ${repeatRank(0, 4)}`;
+      case CATEGORY.FULL_HOUSE:
+        return `Boat ${repeatRank(0, 3)}${repeatRank(1, 2)}`;
+      case CATEGORY.FLUSH:
+        return `Flush ${rank()}-high`;
+      case CATEGORY.STRAIGHT:
+        return `Straight ${rank()}-high`;
+      case CATEGORY.TRIPS:
+        return `Trips ${repeatRank(0, 3)}`;
+      case CATEGORY.TWO_PAIR:
+        return `Two Pair ${repeatRank(0, 2)}${repeatRank(1, 2)}`;
+      case CATEGORY.PAIR:
+        return `Pair ${repeatRank(0, 2)}`;
+      default:
+        return `High Card ${rank()}`;
+    }
   }
 
   function scoreTrainerRows(cardIds, rows, options = {}) {

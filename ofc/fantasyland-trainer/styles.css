@@ -480,6 +480,7 @@ h3 {
 .trainer-row {
   display: grid;
   grid-template-columns: 116px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
@@ -496,6 +497,8 @@ h3 {
 }
 
 .trainer-row-head {
+  grid-column: 1;
+  grid-row: 1;
   width: 100%;
   min-height: 100%;
   display: flex;
@@ -520,6 +523,8 @@ h3 {
 }
 
 .trainer-slots {
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
   grid-template-columns: repeat(5, minmax(48px, 76px));
   justify-content: start;
@@ -529,6 +534,27 @@ h3 {
 
 .trainer-slots.top-row {
   grid-template-columns: repeat(3, minmax(48px, 76px));
+}
+
+.trainer-row-summary {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 10px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.trainer-row-summary strong {
+  color: var(--text);
 }
 
 .trainer-slot {
@@ -2000,6 +2026,7 @@ kbd {
     min-height: 0;
     display: grid;
     grid-template-columns: 50px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     border-color: rgba(205, 220, 238, 0.14);
     background: rgba(4, 10, 9, 0.34);
   }
@@ -2032,6 +2059,14 @@ kbd {
     justify-content: center;
     gap: 5px;
     padding: 0 6px;
+  }
+
+  .trainer-row-summary {
+    min-height: 18px;
+    gap: 6px;
+    padding: 2px 6px 3px;
+    font-size: 0.62rem;
+    letter-spacing: 0;
   }
 
   .trainer-slot {
