@@ -737,8 +737,8 @@
 
       const summary = document.createElement("div");
       const rowSummary = getTrainerRowSummary(rowDef.key, puzzle);
-      summary.className = `trainer-row-summary ${rowSummary.points ? "" : "is-empty"}`;
-      if (rowSummary.points) {
+      summary.className = `trainer-row-summary ${rowSummary.visible ? "" : "is-empty"}`;
+      if (rowSummary.visible) {
         summary.innerHTML = `
           <span>${rowSummary.label}</span>
           <strong>${rowSummary.points} pts</strong>
@@ -1442,7 +1442,7 @@
 
   function getTrainerRowSummary(rowKey, puzzle) {
     const ids = state.trainer.rows[rowKey];
-    const empty = { label: "", points: 0 };
+    const empty = { label: "", points: 0, visible: false };
     if (!ids.length) return empty;
 
     const cards = getTrainerCardsForIds(ids, puzzle);
@@ -1464,7 +1464,7 @@
     if (cards.length >= 3) {
       const evalResult = evaluateBestTop(cards);
       const points = topRoyalty(evalResult);
-      return points ? { label: formatTrainerHandName(evalResult, "top"), points } : null;
+      return points ? { label: formatTrainerHandName(evalResult, "top"), points, visible: true } : null;
     }
 
     if (cards.length < 2) return null;
@@ -1479,19 +1479,20 @@
         const quadRank = bestRepeatRank(cards, 4);
         if (quadRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.QUADS, quadRank);
       }
-      if (rowKey === "middle" && cards.length >= 3) {
+      if (cards.length >= 3) {
         const tripRank = bestRepeatRank(cards, 3);
-        if (tripRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.TRIPS, tripRank);
+        if (tripRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.TRIPS, tripRank, { showZero: true });
       }
       return null;
     }
 
     const evalResult = evaluateBestFive(cards);
     const points = fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
-    if (!points) return null;
+    if (!points && evalResult.category !== CATEGORY.TRIPS) return null;
     return {
       label: formatTrainerHandName(evalResult, rowKey),
       points,
+      visible: true,
     };
   }
 
@@ -1504,13 +1505,15 @@
     return 0;
   }
 
-  function royaltySummaryFromRepeat(rowKey, category, rank) {
+  function royaltySummaryFromRepeat(rowKey, category, rank, options = {}) {
     const evalResult = { category, mainRank: rank, ranks: [rank] };
     const points =
       rowKey === "top"
         ? topRoyalty(evalResult)
         : fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
-    return points ? { label: formatTrainerHandName(evalResult, rowKey), points } : null;
+    return points || options.showZero
+      ? { label: formatTrainerHandName(evalResult, rowKey), points, visible: true }
+      : null;
   }
 
   function formatTrainerHandName(evalResult, rowKey) {
