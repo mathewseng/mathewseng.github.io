@@ -1481,14 +1481,14 @@
       }
       if (cards.length >= 3) {
         const tripRank = bestRepeatRank(cards, 3);
-        if (tripRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.TRIPS, tripRank, { showZero: true });
+        if (tripRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.TRIPS, tripRank);
       }
       return null;
     }
 
     const evalResult = evaluateBestFive(cards);
     const points = fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
-    if (!points && evalResult.category !== CATEGORY.TRIPS) return null;
+    if (!points) return null;
     return {
       label: formatTrainerHandName(evalResult, rowKey),
       points,
@@ -1505,15 +1505,13 @@
     return 0;
   }
 
-  function royaltySummaryFromRepeat(rowKey, category, rank, options = {}) {
+  function royaltySummaryFromRepeat(rowKey, category, rank) {
     const evalResult = { category, mainRank: rank, ranks: [rank] };
     const points =
       rowKey === "top"
         ? topRoyalty(evalResult)
         : fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
-    return points || options.showZero
-      ? { label: formatTrainerHandName(evalResult, rowKey), points, visible: true }
-      : null;
+    return points ? { label: formatTrainerHandName(evalResult, rowKey), points, visible: true } : null;
   }
 
   function formatTrainerHandName(evalResult, rowKey) {
