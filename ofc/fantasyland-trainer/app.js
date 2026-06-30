@@ -462,7 +462,7 @@
 
     const frag = document.createDocumentFragment();
     rows.forEach((row) => {
-      frag.appendChild(renderBoardRow(result.cards, row, result.options.repeatRule));
+      frag.appendChild(renderBoardRow(result.cards, row));
     });
 
     const discards = sortSolutionCards(
@@ -480,18 +480,16 @@
     els.boardStack.replaceChildren(frag);
   }
 
-  function renderBoardRow(cards, row, repeatRule) {
+  function renderBoardRow(cards, row) {
     const wrapper = document.createElement("div");
     wrapper.className = "board-row";
     const royalty = row.role === "top" ? row.candidate.royalty : row.candidate[row.role === "middle" ? "middleRoyalty" : "backRoyalty"];
-    const repeat = rowRepeats(row.role, row.candidate.eval, repeatRule);
     wrapper.innerHTML = `
       <div class="row-head">
         <strong>${row.label}</strong>
         <div class="row-meta">
           <span>${row.candidate.eval.name}</span>
           <span>${royalty} pts</span>
-          ${repeat ? "<span>Repeat fantasyland</span>" : ""}
         </div>
       </div>
     `;
@@ -507,14 +505,6 @@
       cardGrid.appendChild(renderMiniCard(card, assigned));
     });
     wrapper.appendChild(cardGrid);
-
-    const note = jokerNote(rowCards, row.candidate.eval);
-    if (note) {
-      const noteEl = document.createElement("div");
-      noteEl.className = "row-note";
-      noteEl.textContent = note;
-      wrapper.appendChild(noteEl);
-    }
     return wrapper;
   }
 
@@ -539,18 +529,6 @@
 
   function solutionDisplayCard(card, assignments) {
     return card.joker && assignments ? assignments.get(card.handIndex) || card : card;
-  }
-
-  function jokerNote(rowCards, evalResult) {
-    if (!evalResult.assignments) return "";
-    const parts = rowCards
-      .filter((card) => card.joker)
-      .map((card) => {
-        const assigned = evalResult.assignments.get(card.handIndex);
-        return assigned ? `${card.id} = ${cardLabel(assigned)}` : "";
-      })
-      .filter(Boolean);
-    return parts.length ? parts.join(", ") : "";
   }
 
   function clearSolution(message) {
