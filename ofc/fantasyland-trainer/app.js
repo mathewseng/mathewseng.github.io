@@ -447,7 +447,7 @@
       : "--";
 
     els.repeatBadge.className = `repeat-badge ${bestRepeat ? "yes" : "no"}`;
-    els.repeatBadge.textContent = bestRepeat ? "Repeat" : "No repeat";
+    els.repeatBadge.textContent = bestRepeat ? "Repeat fantasyland" : "No repeat";
 
     if (!best) {
       clearSolution("No legal OFC board found.");
@@ -491,7 +491,7 @@
         <div class="row-meta">
           <span>${row.candidate.eval.name}</span>
           <span>${royalty} pts</span>
-          ${repeat ? "<span>repeat</span>" : ""}
+          ${repeat ? "<span>Repeat fantasyland</span>" : ""}
         </div>
       </div>
     `;
@@ -845,13 +845,15 @@
 
     const user = scoreTrainerRows(puzzle.ids, trainer.rows, {
       fiveKindRule: state.fiveKindRule,
+      repeatRule: state.repeatRule,
     });
     const optimal = solveHand(puzzle.ids, {
       repeatRule: state.repeatRule,
       fiveKindRule: state.fiveKindRule,
     });
     const maxPoints = optimal.best ? optimal.best.points : 0;
-    const correct = user.legal && user.points === maxPoints;
+    const maxRepeat = Boolean(optimal.best && optimal.best.repeat);
+    const correct = user.legal && user.points === maxPoints && user.repeat === maxRepeat;
     const result = {
       mode: trainer.mode,
       scope: trainer.scope,
@@ -867,6 +869,8 @@
       timeMs: trainer.elapsedMs,
       points: user.points,
       maxPoints,
+      repeat: user.repeat,
+      maxRepeat,
       correct,
       legal: user.legal,
       rowNames: user.rowNames,
@@ -881,11 +885,25 @@
   function renderTrainerResult(result) {
     els.trainerYourPoints.textContent = String(result.points);
     els.trainerMaxPoints.textContent = String(result.maxPoints);
-    els.trainerResult.textContent = result.correct ? "Max" : result.legal ? "Not max" : "Foul";
-    els.trainerMessage.textContent = `${result.correct ? "Max royalties" : "Below max"} in ${formatTime(result.timeMs)}.`;
+    els.trainerResult.textContent = trainerResultLabel(result);
+    els.trainerMessage.textContent = `${trainerResultMessage(result)} in ${formatTime(result.timeMs)}.`;
     els.trainerShare.value = buildTrainerShare();
     els.trainerCopy.disabled = !els.trainerShare.value;
     updateTrainerControls();
+  }
+
+  function trainerResultLabel(result) {
+    if (!result.legal) return "Foul";
+    if (result.correct) return "Max";
+    if (result.maxRepeat && !result.repeat) return "No repeat";
+    return "Not max";
+  }
+
+  function trainerResultMessage(result) {
+    if (!result.legal) return "Foul board";
+    if (result.correct) return "Max royalties";
+    if (result.maxRepeat && !result.repeat) return "No repeat fantasyland";
+    return "Below max";
   }
 
   function clearTrainerResult() {
@@ -1561,6 +1579,11 @@
     const legal =
       bottomEval.strength >= middleEval.strength &&
       isTopLegalAgainstMiddle(topEval, middleEval);
+    const repeat =
+      legal &&
+      (rowRepeats("top", topEval, options.repeatRule || state.repeatRule) ||
+        rowRepeats("middle", middleEval, options.repeatRule || state.repeatRule) ||
+        rowRepeats("back", bottomEval, options.repeatRule || state.repeatRule));
     const points = legal
       ? topRoyalty(topEval) +
         fiveRoyalty(middleEval, "middle", fiveKindRule) +
@@ -1569,6 +1592,7 @@
     return {
       legal,
       points,
+      repeat,
       rowNames: {
         top: topEval.name,
         middle: middleEval.name,
@@ -1608,7 +1632,7 @@
     const title = "OFC Fantasyland Random";
     const blocks = results.map((result) =>
       [
-        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
+        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties, ${repeatStatusLabel(result.repeat)} ${formatTime(result.timeMs)}`,
         cardsToShare(result.rows.top),
         cardsToShare(result.rows.middle),
         cardsToShare(result.rows.bottom),
@@ -1626,6 +1650,10 @@
 
   function configShareLabel(config) {
     return `${config.cards} cards / ${config.jokers} ${config.jokers === 1 ? "joker" : "jokers"}`;
+  }
+
+  function repeatStatusLabel(repeat) {
+    return repeat ? "repeat fantasyland" : "no repeat fantasyland";
   }
 
   async function copyTrainerReport() {
