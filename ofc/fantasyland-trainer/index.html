@@ -10,7 +10,7 @@
     />
     <title>OFC Fantasyland Trainer</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260629af" />
+    <link rel="stylesheet" href="./styles.css?v=20260630a" />
   </head>
   <body>
     <div class="app-shell">
@@ -26,9 +26,10 @@
 
       <section class="surface trainer-panel" aria-labelledby="trainer-title">
         <div class="panel-heading trainer-heading">
-          <div>
+          <div class="trainer-heading-copy">
             <p class="eyebrow">Fantasyland trainer</p>
             <h2 id="trainer-title">Daily puzzle</h2>
+            <span id="trainer-config" class="trainer-config">14 cards / 0 jokers</span>
           </div>
           <div class="trainer-status">
             <div class="timer-pill">
@@ -36,6 +37,10 @@
               <strong id="trainer-time">0:00</strong>
             </div>
             <div class="timer-pill">
+              <span>Points</span>
+              <strong id="trainer-current-points">0</strong>
+            </div>
+            <div id="trainer-progress-pill" class="timer-pill" hidden>
               <span>Puzzle</span>
               <strong id="trainer-progress">1/1</strong>
             </div>
@@ -185,6 +190,6 @@
       </details>
     </div>
 
-    <script src="./app.js?v=20260629af"></script>
+    <script src="./app.js?v=20260630a"></script>
   </body>
 </html>

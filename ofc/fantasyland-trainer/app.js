@@ -156,8 +156,11 @@
       simStatus: document.querySelector("#sim-status"),
       simProgress: document.querySelector("#sim-progress"),
       trainerTitle: document.querySelector("#trainer-title"),
+      trainerConfig: document.querySelector("#trainer-config"),
       trainerPanel: document.querySelector(".trainer-panel"),
       trainerTime: document.querySelector("#trainer-time"),
+      trainerCurrentPoints: document.querySelector("#trainer-current-points"),
+      trainerProgressPill: document.querySelector("#trainer-progress-pill"),
       trainerProgress: document.querySelector("#trainer-progress"),
       trainerSortRank: document.querySelector("#trainer-sort-rank"),
       trainerSortSuit: document.querySelector("#trainer-sort-suit"),
@@ -635,14 +638,24 @@
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return;
 
-    els.trainerTitle.textContent = trainer.mode === "daily" ? "Daily puzzle" : "Random puzzle";
-    els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
+    updateTrainerHeader();
     updateTrainerHandSizing(puzzle);
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
     updateTrainerTimer();
     syncSolverToTrainerPuzzle(puzzle);
+  }
+
+  function updateTrainerHeader() {
+    const trainer = state.trainer;
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle) return;
+    els.trainerTitle.textContent = trainer.mode === "daily" ? "Daily puzzle" : "Random puzzle";
+    if (els.trainerConfig) els.trainerConfig.textContent = configShareLabel(puzzle);
+    if (els.trainerCurrentPoints) els.trainerCurrentPoints.textContent = String(getTrainerCurrentPoints(puzzle));
+    if (els.trainerProgress) els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
+    if (els.trainerProgressPill) els.trainerProgressPill.hidden = trainer.puzzles.length <= 1;
   }
 
   function syncSolverToTrainerPuzzle(puzzle) {
@@ -746,15 +759,20 @@
 
       const summary = document.createElement("div");
       const rowSummary = getTrainerRowSummary(rowDef.key, puzzle);
-      summary.className = "trainer-row-summary";
-      summary.innerHTML = `
-        <span>${rowSummary.label}</span>
-        <strong>${rowSummary.points} pts</strong>
-      `;
+      summary.className = `trainer-row-summary ${rowSummary.points ? "" : "is-empty"}`;
+      if (rowSummary.points) {
+        summary.innerHTML = `
+          <span>${rowSummary.label}</span>
+          <strong>${rowSummary.points} pts</strong>
+        `;
+      } else {
+        summary.setAttribute("aria-hidden", "true");
+      }
       row.appendChild(summary);
       frag.appendChild(row);
     });
     els.trainerRows.replaceChildren(frag);
+    updateTrainerHeader();
   }
 
   function addTrainerCard(id) {
@@ -1428,21 +1446,75 @@
 
   function getTrainerRowSummary(rowKey, puzzle) {
     const ids = state.trainer.rows[rowKey];
-    const size = trainerRowSize(rowKey, puzzle);
-    if (!ids.length) return { label: "No cards set", points: 0 };
-    if (ids.length < size) return { label: `Set ${ids.length}/${size} cards`, points: 0 };
+    const empty = { label: "", points: 0 };
+    if (!ids.length) return empty;
 
-    const cardById = new Map(puzzle.ids.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
-    const cards = ids.map((id) => cardById.get(id)).filter(Boolean);
-    const evalResult = rowKey === "top" ? evaluateBestTop(cards) : evaluateBestFive(cards);
-    const points =
-      rowKey === "top"
-        ? topRoyalty(evalResult)
-        : fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
+    const cards = getTrainerCardsForIds(ids, puzzle);
+    if (rowKey === "top") return getTrainerTopSummary(cards) || empty;
+    return getTrainerFiveRowSummary(rowKey, cards) || empty;
+  }
+
+  function getTrainerCurrentPoints(puzzle = getTrainerPuzzle()) {
+    if (!puzzle) return 0;
+    return TRAINER_ROWS.reduce((total, row) => total + getTrainerRowSummary(row.key, puzzle).points, 0);
+  }
+
+  function getTrainerCardsForIds(ids, puzzle) {
+    const handIndexById = new Map(puzzle.ids.map((id, index) => [id, index]));
+    return ids.map((id) => ({ ...cardFromId(id), handIndex: handIndexById.get(id) })).filter(Boolean);
+  }
+
+  function getTrainerTopSummary(cards) {
+    if (cards.length >= 3) {
+      const evalResult = evaluateBestTop(cards);
+      const points = topRoyalty(evalResult);
+      return points ? { label: formatTrainerHandName(evalResult, "top"), points } : null;
+    }
+
+    if (cards.length < 2) return null;
+    const pairRank = bestRepeatRank(cards, 2, 6);
+    if (!pairRank) return null;
+    return royaltySummaryFromRepeat("top", CATEGORY.PAIR, pairRank);
+  }
+
+  function getTrainerFiveRowSummary(rowKey, cards) {
+    if (cards.length < 5) {
+      if (cards.length >= 4) {
+        const quadRank = bestRepeatRank(cards, 4);
+        if (quadRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.QUADS, quadRank);
+      }
+      if (rowKey === "middle" && cards.length >= 3) {
+        const tripRank = bestRepeatRank(cards, 3);
+        if (tripRank) return royaltySummaryFromRepeat(rowKey, CATEGORY.TRIPS, tripRank);
+      }
+      return null;
+    }
+
+    const evalResult = evaluateBestFive(cards);
+    const points = fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
+    if (!points) return null;
     return {
       label: formatTrainerHandName(evalResult, rowKey),
       points,
     };
+  }
+
+  function bestRepeatRank(cards, targetCount, minRank = 2) {
+    const jokerCount = cards.filter((card) => card.joker).length;
+    const counts = rankCounts(cards.filter((card) => !card.joker));
+    for (let rank = 14; rank >= minRank; rank -= 1) {
+      if ((counts.get(rank) || 0) + jokerCount >= targetCount) return rank;
+    }
+    return 0;
+  }
+
+  function royaltySummaryFromRepeat(rowKey, category, rank) {
+    const evalResult = { category, mainRank: rank, ranks: [rank] };
+    const points =
+      rowKey === "top"
+        ? topRoyalty(evalResult)
+        : fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
+    return points ? { label: formatTrainerHandName(evalResult, rowKey), points } : null;
   }
 
   function formatTrainerHandName(evalResult, rowKey) {
@@ -1457,23 +1529,23 @@
 
     switch (evalResult.category) {
       case CATEGORY.STRAIGHT_FLUSH:
-        return evalResult.mainRank === 14 ? "Royal Flush" : `Straight Flush ${rank()}-high`;
+        return evalResult.mainRank === 14 ? "Royal Flush" : "Straight Flush";
       case CATEGORY.QUADS:
-        return `Quads ${repeatRank(0, 4)}`;
+        return "Quads";
       case CATEGORY.FULL_HOUSE:
-        return `Boat ${repeatRank(0, 3)}${repeatRank(1, 2)}`;
+        return "Boat";
       case CATEGORY.FLUSH:
-        return `Flush ${rank()}-high`;
+        return "Flush";
       case CATEGORY.STRAIGHT:
-        return `Straight ${rank()}-high`;
+        return "Straight";
       case CATEGORY.TRIPS:
-        return `Trips ${repeatRank(0, 3)}`;
+        return "Trips";
       case CATEGORY.TWO_PAIR:
-        return `Two Pair ${repeatRank(0, 2)}${repeatRank(1, 2)}`;
+        return "Two Pair";
       case CATEGORY.PAIR:
-        return `Pair ${repeatRank(0, 2)}`;
+        return "Pair";
       default:
-        return `High Card ${rank()}`;
+        return "High Card";
     }
   }
 

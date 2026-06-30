@@ -266,6 +266,20 @@ h3 {
   background: var(--surface);
 }
 
+.trainer-heading-copy {
+  min-width: 0;
+}
+
+.trainer-config {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .trainer-status {
   display: flex;
   gap: 6px;
@@ -555,6 +569,10 @@ h3 {
 
 .trainer-row-summary strong {
   color: var(--text);
+}
+
+.trainer-row-summary.is-empty {
+  border-top-color: transparent;
 }
 
 .trainer-slot {
@@ -1761,7 +1779,7 @@ kbd {
   .trainer-panel {
     min-height: 0;
     display: grid;
-    grid-template-rows: 42px 42px minmax(0, 1fr);
+    grid-template-rows: 50px 42px minmax(0, 1fr);
     margin-top: 0;
     overflow: hidden;
     background: #06100e;
@@ -1788,9 +1806,16 @@ kbd {
 
   .trainer-heading h2 {
     overflow: hidden;
-    font-size: 1rem;
+    font-size: 0.92rem;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .trainer-config {
+    margin-top: 3px;
+    overflow: hidden;
+    font-size: 0.62rem;
+    text-overflow: ellipsis;
   }
 
   .trainer-status {
@@ -1800,8 +1825,8 @@ kbd {
   }
 
   .timer-pill {
-    min-width: 66px;
-    padding: 4px 6px;
+    min-width: 58px;
+    padding: 4px 5px;
   }
 
   .timer-pill span {
@@ -2208,7 +2233,7 @@ kbd {
 
 @media (max-width: 360px) {
   .trainer-panel {
-    grid-template-rows: 42px 76px minmax(0, 1fr);
+    grid-template-rows: 50px 76px minmax(0, 1fr);
   }
 
   .trainer-controls {
