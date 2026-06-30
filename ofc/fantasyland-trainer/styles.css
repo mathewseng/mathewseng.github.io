@@ -512,7 +512,7 @@ h3 {
 
 .trainer-row-head {
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 1 / 3;
   width: 100%;
   min-height: 100%;
   display: flex;
@@ -551,7 +551,7 @@ h3 {
 }
 
 .trainer-row-summary {
-  grid-column: 1 / -1;
+  grid-column: 2;
   grid-row: 2;
   min-height: 24px;
   display: flex;
