@@ -1611,7 +1611,7 @@
     const title = "OFC Fantasyland Random";
     const blocks = results.map((result) =>
       [
-        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties, ${repeatStatusLabel(result.repeat)} ${formatTime(result.timeMs)}`,
+        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties${repeatMissShareSuffix(result)} ${formatTime(result.timeMs)}`,
         cardsToShare(result.rows.top),
         cardsToShare(result.rows.middle),
         cardsToShare(result.rows.bottom),
@@ -1631,8 +1631,8 @@
     return `${config.cards} cards / ${config.jokers} ${config.jokers === 1 ? "joker" : "jokers"}`;
   }
 
-  function repeatStatusLabel(repeat) {
-    return repeat ? "repeat fantasyland" : "no repeat fantasyland";
+  function repeatMissShareSuffix(result) {
+    return result.maxRepeat && !result.repeat && !result.correct ? ", no repeat fantasyland" : "";
   }
 
   async function copyTrainerReport() {
