@@ -447,7 +447,7 @@
       : "--";
 
     els.repeatBadge.className = `repeat-badge ${bestRepeat ? "yes" : "no"}`;
-    els.repeatBadge.textContent = bestRepeat ? "Repeat fantasyland" : "No repeat";
+    els.repeatBadge.textContent = bestRepeat ? "Repeat" : "No repeat";
 
     if (!best) {
       clearSolution("No legal OFC board found.");
@@ -880,7 +880,7 @@
   function trainerResultMessage(result) {
     if (!result.legal) return "Foul board";
     if (result.correct) return "Max royalties";
-    if (result.maxRepeat && !result.repeat) return "No repeat fantasyland";
+    if (result.maxRepeat && !result.repeat) return "no repeat fantasyland";
     return "Below max";
   }
 
