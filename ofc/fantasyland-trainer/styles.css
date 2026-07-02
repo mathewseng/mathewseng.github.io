@@ -317,6 +317,24 @@ h3 {
   align-items: end;
 }
 
+.trainer-current-config-control {
+  grid-column: span 2;
+}
+
+.trainer-current-config-control strong {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #090f19;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
 .trainer-game {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
@@ -1384,6 +1402,10 @@ kbd {
     grid-template-columns: 1fr;
   }
 
+  .trainer-current-config-control {
+    grid-column: auto;
+  }
+
   .trainer-row {
     grid-template-columns: 1fr;
   }
@@ -1850,6 +1872,17 @@ kbd {
 
   .trainer-controls .control-field {
     gap: 0;
+  }
+
+  .trainer-current-config-control {
+    grid-column: span 2;
+  }
+
+  .trainer-current-config-control strong {
+    min-height: 30px;
+    justify-content: center;
+    padding: 0 6px;
+    font-size: 0.68rem;
   }
 
   .trainer-controls .control-field > span {

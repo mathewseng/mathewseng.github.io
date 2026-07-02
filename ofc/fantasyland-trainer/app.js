@@ -83,6 +83,7 @@
   const TRAINER_ROW_CYCLE = ["bottom", "middle", "top"];
   const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
   const TRAINER_DROP_ANIMATION_MS = 250;
+  const TRAINER_STORAGE_KEY = "ofcFantasylandTrainerState.v1";
 
   const comboCache = new Map();
   const virtualDeck = buildVirtualDeck();
@@ -123,7 +124,12 @@
     document.addEventListener("DOMContentLoaded", () => {
       cacheElements();
       bindEvents();
-      startTrainerSet();
+      if (!restoreTrainerState()) startTrainerSet();
+      window.addEventListener("beforeunload", saveTrainerState);
+      window.addEventListener("pagehide", saveTrainerState);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") saveTrainerState();
+      });
     });
   }
 
@@ -157,6 +163,8 @@
       simProgress: document.querySelector("#sim-progress"),
       trainerTitle: document.querySelector("#trainer-title"),
       trainerConfig: document.querySelector("#trainer-config"),
+      trainerCurrentConfig: document.querySelector("#trainer-current-config"),
+      trainerCurrentConfigControl: document.querySelector(".trainer-current-config-control"),
       trainerPanel: document.querySelector(".trainer-panel"),
       trainerTime: document.querySelector("#trainer-time"),
       trainerCurrentPoints: document.querySelector("#trainer-current-points"),
@@ -256,9 +264,7 @@
     document.querySelectorAll('input[name="trainer-scope"]').forEach((input) => {
       input.addEventListener("change", () => {
         state.trainer.scope = input.value;
-        document.querySelectorAll(".trainer-single-control").forEach((control) => {
-          control.hidden = state.trainer.scope === "all";
-        });
+        updateTrainerConfigControls();
         startTrainerSet();
       });
     });
@@ -560,9 +566,7 @@
     trainer.scope = getCheckedValue("trainer-scope", trainer.scope);
     trainer.cardCount = Number(getCheckedValue("trainer-card-count", String(trainer.cardCount)));
     trainer.jokerCount = Number(getCheckedValue("trainer-joker-count", String(trainer.jokerCount)));
-    document.querySelectorAll(".trainer-single-control").forEach((control) => {
-      control.hidden = trainer.scope === "all";
-    });
+    updateTrainerConfigControls();
 
     const configs =
       trainer.scope === "all"
@@ -602,6 +606,7 @@
     clearTrainerResult();
     startTrainerTimer();
     renderTrainer();
+    saveTrainerState();
   }
 
   function loadNextTrainerPuzzle() {
@@ -609,6 +614,145 @@
     if (next < state.trainer.puzzles.length) {
       loadTrainerPuzzle(next);
     }
+  }
+
+  function saveTrainerState() {
+    if (typeof window === "undefined") return;
+    const trainer = state.trainer;
+    if (!trainer.puzzles.length) return;
+
+    const snapshot = {
+      version: 1,
+      savedAt: Date.now(),
+      mode: trainer.mode,
+      scope: trainer.scope,
+      cardCount: trainer.cardCount,
+      jokerCount: trainer.jokerCount,
+      randomBase: trainer.randomBase,
+      puzzleIndex: trainer.puzzleIndex,
+      activeRow: trainer.activeRow,
+      rows: cloneTrainerRows(trainer.rows),
+      results: trainer.results.map((result) => (result ? clonePlainObject(result) : null)),
+      puzzles: trainer.puzzles.map((puzzle) => ({
+        cards: puzzle.cards,
+        jokers: puzzle.jokers,
+        seed: puzzle.seed,
+        dateKey: puzzle.dateKey,
+        ids: puzzle.ids.slice(),
+      })),
+      confirmed: trainer.confirmed,
+      reportOpen: trainer.reportOpen,
+      elapsedMs: currentTrainerElapsedMs(),
+      sortMode: trainer.sortMode,
+    };
+
+    try {
+      window.localStorage.setItem(TRAINER_STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+      // Private browsing or storage quotas can make persistence unavailable.
+    }
+  }
+
+  function restoreTrainerState() {
+    if (typeof window === "undefined") return false;
+    let snapshot = null;
+    try {
+      snapshot = JSON.parse(window.localStorage.getItem(TRAINER_STORAGE_KEY) || "null");
+    } catch (error) {
+      return false;
+    }
+    if (!isTrainerSnapshotValid(snapshot)) return false;
+
+    const trainer = state.trainer;
+    trainer.mode = snapshot.mode;
+    trainer.scope = snapshot.scope;
+    trainer.cardCount = Number(snapshot.cardCount) || 14;
+    trainer.jokerCount = Number(snapshot.jokerCount) || 0;
+    trainer.randomBase = snapshot.randomBase || "";
+    trainer.puzzles = snapshot.puzzles.map((puzzle) => ({
+      cards: Number(puzzle.cards),
+      jokers: Number(puzzle.jokers),
+      seed: String(puzzle.seed || ""),
+      dateKey: String(puzzle.dateKey || ""),
+      ids: puzzle.ids.slice(),
+    }));
+    trainer.puzzleIndex = Math.min(Math.max(0, Number(snapshot.puzzleIndex) || 0), trainer.puzzles.length - 1);
+    trainer.activeRow = TRAINER_ROWS.some((row) => row.key === snapshot.activeRow) ? snapshot.activeRow : "bottom";
+    trainer.rows = sanitizeTrainerRows(snapshot.rows, getTrainerPuzzle());
+    trainer.results = Array.isArray(snapshot.results) ? snapshot.results.map((result) => (result ? clonePlainObject(result) : null)) : [];
+    trainer.confirmed = Boolean(snapshot.confirmed);
+    trainer.reportOpen = Boolean(snapshot.reportOpen);
+    trainer.elapsedMs = Math.max(0, Number(snapshot.elapsedMs) || 0);
+    trainer.sortMode = snapshot.sortMode === "suit" ? "suit" : "rank";
+    trainer.drag = null;
+    trainer.dragClickBlock = null;
+    trainer.dropAnimating = false;
+
+    syncTrainerInputsFromState();
+    if (trainer.confirmed) {
+      stopTrainerTimer();
+    } else {
+      startTrainerTimer(trainer.elapsedMs);
+    }
+    renderTrainer();
+
+    const result = trainer.results[trainer.puzzleIndex];
+    if (trainer.confirmed && result) {
+      renderTrainerResult(result);
+    }
+    return true;
+  }
+
+  function isTrainerSnapshotValid(snapshot) {
+    if (!snapshot || snapshot.version !== 1) return false;
+    if (snapshot.mode !== "daily" && snapshot.mode !== "random") return false;
+    if (snapshot.scope !== "single" && snapshot.scope !== "all") return false;
+    if (!Array.isArray(snapshot.puzzles) || !snapshot.puzzles.length) return false;
+    if (!snapshot.puzzles.every((puzzle) => Array.isArray(puzzle.ids) && puzzle.ids.length >= 13)) return false;
+    if (snapshot.mode === "daily") {
+      const dateKey = localDateKey();
+      if (!snapshot.puzzles.every((puzzle) => puzzle.dateKey === dateKey)) return false;
+    }
+    return true;
+  }
+
+  function syncTrainerInputsFromState() {
+    const trainer = state.trainer;
+    setCheckedValue("trainer-mode", trainer.mode);
+    setCheckedValue("trainer-scope", trainer.scope);
+    setCheckedValue("trainer-card-count", String(trainer.cardCount));
+    setCheckedValue("trainer-joker-count", String(trainer.jokerCount));
+    updateTrainerConfigControls();
+  }
+
+  function sanitizeTrainerRows(rows, puzzle) {
+    const sanitized = createEmptyTrainerRows();
+    if (!rows || typeof rows !== "object") return sanitized;
+    const allowed = new Set(puzzle ? puzzle.ids : []);
+    const used = new Set();
+    TRAINER_ROWS.forEach((row) => {
+      if (!Array.isArray(rows[row.key])) return;
+      const size = puzzle ? trainerRowSize(row.key, puzzle) : row.size;
+      rows[row.key].forEach((id) => {
+        if (typeof id !== "string") return;
+        if (allowed.size && !allowed.has(id)) return;
+        if (used.has(id) || sanitized[row.key].length >= size) return;
+        sanitized[row.key].push(id);
+        used.add(id);
+      });
+    });
+    return sanitized;
+  }
+
+  function clonePlainObject(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function currentTrainerElapsedMs() {
+    const trainer = state.trainer;
+    if (trainer.confirmed) return trainer.elapsedMs;
+    if (!trainer.startedAt) return trainer.elapsedMs;
+    return Math.max(0, now() - trainer.startedAt);
   }
 
   function renderTrainer() {
@@ -634,6 +778,18 @@
     if (els.trainerCurrentPoints) els.trainerCurrentPoints.textContent = String(getTrainerCurrentPoints(puzzle));
     if (els.trainerProgress) els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
     if (els.trainerProgressPill) els.trainerProgressPill.hidden = trainer.puzzles.length <= 1;
+    updateTrainerConfigControls(puzzle);
+  }
+
+  function updateTrainerConfigControls(puzzle = getTrainerPuzzle()) {
+    const isAll = state.trainer.scope === "all";
+    document.querySelectorAll(".trainer-single-control").forEach((control) => {
+      control.hidden = isAll;
+    });
+    if (els.trainerCurrentConfigControl) els.trainerCurrentConfigControl.hidden = !isAll;
+    if (els.trainerCurrentConfig && puzzle) {
+      els.trainerCurrentConfig.textContent = configControlLabel(puzzle);
+    }
   }
 
   function syncSolverToTrainerPuzzle(puzzle) {
@@ -773,6 +929,7 @@
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function removeTrainerCard(rowKey, id) {
@@ -784,6 +941,7 @@
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function clearTrainerSet() {
@@ -794,6 +952,7 @@
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function confirmTrainerSet() {
@@ -858,6 +1017,7 @@
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function renderTrainerResult(result) {
@@ -916,11 +1076,13 @@
     if (!state.trainer.confirmed) return;
     state.trainer.reportOpen = true;
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function closeTrainerReport() {
     state.trainer.reportOpen = false;
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function updateTrainerHandSizing(puzzle) {
@@ -990,6 +1152,7 @@
     state.trainer.sortMode = mode === "suit" ? "suit" : "rank";
     updateTrainerSortButtons();
     renderTrainerTray();
+    saveTrainerState();
   }
 
   function updateTrainerSortButtons() {
@@ -1194,6 +1357,7 @@
           renderTrainerBoard();
           renderTrainerTray();
           updateTrainerControls();
+          saveTrainerState();
         };
       }
 
@@ -1381,6 +1545,7 @@
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function dropTrainerCardToSlot(event, rowKey, index) {
@@ -1424,6 +1589,7 @@
     renderTrainerBoard();
     renderTrainerTray();
     updateTrainerControls();
+    saveTrainerState();
   }
 
   function findTrainerCardLocation(id) {
@@ -1631,6 +1797,10 @@
     return `${config.cards} cards / ${config.jokers} ${config.jokers === 1 ? "joker" : "jokers"}`;
   }
 
+  function configControlLabel(config) {
+    return `${config.cards} cards, ${config.jokers} ${config.jokers === 1 ? "joker" : "jokers"}`;
+  }
+
   function repeatMissShareSuffix(result) {
     return result.maxRepeat && !result.repeat && !result.correct ? ", no repeat fantasyland" : "";
   }
@@ -1656,9 +1826,9 @@
     }, 1200);
   }
 
-  function startTrainerTimer() {
+  function startTrainerTimer(elapsedMs = 0) {
     stopTrainerTimer();
-    state.trainer.startedAt = now();
+    state.trainer.startedAt = now() - Math.max(0, elapsedMs);
     state.trainer.timerId = window.setInterval(updateTrainerTimer, 10);
     updateTrainerTimer();
   }
