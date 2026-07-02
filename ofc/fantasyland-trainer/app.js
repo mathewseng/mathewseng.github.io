@@ -1744,44 +1744,18 @@
     const optimal = solveHand(cardIds, options);
     const maxPoints = optimal.best ? optimal.best.points : 0;
     const maxRepeat = Boolean(optimal.best && optimal.best.repeat);
-    const matchesPreferred = solutionMatchesTrainerRows(cardIds, rows, optimal.best);
-    const legal = user.legal || matchesPreferred;
-    const points = matchesPreferred && !user.legal ? maxPoints : user.points;
-    const repeat = user.repeat || Boolean(matchesPreferred && maxRepeat);
-    const correct = matchesPreferred || (legal && points === maxPoints && repeat === maxRepeat);
+    const correct = user.legal && user.points === maxPoints && user.repeat === maxRepeat;
 
     return {
-      legal,
-      points,
-      repeat,
+      legal: user.legal,
+      points: user.points,
+      repeat: user.repeat,
       maxPoints,
       maxRepeat,
       correct,
       rowNames: user.rowNames,
       optimal,
     };
-  }
-
-  function solutionMatchesTrainerRows(cardIds, rows, solution) {
-    if (!solution) return false;
-    return (
-      sameCardSet(rows.top, idsForMask(cardIds, solution.top.mask)) &&
-      sameCardSet(rows.middle, idsForMask(cardIds, solution.middle.mask)) &&
-      sameCardSet(rows.bottom, idsForMask(cardIds, solution.back.mask))
-    );
-  }
-
-  function idsForMask(ids, mask) {
-    const result = [];
-    for (let index = 0; index < ids.length; index += 1) {
-      if (mask & (1 << index)) result.push(ids[index]);
-    }
-    return result;
-  }
-
-  function sameCardSet(left, right) {
-    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
-    return left.slice().sort().join("|") === right.slice().sort().join("|");
   }
 
   function isTopLegalAgainstMiddle(topEval, middleEval) {
