@@ -126,10 +126,11 @@
       bindEvents();
       if (!restoreTrainerState()) startTrainerSet();
       window.addEventListener("beforeunload", saveTrainerState);
-      window.addEventListener("pagehide", saveTrainerState);
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") saveTrainerState();
+      window.addEventListener("pagehide", () => {
+        pauseTrainerTimer();
+        saveTrainerState();
       });
+      document.addEventListener("visibilitychange", handleTrainerVisibilityChange);
     });
   }
 
@@ -642,7 +643,7 @@
       })),
       confirmed: trainer.confirmed,
       reportOpen: trainer.reportOpen,
-      elapsedMs: currentTrainerElapsedMs(),
+      elapsedMs: finiteNumber(currentTrainerElapsedMs()),
       sortMode: trainer.sortMode,
     };
 
@@ -682,7 +683,7 @@
     trainer.results = Array.isArray(snapshot.results) ? snapshot.results.map((result) => (result ? clonePlainObject(result) : null)) : [];
     trainer.confirmed = Boolean(snapshot.confirmed);
     trainer.reportOpen = Boolean(snapshot.reportOpen);
-    trainer.elapsedMs = Math.max(0, Number(snapshot.elapsedMs) || 0);
+    trainer.elapsedMs = finiteNumber(snapshot.elapsedMs);
     trainer.sortMode = snapshot.sortMode === "suit" ? "suit" : "rank";
     trainer.drag = null;
     trainer.dragClickBlock = null;
@@ -750,9 +751,8 @@
 
   function currentTrainerElapsedMs() {
     const trainer = state.trainer;
-    if (trainer.confirmed) return trainer.elapsedMs;
-    if (!trainer.startedAt) return trainer.elapsedMs;
-    return Math.max(0, now() - trainer.startedAt);
+    if (trainer.confirmed || !trainer.timerId || !trainer.startedAt) return finiteNumber(trainer.elapsedMs);
+    return finiteNumber(now() - trainer.startedAt);
   }
 
   function renderTrainer() {
@@ -975,7 +975,7 @@
       return;
     }
 
-    trainer.elapsedMs = now() - trainer.startedAt;
+    trainer.elapsedMs = currentTrainerElapsedMs();
     stopTrainerTimer();
     trainer.confirmed = true;
     trainer.reportOpen = true;
@@ -1014,8 +1014,8 @@
   }
 
   function renderTrainerResult(result) {
-    els.trainerYourPoints.textContent = String(result.points);
-    els.trainerMaxPoints.textContent = String(result.maxPoints);
+    els.trainerYourPoints.textContent = wholeNumberText(result.points);
+    els.trainerMaxPoints.textContent = wholeNumberText(result.maxPoints);
     els.trainerResult.textContent = trainerResultLabel(result);
     els.trainerMessage.textContent = `${trainerResultMessage(result)} in ${formatTime(result.timeMs)}.`;
     els.trainerShare.value = buildTrainerShare();
@@ -1789,7 +1789,7 @@
     const title = "OFC Fantasyland Random";
     const blocks = results.map((result) =>
       [
-        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties${repeatMissShareSuffix(result)} ${formatTime(result.timeMs)}`,
+        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${wholeNumberText(result.points)}/${wholeNumberText(result.maxPoints)} royalties${repeatMissShareSuffix(result)} ${formatTime(result.timeMs)}`,
         cardsToShare(result.rows.top),
         cardsToShare(result.rows.middle),
         cardsToShare(result.rows.bottom),
@@ -1838,9 +1838,24 @@
     }, 1200);
   }
 
+  function handleTrainerVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      pauseTrainerTimer();
+      saveTrainerState();
+    } else {
+      resumeTrainerTimer();
+    }
+  }
+
   function startTrainerTimer(elapsedMs = 0) {
     stopTrainerTimer();
-    state.trainer.startedAt = now() - Math.max(0, elapsedMs);
+    state.trainer.elapsedMs = finiteNumber(elapsedMs);
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      state.trainer.startedAt = 0;
+      updateTrainerTimer();
+      return;
+    }
+    state.trainer.startedAt = now() - state.trainer.elapsedMs;
     state.trainer.timerId = window.setInterval(updateTrainerTimer, 10);
     updateTrainerTimer();
   }
@@ -1852,12 +1867,23 @@
     }
   }
 
+  function pauseTrainerTimer() {
+    if (state.trainer.confirmed || !state.trainer.timerId) return;
+    state.trainer.elapsedMs = currentTrainerElapsedMs();
+    stopTrainerTimer();
+    state.trainer.startedAt = 0;
+    updateTrainerTimer();
+  }
+
+  function resumeTrainerTimer() {
+    const trainer = state.trainer;
+    if (trainer.confirmed || trainer.timerId || !trainer.puzzles.length) return;
+    startTrainerTimer(trainer.elapsedMs);
+  }
+
   function updateTrainerTimer() {
     if (!els.trainerTime) return;
-    const elapsed = state.trainer.confirmed
-      ? state.trainer.elapsedMs
-      : Math.max(0, now() - state.trainer.startedAt);
-    els.trainerTime.textContent = formatTime(elapsed);
+    els.trainerTime.textContent = formatTime(currentTrainerElapsedMs());
   }
 
   function trainerReady() {
@@ -1995,11 +2021,20 @@
   }
 
   function formatTime(ms) {
-    const totalHundredths = Math.max(0, Math.floor(ms / 10));
+    const totalHundredths = Math.floor(finiteNumber(ms) / 10);
     const minutes = Math.floor(totalHundredths / 6000);
     const seconds = Math.floor((totalHundredths % 6000) / 100);
     const hundredths = totalHundredths % 100;
     return `${minutes}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`;
+  }
+
+  function finiteNumber(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? number : fallback;
+  }
+
+  function wholeNumberText(value) {
+    return String(Math.round(finiteNumber(value)));
   }
 
   function cardsToShare(ids) {
