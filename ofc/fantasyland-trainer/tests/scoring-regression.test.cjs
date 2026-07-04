@@ -67,3 +67,13 @@ const bottomQuads = scoreRows({
 });
 assert.equal(bottomQuads.legal, true, "bottom quads: board should be legal");
 assert.equal(bottomQuads.repeat, true, "bottom quads should repeat");
+
+const globalJoker = scoreRows({
+  top: ["Qs", "Qd", "3c"],
+  middle: ["Ah", "Kh", "Qh", "Jh", "JK1"],
+  bottom: ["9s", "9d", "9c", "2c", "2d"],
+  discard: [],
+});
+assert.equal(globalJoker.legal, true, "global joker: lower assignment should avoid a foul");
+assert.equal(globalJoker.rowNames.middle, "Ace-high flush", "global joker: middle should score as the legal flush");
+assert.equal(globalJoker.assignments.get("JK1").id, "9h", "global joker: joker should not become the fouling Th");

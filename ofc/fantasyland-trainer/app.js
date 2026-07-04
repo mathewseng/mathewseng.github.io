@@ -839,6 +839,7 @@
   function renderTrainerBoard() {
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return;
+    const boardEvaluation = getTrainerBoardEvaluation(puzzle);
     const frag = document.createDocumentFragment();
     TRAINER_ROWS.forEach((rowDef) => {
       const size = trainerRowSize(rowDef.key, puzzle);
@@ -872,13 +873,14 @@
         slot.addEventListener("drop", (event) => dropTrainerCardToSlot(event, rowDef.key, index));
         if (id) {
           const card = cardFromId(id);
+          const displayCard = getTrainerDisplayCard(card, boardEvaluation);
           const button = document.createElement("button");
           button.type = "button";
-          button.className = `mini-card trainer-placed-card ${cardClass(card)}`;
+          button.className = `mini-card trainer-placed-card ${cardClass(displayCard)}`;
           button.disabled = state.trainer.confirmed;
           button.draggable = false;
           button.dataset.cardId = id;
-          button.innerHTML = cardFaceHtml(card);
+          button.innerHTML = cardFaceHtml(displayCard);
           button.addEventListener("click", (event) => {
             if (consumeTrainerDragClick(event, id)) return;
             removeTrainerCard(rowDef.key, id);
@@ -892,7 +894,7 @@
       row.appendChild(slots);
 
       const summary = document.createElement("div");
-      const rowSummary = getTrainerRowSummary(rowDef.key, puzzle);
+      const rowSummary = getTrainerRowSummary(rowDef.key, puzzle, boardEvaluation);
       summary.className = `trainer-row-summary ${rowSummary.visible ? "" : "is-empty"}`;
       if (rowSummary.visible) {
         summary.innerHTML = `
@@ -975,15 +977,24 @@
       return;
     }
 
+    const evaluation = evaluateTrainerSubmission(puzzle.ids, trainer.rows, {
+      fiveKindRule: state.fiveKindRule,
+      repeatRule: state.repeatRule,
+    });
+    if (!evaluation.legal) {
+      els.trainerMessage.textContent = "Foul board.";
+      renderTrainerBoard();
+      renderTrainerTray();
+      updateTrainerControls();
+      saveTrainerState();
+      return;
+    }
+
     trainer.elapsedMs = currentTrainerElapsedMs();
     stopTrainerTimer();
     trainer.confirmed = true;
     trainer.reportOpen = true;
 
-    const evaluation = evaluateTrainerSubmission(puzzle.ids, trainer.rows, {
-      fiveKindRule: state.fiveKindRule,
-      repeatRule: state.repeatRule,
-    });
     const result = {
       mode: trainer.mode,
       scope: trainer.scope,
@@ -1051,9 +1062,11 @@
   function updateTrainerControls() {
     const trainer = state.trainer;
     const hasPlacedCards = getPlacedTrainerIds().length > 0;
+    const pendingEvaluation = hasPlacedCards && !trainer.confirmed ? getTrainerPendingEvaluation() : null;
+    const willFoul = Boolean(pendingEvaluation && !pendingEvaluation.legal);
     els.trainerPanel.classList.toggle("is-confirmed", trainer.confirmed);
     els.trainerPanel.classList.toggle("is-report-open", trainer.confirmed && trainer.reportOpen);
-    els.trainerConfirm.disabled = trainer.confirmed || !hasPlacedCards;
+    els.trainerConfirm.disabled = trainer.confirmed || !hasPlacedCards || willFoul;
     els.trainerClear.disabled = trainer.confirmed;
     els.trainerConfirm.hidden = trainer.confirmed;
     els.trainerClear.hidden = trainer.confirmed;
@@ -1179,20 +1192,25 @@
 
   function fillTrainerSetFromBankOrder(puzzle = getTrainerPuzzle()) {
     if (!puzzle || state.trainer.confirmed) return;
-    const placed = new Set(getPlacedTrainerIds());
+    fillTrainerRowsFromBankOrder(state.trainer.rows, puzzle);
+
+    const nextRow = TRAINER_ROWS.find((row) => state.trainer.rows[row.key].length < trainerRowSize(row.key, puzzle));
+    state.trainer.activeRow = nextRow ? nextRow.key : "bottom";
+    els.trainerMessage.textContent = "";
+  }
+
+  function fillTrainerRowsFromBankOrder(rows, puzzle = getTrainerPuzzle()) {
+    if (!puzzle) return;
+    const placed = new Set(TRAINER_ROWS.flatMap((row) => rows[row.key]));
     const remaining = getTrainerOrderedIds(puzzle).filter((id) => !placed.has(id));
 
     TRAINER_ROWS.forEach((row) => {
-      const rowCards = state.trainer.rows[row.key];
+      const rowCards = rows[row.key];
       const size = trainerRowSize(row.key, puzzle);
       while (rowCards.length < size && remaining.length) {
         rowCards.push(remaining.shift());
       }
     });
-
-    const nextRow = TRAINER_ROWS.find((row) => state.trainer.rows[row.key].length < trainerRowSize(row.key, puzzle));
-    state.trainer.activeRow = nextRow ? nextRow.key : "bottom";
-    els.trainerMessage.textContent = "";
   }
 
   function startTrainerDrag(event, id) {
@@ -1599,7 +1617,21 @@
     });
   }
 
-  function getTrainerRowSummary(rowKey, puzzle) {
+  function getTrainerDisplayCard(card, boardEvaluation) {
+    if (!card.joker || !boardEvaluation || !boardEvaluation.assignments) return card;
+    return boardEvaluation.assignments.get(card.id) || card;
+  }
+
+  function getTrainerRowSummary(rowKey, puzzle, boardEvaluation = getTrainerBoardEvaluation(puzzle)) {
+    const boardEval = boardEvaluation && boardEvaluation.rowEvals ? boardEvaluation.rowEvals[rowKey] : null;
+    if (boardEval) {
+      const points =
+        rowKey === "top"
+          ? topRoyalty(boardEval)
+          : fiveRoyalty(boardEval, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
+      return points ? { label: formatTrainerHandName(boardEval, rowKey), points, visible: true } : { label: "", points: 0, visible: false };
+    }
+
     const ids = state.trainer.rows[rowKey];
     const empty = { label: "", points: 0, visible: false };
     if (!ids.length) return empty;
@@ -1611,7 +1643,24 @@
 
   function getTrainerCurrentPoints(puzzle = getTrainerPuzzle()) {
     if (!puzzle) return 0;
+    const boardEvaluation = getTrainerBoardEvaluation(puzzle);
+    if (boardEvaluation) return boardEvaluation.royaltyTotal;
     return TRAINER_ROWS.reduce((total, row) => total + getTrainerRowSummary(row.key, puzzle).points, 0);
+  }
+
+  function getTrainerBoardEvaluation(puzzle = getTrainerPuzzle(), rows = state.trainer.rows) {
+    if (!puzzle || !trainerRowsReady(rows, puzzle)) return null;
+    return evaluateTrainerRows(puzzle.ids, rows, {
+      repeatRule: state.repeatRule,
+      fiveKindRule: state.fiveKindRule,
+    });
+  }
+
+  function getTrainerPendingEvaluation(puzzle = getTrainerPuzzle()) {
+    if (!puzzle) return null;
+    const rows = cloneTrainerRows(state.trainer.rows);
+    fillTrainerRowsFromBankOrder(rows, puzzle);
+    return getTrainerBoardEvaluation(puzzle, rows);
   }
 
   function getTrainerCardsForIds(ids, puzzle) {
@@ -1706,37 +1755,106 @@
   }
 
   function scoreTrainerRows(cardIds, rows, options = {}) {
+    return evaluateTrainerRows(cardIds, rows, options);
+  }
+
+  function evaluateTrainerRows(cardIds, rows, options = {}) {
     const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
-    const topCards = rows.top.map((id) => cardById.get(id));
-    const middleCards = rows.middle.map((id) => cardById.get(id));
-    const bottomCards = rows.bottom.map((id) => cardById.get(id));
+    const jokerIds = TRAINER_ROWS.flatMap((row) => rows[row.key]).filter((id) => cardById.get(id)?.joker);
+    const assignments = buildTrainerJokerAssignments(cardIds, jokerIds);
+    let best = null;
+
+    assignments.forEach((assignment) => {
+      const candidate = evaluateConcreteTrainerRows(cardById, rows, assignment, options);
+      if (isBetterTrainerRowEvaluation(candidate, best)) best = candidate;
+    });
+
+    return best;
+  }
+
+  function evaluateConcreteTrainerRows(cardById, rows, assignments, options = {}) {
     const fiveKindRule = options.fiveKindRule || "none";
-    const topEval = evaluateBestTop(topCards);
-    const middleEval = evaluateBestFive(middleCards);
-    const bottomEval = evaluateBestFive(bottomCards);
+    const topCards = materializeTrainerRow(rows.top, cardById, assignments);
+    const middleCards = materializeTrainerRow(rows.middle, cardById, assignments);
+    const bottomCards = materializeTrainerRow(rows.bottom, cardById, assignments);
+    const topEval = evaluateConcreteTop(topCards);
+    const middleEval = evaluateConcreteFive(middleCards);
+    const bottomEval = evaluateConcreteFive(bottomCards);
     const legal =
       bottomEval.strength >= middleEval.strength &&
       isTopLegalAgainstMiddle(topEval, middleEval);
+    const royaltyTotal =
+      topRoyalty(topEval) +
+      fiveRoyalty(middleEval, "middle", fiveKindRule) +
+      fiveRoyalty(bottomEval, "back", fiveKindRule);
     const repeat =
       legal &&
       (rowRepeats("top", topEval, options.repeatRule || state.repeatRule) ||
         rowRepeats("middle", middleEval, options.repeatRule || state.repeatRule) ||
         rowRepeats("back", bottomEval, options.repeatRule || state.repeatRule));
-    const points = legal
-      ? topRoyalty(topEval) +
-        fiveRoyalty(middleEval, "middle", fiveKindRule) +
-        fiveRoyalty(bottomEval, "back", fiveKindRule)
-      : 0;
     return {
       legal,
-      points,
+      points: legal ? royaltyTotal : 0,
+      royaltyTotal,
       repeat,
+      assignments,
+      rowEvals: {
+        top: topEval,
+        middle: middleEval,
+        bottom: bottomEval,
+      },
       rowNames: {
         top: topEval.name,
         middle: middleEval.name,
         bottom: bottomEval.name,
       },
     };
+  }
+
+  function buildTrainerJokerAssignments(cardIds, jokerIds) {
+    const uniqueJokers = Array.from(new Set(jokerIds));
+    if (!uniqueJokers.length) return [new Map()];
+
+    const naturalIds = new Set(
+      cardIds
+        .map((id) => cardFromId(id))
+        .filter((card) => !card.joker)
+        .map((card) => card.id)
+    );
+    const available = virtualDeck.filter((card) => !naturalIds.has(card.id));
+
+    if (uniqueJokers.length === 1) {
+      return available.map((card) => new Map([[uniqueJokers[0], card]]));
+    }
+
+    const result = [];
+    available.forEach((first) => {
+      available.forEach((second) => {
+        if (second.id === first.id) return;
+        result.push(new Map([[uniqueJokers[0], first], [uniqueJokers[1], second]]));
+      });
+    });
+    return result;
+  }
+
+  function materializeTrainerRow(ids, cardById, assignments) {
+    return ids.map((id) => {
+      const card = cardById.get(id);
+      if (card && card.joker && assignments.has(id)) return assignments.get(id);
+      return card;
+    });
+  }
+
+  function isBetterTrainerRowEvaluation(candidate, current) {
+    if (!current) return true;
+    if (candidate.legal !== current.legal) return candidate.legal;
+    if (candidate.royaltyTotal !== current.royaltyTotal) return candidate.royaltyTotal > current.royaltyTotal;
+    if (candidate.repeat !== current.repeat) return candidate.repeat;
+    const candidateStrength =
+      candidate.rowEvals.bottom.strength + candidate.rowEvals.middle.strength + candidate.rowEvals.top.strength;
+    const currentStrength =
+      current.rowEvals.bottom.strength + current.rowEvals.middle.strength + current.rowEvals.top.strength;
+    return candidateStrength > currentStrength;
   }
 
   function evaluateTrainerSubmission(cardIds, rows, options = {}) {
@@ -1888,8 +2006,12 @@
 
   function trainerReady() {
     const puzzle = getTrainerPuzzle();
+    return trainerRowsReady(state.trainer.rows, puzzle);
+  }
+
+  function trainerRowsReady(rows, puzzle) {
     if (!puzzle) return false;
-    return TRAINER_ROWS.every((row) => state.trainer.rows[row.key].length === trainerRowSize(row.key, puzzle));
+    return TRAINER_ROWS.every((row) => rows[row.key].length === trainerRowSize(row.key, puzzle));
   }
 
   function getPlacedTrainerIds() {
