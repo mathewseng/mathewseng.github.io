@@ -28,7 +28,7 @@ function scoreBottomStraightFlush(bottom) {
 }
 
 function scoreRows(rows) {
-  const ids = [...rows.top, ...rows.middle, ...rows.bottom];
+  const ids = [...rows.top, ...rows.middle, ...rows.bottom, ...(rows.discard || [])];
   return core.scoreTrainerRows(ids, rows, {
     repeatRule: "pineapple",
     fiveKindRule: "none",
@@ -77,3 +77,15 @@ const globalJoker = scoreRows({
 assert.equal(globalJoker.legal, true, "global joker: lower assignment should avoid a foul");
 assert.equal(globalJoker.rowNames.middle, "Ace-high flush", "global joker: middle should score as the legal flush");
 assert.equal(globalJoker.assignments.get("JK1").id, "9h", "global joker: joker should not become the fouling Th");
+
+const reportedHand = scoreRows({
+  top: ["Jh", "Jc", "JK1"],
+  middle: ["7s", "7h", "JK2", "Ts", "Td"],
+  bottom: ["8h", "8d", "8c", "6h", "6c"],
+  discard: ["2h", "3s", "4d"],
+});
+assert.equal(reportedHand.legal, true, "reported hand: joker assignments should avoid a foul");
+assert.equal(reportedHand.points, 37, "reported hand: should score 37 royalties");
+assert.equal(reportedHand.repeat, true, "reported hand: top trips should repeat");
+assert.equal(reportedHand.rowNames.top, "Three jacks", "reported hand: top joker should make trips");
+assert.equal(reportedHand.rowNames.middle, "7 full of tens", "reported hand: middle joker should make sevens full");

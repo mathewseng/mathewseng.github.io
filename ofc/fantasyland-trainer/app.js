@@ -873,14 +873,15 @@
         slot.addEventListener("drop", (event) => dropTrainerCardToSlot(event, rowDef.key, index));
         if (id) {
           const card = cardFromId(id);
-          const displayCard = getTrainerDisplayCard(card, boardEvaluation);
+          const assignedCard = getTrainerAssignedCard(card, boardEvaluation);
+          const displayCard = assignedCard || card;
           const button = document.createElement("button");
           button.type = "button";
-          button.className = `mini-card trainer-placed-card ${cardClass(displayCard)}`;
+          button.className = `mini-card trainer-placed-card ${cardClass(card)}`;
           button.disabled = state.trainer.confirmed;
           button.draggable = false;
           button.dataset.cardId = id;
-          button.innerHTML = cardFaceHtml(displayCard);
+          button.innerHTML = cardFaceHtml(displayCard, assignedCard ? "JK" : "");
           button.addEventListener("click", (event) => {
             if (consumeTrainerDragClick(event, id)) return;
             removeTrainerCard(rowDef.key, id);
@@ -1617,9 +1618,9 @@
     });
   }
 
-  function getTrainerDisplayCard(card, boardEvaluation) {
-    if (!card.joker || !boardEvaluation || !boardEvaluation.assignments) return card;
-    return boardEvaluation.assignments.get(card.id) || card;
+  function getTrainerAssignedCard(card, boardEvaluation) {
+    if (!card.joker || !boardEvaluation || !boardEvaluation.assignments) return null;
+    return boardEvaluation.assignments.get(card.id) || null;
   }
 
   function getTrainerRowSummary(rowKey, puzzle, boardEvaluation = getTrainerBoardEvaluation(puzzle)) {
@@ -1644,12 +1645,12 @@
   function getTrainerCurrentPoints(puzzle = getTrainerPuzzle()) {
     if (!puzzle) return 0;
     const boardEvaluation = getTrainerBoardEvaluation(puzzle);
-    if (boardEvaluation) return boardEvaluation.royaltyTotal;
-    return TRAINER_ROWS.reduce((total, row) => total + getTrainerRowSummary(row.key, puzzle).points, 0);
+    if (boardEvaluation && trainerReady()) return boardEvaluation.royaltyTotal;
+    return TRAINER_ROWS.reduce((total, row) => total + getTrainerRowSummary(row.key, puzzle, boardEvaluation).points, 0);
   }
 
   function getTrainerBoardEvaluation(puzzle = getTrainerPuzzle(), rows = state.trainer.rows) {
-    if (!puzzle || !trainerRowsReady(rows, puzzle)) return null;
+    if (!puzzle) return null;
     return evaluateTrainerRows(puzzle.ids, rows, {
       repeatRule: state.repeatRule,
       fiveKindRule: state.fiveKindRule,
@@ -1760,68 +1761,91 @@
 
   function evaluateTrainerRows(cardIds, rows, options = {}) {
     const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
-    const jokerIds = TRAINER_ROWS.flatMap((row) => rows[row.key]).filter((id) => cardById.get(id)?.joker);
-    const assignments = buildTrainerJokerAssignments(cardIds, jokerIds);
-    let best = null;
-
-    assignments.forEach((assignment) => {
-      const candidate = evaluateConcreteTrainerRows(cardById, rows, assignment, options);
-      if (isBetterTrainerRowEvaluation(candidate, best)) best = candidate;
-    });
-
-    return best;
-  }
-
-  function evaluateConcreteTrainerRows(cardById, rows, assignments, options = {}) {
     const fiveKindRule = options.fiveKindRule || "none";
-    const topCards = materializeTrainerRow(rows.top, cardById, assignments);
-    const middleCards = materializeTrainerRow(rows.middle, cardById, assignments);
-    const bottomCards = materializeTrainerRow(rows.bottom, cardById, assignments);
-    const topEval = evaluateConcreteTop(topCards);
-    const middleEval = evaluateConcreteFive(middleCards);
-    const bottomEval = evaluateConcreteFive(bottomCards);
-    const legal =
-      bottomEval.strength >= middleEval.strength &&
-      isTopLegalAgainstMiddle(topEval, middleEval);
+    const blockedIds = new Set(
+      cardIds
+        .map((id) => cardFromId(id))
+        .filter((card) => !card.joker)
+        .map((card) => card.id)
+    );
+    const assignments = new Map();
+    const rowEvals = {};
+
+    const bottom = evaluateTrainerRowJokers("bottom", rows.bottom, cardById, blockedIds, null);
+    if (bottom) {
+      mergeTrainerAssignment(assignments, bottom.assignments, blockedIds);
+      rowEvals.bottom = bottom.eval;
+    }
+
+    const middle = evaluateTrainerRowJokers("middle", rows.middle, cardById, blockedIds, rowEvals.bottom || null);
+    if (middle) {
+      mergeTrainerAssignment(assignments, middle.assignments, blockedIds);
+      rowEvals.middle = middle.eval;
+    }
+
+    const top = evaluateTrainerRowJokers("top", rows.top, cardById, blockedIds, rowEvals.middle || null);
+    if (top) {
+      mergeTrainerAssignment(assignments, top.assignments, blockedIds);
+      rowEvals.top = top.eval;
+    }
+
+    const complete = Boolean(rowEvals.top && rowEvals.middle && rowEvals.bottom);
+    const legal = complete
+      ? rowEvals.bottom.strength >= rowEvals.middle.strength &&
+        isTopLegalAgainstMiddle(rowEvals.top, rowEvals.middle)
+      : false;
     const royaltyTotal =
-      topRoyalty(topEval) +
-      fiveRoyalty(middleEval, "middle", fiveKindRule) +
-      fiveRoyalty(bottomEval, "back", fiveKindRule);
+      (rowEvals.top ? topRoyalty(rowEvals.top) : 0) +
+      (rowEvals.middle ? fiveRoyalty(rowEvals.middle, "middle", fiveKindRule) : 0) +
+      (rowEvals.bottom ? fiveRoyalty(rowEvals.bottom, "back", fiveKindRule) : 0);
     const repeat =
       legal &&
-      (rowRepeats("top", topEval, options.repeatRule || state.repeatRule) ||
-        rowRepeats("middle", middleEval, options.repeatRule || state.repeatRule) ||
-        rowRepeats("back", bottomEval, options.repeatRule || state.repeatRule));
+      (rowRepeats("top", rowEvals.top, options.repeatRule || state.repeatRule) ||
+        rowRepeats("middle", rowEvals.middle, options.repeatRule || state.repeatRule) ||
+        rowRepeats("back", rowEvals.bottom, options.repeatRule || state.repeatRule));
     return {
       legal,
       points: legal ? royaltyTotal : 0,
       royaltyTotal,
       repeat,
       assignments,
-      rowEvals: {
-        top: topEval,
-        middle: middleEval,
-        bottom: bottomEval,
-      },
+      rowEvals,
       rowNames: {
-        top: topEval.name,
-        middle: middleEval.name,
-        bottom: bottomEval.name,
+        top: rowEvals.top ? rowEvals.top.name : "",
+        middle: rowEvals.middle ? rowEvals.middle.name : "",
+        bottom: rowEvals.bottom ? rowEvals.bottom.name : "",
       },
     };
   }
 
-  function buildTrainerJokerAssignments(cardIds, jokerIds) {
+  function evaluateTrainerRowJokers(rowKey, ids, cardById, blockedIds, lowerEval) {
+    const requiredSize = rowKey === "top" ? 3 : 5;
+    if (!Array.isArray(ids) || ids.length !== requiredSize) return null;
+    const jokerIds = ids.filter((id) => cardById.get(id)?.joker);
+    const assignments = buildTrainerJokerAssignments(jokerIds, blockedIds);
+    let best = null;
+
+    assignments.forEach((assignment) => {
+      const cards = materializeTrainerRow(ids, cardById, assignment);
+      const evalResult = rowKey === "top" ? evaluateConcreteTop(cards) : evaluateConcreteFive(cards);
+      const legal = trainerRowDoesNotFoul(rowKey, evalResult, lowerEval);
+      const candidate = { eval: evalResult, assignments: assignment, legal };
+      if (isBetterTrainerJokerCandidate(candidate, best)) best = candidate;
+    });
+
+    return best;
+  }
+
+  function trainerRowDoesNotFoul(rowKey, evalResult, lowerEval) {
+    if (!lowerEval || rowKey === "bottom") return true;
+    if (rowKey === "middle") return evalResult.strength <= lowerEval.strength;
+    return isTopLegalAgainstMiddle(evalResult, lowerEval);
+  }
+
+  function buildTrainerJokerAssignments(jokerIds, blockedIds) {
     const uniqueJokers = Array.from(new Set(jokerIds));
     if (!uniqueJokers.length) return [new Map()];
-
-    const naturalIds = new Set(
-      cardIds
-        .map((id) => cardFromId(id))
-        .filter((card) => !card.joker)
-        .map((card) => card.id)
-    );
-    const available = virtualDeck.filter((card) => !naturalIds.has(card.id));
+    const available = virtualDeck.filter((card) => !blockedIds.has(card.id));
 
     if (uniqueJokers.length === 1) {
       return available.map((card) => new Map([[uniqueJokers[0], card]]));
@@ -1837,6 +1861,13 @@
     return result;
   }
 
+  function mergeTrainerAssignment(target, source, blockedIds) {
+    source.forEach((card, id) => {
+      target.set(id, card);
+      blockedIds.add(card.id);
+    });
+  }
+
   function materializeTrainerRow(ids, cardById, assignments) {
     return ids.map((id) => {
       const card = cardById.get(id);
@@ -1845,16 +1876,19 @@
     });
   }
 
-  function isBetterTrainerRowEvaluation(candidate, current) {
+  function isBetterTrainerJokerCandidate(candidate, current) {
     if (!current) return true;
     if (candidate.legal !== current.legal) return candidate.legal;
-    if (candidate.royaltyTotal !== current.royaltyTotal) return candidate.royaltyTotal > current.royaltyTotal;
-    if (candidate.repeat !== current.repeat) return candidate.repeat;
-    const candidateStrength =
-      candidate.rowEvals.bottom.strength + candidate.rowEvals.middle.strength + candidate.rowEvals.top.strength;
-    const currentStrength =
-      current.rowEvals.bottom.strength + current.rowEvals.middle.strength + current.rowEvals.top.strength;
-    return candidateStrength > currentStrength;
+    if (candidate.eval.strength !== current.eval.strength) return candidate.eval.strength > current.eval.strength;
+    return trainerAssignmentSortValue(candidate.assignments) > trainerAssignmentSortValue(current.assignments);
+  }
+
+  function trainerAssignmentSortValue(assignments) {
+    let value = 0;
+    assignments.forEach((card) => {
+      value = value * 1e4 + card.rank * 10 + SUITS.indexOf(card.suit);
+    });
+    return value;
   }
 
   function evaluateTrainerSubmission(cardIds, rows, options = {}) {
