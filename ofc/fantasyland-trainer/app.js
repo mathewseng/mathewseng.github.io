@@ -1038,14 +1038,14 @@
   function trainerResultLabel(result) {
     if (!result.legal) return "Foul";
     if (result.correct) return "Max";
-    if (result.maxRepeat && !result.repeat) return "No repeat";
+    if (result.maxRepeat && !result.repeat) return "missed repeat FL";
     return "Not max";
   }
 
   function trainerResultMessage(result) {
     if (!result.legal) return "Foul board";
     if (result.correct) return "Max royalties";
-    if (result.maxRepeat && !result.repeat) return "no repeat fantasyland";
+    if (result.maxRepeat && !result.repeat) return "missed repeat FL";
     return "Below max";
   }
 
@@ -1966,7 +1966,7 @@
   }
 
   function repeatMissShareSuffix(result) {
-    return result.maxRepeat && !result.repeat && !result.correct ? ", no repeat fantasyland" : "";
+    return result.maxRepeat && !result.repeat && !result.correct ? ", missed repeat FL" : "";
   }
 
   async function copyTrainerReport() {
