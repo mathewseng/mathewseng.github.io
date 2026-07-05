@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#071015" />
+    <meta
+      name="description"
+      content="Open-face Chinese poker Fantasyland royalty distribution, joker probability, EV, and repeat report."
+    />
+    <title>OFC Fantasyland Report</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css?v=20260705a" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand-mark" href="/ofc/" aria-label="OFC tools">MS</a>
+        <nav class="topnav" aria-label="OFC navigation">
+          <a href="/ofc/fantasyland-trainer/">Trainer</a>
+          <a href="/ofc/fantasyland-ev/">EV Matrix</a>
+          <a href="/ofc/">OFC Directory</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Open-face Chinese poker</p>
+            <h1>Fantasyland Royalty Report</h1>
+            <p class="lede">
+              A compact readout of royalty distribution, immediate EV, recursive EV, repeat rate,
+              and joker exposure across 14 through 17 card Fantasyland hands.
+            </p>
+          </div>
+          <aside class="method-card">
+            <span>Dataset</span>
+            <strong id="method-samples">24 samples per config</strong>
+            <p>
+              Fixed-seed Monte Carlo using the site optimizer, pineapple repeat rule, and no
+              five-of-a-kind royalty. Treat thin tails and 100% repeat cells as directional.
+            </p>
+          </aside>
+        </section>
+
+        <section class="metric-grid" id="summary-grid" aria-label="Report highlights"></section>
+
+        <section class="report-section">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Config matrix</p>
+              <h2>EV And Repeat By Fantasyland Type</h2>
+            </div>
+            <div class="metric-tabs" role="tablist" aria-label="Matrix metric">
+              <button type="button" class="active" data-metric="mean">Immediate EV</button>
+              <button type="button" data-metric="repeatPct">Repeat %</button>
+              <button type="button" data-metric="recursiveEV">Recursive EV</button>
+            </div>
+          </div>
+          <div class="matrix-wrap">
+            <div id="metric-matrix" class="metric-matrix" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="report-layout">
+          <article class="panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Distribution</p>
+                <h2>Royalty Bands</h2>
+              </div>
+            </div>
+            <div id="distribution-bars" class="distribution-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Selected config</p>
+                <h2 id="detail-title">14 cards / 0 jokers</h2>
+              </div>
+            </div>
+            <div id="config-selector" class="config-selector" aria-label="Select config"></div>
+            <div id="detail-panel" class="detail-panel"></div>
+          </article>
+        </section>
+
+        <section class="report-section">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Joker exposure</p>
+              <h2>Chance Of 0, 1, Or 2 Jokers In A Random Hand</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="joker-probability-table">
+              <thead>
+                <tr>
+                  <th>Cards</th>
+                  <th>0 jokers</th>
+                  <th>1 joker</th>
+                  <th>2 jokers</th>
+                  <th>Weighted EV</th>
+                  <th>Weighted repeat</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="report-layout">
+          <article class="panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Row composition</p>
+                <h2>Where The Royalties Come From</h2>
+              </div>
+            </div>
+            <div id="row-contribution-chart" class="row-chart"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Readout</p>
+                <h2>Key Takeaways</h2>
+              </div>
+            </div>
+            <div id="insight-list" class="insight-list"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js?v=20260705a"></script>
+  </body>
+</html>
