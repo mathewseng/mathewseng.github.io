@@ -1,16 +1,16 @@
+use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::PathBuf;
-use std::thread;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 const CARD_COUNT: usize = 52;
 const RANK_COUNT: usize = 13;
 const SUIT_COUNT: usize = 4;
+const MAX_TRACKED_CARDS: usize = 13;
 const HAND_RANK_COUNT: usize = 10;
-const ROYAL_MASK: u16 = (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 12);
-const DEFAULT_EXACT_THROUGH: usize = 10;
-const DEFAULT_MONTE_CARLO_SAMPLES: u64 = 5_000_000;
-const DEFAULT_SEED: u64 = 0xa51c_2026_0706_d00d;
+const LANE_COUNT_MASK: u8 = 0b0000_0111;
+const LANE_RUN_MASK: u8 = 0b0011_1000;
+const LANE_WHEEL_LOW: u8 = 0b0100_0000;
 
 const HAND_RANKS: [(&str, &str); HAND_RANK_COUNT] = [
     ("high_card", "High card"),
@@ -23,6 +23,10 @@ const HAND_RANKS: [(&str, &str); HAND_RANK_COUNT] = [
     ("quads", "Quads"),
     ("straight_flush", "Straight flush"),
     ("royal_flush", "Royal flush"),
+];
+
+const RANK_LABELS: [&str; RANK_COUNT] = [
+    "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A",
 ];
 
 #[derive(Clone, Copy)]
@@ -40,149 +44,43 @@ enum HandRank {
 }
 
 #[derive(Clone)]
-struct HandState {
-    rank_counts: [u8; RANK_COUNT],
-    suit_counts: [u8; SUIT_COUNT],
-    suit_masks: [u16; SUIT_COUNT],
-    rank_mask: u16,
-    pairs: u8,
-    trips: u8,
-    quads: u8,
-    cards: u8,
-}
-
-impl HandState {
-    fn new() -> Self {
-        Self {
-            rank_counts: [0; RANK_COUNT],
-            suit_counts: [0; SUIT_COUNT],
-            suit_masks: [0; SUIT_COUNT],
-            rank_mask: 0,
-            pairs: 0,
-            trips: 0,
-            quads: 0,
-            cards: 0,
-        }
-    }
-
-    #[inline(always)]
-    fn add(&mut self, card: u8) {
-        let rank = (card >> 2) as usize;
-        let suit = (card & 3) as usize;
-        let bit = 1u16 << rank;
-        let old = self.rank_counts[rank];
-
-        match old {
-            0 => self.rank_mask |= bit,
-            1 => self.pairs += 1,
-            2 => {
-                self.pairs -= 1;
-                self.trips += 1;
-            }
-            3 => {
-                self.trips -= 1;
-                self.quads += 1;
-            }
-            _ => unreachable!("a standard deck has only four cards per rank"),
-        }
-
-        self.rank_counts[rank] = old + 1;
-        self.suit_counts[suit] += 1;
-        self.suit_masks[suit] |= bit;
-        self.cards += 1;
-    }
-
-    #[inline(always)]
-    fn remove(&mut self, card: u8) {
-        let rank = (card >> 2) as usize;
-        let suit = (card & 3) as usize;
-        let bit = 1u16 << rank;
-        let old = self.rank_counts[rank];
-
-        match old {
-            1 => self.rank_mask &= !bit,
-            2 => self.pairs -= 1,
-            3 => {
-                self.trips -= 1;
-                self.pairs += 1;
-            }
-            4 => {
-                self.quads -= 1;
-                self.trips += 1;
-            }
-            _ => unreachable!("cannot remove a card that is not in the hand"),
-        }
-
-        self.rank_counts[rank] = old - 1;
-        self.suit_counts[suit] -= 1;
-        self.suit_masks[suit] &= !bit;
-        self.cards -= 1;
-    }
-
-    #[inline(always)]
-    fn evaluate(&self, straight_lookup: &[bool; 1 << RANK_COUNT]) -> HandRank {
-        if self.cards < 5 {
-            return if self.quads > 0 {
-                HandRank::Quads
-            } else if self.trips > 0 {
-                HandRank::Trips
-            } else if self.pairs >= 2 {
-                HandRank::TwoPair
-            } else if self.pairs == 1 {
-                HandRank::Pair
-            } else {
-                HandRank::HighCard
-            };
-        }
-
-        let mut has_straight_flush = false;
-        let mut has_flush = false;
-        for suit in 0..SUIT_COUNT {
-            let suited_mask = self.suit_masks[suit] as usize;
-            if (self.suit_masks[suit] & ROYAL_MASK) == ROYAL_MASK {
-                return HandRank::RoyalFlush;
-            }
-            has_straight_flush |= straight_lookup[suited_mask];
-            has_flush |= self.suit_counts[suit] >= 5;
-        }
-
-        if has_straight_flush {
-            HandRank::StraightFlush
-        } else if self.quads > 0 {
-            HandRank::Quads
-        } else if self.trips > 0 && (self.pairs > 0 || self.trips > 1) {
-            HandRank::Boat
-        } else if has_flush {
-            HandRank::Flush
-        } else if straight_lookup[self.rank_mask as usize] {
-            HandRank::Straight
-        } else if self.trips > 0 {
-            HandRank::Trips
-        } else if self.pairs >= 2 {
-            HandRank::TwoPair
-        } else if self.pairs == 1 {
-            HandRank::Pair
-        } else {
-            HandRank::HighCard
-        }
-    }
-}
-
-#[derive(Clone)]
 struct SolveRow {
     cards: usize,
-    method: &'static str,
     observations: u64,
-    elapsed_ms: f64,
-    max_standard_error: f64,
     counts: [u64; HAND_RANK_COUNT],
 }
 
+#[derive(Clone)]
+struct LayerStat {
+    rank: &'static str,
+    states: usize,
+    represented_subsets: u64,
+}
+
+struct SolveResult {
+    rows: Vec<SolveRow>,
+    layer_stats: Vec<LayerStat>,
+    final_states: usize,
+    peak_states: usize,
+    covered_subsets: u64,
+    elapsed_ms: f64,
+}
+
+#[derive(Clone, Copy)]
+struct StateFields {
+    total: u8,
+    pairs: u8,
+    trips: u8,
+    quads: bool,
+    rank_run: u8,
+    rank_wheel_low: bool,
+    straight: bool,
+    straight_flush: bool,
+    royal_flush: bool,
+    lanes: [u8; SUIT_COUNT],
+}
+
 struct Config {
-    exact_through: usize,
-    samples: u64,
-    seed: u64,
-    threads: usize,
     output: Option<PathBuf>,
 }
 
@@ -191,36 +89,13 @@ fn main() {
         Ok(config) => config,
         Err(message) => {
             eprintln!("{message}");
-            eprintln!(
-                "usage: cargo run --release -- [--output path] [--exact-through n] [--samples n] [--seed n] [--threads n]"
-            );
+            eprintln!("usage: cargo run --release -- [--output path]");
             std::process::exit(2);
         }
     };
 
-    let straight_lookup = build_straight_lookup();
-    let total_start = Instant::now();
-    let mut rows = Vec::with_capacity(12);
-
-    for cards in 2..=13 {
-        let row = if cards <= config.exact_through {
-            eprintln!("exact {cards} cards");
-            run_exact(cards, &straight_lookup, config.threads)
-        } else {
-            eprintln!("monte carlo {cards} cards: {} samples", config.samples);
-            run_monte_carlo(
-                cards,
-                config.samples,
-                config.seed ^ mix64(cards as u64),
-                &straight_lookup,
-                config.threads,
-            )
-        };
-        rows.push(row);
-    }
-
-    let total_elapsed_ms = total_start.elapsed().as_secs_f64() * 1000.0;
-    let json = build_json(&rows, &config, total_elapsed_ms);
+    let result = solve_exact();
+    let json = build_json(&result);
 
     if let Some(path) = config.output {
         std::fs::write(&path, json).unwrap_or_else(|err| {
@@ -233,242 +108,299 @@ fn main() {
 }
 
 fn parse_args() -> Result<Config, String> {
-    let mut config = Config {
-        exact_through: DEFAULT_EXACT_THROUGH,
-        samples: DEFAULT_MONTE_CARLO_SAMPLES,
-        seed: DEFAULT_SEED,
-        threads: thread::available_parallelism().map_or(1, usize::from),
-        output: None,
-    };
-
+    let mut config = Config { output: None };
     let mut args = std::env::args().skip(1);
+
     while let Some(arg) = args.next() {
         match arg.as_str() {
-            "--help" | "-h" => {
-                return Err("Poker calculation solver".to_string());
-            }
+            "--help" | "-h" => return Err("Poker calculation solver".to_string()),
             "--output" | "-o" => {
                 let value = args.next().ok_or("--output requires a path")?;
                 config.output = Some(PathBuf::from(value));
-            }
-            "--exact-through" => {
-                let value = args.next().ok_or("--exact-through requires a number")?;
-                config.exact_through = parse_usize("--exact-through", &value)?;
-            }
-            "--samples" => {
-                let value = args.next().ok_or("--samples requires a number")?;
-                config.samples = parse_u64("--samples", &value)?;
-            }
-            "--seed" => {
-                let value = args.next().ok_or("--seed requires a number")?;
-                config.seed = parse_seed(&value)?;
-            }
-            "--threads" => {
-                let value = args.next().ok_or("--threads requires a number")?;
-                config.threads = parse_usize("--threads", &value)?.max(1);
             }
             other => return Err(format!("unknown argument: {other}")),
         }
     }
 
-    if config.exact_through > 13 {
-        return Err("--exact-through cannot exceed 13".to_string());
-    }
-    if config.samples == 0 && config.exact_through < 13 {
-        return Err("--samples must be positive when Monte Carlo rows are enabled".to_string());
-    }
-
     Ok(config)
 }
 
-fn parse_usize(name: &str, value: &str) -> Result<usize, String> {
-    value
-        .replace('_', "")
-        .parse::<usize>()
-        .map_err(|_| format!("{name} must be an integer"))
-}
-
-fn parse_u64(name: &str, value: &str) -> Result<u64, String> {
-    value
-        .replace('_', "")
-        .parse::<u64>()
-        .map_err(|_| format!("{name} must be an integer"))
-}
-
-fn parse_seed(value: &str) -> Result<u64, String> {
-    if let Some(hex) = value.strip_prefix("0x") {
-        u64::from_str_radix(hex, 16)
-            .map_err(|_| "--seed must be a u64 or 0x-prefixed hex u64".to_string())
-    } else {
-        parse_u64("--seed", value)
-    }
-}
-
-fn build_straight_lookup() -> [bool; 1 << RANK_COUNT] {
-    let mut lookup = [false; 1 << RANK_COUNT];
-    let wheel = (1 << 12) | 0b1111;
-
-    for (mask, value) in lookup.iter_mut().enumerate() {
-        if (mask & wheel) == wheel {
-            *value = true;
-            continue;
-        }
-
-        for start in 0..=8 {
-            let straight = 0b1_1111 << start;
-            if (mask & straight) == straight {
-                *value = true;
-                break;
-            }
-        }
-    }
-
-    lookup
-}
-
-fn run_exact(cards: usize, straight_lookup: &[bool; 1 << RANK_COUNT], threads: usize) -> SolveRow {
+fn solve_exact() -> SolveResult {
     let start = Instant::now();
-    let observations = combinations(CARD_COUNT as u64, cards as u64);
-    let worker_count = threads.min(CARD_COUNT - cards + 1).max(1);
-    let mut counts = [0u64; HAND_RANK_COUNT];
+    let mut states = HashMap::with_capacity(1);
+    let start_lanes = [pack_lane(0, 0, true); SUIT_COUNT];
+    states.insert(
+        pack_state(StateFields {
+            total: 0,
+            pairs: 0,
+            trips: 0,
+            quads: false,
+            rank_run: 0,
+            rank_wheel_low: true,
+            straight: false,
+            straight_flush: false,
+            royal_flush: false,
+            lanes: start_lanes,
+        }),
+        1u64,
+    );
 
-    thread::scope(|scope| {
-        let mut handles = Vec::with_capacity(worker_count);
-        for worker in 0..worker_count {
-            handles.push(scope.spawn(move || {
-                let mut local = [0u64; HAND_RANK_COUNT];
-                let mut state = HandState::new();
-                let max_first_card = CARD_COUNT - cards;
-                let mut first_card = worker;
+    let mut layer_stats = Vec::with_capacity(RANK_COUNT);
+    let mut peak_states = states.len();
 
-                while first_card <= max_first_card {
-                    state.add(first_card as u8);
-                    enumerate_exact(
-                        cards,
-                        1,
-                        first_card + 1,
-                        &mut state,
-                        &mut local,
-                        straight_lookup,
-                    );
-                    state.remove(first_card as u8);
-                    first_card += worker_count;
+    for rank in 0..RANK_COUNT {
+        let mut next = HashMap::with_capacity(states.len() * 4);
+
+        for (&key, &ways) in &states {
+            let fields = unpack_state(key);
+            for suit_mask in 0u8..(1 << SUIT_COUNT) {
+                let added_cards = suit_mask.count_ones() as u8;
+                if fields.total as usize + added_cards as usize > MAX_TRACKED_CARDS {
+                    continue;
                 }
 
-                local
-            }));
-        }
-
-        for handle in handles {
-            let local = handle.join().expect("exact worker panicked");
-            for index in 0..HAND_RANK_COUNT {
-                counts[index] += local[index];
+                let next_fields = advance_state(fields, rank, suit_mask, added_cards);
+                let next_key = pack_state(next_fields);
+                *next.entry(next_key).or_insert(0) += ways;
             }
         }
-    });
 
-    SolveRow {
-        cards,
-        method: "exact",
-        observations,
+        let represented_subsets = next.values().sum();
+        peak_states = peak_states.max(next.len());
+        layer_stats.push(LayerStat {
+            rank: RANK_LABELS[rank],
+            states: next.len(),
+            represented_subsets,
+        });
+        states = next;
+    }
+
+    let mut counts = [[0u64; HAND_RANK_COUNT]; MAX_TRACKED_CARDS + 1];
+    for (&key, &ways) in &states {
+        let fields = unpack_state(key);
+        if fields.total < 2 {
+            continue;
+        }
+        let rank = evaluate_final(fields);
+        counts[fields.total as usize][rank as usize] += ways;
+    }
+
+    let mut rows = Vec::with_capacity(12);
+    for cards in 2..=MAX_TRACKED_CARDS {
+        let observations = combinations(CARD_COUNT as u64, cards as u64);
+        let row_total: u64 = counts[cards].iter().sum();
+        assert_eq!(
+            row_total, observations,
+            "exact counts did not sum to C(52,{cards})"
+        );
+        rows.push(SolveRow {
+            cards,
+            observations,
+            counts: counts[cards],
+        });
+    }
+
+    SolveResult {
+        rows,
+        layer_stats,
+        final_states: states.len(),
+        peak_states,
+        covered_subsets: states.values().sum(),
         elapsed_ms: start.elapsed().as_secs_f64() * 1000.0,
-        max_standard_error: 0.0,
-        counts,
     }
 }
 
 #[inline(always)]
-fn enumerate_exact(
-    target_cards: usize,
-    depth: usize,
-    start_card: usize,
-    state: &mut HandState,
-    counts: &mut [u64; HAND_RANK_COUNT],
-    straight_lookup: &[bool; 1 << RANK_COUNT],
-) {
-    if depth == target_cards {
-        counts[state.evaluate(straight_lookup) as usize] += 1;
-        return;
+fn advance_state(fields: StateFields, rank: usize, suit_mask: u8, added_cards: u8) -> StateFields {
+    let mut next = fields;
+    next.total += added_cards;
+
+    match added_cards {
+        2 => next.pairs = (next.pairs + 1).min(2),
+        3 => next.trips = (next.trips + 1).min(2),
+        4 => next.quads = true,
+        _ => {}
     }
 
-    let needed = target_cards - depth;
-    let max_card = CARD_COUNT - needed;
-    for card in start_card..=max_card {
-        state.add(card as u8);
-        enumerate_exact(
-            target_cards,
-            depth + 1,
-            card + 1,
-            state,
-            counts,
-            straight_lookup,
-        );
-        state.remove(card as u8);
+    let rank_present = added_cards > 0;
+    next.rank_run = if rank_present {
+        (fields.rank_run + 1).min(5)
+    } else {
+        0
+    };
+    next.straight |= next.rank_run >= 5;
+
+    if rank < 4 {
+        next.rank_wheel_low &= rank_present;
+    }
+    if rank == 12 && rank_present && fields.rank_wheel_low {
+        next.straight = true;
+    }
+
+    for suit in 0..SUIT_COUNT {
+        let selected = (suit_mask & (1 << suit)) != 0;
+        let old_lane = fields.lanes[suit];
+        let old_count = lane_count(old_lane);
+        let old_run = lane_run(old_lane);
+        let old_wheel_low = lane_wheel_low(old_lane);
+
+        let count = if selected {
+            (old_count + 1).min(5)
+        } else {
+            old_count
+        };
+        let run = if selected { (old_run + 1).min(5) } else { 0 };
+        let mut wheel_low = old_wheel_low;
+
+        if rank < 4 {
+            wheel_low &= selected;
+        }
+
+        if selected && run >= 5 {
+            next.straight_flush = true;
+            if rank == 12 {
+                next.royal_flush = true;
+            }
+        }
+        if rank == 12 && selected && old_wheel_low {
+            next.straight_flush = true;
+        }
+
+        next.lanes[suit] = pack_lane(count, run, wheel_low);
+    }
+
+    next.lanes.sort_unstable();
+    next
+}
+
+#[inline(always)]
+fn evaluate_final(fields: StateFields) -> HandRank {
+    if fields.total < 5 {
+        return if fields.quads {
+            HandRank::Quads
+        } else if fields.trips > 0 {
+            HandRank::Trips
+        } else if fields.pairs >= 2 {
+            HandRank::TwoPair
+        } else if fields.pairs == 1 {
+            HandRank::Pair
+        } else {
+            HandRank::HighCard
+        };
+    }
+
+    let has_flush = fields.lanes.iter().any(|&lane| lane_count(lane) >= 5);
+
+    if fields.royal_flush {
+        HandRank::RoyalFlush
+    } else if fields.straight_flush {
+        HandRank::StraightFlush
+    } else if fields.quads {
+        HandRank::Quads
+    } else if fields.trips > 0 && (fields.pairs > 0 || fields.trips > 1) {
+        HandRank::Boat
+    } else if has_flush {
+        HandRank::Flush
+    } else if fields.straight {
+        HandRank::Straight
+    } else if fields.trips > 0 {
+        HandRank::Trips
+    } else if fields.pairs >= 2 {
+        HandRank::TwoPair
+    } else if fields.pairs == 1 {
+        HandRank::Pair
+    } else {
+        HandRank::HighCard
     }
 }
 
-fn run_monte_carlo(
-    cards: usize,
-    samples: u64,
-    seed: u64,
-    straight_lookup: &[bool; 1 << RANK_COUNT],
-    threads: usize,
-) -> SolveRow {
-    let start = Instant::now();
-    let worker_count = threads.min(samples as usize).max(1);
-    let mut counts = [0u64; HAND_RANK_COUNT];
+#[inline(always)]
+fn pack_lane(count: u8, run: u8, wheel_low: bool) -> u8 {
+    count | (run << 3) | if wheel_low { LANE_WHEEL_LOW } else { 0 }
+}
 
-    thread::scope(|scope| {
-        let mut handles = Vec::with_capacity(worker_count);
-        for worker in 0..worker_count {
-            let worker_samples =
-                samples / worker_count as u64 + u64::from(worker < samples as usize % worker_count);
-            handles.push(scope.spawn(move || {
-                let mut local = [0u64; HAND_RANK_COUNT];
-                let mut deck = [0u8; CARD_COUNT];
-                for (card, slot) in deck.iter_mut().enumerate() {
-                    *slot = card as u8;
-                }
+#[inline(always)]
+fn lane_count(lane: u8) -> u8 {
+    lane & LANE_COUNT_MASK
+}
 
-                let mut rng = SplitMix64::new(seed ^ mix64(worker as u64 + 1));
-                for _ in 0..worker_samples {
-                    let mut state = HandState::new();
-                    for index in 0..cards {
-                        let swap_index = index + rng.bounded((CARD_COUNT - index) as u32);
-                        deck.swap(index, swap_index);
-                        state.add(deck[index]);
-                    }
-                    local[state.evaluate(straight_lookup) as usize] += 1;
-                }
+#[inline(always)]
+fn lane_run(lane: u8) -> u8 {
+    (lane & LANE_RUN_MASK) >> 3
+}
 
-                local
-            }));
-        }
+#[inline(always)]
+fn lane_wheel_low(lane: u8) -> bool {
+    (lane & LANE_WHEEL_LOW) != 0
+}
 
-        for handle in handles {
-            let local = handle.join().expect("Monte Carlo worker panicked");
-            for index in 0..HAND_RANK_COUNT {
-                counts[index] += local[index];
-            }
-        }
-    });
+#[inline(always)]
+fn pack_state(fields: StateFields) -> u64 {
+    let mut lanes = fields.lanes;
+    lanes.sort_unstable();
 
-    let max_standard_error = counts
-        .iter()
-        .map(|&count| {
-            let probability = count as f64 / samples as f64;
-            (probability * (1.0 - probability) / samples as f64).sqrt()
-        })
-        .fold(0.0_f64, f64::max);
+    let mut key = fields.total as u64;
+    let mut shift = 4;
+    push_bits(&mut key, &mut shift, fields.pairs as u64, 2);
+    push_bits(&mut key, &mut shift, fields.trips as u64, 2);
+    push_bits(&mut key, &mut shift, fields.quads as u64, 1);
+    push_bits(&mut key, &mut shift, fields.rank_run as u64, 3);
+    push_bits(&mut key, &mut shift, fields.rank_wheel_low as u64, 1);
+    push_bits(&mut key, &mut shift, fields.straight as u64, 1);
+    push_bits(&mut key, &mut shift, fields.straight_flush as u64, 1);
+    push_bits(&mut key, &mut shift, fields.royal_flush as u64, 1);
 
-    SolveRow {
-        cards,
-        method: "monte_carlo",
-        observations: samples,
-        elapsed_ms: start.elapsed().as_secs_f64() * 1000.0,
-        max_standard_error,
-        counts,
+    for lane in lanes {
+        push_bits(&mut key, &mut shift, lane as u64, 7);
     }
+
+    key
+}
+
+#[inline(always)]
+fn unpack_state(key: u64) -> StateFields {
+    let mut shift = 4;
+    let total = (key & 0b1111) as u8;
+    let pairs = read_bits(key, &mut shift, 2) as u8;
+    let trips = read_bits(key, &mut shift, 2) as u8;
+    let quads = read_bits(key, &mut shift, 1) != 0;
+    let rank_run = read_bits(key, &mut shift, 3) as u8;
+    let rank_wheel_low = read_bits(key, &mut shift, 1) != 0;
+    let straight = read_bits(key, &mut shift, 1) != 0;
+    let straight_flush = read_bits(key, &mut shift, 1) != 0;
+    let royal_flush = read_bits(key, &mut shift, 1) != 0;
+    let mut lanes = [0u8; SUIT_COUNT];
+
+    for lane in &mut lanes {
+        *lane = read_bits(key, &mut shift, 7) as u8;
+    }
+
+    StateFields {
+        total,
+        pairs,
+        trips,
+        quads,
+        rank_run,
+        rank_wheel_low,
+        straight,
+        straight_flush,
+        royal_flush,
+        lanes,
+    }
+}
+
+#[inline(always)]
+fn push_bits(key: &mut u64, shift: &mut u8, value: u64, bits: u8) {
+    *key |= value << *shift;
+    *shift += bits;
+}
+
+#[inline(always)]
+fn read_bits(key: u64, shift: &mut u8, bits: u8) -> u64 {
+    let mask = (1u64 << bits) - 1;
+    let value = (key >> *shift) & mask;
+    *shift += bits;
+    value
 }
 
 fn combinations(n: u64, k: u64) -> u64 {
@@ -480,45 +412,12 @@ fn combinations(n: u64, k: u64) -> u64 {
     result as u64
 }
 
-struct SplitMix64 {
-    state: u64,
-}
-
-impl SplitMix64 {
-    fn new(seed: u64) -> Self {
-        Self { state: seed }
-    }
-
-    #[inline(always)]
-    fn next_u64(&mut self) -> u64 {
-        self.state = self.state.wrapping_add(0x9e37_79b9_7f4a_7c15);
-        mix64(self.state)
-    }
-
-    #[inline(always)]
-    fn bounded(&mut self, bound: u32) -> usize {
-        (((self.next_u64() as u128) * (bound as u128)) >> 64) as usize
-    }
-}
-
-#[inline(always)]
-fn mix64(mut value: u64) -> u64 {
-    value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-    value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-    value ^ (value >> 31)
-}
-
-fn build_json(rows: &[SolveRow], config: &Config, total_elapsed_ms: f64) -> String {
+fn build_json(result: &SolveResult) -> String {
     let generated_at_unix = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |duration| duration.as_secs());
-    let monte_carlo_from = if config.exact_through < 13 {
-        config.exact_through + 1
-    } else {
-        0
-    };
 
-    let mut json = String::with_capacity(24_000);
+    let mut json = String::with_capacity(30_000);
     writeln!(&mut json, "{{").unwrap();
     writeln!(
         &mut json,
@@ -537,22 +436,27 @@ fn build_json(rows: &[SolveRow], config: &Config, total_elapsed_ms: f64) -> Stri
     )
     .unwrap();
     writeln!(&mut json, "  \"parameters\": {{").unwrap();
-    writeln!(&mut json, "    \"exactThrough\": {},", config.exact_through).unwrap();
-    if monte_carlo_from == 0 {
-        writeln!(&mut json, "    \"monteCarloFrom\": null,").unwrap();
-    } else {
-        writeln!(&mut json, "    \"monteCarloFrom\": {monte_carlo_from},").unwrap();
-    }
+    writeln!(&mut json, "    \"algorithm\": \"canonical_suit_lane_dp\",").unwrap();
+    writeln!(&mut json, "    \"algorithmLabel\": \"Exact canonical DP\",").unwrap();
+    writeln!(&mut json, "    \"exactThrough\": 13,").unwrap();
+    writeln!(&mut json, "    \"monteCarloFrom\": null,").unwrap();
+    writeln!(&mut json, "    \"monteCarloSamplesPerRow\": 0,").unwrap();
     writeln!(
         &mut json,
-        "    \"monteCarloSamplesPerRow\": {},",
-        config.samples
+        "    \"totalElapsedMs\": {:.6},",
+        result.elapsed_ms
     )
     .unwrap();
-    writeln!(&mut json, "    \"seed\": \"0x{:016x}\",", config.seed).unwrap();
-    writeln!(&mut json, "    \"threads\": {},", config.threads).unwrap();
-    writeln!(&mut json, "    \"totalElapsedMs\": {:.6}", total_elapsed_ms).unwrap();
+    writeln!(&mut json, "    \"finalStates\": {},", result.final_states).unwrap();
+    writeln!(&mut json, "    \"peakStates\": {},", result.peak_states).unwrap();
+    writeln!(
+        &mut json,
+        "    \"coveredSubsets\": {}",
+        result.covered_subsets
+    )
+    .unwrap();
     writeln!(&mut json, "  }},").unwrap();
+
     writeln!(&mut json, "  \"handRanks\": [").unwrap();
     for (index, (key, label)) in HAND_RANKS.iter().enumerate() {
         let suffix = if index + 1 == HAND_RANKS.len() {
@@ -567,21 +471,34 @@ fn build_json(rows: &[SolveRow], config: &Config, total_elapsed_ms: f64) -> Stri
         .unwrap();
     }
     writeln!(&mut json, "  ],").unwrap();
-    writeln!(&mut json, "  \"rows\": [").unwrap();
 
-    for (row_index, row) in rows.iter().enumerate() {
-        let suffix = if row_index + 1 == rows.len() { "" } else { "," };
-        writeln!(&mut json, "    {{").unwrap();
-        writeln!(&mut json, "      \"cards\": {},", row.cards).unwrap();
-        writeln!(&mut json, "      \"method\": \"{}\",", row.method).unwrap();
-        writeln!(&mut json, "      \"observations\": {},", row.observations).unwrap();
-        writeln!(&mut json, "      \"elapsedMs\": {:.6},", row.elapsed_ms).unwrap();
+    writeln!(&mut json, "  \"solverLayers\": [").unwrap();
+    for (index, layer) in result.layer_stats.iter().enumerate() {
+        let suffix = if index + 1 == result.layer_stats.len() {
+            ""
+        } else {
+            ","
+        };
         writeln!(
             &mut json,
-            "      \"maxStandardError\": {:.12},",
-            row.max_standard_error
+            "    {{\"rank\": \"{}\", \"states\": {}, \"representedSubsets\": {}}}{suffix}",
+            layer.rank, layer.states, layer.represented_subsets
         )
         .unwrap();
+    }
+    writeln!(&mut json, "  ],").unwrap();
+
+    writeln!(&mut json, "  \"rows\": [").unwrap();
+    for (row_index, row) in result.rows.iter().enumerate() {
+        let suffix = if row_index + 1 == result.rows.len() {
+            ""
+        } else {
+            ","
+        };
+        writeln!(&mut json, "    {{").unwrap();
+        writeln!(&mut json, "      \"cards\": {},", row.cards).unwrap();
+        writeln!(&mut json, "      \"method\": \"exact\",").unwrap();
+        writeln!(&mut json, "      \"observations\": {},", row.observations).unwrap();
         writeln!(
             &mut json,
             "      \"counts\": {},",
@@ -596,7 +513,6 @@ fn build_json(rows: &[SolveRow], config: &Config, total_elapsed_ms: f64) -> Stri
         .unwrap();
         writeln!(&mut json, "    }}{suffix}").unwrap();
     }
-
     writeln!(&mut json, "  ]").unwrap();
     writeln!(&mut json, "}}").unwrap();
     json
