@@ -1,17 +1,19 @@
 const DATA_URL = "./data/probabilities.json";
 
 const RANK_COLORS = [
-  "#59636e",
-  "#2f65b8",
-  "#13795b",
-  "#966b16",
-  "#7c4d99",
-  "#b3382e",
-  "#0f766e",
-  "#5b50b6",
-  "#c45d12",
-  "#111827",
+  "#a4afbd",
+  "#7fb4ff",
+  "#6ed0a8",
+  "#f3c45f",
+  "#c5a6ff",
+  "#ff8b83",
+  "#5dd4c7",
+  "#9c92ff",
+  "#ffad66",
+  "#f8fafc",
 ];
+
+const RANK_ABBREVIATIONS = ["HC", "P", "TP", "T", "S", "F", "B", "Q", "SF", "RF"];
 
 const formatInteger = new Intl.NumberFormat("en-US");
 
@@ -263,7 +265,7 @@ function renderStackedMap(data) {
                 data-cards="${row.cards}"
                 style="--rank-color: ${RANK_COLORS[index]}; flex-basis: ${(probability * 100).toFixed(6)}%"
                 aria-label="${row.cards} cards ${data.handRanks[index].label} ${formatProbability(probability)}"
-              ></button>
+              ><span>${RANK_ABBREVIATIONS[index]}</span></button>
             `;
           })
           .join("")}
