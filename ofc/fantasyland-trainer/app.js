@@ -2158,11 +2158,11 @@
   function trainerGradeEmoji(grade) {
     const family = grade.charAt(0);
     return {
-      S: "🏆",
-      A: "💎",
-      B: "✅",
-      C: "🟨",
-      D: "⚠️",
+      S: "💯",
+      A: "🟩",
+      B: "🟨",
+      C: "🟧",
+      D: "🟥",
       F: "❌",
     }[family];
   }
