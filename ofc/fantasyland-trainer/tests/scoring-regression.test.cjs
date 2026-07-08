@@ -114,6 +114,25 @@ const incompleteSetDisplay = core.evaluateTrainerDisplayRows(
 );
 assert.equal(incompleteSetDisplay.assignments.get("JK1").id, "Ks", "incomplete set display: visual joker should still avoid a foul");
 
+const aggregate = core.trainerShareAggregate([
+  { points: 10, maxPoints: 10, maxRepeat: false, repeat: false, correct: true },
+  { points: 20, maxPoints: 20, maxRepeat: true, repeat: false, correct: false },
+  { points: 5, maxPoints: 10, maxRepeat: false, repeat: false, correct: false },
+]);
+assert.equal(aggregate.points, 35, "share aggregate: raw score should keep full royalties");
+assert.equal(aggregate.maxPoints, 40, "share aggregate: max score should sum possible royalties");
+assert.equal(aggregate.effectivePoints, 25, "share aggregate: missed FL royalties should count half");
+assert.equal(aggregate.missedFLs, 1, "share aggregate: should count missed FLs");
+assert.equal(aggregate.grade, "D-", "share aggregate: effective ratio should drive grade");
+assert.equal(aggregate.emoji, "⚠️", "share aggregate: D grade should use warning emoji");
+assert.deepEqual(core.buildTrainerShareSummary([
+  { points: 40, maxPoints: 40, maxRepeat: false, repeat: false, correct: true },
+  { points: 10, maxPoints: 10, maxRepeat: true, repeat: false, correct: false },
+]), ["Score: 50/50", "1 missed FL", "Grade: A- 💎"], "share summary: should format all-12 footer lines");
+assert.equal(core.trainerGradeFromRatio(1), "S", "grade: 100 should be S");
+assert.equal(core.trainerGradeFromRatio(0.9667), "A+", "grade: 96 2/3 should be A+");
+assert.equal(core.trainerGradeFromRatio(0.5999), "F", "grade: below 60 should be F");
+
 const reportedHand = scoreRows({
   top: ["Jh", "Jc", "JK1"],
   middle: ["7s", "7h", "JK2", "Ts", "Td"],
