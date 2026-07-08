@@ -840,6 +840,7 @@
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return;
     const boardEvaluation = getTrainerBoardEvaluation(puzzle);
+    const displayEvaluation = getTrainerDisplayEvaluation(puzzle);
     const frag = document.createDocumentFragment();
     TRAINER_ROWS.forEach((rowDef) => {
       const size = trainerRowSize(rowDef.key, puzzle);
@@ -873,7 +874,7 @@
         slot.addEventListener("drop", (event) => dropTrainerCardToSlot(event, rowDef.key, index));
         if (id) {
           const card = cardFromId(id);
-          const assignedCard = getTrainerAssignedCard(card, boardEvaluation);
+          const assignedCard = getTrainerAssignedCard(card, displayEvaluation);
           const displayCard = assignedCard || card;
           const button = document.createElement("button");
           button.type = "button";
@@ -895,7 +896,7 @@
       row.appendChild(slots);
 
       const summary = document.createElement("div");
-      const rowSummary = getTrainerRowSummary(rowDef.key, puzzle, boardEvaluation);
+      const rowSummary = getTrainerRowSummary(rowDef.key, puzzle, displayEvaluation);
       summary.className = `trainer-row-summary ${rowSummary.visible ? "" : "is-empty"}`;
       if (rowSummary.visible) {
         summary.innerHTML = `
@@ -1646,7 +1647,8 @@
     if (!puzzle) return 0;
     const boardEvaluation = getTrainerBoardEvaluation(puzzle);
     if (boardEvaluation && trainerReady()) return boardEvaluation.royaltyTotal;
-    return TRAINER_ROWS.reduce((total, row) => total + getTrainerRowSummary(row.key, puzzle, boardEvaluation).points, 0);
+    const displayEvaluation = getTrainerDisplayEvaluation(puzzle);
+    return TRAINER_ROWS.reduce((total, row) => total + getTrainerRowSummary(row.key, puzzle, displayEvaluation).points, 0);
   }
 
   function getTrainerBoardEvaluation(puzzle = getTrainerPuzzle(), rows = state.trainer.rows) {
@@ -1771,19 +1773,19 @@
     const assignments = new Map();
     const rowEvals = {};
 
-    const bottom = evaluateTrainerRowJokers("bottom", rows.bottom, cardById, blockedIds, null);
+    const bottom = evaluateTrainerRowJokers("bottom", rows.bottom, cardById, blockedIds, null, fiveKindRule);
     if (bottom) {
       mergeTrainerAssignment(assignments, bottom.assignments, blockedIds);
       rowEvals.bottom = bottom.eval;
     }
 
-    const middle = evaluateTrainerRowJokers("middle", rows.middle, cardById, blockedIds, rowEvals.bottom || null);
+    const middle = evaluateTrainerRowJokers("middle", rows.middle, cardById, blockedIds, rowEvals.bottom || null, fiveKindRule);
     if (middle) {
       mergeTrainerAssignment(assignments, middle.assignments, blockedIds);
       rowEvals.middle = middle.eval;
     }
 
-    const top = evaluateTrainerRowJokers("top", rows.top, cardById, blockedIds, rowEvals.middle || null);
+    const top = evaluateTrainerRowJokers("top", rows.top, cardById, blockedIds, rowEvals.middle || null, fiveKindRule);
     if (top) {
       mergeTrainerAssignment(assignments, top.assignments, blockedIds);
       rowEvals.top = top.eval;
@@ -1818,7 +1820,64 @@
     };
   }
 
-  function evaluateTrainerRowJokers(rowKey, ids, cardById, blockedIds, lowerEval) {
+  function getTrainerDisplayEvaluation(puzzle = getTrainerPuzzle(), rows = state.trainer.rows) {
+    if (!puzzle) return null;
+    return evaluateTrainerDisplayRows(puzzle.ids, rows, {
+      fiveKindRule: state.fiveKindRule,
+    });
+  }
+
+  function evaluateTrainerDisplayRows(cardIds, rows, options = {}) {
+    const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
+    const fiveKindRule = options.fiveKindRule || "none";
+    const blockedIds = new Set(
+      cardIds
+        .map((id) => cardFromId(id))
+        .filter((card) => !card.joker)
+        .map((card) => card.id)
+    );
+    const assignments = new Map();
+    const rowEvals = {};
+    const constrainEvals = {};
+
+    const bottom = evaluateTrainerDisplayRowJokers("bottom", rows.bottom, cardById, blockedIds, null, fiveKindRule);
+    if (bottom) {
+      mergeTrainerAssignment(assignments, bottom.assignments, blockedIds);
+      if (bottom.eval) rowEvals.bottom = bottom.eval;
+      if (bottom.constrains) constrainEvals.bottom = bottom.eval;
+    }
+
+    const middle = evaluateTrainerDisplayRowJokers(
+      "middle",
+      rows.middle,
+      cardById,
+      blockedIds,
+      constrainEvals.bottom || null,
+      fiveKindRule
+    );
+    if (middle) {
+      mergeTrainerAssignment(assignments, middle.assignments, blockedIds);
+      if (middle.eval) rowEvals.middle = middle.eval;
+      if (middle.constrains) constrainEvals.middle = middle.eval;
+    }
+
+    const top = evaluateTrainerDisplayRowJokers(
+      "top",
+      rows.top,
+      cardById,
+      blockedIds,
+      constrainEvals.middle || null,
+      fiveKindRule
+    );
+    if (top) {
+      mergeTrainerAssignment(assignments, top.assignments, blockedIds);
+      if (top.eval) rowEvals.top = top.eval;
+    }
+
+    return { assignments, rowEvals };
+  }
+
+  function evaluateTrainerRowJokers(rowKey, ids, cardById, blockedIds, lowerEval, fiveKindRule) {
     const requiredSize = rowKey === "top" ? 3 : 5;
     if (!Array.isArray(ids) || ids.length !== requiredSize) return null;
     const jokerIds = ids.filter((id) => cardById.get(id)?.joker);
@@ -1829,11 +1888,97 @@
       const cards = materializeTrainerRow(ids, cardById, assignment);
       const evalResult = rowKey === "top" ? evaluateConcreteTop(cards) : evaluateConcreteFive(cards);
       const legal = trainerRowDoesNotFoul(rowKey, evalResult, lowerEval);
-      const candidate = { eval: evalResult, assignments: assignment, legal };
+      const candidate = {
+        eval: evalResult,
+        assignments: assignment,
+        legal,
+        points: trainerRowRoyalty(rowKey, evalResult, fiveKindRule),
+      };
       if (isBetterTrainerJokerCandidate(candidate, best)) best = candidate;
     });
 
     return best;
+  }
+
+  function evaluateTrainerDisplayRowJokers(rowKey, ids, cardById, blockedIds, lowerEval, fiveKindRule) {
+    if (!Array.isArray(ids) || !ids.length) return null;
+    const jokerIds = ids.filter((id) => cardById.get(id)?.joker);
+    const assignments = buildTrainerJokerAssignments(jokerIds, blockedIds);
+    let best = null;
+
+    assignments.forEach((assignment) => {
+      const cards = materializeTrainerRow(ids, cardById, assignment).filter(Boolean);
+      const display = evaluateTrainerDisplayRow(rowKey, cards);
+      const evalResult = display ? display.eval : null;
+      const legal = evalResult ? trainerRowDoesNotFoul(rowKey, evalResult, lowerEval) : true;
+      const points = evalResult ? trainerRowRoyalty(rowKey, evalResult, fiveKindRule) : 0;
+      const candidate = {
+        eval: evalResult,
+        assignments: assignment,
+        legal,
+        points,
+        constrains: Boolean(display && display.constrains),
+      };
+      if (isBetterTrainerJokerCandidate(candidate, best)) best = candidate;
+    });
+
+    return best;
+  }
+
+  function evaluateTrainerDisplayRow(rowKey, cards) {
+    if (!cards.length) return null;
+    const requiredSize = rowKey === "top" ? 3 : 5;
+    if (cards.length >= requiredSize) {
+      return {
+        eval: rowKey === "top" ? evaluateConcreteTop(cards) : evaluateConcreteFive(cards),
+        constrains: true,
+      };
+    }
+
+    return {
+      eval: rowKey === "top" ? evaluatePartialTop(cards) : evaluatePartialFive(cards),
+      constrains: false,
+    };
+  }
+
+  function evaluatePartialTop(cards) {
+    const groups = rankGroups(cards);
+    if (groups[0].count >= 3) return makeEval(CATEGORY.TRIPS, [groups[0].rank], `Three ${RANK_NAME[groups[0].rank]}`);
+    if (groups[0].count >= 2) {
+      const kicker = groups.find((group) => group.rank !== groups[0].rank)?.rank || 0;
+      return makeEval(CATEGORY.PAIR, [groups[0].rank, kicker], `Pair of ${RANK_NAME[groups[0].rank]}`);
+    }
+    const ranks = cards.map((card) => card.rank).sort(descNumber);
+    return makeEval(CATEGORY.HIGH, ranks, `${rankLong(ranks[0])}-high`);
+  }
+
+  function evaluatePartialFive(cards) {
+    const groups = rankGroups(cards);
+    if (groups[0].count >= 4) {
+      const kicker = groups.find((group) => group.rank !== groups[0].rank)?.rank || 0;
+      return makeEval(CATEGORY.QUADS, [groups[0].rank, kicker], `Four ${RANK_NAME[groups[0].rank]}`);
+    }
+    if (groups[0].count >= 3) {
+      const kickers = groups
+        .filter((group) => group.rank !== groups[0].rank)
+        .map((group) => group.rank)
+        .sort(descNumber);
+      return makeEval(CATEGORY.TRIPS, [groups[0].rank].concat(kickers), `Three ${RANK_NAME[groups[0].rank]}`);
+    }
+    const ranks = cards.map((card) => card.rank).sort(descNumber);
+    return makeEval(CATEGORY.HIGH, ranks, `${rankLong(ranks[0])}-high`);
+  }
+
+  function rankGroups(cards) {
+    return Array.from(rankCounts(cards).entries())
+      .map(([rank, count]) => ({ rank: Number(rank), count }))
+      .sort((a, b) => b.count - a.count || b.rank - a.rank);
+  }
+
+  function trainerRowRoyalty(rowKey, evalResult, fiveKindRule) {
+    return rowKey === "top"
+      ? topRoyalty(evalResult)
+      : fiveRoyalty(evalResult, rowKey === "middle" ? "middle" : "back", fiveKindRule);
   }
 
   function trainerRowDoesNotFoul(rowKey, evalResult, lowerEval) {
@@ -1879,6 +2024,8 @@
   function isBetterTrainerJokerCandidate(candidate, current) {
     if (!current) return true;
     if (candidate.legal !== current.legal) return candidate.legal;
+    if (candidate.points !== current.points) return candidate.points > current.points;
+    if (!candidate.eval || !current.eval) return Boolean(candidate.eval);
     if (candidate.eval.strength !== current.eval.strength) return candidate.eval.strength > current.eval.strength;
     return trainerAssignmentSortValue(candidate.assignments) > trainerAssignmentSortValue(current.assignments);
   }
@@ -3069,6 +3216,7 @@
       dealIdsSeeded,
       scoreTrainerRows,
       evaluateTrainerSubmission,
+      evaluateTrainerDisplayRows,
       isTopLegalAgainstMiddle,
       cardIdToShare,
     };
@@ -3087,6 +3235,7 @@
       dealIdsSeeded,
       scoreTrainerRows,
       evaluateTrainerSubmission,
+      evaluateTrainerDisplayRows,
       isTopLegalAgainstMiddle,
       cardIdToShare,
     };

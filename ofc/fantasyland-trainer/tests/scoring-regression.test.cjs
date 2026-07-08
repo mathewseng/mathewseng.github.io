@@ -78,6 +78,42 @@ assert.equal(globalJoker.legal, true, "global joker: lower assignment should avo
 assert.equal(globalJoker.rowNames.middle, "Ace-high flush", "global joker: middle should score as the legal flush");
 assert.equal(globalJoker.assignments.get("JK1").id, "9h", "global joker: joker should not become the fouling Th");
 
+const flushLimitJoker = scoreRows({
+  top: ["Jh", "Jd", "Ah"],
+  middle: ["9s", "8s", "6s", "3s", "JK1"],
+  bottom: ["Kc", "Tc", "9c", "6c", "4c"],
+  discard: ["3h", "5d", "4d"],
+});
+assert.equal(flushLimitJoker.legal, true, "flush limit joker: board should avoid the foul");
+assert.equal(flushLimitJoker.points, 18, "flush limit joker: royalties should still score");
+assert.equal(flushLimitJoker.rowNames.middle, "King-high flush", "flush limit joker: middle should stay under bottom");
+assert.equal(flushLimitJoker.assignments.get("JK1").id, "Ks", "flush limit joker: joker should become Ks, not As");
+
+const flushLimitDisplay = core.evaluateTrainerDisplayRows(
+  ["Jh", "Jd", "Ah", "9s", "8s", "6s", "3s", "JK1", "Kc", "Tc", "9c", "6c", "4c", "3h", "5d", "4d"],
+  {
+    top: ["Jh", "Jd", "Ah"],
+    middle: ["9s", "8s", "6s", "3s", "JK1"],
+    bottom: ["Kc", "Tc", "9c", "6c", "4c"],
+    discard: [],
+  },
+  { fiveKindRule: "none" }
+);
+assert.equal(flushLimitDisplay.assignments.get("JK1").id, "Ks", "flush limit display: visual joker should become Ks");
+assert.equal(flushLimitDisplay.rowEvals.middle.name, "King-high flush", "flush limit display: visual row text should match Ks");
+
+const incompleteSetDisplay = core.evaluateTrainerDisplayRows(
+  ["Jh", "Jd", "Ah", "9s", "8s", "6s", "3s", "JK1", "Kc", "Tc", "9c", "6c", "4c", "3h", "5d", "4d"],
+  {
+    top: [],
+    middle: ["9s", "8s", "6s", "3s", "JK1"],
+    bottom: ["Kc", "Tc", "9c", "6c", "4c"],
+    discard: [],
+  },
+  { fiveKindRule: "none" }
+);
+assert.equal(incompleteSetDisplay.assignments.get("JK1").id, "Ks", "incomplete set display: visual joker should still avoid a foul");
+
 const reportedHand = scoreRows({
   top: ["Jh", "Jc", "JK1"],
   middle: ["7s", "7h", "JK2", "Ts", "Td"],
