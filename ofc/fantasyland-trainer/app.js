@@ -97,7 +97,7 @@
     suppressInput: false,
     trainer: {
       mode: "daily",
-      scope: "single",
+      scope: "all",
       cardCount: 14,
       jokerCount: 0,
       activeRow: "bottom",
@@ -2081,7 +2081,7 @@
     if (first.mode === "daily") {
       const title = `OFC Fantasyland Daily ${formatDateKey(first.dateKey)}`;
       return [title]
-        .concat(results.map((result) => `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${formatTime(result.timeMs)}`))
+        .concat(results.map((result) => `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${formatShareTime(result.timeMs)}`))
         .concat(footer)
         .concat(TRAINER_SHARE_URL)
         .join("\n");
@@ -2090,7 +2090,7 @@
     const title = "OFC Fantasyland Random";
     const blocks = results.map((result) =>
       [
-        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${wholeNumberText(result.points)}/${wholeNumberText(result.maxPoints)} royalties${repeatMissShareSuffix(result)} ${formatTime(result.timeMs)}`,
+        `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${wholeNumberText(result.points)}/${wholeNumberText(result.maxPoints)} royalties${repeatMissShareSuffix(result)} ${formatShareTime(result.timeMs)}`,
         cardsToShare(result.rows.top),
         cardsToShare(result.rows.middle),
         cardsToShare(result.rows.bottom),
@@ -2112,6 +2112,7 @@
       lines.push(`${aggregate.missedFLs} missed FL${aggregate.missedFLs > 1 ? "s" : ""}`);
     }
     lines.push(`Grade: ${aggregate.grade} ${aggregate.emoji}`);
+    lines.push(`Time: ${formatTime(aggregate.timeMs)} ${trainerTimeEmoji(aggregate.timeMs, true)}`);
     return lines;
   }
 
@@ -2125,9 +2126,10 @@
         sum.maxPoints += maxPoints;
         sum.effectivePoints += missedFL ? points * 0.5 : points;
         sum.missedFLs += missedFL ? 1 : 0;
+        sum.timeMs += finiteNumber(result.timeMs);
         return sum;
       },
-      { points: 0, maxPoints: 0, effectivePoints: 0, missedFLs: 0 }
+      { points: 0, maxPoints: 0, effectivePoints: 0, missedFLs: 0, timeMs: 0 }
     );
     const ratio = totals.maxPoints ? Math.max(0, Math.min(1, totals.effectivePoints / totals.maxPoints)) : 0;
     const grade = trainerGradeFromRatio(ratio);
@@ -2165,6 +2167,19 @@
       D: "🟥",
       F: "❌",
     }[family];
+  }
+
+  function trainerTimeEmoji(timeMs, aggregate = false) {
+    const time = finiteNumber(timeMs);
+    const thresholds = aggregate ? [300000, 420000, 540000] : [15000, 30000, 60000];
+    if (time < thresholds[0]) return "⚡";
+    if (time < thresholds[1]) return "💨";
+    if (time < thresholds[2]) return "⏳";
+    return "😴";
+  }
+
+  function formatShareTime(timeMs) {
+    return `${formatTime(timeMs)} ${trainerTimeEmoji(timeMs)}`;
   }
 
   function formatDateKey(dateKey) {
@@ -3293,6 +3308,7 @@
       trainerShareAggregate,
       buildTrainerShareSummary,
       trainerGradeFromRatio,
+      trainerTimeEmoji,
       isTopLegalAgainstMiddle,
       cardIdToShare,
     };
@@ -3315,6 +3331,7 @@
       trainerShareAggregate,
       buildTrainerShareSummary,
       trainerGradeFromRatio,
+      trainerTimeEmoji,
       isTopLegalAgainstMiddle,
       cardIdToShare,
     };
