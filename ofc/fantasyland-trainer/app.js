@@ -256,7 +256,13 @@
     }
 
     document.querySelectorAll('input[name="trainer-mode"]').forEach((input) => {
+      input.addEventListener("click", () => {
+        if (input.value === "random" && input.checked && state.trainer.mode === "random") {
+          startTrainerSet();
+        }
+      });
       input.addEventListener("change", () => {
+        if (state.trainer.mode === input.value) return;
         state.trainer.mode = input.value;
         startTrainerSet();
       });
