@@ -1770,30 +1770,45 @@
   function evaluateTrainerRows(cardIds, rows, options = {}) {
     const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
     const fiveKindRule = options.fiveKindRule || "none";
-    const blockedIds = new Set(
-      cardIds
-        .map((id) => cardFromId(id))
-        .filter((card) => !card.joker)
-        .map((card) => card.id)
-    );
     const assignments = new Map();
     const rowEvals = {};
 
-    const bottom = evaluateTrainerRowJokers("bottom", rows.bottom, cardById, blockedIds, null, fiveKindRule);
+    const bottom = evaluateTrainerRowJokers(
+      "bottom",
+      rows.bottom,
+      cardById,
+      trainerRowBlockedIds(rows.bottom, cardById),
+      null,
+      fiveKindRule
+    );
     if (bottom) {
-      mergeTrainerAssignment(assignments, bottom.assignments, blockedIds);
+      mergeTrainerAssignment(assignments, bottom.assignments);
       rowEvals.bottom = bottom.eval;
     }
 
-    const middle = evaluateTrainerRowJokers("middle", rows.middle, cardById, blockedIds, rowEvals.bottom || null, fiveKindRule);
+    const middle = evaluateTrainerRowJokers(
+      "middle",
+      rows.middle,
+      cardById,
+      trainerRowBlockedIds(rows.middle, cardById),
+      rowEvals.bottom || null,
+      fiveKindRule
+    );
     if (middle) {
-      mergeTrainerAssignment(assignments, middle.assignments, blockedIds);
+      mergeTrainerAssignment(assignments, middle.assignments);
       rowEvals.middle = middle.eval;
     }
 
-    const top = evaluateTrainerRowJokers("top", rows.top, cardById, blockedIds, rowEvals.middle || null, fiveKindRule);
+    const top = evaluateTrainerRowJokers(
+      "top",
+      rows.top,
+      cardById,
+      trainerRowBlockedIds(rows.top, cardById),
+      rowEvals.middle || null,
+      fiveKindRule
+    );
     if (top) {
-      mergeTrainerAssignment(assignments, top.assignments, blockedIds);
+      mergeTrainerAssignment(assignments, top.assignments);
       rowEvals.top = top.eval;
     }
 
@@ -1836,19 +1851,20 @@
   function evaluateTrainerDisplayRows(cardIds, rows, options = {}) {
     const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
     const fiveKindRule = options.fiveKindRule || "none";
-    const blockedIds = new Set(
-      cardIds
-        .map((id) => cardFromId(id))
-        .filter((card) => !card.joker)
-        .map((card) => card.id)
-    );
     const assignments = new Map();
     const rowEvals = {};
     const constrainEvals = {};
 
-    const bottom = evaluateTrainerDisplayRowJokers("bottom", rows.bottom, cardById, blockedIds, null, fiveKindRule);
+    const bottom = evaluateTrainerDisplayRowJokers(
+      "bottom",
+      rows.bottom,
+      cardById,
+      trainerRowBlockedIds(rows.bottom, cardById),
+      null,
+      fiveKindRule
+    );
     if (bottom) {
-      mergeTrainerAssignment(assignments, bottom.assignments, blockedIds);
+      mergeTrainerAssignment(assignments, bottom.assignments);
       if (bottom.eval) rowEvals.bottom = bottom.eval;
       if (bottom.constrains) constrainEvals.bottom = bottom.eval;
     }
@@ -1857,12 +1873,12 @@
       "middle",
       rows.middle,
       cardById,
-      blockedIds,
+      trainerRowBlockedIds(rows.middle, cardById),
       constrainEvals.bottom || null,
       fiveKindRule
     );
     if (middle) {
-      mergeTrainerAssignment(assignments, middle.assignments, blockedIds);
+      mergeTrainerAssignment(assignments, middle.assignments);
       if (middle.eval) rowEvals.middle = middle.eval;
       if (middle.constrains) constrainEvals.middle = middle.eval;
     }
@@ -1871,12 +1887,12 @@
       "top",
       rows.top,
       cardById,
-      blockedIds,
+      trainerRowBlockedIds(rows.top, cardById),
       constrainEvals.middle || null,
       fiveKindRule
     );
     if (top) {
-      mergeTrainerAssignment(assignments, top.assignments, blockedIds);
+      mergeTrainerAssignment(assignments, top.assignments);
       if (top.eval) rowEvals.top = top.eval;
     }
 
@@ -2012,10 +2028,18 @@
     return result;
   }
 
-  function mergeTrainerAssignment(target, source, blockedIds) {
+  function trainerRowBlockedIds(ids, cardById) {
+    return new Set(
+      (Array.isArray(ids) ? ids : [])
+        .map((id) => cardById.get(id))
+        .filter((card) => card && !card.joker)
+        .map((card) => card.id)
+    );
+  }
+
+  function mergeTrainerAssignment(target, source) {
     source.forEach((card, id) => {
       target.set(id, card);
-      blockedIds.add(card.id);
     });
   }
 
@@ -2039,7 +2063,7 @@
   function trainerAssignmentSortValue(assignments) {
     let value = 0;
     assignments.forEach((card) => {
-      value = value * 1e4 + card.rank * 10 + SUITS.indexOf(card.suit);
+      value = value * 1e4 + card.rank * 10 + (SUITS.length - SUITS.indexOf(card.suit));
     });
     return value;
   }

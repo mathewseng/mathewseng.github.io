@@ -114,6 +114,27 @@ const incompleteSetDisplay = core.evaluateTrainerDisplayRows(
 );
 assert.equal(incompleteSetDisplay.assignments.get("JK1").id, "Ks", "incomplete set display: visual joker should still avoid a foul");
 
+const independentRowJokers = scoreRows({
+  top: ["7s", "7c", "2h"],
+  middle: ["As", "Kh", "Qs", "Jd", "JK1"],
+  bottom: ["Th", "Td", "Tc", "JK2", "9s"],
+  discard: [],
+});
+assert.equal(independentRowJokers.legal, true, "independent row jokers: board should be legal");
+assert.equal(independentRowJokers.assignments.get("JK1").id, "Ts", "independent row jokers: middle joker should become Ts");
+assert.equal(independentRowJokers.assignments.get("JK2").id, "Ts", "independent row jokers: bottom joker may also become Ts");
+assert.equal(independentRowJokers.rowNames.middle, "Ace-high straight", "independent row jokers: middle should make a straight");
+assert.equal(independentRowJokers.rowNames.bottom, "Four tens", "independent row jokers: bottom should make quads");
+
+const sameRowJokers = core.evaluateTrainerDisplayRows(
+  ["As", "Ks", "Qs", "JK1", "JK2"],
+  { top: [], middle: ["As", "Ks", "Qs", "JK1", "JK2"], bottom: [], discard: [] },
+  { fiveKindRule: "none" }
+);
+const sameRowAssignments = [sameRowJokers.assignments.get("JK1").id, sameRowJokers.assignments.get("JK2").id];
+assert.notEqual(sameRowAssignments[0], sameRowAssignments[1], "same row jokers: substitutions must remain distinct");
+assert.deepEqual(sameRowAssignments.sort(), ["Js", "Ts"], "same row jokers: distinct substitutions should complete the royal flush");
+
 const aggregate = core.trainerShareAggregate([
   { points: 10, maxPoints: 10, maxRepeat: false, repeat: false, correct: true },
   { points: 20, maxPoints: 20, maxRepeat: true, repeat: false, correct: false },
