@@ -1,4 +1,4 @@
-const assert = require("node:assert/strict");
+const assert = require("assert").strict;
 const core = require("../app.js");
 
 function scoreBottomStraightFlush(bottom) {

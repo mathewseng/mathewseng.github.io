@@ -1,0 +1,7 @@
+{
+  "name": "ofc-fantasyland-trainer",
+  "private": true,
+  "scripts": {
+    "test": "node tests/scoring-regression.test.cjs && node tests/joker-regression.test.cjs"
+  }
+}
