@@ -1,5 +1,8 @@
 import type { ReadinessInput, Scale0To6, WorkoutType } from "./types";
 
+export const WORKOUT_DURATION_OPTIONS = [30, 45, 60, 75, 90] as const;
+export type WorkoutDurationMinutes = (typeof WORKOUT_DURATION_OPTIONS)[number];
+
 export type ReadinessLevel = "high" | "moderate" | "low" | "recovery";
 export type SuggestedSessionType = WorkoutType | "rest";
 
@@ -25,7 +28,7 @@ export interface SuggestedExercise {
 }
 
 export interface SuggestionOptions {
-  desiredDurationMinutes?: 20 | 30 | 45 | 60 | number;
+  desiredDurationMinutes?: WorkoutDurationMinutes;
   requestedType?: WorkoutType;
 }
 
@@ -300,23 +303,18 @@ function normalizeDuration(value: number | undefined): number {
   if (value === undefined || !Number.isFinite(value)) {
     return 45;
   }
-  if (value <= 20) {
-    return 20;
-  }
-  if (value <= 30) {
-    return 30;
-  }
-  if (value <= 45) {
-    return 45;
-  }
-  return 60;
+
+  return (
+    WORKOUT_DURATION_OPTIONS.find((duration) => value <= duration) ??
+    WORKOUT_DURATION_OPTIONS.at(-1)!
+  );
 }
 
 function fitDuration(
   exercises: readonly SuggestedExercise[],
   minutes: number,
 ): SuggestedExercise[] {
-  const limit = minutes <= 20 ? 3 : minutes <= 30 ? 4 : exercises.length;
+  const limit = minutes <= 30 ? 4 : exercises.length;
   const setCap = minutes <= 30 ? 2 : minutes <= 45 ? 3 : Number.POSITIVE_INFINITY;
   return exercises.slice(0, limit).map((item) => ({
     ...item,

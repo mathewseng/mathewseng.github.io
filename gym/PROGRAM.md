@@ -171,9 +171,10 @@ The rules are deterministic guidance, not a diagnosis:
 
 Supported desired durations:
 
-- 20 minutes
 - 30 minutes
 - 45 minutes
 - 60 minutes
+- 75 minutes
+- 90 minutes
 
 Shorter sessions reduce exercise count and accessory volume; they do not justify riskier loading.

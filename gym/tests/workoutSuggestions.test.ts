@@ -4,6 +4,7 @@ import {
   calculateReadiness,
   getNextWorkoutType,
   suggestWorkout,
+  WORKOUT_DURATION_OPTIONS,
 } from "../src/lib/workoutSuggestions";
 import type { ReadinessInput } from "../src/lib/types";
 
@@ -126,13 +127,26 @@ describe("readiness-based suggestions", () => {
     expect(suggestion.warnings.join(" ")).toMatch(/Skip the workout/);
   });
 
-  it("fits short sessions by trimming exercises and sets", () => {
+  it("offers 30–90 minute sessions in 15-minute increments", () => {
+    expect(WORKOUT_DURATION_OPTIONS).toEqual([30, 45, 60, 75, 90]);
+  });
+
+  it("fits 30-minute sessions by trimming exercises and sets", () => {
     const suggestion = suggestWorkout(healthy, {
-      desiredDurationMinutes: 20,
+      desiredDurationMinutes: 30,
     });
 
-    expect(suggestion.desiredDurationMinutes).toBe(20);
-    expect(suggestion.exercises).toHaveLength(3);
+    expect(suggestion.desiredDurationMinutes).toBe(30);
+    expect(suggestion.exercises).toHaveLength(4);
     expect(suggestion.exercises.every((item) => item.sets <= 2)).toBe(true);
+  });
+
+  it("preserves longer 75- and 90-minute selections", () => {
+    expect(
+      suggestWorkout(healthy, { desiredDurationMinutes: 75 }).desiredDurationMinutes,
+    ).toBe(75);
+    expect(
+      suggestWorkout(healthy, { desiredDurationMinutes: 90 }).desiredDurationMinutes,
+    ).toBe(90);
   });
 });

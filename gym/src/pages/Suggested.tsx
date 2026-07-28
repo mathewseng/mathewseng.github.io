@@ -15,7 +15,11 @@ import { useMemo, useState } from "react";
 import { ScoreControl } from "../components/ScoreControl";
 import { Badge, PageHeader, SectionHeading, Surface } from "../components/ui";
 import type { ReadinessInput, Scale0To6, WorkoutType } from "../lib/types";
-import { suggestWorkout } from "../lib/workoutSuggestions";
+import {
+  suggestWorkout,
+  WORKOUT_DURATION_OPTIONS,
+  type WorkoutDurationMinutes,
+} from "../lib/workoutSuggestions";
 import { Link } from "../router";
 
 const initialReadiness: Required<
@@ -41,7 +45,6 @@ const initialReadiness: Required<
   generalPain: 0,
 };
 
-const durations = [20, 30, 45, 60] as const;
 const workoutTypes: WorkoutType[] = ["push", "pull", "legs", "full-body"];
 
 function readinessColor(level: string): string {
@@ -59,7 +62,7 @@ function readinessColor(level: string): string {
 
 export default function Suggested() {
   const [readiness, setReadiness] = useState(initialReadiness);
-  const [duration, setDuration] = useState<(typeof durations)[number]>(45);
+  const [duration, setDuration] = useState<WorkoutDurationMinutes>(45);
   const [lastWorkoutType, setLastWorkoutType] = useState<WorkoutType>("push");
   const [requestedType, setRequestedType] = useState<WorkoutType | "auto">("auto");
 
@@ -220,8 +223,8 @@ export default function Suggested() {
             </div>
             <fieldset className="mt-4">
               <legend className="label">Time available</legend>
-              <div className="grid grid-cols-4 gap-2">
-                {durations.map((minutes) => (
+              <div className="grid grid-cols-5 gap-2">
+                {WORKOUT_DURATION_OPTIONS.map((minutes) => (
                   <button
                     key={minutes}
                     type="button"
