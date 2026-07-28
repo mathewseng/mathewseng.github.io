@@ -45,6 +45,9 @@ describe("interactive UI", () => {
     render(<ScoreHarness />);
 
     expect(screen.getByRole("radio", { checked: true })).toHaveTextContent("2");
+    screen.getByRole("radio", { checked: true }).focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("radio", { checked: true })).toHaveTextContent("3");
     await user.click(screen.getByRole("radio", { name: "6" }));
     expect(screen.getByRole("radio", { checked: true })).toHaveTextContent("6");
     expect(screen.getByText("6 · severe")).toBeVisible();

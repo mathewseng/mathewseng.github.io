@@ -8,7 +8,7 @@ import {
   Target,
   Weight,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import ProgressChart, { type ChartPoint } from "../components/ProgressChart";
 import { Badge, MetricCard, PageHeader, Surface } from "../components/ui";
@@ -34,6 +34,21 @@ export default function Exercises() {
   const [category, setCategory] = useState<ExerciseCategory | "all">("all");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState("smith-flat-bench");
+  const detailHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  function selectExercise(exerciseId: string) {
+    setSelectedId(exerciseId);
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    window.requestAnimationFrame(() => {
+      detailHeadingRef.current?.focus({ preventScroll: true });
+      detailHeadingRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    });
+  }
 
   const filteredExercises = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -119,7 +134,7 @@ export default function Exercises() {
         description="Keep machines and free weights separate, compare only meaningful sets, and see exactly where the next rep fits."
       />
 
-      <div className="grid gap-5 xl:grid-cols-[21rem_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[21rem_minmax(0,1fr)]">
         <Surface className="self-start p-3 sm:p-4">
           <label className="relative block">
             <span className="sr-only">Search exercises</span>
@@ -141,16 +156,17 @@ export default function Exercises() {
                 type="button"
                 className={
                   category === option
-                    ? "button-primary !min-h-9 whitespace-nowrap !px-3 text-xs capitalize"
-                    : "button-secondary !min-h-9 whitespace-nowrap !px-3 text-xs capitalize"
+                    ? "button-primary !min-h-11 whitespace-nowrap !px-3 text-xs capitalize"
+                    : "button-secondary !min-h-11 whitespace-nowrap !px-3 text-xs capitalize"
                 }
                 onClick={() => setCategory(option)}
+                aria-pressed={category === option}
               >
                 {option}
               </button>
             ))}
           </div>
-          <div className="mt-2 max-h-[38rem] space-y-1 overflow-y-auto pr-1">
+          <div className="mt-2 max-h-[18rem] space-y-1 overflow-y-auto pr-1 lg:max-h-[38rem]">
             {filteredExercises.map((exercise) => {
               const recorded = workouts.some((workout) =>
                 workout.exercises.some((entry) => entry.exerciseId === exercise.id),
@@ -159,7 +175,8 @@ export default function Exercises() {
                 <button
                   key={exercise.id}
                   type="button"
-                  onClick={() => setSelectedId(exercise.id)}
+                  onClick={() => selectExercise(exercise.id)}
+                  aria-pressed={selected?.id === exercise.id}
                   className={
                     selected?.id === exercise.id
                       ? "flex w-full items-center justify-between gap-3 rounded-xl bg-[var(--accent)] px-3 py-3 text-left text-[var(--accent-ink)]"
@@ -208,7 +225,11 @@ export default function Exercises() {
                       {selected.equipment.join(" · ")}
                     </Badge>
                   </div>
-                  <h2 className="mt-5 text-3xl font-black tracking-[-0.05em]">
+                  <h2
+                    ref={detailHeadingRef}
+                    tabIndex={-1}
+                    className="mt-5 scroll-mt-24 text-3xl font-black tracking-[-0.05em] focus:outline-none"
+                  >
                     {selected.canonicalName}
                   </h2>
                   <p className="mt-3 text-sm leading-6 opacity-75">{selected.notes}</p>

@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
 
 import { exercises } from "../src/data/exercises";
+import { benchGoal } from "../src/data/goals";
 import { workouts } from "../src/data/workouts";
 import { getRepProgression } from "../src/lib/progression";
 import { validateWorkout } from "../src/lib/validation";
 
 describe("seed data integration", () => {
+  it("keeps the Smith-machine bench target at 145 lb", () => {
+    expect(benchGoal.targetValue).toBe(145);
+    expect(benchGoal.milestones?.at(-1)).toEqual(
+      expect.objectContaining({
+        id: "bench-145-1",
+        label: "145 lb × 1",
+        value: 145,
+      }),
+    );
+  });
+
   it("keeps every historical workout valid against the exercise registry", () => {
     const knownExerciseIds = exercises.map((exercise) => exercise.id);
     const errors = workouts.flatMap((workout) =>

@@ -2,6 +2,18 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-07-28 — Mobile & Accessibility Audit
+
+### Changed
+
+- Corrected the primary Smith-machine bench goal from 140 lb to 145 lb across the dashboard, goal ladder, supporting indicators, documentation, metadata, and social preview.
+- Fixed the surface-style cascade that made accent-panel text unreadable in light and dark themes.
+- Increased text, form-border, focus-ring, and warm-status contrast.
+- Added complete mobile navigation, larger touch targets, a phone-friendly 0–6 score grid, compact calendar markers, and a selected-day summary.
+- Made the calendar's initial and “Latest” dates follow the newest dated workout or nutrition record.
+- Gave secondary chart metrics their own scale and visible legend so volume no longer flattens repetition trends.
+- Reduced the mobile exercise-picker height and moved focus to the selected exercise result.
+
 ## 2026-07-28 — Initial Release
 
 ### Added

@@ -226,6 +226,7 @@ export default function Suggested() {
                     key={minutes}
                     type="button"
                     onClick={() => setDuration(minutes)}
+                    aria-pressed={duration === minutes}
                     className={
                       duration === minutes
                         ? "button-primary !px-2 text-xs"

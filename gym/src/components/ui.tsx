@@ -73,7 +73,11 @@ export function PageHeader({
           </p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full shrink-0 flex-col gap-2 min-[360px]:w-auto min-[360px]:flex-row min-[360px]:flex-wrap [&>*]:w-full min-[360px]:[&>*]:w-auto">
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }

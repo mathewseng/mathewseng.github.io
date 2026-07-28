@@ -149,7 +149,7 @@ export default function Workouts() {
               {search ? (
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-[var(--muted)]"
+                  className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-xl text-[var(--muted)] hover:bg-[var(--surface-soft)]"
                   onClick={() => setSearch("")}
                   aria-label="Clear search"
                 >
@@ -165,9 +165,10 @@ export default function Workouts() {
                   onClick={() => setType(option)}
                   className={
                     type === option
-                      ? "button-primary !min-h-10 whitespace-nowrap !px-3 text-xs capitalize"
-                      : "button-secondary !min-h-10 whitespace-nowrap !px-3 text-xs capitalize"
+                      ? "button-primary !min-h-11 whitespace-nowrap !px-3 text-xs capitalize"
+                      : "button-secondary !min-h-11 whitespace-nowrap !px-3 text-xs capitalize"
                   }
+                  aria-pressed={type === option}
                 >
                   {option}
                 </button>
@@ -175,7 +176,7 @@ export default function Workouts() {
             </div>
             <button
               type="button"
-              className="button-secondary !min-h-10 shrink-0 text-xs"
+              className="button-secondary !min-h-11 shrink-0 text-xs"
               onClick={() => setShowFilters((value) => !value)}
               aria-expanded={showFilters}
             >
@@ -200,9 +201,10 @@ export default function Workouts() {
                     onClick={() => toggleFilter(option.id)}
                     className={
                       active
-                        ? "button-primary !min-h-9 !px-3 text-xs"
-                        : "button-secondary !min-h-9 !px-3 text-xs"
+                        ? "button-primary !min-h-11 !px-3 text-xs"
+                        : "button-secondary !min-h-11 !px-3 text-xs"
                     }
+                    aria-pressed={active}
                   >
                     {active ? <Check size={13} /> : null}
                     {option.label}

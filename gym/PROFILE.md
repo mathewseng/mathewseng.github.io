@@ -30,7 +30,7 @@
 
 ## Main Goals
 
-1. Smith-machine bench press 140 lb.
+1. Smith-machine bench press 145 lb.
 2. Perform 10 strict pull-ups.
 3. Build muscle.
 4. Pick up and carry a 120 lb person comfortably.

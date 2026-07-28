@@ -17,7 +17,7 @@ import {
 import ProgressChart from "../components/ProgressChart";
 import WorkoutCalendar from "../components/WorkoutCalendar";
 import { Badge, MetricCard, PageHeader, SectionHeading, Surface } from "../components/ui";
-import { goals } from "../data/goals";
+import { benchGoal, goals } from "../data/goals";
 import { workouts as seedWorkouts } from "../data/workouts";
 import type { Workout } from "../lib/types";
 import { Link } from "../router";
@@ -155,11 +155,22 @@ export default function Dashboard() {
     seedWorkouts[seedWorkouts.length - 1];
   const goalCount = goals.filter((goal) => goal.status === "in-progress").length;
   const trainingWeeks = recentTrainingWeeks(workouts);
+  const latestDateLabel = latestWorkout?.date
+    ? new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }).format(new Date(`${latestWorkout.date}T12:00:00`))
+    : "Undated training history";
+  const benchCurrent = benchGoal.currentValue ?? 115;
+  const benchTarget = benchGoal.targetValue ?? 145;
+  const benchPercent = Math.min(100, Math.round((benchCurrent / benchTarget) * 100));
+  const benchRemaining = Math.max(0, benchTarget - benchCurrent);
 
   return (
     <>
       <PageHeader
-        eyebrow="Tuesday, July 28 · Training day"
+        eyebrow={`${latestDateLabel} · Latest log`}
         title="Build the next rep."
         description="Your dashboard keeps performance and context together, so one hard day never gets mistaken for a trend."
         actions={
@@ -177,7 +188,7 @@ export default function Dashboard() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.7fr)]">
         <Surface
           raised
-          className="relative min-h-[22rem] overflow-hidden bg-[var(--accent)] p-5 text-[var(--accent-ink)] sm:p-7"
+          className="relative min-h-[20rem] overflow-hidden bg-[var(--accent)] p-5 text-[var(--accent-ink)] sm:min-h-[22rem] sm:p-7"
         >
           <div
             className="absolute inset-y-0 right-0 w-1/2 opacity-15 dot-grid"
@@ -192,11 +203,11 @@ export default function Dashboard() {
                 Push → Pull next
               </Badge>
             </div>
-            <div className="mt-10 max-w-xl">
+            <div className="mt-8 max-w-xl sm:mt-10">
               <p className="text-xs font-extrabold uppercase tracking-[0.16em] opacity-70">
                 Suggested next session
               </p>
-              <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] sm:text-5xl">
+              <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
                 Pull, with room in the tank.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
@@ -235,18 +246,23 @@ export default function Dashboard() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="eyebrow">Bench trajectory</p>
-                <h2 className="mt-1 text-lg font-black">115 → 140 lb</h2>
+                <h2 className="mt-1 text-lg font-black">
+                  {benchCurrent} → {benchTarget} lb
+                </h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--acid-soft)]">
                 <Trophy size={18} />
               </span>
             </div>
             <div className="mt-5 h-3 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-              <div className="h-full w-[82%] rounded-full bg-[var(--accent)]" />
+              <div
+                className="h-full rounded-full bg-[var(--accent)]"
+                style={{ width: `${benchPercent}%` }}
+              />
             </div>
             <div className="mt-3 flex items-start justify-between gap-3 text-xs">
               <span className="text-[var(--muted)]">Confirmed single</span>
-              <strong>25 lb to goal</strong>
+              <strong>{benchRemaining} lb to goal</strong>
             </div>
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
@@ -494,9 +510,9 @@ export default function Dashboard() {
           <SectionHeading title="Nearest milestones" description="What to earn next." />
           <Surface className="space-y-3 p-4">
             <GoalMiniCard
-              title="Bench body weight"
-              current={115}
-              target={140}
+              title="Smith-machine bench"
+              current={benchCurrent}
+              target={benchTarget}
               unit="lb"
               detail="Smith machine · confirmed"
             />

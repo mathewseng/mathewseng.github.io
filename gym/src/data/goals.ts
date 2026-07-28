@@ -3,11 +3,11 @@ import type { Goal } from "../lib/types";
 export const goals: Goal[] = [
   {
     id: "bench-body-weight",
-    title: "Bench Body Weight",
+    title: "Smith Bench: 145 lb",
     category: "strength",
     status: "in-progress",
     currentValue: 115,
-    targetValue: 140,
+    targetValue: 145,
     unit: "lb",
     milestones: [
       {
@@ -60,9 +60,9 @@ export const goals: Goal[] = [
         achieved: false,
       },
       {
-        id: "bench-140-1",
-        label: "140 lb × 1",
-        value: 140,
+        id: "bench-145-1",
+        label: "145 lb × 1",
+        value: 145,
         unit: "lb",
         achieved: false,
       },
@@ -213,9 +213,9 @@ export const goals: Goal[] = [
         achieved: false,
       },
       {
-        id: "carry-140-bench",
-        label: "140 lb Smith-machine bench",
-        value: 140,
+        id: "carry-145-bench",
+        label: "145 lb Smith-machine bench",
+        value: 145,
         unit: "lb",
         achieved: false,
       },
@@ -289,5 +289,7 @@ export const goals: Goal[] = [
     notes: "Currently temporarily limited by back symptoms/history.",
   },
 ];
+
+export const benchGoal = goals.find((goal) => goal.id === "bench-body-weight")!;
 
 export const goalById = new Map(goals.map((goal) => [goal.id, goal] as const));

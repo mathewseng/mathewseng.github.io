@@ -1,10 +1,10 @@
 # Training Goals
 
-## Goal 1: Bench Body Weight
+## Goal 1: Smith Bench — 145 lb
 
 Target:
 
-- Smith-machine bench press 140 lb for one clean repetition
+- Smith-machine bench press 145 lb for one clean repetition
 
 Current confirmed status:
 
@@ -32,7 +32,7 @@ Milestones:
 5. 115 lb × 5
 6. 125 lb × 1
 7. 135 lb × 1
-8. 140 lb × 1
+8. 145 lb × 1
 
 Progression rule:
 
@@ -164,7 +164,7 @@ Supporting exercises:
 Suggested indicators:
 
 - 10 strict pull-ups
-- 140 lb Smith-machine bench
+- 145 lb Smith-machine bench
 - Farmer's carry with 120–160 lb total for at least 30 seconds
 - Pain-free leg strength substantially above 120 lb
 - Strong front-loaded carrying capacity

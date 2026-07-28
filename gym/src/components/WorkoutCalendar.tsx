@@ -62,7 +62,7 @@ const typeColor: Record<Workout["type"], string> = {
 export default function WorkoutCalendar({
   workouts,
   nutritionEntries,
-  initialDate = "2026-07-28",
+  initialDate,
   compact = false,
 }: {
   workouts: Workout[];
@@ -70,8 +70,16 @@ export default function WorkoutCalendar({
   initialDate?: string;
   compact?: boolean;
 }) {
-  const [visibleMonth, setVisibleMonth] = useState(() => parseLocalDate(initialDate));
-  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const newestDate = useMemo(() => {
+    const datedRecords = [
+      ...workouts.flatMap((workout) => (workout.date ? [workout.date] : [])),
+      ...nutritionEntries.flatMap((entry) => (entry.date ? [entry.date] : [])),
+    ].sort((left, right) => left.localeCompare(right));
+    return datedRecords.at(-1) ?? localIso(new Date());
+  }, [nutritionEntries, workouts]);
+  const startingDate = initialDate ?? newestDate;
+  const [visibleMonth, setVisibleMonth] = useState(() => parseLocalDate(startingDate));
+  const [selectedDate, setSelectedDate] = useState(startingDate);
   const cells = useMemo(() => getMonthCells(visibleMonth), [visibleMonth]);
   const selectedWorkouts = workouts.filter((workout) => workout.date === selectedDate);
   const selectedNutrition = nutritionEntries.filter(
@@ -86,6 +94,7 @@ export default function WorkoutCalendar({
   }
 
   const selectedDateObject = parseLocalDate(selectedDate);
+  const today = localIso(new Date());
 
   return (
     <div
@@ -102,7 +111,7 @@ export default function WorkoutCalendar({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="button-secondary !h-10 !min-h-10 !w-10 !p-0"
+              className="button-secondary !h-11 !min-h-11 !w-11 !p-0"
               onClick={() => moveMonth(-1)}
               aria-label="Previous month"
             >
@@ -110,18 +119,18 @@ export default function WorkoutCalendar({
             </button>
             <button
               type="button"
-              className="button-secondary !h-10 !min-h-10 !px-3 text-xs"
+              className="button-secondary !h-11 !min-h-11 !px-3 text-xs"
               onClick={() => {
-                const current = parseLocalDate("2026-07-28");
+                const current = parseLocalDate(newestDate);
                 setVisibleMonth(current);
-                setSelectedDate("2026-07-28");
+                setSelectedDate(newestDate);
               }}
             >
               Latest
             </button>
             <button
               type="button"
-              className="button-secondary !h-10 !min-h-10 !w-10 !p-0"
+              className="button-secondary !h-11 !min-h-11 !w-11 !p-0"
               onClick={() => moveMonth(1)}
               aria-label="Next month"
             >
@@ -134,7 +143,7 @@ export default function WorkoutCalendar({
           {weekdayLabels.map((day) => (
             <div
               key={day}
-              className="py-2 text-center text-[0.62rem] font-extrabold uppercase tracking-wider text-[var(--faint)]"
+              className="py-2 text-center text-[0.68rem] font-extrabold uppercase tracking-wider text-[var(--faint)]"
             >
               <span className="sm:hidden">{day.slice(0, 1)}</span>
               <span className="hidden sm:inline">{day}</span>
@@ -145,7 +154,7 @@ export default function WorkoutCalendar({
             const dayWorkouts = workouts.filter((workout) => workout.date === iso);
             const hasNutrition = nutritionEntries.some((entry) => entry.date === iso);
             const outside = date.getMonth() !== visibleMonth.getMonth();
-            const isToday = iso === "2026-07-28";
+            const isToday = iso === today;
 
             return (
               <button
@@ -156,21 +165,22 @@ export default function WorkoutCalendar({
                 data-selected={iso === selectedDate}
                 data-today={isToday}
                 onClick={() => setSelectedDate(iso)}
-                aria-label={`${detailFormatter.format(date)}: ${dayWorkouts.length} workouts${hasNutrition ? ", nutrition recorded" : ""}`}
+                aria-label={`${detailFormatter.format(date)}: ${dayWorkouts.length} workout${dayWorkouts.length === 1 ? "" : "s"}${dayWorkouts.length ? ` (${dayWorkouts.map((workout) => workout.type).join(", ")})` : ""}${hasNutrition ? ", nutrition recorded" : ""}`}
               >
                 <span className="day-number">{date.getDate()}</span>
-                <span className="mt-1 block space-y-1">
+                <span className="mt-1 flex flex-wrap items-center gap-1 sm:block sm:space-y-1">
                   {dayWorkouts.slice(0, compact ? 1 : 2).map((workout) => (
                     <span
                       key={workout.id}
-                      className="block truncate rounded-md px-1.5 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-[#10130f]"
+                      className="h-2 w-2 rounded-full sm:block sm:h-auto sm:w-auto sm:truncate sm:rounded-md sm:px-1.5 sm:py-1 sm:text-[0.68rem] sm:font-extrabold sm:uppercase sm:tracking-wide sm:text-[#10130f]"
                       style={{ backgroundColor: typeColor[workout.type] }}
+                      aria-hidden="true"
                     >
-                      {workout.type}
+                      <span className="hidden sm:inline">{workout.type}</span>
                     </span>
                   ))}
                   {dayWorkouts.length > (compact ? 1 : 2) ? (
-                    <span className="block text-[0.6rem] font-bold text-[var(--muted)]">
+                    <span className="hidden text-[0.68rem] font-bold text-[var(--muted)] sm:block">
                       +{dayWorkouts.length - (compact ? 1 : 2)} more
                     </span>
                   ) : null}
@@ -200,6 +210,31 @@ export default function WorkoutCalendar({
             </span>
           ) : null}
         </div>
+        {compact ? (
+          <div
+            className="flex flex-col gap-3 border-t border-[var(--line)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            aria-live="polite"
+          >
+            <div className="min-w-0">
+              <p className="text-xs font-extrabold">
+                {detailFormatter.format(selectedDateObject)}
+              </p>
+              <p className="mt-1 truncate text-xs text-[var(--muted)]">
+                {selectedWorkouts.length
+                  ? selectedWorkouts.map((workout) => workout.title).join(" · ")
+                  : selectedNutrition.length
+                    ? "Nutrition recorded"
+                    : "No entries recorded"}
+              </p>
+            </div>
+            <Link
+              to="/workouts"
+              className="button-ghost shrink-0 justify-between !px-2 text-xs"
+            >
+              Open calendar <ArrowRight size={14} />
+            </Link>
+          </div>
+        ) : null}
       </Surface>
 
       {!compact ? (

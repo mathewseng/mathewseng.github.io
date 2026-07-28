@@ -74,16 +74,32 @@ export default function ProgressChart({
   height?: number;
 }) {
   const gradientId = useId().replaceAll(":", "");
+  const hasSecondary = data.some((point) => point.secondary !== undefined);
   const common = {
     data,
-    margin: { top: 8, right: 8, bottom: 0, left: -22 },
+    margin: { top: 8, right: hasSecondary ? 0 : 8, bottom: 0, left: -18 },
   };
 
   return (
-    <Surface className="min-w-0 p-4 sm:p-5">
+    <Surface className="min-w-0 overflow-hidden p-4 sm:p-5">
       <h3 className="text-sm font-extrabold">{title}</h3>
       {description ? (
         <p className="mt-1 text-xs leading-5 text-[var(--muted)]">{description}</p>
+      ) : null}
+      {hasSecondary ? (
+        <div
+          className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-[var(--muted)]"
+          aria-hidden="true"
+        >
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+            {valueSuffix || "Primary value"}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-0.5 w-4 border-t-2 border-dashed border-[var(--orange)]" />
+            {secondaryLabel ?? "Secondary value"}
+          </span>
+        </div>
       ) : null}
       <div className="mt-4 w-full" style={{ height }} role="img" aria-label={title}>
         <ResponsiveContainer width="100%" height="100%">
@@ -103,9 +119,10 @@ export default function ProgressChart({
                 tick={{ fill: "var(--muted)", fontSize: 10 }}
               />
               <YAxis
+                yAxisId="primary"
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={46}
                 tick={{ fill: "var(--muted)", fontSize: 10 }}
               />
               <Tooltip
@@ -119,6 +136,7 @@ export default function ProgressChart({
               <Area
                 type="monotone"
                 dataKey="value"
+                yAxisId="primary"
                 stroke="var(--accent)"
                 strokeWidth={2.4}
                 fill={`url(#${gradientId})`}
@@ -136,11 +154,22 @@ export default function ProgressChart({
                 tick={{ fill: "var(--muted)", fontSize: 10 }}
               />
               <YAxis
+                yAxisId="primary"
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={46}
                 tick={{ fill: "var(--muted)", fontSize: 10 }}
               />
+              {hasSecondary ? (
+                <YAxis
+                  yAxisId="secondary"
+                  orientation="right"
+                  axisLine={false}
+                  tickLine={false}
+                  width={42}
+                  tick={{ fill: "var(--orange)", fontSize: 9 }}
+                />
+              ) : null}
               <Tooltip
                 content={
                   <ChartTooltip
@@ -152,16 +181,18 @@ export default function ProgressChart({
               <Line
                 type="monotone"
                 dataKey="value"
+                yAxisId="primary"
                 stroke="var(--accent)"
                 strokeWidth={2.4}
                 connectNulls={false}
                 dot={{ r: 4, fill: "var(--surface-raised)", strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: "var(--accent)" }}
               />
-              {data.some((point) => point.secondary !== undefined) ? (
+              {hasSecondary ? (
                 <Line
                   type="monotone"
                   dataKey="secondary"
+                  yAxisId="secondary"
                   stroke="var(--orange)"
                   strokeWidth={1.8}
                   strokeDasharray="5 5"
