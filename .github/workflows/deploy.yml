@@ -1,0 +1,88 @@
+name: Build, test, and deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gym/package-lock.json
+
+      - name: Install dependencies
+        working-directory: gym
+        run: npm ci
+
+      - name: Check formatting
+        working-directory: gym
+        run: npm run format:check
+
+      - name: Lint
+        working-directory: gym
+        run: npm run lint
+
+      - name: Type-check
+        working-directory: gym
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: gym
+        run: npm test
+
+      - name: Build gym app
+        working-directory: gym
+        run: npm run build
+
+      - name: Assemble complete user site
+        run: |
+          mkdir _site
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.openai' \
+            --exclude '_site' \
+            --exclude 'gym' \
+            --exclude 'node_modules' \
+            ./ _site/
+          mkdir -p _site/gym
+          cp -R gym/dist/. _site/gym/
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
