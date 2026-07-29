@@ -293,8 +293,9 @@ export default function Settings() {
               </button>
             </div>
             <p className="mt-4 text-[0.68rem] leading-5 text-[var(--muted)]">
-              When you send me your next daily workout, I’ll add it to LOGS.md and the
-              structured seed data, rerun the checks, and push the updated site to main.
+              When you send me your next daily workout, I’ll add one repository JSON log
+              plus the readable LOGS.md entry, rerun the checks, and push the updated site
+              to main.
             </p>
           </Surface>
         </div>

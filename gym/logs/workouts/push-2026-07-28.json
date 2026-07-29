@@ -1,0 +1,159 @@
+{
+  "id": "push-2026-07-28",
+  "date": "2026-07-28",
+  "type": "push",
+  "title": "Push Workout After Travel and Mild Illness",
+  "chronologyIndex": 8,
+  "dataQuality": "ambiguous",
+  "context": {
+    "notes": "Recently returned from travel and felt mildly sick/under the weather. No numeric context rating was supplied, so illness and travel impact remain unscored.",
+    "sourceLabels": ["recent-travel", "mild-illness", "under-the-weather"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-28-flat-25",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-07-28-flat-75",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true,
+          "rampUp": true
+        },
+        {
+          "id": "2026-07-28-flat-85",
+          "weightLb": 85,
+          "reps": 9,
+          "completed": true,
+          "rampUp": true
+        },
+        {
+          "id": "2026-07-28-flat-95",
+          "weightLb": 95,
+          "reps": 5,
+          "completed": true
+        }
+      ],
+      "notes": "Ramp-up structure rather than multiple working sets at one weight. Do not interpret 95 lb × 5 as definite regression during illness."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-28-incline-25",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-07-28-incline-45",
+          "weightLb": 45,
+          "reps": 10,
+          "completed": true,
+          "rampUp": true
+        },
+        {
+          "id": "2026-07-28-incline-55",
+          "weightLb": 55,
+          "reps": 10,
+          "completed": true,
+          "rampUp": true
+        },
+        {
+          "id": "2026-07-28-incline-65",
+          "weightLb": 65,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "65 lb × 10 is the best recorded incline top set."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-28-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-07-28-pushdown-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-07-28-pushdown-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "900 lb completed volume. Previous return-from-travel result was 10, 8, 5 at the same weight."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-07-28-overhead-1",
+          "weightLb": 20,
+          "reps": 7,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Only one set was recorded; equipment was not specified."
+    },
+    {
+      "exerciseId": "lateral-raise-unspecified",
+      "name": "Lateral Raise",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-07-28-lateral-1",
+          "weightLb": 10,
+          "reps": 20,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-07-28-lateral-2",
+          "weightLb": 15,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-07-28-lateral-3",
+          "weightLb": 15,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "It is unclear whether this was dumbbell or cable resistance and whether the load was per side."
+    }
+  ]
+}

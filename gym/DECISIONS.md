@@ -68,5 +68,11 @@
 
 ### 2026-07-28 — Ongoing Workout Update Workflow
 
-- **Decision:** When the user provides a new daily workout, treat it as a request to add that factual record to `LOGS.md`, update the matching structured site data, update derived benchmarks only when supported, run verification, and push the completed change to `main`.
+- **Decision:** When the user provides a new daily workout, treat it as a request to add that factual record to `LOGS.md`, add one matching JSON record under `logs/workouts/`, update derived benchmarks only when supported, run verification, and push the completed change to `main`.
 - **Consequence:** Preserve the user's original values and ambiguities; do not silently normalize uncertain equipment or per-side loads. Browser-local entries are not considered committed history until they are exported and incorporated into the repository.
+
+### 2026-07-29 — One JSON File per Workout
+
+- **Decision:** Store each committed workout as one `logs/workouts/<workout-id>.json` object and discover the folder automatically at build time.
+- **Reason:** Daily additions stay isolated, reviewable, and less likely to create merge conflicts than one growing TypeScript array.
+- **Consequence:** The filename must match the workout ID, chronology indices remain unique, and `LOGS.md` stays synchronized as the human-readable history.

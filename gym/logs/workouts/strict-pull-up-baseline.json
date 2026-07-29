@@ -1,0 +1,41 @@
+{
+  "id": "strict-pull-up-baseline",
+  "type": "pull",
+  "title": "Strict Pull-Up Baseline",
+  "chronologyIndex": 6,
+  "dataQuality": "estimated",
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Strict Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "estimated",
+      "sets": [
+        {
+          "id": "pullup-baseline-1",
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "pullup-baseline-2",
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "pullup-baseline-3",
+          "reps": 3,
+          "completed": true
+        },
+        {
+          "id": "pullup-baseline-fail",
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "The following repetition could not be completed fully."
+        }
+      ],
+      "notes": "Full descent to a dead hang, chin at or near the bar, and no partial repetition counted. Considerable rest between sets. Session total: 13. Estimated fresh maximum: approximately 5–6."
+    }
+  ],
+  "notes": "Exact date unknown."
+}

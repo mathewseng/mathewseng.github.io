@@ -1,0 +1,86 @@
+{
+  "id": "early-bench-incline-session",
+  "type": "push",
+  "title": "Early Bench and Incline Session",
+  "chronologyIndex": 2,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Long rests were taken. The failed 135 lb attempt likely affected later performance."
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "partial",
+      "notes": "The source says 115 lb was completed but does not record a repetition count; it remains unknown.",
+      "sets": [
+        {
+          "id": "early-flat-115",
+          "weightLb": 115,
+          "completed": true,
+          "notes": "Completed; repetition count not recorded.",
+          "dataQuality": "partial"
+        },
+        {
+          "id": "early-flat-135-fail",
+          "weightLb": 135,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "dataQuality": "complete"
+        },
+        {
+          "id": "early-flat-95-1",
+          "weightLb": 95,
+          "reps": 5,
+          "completed": true,
+          "dataQuality": "complete"
+        },
+        {
+          "id": "early-flat-95-2",
+          "weightLb": 95,
+          "reps": 4,
+          "completed": true,
+          "dataQuality": "complete"
+        },
+        {
+          "id": "early-flat-95-3",
+          "weightLb": 95,
+          "reps": 3,
+          "completed": true,
+          "dataQuality": "complete"
+        }
+      ]
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "early-incline-65-1",
+          "weightLb": 65,
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "early-incline-65-2",
+          "weightLb": 65,
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "early-incline-65-3",
+          "weightLb": 65,
+          "reps": 7,
+          "completed": true
+        }
+      ]
+    }
+  ],
+  "notes": "Exact date unknown."
+}

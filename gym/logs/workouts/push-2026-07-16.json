@@ -1,0 +1,181 @@
+{
+  "id": "push-2026-07-16",
+  "date": "2026-07-16",
+  "type": "push",
+  "title": "Push Workout",
+  "chronologyIndex": 5,
+  "dataQuality": "ambiguous",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-16-flat-1",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-07-16-flat-2",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-07-16-flat-3",
+          "weightLb": 95,
+          "reps": 6,
+          "completed": true
+        }
+      ],
+      "notes": "20 completed repetitions and 1,900 lb volume: +1 rep and +95 lb volume versus July 14."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-16-incline-1",
+          "weightLb": 55,
+          "reps": 9,
+          "completed": true
+        },
+        {
+          "id": "2026-07-16-incline-2",
+          "weightLb": 55,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-07-16-incline-3",
+          "weightLb": 55,
+          "reps": 11,
+          "completed": true
+        }
+      ],
+      "notes": "30 completed repetitions and 1,650 lb volume."
+    },
+    {
+      "exerciseId": "shoulder-press",
+      "name": "Shoulder Press",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-07-16-shoulder-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-07-16-shoulder-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-07-16-shoulder-3",
+          "weightLb": 30,
+          "reps": 12,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "32 completed repetitions and 960 lb nominal volume. Equipment and whether 30 lb was a per-side load were not recorded."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-16-pushdown-1",
+          "weightLb": 25,
+          "reps": 12,
+          "completed": true
+        },
+        {
+          "id": "2026-07-16-pushdown-2",
+          "weightLb": 25,
+          "reps": 11,
+          "completed": true
+        },
+        {
+          "id": "2026-07-16-pushdown-3",
+          "weightLb": 25,
+          "reps": 9,
+          "completed": true
+        }
+      ],
+      "notes": "32 completed repetitions and 800 lb volume."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-16-lateral-1",
+          "weightLb": 7.5,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-07-16-lateral-2",
+          "weightLb": 7.5,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-07-16-lateral-3",
+          "weightLb": 7.5,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Performed one arm at a time; all three sets were 10 reps per arm."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-07-16-overhead-1",
+          "weightLb": 20,
+          "reps": 12,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-07-16-overhead-2",
+          "weightLb": 20,
+          "reps": 6,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-07-16-overhead-3",
+          "weightLb": 20,
+          "reps": 4,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "22 completed repetitions and 440 lb nominal volume. Equipment and per-side loading were not recorded."
+    }
+  ]
+}

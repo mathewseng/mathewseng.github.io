@@ -1,0 +1,154 @@
+{
+  "id": "push-2026-07-14",
+  "date": "2026-07-14",
+  "type": "push",
+  "title": "Push Workout",
+  "chronologyIndex": 4,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-14-flat-1",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-07-14-flat-1-fail",
+          "weightLb": 95,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "Attempted repetition 8."
+        },
+        {
+          "id": "2026-07-14-flat-2",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-07-14-flat-2-fail",
+          "weightLb": 95,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "Attempted repetition 8."
+        },
+        {
+          "id": "2026-07-14-flat-3",
+          "weightLb": 95,
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-07-14-flat-3-fail",
+          "weightLb": 95,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "Attempted repetition 6."
+        }
+      ],
+      "notes": "19 completed repetitions and 1,805 lb completed volume."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "estimated",
+      "sets": [
+        {
+          "id": "2026-07-14-incline-1",
+          "weightLb": 55,
+          "reps": 8,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-07-14-incline-2",
+          "weightLb": 55,
+          "reps": 8,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-07-14-incline-3",
+          "weightLb": 55,
+          "reps": 8,
+          "completed": true,
+          "rirRange": [1, 2]
+        }
+      ],
+      "notes": "24 completed repetitions and 1,320 lb volume. Effort was estimated at approximately 1–2 reps from failure."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-07-14-pushdown-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-07-14-pushdown-2",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-07-14-pushdown-3",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "750 lb completed volume."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-07-14-overhead-1",
+          "weightLb": 15,
+          "completed": true,
+          "dataQuality": "partial"
+        },
+        {
+          "id": "2026-07-14-overhead-2",
+          "weightLb": 15,
+          "completed": true,
+          "dataQuality": "partial"
+        },
+        {
+          "id": "2026-07-14-overhead-3",
+          "weightLb": 15,
+          "completed": true,
+          "dataQuality": "partial"
+        }
+      ],
+      "notes": "Three sets were completed. Repetitions ranged approximately from 10 down to 6, but exact set-by-set counts and equipment were not recorded."
+    },
+    {
+      "exerciseId": "shoulder-cable-work",
+      "name": "Shoulder Cable Work",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [],
+      "notes": "Three different shoulder cable exercises were performed at approximately 2–5 reps from failure. Names, weights, set counts, and repetitions are incomplete."
+    }
+  ]
+}

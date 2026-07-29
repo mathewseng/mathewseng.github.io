@@ -5,7 +5,13 @@ import { exercises } from "../src/data/exercises";
 import { benchGoal } from "../src/data/goals";
 import { workouts, workoutsNewestFirst } from "../src/data/workouts";
 import { getRepProgression } from "../src/lib/progression";
+import type { Workout } from "../src/lib/types";
 import { validateWorkout } from "../src/lib/validation";
+
+const workoutLogModules = import.meta.glob<Workout>("../logs/workouts/*.json", {
+  eager: true,
+  import: "default",
+});
 
 describe("seed data integration", () => {
   it("keeps the Smith-machine bench target at 145 lb", () => {
@@ -29,6 +35,20 @@ describe("seed data integration", () => {
     );
 
     expect(errors).toEqual([]);
+  });
+
+  it("stores exactly one workout in each matching JSON log file", () => {
+    const fileEntries = Object.entries(workoutLogModules);
+    const fileWorkoutIds = fileEntries.map(([, workout]) => workout.id).sort();
+    const loadedWorkoutIds = workouts.map((workout) => workout.id).sort();
+
+    expect(fileEntries).toHaveLength(workouts.length);
+    expect(fileWorkoutIds).toEqual(loadedWorkoutIds);
+
+    for (const [path, workout] of fileEntries) {
+      expect(Array.isArray(workout)).toBe(false);
+      expect(path.endsWith(`/${workout.id}.json`)).toBe(true);
+    }
   });
 
   it("preserves the completed July 28 pull workout and its uncertainty", () => {

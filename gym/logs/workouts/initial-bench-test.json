@@ -1,0 +1,37 @@
+{
+  "id": "initial-bench-test",
+  "type": "push",
+  "title": "Initial Bench Test",
+  "chronologyIndex": 1,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "partial",
+      "notes": "All weights include the 25 lb Smith bar. Intermediate loads were not tested, so this did not establish a precise maximum.",
+      "sets": [
+        {
+          "id": "initial-bench-115",
+          "weightLb": 115,
+          "reps": 1,
+          "completed": true,
+          "notes": "Completed and described as easy; confirmed heavy single.",
+          "dataQuality": "complete"
+        },
+        {
+          "id": "initial-bench-135-fail",
+          "weightLb": 135,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "Failed attempt.",
+          "dataQuality": "complete"
+        }
+      ]
+    }
+  ],
+  "notes": "Exact date unknown. Confirmed successful heavy single: 115 lb. The 135 lb attempt was above current strength on that day."
+}

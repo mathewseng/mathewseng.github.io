@@ -104,23 +104,26 @@ Required repository settings:
 
 The production application is expected at `/gym/`; hash-based routes appear after `#` and do not require server rewrites.
 
-## Human-Readable Source Documents
+## Repository Data and Documents
 
-| File            | Purpose                                                     |
-| --------------- | ----------------------------------------------------------- |
-| `PROFILE.md`    | Athlete, equipment, training background, and constraints    |
-| `LOGS.md`       | Canonical supplied workout history                          |
-| `GOALS.md`      | Targets, standards, milestones, and current status          |
-| `NOTES.md`      | Equipment, form, programming, recovery, and ambiguity notes |
-| `NUTRITION.md`  | Known nutrition and supplement observations and guardrails  |
-| `PROGRAM.md`    | Current Push / Pull / Legs and recovery-session templates   |
-| `EXERCISES.md`  | Stable exercise identifiers and equipment identity rules    |
-| `DATA_MODEL.md` | Type and calculation contract                               |
-| `DECISIONS.md`  | Architecture and product decisions                          |
-| `CHANGELOG.md`  | User-visible project changes                                |
-| `DISCLAIMER.md` | Health, training, and supplement disclaimer                 |
+| File/Folder            | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `logs/workouts/*.json` | Canonical structured workout records, one workout per file  |
+| `PROFILE.md`           | Athlete, equipment, training background, and constraints    |
+| `LOGS.md`              | Human-readable supplied workout history                     |
+| `GOALS.md`             | Targets, standards, milestones, and current status          |
+| `NOTES.md`             | Equipment, form, programming, recovery, and ambiguity notes |
+| `NUTRITION.md`         | Known nutrition and supplement observations and guardrails  |
+| `PROGRAM.md`           | Current Push / Pull / Legs and recovery-session templates   |
+| `EXERCISES.md`         | Stable exercise identifiers and equipment identity rules    |
+| `DATA_MODEL.md`        | Type and calculation contract                               |
+| `DECISIONS.md`         | Architecture and product decisions                          |
+| `CHANGELOG.md`         | User-visible project changes                                |
+| `DISCLAIMER.md`        | Health, training, and supplement disclaimer                 |
 
-These Markdown documents are the human-readable source of truth. Relevant facts are mirrored into typed seed files in `src/data/` for the application. Update the Markdown and structured data together.
+The Markdown documents are the human-readable source of truth. Workout objects are
+stored individually in `logs/workouts/` and loaded automatically by the
+application. Update `LOGS.md` and the matching JSON record together.
 
 ## Historical Data Rules
 
@@ -171,11 +174,12 @@ When a new workout is supplied in conversation:
 
 1. Preserve the user's exact values, wording, and ambiguity.
 2. Append the record to `LOGS.md`.
-3. Add the matching typed record in `src/data/workouts.ts`.
+3. Add one matching `logs/workouts/<workout-id>.json` file; do not add the workout to a monolithic source array.
 4. Update supported benchmarks, charts, goal status, and `CHANGELOG.md` when applicable.
-5. Do not manufacture missing dates, context scores, equipment, or repetitions.
-6. Run formatting, lint, TypeScript, tests, and the production build.
-7. Commit and push the verified update to `main` as requested.
+5. Keep the JSON filename equal to the workout ID and assign the next unique chronology index.
+6. Do not manufacture missing dates, context scores, equipment, or repetitions.
+7. Run formatting, lint, TypeScript, tests, and the production build.
+8. Commit and push the verified update to `main` as requested.
 
 This is the standing maintenance workflow for future daily workouts.
 

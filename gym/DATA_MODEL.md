@@ -1,6 +1,16 @@
 # Gym Data Model
 
-This document defines the human-readable contract for the structured TypeScript data used by the site.
+This document defines the human-readable contract for the structured JSON and TypeScript data used by the site.
+
+## Repository Workout Storage
+
+Committed workouts are stored as individual JSON objects in
+`logs/workouts/<workout-id>.json`. Each file contains exactly one object matching
+the `Workout` contract below, and its filename must match its `id`.
+
+The application discovers every JSON file in that folder automatically and sorts
+the records by `chronologyIndex`. `LOGS.md` mirrors the same facts for human
+review. Unknown data remains omitted, not converted to a default value.
 
 ## Context Rating Contract
 

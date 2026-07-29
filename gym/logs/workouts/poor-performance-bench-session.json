@@ -1,0 +1,75 @@
+{
+  "id": "poor-performance-bench-session",
+  "type": "push",
+  "title": "Poor-Performance Bench Session",
+  "chronologyIndex": 3,
+  "dataQuality": "partial",
+  "context": {
+    "daysSinceLastWorkout": 2,
+    "notes": "Occurred after approximately two days away from the gym. Several heavy attempts preceded the volume work.",
+    "sourceLabels": ["approximately-two-days-away", "repeated-heavy-attempts"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "poor-flat-135-fail",
+          "weightLb": 135,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "User reported barely being able to move the weight."
+        },
+        {
+          "id": "poor-flat-125-fail",
+          "weightLb": 125,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "User reported barely being able to move the weight."
+        },
+        {
+          "id": "poor-flat-115-fail",
+          "weightLb": 115,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "User reported barely being able to move the weight."
+        },
+        {
+          "id": "poor-flat-95",
+          "weightLb": 95,
+          "reps": 3,
+          "completed": true
+        },
+        {
+          "id": "poor-flat-75-1",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "poor-flat-75-2",
+          "weightLb": 75,
+          "completed": true,
+          "notes": "Completed set; exact repetition count unknown.",
+          "dataQuality": "partial"
+        },
+        {
+          "id": "poor-flat-75-3",
+          "weightLb": 75,
+          "completed": true,
+          "notes": "Completed set; exact repetition count unknown.",
+          "dataQuality": "partial"
+        }
+      ],
+      "notes": "The three failures likely caused substantial acute fatigue. The later work was intentionally converted to lighter volume."
+    }
+  ],
+  "notes": "Exact date unknown. The sudden result should not be interpreted as proven long-term strength loss."
+}

@@ -2,6 +2,15 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-07-29 — Per-Workout JSON Logs
+
+### Changed
+
+- Moved all nine committed workouts into `logs/workouts/`, with one JSON object per workout.
+- Made the application discover and load workout JSON files automatically.
+- Added filename, chronology, uncertainty, context-scale, and per-side storage rules for future daily logs.
+- Added regression coverage ensuring every committed workout has exactly one matching JSON file.
+
 ## 2026-07-28 — Pull Workout Log
 
 ### Added

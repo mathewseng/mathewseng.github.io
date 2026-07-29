@@ -1,0 +1,226 @@
+{
+  "id": "return-from-travel-upper",
+  "type": "upper",
+  "title": "Return-from-Travel Upper-Body Session",
+  "chronologyIndex": 7,
+  "dataQuality": "ambiguous",
+  "context": {
+    "daysSinceLastWorkout": 10,
+    "notes": "Approximately 10 days without gym training; recently returned from travel; felt tired and sore. No numeric readiness ratings were recorded. Intended as a quick, easy full-body workout, but the actual session was primarily upper body. Creatine had not been taken during travel.",
+    "sourceLabels": [
+      "recent-travel",
+      "approximately-10-day-gym-break",
+      "tired",
+      "sore",
+      "creatine-paused-during-travel"
+    ]
+  },
+  "exercises": [
+    {
+      "exerciseId": "lat-pulldown",
+      "name": "Lat Pulldown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "return-pulldown-70",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "return-pulldown-90",
+          "weightLb": 90,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "return-pulldown-110",
+          "weightLb": 110,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "2,700 lb completed volume. Loads ascended, but the source did not classify individual sets as working or ramp-up."
+    },
+    {
+      "exerciseId": "incline-bench-machine",
+      "name": "Incline Bench Machine",
+      "equipment": "Chest press machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "return-incline-30",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "return-incline-40",
+          "weightLb": 40,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "return-incline-50",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "return-incline-60",
+          "weightLb": 60,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "1,800 lb completed volume. Loads ascended, but the source did not classify individual sets as working or ramp-up."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Curl",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "return-spider-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "return-spider-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "return-spider-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "It is unclear whether 15 lb was per hand."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Curl",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "return-incline-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "return-incline-curl-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "return-incline-curl-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "It is unclear whether 15 lb was per hand."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "return-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "return-pushdown-2",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "return-pushdown-3",
+          "weightLb": 30,
+          "reps": 5,
+          "completed": true
+        }
+      ],
+      "notes": "690 lb completed volume."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "return-lateral-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "return-lateral-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "return-lateral-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Three logical sets per movement are represented. The source reported 12 total shoulder sets, likely counting individual sides separately."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "return-front-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "return-front-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "return-front-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Three logical sets per movement are represented. The source reported 12 total shoulder sets, likely counting individual sides separately."
+    }
+  ],
+  "notes": "Exact date unknown."
+}
