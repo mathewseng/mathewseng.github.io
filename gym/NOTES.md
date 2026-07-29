@@ -11,6 +11,8 @@
 - Do not silently compare Smith-machine records with free-weight barbell records.
 - Different machines may have different cable ratios or resistance curves.
 - Machine stack numbers should be tracked as machine-specific values.
+- The gym does not have a seated cable-row station.
+- Use a standing dual-cable row or chest-supported dumbbell row instead.
 
 ## Exercise Standards
 

@@ -71,15 +71,18 @@ Progress to 105 lb after:
 
 - 3 sets of 8–12
 - Choose a true working weight
-- Current top recorded set: 110 lb × 10
+- Current top recorded set: 130 lb × 8
+- Current 10-repetition reference: 115 lb × 10
 
 ### Row
 
 Choose one:
 
 - Chest-supported row
-- Seated cable row
+- Standing dual-cable row
 - Machine row
+
+The gym does not have a seated cable-row station.
 
 Perform:
 
@@ -142,7 +145,7 @@ Use after travel, during mild fatigue, or when returning after time off.
 1. Lat pulldown: 2–3 × 10
 2. Smith bench or incline machine: 2–3 × 8
 3. Goblet squat or leg press: 2–3 × 10
-4. Seated row: 2 × 10
+4. Standing dual-cable row: 2 × 10
 5. Lateral raise: 2 × 12–15
 6. Optional curls or pushdowns: 2 × 10–15
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { currentBenchmarks } from "../src/data/benchmarks";
 import { exercises } from "../src/data/exercises";
 import { benchGoal } from "../src/data/goals";
-import { workouts } from "../src/data/workouts";
+import { workouts, workoutsNewestFirst } from "../src/data/workouts";
 import { getRepProgression } from "../src/lib/progression";
 import { validateWorkout } from "../src/lib/validation";
 
@@ -28,6 +29,46 @@ describe("seed data integration", () => {
     );
 
     expect(errors).toEqual([]);
+  });
+
+  it("preserves the completed July 28 pull workout and its uncertainty", () => {
+    const workout = workouts.find((item) => item.id === "pull-2026-07-28");
+    const reverseFly = workout?.exercises.find(
+      (entry) => entry.exerciseId === "reverse-cable-fly",
+    );
+    const cableRow = workout?.exercises.find(
+      (entry) => entry.exerciseId === "standing-cable-row",
+    );
+    const rdl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "romanian-deadlift",
+    );
+    const pulldownBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "lat-pulldown-top-set",
+    );
+
+    expect(workout).toMatchObject({
+      chronologyIndex: 9,
+      date: "2026-07-28",
+      type: "pull",
+      dataQuality: "partial",
+      context: { backPain: 0 },
+    });
+    expect(reverseFly?.dataQuality).toBe("ambiguous");
+    expect(cableRow?.sets.every((set) => "perSide" in set && set.perSide === true)).toBe(
+      true,
+    );
+    expect(rdl?.sets).toEqual([
+      expect.objectContaining({
+        weightLb: 25,
+        reps: 100,
+        dataQuality: "estimated",
+      }),
+    ]);
+    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-07-28");
+    expect(pulldownBenchmark).toMatchObject({
+      value: 130,
+      workoutId: "pull-2026-07-28",
+    });
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

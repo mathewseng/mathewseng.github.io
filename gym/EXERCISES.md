@@ -16,6 +16,7 @@ Exercise identifiers are stable keys. A Smith-machine press and a free-weight ba
 - `strict-pull-up`
 - `lat-pulldown`
 - `seated-cable-row`
+- `standing-cable-row`
 - `chest-supported-row`
 - `machine-row`
 - `face-pull`
@@ -57,6 +58,7 @@ Exercise identifiers are stable keys. A Smith-machine press and a free-weight ba
 - `plank`
 - `pallof-press`
 - `hanging-leg-raise`
+- `cable-ab-crunch`
 - `ab-wheel`
 
 ## Definition Shape

@@ -18,7 +18,7 @@ import ProgressChart from "../components/ProgressChart";
 import WorkoutCalendar from "../components/WorkoutCalendar";
 import { Badge, MetricCard, PageHeader, SectionHeading, Surface } from "../components/ui";
 import { benchGoal, goals } from "../data/goals";
-import { workouts as seedWorkouts } from "../data/workouts";
+import { compareWorkoutsNewestFirst, workouts as seedWorkouts } from "../data/workouts";
 import type { Workout } from "../lib/types";
 import { Link } from "../router";
 import { useAppState } from "../state/AppState";
@@ -149,9 +149,7 @@ function GoalMiniCard({
 export default function Dashboard() {
   const { workouts, nutritionEntries } = useAppState();
   const latestWorkout =
-    workouts
-      .filter((workout) => workout.date)
-      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))[0] ??
+    workouts.filter((workout) => workout.date).sort(compareWorkoutsNewestFirst)[0] ??
     seedWorkouts[seedWorkouts.length - 1];
   const goalCount = goals.filter((goal) => goal.status === "in-progress").length;
   const trainingWeeks = recentTrainingWeeks(workouts);

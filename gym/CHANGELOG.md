@@ -2,6 +2,20 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-07-28 — Pull Workout Log
+
+### Added
+
+- Added the completed pull workout with face pulls, pull-ups, lat pulldowns, dumbbell curls, reverse cable flies, standing cable rows, Smith-machine RDL technique work, and cable ab crunches.
+- Recorded back pain as 0/6 before the RDL practice and preserved the approximate 100-repetition total without inventing a set breakdown.
+- Added standing cable row and cable ab crunch to the exercise registry.
+- Recorded that the gym does not have a seated cable-row station and added standing cable-row and chest-supported-row substitutions.
+
+### Changed
+
+- Updated the lat-pulldown benchmark to 130 lb × 8, with 115 lb × 10 as the current 10-repetition reference.
+- Made same-day workout ordering use chronology so the later pull session appears as the latest log.
+
 ## 2026-07-28 — Mobile & Accessibility Audit
 
 ### Changed

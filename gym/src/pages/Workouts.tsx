@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import WorkoutCalendar from "../components/WorkoutCalendar";
 import WorkoutCard from "../components/WorkoutCard";
 import { Badge, PageHeader, SectionHeading, Surface } from "../components/ui";
+import { compareWorkoutsNewestFirst } from "../data/workouts";
 import type { WorkoutType } from "../lib/types";
 import { Link } from "../router";
 import { useAppState } from "../state/AppState";
@@ -92,12 +93,7 @@ export default function Workouts() {
           }
         }),
       )
-      .sort((left, right) => {
-        if (left.date && right.date) return right.date.localeCompare(left.date);
-        if (left.date) return -1;
-        if (right.date) return 1;
-        return right.chronologyIndex - left.chronologyIndex;
-      });
+      .sort(compareWorkoutsNewestFirst);
   }, [filters, search, type, workouts]);
 
   const dated = filtered.filter((workout) => workout.date);

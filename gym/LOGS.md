@@ -418,6 +418,113 @@ It is unclear whether this refers to dumbbells, cable resistance, or per-side lo
 
 ---
 
+# 9. Pull Workout with RDL Technique Practice — July 28, 2026
+
+**Date:** 2026-07-28
+
+**Data quality:** Partial
+
+## Context
+
+- Back pain before Smith-machine RDL practice: **0/6**
+- No other numeric readiness ratings were supplied.
+- This was a distinct later session on the same date as the recorded push workout.
+
+## Face Pull
+
+- 60 lb × 10
+- 60 lb × 10
+
+## Pull-Up
+
+- 4 repetitions
+- 3 repetitions
+
+Seven total repetitions were reported. The strict form standard was not explicitly confirmed.
+
+## Lat Pulldown
+
+- 100 lb × 10
+- 115 lb × 10, approximately 2–4 RIR
+- 130 lb × 8
+
+Completed volume:
+
+- 3,190 lb
+
+The 130 lb × 8 top set is the best recorded lat-pulldown load.
+
+## Incline Dumbbell Curl
+
+Recorded per dumbbell:
+
+- 15 lb × 10
+- 15 lb × 10
+- 15 lb × 15
+
+## Spider Curl
+
+Recorded per dumbbell:
+
+- 15 lb × 15
+- 15 lb × 15
+- 15 lb × 30
+
+Progression note:
+
+- Try 20 lb next time for a controlled 10–15-repetition target.
+
+## Standing Reverse Cable Fly
+
+- 10 lb × 15
+- 10 lb × 15
+- 12.5 lb × 15
+- 10 lb × 15
+
+Data-quality notes:
+
+- The user reported poor form across these sets.
+- The supplied stack values may be per side, but the loading convention was not explicitly confirmed.
+- Start around 5–7.5 lb next time and keep a stable slight elbow bend.
+
+## Standing Two-Arm Cable Row
+
+Performed with both arms simultaneously; every stack value is per side:
+
+- 20 lb per side × 20
+- 25 lb per side × 20
+- 30 lb per side × 20
+- 35 lb per side × 20
+
+Equipment note:
+
+- The gym does not have a seated cable-row station.
+
+## Smith-Machine Romanian Deadlift
+
+- 25 lb Smith bar
+- Approximately 100 total repetitions across multiple form-practice sets
+- Exact set structure was not recorded
+
+Context:
+
+- Back pain was 0/6 before starting.
+- This is an aggregate repetition total, not a single 100-repetition set.
+
+## Cable Ab Crunch
+
+- 60 lb × 20
+- 70 lb × 15
+- 70 lb × 15
+
+Completed volume:
+
+- 3,300 lb
+
+Performed as the session finisher.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -454,7 +561,8 @@ It is unclear whether this refers to dumbbells, cable resistance, or per-side lo
 
 ## Lat Pulldown
 
-- Best recorded top set: 110 lb × 10
+- Best recorded load: 130 lb × 8
+- Best recorded 10-repetition load: 115 lb × 10
 
 ## Explicit Historical Comparisons
 

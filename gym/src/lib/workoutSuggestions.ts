@@ -229,7 +229,7 @@ function healthyTemplate(type: WorkoutType): SuggestedExercise[] {
         }),
         exercise("lat-pulldown", "Lat pulldown", 3, [8, 12], [1, 3]),
         exercise("chest-supported-row", "Chest-supported row", 3, [8, 12], [1, 3], {
-          alternatives: ["seated-cable-row", "machine-row"],
+          alternatives: ["standing-cable-row", "machine-row"],
         }),
         exercise("face-pull", "Rear-delt work", 3, [12, 20], [0, 2], {
           alternatives: ["reverse-cable-fly", "rear-delt-machine"],
@@ -276,7 +276,7 @@ function recoveryTemplate(): SuggestedExercise[] {
     exercise("leg-press", "Leg press", 2, [10, 10], [3, 4], {
       alternatives: ["goblet-squat"],
     }),
-    exercise("seated-cable-row", "Seated cable row", 2, [10, 10], [3, 4]),
+    exercise("standing-cable-row", "Standing cable row", 2, [10, 10], [3, 4]),
     exercise("cable-lateral-raise", "Lateral raise", 2, [12, 15], [3, 4]),
     exercise("triceps-pushdown", "Optional arms", 2, [10, 15], [3, 4], {
       optional: true,

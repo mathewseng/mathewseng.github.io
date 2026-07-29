@@ -154,6 +154,20 @@ export const exercises: ExerciseDefinition[] = [
     notes: "Use controlled torso position; reduce or avoid if it reproduces back pain.",
   }),
   defineExercise({
+    id: "standing-cable-row",
+    canonicalName: "Standing Cable Row",
+    aliases: ["Standing dual-cable row"],
+    category: "back",
+    muscleGroups: ["mid back", "lats", "rear delts", "biceps"],
+    equipment: ["cable machine"],
+    weightMayBePerSide: true,
+    failureRelativelySafe: true,
+    mayStressBack: true,
+    defaultRepRange: [8, 15],
+    notes:
+      "Record whether the stack value is per side and keep the torso braced without leaning.",
+  }),
+  defineExercise({
     id: "chest-supported-row",
     canonicalName: "Chest-Supported Row",
     aliases: ["Supported row"],
@@ -426,7 +440,7 @@ export const exercises: ExerciseDefinition[] = [
     aliases: ["RDL"],
     category: "legs",
     muscleGroups: ["hamstrings", "glutes", "spinal erectors", "upper back"],
-    equipment: ["barbell", "dumbbells"],
+    equipment: ["barbell", "dumbbells", "Smith machine"],
     weightMayBePerSide: true,
     estimatedOneRepMaxAppropriate: true,
     mayStressBack: true,
@@ -529,6 +543,18 @@ export const exercises: ExerciseDefinition[] = [
     volumeCalculationMeaningful: false,
     defaultRepRange: [6, 15],
     notes: "Control swinging; knee-raise variation is a valid separate note.",
+  }),
+  defineExercise({
+    id: "cable-ab-crunch",
+    canonicalName: "Cable Ab Crunch",
+    aliases: ["Cable crunch", "Kneeling cable crunch"],
+    category: "core",
+    muscleGroups: ["abs"],
+    equipment: ["cable machine", "rope"],
+    failureRelativelySafe: true,
+    defaultRepRange: [10, 20],
+    notes:
+      "Curl the ribcage toward the pelvis with controlled spinal motion; avoid turning the movement into a hip hinge.",
   }),
   defineExercise({
     id: "ab-wheel",

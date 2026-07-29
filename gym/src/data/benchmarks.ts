@@ -86,11 +86,11 @@ export const currentBenchmarks: Benchmark[] = [
     id: "lat-pulldown-top-set",
     exerciseId: "lat-pulldown",
     label: "Best recorded lat-pulldown top set",
-    value: 110,
+    value: 130,
     unit: "lb",
     confirmed: true,
-    workoutId: "return-from-travel-upper",
-    notes: "110 lb × 10.",
+    workoutId: "pull-2026-07-28",
+    notes: "130 lb × 8; best recorded 10-repetition load is 115 lb.",
   },
 ];
 

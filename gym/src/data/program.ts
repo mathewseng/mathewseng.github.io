@@ -143,14 +143,17 @@ export const programTemplates: ProgramTemplate[] = [
         sets: 3,
         repRange: [8, 12],
         rirRange: [1, 2],
-        notes: "Choose a true working weight. Current top recorded set is 110 lb × 10.",
+        notes:
+          "Choose a true working weight. Current top set is 130 lb × 8; current 10-repetition reference is 115 lb × 10.",
       },
       {
         exerciseId: "chest-supported-row",
         label: "Supported Row",
         sets: 3,
         repRange: [8, 12],
-        alternatives: ["seated-cable-row", "machine-row"],
+        alternatives: ["standing-cable-row", "machine-row"],
+        notes:
+          "The gym does not have a seated cable-row station. Use a standing dual-cable row or chest-supported dumbbell row.",
       },
       {
         exerciseId: "face-pull",
@@ -335,8 +338,8 @@ export const programTemplates: ProgramTemplate[] = [
         rirRange: [3, 4],
       },
       {
-        exerciseId: "seated-cable-row",
-        label: "Seated Row",
+        exerciseId: "standing-cable-row",
+        label: "Standing Cable Row",
         sets: 2,
         reps: 10,
         rirRange: [3, 4],

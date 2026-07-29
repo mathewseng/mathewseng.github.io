@@ -1,10 +1,11 @@
 import type { Workout } from "../lib/types";
 
 /**
- * The eight source workouts, in the order they were recorded.
+ * Source workouts in the order they were recorded.
  *
- * chronologyIndex preserves relative ordering for the five undated sessions.
- * It must never be converted into a fabricated calendar date.
+ * chronologyIndex preserves relative ordering, including same-day sessions and
+ * the five undated sessions. Undated sessions must never be assigned fabricated
+ * calendar dates.
  */
 export const workouts = [
   {
@@ -989,6 +990,279 @@ export const workouts = [
       },
     ],
   },
+  {
+    id: "pull-2026-07-28",
+    date: "2026-07-28",
+    type: "pull",
+    title: "Pull Workout with RDL Technique Practice",
+    chronologyIndex: 9,
+    dataQuality: "partial",
+    context: {
+      backPain: 0,
+      notes:
+        "Back pain was explicitly rated 0/6 before the Smith-machine Romanian deadlift practice. No other numeric readiness ratings were supplied.",
+      sourceLabels: ["back-pain-zero", "rdl-form-practice"],
+    },
+    exercises: [
+      {
+        exerciseId: "face-pull",
+        name: "Face Pull",
+        equipment: "Cable machine",
+        dataQuality: "complete",
+        sets: [
+          {
+            id: "2026-07-28-pull-face-pull-1",
+            weightLb: 60,
+            reps: 10,
+            completed: true,
+          },
+          {
+            id: "2026-07-28-pull-face-pull-2",
+            weightLb: 60,
+            reps: 10,
+            completed: true,
+          },
+        ],
+      },
+      {
+        exerciseId: "strict-pull-up",
+        name: "Pull-Up",
+        equipment: "Pull-up bar",
+        dataQuality: "partial",
+        sets: [
+          {
+            id: "2026-07-28-pull-pullup-1",
+            reps: 4,
+            completed: true,
+          },
+          {
+            id: "2026-07-28-pull-pullup-2",
+            reps: 3,
+            completed: true,
+          },
+        ],
+        notes:
+          "Seven total repetitions were reported. The strict pull-up form standard was not explicitly confirmed.",
+      },
+      {
+        exerciseId: "lat-pulldown",
+        name: "Lat Pulldown",
+        equipment: "Lat pulldown machine",
+        dataQuality: "complete",
+        sets: [
+          {
+            id: "2026-07-28-pull-pulldown-100",
+            weightLb: 100,
+            reps: 10,
+            completed: true,
+            rampUp: true,
+          },
+          {
+            id: "2026-07-28-pull-pulldown-115",
+            weightLb: 115,
+            reps: 10,
+            completed: true,
+            rirRange: [2, 4],
+            rampUp: true,
+          },
+          {
+            id: "2026-07-28-pull-pulldown-130",
+            weightLb: 130,
+            reps: 8,
+            completed: true,
+          },
+        ],
+        notes:
+          "3,190 lb completed volume. The 130 lb × 8 top set is the best recorded lat-pulldown load.",
+      },
+      {
+        exerciseId: "incline-curl",
+        name: "Incline Dumbbell Curl",
+        equipment: "Dumbbells and incline bench",
+        dataQuality: "complete",
+        sets: [
+          {
+            id: "2026-07-28-pull-incline-curl-1",
+            weightLb: 15,
+            reps: 10,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-incline-curl-2",
+            weightLb: 15,
+            reps: 10,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-incline-curl-3",
+            weightLb: 15,
+            reps: 15,
+            completed: true,
+            perSide: true,
+          },
+        ],
+        notes: "15 lb per dumbbell.",
+      },
+      {
+        exerciseId: "spider-curl",
+        name: "Spider Curl",
+        equipment: "Dumbbells and incline bench",
+        dataQuality: "complete",
+        sets: [
+          {
+            id: "2026-07-28-pull-spider-curl-1",
+            weightLb: 15,
+            reps: 15,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-spider-curl-2",
+            weightLb: 15,
+            reps: 15,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-spider-curl-3",
+            weightLb: 15,
+            reps: 30,
+            completed: true,
+            perSide: true,
+          },
+        ],
+        notes:
+          "15 lb per dumbbell. Try 20 lb next time for a controlled 10–15-rep target.",
+      },
+      {
+        exerciseId: "reverse-cable-fly",
+        name: "Standing Reverse Cable Fly",
+        equipment: "Dual cable machine",
+        dataQuality: "ambiguous",
+        sets: [
+          {
+            id: "2026-07-28-pull-reverse-fly-1",
+            weightLb: 10,
+            reps: 15,
+            completed: true,
+            dataQuality: "ambiguous",
+          },
+          {
+            id: "2026-07-28-pull-reverse-fly-2",
+            weightLb: 10,
+            reps: 15,
+            completed: true,
+            dataQuality: "ambiguous",
+          },
+          {
+            id: "2026-07-28-pull-reverse-fly-3",
+            weightLb: 12.5,
+            reps: 15,
+            completed: true,
+            dataQuality: "ambiguous",
+          },
+          {
+            id: "2026-07-28-pull-reverse-fly-4",
+            weightLb: 10,
+            reps: 15,
+            completed: true,
+            dataQuality: "ambiguous",
+          },
+        ],
+        notes:
+          "The user reported poor form across these sets. The supplied stack values may be per side, but the loading convention was not explicitly confirmed. Start around 5–7.5 lb next time and keep a stable slight elbow bend.",
+      },
+      {
+        exerciseId: "standing-cable-row",
+        name: "Standing Two-Arm Cable Row",
+        equipment: "Dual cable machine",
+        dataQuality: "complete",
+        sets: [
+          {
+            id: "2026-07-28-pull-cable-row-20",
+            weightLb: 20,
+            reps: 20,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-cable-row-25",
+            weightLb: 25,
+            reps: 20,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-cable-row-30",
+            weightLb: 30,
+            reps: 20,
+            completed: true,
+            perSide: true,
+          },
+          {
+            id: "2026-07-28-pull-cable-row-35",
+            weightLb: 35,
+            reps: 20,
+            completed: true,
+            perSide: true,
+          },
+        ],
+        notes:
+          "Performed with both arms simultaneously. All stack values are explicitly recorded per side.",
+      },
+      {
+        exerciseId: "romanian-deadlift",
+        name: "Smith-Machine Romanian Deadlift",
+        equipment: "Smith machine",
+        machineId: "primary-smith-machine",
+        dataQuality: "estimated",
+        sets: [
+          {
+            id: "2026-07-28-pull-rdl-aggregate",
+            weightLb: 25,
+            reps: 100,
+            completed: true,
+            dataQuality: "estimated",
+            notes:
+              "Approximate aggregate repetition total across multiple form-practice sets; exact set breakdown was not recorded.",
+          },
+        ],
+        notes:
+          "Used only the 25 lb Smith bar for light hinge-form practice. Back pain was 0/6 before starting. Approximately 100 total repetitions were reported, but the set structure is unknown.",
+      },
+      {
+        exerciseId: "cable-ab-crunch",
+        name: "Cable Ab Crunch",
+        equipment: "Cable machine",
+        dataQuality: "complete",
+        sets: [
+          {
+            id: "2026-07-28-pull-ab-crunch-60",
+            weightLb: 60,
+            reps: 20,
+            completed: true,
+          },
+          {
+            id: "2026-07-28-pull-ab-crunch-70-1",
+            weightLb: 70,
+            reps: 15,
+            completed: true,
+          },
+          {
+            id: "2026-07-28-pull-ab-crunch-70-2",
+            weightLb: 70,
+            reps: 15,
+            completed: true,
+          },
+        ],
+        notes: "3,300 lb completed volume; performed as the session finisher.",
+      },
+    ],
+    notes:
+      "This was a distinct later session on the same date as the recorded push workout. The gym does not have a seated cable-row station. Exact RDL set structure and reverse-fly loading convention remain unknown.",
+  },
 ] satisfies Workout[];
 
 export const datedWorkouts = workouts.filter(
@@ -998,13 +1272,17 @@ export const datedWorkouts = workouts.filter(
 
 export const undatedWorkouts = workouts.filter((workout) => workout.date === undefined);
 
-export const workoutsNewestFirst = [...workouts].sort((a, b) => {
+export function compareWorkoutsNewestFirst(a: Workout, b: Workout): number {
   if (a.date && b.date) {
-    return b.date.localeCompare(a.date);
+    const dateOrder = b.date.localeCompare(a.date);
+    return dateOrder || b.chronologyIndex - a.chronologyIndex;
   }
-
+  if (a.date) return -1;
+  if (b.date) return 1;
   return b.chronologyIndex - a.chronologyIndex;
-});
+}
+
+export const workoutsNewestFirst = [...workouts].sort(compareWorkoutsNewestFirst);
 
 export const workoutById = new Map(
   workouts.map((workout) => [workout.id, workout] as const),

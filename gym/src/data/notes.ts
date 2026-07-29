@@ -12,6 +12,7 @@ export const trainingNotes: TrainingNote[] = [
       "The gym does not have 2.5 lb plates, so bench and similar bar-loading exercises normally increase by 10 lb total.",
       "Use rep progression before increasing load.",
       "Different machines may have different cable ratios or resistance curves; track stack values by machine.",
+      "The gym does not have a seated cable-row station; use a standing dual-cable row or chest-supported dumbbell row instead.",
     ],
   },
   {
