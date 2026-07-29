@@ -51,6 +51,14 @@ describe("seed data integration", () => {
     }
   });
 
+  it("places the corrected push workout on July 27", () => {
+    expect(workouts.find((workout) => workout.id === "push-2026-07-27")).toMatchObject({
+      date: "2026-07-27",
+      type: "push",
+    });
+    expect(workouts.some((workout) => workout.id === "push-2026-07-28")).toBe(false);
+  });
+
   it("preserves the completed July 28 pull workout and its uncertainty", () => {
     const workout = workouts.find((item) => item.id === "pull-2026-07-28");
     const reverseFly = workout?.exercises.find(

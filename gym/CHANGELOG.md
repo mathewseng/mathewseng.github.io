@@ -2,6 +2,12 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-07-29 — Push Workout Date Correction
+
+### Fixed
+
+- Corrected the travel-and-mild-illness push workout from July 28 to July 27 across its JSON identity, set IDs, calendar date, charts, benchmarks, and human-readable log.
+
 ## 2026-07-29 — Per-Workout JSON Logs
 
 ### Changed

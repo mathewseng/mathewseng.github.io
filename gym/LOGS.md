@@ -348,9 +348,9 @@ Completed volume:
 
 ---
 
-# 8. Push Workout After Travel and Mild Illness — July 28, 2026
+# 8. Push Workout After Travel and Mild Illness — July 27, 2026
 
-**Date:** 2026-07-28
+**Date:** 2026-07-27
 
 **Data quality:** Partial
 
@@ -428,7 +428,7 @@ It is unclear whether this refers to dumbbells, cable resistance, or per-side lo
 
 - Back pain before Smith-machine RDL practice: **0/6**
 - No other numeric readiness ratings were supplied.
-- This was a distinct later session on the same date as the recorded push workout.
+- This session followed the July 27 push workout.
 
 ## Face Pull
 
@@ -580,6 +580,6 @@ Change: **+1 completed repetition and +95 lb of completed volume**.
 | Session                                   | Completed set reps | Completed reps | Completed volume |
 | ----------------------------------------- | ------------------ | -------------: | ---------------: |
 | Return-from-travel session (date unknown) | 10, 8, 5           |             23 |           690 lb |
-| 2026-07-28                                | 10, 10, 10         |             30 |           900 lb |
+| 2026-07-27                                | 10, 10, 10         |             30 |           900 lb |
 
 Change: **+7 completed repetitions and +210 lb of completed volume**.

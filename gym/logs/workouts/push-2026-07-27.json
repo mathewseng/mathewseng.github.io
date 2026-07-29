@@ -1,6 +1,6 @@
 {
-  "id": "push-2026-07-28",
-  "date": "2026-07-28",
+  "id": "push-2026-07-27",
+  "date": "2026-07-27",
   "type": "push",
   "title": "Push Workout After Travel and Mild Illness",
   "chronologyIndex": 8,
@@ -18,28 +18,28 @@
       "dataQuality": "complete",
       "sets": [
         {
-          "id": "2026-07-28-flat-25",
+          "id": "2026-07-27-flat-25",
           "weightLb": 25,
           "reps": 10,
           "completed": true,
           "warmup": true
         },
         {
-          "id": "2026-07-28-flat-75",
+          "id": "2026-07-27-flat-75",
           "weightLb": 75,
           "reps": 10,
           "completed": true,
           "rampUp": true
         },
         {
-          "id": "2026-07-28-flat-85",
+          "id": "2026-07-27-flat-85",
           "weightLb": 85,
           "reps": 9,
           "completed": true,
           "rampUp": true
         },
         {
-          "id": "2026-07-28-flat-95",
+          "id": "2026-07-27-flat-95",
           "weightLb": 95,
           "reps": 5,
           "completed": true
@@ -55,28 +55,28 @@
       "dataQuality": "complete",
       "sets": [
         {
-          "id": "2026-07-28-incline-25",
+          "id": "2026-07-27-incline-25",
           "weightLb": 25,
           "reps": 10,
           "completed": true,
           "warmup": true
         },
         {
-          "id": "2026-07-28-incline-45",
+          "id": "2026-07-27-incline-45",
           "weightLb": 45,
           "reps": 10,
           "completed": true,
           "rampUp": true
         },
         {
-          "id": "2026-07-28-incline-55",
+          "id": "2026-07-27-incline-55",
           "weightLb": 55,
           "reps": 10,
           "completed": true,
           "rampUp": true
         },
         {
-          "id": "2026-07-28-incline-65",
+          "id": "2026-07-27-incline-65",
           "weightLb": 65,
           "reps": 10,
           "completed": true
@@ -91,19 +91,19 @@
       "dataQuality": "complete",
       "sets": [
         {
-          "id": "2026-07-28-pushdown-1",
+          "id": "2026-07-27-pushdown-1",
           "weightLb": 30,
           "reps": 10,
           "completed": true
         },
         {
-          "id": "2026-07-28-pushdown-2",
+          "id": "2026-07-27-pushdown-2",
           "weightLb": 30,
           "reps": 10,
           "completed": true
         },
         {
-          "id": "2026-07-28-pushdown-3",
+          "id": "2026-07-27-pushdown-3",
           "weightLb": 30,
           "reps": 10,
           "completed": true
@@ -117,7 +117,7 @@
       "dataQuality": "ambiguous",
       "sets": [
         {
-          "id": "2026-07-28-overhead-1",
+          "id": "2026-07-27-overhead-1",
           "weightLb": 20,
           "reps": 7,
           "completed": true,
@@ -132,21 +132,21 @@
       "dataQuality": "ambiguous",
       "sets": [
         {
-          "id": "2026-07-28-lateral-1",
+          "id": "2026-07-27-lateral-1",
           "weightLb": 10,
           "reps": 20,
           "completed": true,
           "dataQuality": "ambiguous"
         },
         {
-          "id": "2026-07-28-lateral-2",
+          "id": "2026-07-27-lateral-2",
           "weightLb": 15,
           "reps": 15,
           "completed": true,
           "dataQuality": "ambiguous"
         },
         {
-          "id": "2026-07-28-lateral-3",
+          "id": "2026-07-27-lateral-3",
           "weightLb": 15,
           "reps": 15,
           "completed": true,

@@ -27,7 +27,7 @@ const benchProgress = [
   { label: "Jul 14", value: 19, secondary: 1805 },
   { label: "Jul 16", value: 20, secondary: 1900 },
   {
-    label: "Jul 28",
+    label: "Jul 27",
     value: 5,
     secondary: 475,
     context: "Single 95 lb ramp-up set during mild illness; not a matched test.",
@@ -39,7 +39,7 @@ const inclineProgress = [
   { label: "Jul 14", value: 8 },
   { label: "Jul 16", value: 11 },
   {
-    label: "Jul 28",
+    label: "Jul 27",
     value: 10,
     context: "65 lb top set after travel; best recorded incline top set.",
   },
@@ -49,7 +49,7 @@ const benchEstimateProgress = [
   { label: "Jul 14", value: 117.2, secondary: 95 },
   { label: "Jul 16", value: 117.2, secondary: 95 },
   {
-    label: "Jul 28",
+    label: "Jul 27",
     value: 110.8,
     secondary: 95,
     context: "Estimated from a single ramp-up top set during mild illness.",
@@ -72,7 +72,7 @@ const pushdownProgress = [
     secondary: 690,
     context: "Exact date was not recorded.",
   },
-  { label: "Jul 28", value: 30, secondary: 900 },
+  { label: "Jul 27", value: 30, secondary: 900 },
 ];
 
 function recentTrainingWeeks(workouts: Workout[]) {
@@ -274,7 +274,7 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">Latest context</p>
+                <p className="eyebrow">July 27 context</p>
                 <h2 className="mt-1 text-lg font-black">Return, don’t regress</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
@@ -282,7 +282,7 @@ export default function Dashboard() {
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              Travel and mild illness make July 28 a contextual session—not proof of
+              Travel and mild illness make July 27 a contextual session—not proof of
               strength loss.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -490,7 +490,7 @@ export default function Dashboard() {
                 <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
                   Pushdown at 30 lb
                 </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Travel return → Jul 28</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Travel return → Jul 27</p>
                 <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
                   <span>10 / 8 / 5</span>
                   <ArrowRight size={15} className="text-[var(--faint)]" />

@@ -94,7 +94,7 @@ Each structured exercise definition supports:
 | Cable Front Raise           | `cable-front-raise`                                                   | Can be per side                                                                       | Return session reports 10 lb per side and likely counts sides as sets |
 | Spider Curl                 | `spider-curl`                                                         | May use two dumbbells                                                                 | It is unclear whether 15 lb is per hand                               |
 | Incline Curl                | `incline-curl`                                                        | May use two dumbbells                                                                 | It is unclear whether 15 lb is per hand                               |
-| Lateral Raise               | unresolved between `cable-lateral-raise` and `dumbbell-lateral-raise` | Do not choose a canonical ID until clarified                                          | July 28 equipment and per-side status are unknown                     |
+| Lateral Raise               | unresolved between `cable-lateral-raise` and `dumbbell-lateral-raise` | Do not choose a canonical ID until clarified                                          | July 27 equipment and per-side status are unknown                     |
 
 ## Calculation Defaults
 

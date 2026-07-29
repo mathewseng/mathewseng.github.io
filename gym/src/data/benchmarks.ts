@@ -29,7 +29,7 @@ export const currentBenchmarks: Benchmark[] = [
     value: 65,
     unit: "lb",
     confirmed: true,
-    workoutId: "push-2026-07-28",
+    workoutId: "push-2026-07-27",
     notes: "65 lb × 10.",
   },
   {
@@ -49,7 +49,7 @@ export const currentBenchmarks: Benchmark[] = [
     value: 30,
     unit: "lb",
     confirmed: true,
-    workoutId: "push-2026-07-28",
+    workoutId: "push-2026-07-27",
     notes: "30 lb × 10, 10, 10.",
   },
   {
