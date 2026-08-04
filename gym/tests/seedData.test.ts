@@ -92,10 +92,64 @@ describe("seed data integration", () => {
         dataQuality: "estimated",
       }),
     ]);
-    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-07-28");
     expect(pulldownBenchmark).toMatchObject({
       value: 130,
       workoutId: "pull-2026-07-28",
+    });
+  });
+
+  it("preserves the August 3 push results and failed eighth bench rep", () => {
+    const workout = workouts.find((item) => item.id === "push-2026-08-03");
+    const benchProgress = getRepProgression(workouts, "smith-flat-bench", 95, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "push-2026-08-03");
+    const bench = workout?.exercises.find(
+      (entry) => entry.exerciseId === "smith-flat-bench",
+    );
+    const incline = workout?.exercises.find(
+      (entry) => entry.exerciseId === "smith-incline-bench",
+    );
+    const benchBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "flat-bench-95-volume",
+    );
+    const overheadBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "overhead-triceps-reference",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-08-03",
+      type: "push",
+      chronologyIndex: 10,
+      dataQuality: "partial",
+      context: {
+        energy: 3,
+        sleepQuality: 2,
+        soreness: 0,
+        illness: 0,
+        backPain: 1,
+      },
+    });
+    expect(benchProgress).toMatchObject({
+      setReps: [7, 7, 7],
+      completedReps: 21,
+      completedVolumeLb: 1_995,
+    });
+    expect(bench?.sets.filter((set) => set.failedAttempt)).toEqual([
+      expect.objectContaining({
+        weightLb: 95,
+        attemptedReps: 1,
+        completed: false,
+      }),
+    ]);
+    expect(incline?.sets.map((set) => set.reps)).toEqual([8, 8, 8]);
+    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-08-03");
+    expect(benchBenchmark).toMatchObject({
+      value: 1_995,
+      workoutId: "push-2026-08-03",
+    });
+    expect(overheadBenchmark).toMatchObject({
+      value: 25,
+      workoutId: "push-2026-08-03",
     });
   });
 

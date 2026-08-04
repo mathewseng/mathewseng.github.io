@@ -525,20 +525,128 @@ Performed as the session finisher.
 
 ---
 
+# 10. Push Workout with Cable and Core Finishers — August 3, 2026
+
+**Date:** 2026-08-03
+
+**Data quality:** Partial
+
+## Context
+
+- Energy: **3/6**
+- Sleep quality: **2/6**
+- Soreness: **0/6**
+- Illness: **0/6**
+- Back pain: **1/6**
+- Workout duration was not supplied.
+
+## Smith-Machine Flat Bench
+
+- 95 lb × 7
+- 95 lb × 7
+- 95 lb × 7
+- Attempted an eighth repetition on the final set and failed halfway
+
+Completed work:
+
+- 21 repetitions
+- 1,995 lb volume
+- +1 completed repetition and +95 lb versus July 16
+
+The failed repetition is preserved separately and excluded from completed repetitions and volume.
+
+## Smith-Machine Incline Bench
+
+- 65 lb × 8
+- 65 lb × 8
+- 65 lb × 8
+
+This is the first documented full three-working-set result at 65 lb: 24 repetitions and 1,560 lb volume.
+
+## Triceps Pushdown
+
+- 30 lb × 10
+- 30 lb × 10
+- 30 lb × 10
+- 30 lb × 10
+
+Completed volume: 1,200 lb.
+
+## Overhead Triceps Extension
+
+- 20 lb × 10
+- 20 lb × 10
+- 25 lb × 10
+- 25 lb × 10
+
+Equipment, attachment, and per-side loading were not supplied. The best recorded load is now 25 lb × 10 for two sets.
+
+## High Cable Chest Press
+
+- 20 lb × 15
+- 20 lb × 15
+- 20 lb × 15
+
+The cable setup and per-side loading convention were not supplied.
+
+## Mid Cable Fly
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+The cable setup and per-side loading convention were not supplied.
+
+## Single-Arm Cable Lateral Raise
+
+Recorded per side:
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+## Single-Arm Cable Front Raise
+
+Recorded per side:
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+## Cable Ab Crunch
+
+- 65 lb × 15
+- 70 lb × 15
+- 75 lb × 15
+
+Completed volume: 3,150 lb.
+
+## Leg Raise
+
+- 60 total repetitions
+- Variation and exact set breakdown were not supplied.
+
+## Reverse Crunch
+
+- 60 total repetitions
+- Exact set breakdown was not supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
 
 - Best confirmed heavy single: 115 lb
 - Failed attempts: 125 lb and 135 lb
-- Best documented three-set performance: 95 lb × 7, 7, 6
-- Best documented completed volume at 95 lb: 1,900 lb
+- Best documented three-set performance: 95 lb × 7, 7, 7
+- Best documented completed volume at 95 lb: 1,995 lb
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
 
 - Best documented top set: 65 lb × 10
-- Previous full working result: 55 lb × 9, 10, 11
+- Best documented full result at 65 lb: 8, 8, 8
 
 ## Shoulder Press
 
@@ -546,12 +654,12 @@ Performed as the session finisher.
 
 ## Triceps Pushdown
 
-- 30 lb × 10, 10, 10
+- 30 lb × 10, 10, 10, 10
 
 ## Overhead Triceps Extension
 
-- 20 lb × 12, 6, 4 after prior triceps work
-- Later: 20 lb × 7
+- 25 lb × 10, 10 after 20 lb × 10, 10
+- Equipment and loading convention remain unrecorded.
 
 ## Strict Pull-Up
 
@@ -572,8 +680,9 @@ Performed as the session finisher.
 | ---------- | ------------------ | -------------: | ---------------: |
 | 2026-07-14 | 7, 7, 5            |             19 |         1,805 lb |
 | 2026-07-16 | 7, 7, 6            |             20 |         1,900 lb |
+| 2026-08-03 | 7, 7, 7            |             21 |         1,995 lb |
 
-Change: **+1 completed repetition and +95 lb of completed volume**.
+Change from July 14 to August 3: **+2 completed repetitions and +190 lb of completed volume**.
 
 ### Triceps Pushdown at 30 lb
 
@@ -581,5 +690,6 @@ Change: **+1 completed repetition and +95 lb of completed volume**.
 | ----------------------------------------- | ------------------ | -------------: | ---------------: |
 | Return-from-travel session (date unknown) | 10, 8, 5           |             23 |           690 lb |
 | 2026-07-27                                | 10, 10, 10         |             30 |           900 lb |
+| 2026-08-03                                | 10, 10, 10, 10     |             40 |         1,200 lb |
 
-Change: **+7 completed repetitions and +210 lb of completed volume**.
+Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.

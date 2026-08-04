@@ -32,6 +32,12 @@ const benchProgress = [
     secondary: 475,
     context: "Single 95 lb ramp-up set during mild illness; not a matched test.",
   },
+  {
+    label: "Aug 3",
+    value: 21,
+    secondary: 1995,
+    context: "7/7/7 completed; the attempted eighth rep of the final set failed.",
+  },
 ];
 
 const inclineProgress = [
@@ -43,6 +49,11 @@ const inclineProgress = [
     value: 10,
     context: "65 lb top set after travel; best recorded incline top set.",
   },
+  {
+    label: "Aug 3",
+    value: 8,
+    context: "Three full working sets were completed at 65 lb: 8/8/8.",
+  },
 ];
 
 const benchEstimateProgress = [
@@ -53,6 +64,12 @@ const benchEstimateProgress = [
     value: 110.8,
     secondary: 95,
     context: "Estimated from a single ramp-up top set during mild illness.",
+  },
+  {
+    label: "Aug 3",
+    value: 117.2,
+    secondary: 95,
+    context: "Estimated from a completed seven-repetition set; not a max test.",
   },
 ];
 
@@ -73,6 +90,7 @@ const pushdownProgress = [
     context: "Exact date was not recorded.",
   },
   { label: "Jul 27", value: 30, secondary: 900 },
+  { label: "Aug 3", value: 40, secondary: 1200 },
 ];
 
 function recentTrainingWeeks(workouts: Workout[]) {
@@ -265,8 +283,8 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                Reach at least 21 total reps at 95 lb; build toward 8 / 8 / 8 before the
-                10 lb jump.
+                You reached 7 / 7 / 7 at 95 lb. Next, earn 22 clean total reps and keep
+                building toward 8 / 8 / 8 before the 10 lb jump.
               </p>
             </div>
           </Surface>
@@ -274,21 +292,21 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">July 27 context</p>
-                <h2 className="mt-1 text-lg font-black">Return, don’t regress</h2>
+                <p className="eyebrow">August 3 context</p>
+                <h2 className="mt-1 text-lg font-black">Low sleep, strong output</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              Travel and mild illness make July 27 a contextual session—not proof of
-              strength loss.
+              You reached the 21-rep bench target with sleep at 2/6, energy at 3/6, and
+              back pain at 1/6. Soreness and illness were both 0/6.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="warm">recent travel</Badge>
-              <Badge tone="warm">mild illness</Badge>
-              <Badge tone="quality">scores not quantified</Badge>
+              <Badge tone="warm">sleep 2/6</Badge>
+              <Badge tone="quality">energy 3/6</Badge>
+              <Badge tone="quality">back pain 1/6</Badge>
             </div>
           </Surface>
         </div>
@@ -330,8 +348,8 @@ export default function Dashboard() {
         />
         <MetricCard
           label="Best bench 3-set"
-          value="7 / 7 / 6"
-          detail="95 lb · 20 completed reps"
+          value="7 / 7 / 7"
+          detail="95 lb · 21 completed reps"
           icon={BarChart3}
         />
         <MetricCard
@@ -343,7 +361,7 @@ export default function Dashboard() {
         <MetricCard
           label="Pushdown"
           value="30 × 10"
-          detail="Three completed sets"
+          detail="Four completed sets"
           icon={Flame}
         />
       </section>
@@ -466,38 +484,38 @@ export default function Dashboard() {
             <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
               <div className="bg-[var(--surface)] p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+1 rep</Badge>
+                  <Badge tone="accent">+2 reps</Badge>
                   <BarChart3 size={18} className="text-[var(--muted)]" />
                 </div>
                 <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
                   Bench at 95 lb
                 </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Jul 16</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Aug 3</p>
                 <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
                   <span>7 / 7 / 5</span>
                   <ArrowRight size={15} className="text-[var(--faint)]" />
-                  <span>7 / 7 / 6</span>
+                  <span>7 / 7 / 7</span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-                  19 → 20 reps · 1,805 → 1,900 lb known volume
+                  19 → 21 reps · 1,805 → 1,995 lb known volume
                 </p>
               </div>
               <div className="bg-[var(--surface)] p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+7 reps</Badge>
+                  <Badge tone="accent">+17 reps</Badge>
                   <Dumbbell size={18} className="text-[var(--muted)]" />
                 </div>
                 <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
                   Pushdown at 30 lb
                 </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Travel return → Jul 27</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Travel return → Aug 3</p>
                 <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
                   <span>10 / 8 / 5</span>
                   <ArrowRight size={15} className="text-[var(--faint)]" />
-                  <span>10 / 10 / 10</span>
+                  <span>10 / 10 / 10 / 10</span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-                  23 → 30 reps · 690 → 900 lb known volume
+                  23 → 40 reps · 690 → 1,200 lb known volume
                 </p>
               </div>
             </div>

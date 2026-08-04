@@ -83,7 +83,7 @@ export const goals: Goal[] = [
       "Avoid repeated descending failed attempts.",
     ],
     notes:
-      "Current body weight is approximately 140 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. Best recent working performance is 95 lb × 7, 7, 6.",
+      "Current body weight is approximately 140 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. Best recent working performance is 95 lb × 7, 7, 7; the attempted eighth rep of the final set failed halfway.",
   },
   {
     id: "ten-strict-pullups",

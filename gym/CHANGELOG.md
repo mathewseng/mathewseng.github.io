@@ -2,6 +2,19 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-08-03 — Push Workout Log
+
+### Added
+
+- Added the August 3 push workout with all five supplied 0–6 context scores, eleven exercises, and aggregate core totals.
+- Added high cable chest press, mid cable fly, leg raise, and reverse crunch to the exercise registry.
+
+### Changed
+
+- Updated the 95 lb Smith-bench record to 7, 7, 7 for 21 completed repetitions and 1,995 lb volume.
+- Preserved the failed eighth repetition of the final bench set without counting it as completed work.
+- Updated the triceps-pushdown reference to four sets of 10 and the overhead-extension reference to 25 lb × 10, 10.
+
 ## 2026-07-29 — Push Workout Date Correction
 
 ### Fixed

@@ -23,10 +23,11 @@ Workout and readiness context is recorded with optional 0–6 integer ratings. E
 Healthy-session reference:
 
 - 95 lb for 3 working sets
-- Current result: 7, 7, 6
-- Next total-repetition goal: at least 21
-- Example target: 7, 7, 7 or 8, 7, 6
+- Current result: 7, 7, 7
+- Next total-repetition goal: at least 22 clean repetitions
+- Example target: 8, 7, 7
 - Most sets at approximately 1–2 reps in reserve
+- The attempted eighth repetition of the final August 3 set failed halfway and does not count as completed.
 
 Progress to 105 lb after:
 
@@ -36,6 +37,7 @@ Progress to 105 lb after:
 ### Smith-Machine Incline Bench
 
 - 65 lb for 3 sets of 8–10 when healthy
+- Current result: 65 lb × 8, 8, 8
 - Build toward 3 sets of 10 before increasing
 
 ### Shoulder Press
@@ -46,6 +48,7 @@ Progress to 105 lb after:
 ### Triceps Pushdown
 
 - 30 lb for 3 sets of 10–12
+- Current result: 30 lb × 10, 10, 10, 10
 - Build toward 12, 12, 12 before increasing
 
 ### Cable Lateral Raise
@@ -55,7 +58,8 @@ Progress to 105 lb after:
 
 ### Overhead Triceps Extension
 
-- 15 lb for 2–3 sets of 10–12
+- Current top result: 25 lb × 10, 10 after 20 lb × 10, 10
+- Use 25 lb for 2–3 sets of 10–12 when the equipment and loading convention match
 - Increase only after stable repetitions across all sets
 
 ## Pull Day

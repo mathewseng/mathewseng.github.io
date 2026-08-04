@@ -1,0 +1,331 @@
+{
+  "id": "push-2026-08-03",
+  "date": "2026-08-03",
+  "type": "push",
+  "title": "Push Workout with Cable and Core Finishers",
+  "chronologyIndex": 10,
+  "dataQuality": "partial",
+  "context": {
+    "energy": 3,
+    "sleepQuality": 2,
+    "soreness": 0,
+    "illness": 0,
+    "backPain": 1,
+    "notes": "All supplied ratings use the 0–6 scale. Energy and sleep use 6 as best; symptom ratings use 6 as worst. Workout duration was not supplied.",
+    "sourceLabels": ["low-sleep", "mild-back-pain"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-03-flat-1",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-flat-2",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-flat-3",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-flat-3-rep-8-fail",
+          "weightLb": 95,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "The eighth repetition of the third set was attempted and failed halfway; it is separate so it is excluded from completed reps and volume."
+        }
+      ],
+      "notes": "95 lb × 7, 7, 7 for 21 completed repetitions and 1,995 lb completed volume: +1 rep and +95 lb versus July 16."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-03-incline-1",
+          "weightLb": 65,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-incline-2",
+          "weightLb": 65,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-incline-3",
+          "weightLb": 65,
+          "reps": 8,
+          "completed": true
+        }
+      ],
+      "notes": "First documented full three-set result at 65 lb: 24 completed repetitions and 1,560 lb completed volume."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-03-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-pushdown-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-pushdown-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-pushdown-4",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Four completed sets for 40 repetitions and 1,200 lb completed volume."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-08-03-overhead-20-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-overhead-20-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-overhead-25-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-overhead-25-2",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Equipment, attachment, and per-side status were not supplied. The best recorded load is now 25 lb × 10 for two sets."
+    },
+    {
+      "exerciseId": "high-cable-chest-press",
+      "name": "High Cable Chest Press",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-08-03-high-cable-press-1",
+          "weightLb": 20,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-high-cable-press-2",
+          "weightLb": 20,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-high-cable-press-3",
+          "weightLb": 20,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "The cable setup and whether 20 lb was per side were not explicitly supplied."
+    },
+    {
+      "exerciseId": "mid-cable-fly",
+      "name": "Mid Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-08-03-mid-cable-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-mid-cable-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-03-mid-cable-fly-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "The cable setup and whether 10 lb was per side were not explicitly supplied."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Single-Arm Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-03-lateral-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-03-lateral-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-03-lateral-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Performed one arm at a time; the recorded load is per side."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Single-Arm Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-03-front-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-03-front-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-03-front-raise-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Performed one arm at a time; the recorded load is per side."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-03-ab-crunch-65",
+          "weightLb": 65,
+          "reps": 15,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-ab-crunch-70",
+          "weightLb": 70,
+          "reps": 15,
+          "completed": true
+        },
+        {
+          "id": "2026-08-03-ab-crunch-75",
+          "weightLb": 75,
+          "reps": 15,
+          "completed": true
+        }
+      ],
+      "notes": "45 completed repetitions and 3,150 lb completed volume."
+    },
+    {
+      "exerciseId": "leg-raise",
+      "name": "Leg Raise",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-08-03-leg-raise-total",
+          "reps": 60,
+          "completed": true,
+          "dataQuality": "estimated",
+          "notes": "Aggregate total; the variation and exact set breakdown were not supplied."
+        }
+      ],
+      "notes": "Sixty total repetitions were reported; this is not represented as one continuous 60-repetition set."
+    },
+    {
+      "exerciseId": "reverse-crunch",
+      "name": "Reverse Crunch",
+      "equipment": "Bodyweight",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-08-03-reverse-crunch-total",
+          "reps": 60,
+          "completed": true,
+          "dataQuality": "estimated",
+          "notes": "Aggregate total; the exact set breakdown was not supplied."
+        }
+      ],
+      "notes": "Sixty total repetitions were reported; this is not represented as one continuous 60-repetition set."
+    }
+  ],
+  "notes": "The session reached the previous 21-repetition bench target despite sleep quality of 2/6. The failed eighth bench repetition is preserved but excluded from completed-repetition and volume calculations. Unspecified cable loading conventions remain ambiguous."
+}

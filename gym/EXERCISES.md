@@ -10,6 +10,8 @@ Exercise identifiers are stable keys. A Smith-machine press and a free-weight ba
 - `dumbbell-bench`
 - `shoulder-press`
 - `machine-chest-press`
+- `high-cable-chest-press`
+- `mid-cable-fly`
 
 ## Back and Pulling
 
@@ -58,6 +60,8 @@ Exercise identifiers are stable keys. A Smith-machine press and a free-weight ba
 - `plank`
 - `pallof-press`
 - `hanging-leg-raise`
+- `leg-raise`
+- `reverse-crunch`
 - `cable-ab-crunch`
 - `ab-wheel`
 
@@ -95,6 +99,10 @@ Each structured exercise definition supports:
 | Spider Curl                 | `spider-curl`                                                         | May use two dumbbells                                                                 | It is unclear whether 15 lb is per hand                               |
 | Incline Curl                | `incline-curl`                                                        | May use two dumbbells                                                                 | It is unclear whether 15 lb is per hand                               |
 | Lateral Raise               | unresolved between `cable-lateral-raise` and `dumbbell-lateral-raise` | Do not choose a canonical ID until clarified                                          | July 27 equipment and per-side status are unknown                     |
+| High Cable Chest Press      | `high-cable-chest-press`                                              | Preserve the entered stack load; record per-side status when known                    | August 3 cable setup and per-side status are unknown                  |
+| Mid Cable Fly               | `mid-cable-fly`                                                       | Preserve the entered stack load; record per-side status when known                    | August 3 cable setup and per-side status are unknown                  |
+| Leg Raise                   | `leg-raise`                                                           | Record the variation and exact sets when known                                        | August 3 supplies only a 60-repetition aggregate total                |
+| Reverse Crunch              | `reverse-crunch`                                                      | Bodyweight core movement; do not force external-load volume                           | August 3 supplies only a 60-repetition aggregate total                |
 
 ## Calculation Defaults
 

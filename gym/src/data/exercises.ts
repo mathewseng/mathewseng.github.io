@@ -117,6 +117,32 @@ export const exercises: ExerciseDefinition[] = [
     defaultRepRange: [8, 12],
     notes: "Track the machine identity because resistance curves differ.",
   }),
+  defineExercise({
+    id: "high-cable-chest-press",
+    canonicalName: "High Cable Chest Press",
+    aliases: ["High cable press", "High-to-low cable press"],
+    category: "chest",
+    muscleGroups: ["chest", "triceps", "front delts"],
+    equipment: ["cable machine"],
+    weightMayBePerSide: true,
+    failureRelativelySafe: true,
+    defaultRepRange: [10, 20],
+    notes:
+      "Record cable height and whether the displayed stack weight is per side; cable ratios vary by machine.",
+  }),
+  defineExercise({
+    id: "mid-cable-fly",
+    canonicalName: "Mid Cable Fly",
+    aliases: ["Cable chest fly", "Standing cable fly"],
+    category: "chest",
+    muscleGroups: ["chest", "front delts"],
+    equipment: ["cable machine"],
+    weightMayBePerSide: true,
+    failureRelativelySafe: true,
+    defaultRepRange: [10, 20],
+    notes:
+      "Record whether the displayed stack weight is per side and compare only on the same cable setup.",
+  }),
 
   defineExercise({
     id: "strict-pull-up",
@@ -543,6 +569,34 @@ export const exercises: ExerciseDefinition[] = [
     volumeCalculationMeaningful: false,
     defaultRepRange: [6, 15],
     notes: "Control swinging; knee-raise variation is a valid separate note.",
+  }),
+  defineExercise({
+    id: "leg-raise",
+    canonicalName: "Leg Raise",
+    aliases: ["Lying leg raise", "Captain's-chair leg raise"],
+    category: "core",
+    muscleGroups: ["abs", "hip flexors"],
+    equipment: ["bodyweight", "floor", "captain's chair"],
+    volumeCalculationMeaningful: false,
+    failureRelativelySafe: true,
+    mayStressBack: true,
+    defaultRepRange: [8, 20],
+    notes:
+      "Record the variation and set breakdown; use only a controlled range that does not increase back symptoms.",
+  }),
+  defineExercise({
+    id: "reverse-crunch",
+    canonicalName: "Reverse Crunch",
+    aliases: [],
+    category: "core",
+    muscleGroups: ["abs", "hip flexors"],
+    equipment: ["bodyweight", "floor", "bench"],
+    volumeCalculationMeaningful: false,
+    failureRelativelySafe: true,
+    mayStressBack: true,
+    defaultRepRange: [8, 20],
+    notes:
+      "Use controlled pelvic movement without momentum and stop if the exercise increases back symptoms.",
   }),
   defineExercise({
     id: "cable-ab-crunch",
