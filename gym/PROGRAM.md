@@ -124,6 +124,14 @@ Perform:
 
 ## Leg Day
 
+Current recorded baselines from August 10:
+
+- Smith-machine squat: 115 lb × 10, 10, 10
+- Leg press: 140 lb × 10, 10, 10
+- Smith-machine Romanian deadlift technique work: 25 lb × 10, 10
+- Standing calf raise: bodyweight × 25, then 35 lb per hand × 10, 10
+- Back-pain severity and RIR were not supplied; do not label these loads pain-free or ready to increase yet.
+
 When the back feels normal:
 
 1. Goblet squat, leg press, or Smith squat: 3 × 6–10

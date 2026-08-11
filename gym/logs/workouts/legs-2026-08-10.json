@@ -1,0 +1,174 @@
+{
+  "id": "legs-2026-08-10",
+  "date": "2026-08-10",
+  "type": "legs",
+  "title": "Leg Day with Shoulder and Triceps Accessories",
+  "chronologyIndex": 11,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-squat",
+      "name": "Smith-Machine Squat",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-10-smith-squat-1",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-smith-squat-2",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-smith-squat-3",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "First precise Smith-squat baseline: 30 completed repetitions and 3,450 lb completed volume. The recorded load includes the 25 lb Smith bar."
+    },
+    {
+      "exerciseId": "romanian-deadlift",
+      "name": "Smith-Machine Romanian Deadlift",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-10-smith-rdl-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-smith-rdl-2",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Performed with only the 25 lb Smith bar. Back-pain severity and RIR were not supplied, so the session is not labeled pain-free."
+    },
+    {
+      "exerciseId": "leg-press",
+      "name": "Leg Press",
+      "equipment": "Leg press machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-10-leg-press-1",
+          "weightLb": 140,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-leg-press-2",
+          "weightLb": 140,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-leg-press-3",
+          "weightLb": 140,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "First precise leg-press baseline: 30 completed repetitions and 4,200 lb completed volume."
+    },
+    {
+      "exerciseId": "calf-raise",
+      "name": "Standing Calf Raise",
+      "equipment": "Bodyweight and dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-10-calf-bodyweight",
+          "reps": 25,
+          "completed": true,
+          "notes": "Bodyweight set."
+        },
+        {
+          "id": "2026-08-10-calf-dumbbell-1",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-10-calf-dumbbell-2",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "The loaded sets used one 35 lb dumbbell in each hand. Per-side load is preserved and is not silently doubled in default volume calculations."
+    },
+    {
+      "exerciseId": "shoulder-press",
+      "name": "Standing Dumbbell Overhead Press",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-10-standing-press-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-10-standing-press-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-08-10-standing-press-3",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Twenty pounds per dumbbell for all three sets. This remains a separate equipment-specific history from the earlier shoulder-press record with unspecified equipment."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-10-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-pushdown-2",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-08-10-pushdown-3",
+          "weightLb": 30,
+          "reps": 6,
+          "completed": true
+        }
+      ],
+      "notes": "Twenty-four completed repetitions and 720 lb completed volume. The August 3 result remains the best recorded 30 lb pushdown session."
+    }
+  ],
+  "notes": "The squat and Romanian deadlift are recorded as Smith-machine movements based on the supplied gym equipment context. No 0–6 readiness, soreness, illness, or back-pain scores were supplied for this session, so those values remain unknown."
+}

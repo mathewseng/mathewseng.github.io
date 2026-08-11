@@ -240,7 +240,7 @@ export const goals: Goal[] = [
       "Use a stable stance and stop if pain occurs.",
     ],
     notes:
-      "Build legs, back, arms, grip, trunk stability, and technique so carrying an approximately 120 lb person feels safe and easy.",
+      "First precise lower-body load baselines were recorded on August 10: Smith squat 115 lb × 10, 10, 10 and leg press 140 lb × 10, 10, 10. Back-pain context was not supplied, so repeatability without symptoms is not yet confirmed.",
   },
   {
     id: "consistent-ppl",
@@ -275,7 +275,7 @@ export const goals: Goal[] = [
       "pallof-press",
     ],
     progressionRules: [
-      "Resume consistent lower-body training without aggravating the back.",
+      "Repeat the August 10 lower-body baseline while recording back pain before, during, and after training.",
       "Use light Romanian deadlifts only if comfortable.",
       "Favor pain-free supported and machine options when needed.",
     ],
@@ -286,7 +286,8 @@ export const goals: Goal[] = [
       "Stop for weakness.",
       "Stop for worsening symptoms.",
     ],
-    notes: "Currently temporarily limited by back symptoms/history.",
+    notes:
+      "The first precise Smith-squat and leg-press baselines were recorded on August 10, but no back-pain score or post-session symptom response was supplied.",
   },
 ];
 

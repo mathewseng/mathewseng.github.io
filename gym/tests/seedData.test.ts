@@ -142,7 +142,6 @@ describe("seed data integration", () => {
       }),
     ]);
     expect(incline?.sets.map((set) => set.reps)).toEqual([8, 8, 8]);
-    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-08-03");
     expect(benchBenchmark).toMatchObject({
       value: 1_995,
       workoutId: "push-2026-08-03",
@@ -151,6 +150,64 @@ describe("seed data integration", () => {
       value: 25,
       workoutId: "push-2026-08-03",
     });
+  });
+
+  it("preserves the August 10 lower-body baselines and per-hand loads", () => {
+    const workout = workouts.find((item) => item.id === "legs-2026-08-10");
+    const squatProgress = getRepProgression(workouts, "smith-squat", 115, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "legs-2026-08-10");
+    const legPressProgress = getRepProgression(workouts, "leg-press", 140).find(
+      (point) => point.workoutId === "legs-2026-08-10",
+    );
+    const calfRaise = workout?.exercises.find(
+      (entry) => entry.exerciseId === "calf-raise",
+    );
+    const overheadPress = workout?.exercises.find(
+      (entry) => entry.exerciseId === "shoulder-press",
+    );
+    const squatBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "smith-squat-baseline",
+    );
+    const legPressBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "leg-press-baseline",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-08-10",
+      type: "legs",
+      chronologyIndex: 11,
+      dataQuality: "partial",
+    });
+    expect(workout?.context).toBeUndefined();
+    expect(squatProgress).toMatchObject({
+      setReps: [10, 10, 10],
+      completedReps: 30,
+      completedVolumeLb: 3_450,
+    });
+    expect(legPressProgress).toMatchObject({
+      setReps: [10, 10, 10],
+      completedReps: 30,
+      completedVolumeLb: 4_200,
+    });
+    expect(calfRaise?.sets.slice(1).every((set) => set.perSide === true)).toBe(true);
+    expect(overheadPress).toMatchObject({
+      equipment: "Dumbbells",
+      sets: [
+        expect.objectContaining({ weightLb: 20, reps: 10, perSide: true }),
+        expect.objectContaining({ weightLb: 20, reps: 10, perSide: true }),
+        expect.objectContaining({ weightLb: 20, reps: 10, perSide: true }),
+      ],
+    });
+    expect(squatBenchmark).toMatchObject({
+      value: 115,
+      workoutId: "legs-2026-08-10",
+    });
+    expect(legPressBenchmark).toMatchObject({
+      value: 140,
+      workoutId: "legs-2026-08-10",
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("legs-2026-08-10");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

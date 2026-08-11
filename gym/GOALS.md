@@ -182,7 +182,7 @@ Safety:
 
 Next action:
 
-- Establish pain-free lower-body and carry baselines before practicing with a person.
+- Repeat the August 10 Smith-squat and leg-press baselines while recording back pain before, during, and after training; then establish a controlled carry baseline.
 
 Current status:
 
@@ -248,11 +248,11 @@ Stop conditions:
 
 Next action:
 
-- Use supported or machine movements and conservative effort when back-pain severity is elevated; seek qualified care for severe or neurological symptoms.
+- Repeat the August 10 lower-body session with a recorded 0–6 back-pain score and post-session symptom response; keep RDLs light and stop if symptoms increase.
 
 Current status:
 
-- Temporarily limited
+- Foundation resumed; symptom response still unconfirmed
 
 ## Status Integrity
 

@@ -103,6 +103,10 @@ Each structured exercise definition supports:
 | Mid Cable Fly               | `mid-cable-fly`                                                       | Preserve the entered stack load; record per-side status when known                    | August 3 cable setup and per-side status are unknown                  |
 | Leg Raise                   | `leg-raise`                                                           | Record the variation and exact sets when known                                        | August 3 supplies only a 60-repetition aggregate total                |
 | Reverse Crunch              | `reverse-crunch`                                                      | Bodyweight core movement; do not force external-load volume                           | August 3 supplies only a 60-repetition aggregate total                |
+| Smith-Machine Squat         | `smith-squat`                                                         | 25 lb Smith bar included; preserve the primary Smith-machine identity                 | August 10 back-pain response and RIR were not supplied                |
+| Leg Press                   | `leg-press`                                                           | Machine-specific load; do not compare across different leg-press machines             | Exact machine identity was not recorded                               |
+| Standing Overhead Press     | `shoulder-press`                                                      | August 10 used 20 lb per dumbbell; keep separate from unspecified shoulder-press data | Earlier 30 lb shoulder-press equipment remains unknown                |
+| Standing Calf Raise         | `calf-raise`                                                          | August 10 loaded sets used 35 lb per hand                                             | Bodyweight plus external-load volume is not combined automatically    |
 
 ## Calculation Defaults
 

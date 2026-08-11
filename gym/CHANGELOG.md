@@ -2,6 +2,18 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-08-11 — August 10 Leg Workout Log
+
+### Added
+
+- Added the August 10 leg workout with Smith squats, Smith RDLs, leg press, calf raises, standing dumbbell overhead presses, and triceps pushdowns.
+- Established precise Smith-squat and leg-press baselines and equipment-specific dumbbell overhead-press and calf-raise references.
+
+### Changed
+
+- Updated the dashboard’s next-session guidance from pull to push after the completed leg day.
+- Updated the back-safe leg and carrying goals to build from the recorded lower-body loads while preserving the missing back-pain response as unknown.
+
 ## 2026-08-03 — Push Workout Log
 
 ### Added

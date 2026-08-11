@@ -633,6 +633,82 @@ Completed volume: 3,150 lb.
 
 ---
 
+# 11. Leg Day with Shoulder and Triceps Accessories — August 10, 2026
+
+**Date:** 2026-08-10
+
+**Data quality:** Partial context; complete set data
+
+## Context
+
+- No 0–6 readiness, soreness, illness, or back-pain scores were supplied.
+- The squat and RDL are recorded as Smith-machine movements based on the gym’s available equipment.
+- The August 10 loads must not be labeled pain-free without a back-symptom response.
+
+## Smith-Machine Squat
+
+- 115 lb × 10
+- 115 lb × 10
+- 115 lb × 10
+
+Completed work:
+
+- 30 repetitions
+- 3,450 lb volume
+- First precise Smith-squat baseline
+
+The recorded load includes the 25 lb Smith bar.
+
+## Smith-Machine Romanian Deadlift
+
+- 25 lb × 10
+- 25 lb × 10
+
+Performed with only the 25 lb Smith bar. Back-pain severity and RIR were not supplied.
+
+## Leg Press
+
+- 140 lb × 10
+- 140 lb × 10
+- 140 lb × 10
+
+Completed work:
+
+- 30 repetitions
+- 4,200 lb volume
+- First precise leg-press baseline
+
+## Standing Calf Raise
+
+- Bodyweight × 25
+- 35 lb per hand × 10
+- 35 lb per hand × 10
+
+The loaded sets used one 35 lb dumbbell in each hand. Default volume preserves the entered per-side load rather than silently doubling it.
+
+## Standing Dumbbell Overhead Press
+
+- 20 lb per dumbbell × 10
+- 20 lb per dumbbell × 10
+- 20 lb per dumbbell × 10
+
+This is the first equipment-specific standing dumbbell overhead-press baseline.
+
+## Triceps Pushdown
+
+- 30 lb × 10
+- 30 lb × 8
+- 30 lb × 6
+
+Completed work:
+
+- 24 repetitions
+- 720 lb volume
+
+The August 3 result of 30 lb × 10, 10, 10, 10 remains the best recorded session at this load.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -650,7 +726,8 @@ Completed volume: 3,150 lb.
 
 ## Shoulder Press
 
-- 30 lb × 10, 10, 12
+- Unspecified-equipment reference: 30 lb × 10, 10, 12
+- Do not merge it with the standing dumbbell overhead-press baseline.
 
 ## Triceps Pushdown
 
@@ -671,6 +748,26 @@ Completed volume: 3,150 lb.
 
 - Best recorded load: 130 lb × 8
 - Best recorded 10-repetition load: 115 lb × 10
+
+## Smith-Machine Squat
+
+- First precise baseline: 115 lb × 10, 10, 10
+- Recorded load includes the 25 lb Smith bar.
+- Back-pain response was not supplied.
+
+## Leg Press
+
+- First precise baseline: 140 lb × 10, 10, 10
+- Machine-specific result
+
+## Standing Dumbbell Overhead Press
+
+- 20 lb per dumbbell × 10, 10, 10
+
+## Standing Calf Raise
+
+- Bodyweight × 25
+- 35 lb per hand × 10, 10
 
 ## Explicit Historical Comparisons
 

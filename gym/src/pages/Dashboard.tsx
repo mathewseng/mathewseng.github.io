@@ -216,7 +216,7 @@ export default function Dashboard() {
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
               <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Push → Pull next
+                Legs → Push next
               </Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
@@ -224,24 +224,24 @@ export default function Dashboard() {
                 Suggested next session
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Pull, with room in the tank.
+                Push, build the next clean rep.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
-                Start with five submaximal pull-up sets around 3 reps. Add only one clean
-                rep across the session, then use supported rows and pulldowns.
+                At 95 lb, aim for at least 22 clean bench reps—such as 8 / 7 / 7—then keep
+                building toward 8 / 8 / 8 without repeated failure.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
               <div className="flex items-center gap-5">
                 <div>
-                  <p className="text-2xl font-black">45</p>
+                  <p className="text-2xl font-black">60</p>
                   <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
                     minutes
                   </p>
                 </div>
                 <div className="h-9 w-px bg-current opacity-20" />
                 <div>
-                  <p className="text-2xl font-black">3–4</p>
+                  <p className="text-2xl font-black">1–2</p>
                   <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
                     target RIR
                   </p>
@@ -353,15 +353,15 @@ export default function Dashboard() {
           icon={BarChart3}
         />
         <MetricCard
-          label="Lat pulldown top"
-          value="110 × 10"
-          detail="Machine-specific record"
+          label="Smith squat"
+          value="115 × 10"
+          detail="Three completed sets"
           icon={TrendingUp}
         />
         <MetricCard
-          label="Pushdown"
-          value="30 × 10"
-          detail="Four completed sets"
+          label="Leg press"
+          value="140 × 10"
+          detail="Three completed sets"
           icon={Flame}
         />
       </section>
