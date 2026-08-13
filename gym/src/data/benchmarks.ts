@@ -16,12 +16,12 @@ export const currentBenchmarks: Benchmark[] = [
     id: "flat-bench-95-volume",
     exerciseId: "smith-flat-bench",
     label: "Best completed volume at 95 lb",
-    value: 1995,
+    value: 2185,
     unit: "lb-volume",
     confirmed: true,
-    workoutId: "push-2026-08-03",
+    workoutId: "push-2026-08-12",
     notes:
-      "95 lb × 7, 7, 7 for 21 completed repetitions; the attempted eighth rep of the final set failed and is excluded.",
+      "95 lb × 8, 7, 8 for 23 completed repetitions with no failed attempt reported.",
   },
   {
     id: "incline-bench-top-set",

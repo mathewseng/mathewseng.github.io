@@ -12,8 +12,8 @@ Current confirmed status:
 - Best successful heavy single: 115 lb
 - 125 lb: failed
 - 135 lb: failed
-- Best recent working performance: 95 lb × 7, 7, 7
-- The attempted eighth repetition of the final set on August 3 failed halfway and is excluded from completed reps.
+- Best recent working performance: 95 lb × 8, 7, 8
+- August 12 produced 23 completed repetitions and no failed attempt was reported.
 
 Definition of success:
 
@@ -44,7 +44,7 @@ Progression rule:
 
 Next action:
 
-- On a healthy, adequately recovered push day, complete at least 22 clean working repetitions at 95 lb, such as 8, 7, 7, then continue toward 8, 8, 8.
+- On a healthy, adequately recovered push day, complete 95 lb × 8, 8, 8 with clean repetitions before considering the 10 lb increase.
 
 Current status:
 

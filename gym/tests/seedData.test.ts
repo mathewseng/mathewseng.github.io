@@ -109,9 +109,6 @@ describe("seed data integration", () => {
     const incline = workout?.exercises.find(
       (entry) => entry.exerciseId === "smith-incline-bench",
     );
-    const benchBenchmark = currentBenchmarks.find(
-      (benchmark) => benchmark.id === "flat-bench-95-volume",
-    );
     const overheadBenchmark = currentBenchmarks.find(
       (benchmark) => benchmark.id === "overhead-triceps-reference",
     );
@@ -142,10 +139,6 @@ describe("seed data integration", () => {
       }),
     ]);
     expect(incline?.sets.map((set) => set.reps)).toEqual([8, 8, 8]);
-    expect(benchBenchmark).toMatchObject({
-      value: 1_995,
-      workoutId: "push-2026-08-03",
-    });
     expect(overheadBenchmark).toMatchObject({
       value: 25,
       workoutId: "push-2026-08-03",
@@ -207,7 +200,51 @@ describe("seed data integration", () => {
       value: 140,
       workoutId: "legs-2026-08-10",
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("legs-2026-08-10");
+  });
+
+  it("preserves the August 12 push progress and cable uncertainty", () => {
+    const workout = workouts.find((item) => item.id === "push-2026-08-12");
+    const benchProgress = getRepProgression(workouts, "smith-flat-bench", 95, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "push-2026-08-12");
+    const incline = workout?.exercises.find(
+      (entry) => entry.exerciseId === "smith-incline-bench",
+    );
+    const highCablePress = workout?.exercises.find(
+      (entry) => entry.exerciseId === "high-cable-chest-press",
+    );
+    const lateralRaise = workout?.exercises.find(
+      (entry) => entry.exerciseId === "cable-lateral-raise",
+    );
+    const benchBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "flat-bench-95-volume",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-08-12",
+      type: "push",
+      chronologyIndex: 12,
+      dataQuality: "partial",
+    });
+    expect(workout?.context).toBeUndefined();
+    expect(benchProgress).toMatchObject({
+      setReps: [8, 7, 8],
+      completedReps: 23,
+      completedVolumeLb: 2_185,
+    });
+    expect(incline?.sets.map((set) => set.reps)).toEqual([9, 8, 8]);
+    expect(highCablePress?.sets).toEqual([
+      expect.objectContaining({ weightLb: 20, reps: 20 }),
+      expect.objectContaining({ weightLb: 25, reps: 12 }),
+      expect.objectContaining({ weightLb: 25, reps: 10 }),
+    ]);
+    expect(highCablePress?.dataQuality).toBe("ambiguous");
+    expect(lateralRaise?.sets.every((set) => set.perSide === undefined)).toBe(true);
+    expect(benchBenchmark).toMatchObject({
+      value: 2_185,
+      workoutId: "push-2026-08-12",
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-08-12");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

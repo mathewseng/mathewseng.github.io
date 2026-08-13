@@ -21,7 +21,7 @@ export const programTemplates: ProgramTemplate[] = [
         weightLb: 95,
         rirRange: [1, 2],
         notes:
-          "Warm up first. The current result is 7/7/7; aim for at least 22 clean working reps next, such as 8/7/7.",
+          "Warm up first. The current result is 8/7/8 for 23 completed reps; aim for 8/8/8 next.",
       },
       {
         exerciseId: "smith-incline-bench",

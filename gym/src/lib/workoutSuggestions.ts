@@ -197,7 +197,7 @@ function healthyTemplate(type: WorkoutType): SuggestedExercise[] {
         exercise("smith-flat-bench", "Smith-machine flat bench", 3, [6, 8], [1, 3], {
           weightLb: 95,
           notes:
-            "Warm up first. Aim for at least 21 completed working repetitions; do not test a maximum.",
+            "Warm up first. Aim for 8/8/8 and 24 clean completed repetitions; do not test a maximum.",
         }),
         exercise(
           "smith-incline-bench",

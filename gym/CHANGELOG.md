@@ -2,6 +2,18 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-08-13 — August 12 Push Workout Log
+
+### Added
+
+- Added the August 12 push workout with Smith bench and incline bench, four cable movements, and two triceps movements.
+
+### Changed
+
+- Updated the 95 lb Smith-bench record to 8, 7, 8 for 23 completed repetitions and 2,185 lb volume.
+- Advanced the next bench target to 8, 8, 8 while keeping the confirmed 145 lb goal unchanged.
+- Updated dashboard charts, current metrics, improvement comparisons, and next-session guidance to reflect the completed push day.
+
 ## 2026-08-11 — August 10 Leg Workout Log
 
 ### Added

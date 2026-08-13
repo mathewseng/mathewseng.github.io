@@ -709,14 +709,110 @@ The August 3 result of 30 lb × 10, 10, 10, 10 remains the best recorded session
 
 ---
 
+# 12. Push Workout with Bench Rep Progress — August 12, 2026
+
+**Date:** 2026-08-12
+
+**Data quality:** Partial context; complete set and repetition data
+
+## Context
+
+- No 0–6 energy, sleep, soreness, illness, or back-pain scores were supplied.
+- Both bench movements are recorded on the established primary Smith machine.
+- Unspecified cable loading conventions remain unknown rather than being inferred as per-side loads.
+
+## Smith-Machine Flat Bench
+
+- 95 lb × 8
+- 95 lb × 7
+- 95 lb × 8
+
+Completed work:
+
+- 23 repetitions
+- 2,185 lb volume
+- +2 completed repetitions and +190 lb versus August 3
+- No failed repetition reported
+
+This is the best recorded three-set performance and completed volume at 95 lb.
+
+## Smith-Machine Incline Bench
+
+- 55 lb × 9
+- 55 lb × 8
+- 55 lb × 8
+
+Completed work:
+
+- 25 repetitions
+- 1,375 lb volume
+
+The load was lower than the 65 lb used on August 3, so the sessions are not treated as a direct regression comparison.
+
+## Triceps Pushdown
+
+- 30 lb × 10
+- 30 lb × 9
+- 30 lb × 7
+
+Completed work:
+
+- 26 repetitions
+- 780 lb volume
+- +2 repetitions versus August 10
+
+The four-set August 3 session remains the highest total at this load.
+
+## High Cable Chest Press
+
+- 20 lb × 20
+- 25 lb × 12
+- 25 lb × 10
+
+Twenty-five pounds is a new recorded load for this movement. The cable setup and per-side loading convention were not supplied.
+
+## Overhead Triceps Extension
+
+- 20 lb × 12
+- 20 lb × 10
+- 20 lb × 8
+
+Equipment, attachment, and per-side loading were not supplied. The August 3 result at 25 lb remains the heaviest recorded load.
+
+## Cable Chest Fly
+
+- 10 lb × 15
+- 10 lb × 15
+- 10 lb × 15
+
+The cable height and per-side loading convention were not supplied.
+
+## Cable Lateral Raise
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Cable Front Raise
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+Unilateral versus bilateral execution and per-side loading were not supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
 
 - Best confirmed heavy single: 115 lb
 - Failed attempts: 125 lb and 135 lb
-- Best documented three-set performance: 95 lb × 7, 7, 7
-- Best documented completed volume at 95 lb: 1,995 lb
+- Best documented three-set performance: 95 lb × 8, 7, 8
+- Best documented completed volume at 95 lb: 2,185 lb
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
@@ -778,8 +874,9 @@ The August 3 result of 30 lb × 10, 10, 10, 10 remains the best recorded session
 | 2026-07-14 | 7, 7, 5            |             19 |         1,805 lb |
 | 2026-07-16 | 7, 7, 6            |             20 |         1,900 lb |
 | 2026-08-03 | 7, 7, 7            |             21 |         1,995 lb |
+| 2026-08-12 | 8, 7, 8            |             23 |         2,185 lb |
 
-Change from July 14 to August 3: **+2 completed repetitions and +190 lb of completed volume**.
+Change from July 14 to August 12: **+4 completed repetitions and +380 lb of completed volume**.
 
 ### Triceps Pushdown at 30 lb
 
@@ -788,5 +885,9 @@ Change from July 14 to August 3: **+2 completed repetitions and +190 lb of compl
 | Return-from-travel session (date unknown) | 10, 8, 5           |             23 |           690 lb |
 | 2026-07-27                                | 10, 10, 10         |             30 |           900 lb |
 | 2026-08-03                                | 10, 10, 10, 10     |             40 |         1,200 lb |
+| 2026-08-10                                | 10, 8, 6           |             24 |           720 lb |
+| 2026-08-12                                | 10, 9, 7           |             26 |           780 lb |
 
 Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.
+
+Change from August 10 to August 12: **+2 completed repetitions and +60 lb of completed volume** across three sets.
