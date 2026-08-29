@@ -2467,3 +2467,403 @@ body.ev-page {
 .ev-page .status-cluster {
   display: none;
 }
+
+/* Variant controls and rule reference */
+.trainer-variant-control {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(520px, 1.45fr) minmax(280px, 0.8fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.control-label-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rules-button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: #0b1220;
+  color: var(--text);
+  font: inherit;
+  text-transform: none;
+}
+
+.rules-button:hover,
+.rules-button:focus-visible {
+  border-color: rgba(66, 230, 164, 0.66);
+  outline: none;
+}
+
+.info-mark {
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.variant-pills {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.variant-pills span {
+  min-height: 32px;
+  padding: 0 7px;
+  font-size: 0.78rem;
+}
+
+.variant-summary {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.badugijack-split {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+  padding: 5px 10px;
+}
+
+.badugijack-zone {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 3px 6px 5px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+}
+
+.badugijack-zone.active {
+  border-color: rgba(66, 230, 164, 0.5);
+  background: rgba(66, 230, 164, 0.045);
+}
+
+.badugijack-zone-label {
+  display: block;
+  padding-bottom: 2px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 850;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.badugijack-zone .trainer-slots {
+  grid-column: auto;
+  grid-row: auto;
+  height: 100%;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+}
+
+.solution-badugijack-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+}
+
+.solution-split-group {
+  min-width: 0;
+}
+
+.solution-split-group > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.rules-dialog {
+  width: min(760px, calc(100vw - 24px));
+  max-height: min(760px, calc(100dvh - 24px));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(205, 220, 238, 0.28);
+  border-radius: 8px;
+  background: #080e14;
+  color: var(--text);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.56);
+}
+
+.rules-dialog::backdrop {
+  background: rgba(3, 6, 10, 0.42);
+}
+
+.rules-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #0d1721;
+}
+
+.rules-dialog-head h2 {
+  margin: 2px 0 0;
+  font-size: 1.08rem;
+}
+
+.dialog-close {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 850;
+}
+
+.rules-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  background: #070d13;
+}
+
+.rules-tabs button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.rules-tabs button.active {
+  border-color: rgba(66, 230, 164, 0.42);
+  background: rgba(66, 230, 164, 0.11);
+  color: var(--accent);
+}
+
+.rules-content {
+  max-height: calc(100dvh - 164px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.rules-article-heading {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-article-heading h3 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.rules-article-heading p,
+.rules-seed-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.rules-article section {
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-article h4 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.rules-article ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rules-article li {
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.rules-seed-note {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+
+@media (max-width: 980px) {
+  .trainer-panel {
+    grid-template-rows: 50px auto minmax(0, 1fr);
+  }
+
+  .trainer-variant-control {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .variant-summary,
+  .control-label-line > span {
+    display: none;
+  }
+
+  .rules-button {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+
+  .rules-button .info-mark {
+    font-size: 0.66rem;
+  }
+
+  .variant-pills span {
+    min-height: 28px;
+    padding: 0 4px;
+    font-size: 0.66rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .trainer-panel.is-badugijack {
+    --trainer-card-width: clamp(36px, calc((100vw - 70px) / 7), 56px);
+    --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+  }
+
+  .trainer-variant-control {
+    grid-column: 1 / -1;
+  }
+
+  .badugijack-middle-row {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .badugijack-middle-row .trainer-row-head {
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    z-index: 1;
+    width: auto;
+    min-height: 20px;
+    padding: 2px 5px;
+    border: 0;
+    border-radius: 5px;
+    background: rgba(3, 10, 9, 0.74);
+  }
+
+  .badugijack-middle-row .badugijack-split,
+  .badugijack-middle-row .trainer-row-summary {
+    grid-column: 1;
+  }
+
+  .badugijack-split {
+    gap: 3px;
+    padding: 2px 3px;
+  }
+
+  .badugijack-zone {
+    padding: 2px;
+  }
+
+  .badugijack-zone .trainer-slots {
+    gap: 3px;
+    padding: 0;
+  }
+
+  .badugijack-zone-label {
+    font-size: 0.52rem;
+  }
+
+  .rules-dialog {
+    width: calc(100vw - 10px);
+    max-height: calc(100dvh - 10px);
+  }
+
+  .rules-dialog-head {
+    padding: 12px;
+  }
+
+  .rules-tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    overflow: visible;
+    padding: 8px;
+  }
+
+  .rules-tabs button {
+    padding: 0 2px;
+    font-size: 0.62rem;
+  }
+
+  .rules-content {
+    max-height: calc(100dvh - 138px);
+    padding: 14px;
+  }
+
+  .rules-article section {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .solution-badugijack-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .trainer-panel {
+    grid-template-rows: 50px auto minmax(0, 1fr);
+  }
+
+  .variant-pills span {
+    padding: 0 2px;
+    font-size: 0.56rem;
+  }
+
+  .rules-tabs button {
+    font-size: 0.55rem;
+  }
+}

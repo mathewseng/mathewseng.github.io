@@ -3,322 +3,157 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0b0d10" />
-    <meta
-      name="description"
-      content="Open-face Chinese poker Fantasyland royalty EV and repeat probability Monte Carlo calculator."
-    />
-    <title>OFC Fantasyland EV Matrix</title>
+    <meta name="theme-color" content="#070a0f" />
+    <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
+    <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260629m" />
+    <link rel="stylesheet" href="./styles.css?v=20260829b" />
   </head>
-  <body class="ev-page">
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand-block">
-          <a class="home-link" href="/" aria-label="Home">MS</a>
-          <div>
-            <p class="eyebrow">Open-face Chinese poker</p>
-            <h1>OFC Fantasyland EV Matrix</h1>
-          </div>
-        </div>
-      </header>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="/" aria-label="Home"><span>MS</span><strong>OFC Fantasyland EV</strong></a>
+        <nav aria-label="OFC tools">
+          <a href="/ofc/">OFC tools</a>
+          <a href="/ofc/fantasyland-trainer/">Trainer</a>
+        </nav>
+      </div>
+    </header>
 
-      <section class="surface trainer-panel" aria-labelledby="trainer-title">
-        <div class="panel-heading trainer-heading">
-          <div>
-            <p class="eyebrow">Fantasyland trainer</p>
-            <h2 id="trainer-title">Daily puzzle</h2>
-          </div>
-          <div class="trainer-status">
-            <div class="timer-pill">
-              <span>Time</span>
-              <strong id="trainer-time">0:00</strong>
-            </div>
-            <div class="timer-pill">
-              <span>Puzzle</span>
-              <strong id="trainer-progress">1/1</strong>
-            </div>
-          </div>
+    <main class="page-shell">
+      <section class="intro-band">
+        <div>
+          <p class="eyebrow">Monte Carlo calculator</p>
+          <h1>Fantasyland royalty EV</h1>
+          <p class="lede">Compare immediate royalties, repeat probability, and recursive value across all 12 card and joker configurations.</p>
         </div>
+        <button id="rules-open" class="rules-button" type="button" aria-haspopup="dialog"><span aria-hidden="true">i</span>Scoring rules</button>
+      </section>
 
-        <div class="trainer-controls">
-          <div class="control-field">
-            <span>Mode</span>
-            <div class="segmented two-up" role="radiogroup" aria-label="Trainer mode">
-              <label><input type="radio" name="trainer-mode" value="daily" checked /><span>Daily</span></label>
-              <label><input type="radio" name="trainer-mode" value="random" /><span>Random</span></label>
+      <section class="calculator-panel" aria-labelledby="variant-heading">
+        <div class="variant-block">
+          <div class="section-label-row">
+            <div>
+              <p class="eyebrow">Variant</p>
+              <h2 id="variant-heading">Choose the middle-row game</h2>
             </div>
+            <p id="variant-summary" class="variant-summary">Standard 3-5-5 OFC with normal high-poker rankings.</p>
           </div>
-          <div class="control-field">
-            <span>Set</span>
-            <div class="segmented two-up" role="radiogroup" aria-label="Trainer set">
-              <label><input type="radio" name="trainer-scope" value="single" checked /><span>Single</span></label>
-              <label><input type="radio" name="trainer-scope" value="all" /><span>All 12</span></label>
-            </div>
-          </div>
-          <div class="control-field trainer-single-control">
-            <span>Cards</span>
-            <div class="segmented four-up" role="radiogroup" aria-label="Trainer card count">
-              <label><input type="radio" name="trainer-card-count" value="14" checked /><span>14</span></label>
-              <label><input type="radio" name="trainer-card-count" value="15" /><span>15</span></label>
-              <label><input type="radio" name="trainer-card-count" value="16" /><span>16</span></label>
-              <label><input type="radio" name="trainer-card-count" value="17" /><span>17</span></label>
-            </div>
-          </div>
-          <div class="control-field trainer-single-control">
-            <span>Jokers</span>
-            <div class="segmented three-up" role="radiogroup" aria-label="Trainer joker count">
-              <label><input type="radio" name="trainer-joker-count" value="0" checked /><span>0</span></label>
-              <label><input type="radio" name="trainer-joker-count" value="1" /><span>1</span></label>
-              <label><input type="radio" name="trainer-joker-count" value="2" /><span>2</span></label>
-            </div>
+          <div class="variant-pills" role="radiogroup" aria-label="Fantasyland variant">
+            <label><input type="radio" name="variant" value="high" checked /><span>High</span></label>
+            <label><input type="radio" name="variant" value="low" /><span>Low</span></label>
+            <label><input type="radio" name="variant" value="badeucey" /><span>Badeucey</span></label>
+            <label><input type="radio" name="variant" value="badugijack" /><span>BadugiJack</span></label>
+            <label><input type="radio" name="variant" value="cribbage" /><span>Cribbage</span></label>
           </div>
         </div>
 
-        <div class="trainer-game">
-          <section class="trainer-left" aria-label="Puzzle cards">
-            <div class="hand-row">
-              <div id="trainer-tray" class="trainer-tray" aria-label="Available cards"></div>
-              <div class="hand-side-controls">
-                <div class="bank-toolbar">
-                  <div class="sort-actions" aria-label="Sort bank">
-                    <button id="trainer-sort-rank" class="sort-button active" type="button" aria-pressed="true">Rank <kbd>R</kbd></button>
-                    <button id="trainer-sort-suit" class="sort-button" type="button" aria-pressed="false">Suit <kbd>S</kbd></button>
-                  </div>
-                </div>
-                <div class="trainer-actions">
-                  <button id="trainer-clear" class="secondary-button" type="button">Clear set <kbd>C</kbd></button>
-                  <button id="trainer-confirm" class="primary-button" type="button" disabled>Confirm <kbd>Space</kbd></button>
-                  <button id="trainer-next" class="primary-button" type="button" hidden>Next</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="trainer-board" aria-label="Your set">
-            <div id="trainer-rows" class="trainer-rows"></div>
-            <div id="trainer-message" class="inline-message" role="status" aria-live="polite"></div>
-          </section>
-
-          <section class="trainer-report" aria-label="Share report">
-            <div class="score-grid trainer-score-grid">
-              <div class="score-tile">
-                <span>Your royalties</span>
-                <strong id="trainer-your-points">--</strong>
-              </div>
-              <div class="score-tile">
-                <span>Max royalties</span>
-                <strong id="trainer-max-points">--</strong>
-              </div>
-              <div class="score-tile">
-                <span>Result</span>
-                <strong id="trainer-result">--</strong>
-              </div>
-            </div>
-            <label class="control-field share-field">
-              <span>Share</span>
-              <textarea id="trainer-share" rows="7" readonly spellcheck="false"></textarea>
-            </label>
-            <button id="trainer-copy" class="secondary-button" type="button" disabled>Copy report</button>
-          </section>
+        <div class="run-bar">
+          <label>
+            <span>Samples per config</span>
+            <select id="sample-count">
+              <option value="5" selected>5 · Quick</option>
+              <option value="20">20 · Standard</option>
+              <option value="50">50 · Deep</option>
+            </select>
+          </label>
+          <div class="run-copy">
+            <strong id="run-status">Ready to calculate</strong>
+            <span id="run-detail">12 configurations · browser only</span>
+          </div>
+          <div class="progress-track" aria-hidden="true"><span id="run-progress"></span></div>
+          <button id="run-calculator" class="primary-button" type="button">Run calculator</button>
+          <button id="stop-calculator" class="secondary-button" type="button" hidden>Stop</button>
         </div>
       </section>
 
-      <details class="solver-drawer" open>
-        <summary>
-          <span>Solver tools</span>
-          <strong>Open optimal solution, deck picker, and EV matrix</strong>
-        </summary>
+      <section class="summary-grid" aria-label="Variant summary">
+        <article><span>Immediate EV</span><strong id="summary-immediate">--</strong><small>Average of 12 configs</small></article>
+        <article><span>Repeat chance</span><strong id="summary-repeat">--</strong><small>Repeat line available</small></article>
+        <article><span>Recursive EV</span><strong id="summary-recursive">--</strong><small>Repeat-first strategy</small></article>
+        <article><span>Qualification</span><strong id="summary-qualify">--</strong><small>Legal board available</small></article>
+      </section>
 
-        <main class="workspace">
-        <section class="surface hand-panel" aria-labelledby="hand-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Fantasyland hand</p>
-              <h2 id="hand-title">Cards</h2>
-            </div>
-            <div class="action-row tight">
-              <button id="random-hand" class="icon-button" type="button" title="Deal random hand" aria-label="Deal random hand">
-                <span aria-hidden="true">R</span>
-              </button>
-              <button id="clear-hand" class="icon-button" type="button" title="Clear hand" aria-label="Clear hand">
-                <span aria-hidden="true">C</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="control-grid">
-            <div class="control-field">
-              <span>Cards</span>
-              <div class="segmented four-up" role="radiogroup" aria-label="Fantasyland card count">
-                <label><input type="radio" name="card-count" value="14" checked /><span>14</span></label>
-                <label><input type="radio" name="card-count" value="15" /><span>15</span></label>
-                <label><input type="radio" name="card-count" value="16" /><span>16</span></label>
-                <label><input type="radio" name="card-count" value="17" /><span>17</span></label>
-              </div>
-            </div>
-
-            <div class="control-field">
-              <span>Wild jokers</span>
-              <div class="segmented three-up" role="radiogroup" aria-label="Joker count">
-                <label><input type="radio" name="joker-count" value="0" checked /><span>0</span></label>
-                <label><input type="radio" name="joker-count" value="1" /><span>1</span></label>
-                <label><input type="radio" name="joker-count" value="2" /><span>2</span></label>
-              </div>
+      <section class="chart-grid">
+        <article class="chart-panel">
+          <div class="panel-head"><div><p class="eyebrow">Royalties</p><h2>Immediate EV by hand</h2></div><span>Higher is better</span></div>
+          <div id="ev-chart" class="bar-chart empty-chart">Run the calculator to compare configurations.</div>
+        </article>
+        <article class="chart-panel">
+          <div class="panel-head"><div><p class="eyebrow">Continuation</p><h2>Repeat probability</h2></div><span>Repeat line available</span></div>
+          <div id="repeat-chart" class="bar-chart empty-chart">Repeat rates will appear here.</div>
+        </article>
+        <article class="chart-panel distribution-panel">
+          <div class="panel-head distribution-head">
+            <div><p class="eyebrow">Outcomes</p><h2>Royalty distribution</h2></div>
+            <div class="distribution-legend" aria-label="Royalty bands">
+              <span><i class="band-zero"></i>0</span>
+              <span><i class="band-low"></i>1-5</span>
+              <span><i class="band-mid"></i>6-10</span>
+              <span><i class="band-high"></i>11-20</span>
+              <span><i class="band-elite"></i>21+</span>
             </div>
           </div>
+          <div id="distribution-chart" class="distribution-chart empty-chart">Royalty bands will appear here.</div>
+        </article>
+      </section>
 
-          <label class="control-field stacked">
-            <span>Paste cards</span>
-            <textarea id="card-input" rows="3" spellcheck="false" placeholder="As Kh Qh Jd Td 9c 9s 8d 7d 6d 5s 4s 3s JK1"></textarea>
-          </label>
-
-          <div class="selected-head">
-            <span id="selected-count">0 / 14 selected</span>
-            <button id="solve-hand" class="primary-button" type="button">Solve hand</button>
-          </div>
-          <div id="selected-cards" class="selected-cards" aria-label="Selected cards"></div>
-          <div id="hand-message" class="inline-message" role="status" aria-live="polite"></div>
-        </section>
-
-        <section class="surface result-panel" aria-labelledby="result-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Optimal set</p>
-              <h2 id="result-title">Best board</h2>
-            </div>
-            <div id="repeat-badge" class="repeat-badge">--</div>
-          </div>
-
-          <div class="score-grid">
-            <div class="score-tile">
-              <span>Royalty points</span>
-              <strong id="best-points">--</strong>
-            </div>
-            <div class="score-tile">
-              <span>Best repeat line</span>
-              <strong id="repeat-points">--</strong>
-            </div>
-            <div class="score-tile">
-              <span>Legal boards</span>
-              <strong id="legal-boards">--</strong>
-            </div>
-          </div>
-
-          <div class="board-stack" id="board-stack">
-            <div class="empty-state">Deal or paste a Fantasyland hand to solve it.</div>
-          </div>
-        </section>
-
-        <section class="surface deck-panel" aria-labelledby="deck-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Picker</p>
-              <h2 id="deck-title">Deck</h2>
-            </div>
-          </div>
-          <div id="deck-grid" class="deck-grid" aria-label="Card picker"></div>
-        </section>
-
-        <section class="surface sim-panel" aria-labelledby="sim-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Monte Carlo</p>
-              <h2 id="sim-title">Fantasyland EV matrix</h2>
-            </div>
-            <div class="action-row">
-              <button id="run-sim" class="primary-button" type="button">Run</button>
-              <button id="stop-sim" class="secondary-button" type="button" disabled>Stop</button>
-            </div>
-          </div>
-
-          <div class="sim-controls">
-            <label class="control-field compact">
-              <span>Solver mode</span>
-              <select id="solver-mode">
-                <option value="fast" selected>Fast beam</option>
-                <option value="exact">Exact optimizer</option>
-              </select>
-            </label>
-            <label class="control-field compact">
-              <span>Samples per cell</span>
-              <select id="sample-count">
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="250">250</option>
-              </select>
-            </label>
-            <label class="control-field compact">
-              <span>Repeat rule</span>
-              <select id="repeat-rule">
-                <option value="pineapple" selected>Trips top or quads+ middle/back</option>
-                <option value="tenpoint">Trips top, boat+ middle, quads+ back</option>
-                <option value="topback">Trips top or quads+ back</option>
-              </select>
-            </label>
-            <label class="control-field compact">
-              <span>Five of a kind</span>
-              <select id="five-kind-rule">
-                <option value="royal" selected>Royal flush points</option>
-                <option value="straightflush">Straight flush points</option>
-                <option value="quads">Quads points</option>
-                <option value="none">No royalty</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="progress-shell" aria-hidden="true">
-            <div id="sim-progress" class="progress-bar"></div>
-          </div>
-          <table class="sim-table">
+      <section class="matrix-panel" aria-labelledby="matrix-title">
+        <div class="panel-head matrix-head">
+          <div><p class="eyebrow">Exact joker counts</p><h2 id="matrix-title">14-17 card Fantasyland matrix</h2></div>
+          <span id="matrix-meta">No samples yet</span>
+        </div>
+        <div class="table-scroll">
+          <table>
             <thead>
               <tr>
-                <th>Cards</th>
-                <th>Deck</th>
-                <th>Immediate EV</th>
-                <th>Repeat %</th>
-                <th>Recursive EV</th>
-                <th>Repeat avg</th>
-                <th>Samples</th>
+                <th scope="col">Hand</th>
+                <th scope="col"><button class="definition-link" data-definition="immediate">Immediate EV</button></th>
+                <th scope="col"><button class="definition-link" data-definition="repeat">Repeat</button></th>
+                <th scope="col"><button class="definition-link" data-definition="line">Repeat-line EV</button></th>
+                <th scope="col"><button class="definition-link" data-definition="recursive">Recursive EV</button></th>
+                <th scope="col"><button class="definition-link" data-definition="qualify">Qualify</button></th>
+                <th scope="col">Samples</th>
               </tr>
             </thead>
-            <tbody id="sim-body"></tbody>
+            <tbody id="matrix-body"></tbody>
           </table>
-          <p id="sim-status" class="inline-message">Ready. Fast beam is approximate; exact optimizer is full enumeration.</p>
-        </section>
+        </div>
+      </section>
 
-        <section class="surface assumptions-panel" aria-labelledby="rules-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Scoring</p>
-              <h2 id="rules-title">Royalty assumptions</h2>
-            </div>
+      <section class="insight-grid">
+        <article class="joker-panel">
+          <div class="panel-head"><div><p class="eyebrow">Two-joker deck</p><h2>Jokers in the dealt hand</h2></div><span>Hypergeometric probability</span></div>
+          <div class="table-scroll compact-table">
+            <table>
+              <thead><tr><th>Cards</th><th>0 jokers</th><th>1 joker</th><th>2 jokers</th></tr></thead>
+              <tbody id="joker-probability-body"></tbody>
+            </table>
           </div>
-          <div class="rules-grid">
-            <div>
-              <h3>Top</h3>
-              <p>Pair 66-AA: 1-9. Trips 222-AAA: 10-22.</p>
-            </div>
-            <div>
-              <h3>Middle</h3>
-              <p>Trips 2, straight 4, flush 8, full house 12, quads 20, straight flush 30, royal 50.</p>
-            </div>
-            <div>
-              <h3>Back</h3>
-              <p>Straight 2, flush 4, full house 6, quads 10, straight flush 15, royal 25.</p>
-            </div>
-            <div>
-              <h3>Jokers</h3>
-              <p>Wild cards may complete any row, including five of a kind under the selected scoring rule.</p>
-            </div>
-          </div>
-        </section>
-        </main>
-      </details>
-    </div>
+        </article>
+        <article class="definitions-panel" id="definitions-panel">
+          <div class="panel-head"><div><p class="eyebrow">How to read it</p><h2 id="definition-title">EV definitions</h2></div></div>
+          <p id="definition-copy">Immediate EV is the average maximum royalty score on the current deal, without adding value from future repeats.</p>
+          <dl>
+            <div><dt>Immediate</dt><dd>Highest royalty line, whether it repeats or not.</dd></div>
+            <div><dt>Repeat</dt><dd>Chance that at least one qualifying repeat line exists.</dd></div>
+            <div><dt>Repeat-line</dt><dd>Average royalties on the best repeat line, only when one exists.</dd></div>
+            <div><dt>Recursive</dt><dd>Expected total royalties across future repeats, with finite-sample smoothing on the repeat rate.</dd></div>
+          </dl>
+        </article>
+      </section>
+    </main>
 
-    <script src="./app.js?v=20260629m"></script>
+    <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title">
+      <div class="rules-dialog-head">
+        <div><p class="eyebrow">Fantasyland variants</p><h2 id="rules-title">Scoring and qualification</h2></div>
+        <button id="rules-close" type="button">Close</button>
+      </div>
+      <div id="rules-tabs" class="rules-tabs" role="tablist" aria-label="Variant rules"></div>
+      <div id="rules-content" class="rules-content"></div>
+    </dialog>
+
+    <script src="../fantasyland-core.js?v=20260829b"></script>
+    <script src="./app.js?v=20260829b"></script>
   </body>
 </html>

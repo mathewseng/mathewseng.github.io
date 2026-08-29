@@ -10,7 +10,7 @@
     />
     <title>OFC Fantasyland Trainer</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260702a" />
+    <link rel="stylesheet" href="./styles.css?v=20260829b" />
   </head>
   <body>
     <div class="app-shell">
@@ -82,6 +82,23 @@
           <div class="control-field trainer-current-config-control" hidden>
             <span>Config</span>
             <strong id="trainer-current-config">14 cards, 0 jokers</strong>
+          </div>
+          <div class="control-field trainer-variant-control">
+            <div class="control-label-line">
+              <span>Variant</span>
+              <button id="trainer-rules-open" class="rules-button" type="button" aria-haspopup="dialog">
+                <span class="info-mark" aria-hidden="true">i</span>
+                Rules
+              </button>
+            </div>
+            <div class="segmented variant-pills" role="radiogroup" aria-label="Fantasyland variant">
+              <label><input type="radio" name="trainer-variant" value="high" checked /><span>High</span></label>
+              <label><input type="radio" name="trainer-variant" value="low" /><span>Low</span></label>
+              <label><input type="radio" name="trainer-variant" value="badeucey" /><span>Badeucey</span></label>
+              <label><input type="radio" name="trainer-variant" value="badugijack" /><span>BadugiJack</span></label>
+              <label><input type="radio" name="trainer-variant" value="cribbage" /><span>Cribbage</span></label>
+            </div>
+            <p id="trainer-variant-summary" class="variant-summary">Standard 3-5-5 OFC with normal high-poker rankings.</p>
           </div>
         </div>
 
@@ -194,6 +211,19 @@
       </details>
     </div>
 
-    <script src="./app.js?v=20260726a"></script>
+    <dialog id="variant-rules-dialog" class="rules-dialog" aria-labelledby="variant-rules-title">
+      <div class="rules-dialog-head">
+        <div>
+          <p class="eyebrow">Fantasyland variants</p>
+          <h2 id="variant-rules-title">Scoring and qualification</h2>
+        </div>
+        <button id="variant-rules-close" class="dialog-close" type="button" aria-label="Close rules">Close</button>
+      </div>
+      <div id="variant-rules-tabs" class="rules-tabs" role="tablist" aria-label="Variant rules"></div>
+      <div id="variant-rules-content" class="rules-content"></div>
+    </dialog>
+
+    <script src="../fantasyland-core.js?v=20260829b"></script>
+    <script src="./app.js?v=20260829b"></script>
   </body>
 </html>

@@ -1,2266 +1,487 @@
 (function () {
   "use strict";
 
-  const RANKS_DESC = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
-  const RANKS_ASC = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
-  const RANK_VALUE = new Map(RANKS_ASC.map((rank, index) => [rank, index + 2]));
-  const RANK_LABEL = {
-    2: "2",
-    3: "3",
-    4: "4",
-    5: "5",
-    6: "6",
-    7: "7",
-    8: "8",
-    9: "9",
-    10: "T",
-    11: "J",
-    12: "Q",
-    13: "K",
-    14: "A",
-  };
-  const RANK_NAME = {
-    2: "twos",
-    3: "threes",
-    4: "fours",
-    5: "fives",
-    6: "sixes",
-    7: "sevens",
-    8: "eights",
-    9: "nines",
-    10: "tens",
-    11: "jacks",
-    12: "queens",
-    13: "kings",
-    14: "aces",
-  };
-  const SUITS = ["s", "h", "d", "c"];
-  const SUIT_SYMBOL = { s: "♠", h: "♥", d: "♦", c: "♣" };
-  const CATEGORY = {
-    HIGH: 0,
-    PAIR: 1,
-    TWO_PAIR: 2,
-    TRIPS: 3,
-    STRAIGHT: 4,
-    FLUSH: 5,
-    FULL_HOUSE: 6,
-    QUADS: 7,
-    STRAIGHT_FLUSH: 8,
-    FIVE_KIND: 9,
-  };
-  const SCENARIOS = [
-    { cards: 14, jokers: 0 },
-    { cards: 15, jokers: 0 },
-    { cards: 16, jokers: 0 },
-    { cards: 17, jokers: 0 },
-    { cards: 14, jokers: 1 },
-    { cards: 15, jokers: 1 },
-    { cards: 16, jokers: 1 },
-    { cards: 17, jokers: 1 },
-    { cards: 14, jokers: 2 },
-    { cards: 15, jokers: 2 },
-    { cards: 16, jokers: 2 },
-    { cards: 17, jokers: 2 },
-  ];
-  const TRAINER_CONFIGS = [
-    { cards: 14, jokers: 0 },
-    { cards: 15, jokers: 0 },
-    { cards: 16, jokers: 0 },
-    { cards: 17, jokers: 0 },
-    { cards: 14, jokers: 1 },
-    { cards: 15, jokers: 1 },
-    { cards: 16, jokers: 1 },
-    { cards: 17, jokers: 1 },
-    { cards: 14, jokers: 2 },
-    { cards: 15, jokers: 2 },
-    { cards: 16, jokers: 2 },
-    { cards: 17, jokers: 2 },
-  ];
-  const TRAINER_ROWS = [
-    { key: "top", label: "Top", size: 3 },
-    { key: "middle", label: "Middle", size: 5 },
-    { key: "back", label: "Back", size: 5 },
-  ];
-
-  const comboCache = new Map();
-  const virtualDeck = buildVirtualDeck();
-  const state = {
-    cardCount: 14,
-    jokerCount: 0,
-    repeatRule: "pineapple",
-    fiveKindRule: "royal",
-    selected: [],
-    simAbort: false,
-    suppressInput: false,
-    trainer: {
-      mode: "daily",
-      scope: "single",
-      cardCount: 14,
-      jokerCount: 0,
-      activeRow: "top",
-      puzzles: [],
-      puzzleIndex: 0,
-      rows: createEmptyTrainerRows(),
-      results: [],
-      startedAt: 0,
-      elapsedMs: 0,
-      timerId: 0,
-      confirmed: false,
-      randomBase: "",
-      sortMode: "rank",
-      drag: null,
-      dragClickBlock: null,
+  const Core = window.OFCFantasylandCore;
+  const STORAGE_KEY = "ofcFantasylandEv.v4";
+  const SCENARIOS = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
+  const DEFINITIONS = {
+    immediate: {
+      title: "Immediate royalty EV",
+      copy: "Average royalties from the highest-scoring legal board on this deal. It does not add any value for future Fantasyland repeats.",
     },
+    repeat: {
+      title: "Repeat probability",
+      copy: "Chance that the hand contains at least one legal repeat-Fantasyland board. The repeat-first strategy takes that line whenever it exists.",
+    },
+    line: {
+      title: "Repeat-line EV",
+      copy: "Average royalties on the best repeat line, conditional on a repeat line existing. Hands with no repeat line are excluded from this average.",
+    },
+    recursive: {
+      title: "Recursive royalty EV",
+      copy: "Expected total royalties across this hand and future repeats. It uses a Jeffreys-smoothed repeat estimate so a small 100% sample does not imply infinite value.",
+    },
+    qualify: {
+      title: "Qualification probability",
+      copy: "Chance that the dealt cards can make a legal board under the selected middle-row rules. Hands that cannot qualify contribute zero royalties.",
+    },
+  };
+
+  const state = {
+    variant: "high",
+    running: false,
+    abort: false,
+    results: loadCache(),
   };
 
   const els = {};
 
-  if (typeof document !== "undefined") {
-    document.addEventListener("DOMContentLoaded", () => {
-      cacheElements();
-      bindEvents();
-      renderDeck();
-      renderSelected();
-      renderSimulationRows();
-      startTrainerSet();
-    });
+  document.addEventListener("DOMContentLoaded", init);
+
+  function init() {
+    if (!Core) {
+      document.body.innerHTML = '<p style="padding:24px;color:#fff">Fantasyland calculation engine did not load.</p>';
+      return;
+    }
+    cacheElements();
+    bindEvents();
+    renderMatrix();
+    renderJokerProbabilities();
+    renderVariant();
   }
 
   function cacheElements() {
     Object.assign(els, {
-      metricPoints: document.querySelector("#metric-points"),
-      metricRepeat: document.querySelector("#metric-repeat"),
-      metricSpeed: document.querySelector("#metric-speed"),
-      selectedCount: document.querySelector("#selected-count"),
-      selectedCards: document.querySelector("#selected-cards"),
-      deckGrid: document.querySelector("#deck-grid"),
-      cardInput: document.querySelector("#card-input"),
-      handMessage: document.querySelector("#hand-message"),
-      solveHand: document.querySelector("#solve-hand"),
-      randomHand: document.querySelector("#random-hand"),
-      clearHand: document.querySelector("#clear-hand"),
-      repeatRule: document.querySelector("#repeat-rule"),
-      fiveKindRule: document.querySelector("#five-kind-rule"),
-      repeatBadge: document.querySelector("#repeat-badge"),
-      bestPoints: document.querySelector("#best-points"),
-      repeatPoints: document.querySelector("#repeat-points"),
-      legalBoards: document.querySelector("#legal-boards"),
-      boardStack: document.querySelector("#board-stack"),
-      solverMode: document.querySelector("#solver-mode"),
+      variantSummary: document.querySelector("#variant-summary"),
       sampleCount: document.querySelector("#sample-count"),
-      runSim: document.querySelector("#run-sim"),
-      stopSim: document.querySelector("#stop-sim"),
-      simBody: document.querySelector("#sim-body"),
-      simStatus: document.querySelector("#sim-status"),
-      simProgress: document.querySelector("#sim-progress"),
-      trainerTitle: document.querySelector("#trainer-title"),
-      trainerPanel: document.querySelector(".trainer-panel"),
-      trainerTime: document.querySelector("#trainer-time"),
-      trainerProgress: document.querySelector("#trainer-progress"),
-      trainerSortRank: document.querySelector("#trainer-sort-rank"),
-      trainerSortSuit: document.querySelector("#trainer-sort-suit"),
-      trainerTray: document.querySelector("#trainer-tray"),
-      trainerRows: document.querySelector("#trainer-rows"),
-      trainerClear: document.querySelector("#trainer-clear"),
-      trainerConfirm: document.querySelector("#trainer-confirm"),
-      trainerNext: document.querySelector("#trainer-next"),
-      trainerMessage: document.querySelector("#trainer-message"),
-      trainerYourPoints: document.querySelector("#trainer-your-points"),
-      trainerMaxPoints: document.querySelector("#trainer-max-points"),
-      trainerResult: document.querySelector("#trainer-result"),
-      trainerShare: document.querySelector("#trainer-share"),
-      trainerCopy: document.querySelector("#trainer-copy"),
+      run: document.querySelector("#run-calculator"),
+      stop: document.querySelector("#stop-calculator"),
+      runStatus: document.querySelector("#run-status"),
+      runDetail: document.querySelector("#run-detail"),
+      runProgress: document.querySelector("#run-progress"),
+      matrixBody: document.querySelector("#matrix-body"),
+      matrixMeta: document.querySelector("#matrix-meta"),
+      summaryImmediate: document.querySelector("#summary-immediate"),
+      summaryRepeat: document.querySelector("#summary-repeat"),
+      summaryRecursive: document.querySelector("#summary-recursive"),
+      summaryQualify: document.querySelector("#summary-qualify"),
+      evChart: document.querySelector("#ev-chart"),
+      repeatChart: document.querySelector("#repeat-chart"),
+      distributionChart: document.querySelector("#distribution-chart"),
+      jokerProbabilityBody: document.querySelector("#joker-probability-body"),
+      definitionTitle: document.querySelector("#definition-title"),
+      definitionCopy: document.querySelector("#definition-copy"),
+      rulesOpen: document.querySelector("#rules-open"),
+      rulesDialog: document.querySelector("#rules-dialog"),
+      rulesClose: document.querySelector("#rules-close"),
+      rulesTabs: document.querySelector("#rules-tabs"),
+      rulesContent: document.querySelector("#rules-content"),
     });
   }
 
   function bindEvents() {
-    document.querySelectorAll('input[name="card-count"]').forEach((input) => {
+    document.querySelectorAll('input[name="variant"]').forEach((input) => {
       input.addEventListener("change", () => {
-        state.cardCount = Number(input.value);
-        if (state.selected.length > state.cardCount) {
-          state.selected = state.selected.slice(0, state.cardCount);
-        }
-        renderSelected();
+        state.abort = state.running;
+        state.variant = Core.normalizeVariant(input.value);
+        renderVariant();
       });
     });
-
-    document.querySelectorAll('input[name="joker-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.jokerCount = Number(input.value);
-        trimUnavailableJokers();
-        renderDeck();
-        renderSelected();
-      });
+    els.run.addEventListener("click", runCalculator);
+    els.stop.addEventListener("click", () => {
+      state.abort = true;
+      els.runStatus.textContent = "Stopping after this sample";
     });
-
-    els.repeatRule.addEventListener("change", () => {
-      state.repeatRule = els.repeatRule.value;
-      solveCurrentHand();
+    document.querySelectorAll(".definition-link").forEach((button) => {
+      button.addEventListener("click", () => showDefinition(button.dataset.definition));
     });
-
-    els.fiveKindRule.addEventListener("change", () => {
-      state.fiveKindRule = els.fiveKindRule.value;
-      solveCurrentHand();
+    els.rulesOpen.addEventListener("click", () => openRules(state.variant));
+    els.rulesClose.addEventListener("click", closeRules);
+    els.rulesDialog.addEventListener("click", (event) => {
+      if (event.target === els.rulesDialog) closeRules();
     });
-
-    els.solveHand.addEventListener("click", solveCurrentHand);
-    els.randomHand.addEventListener("click", () => {
-      dealRandomHand();
-      solveCurrentHand();
-    });
-    els.clearHand.addEventListener("click", () => {
-      state.selected = [];
-      renderSelected();
-      clearSolution("Deal or paste a Fantasyland hand to solve it.");
-    });
-
-    let inputTimer = 0;
-    els.cardInput.addEventListener("input", () => {
-      if (state.suppressInput) return;
-      window.clearTimeout(inputTimer);
-      inputTimer = window.setTimeout(parseInputCards, 260);
-    });
-
-    els.runSim.addEventListener("click", runSimulationMatrix);
-    els.stopSim.addEventListener("click", () => {
-      state.simAbort = true;
-      els.simStatus.textContent = "Stopping after the current sample.";
-    });
-
-    document.querySelectorAll('input[name="trainer-mode"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.mode = input.value;
-        startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-scope"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.scope = input.value;
-        document.querySelectorAll(".trainer-single-control").forEach((control) => {
-          control.hidden = state.trainer.scope === "all";
-        });
-        startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-card-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.cardCount = Number(input.value);
-        if (state.trainer.scope === "single") startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-joker-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.jokerCount = Number(input.value);
-        if (state.trainer.scope === "single") startTrainerSet();
-      });
-    });
-
-    els.trainerClear.addEventListener("click", clearTrainerSet);
-    els.trainerConfirm.addEventListener("click", confirmTrainerSet);
-    els.trainerNext.addEventListener("click", loadNextTrainerPuzzle);
-    els.trainerCopy.addEventListener("click", copyTrainerReport);
-    els.trainerSortRank.addEventListener("click", () => setTrainerSortMode("rank"));
-    els.trainerSortSuit.addEventListener("click", () => setTrainerSortMode("suit"));
-    els.trainerTray.addEventListener("dragover", allowTrainerDrop);
-    els.trainerTray.addEventListener("dragleave", clearTrainerDragOver);
-    els.trainerTray.addEventListener("drop", dropTrainerCardToBank);
-    document.addEventListener("keydown", handleTrainerHotkeys);
   }
 
-  function trimUnavailableJokers() {
-    const allowed = new Set(buildDeckIds(state.jokerCount));
-    state.selected = state.selected.filter((id) => allowed.has(id));
-  }
-
-  function dealRandomHand() {
-    state.selected = dealIds(state.cardCount, state.jokerCount);
-    renderSelected();
-  }
-
-  function parseInputCards() {
-    const parsed = parseCardList(els.cardInput.value, state.jokerCount);
-    if (parsed.ids.length) {
-      state.selected = parsed.ids.slice(0, state.cardCount);
-      renderSelected({ keepInput: true });
-    } else {
-      state.selected = [];
-      renderSelected({ keepInput: true });
-    }
-    if (parsed.errors.length) {
-      setMessage(parsed.errors.slice(0, 2).join(" "));
-    } else {
-      setMessage("");
+  function renderVariant() {
+    const meta = Core.VARIANTS[state.variant];
+    els.variantSummary.textContent = meta.short;
+    const data = getVariantResults();
+    renderMatrix(data);
+    renderSummary(data);
+    renderCharts(data);
+    const complete = SCENARIOS.filter((scenario) => data[scenarioKey(scenario)]).length;
+    els.matrixMeta.textContent = complete ? `${meta.label} - ${complete}/12 configs` : "No samples yet";
+    if (!state.running) {
+      els.runStatus.textContent = complete ? `${meta.label} results loaded` : "Ready to calculate";
+      els.runDetail.textContent = complete ? "Run again to replace this sample" : "12 configurations - browser only";
+      els.runProgress.style.width = complete === 12 ? "100%" : "0%";
     }
   }
 
-  function solveCurrentHand() {
-    if (state.selected.length < 13) {
-      setMessage("Select at least 13 cards.");
-      clearSolution("The solver needs at least 13 cards.");
+  function renderMatrix(data = getVariantResults()) {
+    if (!els.matrixBody) return;
+    const fragment = document.createDocumentFragment();
+    SCENARIOS.forEach((scenario) => {
+      const result = data[scenarioKey(scenario)];
+      const row = document.createElement("tr");
+      row.dataset.config = scenarioKey(scenario);
+      row.innerHTML = `
+        <td><span class="hand-label"><i class="joker-dot j${scenario.jokers}"></i>${scenario.cards} cards / ${scenario.jokers}J</span></td>
+        <td data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="repeatLine">${result && result.repeatLine !== null ? formatPoints(result.repeatLine) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="recursive">${result ? formatRecursive(result.recursive) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="qualify">${result ? formatPct(result.qualifyRate) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="samples">${result ? result.samples : '<span class="cell-muted">0</span>'}</td>
+      `;
+      if (result) row.querySelector('[data-value="immediate"]').title = `Standard error +/-${formatPoints(result.standardError)}`;
+      fragment.appendChild(row);
+    });
+    els.matrixBody.replaceChildren(fragment);
+  }
+
+  function renderSummary(data) {
+    const results = SCENARIOS.map((scenario) => data[scenarioKey(scenario)]).filter(Boolean);
+    if (!results.length) {
+      [els.summaryImmediate, els.summaryRepeat, els.summaryRecursive, els.summaryQualify].forEach((element) => { element.textContent = "--"; });
       return;
     }
-
-    try {
-      const result = solveHand(state.selected, {
-        repeatRule: state.repeatRule,
-        fiveKindRule: state.fiveKindRule,
-      });
-      renderSolution(result);
-      setMessage(
-        result.best
-          ? `Solved ${state.selected.length} cards exactly.`
-          : "No legal OFC board found for this hand."
-      );
-    } catch (error) {
-      console.error(error);
-      setMessage(error.message || "Could not solve this hand.");
-      clearSolution("Solver error.");
-    }
+    els.summaryImmediate.textContent = formatPoints(mean(results.map((result) => result.immediate)));
+    els.summaryRepeat.textContent = formatPct(mean(results.map((result) => result.repeatRate)));
+    els.summaryRecursive.textContent = formatRecursive(meanFinite(results.map((result) => result.recursive)));
+    els.summaryQualify.textContent = formatPct(mean(results.map((result) => result.qualifyRate)));
   }
 
-  function renderDeck() {
-    const selected = new Set(state.selected);
-    const frag = document.createDocumentFragment();
-
-    SUITS.forEach((suit) => {
-      RANKS_DESC.forEach((rank) => {
-        const id = `${rank}${suit}`;
-        frag.appendChild(createCardButton(id, selected.has(id)));
-      });
-    });
-
-    const jokerZone = document.createElement("div");
-    jokerZone.className = "joker-zone";
-    ["JK1", "JK2"].forEach((id, index) => {
-      const button = createCardButton(id, selected.has(id));
-      button.disabled = index >= state.jokerCount;
-      jokerZone.appendChild(button);
-    });
-    frag.appendChild(jokerZone);
-
-    els.deckGrid.replaceChildren(frag);
-  }
-
-  function createCardButton(id, isSelected) {
-    const card = cardFromId(id);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `card-button ${cardClass(card)}${isSelected ? " selected" : ""}`;
-    button.dataset.cardId = id;
-    button.innerHTML = cardFaceHtml(card);
-    button.addEventListener("click", () => toggleCard(id));
-    return button;
-  }
-
-  function toggleCard(id) {
-    const existing = state.selected.indexOf(id);
-    if (existing >= 0) {
-      state.selected.splice(existing, 1);
-    } else if (state.selected.length < state.cardCount) {
-      state.selected.push(id);
-    } else {
-      setMessage(`Already at ${state.cardCount} cards.`);
-    }
-    renderDeck();
-    renderSelected();
-  }
-
-  function renderSelected(options = {}) {
-    const target = state.cardCount;
-    els.selectedCount.textContent = `${state.selected.length} / ${target} selected`;
-
-    const frag = document.createDocumentFragment();
-    state.selected.forEach((id) => {
-      const card = cardFromId(id);
-      const item = document.createElement("div");
-      item.className = `mini-card ${cardClass(card)}`;
-      item.innerHTML = cardFaceHtml(card);
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "×";
-      remove.setAttribute("aria-label", `Remove ${id}`);
-      remove.addEventListener("click", () => {
-        state.selected = state.selected.filter((cardId) => cardId !== id);
-        renderDeck();
-        renderSelected();
-      });
-      item.appendChild(remove);
-      frag.appendChild(item);
-    });
-    els.selectedCards.replaceChildren(frag);
-    renderDeck();
-
-    if (!options.keepInput) {
-      state.suppressInput = true;
-      els.cardInput.value = state.selected.join(" ");
-      state.suppressInput = false;
-    }
-  }
-
-  function renderSolution(result) {
-    const best = result.best;
-    const bestRepeat = result.bestRepeat;
-    setOptionalText(els.metricPoints, best ? String(best.points) : "--");
-    setOptionalText(els.metricRepeat, bestRepeat ? "Yes" : "No");
-    setOptionalText(els.metricSpeed, `${result.elapsedMs.toFixed(0)} ms`);
-    els.bestPoints.textContent = best ? String(best.points) : "--";
-    els.legalBoards.textContent = formatInteger(result.legalBoards);
-    els.repeatPoints.textContent = bestRepeat
-      ? best && bestRepeat.points < best.points
-        ? `${bestRepeat.points} (-${best.points - bestRepeat.points})`
-        : String(bestRepeat.points)
-      : "--";
-
-    els.repeatBadge.className = `repeat-badge ${bestRepeat ? "yes" : "no"}`;
-    els.repeatBadge.textContent = bestRepeat ? "Repeat" : "No repeat";
-
-    if (!best) {
-      clearSolution("No legal OFC board found.");
+  function renderCharts(data) {
+    const results = SCENARIOS.map((scenario) => ({ scenario, result: data[scenarioKey(scenario)] })).filter((entry) => entry.result);
+    if (!results.length) {
+      els.evChart.className = "bar-chart empty-chart";
+      els.evChart.textContent = "Run the calculator to compare configurations.";
+      els.repeatChart.className = "bar-chart empty-chart";
+      els.repeatChart.textContent = "Repeat rates will appear here.";
+      els.distributionChart.className = "distribution-chart empty-chart";
+      els.distributionChart.textContent = "Royalty bands will appear here.";
       return;
     }
+    const maxImmediate = Math.max(1, ...results.map((entry) => entry.result.immediate));
+    renderBarChart(els.evChart, results, (result) => result.immediate, maxImmediate, formatPoints);
+    renderBarChart(els.repeatChart, results, (result) => result.repeatRate, 1, formatPct);
+    renderDistributionChart(results);
+  }
 
-    const rows = [
-      { label: "Top", role: "top", candidate: best.top, className: "top-row" },
-      { label: "Middle", role: "middle", candidate: best.middle, className: "" },
-      { label: "Back", role: "back", candidate: best.back, className: "" },
-    ];
-
-    const frag = document.createDocumentFragment();
-    rows.forEach((row) => {
-      frag.appendChild(renderBoardRow(result.cards, row, result.options.repeatRule));
+  function renderBarChart(target, entries, valueFor, max, formatter) {
+    const fragment = document.createDocumentFragment();
+    entries.forEach(({ scenario, result }) => {
+      const value = valueFor(result);
+      const row = document.createElement("div");
+      row.className = "chart-row";
+      row.dataset.jokers = String(scenario.jokers);
+      row.innerHTML = `
+        <span>${scenario.cards}C / ${scenario.jokers}J</span>
+        <div class="bar-track"><i style="width:${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(2)}%"></i></div>
+        <strong>${formatter(value)}</strong>
+      `;
+      fragment.appendChild(row);
     });
-
-    const discards = result.cards.filter((card, index) => (best.usedMask & (1 << index)) === 0);
-    const discardRow = document.createElement("div");
-    discardRow.className = "board-row";
-    discardRow.innerHTML = `<div class="row-head"><strong>Discards</strong><div class="row-meta"><span>${discards.length}</span></div></div>`;
-    const discardCards = document.createElement("div");
-    discardCards.className = "row-cards discard-row";
-    discards.forEach((card) => discardCards.appendChild(renderMiniCard(card, null)));
-    discardRow.appendChild(discardCards);
-    frag.appendChild(discardRow);
-
-    els.boardStack.replaceChildren(frag);
+    target.className = "bar-chart";
+    target.replaceChildren(fragment);
   }
 
-  function renderBoardRow(cards, row, repeatRule) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "board-row";
-    const royalty = row.role === "top" ? row.candidate.royalty : row.candidate[row.role === "middle" ? "middleRoyalty" : "backRoyalty"];
-    const repeat = rowRepeats(row.role, row.candidate.eval, repeatRule);
-    wrapper.innerHTML = `
-      <div class="row-head">
-        <strong>${row.label}</strong>
-        <div class="row-meta">
-          <span>${row.candidate.eval.name}</span>
-          <span>${royalty} pts</span>
-          ${repeat ? "<span>repeat</span>" : ""}
-        </div>
-      </div>
-    `;
-
-    const cardGrid = document.createElement("div");
-    cardGrid.className = `row-cards ${row.className}`;
-    cardsForMask(cards, row.candidate.mask).forEach((card) => {
-      const assigned = row.candidate.eval.assignments ? row.candidate.eval.assignments.get(card.handIndex) : null;
-      cardGrid.appendChild(renderMiniCard(card, assigned));
+  function renderDistributionChart(entries) {
+    const labels = ["0 royalties", "1-5 royalties", "6-10 royalties", "11-20 royalties", "21 or more royalties"];
+    const classes = ["band-zero", "band-low", "band-mid", "band-high", "band-elite"];
+    const fragment = document.createDocumentFragment();
+    entries.forEach(({ scenario, result }) => {
+      const row = document.createElement("div");
+      row.className = "distribution-row";
+      const label = document.createElement("span");
+      label.textContent = `${scenario.cards}C / ${scenario.jokers}J`;
+      const bar = document.createElement("div");
+      bar.className = "distribution-bar";
+      bar.setAttribute("aria-label", result.distribution.map((value, index) => `${labels[index]} ${formatPct(value)}`).join(", "));
+      result.distribution.forEach((value, index) => {
+        const segment = document.createElement("i");
+        segment.className = classes[index];
+        segment.style.width = `${(value * 100).toFixed(2)}%`;
+        segment.title = `${labels[index]}: ${formatPct(value)}`;
+        bar.appendChild(segment);
+      });
+      row.append(label, bar);
+      fragment.appendChild(row);
     });
-    wrapper.appendChild(cardGrid);
-
-    const note = jokerNote(cardsForMask(cards, row.candidate.mask), row.candidate.eval);
-    if (note) {
-      const noteEl = document.createElement("div");
-      noteEl.className = "row-note";
-      noteEl.textContent = note;
-      wrapper.appendChild(noteEl);
-    }
-    return wrapper;
+    els.distributionChart.className = "distribution-chart";
+    els.distributionChart.replaceChildren(fragment);
   }
 
-  function renderMiniCard(card, assigned) {
-    const item = document.createElement("div");
-    item.className = `mini-card ${cardClass(card)}`;
-    item.innerHTML = cardFaceHtml(card.joker && assigned ? assigned : card, card.joker && assigned ? "JK" : "");
-    return item;
-  }
+  async function runCalculator() {
+    if (state.running) return;
+    const variant = state.variant;
+    const samples = Math.max(1, Number(els.sampleCount.value) || 5);
+    const total = samples * SCENARIOS.length;
+    const runSeed = Core.hashSeed(`${Date.now()}-${Math.random()}-${variant}`).toString(16).padStart(8, "0").toUpperCase();
+    const nextResults = {};
+    const started = performance.now();
+    let completed = 0;
+    state.running = true;
+    state.abort = false;
+    setRunningUi(true);
 
-  function jokerNote(rowCards, evalResult) {
-    if (!evalResult.assignments) return "";
-    const parts = rowCards
-      .filter((card) => card.joker)
-      .map((card) => {
-        const assigned = evalResult.assignments.get(card.handIndex);
-        return assigned ? `${card.id} = ${cardLabel(assigned)}` : "";
-      })
-      .filter(Boolean);
-    return parts.length ? parts.join(", ") : "";
-  }
-
-  function clearSolution(message) {
-    setOptionalText(els.metricPoints, "--");
-    setOptionalText(els.metricRepeat, "--");
-    setOptionalText(els.metricSpeed, "--");
-    els.bestPoints.textContent = "--";
-    els.repeatPoints.textContent = "--";
-    els.legalBoards.textContent = "--";
-    els.repeatBadge.className = "repeat-badge";
-    els.repeatBadge.textContent = "--";
-    els.boardStack.innerHTML = `<div class="empty-state">${message}</div>`;
-  }
-
-  function setMessage(text) {
-    els.handMessage.textContent = text;
-  }
-
-  function setOptionalText(element, text) {
-    if (element) element.textContent = text;
-  }
-
-  function startTrainerSet() {
-    stopTrainerTimer();
-    const trainer = state.trainer;
-    trainer.mode = getCheckedValue("trainer-mode", trainer.mode);
-    trainer.scope = getCheckedValue("trainer-scope", trainer.scope);
-    trainer.cardCount = Number(getCheckedValue("trainer-card-count", String(trainer.cardCount)));
-    trainer.jokerCount = Number(getCheckedValue("trainer-joker-count", String(trainer.jokerCount)));
-    document.querySelectorAll(".trainer-single-control").forEach((control) => {
-      control.hidden = trainer.scope === "all";
-    });
-
-    const configs =
-      trainer.scope === "all"
-        ? TRAINER_CONFIGS
-        : [{ cards: trainer.cardCount, jokers: trainer.jokerCount }];
-
-    trainer.randomBase =
-      trainer.mode === "random"
-        ? `R${Date.now().toString(36)}${Math.floor(Math.random() * 1e9).toString(36)}`
-        : "";
-
-    const dateKey = localDateKey();
-    trainer.puzzles = configs.map((config) => {
-      const seed =
-        trainer.mode === "daily"
-          ? `${dateKey}${config.cards}${config.jokers}`
-          : `${trainer.randomBase}${config.cards}${config.jokers}`;
-      return {
-        ...config,
-        seed,
-        dateKey,
-        ids: dealIdsSeeded(config.cards, config.jokers, seed),
-      };
-    });
-    trainer.results = [];
-    loadTrainerPuzzle(0);
-  }
-
-  function loadTrainerPuzzle(index) {
-    const trainer = state.trainer;
-    trainer.puzzleIndex = index;
-    trainer.rows = createEmptyTrainerRows();
-    trainer.activeRow = "top";
-    trainer.confirmed = false;
-    trainer.elapsedMs = 0;
-    clearTrainerResult();
-    startTrainerTimer();
-    renderTrainer();
-  }
-
-  function loadNextTrainerPuzzle() {
-    const next = state.trainer.puzzleIndex + 1;
-    if (next < state.trainer.puzzles.length) {
-      loadTrainerPuzzle(next);
-    }
-  }
-
-  function renderTrainer() {
-    const trainer = state.trainer;
-    const puzzle = getTrainerPuzzle();
-    if (!puzzle) return;
-
-    els.trainerTitle.textContent = trainer.mode === "daily" ? "Daily puzzle" : "Random puzzle";
-    els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
-    updateTrainerHandSizing(puzzle);
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-    updateTrainerTimer();
-  }
-
-  function renderTrainerTray() {
-    const puzzle = getTrainerPuzzle();
-    if (!puzzle) return;
-    const placed = new Set(getPlacedTrainerIds());
-    const frag = document.createDocumentFragment();
-    const ordered = getTrainerOrderedIds(puzzle);
-    ordered.forEach((id) => {
-      if (placed.has(id)) {
-        const slot = document.createElement("div");
-        slot.className = "trainer-bank-slot empty";
-        slot.dataset.cardId = id;
-        slot.setAttribute("aria-label", `${id} is set`);
-        frag.appendChild(slot);
-        return;
+    for (const scenario of SCENARIOS) {
+      const aggregate = createAggregate();
+      for (let sample = 0; sample < samples; sample += 1) {
+        if (state.abort || state.variant !== variant) break;
+        const label = `${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}`;
+        els.runStatus.textContent = `Calculating ${label}`;
+        els.runDetail.textContent = `Sample ${sample + 1} of ${samples}`;
+        await yieldFrame();
+        const seedText = `EV-${runSeed}-${variant}-${scenario.cards}C-${scenario.jokers}J-${sample}`;
+        const ids = Core.dealSeeded(scenario.cards, scenario.jokers, Core.hashSeed(seedText).toString(16));
+        const solved = solveSample(ids, variant);
+        addSample(aggregate, solved);
+        completed += 1;
+        els.runProgress.style.width = `${((completed / total) * 100).toFixed(2)}%`;
       }
+      if (aggregate.samples) {
+        nextResults[scenarioKey(scenario)] = finalizeAggregate(aggregate);
+        state.results[variant] = { ...(state.results[variant] || {}), ...nextResults };
+        renderMatrix(state.results[variant]);
+        renderSummary(state.results[variant]);
+        renderCharts(state.results[variant]);
+        saveCache();
+      }
+      if (state.abort || state.variant !== variant) break;
+    }
 
-      const card = cardFromId(id);
+    const elapsedSeconds = (performance.now() - started) / 1000;
+    state.running = false;
+    setRunningUi(false);
+    if (state.variant !== variant) {
+      state.abort = false;
+      renderVariant();
+      return;
+    }
+    if (state.abort) {
+      els.runStatus.textContent = "Calculation stopped";
+      els.runDetail.textContent = `${completed}/${total} samples completed`;
+    } else {
+      els.runStatus.textContent = "Calculation complete";
+      els.runDetail.textContent = `${completed} deals in ${elapsedSeconds.toFixed(1)}s - bounded search estimate`;
+      els.matrixMeta.textContent = `${Core.VARIANTS[variant].label} - ${samples} samples per config`;
+      els.runProgress.style.width = "100%";
+    }
+    state.abort = false;
+  }
+
+  function createAggregate() {
+    return { samples: 0, immediateSum: 0, immediateSquared: 0, strategySum: 0, repeatCount: 0, repeatPointSum: 0, qualifyCount: 0, distribution: [0, 0, 0, 0, 0] };
+  }
+
+  function solveSample(ids, variant) {
+    const searchBounds = variant === "badugijack"
+      ? { maskLimit: 40, beamLimit: 24 }
+      : { maskLimit: 140, beamLimit: 72 };
+    let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds });
+    if (solved.best || variant === "high" || !Core.hasQualifyingMiddle(ids, variant)) return solved;
+
+    solved = variant === "badugijack"
+      ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48 })
+      : Core.solveHand(ids, { variant, mode: "exact" });
+    return solved;
+  }
+
+  function addSample(aggregate, solved) {
+    const immediate = solved.bestRoyalty ? finiteNumber(solved.bestRoyalty.points) : 0;
+    const strategy = solved.best ? finiteNumber(solved.best.points) : 0;
+    aggregate.samples += 1;
+    aggregate.immediateSum += immediate;
+    aggregate.immediateSquared += immediate * immediate;
+    aggregate.strategySum += strategy;
+    aggregate.distribution[royaltyBandIndex(immediate)] += 1;
+    if (solved.best) aggregate.qualifyCount += 1;
+    if (solved.bestRepeat) {
+      aggregate.repeatCount += 1;
+      aggregate.repeatPointSum += finiteNumber(solved.bestRepeat.points);
+    }
+  }
+
+  function finalizeAggregate(aggregate) {
+    const n = aggregate.samples;
+    const immediate = aggregate.immediateSum / n;
+    const strategy = aggregate.strategySum / n;
+    const repeatRate = aggregate.repeatCount / n;
+    const recursiveRepeatRate = (aggregate.repeatCount + 0.5) / (n + 1);
+    const variance = Math.max(0, aggregate.immediateSquared / n - immediate * immediate);
+    return {
+      samples: n,
+      immediate,
+      strategy,
+      repeatRate,
+      recursiveRepeatRate,
+      repeatLine: aggregate.repeatCount ? aggregate.repeatPointSum / aggregate.repeatCount : null,
+      recursive: strategy / (1 - recursiveRepeatRate),
+      qualifyRate: aggregate.qualifyCount / n,
+      standardError: Math.sqrt(variance / n),
+      distribution: aggregate.distribution.map((count) => count / n),
+    };
+  }
+
+  function royaltyBandIndex(points) {
+    if (points <= 0) return 0;
+    if (points <= 5) return 1;
+    if (points <= 10) return 2;
+    if (points <= 20) return 3;
+    return 4;
+  }
+
+  function setRunningUi(running) {
+    els.run.disabled = running;
+    els.stop.hidden = !running;
+    els.sampleCount.disabled = running;
+  }
+
+  function renderJokerProbabilities() {
+    const fragment = document.createDocumentFragment();
+    [14, 15, 16, 17].forEach((cards) => {
+      const probabilities = [0, 1, 2].map((jokers) => hypergeometricJokers(cards, jokers));
+      const row = document.createElement("tr");
+      row.innerHTML = `<td><strong>${cards} cards</strong></td>${probabilities.map((value) => `<td>${formatPct(value)}</td>`).join("")}`;
+      fragment.appendChild(row);
+    });
+    els.jokerProbabilityBody.replaceChildren(fragment);
+  }
+
+  function hypergeometricJokers(cards, jokers) {
+    return (choose(2, jokers) * choose(52, cards - jokers)) / choose(54, cards);
+  }
+
+  function choose(n, k) {
+    if (k < 0 || k > n) return 0;
+    const size = Math.min(k, n - k);
+    let value = 1;
+    for (let index = 1; index <= size; index += 1) value = (value * (n - size + index)) / index;
+    return value;
+  }
+
+  function showDefinition(key) {
+    const definition = DEFINITIONS[key] || DEFINITIONS.immediate;
+    els.definitionTitle.textContent = definition.title;
+    els.definitionCopy.textContent = definition.copy;
+  }
+
+  function openRules(variant) {
+    renderRules(variant);
+    if (typeof els.rulesDialog.showModal === "function") els.rulesDialog.showModal();
+    else els.rulesDialog.setAttribute("open", "");
+  }
+
+  function closeRules() {
+    if (typeof els.rulesDialog.close === "function" && els.rulesDialog.open) els.rulesDialog.close();
+    else els.rulesDialog.removeAttribute("open");
+  }
+
+  function renderRules(value) {
+    const active = Core.normalizeVariant(value);
+    const tabFragment = document.createDocumentFragment();
+    Core.VARIANT_ORDER.forEach((variant) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = `card-button trainer-card ${cardClass(card)}`;
-      button.disabled = state.trainer.confirmed;
-      button.draggable = false;
-      button.dataset.cardId = id;
-      button.innerHTML = cardFaceHtml(card);
-      button.addEventListener("click", (event) => {
-        if (consumeTrainerDragClick(event, id)) return;
-        addTrainerCard(id);
+      button.role = "tab";
+      button.className = variant === active ? "active" : "";
+      button.setAttribute("aria-selected", String(variant === active));
+      button.textContent = Core.VARIANTS[variant].label;
+      button.addEventListener("click", () => renderRules(variant));
+      tabFragment.appendChild(button);
+    });
+    els.rulesTabs.replaceChildren(tabFragment);
+
+    const rules = Core.RULE_SECTIONS.find((section) => section.id === active);
+    const article = document.createElement("article");
+    article.className = "rules-article";
+    const heading = document.createElement("div");
+    heading.className = "rules-article-heading";
+    const title = document.createElement("h3");
+    title.textContent = rules.title;
+    const short = document.createElement("p");
+    short.textContent = Core.VARIANTS[active].short;
+    heading.append(title, short);
+    article.appendChild(heading);
+    [["Qualify", [rules.qualification]], ["Royalties", rules.scoring], ["Repeat Fantasyland", [rules.repeat]]].forEach(([label, lines]) => {
+      const section = document.createElement("section");
+      const sectionTitle = document.createElement("h4");
+      sectionTitle.textContent = label;
+      const list = document.createElement("ul");
+      lines.forEach((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        list.appendChild(item);
       });
-      button.addEventListener("pointerdown", (event) => startTrainerPointerDrag(event, id, button));
-      button.addEventListener("dragstart", (event) => event.preventDefault());
-      frag.appendChild(button);
+      section.append(sectionTitle, list);
+      article.appendChild(section);
     });
-    els.trainerTray.replaceChildren(frag);
-    updateTrainerSortButtons();
-  }
-
-  function renderTrainerBoard() {
-    const puzzle = getTrainerPuzzle();
-    if (!puzzle) return;
-    const frag = document.createDocumentFragment();
-    TRAINER_ROWS.forEach((rowDef) => {
-      const size = trainerRowSize(rowDef.key, puzzle);
-      const row = document.createElement("section");
-      row.className = `trainer-row ${state.trainer.activeRow === rowDef.key ? "active" : ""}`;
-      row.dataset.row = rowDef.key;
-      row.addEventListener("click", (event) => {
-        if (state.trainer.confirmed || event.target.closest(".trainer-placed-card")) return;
-        setTrainerActiveRow(rowDef.key);
-      });
-
-      const head = document.createElement("button");
-      head.type = "button";
-      head.className = "trainer-row-head";
-      head.disabled = state.trainer.confirmed;
-      head.innerHTML = `<strong>${rowDef.label} <kbd>${trainerRowHotkey(rowDef.key)}</kbd></strong><span>${state.trainer.rows[rowDef.key].length}/${size}</span>`;
-      head.addEventListener("click", () => setTrainerActiveRow(rowDef.key));
-      row.appendChild(head);
-
-      const slots = document.createElement("div");
-      slots.className = `trainer-slots ${rowDef.key === "top" ? "top-row" : ""}`;
-      for (let index = 0; index < size; index += 1) {
-        const id = state.trainer.rows[rowDef.key][index];
-        const slot = document.createElement("div");
-        slot.className = `trainer-slot ${id ? "filled" : ""}`;
-        slot.dataset.row = rowDef.key;
-        slot.dataset.index = String(index);
-        slot.addEventListener("dragover", allowTrainerDrop);
-        slot.addEventListener("dragleave", clearTrainerDragOver);
-        slot.addEventListener("drop", (event) => dropTrainerCardToSlot(event, rowDef.key, index));
-        if (id) {
-          const card = cardFromId(id);
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = `mini-card trainer-placed-card ${cardClass(card)}`;
-          button.disabled = state.trainer.confirmed;
-          button.draggable = false;
-          button.dataset.cardId = id;
-          button.innerHTML = cardFaceHtml(card);
-          button.addEventListener("click", (event) => {
-            if (consumeTrainerDragClick(event, id)) return;
-            removeTrainerCard(rowDef.key, id);
-          });
-          button.addEventListener("pointerdown", (event) => startTrainerPointerDrag(event, id, button));
-          button.addEventListener("dragstart", (event) => event.preventDefault());
-          slot.appendChild(button);
-        }
-        slots.appendChild(slot);
-      }
-      row.appendChild(slots);
-      frag.appendChild(row);
-    });
-    els.trainerRows.replaceChildren(frag);
-  }
-
-  function addTrainerCard(id) {
-    const trainer = state.trainer;
-    if (trainer.confirmed || getPlacedTrainerIds().includes(id)) return;
-    let rowKey = trainer.activeRow;
-    if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle())) {
-      const nextRow = nextTrainerRowWithSpace(rowKey);
-      if (!nextRow) {
-        els.trainerMessage.textContent = "All rows are full.";
-        return;
-      }
-      rowKey = nextRow;
-      setTrainerActiveRow(rowKey, { render: false });
-    }
-
-    trainer.rows[rowKey].push(id);
-    const nextRow = nextTrainerRowWithSpace(rowKey);
-    if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle()) && nextRow) {
-      setTrainerActiveRow(nextRow, { render: false });
-    }
-    els.trainerMessage.textContent = "";
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-  }
-
-  function removeTrainerCard(rowKey, id) {
-    const trainer = state.trainer;
-    if (trainer.confirmed) return;
-    trainer.rows[rowKey] = trainer.rows[rowKey].filter((cardId) => cardId !== id);
-    setTrainerActiveRow(rowKey, { render: false });
-    els.trainerMessage.textContent = "";
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-  }
-
-  function clearTrainerSet() {
-    if (state.trainer.confirmed) return;
-    state.trainer.rows = createEmptyTrainerRows();
-    setTrainerActiveRow("top", { render: false });
-    els.trainerMessage.textContent = "";
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-  }
-
-  function confirmTrainerSet() {
-    const trainer = state.trainer;
-    const puzzle = getTrainerPuzzle();
-    if (!puzzle || trainer.confirmed) return;
-    if (!trainerReady()) {
-      fillTrainerSetFromBankOrder(puzzle);
-    }
-    if (!trainerReady()) {
-      els.trainerMessage.textContent = "Not enough cards to fill the set.";
-      renderTrainerBoard();
-      renderTrainerTray();
-      updateTrainerControls();
-      return;
-    }
-
-    trainer.elapsedMs = now() - trainer.startedAt;
-    stopTrainerTimer();
-    trainer.confirmed = true;
-
-    const user = scoreTrainerRows(puzzle.ids, trainer.rows, {
-      fiveKindRule: state.fiveKindRule,
-    });
-    const optimal = solveHand(puzzle.ids, {
-      repeatRule: state.repeatRule,
-      fiveKindRule: state.fiveKindRule,
-    });
-    const maxPoints = optimal.best ? optimal.best.points : 0;
-    const correct = user.legal && user.points === maxPoints;
-    const result = {
-      mode: trainer.mode,
-      scope: trainer.scope,
-      seed: puzzle.seed,
-      dateKey: puzzle.dateKey,
-      cards: puzzle.cards,
-      jokers: puzzle.jokers,
-      ids: puzzle.ids.slice(),
-      rows: {
-        ...cloneTrainerRows(trainer.rows),
-        discard: getTrainerDiscardIds(puzzle),
-      },
-      timeMs: trainer.elapsedMs,
-      points: user.points,
-      maxPoints,
-      correct,
-      legal: user.legal,
-      rowNames: user.rowNames,
-    };
-    trainer.results[trainer.puzzleIndex] = result;
-    renderTrainerResult(result);
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-  }
-
-  function renderTrainerResult(result) {
-    els.trainerYourPoints.textContent = String(result.points);
-    els.trainerMaxPoints.textContent = String(result.maxPoints);
-    els.trainerResult.textContent = result.correct ? "Max" : result.legal ? "Not max" : "Foul";
-    els.trainerMessage.textContent = `${result.correct ? "Max royalties" : "Below max"} in ${formatTime(result.timeMs)}.`;
-    els.trainerShare.value = buildTrainerShare();
-    els.trainerCopy.disabled = !els.trainerShare.value;
-  }
-
-  function clearTrainerResult() {
-    els.trainerYourPoints.textContent = "--";
-    els.trainerMaxPoints.textContent = "--";
-    els.trainerResult.textContent = "--";
-    els.trainerMessage.textContent = "";
-    els.trainerShare.value = "";
-    els.trainerCopy.disabled = true;
-    els.trainerNext.hidden = true;
-  }
-
-  function updateTrainerControls() {
-    const trainer = state.trainer;
-    els.trainerPanel.classList.toggle("is-confirmed", trainer.confirmed);
-    els.trainerConfirm.disabled = trainer.confirmed;
-    els.trainerClear.disabled = trainer.confirmed;
-    els.trainerNext.hidden = !trainer.confirmed || trainer.puzzleIndex >= trainer.puzzles.length - 1;
-  }
-
-  function updateTrainerHandSizing(puzzle) {
-    if (!els.trainerPanel || !puzzle) return;
-    els.trainerPanel.classList.remove("hand-cols-7", "hand-cols-8", "hand-cols-9");
-    const columns = Math.min(9, Math.max(7, Math.ceil(puzzle.cards / 2)));
-    els.trainerPanel.classList.add(`hand-cols-${columns}`);
-  }
-
-  function handleTrainerHotkeys(event) {
-    if (shouldIgnoreTrainerHotkey(event)) return;
-    const key = event.key.toLowerCase();
-    if (key === "1") {
-      event.preventDefault();
-      setTrainerActiveRow("top");
-    } else if (key === "2") {
-      event.preventDefault();
-      setTrainerActiveRow("middle");
-    } else if (key === "3") {
-      event.preventDefault();
-      setTrainerActiveRow("back");
-    } else if (key === "r") {
-      event.preventDefault();
-      setTrainerSortMode("rank");
-    } else if (key === "s") {
-      event.preventDefault();
-      setTrainerSortMode("suit");
-    } else if (key === "c") {
-      event.preventDefault();
-      clearTrainerSet();
-    } else if (event.code === "Space" && !els.trainerConfirm.disabled) {
-      event.preventDefault();
-      confirmTrainerSet();
-    }
-  }
-
-  function shouldIgnoreTrainerHotkey(event) {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return true;
-    const target = event.target;
-    if (!target) return false;
-    return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
-  }
-
-  function trainerRowHotkey(key) {
-    if (key === "top") return "1";
-    if (key === "middle") return "2";
-    return "3";
-  }
-
-  function setTrainerSortMode(mode) {
-    state.trainer.sortMode = mode === "suit" ? "suit" : "rank";
-    updateTrainerSortButtons();
-    renderTrainerTray();
-  }
-
-  function updateTrainerSortButtons() {
-    const isRank = state.trainer.sortMode !== "suit";
-    els.trainerSortRank.classList.toggle("active", isRank);
-    els.trainerSortSuit.classList.toggle("active", !isRank);
-    els.trainerSortRank.setAttribute("aria-pressed", String(isRank));
-    els.trainerSortSuit.setAttribute("aria-pressed", String(!isRank));
-  }
-
-  function compareTrainerCards(leftId, rightId, mode) {
-    const left = cardFromId(leftId);
-    const right = cardFromId(rightId);
-    if (left.joker || right.joker) {
-      if (left.joker && right.joker) return left.id.localeCompare(right.id);
-      return left.joker ? -1 : 1;
-    }
-
-    const leftSuit = SUITS.indexOf(left.suit);
-    const rightSuit = SUITS.indexOf(right.suit);
-    if (mode === "suit") {
-      return leftSuit - rightSuit || right.rank - left.rank || left.id.localeCompare(right.id);
-    }
-    return right.rank - left.rank || leftSuit - rightSuit || left.id.localeCompare(right.id);
-  }
-
-  function getTrainerOrderedIds(puzzle = getTrainerPuzzle()) {
-    if (!puzzle) return [];
-    return puzzle.ids.slice().sort((left, right) => compareTrainerCards(left, right, state.trainer.sortMode));
-  }
-
-  function fillTrainerSetFromBankOrder(puzzle = getTrainerPuzzle()) {
-    if (!puzzle || state.trainer.confirmed) return;
-    const placed = new Set(getPlacedTrainerIds());
-    const remaining = getTrainerOrderedIds(puzzle).filter((id) => !placed.has(id));
-
-    TRAINER_ROWS.forEach((row) => {
-      const rowCards = state.trainer.rows[row.key];
-      const size = trainerRowSize(row.key, puzzle);
-      while (rowCards.length < size && remaining.length) {
-        rowCards.push(remaining.shift());
-      }
-    });
-
-    const nextRow = TRAINER_ROWS.find((row) => state.trainer.rows[row.key].length < trainerRowSize(row.key, puzzle));
-    state.trainer.activeRow = nextRow ? nextRow.key : "back";
-    els.trainerMessage.textContent = "";
-  }
-
-  function startTrainerDrag(event, id) {
-    if (state.trainer.confirmed || !event.dataTransfer) return;
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", id);
-  }
-
-  function startTrainerPointerDrag(event, id, sourceEl) {
-    if (state.trainer.confirmed || event.button > 0) return;
-    state.trainer.drag = {
-      id,
-      sourceEl,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      active: false,
-      ghost: null,
-      overEl: null,
-    };
-    document.addEventListener("pointermove", moveTrainerPointerDrag);
-    document.addEventListener("pointerup", finishTrainerPointerDrag);
-    document.addEventListener("pointercancel", cancelTrainerPointerDrag);
-  }
-
-  function moveTrainerPointerDrag(event) {
-    const drag = state.trainer.drag;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-
-    const dx = event.clientX - drag.startX;
-    const dy = event.clientY - drag.startY;
-    if (!drag.active && Math.hypot(dx, dy) < 5) return;
-
-    if (!drag.active) activateTrainerPointerDrag(event);
-    updateTrainerDragGhost(event);
-    updateTrainerDragTarget(event);
-    event.preventDefault();
-  }
-
-  function activateTrainerPointerDrag(event) {
-    const drag = state.trainer.drag;
-    if (!drag || drag.active) return;
-    const rect = drag.sourceEl.getBoundingClientRect();
-    const ghost = drag.sourceEl.cloneNode(true);
-    ghost.classList.remove("drag-source-hidden");
-    ghost.classList.add("trainer-drag-ghost");
-    ghost.style.width = `${rect.width}px`;
-    ghost.style.height = `${rect.height}px`;
-    document.body.appendChild(ghost);
-    drag.sourceEl.classList.add("drag-source-hidden");
-    drag.active = true;
-    drag.ghost = ghost;
-    updateTrainerDragGhost(event);
-    window.requestAnimationFrame(() => ghost.classList.add("is-lifted"));
-  }
-
-  function updateTrainerDragGhost(event) {
-    const drag = state.trainer.drag;
-    if (!drag || !drag.ghost) return;
-    drag.ghost.style.left = `${event.clientX}px`;
-    drag.ghost.style.top = `${event.clientY}px`;
-  }
-
-  function updateTrainerDragTarget(event) {
-    const drag = state.trainer.drag;
-    if (!drag || !drag.active) return;
-    const target = document.elementFromPoint(event.clientX, event.clientY);
-    const overEl = target ? target.closest(".trainer-slot, #trainer-tray") : null;
-    if (drag.overEl === overEl) return;
-    clearTrainerPointerDragTarget();
-    drag.overEl = overEl;
-    if (overEl) overEl.classList.add("drag-over");
-  }
-
-  function clearTrainerPointerDragTarget() {
-    const drag = state.trainer.drag;
-    if (drag && drag.overEl) {
-      drag.overEl.classList.remove("drag-over");
-      drag.overEl = null;
-    }
-  }
-
-  function finishTrainerPointerDrag(event) {
-    const drag = state.trainer.drag;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-
-    const wasActive = drag.active;
-    if (wasActive) {
-      const target = document.elementFromPoint(event.clientX, event.clientY);
-      const slot = target ? target.closest(".trainer-slot") : null;
-      const bank = target ? target.closest("#trainer-tray") : null;
-      cleanupTrainerPointerDrag({ suppressClick: true });
-
-      if (slot && slot.dataset.row && slot.dataset.index) {
-        placeTrainerCardInSlot(drag.id, slot.dataset.row, Number(slot.dataset.index));
-      } else if (bank && findTrainerCardLocation(drag.id)) {
-        removeTrainerCardFromRows(drag.id);
-        els.trainerMessage.textContent = "";
-        renderTrainerBoard();
-        renderTrainerTray();
-        updateTrainerControls();
-      }
-      event.preventDefault();
-      return;
-    }
-
-    cleanupTrainerPointerDrag({ suppressClick: false });
-  }
-
-  function cancelTrainerPointerDrag() {
-    cleanupTrainerPointerDrag({ suppressClick: false });
-  }
-
-  function cleanupTrainerPointerDrag(options = {}) {
-    const drag = state.trainer.drag;
-    if (!drag) return;
-    clearTrainerPointerDragTarget();
-    if (drag.sourceEl) drag.sourceEl.classList.remove("drag-source-hidden");
-    if (drag.ghost) drag.ghost.remove();
-    if (options.suppressClick) {
-      state.trainer.dragClickBlock = { id: drag.id, until: now() + 450 };
-    }
-    document.removeEventListener("pointermove", moveTrainerPointerDrag);
-    document.removeEventListener("pointerup", finishTrainerPointerDrag);
-    document.removeEventListener("pointercancel", cancelTrainerPointerDrag);
-    state.trainer.drag = null;
-  }
-
-  function consumeTrainerDragClick(event, id) {
-    const block = state.trainer.dragClickBlock;
-    if (!block || block.id !== id || now() > block.until) return false;
-    state.trainer.dragClickBlock = null;
-    event.preventDefault();
-    event.stopPropagation();
-    return true;
-  }
-
-  function allowTrainerDrop(event) {
-    if (state.trainer.confirmed) return;
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-    event.currentTarget.classList.add("drag-over");
-  }
-
-  function clearTrainerDragOver(event) {
-    event.currentTarget.classList.remove("drag-over");
-  }
-
-  function dropTrainerCardToBank(event) {
-    event.preventDefault();
-    clearTrainerDragOver(event);
-    const id = getTrainerDragCardId(event);
-    if (!id || state.trainer.confirmed) return;
-    removeTrainerCardFromRows(id);
-    els.trainerMessage.textContent = "";
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-  }
-
-  function dropTrainerCardToSlot(event, rowKey, index) {
-    event.preventDefault();
-    clearTrainerDragOver(event);
-    const id = getTrainerDragCardId(event);
-    if (!id) return;
-    placeTrainerCardInSlot(id, rowKey, index);
-  }
-
-  function getTrainerDragCardId(event) {
-    return event.dataTransfer ? event.dataTransfer.getData("text/plain") : "";
-  }
-
-  function placeTrainerCardInSlot(id, rowKey, index) {
-    const trainer = state.trainer;
-    const puzzle = getTrainerPuzzle();
-    if (!puzzle || trainer.confirmed) return;
-    const rowSize = trainerRowSize(rowKey, puzzle);
-    if (index < 0 || index >= rowSize) return;
-
-    const targetRow = trainer.rows[rowKey];
-    const targetId = targetRow[index] || "";
-    if (targetId === id) return;
-
-    const origin = findTrainerCardLocation(id);
-    if (targetId) {
-      if (origin) trainer.rows[origin.rowKey][origin.index] = targetId;
-      targetRow[index] = id;
-    } else {
-      if (origin) trainer.rows[origin.rowKey].splice(origin.index, 1);
-      const adjustedIndex = origin && origin.rowKey === rowKey && origin.index < index ? index - 1 : index;
-      trainer.rows[rowKey].splice(Math.min(adjustedIndex, trainer.rows[rowKey].length), 0, id);
-    }
-
-    setTrainerActiveRow(rowKey, { render: false });
-    els.trainerMessage.textContent = "";
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-  }
-
-  function findTrainerCardLocation(id) {
-    for (const row of TRAINER_ROWS) {
-      const index = state.trainer.rows[row.key].indexOf(id);
-      if (index >= 0) return { rowKey: row.key, index };
-    }
-    return null;
-  }
-
-  function removeTrainerCardFromRows(id) {
-    TRAINER_ROWS.forEach((row) => {
-      state.trainer.rows[row.key] = state.trainer.rows[row.key].filter((cardId) => cardId !== id);
-    });
-  }
-
-  function scoreTrainerRows(cardIds, rows, options = {}) {
-    const cardById = new Map(cardIds.map((id, index) => [id, { ...cardFromId(id), handIndex: index }]));
-    const topCards = rows.top.map((id) => cardById.get(id));
-    const middleCards = rows.middle.map((id) => cardById.get(id));
-    const backCards = rows.back.map((id) => cardById.get(id));
-    const fiveKindRule = options.fiveKindRule || "royal";
-    const topEval = evaluateBestTop(topCards);
-    const middleEval = evaluateBestFive(middleCards);
-    const backEval = evaluateBestFive(backCards);
-    const legal =
-      backEval.strength >= middleEval.strength &&
-      isTopLegalAgainstMiddle(topEval, middleEval);
-    const points = legal
-      ? topRoyalty(topEval) +
-        fiveRoyalty(middleEval, "middle", fiveKindRule) +
-        fiveRoyalty(backEval, "back", fiveKindRule)
-      : 0;
-    return {
-      legal,
-      points,
-      rowNames: {
-        top: topEval.name,
-        middle: middleEval.name,
-        back: backEval.name,
-      },
-    };
-  }
-
-  function isTopLegalAgainstMiddle(topEval, middleEval) {
-    if (middleEval.category >= CATEGORY.STRAIGHT) return true;
-    if (middleEval.category === CATEGORY.TRIPS) {
-      return topEval.category < CATEGORY.TRIPS || topEval.mainRank <= middleEval.mainRank;
-    }
-    if (middleEval.category === CATEGORY.TWO_PAIR) {
-      return topEval.category < CATEGORY.TRIPS;
-    }
-    if (middleEval.category === CATEGORY.PAIR) {
-      if (topEval.category === CATEGORY.HIGH) return true;
-      return topEval.category === CATEGORY.PAIR && topEval.mainRank <= middleEval.mainRank;
-    }
-    return topEval.category === CATEGORY.HIGH && topEval.strength <= middleEval.strength;
-  }
-
-  function buildTrainerShare() {
-    const trainer = state.trainer;
-    const results = trainer.results.filter(Boolean);
-    if (!results.length) return "";
-    const first = results[0];
-    if (first.mode === "daily") {
-      const title =
-        trainer.scope === "all"
-          ? `OFC Fantasyland Daily ${first.dateKey} All 12`
-          : `OFC Fantasyland Daily ${first.dateKey} ${configShort(first)}`;
-      return [title]
-        .concat(results.map((result) => `${configShort(result)} ${result.correct ? "✅" : "❌"} ${formatTime(result.timeMs)}`))
-        .join("\n");
-    }
-
-    const title =
-      trainer.scope === "all"
-        ? "OFC Fantasyland Random All 12"
-        : `OFC Fantasyland Random ${configShort(first)}`;
-    const blocks = results.map((result) =>
-      [
-        `${configShort(result)} ${result.correct ? "✅" : "❌"} ${result.points}/${result.maxPoints} royalties ${formatTime(result.timeMs)}`,
-        `Top: ${cardsToShare(result.rows.top)}`,
-        `Middle: ${cardsToShare(result.rows.middle)}`,
-        `Back: ${cardsToShare(result.rows.back)}`,
-        `Discards: ${cardsToShare(result.rows.discard)}`,
-      ].join("\n")
-    );
-    return [title].concat(blocks).join("\n\n");
-  }
-
-  async function copyTrainerReport() {
-    const text = els.trainerShare.value;
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      els.trainerCopy.textContent = "Copied";
-      window.setTimeout(() => {
-        els.trainerCopy.textContent = "Copy report";
-      }, 1200);
-    } catch (error) {
-      els.trainerShare.focus();
-      els.trainerShare.select();
-      document.execCommand("copy");
-    }
-  }
-
-  function startTrainerTimer() {
-    stopTrainerTimer();
-    state.trainer.startedAt = now();
-    state.trainer.timerId = window.setInterval(updateTrainerTimer, 250);
-    updateTrainerTimer();
-  }
-
-  function stopTrainerTimer() {
-    if (state.trainer.timerId) {
-      window.clearInterval(state.trainer.timerId);
-      state.trainer.timerId = 0;
-    }
-  }
-
-  function updateTrainerTimer() {
-    if (!els.trainerTime) return;
-    const elapsed = state.trainer.confirmed
-      ? state.trainer.elapsedMs
-      : Math.max(0, now() - state.trainer.startedAt);
-    els.trainerTime.textContent = formatTime(elapsed);
-  }
-
-  function trainerReady() {
-    const puzzle = getTrainerPuzzle();
-    if (!puzzle) return false;
-    return TRAINER_ROWS.every((row) => state.trainer.rows[row.key].length === trainerRowSize(row.key, puzzle));
-  }
-
-  function getPlacedTrainerIds() {
-    return TRAINER_ROWS.flatMap((row) => state.trainer.rows[row.key]);
-  }
-
-  function getTrainerDiscardIds(puzzle = getTrainerPuzzle()) {
-    if (!puzzle) return [];
-    const placed = new Set(getPlacedTrainerIds());
-    return puzzle.ids.filter((id) => !placed.has(id));
-  }
-
-  function nextTrainerRowWithSpace(currentKey) {
-    const puzzle = getTrainerPuzzle();
-    const order = TRAINER_ROWS.map((row) => row.key);
-    const start = Math.max(0, order.indexOf(currentKey));
-    for (let step = 1; step <= order.length; step += 1) {
-      const key = order[(start + step) % order.length];
-      if (state.trainer.rows[key].length < trainerRowSize(key, puzzle)) return key;
-    }
-    return "";
-  }
-
-  function setTrainerActiveRow(key, options = {}) {
-    state.trainer.activeRow = key;
-    if (options.render !== false) renderTrainerBoard();
-  }
-
-  function trainerRowSize(key, puzzle) {
-    if (key === "discard") return Math.max(0, puzzle.cards - 13);
-    const row = TRAINER_ROWS.find((entry) => entry.key === key);
-    return row ? row.size : 0;
-  }
-
-  function getTrainerPuzzle() {
-    return state.trainer.puzzles[state.trainer.puzzleIndex];
-  }
-
-  function createEmptyTrainerRows() {
-    return { top: [], middle: [], back: [], discard: [] };
-  }
-
-  function cloneTrainerRows(rows) {
-    return {
-      top: rows.top.slice(),
-      middle: rows.middle.slice(),
-      back: rows.back.slice(),
-      discard: rows.discard.slice(),
-    };
-  }
-
-  function getCheckedValue(name, fallback) {
-    const input = document.querySelector(`input[name="${name}"]:checked`);
-    return input ? input.value : fallback;
-  }
-
-  function setCheckedValue(name, value) {
-    const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
-    if (input) input.checked = true;
-  }
-
-  function configShort(config) {
-    return `${config.cards}/${config.jokers}`;
-  }
-
-  function localDateKey() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}${month}${day}`;
-  }
-
-  function dealIdsSeeded(count, jokers, seed) {
-    const rng = seededRandom(seed);
-    const naturals = buildDeckIds(0);
-    shuffleWithRng(naturals, rng);
-    const hand = naturals.slice(0, Math.max(0, count - jokers));
-    for (let index = 1; index <= jokers; index += 1) {
-      hand.push(`JK${index}`);
-    }
-    shuffleWithRng(hand, rng);
-    return hand.slice(0, count);
-  }
-
-  function shuffleWithRng(items, rng) {
-    for (let index = items.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(rng() * (index + 1));
-      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
-    }
-    return items;
-  }
-
-  function seededRandom(seed) {
-    return mulberry32(hashSeed(seed));
-  }
-
-  function hashSeed(seed) {
-    let hash = 1779033703 ^ seed.length;
-    for (let index = 0; index < seed.length; index += 1) {
-      hash = Math.imul(hash ^ seed.charCodeAt(index), 3432918353);
-      hash = (hash << 13) | (hash >>> 19);
-    }
-    hash = Math.imul(hash ^ (hash >>> 16), 2246822507);
-    hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
-    return (hash ^= hash >>> 16) >>> 0;
-  }
-
-  function mulberry32(seed) {
-    let value = seed >>> 0;
-    return function nextRandom() {
-      value += 0x6d2b79f5;
-      let result = Math.imul(value ^ (value >>> 15), 1 | value);
-      result ^= result + Math.imul(result ^ (result >>> 7), 61 | result);
-      return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
-  function formatTime(ms) {
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
-  }
-
-  function cardsToShare(ids) {
-    return ids.map(cardIdToShare).join(" ");
-  }
-
-  function cardIdToShare(id) {
-    if (id.startsWith("JK")) return "🃏";
-    const rank = id[0] === "T" ? "10" : id[0];
-    const suit = id[1].toLowerCase();
-    const suits = { s: "♠️", h: "♥️", d: "♦️", c: "♣️" };
-    return `${rank}${suits[suit]}`;
-  }
-
-  async function runSimulationMatrix() {
-    state.simAbort = false;
-    els.runSim.disabled = true;
-    els.stopSim.disabled = false;
-    els.simProgress.style.width = "0%";
-    renderSimulationRows();
-
-    const samples = Number(els.sampleCount.value);
-    const options = {
-      repeatRule: els.repeatRule.value,
-      fiveKindRule: els.fiveKindRule.value,
-    };
-    const solver = els.solverMode.value === "exact" ? solveHand : solveHandFast;
-    const modeLabel = els.solverMode.value === "exact" ? "exact" : "fast";
-    const totalsByKey = new Map();
-    const totalWork = SCENARIOS.length * samples;
-    let completed = 0;
-    const started = now();
-
-    try {
-      for (const scenario of SCENARIOS) {
-        const key = scenarioKey(scenario);
-        const totals = { points: 0, repeats: 0, repeatPoints: 0, samples: 0 };
-        totalsByKey.set(key, totals);
-
-        for (let i = 0; i < samples; i += 1) {
-          if (state.simAbort) {
-            els.simStatus.textContent = "Stopped.";
-            return;
-          }
-
-          const ids = dealIds(scenario.cards, scenario.jokers);
-          const result = solver(ids, options);
-          totals.samples += 1;
-          totals.points += result.best ? result.best.points : 0;
-          if (result.bestRepeat) {
-            totals.repeats += 1;
-            totals.repeatPoints += result.bestRepeat.points;
-          }
-
-          completed += 1;
-          if (i === samples - 1 || i % 2 === 1) {
-            updateSimulationRow(scenario, totals);
-            els.simProgress.style.width = `${Math.round((completed / totalWork) * 100)}%`;
-            els.simStatus.textContent = `${completed} / ${totalWork} ${modeLabel} samples`;
-            await yieldFrame();
-          }
-        }
-      }
-
-      const elapsed = ((now() - started) / 1000).toFixed(1);
-      els.simProgress.style.width = "100%";
-      els.simStatus.textContent = `Finished ${totalWork} ${modeLabel} samples in ${elapsed}s.`;
-    } finally {
-      els.runSim.disabled = false;
-      els.stopSim.disabled = true;
-      state.simAbort = false;
-    }
-  }
-
-  function renderSimulationRows() {
-    const frag = document.createDocumentFragment();
-    SCENARIOS.forEach((scenario) => {
-      const jokerLabel =
-        scenario.jokers === 0
-          ? "No jokers"
-          : `${scenario.jokers} ${scenario.jokers === 1 ? "joker" : "jokers"}`;
-      const tr = document.createElement("tr");
-      tr.dataset.scenario = scenarioKey(scenario);
-      tr.innerHTML = `
-        <td>${scenario.cards}</td>
-        <td>${jokerLabel}</td>
-        <td class="pending">--</td>
-        <td class="pending">--</td>
-        <td class="pending">--</td>
-        <td class="pending">--</td>
-        <td class="pending">0</td>
-      `;
-      frag.appendChild(tr);
-    });
-    els.simBody.replaceChildren(frag);
-  }
-
-  function updateSimulationRow(scenario, totals) {
-    const row = els.simBody.querySelector(`[data-scenario="${scenarioKey(scenario)}"]`);
-    if (!row) return;
-    const avg = totals.samples ? totals.points / totals.samples : 0;
-    const repeatPct = totals.samples ? totals.repeats / totals.samples : 0;
-    const repeatAvg = totals.repeats ? totals.repeatPoints / totals.repeats : 0;
-    const recursive = repeatPct >= 0.999999 ? Infinity : avg / (1 - repeatPct);
-    row.children[2].textContent = avg.toFixed(2);
-    row.children[3].textContent = formatPct(repeatPct);
-    row.children[4].textContent = Number.isFinite(recursive) ? recursive.toFixed(2) : "∞";
-    row.children[5].textContent = totals.repeats ? repeatAvg.toFixed(2) : "--";
-    row.children[6].textContent = String(totals.samples);
-    Array.from(row.children).forEach((cell) => cell.classList.remove("pending"));
+    const note = document.createElement("p");
+    note.className = "rules-seed-note";
+    note.textContent = "EV samples are unfiltered random hands with the exact joker count shown. A hand that cannot qualify scores zero and is reflected in the Qualify column.";
+    article.appendChild(note);
+    els.rulesContent.replaceChildren(article);
+  }
+
+  function getVariantResults() {
+    return state.results[state.variant] || {};
   }
 
   function scenarioKey(scenario) {
     return `${scenario.cards}-${scenario.jokers}`;
   }
 
-  function solveHand(cardIds, options = {}) {
-    const repeatRule = options.repeatRule || "pineapple";
-    const fiveKindRule = options.fiveKindRule || "royal";
-    const started = now();
-    const cards = cardIds.map((id, handIndex) => ({ ...cardFromId(id), handIndex }));
-    const n = cards.length;
-    if (n < 13 || n > 17) {
-      throw new Error("OFC Fantasyland solver supports 13 to 17 cards.");
-    }
-
-    const combo = getComboCache(n);
-    const five = buildFiveCandidates(cards, combo.fiveMasks, fiveKindRule);
-    const top = buildTopCandidates(cards, combo.threeMasks);
-    const fiveStrength = five.map((candidate) => candidate.eval.strength);
-    const fiveMiddleRoyalty = five.map((candidate) => candidate.middleRoyalty);
-    const fiveBackRoyalty = five.map((candidate) => candidate.backRoyalty);
-    const topByMask = [];
-    top.forEach((candidate) => {
-      topByMask[candidate.mask] = candidate;
-    });
-    const topCache = [];
-    const fullMask = (1 << n) - 1;
-    let best = null;
-    let bestRepeat = null;
-    let legalBoards = 0;
-
-    for (let backIndex = 0; backIndex < combo.fiveMasks.length; backIndex += 1) {
-      const backStrength = fiveStrength[backIndex];
-      const backRoyalty = fiveBackRoyalty[backIndex];
-      const offsetStart = combo.disjointOffsets[backIndex];
-      const offsetEnd = combo.disjointOffsets[backIndex + 1];
-
-      for (let offset = offsetStart; offset < offsetEnd; offset += 1) {
-        const middleIndex = combo.disjointFive[offset];
-        const middleStrength = fiveStrength[middleIndex];
-        if (backStrength < middleStrength) continue;
-
-        const remainingMask = fullMask ^ combo.fiveMasks[backIndex] ^ combo.fiveMasks[middleIndex];
-        const topCandidate = getBestTopForMiddle(
-          remainingMask,
-          five[middleIndex].eval,
-          topByMask,
-          topCache
-        );
-        if (!topCandidate) continue;
-
-        legalBoards += 1;
-        const points = backRoyalty + fiveMiddleRoyalty[middleIndex] + topCandidate.royalty;
-        const repeats =
-          rowRepeats("top", topCandidate.eval, repeatRule) ||
-          rowRepeats("middle", five[middleIndex].eval, repeatRule) ||
-          rowRepeats("back", five[backIndex].eval, repeatRule);
-
-        const solution = {
-          points,
-          repeat: repeats,
-          top: topCandidate,
-          middle: five[middleIndex],
-          back: five[backIndex],
-          usedMask: topCandidate.mask | combo.fiveMasks[middleIndex] | combo.fiveMasks[backIndex],
-          tieStrength: backStrength + middleStrength + topCandidate.eval.strength,
-        };
-
-        if (isBetterSolution(solution, best)) best = solution;
-        if (repeats && isBetterSolution(solution, bestRepeat)) bestRepeat = solution;
-      }
-    }
-
-    const preferred = bestRepeat || best;
-    return {
-      cards,
-      best: preferred,
-      bestRoyalty: best,
-      bestRepeat,
-      legalBoards,
-      elapsedMs: now() - started,
-      options: { repeatRule, fiveKindRule },
-    };
+  function mean(values) {
+    return values.length ? values.reduce((sum, value) => sum + finiteNumber(value), 0) / values.length : 0;
   }
 
-  function solveHandFast(cardIds, options = {}) {
-    const repeatRule = options.repeatRule || "pineapple";
-    const fiveKindRule = options.fiveKindRule || "royal";
-    const started = now();
-    const cards = cardIds.map((id, handIndex) => ({ ...cardFromId(id), handIndex }));
-    const n = cards.length;
-    if (n < 13 || n > 17) {
-      throw new Error("OFC Fantasyland solver supports 13 to 17 cards.");
-    }
-
-    const combo = getComboCache(n);
-    const five = buildFiveCandidates(cards, combo.fiveMasks, fiveKindRule);
-    const top = buildTopCandidates(cards, combo.threeMasks);
-    const fiveStrength = five.map((candidate) => candidate.eval.strength);
-    const fiveMiddleRoyalty = five.map((candidate) => candidate.middleRoyalty);
-    const fiveBackRoyalty = five.map((candidate) => candidate.backRoyalty);
-    const topByMask = [];
-    top.forEach((candidate) => {
-      topByMask[candidate.mask] = candidate;
-    });
-    const topCache = [];
-    const fullMask = (1 << n) - 1;
-    const backBeam = selectFiveBeam(five, "back", repeatRule);
-    const middleBeam = selectFiveBeam(five, "middle", repeatRule);
-    let best = null;
-    let bestRepeat = null;
-    let legalBoards = 0;
-
-    for (const backIndex of backBeam) {
-      const backMask = combo.fiveMasks[backIndex];
-      const backStrength = fiveStrength[backIndex];
-      const backRoyalty = fiveBackRoyalty[backIndex];
-
-      for (const middleIndex of middleBeam) {
-        const middleMask = combo.fiveMasks[middleIndex];
-        if (backMask & middleMask) continue;
-
-        const middleStrength = fiveStrength[middleIndex];
-        if (backStrength < middleStrength) continue;
-
-        const remainingMask = fullMask ^ backMask ^ middleMask;
-        const topCandidate = getBestTopForMiddle(
-          remainingMask,
-          five[middleIndex].eval,
-          topByMask,
-          topCache
-        );
-        if (!topCandidate) continue;
-
-        legalBoards += 1;
-        const points = backRoyalty + fiveMiddleRoyalty[middleIndex] + topCandidate.royalty;
-        const repeats =
-          rowRepeats("top", topCandidate.eval, repeatRule) ||
-          rowRepeats("middle", five[middleIndex].eval, repeatRule) ||
-          rowRepeats("back", five[backIndex].eval, repeatRule);
-
-        const solution = {
-          points,
-          repeat: repeats,
-          top: topCandidate,
-          middle: five[middleIndex],
-          back: five[backIndex],
-          usedMask: topCandidate.mask | middleMask | backMask,
-          tieStrength: backStrength + middleStrength + topCandidate.eval.strength,
-        };
-
-        if (isBetterSolution(solution, best)) best = solution;
-        if (repeats && isBetterSolution(solution, bestRepeat)) bestRepeat = solution;
-      }
-    }
-
-    if (!best) return solveHand(cardIds, options);
-
-    const preferred = bestRepeat || best;
-    return {
-      cards,
-      best: preferred,
-      bestRoyalty: best,
-      bestRepeat,
-      legalBoards,
-      elapsedMs: now() - started,
-      options: { repeatRule, fiveKindRule, mode: "fast" },
-    };
+  function meanFinite(values) {
+    const finite = values.filter(Number.isFinite);
+    return finite.length ? mean(finite) : Infinity;
   }
 
-  function selectFiveBeam(five, row, repeatRule) {
-    const limit = 320;
-    const selected = new Set();
-    const addTop = (scoreFn, count) => {
-      five
-        .map((candidate, index) => ({ index, score: scoreFn(candidate) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, count)
-        .forEach((entry) => selected.add(entry.index));
-    };
-
-    const royaltyOf = (candidate) => (row === "middle" ? candidate.middleRoyalty : candidate.backRoyalty);
-    addTop(
-      (candidate) =>
-        royaltyOf(candidate) * 100000 +
-        (rowRepeats(row, candidate.eval, repeatRule) ? 25000 : 0) +
-        candidate.eval.strength / 1e6,
-      limit
-    );
-    addTop((candidate) => candidate.eval.strength, Math.ceil(limit / 3));
-    addTop(
-      (candidate) =>
-        (rowRepeats(row, candidate.eval, repeatRule) ? 100000 : 0) +
-        royaltyOf(candidate) * 1000 +
-        candidate.eval.strength / 1e8,
-      Math.ceil(limit / 2)
-    );
-
-    return Array.from(selected);
+  function finiteNumber(value) {
+    return Number.isFinite(Number(value)) ? Number(value) : 0;
   }
 
-  function buildFiveCandidates(cards, masks, fiveKindRule) {
-    return masks.map((mask) => {
-      const rowCards = cardsForMask(cards, mask);
-      const evalResult = evaluateBestFive(rowCards);
-      return {
-        mask,
-        eval: evalResult,
-        middleRoyalty: fiveRoyalty(evalResult, "middle", fiveKindRule),
-        backRoyalty: fiveRoyalty(evalResult, "back", fiveKindRule),
-      };
-    });
-  }
-
-  function buildTopCandidates(cards, masks) {
-    return masks.map((mask) => {
-      const rowCards = cardsForMask(cards, mask);
-      const evalResult = evaluateBestTop(rowCards);
-      return {
-        mask,
-        eval: evalResult,
-        royalty: topRoyalty(evalResult),
-      };
-    });
-  }
-
-  function getBestTopForMiddle(remainingMask, middleEval, topByMask, topCache) {
-    let cache = topCache[remainingMask];
-    if (!cache) {
-      cache = buildTopOptionCache(remainingMask, topByMask);
-      topCache[remainingMask] = cache;
-    }
-
-    if (middleEval.category >= CATEGORY.STRAIGHT) return cache.any;
-    if (middleEval.category === CATEGORY.TRIPS) return cache.tripLimit[middleEval.mainRank] || null;
-    if (middleEval.category === CATEGORY.TWO_PAIR) return cache.noTrips || null;
-    if (middleEval.category === CATEGORY.PAIR) return cache.pairLimit[middleEval.mainRank] || null;
-
-    for (const candidate of cache.highs) {
-      if (candidate.eval.strength <= middleEval.strength) return candidate;
-    }
-    return null;
-  }
-
-  function buildTopOptionCache(mask, topByMask) {
-    const positions = bitPositions(mask);
-    const cache = {
-      any: null,
-      noTrips: null,
-      pairLimit: Array(15).fill(null),
-      tripLimit: Array(15).fill(null),
-      highs: [],
-    };
-
-    for (let a = 0; a < positions.length - 2; a += 1) {
-      for (let b = a + 1; b < positions.length - 1; b += 1) {
-        for (let c = b + 1; c < positions.length; c += 1) {
-          const topMask = (1 << positions[a]) | (1 << positions[b]) | (1 << positions[c]);
-          const candidate = topByMask[topMask];
-          if (!candidate) continue;
-          cache.any = betterTop(candidate, cache.any);
-
-          if (candidate.eval.category < CATEGORY.TRIPS) {
-            cache.noTrips = betterTop(candidate, cache.noTrips);
-          }
-
-          if (candidate.eval.category === CATEGORY.HIGH) {
-            cache.highs.push(candidate);
-            for (let rank = 2; rank <= 14; rank += 1) {
-              cache.pairLimit[rank] = betterTop(candidate, cache.pairLimit[rank]);
-              cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
-            }
-          } else if (candidate.eval.category === CATEGORY.PAIR) {
-            for (let rank = candidate.eval.mainRank; rank <= 14; rank += 1) {
-              cache.pairLimit[rank] = betterTop(candidate, cache.pairLimit[rank]);
-              cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
-            }
-          } else if (candidate.eval.category === CATEGORY.TRIPS) {
-            for (let rank = candidate.eval.mainRank; rank <= 14; rank += 1) {
-              cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
-            }
-          }
-        }
-      }
-    }
-
-    cache.highs.sort((a, b) => topSortValue(b) - topSortValue(a));
-    return cache;
-  }
-
-  function betterTop(candidate, current) {
-    if (!current) return candidate;
-    return topSortValue(candidate) > topSortValue(current) ? candidate : current;
-  }
-
-  function topSortValue(candidate) {
-    return candidate.royalty * 1e12 + candidate.eval.strength;
-  }
-
-  function isBetterSolution(candidate, current) {
-    if (!current) return true;
-    if (candidate.points !== current.points) return candidate.points > current.points;
-    if (candidate.repeat !== current.repeat) return candidate.repeat;
-    return candidate.tieStrength > current.tieStrength;
-  }
-
-  function rowRepeats(row, evalResult, rule) {
-    if (row === "top") return evalResult.category === CATEGORY.TRIPS;
-    if (row === "back") return evalResult.category >= CATEGORY.QUADS;
-    if (rule === "topback") return false;
-    if (rule === "tenpoint") return evalResult.category >= CATEGORY.FULL_HOUSE;
-    return evalResult.category >= CATEGORY.QUADS;
-  }
-
-  function topRoyalty(evalResult) {
-    if (evalResult.category === CATEGORY.PAIR && evalResult.mainRank >= 6) {
-      return evalResult.mainRank - 5;
-    }
-    if (evalResult.category === CATEGORY.TRIPS) {
-      return evalResult.mainRank + 8;
-    }
-    return 0;
-  }
-
-  function fiveRoyalty(evalResult, row, fiveKindRule) {
-    const middle = row === "middle";
-    switch (evalResult.category) {
-      case CATEGORY.TRIPS:
-        return middle ? 2 : 0;
-      case CATEGORY.STRAIGHT:
-        return middle ? 4 : 2;
-      case CATEGORY.FLUSH:
-        return middle ? 8 : 4;
-      case CATEGORY.FULL_HOUSE:
-        return middle ? 12 : 6;
-      case CATEGORY.QUADS:
-        return middle ? 20 : 10;
-      case CATEGORY.STRAIGHT_FLUSH:
-        if (evalResult.mainRank === 14) return middle ? 50 : 25;
-        return middle ? 30 : 15;
-      case CATEGORY.FIVE_KIND:
-        if (fiveKindRule === "royal") return middle ? 50 : 25;
-        if (fiveKindRule === "straightflush") return middle ? 30 : 15;
-        if (fiveKindRule === "quads") return middle ? 20 : 10;
-        return 0;
-      default:
-        return 0;
-    }
-  }
-
-  function evaluateBestFive(cards) {
-    return evaluateWithJokers(cards, evaluateConcreteFive);
-  }
-
-  function evaluateBestTop(cards) {
-    return evaluateWithJokers(cards, evaluateConcreteTop);
-  }
-
-  function evaluateWithJokers(cards, evaluator) {
-    const jokers = cards.filter((card) => card.joker);
-    const natural = cards.filter((card) => !card.joker);
-
-    if (jokers.length === 0) {
-      return evaluator(cards, null);
-    }
-
-    let best = null;
-    const consider = (replacements) => {
-      const concrete = natural.concat(replacements);
-      const evaluated = evaluator(concrete, null);
-      const assignments = new Map();
-      jokers.forEach((joker, index) => assignments.set(joker.handIndex, replacements[index]));
-      evaluated.assignments = assignments;
-      if (!best || evaluated.strength > best.strength) {
-        best = evaluated;
-      }
-    };
-
-    if (jokers.length === 1) {
-      for (const first of virtualDeck) consider([first]);
-    } else if (jokers.length === 2) {
-      for (const first of virtualDeck) {
-        for (const second of virtualDeck) {
-          consider([first, second]);
-        }
-      }
-    } else {
-      throw new Error("This solver supports up to two jokers.");
-    }
-
-    return best;
-  }
-
-  function evaluateConcreteFive(cards) {
-    const counts = rankCounts(cards);
-    const groups = Array.from(counts.entries())
-      .map(([rank, count]) => ({ rank: Number(rank), count }))
-      .sort((a, b) => b.count - a.count || b.rank - a.rank);
-    const uniqueRanks = Array.from(counts.keys()).map(Number);
-    const flush = cards.every((card) => card.suit === cards[0].suit);
-    const straightHigh = straightHighRank(uniqueRanks);
-
-    if (groups[0].count === 5) {
-      return makeEval(CATEGORY.FIVE_KIND, [groups[0].rank], `Five ${RANK_NAME[groups[0].rank]}`);
-    }
-
-    if (flush && straightHigh) {
-      const name = straightHigh === 14 ? "Royal flush" : `${rankLong(straightHigh)}-high straight flush`;
-      return makeEval(CATEGORY.STRAIGHT_FLUSH, [straightHigh], name);
-    }
-
-    if (groups[0].count === 4) {
-      const kicker = groups.find((group) => group.count === 1).rank;
-      return makeEval(CATEGORY.QUADS, [groups[0].rank, kicker], `Four ${RANK_NAME[groups[0].rank]}`);
-    }
-
-    if (groups[0].count === 3 && groups[1] && groups[1].count === 2) {
-      return makeEval(
-        CATEGORY.FULL_HOUSE,
-        [groups[0].rank, groups[1].rank],
-        `${rankLong(groups[0].rank)} full of ${RANK_NAME[groups[1].rank]}`
-      );
-    }
-
-    if (flush) {
-      const ranks = cards.map((card) => card.rank).sort(descNumber);
-      return makeEval(CATEGORY.FLUSH, ranks, `${rankLong(ranks[0])}-high flush`);
-    }
-
-    if (straightHigh) {
-      return makeEval(CATEGORY.STRAIGHT, [straightHigh], `${rankLong(straightHigh)}-high straight`);
-    }
-
-    if (groups[0].count === 3) {
-      const kickers = groups
-        .filter((group) => group.count === 1)
-        .map((group) => group.rank)
-        .sort(descNumber);
-      return makeEval(CATEGORY.TRIPS, [groups[0].rank].concat(kickers), `Three ${RANK_NAME[groups[0].rank]}`);
-    }
-
-    if (groups[0].count === 2 && groups[1] && groups[1].count === 2) {
-      const pairs = groups
-        .filter((group) => group.count === 2)
-        .map((group) => group.rank)
-        .sort(descNumber);
-      const kicker = groups.find((group) => group.count === 1).rank;
-      return makeEval(CATEGORY.TWO_PAIR, pairs.concat(kicker), `${rankLong(pairs[0])} and ${RANK_NAME[pairs[1]]}`);
-    }
-
-    if (groups[0].count === 2) {
-      const kickers = groups
-        .filter((group) => group.count === 1)
-        .map((group) => group.rank)
-        .sort(descNumber);
-      return makeEval(CATEGORY.PAIR, [groups[0].rank].concat(kickers), `Pair of ${RANK_NAME[groups[0].rank]}`);
-    }
-
-    const ranks = cards.map((card) => card.rank).sort(descNumber);
-    return makeEval(CATEGORY.HIGH, ranks, `${rankLong(ranks[0])}-high`);
-  }
-
-  function evaluateConcreteTop(cards) {
-    const counts = rankCounts(cards);
-    const groups = Array.from(counts.entries())
-      .map(([rank, count]) => ({ rank: Number(rank), count }))
-      .sort((a, b) => b.count - a.count || b.rank - a.rank);
-
-    if (groups[0].count === 3) {
-      return makeEval(CATEGORY.TRIPS, [groups[0].rank], `Three ${RANK_NAME[groups[0].rank]}`);
-    }
-
-    if (groups[0].count === 2) {
-      const kicker = groups.find((group) => group.count === 1).rank;
-      return makeEval(CATEGORY.PAIR, [groups[0].rank, kicker], `Pair of ${RANK_NAME[groups[0].rank]}`);
-    }
-
-    const ranks = cards.map((card) => card.rank).sort(descNumber);
-    return makeEval(CATEGORY.HIGH, ranks, `${rankLong(ranks[0])}-high`);
-  }
-
-  function makeEval(category, ranks, name) {
-    return {
-      category,
-      mainRank: ranks[0] || 0,
-      ranks,
-      name,
-      strength: encodeStrength(category, ranks),
-      assignments: null,
-    };
-  }
-
-  function encodeStrength(category, ranks) {
-    let value = category * 1e10;
-    const weights = [1e8, 1e6, 1e4, 1e2, 1];
-    for (let index = 0; index < weights.length; index += 1) {
-      value += (ranks[index] || 0) * weights[index];
-    }
-    return value;
-  }
-
-  function rankCounts(cards) {
-    const counts = new Map();
-    cards.forEach((card) => counts.set(card.rank, (counts.get(card.rank) || 0) + 1));
-    return counts;
-  }
-
-  function straightHighRank(ranks) {
-    const unique = Array.from(new Set(ranks)).sort(descNumber);
-    if (unique.length < 5) return 0;
-    const withWheel = unique.includes(14) ? unique.concat(1) : unique;
-    for (let index = 0; index <= withWheel.length - 5; index += 1) {
-      const high = withWheel[index];
-      let ok = true;
-      for (let step = 1; step < 5; step += 1) {
-        if (withWheel[index + step] !== high - step) {
-          ok = false;
-          break;
-        }
-      }
-      if (ok) return high === 5 ? 5 : high;
-    }
-    return 0;
-  }
-
-  function getComboCache(n) {
-    if (comboCache.has(n)) return comboCache.get(n);
-    const fiveMasks = generateMasks(n, 5);
-    const threeMasks = generateMasks(n, 3);
-    const disjointOffsets = new Uint32Array(fiveMasks.length + 1);
-    let total = 0;
-
-    for (let i = 0; i < fiveMasks.length; i += 1) {
-      disjointOffsets[i] = total;
-      for (let j = 0; j < fiveMasks.length; j += 1) {
-        if ((fiveMasks[i] & fiveMasks[j]) === 0) total += 1;
-      }
-    }
-    disjointOffsets[fiveMasks.length] = total;
-
-    const disjointFive = new Uint16Array(total);
-    let cursor = 0;
-    for (let i = 0; i < fiveMasks.length; i += 1) {
-      for (let j = 0; j < fiveMasks.length; j += 1) {
-        if ((fiveMasks[i] & fiveMasks[j]) === 0) {
-          disjointFive[cursor] = j;
-          cursor += 1;
-        }
-      }
-    }
-
-    const cache = { fiveMasks, threeMasks, disjointOffsets, disjointFive };
-    comboCache.set(n, cache);
-    return cache;
-  }
-
-  function generateMasks(n, k) {
-    const masks = [];
-    const walk = (start, left, mask) => {
-      if (left === 0) {
-        masks.push(mask);
-        return;
-      }
-      for (let index = start; index <= n - left; index += 1) {
-        walk(index + 1, left - 1, mask | (1 << index));
-      }
-    };
-    walk(0, k, 0);
-    return masks;
-  }
-
-  function bitPositions(mask) {
-    const positions = [];
-    let index = 0;
-    while (mask) {
-      if (mask & 1) positions.push(index);
-      mask >>= 1;
-      index += 1;
-    }
-    return positions;
-  }
-
-  function cardsForMask(cards, mask) {
-    const row = [];
-    for (let index = 0; index < cards.length; index += 1) {
-      if (mask & (1 << index)) row.push(cards[index]);
-    }
-    return row;
-  }
-
-  function parseCardList(text, jokerLimit) {
-    const tokens = text
-      .replace(/[,\n;]+/g, " ")
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter(Boolean);
-    const ids = [];
-    const seen = new Set();
-    const errors = [];
-    let jokerSeen = 0;
-
-    tokens.forEach((token) => {
-      const id = parseCardToken(token, jokerSeen + 1);
-      if (!id) {
-        errors.push(`Skipped ${token}.`);
-        return;
-      }
-      if (id.startsWith("JK")) {
-        jokerSeen += 1;
-        if (jokerSeen > jokerLimit) {
-          errors.push(`Only ${jokerLimit} joker${jokerLimit === 1 ? "" : "s"} enabled.`);
-          return;
-        }
-      }
-      if (seen.has(id)) {
-        errors.push(`Duplicate ${id}.`);
-        return;
-      }
-      seen.add(id);
-      ids.push(id);
-    });
-
-    return { ids, errors };
-  }
-
-  function parseCardToken(raw, nextJokerNumber) {
-    const normalized = raw
-      .trim()
-      .toUpperCase()
-      .replace(/10/g, "T")
-      .replace(/[♠]/g, "S")
-      .replace(/[♥]/g, "H")
-      .replace(/[♦]/g, "D")
-      .replace(/[♣]/g, "C")
-      .replace(/[^A-Z0-9]/g, "");
-
-    if (/^(JOKER|JOK|JK|X|WILD)([12])?$/.test(normalized)) {
-      const explicit = normalized.match(/([12])$/);
-      return `JK${explicit ? explicit[1] : Math.min(nextJokerNumber, 2)}`;
-    }
-
-    const match = normalized.match(/^([AKQJT2-9])([SHDC])$/) || normalized.match(/^([SHDC])([AKQJT2-9])$/);
-    if (!match) return null;
-    if (SUITS.includes(match[2].toLowerCase())) return `${match[1]}${match[2].toLowerCase()}`;
-    return `${match[2]}${match[1].toLowerCase()}`;
-  }
-
-  function buildDeckIds(jokers) {
-    const ids = [];
-    SUITS.forEach((suit) => {
-      RANKS_DESC.forEach((rank) => ids.push(`${rank}${suit}`));
-    });
-    if (jokers >= 1) ids.push("JK1");
-    if (jokers >= 2) ids.push("JK2");
-    return ids;
-  }
-
-  function dealIds(count, jokers) {
-    const naturals = buildDeckIds(0);
-    shuffle(naturals);
-    const hand = naturals.slice(0, Math.max(0, count - jokers));
-    for (let index = 1; index <= jokers; index += 1) {
-      hand.push(`JK${index}`);
-    }
-    shuffle(hand);
-    return hand.slice(0, count);
-  }
-
-  function buildVirtualDeck() {
-    const deck = [];
-    SUITS.forEach((suit) => {
-      RANKS_ASC.forEach((rank) => {
-        deck.push({
-          id: `${rank}${suit}`,
-          rank: RANK_VALUE.get(rank),
-          suit,
-          joker: false,
-        });
-      });
-    });
-    return deck;
-  }
-
-  function cardFromId(id) {
-    if (id.startsWith("JK")) {
-      return { id, rank: 0, suit: "", joker: true };
-    }
-    const rank = id[0].toUpperCase();
-    const suit = id[1].toLowerCase();
-    return {
-      id: `${rank}${suit}`,
-      rank: RANK_VALUE.get(rank),
-      suit,
-      joker: false,
-    };
-  }
-
-  function cardLabel(card) {
-    if (card.joker) return "JK";
-    return `${RANK_LABEL[card.rank]}${SUIT_SYMBOL[card.suit]}`;
-  }
-
-  function cardFaceHtml(card, badge = "") {
-    const rank = card.joker ? "JK" : RANK_LABEL[card.rank];
-    const suit = card.joker ? "★" : SUIT_SYMBOL[card.suit];
-    const badgeHtml = badge ? `<span class="card-badge">${badge}</span>` : "";
-    return `<span class="card-corner" aria-hidden="true">${suit}</span><span class="card-rank">${rank}</span>${badgeHtml}`;
-  }
-
-  function cardSubLabel(card) {
-    if (card.joker) return card.id;
-    return card.id;
-  }
-
-  function cardClass(card) {
-    if (card.joker) return "joker";
-    return `suit-${card.suit}`;
-  }
-
-  function rankLong(rank) {
-    if (rank === 14) return "Ace";
-    if (rank === 13) return "King";
-    if (rank === 12) return "Queen";
-    if (rank === 11) return "Jack";
-    if (rank === 10) return "Ten";
-    return RANK_LABEL[rank];
-  }
-
-  function descNumber(a, b) {
-    return b - a;
-  }
-
-  function shuffle(items) {
-    for (let index = items.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
-    }
-    return items;
-  }
-
-  function formatInteger(value) {
-    return new Intl.NumberFormat("en-US").format(value);
+  function formatPoints(value) {
+    return Number.isFinite(value) ? value.toFixed(2) : "--";
   }
 
   function formatPct(value) {
-    return `${(value * 100).toFixed(1)}%`;
+    return `${(finiteNumber(value) * 100).toFixed(1)}%`;
+  }
+
+  function formatRecursive(value) {
+    return Number.isFinite(value) ? formatPoints(value) : "infinite";
   }
 
   function yieldFrame() {
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
-  function now() {
-    if (typeof performance !== "undefined" && performance.now) return performance.now();
-    return Date.now();
+  function loadCache() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (error) {
+      return {};
+    }
   }
 
-  if (typeof window !== "undefined") {
-    window.OFCSolverCore = {
-      solveHand,
-      solveHandFast,
-      parseCardList,
-      cardFromId,
-      evaluateBestFive,
-      evaluateBestTop,
-      topRoyalty,
-      fiveRoyalty,
-      dealIdsSeeded,
-      scoreTrainerRows,
-      isTopLegalAgainstMiddle,
-      cardIdToShare,
-    };
+  function saveCache() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.results));
+    } catch (error) {
+      // Storage is optional; calculations still work without it.
+    }
   }
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      solveHand,
-      solveHandFast,
-      parseCardList,
-      cardFromId,
-      evaluateBestFive,
-      evaluateBestTop,
-      topRoyalty,
-      fiveRoyalty,
-      dealIdsSeeded,
-      scoreTrainerRows,
-      isTopLegalAgainstMiddle,
-      cardIdToShare,
-    };
-  }
+  window.OFCFantasylandEV = {
+    finalizeAggregate,
+    hypergeometricJokers,
+    definitions: DEFINITIONS,
+  };
 })();
