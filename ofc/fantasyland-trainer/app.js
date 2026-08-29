@@ -584,7 +584,15 @@
   function renderVariantBoardRow(label, candidate, cardById, assignments) {
     const wrapper = document.createElement("div");
     wrapper.className = "board-row";
-    wrapper.innerHTML = `<div class="row-head"><strong>${label}</strong><div class="row-meta"><span>${candidate.eval.name}</span><span>${candidate.points} pts</span></div></div>`;
+    const head = document.createElement("div");
+    head.className = "row-head";
+    const title = document.createElement("strong");
+    title.textContent = label;
+    const meta = document.createElement("div");
+    meta.className = "row-meta";
+    appendVariantScoreMeta(meta, candidate.eval, candidate.points);
+    head.append(title, meta);
+    wrapper.appendChild(head);
     const cards = document.createElement("div");
     cards.className = `row-cards ${label === "Top" ? "top-row" : ""}`;
     candidate.ids
@@ -599,7 +607,15 @@
   function renderBadugiJackSolutionRow(candidate, cardById, assignments) {
     const wrapper = document.createElement("div");
     wrapper.className = "board-row";
-    wrapper.innerHTML = `<div class="row-head"><strong>Middle</strong><div class="row-meta"><span>${candidate.eval.name}</span><span>${candidate.points} pts</span></div></div>`;
+    const head = document.createElement("div");
+    head.className = "row-head";
+    const title = document.createElement("strong");
+    title.textContent = "Middle";
+    const meta = document.createElement("div");
+    meta.className = "row-meta";
+    appendVariantScoreMeta(meta, candidate.eval, candidate.points);
+    head.append(title, meta);
+    wrapper.appendChild(head);
     const split = document.createElement("div");
     split.className = "solution-badugijack-split";
     [
@@ -621,6 +637,25 @@
     });
     wrapper.appendChild(split);
     return wrapper;
+  }
+
+  function appendVariantScoreMeta(container, evaluation, totalPoints) {
+    const components = Array.isArray(evaluation?.scoreComponents) ? evaluation.scoreComponents : [];
+    if (components.length) {
+      container.classList.add("split-score-meta");
+      components.forEach((component) => {
+        const item = document.createElement("span");
+        item.className = "solution-score-component";
+        item.textContent = `${component.label} ${finiteNumber(component.points)} pts`;
+        container.appendChild(item);
+      });
+      return;
+    }
+    const name = document.createElement("span");
+    name.textContent = evaluation?.name || "";
+    const points = document.createElement("span");
+    points.textContent = `${finiteNumber(totalPoints)} pts`;
+    container.append(name, points);
   }
 
   function renderVariantMiniCard(card, assignments) {
@@ -1039,10 +1074,25 @@
       const rowSummary = getTrainerRowSummary(rowDef.key, puzzle, displayEvaluation);
       summary.className = `trainer-row-summary ${rowSummary.visible ? "" : "is-empty"}`;
       if (rowSummary.visible) {
-        summary.innerHTML = `
-          <span>${rowSummary.label}</span>
-          <strong>${rowSummary.points} pts</strong>
-        `;
+        if (rowSummary.scoreComponents?.length) {
+          summary.classList.add("is-split-score");
+          rowSummary.scoreComponents.forEach((component) => {
+            const item = document.createElement("span");
+            item.className = "trainer-score-component";
+            const label = document.createElement("span");
+            label.textContent = component.label;
+            const points = document.createElement("strong");
+            points.textContent = `${finiteNumber(component.points)} pts`;
+            item.append(label, points);
+            summary.appendChild(item);
+          });
+        } else {
+          const label = document.createElement("span");
+          label.textContent = rowSummary.label;
+          const points = document.createElement("strong");
+          points.textContent = `${rowSummary.points} pts`;
+          summary.append(label, points);
+        }
       } else {
         summary.setAttribute("aria-hidden", "true");
       }
@@ -1838,8 +1888,11 @@
     if (boardEval) {
       if (normalizeTrainerVariant(puzzle.variant) !== "high" && rowKey === "middle") {
         const points = finiteNumber(boardEval.points);
-        const visible = Boolean(boardEval.qualifies || boardEval.name);
-        return visible ? { label: boardEval.name, points, visible: true } : { label: "", points: 0, visible: false };
+        const visible = Boolean(boardEval.qualifies && points > 0);
+        const scoreComponents = Array.isArray(boardEval.scoreComponents) ? boardEval.scoreComponents : [];
+        return visible
+          ? { label: boardEval.name, points, scoreComponents, visible: true }
+          : { label: "", points: 0, scoreComponents: [], visible: false };
       }
       const points = rowKey === "top" ? topRoyalty(boardEval) : fiveRoyalty(boardEval, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
       return points ? { label: formatTrainerHandName(boardEval, rowKey), points, visible: true } : { label: "", points: 0, visible: false };

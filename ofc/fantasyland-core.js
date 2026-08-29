@@ -277,15 +277,23 @@
     const badugiPoints = !badugi ? 0 : badugi.high <= 5 ? 12 : badugi.high === 6 ? 8 : badugi.high === 7 ? 4 : 0;
     const qualifies = low.qualifies && Boolean(badugi);
     const repeat = qualifies && low.wheel && badugi.ranks.join(",") === "5,4,3,2";
+    const badugiLabel = badugi ? `${RANK_LABEL[badugi.high]}-high Badugi` : "No four-card Badugi";
+    const scoreComponents = qualifies
+      ? [
+          { key: "badugi", label: badugiLabel, points: badugiPoints },
+          { key: "low", label: low.name, points: low.points },
+        ]
+      : [];
     return {
       qualifies,
       points: qualifies ? low.points + badugiPoints : 0,
       repeat,
       quality: qualifies ? low.quality * 1e6 + badugi.quality : -1,
       low,
-      badugi,
-      name: qualifies ? `${low.name} + ${RANK_LABEL[badugi.high]}-high Badugi` : "Badeucey does not qualify",
-      detail: qualifies ? `Low ${low.points} + Badugi ${badugiPoints}` : "Needs 10-low and four-card Badugi",
+      badugi: badugi ? { ...badugi, points: badugiPoints } : null,
+      scoreComponents,
+      name: qualifies ? `${badugiLabel} + ${low.name}` : "Badeucey does not qualify",
+      detail: qualifies ? scoreComponents.map((component) => `${component.label} ${component.points}`).join(" + ") : "Needs 10-low and four-card Badugi",
     };
   }
 
@@ -327,6 +335,18 @@
                   : 0;
     const qualifies = badugiValid && blackjackQualifies;
     const repeat = qualifies && badugiCards.length === 4 && badugiHigh <= 5 && blackjack.natural;
+    const badugiLabel = `${RANK_LABEL[badugiHigh] || badugiHigh}-high Badugi`;
+    const blackjackLabel = blackjack.suitedNatural
+      ? "Suited blackjack"
+      : blackjack.natural
+        ? "Blackjack"
+        : `${blackjack.total} blackjack`;
+    const scoreComponents = qualifies
+      ? [
+          { key: "badugi", label: badugiLabel, points: badugiPoints },
+          { key: "blackjack", label: blackjackLabel, points: blackjackPoints },
+        ]
+      : [];
     return {
       qualifies,
       points: qualifies ? badugiPoints + blackjackPoints : 0,
@@ -334,8 +354,9 @@
       quality: qualifies ? (15 - badugiHigh) * 100 + blackjack.total + (blackjack.natural ? 50 : 0) : -1,
       badugi: { valid: badugiValid, ranks: badugiRanks, high: badugiHigh, points: badugiPoints },
       blackjack: { ...blackjack, qualifies: blackjackQualifies, points: blackjackPoints },
-      name: qualifies ? `${RANK_LABEL[badugiHigh] || badugiHigh}-high Badugi + ${blackjack.suitedNatural ? "suited blackjack" : blackjack.natural ? "blackjack" : blackjack.total}` : "BadugiJack does not qualify",
-      detail: qualifies ? `Badugi ${badugiPoints} + blackjack ${blackjackPoints}` : "Needs a valid Badugi and 17+ blackjack",
+      scoreComponents,
+      name: qualifies ? `${badugiLabel} + ${blackjackLabel}` : "BadugiJack does not qualify",
+      detail: qualifies ? scoreComponents.map((component) => `${component.label} ${component.points}`).join(" + ") : "Needs a valid Badugi and 17+ blackjack",
     };
   }
 

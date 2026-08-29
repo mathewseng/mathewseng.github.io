@@ -25,6 +25,10 @@
   --trainer-action-width: clamp(132px, 9vw, 156px);
   --trainer-card-width: clamp(42px, calc((100vw - 285px) / 17), 72px);
   --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   --radius: 8px;
   --shadow: none;
   font-family:
@@ -41,6 +45,7 @@ html {
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -589,7 +594,30 @@ h3 {
   color: var(--text);
 }
 
+.trainer-row-summary.is-split-score {
+  gap: clamp(10px, 3vw, 24px);
+}
+
+.trainer-score-component,
+.solution-score-component {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.solution-score-component {
+  color: var(--muted);
+}
+
+.split-score-meta {
+  column-gap: 12px;
+}
+
 .trainer-row-summary.is-empty {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   border-top-color: transparent;
 }
 
@@ -1481,7 +1509,7 @@ kbd {
     width: min(1680px, 100%);
     height: 100dvh;
     display: grid;
-    grid-template-rows: 52px minmax(0, 1fr) 42px;
+    grid-template-rows: 52px minmax(0, 1fr) auto;
     gap: 8px;
     padding: 8px;
     overflow: hidden;
@@ -1756,10 +1784,15 @@ kbd {
   .app-shell {
     width: 100%;
     height: 100dvh;
+    min-height: 100svh;
     display: grid;
-    grid-template-rows: 44px minmax(0, 1fr) 34px;
+    grid-template-rows: 44px minmax(0, 1fr) auto;
     gap: 4px;
-    padding: 4px;
+    padding:
+      max(4px, var(--safe-top))
+      max(4px, var(--safe-right))
+      max(4px, var(--safe-bottom))
+      max(4px, var(--safe-left));
     overflow: hidden;
   }
 
@@ -1794,8 +1827,12 @@ kbd {
   }
 
   h1 {
+    max-width: 100%;
+    overflow: hidden;
     font-size: 1rem;
     line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .trainer-panel {
@@ -2083,7 +2120,7 @@ kbd {
   .trainer-row {
     min-height: 0;
     display: grid;
-    grid-template-columns: 50px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
     border-color: rgba(205, 220, 238, 0.14);
     background: rgba(4, 10, 9, 0.34);
@@ -2100,7 +2137,7 @@ kbd {
     align-items: flex-start;
     justify-content: center;
     gap: 5px;
-    padding: 7px 8px;
+    padding: 7px 6px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     border-bottom: 0;
   }
@@ -2125,6 +2162,14 @@ kbd {
     padding: 2px 6px 3px;
     font-size: 0.62rem;
     letter-spacing: 0;
+  }
+
+  .trainer-row-summary.is-split-score {
+    gap: 10px;
+  }
+
+  .trainer-score-component {
+    gap: 3px;
   }
 
   .trainer-slot {
@@ -2169,19 +2214,22 @@ kbd {
 @media (max-width: 760px) {
   .trainer-panel.hand-cols-7 {
     --trainer-hand-columns: 7;
-    --trainer-card-width: clamp(32px, calc((100vw - 64px) / 7), 64px);
+    --trainer-hand-card-width: clamp(32px, calc((100vw - 64px - var(--safe-left) - var(--safe-right)) / 7), 64px);
+    --trainer-card-width: var(--trainer-hand-card-width);
     --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
   }
 
   .trainer-panel.hand-cols-8 {
     --trainer-hand-columns: 8;
-    --trainer-card-width: clamp(28px, calc((100vw - 69px) / 8), 64px);
+    --trainer-hand-card-width: clamp(28px, calc((100vw - 69px - var(--safe-left) - var(--safe-right)) / 8), 64px);
+    --trainer-card-width: var(--trainer-hand-card-width);
     --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
   }
 
   .trainer-panel.hand-cols-9 {
     --trainer-hand-columns: 9;
-    --trainer-card-width: clamp(24px, calc((100vw - 74px) / 9), 64px);
+    --trainer-hand-card-width: clamp(24px, calc((100vw - 74px - var(--safe-left) - var(--safe-right)) / 9), 64px);
+    --trainer-card-width: var(--trainer-hand-card-width);
     --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
   }
 
@@ -2769,7 +2817,10 @@ body.ev-page {
 
 @media (max-width: 760px) {
   .trainer-panel.is-badugijack {
-    --trainer-card-width: clamp(36px, calc((100vw - 70px) / 7), 56px);
+    --trainer-card-width: min(
+      var(--trainer-hand-card-width, 56px),
+      clamp(34px, calc((100vw - 84px - var(--safe-left) - var(--safe-right)) / 7), 56px)
+    );
     --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
   }
 
@@ -2801,11 +2852,13 @@ body.ev-page {
   }
 
   .badugijack-split {
+    max-width: 100%;
     gap: 3px;
     padding: 2px 3px;
   }
 
   .badugijack-zone {
+    max-width: 100%;
     padding: 2px;
   }
 
@@ -2819,8 +2872,8 @@ body.ev-page {
   }
 
   .rules-dialog {
-    width: calc(100vw - 10px);
-    max-height: calc(100dvh - 10px);
+    width: calc(100vw - 10px - var(--safe-left) - var(--safe-right));
+    max-height: calc(100dvh - 10px - var(--safe-top) - var(--safe-bottom));
   }
 
   .rules-dialog-head {
@@ -2853,6 +2906,81 @@ body.ev-page {
   }
 }
 
+@media (max-width: 760px) {
+  .trainer-panel.is-report-open .trainer-report {
+    inset:
+      max(6px, var(--safe-top))
+      max(6px, var(--safe-right))
+      max(6px, var(--safe-bottom))
+      max(6px, var(--safe-left));
+    width: auto;
+    height: auto;
+    max-height: none;
+    transform: none;
+  }
+
+  .rules-dialog[open] {
+    inset:
+      max(6px, var(--safe-top))
+      max(6px, var(--safe-right))
+      max(6px, var(--safe-bottom))
+      max(6px, var(--safe-left));
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+  }
+
+  .row-meta.split-score-meta {
+    justify-content: flex-start;
+  }
+
+  .board-stack > .board-row > .row-cards {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .board-stack > .board-row > .row-cards.top-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .board-stack > .board-row > .row-cards.discard-row {
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  }
+
+  .solution-split-group .row-cards {
+    grid-template-columns: repeat(auto-fit, minmax(42px, 52px));
+    justify-content: start;
+    gap: 5px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar h1 {
+    font-size: 0.92rem;
+  }
+
+  .variant-pills {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .variant-pills label {
+    grid-column: span 2;
+  }
+
+  .variant-pills label:nth-child(n + 4) {
+    grid-column: span 3;
+  }
+
+  .trainer-row-summary.is-split-score {
+    gap: 7px;
+    font-size: 0.58rem;
+  }
+}
+
 @media (max-width: 360px) {
   .trainer-panel {
     grid-template-rows: 50px auto minmax(0, 1fr);
@@ -2865,5 +2993,57 @@ body.ev-page {
 
   .rules-tabs button {
     font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 390px) and (max-height: 700px) {
+  body,
+  body:has(.solver-drawer[open]) {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .app-shell,
+  .app-shell:has(.solver-drawer[open]) {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-rows: 40px auto auto;
+    overflow: visible;
+  }
+
+  .topbar {
+    min-height: 40px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .home-link {
+    width: 28px;
+    height: 28px;
+  }
+
+  .trainer-panel {
+    min-height: 530px;
+    overflow: visible;
+  }
+
+  .trainer-game {
+    height: auto;
+    grid-template-rows: auto auto;
+  }
+
+  .trainer-board {
+    min-height: 218px;
+  }
+
+  .trainer-rows {
+    height: auto;
+    min-height: 198px;
+    grid-template-rows: repeat(3, minmax(62px, auto));
+    gap: 3px;
+  }
+
+  .trainer-row {
+    min-height: 62px;
   }
 }

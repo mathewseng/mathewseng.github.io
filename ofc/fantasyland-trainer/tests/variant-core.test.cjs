@@ -31,6 +31,16 @@ const badeuceyWheel = core.evaluateBadeucey(cards(["7s", "5h", "4d", "3c", "2s"]
 assert.equal(badeuceyWheel.qualifies, true, "badeucey: wheel low plus four-card Badugi should qualify");
 assert.equal(badeuceyWheel.points, 16, "badeucey: both wheels should score sixteen");
 assert.equal(badeuceyWheel.repeat, true, "badeucey: both wheels should repeat");
+assert.deepEqual(
+  badeuceyWheel.scoreComponents.map(({ key, points }) => [key, points]),
+  [["badugi", 12], ["low", 4]],
+  "badeucey: score components should be separate with Badugi first"
+);
+assert.deepEqual(
+  badeuceyWheel.scoreComponents.map(({ label }) => label),
+  ["5-high Badugi", "7-high low"],
+  "badeucey: each split score should retain its own hand description"
+);
 
 const sixHighBadeucey = core.evaluateBadeucey(cards(["7s", "6h", "5d", "4c", "2s"]));
 assert.equal(sixHighBadeucey.points, 12, "badeucey: 7-low plus 6-high Badugi should score twelve");
@@ -45,6 +55,16 @@ const badugiJackNuts = core.evaluateBadugiJackConcrete(
 assert.equal(badugiJackNuts.qualifies, true, "badugijack: wheel plus blackjack should qualify");
 assert.equal(badugiJackNuts.points, 21, "badugijack: wheel plus blackjack should score twenty-one");
 assert.equal(badugiJackNuts.repeat, true, "badugijack: five-high or better plus blackjack should repeat");
+assert.deepEqual(
+  badugiJackNuts.scoreComponents.map(({ key, points }) => [key, points]),
+  [["badugi", 13], ["blackjack", 8]],
+  "badugijack: score components should be separate with Badugi first"
+);
+assert.deepEqual(
+  badugiJackNuts.scoreComponents.map(({ label }) => label),
+  ["4-high Badugi", "Blackjack"],
+  "badugijack: Badugi should be the first named score component"
+);
 
 const threeThreeBadugiJack = core.evaluateBadugiJackConcrete(
   cards(["As", "2h", "3d"]),
