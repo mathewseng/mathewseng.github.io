@@ -410,13 +410,19 @@
       const section = document.createElement("section");
       const sectionTitle = document.createElement("h4");
       sectionTitle.textContent = label;
-      const list = document.createElement("ul");
-      lines.forEach((line) => {
-        const item = document.createElement("li");
-        appendRuleLine(item, line);
-        list.appendChild(item);
-      });
-      section.append(sectionTitle, list);
+      section.appendChild(sectionTitle);
+      if (label === "Royalties") {
+        section.classList.add("royalties-section");
+        section.appendChild(renderRoyaltyGroups(lines));
+      } else {
+        const list = document.createElement("ul");
+        lines.forEach((line) => {
+          const item = document.createElement("li");
+          appendRuleLine(item, line);
+          list.appendChild(item);
+        });
+        section.appendChild(list);
+      }
       article.appendChild(section);
     });
     const note = document.createElement("p");
@@ -424,6 +430,28 @@
     note.textContent = "EV samples are unfiltered random hands with the exact joker count shown. A hand that cannot qualify scores zero and is reflected in the Qualify column.";
     article.appendChild(note);
     els.rulesContent.replaceChildren(article);
+    els.rulesContent.scrollTop = 0;
+  }
+
+  function renderRoyaltyGroups(groups) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "royalty-groups";
+    groups.forEach((group) => {
+      const block = document.createElement("div");
+      block.className = "royalty-group";
+      const title = document.createElement("h5");
+      title.textContent = group.label;
+      const list = document.createElement("ul");
+      list.className = "royalty-list";
+      group.items.forEach((line) => {
+        const item = document.createElement("li");
+        appendRuleLine(item, line);
+        list.appendChild(item);
+      });
+      block.append(title, list);
+      wrapper.appendChild(block);
+    });
+    return wrapper;
   }
 
   function appendRuleLine(item, line) {

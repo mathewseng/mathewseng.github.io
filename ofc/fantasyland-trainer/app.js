@@ -610,15 +610,15 @@
 
   function renderSplitMiddleSolutionRow(variant, candidate, cardById, assignments) {
     const wrapper = document.createElement("div");
-    wrapper.className = "board-row";
+    wrapper.className = "board-row solution-split-row";
     const head = document.createElement("div");
     head.className = "row-head";
     const title = document.createElement("strong");
     title.textContent = "Middle";
     const meta = document.createElement("div");
-    meta.className = "row-meta";
+    meta.className = "row-meta solution-row-summary";
     appendVariantScoreMeta(meta, candidate.eval, candidate.points);
-    head.append(title, meta);
+    head.appendChild(title);
     wrapper.appendChild(head);
     const split = document.createElement("div");
     split.className = "solution-badugijack-split solution-split-middle";
@@ -637,6 +637,7 @@
       split.appendChild(group);
     });
     wrapper.appendChild(split);
+    wrapper.appendChild(meta);
     return wrapper;
   }
 
@@ -2952,13 +2953,18 @@
       const sectionTitle = document.createElement("h4");
       sectionTitle.textContent = label;
       section.appendChild(sectionTitle);
-      const list = document.createElement("ul");
-      lines.forEach((line) => {
-        const item = document.createElement("li");
-        appendRuleLine(item, line);
-        list.appendChild(item);
-      });
-      section.appendChild(list);
+      if (label === "Royalties") {
+        section.classList.add("royalties-section");
+        section.appendChild(renderRoyaltyGroups(lines));
+      } else {
+        const list = document.createElement("ul");
+        lines.forEach((line) => {
+          const item = document.createElement("li");
+          appendRuleLine(item, line);
+          list.appendChild(item);
+        });
+        section.appendChild(list);
+      }
       article.appendChild(section);
     });
     const seedNote = document.createElement("p");
@@ -2966,6 +2972,28 @@
     seedNote.textContent = `Daily seed: YYYY-MM-DD-{14/15/16/17}C-{0/1/2}J-${VariantCore.VARIANTS[active].seedLabel}-{number}. The number starts at 0 and advances only when the hand cannot qualify.`;
     article.appendChild(seedNote);
     els.variantRulesContent.replaceChildren(article);
+    els.variantRulesContent.scrollTop = 0;
+  }
+
+  function renderRoyaltyGroups(groups) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "royalty-groups";
+    groups.forEach((group) => {
+      const block = document.createElement("div");
+      block.className = "royalty-group";
+      const title = document.createElement("h5");
+      title.textContent = group.label;
+      const list = document.createElement("ul");
+      list.className = "royalty-list";
+      group.items.forEach((line) => {
+        const item = document.createElement("li");
+        appendRuleLine(item, line);
+        list.appendChild(item);
+      });
+      block.append(title, list);
+      wrapper.appendChild(block);
+    });
+    return wrapper;
   }
 
   function appendRuleLine(item, line) {

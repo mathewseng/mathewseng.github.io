@@ -23,7 +23,7 @@
   --club-card: #05a82b;
   --joker-card: #6f42d8;
   --trainer-action-width: clamp(132px, 9vw, 156px);
-  --trainer-card-width: clamp(42px, calc((100vw - 285px) / 17), 72px);
+  --trainer-card-width: clamp(42px, calc((100vw - 285px) / 17), 82px);
   --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
@@ -697,6 +697,14 @@ h3 {
   min-height: auto;
   border: 0;
   touch-action: none;
+}
+
+.trainer-bank-slot:not(.empty) .trainer-card,
+.trainer-slot.filled .trainer-placed-card {
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.28);
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .drag-source-hidden {
@@ -1392,6 +1400,62 @@ kbd {
   grid-template-columns: repeat(auto-fit, minmax(46px, 64px));
 }
 
+.solver-drawer .board-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-rows: auto;
+  background: #08141b;
+}
+
+.solver-drawer .board-row > .row-head {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 0;
+  background: rgba(255, 255, 255, 0.026);
+}
+
+.solver-drawer .board-row > .row-cards,
+.solver-drawer .board-row > .solution-badugijack-split {
+  grid-column: 2;
+}
+
+.solver-drawer .solution-split-row > .solution-badugijack-split {
+  grid-row: 1;
+}
+
+.solver-drawer .solution-split-row > .solution-row-summary {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 30px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 10px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.solver-drawer .board-row .row-meta {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.solver-drawer .board-row > .row-cards {
+  justify-content: center;
+  padding: 12px;
+}
+
 @media (max-width: 1380px) {
   .trainer-game {
     grid-template-columns: minmax(0, 1fr) minmax(270px, 330px);
@@ -1621,7 +1685,7 @@ kbd {
     min-height: 0;
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
-    padding: 12px;
+    padding: 14px;
     border-color: rgba(76, 164, 131, 0.28);
     background: var(--felt-2);
   }
@@ -1629,39 +1693,65 @@ kbd {
   .trainer-rows {
     min-height: 0;
     height: 100%;
+    align-self: stretch;
+    align-content: space-evenly;
     display: grid;
-    grid-template-rows: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-rows: repeat(3, minmax(calc(var(--trainer-card-height) + 38px), auto));
+    gap: 8px;
   }
 
   .trainer-row {
     min-height: 0;
+    position: relative;
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-columns: 92px minmax(0, 1fr);
+    grid-template-rows: minmax(calc(var(--trainer-card-height) + 12px), auto) minmax(26px, auto);
     border-color: rgba(205, 220, 238, 0.15);
-    background: rgba(4, 10, 9, 0.38);
+    background: rgba(4, 14, 12, 0.58);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
   }
 
   .trainer-row.active {
     border-color: rgba(55, 217, 158, 0.78);
+    background: rgba(7, 27, 22, 0.78);
+  }
+
+  .trainer-row.active::before {
+    content: "";
+    position: absolute;
+    inset: 8px auto 8px 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
   }
 
   .trainer-row-head {
     min-height: 0;
-    padding: 10px 12px;
+    align-items: center;
+    padding: 10px 8px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     border-bottom: 0;
-    background: rgba(255, 255, 255, 0.035);
+    background: rgba(255, 255, 255, 0.028);
+    text-align: center;
+  }
+
+  .trainer-row.active .trainer-row-head {
+    color: var(--accent);
+  }
+
+  .trainer-row-head strong {
+    font-size: 0.92rem;
   }
 
   .trainer-slots,
   .trainer-slots.top-row {
-    height: 100%;
+    height: auto;
+    min-height: calc(var(--trainer-card-height) + 12px);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 0 12px;
+    padding: 6px 12px;
   }
 
   .trainer-slot {
@@ -1673,6 +1763,12 @@ kbd {
     min-width: 0;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.035);
+  }
+
+  .trainer-row-summary {
+    min-height: 26px;
+    padding: 4px 10px 5px;
+    background: rgba(0, 0, 0, 0.16);
   }
 
   .trainer-board .inline-message {
@@ -2146,34 +2242,54 @@ kbd {
   .trainer-rows {
     min-height: 0;
     height: 100%;
+    align-self: stretch;
+    align-content: space-evenly;
     display: grid;
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(calc(var(--trainer-card-height) + 30px), auto));
     gap: 5px;
   }
 
   .trainer-row {
     min-height: 0;
+    position: relative;
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-rows: minmax(calc(var(--trainer-card-height) + 10px), auto) minmax(20px, auto);
     border-color: rgba(205, 220, 238, 0.14);
-    background: rgba(4, 10, 9, 0.34);
+    background: rgba(4, 14, 12, 0.58);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
   }
 
   .trainer-row.active {
     border-color: rgba(55, 217, 158, 0.88);
+    background: rgba(7, 27, 22, 0.78);
+  }
+
+  .trainer-row.active::before {
+    content: "";
+    position: absolute;
+    inset: 5px auto 5px 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
   }
 
   .trainer-row-head {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     gap: 5px;
     padding: 7px 6px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     border-bottom: 0;
+    background: rgba(255, 255, 255, 0.028);
+    text-align: center;
+  }
+
+  .trainer-row.active .trainer-row-head {
+    color: var(--accent);
   }
 
   .trainer-row-head strong {
@@ -2182,18 +2298,20 @@ kbd {
 
   .trainer-slots,
   .trainer-slots.top-row {
-    height: 100%;
+    height: auto;
+    min-height: calc(var(--trainer-card-height) + 10px);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    padding: 0 6px;
+    padding: 5px 6px;
   }
 
   .trainer-row-summary {
     min-height: 16px;
     gap: 6px;
     padding: 1px 6px 2px;
+    background: rgba(0, 0, 0, 0.16);
     font-size: 0.62rem;
     letter-spacing: 0;
   }
@@ -2643,13 +2761,14 @@ body.ev-page {
   grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   padding: 3px 6px 5px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(205, 220, 238, 0.12);
   border-radius: 7px;
+  background: rgba(255, 255, 255, 0.018);
 }
 
 .badugijack-zone.active {
-  border-color: rgba(66, 230, 164, 0.5);
-  background: rgba(66, 230, 164, 0.045);
+  border-color: rgba(66, 230, 164, 0.64);
+  background: rgba(66, 230, 164, 0.06);
 }
 
 .badugijack-zone-label {
@@ -2815,6 +2934,53 @@ body.ev-page {
   line-height: 1.45;
 }
 
+.royalty-groups {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.royalty-group {
+  min-width: 0;
+  padding-left: 12px;
+  border-left: 2px solid rgba(55, 217, 158, 0.34);
+}
+
+.royalty-group h5 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.rules-article .royalty-list {
+  gap: 0;
+}
+
+.rules-article .royalty-list li {
+  min-height: 28px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(205, 220, 238, 0.08);
+}
+
+.rules-article .royalty-list li:last-child {
+  border-bottom: 0;
+}
+
+.royalty-list .rule-term {
+  color: rgba(238, 245, 255, 0.76);
+  font-weight: 700;
+}
+
+.royalty-list .rule-detail {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
 .rule-term {
   flex: 0 0 auto;
   color: var(--accent);
@@ -2905,7 +3071,10 @@ body.ev-page {
   }
 
   .trainer-panel.is-badugijack .trainer-rows {
-    grid-template-rows: minmax(0, 0.88fr) minmax(0, 1.24fr) minmax(0, 0.88fr);
+    grid-template-rows:
+      minmax(calc(var(--trainer-card-height) + 30px), auto)
+      minmax(calc(var(--trainer-card-height) + 46px), auto)
+      minmax(calc(var(--trainer-card-height) + 30px), auto);
   }
 
   .badugijack-middle-row .trainer-row-head {
@@ -2928,13 +3097,15 @@ body.ev-page {
 
   .badugijack-split {
     max-width: 100%;
-    gap: 3px;
-    padding: 2px 3px;
+    gap: 5px;
+    padding: 5px 6px;
   }
 
   .badugijack-zone {
     max-width: 100%;
-    padding: 2px;
+    padding: 5px;
+    border-color: rgba(205, 220, 238, 0.12);
+    background: rgba(255, 255, 255, 0.018);
   }
 
   .badugijack-zone .trainer-slots {
@@ -2985,6 +3156,15 @@ body.ev-page {
     display: block;
   }
 
+  .royalty-groups {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .rules-article .royalty-list li {
+    display: flex;
+  }
+
   .rule-term,
   .rule-detail {
     display: block;
@@ -3000,6 +3180,14 @@ body.ev-page {
 }
 
 @media (max-width: 760px) {
+  .solver-drawer {
+    --solution-card-width: clamp(36px, calc((100vw - 128px) / 5), 58px);
+  }
+
+  .solver-drawer .board-row {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+
   .trainer-panel.is-report-open .trainer-report {
     inset:
       max(6px, var(--safe-top))
@@ -3033,21 +3221,22 @@ body.ev-page {
   }
 
   .board-stack > .board-row > .row-cards {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(5, var(--solution-card-width));
+    justify-content: center;
     gap: 5px;
     padding: 8px;
   }
 
   .board-stack > .board-row > .row-cards.top-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, var(--solution-card-width));
   }
 
   .board-stack > .board-row > .row-cards.discard-row {
-    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    grid-template-columns: repeat(auto-fit, var(--solution-card-width));
   }
 
-  .solution-split-group .row-cards {
-    grid-template-columns: repeat(auto-fit, minmax(42px, 52px));
+  .solver-drawer .solution-split-group .row-cards {
+    grid-template-columns: repeat(auto-fit, var(--solution-card-width));
     justify-content: start;
     gap: 5px;
     padding: 8px;
