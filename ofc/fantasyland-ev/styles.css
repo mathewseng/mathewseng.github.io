@@ -13,6 +13,10 @@
   --orange: #f1a24c;
   --violet: #a88bfa;
   --red: #ef6a72;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -65,6 +69,9 @@ p {
 }
 
 .site-header {
+  padding-top: var(--safe-top);
+  padding-right: var(--safe-right);
+  padding-left: var(--safe-left);
   border-bottom: 1px solid var(--line);
   background: #080d13;
 }
@@ -255,7 +262,7 @@ h2 {
 
 .variant-pills {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 4px;
   margin-top: 14px;
   padding: 4px;
@@ -711,7 +718,7 @@ dd {
 
 .rules-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 4px;
   padding: 10px;
   border-bottom: 1px solid var(--line);
@@ -781,8 +788,40 @@ dd {
 }
 
 .rules-article li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: 0.84rem;
   line-height: 1.45;
+}
+
+.rule-term {
+  flex: 0 0 auto;
+  color: var(--green);
+  font-weight: 850;
+}
+
+.rule-detail {
+  color: rgba(238, 245, 255, 0.76);
+}
+
+.rule-number {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: rgba(78, 155, 255, 0.13);
+  color: #9bc9ff;
+  font: inherit;
+  font-weight: 850;
+}
+
+.rule-keyword {
+  color: #dce9f8;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.rule-keyword.danger {
+  color: #ff7189;
 }
 
 .rules-seed-note {
@@ -816,7 +855,7 @@ dd {
 @media (max-width: 680px) {
   .header-inner,
   .page-shell {
-    width: min(100% - 20px, 1240px);
+    width: min(calc(100% - 20px - var(--safe-left) - var(--safe-right)), 1240px);
   }
 
   .header-inner {
@@ -833,7 +872,7 @@ dd {
 
   .page-shell {
     gap: 10px;
-    padding: 20px 0 34px;
+    padding: 20px 0 max(34px, var(--safe-bottom));
   }
 
   .intro-band {
@@ -879,7 +918,8 @@ dd {
   .variant-pills span {
     min-height: 36px;
     padding: 0 3px;
-    font-size: 0.63rem;
+    font-size: 0.56rem;
+    line-height: 1.05;
   }
 
   .run-bar {
@@ -974,7 +1014,11 @@ dd {
 
   .rules-dialog {
     width: calc(100vw - 10px);
-    max-height: calc(100dvh - 10px);
+    height: calc(100dvh - 10px - var(--safe-top) - var(--safe-bottom));
+    max-height: none;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    overflow: hidden;
   }
 
   .rules-dialog-head {
@@ -982,7 +1026,7 @@ dd {
   }
 
   .rules-tabs {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     overflow: visible;
     padding: 8px;
   }
@@ -993,16 +1037,39 @@ dd {
   }
 
   .rules-content {
-    padding: 14px;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    padding: 14px 14px max(14px, var(--safe-bottom));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
 
   .rules-article section {
     grid-template-columns: 1fr;
     gap: 7px;
   }
+
+  .rules-article li {
+    display: block;
+  }
+
+  .rule-term,
+  .rule-detail {
+    display: block;
+  }
+
+  .rule-term {
+    margin-bottom: 2px;
+  }
 }
 
 @media (max-width: 390px) {
+  .variant-pills {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .variant-pills span {
     font-size: 0.56rem;
   }

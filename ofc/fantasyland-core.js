@@ -10,7 +10,7 @@
   const RANK_LABEL = { 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T", 9: "9", 8: "8", 7: "7", 6: "6", 5: "5", 4: "4", 3: "3", 2: "2" };
   const RANK_NAME = { 14: "aces", 13: "kings", 12: "queens", 11: "jacks", 10: "tens", 9: "nines", 8: "eights", 7: "sevens", 6: "sixes", 5: "fives", 4: "fours", 3: "threes", 2: "twos" };
   const CATEGORY = { HIGH: 0, PAIR: 1, TWO_PAIR: 2, TRIPS: 3, STRAIGHT: 4, FLUSH: 5, FULL_HOUSE: 6, QUADS: 7, STRAIGHT_FLUSH: 8 };
-  const VARIANT_ORDER = ["high", "low", "badeucey", "badugijack", "cribbage"];
+  const VARIANT_ORDER = ["high", "low", "badeucey", "badugijack", "doubleblackjack", "cribbage"];
   const VARIANTS = {
     high: {
       id: "high",
@@ -24,7 +24,7 @@
       seedLabel: "LOW",
       label: "Low",
       middleSize: 5,
-      short: "Middle must make an unpaired, non-straight, non-flush 10-low or better.",
+      short: "Middle must make an unpaired, non-straight, non-flush Thi or better 2–7 low.",
     },
     badeucey: {
       id: "badeucey",
@@ -39,6 +39,13 @@
       label: "BadugiJack",
       middleSize: 6,
       short: "Split six middle cards into a three/four-card Badugi and a two/three-card blackjack hand.",
+    },
+    doubleblackjack: {
+      id: "doubleblackjack",
+      seedLabel: "DOUBLEBLACKJACK",
+      label: "Double Blackjack",
+      middleSize: 5,
+      short: "Split the middle into fixed three-card and two-card blackjack hands; both need 17 or more without busting.",
     },
     cribbage: {
       id: "cribbage",
@@ -63,15 +70,15 @@
     {
       id: "low",
       title: "Low",
-      qualification: "Middle needs a 10-high or lower 2–7 low. Pairs, straights, and flushes do not qualify; aces are high.",
-      scoring: ["7-high: 4", "8-high: 2", "9-high: 1", "10-high: 0"],
+      qualification: "Middle needs Thi or lower in 2–7 low. Pairs, straights, and flushes do not qualify; aces are high.",
+      scoring: ["7hi: 4pts", "8hi: 2pts", "9hi: 1pt", "Thi: 0pts"],
       repeat: "Trips on top, 7-5-4-3-2 in the middle, or quads or better on the bottom.",
     },
     {
       id: "badeucey",
       title: "Badeucey",
       qualification: "The same five middle cards need both a qualifying 2–7 low and four unpaired cards of different suits for 2–5 Badugi. Aces are high.",
-      scoring: ["Low: 7-high 4, 8-high 2, 9-high 1.", "Badugi: 5-high 12, 6-high 8, 7-high 4."],
+      scoring: ["Low: 7hi 4pts, 8hi 2pts, 9hi 1pt.", "Badugi: 5hi 12pts, 6hi 8pts, 7hi 4pts."],
       repeat: "Trips on top; both 7-5-4-3-2 low and a 5-4-3-2 Badugi in the middle; or quads or better on the bottom.",
     },
     {
@@ -79,19 +86,30 @@
       title: "BadugiJack",
       qualification: "Split six middle cards: 3 Badugi + 3 blackjack, or 4 Badugi + 2 blackjack. Badugi cards need unique ranks and suits; blackjack needs 17 or more without busting.",
       scoring: [
-        "Four-card Badugi: 9-high 1, 8-high 2, 7-high 3, 6-high 5, 5-high 8, 4-high wheel 13. Aces are low.",
-        "Blackjack: 17 scores 0, 18 scores 1, 19 scores 2, 20 scores 3, three-card 21 scores 5, A + ten-value blackjack scores 8, and suited blackjack scores 13.",
+        "Four-card Badugi: 9hi 1pt, 8hi 2pts, 7hi 3pts, 6hi 5pts, 5hi 8pts, 4hi wheel 13pts. Aces are low.",
+        "Blackjack: 17 scores 0pts, 18 scores 1pt, 19 scores 2pts, 20 scores 3pts, three-card 21 scores 5pts, A + ten-value blackjack scores 8pts, and any suited 21 scores 13pts.",
       ],
-      repeat: "Trips on top; a 5-high or better four-card Badugi plus natural blackjack; or quads or better on the bottom.",
+      repeat: "Trips on top; a 5hi or better four-card Badugi plus natural blackjack; or quads or better on the bottom.",
+    },
+    {
+      id: "doubleblackjack",
+      title: "Double Blackjack",
+      qualification: "Split the five middle cards into the marked three-card and two-card hands. Both hands need 17 or more and neither may bust.",
+      scoring: [
+        "Each hand scores separately: 17 scores 0pts, 18 scores 1pt, 19 scores 2pts, 20 scores 3pts, 21 scores 5pts, and A + ten-value blackjack scores 8pts.",
+        "A three-card 21 with one suit, or a suited blackjack, scores 13pts.",
+      ],
+      repeat: "Trips on top; suited 21 plus blackjack in either middle-hand order; or quads or better on the bottom.",
     },
     {
       id: "cribbage",
       title: "Cribbage",
       qualification: "Middle needs at least 12 cribbage points.",
       scoring: [
-        "Each combination totaling 15 scores 2. Each pair scores 2.",
-        "Runs score their maximal length with duplicate-card multiplicity (for example, 6-7-7-8-8 scores four runs of three).",
-        "Four-card flush: 4; five-card flush: 5. Each jack sharing its suit with another card scores 1.",
+        "Fifteens and pairs: Each combination totaling 15 scores 2pts. Each pair scores 2pts.",
+        "Runs: Score the longest run present with duplicate-card multiplicity. Each run scores its card count; 6-7-7-8-8 has four runs of three for 12pts.",
+        "Flushes: Four cards of one suit score 4pts; five score 5pts.",
+        "Suited jacks: Each jack sharing its suit with another card scores 1pt.",
       ],
       repeat: "Trips on top, 24 or more cribbage points in the middle, or quads or better on the bottom.",
     },
@@ -214,6 +232,10 @@
     return normalized.reduce((value, rank) => value * 15 + (15 - rank), 0);
   }
 
+  function highCardLabel(rank) {
+    return `${RANK_LABEL[rank] || rank}hi`;
+  }
+
   function evaluateDeuceSeven(cards) {
     const groups = rankGroups(cards);
     const ranks = cards.map((card) => card.rank);
@@ -226,6 +248,7 @@
     const points = qualifies ? (high <= 7 ? 4 : high === 8 ? 2 : high === 9 ? 1 : 0) : 0;
     const wheel = qualifies && sorted.join(",") === "7,5,4,3,2";
     const reason = groups.some((group) => group.count > 1) ? "paired" : flush ? "flush" : straight ? "straight" : sorted[0] > 10 ? "above 10-high" : "not qualified";
+    const label = qualifies ? highCardLabel(high) : clean && high !== 99 ? `${highCardLabel(high)} Foul` : "Foul";
     return {
       qualifies,
       points,
@@ -234,7 +257,10 @@
       high,
       ranks: sorted,
       quality: clean ? lowQuality(sorted, false) : -1,
-      name: qualifies ? `${RANK_LABEL[high]}-high low` : `No low (${reason})`,
+      status: qualifies ? "ok" : "foul",
+      scoreComponents: [{ key: "low", label, points: qualifies && points ? points : null, status: qualifies ? "ok" : "foul" }],
+      name: label,
+      detail: qualifies ? label : reason,
     };
   }
 
@@ -277,13 +303,13 @@
     const badugiPoints = !badugi ? 0 : badugi.high <= 5 ? 12 : badugi.high === 6 ? 8 : badugi.high === 7 ? 4 : 0;
     const qualifies = low.qualifies && Boolean(badugi);
     const repeat = qualifies && low.wheel && badugi.ranks.join(",") === "5,4,3,2";
-    const badugiLabel = badugi ? `${RANK_LABEL[badugi.high]}-high Badugi` : "No four-card Badugi";
+    const badugiLabel = badugi ? highCardLabel(badugi.high) : "Foul";
     const scoreComponents = qualifies
       ? [
-          { key: "badugi", label: badugiLabel, points: badugiPoints },
-          { key: "low", label: low.name, points: low.points },
+          { key: "badugi", label: badugiLabel, points: badugiPoints || null, status: "ok" },
+          { key: "low", label: low.name, points: low.points || null, status: "ok" },
         ]
-      : [];
+      : [{ key: "foul", label: "Foul", points: null, status: "foul" }];
     return {
       qualifies,
       points: qualifies ? low.points + badugiPoints : 0,
@@ -293,7 +319,7 @@
       badugi: badugi ? { ...badugi, points: badugiPoints } : null,
       scoreComponents,
       name: qualifies ? `${badugiLabel} + ${low.name}` : "Badeucey does not qualify",
-      detail: qualifies ? scoreComponents.map((component) => `${component.label} ${component.points}`).join(" + ") : "Needs 10-low and four-card Badugi",
+      detail: qualifies ? scoreComponents.map((component) => component.label).join(" + ") : "Foul",
     };
   }
 
@@ -309,55 +335,121 @@
     return { total, natural, suitedNatural, bust: total > 21 };
   }
 
+  function evaluateBlackjack(cards, options = {}) {
+    const final = options.final !== false;
+    const value = blackjackValue(cards);
+    const sameSuit = cards.length > 1 && cards.every((card) => card.suit === cards[0].suit);
+    const suitedTwentyOne = value.total === 21 && sameSuit && (cards.length === 3 || value.suitedNatural);
+    const qualifies = cards.length >= 2 && cards.length <= 3 && !value.bust && value.total >= 17;
+    let points = 0;
+    let label = String(value.total);
+    let status = "ok";
+
+    if (value.bust) {
+      label = `${value.total} Bust`;
+      status = "bust";
+    } else if (value.suitedNatural) {
+      label = "Suited BJ";
+      points = 13;
+    } else if (value.natural) {
+      label = "BJ";
+      points = 8;
+    } else if (suitedTwentyOne) {
+      label = "Suited 21";
+      points = 13;
+    } else if (cards.length === 3 && value.total === 21) {
+      label = "21";
+      points = 5;
+    } else if (qualifies) {
+      points = value.total === 20 ? 3 : value.total === 19 ? 2 : value.total === 18 ? 1 : 0;
+    } else if (final && cards.length >= 2) {
+      label = `${value.total} Foul`;
+      status = "foul";
+    } else {
+      status = "pending";
+    }
+
+    return {
+      ...value,
+      qualifies,
+      suitedTwentyOne,
+      points: qualifies ? points : 0,
+      label,
+      name: label,
+      status,
+      quality: qualifies ? value.total + (value.natural ? 30 : 0) + (suitedTwentyOne ? 60 : 0) : -1,
+    };
+  }
+
+  function evaluateBadugiCards(cards, options = {}) {
+    const minimumSize = Number.isFinite(options.minimumSize) ? options.minimumSize : 3;
+    const final = options.final !== false;
+    const validSize = cards.length >= minimumSize && cards.length <= 4;
+    const valid = validSize && isBadugi(cards);
+    const ranks = cards.map((card) => (card.rank === 14 ? 1 : card.rank)).sort((a, b) => b - a);
+    const high = valid ? ranks[0] : 99;
+    const pointsTable = options.pointsTable || { 4: 13, 5: 8, 6: 5, 7: 3, 8: 2, 9: 1 };
+    const points = valid && cards.length === 4 ? pointsTable[high] || 0 : 0;
+    const label = valid ? highCardLabel(high) : final && cards.length >= minimumSize ? "Foul" : "";
+    return {
+      valid,
+      qualifies: valid,
+      ranks,
+      high,
+      points,
+      label,
+      name: label,
+      status: valid ? "ok" : final && cards.length >= minimumSize ? "foul" : "pending",
+      quality: valid ? lowQuality(ranks, false) : -1,
+    };
+  }
+
   function evaluateBadugiJackConcrete(badugiCards, blackjackCards) {
     const validSizes = (badugiCards.length === 3 && blackjackCards.length === 3) || (badugiCards.length === 4 && blackjackCards.length === 2);
-    const badugiValid = validSizes && isBadugi(badugiCards);
-    const badugiRanks = badugiCards.map((card) => (card.rank === 14 ? 1 : card.rank)).sort((a, b) => b - a);
-    const badugiHigh = badugiValid ? badugiRanks[0] : 99;
-    const badugiPointsTable = { 4: 13, 5: 8, 6: 5, 7: 3, 8: 2, 9: 1 };
-    const badugiPoints = badugiValid && badugiCards.length === 4 ? badugiPointsTable[badugiHigh] || 0 : 0;
-    const blackjack = blackjackValue(blackjackCards);
-    const blackjackQualifies = !blackjack.bust && blackjack.total >= 17;
-    const blackjackPoints = !blackjackQualifies
-      ? 0
-      : blackjack.suitedNatural
-        ? 13
-        : blackjack.natural
-          ? 8
-          : blackjackCards.length === 3 && blackjack.total === 21
-            ? 5
-            : blackjack.total === 20
-              ? 3
-              : blackjack.total === 19
-                ? 2
-                : blackjack.total === 18
-                  ? 1
-                  : 0;
-    const qualifies = badugiValid && blackjackQualifies;
-    const repeat = qualifies && badugiCards.length === 4 && badugiHigh <= 5 && blackjack.natural;
-    const badugiLabel = `${RANK_LABEL[badugiHigh] || badugiHigh}-high Badugi`;
-    const blackjackLabel = blackjack.suitedNatural
-      ? "Suited blackjack"
-      : blackjack.natural
-        ? "Blackjack"
-        : `${blackjack.total} blackjack`;
-    const scoreComponents = qualifies
-      ? [
-          { key: "badugi", label: badugiLabel, points: badugiPoints },
-          { key: "blackjack", label: blackjackLabel, points: blackjackPoints },
-        ]
-      : [];
+    const badugi = evaluateBadugiCards(badugiCards, { final: badugiCards.length >= 3 });
+    const blackjack = evaluateBlackjack(blackjackCards, { final: blackjackCards.length >= 2 });
+    const qualifies = validSizes && badugi.qualifies && blackjack.qualifies;
+    const repeat = qualifies && badugiCards.length === 4 && badugi.high <= 5 && blackjack.natural;
+    const scoreComponents = [];
+    if (badugi.label) scoreComponents.push({ key: "badugi", label: badugi.label, points: badugi.points || null, status: badugi.status });
+    if (blackjackCards.length) scoreComponents.push({ key: "blackjack", label: blackjack.label, points: blackjack.points || null, status: blackjack.status });
     return {
       qualifies,
-      points: qualifies ? badugiPoints + blackjackPoints : 0,
+      points: qualifies ? badugi.points + blackjack.points : 0,
       repeat,
-      quality: qualifies ? (15 - badugiHigh) * 100 + blackjack.total + (blackjack.natural ? 50 : 0) : -1,
-      badugi: { valid: badugiValid, ranks: badugiRanks, high: badugiHigh, points: badugiPoints },
-      blackjack: { ...blackjack, qualifies: blackjackQualifies, points: blackjackPoints },
+      quality: qualifies ? (15 - badugi.high) * 100 + blackjack.total + (blackjack.natural ? 50 : 0) + (blackjack.suitedTwentyOne ? 25 : 0) : -1,
+      badugi,
+      blackjack,
       scoreComponents,
-      name: qualifies ? `${badugiLabel} + ${blackjackLabel}` : "BadugiJack does not qualify",
-      detail: qualifies ? scoreComponents.map((component) => `${component.label} ${component.points}`).join(" + ") : "Needs a valid Badugi and 17+ blackjack",
+      name: scoreComponents.map((component) => component.label).join(" + ") || "BadugiJack",
+      detail: qualifies ? scoreComponents.map((component) => component.label).join(" + ") : "Foul",
     };
+  }
+
+  function combineDoubleBlackjackEvaluations(three, two, validSizes, threePresent = true, twoPresent = true) {
+    const qualifies = validSizes && three.qualifies && two.qualifies;
+    const repeat = qualifies && ((three.suitedTwentyOne && two.natural) || (three.total === 21 && two.suitedNatural));
+    const scoreComponents = [];
+    if (threePresent) scoreComponents.push({ key: "blackjackThree", label: three.label, points: three.points || null, status: three.status });
+    if (twoPresent) scoreComponents.push({ key: "blackjackTwo", label: two.label, points: two.points || null, status: two.status });
+    return {
+      qualifies,
+      points: qualifies ? three.points + two.points : 0,
+      repeat,
+      quality: qualifies ? three.quality * 1000 + two.quality : -1,
+      blackjackThree: three,
+      blackjackTwo: two,
+      scoreComponents,
+      name: scoreComponents.map((component) => component.label).join(" + ") || "Double Blackjack",
+      detail: qualifies ? scoreComponents.map((component) => component.label).join(" + ") : "Foul",
+    };
+  }
+
+  function evaluateDoubleBlackjackConcrete(threeCardHand, twoCardHand) {
+    const validSizes = threeCardHand.length === 3 && twoCardHand.length === 2;
+    const three = evaluateBlackjack(threeCardHand, { final: threeCardHand.length === 3 });
+    const two = evaluateBlackjack(twoCardHand, { final: twoCardHand.length === 2 });
+    return combineDoubleBlackjackEvaluations(three, two, validSizes, threeCardHand.length > 0, twoCardHand.length > 0);
   }
 
   function cribbageScore(cards) {
@@ -375,35 +467,56 @@
     const pairs = groups.reduce((sum, group) => sum + group.count * (group.count - 1), 0);
     const countByRank = new Map(groups.map((group) => [group.rank === 14 ? 1 : group.rank, group.count]));
     let runPoints = 0;
+    let runLength = 0;
     for (let length = 5; length >= 3 && runPoints === 0; length -= 1) {
       for (let start = 1; start <= 14 - length + 1; start += 1) {
         let multiplier = 1;
         for (let rank = start; rank < start + length; rank += 1) {
           multiplier *= countByRank.get(rank) || 0;
         }
-        if (multiplier) runPoints += length * multiplier;
+        if (multiplier) {
+          runPoints += length * multiplier;
+          runLength = length;
+        }
       }
     }
 
     const suitCounts = new Map();
     cards.forEach((card) => suitCounts.set(card.suit, (suitCounts.get(card.suit) || 0) + 1));
-    const maxSuit = Math.max(...suitCounts.values());
+    const maxSuit = suitCounts.size ? Math.max(...suitCounts.values()) : 0;
     const flush = maxSuit >= 5 ? 5 : maxSuit === 4 ? 4 : 0;
     const nobs = cards.filter((card) => card.rank === 11 && cards.some((other) => other !== card && other.suit === card.suit)).length;
     const total = fifteens + pairs + runPoints + flush + nobs;
-    return { total, fifteens, pairs, runs: runPoints, flush, nobs };
+    const pairCounts = groups.map((group) => group.count).filter((count) => count >= 2).sort((a, b) => b - a);
+    let pairLabel = "";
+    if (pairCounts[0] === 4) pairLabel = "Quads";
+    else if (pairCounts[0] === 3 && pairCounts[1] === 2) pairLabel = "Boat";
+    else if (pairCounts[0] === 3) pairLabel = "Trips";
+    else if (pairCounts.filter((count) => count === 2).length === 2) pairLabel = "2 Pairs";
+    else if (pairCounts[0] === 2) pairLabel = "Pair";
+    const fifteenCount = fifteens / 2;
+    const runCount = runLength ? runPoints / runLength : 0;
+    const scoreComponents = [];
+    if (flush) scoreComponents.push({ key: "flush", label: `${flush} Card Flush`, points: flush, status: "ok" });
+    if (runPoints) scoreComponents.push({ key: "runs", label: runCount === 1 ? `Run of ${runLength}` : `${runCount} Runs of ${runLength}`, points: runPoints, status: "ok" });
+    if (pairs) scoreComponents.push({ key: "pairs", label: pairLabel, points: pairs, status: "ok" });
+    if (fifteens) scoreComponents.push({ key: "fifteens", label: fifteenCount === 1 ? "15" : `${fifteenCount} 15s`, points: fifteens, status: "ok" });
+    if (nobs) scoreComponents.push({ key: "nobs", label: nobs === 1 ? "Suited J" : `${nobs} Suited Js`, points: nobs, status: "ok" });
+    return { total, fifteens, fifteenCount, pairs, pairLabel, runs: runPoints, runLength, runCount, flush, nobs, scoreComponents };
   }
 
   function evaluateCribbage(cards) {
     const breakdown = cribbageScore(cards);
+    const complete = cards.length === 5;
     return {
-      qualifies: breakdown.total >= 12,
+      qualifies: complete && breakdown.total >= 12,
       points: breakdown.total,
-      repeat: breakdown.total >= 24,
+      repeat: complete && breakdown.total >= 24,
       quality: breakdown.total,
       breakdown,
-      name: `${breakdown.total} cribbage pts`,
-      detail: `${breakdown.fifteens} fifteens · ${breakdown.pairs} pairs · ${breakdown.runs} runs · ${breakdown.flush} flush · ${breakdown.nobs} jacks`,
+      scoreComponents: breakdown.scoreComponents,
+      name: `${breakdown.total}pts`,
+      detail: breakdown.scoreComponents.map((component) => component.label).join(" + "),
     };
   }
 
@@ -420,6 +533,7 @@
     const jokers = cards.filter((card) => card.joker);
     const naturals = cards.filter((card) => !card.joker);
     const blocked = new Set(naturals.map((card) => card.id));
+    (options.blockedIds || []).forEach((id) => blocked.add(id));
     const available = virtualDeck.filter((card) => !blocked.has(card.id));
     const candidates = [];
     const consider = (replacements) => {
@@ -461,6 +575,42 @@
     );
   }
 
+  function doubleBlackjackCandidates(threeIds, twoIds) {
+    const allNaturals = threeIds.concat(twoIds).filter((id) => !makeCard(id).joker);
+    const threeCandidates = enumerateWild(
+      threeIds,
+      (cards) => evaluateBlackjack(cards, { final: cards.length === 3 }),
+      { dedupe: false, blockedIds: allNaturals }
+    );
+    const twoCandidates = enumerateWild(
+      twoIds,
+      (cards) => evaluateBlackjack(cards, { final: cards.length === 2 }),
+      { dedupe: false, blockedIds: allNaturals }
+    );
+    const deduped = new Map();
+
+    threeCandidates.forEach((three) => twoCandidates.forEach((two) => {
+      const replacementIds = [];
+      three.assignments.forEach((card) => replacementIds.push(card.id));
+      two.assignments.forEach((card) => replacementIds.push(card.id));
+      if (new Set(replacementIds).size !== replacementIds.length) return;
+      const assignments = mergeAssignments(three.assignments, two.assignments);
+      const evaluation = combineDoubleBlackjackEvaluations(
+        three.evaluation,
+        two.evaluation,
+        threeIds.length === 3 && twoIds.length === 2,
+        threeIds.length > 0,
+        twoIds.length > 0
+      );
+      const candidate = { evaluation, assignments, assignmentValue: assignmentValue(assignments) };
+      const key = middleKey(evaluation);
+      const current = deduped.get(key);
+      if (!current || candidate.assignmentValue > current.assignmentValue) deduped.set(key, candidate);
+    }));
+
+    return Array.from(deduped.values());
+  }
+
   function variantMiddleCandidates(variant, rows) {
     if (variant === "high") return highRowCandidates(rows.middle || [], "middle");
     if (variant === "low") return enumerateWild(rows.middle || [], evaluateDeuceSeven, { key: middleKey });
@@ -475,6 +625,11 @@
         (cards) => evaluateBadugiJackConcrete(cards.slice(0, badugiIds.length), cards.slice(badugiIds.length)),
         { key: middleKey }
       );
+    }
+    if (variant === "doubleblackjack") {
+      const threeIds = rows.middleBlackjackThree || [];
+      const twoIds = rows.middleBlackjackTwo || [];
+      return doubleBlackjackCandidates(threeIds, twoIds);
     }
     return [];
   }
@@ -508,6 +663,9 @@
       const badugi = (rows.middleBadugi || []).length;
       const blackjack = (rows.middleBlackjack || []).length;
       return badugi + blackjack === 6 && ((badugi === 3 && blackjack === 3) || (badugi === 4 && blackjack === 2));
+    }
+    if (variant === "doubleblackjack") {
+      return (rows.middleBlackjackThree || []).length === 3 && (rows.middleBlackjackTwo || []).length === 2;
     }
     return (rows.middle || []).length === 5;
   }
@@ -576,7 +734,11 @@
     if (variant === "badugijack") {
       const badugi = (rows.middleBadugi || []).length;
       const blackjack = (rows.middleBlackjack || []).length;
-      if (badugi + blackjack === 6 && ((badugi === 3 && blackjack === 3) || (badugi === 4 && blackjack === 2))) take("middle", variantMiddleCandidates(variant, rows));
+      if (badugi + blackjack > 0) take("middle", variantMiddleCandidates(variant, rows));
+    } else if (variant === "doubleblackjack") {
+      if ((rows.middleBlackjackThree || []).length + (rows.middleBlackjackTwo || []).length > 0) take("middle", variantMiddleCandidates(variant, rows));
+    } else if (variant === "cribbage") {
+      if ((rows.middle || []).length > 0) take("middle", variantMiddleCandidates(variant, rows));
     } else if ((rows.middle || []).length === 5) take("middle", variantMiddleCandidates(variant, rows));
     return { legal: false, complete: false, assignments, rowEvals, rowNames: Object.fromEntries(Object.entries(rowEvals).map(([key, value]) => [key, value.name])) };
   }
@@ -611,19 +773,34 @@
   }
 
   function bestMiddleForMask(variant, ids) {
-    if (variant !== "badugijack") {
+    if (variant !== "badugijack" && variant !== "doubleblackjack") {
       const candidates = variantMiddleCandidates(variant, { middle: ids });
       return bestCandidate(candidates, (candidate) => variant === "high" || candidate.evaluation.qualifies);
     }
     let best = null;
-    [3, 4].forEach((badugiSize) => combinations(ids, badugiSize).forEach((badugiIds) => {
-      const chosen = new Set(badugiIds);
-      const blackjackIds = ids.filter((id) => !chosen.has(id));
-      const candidate = bestCandidate(variantMiddleCandidates(variant, { middleBadugi: badugiIds, middleBlackjack: blackjackIds }), (entry) => entry.evaluation.qualifies);
+    if (variant === "badugijack") {
+      [3, 4].forEach((badugiSize) => combinations(ids, badugiSize).forEach((badugiIds) => {
+        const chosen = new Set(badugiIds);
+        const blackjackIds = ids.filter((id) => !chosen.has(id));
+        const candidate = bestCandidate(variantMiddleCandidates(variant, { middleBadugi: badugiIds, middleBlackjack: blackjackIds }), (entry) => entry.evaluation.qualifies);
+        if (!candidate) return;
+        const withSplit = { ...candidate, badugiIds: badugiIds.slice(), blackjackIds };
+        if (!best || compareRowCandidate(withSplit, best) > 0) best = withSplit;
+      }));
+      return best;
+    }
+
+    combinations(ids, 3).forEach((threeIds) => {
+      const chosen = new Set(threeIds);
+      const twoIds = ids.filter((id) => !chosen.has(id));
+      const candidate = bestCandidate(
+        variantMiddleCandidates(variant, { middleBlackjackThree: threeIds, middleBlackjackTwo: twoIds }),
+        (entry) => entry.evaluation.qualifies
+      );
       if (!candidate) return;
-      const withSplit = { ...candidate, badugiIds: badugiIds.slice(), blackjackIds };
+      const withSplit = { ...candidate, blackjackThreeIds: threeIds.slice(), blackjackTwoIds: twoIds };
       if (!best || compareRowCandidate(withSplit, best) > 0) best = withSplit;
-    }));
+    });
     return best;
   }
 
@@ -685,6 +862,10 @@
     if (variant === "badugijack") {
       const blackjackCards = naturals.filter((card) => card.rank === 14 || card.rank >= 7).length;
       return distinctRanks * 7000 + distinctSuits * 6500 + blackjackCards * 1200 - pairShape * 350 - maxRank;
+    }
+    if (variant === "doubleblackjack") {
+      const blackjackCards = naturals.filter((card) => card.rank === 14 || card.rank >= 6).length;
+      return blackjackCards * 9000 + naturals.reduce((sum, card) => sum + Math.min(card.rank, 10), 0) * 350 - pairShape * 120;
     }
 
     let fifteenShape = 0;
@@ -767,7 +948,7 @@
       const candidate = bestCandidate(highRowCandidates(rowIds, "bottom"));
       return { mask, candidate, estimate: candidate.evaluation.points * 1e8 + candidate.evaluation.strength };
     });
-    const beamLimit = Number.isFinite(options.beamLimit) ? Math.max(16, Math.floor(options.beamLimit)) : variant === "badugijack" ? 260 : 360;
+    const beamLimit = Number.isFinite(options.beamLimit) ? Math.max(16, Math.floor(options.beamLimit)) : variant === "badugijack" || variant === "doubleblackjack" ? 260 : 360;
     const middlePool = mode === "fast" ? takeBeam(middleEntries, beamLimit, variant === "high") : middleEntries;
     const bottomPool = mode === "fast" ? takeBeam(bottomEntries, beamLimit) : bottomEntries;
     const topCache = new Map();
@@ -806,6 +987,8 @@
           assignments: middle.assignments,
           badugiIds: middle.badugiIds || null,
           blackjackIds: middle.blackjackIds || null,
+          blackjackThreeIds: middle.blackjackThreeIds || null,
+          blackjackTwoIds: middle.blackjackTwoIds || null,
         },
         bottom: { ids: idsForMask(ids, bottomEntry.mask), mask: bottomEntry.mask, eval: bottom.evaluation, points: bottom.evaluation.points, assignments: bottom.assignments },
         assignments: mergeAssignments(top.assignments, middle.assignments, bottom.assignments),
@@ -927,7 +1110,9 @@
     evaluateHighTop,
     evaluateDeuceSeven,
     evaluateBadeucey,
+    evaluateBlackjack,
     evaluateBadugiJackConcrete,
+    evaluateDoubleBlackjackConcrete,
     cribbageScore,
     evaluateCribbage,
     topRoyalty,

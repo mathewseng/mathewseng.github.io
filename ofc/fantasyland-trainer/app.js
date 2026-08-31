@@ -130,6 +130,7 @@
 
   if (typeof document !== "undefined") {
     document.addEventListener("DOMContentLoaded", () => {
+      applyMobilePlatformClasses();
       cacheElements();
       bindEvents();
       if (!restoreTrainerState()) startTrainerSet();
@@ -142,6 +143,12 @@
       window.addEventListener("focus", resumeTrainerTimer);
       document.addEventListener("visibilitychange", handleTrainerVisibilityChange);
     });
+  }
+
+  function applyMobilePlatformClasses() {
+    const appleTouchDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const longEdge = Math.max(window.screen.width || 0, window.screen.height || 0);
+    document.documentElement.classList.toggle("ios-notch-device", appleTouchDevice && longEdge >= 812);
   }
 
   function cacheElements() {
@@ -374,10 +381,7 @@
       const puzzle = getTrainerPuzzle();
       const variant = normalizeTrainerVariant(puzzle?.variant || state.trainer.variant);
       if (variant !== "high") {
-        const result = VariantCore.solveHand(state.selected, {
-          variant,
-          mode: state.selected.length >= 16 || variant === "badugijack" ? "fast" : "exact",
-        });
+        const result = VariantCore.solveHand(state.selected, trainerVariantSolveOptions(state.selected, variant));
         renderSolution(result);
         setMessage(result.best ? `Solved ${VariantCore.VARIANTS[variant].label} Fantasyland.` : "No legal board found for this hand.");
         return;
@@ -560,8 +564,8 @@
     const cardById = new Map(result.cards.map((card) => [card.id, card]));
     const frag = document.createDocumentFragment();
     frag.appendChild(renderVariantBoardRow("Top", best.top, cardById, best.assignments));
-    if (result.variant === "badugijack") {
-      frag.appendChild(renderBadugiJackSolutionRow(best.middle, cardById, best.assignments));
+    if (isSplitMiddleVariant(result.variant)) {
+      frag.appendChild(renderSplitMiddleSolutionRow(result.variant, best.middle, cardById, best.assignments));
     } else {
       frag.appendChild(renderVariantBoardRow("Middle", best.middle, cardById, best.assignments));
     }
@@ -604,7 +608,7 @@
     return wrapper;
   }
 
-  function renderBadugiJackSolutionRow(candidate, cardById, assignments) {
+  function renderSplitMiddleSolutionRow(variant, candidate, cardById, assignments) {
     const wrapper = document.createElement("div");
     wrapper.className = "board-row";
     const head = document.createElement("div");
@@ -617,11 +621,8 @@
     head.append(title, meta);
     wrapper.appendChild(head);
     const split = document.createElement("div");
-    split.className = "solution-badugijack-split";
-    [
-      ["Badugi", candidate.badugiIds || []],
-      ["Blackjack", candidate.blackjackIds || []],
-    ].forEach(([label, ids]) => {
+    split.className = "solution-badugijack-split solution-split-middle";
+    getSolutionSplitGroups(variant, candidate).forEach(({ label, ids }) => {
       const group = document.createElement("div");
       group.className = "solution-split-group";
       group.innerHTML = `<span>${label}</span>`;
@@ -639,22 +640,30 @@
     return wrapper;
   }
 
+  function getSolutionSplitGroups(variant, candidate) {
+    if (variant === "badugijack") {
+      return [
+        { label: "Badugi", ids: candidate.badugiIds || [] },
+        { label: "Blackjack", ids: candidate.blackjackIds || [] },
+      ];
+    }
+    return [
+      { label: "3 Card BJ", ids: candidate.blackjackThreeIds || [] },
+      { label: "2 Card BJ", ids: candidate.blackjackTwoIds || [] },
+    ];
+  }
+
   function appendVariantScoreMeta(container, evaluation, totalPoints) {
     const components = Array.isArray(evaluation?.scoreComponents) ? evaluation.scoreComponents : [];
     if (components.length) {
       container.classList.add("split-score-meta");
-      components.forEach((component) => {
-        const item = document.createElement("span");
-        item.className = "solution-score-component";
-        item.textContent = `${component.label} ${finiteNumber(component.points)} pts`;
-        container.appendChild(item);
-      });
+      appendScoreComponents(container, components, { className: "solution-score-component" });
       return;
     }
     const name = document.createElement("span");
     name.textContent = evaluation?.name || "";
     const points = document.createElement("span");
-    points.textContent = `${finiteNumber(totalPoints)} pts`;
+    points.textContent = formatPointUnit(totalPoints);
     container.append(name, points);
   }
 
@@ -973,7 +982,7 @@
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return;
     els.trainerTitle.textContent = trainer.mode === "daily" ? "Daily puzzle" : "Random puzzle";
-    if (els.trainerConfig) els.trainerConfig.textContent = `${configShareLabel(puzzle)} · ${trainerVariantLabel(puzzle.variant)}`;
+    if (els.trainerConfig) els.trainerConfig.textContent = configShareLabel(puzzle);
     if (els.trainerVariantSummary) els.trainerVariantSummary.textContent = VariantCore.VARIANTS[normalizeTrainerVariant(puzzle.variant)].short;
     if (els.trainerCurrentPoints) els.trainerCurrentPoints.textContent = String(getTrainerCurrentPoints(puzzle));
     if (els.trainerProgress) els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
@@ -988,7 +997,7 @@
     });
     if (els.trainerCurrentConfigControl) els.trainerCurrentConfigControl.hidden = !isAll;
     if (els.trainerCurrentConfig && puzzle) {
-      els.trainerCurrentConfig.textContent = `${configControlLabel(puzzle)} · ${trainerVariantLabel(puzzle.variant)}`;
+      els.trainerCurrentConfig.textContent = `${configControlLabel(puzzle)} · ${trainerVariantCompactLabel(puzzle.variant)}`;
     }
   }
 
@@ -997,7 +1006,7 @@
     state.jokerCount = puzzle.jokers;
     state.selected = puzzle.ids.slice();
     renderSelected({ keepInput: true, readOnly: true });
-    solveCurrentHand();
+    if (state.trainer.confirmed) solveCurrentHand();
   }
 
   function renderTrainerTray() {
@@ -1042,13 +1051,13 @@
     const displayEvaluation = getTrainerDisplayEvaluation(puzzle);
     const frag = document.createDocumentFragment();
     TRAINER_ROWS.forEach((rowDef) => {
-      const badugiJackMiddle = rowDef.key === "middle" && isBadugiJackPuzzle(puzzle);
-      const rowActive = badugiJackMiddle
+      const splitMiddle = rowDef.key === "middle" && isSplitMiddlePuzzle(puzzle);
+      const rowActive = splitMiddle
         ? state.trainer.activeRow.startsWith("middle")
         : state.trainer.activeRow === rowDef.key;
       const row = document.createElement("section");
-      row.className = `trainer-row ${rowActive ? "active" : ""} ${badugiJackMiddle ? "badugijack-middle-row" : ""}`;
-      row.dataset.row = badugiJackMiddle ? getBadugiJackMiddleTarget() : rowDef.key;
+      row.className = `trainer-row ${rowActive ? "active" : ""} ${splitMiddle ? "badugijack-middle-row split-middle-row" : ""}`;
+      row.dataset.row = splitMiddle ? getSplitMiddleTarget(puzzle) : rowDef.key;
       row.addEventListener("click", (event) => {
         if (state.trainer.confirmed || event.target.closest(".trainer-placed-card")) return;
         const splitTarget = event.target.closest("[data-drop-row]");
@@ -1064,8 +1073,8 @@
       head.addEventListener("click", () => setTrainerActiveRow(rowDef.key));
       row.appendChild(head);
 
-      if (badugiJackMiddle) {
-        row.appendChild(renderBadugiJackMiddleSlots(displayEvaluation));
+      if (splitMiddle) {
+        row.appendChild(renderSplitMiddleSlots(displayEvaluation, puzzle));
       } else {
         row.appendChild(renderTrainerSlots(rowDef.key, trainerRowSize(rowDef.key, puzzle), displayEvaluation, rowDef.key === "top" ? "top-row" : ""));
       }
@@ -1076,21 +1085,18 @@
       if (rowSummary.visible) {
         if (rowSummary.scoreComponents?.length) {
           summary.classList.add("is-split-score");
-          rowSummary.scoreComponents.forEach((component) => {
-            const item = document.createElement("span");
-            item.className = "trainer-score-component";
-            const label = document.createElement("span");
-            label.textContent = component.label;
-            const points = document.createElement("strong");
-            points.textContent = `${finiteNumber(component.points)} pts`;
-            item.append(label, points);
-            summary.appendChild(item);
+          appendScoreComponents(summary, rowSummary.scoreComponents, {
+            className: "trainer-score-component",
+            total: rowSummary.showTotal ? rowSummary.points : null,
           });
+          applyScoreDensity(summary);
         } else {
           const label = document.createElement("span");
+          label.className = "score-description";
           label.textContent = rowSummary.label;
           const points = document.createElement("strong");
-          points.textContent = `${rowSummary.points} pts`;
+          points.className = "score-points";
+          points.textContent = formatPointUnit(rowSummary.points);
           summary.append(label, points);
         }
       } else {
@@ -1103,15 +1109,12 @@
     updateTrainerHeader();
   }
 
-  function renderBadugiJackMiddleSlots(displayEvaluation) {
+  function renderSplitMiddleSlots(displayEvaluation, puzzle) {
     const split = document.createElement("div");
-    split.className = "badugijack-split";
-    [
-      { key: "middleBadugi", label: "Badugi", size: 4 },
-      { key: "middleBlackjack", label: "Blackjack", size: 3 },
-    ].forEach((group) => {
+    split.className = "badugijack-split split-middle";
+    getSplitMiddleGroups(puzzle).forEach((group) => {
       const zone = document.createElement("section");
-      zone.className = `badugijack-zone ${state.trainer.activeRow === group.key ? "active" : ""}`;
+      zone.className = `badugijack-zone split-middle-zone ${state.trainer.activeRow === group.key ? "active" : ""}`;
       zone.dataset.dropRow = group.key;
       zone.setAttribute("aria-label", `${group.label} cards`);
       zone.addEventListener("click", (event) => {
@@ -1120,13 +1123,59 @@
         setTrainerActiveRow(group.key);
       });
       const label = document.createElement("span");
-      label.className = "badugijack-zone-label";
+      label.className = "badugijack-zone-label split-middle-zone-label";
       label.textContent = group.label;
       zone.appendChild(label);
-      zone.appendChild(renderTrainerSlots(group.key, group.size, displayEvaluation, "badugijack-group-slots"));
+      zone.appendChild(renderTrainerSlots(group.key, group.size, displayEvaluation, "badugijack-group-slots split-middle-group-slots"));
       split.appendChild(zone);
     });
     return split;
+  }
+
+  function appendScoreComponents(container, components, options = {}) {
+    const visible = components.filter((component) => component && component.label);
+    visible.forEach((component, index) => {
+      if (index) {
+        const separator = document.createElement("span");
+        separator.className = "score-separator";
+        separator.textContent = "+";
+        container.appendChild(separator);
+      }
+      const item = document.createElement("span");
+      item.className = `${options.className || "trainer-score-component"} ${component.status === "foul" || component.status === "bust" ? "is-danger" : ""}`.trim();
+      const label = document.createElement("span");
+      label.className = "score-description";
+      label.textContent = component.label;
+      item.appendChild(label);
+      if (Number.isFinite(Number(component.points)) && Number(component.points) > 0) {
+        const points = document.createElement("strong");
+        points.className = "score-points";
+        points.textContent = formatPointUnit(component.points);
+        item.appendChild(points);
+      }
+      container.appendChild(item);
+    });
+
+    if (Number.isFinite(Number(options.total)) && Number(options.total) > 0) {
+      const equals = document.createElement("span");
+      equals.className = "score-separator score-equals";
+      equals.textContent = "=";
+      const total = document.createElement("strong");
+      total.className = "score-total score-points";
+      total.textContent = formatPointUnit(options.total);
+      container.append(equals, total);
+    }
+  }
+
+  function applyScoreDensity(element) {
+    const length = element.textContent.length;
+    element.classList.toggle("is-dense", length > 54);
+    element.classList.toggle("is-very-dense", length > 86);
+  }
+
+  function formatPointUnit(value) {
+    const points = finiteNumber(value);
+    return `${wholeNumberText(points)}pt${points === 1 ? "" : "s"}`;
   }
 
   function renderTrainerSlots(rowKey, size, displayEvaluation, extraClass = "") {
@@ -1273,6 +1322,7 @@
       rowNames: evaluation.rowNames,
     };
     trainer.results[trainer.puzzleIndex] = result;
+    renderSolution(evaluation.optimal);
     renderTrainerResult(result);
     renderTrainerBoard();
     renderTrainerTray();
@@ -1351,7 +1401,8 @@
   function updateTrainerHandSizing(puzzle) {
     if (!els.trainerPanel || !puzzle) return;
     els.trainerPanel.classList.remove("hand-cols-7", "hand-cols-8", "hand-cols-9");
-    els.trainerPanel.classList.toggle("is-badugijack", isBadugiJackPuzzle(puzzle));
+    els.trainerPanel.classList.toggle("is-badugijack", isSplitMiddlePuzzle(puzzle));
+    els.trainerPanel.classList.toggle("is-double-blackjack", normalizeTrainerVariant(puzzle.variant) === "doubleblackjack");
     const columns = Math.min(9, Math.max(7, Math.ceil(puzzle.cards / 2)));
     els.trainerPanel.classList.add(`hand-cols-${columns}`);
   }
@@ -1888,10 +1939,11 @@
     if (boardEval) {
       if (normalizeTrainerVariant(puzzle.variant) !== "high" && rowKey === "middle") {
         const points = finiteNumber(boardEval.points);
-        const visible = Boolean(boardEval.qualifies && points > 0);
         const scoreComponents = Array.isArray(boardEval.scoreComponents) ? boardEval.scoreComponents : [];
+        const variant = normalizeTrainerVariant(puzzle.variant);
+        const visible = scoreComponents.some((component) => component && component.label) && (variant === "cribbage" ? points > 0 : true);
         return visible
-          ? { label: boardEval.name, points, scoreComponents, visible: true }
+          ? { label: boardEval.name, points, scoreComponents, showTotal: variant === "cribbage", visible: true }
           : { label: "", points: 0, scoreComponents: [], visible: false };
       }
       const points = rowKey === "top" ? topRoyalty(boardEval) : fiveRoyalty(boardEval, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
@@ -2117,21 +2169,34 @@
         fillTrainerRowsFromBankOrder(pendingRows, puzzle);
         const pending = VariantCore.evaluateBoard(puzzle.ids, pendingRows, { variant: puzzle.variant });
         if (pending.legal) {
-          const middleIds = new Set(
-            isBadugiJackPuzzle(puzzle)
-              ? (rows.middleBadugi || []).concat(rows.middleBlackjack || [])
-              : rows.middle || []
-          );
+          const middleIds = new Set(trainerPlacementKeys(puzzle).filter((key) => key.startsWith("middle")).flatMap((key) => rows[key] || []));
           pending.assignments.forEach((card, id) => {
             if (middleIds.has(id)) preview.assignments.set(id, card);
           });
         }
       }
+      refreshVariantMiddlePreview(preview, rows, puzzle);
       return preview;
     }
     return evaluateTrainerDisplayRows(puzzle.ids, rows, {
       fiveKindRule: state.fiveKindRule,
     });
+  }
+
+  function refreshVariantMiddlePreview(preview, rows, puzzle) {
+    const concrete = (ids) => (ids || []).map((id) => {
+      const card = cardFromId(id);
+      return card.joker && preview.assignments.has(id) ? preview.assignments.get(id) : card;
+    });
+    const variant = normalizeTrainerVariant(puzzle.variant);
+    if (variant === "badugijack") {
+      preview.rowEvals.middle = VariantCore.evaluateBadugiJackConcrete(concrete(rows.middleBadugi), concrete(rows.middleBlackjack));
+    } else if (variant === "doubleblackjack") {
+      preview.rowEvals.middle = VariantCore.evaluateDoubleBlackjackConcrete(concrete(rows.middleBlackjackThree), concrete(rows.middleBlackjackTwo));
+    } else if (variant === "cribbage" && rows.middle.length) {
+      preview.rowEvals.middle = VariantCore.evaluateCribbage(concrete(rows.middle));
+    }
+    if (preview.rowEvals.middle) preview.rowNames.middle = preview.rowEvals.middle.name;
   }
 
   function evaluateTrainerDisplayRows(cardIds, rows, options = {}) {
@@ -2358,10 +2423,7 @@
     const variant = normalizeTrainerVariant(options.variant);
     if (variant !== "high") {
       const user = VariantCore.evaluateBoard(cardIds, rows, { variant });
-      const optimal = VariantCore.solveHand(cardIds, {
-        variant,
-        mode: cardIds.length >= 16 || variant === "badugijack" ? "fast" : "exact",
-      });
+      const optimal = VariantCore.solveHand(cardIds, trainerVariantSolveOptions(cardIds, variant));
       const maxPoints = optimal.best ? finiteNumber(optimal.best.points) : 0;
       const maxRepeat = Boolean(optimal.best && optimal.best.repeat);
       const correct = user.legal && user.points === maxPoints && (!maxRepeat || user.repeat);
@@ -2392,6 +2454,19 @@
       rowNames: user.rowNames,
       optimal,
     };
+  }
+
+  function trainerVariantSolveOptions(cardIds, variantValue) {
+    const variant = normalizeTrainerVariant(variantValue);
+    const options = {
+      variant,
+      mode: cardIds.length >= 16 || isSplitMiddleVariant(variant) ? "fast" : "exact",
+    };
+    if (variant === "doubleblackjack" && cardIds.some((id) => cardFromId(id).joker)) {
+      options.maskLimit = 140;
+      options.beamLimit = 96;
+    }
+    return options;
   }
 
   function isTopLegalAgainstMiddle(topEval, middleEval) {
@@ -2429,9 +2504,7 @@
       [
         `${configShareLabel(result)} ${result.correct ? "✅" : "❌"} ${wholeNumberText(result.points)}/${wholeNumberText(result.maxPoints)} royalties${repeatMissShareSuffix(result)} ${formatShareTime(result.timeMs)}`,
         cardsToShare(result.rows.top),
-        result.variant === "badugijack"
-          ? `${cardsToShare(result.rows.middleBadugi)} | ${cardsToShare(result.rows.middleBlackjack)}`
-          : cardsToShare(result.rows.middle),
+        trainerMiddleShareLine(result),
         cardsToShare(result.rows.bottom),
         cardsToShare(result.rows.discard),
       ].join("\n")
@@ -2441,6 +2514,16 @@
       .concat(footer.length ? [footer.join("\n")] : [])
       .concat(TRAINER_SHARE_URL)
       .join("\n\n");
+  }
+
+  function trainerMiddleShareLine(result) {
+    if (result.variant === "badugijack") {
+      return `${cardsToShare(result.rows.middleBadugi)} | ${cardsToShare(result.rows.middleBlackjack)}`;
+    }
+    if (result.variant === "doubleblackjack") {
+      return `${cardsToShare(result.rows.middleBlackjackThree)} | ${cardsToShare(result.rows.middleBlackjackTwo)}`;
+    }
+    return cardsToShare(result.rows.middle);
   }
 
   function buildTrainerShareSummary(results) {
@@ -2625,12 +2708,7 @@
 
   function trainerRowsReady(rows, puzzle) {
     if (!puzzle) return false;
-    if (isBadugiJackPuzzle(puzzle)) {
-      const badugi = rows.middleBadugi.length;
-      const blackjack = rows.middleBlackjack.length;
-      return rows.top.length === 3 && rows.bottom.length === 5 && badugi + blackjack === 6 && ((badugi === 4 && blackjack === 2) || (badugi === 3 && blackjack === 3));
-    }
-    return TRAINER_ROWS.every((row) => rows[row.key].length === trainerRowSize(row.key, puzzle));
+    return VariantCore.rowsComplete(normalizeTrainerVariant(puzzle.variant), rows);
   }
 
   function getPlacedTrainerIds() {
@@ -2669,14 +2747,16 @@
   }
 
   function setTrainerActiveRow(key, options = {}) {
-    state.trainer.activeRow = key === "middle" && isBadugiJackPuzzle() ? getBadugiJackMiddleTarget() : key;
+    state.trainer.activeRow = key === "middle" && isSplitMiddlePuzzle() ? getSplitMiddleTarget() : key;
     if (options.render !== false) renderTrainerBoard();
   }
 
   function trainerRowSize(key, puzzle) {
-    if (key === "discard") return Math.max(0, puzzle.cards - (isBadugiJackPuzzle(puzzle) ? 14 : 13));
+    if (key === "discard") return Math.max(0, puzzle.cards - (3 + VariantCore.VARIANTS[normalizeTrainerVariant(puzzle.variant)].middleSize + 5));
     if (key === "middleBadugi") return 4;
     if (key === "middleBlackjack") return 3;
+    if (key === "middleBlackjackThree") return 3;
+    if (key === "middleBlackjackTwo") return 2;
     const row = TRAINER_ROWS.find((entry) => entry.key === key);
     return row ? row.size : 0;
   }
@@ -2686,7 +2766,16 @@
   }
 
   function createEmptyTrainerRows() {
-    return { top: [], middle: [], middleBadugi: [], middleBlackjack: [], bottom: [], discard: [] };
+    return {
+      top: [],
+      middle: [],
+      middleBadugi: [],
+      middleBlackjack: [],
+      middleBlackjackThree: [],
+      middleBlackjackTwo: [],
+      bottom: [],
+      discard: [],
+    };
   }
 
   function cloneTrainerRows(rows) {
@@ -2695,21 +2784,25 @@
       middle: rows.middle.slice(),
       middleBadugi: (rows.middleBadugi || []).slice(),
       middleBlackjack: (rows.middleBlackjack || []).slice(),
+      middleBlackjackThree: (rows.middleBlackjackThree || []).slice(),
+      middleBlackjackTwo: (rows.middleBlackjackTwo || []).slice(),
       bottom: rows.bottom.slice(),
       discard: rows.discard.slice(),
     };
   }
 
   function trainerPlacementKeys(puzzle = getTrainerPuzzle()) {
-    return isBadugiJackPuzzle(puzzle)
-      ? ["top", "middleBadugi", "middleBlackjack", "bottom"]
-      : ["top", "middle", "bottom"];
+    const variant = normalizeTrainerVariant(puzzle ? puzzle.variant : state.trainer.variant);
+    if (variant === "badugijack") return ["top", "middleBadugi", "middleBlackjack", "bottom"];
+    if (variant === "doubleblackjack") return ["top", "middleBlackjackThree", "middleBlackjackTwo", "bottom"];
+    return ["top", "middle", "bottom"];
   }
 
   function trainerRowCycle(puzzle = getTrainerPuzzle()) {
-    return isBadugiJackPuzzle(puzzle)
-      ? ["bottom", "middleBadugi", "middleBlackjack", "top"]
-      : TRAINER_ROW_CYCLE;
+    const variant = normalizeTrainerVariant(puzzle ? puzzle.variant : state.trainer.variant);
+    if (variant === "badugijack") return ["bottom", "middleBadugi", "middleBlackjack", "top"];
+    if (variant === "doubleblackjack") return ["bottom", "middleBlackjackThree", "middleBlackjackTwo", "top"];
+    return TRAINER_ROW_CYCLE;
   }
 
   function trainerAutofillSize(rowKey, puzzle = getTrainerPuzzle()) {
@@ -2725,8 +2818,43 @@
     return "middleBadugi";
   }
 
+  function getDoubleBlackjackMiddleTarget() {
+    const rows = state.trainer.rows;
+    if (rows.middleBlackjackThree.length < 3) return "middleBlackjackThree";
+    if (rows.middleBlackjackTwo.length < 2) return "middleBlackjackTwo";
+    return "middleBlackjackThree";
+  }
+
+  function getSplitMiddleTarget(puzzle = getTrainerPuzzle()) {
+    return normalizeTrainerVariant(puzzle ? puzzle.variant : state.trainer.variant) === "doubleblackjack"
+      ? getDoubleBlackjackMiddleTarget()
+      : getBadugiJackMiddleTarget();
+  }
+
+  function getSplitMiddleGroups(puzzle = getTrainerPuzzle()) {
+    if (normalizeTrainerVariant(puzzle ? puzzle.variant : state.trainer.variant) === "doubleblackjack") {
+      return [
+        { key: "middleBlackjackThree", label: "3 Card BJ", size: 3 },
+        { key: "middleBlackjackTwo", label: "2 Card BJ", size: 2 },
+      ];
+    }
+    return [
+      { key: "middleBadugi", label: "Badugi", size: 4 },
+      { key: "middleBlackjack", label: "Blackjack", size: 3 },
+    ];
+  }
+
   function isBadugiJackPuzzle(puzzle = getTrainerPuzzle()) {
     return normalizeTrainerVariant(puzzle ? puzzle.variant : state.trainer.variant) === "badugijack";
+  }
+
+  function isSplitMiddleVariant(value) {
+    const variant = normalizeTrainerVariant(value);
+    return variant === "badugijack" || variant === "doubleblackjack";
+  }
+
+  function isSplitMiddlePuzzle(puzzle = getTrainerPuzzle()) {
+    return isSplitMiddleVariant(puzzle ? puzzle.variant : state.trainer.variant);
   }
 
   function getCheckedValue(name, fallback) {
@@ -2762,6 +2890,10 @@
   function trainerVariantLabel(value) {
     const variant = normalizeTrainerVariant(value);
     return VariantCore?.VARIANTS[variant]?.label || "High";
+  }
+
+  function trainerVariantCompactLabel(value) {
+    return normalizeTrainerVariant(value) === "doubleblackjack" ? "Double BJ" : trainerVariantLabel(value);
   }
 
   function openVariantRules(variant = state.trainer.variant) {
@@ -2823,7 +2955,7 @@
       const list = document.createElement("ul");
       lines.forEach((line) => {
         const item = document.createElement("li");
-        item.textContent = line;
+        appendRuleLine(item, line);
         list.appendChild(item);
       });
       section.appendChild(list);
@@ -2834,6 +2966,42 @@
     seedNote.textContent = `Daily seed: YYYY-MM-DD-{14/15/16/17}C-{0/1/2}J-${VariantCore.VARIANTS[active].seedLabel}-{number}. The number starts at 0 and advances only when the hand cannot qualify.`;
     article.appendChild(seedNote);
     els.variantRulesContent.replaceChildren(article);
+  }
+
+  function appendRuleLine(item, line) {
+    const separator = line.indexOf(":");
+    if (separator > 0) {
+      const term = document.createElement("strong");
+      term.className = "rule-term";
+      term.textContent = line.slice(0, separator);
+      item.appendChild(term);
+      appendRuleDetail(item, line.slice(separator + 1));
+      return;
+    }
+    appendRuleDetail(item, line);
+  }
+
+  function appendRuleDetail(item, text) {
+    const detail = document.createElement("span");
+    detail.className = "rule-detail";
+    const tokens = String(text).split(/(\b\d+(?:[-–]\d+)?(?:pts?)?\+?\b|\b(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)\b)/gi);
+    tokens.forEach((token) => {
+      if (!token) return;
+      if (/^\d/.test(token)) {
+        const value = document.createElement("mark");
+        value.className = "rule-number";
+        value.textContent = token;
+        detail.appendChild(value);
+      } else if (/^(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)$/i.test(token)) {
+        const keyword = document.createElement("em");
+        keyword.className = /^(?:foul|bust)$/i.test(token) ? "rule-keyword danger" : "rule-keyword";
+        keyword.textContent = token;
+        detail.appendChild(keyword);
+      } else {
+        detail.appendChild(document.createTextNode(token));
+      }
+    });
+    item.appendChild(detail);
   }
 
   function dealIdsSeeded(count, jokers, seed) {

@@ -277,13 +277,14 @@
   }
 
   function solveSample(ids, variant) {
-    const searchBounds = variant === "badugijack"
+    const splitVariant = variant === "badugijack" || variant === "doubleblackjack";
+    const searchBounds = splitVariant
       ? { maskLimit: 40, beamLimit: 24 }
       : { maskLimit: 140, beamLimit: 72 };
     let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds });
     if (solved.best || variant === "high" || !Core.hasQualifyingMiddle(ids, variant)) return solved;
 
-    solved = variant === "badugijack"
+    solved = splitVariant
       ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48 })
       : Core.solveHand(ids, { variant, mode: "exact" });
     return solved;
@@ -412,7 +413,7 @@
       const list = document.createElement("ul");
       lines.forEach((line) => {
         const item = document.createElement("li");
-        item.textContent = line;
+        appendRuleLine(item, line);
         list.appendChild(item);
       });
       section.append(sectionTitle, list);
@@ -423,6 +424,41 @@
     note.textContent = "EV samples are unfiltered random hands with the exact joker count shown. A hand that cannot qualify scores zero and is reflected in the Qualify column.";
     article.appendChild(note);
     els.rulesContent.replaceChildren(article);
+  }
+
+  function appendRuleLine(item, line) {
+    const separator = line.indexOf(":");
+    if (separator > 0) {
+      const term = document.createElement("strong");
+      term.className = "rule-term";
+      term.textContent = line.slice(0, separator);
+      item.appendChild(term);
+      appendRuleDetail(item, line.slice(separator + 1));
+      return;
+    }
+    appendRuleDetail(item, line);
+  }
+
+  function appendRuleDetail(item, text) {
+    const detail = document.createElement("span");
+    detail.className = "rule-detail";
+    String(text).split(/(\b\d+(?:[-–]\d+)?(?:pts?)?\+?\b|\b(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)\b)/gi).forEach((token) => {
+      if (!token) return;
+      if (/^\d/.test(token)) {
+        const value = document.createElement("mark");
+        value.className = "rule-number";
+        value.textContent = token;
+        detail.appendChild(value);
+      } else if (/^(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)$/i.test(token)) {
+        const keyword = document.createElement("em");
+        keyword.className = /^(?:foul|bust)$/i.test(token) ? "rule-keyword danger" : "rule-keyword";
+        keyword.textContent = token;
+        detail.appendChild(keyword);
+      } else {
+        detail.appendChild(document.createTextNode(token));
+      }
+    });
+    item.appendChild(detail);
   }
 
   function getVariantResults() {
