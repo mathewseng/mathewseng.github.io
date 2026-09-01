@@ -3,9 +3,19 @@
 
   const Core = window.OFCFantasylandCore;
   const STORAGE_KEY = "ofcFantasylandEv.v6";
+  const SETTINGS_KEY = "ofcFantasylandEv.settings.v1";
   const CARD_COUNTS = [14, 15, 16, 17];
   const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
   const DECK_JOKER_COUNTS = [1, 2];
+  const DEFAULT_SERIAL_MS = {
+    high: 180,
+    low: 240,
+    badeucey: 340,
+    bdp: 180,
+    badugijack: 260,
+    doubleblackjack: 230,
+    cribbage: 190,
+  };
   const DEFINITIONS = {
     immediate: {
       title: "Royalty EV",
@@ -38,6 +48,9 @@
     running: false,
     abort: false,
     results: loadCache(),
+    settings: loadSettings(),
+    cancelRun: null,
+    precomputedSamples: 0,
   };
 
   const els = {};
@@ -51,13 +64,20 @@
     }
     cacheElements();
     bindEvents();
+    state.precomputedSamples = applyPrecomputedResults(window.OFCFantasylandPrecomputed);
+    if (state.settings.sampleCount) els.sampleCount.value = state.settings.sampleCount;
     renderVariant();
+    updateEstimate();
   }
 
   function cacheElements() {
     Object.assign(els, {
       variantSummary: document.querySelector("#variant-summary"),
       sampleCount: document.querySelector("#sample-count"),
+      sample100k: document.querySelector("#sample-100k"),
+      sampleTotal: document.querySelector("#sample-total"),
+      estimateTime: document.querySelector("#estimate-time"),
+      estimateDetail: document.querySelector("#estimate-detail"),
       run: document.querySelector("#run-calculator"),
       stop: document.querySelector("#stop-calculator"),
       runStatus: document.querySelector("#run-status"),
@@ -92,14 +112,27 @@
     document.querySelectorAll('input[name="variant"]').forEach((input) => {
       input.addEventListener("change", () => {
         state.abort = state.running;
+        if (state.cancelRun) state.cancelRun();
         state.variant = Core.normalizeVariant(input.value);
         renderVariant();
+        updateEstimate();
       });
     });
     els.run.addEventListener("click", runCalculator);
     els.stop.addEventListener("click", () => {
       state.abort = true;
-      els.runStatus.textContent = "Stopping after this sample";
+      els.runStatus.textContent = "Stopping calculation";
+      if (state.cancelRun) state.cancelRun();
+    });
+    els.sampleCount.addEventListener("input", () => {
+      state.settings.sampleCount = els.sampleCount.value;
+      saveSettings();
+      updateEstimate();
+    });
+    els.sample100k.addEventListener("click", () => {
+      els.sampleCount.value = "100000";
+      els.sampleCount.dispatchEvent(new Event("input", { bubbles: true }));
+      els.sampleCount.focus();
     });
     document.querySelectorAll(".definition-link").forEach((button) => {
       button.addEventListener("click", () => showDefinition(button.dataset.definition));
@@ -124,12 +157,15 @@
     renderCharts(data, scenarios);
     renderJokerProbabilities();
     const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
+    const sampleSummary = resultSampleSummary(data, scenarios);
     els.matrixTitle.textContent = `14–17 card ${meta.label} matrix`;
     els.summaryConfigCount.textContent = `Average of ${configCount} configs`;
-    els.matrixMeta.textContent = complete ? `${meta.label} - ${complete}/${configCount} configs` : "No samples yet";
+    els.matrixMeta.textContent = complete ? `${meta.label} - ${sampleSummary}` : "No samples yet";
     if (!state.running) {
       els.runStatus.textContent = complete ? `${meta.label} results loaded` : "Ready to calculate";
-      els.runDetail.textContent = complete ? "Run again to replace this sample" : `${configCount} configurations - browser only`;
+      els.runDetail.textContent = complete
+        ? `${sampleSummary}; ${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
+        : `${configCount} configurations - completed samples save locally`;
       els.runProgress.style.width = complete === configCount ? "100%" : "0%";
     }
   }
@@ -150,7 +186,7 @@
         <td data-value="repeatLine">${result && result.repeatLine !== null ? formatPoints(result.repeatLine) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="recursive">${result ? formatRecursive(result.recursive) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="foul">${result ? formatPct(resultFoulRate(result)) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="samples">${result ? result.samples : '<span class="cell-muted">0</span>'}</td>
+        <td data-value="samples">${result ? formatInteger(result.samples) : '<span class="cell-muted">0</span>'}</td>
       `;
       if (result) row.querySelector('[data-value="immediate"]').title = `Standard error +/-${formatPoints(result.standardError)}`;
       fragment.appendChild(row);
@@ -278,67 +314,237 @@
 
   async function runCalculator() {
     if (state.running) return;
+    const samples = parseSampleCount();
+    if (!samples) {
+      updateEstimate();
+      els.sampleCount.focus();
+      return;
+    }
     const variant = state.variant;
     const scenarios = scenariosForVariant(variant);
-    const samples = Math.max(1, Number(els.sampleCount.value) || 5);
     const total = samples * scenarios.length;
     const runSeed = Core.hashSeed(`${Date.now()}-${Math.random()}-${variant}`).toString(16).padStart(8, "0").toUpperCase();
-    const nextResults = {};
     const started = performance.now();
+    const aggregates = new Map(scenarios.map((scenario) => [scenarioKey(scenario), aggregateFromResult(getVariantResults()[scenarioKey(scenario)])]));
     let completed = 0;
+    let lastRender = 0;
+    let lastSave = 0;
+    let workersUsed = 1;
     state.running = true;
     state.abort = false;
     setRunningUi(true);
+    els.runStatus.textContent = "Starting calculation";
+    els.runDetail.textContent = `${formatInteger(total)} new hands across ${scenarios.length} configurations`;
+    els.runProgress.style.width = "0%";
 
-    for (const scenario of scenarios) {
-      const aggregate = createAggregate();
-      for (let sample = 0; sample < samples; sample += 1) {
-        if (state.abort || state.variant !== variant) break;
-        const label = `${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}`;
-        els.runStatus.textContent = `Calculating ${label}`;
-        els.runDetail.textContent = `Sample ${sample + 1} of ${samples}`;
-        await yieldFrame();
-        const seedText = `EV-${runSeed}-${variant}-${scenario.cards}C-${scenario.jokers}J-${sample}`;
-        const ids = Core.dealSeeded(scenario.cards, scenario.jokers, Core.hashSeed(seedText).toString(16));
-        const solved = solveSample(ids, variant);
-        addSample(aggregate, solved);
-        completed += 1;
-        els.runProgress.style.width = `${((completed / total) * 100).toFixed(2)}%`;
-      }
-      if (aggregate.samples) {
-        nextResults[scenarioKey(scenario)] = finalizeAggregate(aggregate);
-        state.results[variant] = { ...(state.results[variant] || {}), ...nextResults };
-        renderMatrix(state.results[variant], scenarios);
-        renderDeckMatrix(state.results[variant]);
-        renderSummary(state.results[variant], scenarios);
-        renderCharts(state.results[variant], scenarios);
+    const renderProgress = (force = false) => {
+      const now = performance.now();
+      if (!force && now - lastRender < 180) return;
+      const data = state.results[variant] || {};
+      renderMatrix(data, scenarios);
+      renderDeckMatrix(data);
+      renderSummary(data, scenarios);
+      renderCharts(data, scenarios);
+      lastRender = now;
+    };
+
+    const handleProgress = (scenario, chunk) => {
+      if (!chunk || !chunk.samples) return;
+      const key = scenarioKey(scenario);
+      const cumulative = aggregates.get(key) || createAggregate();
+      mergeAggregate(cumulative, chunk);
+      aggregates.set(key, cumulative);
+      state.results[variant] = state.results[variant] || {};
+      state.results[variant][key] = finalizeAggregate(cumulative);
+      completed += chunk.samples;
+
+      const elapsed = performance.now() - started;
+      const remainingMs = completed ? (elapsed / completed) * Math.max(0, total - completed) : estimateRunMs(samples, variant);
+      els.runStatus.textContent = `Calculating ${Core.VARIANTS[variant].label}`;
+      els.runDetail.textContent = `${formatInteger(completed)} / ${formatInteger(total)} hands - ${formatDuration(remainingMs)} left`;
+      els.runProgress.style.width = `${Math.min(100, (completed / total) * 100).toFixed(2)}%`;
+      els.estimateTime.textContent = formatDuration(remainingMs);
+      els.estimateDetail.textContent = `${formatInteger(completed)} hands completed`;
+      renderProgress();
+      if (performance.now() - lastSave >= 1000) {
         saveCache();
+        lastSave = performance.now();
       }
-      if (state.abort || state.variant !== variant) break;
+    };
+
+    let outcome;
+    try {
+      if (typeof Worker === "function") {
+        outcome = await runWorkerPool({ variant, scenarios, samples, runSeed, onProgress: handleProgress });
+        workersUsed = outcome.workersUsed;
+      } else {
+        outcome = await runMainThread({ variant, scenarios, samples, runSeed, onProgress: handleProgress });
+      }
+    } catch (error) {
+      outcome = { stopped: true, error };
     }
 
     const elapsedSeconds = (performance.now() - started) / 1000;
     state.running = false;
+    state.cancelRun = null;
     setRunningUi(false);
+    renderProgress(true);
+    saveCache();
+    if (completed >= Math.min(12, total)) saveBenchmark(variant, (elapsedSeconds * 1000 * workersUsed) / completed);
     if (state.variant !== variant) {
       state.abort = false;
       renderVariant();
       return;
     }
-    if (state.abort) {
+    if (outcome.error) {
+      els.runStatus.textContent = "Calculation interrupted";
+      els.runDetail.textContent = `${formatInteger(completed)} new hands saved - ${outcome.error.message || "worker error"}`;
+    } else if (state.abort || outcome.stopped) {
       els.runStatus.textContent = "Calculation stopped";
-      els.runDetail.textContent = `${completed}/${total} samples completed`;
+      els.runDetail.textContent = `${formatInteger(completed)} / ${formatInteger(total)} new hands saved`;
     } else {
       els.runStatus.textContent = "Calculation complete";
-      els.runDetail.textContent = `${completed} deals in ${elapsedSeconds.toFixed(1)}s - bounded search estimate`;
-      els.matrixMeta.textContent = `${Core.VARIANTS[variant].label} - ${samples} samples per config`;
+      els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}`;
+      els.matrixMeta.textContent = `${Core.VARIANTS[variant].label} - ${resultSampleSummary(state.results[variant], scenarios)}`;
       els.runProgress.style.width = "100%";
     }
     state.abort = false;
+    updateEstimate();
+  }
+
+  function runWorkerPool({ variant, scenarios, samples, runSeed, onProgress }) {
+    const workerCount = availableWorkerCount();
+    const chunkSize = sampleChunkSize(samples);
+    return new Promise((resolve, reject) => {
+      const workers = [];
+      let queueIndex = 0;
+      let completedTasks = 0;
+      let settled = false;
+
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        workers.forEach((worker) => worker.terminate());
+        resolve({ workersUsed: workerCount, ...result });
+      };
+
+      state.cancelRun = () => finish({ stopped: true });
+
+      const assign = (worker) => {
+        if (settled) return;
+        if (queueIndex >= scenarios.length) {
+          if (completedTasks >= scenarios.length) finish({ stopped: false });
+          return;
+        }
+        const scenario = scenarios[queueIndex];
+        const taskId = queueIndex;
+        queueIndex += 1;
+        worker.postMessage({ type: "run", taskId, variant, scenario, samples, runSeed, chunkSize });
+      };
+
+      for (let index = 0; index < workerCount; index += 1) {
+        let worker;
+        try {
+          worker = new Worker("./worker.js?v=20260901e");
+        } catch (error) {
+          workers.forEach((item) => item.terminate());
+          reject(error);
+          return;
+        }
+        workers.push(worker);
+        worker.onmessage = (event) => {
+          const message = event.data || {};
+          if (message.type === "progress") onProgress(message.scenario, message.aggregate);
+          if (message.type === "complete") {
+            completedTasks += 1;
+            assign(worker);
+          }
+        };
+        worker.onerror = (event) => {
+          if (settled) return;
+          settled = true;
+          workers.forEach((item) => item.terminate());
+          reject(new Error(event.message || "Calculation worker failed"));
+        };
+        assign(worker);
+      }
+    });
+  }
+
+  async function runMainThread({ variant, scenarios, samples, runSeed, onProgress }) {
+    state.cancelRun = () => { state.abort = true; };
+    for (const scenario of scenarios) {
+      for (let sample = 0; sample < samples; sample += 1) {
+        if (state.abort || state.variant !== variant) return { stopped: true, workersUsed: 1 };
+        await yieldFrame();
+        const seedText = `EV-${runSeed}-${variant}-${scenario.cards}C-${scenario.jokers}J-${sample}`;
+        const ids = Core.dealSeeded(scenario.cards, scenario.jokers, Core.hashSeed(seedText).toString(16));
+        const chunk = createAggregate();
+        addSample(chunk, solveSample(ids, variant));
+        onProgress(scenario, chunk);
+      }
+    }
+    return { stopped: false, workersUsed: 1 };
   }
 
   function createAggregate() {
     return { samples: 0, immediateSum: 0, immediateSquared: 0, strategySum: 0, repeatCount: 0, repeatPointSum: 0, qualifyCount: 0, distribution: [0, 0, 0, 0, 0] };
+  }
+
+  function mergeAggregate(target, source) {
+    target.samples += finiteNumber(source.samples);
+    target.immediateSum += finiteNumber(source.immediateSum);
+    target.immediateSquared += finiteNumber(source.immediateSquared);
+    target.strategySum += finiteNumber(source.strategySum);
+    target.repeatCount += finiteNumber(source.repeatCount);
+    target.repeatPointSum += finiteNumber(source.repeatPointSum);
+    target.qualifyCount += finiteNumber(source.qualifyCount);
+    target.distribution = target.distribution.map((value, index) => value + finiteNumber(source.distribution?.[index]));
+    return target;
+  }
+
+  function aggregateFromResult(result) {
+    if (!result || !finiteNumber(result.samples)) return createAggregate();
+    if (result.totals && finiteNumber(result.totals.samples) === finiteNumber(result.samples)) {
+      return {
+        samples: finiteNumber(result.totals.samples),
+        immediateSum: finiteNumber(result.totals.immediateSum),
+        immediateSquared: finiteNumber(result.totals.immediateSquared),
+        strategySum: finiteNumber(result.totals.strategySum),
+        repeatCount: finiteNumber(result.totals.repeatCount),
+        repeatPointSum: finiteNumber(result.totals.repeatPointSum),
+        qualifyCount: finiteNumber(result.totals.qualifyCount),
+        distribution: Array.from({ length: 5 }, (_, index) => finiteNumber(result.totals.distribution?.[index])),
+      };
+    }
+
+    const samples = Math.max(0, Math.round(finiteNumber(result.samples)));
+    const immediate = finiteNumber(result.immediate);
+    const variance = Math.pow(finiteNumber(result.standardError), 2) * samples;
+    const rawDistribution = Array.from({ length: 5 }, (_, index) => finiteNumber(result.distribution?.[index]) * samples);
+    const distribution = rawDistribution.map(Math.floor);
+    let remainder = samples - distribution.reduce((sum, value) => sum + value, 0);
+    const fractionalOrder = rawDistribution.map((value, index) => ({ index, fraction: value - Math.floor(value) })).sort((left, right) => right.fraction - left.fraction);
+    for (let index = 0; remainder > 0; index = (index + 1) % fractionalOrder.length) {
+      distribution[fractionalOrder[index].index] += 1;
+      remainder -= 1;
+    }
+    while (remainder < 0) {
+      const largest = distribution.indexOf(Math.max(...distribution));
+      distribution[largest] -= 1;
+      remainder += 1;
+    }
+    const repeatCount = Math.round(finiteNumber(result.repeatRate) * samples);
+    return {
+      samples,
+      immediateSum: immediate * samples,
+      immediateSquared: (variance + immediate * immediate) * samples,
+      strategySum: finiteNumber(result.strategy) * samples,
+      repeatCount,
+      repeatPointSum: finiteNumber(result.repeatLine) * repeatCount,
+      qualifyCount: Math.round((1 - resultFoulRate(result)) * samples),
+      distribution,
+    };
   }
 
   function solveSample(ids, variant) {
@@ -392,6 +598,16 @@
       foulRate: 1 - aggregate.qualifyCount / n,
       standardError: Math.sqrt(variance / n),
       distribution: aggregate.distribution.map((count) => count / n),
+      totals: {
+        samples: n,
+        immediateSum: aggregate.immediateSum,
+        immediateSquared: aggregate.immediateSquared,
+        strategySum: aggregate.strategySum,
+        repeatCount: aggregate.repeatCount,
+        repeatPointSum: aggregate.repeatPointSum,
+        qualifyCount: aggregate.qualifyCount,
+        distribution: aggregate.distribution.slice(),
+      },
     };
   }
 
@@ -404,9 +620,11 @@
   }
 
   function setRunningUi(running) {
+    document.querySelector(".run-bar")?.classList.toggle("is-running", running);
     els.run.disabled = running;
     els.stop.hidden = !running;
     els.sampleCount.disabled = running;
+    els.sample100k.disabled = running;
   }
 
   function renderJokerProbabilities() {
@@ -573,6 +791,94 @@
     return EXACT_SCENARIOS;
   }
 
+  function parseSampleCount() {
+    const value = Number(els.sampleCount?.value);
+    if (!Number.isFinite(value) || value < 1 || !Number.isSafeInteger(value) || value > Math.floor(Number.MAX_SAFE_INTEGER / EXACT_SCENARIOS.length)) return null;
+    return value;
+  }
+
+  function updateEstimate() {
+    if (!els.sampleCount || !els.estimateTime) return;
+    const samples = parseSampleCount();
+    const valid = Boolean(samples);
+    els.sampleCount.setCustomValidity(valid ? "" : "Enter a whole number of at least 1.");
+    if (!state.running) els.run.disabled = !valid;
+    if (!valid) {
+      els.sampleTotal.textContent = "Enter a whole number of at least 1";
+      els.estimateTime.textContent = "--";
+      els.estimateDetail.textContent = "Waiting for a valid sample count";
+      return;
+    }
+    const total = samples * EXACT_SCENARIOS.length;
+    const workers = availableWorkerCount();
+    const calibrated = finiteNumber(state.settings.benchmarks?.[state.variant]?.serialMsPerDeal) > 0;
+    els.sampleTotal.textContent = `${formatInteger(total)} hands total`;
+    els.estimateTime.textContent = `~${formatDuration(estimateRunMs(samples, state.variant))}`;
+    els.estimateDetail.textContent = `${workers} worker${workers === 1 ? "" : "s"}; ${calibrated ? "calibrated" : "initial estimate"}`;
+  }
+
+  function estimateRunMs(samples, variant = state.variant) {
+    const saved = finiteNumber(state.settings.benchmarks?.[variant]?.serialMsPerDeal);
+    const serialMs = saved > 0 ? saved : DEFAULT_SERIAL_MS[variant] || 220;
+    return (samples * EXACT_SCENARIOS.length * serialMs) / availableWorkerCount();
+  }
+
+  function saveBenchmark(variant, serialMsPerDeal) {
+    if (!Number.isFinite(serialMsPerDeal) || serialMsPerDeal <= 0) return;
+    state.settings.benchmarks = state.settings.benchmarks || {};
+    const previous = finiteNumber(state.settings.benchmarks[variant]?.serialMsPerDeal);
+    state.settings.benchmarks[variant] = {
+      serialMsPerDeal: previous > 0 ? previous * 0.65 + serialMsPerDeal * 0.35 : serialMsPerDeal,
+      updatedAt: new Date().toISOString(),
+    };
+    saveSettings();
+  }
+
+  function availableWorkerCount() {
+    const hardware = typeof navigator !== "undefined" ? finiteNumber(navigator.hardwareConcurrency) : 1;
+    return Math.min(EXACT_SCENARIOS.length, 8, Math.max(1, Math.floor(hardware || 2) - 1));
+  }
+
+  function sampleChunkSize(samples) {
+    if (samples <= 24) return 1;
+    if (samples <= 240) return 2;
+    if (samples <= 2400) return 5;
+    if (samples <= 24000) return 10;
+    return 25;
+  }
+
+  function resultSampleSummary(data, scenarios = EXACT_SCENARIOS) {
+    const counts = scenarios.map((scenario) => finiteNumber(data?.[scenarioKey(scenario)]?.samples)).filter((value) => value > 0);
+    if (!counts.length) return "no samples";
+    const minimum = Math.min(...counts);
+    const maximum = Math.max(...counts);
+    return minimum === maximum
+      ? `${formatInteger(minimum)} samples/config`
+      : `${formatInteger(minimum)}-${formatInteger(maximum)} samples/config`;
+  }
+
+  function applyPrecomputedResults(dataset) {
+    const target = finiteNumber(dataset?.samplesPerConfig);
+    if (dataset?.schemaVersion !== 1 || target < 100000 || !dataset.results) return 0;
+    const complete = Core.VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
+      const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
+      return finiteNumber(result?.samples) >= target && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples);
+    }));
+    if (!complete) return 0;
+
+    Core.VARIANT_ORDER.forEach((variant) => {
+      state.results[variant] = state.results[variant] || {};
+      EXACT_SCENARIOS.forEach((scenario) => {
+        const key = scenarioKey(scenario);
+        const baseline = dataset.results[variant][key];
+        const local = state.results[variant][key];
+        if (!local || finiteNumber(local.samples) < finiteNumber(baseline.samples)) state.results[variant][key] = baseline;
+      });
+    });
+    saveCache();
+    return target;
+  }
+
   function resultFoulRate(result) {
     if (Number.isFinite(Number(result?.foulRate))) return Number(result.foulRate);
     return 1 - finiteNumber(result?.qualifyRate);
@@ -603,6 +909,22 @@
     return Number.isFinite(value) ? formatPoints(value) : "infinite";
   }
 
+  function formatInteger(value) {
+    return Math.max(0, Math.round(finiteNumber(value))).toLocaleString("en-US");
+  }
+
+  function formatDuration(milliseconds) {
+    const seconds = Math.max(0, Math.ceil(finiteNumber(milliseconds) / 1000));
+    if (seconds < 1) return "<1s";
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ${String(seconds % 60).padStart(2, "0")}s`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ${String(minutes % 60).padStart(2, "0")}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${String(hours % 24).padStart(2, "0")}h`;
+  }
+
   function yieldFrame() {
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
@@ -610,6 +932,15 @@
   function loadCache() {
     try {
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function loadSettings() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch (error) {
       return {};
@@ -624,10 +955,23 @@
     }
   }
 
+  function saveSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+    } catch (error) {
+      // Device calibration is optional.
+    }
+  }
+
   window.OFCFantasylandEV = {
     aggregateDeckResults,
+    aggregateFromResult,
+    applyPrecomputedResults,
     finalizeAggregate,
+    formatDuration,
     hypergeometricJokers,
+    mergeAggregate,
+    sampleChunkSize,
     scenariosForVariant,
     definitions: DEFINITIONS,
   };

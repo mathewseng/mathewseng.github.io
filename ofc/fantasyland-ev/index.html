@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260901d" />
+    <link rel="stylesheet" href="./styles.css?v=20260901e" />
   </head>
   <body>
     <header class="site-header">
@@ -51,14 +51,19 @@
         </div>
 
         <div class="run-bar">
-          <label>
-            <span>Samples per config</span>
-            <select id="sample-count">
-              <option value="5" selected>5 · Quick</option>
-              <option value="20">20 · Standard</option>
-              <option value="50">50 · Deep</option>
-            </select>
-          </label>
+          <div class="sample-control">
+            <label for="sample-count">New samples / config</label>
+            <span class="number-input-shell">
+              <input id="sample-count" type="number" min="1" step="1" inputmode="numeric" value="100" aria-describedby="sample-total" />
+              <button id="sample-100k" type="button" title="Set 100,000 samples per configuration">100K</button>
+            </span>
+            <small id="sample-total">1,200 hands total</small>
+          </div>
+          <div class="estimate-copy">
+            <span>Estimated time</span>
+            <strong id="estimate-time">Calculating...</strong>
+            <small id="estimate-detail">Calibrates to this device</small>
+          </div>
           <div class="run-copy">
             <strong id="run-status">Ready to calculate</strong>
             <span id="run-detail">Loading configurations</span>
@@ -182,7 +187,8 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260901d"></script>
-    <script src="./app.js?v=20260901d"></script>
+    <script src="../fantasyland-core.js?v=20260901e"></script>
+    <script src="./precomputed.js?v=20260901e"></script>
+    <script src="./app.js?v=20260901e"></script>
   </body>
 </html>
