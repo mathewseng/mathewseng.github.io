@@ -38,7 +38,8 @@
       seedLabel: "BADUGIJACK",
       label: "BadugiJack",
       middleSize: 6,
-      short: "Split six middle cards into a three/four-card Badugi and a two/three-card blackjack hand.",
+      boardSize: 13,
+      short: "Place exactly 13 cards across the board, with a three/four-card Badugi and a two/three-card blackjack hand in the middle.",
     },
     doubleblackjack: {
       id: "doubleblackjack",
@@ -134,7 +135,7 @@
     {
       id: "badugijack",
       title: "BadugiJack",
-      qualification: "Split six middle cards: 3 Badugi + 3 blackjack, or 4 Badugi + 2 blackjack. Badugi cards need unique ranks and suits, with aces low; blackjack needs 17 or more without busting.",
+      qualification: "Place exactly 13 cards across the 15 available slots. Badugi needs 3 or 4 unique ranks and suits, with aces low; blackjack needs 2 or 3 cards totaling 17 or more without busting. The two empty slots may be in any row.",
       scoring: [
         {
           label: "Four-card Badugi",
@@ -153,8 +154,12 @@
       qualification: "Split the five middle cards into the marked three-card and two-card hands. Both hands need 17 or more and neither may bust.",
       scoring: [
         {
-          label: "Each middle hand",
-          items: ["17: 0pts", "18: 1pt", "19: 2pts", "20: 3pts", "Three-card 21: 5pts", "BJ: 8pts", "Suited 21: 13pts", "Suited BJ: 13pts"],
+          label: "3-card blackjack",
+          items: ["17: 0pts", "18: 1pt", "19: 2pts", "20: 3pts", "21: 5pts", "Suited 21: 13pts"],
+        },
+        {
+          label: "2-card blackjack",
+          items: ["17: 0pts", "18: 1pt", "19: 2pts", "20: 3pts", "BJ: 8pts", "Suited BJ: 13pts"],
         },
       ],
       repeat: "Trips on top; suited 21 plus blackjack in either middle-hand order; or quads or better on the bottom.",
@@ -223,7 +228,28 @@
     return 0;
   }
 
+  function evaluateHighPartial(cards) {
+    const groups = rankGroups(cards);
+    const sorted = cards.map((card) => card.rank).sort((a, b) => b - a);
+    if (!groups.length) return makeHighEval(CATEGORY.HIGH, [], "Empty");
+    if (groups[0].count === 4) return makeHighEval(CATEGORY.QUADS, [groups[0].rank], `Four ${RANK_NAME[groups[0].rank]}`);
+    if (groups[0].count === 3) {
+      const kickers = groups.filter((group) => group.count === 1).map((group) => group.rank).sort((a, b) => b - a);
+      return makeHighEval(CATEGORY.TRIPS, [groups[0].rank].concat(kickers), `Three ${RANK_NAME[groups[0].rank]}`);
+    }
+    if (groups[0].count === 2 && groups[1] && groups[1].count === 2) {
+      const pairs = groups.filter((group) => group.count === 2).map((group) => group.rank).sort((a, b) => b - a);
+      return makeHighEval(CATEGORY.TWO_PAIR, pairs, `${RANK_LABEL[pairs[0]]} and ${RANK_LABEL[pairs[1]]}`);
+    }
+    if (groups[0].count === 2) {
+      const kickers = groups.filter((group) => group.count === 1).map((group) => group.rank).sort((a, b) => b - a);
+      return makeHighEval(CATEGORY.PAIR, [groups[0].rank].concat(kickers), `Pair of ${RANK_NAME[groups[0].rank]}`);
+    }
+    return makeHighEval(CATEGORY.HIGH, sorted, `${RANK_LABEL[sorted[0]]}-high`);
+  }
+
   function evaluateHighFive(cards) {
+    if (cards.length < 5) return evaluateHighPartial(cards);
     const groups = rankGroups(cards);
     const ranks = cards.map((card) => card.rank);
     const flush = cards.every((card) => card.suit === cards[0].suit);
@@ -386,46 +412,53 @@
   }
 
   function blackjackValue(cards) {
-    let total = cards.reduce((sum, card) => sum + (card.rank === 14 ? 11 : Math.min(card.rank, 10)), 0);
-    let aces = cards.filter((card) => card.rank === 14).length;
-    while (total > 21 && aces > 0) {
-      total -= 10;
-      aces -= 1;
-    }
+    const aceCount = cards.filter((card) => card.rank === 14).length;
+    const hardTotal = cards.reduce((sum, card) => sum + (card.rank === 14 ? 1 : Math.min(card.rank, 10)), 0);
+    const softTotal = aceCount > 0 && hardTotal + 10 <= 21 ? hardTotal + 10 : null;
+    const total = softTotal === null ? hardTotal : softTotal;
     const natural = cards.length === 2 && cards.some((card) => card.rank === 14) && cards.some((card) => card.rank >= 10 && card.rank <= 13);
     const suitedNatural = natural && cards[0].suit === cards[1].suit;
-    return { total, natural, suitedNatural, bust: total > 21 };
+    return { total, hardTotal, softTotal, soft: softTotal !== null, natural, suitedNatural, bust: total > 21 };
+  }
+
+  function blackjackTotalLabel(cards, value) {
+    if (cards.length === 1 && value.soft && cards[0].rank === 14) return "A";
+    return value.soft ? `${value.hardTotal}/${value.softTotal}` : String(value.total);
   }
 
   function evaluateBlackjack(cards, options = {}) {
     const final = options.final !== false;
     const value = blackjackValue(cards);
+    const requiredCards = Number.isFinite(options.requiredCards) ? Number(options.requiredCards) : 0;
+    const complete = requiredCards ? cards.length === requiredCards : cards.length >= 2 && cards.length <= 3;
+    const natural = options.allowNatural !== false && value.natural;
+    const suitedNatural = natural && value.suitedNatural;
     const sameSuit = cards.length > 1 && cards.every((card) => card.suit === cards[0].suit);
-    const suitedTwentyOne = value.total === 21 && sameSuit && (cards.length === 3 || value.suitedNatural);
-    const qualifies = cards.length >= 2 && cards.length <= 3 && !value.bust && value.total >= 17;
+    const suitedTwentyOne = complete && value.total === 21 && sameSuit && (cards.length === 3 || suitedNatural);
+    const qualifies = complete && !value.bust && value.total >= 17;
     let points = 0;
-    let label = String(value.total);
+    let label = blackjackTotalLabel(cards, value);
     let status = "ok";
 
     if (value.bust) {
       label = `${value.total} Bust`;
       status = "bust";
-    } else if (value.suitedNatural) {
+    } else if (suitedNatural) {
       label = "Suited BJ";
       points = 13;
-    } else if (value.natural) {
+    } else if (natural) {
       label = "BJ";
       points = 8;
     } else if (suitedTwentyOne) {
-      label = "Suited 21";
+      label = value.soft ? `Suited ${blackjackTotalLabel(cards, value)}` : "Suited 21";
       points = 13;
     } else if (cards.length === 3 && value.total === 21) {
-      label = "21";
+      label = blackjackTotalLabel(cards, value);
       points = 5;
     } else if (qualifies) {
       points = value.total === 20 ? 3 : value.total === 19 ? 2 : value.total === 18 ? 1 : 0;
-    } else if (final && cards.length >= 2) {
-      label = `${value.total} Foul`;
+    } else if (final && complete) {
+      label = `${blackjackTotalLabel(cards, value)} Foul`;
       status = "foul";
     } else {
       status = "pending";
@@ -433,13 +466,16 @@
 
     return {
       ...value,
+      natural,
+      suitedNatural,
+      complete,
       qualifies,
       suitedTwentyOne,
       points: qualifies ? points : 0,
       label,
       name: label,
       status,
-      quality: qualifies ? value.total + (value.natural ? 30 : 0) + (suitedTwentyOne ? 60 : 0) : -1,
+      quality: qualifies ? value.total + (natural ? 30 : 0) + (suitedTwentyOne ? 60 : 0) : -1,
     };
   }
 
@@ -467,7 +503,7 @@
   }
 
   function evaluateBadugiJackConcrete(badugiCards, blackjackCards) {
-    const validSizes = (badugiCards.length === 3 && blackjackCards.length === 3) || (badugiCards.length === 4 && blackjackCards.length === 2);
+    const validSizes = badugiCards.length >= 3 && badugiCards.length <= 4 && blackjackCards.length >= 2 && blackjackCards.length <= 3;
     const badugi = evaluateBadugiCards(badugiCards, { final: badugiCards.length >= 3 });
     const blackjack = evaluateBlackjack(blackjackCards, { final: blackjackCards.length >= 2 });
     const qualifies = validSizes && badugi.qualifies && blackjack.qualifies;
@@ -509,8 +545,8 @@
 
   function evaluateDoubleBlackjackConcrete(threeCardHand, twoCardHand) {
     const validSizes = threeCardHand.length === 3 && twoCardHand.length === 2;
-    const three = evaluateBlackjack(threeCardHand, { final: threeCardHand.length === 3 });
-    const two = evaluateBlackjack(twoCardHand, { final: twoCardHand.length === 2 });
+    const three = evaluateBlackjack(threeCardHand, { final: threeCardHand.length === 3, requiredCards: 3, allowNatural: false });
+    const two = evaluateBlackjack(twoCardHand, { final: twoCardHand.length === 2, requiredCards: 2 });
     return combineDoubleBlackjackEvaluations(three, two, validSizes, threeCardHand.length > 0, twoCardHand.length > 0);
   }
 
@@ -623,30 +659,66 @@
     return Array.from(deduped.values());
   }
 
+  function enumerateTopWild(ids, evaluator) {
+    const cards = ids.map(makeCard);
+    const jokers = cards.filter((card) => card.joker);
+    if (!jokers.length) return enumerateWild(ids, evaluator, { key: (evaluation) => String(evaluation.strength) });
+
+    const blocked = new Set(cards.filter((card) => !card.joker).map((card) => card.id));
+    const availableByRank = new Map(RANKS.map((rank) => [rank, virtualDeck.filter((card) => card.rank === rank && !blocked.has(card.id))]));
+    const candidates = [];
+    const selected = [];
+
+    const visit = (index) => {
+      if (index === jokers.length) {
+        const replacementById = new Map();
+        jokers.forEach((joker, jokerIndex) => replacementById.set(joker.id, selected[jokerIndex]));
+        const concrete = cards.map((card) => (card.joker ? replacementById.get(card.id) : card));
+        candidates.push({ evaluation: evaluator(concrete), assignments: replacementById, assignmentValue: assignmentValue(replacementById) });
+        return;
+      }
+
+      RANKS.forEach((rank) => {
+        const used = new Set(selected.map((card) => card.id));
+        const replacement = availableByRank.get(rank).find((card) => !used.has(card.id));
+        if (!replacement) return;
+        selected.push(replacement);
+        visit(index + 1);
+        selected.pop();
+      });
+    };
+    visit(0);
+
+    const deduped = new Map();
+    candidates.forEach((candidate) => {
+      const key = String(candidate.evaluation.strength);
+      const current = deduped.get(key);
+      if (!current || candidate.assignmentValue > current.assignmentValue) deduped.set(key, candidate);
+    });
+    return Array.from(deduped.values());
+  }
+
   function highRowCandidates(ids, role) {
     const top = role === "top";
-    return enumerateWild(
-      ids,
-      (cards) => {
-        const evaluation = top ? evaluateHighTop(cards) : evaluateHighFive(cards);
-        const points = top ? topRoyalty(evaluation) : highFiveRoyalty(evaluation, role);
-        const repeat = top ? evaluation.category === CATEGORY.TRIPS : evaluation.category >= CATEGORY.QUADS;
-        return { ...evaluation, points, repeat, qualifies: true, quality: evaluation.strength };
-      },
-      { key: (evaluation) => String(evaluation.strength) }
-    );
+    const evaluator = (cards) => {
+      const evaluation = top ? evaluateHighTop(cards) : evaluateHighFive(cards);
+      const points = top ? topRoyalty(evaluation) : highFiveRoyalty(evaluation, role);
+      const repeat = top ? evaluation.category === CATEGORY.TRIPS : evaluation.category >= CATEGORY.QUADS;
+      return { ...evaluation, points, repeat, qualifies: true, quality: evaluation.strength };
+    };
+    return top ? enumerateTopWild(ids, evaluator) : enumerateWild(ids, evaluator, { key: (evaluation) => String(evaluation.strength) });
   }
 
   function doubleBlackjackCandidates(threeIds, twoIds) {
     const allNaturals = threeIds.concat(twoIds).filter((id) => !makeCard(id).joker);
     const threeCandidates = enumerateWild(
       threeIds,
-      (cards) => evaluateBlackjack(cards, { final: cards.length === 3 }),
+      (cards) => evaluateBlackjack(cards, { final: cards.length === 3, requiredCards: 3, allowNatural: false }),
       { dedupe: false, blockedIds: allNaturals }
     );
     const twoCandidates = enumerateWild(
       twoIds,
-      (cards) => evaluateBlackjack(cards, { final: cards.length === 2 }),
+      (cards) => evaluateBlackjack(cards, { final: cards.length === 2, requiredCards: 2 }),
       { dedupe: false, blockedIds: allNaturals }
     );
     const deduped = new Map();
@@ -720,12 +792,15 @@
   }
 
   function rowsComplete(variant, rows) {
-    if (!rows || (rows.top || []).length !== 3 || (rows.bottom || []).length !== 5) return false;
+    if (!rows) return false;
     if (variant === "badugijack") {
+      const top = (rows.top || []).length;
+      const bottom = (rows.bottom || []).length;
       const badugi = (rows.middleBadugi || []).length;
       const blackjack = (rows.middleBlackjack || []).length;
-      return badugi + blackjack === 6 && ((badugi === 3 && blackjack === 3) || (badugi === 4 && blackjack === 2));
+      return top >= 1 && top <= 3 && bottom >= 3 && bottom <= 5 && badugi >= 3 && badugi <= 4 && blackjack >= 2 && blackjack <= 3 && top + bottom + badugi + blackjack === 13;
     }
+    if ((rows.top || []).length !== 3 || (rows.bottom || []).length !== 5) return false;
     if (variant === "doubleblackjack") {
       return (rows.middleBlackjackThree || []).length === 3 && (rows.middleBlackjackTwo || []).length === 2;
     }
@@ -791,8 +866,9 @@
       rowEvals[key] = best.evaluation;
       best.assignments.forEach((card, id) => assignments.set(id, card));
     };
-    if ((rows.top || []).length === 3) take("top", highRowCandidates(rows.top, "top"));
-    if ((rows.bottom || []).length === 5) take("bottom", highRowCandidates(rows.bottom, "bottom"));
+    const flexibleOuterRows = variant === "badugijack";
+    if ((rows.top || []).length === 3 || (flexibleOuterRows && (rows.top || []).length > 0)) take("top", highRowCandidates(rows.top, "top"));
+    if ((rows.bottom || []).length === 5 || (flexibleOuterRows && (rows.bottom || []).length > 0)) take("bottom", highRowCandidates(rows.bottom, "bottom"));
     if (variant === "badugijack") {
       const badugi = (rows.middleBadugi || []).length;
       const blackjack = (rows.middleBlackjack || []).length;
@@ -841,7 +917,7 @@
     }
     let best = null;
     if (variant === "badugijack") {
-      [3, 4].forEach((badugiSize) => combinations(ids, badugiSize).forEach((badugiIds) => {
+      [3, 4].filter((badugiSize) => ids.length - badugiSize >= 2 && ids.length - badugiSize <= 3).forEach((badugiSize) => combinations(ids, badugiSize).forEach((badugiIds) => {
         const chosen = new Set(badugiIds);
         const blackjackIds = ids.filter((id) => !chosen.has(id));
         const candidate = bestCandidate(variantMiddleCandidates(variant, { middleBadugi: badugiIds, middleBlackjack: blackjackIds }), (entry) => entry.evaluation.qualifies);
@@ -874,13 +950,18 @@
     return `h${evaluation.strength}`;
   }
 
-  function chooseTop(ids, topMasks, availableMask, constraint, cache) {
+  function chooseTop(ids, topMasks, availableMask, constraint, cache, candidateCache = null) {
     const key = `${availableMask}:${constraintKey(constraint)}`;
     if (cache.has(key)) return cache.get(key);
     let best = null;
     topMasks.forEach((mask) => {
       if ((mask & availableMask) !== mask) return;
-      highRowCandidates(idsForMask(ids, mask), "top").forEach((candidate) => {
+      let candidates = candidateCache ? candidateCache.get(mask) : null;
+      if (!candidates) {
+        candidates = highRowCandidates(idsForMask(ids, mask), "top");
+        if (candidateCache) candidateCache.set(mask, candidates);
+      }
+      candidates.forEach((candidate) => {
         if (!isTopLegalAgainstFive(candidate.evaluation, constraint)) return;
         const entry = { ...candidate, mask, ids: idsForMask(ids, mask) };
         if (!best || compareRowCandidate(entry, best) > 0) best = entry;
@@ -975,14 +1056,121 @@
     return masks.filter((mask) => selected.has(mask)).slice(0, limit);
   }
 
+  function solveBadugiJackHand(ids, options, started, mode) {
+    const n = ids.length;
+    if (n < 13 || n > 17) throw new Error("BadugiJack Fantasyland needs 13 to 17 cards.");
+
+    const layouts = [
+      { middleSize: 5, topSize: 3, bottomSize: 5 },
+      { middleSize: 6, topSize: 2, bottomSize: 5 },
+      { middleSize: 6, topSize: 3, bottomSize: 4 },
+      { middleSize: 7, topSize: 1, bottomSize: 5 },
+      { middleSize: 7, topSize: 2, bottomSize: 4 },
+      { middleSize: 7, topSize: 3, bottomSize: 3 },
+    ];
+    const fullMask = (1 << n) - 1;
+    const maskLimit = mode === "fast" && Number.isFinite(options.maskLimit) ? Math.max(24, Math.floor(options.maskLimit)) : 0;
+    const beamLimit = Number.isFinite(options.beamLimit) ? Math.max(16, Math.floor(options.beamLimit)) : 260;
+    const middlePools = new Map();
+    const bottomPools = new Map();
+    const topMasks = new Map();
+    const topCaches = new Map();
+    const topCandidateCache = new Map();
+    let best = null;
+    let bestRoyalty = null;
+    let bestRepeat = null;
+    let legalBoards = 0;
+
+    const getMiddlePool = (size) => {
+      if (middlePools.has(size)) return middlePools.get(size);
+      const masks = limitMasks(combinationMasks(n, size), ids, maskLimit, "badugijack", "middle");
+      const entries = [];
+      masks.forEach((mask) => {
+        const candidate = bestMiddleForMask("badugijack", idsForMask(ids, mask));
+        if (!candidate) return;
+        entries.push({ mask, candidate, estimate: candidate.evaluation.points * 1e7 + candidate.evaluation.quality });
+      });
+      const pool = mode === "fast" ? takeBeam(entries, beamLimit) : entries;
+      middlePools.set(size, pool);
+      return pool;
+    };
+
+    const getBottomPool = (size) => {
+      if (bottomPools.has(size)) return bottomPools.get(size);
+      const masks = limitMasks(combinationMasks(n, size), ids, maskLimit, "badugijack", "bottom");
+      const entries = masks.map((mask) => {
+        const candidate = bestCandidate(highRowCandidates(idsForMask(ids, mask), "bottom"));
+        return { mask, candidate, estimate: candidate.evaluation.points * 1e8 + candidate.evaluation.strength };
+      });
+      const pool = mode === "fast" ? takeBeam(entries, beamLimit) : entries;
+      bottomPools.set(size, pool);
+      return pool;
+    };
+
+    layouts.forEach((layout) => {
+      const middlePool = getMiddlePool(layout.middleSize);
+      const bottomPool = getBottomPool(layout.bottomSize);
+      if (!topMasks.has(layout.topSize)) topMasks.set(layout.topSize, combinationMasks(n, layout.topSize));
+      if (!topCaches.has(layout.topSize)) topCaches.set(layout.topSize, new Map());
+      const layoutTopMasks = topMasks.get(layout.topSize);
+      const topCache = topCaches.get(layout.topSize);
+
+      middlePool.forEach((middleEntry) => bottomPool.forEach((bottomEntry) => {
+        if (middleEntry.mask & bottomEntry.mask) return;
+        const middle = middleEntry.candidate;
+        const bottom = bottomEntry.candidate;
+        const availableMask = fullMask ^ middleEntry.mask ^ bottomEntry.mask;
+        const top = chooseTop(ids, layoutTopMasks, availableMask, bottom.evaluation, topCache, topCandidateCache);
+        if (!top) return;
+        legalBoards += 1;
+        const repeat = top.evaluation.repeat || middle.evaluation.repeat || bottom.evaluation.repeat;
+        const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
+        const usedMask = top.mask | middleEntry.mask | bottomEntry.mask;
+        const solution = {
+          points,
+          repeat,
+          usedMask,
+          tieQuality: top.evaluation.quality + middle.evaluation.quality + bottom.evaluation.quality,
+          top: { ids: top.ids, mask: top.mask, eval: top.evaluation, points: top.evaluation.points, assignments: top.assignments },
+          middle: {
+            ids: idsForMask(ids, middleEntry.mask),
+            mask: middleEntry.mask,
+            eval: middle.evaluation,
+            points: middle.evaluation.points,
+            assignments: middle.assignments,
+            badugiIds: middle.badugiIds || null,
+            blackjackIds: middle.blackjackIds || null,
+          },
+          bottom: { ids: idsForMask(ids, bottomEntry.mask), mask: bottomEntry.mask, eval: bottom.evaluation, points: bottom.evaluation.points, assignments: bottom.assignments },
+          assignments: mergeAssignments(top.assignments, middle.assignments, bottom.assignments),
+        };
+        if (!bestRoyalty || points > bestRoyalty.points || (points === bestRoyalty.points && solution.tieQuality > bestRoyalty.tieQuality)) bestRoyalty = solution;
+        if (repeat && (!bestRepeat || points > bestRepeat.points || (points === bestRepeat.points && solution.tieQuality > bestRepeat.tieQuality))) bestRepeat = solution;
+        if (compareBoard(solution, best) > 0) best = solution;
+      }));
+    });
+
+    return {
+      variant: "badugijack",
+      cards: parseCards(ids),
+      best: bestRepeat || best || bestRoyalty,
+      bestRoyalty,
+      bestRepeat,
+      legalBoards,
+      elapsedMs: now() - started,
+      mode,
+    };
+  }
+
   function solveHand(cardIds, options = {}) {
     const started = now();
     const variant = normalizeVariant(options.variant);
     const mode = options.mode === "fast" ? "fast" : "exact";
     const ids = cardIds.slice();
     const n = ids.length;
+    if (variant === "badugijack") return solveBadugiJackHand(ids, options, started, mode);
     const middleSize = VARIANTS[variant].middleSize;
-    const boardSize = 3 + middleSize + 5;
+    const boardSize = VARIANTS[variant].boardSize || 3 + middleSize + 5;
     if (n < boardSize || n > 17) throw new Error(`${VARIANTS[variant].label} Fantasyland needs ${boardSize} to 17 cards.`);
 
     const fullMask = (1 << n) - 1;
@@ -1089,10 +1277,12 @@
   function hasQualifyingMiddle(cardIds, variantValue) {
     const variant = normalizeVariant(variantValue);
     if (variant === "high") return true;
-    const size = VARIANTS[variant].middleSize;
-    const masks = combinationMasks(cardIds.length, size);
-    for (const mask of masks) {
-      if (bestMiddleForMask(variant, idsForMask(cardIds, mask))) return true;
+    const sizes = variant === "badugijack" ? [5, 6, 7] : [VARIANTS[variant].middleSize];
+    for (const size of sizes) {
+      const masks = combinationMasks(cardIds.length, size);
+      for (const mask of masks) {
+        if (bestMiddleForMask(variant, idsForMask(cardIds, mask))) return true;
+      }
     }
     return false;
   }

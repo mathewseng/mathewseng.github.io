@@ -2,7 +2,7 @@
   "use strict";
 
   const Core = window.OFCFantasylandCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v4";
+  const STORAGE_KEY = "ofcFantasylandEv.v5";
   const SCENARIOS = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
   const DEFINITIONS = {
     immediate: {

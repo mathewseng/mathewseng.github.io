@@ -73,6 +73,13 @@ const threeThreeBadugiJack = core.evaluateBadugiJackConcrete(
 assert.equal(threeThreeBadugiJack.qualifies, true, "badugijack: a 3/3 split may qualify");
 assert.equal(threeThreeBadugiJack.points, 5, "badugijack: three-card 21 should score five");
 
+const fourThreeBadugiJack = core.evaluateBadugiJackConcrete(
+  cards(["As", "2h", "3d", "4c"]),
+  cards(["7c", "7d", "7h"])
+);
+assert.equal(fourThreeBadugiJack.qualifies, true, "badugijack: a 4/3 split may qualify");
+assert.equal(fourThreeBadugiJack.points, 18, "badugijack: a four-card wheel plus three-card 21 should score eighteen");
+
 const badugiJackSuited = core.evaluateBadugiJackConcrete(
   cards(["2s", "4h", "6d", "9c"]),
   cards(["Ah", "Kh"])
@@ -159,7 +166,7 @@ assert.equal(lowFoul.status, "foul", "low: a failed low should expose a danger s
   [["7s", "7h", "7d"], "21", 5],
   [["As", "Kh"], "BJ", 8],
   [["As", "Ks"], "Suited BJ", 13],
-  [["As", "5s", "5h"], "21", 5],
+  [["As", "5s", "5h"], "11/21", 5],
   [["9s", "7s", "5s"], "Suited 21", 13],
 ].forEach(([ids, label, points]) => {
   const result = core.evaluateBlackjack(cards(ids));
@@ -169,6 +176,12 @@ assert.equal(lowFoul.status, "foul", "low: a failed low should expose a danger s
 
 assert.equal(core.evaluateBlackjack(cards(["9s", "7h"])).label, "16 Foul", "blackjack: sub-17 final hand should foul");
 assert.equal(core.evaluateBlackjack(cards(["Ks", "Qh", "2d"])).label, "22 Bust", "blackjack: over-21 hand should bust");
+assert.equal(core.evaluateBlackjack(cards(["As"]), { final: false, requiredCards: 3, allowNatural: false }).label, "A", "blackjack: a lone ace should remain readable");
+assert.equal(core.evaluateBlackjack(cards(["As", "6h"])).label, "7/17", "blackjack: a soft seventeen should show both totals");
+const fixedThreePreview = core.evaluateBlackjack(cards(["As", "Kh"]), { final: false, requiredCards: 3, allowNatural: false });
+assert.equal(fixedThreePreview.label, "11/21", "blackjack: a fixed three-card hand should show a soft total instead of BJ");
+assert.equal(fixedThreePreview.qualifies, false, "blackjack: a fixed three-card hand cannot qualify with only two cards");
+assert.equal(fixedThreePreview.points, 0, "blackjack: an incomplete fixed three-card hand cannot score BJ royalties");
 
 const doubleBlackjack = core.evaluateDoubleBlackjackConcrete(
   cards(["7s", "7h", "7d"]),
@@ -198,6 +211,9 @@ assert.deepEqual(
   ["15 Foul", "BJ"],
   "double blackjack: qualifying split labels should still remain visible"
 );
+
+const incompleteDoubleBlackjack = core.evaluateDoubleBlackjackConcrete(cards(["As", "Kh"]), []);
+assert.equal(incompleteDoubleBlackjack.blackjackThree.label, "11/21", "double blackjack: the incomplete three-card side should not display BJ");
 
 const lowBoard = core.evaluateBoard(
   ["6s", "6h", "2d", "7s", "5h", "4d", "3c", "2s", "Kh", "Kd", "Kc", "9d", "9c", "Ah"],
@@ -236,6 +252,42 @@ const sameRowJokers = core.evaluateBoard(
 );
 assert.notEqual(sameRowJokers.assignments.get("JK1").id, sameRowJokers.assignments.get("JK2").id, "jokers: two jokers in one row cannot become the same exact card");
 
+const flexibleBadugiJackRows = {
+  top: ["Kh", "Kd"],
+  middleBadugi: ["As", "2h", "3d", "4c"],
+  middleBlackjack: ["7s", "7h", "7d"],
+  bottom: ["Qs", "Qh", "Qd", "Qc"],
+};
+const flexibleBadugiJackIds = Object.values(flexibleBadugiJackRows).flat();
+assert.equal(core.rowsComplete("badugijack", flexibleBadugiJackRows), true, "badugijack: exactly thirteen cards may leave one outer slot empty in each row");
+const flexibleBadugiJackBoard = core.evaluateBoard(flexibleBadugiJackIds, flexibleBadugiJackRows, { variant: "badugijack" });
+assert.equal(flexibleBadugiJackBoard.legal, true, "badugijack: a legal 2/7/4 board should evaluate");
+assert.equal(flexibleBadugiJackBoard.points, 36, "badugijack: shortened outer rows should retain earned royalties");
+assert.equal(flexibleBadugiJackBoard.repeat, true, "badugijack: bottom quads should repeat on a shortened bottom row");
+[
+  [3, 3, 2, 5],
+  [1, 4, 3, 5],
+  [3, 4, 3, 3],
+  [2, 3, 3, 5],
+  [3, 4, 2, 4],
+].forEach(([top, badugi, blackjack, bottom]) => {
+  assert.equal(
+    core.rowsComplete("badugijack", {
+      top: Array(top).fill("top"),
+      middleBadugi: Array(badugi).fill("badugi"),
+      middleBlackjack: Array(blackjack).fill("blackjack"),
+      bottom: Array(bottom).fill("bottom"),
+    }),
+    true,
+    `badugijack: ${top}/${badugi + blackjack}/${bottom} should be a valid thirteen-card layout`
+  );
+});
+assert.equal(
+  core.rowsComplete("badugijack", { ...flexibleBadugiJackRows, top: ["Kh", "Kd", "Kc"] }),
+  false,
+  "badugijack: the former fourteen-card board should be rejected"
+);
+
 assert.equal(core.buildSeed("2026-08-29", 14, 2, "badeucey", 0), "2026-08-29-14C-2J-BADEUCEY-0", "seed: canonical daily format");
 assert.equal(core.buildSeed("2026-08-29", 17, 1, "badugijack", 3), "2026-08-29-17C-1J-BADUGIJACK-3", "seed: BadugiJack should have its own seed label");
 assert.equal(core.buildSeed("2026-08-29", 16, 2, "doubleblackjack", 4), "2026-08-29-16C-2J-DOUBLEBLACKJACK-4", "seed: Double Blackjack should have its own seed label");
@@ -267,6 +319,13 @@ assert.ok(boundedFirst.best, "bounded search: BadugiJack sample should find a le
 assert.equal(Number.isFinite(boundedFirst.best.points), true, "bounded search: points should always be finite");
 assert.equal(boundedFirst.best.points, boundedSecond.best.points, "bounded search: identical cards and bounds should be deterministic");
 assert.deepEqual(boundedFirst.best.top.ids, boundedSecond.best.top.ids, "bounded search: selected board should be reproducible");
+assert.equal(
+  boundedFirst.best.top.ids.length + boundedFirst.best.middle.ids.length + boundedFirst.best.bottom.ids.length,
+  13,
+  "bounded search: BadugiJack solutions should place exactly thirteen cards"
+);
+assert.ok(boundedFirst.best.top.ids.length >= 1 && boundedFirst.best.top.ids.length <= 3, "bounded search: BadugiJack top should use one to three cards");
+assert.ok(boundedFirst.best.bottom.ids.length >= 3 && boundedFirst.best.bottom.ids.length <= 5, "bounded search: BadugiJack bottom should use three to five cards");
 
 const doubleBlackjackSolveIds = ["6s", "6h", "2d", "9s", "7s", "5s", "Ah", "Kh", "Ks", "Kd", "Kc", "9d", "9c", "3h"];
 const doubleBlackjackSolved = core.solveHand(doubleBlackjackSolveIds, { variant: "doubleblackjack", mode: "exact" });

@@ -823,7 +823,7 @@
     if (!trainer.puzzles.length) return;
 
     const snapshot = {
-      version: 2,
+      version: 3,
       savedAt: Date.now(),
       mode: trainer.mode,
       scope: trainer.scope,
@@ -888,9 +888,10 @@
     trainer.puzzleIndex = Math.min(Math.max(0, Number(snapshot.puzzleIndex) || 0), trainer.puzzles.length - 1);
     trainer.activeRow = trainerPlacementKeys(getTrainerPuzzle()).includes(snapshot.activeRow) ? snapshot.activeRow : "bottom";
     trainer.rows = sanitizeTrainerRows(snapshot.rows, getTrainerPuzzle());
-    trainer.results = Array.isArray(snapshot.results) ? snapshot.results.map((result) => (result ? clonePlainObject(result) : null)) : [];
-    trainer.confirmed = Boolean(snapshot.confirmed);
-    trainer.reportOpen = Boolean(snapshot.reportOpen);
+    const migratedBadugiJack = Number(snapshot.version) < 3 && trainer.variant === "badugijack";
+    trainer.results = migratedBadugiJack ? [] : Array.isArray(snapshot.results) ? snapshot.results.map((result) => (result ? clonePlainObject(result) : null)) : [];
+    trainer.confirmed = migratedBadugiJack ? false : Boolean(snapshot.confirmed);
+    trainer.reportOpen = migratedBadugiJack ? false : Boolean(snapshot.reportOpen);
     trainer.elapsedMs = finiteNumber(snapshot.elapsedMs);
     trainer.sortMode = snapshot.sortMode === "suit" ? "suit" : "rank";
     trainer.drag = null;
@@ -913,7 +914,7 @@
   }
 
   function isTrainerSnapshotValid(snapshot) {
-    if (!snapshot || ![1, 2].includes(snapshot.version)) return false;
+    if (!snapshot || ![1, 2, 3].includes(snapshot.version)) return false;
     if (snapshot.mode !== "daily" && snapshot.mode !== "random") return false;
     if (snapshot.scope !== "single" && snapshot.scope !== "all") return false;
     if (!Array.isArray(snapshot.puzzles) || !snapshot.puzzles.length) return false;
@@ -940,13 +941,14 @@
     if (!rows || typeof rows !== "object") return sanitized;
     const allowed = new Set(puzzle ? puzzle.ids : []);
     const used = new Set();
+    const targetCount = puzzle ? trainerBoardTargetCount(puzzle) : Infinity;
     trainerPlacementKeys(puzzle).forEach((rowKey) => {
       if (!Array.isArray(rows[rowKey])) return;
       const size = puzzle ? trainerRowSize(rowKey, puzzle) : 5;
       rows[rowKey].forEach((id) => {
         if (typeof id !== "string") return;
         if (allowed.size && !allowed.has(id)) return;
-        if (used.has(id) || sanitized[rowKey].length >= size) return;
+        if (used.has(id) || used.size >= targetCount || sanitized[rowKey].length >= size) return;
         sanitized[rowKey].push(id);
         used.add(id);
       });
@@ -1218,6 +1220,10 @@
   function addTrainerCard(id) {
     const trainer = state.trainer;
     if (trainer.confirmed || trainer.dropAnimating || getPlacedTrainerIds().includes(id)) return;
+    if (getPlacedTrainerIds().length >= trainerBoardTargetCount(getTrainerPuzzle())) {
+      els.trainerMessage.textContent = trainerPlacementLimitMessage();
+      return;
+    }
     let rowKey = trainer.activeRow;
     if (trainer.rows[rowKey].length >= trainerRowSize(rowKey, getTrainerPuzzle())) {
       const nextRow = nextTrainerRowWithSpace(rowKey);
@@ -1514,13 +1520,36 @@
     const placementKeys = trainerPlacementKeys(puzzle);
     const placed = new Set(placementKeys.flatMap((rowKey) => rows[rowKey]));
     const remaining = getTrainerOrderedIds(puzzle).filter((id) => !placed.has(id));
+    const fillTo = (rowKey, size) => {
+      const rowCards = rows[rowKey];
+      while (rowCards.length < size && remaining.length) rowCards.push(remaining.shift());
+    };
+
+    if (isBadugiJackPuzzle(puzzle)) {
+      [
+        ["top", 1],
+        ["middleBadugi", 3],
+        ["middleBlackjack", 2],
+        ["bottom", 3],
+      ].forEach(([rowKey, size]) => fillTo(rowKey, size));
+
+      let total = placementKeys.reduce((sum, rowKey) => sum + rows[rowKey].length, 0);
+      const outerRows = ["top", "bottom"];
+      while (total < trainerBoardTargetCount(puzzle) && remaining.length) {
+        let added = false;
+        outerRows.forEach((rowKey) => {
+          if (total >= trainerBoardTargetCount(puzzle) || rows[rowKey].length >= trainerRowSize(rowKey, puzzle) || !remaining.length) return;
+          rows[rowKey].push(remaining.shift());
+          total += 1;
+          added = true;
+        });
+        if (!added) break;
+      }
+      return;
+    }
 
     placementKeys.forEach((rowKey) => {
-      const rowCards = rows[rowKey];
-      const size = trainerAutofillSize(rowKey, puzzle);
-      while (rowCards.length < size && remaining.length) {
-        rowCards.push(remaining.shift());
-      }
+      fillTo(rowKey, trainerAutofillSize(rowKey, puzzle));
     });
   }
 
@@ -1726,6 +1755,7 @@
     if (!rowCards) return -1;
 
     if (origin && origin.rowKey === rowKey) return origin.index;
+    if (!origin && getPlacedTrainerIds().length >= trainerBoardTargetCount(puzzle)) return -1;
     if (rowCards.length >= rowSize) return -1;
     return rowCards.length;
   }
@@ -1897,6 +1927,10 @@
     if (targetId === id) return;
 
     const origin = findTrainerCardLocation(id);
+    if (!origin && getPlacedTrainerIds().length >= trainerBoardTargetCount(puzzle)) {
+      els.trainerMessage.textContent = trainerPlacementLimitMessage(puzzle);
+      return;
+    }
     if (targetId && !origin) return;
     if (targetId) {
       if (origin) trainer.rows[origin.rowKey][origin.index] = targetId;
@@ -2159,13 +2193,14 @@
     if (!puzzle) return null;
     if (normalizeTrainerVariant(puzzle.variant) !== "high") {
       const preview = VariantCore.previewRows(puzzle.ids, rows, { variant: puzzle.variant });
-      const outer = evaluateTrainerDisplayRows(puzzle.ids, { ...rows, middle: [] }, { fiveKindRule: state.fiveKindRule });
-      ["top", "bottom"].forEach((rowKey) => {
-        if (outer.rowEvals[rowKey]) preview.rowEvals[rowKey] = outer.rowEvals[rowKey];
-      });
-      outer.assignments.forEach((card, id) => preview.assignments.set(id, card));
+      const ready = trainerRowsReady(rows, puzzle);
+      if (!ready) {
+        const outer = evaluateTrainerDisplayRows(puzzle.ids, { ...rows, middle: [] }, { fiveKindRule: state.fiveKindRule });
+        ["top", "bottom"].forEach((rowKey) => {
+          if (outer.rowEvals[rowKey]) preview.rowEvals[rowKey] = outer.rowEvals[rowKey];
+        });
+        outer.assignments.forEach((card, id) => preview.assignments.set(id, card));
 
-      if (!trainerRowsReady(rows, puzzle)) {
         const pendingRows = cloneTrainerRows(rows);
         fillTrainerRowsFromBankOrder(pendingRows, puzzle);
         const pending = VariantCore.evaluateBoard(puzzle.ids, pendingRows, { variant: puzzle.variant });
@@ -2463,6 +2498,12 @@
       variant,
       mode: cardIds.length >= 16 || isSplitMiddleVariant(variant) ? "fast" : "exact",
     };
+    if (variant === "badugijack") {
+      const jokers = cardIds.filter((id) => cardFromId(id).joker).length;
+      const bounds = jokers >= 2 ? [40, 32] : jokers === 1 ? [60, 48] : [80, 64];
+      options.maskLimit = bounds[0];
+      options.beamLimit = bounds[1];
+    }
     if (variant === "doubleblackjack" && cardIds.some((id) => cardFromId(id).joker)) {
       options.maskLimit = 140;
       options.beamLimit = 96;
@@ -2736,7 +2777,7 @@
   function advanceTrainerActiveRowIfFilled(rowKey) {
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return;
-    const completeAt = isBadugiJackPuzzle(puzzle) && rowKey === "middleBlackjack" && state.trainer.rows.middleBadugi.length === 4 ? 2 : trainerRowSize(rowKey, puzzle);
+    const completeAt = trainerRowSize(rowKey, puzzle);
     if (state.trainer.rows[rowKey].length < completeAt) return;
     setTrainerActiveRow(nextTrainerRowInCycle(rowKey), { render: false });
   }
@@ -2753,13 +2794,23 @@
   }
 
   function trainerRowSize(key, puzzle) {
-    if (key === "discard") return Math.max(0, puzzle.cards - (3 + VariantCore.VARIANTS[normalizeTrainerVariant(puzzle.variant)].middleSize + 5));
+    if (key === "discard") return Math.max(0, puzzle.cards - trainerBoardTargetCount(puzzle));
     if (key === "middleBadugi") return 4;
     if (key === "middleBlackjack") return 3;
     if (key === "middleBlackjackThree") return 3;
     if (key === "middleBlackjackTwo") return 2;
     const row = TRAINER_ROWS.find((entry) => entry.key === key);
     return row ? row.size : 0;
+  }
+
+  function trainerBoardTargetCount(puzzle = getTrainerPuzzle()) {
+    if (!puzzle) return 13;
+    const variant = VariantCore.VARIANTS[normalizeTrainerVariant(puzzle.variant)];
+    return variant.boardSize || 3 + variant.middleSize + 5;
+  }
+
+  function trainerPlacementLimitMessage(puzzle = getTrainerPuzzle()) {
+    return isBadugiJackPuzzle(puzzle) ? "BadugiJack uses exactly 13 cards. Move or remove a card first." : "All rows are full.";
   }
 
   function getTrainerPuzzle() {
@@ -2807,15 +2858,21 @@
   }
 
   function trainerAutofillSize(rowKey, puzzle = getTrainerPuzzle()) {
-    if (isBadugiJackPuzzle(puzzle) && rowKey === "middleBlackjack") return 2;
+    if (isBadugiJackPuzzle(puzzle)) {
+      if (rowKey === "top") return 1;
+      if (rowKey === "middleBadugi") return 3;
+      if (rowKey === "middleBlackjack") return 2;
+      if (rowKey === "bottom") return 3;
+    }
     return trainerRowSize(rowKey, puzzle);
   }
 
   function getBadugiJackMiddleTarget() {
     const rows = state.trainer.rows;
-    if (rows.middleBadugi.length < 4) return "middleBadugi";
+    if (rows.middleBadugi.length < 3) return "middleBadugi";
     if (rows.middleBlackjack.length < 2) return "middleBlackjack";
-    if (rows.middleBlackjack.length < 3 && rows.middleBadugi.length === 3) return "middleBlackjack";
+    if (rows.middleBadugi.length < 4) return "middleBadugi";
+    if (rows.middleBlackjack.length < 3) return "middleBlackjack";
     return "middleBadugi";
   }
 
