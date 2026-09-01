@@ -48,6 +48,53 @@ assert.equal(sixHighBadeucey.points, 12, "badeucey: 7-low plus 6-high Badugi sho
 const sevenHighBadeucey = core.evaluateBadeucey(cards(["8s", "7h", "6d", "5c", "2s"]));
 assert.equal(sevenHighBadeucey.points, 6, "badeucey: 8-low plus 7-high Badugi should score six");
 
+assert.equal(core.VARIANT_ORDER.indexOf("bdp"), core.VARIANT_ORDER.indexOf("badeucey") + 1, "bdp: selector order should place BDP directly after Badeucey");
+
+[
+  [["As", "2h", "3d"], true, 12, "3hi"],
+  [["As", "2h", "4d"], true, 8, "4hi"],
+  [["As", "2h", "5d"], true, 4, "5hi"],
+  [["As", "2h", "6d"], true, 0, "6hi"],
+  [["As", "Ah", "3d"], false, 0, "Foul"],
+  [["As", "2s", "3d"], false, 0, "Foul"],
+].forEach(([ids, qualifies, points, label]) => {
+  const evaluation = core.evaluateBdpTop(cards(ids));
+  assert.equal(evaluation.qualifies, qualifies, `bdp top: ${ids.join(" ")} qualification`);
+  assert.equal(evaluation.points, points, `bdp top: ${ids.join(" ")} royalties`);
+  assert.equal(evaluation.name, label, `bdp top: ${ids.join(" ")} label`);
+  assert.equal(evaluation.repeat, false, "bdp top: top Badugi never repeats Fantasyland");
+});
+
+[
+  [["7s", "5h", "4d", "3c", "2s"], 12, "7hi"],
+  [["8s", "7h", "5d", "4c", "2s"], 6, "8hi"],
+  [["9s", "7h", "5d", "4c", "2s"], 3, "9hi"],
+  [["Ts", "8h", "6d", "4c", "2s"], 0, "Thi"],
+].forEach(([ids, points, label]) => {
+  const evaluation = core.evaluateBdpLow(cards(ids));
+  assert.equal(evaluation.qualifies, true, `bdp middle: ${label} should qualify`);
+  assert.equal(evaluation.points, points, `bdp middle: ${label} royalty breakpoint`);
+  assert.equal(evaluation.name, label, `bdp middle: ${label} display label`);
+  assert.equal(evaluation.repeat, false, "bdp middle: the 2-7 wheel does not repeat Fantasyland");
+});
+
+[
+  [["Ks", "Kh", "9d", "8c", "6s"], true, 0, false, "Pair"],
+  [["9s", "8h", "7d", "6c", "5s"], true, 6, false, "Straight"],
+  [["As", "Js", "8s", "4s", "2s"], true, 12, false, "Flush"],
+  [["Ks", "Kh", "Kd", "9c", "9s"], true, 18, false, "Boat"],
+  [["Qs", "Qh", "Qd", "Qc", "2s"], true, 30, true, "Quads"],
+  [["9s", "8s", "7s", "6s", "5s"], true, 45, true, "Straight Flush"],
+  [["As", "Ks", "Qs", "Js", "Ts"], true, 75, true, "Royal Flush"],
+  [["As", "Kh", "9d", "7c", "4s"], false, 0, false, "Foul"],
+].forEach(([ids, qualifies, points, repeat, label]) => {
+  const evaluation = core.evaluateBdpBottom(cards(ids));
+  assert.equal(evaluation.qualifies, qualifies, `bdp bottom: ${label} qualification`);
+  assert.equal(evaluation.points, points, `bdp bottom: ${label} should score three times normal royalties`);
+  assert.equal(evaluation.repeat, repeat, `bdp bottom: ${label} repeat rule`);
+  assert.equal(evaluation.name, label, `bdp bottom: ${label} display label`);
+});
+
 const badugiJackNuts = core.evaluateBadugiJackConcrete(
   cards(["As", "2h", "3d", "4c"]),
   cards(["Ah", "Ks"])
@@ -215,6 +262,39 @@ assert.deepEqual(
 const incompleteDoubleBlackjack = core.evaluateDoubleBlackjackConcrete(cards(["As", "Kh"]), []);
 assert.equal(incompleteDoubleBlackjack.blackjackThree.label, "11/21", "double blackjack: the incomplete three-card side should not display BJ");
 
+const bdpRows = {
+  top: ["As", "2h", "3d"],
+  middle: ["7c", "5s", "4h", "3c", "2d"],
+  bottom: ["Qs", "Qh", "Qd", "Qc", "Ks"],
+};
+const bdpIds = Object.values(bdpRows).flat();
+const bdpBoard = core.evaluateBoard(bdpIds, bdpRows, { variant: "bdp" });
+assert.equal(bdpBoard.legal, true, "bdp board: independently qualifying rows should make a legal board");
+assert.equal(bdpBoard.points, 54, "bdp board: 3hi, 7hi, and triple bottom quads should total fifty-four");
+assert.equal(bdpBoard.repeat, true, "bdp board: bottom quads should repeat Fantasyland");
+assert.deepEqual(bdpBoard.rowPoints, { top: 12, middle: 12, bottom: 30 }, "bdp board: row royalties should remain separate");
+
+const bdpJokerRows = { ...bdpRows, top: ["As", "2h", "JK1"] };
+const bdpJokerIds = Object.values(bdpJokerRows).flat();
+const bdpJokerBoard = core.evaluateBoard(bdpJokerIds, bdpJokerRows, { variant: "bdp" });
+assert.equal(bdpJokerBoard.legal, true, "bdp joker: a top joker should complete a qualifying three-card Badugi");
+assert.equal(bdpJokerBoard.assignments.get("JK1").rank, 3, "bdp joker: the top joker should make the 3hi nuts");
+assert.ok(!["s", "h"].includes(bdpJokerBoard.assignments.get("JK1").suit), "bdp joker: the assigned card should preserve three different suits");
+
+const bdpFoulRows = { ...bdpRows, bottom: ["Ah", "Kh", "9d", "8c", "6s"] };
+const bdpFoulBottom = core.evaluateBoard(Object.values(bdpFoulRows).flat(), bdpFoulRows, { variant: "bdp" });
+assert.equal(bdpFoulBottom.legal, false, "bdp board: a high-card bottom should foul even when top and middle qualify");
+assert.equal(bdpFoulBottom.rowNames.bottom, "Foul", "bdp board: a completed foul should retain bottom-row feedback");
+assert.equal(bdpFoulBottom.rowNames.middle, "7hi", "bdp board: a completed foul should retain qualifying middle feedback");
+assert.equal(bdpFoulBottom.points, 24, "bdp board: live foul feedback should retain earned top and middle royalties");
+
+const bdpSolved = core.solveHand(bdpIds.concat("9h"), { variant: "bdp", mode: "exact" });
+assert.ok(bdpSolved.best, "bdp solver: a qualifying hand should produce a legal solution");
+assert.equal(bdpSolved.best.repeat, true, "bdp solver: a bottom quads repeat line should be preserved");
+assert.equal(bdpSolved.best.top.eval.qualifies, true, "bdp solver: top must qualify as three-card Badugi");
+assert.equal(bdpSolved.best.middle.eval.qualifies, true, "bdp solver: middle must qualify as 2-7 low");
+assert.equal(bdpSolved.best.bottom.eval.qualifies, true, "bdp solver: bottom must qualify with a pair or better");
+
 const lowBoard = core.evaluateBoard(
   ["6s", "6h", "2d", "7s", "5h", "4d", "3c", "2s", "Kh", "Kd", "Kc", "9d", "9c", "Ah"],
   {
@@ -289,6 +369,7 @@ assert.equal(
 );
 
 assert.equal(core.buildSeed("2026-08-29", 14, 2, "badeucey", 0), "2026-08-29-14C-2J-BADEUCEY-0", "seed: canonical daily format");
+assert.equal(core.buildSeed("2026-08-29", 15, 1, "bdp", 2), "2026-08-29-15C-1J-BDP-2", "seed: BDP should have its own seed label");
 assert.equal(core.buildSeed("2026-08-29", 17, 1, "badugijack", 3), "2026-08-29-17C-1J-BADUGIJACK-3", "seed: BadugiJack should have its own seed label");
 assert.equal(core.buildSeed("2026-08-29", 16, 2, "doubleblackjack", 4), "2026-08-29-16C-2J-DOUBLEBLACKJACK-4", "seed: Double Blackjack should have its own seed label");
 
@@ -298,7 +379,7 @@ assert.deepEqual(firstDeal, secondDeal, "seed: identical seeds should reproduce 
 assert.equal(firstDeal.length, 14, "seed: deal should have requested card count");
 assert.equal(firstDeal.filter((id) => id.startsWith("JK")).length, 2, "seed: deal should have requested jokers");
 
-for (const variant of ["low", "badeucey", "badugijack", "doubleblackjack", "cribbage"]) {
+for (const variant of ["low", "badeucey", "bdp", "badugijack", "doubleblackjack", "cribbage"]) {
   const deal = core.findQualifyingDeal("2026-08-29", 14, 0, variant, { maxAttempts: 5000 });
   assert.equal(core.hasQualifyingMiddle(deal.ids, variant), true, `seed: ${variant} deal should be middle-qualified`);
   assert.equal(deal.rawSeed, core.buildSeed("2026-08-29", 14, 0, variant, deal.counter), `seed: ${variant} counter should match raw seed`);

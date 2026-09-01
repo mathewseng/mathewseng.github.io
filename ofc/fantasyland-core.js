@@ -10,7 +10,7 @@
   const RANK_LABEL = { 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T", 9: "9", 8: "8", 7: "7", 6: "6", 5: "5", 4: "4", 3: "3", 2: "2" };
   const RANK_NAME = { 14: "aces", 13: "kings", 12: "queens", 11: "jacks", 10: "tens", 9: "nines", 8: "eights", 7: "sevens", 6: "sixes", 5: "fives", 4: "fours", 3: "threes", 2: "twos" };
   const CATEGORY = { HIGH: 0, PAIR: 1, TWO_PAIR: 2, TRIPS: 3, STRAIGHT: 4, FLUSH: 5, FULL_HOUSE: 6, QUADS: 7, STRAIGHT_FLUSH: 8 };
-  const VARIANT_ORDER = ["high", "low", "badeucey", "badugijack", "doubleblackjack", "cribbage"];
+  const VARIANT_ORDER = ["high", "low", "badeucey", "bdp", "badugijack", "doubleblackjack", "cribbage"];
   const VARIANTS = {
     high: {
       id: "high",
@@ -33,6 +33,13 @@
       middleSize: 5,
       short: "Middle must qualify as both 2–7 low and a four-card 2–5 Badugi.",
     },
+    bdp: {
+      id: "bdp",
+      seedLabel: "BDP",
+      label: "BDP",
+      middleSize: 5,
+      short: "Badugi on top, 2–7 low in the middle, and a pair or better on the bottom.",
+    },
     badugijack: {
       id: "badugijack",
       seedLabel: "BADUGIJACK",
@@ -45,6 +52,7 @@
       id: "doubleblackjack",
       seedLabel: "DOUBLEBLACKJACK",
       label: "Double Blackjack",
+      compactLabel: "Double BJ",
       middleSize: 5,
       short: "Split the middle into fixed three-card and two-card blackjack hands; both need 17 or more without busting.",
     },
@@ -131,6 +139,20 @@
         { label: "Badugi", items: ["5hi: 12pts", "6hi: 8pts", "7hi: 4pts", "8hi: 0pts", "9hi: 0pts", "Thi: 0pts"] },
       ],
       repeat: "Trips on top; both 7-5-4-3-2 low and a 5-4-3-2 Badugi in the middle; or quads or better on the bottom.",
+    },
+    {
+      id: "bdp",
+      title: "BDP",
+      qualification: "Badugi, Deuce, Pair: top needs three unpaired cards of different suits with aces low; middle needs Thi or lower in 2–7 low; bottom needs a pair or better.",
+      scoring: [
+        { label: "Top · 3-card Badugi", items: ["3hi: 12pts", "4hi: 8pts", "5hi: 4pts", "6hi or higher: 0pts"] },
+        { label: "Middle · 2–7 Low", items: ["7hi: 12pts", "8hi: 6pts", "9hi: 3pts", "Thi: 0pts"] },
+        {
+          label: "Bottom · 3× royalties",
+          items: ["Pair, Two Pair, Trips: 0pts", "Straight: 6pts", "Flush: 12pts", "Boat: 18pts", "Quads: 30pts", "Straight Flush: 45pts", "Royal Flush: 75pts"],
+        },
+      ],
+      repeat: "Quads or better on the bottom.",
     },
     {
       id: "badugijack",
@@ -408,6 +430,71 @@
       scoreComponents,
       name: qualifies ? `${badugiLabel} + ${low.name}` : "Badeucey does not qualify",
       detail: qualifies ? scoreComponents.map((component) => component.label).join(" + ") : "Foul",
+    };
+  }
+
+  function evaluateBdpTop(cards) {
+    const complete = cards.length === 3;
+    const badugi = complete ? bestBadugi(cards, 3, true) : null;
+    const qualifies = Boolean(badugi);
+    const points = !badugi ? 0 : badugi.high <= 3 ? 12 : badugi.high === 4 ? 8 : badugi.high === 5 ? 4 : 0;
+    const label = qualifies ? highCardLabel(badugi.high) : complete ? "Foul" : "";
+    return {
+      qualifies,
+      points,
+      repeat: false,
+      quality: qualifies ? badugi.quality : -1,
+      badugi: badugi ? { ...badugi, points } : null,
+      status: qualifies ? "ok" : complete ? "foul" : "pending",
+      scoreComponents: label ? [{ key: "badugi", label, points: points || null, status: qualifies ? "ok" : "foul" }] : [],
+      name: label,
+      detail: label,
+    };
+  }
+
+  function evaluateBdpLow(cards) {
+    const low = evaluateDeuceSeven(cards);
+    const points = low.qualifies ? (low.high <= 7 ? 12 : low.high === 8 ? 6 : low.high === 9 ? 3 : 0) : 0;
+    const label = low.name;
+    return {
+      ...low,
+      points,
+      repeat: false,
+      scoreComponents: [{ key: "low", label, points: points || null, status: low.status }],
+      name: label,
+      detail: label,
+    };
+  }
+
+  function bdpBottomLabel(evaluation) {
+    if (evaluation.category === CATEGORY.PAIR) return "Pair";
+    if (evaluation.category === CATEGORY.TWO_PAIR) return "Two Pair";
+    if (evaluation.category === CATEGORY.TRIPS) return "Trips";
+    if (evaluation.category === CATEGORY.STRAIGHT) return "Straight";
+    if (evaluation.category === CATEGORY.FLUSH) return "Flush";
+    if (evaluation.category === CATEGORY.FULL_HOUSE) return "Boat";
+    if (evaluation.category === CATEGORY.QUADS) return "Quads";
+    if (evaluation.category === CATEGORY.STRAIGHT_FLUSH) return evaluation.mainRank === 14 ? "Royal Flush" : "Straight Flush";
+    return "Foul";
+  }
+
+  function evaluateBdpBottom(cards) {
+    const complete = cards.length === 5;
+    const high = complete ? evaluateHighFive(cards) : null;
+    const qualifies = Boolean(high && high.category >= CATEGORY.PAIR);
+    const points = qualifies ? highFiveRoyalty(high, "bottom") * 3 : 0;
+    const label = high ? bdpBottomLabel(high) : "";
+    const status = qualifies ? "ok" : complete ? "foul" : "pending";
+    return {
+      ...(high || {}),
+      qualifies,
+      points,
+      repeat: qualifies && high.category >= CATEGORY.QUADS,
+      quality: qualifies ? high.strength : -1,
+      status,
+      scoreComponents: label ? [{ key: "bottom", label, points: points || null, status }] : [],
+      name: label,
+      detail: label,
     };
   }
 
@@ -709,6 +796,16 @@
     return top ? enumerateTopWild(ids, evaluator) : enumerateWild(ids, evaluator, { key: (evaluation) => String(evaluation.strength) });
   }
 
+  function variantTopCandidates(variant, ids) {
+    if (variant === "bdp") return enumerateWild(ids, evaluateBdpTop, { key: middleKey });
+    return highRowCandidates(ids, "top");
+  }
+
+  function variantBottomCandidates(variant, ids) {
+    if (variant === "bdp") return enumerateWild(ids, evaluateBdpBottom, { key: middleKey });
+    return highRowCandidates(ids, "bottom");
+  }
+
   function doubleBlackjackCandidates(threeIds, twoIds) {
     const allNaturals = threeIds.concat(twoIds).filter((id) => !makeCard(id).joker);
     const threeCandidates = enumerateWild(
@@ -749,6 +846,7 @@
     if (variant === "high") return highRowCandidates(rows.middle || [], "middle");
     if (variant === "low") return enumerateWild(rows.middle || [], evaluateDeuceSeven, { key: middleKey });
     if (variant === "badeucey") return enumerateWild(rows.middle || [], evaluateBadeucey, { key: middleKey });
+    if (variant === "bdp") return enumerateWild(rows.middle || [], evaluateBdpLow, { key: middleKey });
     if (variant === "cribbage") return enumerateWild(rows.middle || [], evaluateCribbage, { key: middleKey });
     if (variant === "badugijack") {
       const badugiIds = rows.middleBadugi || [];
@@ -824,8 +922,8 @@
   function evaluateBoard(cardIds, rows, options = {}) {
     const variant = normalizeVariant(options.variant);
     if (!rowsComplete(variant, rows)) return { legal: false, complete: false, points: 0, repeat: false, assignments: new Map(), rowEvals: {}, rowNames: {} };
-    const topCandidates = highRowCandidates(rows.top, "top");
-    const bottomCandidates = highRowCandidates(rows.bottom, "bottom");
+    const topCandidates = variantTopCandidates(variant, rows.top);
+    const bottomCandidates = variantBottomCandidates(variant, rows.bottom);
     const middleCandidates = variantMiddleCandidates(variant, rows);
     let best = null;
 
@@ -833,7 +931,9 @@
       const middleEval = middle.evaluation;
       const legal = variant === "high"
         ? bottom.evaluation.strength >= middleEval.strength && isTopLegalAgainstFive(top.evaluation, middleEval)
-        : middleEval.qualifies && isTopLegalAgainstFive(top.evaluation, bottom.evaluation);
+        : variant === "bdp"
+          ? top.evaluation.qualifies && middleEval.qualifies && bottom.evaluation.qualifies
+          : middleEval.qualifies && isTopLegalAgainstFive(top.evaluation, bottom.evaluation);
       if (!legal) return;
       const points = top.evaluation.points + middleEval.points + bottom.evaluation.points;
       const repeat = top.evaluation.repeat || middleEval.repeat || bottom.evaluation.repeat;
@@ -852,7 +952,27 @@
       if (compareBoard(candidate, best) > 0) best = candidate;
     })));
 
-    return best || { legal: false, complete: true, points: 0, repeat: false, assignments: new Map(), rowEvals: {}, rowNames: {} };
+    if (best) return best;
+    if (variant === "bdp") {
+      const top = bestCandidate(topCandidates);
+      const middle = bestCandidate(middleCandidates);
+      const bottom = bestCandidate(bottomCandidates);
+      if (top && middle && bottom) {
+        const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
+        return {
+          legal: false,
+          complete: true,
+          points,
+          repeat: false,
+          assignments: mergeAssignments(top.assignments, middle.assignments, bottom.assignments),
+          rowEvals: { top: top.evaluation, middle: middle.evaluation, bottom: bottom.evaluation },
+          rowNames: { top: top.evaluation.name, middle: middle.evaluation.name, bottom: bottom.evaluation.name },
+          rowPoints: { top: top.evaluation.points, middle: middle.evaluation.points, bottom: bottom.evaluation.points },
+          details: { middle: middle.evaluation.detail || "" },
+        };
+      }
+    }
+    return { legal: false, complete: true, points: 0, repeat: false, assignments: new Map(), rowEvals: {}, rowNames: {} };
   }
 
   function previewRows(cardIds, rows, options = {}) {
@@ -867,8 +987,8 @@
       best.assignments.forEach((card, id) => assignments.set(id, card));
     };
     const flexibleOuterRows = variant === "badugijack";
-    if ((rows.top || []).length === 3 || (flexibleOuterRows && (rows.top || []).length > 0)) take("top", highRowCandidates(rows.top, "top"));
-    if ((rows.bottom || []).length === 5 || (flexibleOuterRows && (rows.bottom || []).length > 0)) take("bottom", highRowCandidates(rows.bottom, "bottom"));
+    if ((rows.top || []).length === 3 || (flexibleOuterRows && (rows.top || []).length > 0)) take("top", variantTopCandidates(variant, rows.top));
+    if ((rows.bottom || []).length === 5 || (flexibleOuterRows && (rows.bottom || []).length > 0)) take("bottom", variantBottomCandidates(variant, rows.bottom));
     if (variant === "badugijack") {
       const badugi = (rows.middleBadugi || []).length;
       const blackjack = (rows.middleBlackjack || []).length;
@@ -950,19 +1070,20 @@
     return `h${evaluation.strength}`;
   }
 
-  function chooseTop(ids, topMasks, availableMask, constraint, cache, candidateCache = null) {
-    const key = `${availableMask}:${constraintKey(constraint)}`;
+  function chooseTop(ids, topMasks, availableMask, constraint, cache, candidateCache = null, variant = "high") {
+    const bdp = variant === "bdp";
+    const key = `${variant}:${availableMask}:${bdp ? "qualify" : constraintKey(constraint)}`;
     if (cache.has(key)) return cache.get(key);
     let best = null;
     topMasks.forEach((mask) => {
       if ((mask & availableMask) !== mask) return;
       let candidates = candidateCache ? candidateCache.get(mask) : null;
       if (!candidates) {
-        candidates = highRowCandidates(idsForMask(ids, mask), "top");
+        candidates = variantTopCandidates(variant, idsForMask(ids, mask));
         if (candidateCache) candidateCache.set(mask, candidates);
       }
       candidates.forEach((candidate) => {
-        if (!isTopLegalAgainstFive(candidate.evaluation, constraint)) return;
+        if (bdp ? !candidate.evaluation.qualifies : !isTopLegalAgainstFive(candidate.evaluation, constraint)) return;
         const entry = { ...candidate, mask, ids: idsForMask(ids, mask) };
         if (!best || compareRowCandidate(entry, best) > 0) best = entry;
       });
@@ -1001,6 +1122,9 @@
     }
     if (variant === "badeucey") {
       return distinctRanks * 10000 + distinctSuits * 7000 + lowRanks * 1800 - pairShape * 700 - maxRank;
+    }
+    if (variant === "bdp") {
+      return distinctRanks * 12000 + lowRanks * 1800 + distinctSuits * 250 - pairShape * 900 - flushShape * 160 - maxRank;
     }
     if (variant === "badugijack") {
       const blackjackCards = naturals.filter((card) => card.rank === 14 || card.rank >= 7).length;
@@ -1193,15 +1317,18 @@
       middleEntries.push({ mask, estimate });
     });
 
-    const bottomEntries = bottomMasks.map((mask) => {
+    const bottomEntries = [];
+    bottomMasks.forEach((mask) => {
       const rowIds = idsForMask(ids, mask);
-      const candidate = bestCandidate(highRowCandidates(rowIds, "bottom"));
-      return { mask, candidate, estimate: candidate.evaluation.points * 1e8 + candidate.evaluation.strength };
+      const candidate = bestCandidate(variantBottomCandidates(variant, rowIds), (entry) => variant !== "bdp" || entry.evaluation.qualifies);
+      if (!candidate) return;
+      bottomEntries.push({ mask, candidate, estimate: candidate.evaluation.points * 1e8 + candidate.evaluation.quality });
     });
     const beamLimit = Number.isFinite(options.beamLimit) ? Math.max(16, Math.floor(options.beamLimit)) : variant === "badugijack" || variant === "doubleblackjack" ? 260 : 360;
     const middlePool = mode === "fast" ? takeBeam(middleEntries, beamLimit, variant === "high") : middleEntries;
     const bottomPool = mode === "fast" ? takeBeam(bottomEntries, beamLimit) : bottomEntries;
     const topCache = new Map();
+    const topCandidateCache = new Map();
     let best = null;
     let bestRoyalty = null;
     let bestRepeat = null;
@@ -1217,7 +1344,7 @@
       }
       const availableMask = fullMask ^ middleEntry.mask ^ bottomEntry.mask;
       const topConstraint = variant === "high" ? middle.evaluation : bottom.evaluation;
-      const top = chooseTop(ids, topMasks, availableMask, topConstraint, topCache);
+      const top = chooseTop(ids, topMasks, availableMask, topConstraint, topCache, topCandidateCache, variant);
       if (!top) return;
       legalBoards += 1;
       const repeat = top.evaluation.repeat || middle.evaluation.repeat || bottom.evaluation.repeat;
@@ -1277,6 +1404,9 @@
   function hasQualifyingMiddle(cardIds, variantValue) {
     const variant = normalizeVariant(variantValue);
     if (variant === "high") return true;
+    if (variant === "bdp") {
+      return Boolean(solveHand(cardIds, { variant, mode: "fast", maskLimit: 180, beamLimit: 120 }).best);
+    }
     const sizes = variant === "badugijack" ? [5, 6, 7] : [VARIANTS[variant].middleSize];
     for (const size of sizes) {
       const masks = combinationMasks(cardIds.length, size);
@@ -1362,6 +1492,9 @@
     evaluateHighTop,
     evaluateDeuceSeven,
     evaluateBadeucey,
+    evaluateBdpTop,
+    evaluateBdpLow,
+    evaluateBdpBottom,
     evaluateBlackjack,
     evaluateBadugiJackConcrete,
     evaluateDoubleBlackjackConcrete,

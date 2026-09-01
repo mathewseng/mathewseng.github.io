@@ -1971,11 +1971,11 @@
 
   function getTrainerRowSummary(rowKey, puzzle, boardEvaluation = getTrainerBoardEvaluation(puzzle)) {
     const boardEval = boardEvaluation && boardEvaluation.rowEvals ? boardEvaluation.rowEvals[rowKey] : null;
+    const variant = normalizeTrainerVariant(puzzle.variant);
     if (boardEval) {
-      if (normalizeTrainerVariant(puzzle.variant) !== "high" && rowKey === "middle") {
+      if (variant === "bdp" || (variant !== "high" && rowKey === "middle")) {
         const points = finiteNumber(boardEval.points);
         const scoreComponents = Array.isArray(boardEval.scoreComponents) ? boardEval.scoreComponents : [];
-        const variant = normalizeTrainerVariant(puzzle.variant);
         const visible = scoreComponents.some((component) => component && component.label) && (variant === "cribbage" ? points > 0 : true);
         return visible
           ? { label: boardEval.name, points, scoreComponents, showTotal: variant === "cribbage", visible: true }
@@ -1988,6 +1988,7 @@
     const ids = state.trainer.rows[rowKey];
     const empty = { label: "", points: 0, visible: false };
     if (!ids.length) return empty;
+    if (variant === "bdp") return empty;
 
     const cards = getTrainerCardsForIds(ids, puzzle);
     if (rowKey === "top") return getTrainerTopSummary(cards) || empty;
@@ -2192,22 +2193,29 @@
   function getTrainerDisplayEvaluation(puzzle = getTrainerPuzzle(), rows = state.trainer.rows) {
     if (!puzzle) return null;
     if (normalizeTrainerVariant(puzzle.variant) !== "high") {
+      const variant = normalizeTrainerVariant(puzzle.variant);
       const preview = VariantCore.previewRows(puzzle.ids, rows, { variant: puzzle.variant });
       const ready = trainerRowsReady(rows, puzzle);
       if (!ready) {
-        const outer = evaluateTrainerDisplayRows(puzzle.ids, { ...rows, middle: [] }, { fiveKindRule: state.fiveKindRule });
-        ["top", "bottom"].forEach((rowKey) => {
-          if (outer.rowEvals[rowKey]) preview.rowEvals[rowKey] = outer.rowEvals[rowKey];
-        });
-        outer.assignments.forEach((card, id) => preview.assignments.set(id, card));
+        if (variant !== "bdp") {
+          const outer = evaluateTrainerDisplayRows(puzzle.ids, { ...rows, middle: [] }, { fiveKindRule: state.fiveKindRule });
+          ["top", "bottom"].forEach((rowKey) => {
+            if (outer.rowEvals[rowKey]) preview.rowEvals[rowKey] = outer.rowEvals[rowKey];
+          });
+          outer.assignments.forEach((card, id) => preview.assignments.set(id, card));
+        }
 
         const pendingRows = cloneTrainerRows(rows);
         fillTrainerRowsFromBankOrder(pendingRows, puzzle);
         const pending = VariantCore.evaluateBoard(puzzle.ids, pendingRows, { variant: puzzle.variant });
         if (pending.legal) {
-          const middleIds = new Set(trainerPlacementKeys(puzzle).filter((key) => key.startsWith("middle")).flatMap((key) => rows[key] || []));
+          const assignableIds = new Set(
+            trainerPlacementKeys(puzzle)
+              .filter((key) => variant === "bdp" || key.startsWith("middle"))
+              .flatMap((key) => rows[key] || [])
+          );
           pending.assignments.forEach((card, id) => {
-            if (middleIds.has(id)) preview.assignments.set(id, card);
+            if (assignableIds.has(id)) preview.assignments.set(id, card);
           });
         }
       }
@@ -2503,6 +2511,15 @@
       const bounds = jokers >= 2 ? [40, 32] : jokers === 1 ? [60, 48] : [80, 64];
       options.maskLimit = bounds[0];
       options.beamLimit = bounds[1];
+    }
+    if (variant === "bdp") {
+      const jokers = cardIds.filter((id) => cardFromId(id).joker).length;
+      if (jokers) {
+        const bounds = jokers >= 2 ? [160, 100] : [180, 120];
+        options.mode = "fast";
+        options.maskLimit = bounds[0];
+        options.beamLimit = bounds[1];
+      }
     }
     if (variant === "doubleblackjack" && cardIds.some((id) => cardFromId(id).joker)) {
       options.maskLimit = 140;
@@ -2951,7 +2968,8 @@
   }
 
   function trainerVariantCompactLabel(value) {
-    return normalizeTrainerVariant(value) === "doubleblackjack" ? "Double BJ" : trainerVariantLabel(value);
+    const variant = normalizeTrainerVariant(value);
+    return VariantCore?.VARIANTS[variant]?.compactLabel || trainerVariantLabel(variant);
   }
 
   function openVariantRules(variant = state.trainer.variant) {
@@ -2984,7 +3002,7 @@
       button.role = "tab";
       button.className = variant === active ? "active" : "";
       button.setAttribute("aria-selected", String(variant === active));
-      button.textContent = meta.label;
+      button.textContent = meta.compactLabel || meta.label;
       button.addEventListener("click", () => renderVariantRules(variant));
       tabs.appendChild(button);
     });

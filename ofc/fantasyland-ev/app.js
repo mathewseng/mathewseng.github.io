@@ -2,7 +2,7 @@
   "use strict";
 
   const Core = window.OFCFantasylandCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v5";
+  const STORAGE_KEY = "ofcFantasylandEv.v6";
   const SCENARIOS = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
   const DEFINITIONS = {
     immediate: {
@@ -23,7 +23,7 @@
     },
     qualify: {
       title: "Qualification probability",
-      copy: "Chance that the dealt cards can make a legal board under the selected middle-row rules. Hands that cannot qualify contribute zero royalties.",
+      copy: "Chance that the dealt cards can make a legal board under the selected variant rules. Hands that cannot qualify contribute zero royalties.",
     },
   };
 
@@ -389,7 +389,7 @@
       button.role = "tab";
       button.className = variant === active ? "active" : "";
       button.setAttribute("aria-selected", String(variant === active));
-      button.textContent = Core.VARIANTS[variant].label;
+      button.textContent = Core.VARIANTS[variant].compactLabel || Core.VARIANTS[variant].label;
       button.addEventListener("click", () => renderRules(variant));
       tabFragment.appendChild(button);
     });

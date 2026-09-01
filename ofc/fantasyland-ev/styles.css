@@ -262,7 +262,7 @@ h2 {
 
 .variant-pills {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   margin-top: 14px;
   padding: 4px;
@@ -718,7 +718,7 @@ dd {
 
 .rules-tabs {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   padding: 10px;
   border-bottom: 1px solid var(--line);
@@ -1073,7 +1073,7 @@ dd {
   }
 
   .rules-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     overflow: visible;
     padding: 8px;
   }
@@ -1123,7 +1123,7 @@ dd {
 
 @media (max-width: 390px) {
   .variant-pills {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .variant-pills span {

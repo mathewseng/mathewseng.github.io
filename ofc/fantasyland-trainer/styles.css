@@ -2726,7 +2726,7 @@ body.ev-page {
 }
 
 .variant-pills {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   min-width: 0;
 }
 
@@ -2853,7 +2853,7 @@ body.ev-page {
 
 .rules-tabs {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   padding: 10px;
   border-bottom: 1px solid var(--line);
@@ -3053,6 +3053,11 @@ body.ev-page {
 }
 
 @media (max-width: 760px) {
+  .variant-pills span {
+    padding: 0 2px;
+    font-size: 0.54rem;
+  }
+
   .trainer-panel.is-badugijack:not(.is-double-blackjack) {
     --trainer-card-width: min(
       var(--trainer-hand-card-width, 56px),
@@ -3127,7 +3132,7 @@ body.ev-page {
   }
 
   .rules-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     overflow: visible;
     padding: 8px;
   }
@@ -3243,13 +3248,13 @@ body.ev-page {
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 390px) {
   .topbar h1 {
     font-size: 0.92rem;
   }
 
   .variant-pills {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .variant-pills label,
