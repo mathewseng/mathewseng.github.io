@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CalendarPlus,
   CircleAlert,
+  Clock3,
   Dumbbell,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -11,6 +12,7 @@ import { useMemo, useState } from "react";
 import { clsx } from "clsx";
 
 import type { NutritionEntry, Workout } from "../lib/types";
+import { formatWorkoutDuration, formatWorkoutStartTime } from "../lib/workoutTime";
 import { Link } from "../router";
 import { Badge, EmptyState, Surface } from "./ui";
 
@@ -253,8 +255,15 @@ export default function WorkoutCalendar({
                   <div>
                     <Badge tone="accent">{workout.type}</Badge>
                     <p className="mt-2 text-sm font-extrabold">{workout.title}</p>
-                    <p className="mt-1 text-xs text-[var(--muted)]">
-                      {workout.exercises.length} exercises
+                    <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
+                      <Clock3 size={12} />
+                      {workout.startTime
+                        ? formatWorkoutStartTime(workout.startTime)
+                        : "Start time not recorded"}
+                      {workout.durationMinutes !== undefined
+                        ? ` · ${formatWorkoutDuration(workout.durationMinutes)}`
+                        : ""}
+                      {` · ${workout.exercises.length} exercises`}
                     </p>
                   </div>
                   <Dumbbell size={18} className="text-[var(--muted)]" />

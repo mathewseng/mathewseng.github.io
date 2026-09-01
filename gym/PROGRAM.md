@@ -23,10 +23,10 @@ Workout and readiness context is recorded with optional 0–6 integer ratings. E
 Healthy-session reference:
 
 - 95 lb for 3 working sets
-- Current result: 8, 7, 8 for 23 completed repetitions
+- Current result: 7, 7, 9 for 23 completed repetitions
 - Next goal: 8, 8, 8 for 24 completed repetitions
 - Most sets at approximately 1–2 reps in reserve
-- No failed repetition was reported on August 12.
+- No failed repetition was reported on August 31.
 
 Progress to 105 lb after:
 
@@ -36,7 +36,7 @@ Progress to 105 lb after:
 ### Smith-Machine Incline Bench
 
 - 65 lb for 3 sets of 8–10 when healthy
-- Best full result at 65 lb: 8, 8, 8
+- Best full result at 65 lb: 8, 8, 9
 - August 12 result at 55 lb: 9, 8, 8
 - Build toward 3 sets of 10 before increasing
 
@@ -48,7 +48,7 @@ Progress to 105 lb after:
 ### Triceps Pushdown
 
 - 30 lb for 3 sets of 10–12
-- Current three-set result: 30 lb × 10, 9, 7
+- Current three-set result: 30 lb × 8, 10, 8
 - Best session total: 30 lb × 10, 10, 10, 10
 - Build toward 12, 12, 12 before increasing
 
@@ -59,8 +59,8 @@ Progress to 105 lb after:
 
 ### Overhead Triceps Extension
 
-- Current top result: 25 lb × 10, 10 after 20 lb × 10, 10
-- Use 25 lb for 2–3 sets of 10–12 when the equipment and loading convention match
+- Current top result: 30 lb × 9, 10, 8
+- Use 30 lb for 2–3 sets of 8–12 only when the equipment and loading convention match
 - Increase only after stable repetitions across all sets
 
 ## Pull Day

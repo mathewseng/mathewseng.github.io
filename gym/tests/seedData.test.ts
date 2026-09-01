@@ -140,8 +140,8 @@ describe("seed data integration", () => {
     ]);
     expect(incline?.sets.map((set) => set.reps)).toEqual([8, 8, 8]);
     expect(overheadBenchmark).toMatchObject({
-      value: 25,
-      workoutId: "push-2026-08-03",
+      value: 30,
+      workoutId: "push-2026-08-31",
     });
   });
 
@@ -242,9 +242,50 @@ describe("seed data integration", () => {
     expect(lateralRaise?.sets.every((set) => set.perSide === undefined)).toBe(true);
     expect(benchBenchmark).toMatchObject({
       value: 2_185,
-      workoutId: "push-2026-08-12",
+      workoutId: "push-2026-08-31",
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-08-12");
+  });
+
+  it("preserves the August 31 travel-return workout, time, and progress", () => {
+    const workout = workouts.find((item) => item.id === "push-2026-08-31");
+    const benchProgress = getRepProgression(workouts, "smith-flat-bench", 95, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "push-2026-08-31");
+    const incline = workout?.exercises.find(
+      (entry) => entry.exerciseId === "smith-incline-bench",
+    );
+    const pushdown = workout?.exercises.find(
+      (entry) => entry.exerciseId === "triceps-pushdown",
+    );
+    const overhead = workout?.exercises.find(
+      (entry) => entry.exerciseId === "overhead-triceps-extension",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-08-31",
+      startTime: "23:20",
+      durationMinutes: 60,
+      type: "push",
+      chronologyIndex: 13,
+      dataQuality: "partial",
+      context: {
+        sourceLabels: expect.arrayContaining([
+          "returned-from-two-week-work-travel",
+          "barcelona-travel",
+        ]),
+      },
+    });
+    expect(workout?.context).not.toHaveProperty("travelImpact");
+    expect(benchProgress).toMatchObject({
+      setReps: [7, 7, 9],
+      completedReps: 23,
+      completedVolumeLb: 2_185,
+    });
+    expect(incline?.sets.map((set) => set.reps)).toEqual([8, 8, 9]);
+    expect(pushdown?.sets.map((set) => set.reps)).toEqual([8, 10, 8]);
+    expect(overhead?.sets.map((set) => set.reps)).toEqual([9, 10, 8]);
+    expect(overhead?.dataQuality).toBe("ambiguous");
+    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-08-31");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

@@ -6,6 +6,7 @@ import type {
   Workout,
   WorkoutContext,
 } from "./types";
+import { formatWorkoutStartTime } from "./workoutTime";
 
 export interface MarkdownExportOptions {
   includeDataQuality?: boolean;
@@ -137,6 +138,12 @@ export function workoutToMarkdown(
     `## ${date} — ${inline(workout.title)}`,
     "",
     `- Type: ${workout.type}`,
+    `- Start time: ${
+      workout.startTime ? formatWorkoutStartTime(workout.startTime) : "not recorded"
+    }`,
+    ...(workout.durationMinutes === undefined
+      ? []
+      : [`- Duration: ${workout.durationMinutes} minutes`]),
     ...(options.includeDataQuality === false
       ? []
       : [`- Data quality: ${workout.dataQuality}`]),

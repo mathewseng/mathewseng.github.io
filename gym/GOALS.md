@@ -12,8 +12,9 @@ Current confirmed status:
 - Best successful heavy single: 115 lb
 - 125 lb: failed
 - 135 lb: failed
-- Best recent working performance: 95 lb × 8, 7, 8
-- August 12 produced 23 completed repetitions and no failed attempt was reported.
+- Latest working performance: 95 lb × 7, 7, 9
+- August 31 produced 23 completed repetitions, tying the best completed volume at this load, and the final set of 9 is the best recent 95 lb working set.
+- This workout followed approximately two weeks of work travel; no 0–6 readiness ratings were supplied.
 
 Definition of success:
 

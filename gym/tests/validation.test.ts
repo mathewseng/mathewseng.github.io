@@ -10,11 +10,14 @@ import {
   validateReadinessInput,
   validateWorkout,
 } from "../src/lib/validation";
+import { isValidWorkoutStartTime } from "../src/lib/workoutTime";
 
 function validWorkout(): Workout {
   return {
     id: "workout-1",
     date: "2026-07-28",
+    startTime: "23:20",
+    durationMinutes: 60,
     chronologyIndex: 1,
     title: "Push",
     type: "push",
@@ -53,6 +56,13 @@ describe("date and 0–6 rating validation", () => {
     expect(isValidIsoDate("2024-02-29")).toBe(true);
     expect(isValidIsoDate("2026-02-29")).toBe(false);
     expect(isValidIsoDate("07/28/2026")).toBe(false);
+  });
+
+  it("accepts valid local workout times and rejects invalid clock values", () => {
+    expect(isValidWorkoutStartTime("00:00")).toBe(true);
+    expect(isValidWorkoutStartTime("23:59")).toBe(true);
+    expect(isValidWorkoutStartTime("11:20 PM")).toBe(false);
+    expect(isValidWorkoutStartTime("24:00")).toBe(false);
   });
 
   it("accepts both endpoints of the numeric scale and rejects booleans", () => {
@@ -111,6 +121,17 @@ describe("date and 0–6 rating validation", () => {
 });
 
 describe("workout validation", () => {
+  it("validates local start time and positive whole-minute duration", () => {
+    const raw = validWorkout();
+    raw.startTime = "25:10";
+    raw.durationMinutes = 0;
+
+    const validation = validateWorkout(raw);
+    expect(validation.errors.map((item) => item.code)).toEqual(
+      expect.arrayContaining(["invalid-start-time", "invalid-workout-duration"]),
+    );
+  });
+
   it("validates nonnegative load/reps, RIR, duplicate IDs, and impossible failure state", () => {
     const raw = validWorkout();
     raw.exercises[0]!.sets = [

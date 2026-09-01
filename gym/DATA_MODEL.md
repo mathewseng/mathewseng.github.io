@@ -89,6 +89,8 @@ type ExerciseEntry = {
 type Workout = {
   id: string;
   date?: string;
+  startTime?: string;
+  durationMinutes?: number;
   type: WorkoutType;
   title: string;
   context?: WorkoutContext;
@@ -185,6 +187,9 @@ Quality applies to the specific record. A workout can be partial while an indivi
 ## Historical Ordering
 
 - Dates use ISO `YYYY-MM-DD` when known.
+- Workout start times use the athlete's local wall-clock `HH:mm` time when known.
+- Workout duration is stored as a positive whole number of minutes when known.
+- Missing historical start times and durations remain omitted and display as not recorded.
 - Undated workouts omit `date`.
 - `chronologyIndex` preserves supplied narrative order without fabricating a date.
 - Calendar views put undated records in an “Undated history” area, not on an invented day.

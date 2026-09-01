@@ -19,6 +19,7 @@ It turns the human-readable training history in this directory into an interacti
 - Travel, illness, soreness, sleep, energy, appetite, and pain context
 - Data-quality badges for complete, partial, estimated, and ambiguous records
 - Mobile-first workout and nutrition entry
+- Local workout start-time and duration logging, with explicit missing-time labels for historical sessions
 - Dark and light themes
 - Versioned local storage, validated JSON backup/restore, and Markdown export
 
@@ -139,7 +140,7 @@ application. Update `LOGS.md` and the matching JSON record together.
 ## Adding a Workout in the Site
 
 1. Open **Add** and choose **Workout**.
-2. Enter a date and workout type.
+2. Enter the date, local start time, duration, and workout type.
 3. Add exercises and sets.
 4. Record weight, reps, RIR, and mechanical set state as applicable.
 5. Optionally rate readiness/context dimensions from 0 through 6.

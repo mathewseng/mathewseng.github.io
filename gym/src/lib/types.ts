@@ -61,6 +61,10 @@ export interface Workout {
   id: string;
   /** ISO YYYY-MM-DD. Absent means the source did not contain a date. */
   date?: string;
+  /** Local wall-clock time in 24-hour HH:mm format. */
+  startTime?: string;
+  /** Total elapsed workout time, when supplied. */
+  durationMinutes?: number;
   type: WorkoutType;
   title: string;
   context?: WorkoutContext;

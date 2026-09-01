@@ -1,0 +1,133 @@
+{
+  "id": "push-2026-08-31",
+  "date": "2026-08-31",
+  "startTime": "23:20",
+  "durationMinutes": 60,
+  "type": "push",
+  "title": "Late-Night Push Workout After Barcelona Travel",
+  "chronologyIndex": 13,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Returned from approximately two weeks of work travel in Barcelona on August 31 and trained later that night. No numeric 0–6 travel-impact or readiness ratings were supplied.",
+    "sourceLabels": [
+      "returned-from-two-week-work-travel",
+      "barcelona-travel",
+      "same-day-travel-return"
+    ]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-31-flat-1",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-08-31-flat-2",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-08-31-flat-3",
+          "weightLb": 95,
+          "reps": 9,
+          "completed": true
+        }
+      ],
+      "notes": "Twenty-three completed repetitions and 2,185 lb completed volume, tying the August 12 session total. The nine-repetition final set is the best recent completed working set at 95 lb. The Smith-machine identity follows the established bench standard."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-31-incline-1",
+          "weightLb": 65,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-08-31-incline-2",
+          "weightLb": 65,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-08-31-incline-3",
+          "weightLb": 65,
+          "reps": 9,
+          "completed": true
+        }
+      ],
+      "notes": "Twenty-five completed repetitions and 1,625 lb completed volume. This improves the best full three-set result at 65 lb from 8, 8, 8 to 8, 8, 9."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-08-31-pushdown-1",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-08-31-pushdown-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-08-31-pushdown-3",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        }
+      ],
+      "notes": "Recorded from the supplied ‘tricep pulldown’ label and normalized to the established triceps-pushdown exercise. Twenty-six completed repetitions and 780 lb completed volume."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-08-31-overhead-1",
+          "weightLb": 30,
+          "reps": 9,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-31-overhead-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-08-31-overhead-3",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Thirty pounds is the heaviest recorded load for this movement. Equipment, attachment, and per-side loading were not supplied, so the load is preserved without further inference."
+    }
+  ],
+  "notes": "Workout started at 11:20 PM local time on August 31 and lasted 60 minutes. The session followed the user’s return from approximately two weeks of work travel in Barcelona earlier that day. No 0–6 energy, sleep, soreness, illness, travel-impact, or back-pain scores and no RIR values were supplied."
+}

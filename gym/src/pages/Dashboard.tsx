@@ -44,6 +44,13 @@ const benchProgress = [
     secondary: 2185,
     context: "8/7/8 completed with no failed attempt reported.",
   },
+  {
+    label: "Aug 31",
+    value: 23,
+    secondary: 2185,
+    context:
+      "7/7/9 completed after returning from two weeks of work travel; tied best session volume and set a new recent 95 lb top-set best.",
+  },
 ];
 
 const inclineProgress = [
@@ -64,6 +71,11 @@ const inclineProgress = [
     label: "Aug 12",
     value: 9,
     context: "Best set was 55 lb × 9; the load was lower than August 3.",
+  },
+  {
+    label: "Aug 31",
+    value: 9,
+    context: "65 lb × 8/8/9; best full three-set result at this load.",
   },
 ];
 
@@ -88,6 +100,13 @@ const benchEstimateProgress = [
     secondary: 95,
     context: "Estimated from a completed eight-repetition set; not a max test.",
   },
+  {
+    label: "Aug 31",
+    value: 123.5,
+    secondary: 95,
+    context:
+      "Estimated from the completed nine-repetition final set after travel; not a max test.",
+  },
 ];
 
 const pullUpProgress = [
@@ -110,6 +129,12 @@ const pushdownProgress = [
   { label: "Aug 3", value: 40, secondary: 1200 },
   { label: "Aug 10", value: 24, secondary: 720 },
   { label: "Aug 12", value: 26, secondary: 780 },
+  {
+    label: "Aug 31",
+    value: 26,
+    secondary: 780,
+    context: "8/10/8 across three sets after returning from work travel.",
+  },
 ];
 
 function recentTrainingWeeks(workouts: Workout[]) {
@@ -302,7 +327,7 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                You reached 8 / 7 / 8 at 95 lb. Next, complete 8 / 8 / 8 before
+                You reached 7 / 7 / 9 at 95 lb. Next, complete 8 / 8 / 8 before
                 considering the gym’s 10 lb jump.
               </p>
             </div>
@@ -311,21 +336,22 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">August 12 context</p>
-                <h2 className="mt-1 text-lg font-black">New bench-volume best</h2>
+                <p className="eyebrow">August 31 context</p>
+                <h2 className="mt-1 text-lg font-black">Strong travel-return session</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              You completed 23 reps at 95 lb—two more than August 3—with no failed attempt
-              reported. Readiness scores were not supplied for this session.
+              At 11:20 PM, after returning from two weeks of work travel in Barcelona, you
+              completed 23 reps at 95 lb and finished with a new recent best set of nine.
+              The 60-minute session tied your best completed bench volume.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge tone="accent">23 completed reps</Badge>
-              <Badge tone="quality">readiness unknown</Badge>
-              <Badge tone="neutral">no failure reported</Badge>
+              <Badge tone="quality">post-travel context</Badge>
+              <Badge tone="neutral">11:20 PM · 60 min</Badge>
             </div>
           </Surface>
         </div>
@@ -361,14 +387,14 @@ export default function Dashboard() {
       <section className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard
           label="Best bench set"
-          value="95 × 8"
+          value="95 × 9"
           detail="Best recent working set"
           icon={Dumbbell}
         />
         <MetricCard
-          label="Best bench 3-set"
-          value="8 / 7 / 8"
-          detail="95 lb · 23 completed reps"
+          label="Latest bench 3-set"
+          value="7 / 7 / 9"
+          detail="95 lb · tied top volume"
           icon={BarChart3}
         />
         <MetricCard
@@ -509,11 +535,11 @@ export default function Dashboard() {
                 <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
                   Bench at 95 lb
                 </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Aug 12</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Aug 31</p>
                 <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
                   <span>7 / 7 / 5</span>
                   <ArrowRight size={15} className="text-[var(--faint)]" />
-                  <span>8 / 7 / 8</span>
+                  <span>7 / 7 / 9</span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                   19 → 23 reps · 1,805 → 2,185 lb known volume

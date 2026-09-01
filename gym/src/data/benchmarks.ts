@@ -19,9 +19,9 @@ export const currentBenchmarks: Benchmark[] = [
     value: 2185,
     unit: "lb-volume",
     confirmed: true,
-    workoutId: "push-2026-08-12",
+    workoutId: "push-2026-08-31",
     notes:
-      "95 lb × 8, 7, 8 for 23 completed repetitions with no failed attempt reported.",
+      "95 lb × 7, 7, 9 for 23 completed repetitions, tying the August 12 volume and establishing the best recent 95 lb completed set at nine repetitions.",
   },
   {
     id: "incline-bench-top-set",
@@ -58,11 +58,11 @@ export const currentBenchmarks: Benchmark[] = [
     id: "overhead-triceps-reference",
     exerciseId: "overhead-triceps-extension",
     label: "Best documented overhead-extension load",
-    value: 25,
+    value: 30,
     unit: "lb",
     confirmed: true,
-    workoutId: "push-2026-08-03",
-    notes: "25 lb × 10, 10 after 20 lb × 10, 10; equipment was not recorded.",
+    workoutId: "push-2026-08-31",
+    notes: "30 lb × 9, 10, 8; equipment and loading convention were not recorded.",
   },
   {
     id: "strict-pullup-best-set",

@@ -2,6 +2,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleAlert,
+  Clock3,
   CloudSun,
   Gauge,
   MapPin,
@@ -10,6 +11,7 @@ import { useState } from "react";
 
 import { calculateCompletedReps, calculateWorkoutTotals } from "../lib/calculations";
 import type { ExerciseSet, Workout } from "../lib/types";
+import { formatWorkoutDuration, formatWorkoutStartTime } from "../lib/workoutTime";
 import { Badge, Surface } from "./ui";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -83,18 +85,29 @@ export default function WorkoutCard({
             <h3 className="mt-3 text-lg font-black tracking-[-0.025em]">
               {workout.title}
             </h3>
-            <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--muted)]">
-              {workout.date ? (
-                <>
-                  <MapPin size={13} />{" "}
-                  {dateFormatter.format(new Date(`${workout.date}T12:00:00`))}
-                </>
-              ) : (
-                <>
-                  <CircleAlert size={13} /> Date not recorded
-                </>
-              )}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[var(--muted)]">
+              <span className="flex items-center gap-1.5">
+                {workout.date ? (
+                  <>
+                    <MapPin size={13} />{" "}
+                    {dateFormatter.format(new Date(`${workout.date}T12:00:00`))}
+                  </>
+                ) : (
+                  <>
+                    <CircleAlert size={13} /> Date not recorded
+                  </>
+                )}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock3 size={13} />
+                {workout.startTime
+                  ? formatWorkoutStartTime(workout.startTime)
+                  : "Start time not recorded"}
+                {workout.durationMinutes !== undefined
+                  ? ` · ${formatWorkoutDuration(workout.durationMinutes)}`
+                  : ""}
+              </span>
+            </div>
           </div>
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-soft)] text-[var(--muted)]">
             {expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}

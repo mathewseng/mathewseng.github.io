@@ -2,6 +2,19 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-01 — August 31 Travel-Return Push Workout
+
+### Added
+
+- Added the August 31 push workout at 11:20 PM for 60 minutes, including the two-week Barcelona work-travel context.
+- Added workout-level local start time and duration to the schema, logging form, workout cards, calendar details, validation, and Markdown export.
+
+### Changed
+
+- Updated the latest 95 lb Smith-bench result to 7, 7, 9, tying the best 2,185 lb completed volume and setting a new recent working-set best of nine repetitions.
+- Updated the best full 65 lb incline result to 8, 8, 9 and the overhead-triceps-extension load reference to 30 lb.
+- Updated dashboard charts, benchmarks, goals, and current push-program notes while preserving all missing 0–6 readiness scores as unknown.
+
 ## 2026-08-13 — August 12 Push Workout Log
 
 ### Added

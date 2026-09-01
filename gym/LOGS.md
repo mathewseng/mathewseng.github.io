@@ -805,20 +805,91 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 
 ---
 
+# 13. Late-Night Push Workout After Barcelona Travel — August 31, 2026
+
+**Date:** 2026-08-31
+
+**Start time:** 11:20 PM local time
+
+**Duration:** 60 minutes
+
+**Data quality:** Partial context; complete set and repetition data except for overhead-extension equipment details
+
+## Context
+
+- Returned from approximately two weeks of work travel in Barcelona earlier on August 31.
+- No numeric 0–6 travel-impact, energy, sleep, soreness, illness, or back-pain scores were supplied.
+- No RIR values were supplied.
+- Both bench movements follow the established primary Smith-machine equipment standard.
+
+## Smith-Machine Flat Bench
+
+- 95 lb × 7
+- 95 lb × 7
+- 95 lb × 9
+
+Completed work:
+
+- 23 repetitions
+- 2,185 lb volume
+- Tied the August 12 session for best completed volume at 95 lb
+- The final set of 9 is the best recent completed working set at 95 lb
+
+## Smith-Machine Incline Bench
+
+- 65 lb × 8
+- 65 lb × 8
+- 65 lb × 9
+
+Completed work:
+
+- 25 repetitions
+- 1,625 lb volume
+- Improved the best full three-set result at 65 lb from 8, 8, 8 to 8, 8, 9
+
+## Triceps Pushdown
+
+- 30 lb × 8
+- 30 lb × 10
+- 30 lb × 8
+
+Completed work:
+
+- 26 repetitions
+- 780 lb volume
+
+The supplied “tricep pulldown” label is normalized to the established triceps-pushdown exercise.
+
+## Overhead Triceps Extension
+
+- 30 lb × 9
+- 30 lb × 10
+- 30 lb × 8
+
+Completed work:
+
+- 27 repetitions
+- 810 lb volume
+
+Thirty pounds is the heaviest recorded load for this movement. Equipment, attachment, and per-side loading were not supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
 
 - Best confirmed heavy single: 115 lb
 - Failed attempts: 125 lb and 135 lb
-- Best documented three-set performance: 95 lb × 8, 7, 8
+- Best documented completed three-set total: 23 reps, reached with 95 lb × 8, 7, 8 and 95 lb × 7, 7, 9
+- Best recent completed working set at 95 lb: 9 reps
 - Best documented completed volume at 95 lb: 2,185 lb
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
 
 - Best documented top set: 65 lb × 10
-- Best documented full result at 65 lb: 8, 8, 8
+- Best documented full result at 65 lb: 8, 8, 9
 
 ## Shoulder Press
 
@@ -831,7 +902,7 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 
 ## Overhead Triceps Extension
 
-- 25 lb × 10, 10 after 20 lb × 10, 10
+- 30 lb × 9, 10, 8
 - Equipment and loading convention remain unrecorded.
 
 ## Strict Pull-Up
@@ -875,8 +946,9 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 | 2026-07-16 | 7, 7, 6            |             20 |         1,900 lb |
 | 2026-08-03 | 7, 7, 7            |             21 |         1,995 lb |
 | 2026-08-12 | 8, 7, 8            |             23 |         2,185 lb |
+| 2026-08-31 | 7, 7, 9            |             23 |         2,185 lb |
 
-Change from July 14 to August 12: **+4 completed repetitions and +380 lb of completed volume**.
+Change from July 14 to August 31: **+4 completed repetitions and +380 lb of completed volume**.
 
 ### Triceps Pushdown at 30 lb
 
@@ -887,7 +959,10 @@ Change from July 14 to August 12: **+4 completed repetitions and +380 lb of comp
 | 2026-08-03                                | 10, 10, 10, 10     |             40 |         1,200 lb |
 | 2026-08-10                                | 10, 8, 6           |             24 |           720 lb |
 | 2026-08-12                                | 10, 9, 7           |             26 |           780 lb |
+| 2026-08-31                                | 8, 10, 8           |             26 |           780 lb |
 
 Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.
 
 Change from August 10 to August 12: **+2 completed repetitions and +60 lb of completed volume** across three sets.
+
+August 31 tied the August 12 three-set total with a different repetition distribution.

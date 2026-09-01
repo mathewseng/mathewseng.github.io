@@ -68,6 +68,13 @@ function localToday(): string {
   return `${year}-${month}-${day}`;
 }
 
+function localTimeNow(): string {
+  const date = new Date();
+  return `${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes(),
+  ).padStart(2, "0")}`;
+}
+
 function newSet(): EditableSet {
   return {
     id: newId("set"),
@@ -443,6 +450,12 @@ export default function AddWorkout() {
   const [workoutId] = useState(existing?.id ?? newId("local-workout"));
 
   const [date, setDate] = useState(existing?.date ?? queryDate ?? localToday());
+  const [startTime, setStartTime] = useState(
+    existing?.startTime ?? (existing ? "" : localTimeNow()),
+  );
+  const [durationMinutes, setDurationMinutes] = useState<number | undefined>(
+    existing?.durationMinutes,
+  );
   const [type, setType] = useState<WorkoutType>(existing?.type ?? "push");
   const [title, setTitle] = useState(existing?.title ?? "Push Workout");
   const [exercises, setExercises] = useState<EditableExercise[]>(
@@ -460,6 +473,8 @@ export default function AddWorkout() {
     () => ({
       id: workoutId,
       date: date || undefined,
+      startTime: startTime || undefined,
+      durationMinutes,
       type,
       title: title.trim() || `${type[0]?.toUpperCase()}${type.slice(1)} Workout`,
       context: Object.keys(context).length ? context : undefined,
@@ -474,9 +489,11 @@ export default function AddWorkout() {
       context,
       dataQuality,
       date,
+      durationMinutes,
       exercises,
       existing?.chronologyIndex,
       notes,
+      startTime,
       title,
       type,
       workoutId,
@@ -559,7 +576,7 @@ export default function AddWorkout() {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="min-w-0">
             <Surface className="p-4 sm:p-5">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <label>
                   <span className="label">Date</span>
                   <input
@@ -567,6 +584,30 @@ export default function AddWorkout() {
                     type="date"
                     value={date}
                     onChange={(event) => setDate(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span className="label">Start time</span>
+                  <input
+                    className="field"
+                    type="time"
+                    value={startTime}
+                    onChange={(event) => setStartTime(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span className="label">Duration (minutes)</span>
+                  <input
+                    className="field"
+                    inputMode="numeric"
+                    type="number"
+                    min="1"
+                    step="15"
+                    value={durationMinutes ?? ""}
+                    onChange={(event) =>
+                      setDurationMinutes(numericValue(event.target.value))
+                    }
+                    placeholder="60"
                   />
                 </label>
                 <label>
@@ -583,7 +624,7 @@ export default function AddWorkout() {
                     ))}
                   </select>
                 </label>
-                <label className="sm:col-span-2 lg:col-span-1">
+                <label className="sm:col-span-2 xl:col-span-4">
                   <span className="label">Title</span>
                   <input
                     className="field"
@@ -850,6 +891,8 @@ export default function AddWorkout() {
                 setExercises([newExercise()]);
                 setContext({});
                 setNotes("");
+                setStartTime(localTimeNow());
+                setDurationMinutes(undefined);
                 setMessage(undefined);
               }}
             >

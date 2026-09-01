@@ -47,6 +47,8 @@ function workout(id = "workout-1"): Workout {
   return {
     id,
     date: "2026-07-28",
+    startTime: "23:20",
+    durationMinutes: 60,
     chronologyIndex: 1,
     title: "Push after travel",
     type: "push",
@@ -244,6 +246,8 @@ describe("Markdown export", () => {
     const markdown = workoutToMarkdown(workout());
 
     expect(markdown).toContain("## 2026-07-28 — Push after travel");
+    expect(markdown).toContain("- Start time: 11:20 PM");
+    expect(markdown).toContain("- Duration: 60 minutes");
     expect(markdown).toContain("- Illness impact: 2/6");
     expect(markdown).toContain("- Travel impact: 5/6");
     expect(markdown).toContain("- 105 lb: failed attempt (1 attempted rep)");

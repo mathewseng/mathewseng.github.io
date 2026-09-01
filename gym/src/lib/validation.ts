@@ -6,6 +6,7 @@ import type {
   Workout,
   WorkoutContext,
 } from "./types";
+import { isValidWorkoutStartTime } from "./workoutTime";
 
 export type ValidationSeverity = "error" | "warning";
 
@@ -297,6 +298,40 @@ export function validateWorkout(
     );
   } else if (!isValidIsoDate(workout.date)) {
     issues.push(issue("date", "invalid-date", "Date must be a real YYYY-MM-DD date."));
+  }
+  if (workout.startTime === undefined) {
+    issues.push(
+      issue(
+        "startTime",
+        "missing-start-time",
+        "The workout start time was not recorded.",
+        "warning",
+      ),
+    );
+  } else if (!isValidWorkoutStartTime(workout.startTime)) {
+    issues.push(
+      issue(
+        "startTime",
+        "invalid-start-time",
+        "Start time must use local 24-hour HH:mm format.",
+      ),
+    );
+  }
+  checkNonnegativeNumber(
+    workout.durationMinutes,
+    "durationMinutes",
+    "Workout duration",
+    issues,
+    true,
+  );
+  if (workout.durationMinutes === 0) {
+    issues.push(
+      issue(
+        "durationMinutes",
+        "invalid-workout-duration",
+        "Workout duration must be greater than zero minutes.",
+      ),
+    );
   }
   checkNonnegativeNumber(
     workout.chronologyIndex,

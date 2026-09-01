@@ -21,7 +21,7 @@ export const programTemplates: ProgramTemplate[] = [
         weightLb: 95,
         rirRange: [1, 2],
         notes:
-          "Warm up first. The current result is 8/7/8 for 23 completed reps; aim for 8/8/8 next.",
+          "Warm up first. The current result is 7/7/9 for 23 completed reps; aim for 8/8/8 next.",
       },
       {
         exerciseId: "smith-incline-bench",
@@ -44,7 +44,7 @@ export const programTemplates: ProgramTemplate[] = [
         label: "Triceps Pushdown",
         sets: 3,
         repRange: [10, 12],
-        weightLb: 30,
+        weightLb: 15,
         rirRange: [0, 2],
         notes: "Build toward 12/12/12 before increasing.",
       },
@@ -61,9 +61,10 @@ export const programTemplates: ProgramTemplate[] = [
         label: "Overhead Triceps Extension",
         setRange: [2, 3],
         repRange: [10, 12],
-        weightLb: 15,
+        weightLb: 30,
         rirRange: [0, 2],
-        notes: "Increase only after stable repetitions across all sets.",
+        notes:
+          "Latest log is 30 lb × 9/10/8, but its equipment and loading convention were not recorded. Keep the conservative template load unless the setup is confirmed to match; increase after stable repetitions across all sets.",
       },
     ],
     rules: [
