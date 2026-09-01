@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260901c" />
+    <link rel="stylesheet" href="./styles.css?v=20260901d" />
   </head>
   <body>
     <header class="site-header">
@@ -25,7 +25,7 @@
         <div>
           <p class="eyebrow">Monte Carlo calculator</p>
           <h1>Fantasyland royalty EV</h1>
-          <p class="lede">Compare immediate royalties, repeat probability, and recursive value across every valid card and joker configuration.</p>
+          <p class="lede">Compare royalty EV, foul chance, and repeat-Fantasyland chance by cards in hand, exact jokers drawn, and total jokers in the deck.</p>
         </div>
         <button id="rules-open" class="rules-button" type="button" aria-haspopup="dialog"><span aria-hidden="true">i</span>Scoring rules</button>
       </section>
@@ -70,20 +70,24 @@
       </section>
 
       <section class="summary-grid" aria-label="Variant summary">
-        <article><span>Immediate EV</span><strong id="summary-immediate">--</strong><small id="summary-config-count">Average of valid configs</small></article>
-        <article><span>Repeat chance</span><strong id="summary-repeat">--</strong><small>Repeat line available</small></article>
+        <article><span>Royalty EV</span><strong id="summary-immediate">--</strong><small id="summary-config-count">Average of 12 exact configs</small></article>
+        <article><span>Repeat FL</span><strong id="summary-repeat">--</strong><small>Repeat line available</small></article>
+        <article><span>Foul chance</span><strong id="summary-foul">--</strong><small>No legal board</small></article>
         <article><span>Recursive EV</span><strong id="summary-recursive">--</strong><small>Repeat-first strategy</small></article>
-        <article><span>Qualification</span><strong id="summary-qualify">--</strong><small>Legal board available</small></article>
       </section>
 
       <section class="chart-grid">
         <article class="chart-panel">
-          <div class="panel-head"><div><p class="eyebrow">Royalties</p><h2>Immediate EV by hand</h2></div><span>Higher is better</span></div>
+          <div class="panel-head"><div><p class="eyebrow">Royalties</p><h2>Royalty EV by hand</h2></div><span>Higher is better</span></div>
           <div id="ev-chart" class="bar-chart empty-chart">Run the calculator to compare configurations.</div>
         </article>
         <article class="chart-panel">
           <div class="panel-head"><div><p class="eyebrow">Continuation</p><h2>Repeat probability</h2></div><span>Repeat line available</span></div>
           <div id="repeat-chart" class="bar-chart empty-chart">Repeat rates will appear here.</div>
+        </article>
+        <article class="chart-panel">
+          <div class="panel-head"><div><p class="eyebrow">Risk</p><h2>Foul probability</h2></div><span>No legal board</span></div>
+          <div id="foul-chart" class="bar-chart empty-chart">Foul rates will appear here.</div>
         </article>
         <article class="chart-panel distribution-panel">
           <div class="panel-head distribution-head">
@@ -110,11 +114,11 @@
             <thead>
               <tr>
                 <th scope="col">Hand</th>
-                <th scope="col"><button class="definition-link" data-definition="immediate">Immediate EV</button></th>
-                <th scope="col"><button class="definition-link" data-definition="repeat">Repeat</button></th>
+                <th scope="col"><button class="definition-link" data-definition="immediate">Royalty EV</button></th>
+                <th scope="col"><button class="definition-link" data-definition="repeat">Repeat FL</button></th>
                 <th scope="col"><button class="definition-link" data-definition="line">Repeat-line EV</button></th>
                 <th scope="col"><button class="definition-link" data-definition="recursive">Recursive EV</button></th>
-                <th scope="col"><button class="definition-link" data-definition="qualify">Qualify</button></th>
+                <th scope="col"><button class="definition-link" data-definition="foul">Foul</button></th>
                 <th scope="col">Samples</th>
               </tr>
             </thead>
@@ -123,24 +127,47 @@
         </div>
       </section>
 
+      <section class="matrix-panel deck-matrix-panel" aria-labelledby="deck-matrix-title">
+        <div class="panel-head matrix-head">
+          <div><p class="eyebrow">Before the deal</p><h2 id="deck-matrix-title">EV by jokers in the deck</h2></div>
+          <span id="deck-matrix-meta">Complete exact-hand results to calculate</span>
+        </div>
+        <p class="matrix-note">Each row weights the exact 0J, 1J, and 2J hand results by their draw probability from a 53-card or 54-card deck.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Deal / deck</th>
+                <th scope="col"><button class="definition-link" data-definition="deck">Royalty EV</button></th>
+                <th scope="col"><button class="definition-link" data-definition="repeat">Repeat FL</button></th>
+                <th scope="col"><button class="definition-link" data-definition="foul">Foul</button></th>
+              </tr>
+            </thead>
+            <tbody id="deck-matrix-body"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="insight-grid">
         <article class="joker-panel">
-          <div class="panel-head"><div><p class="eyebrow">Two-joker deck</p><h2>Jokers in the dealt hand</h2></div><span>Hypergeometric probability</span></div>
+          <div class="panel-head"><div><p class="eyebrow">Deck composition</p><h2>Jokers drawn into the hand</h2></div><span>Hypergeometric probability</span></div>
           <div class="table-scroll compact-table">
             <table>
-              <thead><tr><th>Cards</th><th>0 jokers</th><th>1 joker</th><th>2 jokers</th></tr></thead>
+              <thead><tr><th>Deal / deck</th><th>0J hand</th><th>1J hand</th><th>2J hand</th></tr></thead>
               <tbody id="joker-probability-body"></tbody>
             </table>
           </div>
         </article>
         <article class="definitions-panel" id="definitions-panel">
           <div class="panel-head"><div><p class="eyebrow">How to read it</p><h2 id="definition-title">EV definitions</h2></div></div>
-          <p id="definition-copy">Immediate EV is the average maximum royalty score on the current deal, without adding value from future repeats.</p>
+          <p id="definition-copy">Royalty EV is the expected maximum immediate royalty score. Deals with no legal board contribute zero.</p>
           <dl>
-            <div><dt>Immediate</dt><dd>Highest royalty line, whether it repeats or not.</dd></div>
-            <div><dt>Repeat</dt><dd>Chance that at least one qualifying repeat line exists.</dd></div>
+            <div><dt>Royalty EV</dt><dd>Expected immediate royalties; fouled deals score zero.</dd></div>
+            <div><dt>Repeat FL</dt><dd>Chance that at least one qualifying repeat line exists.</dd></div>
+            <div><dt>Foul</dt><dd>Chance that the deal cannot make a legal board.</dd></div>
             <div><dt>Repeat-line</dt><dd>Average royalties on the best repeat line, only when one exists.</dd></div>
             <div><dt>Recursive</dt><dd>Expected total royalties across future repeats, with finite-sample smoothing on the repeat rate.</dd></div>
+            <div><dt>Deck mix</dt><dd>Weighted average over the possible joker counts drawn from a one- or two-joker deck.</dd></div>
           </dl>
         </article>
       </section>
@@ -155,7 +182,7 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260901c"></script>
-    <script src="./app.js?v=20260901c"></script>
+    <script src="../fantasyland-core.js?v=20260901d"></script>
+    <script src="./app.js?v=20260901d"></script>
   </body>
 </html>

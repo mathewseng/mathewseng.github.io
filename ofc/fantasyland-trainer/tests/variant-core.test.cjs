@@ -317,6 +317,14 @@ assert.throws(
   /BDP Fantasyland needs 17 cards/,
   "bdp solver: hands below seventeen cards should be rejected"
 );
+const hypotheticalBdp = core.solveHand(bdpIds.concat("9h"), { variant: "bdp", mode: "exact", allowUnsupportedCardCount: true });
+assert.ok(hypotheticalBdp.best, "bdp analysis: an explicit analytical override should solve off-rule card counts");
+assert.equal(hypotheticalBdp.best.repeat, true, "bdp analysis: hypothetical solves should retain normal repeat rules");
+assert.equal(
+  core.hasQualifyingMiddle(bdpIds.concat("9h"), "bdp", { allowUnsupportedCardCount: true }),
+  true,
+  "bdp analysis: qualification checks should honor the analytical override"
+);
 const bdpSolved = core.solveHand(bdpIds.concat(["9h", "8d", "6c", "Jh"]), { variant: "bdp", mode: "fast", maskLimit: 600, beamLimit: 360 });
 assert.ok(bdpSolved.best, "bdp solver: a qualifying hand should produce a legal solution");
 assert.equal(bdpSolved.best.repeat, true, "bdp solver: a bottom quads repeat line should be preserved");

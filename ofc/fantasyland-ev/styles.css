@@ -396,10 +396,15 @@ select {
 
 .summary-grid article:nth-child(1) strong { color: var(--blue); }
 .summary-grid article:nth-child(2) strong { color: var(--green); }
-.summary-grid article:nth-child(3) strong { color: var(--violet); }
-.summary-grid article:nth-child(4) strong { color: var(--orange); }
+.summary-grid article:nth-child(3) strong { color: var(--red); }
+.summary-grid article:nth-child(4) strong { color: var(--violet); }
 
-.chart-grid,
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .insight-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -489,6 +494,9 @@ select {
 #repeat-chart .bar-track i { background: var(--green); }
 #repeat-chart .chart-row[data-jokers="1"] .bar-track i { background: #5cb9d5; }
 #repeat-chart .chart-row[data-jokers="2"] .bar-track i { background: var(--violet); }
+#foul-chart .bar-track i { background: var(--red); }
+#foul-chart .chart-row[data-jokers="1"] .bar-track i { background: #f18d65; }
+#foul-chart .chart-row[data-jokers="2"] .bar-track i { background: #c17df0; }
 
 .distribution-head {
   align-items: center;
@@ -564,6 +572,15 @@ select {
   overflow: hidden;
 }
 
+.matrix-note {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--line);
+  background: #090f16;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
 .table-scroll {
   overflow-x: auto;
 }
@@ -615,6 +632,33 @@ tbody tr:hover td {
   font-weight: 850;
 }
 
+.hand-label small {
+  padding: 2px 4px;
+  border: 1px solid rgba(241, 162, 76, 0.35);
+  border-radius: 3px;
+  color: var(--orange);
+  font-size: 0.56rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.is-hypothetical td {
+  background: rgba(241, 162, 76, 0.025);
+}
+
+.deck-count {
+  min-width: 25px;
+  min-height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.62rem;
+  font-style: normal;
+}
+
 .joker-dot {
   width: 7px;
   height: 7px;
@@ -648,6 +692,18 @@ tbody tr:hover td {
 .compact-table th:first-child,
 .compact-table td:first-child {
   text-align: left;
+}
+
+.compact-table td:first-child strong,
+.compact-table td:first-child small {
+  display: block;
+}
+
+.compact-table td:first-child small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 750;
 }
 
 .definitions-panel > p {
@@ -1037,6 +1093,10 @@ dd {
 
   .matrix-panel table {
     min-width: 720px;
+  }
+
+  .deck-matrix-panel table {
+    min-width: 520px;
   }
 
   th,

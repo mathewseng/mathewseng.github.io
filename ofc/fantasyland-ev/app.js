@@ -3,14 +3,17 @@
 
   const Core = window.OFCFantasylandCore;
   const STORAGE_KEY = "ofcFantasylandEv.v6";
+  const CARD_COUNTS = [14, 15, 16, 17];
+  const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
+  const DECK_JOKER_COUNTS = [1, 2];
   const DEFINITIONS = {
     immediate: {
-      title: "Immediate royalty EV",
-      copy: "Average royalties from the highest-scoring legal board on this deal. It does not add any value for future Fantasyland repeats.",
+      title: "Royalty EV",
+      copy: "Expected immediate royalties from the highest-scoring legal board. Deals with no legal board contribute zero royalties.",
     },
     repeat: {
-      title: "Repeat probability",
-      copy: "Chance that the hand contains at least one legal repeat-Fantasyland board. The repeat-first strategy takes that line whenever it exists.",
+      title: "Repeat Fantasyland chance",
+      copy: "Chance that the hand contains at least one legal board that returns to Fantasyland. The repeat-first strategy takes that line whenever it exists.",
     },
     line: {
       title: "Repeat-line EV",
@@ -20,9 +23,13 @@
       title: "Recursive royalty EV",
       copy: "Expected total royalties across this hand and future repeats. It uses a Jeffreys-smoothed repeat estimate so a small 100% sample does not imply infinite value.",
     },
-    qualify: {
-      title: "Qualification probability",
-      copy: "Chance that the dealt cards can make a legal board under the selected variant rules. Hands that cannot qualify contribute zero royalties.",
+    foul: {
+      title: "Foul chance",
+      copy: "Chance that no legal board can be made under the selected variant rules. This includes failure to meet any required row qualification.",
+    },
+    deck: {
+      title: "Deck-composition EV",
+      copy: "Probability-weighted result before the deal, using the chance of drawing each exact joker count from a deck containing one or two jokers.",
     },
   };
 
@@ -59,13 +66,16 @@
       matrixBody: document.querySelector("#matrix-body"),
       matrixTitle: document.querySelector("#matrix-title"),
       matrixMeta: document.querySelector("#matrix-meta"),
+      deckMatrixBody: document.querySelector("#deck-matrix-body"),
+      deckMatrixMeta: document.querySelector("#deck-matrix-meta"),
       summaryImmediate: document.querySelector("#summary-immediate"),
       summaryConfigCount: document.querySelector("#summary-config-count"),
       summaryRepeat: document.querySelector("#summary-repeat"),
       summaryRecursive: document.querySelector("#summary-recursive"),
-      summaryQualify: document.querySelector("#summary-qualify"),
+      summaryFoul: document.querySelector("#summary-foul"),
       evChart: document.querySelector("#ev-chart"),
       repeatChart: document.querySelector("#repeat-chart"),
+      foulChart: document.querySelector("#foul-chart"),
       distributionChart: document.querySelector("#distribution-chart"),
       jokerProbabilityBody: document.querySelector("#joker-probability-body"),
       definitionTitle: document.querySelector("#definition-title"),
@@ -104,16 +114,17 @@
   function renderVariant() {
     const meta = Core.VARIANTS[state.variant];
     const scenarios = scenariosForVariant(state.variant);
-    const cardCounts = Core.variantCardCounts(state.variant);
     const configCount = scenarios.length;
-    els.variantSummary.textContent = meta.short;
+    const includesHypotheticals = CARD_COUNTS.some((cards) => !Core.supportsVariantCardCount(state.variant, cards));
+    els.variantSummary.textContent = `${meta.short}${includesHypotheticals ? " Off-rule card counts are modeled as hypotheticals below." : ""}`;
     const data = getVariantResults();
     renderMatrix(data, scenarios);
+    renderDeckMatrix(data);
     renderSummary(data, scenarios);
     renderCharts(data, scenarios);
     renderJokerProbabilities();
     const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
-    els.matrixTitle.textContent = `${cardRangeLabel(cardCounts)} ${meta.label} matrix`;
+    els.matrixTitle.textContent = `14–17 card ${meta.label} matrix`;
     els.summaryConfigCount.textContent = `Average of ${configCount} configs`;
     els.matrixMeta.textContent = complete ? `${meta.label} - ${complete}/${configCount} configs` : "No samples yet";
     if (!state.running) {
@@ -128,15 +139,17 @@
     const fragment = document.createDocumentFragment();
     scenarios.forEach((scenario) => {
       const result = data[scenarioKey(scenario)];
+      const hypothetical = !Core.supportsVariantCardCount(state.variant, scenario.cards);
       const row = document.createElement("tr");
       row.dataset.config = scenarioKey(scenario);
+      row.classList.toggle("is-hypothetical", hypothetical);
       row.innerHTML = `
-        <td><span class="hand-label"><i class="joker-dot j${scenario.jokers}"></i>${scenario.cards} cards / ${scenario.jokers}J</span></td>
+        <td><span class="hand-label"><i class="joker-dot j${scenario.jokers}"></i><span>${scenario.cards} cards / ${scenario.jokers}J</span>${hypothetical ? '<small>hypothetical</small>' : ""}</span></td>
         <td data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="repeatLine">${result && result.repeatLine !== null ? formatPoints(result.repeatLine) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="recursive">${result ? formatRecursive(result.recursive) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="qualify">${result ? formatPct(result.qualifyRate) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="foul">${result ? formatPct(resultFoulRate(result)) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="samples">${result ? result.samples : '<span class="cell-muted">0</span>'}</td>
       `;
       if (result) row.querySelector('[data-value="immediate"]').title = `Standard error +/-${formatPoints(result.standardError)}`;
@@ -145,16 +158,58 @@
     els.matrixBody.replaceChildren(fragment);
   }
 
+  function renderDeckMatrix(data = getVariantResults()) {
+    if (!els.deckMatrixBody) return;
+    const complete = EXACT_SCENARIOS.every((scenario) => data[scenarioKey(scenario)]);
+    if (els.deckMatrixMeta) {
+      els.deckMatrixMeta.textContent = complete
+        ? "Weighted from exact-hand results"
+        : "Complete exact-hand results to calculate";
+    }
+    const fragment = document.createDocumentFragment();
+    CARD_COUNTS.forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
+      const result = aggregateDeckResults(data, cards, deckJokers);
+      const row = document.createElement("tr");
+      row.dataset.deckConfig = `${cards}-${deckJokers}`;
+      row.innerHTML = `
+        <td><span class="hand-label deck-label"><i class="deck-count">${deckJokers}J</i><span>${cards} cards</span></span></td>
+        <td data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="foul">${result ? formatPct(result.foulRate) : '<span class="cell-muted">--</span>'}</td>
+      `;
+      fragment.appendChild(row);
+    }));
+    els.deckMatrixBody.replaceChildren(fragment);
+  }
+
+  function aggregateDeckResults(data, cards, deckJokers) {
+    const weighted = [];
+    for (let jokers = 0; jokers <= deckJokers; jokers += 1) {
+      const result = data[scenarioKey({ cards, jokers })];
+      if (!result) return null;
+      weighted.push({ result, weight: hypergeometricJokers(cards, jokers, deckJokers) });
+    }
+    return weighted.reduce(
+      (total, entry) => {
+        total.immediate += finiteNumber(entry.result.immediate) * entry.weight;
+        total.repeatRate += finiteNumber(entry.result.repeatRate) * entry.weight;
+        total.foulRate += resultFoulRate(entry.result) * entry.weight;
+        return total;
+      },
+      { immediate: 0, repeatRate: 0, foulRate: 0 }
+    );
+  }
+
   function renderSummary(data, scenarios = scenariosForVariant()) {
     const results = scenarios.map((scenario) => data[scenarioKey(scenario)]).filter(Boolean);
     if (!results.length) {
-      [els.summaryImmediate, els.summaryRepeat, els.summaryRecursive, els.summaryQualify].forEach((element) => { element.textContent = "--"; });
+      [els.summaryImmediate, els.summaryRepeat, els.summaryFoul, els.summaryRecursive].forEach((element) => { element.textContent = "--"; });
       return;
     }
     els.summaryImmediate.textContent = formatPoints(mean(results.map((result) => result.immediate)));
     els.summaryRepeat.textContent = formatPct(mean(results.map((result) => result.repeatRate)));
+    els.summaryFoul.textContent = formatPct(mean(results.map((result) => resultFoulRate(result))));
     els.summaryRecursive.textContent = formatRecursive(meanFinite(results.map((result) => result.recursive)));
-    els.summaryQualify.textContent = formatPct(mean(results.map((result) => result.qualifyRate)));
   }
 
   function renderCharts(data, scenarios = scenariosForVariant()) {
@@ -164,6 +219,8 @@
       els.evChart.textContent = "Run the calculator to compare configurations.";
       els.repeatChart.className = "bar-chart empty-chart";
       els.repeatChart.textContent = "Repeat rates will appear here.";
+      els.foulChart.className = "bar-chart empty-chart";
+      els.foulChart.textContent = "Foul rates will appear here.";
       els.distributionChart.className = "distribution-chart empty-chart";
       els.distributionChart.textContent = "Royalty bands will appear here.";
       return;
@@ -171,6 +228,7 @@
     const maxImmediate = Math.max(1, ...results.map((entry) => entry.result.immediate));
     renderBarChart(els.evChart, results, (result) => result.immediate, maxImmediate, formatPoints);
     renderBarChart(els.repeatChart, results, (result) => result.repeatRate, 1, formatPct);
+    renderBarChart(els.foulChart, results, resultFoulRate, 1, formatPct);
     renderDistributionChart(results);
   }
 
@@ -251,6 +309,7 @@
         nextResults[scenarioKey(scenario)] = finalizeAggregate(aggregate);
         state.results[variant] = { ...(state.results[variant] || {}), ...nextResults };
         renderMatrix(state.results[variant], scenarios);
+        renderDeckMatrix(state.results[variant]);
         renderSummary(state.results[variant], scenarios);
         renderCharts(state.results[variant], scenarios);
         saveCache();
@@ -287,12 +346,15 @@
     const searchBounds = splitVariant
       ? { maskLimit: 40, beamLimit: 24 }
       : { maskLimit: 140, beamLimit: 72 };
-    let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds });
-    if (solved.best || variant === "high" || !Core.hasQualifyingMiddle(ids, variant)) return solved;
+    const analysisOptions = { allowUnsupportedCardCount: true };
+    let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds, ...analysisOptions });
+    if (solved.best || variant === "high" || !Core.hasQualifyingMiddle(ids, variant, analysisOptions)) return solved;
 
     solved = splitVariant
-      ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48 })
-      : Core.solveHand(ids, { variant, mode: "exact" });
+      ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48, ...analysisOptions })
+      : ids.length === 14
+        ? Core.solveHand(ids, { variant, mode: "exact", ...analysisOptions })
+        : Core.solveHand(ids, { variant, mode: "fast", maskLimit: 320, beamLimit: 180, ...analysisOptions });
     return solved;
   }
 
@@ -327,6 +389,7 @@
       repeatLine: aggregate.repeatCount ? aggregate.repeatPointSum / aggregate.repeatCount : null,
       recursive: strategy / (1 - recursiveRepeatRate),
       qualifyRate: aggregate.qualifyCount / n,
+      foulRate: 1 - aggregate.qualifyCount / n,
       standardError: Math.sqrt(variance / n),
       distribution: aggregate.distribution.map((count) => count / n),
     };
@@ -348,17 +411,20 @@
 
   function renderJokerProbabilities() {
     const fragment = document.createDocumentFragment();
-    Core.variantCardCounts(state.variant).forEach((cards) => {
-      const probabilities = [0, 1, 2].map((jokers) => hypergeometricJokers(cards, jokers));
+    CARD_COUNTS.forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
+      const probabilities = [0, 1, 2].map((jokers) => (jokers <= deckJokers ? hypergeometricJokers(cards, jokers, deckJokers) : null));
       const row = document.createElement("tr");
-      row.innerHTML = `<td><strong>${cards} cards</strong></td>${probabilities.map((value) => `<td>${formatPct(value)}</td>`).join("")}`;
+      row.innerHTML = `
+        <td><strong>${cards} cards</strong><small>${deckJokers}J deck</small></td>
+        ${probabilities.map((value) => `<td>${value === null ? '<span class="cell-muted">--</span>' : formatPct(value)}</td>`).join("")}
+      `;
       fragment.appendChild(row);
-    });
+    }));
     els.jokerProbabilityBody.replaceChildren(fragment);
   }
 
-  function hypergeometricJokers(cards, jokers) {
-    return (choose(2, jokers) * choose(52, cards - jokers)) / choose(54, cards);
+  function hypergeometricJokers(cards, jokers, deckJokers = 2) {
+    return (choose(deckJokers, jokers) * choose(52, cards - jokers)) / choose(52 + deckJokers, cards);
   }
 
   function choose(n, k) {
@@ -433,7 +499,7 @@
     });
     const note = document.createElement("p");
     note.className = "rules-seed-note";
-    note.textContent = "EV samples are unfiltered random hands with the exact joker count shown. A hand that cannot qualify scores zero and is reflected in the Qualify column.";
+    note.textContent = "Exact-hand samples use the joker count shown. Off-rule card counts are hypothetical analyses; deals with no legal board score zero royalties and appear in the Foul column.";
     article.appendChild(note);
     els.rulesContent.replaceChildren(article);
     els.rulesContent.scrollTop = 0;
@@ -503,12 +569,13 @@
     return `${scenario.cards}-${scenario.jokers}`;
   }
 
-  function scenariosForVariant(variant = state.variant) {
-    return Core.variantScenarios(variant);
+  function scenariosForVariant() {
+    return EXACT_SCENARIOS;
   }
 
-  function cardRangeLabel(cardCounts) {
-    return cardCounts.length === 1 ? `${cardCounts[0]}-card` : `${cardCounts[0]}–${cardCounts[cardCounts.length - 1]} card`;
+  function resultFoulRate(result) {
+    if (Number.isFinite(Number(result?.foulRate))) return Number(result.foulRate);
+    return 1 - finiteNumber(result?.qualifyRate);
   }
 
   function mean(values) {
@@ -558,6 +625,7 @@
   }
 
   window.OFCFantasylandEV = {
+    aggregateDeckResults,
     finalizeAggregate,
     hypergeometricJokers,
     scenariosForVariant,

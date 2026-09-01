@@ -2,6 +2,6 @@
   "name": "ofc-fantasyland-trainer",
   "private": true,
   "scripts": {
-    "test": "node tests/scoring-regression.test.cjs && node tests/joker-regression.test.cjs && node tests/variant-core.test.cjs"
+    "test": "node tests/scoring-regression.test.cjs && node tests/joker-regression.test.cjs && node tests/variant-core.test.cjs && node tests/ev-metrics.test.cjs"
   }
 }

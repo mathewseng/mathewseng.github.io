@@ -1317,9 +1317,15 @@
     const mode = options.mode === "fast" ? "fast" : "exact";
     const ids = cardIds.slice();
     const n = ids.length;
-    assertVariantCardCount(variant, n);
+    const variantMeta = VARIANTS[variant];
+    const boardSize = variantMeta.boardSize || 3 + variantMeta.middleSize + 5;
+    if (options.allowUnsupportedCardCount) {
+      if (n < boardSize || n > 17) throw new RangeError(`${variantMeta.label} analysis needs ${boardSize} to 17 cards.`);
+    } else {
+      assertVariantCardCount(variant, n);
+    }
     if (variant === "badugijack") return solveBadugiJackHand(ids, options, started, mode);
-    const middleSize = VARIANTS[variant].middleSize;
+    const middleSize = variantMeta.middleSize;
 
     const fullMask = (1 << n) - 1;
     const allMiddleMasks = combinationMasks(n, middleSize);
@@ -1425,12 +1431,12 @@
     return Array.from(selected.values());
   }
 
-  function hasQualifyingMiddle(cardIds, variantValue) {
+  function hasQualifyingMiddle(cardIds, variantValue, options = {}) {
     const variant = normalizeVariant(variantValue);
-    if (!supportsVariantCardCount(variant, cardIds.length)) return false;
+    if (!options.allowUnsupportedCardCount && !supportsVariantCardCount(variant, cardIds.length)) return false;
     if (variant === "high") return true;
     if (variant === "bdp") {
-      return Boolean(solveHand(cardIds, { variant, mode: "fast", maskLimit: 180, beamLimit: 120 }).best);
+      return Boolean(solveHand(cardIds, { variant, mode: "fast", maskLimit: 180, beamLimit: 120, allowUnsupportedCardCount: options.allowUnsupportedCardCount }).best);
     }
     const sizes = variant === "badugijack" ? [5, 6, 7] : [VARIANTS[variant].middleSize];
     for (const size of sizes) {
