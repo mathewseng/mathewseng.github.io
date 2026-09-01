@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260901b" />
+    <link rel="stylesheet" href="./styles.css?v=20260901c" />
   </head>
   <body>
     <header class="site-header">
@@ -25,7 +25,7 @@
         <div>
           <p class="eyebrow">Monte Carlo calculator</p>
           <h1>Fantasyland royalty EV</h1>
-          <p class="lede">Compare immediate royalties, repeat probability, and recursive value across all 12 card and joker configurations.</p>
+          <p class="lede">Compare immediate royalties, repeat probability, and recursive value across every valid card and joker configuration.</p>
         </div>
         <button id="rules-open" class="rules-button" type="button" aria-haspopup="dialog"><span aria-hidden="true">i</span>Scoring rules</button>
       </section>
@@ -61,7 +61,7 @@
           </label>
           <div class="run-copy">
             <strong id="run-status">Ready to calculate</strong>
-            <span id="run-detail">12 configurations · browser only</span>
+            <span id="run-detail">Loading configurations</span>
           </div>
           <div class="progress-track" aria-hidden="true"><span id="run-progress"></span></div>
           <button id="run-calculator" class="primary-button" type="button">Run calculator</button>
@@ -70,7 +70,7 @@
       </section>
 
       <section class="summary-grid" aria-label="Variant summary">
-        <article><span>Immediate EV</span><strong id="summary-immediate">--</strong><small>Average of 12 configs</small></article>
+        <article><span>Immediate EV</span><strong id="summary-immediate">--</strong><small id="summary-config-count">Average of valid configs</small></article>
         <article><span>Repeat chance</span><strong id="summary-repeat">--</strong><small>Repeat line available</small></article>
         <article><span>Recursive EV</span><strong id="summary-recursive">--</strong><small>Repeat-first strategy</small></article>
         <article><span>Qualification</span><strong id="summary-qualify">--</strong><small>Legal board available</small></article>
@@ -102,7 +102,7 @@
 
       <section class="matrix-panel" aria-labelledby="matrix-title">
         <div class="panel-head matrix-head">
-          <div><p class="eyebrow">Exact joker counts</p><h2 id="matrix-title">14-17 card Fantasyland matrix</h2></div>
+          <div><p class="eyebrow">Exact joker counts</p><h2 id="matrix-title">Fantasyland matrix</h2></div>
           <span id="matrix-meta">No samples yet</span>
         </div>
         <div class="table-scroll">
@@ -155,7 +155,7 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260901b"></script>
-    <script src="./app.js?v=20260901b"></script>
+    <script src="../fantasyland-core.js?v=20260901c"></script>
+    <script src="./app.js?v=20260901c"></script>
   </body>
 </html>

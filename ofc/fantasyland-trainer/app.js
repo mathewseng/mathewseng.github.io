@@ -68,20 +68,6 @@
     { cards: 16, jokers: 2 },
     { cards: 17, jokers: 2 },
   ];
-  const TRAINER_CONFIGS = [
-    { cards: 14, jokers: 0 },
-    { cards: 15, jokers: 0 },
-    { cards: 16, jokers: 0 },
-    { cards: 17, jokers: 0 },
-    { cards: 14, jokers: 1 },
-    { cards: 15, jokers: 1 },
-    { cards: 16, jokers: 1 },
-    { cards: 17, jokers: 1 },
-    { cards: 14, jokers: 2 },
-    { cards: 15, jokers: 2 },
-    { cards: 16, jokers: 2 },
-    { cards: 17, jokers: 2 },
-  ];
   const TRAINER_ROWS = [
     { key: "top", label: "Top", size: 3 },
     { key: "middle", label: "Middle", size: 5 },
@@ -181,6 +167,8 @@
       simProgress: document.querySelector("#sim-progress"),
       trainerTitle: document.querySelector("#trainer-title"),
       trainerConfig: document.querySelector("#trainer-config"),
+      trainerAllLabel: document.querySelector("#trainer-all-label"),
+      trainerCardCountOptions: document.querySelector("#trainer-card-count-options"),
       trainerCurrentConfig: document.querySelector("#trainer-current-config"),
       trainerCurrentConfigControl: document.querySelector(".trainer-current-config-control"),
       trainerPanel: document.querySelector(".trainer-panel"),
@@ -759,13 +747,13 @@
     trainer.mode = getCheckedValue("trainer-mode", trainer.mode);
     trainer.scope = getCheckedValue("trainer-scope", trainer.scope);
     trainer.variant = normalizeTrainerVariant(getCheckedValue("trainer-variant", trainer.variant));
-    trainer.cardCount = Number(getCheckedValue("trainer-card-count", String(trainer.cardCount)));
+    trainer.cardCount = normalizeTrainerCardCount(getCheckedValue("trainer-card-count", String(trainer.cardCount)), trainer.variant);
     trainer.jokerCount = Number(getCheckedValue("trainer-joker-count", String(trainer.jokerCount)));
     updateTrainerConfigControls();
 
     const configs =
       trainer.scope === "all"
-        ? TRAINER_CONFIGS
+        ? VariantCore.variantScenarios(trainer.variant)
         : [{ cards: trainer.cardCount, jokers: trainer.jokerCount }];
 
     trainer.randomBase =
@@ -823,7 +811,7 @@
     if (!trainer.puzzles.length) return;
 
     const snapshot = {
-      version: 3,
+      version: 4,
       savedAt: Date.now(),
       mode: trainer.mode,
       scope: trainer.scope,
@@ -872,7 +860,7 @@
     trainer.mode = snapshot.mode;
     trainer.scope = snapshot.scope;
     trainer.variant = normalizeTrainerVariant(snapshot.variant || "high");
-    trainer.cardCount = Number(snapshot.cardCount) || 14;
+    trainer.cardCount = normalizeTrainerCardCount(snapshot.cardCount, trainer.variant);
     trainer.jokerCount = Number(snapshot.jokerCount) || 0;
     trainer.randomBase = snapshot.randomBase || "";
     trainer.puzzles = snapshot.puzzles.map((puzzle) => ({
@@ -914,11 +902,16 @@
   }
 
   function isTrainerSnapshotValid(snapshot) {
-    if (!snapshot || ![1, 2, 3].includes(snapshot.version)) return false;
+    if (!snapshot || ![1, 2, 3, 4].includes(snapshot.version)) return false;
     if (snapshot.mode !== "daily" && snapshot.mode !== "random") return false;
     if (snapshot.scope !== "single" && snapshot.scope !== "all") return false;
     if (!Array.isArray(snapshot.puzzles) || !snapshot.puzzles.length) return false;
     if (!snapshot.puzzles.every((puzzle) => Array.isArray(puzzle.ids) && puzzle.ids.length >= 13)) return false;
+    const variant = normalizeTrainerVariant(snapshot.variant || snapshot.puzzles[0]?.variant || "high");
+    const supported = new Set(VariantCore.variantScenarios(variant).map((config) => configShort(config)));
+    if (!snapshot.puzzles.every((puzzle) => supported.has(configShort(puzzle)))) return false;
+    if (snapshot.scope === "all" && snapshot.puzzles.length !== supported.size) return false;
+    if (snapshot.scope === "single" && snapshot.puzzles.length !== 1) return false;
     if (snapshot.mode === "daily") {
       const dateKey = localDateKey();
       if (!snapshot.puzzles.every((puzzle) => normalizeDateKey(puzzle.dateKey) === dateKey)) return false;
@@ -995,6 +988,18 @@
 
   function updateTrainerConfigControls(puzzle = getTrainerPuzzle()) {
     const isAll = state.trainer.scope === "all";
+    const cardCounts = VariantCore.variantCardCounts(state.trainer.variant);
+    state.trainer.cardCount = normalizeTrainerCardCount(state.trainer.cardCount, state.trainer.variant);
+    document.querySelectorAll('input[name="trainer-card-count"]').forEach((input) => {
+      const supported = cardCounts.includes(Number(input.value));
+      input.disabled = !supported;
+      input.closest("label").hidden = !supported;
+    });
+    setCheckedValue("trainer-card-count", String(state.trainer.cardCount));
+    if (els.trainerCardCountOptions) {
+      els.trainerCardCountOptions.style.gridTemplateColumns = `repeat(${cardCounts.length}, minmax(0, 1fr))`;
+    }
+    if (els.trainerAllLabel) els.trainerAllLabel.textContent = `All ${cardCounts.length * 3}`;
     document.querySelectorAll(".trainer-single-control").forEach((control) => {
       control.hidden = isAll;
     });
@@ -1002,6 +1007,12 @@
     if (els.trainerCurrentConfig && puzzle) {
       els.trainerCurrentConfig.textContent = `${configControlLabel(puzzle)} · ${trainerVariantCompactLabel(puzzle.variant)}`;
     }
+  }
+
+  function normalizeTrainerCardCount(value, variant) {
+    const supported = VariantCore.variantCardCounts(variant);
+    const cards = Number(value);
+    return supported.includes(cards) ? cards : supported[0];
   }
 
   function syncSolverToTrainerPuzzle(puzzle) {

@@ -49,6 +49,30 @@ const sevenHighBadeucey = core.evaluateBadeucey(cards(["8s", "7h", "6d", "5c", "
 assert.equal(sevenHighBadeucey.points, 6, "badeucey: 8-low plus 7-high Badugi should score six");
 
 assert.equal(core.VARIANT_ORDER.indexOf("bdp"), core.VARIANT_ORDER.indexOf("badeucey") + 1, "bdp: selector order should place BDP directly after Badeucey");
+assert.deepEqual(core.variantCardCounts("high"), [14, 15, 16, 17], "config: High should retain all four card counts");
+assert.deepEqual(core.variantCardCounts("badeucey"), [16, 17], "config: Badeucey should start at sixteen cards");
+assert.deepEqual(core.variantCardCounts("bdp"), [17], "config: BDP should use only seventeen cards");
+assert.deepEqual(
+  core.variantScenarios("badeucey"),
+  [
+    { cards: 16, jokers: 0 },
+    { cards: 17, jokers: 0 },
+    { cards: 16, jokers: 1 },
+    { cards: 17, jokers: 1 },
+    { cards: 16, jokers: 2 },
+    { cards: 17, jokers: 2 },
+  ],
+  "config: Badeucey should expose six card/joker configurations"
+);
+assert.deepEqual(
+  core.variantScenarios("bdp"),
+  [
+    { cards: 17, jokers: 0 },
+    { cards: 17, jokers: 1 },
+    { cards: 17, jokers: 2 },
+  ],
+  "config: BDP should expose three card/joker configurations"
+);
 
 [
   [["As", "2h", "3d"], true, 12, "3hi"],
@@ -288,7 +312,12 @@ assert.equal(bdpFoulBottom.rowNames.bottom, "Foul", "bdp board: a completed foul
 assert.equal(bdpFoulBottom.rowNames.middle, "7hi", "bdp board: a completed foul should retain qualifying middle feedback");
 assert.equal(bdpFoulBottom.points, 24, "bdp board: live foul feedback should retain earned top and middle royalties");
 
-const bdpSolved = core.solveHand(bdpIds.concat("9h"), { variant: "bdp", mode: "exact" });
+assert.throws(
+  () => core.solveHand(bdpIds.concat("9h"), { variant: "bdp", mode: "exact" }),
+  /BDP Fantasyland needs 17 cards/,
+  "bdp solver: hands below seventeen cards should be rejected"
+);
+const bdpSolved = core.solveHand(bdpIds.concat(["9h", "8d", "6c", "Jh"]), { variant: "bdp", mode: "fast", maskLimit: 600, beamLimit: 360 });
 assert.ok(bdpSolved.best, "bdp solver: a qualifying hand should produce a legal solution");
 assert.equal(bdpSolved.best.repeat, true, "bdp solver: a bottom quads repeat line should be preserved");
 assert.equal(bdpSolved.best.top.eval.qualifies, true, "bdp solver: top must qualify as three-card Badugi");
@@ -368,8 +397,10 @@ assert.equal(
   "badugijack: the former fourteen-card board should be rejected"
 );
 
-assert.equal(core.buildSeed("2026-08-29", 14, 2, "badeucey", 0), "2026-08-29-14C-2J-BADEUCEY-0", "seed: canonical daily format");
-assert.equal(core.buildSeed("2026-08-29", 15, 1, "bdp", 2), "2026-08-29-15C-1J-BDP-2", "seed: BDP should have its own seed label");
+assert.equal(core.buildSeed("2026-08-29", 16, 2, "badeucey", 0), "2026-08-29-16C-2J-BADEUCEY-0", "seed: canonical Badeucey format");
+assert.equal(core.buildSeed("2026-08-29", 17, 1, "bdp", 2), "2026-08-29-17C-1J-BDP-2", "seed: BDP should have its own seed label");
+assert.throws(() => core.buildSeed("2026-08-29", 15, 0, "badeucey", 0), /Badeucey Fantasyland needs 16 to 17 cards/, "seed: Badeucey should reject fifteen cards");
+assert.throws(() => core.buildSeed("2026-08-29", 16, 0, "bdp", 0), /BDP Fantasyland needs 17 cards/, "seed: BDP should reject sixteen cards");
 assert.equal(core.buildSeed("2026-08-29", 17, 1, "badugijack", 3), "2026-08-29-17C-1J-BADUGIJACK-3", "seed: BadugiJack should have its own seed label");
 assert.equal(core.buildSeed("2026-08-29", 16, 2, "doubleblackjack", 4), "2026-08-29-16C-2J-DOUBLEBLACKJACK-4", "seed: Double Blackjack should have its own seed label");
 
@@ -380,9 +411,10 @@ assert.equal(firstDeal.length, 14, "seed: deal should have requested card count"
 assert.equal(firstDeal.filter((id) => id.startsWith("JK")).length, 2, "seed: deal should have requested jokers");
 
 for (const variant of ["low", "badeucey", "bdp", "badugijack", "doubleblackjack", "cribbage"]) {
-  const deal = core.findQualifyingDeal("2026-08-29", 14, 0, variant, { maxAttempts: 5000 });
+  const cards = core.variantCardCounts(variant)[0];
+  const deal = core.findQualifyingDeal("2026-08-29", cards, 0, variant, { maxAttempts: 5000 });
   assert.equal(core.hasQualifyingMiddle(deal.ids, variant), true, `seed: ${variant} deal should be middle-qualified`);
-  assert.equal(deal.rawSeed, core.buildSeed("2026-08-29", 14, 0, variant, deal.counter), `seed: ${variant} counter should match raw seed`);
+  assert.equal(deal.rawSeed, core.buildSeed("2026-08-29", cards, 0, variant, deal.counter), `seed: ${variant} counter should match raw seed`);
 }
 
 const incrementedLowDeal = core.findQualifyingDeal("TEST-29", 14, 0, "low", { maxAttempts: 100 });

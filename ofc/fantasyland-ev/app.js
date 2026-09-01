@@ -3,7 +3,6 @@
 
   const Core = window.OFCFantasylandCore;
   const STORAGE_KEY = "ofcFantasylandEv.v6";
-  const SCENARIOS = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
   const DEFINITIONS = {
     immediate: {
       title: "Immediate royalty EV",
@@ -45,8 +44,6 @@
     }
     cacheElements();
     bindEvents();
-    renderMatrix();
-    renderJokerProbabilities();
     renderVariant();
   }
 
@@ -60,8 +57,10 @@
       runDetail: document.querySelector("#run-detail"),
       runProgress: document.querySelector("#run-progress"),
       matrixBody: document.querySelector("#matrix-body"),
+      matrixTitle: document.querySelector("#matrix-title"),
       matrixMeta: document.querySelector("#matrix-meta"),
       summaryImmediate: document.querySelector("#summary-immediate"),
+      summaryConfigCount: document.querySelector("#summary-config-count"),
       summaryRepeat: document.querySelector("#summary-repeat"),
       summaryRecursive: document.querySelector("#summary-recursive"),
       summaryQualify: document.querySelector("#summary-qualify"),
@@ -104,24 +103,30 @@
 
   function renderVariant() {
     const meta = Core.VARIANTS[state.variant];
+    const scenarios = scenariosForVariant(state.variant);
+    const cardCounts = Core.variantCardCounts(state.variant);
+    const configCount = scenarios.length;
     els.variantSummary.textContent = meta.short;
     const data = getVariantResults();
-    renderMatrix(data);
-    renderSummary(data);
-    renderCharts(data);
-    const complete = SCENARIOS.filter((scenario) => data[scenarioKey(scenario)]).length;
-    els.matrixMeta.textContent = complete ? `${meta.label} - ${complete}/12 configs` : "No samples yet";
+    renderMatrix(data, scenarios);
+    renderSummary(data, scenarios);
+    renderCharts(data, scenarios);
+    renderJokerProbabilities();
+    const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
+    els.matrixTitle.textContent = `${cardRangeLabel(cardCounts)} ${meta.label} matrix`;
+    els.summaryConfigCount.textContent = `Average of ${configCount} configs`;
+    els.matrixMeta.textContent = complete ? `${meta.label} - ${complete}/${configCount} configs` : "No samples yet";
     if (!state.running) {
       els.runStatus.textContent = complete ? `${meta.label} results loaded` : "Ready to calculate";
-      els.runDetail.textContent = complete ? "Run again to replace this sample" : "12 configurations - browser only";
-      els.runProgress.style.width = complete === 12 ? "100%" : "0%";
+      els.runDetail.textContent = complete ? "Run again to replace this sample" : `${configCount} configurations - browser only`;
+      els.runProgress.style.width = complete === configCount ? "100%" : "0%";
     }
   }
 
-  function renderMatrix(data = getVariantResults()) {
+  function renderMatrix(data = getVariantResults(), scenarios = scenariosForVariant()) {
     if (!els.matrixBody) return;
     const fragment = document.createDocumentFragment();
-    SCENARIOS.forEach((scenario) => {
+    scenarios.forEach((scenario) => {
       const result = data[scenarioKey(scenario)];
       const row = document.createElement("tr");
       row.dataset.config = scenarioKey(scenario);
@@ -140,8 +145,8 @@
     els.matrixBody.replaceChildren(fragment);
   }
 
-  function renderSummary(data) {
-    const results = SCENARIOS.map((scenario) => data[scenarioKey(scenario)]).filter(Boolean);
+  function renderSummary(data, scenarios = scenariosForVariant()) {
+    const results = scenarios.map((scenario) => data[scenarioKey(scenario)]).filter(Boolean);
     if (!results.length) {
       [els.summaryImmediate, els.summaryRepeat, els.summaryRecursive, els.summaryQualify].forEach((element) => { element.textContent = "--"; });
       return;
@@ -152,8 +157,8 @@
     els.summaryQualify.textContent = formatPct(mean(results.map((result) => result.qualifyRate)));
   }
 
-  function renderCharts(data) {
-    const results = SCENARIOS.map((scenario) => ({ scenario, result: data[scenarioKey(scenario)] })).filter((entry) => entry.result);
+  function renderCharts(data, scenarios = scenariosForVariant()) {
+    const results = scenarios.map((scenario) => ({ scenario, result: data[scenarioKey(scenario)] })).filter((entry) => entry.result);
     if (!results.length) {
       els.evChart.className = "bar-chart empty-chart";
       els.evChart.textContent = "Run the calculator to compare configurations.";
@@ -216,8 +221,9 @@
   async function runCalculator() {
     if (state.running) return;
     const variant = state.variant;
+    const scenarios = scenariosForVariant(variant);
     const samples = Math.max(1, Number(els.sampleCount.value) || 5);
-    const total = samples * SCENARIOS.length;
+    const total = samples * scenarios.length;
     const runSeed = Core.hashSeed(`${Date.now()}-${Math.random()}-${variant}`).toString(16).padStart(8, "0").toUpperCase();
     const nextResults = {};
     const started = performance.now();
@@ -226,7 +232,7 @@
     state.abort = false;
     setRunningUi(true);
 
-    for (const scenario of SCENARIOS) {
+    for (const scenario of scenarios) {
       const aggregate = createAggregate();
       for (let sample = 0; sample < samples; sample += 1) {
         if (state.abort || state.variant !== variant) break;
@@ -244,9 +250,9 @@
       if (aggregate.samples) {
         nextResults[scenarioKey(scenario)] = finalizeAggregate(aggregate);
         state.results[variant] = { ...(state.results[variant] || {}), ...nextResults };
-        renderMatrix(state.results[variant]);
-        renderSummary(state.results[variant]);
-        renderCharts(state.results[variant]);
+        renderMatrix(state.results[variant], scenarios);
+        renderSummary(state.results[variant], scenarios);
+        renderCharts(state.results[variant], scenarios);
         saveCache();
       }
       if (state.abort || state.variant !== variant) break;
@@ -342,7 +348,7 @@
 
   function renderJokerProbabilities() {
     const fragment = document.createDocumentFragment();
-    [14, 15, 16, 17].forEach((cards) => {
+    Core.variantCardCounts(state.variant).forEach((cards) => {
       const probabilities = [0, 1, 2].map((jokers) => hypergeometricJokers(cards, jokers));
       const row = document.createElement("tr");
       row.innerHTML = `<td><strong>${cards} cards</strong></td>${probabilities.map((value) => `<td>${formatPct(value)}</td>`).join("")}`;
@@ -497,6 +503,14 @@
     return `${scenario.cards}-${scenario.jokers}`;
   }
 
+  function scenariosForVariant(variant = state.variant) {
+    return Core.variantScenarios(variant);
+  }
+
+  function cardRangeLabel(cardCounts) {
+    return cardCounts.length === 1 ? `${cardCounts[0]}-card` : `${cardCounts[0]}–${cardCounts[cardCounts.length - 1]} card`;
+  }
+
   function mean(values) {
     return values.length ? values.reduce((sum, value) => sum + finiteNumber(value), 0) / values.length : 0;
   }
@@ -546,6 +560,7 @@
   window.OFCFantasylandEV = {
     finalizeAggregate,
     hypergeometricJokers,
+    scenariosForVariant,
     definitions: DEFINITIONS,
   };
 })();

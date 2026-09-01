@@ -30,15 +30,17 @@
       id: "badeucey",
       seedLabel: "BADEUCEY",
       label: "Badeucey",
+      minCards: 16,
       middleSize: 5,
-      short: "Middle must qualify as both 2–7 low and a four-card 2–5 Badugi.",
+      short: "16–17 cards. Middle must qualify as both 2–7 low and a four-card 2–5 Badugi.",
     },
     bdp: {
       id: "bdp",
       seedLabel: "BDP",
       label: "BDP",
+      minCards: 17,
       middleSize: 5,
-      short: "Badugi on top, 2–7 low in the middle, and a pair or better on the bottom.",
+      short: "17 cards. Badugi on top, 2–7 low in the middle, and a pair or better on the bottom.",
     },
     badugijack: {
       id: "badugijack",
@@ -133,7 +135,7 @@
     {
       id: "badeucey",
       title: "Badeucey",
-      qualification: "The same five middle cards need both a qualifying 2–7 low and four unpaired cards of different suits for 2–5 Badugi. Aces are high.",
+      qualification: "Fantasyland uses 16 or 17 cards. The same five middle cards need both a qualifying 2–7 low and four unpaired cards of different suits for 2–5 Badugi. Aces are high.",
       scoring: [
         { label: "2–7 Low", items: ["7hi: 4pts", "8hi: 2pts", "9hi: 1pt", "Thi: 0pts"] },
         { label: "Badugi", items: ["5hi: 12pts", "6hi: 8pts", "7hi: 4pts", "8hi: 0pts", "9hi: 0pts", "Thi: 0pts"] },
@@ -143,7 +145,7 @@
     {
       id: "bdp",
       title: "BDP",
-      qualification: "Badugi, Deuce, Pair: top needs three unpaired cards of different suits with aces low; middle needs Thi or lower in 2–7 low; bottom needs a pair or better.",
+      qualification: "Fantasyland uses 17 cards. Badugi, Deuce, Pair: top needs three unpaired cards of different suits with aces low; middle needs Thi or lower in 2–7 low; bottom needs a pair or better.",
       scoring: [
         { label: "Top · 3-card Badugi", items: ["3hi: 12pts", "4hi: 8pts", "5hi: 4pts", "6hi or higher: 0pts"] },
         { label: "Middle · 2–7 Low", items: ["7hi: 12pts", "8hi: 6pts", "9hi: 3pts", "Thi: 0pts"] },
@@ -211,6 +213,29 @@
   function normalizeVariant(value) {
     const id = String(value || "high").toLowerCase();
     return VARIANTS[id] ? id : "high";
+  }
+
+  function variantCardCounts(value) {
+    const variant = VARIANTS[normalizeVariant(value)];
+    const minimum = Number(variant.minCards) || 14;
+    return [14, 15, 16, 17].filter((cards) => cards >= minimum);
+  }
+
+  function variantScenarios(value) {
+    const cardCounts = variantCardCounts(value);
+    return [0, 1, 2].flatMap((jokers) => cardCounts.map((cards) => ({ cards, jokers })));
+  }
+
+  function supportsVariantCardCount(value, cards) {
+    return variantCardCounts(value).includes(Number(cards));
+  }
+
+  function assertVariantCardCount(value, cards) {
+    const variant = VARIANTS[normalizeVariant(value)];
+    const supported = variantCardCounts(variant.id);
+    if (supported.includes(Number(cards))) return;
+    const requirement = supported.length === 1 ? `${supported[0]} cards` : `${supported[0]} to ${supported[supported.length - 1]} cards`;
+    throw new RangeError(`${variant.label} Fantasyland needs ${requirement}.`);
   }
 
   function makeCard(id) {
@@ -1292,10 +1317,9 @@
     const mode = options.mode === "fast" ? "fast" : "exact";
     const ids = cardIds.slice();
     const n = ids.length;
+    assertVariantCardCount(variant, n);
     if (variant === "badugijack") return solveBadugiJackHand(ids, options, started, mode);
     const middleSize = VARIANTS[variant].middleSize;
-    const boardSize = VARIANTS[variant].boardSize || 3 + middleSize + 5;
-    if (n < boardSize || n > 17) throw new Error(`${VARIANTS[variant].label} Fantasyland needs ${boardSize} to 17 cards.`);
 
     const fullMask = (1 << n) - 1;
     const allMiddleMasks = combinationMasks(n, middleSize);
@@ -1403,6 +1427,7 @@
 
   function hasQualifyingMiddle(cardIds, variantValue) {
     const variant = normalizeVariant(variantValue);
+    if (!supportsVariantCardCount(variant, cardIds.length)) return false;
     if (variant === "high") return true;
     if (variant === "bdp") {
       return Boolean(solveHand(cardIds, { variant, mode: "fast", maskLimit: 180, beamLimit: 120 }).best);
@@ -1418,7 +1443,9 @@
   }
 
   function buildSeed(dateKey, cards, jokers, variantValue, counter) {
-    const variant = VARIANTS[normalizeVariant(variantValue)];
+    const variantId = normalizeVariant(variantValue);
+    assertVariantCardCount(variantId, cards);
+    const variant = VARIANTS[variantId];
     return `${dateKey}-${cards}C-${jokers}J-${variant.seedLabel}-${counter}`;
   }
 
@@ -1464,6 +1491,7 @@
 
   function findQualifyingDeal(base, cards, jokers, variantValue, options = {}) {
     const variant = normalizeVariant(variantValue);
+    assertVariantCardCount(variant, cards);
     const daily = options.daily !== false;
     const maxAttempts = options.maxAttempts || 5000;
     for (let counter = 0; counter < maxAttempts; counter += 1) {
@@ -1487,6 +1515,9 @@
     VARIANT_ORDER,
     RULE_SECTIONS,
     normalizeVariant,
+    variantCardCounts,
+    variantScenarios,
+    supportsVariantCardCount,
     makeCard,
     evaluateHighFive,
     evaluateHighTop,

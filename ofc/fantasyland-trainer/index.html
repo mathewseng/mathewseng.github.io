@@ -10,7 +10,7 @@
     />
     <title>OFC Fantasyland Trainer</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260901b" />
+    <link rel="stylesheet" href="./styles.css?v=20260901c" />
   </head>
   <body>
     <div class="app-shell">
@@ -59,12 +59,12 @@
             <span>Set</span>
             <div class="segmented two-up" role="radiogroup" aria-label="Trainer set">
               <label><input type="radio" name="trainer-scope" value="single" /><span>Single</span></label>
-              <label><input type="radio" name="trainer-scope" value="all" checked /><span>All 12</span></label>
+              <label><input type="radio" name="trainer-scope" value="all" checked /><span id="trainer-all-label">All 12</span></label>
             </div>
           </div>
           <div class="control-field trainer-single-control">
             <span>Cards</span>
-            <div class="segmented four-up" role="radiogroup" aria-label="Trainer card count">
+            <div id="trainer-card-count-options" class="segmented four-up" role="radiogroup" aria-label="Trainer card count">
               <label><input type="radio" name="trainer-card-count" value="14" checked /><span>14</span></label>
               <label><input type="radio" name="trainer-card-count" value="15" /><span>15</span></label>
               <label><input type="radio" name="trainer-card-count" value="16" /><span>16</span></label>
@@ -225,7 +225,7 @@
       <div id="variant-rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260901b"></script>
-    <script src="./app.js?v=20260901b"></script>
+    <script src="../fantasyland-core.js?v=20260901c"></script>
+    <script src="./app.js?v=20260901c"></script>
   </body>
 </html>
