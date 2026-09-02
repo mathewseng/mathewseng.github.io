@@ -2,13 +2,14 @@
   "use strict";
 
   const Core = window.OFCFantasylandCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v6";
-  const SETTINGS_KEY = "ofcFantasylandEv.settings.v1";
+  const TrainerCore = window.OFCSolverCore;
+  const STORAGE_KEY = "ofcFantasylandEv.v8";
+  const SETTINGS_KEY = "ofcFantasylandEv.settings.v2";
   const CARD_COUNTS = [14, 15, 16, 17];
   const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
   const DECK_JOKER_COUNTS = [1, 2];
   const DEFAULT_SERIAL_MS = {
-    high: 180,
+    high: 360,
     low: 240,
     badeucey: 340,
     bdp: 180,
@@ -58,8 +59,8 @@
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
-    if (!Core) {
-      document.body.innerHTML = '<p style="padding:24px;color:#fff">Fantasyland calculation engine did not load.</p>';
+    if (!Core || !TrainerCore) {
+      document.body.innerHTML = '<p style="padding:24px;color:#fff">Fantasyland calculation engines did not load.</p>';
       return;
     }
     cacheElements();
@@ -88,11 +89,6 @@
       matrixMeta: document.querySelector("#matrix-meta"),
       deckMatrixBody: document.querySelector("#deck-matrix-body"),
       deckMatrixMeta: document.querySelector("#deck-matrix-meta"),
-      summaryImmediate: document.querySelector("#summary-immediate"),
-      summaryConfigCount: document.querySelector("#summary-config-count"),
-      summaryRepeat: document.querySelector("#summary-repeat"),
-      summaryRecursive: document.querySelector("#summary-recursive"),
-      summaryFoul: document.querySelector("#summary-foul"),
       evChart: document.querySelector("#ev-chart"),
       repeatChart: document.querySelector("#repeat-chart"),
       foulChart: document.querySelector("#foul-chart"),
@@ -153,18 +149,16 @@
     const data = getVariantResults();
     renderMatrix(data, scenarios);
     renderDeckMatrix(data);
-    renderSummary(data, scenarios);
     renderCharts(data, scenarios);
     renderJokerProbabilities();
     const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
     const sampleSummary = resultSampleSummary(data, scenarios);
     els.matrixTitle.textContent = `14–17 card ${meta.label} matrix`;
-    els.summaryConfigCount.textContent = `Average of ${configCount} configs`;
     els.matrixMeta.textContent = complete ? `${meta.label} - ${sampleSummary}` : "No samples yet";
     if (!state.running) {
       els.runStatus.textContent = complete ? `${meta.label} results loaded` : "Ready to calculate";
       els.runDetail.textContent = complete
-        ? `${sampleSummary}; ${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
+        ? `${sampleSummary}; ${state.variant === "high" ? "exact trainer solver; " : ""}${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
         : `${configCount} configurations - completed samples save locally`;
       els.runProgress.style.width = complete === configCount ? "100%" : "0%";
     }
@@ -234,18 +228,6 @@
       },
       { immediate: 0, repeatRate: 0, foulRate: 0 }
     );
-  }
-
-  function renderSummary(data, scenarios = scenariosForVariant()) {
-    const results = scenarios.map((scenario) => data[scenarioKey(scenario)]).filter(Boolean);
-    if (!results.length) {
-      [els.summaryImmediate, els.summaryRepeat, els.summaryFoul, els.summaryRecursive].forEach((element) => { element.textContent = "--"; });
-      return;
-    }
-    els.summaryImmediate.textContent = formatPoints(mean(results.map((result) => result.immediate)));
-    els.summaryRepeat.textContent = formatPct(mean(results.map((result) => result.repeatRate)));
-    els.summaryFoul.textContent = formatPct(mean(results.map((result) => resultFoulRate(result))));
-    els.summaryRecursive.textContent = formatRecursive(meanFinite(results.map((result) => result.recursive)));
   }
 
   function renderCharts(data, scenarios = scenariosForVariant()) {
@@ -343,7 +325,6 @@
       const data = state.results[variant] || {};
       renderMatrix(data, scenarios);
       renderDeckMatrix(data);
-      renderSummary(data, scenarios);
       renderCharts(data, scenarios);
       lastRender = now;
     };
@@ -404,7 +385,7 @@
       els.runDetail.textContent = `${formatInteger(completed)} / ${formatInteger(total)} new hands saved`;
     } else {
       els.runStatus.textContent = "Calculation complete";
-      els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}`;
+      els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}${variant === "high" ? "; exact trainer solver" : ""}`;
       els.matrixMeta.textContent = `${Core.VARIANTS[variant].label} - ${resultSampleSummary(state.results[variant], scenarios)}`;
       els.runProgress.style.width = "100%";
     }
@@ -445,7 +426,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260901f");
+          worker = new Worker("./worker.js?v=20260902b");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -548,13 +529,18 @@
   }
 
   function solveSample(ids, variant) {
+    if (variant === "high") {
+      const solved = TrainerCore.solveHand(ids);
+      if (!solved.best) throw new Error("High Fantasyland must always have a legal board.");
+      return solved;
+    }
     const splitVariant = variant === "badugijack" || variant === "doubleblackjack";
     const searchBounds = splitVariant
       ? { maskLimit: 40, beamLimit: 24 }
       : { maskLimit: 140, beamLimit: 72 };
     const analysisOptions = { allowUnsupportedCardCount: true };
     let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds, ...analysisOptions });
-    if (solved.best || variant === "high" || !Core.hasQualifyingMiddle(ids, variant, analysisOptions)) return solved;
+    if (solved.best || !Core.hasQualifyingMiddle(ids, variant, analysisOptions)) return solved;
 
     solved = splitVariant
       ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48, ...analysisOptions })
@@ -884,15 +870,6 @@
     return 1 - finiteNumber(result?.qualifyRate);
   }
 
-  function mean(values) {
-    return values.length ? values.reduce((sum, value) => sum + finiteNumber(value), 0) / values.length : 0;
-  }
-
-  function meanFinite(values) {
-    const finite = values.filter(Number.isFinite);
-    return finite.length ? mean(finite) : Infinity;
-  }
-
   function finiteNumber(value) {
     return Number.isFinite(Number(value)) ? Number(value) : 0;
   }
@@ -973,6 +950,7 @@
     mergeAggregate,
     sampleChunkSize,
     scenariosForVariant,
+    solveSample,
     definitions: DEFINITIONS,
   };
 })();

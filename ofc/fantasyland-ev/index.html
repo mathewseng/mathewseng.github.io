@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260901f" />
+    <link rel="stylesheet" href="./styles.css?v=20260902b" />
   </head>
   <body>
     <header class="site-header">
@@ -72,13 +72,6 @@
           <button id="run-calculator" class="primary-button" type="button">Run calculator</button>
           <button id="stop-calculator" class="secondary-button" type="button" hidden>Stop</button>
         </div>
-      </section>
-
-      <section class="summary-grid" aria-label="Variant summary">
-        <article><span>Royalty EV</span><strong id="summary-immediate">--</strong><small id="summary-config-count">Average of 12 exact configs</small></article>
-        <article><span>Repeat FL</span><strong id="summary-repeat">--</strong><small>Repeat line available</small></article>
-        <article><span>Foul chance</span><strong id="summary-foul">--</strong><small>No legal board</small></article>
-        <article><span>Recursive EV</span><strong id="summary-recursive">--</strong><small>Repeat-first strategy</small></article>
       </section>
 
       <section class="chart-grid">
@@ -187,8 +180,9 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260901f"></script>
-    <script src="./precomputed.js?v=20260901f"></script>
-    <script src="./app.js?v=20260901f"></script>
+    <script src="../fantasyland-core.js?v=20260902b"></script>
+    <script src="../fantasyland-trainer/app.js?v=20260902b"></script>
+    <script src="./precomputed.js?v=20260902b"></script>
+    <script src="./app.js?v=20260902b"></script>
   </body>
 </html>

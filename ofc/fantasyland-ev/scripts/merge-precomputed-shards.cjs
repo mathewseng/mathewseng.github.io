@@ -20,9 +20,13 @@ let merged = 0;
 selectedVariants.forEach((variant) => scenarios
   .filter(({ cards, jokers }) => (selectedCards === null || cards === selectedCards) && (selectedJokers === null || jokers === selectedJokers))
   .forEach(({ cards, jokers }) => {
+  const solverId = variant === "high" ? "trainer-exact-high-20260902a" : "bounded-search-20260901e";
   const outputPath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
-  const prefix = readPart(outputPath);
-  if (prefix.result.totals.samples === target) return;
+  const prefix = fs.existsSync(outputPath) ? readPart(outputPath, solverId) : emptyPart(variant, cards, jokers);
+  if (prefix.result.totals.samples === target) {
+    if (variant === "high" && prefix.result.totals.qualifyCount !== target) fail(`High Fantasyland false foul in ${cards}C/${jokers}J`);
+    return;
+  }
 
   const intervals = [{
     start: 0,
@@ -37,7 +41,7 @@ selectedVariants.forEach((variant) => scenarios
 
   shardNames.forEach((name) => {
     const source = path.join(shardDirectory, name);
-    const part = readPart(source);
+    const part = readPart(source, solverId);
     if (part.variant !== variant || part.cards !== cards || part.jokers !== jokers) fail(`Mismatched shard metadata: ${source}`);
     const start = Number(part.sampleStart);
     const end = Number(part.sampleEnd);
@@ -56,10 +60,11 @@ selectedVariants.forEach((variant) => scenarios
     cursor = interval.end;
   });
   if (cursor !== target || aggregate.samples !== target) fail(`Incomplete shards for ${variant} ${cards}C/${jokers}J: ${cursor}/${target}`);
+  if (variant === "high" && aggregate.qualifyCount !== target) fail(`High Fantasyland false foul in ${cards}C/${jokers}J`);
 
   const payload = {
     schemaVersion: 1,
-    solver: "bounded-search-20260901e",
+    solver: solverId,
     generatedAt: new Date().toISOString(),
     variant,
     cards,
@@ -76,10 +81,20 @@ selectedVariants.forEach((variant) => scenarios
 
 console.log(`Merged ${merged} configuration${merged === 1 ? "" : "s"} to ${target.toLocaleString()} samples.`);
 
-function readPart(filePath) {
+function emptyPart(variant, cards, jokers) {
+  return {
+    variant,
+    cards,
+    jokers,
+    result: { totals: createAggregate() },
+  };
+}
+
+function readPart(filePath, solverId) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
     if (!parsed?.result?.totals) fail(`Missing raw totals: ${filePath}`);
+    if (parsed.solver !== solverId) fail(`Wrong solver data in ${filePath}: ${parsed.solver || "unknown"}`);
     return parsed;
   } catch (error) {
     fail(`Could not read ${filePath}: ${error.message}`);

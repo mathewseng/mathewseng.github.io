@@ -2,8 +2,10 @@ const fs = require("fs");
 const path = require("path");
 
 const Core = require("../../fantasyland-core.js");
+const TrainerCore = require("../../fantasyland-trainer/app.js");
 const args = parseArgs(process.argv.slice(2));
 const variant = Core.normalizeVariant(args.variant);
+const solverId = variant === "high" ? "trainer-exact-high-20260902a" : "bounded-search-20260901e";
 const cards = Number(args.cards);
 const jokers = Number(args.jokers);
 const target = Number(args.samples || 10000);
@@ -57,7 +59,7 @@ console.log(`Complete: ${outputPath} (${aggregate.samples.toLocaleString()} samp
 function savePart() {
   const payload = {
     schemaVersion: 1,
-    solver: "bounded-search-20260901e",
+    solver: solverId,
     generatedAt: new Date().toISOString(),
     variant,
     cards,
@@ -81,7 +83,7 @@ function loadAggregate(filePath) {
     const intervalMatches = ranged
       ? parsedStart === sampleStart && parsedEnd === sampleEnd
       : parsedStart === 0 && finite(totals?.samples) <= target;
-    if (parsed?.variant !== variant || parsed?.cards !== cards || parsed?.jokers !== jokers || !intervalMatches || !totals) {
+    if (parsed?.solver !== solverId || parsed?.variant !== variant || parsed?.cards !== cards || parsed?.jokers !== jokers || !intervalMatches || !totals) {
       return createAggregate();
     }
     return {
@@ -100,11 +102,16 @@ function loadAggregate(filePath) {
 }
 
 function solveSample(ids, selectedVariant) {
+  if (selectedVariant === "high") {
+    const solved = TrainerCore.solveHand(ids);
+    if (!solved.best) throw new Error("High Fantasyland must always have a legal board.");
+    return solved;
+  }
   const splitVariant = selectedVariant === "badugijack" || selectedVariant === "doubleblackjack";
   const searchBounds = splitVariant ? { maskLimit: 40, beamLimit: 24 } : { maskLimit: 140, beamLimit: 72 };
   const analysisOptions = { allowUnsupportedCardCount: true };
   let solved = Core.solveHand(ids, { variant: selectedVariant, mode: "fast", ...searchBounds, ...analysisOptions });
-  if (solved.best || selectedVariant === "high" || !Core.hasQualifyingMiddle(ids, selectedVariant, analysisOptions)) return solved;
+  if (solved.best || !Core.hasQualifyingMiddle(ids, selectedVariant, analysisOptions)) return solved;
   return splitVariant
     ? Core.solveHand(ids, { variant: selectedVariant, mode: "fast", maskLimit: 80, beamLimit: 48, ...analysisOptions })
     : ids.length === 14

@@ -4,18 +4,23 @@ const path = require("path");
 const vm = require("vm");
 
 const core = require("../../fantasyland-core.js");
+const trainerCore = require("../app.js");
 const source = fs.readFileSync(path.join(__dirname, "../../fantasyland-ev/app.js"), "utf8");
 const context = {
   console,
   document: { addEventListener() {} },
   localStorage: { getItem() { return null; }, setItem() {} },
   performance: { now: () => Date.now() },
-  window: { OFCFantasylandCore: core, setTimeout },
+  window: { OFCFantasylandCore: core, OFCSolverCore: trainerCore, setTimeout },
 };
 vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
+
+const previousFalseFoul = ["Qs", "2s", "9h", "5h", "3c", "Th", "Tc", "Kh", "3h", "Ts", "As", "9c", "4c", "4d"];
+const exactHigh = api.solveSample(previousFalseFoul, "high");
+assert.ok(exactHigh.best, "EV High samples must use the trainer's complete solver and never report a false foul");
 
 core.VARIANT_ORDER.forEach((variant) => {
   const scenarios = Array.from(api.scenariosForVariant(variant), (scenario) => ({ cards: scenario.cards, jokers: scenario.jokers }));

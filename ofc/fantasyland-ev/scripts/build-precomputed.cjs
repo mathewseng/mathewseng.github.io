@@ -18,7 +18,9 @@ Core.VARIANT_ORDER.forEach((variant) => {
     const filePath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
     try {
       const part = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      if (part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
+      const solverId = variant === "high" ? "trainer-exact-high-20260902a" : "bounded-search-20260901e";
+      if (part.solver !== solverId || part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
+      if (variant === "high" && Number(part.result.totals.qualifyCount) !== Number(part.result.samples)) throw new Error("High Fantasyland contains a false foul");
       results[variant][`${cards}-${jokers}`] = part.result;
     } catch (error) {
       missing.push(`${variant} ${cards}C/${jokers}J`);
@@ -32,7 +34,7 @@ const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "bounded-search-20260901e",
+  solver: "trainer-exact-high-20260902a+bounded-variants-20260901e",
   results,
 };
 fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze(${JSON.stringify(dataset)});\n`);

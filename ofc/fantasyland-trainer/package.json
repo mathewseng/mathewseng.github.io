@@ -2,8 +2,9 @@
   "name": "ofc-fantasyland-trainer",
   "private": true,
   "scripts": {
-    "test": "node tests/scoring-regression.test.cjs && node tests/joker-regression.test.cjs && node tests/variant-core.test.cjs && node tests/ev-metrics.test.cjs",
+    "test": "node tests/scoring-regression.test.cjs && node tests/joker-regression.test.cjs && node tests/variant-core.test.cjs && node tests/ev-metrics.test.cjs && node tests/high-ev-solver.test.cjs",
     "precompute:config": "node ../fantasyland-ev/scripts/precompute-config.cjs",
+    "precompute:variant": "node ../fantasyland-ev/scripts/precompute-variant-parallel.cjs",
     "precompute:merge": "node ../fantasyland-ev/scripts/merge-precomputed-shards.cjs",
     "precompute:build": "node ../fantasyland-ev/scripts/build-precomputed.cjs"
   }

@@ -79,6 +79,9 @@
   const TRAINER_STORAGE_KEY = "ofcFantasylandTrainerState.v1";
 
   const comboCache = new Map();
+  // Cache row values only; assignments are remapped to each hand's joker indexes on read.
+  const fiveJokerEvalCaches = [null, new Map(), new Map()];
+  const topJokerEvalCaches = [null, new Map(), new Map()];
   const virtualDeck = buildVirtualDeck();
   const state = {
     cardCount: 14,
@@ -116,6 +119,7 @@
 
   if (typeof document !== "undefined") {
     document.addEventListener("DOMContentLoaded", () => {
+      if (!document.querySelector("#trainer-rows")) return;
       applyMobilePlatformClasses();
       cacheElements();
       bindEvents();
@@ -3653,34 +3657,60 @@
       return evaluator(cards, null);
     }
 
+    const cache = evaluator === evaluateConcreteFive
+      ? fiveJokerEvalCaches[jokers.length]
+      : topJokerEvalCaches[jokers.length];
+    const cacheKey = natural.map((card) => card.id).sort().join(",");
+    const cached = cache.get(cacheKey);
+    if (cached) return materializeJokerEvaluation(cached, jokers);
+
     let best = null;
+    let bestReplacements = null;
     const occupied = new Set(natural.map((card) => card.id));
     const available = virtualDeck.filter((card) => !occupied.has(card.id));
     const consider = (replacements) => {
       const concrete = natural.concat(replacements);
       const evaluated = evaluator(concrete, null);
-      const assignments = new Map();
-      jokers.forEach((joker, index) => assignments.set(joker.handIndex, replacements[index]));
-      evaluated.assignments = assignments;
       if (!best || evaluated.strength > best.strength) {
         best = evaluated;
+        bestReplacements = replacements.slice();
       }
     };
 
     if (jokers.length === 1) {
       for (const first of available) consider([first]);
     } else if (jokers.length === 2) {
-      for (const first of available) {
-        for (const second of available) {
-          if (second.id === first.id) continue;
-          consider([first, second]);
+      for (let firstIndex = 0; firstIndex < available.length - 1; firstIndex += 1) {
+        for (let secondIndex = firstIndex + 1; secondIndex < available.length; secondIndex += 1) {
+          consider([available[firstIndex], available[secondIndex]]);
         }
       }
     } else {
       throw new Error("This solver supports up to two jokers.");
     }
 
-    return best;
+    const entry = { evaluation: best, replacements: bestReplacements };
+    const limit = evaluator === evaluateConcreteFive
+      ? jokers.length === 2 ? 24000 : 60000
+      : 5000;
+    setBoundedJokerEvaluation(cache, cacheKey, entry, limit);
+    return materializeJokerEvaluation(entry, jokers);
+  }
+
+  function setBoundedJokerEvaluation(cache, key, value, limit) {
+    if (cache.size >= limit) cache.delete(cache.keys().next().value);
+    cache.set(key, value);
+  }
+
+  function materializeJokerEvaluation(entry, jokers) {
+    const result = {
+      ...entry.evaluation,
+      ranks: entry.evaluation.ranks.slice(),
+    };
+    const assignments = new Map();
+    jokers.forEach((joker, index) => assignments.set(joker.handIndex, entry.replacements[index]));
+    result.assignments = assignments;
+    return result;
   }
 
   function evaluateConcreteFive(cards) {
@@ -4043,8 +4073,8 @@
     return Date.now();
   }
 
-  if (typeof window !== "undefined") {
-    window.OFCSolverCore = {
+  if (typeof globalThis !== "undefined") {
+    globalThis.OFCSolverCore = {
       solveHand,
       solveHandFast,
       parseCardList,

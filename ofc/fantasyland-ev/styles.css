@@ -426,41 +426,6 @@ select {
   transition: width 180ms ease;
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.summary-grid article {
-  min-width: 0;
-  min-height: 96px;
-  display: grid;
-  align-content: center;
-  gap: 3px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-}
-
-.summary-grid span,
-.summary-grid small {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 750;
-}
-
-.summary-grid strong {
-  font-size: 1.55rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.summary-grid article:nth-child(1) strong { color: var(--blue); }
-.summary-grid article:nth-child(2) strong { color: var(--green); }
-.summary-grid article:nth-child(3) strong { color: var(--red); }
-.summary-grid article:nth-child(4) strong { color: var(--violet); }
-
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1131,20 +1096,6 @@ dd {
 
   .progress-track {
     grid-row: 4;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-  }
-
-  .summary-grid article {
-    min-height: 82px;
-    padding: 11px;
-  }
-
-  .summary-grid strong {
-    font-size: 1.25rem;
   }
 
   .panel-head {
