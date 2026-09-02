@@ -8,7 +8,7 @@ Target:
 
 Current confirmed status:
 
-- Body weight: approximately 140 lb
+- Current reported body weight: 150 lb on September 2 after the Barcelona work trip
 - Best successful heavy single: 115 lb
 - 125 lb: failed
 - 135 lb: failed
@@ -64,6 +64,7 @@ Current status:
 - Best set: 5
 - Best session: 5, 5, 3
 - Total completed repetitions: 13
+- Latest session on September 1: 5, 4, 3 for 12 total after travel
 - Estimated maximum: approximately 5–6
 
 Strict standard:

@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   BarChart3,
-  CalendarCheck2,
   ChevronRight,
   CircleAlert,
   Dumbbell,
@@ -9,6 +8,7 @@ import {
   Gauge,
   HeartPulse,
   Plus,
+  Scale,
   Sparkles,
   Trophy,
   TrendingUp,
@@ -17,7 +17,8 @@ import {
 import ProgressChart from "../components/ProgressChart";
 import WorkoutCalendar from "../components/WorkoutCalendar";
 import { Badge, MetricCard, PageHeader, SectionHeading, Surface } from "../components/ui";
-import { benchGoal, goals } from "../data/goals";
+import { benchGoal } from "../data/goals";
+import { profile } from "../data/profile";
 import { compareWorkoutsNewestFirst, workouts as seedWorkouts } from "../data/workouts";
 import type { Workout } from "../lib/types";
 import { Link } from "../router";
@@ -116,6 +117,13 @@ const pullUpProgress = [
     secondary: 13,
     context: "Exact date was not recorded.",
   },
+  {
+    label: "Sep 1",
+    value: 5,
+    secondary: 12,
+    context:
+      "5/4/3 the night after returning from two weeks of work travel; strict form was not explicitly confirmed.",
+  },
 ];
 
 const pushdownProgress = [
@@ -213,7 +221,6 @@ export default function Dashboard() {
   const latestWorkout =
     workouts.filter((workout) => workout.date).sort(compareWorkoutsNewestFirst)[0] ??
     seedWorkouts[seedWorkouts.length - 1];
-  const goalCount = goals.filter((goal) => goal.status === "in-progress").length;
   const trainingWeeks = recentTrainingWeeks(workouts);
   const latestDateLabel = latestWorkout?.date
     ? new Intl.DateTimeFormat("en-US", {
@@ -260,7 +267,7 @@ export default function Dashboard() {
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
               <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Push → Pull next
+                Pull → Legs next
               </Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
@@ -268,11 +275,11 @@ export default function Dashboard() {
                 Suggested next session
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Pull, build clean volume.
+                Legs, rebuild the foundation.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
-                Start with five submaximal pull-up sets around 3 reps, then use pulldowns,
-                standing cable rows, rear delts, and controlled curls.
+                Use the Smith squat or leg press as your main pattern, keep 2–4 reps in
+                reserve, and record back pain before and after the session.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -285,7 +292,7 @@ export default function Dashboard() {
                 </div>
                 <div className="h-9 w-px bg-current opacity-20" />
                 <div>
-                  <p className="text-2xl font-black">1–3</p>
+                  <p className="text-2xl font-black">2–4</p>
                   <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
                     target RIR
                   </p>
@@ -336,22 +343,22 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">August 31 context</p>
-                <h2 className="mt-1 text-lg font-black">Strong travel-return session</h2>
+                <p className="eyebrow">September 1 context</p>
+                <h2 className="mt-1 text-lg font-black">Post-travel pull session</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 11:20 PM, after returning from two weeks of work travel in Barcelona, you
-              completed 23 reps at 95 lb and finished with a new recent best set of nine.
-              The 60-minute session tied your best completed bench volume.
+              At 11:20 PM, the night after returning from Barcelona, you completed 12
+              pull-ups across 5 / 4 / 3 and 75 minutes of back, shoulder, arm, and core
+              work. No 0–6 readiness or pain scores were supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">23 completed reps</Badge>
+              <Badge tone="accent">12 pull-ups</Badge>
               <Badge tone="quality">post-travel context</Badge>
-              <Badge tone="neutral">11:20 PM · 60 min</Badge>
+              <Badge tone="neutral">11:20 PM · 75 min</Badge>
             </div>
           </Surface>
         </div>
@@ -378,10 +385,10 @@ export default function Dashboard() {
           icon={TrendingUp}
         />
         <MetricCard
-          label="Active goals"
-          value={`${goalCount}`}
-          detail="Plus back-safe leg foundation"
-          icon={CalendarCheck2}
+          label="Body weight"
+          value={`${profile.bodyWeightLb} lb`}
+          detail="Reported Sep 2 · post-travel"
+          icon={Scale}
         />
       </section>
       <section className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">

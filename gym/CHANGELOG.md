@@ -2,6 +2,20 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-02 — September 1 Pull Workout and Body-Weight Update
+
+### Added
+
+- Added the September 1 pull workout at 11:20 PM for 75 minutes with pull-ups, cable lat and core work, rear-deltoid and shoulder work, and three curl variations.
+- Added straight-arm cable pulldown and two-hand cable biceps curl as canonical exercises.
+- Added a dated 150 lb body-weight observation for September 2 after the Barcelona work trip.
+
+### Changed
+
+- Updated the dashboard’s latest-session context, pull-up chart, body-weight metric, and next-session guidance from pull to legs.
+- Recorded new load references for the straight-arm cable pulldown, cable ab crunch, cable biceps curl, and spider curl.
+- Preserved missing 0–6 readiness ratings and ambiguous per-side cable and curl loading without inventing values.
+
 ## 2026-09-01 — August 31 Travel-Return Push Workout
 
 ### Added

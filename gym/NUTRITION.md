@@ -4,7 +4,9 @@ Supplement entries are personal observations, not medical recommendations.
 
 ## Current Known Information
 
-- Body weight: approximately 140 lb
+- Current reported body weight: 150 lb on September 2, 2026
+- This was reported after the Barcelona work trip; weigh-in time and conditions were not supplied.
+- One post-travel observation cannot establish a body-composition change or trend.
 - Primary nutrition objective: support muscle growth, strength, recovery, and consistent training
 - Exact daily calories are not yet recorded
 - Exact daily protein intake is not yet recorded
@@ -57,6 +59,15 @@ Allow entry of:
 - Notes
 - Travel status
 - Illness status
+
+## Dated Entries
+
+### September 2, 2026
+
+- Body weight: 150 lb
+- Context: reported after returning from approximately two weeks of work travel in Barcelona
+- Weigh-in time and conditions: not recorded
+- Data quality: partial context; body-weight value and date were supplied
 
 Workout/readiness context uses the 0–6 model described in `DATA_MODEL.md`. Nutrition-only fields may use their own explicitly documented scales, but they must never be silently treated as workout-readiness ratings.
 

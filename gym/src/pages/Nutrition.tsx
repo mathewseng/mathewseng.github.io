@@ -91,7 +91,7 @@ export default function Nutrition() {
         <div className="grid min-w-0 gap-4">
           <ProgressChart
             title="Body-weight trend"
-            description="Only dated, recorded weigh-ins appear. The undated ~140 lb observation is not plotted."
+            description="Only dated, recorded weigh-ins appear. One post-travel value is a baseline, not yet a trend."
             data={sorted.map((entry) => ({
               label: dateLabel(entry.date),
               value: entry.bodyWeightLb,

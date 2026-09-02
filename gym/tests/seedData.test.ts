@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import { currentBenchmarks } from "../src/data/benchmarks";
 import { exercises } from "../src/data/exercises";
 import { benchGoal } from "../src/data/goals";
+import { nutritionEntries } from "../src/data/nutrition";
+import { profile } from "../src/data/profile";
 import { workouts, workoutsNewestFirst } from "../src/data/workouts";
+import { calculateWorkoutTotals } from "../src/lib/calculations";
 import { getRepProgression } from "../src/lib/progression";
 import type { Workout } from "../src/lib/types";
-import { validateWorkout } from "../src/lib/validation";
+import { validateNutritionEntry, validateWorkout } from "../src/lib/validation";
 
 const workoutLogModules = import.meta.glob<Workout>("../logs/workouts/*.json", {
   eager: true,
@@ -23,6 +26,24 @@ describe("seed data integration", () => {
         value: 145,
       }),
     );
+  });
+
+  it("records the post-Barcelona body weight without inferring a trend", () => {
+    expect(profile).toMatchObject({
+      bodyWeightLb: 150,
+      bodyWeightApproximate: false,
+    });
+    expect(nutritionEntries).toEqual([
+      expect.objectContaining({
+        id: "nutrition-2026-09-02-body-weight",
+        date: "2026-09-02",
+        bodyWeightLb: 150,
+        dataQuality: "partial",
+      }),
+    ]);
+    expect(
+      nutritionEntries.flatMap((entry) => validateNutritionEntry(entry).errors),
+    ).toEqual([]);
   });
 
   it("keeps every historical workout valid against the exercise registry", () => {
@@ -285,7 +306,71 @@ describe("seed data integration", () => {
     expect(pushdown?.sets.map((set) => set.reps)).toEqual([8, 10, 8]);
     expect(overhead?.sets.map((set) => set.reps)).toEqual([9, 10, 8]);
     expect(overhead?.dataQuality).toBe("ambiguous");
-    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-08-31");
+  });
+
+  it("preserves the September 1 pull workout and cable ambiguity", () => {
+    const workout = workouts.find((item) => item.id === "pull-2026-09-01");
+    const pullUps = workout?.exercises.find(
+      (entry) => entry.exerciseId === "strict-pull-up",
+    );
+    const straightArmPulldown = workout?.exercises.find(
+      (entry) => entry.exerciseId === "straight-arm-cable-pulldown",
+    );
+    const abCrunch = workout?.exercises.find(
+      (entry) => entry.exerciseId === "cable-ab-crunch",
+    );
+    const cableCurl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "cable-biceps-curl",
+    );
+    const reverseFly = workout?.exercises.find(
+      (entry) => entry.exerciseId === "reverse-cable-fly",
+    );
+    const spiderCurl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "spider-curl",
+    );
+    const abCrunchBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "cable-ab-crunch-top-set",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-09-01",
+      startTime: "23:20",
+      durationMinutes: 75,
+      type: "pull",
+      chronologyIndex: 14,
+      dataQuality: "partial",
+      context: {
+        sourceLabels: expect.arrayContaining([
+          "post-barcelona-travel",
+          "second-consecutive-training-day",
+        ]),
+      },
+    });
+    expect(workout?.context).not.toHaveProperty("travelImpact");
+    expect(pullUps?.sets.map((set) => set.reps)).toEqual([5, 4, 3]);
+    expect(straightArmPulldown?.sets).toEqual([
+      expect.objectContaining({ weightLb: 30, reps: 10 }),
+      expect.objectContaining({ weightLb: 35, reps: 10 }),
+      expect.objectContaining({ weightLb: 40, reps: 10 }),
+    ]);
+    expect(abCrunch?.sets.at(-1)).toMatchObject({ weightLb: 80, reps: 10 });
+    expect(cableCurl?.sets.map((set) => set.reps)).toEqual([10, 10, 10]);
+    expect(reverseFly?.sets.every((set) => set.perSide === undefined)).toBe(true);
+    expect(reverseFly?.dataQuality).toBe("ambiguous");
+    expect(spiderCurl?.sets).toEqual([
+      expect.objectContaining({ weightLb: 20, reps: 10 }),
+    ]);
+    expect(calculateWorkoutTotals(workout!)).toMatchObject({
+      completedReps: 212,
+      completedVolumeLb: 5_350,
+      calculableSetCount: 19,
+      excludedSetCount: 3,
+    });
+    expect(abCrunchBenchmark).toMatchObject({
+      value: 80,
+      workoutId: "pull-2026-09-01",
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-09-01");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

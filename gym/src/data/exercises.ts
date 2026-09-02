@@ -168,6 +168,18 @@ export const exercises: ExerciseDefinition[] = [
     notes: "Cable ratios differ; compare results on the same machine.",
   }),
   defineExercise({
+    id: "straight-arm-cable-pulldown",
+    canonicalName: "Straight-Arm Cable Pulldown",
+    aliases: ["Cable lat pushdown", "Straight-arm lat pulldown"],
+    category: "back",
+    muscleGroups: ["lats", "teres major", "core"],
+    equipment: ["cable machine", "bar or rope attachment"],
+    failureRelativelySafe: true,
+    defaultRepRange: [10, 15],
+    notes:
+      "Keep the elbows softly bent and fixed while drawing the attachment toward the thighs. Cable-stack values are machine-specific.",
+  }),
+  defineExercise({
     id: "seated-cable-row",
     canonicalName: "Seated Cable Row",
     aliases: ["Cable row"],
@@ -299,6 +311,18 @@ export const exercises: ExerciseDefinition[] = [
     failureRelativelySafe: true,
     defaultRepRange: [8, 15],
     notes: "Record equipment and per-side load.",
+  }),
+  defineExercise({
+    id: "cable-biceps-curl",
+    canonicalName: "Cable Biceps Curl",
+    aliases: ["Two-hand cable curl", "Cable curl"],
+    category: "arms",
+    muscleGroups: ["biceps", "brachialis"],
+    equipment: ["cable machine", "bar attachment"],
+    failureRelativelySafe: true,
+    defaultRepRange: [8, 15],
+    notes:
+      "Record whether the movement is bilateral or single-arm and keep cable-stack comparisons on the same setup.",
   }),
 
   defineExercise({

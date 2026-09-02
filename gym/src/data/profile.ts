@@ -1,8 +1,8 @@
 import type { TrainingProfile } from "../lib/types";
 
 export const profile: TrainingProfile = {
-  bodyWeightLb: 140,
-  bodyWeightApproximate: true,
+  bodyWeightLb: 150,
+  bodyWeightApproximate: false,
   partnerBodyWeightLb: 120,
   partnerBodyWeightApproximate: true,
   trainingDaysPerWeek: [4, 5],
@@ -23,8 +23,8 @@ export const profile: TrainingProfile = {
   currentConstraints: [
     "A previous back injury caused at least one skipped leg day.",
     "Back-sensitive movements should be modified when symptoms are active.",
-    "Recent travel caused an approximately 10-day break from gym training.",
-    "Tiredness, soreness, and mild illness were reported after returning.",
+    "Recent Barcelona work travel lasted approximately two weeks; the athlete returned on August 31, 2026.",
+    "Readiness scores were not supplied for the first two post-travel sessions.",
     "Recommendations should account for sleep, travel, illness, soreness, and back discomfort.",
   ],
   mainGoalIds: [

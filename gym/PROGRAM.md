@@ -69,6 +69,8 @@ Progress to 105 lb after:
 
 - 5 submaximal sets
 - Begin around 3 repetitions per set
+- Latest result: 5, 4, 3 for 12 total on September 1; strict form was not explicitly confirmed
+- Build back to five submaximal sets before pushing early-set effort
 - Add one total repetition per workout
 - Avoid early-set failure
 
@@ -78,6 +80,12 @@ Progress to 105 lb after:
 - Choose a true working weight
 - Current top recorded set: 130 lb × 8
 - Current 10-repetition reference: 115 lb × 10
+
+### Straight-Arm Cable Pulldown
+
+- September 1 baseline: 30 lb × 10, 35 lb × 10, 40 lb × 10
+- Treat this as a lat isolation/accessory movement, not a replacement for pull-ups or standard lat pulldowns
+- Keep cable-machine and attachment comparisons consistent
 
 ### Row
 
@@ -112,11 +120,19 @@ Choose one or two:
 - Spider curl
 - Incline curl
 - Hammer curl
+- Two-hand cable biceps curl
 
 Perform:
 
 - 2–3 sets each
 - 8–15 repetitions
+
+Current accessory references from September 1:
+
+- Two-hand cable biceps curl: 30 lb × 10, 10, 10
+- Incline curl: 15 lb × 10, 10
+- Spider curl: 20 lb × 10
+- Curl equipment/per-hand loading was not restated for the incline and spider sets.
 
 ### Optional Carry
 

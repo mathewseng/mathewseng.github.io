@@ -136,7 +136,7 @@ export const programTemplates: ProgramTemplate[] = [
         sets: 5,
         reps: 3,
         notes:
-          "Begin around 3 reps per set and add one total repetition each pull workout. Avoid early-set failure.",
+          "Latest session was 5/4/3 for 12 total after travel. Build back to five submaximal sets around 3 reps and avoid early-set failure.",
       },
       {
         exerciseId: "lat-pulldown",
@@ -168,7 +168,7 @@ export const programTemplates: ProgramTemplate[] = [
         label: "Biceps",
         setRange: [2, 3],
         repRange: [8, 15],
-        alternatives: ["incline-curl", "hammer-curl"],
+        alternatives: ["incline-curl", "hammer-curl", "cable-biceps-curl"],
         notes: "Choose one or two curl variations.",
       },
       {

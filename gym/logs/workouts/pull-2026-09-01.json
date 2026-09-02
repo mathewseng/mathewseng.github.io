@@ -1,0 +1,239 @@
+{
+  "id": "pull-2026-09-01",
+  "date": "2026-09-01",
+  "startTime": "23:20",
+  "durationMinutes": 75,
+  "type": "pull",
+  "title": "Post-Barcelona Pull Workout",
+  "chronologyIndex": 14,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Trained the night after returning from approximately two weeks of work travel in Barcelona. This was the second consecutive training night after the trip. No numeric 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": [
+      "post-barcelona-travel",
+      "day-after-travel-return",
+      "second-consecutive-training-day"
+    ]
+  },
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-01-pullup-1",
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-pullup-2",
+          "reps": 4,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-pullup-3",
+          "reps": 3,
+          "completed": true
+        }
+      ],
+      "notes": "Twelve total repetitions. The five-repetition best set ties the existing best; the 5, 5, 3 baseline remains the highest recorded session total at 13. Strict form was not explicitly confirmed."
+    },
+    {
+      "exerciseId": "straight-arm-cable-pulldown",
+      "name": "Straight-Arm Cable Pulldown",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-01-straight-arm-pulldown-30",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-straight-arm-pulldown-35",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-straight-arm-pulldown-40",
+          "weightLb": 40,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Normalized from the supplied ‘cable lat push down’ label. Elbow position and attachment were not supplied. This establishes a 40 lb × 10 top-set baseline for this movement."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-01-ab-crunch-60",
+          "weightLb": 60,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-ab-crunch-70",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-ab-crunch-80",
+          "weightLb": 80,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Normalized from the supplied ‘cable ab crush’ label. The 80 lb × 10 final set is the heaviest recorded cable-ab-crunch load."
+    },
+    {
+      "exerciseId": "cable-biceps-curl",
+      "name": "Two-Hand Cable Biceps Curl",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-01-cable-curl-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-cable-curl-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-01-cable-curl-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Performed with both hands. The attachment and cable-machine identity were not supplied; this establishes the first recorded baseline for this variant."
+    },
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-01-reverse-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-01-reverse-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-01-reverse-fly-3",
+          "weightLb": 10,
+          "reps": 20,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Per-side loading and execution style were not supplied. The stack value is preserved without doubling it."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-01-lateral-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-01-lateral-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Normalized from ‘shoulder cable side ext.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-01-front-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-01-front-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Normalized from ‘shoulder cable front ext.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Curl",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-01-incline-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-01-incline-curl-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Equipment and per-hand loading were not explicitly restated for this session, so the entered load is preserved without a per-side inference."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Curl",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-01-spider-curl-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Twenty pounds matches the planned increase from the July 28 session. Equipment and per-hand loading were not explicitly restated, so the entered load is preserved without a per-side inference."
+    }
+  ],
+  "notes": "Workout started at 11:20 PM local time on September 1 and lasted 75 minutes. It contained 22 completed sets and 212 completed repetitions. Entered external loads produce 5,350 lb of preserved volume without doubling any ambiguous per-side values. No RIR, pain, sleep, energy, soreness, or illness scores were supplied."
+}

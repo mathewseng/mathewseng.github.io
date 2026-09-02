@@ -2,7 +2,7 @@
 
 ## Personal Details
 
-- Body weight: approximately 140 lb
+- Current reported body weight: 150 lb on September 2, 2026, after the Barcelona work trip
 - Girlfriend's body weight: approximately 120 lb
 - Training frequency: generally 4–5 days per week
 - Current split: rotating Push / Pull / Legs
@@ -23,8 +23,8 @@
 
 - A previous back injury caused at least one skipped leg day.
 - Back-sensitive movements should be modified when symptoms are active.
-- A recent trip involved approximately 10 days without gym training.
-- The athlete felt tired, sore, and mildly sick after returning from travel.
+- Recent Barcelona work travel lasted approximately two weeks; the athlete returned on August 31, 2026.
+- Readiness scores were not supplied for the first two post-travel sessions.
 - Training recommendations should account for sleep, travel disruption, illness, soreness, and back discomfort.
 - Context is entered with optional 0–6 ratings, not yes/no fields. Energy and sleep use `6 = best`; symptom and disruption fields use `6 = worst`.
 
@@ -39,4 +39,4 @@
 
 ## Known-Data Boundary
 
-No age, height, sex, medical history, dietary target, exact calorie intake, or exact protein intake has been provided. The project must not infer any of those values.
+No age, height, sex, medical history, dietary target, exact calorie intake, or exact protein intake has been provided. The single 150 lb post-travel observation does not establish a body-composition change or weight trend. The project must not infer any of those values or outcomes.

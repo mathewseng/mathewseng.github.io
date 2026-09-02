@@ -875,6 +875,119 @@ Thirty pounds is the heaviest recorded load for this movement. Equipment, attach
 
 ---
 
+# 14. Post-Barcelona Pull Workout — September 1, 2026
+
+**Date:** 2026-09-01
+
+**Start time:** 11:20 PM local time
+
+**Duration:** 75 minutes
+
+**Data quality:** Partial context; complete repetitions with several unspecified cable and curl loading conventions
+
+## Context
+
+- Trained the night after returning from approximately two weeks of work travel in Barcelona.
+- This was the second consecutive training night after the trip.
+- No 0–6 energy, sleep, soreness, illness, travel-impact, back-pain, or general-pain scores were supplied.
+- No RIR values were supplied.
+
+## Pull-Ups
+
+- 5 reps
+- 4 reps
+- 3 reps
+
+Completed work:
+
+- 12 total repetitions
+- Best set of 5 ties the existing best set
+- The 5, 5, 3 baseline remains the highest session total at 13
+
+Strict form was not explicitly confirmed for this session.
+
+## Straight-Arm Cable Pulldown
+
+- 30 lb × 10
+- 35 lb × 10
+- 40 lb × 10
+
+Completed work:
+
+- 30 repetitions
+- 1,050 lb preserved entered-load volume
+- 40 lb × 10 establishes the top-set baseline
+
+This movement was normalized from the supplied “cable lat push down” label. Attachment and elbow position were not supplied.
+
+## Cable Ab Crunch
+
+- 60 lb × 10
+- 70 lb × 10
+- 80 lb × 10
+
+Completed work:
+
+- 30 repetitions
+- 2,100 lb volume
+- 80 lb × 10 is the heaviest recorded cable-ab-crunch load
+
+## Two-Hand Cable Biceps Curl
+
+- 30 lb × 10
+- 30 lb × 10
+- 30 lb × 10
+
+Completed work:
+
+- 30 repetitions
+- 900 lb volume
+
+The attachment and cable-machine identity were not supplied.
+
+## Reverse Cable Fly
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 20
+
+The per-side loading convention and execution style were not supplied. The stack value is preserved without doubling.
+
+## Cable Lateral Raise
+
+- 10 lb × 10
+- 10 lb × 10
+
+Normalized from “shoulder cable side ext.” Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Cable Front Raise
+
+- 10 lb × 10
+- 10 lb × 10
+
+Normalized from “shoulder cable front ext.” Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Incline Curl
+
+- 15 lb × 10
+- 15 lb × 10
+
+Equipment and per-hand loading were not explicitly restated for this session.
+
+## Spider Curl
+
+- 20 lb × 10
+
+This completed the planned increase from the July 28 session. Equipment and per-hand loading were not explicitly restated.
+
+## Session Totals
+
+- 22 completed sets
+- 212 completed repetitions
+- 5,350 lb preserved entered-load volume without doubling ambiguous per-side loads
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -910,11 +1023,29 @@ Thirty pounds is the heaviest recorded load for this movement. Equipment, attach
 - Best recorded set: 5
 - Best recorded session: 5, 5, 3
 - Session total: 13
+- Latest result: 5, 4, 3 for 12 total on September 1
 
 ## Lat Pulldown
 
 - Best recorded load: 130 lb × 8
 - Best recorded 10-repetition load: 115 lb × 10
+
+## Straight-Arm Cable Pulldown
+
+- First recorded baseline: 30 lb × 10, 35 lb × 10, 40 lb × 10
+
+## Cable Ab Crunch
+
+- Heaviest recorded load: 80 lb × 10
+
+## Two-Hand Cable Biceps Curl
+
+- First recorded baseline: 30 lb × 10, 10, 10
+
+## Spider Curl
+
+- Heaviest recorded load: 20 lb × 10
+- Equipment and per-hand loading were not restated for this session.
 
 ## Smith-Machine Squat
 
@@ -966,3 +1097,13 @@ Change from the return session to August 3: **+17 completed repetitions and +510
 Change from August 10 to August 12: **+2 completed repetitions and +60 lb of completed volume** across three sets.
 
 August 31 tied the August 12 three-set total with a different repetition distribution.
+
+### Pull-Up Session Repetitions
+
+| Session                 | Completed set reps | Session total | Form note                       |
+| ----------------------- | ------------------ | ------------: | ------------------------------- |
+| Baseline (date unknown) | 5, 5, 3            |            13 | Recorded as strict baseline     |
+| 2026-07-28              | 4, 3               |             7 | Strict standard not reconfirmed |
+| 2026-09-01              | 5, 4, 3            |            12 | Strict standard not reconfirmed |
+
+The September 1 workout tied the best recorded set of 5 but did not exceed the 13-repetition baseline session total.

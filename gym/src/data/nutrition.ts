@@ -1,20 +1,25 @@
 import type { NutritionEntry, NutritionObservation, Scale0To6 } from "../lib/types";
 
-/**
- * No dated nutrition logs were supplied. Keep this empty rather than creating
- * synthetic adherence, calorie, protein, hydration, or body-weight records.
- */
-export const nutritionEntries: NutritionEntry[] = [];
+export const nutritionEntries: NutritionEntry[] = [
+  {
+    id: "nutrition-2026-09-02-body-weight",
+    date: "2026-09-02",
+    bodyWeightLb: 150,
+    notes:
+      "Current body weight reported after returning from the Barcelona work trip. Weigh-in time and conditions were not supplied, so this is one observation rather than a trend.",
+    dataQuality: "partial",
+  },
+];
 
 export const nutritionObservations: NutritionObservation[] = [
   {
     id: "body-weight",
     title: "Current reported body weight",
-    value: 140,
+    value: 150,
     unit: "lb",
     status: "reported",
-    notes: "Approximately 140 lb; no dated weigh-in was supplied.",
-    dataQuality: "estimated",
+    notes: "Reported at 150 lb on September 2, 2026, after the Barcelona work trip.",
+    dataQuality: "complete",
   },
   {
     id: "nutrition-objective",

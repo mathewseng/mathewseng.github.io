@@ -83,7 +83,7 @@ export const goals: Goal[] = [
       "Avoid repeated descending failed attempts.",
     ],
     notes:
-      "Current body weight is approximately 140 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. Latest working performance is 95 lb × 7, 7, 9 for 23 completed repetitions after two weeks of work travel, tying the best completed volume and setting a new recent 95 lb top-set best.",
+      "Current reported body weight is 150 lb after the Barcelona work trip. The bench target remains 145 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. Latest working performance is 95 lb × 7, 7, 9 for 23 completed repetitions, tying the best completed volume and setting a new recent 95 lb top-set best.",
   },
   {
     id: "ten-strict-pullups",
@@ -160,7 +160,7 @@ export const goals: Goal[] = [
       "Retest a maximum set after a recovery period.",
     ],
     notes:
-      "Best set: 5. Best session: 5, 5, 3 for 13 total. Estimated fresh maximum is approximately 5–6.",
+      "Best set: 5. Best session: 5, 5, 3 for 13 total. The September 1 post-travel session was 5, 4, 3 for 12 total; strict form was not explicitly confirmed. Estimated fresh maximum remains approximately 5–6.",
   },
   {
     id: "build-muscle",
