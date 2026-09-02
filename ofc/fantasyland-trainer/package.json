@@ -4,6 +4,7 @@
   "scripts": {
     "test": "node tests/scoring-regression.test.cjs && node tests/joker-regression.test.cjs && node tests/variant-core.test.cjs && node tests/ev-metrics.test.cjs",
     "precompute:config": "node ../fantasyland-ev/scripts/precompute-config.cjs",
+    "precompute:merge": "node ../fantasyland-ev/scripts/merge-precomputed-shards.cjs",
     "precompute:build": "node ../fantasyland-ev/scripts/build-precomputed.cjs"
   }
 }

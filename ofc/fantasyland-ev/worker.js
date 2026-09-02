@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260901e");
+importScripts("../fantasyland-core.js?v=20260901f");
 
 const Core = self.OFCFantasylandCore;
 let activeTask = null;

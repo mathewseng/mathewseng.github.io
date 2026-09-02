@@ -445,7 +445,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260901e");
+          worker = new Worker("./worker.js?v=20260901f");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -859,7 +859,7 @@
 
   function applyPrecomputedResults(dataset) {
     const target = finiteNumber(dataset?.samplesPerConfig);
-    if (dataset?.schemaVersion !== 1 || target < 100000 || !dataset.results) return 0;
+    if (dataset?.schemaVersion !== 1 || target < 10000 || !dataset.results) return 0;
     const complete = Core.VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples);

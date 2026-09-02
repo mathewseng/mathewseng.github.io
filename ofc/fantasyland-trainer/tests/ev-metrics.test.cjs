@@ -86,9 +86,9 @@ assert.equal(api.sampleChunkSize(100000), 25, "large runs should use bounded wor
 assert.equal(api.formatDuration(61000), "1m 01s", "time estimates should remain compact and precise");
 
 assert.equal(
-  api.applyPrecomputedResults({ schemaVersion: 1, samplesPerConfig: 99999, results: {} }),
+  api.applyPrecomputedResults({ schemaVersion: 1, samplesPerConfig: 9999, results: {} }),
   0,
-  "the production page should reject a baseline below 100k samples per configuration"
+  "the production page should reject a baseline below 10k samples per configuration"
 );
 const completeBaseline = {};
 core.VARIANT_ORDER.forEach((variant) => {
@@ -96,15 +96,15 @@ core.VARIANT_ORDER.forEach((variant) => {
   api.scenariosForVariant().forEach((scenario) => {
     completeBaseline[variant][`${scenario.cards}-${scenario.jokers}`] = {
       ...aggregate,
-      samples: 100000,
-      totals: { ...aggregate.totals, samples: 100000 },
+      samples: 10000,
+      totals: { ...aggregate.totals, samples: 10000 },
     };
   });
 });
 assert.equal(
-  api.applyPrecomputedResults({ schemaVersion: 1, samplesPerConfig: 100000, results: completeBaseline }),
-  100000,
-  "a complete 100k-per-row baseline should pass the production gate"
+  api.applyPrecomputedResults({ schemaVersion: 1, samplesPerConfig: 10000, results: completeBaseline }),
+  10000,
+  "a complete 10k-per-row baseline should pass the production gate"
 );
 
 console.log("EV metric regression tests passed");

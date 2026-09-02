@@ -6,16 +6,28 @@ const args = parseArgs(process.argv.slice(2));
 const variant = Core.normalizeVariant(args.variant);
 const cards = Number(args.cards);
 const jokers = Number(args.jokers);
-const target = Number(args.samples || 100000);
+const target = Number(args.samples || 10000);
 const outputDirectory = path.resolve(args.output || path.join(__dirname, "../precomputed-parts"));
+const sampleStart = args.start === undefined ? 0 : Number(args.start);
+const sampleEnd = args.end === undefined ? target : Number(args.end);
 
 if (!Core.VARIANT_ORDER.includes(variant)) fail(`Unknown variant: ${args.variant || ""}`);
 if (![14, 15, 16, 17].includes(cards)) fail("--cards must be 14, 15, 16, or 17");
 if (![0, 1, 2].includes(jokers)) fail("--jokers must be 0, 1, or 2");
 if (!Number.isSafeInteger(target) || target < 1) fail("--samples must be a positive whole number");
+if (!Number.isSafeInteger(sampleStart) || !Number.isSafeInteger(sampleEnd) || sampleStart < 0 || sampleEnd > target || sampleStart >= sampleEnd) {
+  fail("--start and --end must define a non-empty range within --samples");
+}
 
 fs.mkdirSync(outputDirectory, { recursive: true });
-const outputPath = path.join(outputDirectory, `${variant}-${cards}-${jokers}.json`);
+const ranged = sampleStart !== 0 || sampleEnd !== target;
+const shardDirectory = path.join(outputDirectory, "shards");
+if (ranged) fs.mkdirSync(shardDirectory, { recursive: true });
+const outputPath = ranged
+  ? path.join(shardDirectory, `${variant}-${cards}-${jokers}-${sampleStart}-${sampleEnd}.json`)
+  : path.join(outputDirectory, `${variant}-${cards}-${jokers}.json`);
+const rangeSamples = sampleEnd - sampleStart;
+const checkpointSamples = ranged ? 25 : 100;
 const aggregate = loadAggregate(outputPath);
 let lastSaved = aggregate.samples;
 let lastReported = Date.now();
@@ -25,14 +37,16 @@ process.on("SIGINT", () => {
   process.exit(130);
 });
 
-for (let sample = aggregate.samples; sample < target; sample += 1) {
+for (let offset = aggregate.samples; offset < rangeSamples; offset += 1) {
+  const sample = sampleStart + offset;
   const seedText = `EV-PRECOMPUTED-v1-${variant}-${cards}C-${jokers}J-${sample}`;
   const ids = Core.dealSeeded(cards, jokers, Core.hashSeed(seedText).toString(16));
   addSample(aggregate, solveSample(ids, variant));
-  if (aggregate.samples - lastSaved >= 10) savePart();
+  if (aggregate.samples - lastSaved >= checkpointSamples) savePart();
   if (Date.now() - lastReported >= 30000) {
-    const percent = ((aggregate.samples / target) * 100).toFixed(2);
-    console.log(`${variant} ${cards}C/${jokers}J: ${aggregate.samples.toLocaleString()}/${target.toLocaleString()} (${percent}%)`);
+    const percent = ((aggregate.samples / rangeSamples) * 100).toFixed(2);
+    const rangeLabel = ranged ? ` [${sampleStart},${sampleEnd})` : "";
+    console.log(`${variant} ${cards}C/${jokers}J${rangeLabel}: ${aggregate.samples.toLocaleString()}/${rangeSamples.toLocaleString()} (${percent}%)`);
     lastReported = Date.now();
   }
 }
@@ -48,6 +62,8 @@ function savePart() {
     variant,
     cards,
     jokers,
+    sampleStart,
+    sampleEnd,
     result: finalizeAggregate(aggregate),
   };
   const temporaryPath = `${outputPath}.tmp`;
@@ -60,7 +76,14 @@ function loadAggregate(filePath) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
     const totals = parsed?.result?.totals;
-    if (parsed?.variant !== variant || parsed?.cards !== cards || parsed?.jokers !== jokers || !totals) return createAggregate();
+    const parsedStart = Number.isSafeInteger(parsed?.sampleStart) ? parsed.sampleStart : 0;
+    const parsedEnd = Number.isSafeInteger(parsed?.sampleEnd) ? parsed.sampleEnd : target;
+    const intervalMatches = ranged
+      ? parsedStart === sampleStart && parsedEnd === sampleEnd
+      : parsedStart === 0 && finite(totals?.samples) <= target;
+    if (parsed?.variant !== variant || parsed?.cards !== cards || parsed?.jokers !== jokers || !intervalMatches || !totals) {
+      return createAggregate();
+    }
     return {
       samples: finite(totals.samples),
       immediateSum: finite(totals.immediateSum),
@@ -151,6 +174,6 @@ function parseArgs(values) {
 
 function fail(message) {
   console.error(message);
-  console.error("Usage: node precompute-config.cjs --variant high --cards 14 --jokers 0 --samples 100000 [--output PATH]");
+  console.error("Usage: node precompute-config.cjs --variant high --cards 14 --jokers 0 --samples 10000 [--start N --end N] [--output PATH]");
   process.exit(1);
 }

@@ -209,6 +209,17 @@
   const virtualDeck = [];
   SUITS.forEach((suit) => RANKS.forEach((rank) => virtualDeck.push(makeCard(`${RANK_LABEL[rank]}${suit}`))));
   const maskCache = new Map();
+  const wildFiveMiddleCache = new Map();
+  const wildFiveBottomCache = new Map();
+  const badugiJackBadugiEvaluationCache = new Map();
+  const badugiJackBlackjackEvaluationCache = new Map();
+  const MEMO_ENTRY_LIMIT = 12000;
+
+  function setBoundedMemo(cache, key, value) {
+    if (!cache.has(key) && cache.size >= MEMO_ENTRY_LIMIT) cache.delete(cache.keys().next().value);
+    cache.set(key, value);
+    return value;
+  }
 
   function normalizeVariant(value) {
     const id = String(value || "high").toLowerCase();
@@ -614,15 +625,13 @@
     };
   }
 
-  function evaluateBadugiJackConcrete(badugiCards, blackjackCards) {
-    const validSizes = badugiCards.length >= 3 && badugiCards.length <= 4 && blackjackCards.length >= 2 && blackjackCards.length <= 3;
-    const badugi = evaluateBadugiCards(badugiCards, { final: badugiCards.length >= 3 });
-    const blackjack = evaluateBlackjack(blackjackCards, { final: blackjackCards.length >= 2 });
+  function combineBadugiJackEvaluations(badugi, blackjack, badugiSize, blackjackSize) {
+    const validSizes = badugiSize >= 3 && badugiSize <= 4 && blackjackSize >= 2 && blackjackSize <= 3;
     const qualifies = validSizes && badugi.qualifies && blackjack.qualifies;
-    const repeat = qualifies && badugiCards.length === 4 && badugi.high <= 5 && blackjack.natural;
+    const repeat = qualifies && badugiSize === 4 && badugi.high <= 5 && blackjack.natural;
     const scoreComponents = [];
     if (badugi.label) scoreComponents.push({ key: "badugi", label: badugi.label, points: badugi.points || null, status: badugi.status });
-    if (blackjackCards.length) scoreComponents.push({ key: "blackjack", label: blackjack.label, points: blackjack.points || null, status: blackjack.status });
+    if (blackjackSize) scoreComponents.push({ key: "blackjack", label: blackjack.label, points: blackjack.points || null, status: blackjack.status });
     return {
       qualifies,
       points: qualifies ? badugi.points + blackjack.points : 0,
@@ -634,6 +643,12 @@
       name: scoreComponents.map((component) => component.label).join(" + ") || "BadugiJack",
       detail: qualifies ? scoreComponents.map((component) => component.label).join(" + ") : "Foul",
     };
+  }
+
+  function evaluateBadugiJackConcrete(badugiCards, blackjackCards) {
+    const badugi = evaluateBadugiCards(badugiCards, { final: badugiCards.length >= 3 });
+    const blackjack = evaluateBlackjack(blackjackCards, { final: blackjackCards.length >= 2 });
+    return combineBadugiJackEvaluations(badugi, blackjack, badugiCards.length, blackjackCards.length);
   }
 
   function combineDoubleBlackjackEvaluations(three, two, validSizes, threePresent = true, twoPresent = true) {
@@ -756,9 +771,15 @@
     if (!jokers.length) consider([]);
     else if (jokers.length === 1) available.forEach((card) => consider([card]));
     else {
-      available.forEach((first) => available.forEach((second) => {
-        if (first.id !== second.id) consider([first, second]);
-      }));
+      for (let first = 0; first < available.length; first += 1) {
+        for (let second = first + 1; second < available.length; second += 1) {
+          const forward = [available[first], available[second]];
+          const reverse = [available[second], available[first]];
+          const forwardMap = new Map([[jokers[0].id, forward[0]], [jokers[1].id, forward[1]]]);
+          const reverseMap = new Map([[jokers[0].id, reverse[0]], [jokers[1].id, reverse[1]]]);
+          consider(assignmentValue(forwardMap) >= assignmentValue(reverseMap) ? forward : reverse);
+        }
+      }
     }
 
     if (options.dedupe === false) return candidates;
@@ -831,6 +852,113 @@
     return highRowCandidates(ids, "bottom");
   }
 
+  function cachedBadugiJackBadugiEvaluation(cards) {
+    const key = cards.map((card) => card.id).sort().join(",");
+    if (!badugiJackBadugiEvaluationCache.has(key)) {
+      setBoundedMemo(badugiJackBadugiEvaluationCache, key, evaluateBadugiCards(cards, { final: cards.length >= 3 }));
+    }
+    return badugiJackBadugiEvaluationCache.get(key);
+  }
+
+  function cachedBadugiJackBlackjackEvaluation(cards) {
+    const key = cards.map((card) => card.id).sort().join(",");
+    if (!badugiJackBlackjackEvaluationCache.has(key)) {
+      setBoundedMemo(badugiJackBlackjackEvaluationCache, key, evaluateBlackjack(cards, { final: cards.length >= 2 }));
+    }
+    return badugiJackBlackjackEvaluationCache.get(key);
+  }
+
+  function badugiEvaluationKey(evaluation) {
+    return [evaluation.valid ? 1 : 0, evaluation.ranks.join("."), evaluation.high, evaluation.points, evaluation.status, evaluation.quality].join("|");
+  }
+
+  function blackjackEvaluationKey(evaluation) {
+    return [
+      evaluation.total,
+      evaluation.hardTotal,
+      evaluation.softTotal === null ? "" : evaluation.softTotal,
+      evaluation.soft ? 1 : 0,
+      evaluation.natural ? 1 : 0,
+      evaluation.suitedNatural ? 1 : 0,
+      evaluation.bust ? 1 : 0,
+      evaluation.complete ? 1 : 0,
+      evaluation.qualifies ? 1 : 0,
+      evaluation.suitedTwentyOne ? 1 : 0,
+      evaluation.points,
+      evaluation.label,
+      evaluation.status,
+      evaluation.quality,
+    ].join("|");
+  }
+
+  function enumerateBadugiJackSubhand(ids, evaluator, evaluationKey, blockedIds) {
+    const cards = ids.map(makeCard);
+    const jokers = cards.filter((card) => card.joker);
+    const blocked = new Set(cards.filter((card) => !card.joker).map((card) => card.id));
+    blockedIds.forEach((id) => blocked.add(id));
+    const available = virtualDeck.filter((card) => !blocked.has(card.id));
+    const candidates = [];
+    const consider = (replacements) => {
+      const replacementById = new Map();
+      jokers.forEach((joker, index) => replacementById.set(joker.id, replacements[index]));
+      const concrete = cards.map((card) => (card.joker ? replacementById.get(card.id) : card));
+      candidates.push({ evaluation: evaluator(concrete), assignments: replacementById, assignmentValue: assignmentValue(replacementById) });
+    };
+
+    if (!jokers.length) consider([]);
+    else if (jokers.length === 1) available.forEach((card) => consider([card]));
+    else {
+      for (let first = 0; first < available.length; first += 1) {
+        for (let second = first + 1; second < available.length; second += 1) {
+          const forward = [available[first], available[second]];
+          const reverse = [available[second], available[first]];
+          const forwardMap = new Map([[jokers[0].id, forward[0]], [jokers[1].id, forward[1]]]);
+          const reverseMap = new Map([[jokers[0].id, reverse[0]], [jokers[1].id, reverse[1]]]);
+          consider(assignmentValue(forwardMap) >= assignmentValue(reverseMap) ? forward : reverse);
+        }
+      }
+    }
+
+    const keepPerEvaluation = jokers.length === 1 ? 2 : 1;
+    if (!jokers.length) return candidates;
+    const grouped = new Map();
+    candidates.forEach((candidate) => {
+      const key = evaluationKey(candidate.evaluation);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(candidate);
+    });
+    return Array.from(grouped.values()).flatMap((group) => group
+      .sort((left, right) => right.assignmentValue - left.assignmentValue)
+      .slice(0, keepPerEvaluation));
+  }
+
+  function badugiJackCandidates(badugiIds, blackjackIds) {
+    const allNaturals = badugiIds.concat(blackjackIds).filter((id) => !makeCard(id).joker);
+    const badugiCandidates = enumerateBadugiJackSubhand(badugiIds, cachedBadugiJackBadugiEvaluation, badugiEvaluationKey, allNaturals);
+    const blackjackCandidates = enumerateBadugiJackSubhand(blackjackIds, cachedBadugiJackBlackjackEvaluation, blackjackEvaluationKey, allNaturals);
+    const deduped = new Map();
+
+    badugiCandidates.forEach((badugi) => blackjackCandidates.forEach((blackjack) => {
+      const replacementIds = [];
+      badugi.assignments.forEach((card) => replacementIds.push(card.id));
+      blackjack.assignments.forEach((card) => replacementIds.push(card.id));
+      if (new Set(replacementIds).size !== replacementIds.length) return;
+      const assignments = mergeAssignments(badugi.assignments, blackjack.assignments);
+      const evaluation = combineBadugiJackEvaluations(
+        badugi.evaluation,
+        blackjack.evaluation,
+        badugiIds.length,
+        blackjackIds.length
+      );
+      const candidate = { evaluation, assignments, assignmentValue: assignmentValue(assignments) };
+      const key = middleKey(evaluation);
+      const current = deduped.get(key);
+      if (!current || candidate.assignmentValue > current.assignmentValue) deduped.set(key, candidate);
+    }));
+
+    return Array.from(deduped.values());
+  }
+
   function doubleBlackjackCandidates(threeIds, twoIds) {
     const allNaturals = threeIds.concat(twoIds).filter((id) => !makeCard(id).joker);
     const threeCandidates = enumerateWild(
@@ -876,12 +1004,7 @@
     if (variant === "badugijack") {
       const badugiIds = rows.middleBadugi || [];
       const blackjackIds = rows.middleBlackjack || [];
-      const combined = badugiIds.concat(blackjackIds);
-      return enumerateWild(
-        combined,
-        (cards) => evaluateBadugiJackConcrete(cards.slice(0, badugiIds.length), cards.slice(badugiIds.length)),
-        { key: middleKey }
-      );
+      return badugiJackCandidates(badugiIds, blackjackIds);
     }
     if (variant === "doubleblackjack") {
       const threeIds = rows.middleBlackjackThree || [];
@@ -1048,6 +1171,13 @@
     return result;
   }
 
+  function wildFiveCacheKey(ids, namespace) {
+    const jokers = ids.filter((id) => makeCard(id).joker).slice().sort();
+    if (ids.length !== 5 || jokers.length < 1) return null;
+    const naturals = ids.filter((id) => !makeCard(id).joker).slice().sort();
+    return `${namespace}:${jokers.join(",")}:${naturals.join(",")}`;
+  }
+
   function maskForIds(allIds, selectedIds) {
     const wanted = new Set(selectedIds);
     let mask = 0;
@@ -1056,9 +1186,13 @@
   }
 
   function bestMiddleForMask(variant, ids) {
+    const cacheKey = wildFiveCacheKey(ids, variant);
+    if (cacheKey && wildFiveMiddleCache.has(cacheKey)) return wildFiveMiddleCache.get(cacheKey);
     if (variant !== "badugijack" && variant !== "doubleblackjack") {
       const candidates = variantMiddleCandidates(variant, { middle: ids });
-      return bestCandidate(candidates, (candidate) => variant === "high" || candidate.evaluation.qualifies);
+      const best = bestCandidate(candidates, (candidate) => variant === "high" || candidate.evaluation.qualifies);
+      if (cacheKey) setBoundedMemo(wildFiveMiddleCache, cacheKey, best);
+      return best;
     }
     let best = null;
     if (variant === "badugijack") {
@@ -1070,6 +1204,7 @@
         const withSplit = { ...candidate, badugiIds: badugiIds.slice(), blackjackIds };
         if (!best || compareRowCandidate(withSplit, best) > 0) best = withSplit;
       }));
+      if (cacheKey) setBoundedMemo(wildFiveMiddleCache, cacheKey, best);
       return best;
     }
 
@@ -1084,6 +1219,7 @@
       const withSplit = { ...candidate, blackjackThreeIds: threeIds.slice(), blackjackTwoIds: twoIds };
       if (!best || compareRowCandidate(withSplit, best) > 0) best = withSplit;
     });
+    if (cacheKey) setBoundedMemo(wildFiveMiddleCache, cacheKey, best);
     return best;
   }
 
@@ -1339,18 +1475,28 @@
     middleMasks.forEach((mask) => {
       const rowIds = idsForMask(ids, mask);
       let candidate;
-      if (variant === "high") candidate = null;
+      if (variant === "high") candidate = highRowCandidates(rowIds, "middle");
       else candidate = bestMiddleForMask(variant, rowIds);
       if (variant !== "high" && !candidate) return;
       middleCache.set(mask, candidate);
-      const estimate = variant === "high" ? cheapHighEstimate(rowIds, "middle") : candidate.evaluation.points * 1e7 + candidate.evaluation.quality;
+      const bestHigh = variant === "high" ? bestCandidate(candidate) : null;
+      const estimate = bestHigh
+        ? bestHigh.evaluation.points * 1e8 + bestHigh.evaluation.strength
+        : candidate.evaluation.points * 1e7 + candidate.evaluation.quality;
       middleEntries.push({ mask, estimate });
     });
 
     const bottomEntries = [];
     bottomMasks.forEach((mask) => {
       const rowIds = idsForMask(ids, mask);
-      const candidate = bestCandidate(variantBottomCandidates(variant, rowIds), (entry) => variant !== "bdp" || entry.evaluation.qualifies);
+      const cacheKey = wildFiveCacheKey(rowIds, variant === "bdp" ? "bdp" : "high");
+      let candidate;
+      if (cacheKey && wildFiveBottomCache.has(cacheKey)) {
+        candidate = wildFiveBottomCache.get(cacheKey);
+      } else {
+        candidate = bestCandidate(variantBottomCandidates(variant, rowIds), (entry) => variant !== "bdp" || entry.evaluation.qualifies);
+        if (cacheKey) setBoundedMemo(wildFiveBottomCache, cacheKey, candidate);
+      }
       if (!candidate) return;
       bottomEntries.push({ mask, candidate, estimate: candidate.evaluation.points * 1e8 + candidate.evaluation.quality });
     });
@@ -1369,7 +1515,7 @@
       const bottom = bottomEntry.candidate;
       let middle = middleCache.get(middleEntry.mask);
       if (variant === "high") {
-        middle = bestCandidate(highRowCandidates(idsForMask(ids, middleEntry.mask), "middle"), (candidate) => candidate.evaluation.strength <= bottom.evaluation.strength);
+        middle = bestCandidate(middle, (candidate) => candidate.evaluation.strength <= bottom.evaluation.strength);
         if (!middle) return;
       }
       const availableMask = fullMask ^ middleEntry.mask ^ bottomEntry.mask;
@@ -1415,11 +1561,6 @@
       elapsedMs: now() - started,
       mode,
     };
-  }
-
-  function cheapHighEstimate(ids, role) {
-    const candidate = bestCandidate(highRowCandidates(ids, role));
-    return candidate.evaluation.points * 1e8 + candidate.evaluation.strength;
   }
 
   function takeBeam(entries, limit, includeWeak = false) {

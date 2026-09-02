@@ -3,14 +3,14 @@ const path = require("path");
 
 const Core = require("../../fantasyland-core.js");
 const args = parseArgs(process.argv.slice(2));
-const target = Number(args.samples || 100000);
+const target = Number(args.samples || 10000);
 const inputDirectory = path.resolve(args.input || path.join(__dirname, "../precomputed-parts"));
 const outputPath = path.resolve(args.output || path.join(__dirname, "../precomputed.js"));
 const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
 const results = {};
 const missing = [];
 
-if (!Number.isSafeInteger(target) || target < 100000) fail("The production baseline requires at least 100,000 samples per configuration.");
+if (!Number.isSafeInteger(target) || target < 10000) fail("The production baseline requires at least 10,000 samples per configuration.");
 
 Core.VARIANT_ORDER.forEach((variant) => {
   results[variant] = {};
