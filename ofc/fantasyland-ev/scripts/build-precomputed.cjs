@@ -12,13 +12,13 @@ const missing = [];
 
 if (!Number.isSafeInteger(target) || target < 10000) fail("The production baseline requires at least 10,000 samples per configuration.");
 
-Core.VARIANT_ORDER.forEach((variant) => {
+Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   results[variant] = {};
   scenarios.forEach(({ cards, jokers }) => {
     const filePath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
     try {
       const part = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      const solverId = variant === "high" ? "trainer-exact-high-20260902a" : "bounded-search-20260901e";
+      const solverId = solverIdForVariant(variant);
       if (part.solver !== solverId || part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
       if (variant === "high" && Number(part.result.totals.qualifyCount) !== Number(part.result.samples)) throw new Error("High Fantasyland contains a false foul");
       results[variant][`${cards}-${jokers}`] = part.result;
@@ -28,17 +28,21 @@ Core.VARIANT_ORDER.forEach((variant) => {
   });
 });
 
-if (missing.length) fail(`Incomplete precomputed rows (${missing.length}/84):\n${missing.join("\n")}`);
+if (missing.length) fail(`Incomplete precomputed rows (${missing.length}/${Core.ACTIVE_VARIANT_ORDER.length * scenarios.length}):\n${missing.join("\n")}`);
 
 const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "trainer-exact-high-20260902a+bounded-variants-20260901e",
+  solver: "trainer-exact-high-20260902a+trainer-matched-variants-20260902c",
   results,
 };
 fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze(${JSON.stringify(dataset)});\n`);
-console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across all 84 configurations.`);
+console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across all ${Core.ACTIVE_VARIANT_ORDER.length * scenarios.length} configurations.`);
+
+function solverIdForVariant(variant) {
+  return variant === "high" ? "trainer-exact-high-20260902a" : "trainer-matched-variants-20260902c";
+}
 
 function parseArgs(values) {
   const parsed = {};

@@ -5,7 +5,7 @@ const Core = require("../../fantasyland-core.js");
 const TrainerCore = require("../../fantasyland-trainer/app.js");
 const args = parseArgs(process.argv.slice(2));
 const variant = Core.normalizeVariant(args.variant);
-const solverId = variant === "high" ? "trainer-exact-high-20260902a" : "bounded-search-20260901e";
+const solverId = solverIdForVariant(variant);
 const cards = Number(args.cards);
 const jokers = Number(args.jokers);
 const target = Number(args.samples || 10000);
@@ -102,21 +102,13 @@ function loadAggregate(filePath) {
 }
 
 function solveSample(ids, selectedVariant) {
-  if (selectedVariant === "high") {
-    const solved = TrainerCore.solveHand(ids);
-    if (!solved.best) throw new Error("High Fantasyland must always have a legal board.");
-    return solved;
-  }
-  const splitVariant = selectedVariant === "badugijack" || selectedVariant === "doubleblackjack";
-  const searchBounds = splitVariant ? { maskLimit: 40, beamLimit: 24 } : { maskLimit: 140, beamLimit: 72 };
-  const analysisOptions = { allowUnsupportedCardCount: true };
-  let solved = Core.solveHand(ids, { variant: selectedVariant, mode: "fast", ...searchBounds, ...analysisOptions });
-  if (solved.best || !Core.hasQualifyingMiddle(ids, selectedVariant, analysisOptions)) return solved;
-  return splitVariant
-    ? Core.solveHand(ids, { variant: selectedVariant, mode: "fast", maskLimit: 80, beamLimit: 48, ...analysisOptions })
-    : ids.length === 14
-      ? Core.solveHand(ids, { variant: selectedVariant, mode: "exact", ...analysisOptions })
-      : Core.solveHand(ids, { variant: selectedVariant, mode: "fast", maskLimit: 320, beamLimit: 180, ...analysisOptions });
+  const solved = TrainerCore.solveVariantHand(ids, selectedVariant, { allowUnsupportedCardCount: true });
+  if (selectedVariant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
+  return solved;
+}
+
+function solverIdForVariant(selectedVariant) {
+  return selectedVariant === "high" ? "trainer-exact-high-20260902a" : "trainer-matched-variants-20260902c";
 }
 
 function createAggregate() {

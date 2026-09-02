@@ -18,11 +18,33 @@ vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
 
+const delegatedVariants = [];
+const delegationContext = {
+  console,
+  document: { addEventListener() {} },
+  localStorage: { getItem() { return null; }, setItem() {} },
+  performance: { now: () => Date.now() },
+  window: {
+    OFCFantasylandCore: core,
+    OFCSolverCore: {
+      solveVariantHand(ids, variant, options) {
+        delegatedVariants.push({ ids, variant, options });
+        return { best: { points: 0 }, bestRoyalty: null, bestRepeat: null };
+      },
+    },
+    setTimeout,
+  },
+};
+vm.runInNewContext(source, delegationContext, { filename: "fantasyland-ev-delegation.js" });
+core.ACTIVE_VARIANT_ORDER.forEach((variant) => delegationContext.window.OFCFantasylandEV.solveSample(["As"], variant));
+assert.deepEqual(delegatedVariants.map(({ variant }) => variant), core.ACTIVE_VARIANT_ORDER, "every active EV variant should delegate to the trainer solver");
+assert.equal(delegatedVariants.every(({ options }) => options.allowUnsupportedCardCount === true), true, "EV delegation should retain off-rule analytical card counts");
+
 const previousFalseFoul = ["Qs", "2s", "9h", "5h", "3c", "Th", "Tc", "Kh", "3h", "Ts", "As", "9c", "4c", "4d"];
 const exactHigh = api.solveSample(previousFalseFoul, "high");
 assert.ok(exactHigh.best, "EV High samples must use the trainer's complete solver and never report a false foul");
 
-core.VARIANT_ORDER.forEach((variant) => {
+core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   const scenarios = Array.from(api.scenariosForVariant(variant), (scenario) => ({ cards: scenario.cards, jokers: scenario.jokers }));
   assert.equal(scenarios.length, 12, `${variant}: EV should include all twelve exact-hand configurations`);
   assert.deepEqual(
@@ -95,8 +117,13 @@ assert.equal(
   0,
   "the production page should reject a baseline below 10k samples per configuration"
 );
+assert.equal(
+  api.applyPrecomputedResults({ schemaVersion: 1, solver: "outdated-solver", samplesPerConfig: 10000, results: {} }),
+  0,
+  "the production page should reject a baseline from a different solver"
+);
 const completeBaseline = {};
-core.VARIANT_ORDER.forEach((variant) => {
+core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   completeBaseline[variant] = {};
   api.scenariosForVariant().forEach((scenario) => {
     completeBaseline[variant][`${scenario.cards}-${scenario.jokers}`] = {
@@ -107,7 +134,12 @@ core.VARIANT_ORDER.forEach((variant) => {
   });
 });
 assert.equal(
-  api.applyPrecomputedResults({ schemaVersion: 1, samplesPerConfig: 10000, results: completeBaseline }),
+  api.applyPrecomputedResults({
+    schemaVersion: 1,
+    solver: "trainer-exact-high-20260902a+trainer-matched-variants-20260902c",
+    samplesPerConfig: 10000,
+    results: completeBaseline,
+  }),
   10000,
   "a complete 10k-per-row baseline should pass the production gate"
 );

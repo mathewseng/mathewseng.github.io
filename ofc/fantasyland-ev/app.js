@@ -3,18 +3,17 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v8";
-  const SETTINGS_KEY = "ofcFantasylandEv.settings.v2";
+  const STORAGE_KEY = "ofcFantasylandEv.v9";
+  const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
   const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
   const DECK_JOKER_COUNTS = [1, 2];
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260902a+trainer-matched-variants-20260902c";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
     badeucey: 340,
     bdp: 180,
-    badugijack: 260,
-    doubleblackjack: 230,
     cribbage: 190,
   };
   const DEFINITIONS = {
@@ -158,7 +157,7 @@
     if (!state.running) {
       els.runStatus.textContent = complete ? `${meta.label} results loaded` : "Ready to calculate";
       els.runDetail.textContent = complete
-        ? `${sampleSummary}; ${state.variant === "high" ? "exact trainer solver; " : ""}${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
+        ? `${sampleSummary}; trainer-matched solver; ${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
         : `${configCount} configurations - completed samples save locally`;
       els.runProgress.style.width = complete === configCount ? "100%" : "0%";
     }
@@ -385,7 +384,7 @@
       els.runDetail.textContent = `${formatInteger(completed)} / ${formatInteger(total)} new hands saved`;
     } else {
       els.runStatus.textContent = "Calculation complete";
-      els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}${variant === "high" ? "; exact trainer solver" : ""}`;
+      els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}; trainer-matched solver`;
       els.matrixMeta.textContent = `${Core.VARIANTS[variant].label} - ${resultSampleSummary(state.results[variant], scenarios)}`;
       els.runProgress.style.width = "100%";
     }
@@ -426,7 +425,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260902b");
+          worker = new Worker("./worker.js?v=20260902d");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -529,24 +528,8 @@
   }
 
   function solveSample(ids, variant) {
-    if (variant === "high") {
-      const solved = TrainerCore.solveHand(ids);
-      if (!solved.best) throw new Error("High Fantasyland must always have a legal board.");
-      return solved;
-    }
-    const splitVariant = variant === "badugijack" || variant === "doubleblackjack";
-    const searchBounds = splitVariant
-      ? { maskLimit: 40, beamLimit: 24 }
-      : { maskLimit: 140, beamLimit: 72 };
-    const analysisOptions = { allowUnsupportedCardCount: true };
-    let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds, ...analysisOptions });
-    if (solved.best || !Core.hasQualifyingMiddle(ids, variant, analysisOptions)) return solved;
-
-    solved = splitVariant
-      ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48, ...analysisOptions })
-      : ids.length === 14
-        ? Core.solveHand(ids, { variant, mode: "exact", ...analysisOptions })
-        : Core.solveHand(ids, { variant, mode: "fast", maskLimit: 320, beamLimit: 180, ...analysisOptions });
+    const solved = TrainerCore.solveVariantHand(ids, variant, { allowUnsupportedCardCount: true });
+    if (variant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
     return solved;
   }
 
@@ -659,7 +642,7 @@
   function renderRules(value) {
     const active = Core.normalizeVariant(value);
     const tabFragment = document.createDocumentFragment();
-    Core.VARIANT_ORDER.forEach((variant) => {
+    Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       const button = document.createElement("button");
       button.type = "button";
       button.role = "tab";
@@ -682,7 +665,11 @@
     short.textContent = Core.VARIANTS[active].short;
     heading.append(title, short);
     article.appendChild(heading);
-    [["Qualify", [rules.qualification]], ["Royalties", rules.scoring], ["Repeat Fantasyland", [rules.repeat]]].forEach(([label, lines]) => {
+    const sections = [["Qualify", [rules.qualification]], ["Royalties", rules.scoring]];
+    if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
+    sections.push(["Repeat Fantasyland", [rules.repeat]]);
+    if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
+    sections.forEach(([label, lines]) => {
       const section = document.createElement("section");
       const sectionTitle = document.createElement("h4");
       sectionTitle.textContent = label;
@@ -845,14 +832,14 @@
 
   function applyPrecomputedResults(dataset) {
     const target = finiteNumber(dataset?.samplesPerConfig);
-    if (dataset?.schemaVersion !== 1 || target < 10000 || !dataset.results) return 0;
-    const complete = Core.VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
+    if (dataset?.schemaVersion !== 1 || dataset?.solver !== PRECOMPUTED_SOLVER_ID || target < 10000 || !dataset.results) return 0;
+    const complete = Core.ACTIVE_VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples);
     }));
     if (!complete) return 0;
 
-    Core.VARIANT_ORDER.forEach((variant) => {
+    Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       state.results[variant] = state.results[variant] || {};
       EXACT_SCENARIOS.forEach((scenario) => {
         const key = scenarioKey(scenario);

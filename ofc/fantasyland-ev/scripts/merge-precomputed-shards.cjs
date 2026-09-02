@@ -7,7 +7,7 @@ const target = Number(args.samples || 10000);
 const inputDirectory = path.resolve(args.input || path.join(__dirname, "../precomputed-parts"));
 const shardDirectory = path.join(inputDirectory, "shards");
 const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
-const selectedVariants = args.variant ? [String(args.variant).toLowerCase()] : Core.VARIANT_ORDER;
+const selectedVariants = args.variant ? [String(args.variant).toLowerCase()] : Core.ACTIVE_VARIANT_ORDER;
 const selectedCards = args.cards === undefined ? null : Number(args.cards);
 const selectedJokers = args.jokers === undefined ? null : Number(args.jokers);
 
@@ -20,7 +20,7 @@ let merged = 0;
 selectedVariants.forEach((variant) => scenarios
   .filter(({ cards, jokers }) => (selectedCards === null || cards === selectedCards) && (selectedJokers === null || jokers === selectedJokers))
   .forEach(({ cards, jokers }) => {
-  const solverId = variant === "high" ? "trainer-exact-high-20260902a" : "bounded-search-20260901e";
+  const solverId = solverIdForVariant(variant);
   const outputPath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
   const prefix = fs.existsSync(outputPath) ? readPart(outputPath, solverId) : emptyPart(variant, cards, jokers);
   if (prefix.result.totals.samples === target) {
@@ -141,6 +141,10 @@ function finalizeAggregate(value) {
 
 function finite(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+function solverIdForVariant(variant) {
+  return variant === "high" ? "trainer-exact-high-20260902a" : "trainer-matched-variants-20260902c";
 }
 
 function parseArgs(values) {

@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260902b", "../fantasyland-trainer/app.js?v=20260902b");
+importScripts("../fantasyland-core.js?v=20260902d", "../fantasyland-trainer/app.js?v=20260902d");
 
 const Core = self.OFCFantasylandCore;
 const TrainerCore = self.OFCSolverCore;
@@ -62,24 +62,9 @@ function createAggregate() {
 }
 
 function solveSample(ids, variant) {
-  if (variant === "high") {
-    const solved = TrainerCore.solveHand(ids);
-    if (!solved.best) throw new Error("High Fantasyland must always have a legal board.");
-    return solved;
-  }
-  const splitVariant = variant === "badugijack" || variant === "doubleblackjack";
-  const searchBounds = splitVariant
-    ? { maskLimit: 40, beamLimit: 24 }
-    : { maskLimit: 140, beamLimit: 72 };
-  const analysisOptions = { allowUnsupportedCardCount: true };
-  let solved = Core.solveHand(ids, { variant, mode: "fast", ...searchBounds, ...analysisOptions });
-  if (solved.best || !Core.hasQualifyingMiddle(ids, variant, analysisOptions)) return solved;
-
-  return splitVariant
-    ? Core.solveHand(ids, { variant, mode: "fast", maskLimit: 80, beamLimit: 48, ...analysisOptions })
-    : ids.length === 14
-      ? Core.solveHand(ids, { variant, mode: "exact", ...analysisOptions })
-      : Core.solveHand(ids, { variant, mode: "fast", maskLimit: 320, beamLimit: 180, ...analysisOptions });
+  const solved = TrainerCore.solveVariantHand(ids, variant, { allowUnsupportedCardCount: true });
+  if (variant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
+  return solved;
 }
 
 function addSample(aggregate, solved) {

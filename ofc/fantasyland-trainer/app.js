@@ -373,7 +373,7 @@
       const puzzle = getTrainerPuzzle();
       const variant = normalizeTrainerVariant(puzzle?.variant || state.trainer.variant);
       if (variant !== "high") {
-        const result = VariantCore.solveHand(state.selected, trainerVariantSolveOptions(state.selected, variant));
+        const result = solveVariantHand(state.selected, variant);
         renderSolution(result);
         setMessage(result.best ? `Solved ${VariantCore.VARIANTS[variant].label} Fantasyland.` : "No legal board found for this hand.");
         return;
@@ -911,6 +911,8 @@
     if (snapshot.scope !== "single" && snapshot.scope !== "all") return false;
     if (!Array.isArray(snapshot.puzzles) || !snapshot.puzzles.length) return false;
     if (!snapshot.puzzles.every((puzzle) => Array.isArray(puzzle.ids) && puzzle.ids.length >= 13)) return false;
+    const savedVariants = [snapshot.variant, ...snapshot.puzzles.map((puzzle) => puzzle.variant)].filter(Boolean);
+    if (savedVariants.some((value) => VariantCore.VARIANTS[VariantCore.normalizeVariant(value)]?.archived)) return false;
     const variant = normalizeTrainerVariant(snapshot.variant || snapshot.puzzles[0]?.variant || "high");
     const supported = new Set(VariantCore.variantScenarios(variant).map((config) => configShort(config)));
     if (!snapshot.puzzles.every((puzzle) => supported.has(configShort(puzzle)))) return false;
@@ -1105,7 +1107,8 @@
           summary.classList.add("is-split-score");
           appendScoreComponents(summary, rowSummary.scoreComponents, {
             className: "trainer-score-component",
-            total: rowSummary.showTotal ? rowSummary.points : null,
+            total: rowSummary.showTotal ? rowSummary.scoreTotal : null,
+            royalty: rowSummary.showRoyalty ? rowSummary.points : null,
           });
           applyScoreDensity(summary);
         } else {
@@ -1182,6 +1185,17 @@
       total.className = "score-total score-points";
       total.textContent = formatPointUnit(options.total);
       container.append(equals, total);
+    }
+
+    if (Number.isFinite(Number(options.royalty)) && Number(options.royalty) > 0) {
+      const separator = document.createElement("span");
+      separator.className = "score-separator score-royalty-separator";
+      separator.textContent = "·";
+      const royalty = document.createElement("strong");
+      royalty.className = "score-total score-points score-royalty";
+      const points = Number(options.royalty);
+      royalty.textContent = `${wholeNumberText(points)} ${points === 1 ? "royalty" : "royalties"}`;
+      container.append(separator, royalty);
     }
   }
 
@@ -1991,9 +2005,18 @@
       if (variant === "bdp" || (variant !== "high" && rowKey === "middle")) {
         const points = finiteNumber(boardEval.points);
         const scoreComponents = Array.isArray(boardEval.scoreComponents) ? boardEval.scoreComponents : [];
-        const visible = scoreComponents.some((component) => component && component.label) && (variant === "cribbage" ? points > 0 : true);
+        const scoreTotal = variant === "cribbage" ? finiteNumber(boardEval.cribbagePoints) : points;
+        const visible = scoreComponents.some((component) => component && component.label) && (variant === "cribbage" ? scoreTotal > 0 : true);
         return visible
-          ? { label: boardEval.name, points, scoreComponents, showTotal: variant === "cribbage", visible: true }
+          ? {
+              label: boardEval.name,
+              points,
+              scoreComponents,
+              scoreTotal,
+              showTotal: variant === "cribbage",
+              showRoyalty: variant === "cribbage" && Boolean(boardEval.complete && boardEval.qualifies),
+              visible: true,
+            }
           : { label: "", points: 0, scoreComponents: [], visible: false };
       }
       const points = rowKey === "top" ? topRoyalty(boardEval) : fiveRoyalty(boardEval, rowKey === "middle" ? "middle" : "back", state.fiveKindRule);
@@ -2482,7 +2505,7 @@
     const variant = normalizeTrainerVariant(options.variant);
     if (variant !== "high") {
       const user = VariantCore.evaluateBoard(cardIds, rows, { variant });
-      const optimal = VariantCore.solveHand(cardIds, trainerVariantSolveOptions(cardIds, variant));
+      const optimal = solveVariantHand(cardIds, variant);
       const maxPoints = optimal.best ? finiteNumber(optimal.best.points) : 0;
       const maxRepeat = Boolean(optimal.best && optimal.best.repeat);
       const correct = user.legal && user.points === maxPoints && (!maxRepeat || user.repeat);
@@ -2516,7 +2539,7 @@
   }
 
   function trainerVariantSolveOptions(cardIds, variantValue) {
-    const variant = normalizeTrainerVariant(variantValue);
+    const variant = VariantCore.normalizeVariant(variantValue);
     const options = {
       variant,
       mode: cardIds.length >= 16 || isSplitMiddleVariant(variant) ? "fast" : "exact",
@@ -2541,6 +2564,16 @@
       options.beamLimit = 96;
     }
     return options;
+  }
+
+  function solveVariantHand(cardIds, variantValue, options = {}) {
+    const variant = VariantCore.normalizeVariant(variantValue);
+    if (variant === "high") return solveHand(cardIds, options);
+    return VariantCore.solveHand(cardIds, {
+      ...trainerVariantSolveOptions(cardIds, variant),
+      ...options,
+      variant,
+    });
   }
 
   function isTopLegalAgainstMiddle(topEval, middleEval) {
@@ -2974,7 +3007,9 @@
   }
 
   function normalizeTrainerVariant(value) {
-    return VariantCore ? VariantCore.normalizeVariant(value) : "high";
+    if (!VariantCore) return "high";
+    const variant = VariantCore.normalizeVariant(value);
+    return VariantCore.VARIANTS[variant]?.archived ? "high" : variant;
   }
 
   function trainerVariantLabel(value) {
@@ -3010,7 +3045,7 @@
     if (!els.variantRulesTabs || !els.variantRulesContent || !VariantCore) return;
     const active = normalizeTrainerVariant(activeValue);
     const tabs = document.createDocumentFragment();
-    VariantCore.VARIANT_ORDER.forEach((variant) => {
+    VariantCore.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       const meta = VariantCore.VARIANTS[variant];
       const button = document.createElement("button");
       button.type = "button";
@@ -3034,11 +3069,14 @@
     short.textContent = VariantCore.VARIANTS[active].short;
     heading.append(title, short);
     article.appendChild(heading);
-    [
+    const sections = [
       ["Qualify", [rules.qualification]],
       ["Royalties", rules.scoring],
-      ["Repeat Fantasyland", [rules.repeat]],
-    ].forEach(([label, lines]) => {
+    ];
+    if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
+    sections.push(["Repeat Fantasyland", [rules.repeat]]);
+    if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
+    sections.forEach(([label, lines]) => {
       const section = document.createElement("section");
       const sectionTitle = document.createElement("h4");
       sectionTitle.textContent = label;
@@ -4086,6 +4124,7 @@
       dealIdsSeeded,
       scoreTrainerRows,
       evaluateTrainerSubmission,
+      solveVariantHand,
       evaluateTrainerDisplayRows,
       trainerShareAggregate,
       buildTrainerShareSummary,
@@ -4109,6 +4148,7 @@
       dealIdsSeeded,
       scoreTrainerRows,
       evaluateTrainerSubmission,
+      solveVariantHand,
       evaluateTrainerDisplayRows,
       trainerShareAggregate,
       buildTrainerShareSummary,

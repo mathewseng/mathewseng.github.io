@@ -30,9 +30,8 @@
       id: "badeucey",
       seedLabel: "BADEUCEY",
       label: "Badeucey",
-      minCards: 16,
       middleSize: 5,
-      short: "16–17 cards. Middle must qualify as both 2–7 low and a four-card 2–5 Badugi.",
+      short: "14–17 cards. Middle must qualify as both 2–7 low and a four-card 2–5 Badugi.",
     },
     bdp: {
       id: "bdp",
@@ -46,6 +45,7 @@
       id: "badugijack",
       seedLabel: "BADUGIJACK",
       label: "BadugiJack",
+      archived: true,
       middleSize: 6,
       boardSize: 13,
       short: "Place exactly 13 cards across the board, with a three/four-card Badugi and a two/three-card blackjack hand in the middle.",
@@ -55,6 +55,7 @@
       seedLabel: "DOUBLEBLACKJACK",
       label: "Double Blackjack",
       compactLabel: "Double BJ",
+      archived: true,
       middleSize: 5,
       short: "Split the middle into fixed three-card and two-card blackjack hands; both need 17 or more without busting.",
     },
@@ -63,9 +64,10 @@
       seedLabel: "CRIBBAGE",
       label: "Cribbage",
       middleSize: 5,
-      short: "Middle uses cribbage scoring and needs at least 12 points to qualify.",
+      short: "Middle needs at least 11 cribbage points. Royalties equal the cribbage score minus 10.",
     },
   };
+  const ACTIVE_VARIANT_ORDER = VARIANT_ORDER.filter((variant) => !VARIANTS[variant].archived);
   const RULE_SECTIONS = [
     {
       id: "high",
@@ -135,7 +137,7 @@
     {
       id: "badeucey",
       title: "Badeucey",
-      qualification: "Fantasyland uses 16 or 17 cards. The same five middle cards need both a qualifying 2–7 low and four unpaired cards of different suits for 2–5 Badugi. Aces are high.",
+      qualification: "Fantasyland uses 14 through 17 cards. The same five middle cards need both a qualifying 2–7 low and four unpaired cards of different suits for 2–5 Badugi. Aces are high.",
       scoring: [
         { label: "2–7 Low", items: ["7hi: 4pts", "8hi: 2pts", "9hi: 1pt", "Thi: 0pts"] },
         { label: "Badugi", items: ["5hi: 12pts", "6hi: 8pts", "7hi: 4pts", "8hi: 0pts", "9hi: 0pts", "Thi: 0pts"] },
@@ -191,34 +193,44 @@
     {
       id: "cribbage",
       title: "Cribbage",
-      qualification: "Middle needs at least 12 cribbage points.",
+      qualification: "Middle needs at least 11 raw cribbage points.",
       scoring: [
-        { label: "Fifteens", items: ["15: 2pts", "2 15s: 4pts", "3 15s: 6pts", "4 15s: 8pts", "Each additional 15: +2pts"] },
-        { label: "Pairs", items: ["Pair: 2pts", "2 Pairs: 4pts", "Trips: 6pts", "Boat: 8pts", "Quads: 12pts"] },
+        { label: "Fifteens", items: ["Each combination totaling 15: 2pts", "T, J, Q, and K: value 10", "A: value 1"] },
+        { label: "Pairs", items: ["Pair: 2pts", "Trips: 6pts", "Quads: 12pts"] },
         {
           label: "Runs",
-          items: ["Run of 3: 3pts", "2 Runs of 3: 6pts", "3 Runs of 3: 9pts", "4 Runs of 3: 12pts", "Run of 4: 4pts", "2 Runs of 4: 8pts", "Run of 5: 5pts"],
+          items: ["Each three-card run: 3pts", "Each four-card run: 4pts", "Each five-card run: 5pts"],
         },
         { label: "Flushes", items: ["Four-card flush: 4pts", "Five-card flush: 5pts"] },
-        { label: "Suited jacks", items: ["Suited J: 1pt", "2 Suited Js: 2pts"] },
+        { label: "Nobs", items: ["Each J matching another card's suit: 1pt"] },
+        { label: "Royalties", items: ["Raw cribbage score minus 10: 11 points = 1 royalty"] },
       ],
-      repeat: "Trips on top, 24 or more cribbage points in the middle, or quads or better on the bottom.",
+      fantasy: "Pair of kings or better on top, 20 or more raw cribbage points in the middle, or quads or better on the bottom.",
+      repeat: "Trips on top, 21 or more raw cribbage points in the middle, or quads or better on the bottom.",
+      superFantasy: "Each additional Fantasyland condition achieved adds one card to the next Fantasyland hand.",
     },
   ];
 
   const virtualDeck = [];
   SUITS.forEach((suit) => RANKS.forEach((rank) => virtualDeck.push(makeCard(`${RANK_LABEL[rank]}${suit}`))));
+  const virtualCardById = new Map(virtualDeck.map((card) => [card.id, card]));
   const maskCache = new Map();
-  const wildFiveMiddleCache = new Map();
-  const wildFiveBottomCache = new Map();
+  const wildFiveMiddleCaches = [null, new Map(), new Map()];
+  const wildFiveBottomCaches = [null, new Map(), new Map()];
   const badugiJackBadugiEvaluationCache = new Map();
   const badugiJackBlackjackEvaluationCache = new Map();
-  const MEMO_ENTRY_LIMIT = 12000;
+  const MEMO_ENTRY_LIMIT = 30000;
+  const WILD_FIVE_MEMO_LIMITS = [0, 280000, 24000];
 
-  function setBoundedMemo(cache, key, value) {
-    if (!cache.has(key) && cache.size >= MEMO_ENTRY_LIMIT) cache.delete(cache.keys().next().value);
+  function setBoundedMemo(cache, key, value, limit = MEMO_ENTRY_LIMIT) {
+    if (!cache.has(key) && cache.size >= limit) cache.delete(cache.keys().next().value);
     cache.set(key, value);
     return value;
+  }
+
+  function wildFiveMemo(caches, ids) {
+    const jokers = ids.filter((id) => makeCard(id).joker).length;
+    return jokers ? { cache: caches[jokers], limit: WILD_FIVE_MEMO_LIMITS[jokers] } : null;
   }
 
   function normalizeVariant(value) {
@@ -334,6 +346,101 @@
     return makeHighEval(CATEGORY.HIGH, sorted, `${RANK_LABEL[sorted[0]]}-high`);
   }
 
+  function evaluateHighFiveFast(cards) {
+    if (cards.length < 5) {
+      const evaluation = evaluateHighPartial(cards);
+      return { category: evaluation.category, ranks: evaluation.ranks, mainRank: evaluation.mainRank, strength: evaluation.strength };
+    }
+    const counts = Array(15).fill(0);
+    const ranks = [];
+    cards.forEach((card) => {
+      counts[card.rank] += 1;
+      ranks.push(card.rank);
+    });
+    ranks.sort((a, b) => b - a);
+    const flush = cards.every((card) => card.suit === cards[0].suit);
+    let straight = 0;
+    for (let high = 14; high >= 6 && !straight; high -= 1) {
+      if (counts[high] && counts[high - 1] && counts[high - 2] && counts[high - 3] && counts[high - 4]) straight = high;
+    }
+    if (!straight && counts[14] && counts[5] && counts[4] && counts[3] && counts[2]) straight = 5;
+
+    const groups = [];
+    for (let rank = 14; rank >= 2; rank -= 1) if (counts[rank]) groups.push({ rank, count: counts[rank] });
+    groups.sort((a, b) => b.count - a.count || b.rank - a.rank);
+    let category = CATEGORY.HIGH;
+    let kickers = ranks;
+    if (flush && straight) {
+      category = CATEGORY.STRAIGHT_FLUSH;
+      kickers = [straight];
+    } else if (groups[0].count === 4) {
+      category = CATEGORY.QUADS;
+      kickers = [groups[0].rank, groups[1].rank];
+    } else if (groups[0].count === 3 && groups[1]?.count === 2) {
+      category = CATEGORY.FULL_HOUSE;
+      kickers = [groups[0].rank, groups[1].rank];
+    } else if (flush) {
+      category = CATEGORY.FLUSH;
+    } else if (straight) {
+      category = CATEGORY.STRAIGHT;
+      kickers = [straight];
+    } else if (groups[0].count === 3) {
+      category = CATEGORY.TRIPS;
+      kickers = [groups[0].rank].concat(groups.filter((group) => group.count === 1).map((group) => group.rank));
+    } else if (groups[0].count === 2 && groups[1]?.count === 2) {
+      category = CATEGORY.TWO_PAIR;
+      kickers = groups.filter((group) => group.count === 2).map((group) => group.rank).concat(groups.find((group) => group.count === 1).rank);
+    } else if (groups[0].count === 2) {
+      category = CATEGORY.PAIR;
+      kickers = [groups[0].rank].concat(groups.filter((group) => group.count === 1).map((group) => group.rank));
+    }
+    return { category, ranks: kickers, mainRank: kickers[0] || 0, strength: encodeStrength(category, kickers) };
+  }
+
+  function highFiveStrengthOnly(cards) {
+    if (cards.length < 5) return evaluateHighFiveFast(cards).strength;
+    let r0 = cards[0].rank;
+    let r1 = cards[1].rank;
+    let r2 = cards[2].rank;
+    let r3 = cards[3].rank;
+    let r4 = cards[4].rank;
+    let swap;
+    if (r0 < r1) { swap = r0; r0 = r1; r1 = swap; }
+    if (r3 < r4) { swap = r3; r3 = r4; r4 = swap; }
+    if (r2 < r4) { swap = r2; r2 = r4; r4 = swap; }
+    if (r2 < r3) { swap = r2; r2 = r3; r3 = swap; }
+    if (r0 < r3) { swap = r0; r0 = r3; r3 = swap; }
+    if (r0 < r2) { swap = r0; r0 = r2; r2 = swap; }
+    if (r1 < r4) { swap = r1; r1 = r4; r4 = swap; }
+    if (r1 < r3) { swap = r1; r1 = r3; r3 = swap; }
+    if (r1 < r2) { swap = r1; r1 = r2; r2 = swap; }
+    const flush = cards[0].suit === cards[1].suit && cards[0].suit === cards[2].suit && cards[0].suit === cards[3].suit && cards[0].suit === cards[4].suit;
+    const distinct = r0 !== r1 && r1 !== r2 && r2 !== r3 && r3 !== r4;
+    const straight = distinct && r0 - r4 === 4 ? r0 : distinct && r0 === 14 && r1 === 5 && r2 === 4 && r3 === 3 && r4 === 2 ? 5 : 0;
+    if (flush && straight) return encodeStrength5(CATEGORY.STRAIGHT_FLUSH, straight);
+    if (r0 === r3) return encodeStrength5(CATEGORY.QUADS, r0, r4);
+    if (r1 === r4) return encodeStrength5(CATEGORY.QUADS, r1, r0);
+    if (r0 === r2 && r3 === r4) return encodeStrength5(CATEGORY.FULL_HOUSE, r0, r3);
+    if (r0 === r1 && r2 === r4) return encodeStrength5(CATEGORY.FULL_HOUSE, r2, r0);
+    if (flush) return encodeStrength5(CATEGORY.FLUSH, r0, r1, r2, r3, r4);
+    if (straight) return encodeStrength5(CATEGORY.STRAIGHT, straight);
+    if (r0 === r2) return encodeStrength5(CATEGORY.TRIPS, r0, r3, r4);
+    if (r1 === r3) return encodeStrength5(CATEGORY.TRIPS, r1, r0, r4);
+    if (r2 === r4) return encodeStrength5(CATEGORY.TRIPS, r2, r0, r1);
+    if (r0 === r1 && r2 === r3) return encodeStrength5(CATEGORY.TWO_PAIR, r0, r2, r4);
+    if (r0 === r1 && r3 === r4) return encodeStrength5(CATEGORY.TWO_PAIR, r0, r3, r2);
+    if (r1 === r2 && r3 === r4) return encodeStrength5(CATEGORY.TWO_PAIR, r1, r3, r0);
+    if (r0 === r1) return encodeStrength5(CATEGORY.PAIR, r0, r2, r3, r4);
+    if (r1 === r2) return encodeStrength5(CATEGORY.PAIR, r1, r0, r3, r4);
+    if (r2 === r3) return encodeStrength5(CATEGORY.PAIR, r2, r0, r1, r4);
+    if (r3 === r4) return encodeStrength5(CATEGORY.PAIR, r3, r0, r1, r2);
+    return encodeStrength5(CATEGORY.HIGH, r0, r1, r2, r3, r4);
+  }
+
+  function encodeStrength5(category, first = 0, second = 0, third = 0, fourth = 0, fifth = 0) {
+    return (((((category * 15 + first) * 15 + second) * 15 + third) * 15 + fourth) * 15 + fifth);
+  }
+
   function evaluateHighTop(cards) {
     const groups = rankGroups(cards);
     if (groups[0].count === 3) return makeHighEval(CATEGORY.TRIPS, [groups[0].rank], `Three ${RANK_NAME[groups[0].rank]}`);
@@ -410,6 +517,55 @@
     };
   }
 
+  function deuceSevenFastFacts(cards) {
+    const ranks = cards.map((card) => card.rank).sort((a, b) => b - a);
+    let paired = false;
+    for (let left = 0; left < ranks.length && !paired; left += 1) {
+      for (let right = left + 1; right < ranks.length; right += 1) {
+        if (ranks[left] === ranks[right]) {
+          paired = true;
+          break;
+        }
+      }
+    }
+    const flush = cards.length > 0 && cards.every((card) => card.suit === cards[0].suit);
+    const straight = !paired && ranks.length === 5 && ranks[0] - ranks[4] === 4;
+    const clean = !paired && !flush && !straight;
+    const high = clean ? ranks[0] : 99;
+    const qualifies = clean && high <= 10;
+    const wheel = qualifies && ranks[0] === 7 && ranks[1] === 5 && ranks[2] === 4 && ranks[3] === 3 && ranks[4] === 2;
+    const quality = clean ? ranks.reduce((value, rank) => value * 15 + (15 - rank), 0) : -1;
+    return { ranks, clean, high, qualifies, wheel, quality };
+  }
+
+  function lowFastRank(cards) {
+    let r0 = cards[0].rank;
+    let r1 = cards[1].rank;
+    let r2 = cards[2].rank;
+    let r3 = cards[3].rank;
+    let r4 = cards[4].rank;
+    let swap;
+    if (r0 < r1) { swap = r0; r0 = r1; r1 = swap; }
+    if (r3 < r4) { swap = r3; r3 = r4; r4 = swap; }
+    if (r2 < r4) { swap = r2; r2 = r4; r4 = swap; }
+    if (r2 < r3) { swap = r2; r2 = r3; r3 = swap; }
+    if (r0 < r3) { swap = r0; r0 = r3; r3 = swap; }
+    if (r0 < r2) { swap = r0; r0 = r2; r2 = swap; }
+    if (r1 < r4) { swap = r1; r1 = r4; r4 = swap; }
+    if (r1 < r3) { swap = r1; r1 = r3; r3 = swap; }
+    if (r1 < r2) { swap = r1; r1 = r2; r2 = swap; }
+    const paired = r0 === r1 || r1 === r2 || r2 === r3 || r3 === r4;
+    const flush = cards[0].suit === cards[1].suit && cards[0].suit === cards[2].suit && cards[0].suit === cards[3].suit && cards[0].suit === cards[4].suit;
+    const straight = !paired && r0 - r4 === 4;
+    if (paired || flush || straight) return -1;
+    const quality = ((((15 - r0) * 15 + (15 - r1)) * 15 + (15 - r2)) * 15 + (15 - r3)) * 15 + (15 - r4);
+    const qualifies = r0 <= 10;
+    if (!qualifies) return quality;
+    const wheel = r0 === 7 && r1 === 5 && r2 === 4 && r3 === 3 && r4 === 2;
+    const points = r0 <= 7 ? 4 : r0 === 8 ? 2 : r0 === 9 ? 1 : 0;
+    return 1e15 + (wheel ? 1e14 : 0) + points * 1e10 + quality;
+  }
+
   function combinations(items, size) {
     const result = [];
     function visit(start, picked) {
@@ -469,6 +625,69 @@
     };
   }
 
+  function badeuceyFastRank(cards) {
+    let r0 = cards[0].rank;
+    let r1 = cards[1].rank;
+    let r2 = cards[2].rank;
+    let r3 = cards[3].rank;
+    let r4 = cards[4].rank;
+    let swap;
+    if (r0 < r1) { swap = r0; r0 = r1; r1 = swap; }
+    if (r3 < r4) { swap = r3; r3 = r4; r4 = swap; }
+    if (r2 < r4) { swap = r2; r2 = r4; r4 = swap; }
+    if (r2 < r3) { swap = r2; r2 = r3; r3 = swap; }
+    if (r0 < r3) { swap = r0; r0 = r3; r3 = swap; }
+    if (r0 < r2) { swap = r0; r0 = r2; r2 = swap; }
+    if (r1 < r4) { swap = r1; r1 = r4; r4 = swap; }
+    if (r1 < r3) { swap = r1; r1 = r3; r3 = swap; }
+    if (r1 < r2) { swap = r1; r1 = r2; r2 = swap; }
+    const paired = r0 === r1 || r1 === r2 || r2 === r3 || r3 === r4;
+    const flush = cards[0].suit === cards[1].suit && cards[0].suit === cards[2].suit && cards[0].suit === cards[3].suit && cards[0].suit === cards[4].suit;
+    const straight = !paired && r0 - r4 === 4;
+    if (paired || flush || straight || r0 > 10) return -1;
+    const lowQualityValue = ((((15 - r0) * 15 + (15 - r1)) * 15 + (15 - r2)) * 15 + (15 - r3)) * 15 + (15 - r4);
+    const lowPoints = r0 <= 7 ? 4 : r0 === 8 ? 2 : r0 === 9 ? 1 : 0;
+    const lowWheel = r0 === 7 && r1 === 5 && r2 === 4 && r3 === 3 && r4 === 2;
+    let badugiHigh = 99;
+    let badugiQuality = -1;
+    let badugiWheel = false;
+
+    const considerBadugi = (first, second, third, fourth) => {
+      const a = cards[first];
+      const b = cards[second];
+      const c = cards[third];
+      const d = cards[fourth];
+      if (
+        a.rank === b.rank || a.rank === c.rank || a.rank === d.rank || b.rank === c.rank || b.rank === d.rank || c.rank === d.rank ||
+        a.suit === b.suit || a.suit === c.suit || a.suit === d.suit || b.suit === c.suit || b.suit === d.suit || c.suit === d.suit
+      ) return;
+      let firstRank = a.rank;
+      let secondRank = b.rank;
+      let thirdRank = c.rank;
+      let fourthRank = d.rank;
+      if (firstRank < secondRank) { swap = firstRank; firstRank = secondRank; secondRank = swap; }
+      if (thirdRank < fourthRank) { swap = thirdRank; thirdRank = fourthRank; fourthRank = swap; }
+      if (firstRank < thirdRank) { swap = firstRank; firstRank = thirdRank; thirdRank = swap; }
+      if (secondRank < fourthRank) { swap = secondRank; secondRank = fourthRank; fourthRank = swap; }
+      if (secondRank < thirdRank) { swap = secondRank; secondRank = thirdRank; thirdRank = swap; }
+      const quality = (((15 - firstRank) * 15 + (15 - secondRank)) * 15 + (15 - thirdRank)) * 15 + (15 - fourthRank);
+      if (quality <= badugiQuality) return;
+      badugiHigh = firstRank;
+      badugiQuality = quality;
+      badugiWheel = firstRank === 5 && secondRank === 4 && thirdRank === 3 && fourthRank === 2;
+    };
+
+    considerBadugi(1, 2, 3, 4);
+    considerBadugi(0, 2, 3, 4);
+    considerBadugi(0, 1, 3, 4);
+    considerBadugi(0, 1, 2, 4);
+    considerBadugi(0, 1, 2, 3);
+    if (badugiQuality < 0) return -1;
+    const badugiPoints = badugiHigh <= 5 ? 12 : badugiHigh === 6 ? 8 : badugiHigh === 7 ? 4 : 0;
+    const repeat = lowWheel && badugiWheel;
+    return 4e15 + (repeat ? 2e15 : 0) + (lowPoints + badugiPoints) * 1e13 + lowQualityValue * 1e6 + badugiQuality;
+  }
+
   function evaluateBdpTop(cards) {
     const complete = cards.length === 3;
     const badugi = complete ? bestBadugi(cards, 3, true) : null;
@@ -488,6 +707,24 @@
     };
   }
 
+  function bdpTopFastRank(cards) {
+    let qualifies = cards.length === 3;
+    for (let left = 0; left < cards.length && qualifies; left += 1) {
+      for (let right = left + 1; right < cards.length; right += 1) {
+        if (cards[left].rank === cards[right].rank || cards[left].suit === cards[right].suit) {
+          qualifies = false;
+          break;
+        }
+      }
+    }
+    if (!qualifies) return -1;
+    const ranks = cards.map((card) => (card.rank === 14 ? 1 : card.rank)).sort((a, b) => b - a);
+    const high = ranks[0];
+    const points = high <= 3 ? 12 : high === 4 ? 8 : high === 5 ? 4 : 0;
+    const quality = ranks.reduce((value, rank) => value * 15 + (15 - rank), 0);
+    return 1e15 + points * 1e10 + quality;
+  }
+
   function evaluateBdpLow(cards) {
     const low = evaluateDeuceSeven(cards);
     const points = low.qualifies ? (low.high <= 7 ? 12 : low.high === 8 ? 6 : low.high === 9 ? 3 : 0) : 0;
@@ -500,6 +737,12 @@
       name: label,
       detail: label,
     };
+  }
+
+  function bdpLowFastRank(cards) {
+    const low = deuceSevenFastFacts(cards);
+    const points = low.qualifies ? (low.high <= 7 ? 12 : low.high === 8 ? 6 : low.high === 9 ? 3 : 0) : 0;
+    return (low.qualifies ? 1e15 : 0) + points * 1e10 + low.quality;
   }
 
   function bdpBottomLabel(evaluation) {
@@ -730,27 +973,151 @@
     return { total, fifteens, fifteenCount, pairs, pairLabel, runs: runPoints, runLength, runCount, flush, nobs, scoreComponents };
   }
 
+  function cribbageScoreTotal(cards) {
+    let total = 0;
+    for (let mask = 1; mask < 1 << cards.length; mask += 1) {
+      if ((mask & (mask - 1)) === 0) continue;
+      let value = 0;
+      for (let index = 0; index < cards.length; index += 1) {
+        if (mask & (1 << index)) value += cards[index].rank === 14 ? 1 : Math.min(cards[index].rank, 10);
+      }
+      if (value === 15) total += 2;
+    }
+
+    const rankCounts = Array(15).fill(0);
+    const suitCounts = [0, 0, 0, 0];
+    cards.forEach((card) => {
+      rankCounts[card.rank === 14 ? 1 : card.rank] += 1;
+      suitCounts[SUITS.indexOf(card.suit)] += 1;
+    });
+    for (let rank = 1; rank <= 13; rank += 1) total += rankCounts[rank] * (rankCounts[rank] - 1);
+
+    let runPoints = 0;
+    for (let length = 5; length >= 3 && runPoints === 0; length -= 1) {
+      for (let start = 1; start <= 14 - length + 1; start += 1) {
+        let multiplier = 1;
+        for (let rank = start; rank < start + length; rank += 1) multiplier *= rankCounts[rank];
+        if (multiplier) runPoints += length * multiplier;
+      }
+    }
+    total += runPoints;
+
+    const maxSuit = Math.max(...suitCounts);
+    if (maxSuit >= 5) total += 5;
+    else if (maxSuit === 4) total += 4;
+    cards.forEach((card) => {
+      if (card.rank === 11 && suitCounts[SUITS.indexOf(card.suit)] > 1) total += 1;
+    });
+    return total;
+  }
+
+  function cribbageScoreTotalFast(cards) {
+    return cribbageRankScoreFast(cards) + cribbageSuitScoreFast(cards);
+  }
+
+  function cribbageRankScoreFast(cards) {
+    const values = [
+      cards[0].rank === 14 ? 1 : Math.min(cards[0].rank, 10),
+      cards[1].rank === 14 ? 1 : Math.min(cards[1].rank, 10),
+      cards[2].rank === 14 ? 1 : Math.min(cards[2].rank, 10),
+      cards[3].rank === 14 ? 1 : Math.min(cards[3].rank, 10),
+      cards[4].rank === 14 ? 1 : Math.min(cards[4].rank, 10),
+    ];
+    let total = 0;
+    for (let mask = 3; mask < 32; mask += 1) {
+      if ((mask & (mask - 1)) === 0) continue;
+      let value = 0;
+      if (mask & 1) value += values[0];
+      if (mask & 2) value += values[1];
+      if (mask & 4) value += values[2];
+      if (mask & 8) value += values[3];
+      if (mask & 16) value += values[4];
+      if (value === 15) total += 2;
+    }
+
+    for (let left = 0; left < 5; left += 1) {
+      for (let right = left + 1; right < 5; right += 1) if (cards[left].rank === cards[right].rank) total += 2;
+    }
+
+    const countRank = (rank) => {
+      if (rank === 14) return 0;
+      const wanted = rank === 1 ? 14 : rank;
+      return (
+        (cards[0].rank === wanted ? 1 : 0) +
+        (cards[1].rank === wanted ? 1 : 0) +
+        (cards[2].rank === wanted ? 1 : 0) +
+        (cards[3].rank === wanted ? 1 : 0) +
+        (cards[4].rank === wanted ? 1 : 0)
+      );
+    };
+    let runPoints = 0;
+    for (let length = 5; length >= 3 && runPoints === 0; length -= 1) {
+      for (let start = 1; start <= 14 - length + 1; start += 1) {
+        let multiplier = 1;
+        for (let rank = start; rank < start + length; rank += 1) multiplier *= countRank(rank);
+        if (multiplier) runPoints += length * multiplier;
+      }
+    }
+    return total + runPoints;
+  }
+
+  function cribbageSuitScoreFast(cards) {
+    let total = 0;
+    let maxSuit = 0;
+    for (let suitIndex = 0; suitIndex < SUITS.length; suitIndex += 1) {
+      const suit = SUITS[suitIndex];
+      let count = 0;
+      for (let index = 0; index < 5; index += 1) if (cards[index].suit === suit) count += 1;
+      if (count > maxSuit) maxSuit = count;
+    }
+    if (maxSuit === 5) total += 5;
+    else if (maxSuit === 4) total += 4;
+    for (let index = 0; index < 5; index += 1) {
+      if (cards[index].rank !== 11) continue;
+      for (let other = 0; other < 5; other += 1) {
+        if (other !== index && cards[other].suit === cards[index].suit) {
+          total += 1;
+          break;
+        }
+      }
+    }
+    return total;
+  }
+
   function evaluateCribbage(cards) {
     const breakdown = cribbageScore(cards);
     const complete = cards.length === 5;
+    const cribbagePoints = breakdown.total;
+    const points = complete ? Math.max(0, cribbagePoints - 10) : 0;
     return {
-      qualifies: complete && breakdown.total >= 12,
-      points: breakdown.total,
-      repeat: complete && breakdown.total >= 24,
-      quality: breakdown.total,
+      qualifies: complete && cribbagePoints >= 11,
+      points,
+      cribbagePoints,
+      fantasy: complete && cribbagePoints >= 20,
+      repeat: complete && cribbagePoints >= 21,
+      complete,
+      quality: cribbagePoints,
       breakdown,
       scoreComponents: breakdown.scoreComponents,
-      name: `${breakdown.total}pts`,
+      name: `${cribbagePoints} cribbage pt${cribbagePoints === 1 ? "" : "s"}`,
       detail: breakdown.scoreComponents.map((component) => component.label).join(" + "),
     };
   }
 
   function assignmentValue(assignments) {
+    return assignmentValueCards(Array.from(assignments.values()));
+  }
+
+  function assignmentValueCards(cards) {
     let value = 0;
-    Array.from(assignments.values()).forEach((card) => {
-      value = value * 100 + card.rank * 5 + (SUITS.length - SUITS.indexOf(card.suit));
+    cards.forEach((card) => {
+      value = value * 100 + assignmentCardValue(card);
     });
     return value;
+  }
+
+  function assignmentCardValue(card) {
+    return card.rank * 5 + (SUITS.length - SUITS.indexOf(card.suit));
   }
 
   function enumerateWild(ids, evaluator, options = {}) {
@@ -792,6 +1159,274 @@
     return Array.from(deduped.values());
   }
 
+  function bestWildCandidate(ids, evaluator, fastRanker = null) {
+    const cards = ids.map(makeCard);
+    const jokers = cards.filter((card) => card.joker);
+    const naturals = cards.filter((card) => !card.joker);
+    const blocked = new Set(naturals.map((card) => card.id));
+    const available = virtualDeck.filter((card) => !blocked.has(card.id));
+    let best = null;
+    let bestFastRank = -Infinity;
+    let bestFastValue = -Infinity;
+    let bestFastReplacements = null;
+    const jokerPositions = [];
+    cards.forEach((card, index) => { if (card.joker) jokerPositions.push(index); });
+    const reusableConcrete = fastRanker ? cards.slice() : null;
+
+    const consider = (replacements, value = assignmentValueCards(replacements)) => {
+      if (fastRanker) {
+        for (let index = 0; index < jokerPositions.length; index += 1) reusableConcrete[jokerPositions[index]] = replacements[index];
+        const rank = fastRanker(reusableConcrete);
+        if (rank > bestFastRank || (rank === bestFastRank && value > bestFastValue)) {
+          bestFastRank = rank;
+          bestFastValue = value;
+          bestFastReplacements = replacements.slice();
+        }
+        return;
+      }
+      let replacementIndex = 0;
+      const concrete = cards.map((card) => (card.joker ? replacements[replacementIndex++] : card));
+      const evaluation = evaluator(concrete);
+      const evaluationComparison = best ? compareRowEvaluations(evaluation, best.evaluation) : 1;
+      if (evaluationComparison < 0 || (evaluationComparison === 0 && value <= best.assignmentValue)) return;
+      const replacementById = new Map();
+      jokers.forEach((joker, index) => replacementById.set(joker.id, replacements[index]));
+      best = { evaluation, assignments: replacementById, assignmentValue: value };
+    };
+
+    if (!jokers.length) consider([], 0);
+    else if (jokers.length === 1) {
+      const replacements = [null];
+      available.forEach((card) => {
+        replacements[0] = card;
+        consider(replacements, assignmentCardValue(card));
+      });
+    }
+    else {
+      const replacements = [null, null];
+      for (let first = 0; first < available.length; first += 1) {
+        const firstCard = available[first];
+        const firstValue = assignmentCardValue(firstCard);
+        for (let second = first + 1; second < available.length; second += 1) {
+          const secondCard = available[second];
+          const secondValue = assignmentCardValue(secondCard);
+          if (firstValue >= secondValue) {
+            replacements[0] = firstCard;
+            replacements[1] = secondCard;
+            consider(replacements, firstValue * 100 + secondValue);
+          } else {
+            replacements[0] = secondCard;
+            replacements[1] = firstCard;
+            consider(replacements, secondValue * 100 + firstValue);
+          }
+        }
+      }
+    }
+    if (fastRanker && bestFastReplacements) {
+      const assignments = new Map();
+      jokers.forEach((joker, index) => assignments.set(joker.id, bestFastReplacements[index]));
+      let replacementIndex = 0;
+      const concrete = cards.map((card) => (card.joker ? bestFastReplacements[replacementIndex++] : card));
+      return { evaluation: evaluator(concrete), assignments, assignmentValue: bestFastValue };
+    }
+    return best;
+  }
+
+  function bestLowWildCandidate(ids, evaluator, fastRanker) {
+    const cards = ids.map(makeCard);
+    const jokers = cards.filter((card) => card.joker);
+    if (!jokers.length) return bestWildCandidate(ids, evaluator, fastRanker);
+    const naturals = cards.filter((card) => !card.joker);
+    const naturalRanks = new Set(naturals.map((card) => card.rank));
+    let replacements = null;
+    let bestRank = -Infinity;
+    let bestValue = -Infinity;
+    const jokerPositions = [];
+    cards.forEach((card, index) => { if (card.joker) jokerPositions.push(index); });
+    const concrete = cards.slice();
+
+    const consider = (candidateCards) => {
+      const ordered = candidateCards.slice().sort((left, right) => assignmentCardValue(right) - assignmentCardValue(left));
+      for (let index = 0; index < jokerPositions.length; index += 1) concrete[jokerPositions[index]] = ordered[index];
+      const rank = fastRanker(concrete);
+      const value = assignmentValueCards(ordered);
+      if (rank > bestRank || (rank === bestRank && value > bestValue)) {
+        bestRank = rank;
+        bestValue = value;
+        replacements = ordered;
+      }
+    };
+
+    if (naturalRanks.size !== naturals.length) {
+      const blocked = new Set(naturals.map((card) => card.id));
+      consider(virtualDeck
+        .filter((card) => !blocked.has(card.id))
+        .sort((left, right) => assignmentCardValue(right) - assignmentCardValue(left))
+        .slice(0, jokers.length));
+    } else {
+      const ranks = RANKS.filter((rank) => !naturalRanks.has(rank));
+      const naturalSuit = naturals.length && naturals.every((card) => card.suit === naturals[0].suit) ? naturals[0].suit : "";
+      const primarySuit = naturalSuit === "s" ? "h" : "s";
+      if (jokers.length === 1) {
+        ranks.forEach((rank) => consider([virtualCardById.get(`${RANK_LABEL[rank]}${primarySuit}`)]));
+      } else {
+        for (let first = 0; first < ranks.length; first += 1) {
+          for (let second = first + 1; second < ranks.length; second += 1) {
+            const firstSuit = "s";
+            const secondSuit = naturalSuit === "s" ? "h" : "s";
+            consider([
+              virtualCardById.get(`${RANK_LABEL[ranks[first]]}${firstSuit}`),
+              virtualCardById.get(`${RANK_LABEL[ranks[second]]}${secondSuit}`),
+            ]);
+          }
+        }
+      }
+    }
+
+    const assignments = new Map();
+    jokers.forEach((joker, index) => assignments.set(joker.id, replacements[index]));
+    let replacementIndex = 0;
+    const finalCards = cards.map((card) => (card.joker ? replacements[replacementIndex++] : card));
+    return { evaluation: evaluator(finalCards), assignments, assignmentValue: bestValue };
+  }
+
+  function bestHighWildCandidate(ids, evaluator) {
+    const cards = ids.map(makeCard);
+    const jokers = cards.filter((card) => card.joker);
+    if (!jokers.length) return bestWildCandidate(ids, evaluator, highFiveStrengthOnly);
+    const naturals = cards.filter((card) => !card.joker);
+    const blocked = new Set(naturals.map((card) => card.id));
+    const availableByRank = new Map(RANKS.map((rank) => [rank, virtualDeck
+      .filter((card) => card.rank === rank && !blocked.has(card.id))
+      .sort((left, right) => assignmentCardValue(right) - assignmentCardValue(left))]));
+    const naturalSuit = naturals.length && naturals.every((card) => card.suit === naturals[0].suit) ? naturals[0].suit : "";
+    const jokerPositions = [];
+    cards.forEach((card, index) => { if (card.joker) jokerPositions.push(index); });
+    const concrete = cards.slice();
+    let replacements = null;
+    let bestStrength = -Infinity;
+    let bestValue = -Infinity;
+
+    const consider = (candidateCards) => {
+      if (candidateCards.length !== jokers.length || (candidateCards.length === 2 && candidateCards[0].id === candidateCards[1].id)) return;
+      const ordered = candidateCards.slice().sort((left, right) => assignmentCardValue(right) - assignmentCardValue(left));
+      for (let index = 0; index < jokerPositions.length; index += 1) concrete[jokerPositions[index]] = ordered[index];
+      const strength = highFiveStrengthOnly(concrete);
+      const value = assignmentValueCards(ordered);
+      if (strength > bestStrength || (strength === bestStrength && value > bestValue)) {
+        bestStrength = strength;
+        bestValue = value;
+        replacements = ordered;
+      }
+    };
+
+    if (jokers.length === 1) {
+      RANKS.forEach((rank) => {
+        const choices = availableByRank.get(rank);
+        if (!choices.length) return;
+        consider([choices[0]]);
+        if (naturalSuit) {
+          const flushCard = choices.find((card) => card.suit === naturalSuit);
+          const nonFlushCard = choices.find((card) => card.suit !== naturalSuit);
+          if (flushCard) consider([flushCard]);
+          if (nonFlushCard) consider([nonFlushCard]);
+        }
+      });
+    } else {
+      for (let first = 0; first < RANKS.length; first += 1) {
+        for (let second = first; second < RANKS.length; second += 1) {
+          const firstChoices = availableByRank.get(RANKS[first]);
+          const secondChoices = availableByRank.get(RANKS[second]);
+          const sameRank = first === second;
+          const highest = sameRank ? [firstChoices[0], firstChoices[1]] : [firstChoices[0], secondChoices[0]];
+          if (highest[0] && highest[1]) consider(highest);
+          if (!naturalSuit) continue;
+          const flushFirst = firstChoices.find((card) => card.suit === naturalSuit);
+          const flushSecond = sameRank ? null : secondChoices.find((card) => card.suit === naturalSuit);
+          if (flushFirst && flushSecond) consider([flushFirst, flushSecond]);
+          if (!sameRank && highest[0]?.suit === naturalSuit && highest[1]?.suit === naturalSuit) {
+            const alternateSecond = secondChoices.find((card) => card.suit !== naturalSuit);
+            if (alternateSecond) consider([highest[0], alternateSecond]);
+          }
+        }
+      }
+    }
+
+    const assignments = new Map();
+    jokers.forEach((joker, index) => assignments.set(joker.id, replacements[index]));
+    let replacementIndex = 0;
+    const finalCards = cards.map((card) => (card.joker ? replacements[replacementIndex++] : card));
+    return { evaluation: evaluator(finalCards), assignments, assignmentValue: bestValue };
+  }
+
+  function bestCribbageWildCandidate(ids) {
+    const cards = ids.map(makeCard);
+    const jokers = cards.filter((card) => card.joker);
+    if (cards.length !== 5) return bestWildCandidate(ids, evaluateCribbage);
+    if (!jokers.length) return bestWildCandidate(ids, evaluateCribbage, cribbageScoreTotalFast);
+    const naturals = cards.filter((card) => !card.joker);
+    const blocked = new Set(naturals.map((card) => card.id));
+    const available = virtualDeck.filter((card) => !blocked.has(card.id));
+    const jokerPositions = [];
+    cards.forEach((card, index) => { if (card.joker) jokerPositions.push(index); });
+    const concrete = cards.slice();
+    const rankScoreCache = new Map();
+    let replacements = null;
+    let bestScore = -Infinity;
+    let bestValue = -Infinity;
+
+    const consider = (candidateCards, value) => {
+      for (let index = 0; index < jokerPositions.length; index += 1) concrete[jokerPositions[index]] = candidateCards[index];
+      const rankKey = candidateCards.length === 1
+        ? candidateCards[0].rank
+        : Math.max(candidateCards[0].rank, candidateCards[1].rank) * 15 + Math.min(candidateCards[0].rank, candidateCards[1].rank);
+      let rankScore = rankScoreCache.get(rankKey);
+      if (rankScore === undefined) {
+        rankScore = cribbageRankScoreFast(concrete);
+        rankScoreCache.set(rankKey, rankScore);
+      }
+      const score = rankScore + cribbageSuitScoreFast(concrete);
+      if (score > bestScore || (score === bestScore && value > bestValue)) {
+        bestScore = score;
+        bestValue = value;
+        replacements = candidateCards.slice();
+      }
+    };
+
+    if (jokers.length === 1) {
+      const replacement = [null];
+      available.forEach((card) => {
+        replacement[0] = card;
+        consider(replacement, assignmentCardValue(card));
+      });
+    } else {
+      const replacement = [null, null];
+      for (let first = 0; first < available.length; first += 1) {
+        const firstCard = available[first];
+        const firstValue = assignmentCardValue(firstCard);
+        for (let second = first + 1; second < available.length; second += 1) {
+          const secondCard = available[second];
+          const secondValue = assignmentCardValue(secondCard);
+          if (firstValue >= secondValue) {
+            replacement[0] = firstCard;
+            replacement[1] = secondCard;
+            consider(replacement, firstValue * 100 + secondValue);
+          } else {
+            replacement[0] = secondCard;
+            replacement[1] = firstCard;
+            consider(replacement, secondValue * 100 + firstValue);
+          }
+        }
+      }
+    }
+
+    const assignments = new Map();
+    jokers.forEach((joker, index) => assignments.set(joker.id, replacements[index]));
+    let replacementIndex = 0;
+    const finalCards = cards.map((card) => (card.joker ? replacements[replacementIndex++] : card));
+    return { evaluation: evaluateCribbage(finalCards), assignments, assignmentValue: bestValue };
+  }
+
   function enumerateTopWild(ids, evaluator) {
     const cards = ids.map(makeCard);
     const jokers = cards.filter((card) => card.joker);
@@ -831,24 +1466,36 @@
     return Array.from(deduped.values());
   }
 
+  function highRowEvaluation(cards, role) {
+    const top = role === "top";
+    const evaluation = top ? evaluateHighTop(cards) : evaluateHighFive(cards);
+    const points = top ? topRoyalty(evaluation) : highFiveRoyalty(evaluation, role);
+    const repeat = top ? evaluation.category === CATEGORY.TRIPS : evaluation.category >= CATEGORY.QUADS;
+    return { ...evaluation, points, repeat, qualifies: true, quality: evaluation.strength };
+  }
+
+  function highBottomFastRank(cards) {
+    return highFiveStrengthOnly(cards);
+  }
+
+  function bdpBottomFastRank(cards) {
+    return highFiveStrengthOnly(cards);
+  }
+
   function highRowCandidates(ids, role) {
     const top = role === "top";
-    const evaluator = (cards) => {
-      const evaluation = top ? evaluateHighTop(cards) : evaluateHighFive(cards);
-      const points = top ? topRoyalty(evaluation) : highFiveRoyalty(evaluation, role);
-      const repeat = top ? evaluation.category === CATEGORY.TRIPS : evaluation.category >= CATEGORY.QUADS;
-      return { ...evaluation, points, repeat, qualifies: true, quality: evaluation.strength };
-    };
+    const evaluator = (cards) => highRowEvaluation(cards, role);
     return top ? enumerateTopWild(ids, evaluator) : enumerateWild(ids, evaluator, { key: (evaluation) => String(evaluation.strength) });
   }
 
   function variantTopCandidates(variant, ids) {
-    if (variant === "bdp") return enumerateWild(ids, evaluateBdpTop, { key: middleKey });
+    if (variant === "bdp") return [bestWildCandidate(ids, evaluateBdpTop, bdpTopFastRank)].filter(Boolean);
     return highRowCandidates(ids, "top");
   }
 
   function variantBottomCandidates(variant, ids) {
-    if (variant === "bdp") return enumerateWild(ids, evaluateBdpBottom, { key: middleKey });
+    if (variant === "bdp") return [bestHighWildCandidate(ids, evaluateBdpBottom)].filter(Boolean);
+    if (variant !== "high") return [bestHighWildCandidate(ids, (cards) => highRowEvaluation(cards, "bottom"))].filter(Boolean);
     return highRowCandidates(ids, "bottom");
   }
 
@@ -997,10 +1644,10 @@
 
   function variantMiddleCandidates(variant, rows) {
     if (variant === "high") return highRowCandidates(rows.middle || [], "middle");
-    if (variant === "low") return enumerateWild(rows.middle || [], evaluateDeuceSeven, { key: middleKey });
-    if (variant === "badeucey") return enumerateWild(rows.middle || [], evaluateBadeucey, { key: middleKey });
-    if (variant === "bdp") return enumerateWild(rows.middle || [], evaluateBdpLow, { key: middleKey });
-    if (variant === "cribbage") return enumerateWild(rows.middle || [], evaluateCribbage, { key: middleKey });
+    if (variant === "low") return [bestLowWildCandidate(rows.middle || [], evaluateDeuceSeven, lowFastRank)].filter(Boolean);
+    if (variant === "badeucey") return [bestWildCandidate(rows.middle || [], evaluateBadeucey, badeuceyFastRank)].filter(Boolean);
+    if (variant === "bdp") return [bestLowWildCandidate(rows.middle || [], evaluateBdpLow, bdpLowFastRank)].filter(Boolean);
+    if (variant === "cribbage") return [bestCribbageWildCandidate(rows.middle || [])].filter(Boolean);
     if (variant === "badugijack") {
       const badugiIds = rows.middleBadugi || [];
       const blackjackIds = rows.middleBlackjack || [];
@@ -1030,11 +1677,17 @@
   function compareRowCandidate(left, right) {
     const a = left.evaluation;
     const b = right.evaluation;
+    const evaluationComparison = compareRowEvaluations(a, b);
+    if (evaluationComparison) return evaluationComparison;
+    return left.assignmentValue - right.assignmentValue;
+  }
+
+  function compareRowEvaluations(a, b) {
     if (Boolean(a.qualifies) !== Boolean(b.qualifies)) return a.qualifies ? 1 : -1;
     if (Boolean(a.repeat) !== Boolean(b.repeat)) return a.repeat ? 1 : -1;
     if ((a.points || 0) !== (b.points || 0)) return (a.points || 0) - (b.points || 0);
     if ((a.quality || 0) !== (b.quality || 0)) return (a.quality || 0) - (b.quality || 0);
-    return left.assignmentValue - right.assignmentValue;
+    return 0;
   }
 
   function rowsComplete(variant, rows) {
@@ -1175,7 +1828,17 @@
     const jokers = ids.filter((id) => makeCard(id).joker).slice().sort();
     if (ids.length !== 5 || jokers.length < 1) return null;
     const naturals = ids.filter((id) => !makeCard(id).joker).slice().sort();
-    return `${namespace}:${jokers.join(",")}:${naturals.join(",")}`;
+    return `${namespace}:${jokers.length}J:${naturals.join(",")}`;
+  }
+
+  function remapCachedJokerAssignments(candidate, ids) {
+    if (!candidate?.assignments?.size) return candidate;
+    const jokerIds = ids.filter((id) => makeCard(id).joker);
+    const cachedIds = Array.from(candidate.assignments.keys());
+    if (jokerIds.length === cachedIds.length && jokerIds.every((id) => candidate.assignments.has(id))) return candidate;
+    const replacements = Array.from(candidate.assignments.values());
+    const assignments = new Map(jokerIds.map((id, index) => [id, replacements[index]]));
+    return { ...candidate, assignments, assignmentValue: assignmentValue(assignments) };
   }
 
   function maskForIds(allIds, selectedIds) {
@@ -1187,11 +1850,12 @@
 
   function bestMiddleForMask(variant, ids) {
     const cacheKey = wildFiveCacheKey(ids, variant);
-    if (cacheKey && wildFiveMiddleCache.has(cacheKey)) return wildFiveMiddleCache.get(cacheKey);
+    const memo = cacheKey ? wildFiveMemo(wildFiveMiddleCaches, ids) : null;
+    if (memo && memo.cache.has(cacheKey)) return remapCachedJokerAssignments(memo.cache.get(cacheKey), ids);
     if (variant !== "badugijack" && variant !== "doubleblackjack") {
       const candidates = variantMiddleCandidates(variant, { middle: ids });
       const best = bestCandidate(candidates, (candidate) => variant === "high" || candidate.evaluation.qualifies);
-      if (cacheKey) setBoundedMemo(wildFiveMiddleCache, cacheKey, best);
+      if (memo) setBoundedMemo(memo.cache, cacheKey, best, memo.limit);
       return best;
     }
     let best = null;
@@ -1204,7 +1868,7 @@
         const withSplit = { ...candidate, badugiIds: badugiIds.slice(), blackjackIds };
         if (!best || compareRowCandidate(withSplit, best) > 0) best = withSplit;
       }));
-      if (cacheKey) setBoundedMemo(wildFiveMiddleCache, cacheKey, best);
+      if (memo) setBoundedMemo(memo.cache, cacheKey, best, memo.limit);
       return best;
     }
 
@@ -1219,7 +1883,7 @@
       const withSplit = { ...candidate, blackjackThreeIds: threeIds.slice(), blackjackTwoIds: twoIds };
       if (!best || compareRowCandidate(withSplit, best) > 0) best = withSplit;
     });
-    if (cacheKey) setBoundedMemo(wildFiveMiddleCache, cacheKey, best);
+    if (memo) setBoundedMemo(memo.cache, cacheKey, best, memo.limit);
     return best;
   }
 
@@ -1447,6 +2111,227 @@
     };
   }
 
+  function compareMiddlePointEntries(left, right, middleCache) {
+    if (!right) return 1;
+    const leftCandidate = middleCache.get(left.mask);
+    const rightCandidate = middleCache.get(right.mask);
+    const leftEval = leftCandidate.evaluation;
+    const rightEval = rightCandidate.evaluation;
+    if (leftEval.points !== rightEval.points) return leftEval.points - rightEval.points;
+    if (leftEval.quality !== rightEval.quality) return leftEval.quality - rightEval.quality;
+    if (leftCandidate.assignmentValue !== rightCandidate.assignmentValue) {
+      return leftCandidate.assignmentValue - rightCandidate.assignmentValue;
+    }
+    return right.mask - left.mask;
+  }
+
+  function buildBestMiddleSubsetTable(n, middlePool, middleCache, repeatOnly = false) {
+    const table = new Int32Array(1 << n);
+    table.fill(-1);
+    middlePool.forEach((entry, index) => {
+      const candidate = middleCache.get(entry.mask);
+      if (!candidate || (repeatOnly && !candidate.evaluation.repeat)) return;
+      const currentIndex = table[entry.mask];
+      if (currentIndex < 0 || compareMiddlePointEntries(entry, middlePool[currentIndex], middleCache) > 0) {
+        table[entry.mask] = index;
+      }
+    });
+
+    for (let bit = 0; bit < n; bit += 1) {
+      const bitMask = 1 << bit;
+      for (let mask = 0; mask < table.length; mask += 1) {
+        if (!(mask & bitMask)) continue;
+        const sourceIndex = table[mask ^ bitMask];
+        if (sourceIndex < 0) continue;
+        const currentIndex = table[mask];
+        if (currentIndex < 0 || compareMiddlePointEntries(middlePool[sourceIndex], middlePool[currentIndex], middleCache) > 0) {
+          table[mask] = sourceIndex;
+        }
+      }
+    }
+    return table;
+  }
+
+  function solveIndependentMiddleHand(context) {
+    const {
+      ids,
+      variant,
+      mode,
+      started,
+      fullMask,
+      middlePool,
+      middleCache,
+      bottomPool,
+      topMasks,
+    } = context;
+    const n = ids.length;
+    const directMiddleLookup = n <= 15;
+    const middleIndexByMask = directMiddleLookup ? new Int32Array(1 << n) : null;
+    if (middleIndexByMask) {
+      middleIndexByMask.fill(-1);
+      middlePool.forEach((entry, index) => { middleIndexByMask[entry.mask] = index; });
+    }
+    const bestMiddle = directMiddleLookup ? null : buildBestMiddleSubsetTable(n, middlePool, middleCache);
+    const bestRepeatingMiddle = directMiddleLookup ? null : buildBestMiddleSubsetTable(n, middlePool, middleCache, true);
+    const topCandidateCache = new Map();
+    const outerByMask = new Array(1 << n);
+    const repeatingOuterByMask = new Array(1 << n);
+    const nonRepeatingOuterByMask = new Array(1 << n);
+    let best = null;
+    let bestRoyalty = null;
+    let bestRepeat = null;
+    let legalBoards = 0;
+
+    const middleIndexFor = (availableMask, repeatOnly = false) => {
+      if (!directMiddleLookup) return (repeatOnly ? bestRepeatingMiddle : bestMiddle)[availableMask];
+      let bestIndex = -1;
+      for (let subset = availableMask; subset; subset = (subset - 1) & availableMask) {
+        const index = middleIndexByMask[subset];
+        if (index < 0) continue;
+        const candidate = middleCache.get(middlePool[index].mask);
+        if (repeatOnly && !candidate.evaluation.repeat) continue;
+        if (bestIndex < 0 || compareMiddlePointEntries(middlePool[index], middlePool[bestIndex], middleCache) > 0) bestIndex = index;
+      }
+      return bestIndex;
+    };
+
+    const solutionFor = (top, middleEntry, bottomEntry) => {
+      const middle = middleCache.get(middleEntry.mask);
+      const bottom = bottomEntry.candidate;
+      const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
+      const repeat = top.evaluation.repeat || middle.evaluation.repeat || bottom.evaluation.repeat;
+      return {
+        points,
+        repeat,
+        usedMask: top.mask | middleEntry.mask | bottomEntry.mask,
+        tieQuality: top.evaluation.quality + middle.evaluation.quality + bottom.evaluation.quality,
+        top: { ids: top.ids, mask: top.mask, eval: top.evaluation, points: top.evaluation.points, assignments: top.assignments },
+        middle: {
+          ids: idsForMask(ids, middleEntry.mask),
+          mask: middleEntry.mask,
+          eval: middle.evaluation,
+          points: middle.evaluation.points,
+          assignments: middle.assignments,
+          badugiIds: middle.badugiIds || null,
+          blackjackIds: middle.blackjackIds || null,
+          blackjackThreeIds: middle.blackjackThreeIds || null,
+          blackjackTwoIds: middle.blackjackTwoIds || null,
+        },
+        bottom: {
+          ids: idsForMask(ids, bottomEntry.mask),
+          mask: bottomEntry.mask,
+          eval: bottom.evaluation,
+          points: bottom.evaluation.points,
+          assignments: bottom.assignments,
+        },
+        assignments: mergeAssignments(top.assignments, middle.assignments, bottom.assignments),
+      };
+    };
+
+    const takeSolution = (top, middleEntry, bottomEntry) => {
+      const solution = solutionFor(top, middleEntry, bottomEntry);
+      if (!bestRoyalty || solution.points > bestRoyalty.points || (solution.points === bestRoyalty.points && solution.tieQuality > bestRoyalty.tieQuality)) {
+        bestRoyalty = solution;
+      }
+      if (solution.repeat && (!bestRepeat || solution.points > bestRepeat.points || (solution.points === bestRepeat.points && solution.tieQuality > bestRepeat.tieQuality))) {
+        bestRepeat = solution;
+      }
+      if (compareBoard(solution, best) > 0) best = solution;
+    };
+
+    const compareOuter = (top, bottomEntry, points, quality, current) => {
+      if (!current) return 1;
+      if (points !== current.points) return points - current.points;
+      if (quality !== current.quality) return quality - current.quality;
+      if (top.assignmentValue !== current.top.assignmentValue) return top.assignmentValue - current.top.assignmentValue;
+      return bottomEntry.candidate.assignmentValue - current.bottomEntry.candidate.assignmentValue;
+    };
+
+    for (let bottomIndex = 0; bottomIndex < bottomPool.length; bottomIndex += 1) {
+      const bottomEntry = bottomPool[bottomIndex];
+      const bottom = bottomEntry.candidate;
+      for (let topIndex = 0; topIndex < topMasks.length; topIndex += 1) {
+        const topMask = topMasks[topIndex];
+        if (topMask & bottomEntry.mask) continue;
+        let topData = topCandidateCache.get(topMask);
+        if (!topData) {
+          const topIds = idsForMask(ids, topMask);
+          const candidates = variantTopCandidates(variant, topIds).slice().sort((left, right) => compareRowCandidate(right, left));
+          topData = { ids: topIds, candidates, bestByConstraint: new Map() };
+          topCandidateCache.set(topMask, topData);
+        }
+        const topConstraintKey = variant === "bdp" ? "qualify" : constraintKey(bottom.evaluation);
+        let top = topData.bestByConstraint.get(topConstraintKey);
+        if (top === undefined) {
+          top = null;
+          for (let candidateIndex = 0; candidateIndex < topData.candidates.length; candidateIndex += 1) {
+            const candidate = topData.candidates[candidateIndex];
+            const legal = variant === "bdp"
+              ? candidate.evaluation.qualifies
+              : isTopLegalAgainstFive(candidate.evaluation, bottom.evaluation);
+            if (legal) {
+              top = candidate;
+              break;
+            }
+          }
+          topData.bestByConstraint.set(topConstraintKey, top);
+        }
+        if (!top) continue;
+        const usedMask = bottomEntry.mask | topMask;
+        const outerRepeats = top.evaluation.repeat || bottom.evaluation.repeat;
+        const points = top.evaluation.points + bottom.evaluation.points;
+        const quality = top.evaluation.quality + bottom.evaluation.quality;
+        const repeatTable = outerRepeats ? repeatingOuterByMask : nonRepeatingOuterByMask;
+        const keepAny = compareOuter(top, bottomEntry, points, quality, outerByMask[usedMask]) > 0;
+        const keepRepeatState = compareOuter(top, bottomEntry, points, quality, repeatTable[usedMask]) > 0;
+        if (!keepAny && !keepRepeatState) continue;
+        const outer = { points, quality, top, topMask, topIds: topData.ids, bottomEntry };
+        if (keepAny) outerByMask[usedMask] = outer;
+        if (keepRepeatState) repeatTable[usedMask] = outer;
+      }
+    }
+
+    for (let usedMask = 0; usedMask < outerByMask.length; usedMask += 1) {
+      const outer = outerByMask[usedMask];
+      if (!outer) continue;
+      const availableMask = fullMask ^ usedMask;
+      const middleIndex = middleIndexFor(availableMask);
+      if (middleIndex < 0) continue;
+      const topEntry = { ...outer.top, mask: outer.topMask, ids: outer.topIds };
+      legalBoards += 1;
+      takeSolution(topEntry, middlePool[middleIndex], outer.bottomEntry);
+
+      const repeatingOuter = repeatingOuterByMask[usedMask];
+      if (repeatingOuter) {
+        takeSolution(
+          { ...repeatingOuter.top, mask: repeatingOuter.topMask, ids: repeatingOuter.topIds },
+          middlePool[middleIndex],
+          repeatingOuter.bottomEntry
+        );
+      }
+      const nonRepeatingOuter = nonRepeatingOuterByMask[usedMask];
+      const repeatIndex = middleIndexFor(availableMask, true);
+      if (nonRepeatingOuter && repeatIndex >= 0) {
+        takeSolution(
+          { ...nonRepeatingOuter.top, mask: nonRepeatingOuter.topMask, ids: nonRepeatingOuter.topIds },
+          middlePool[repeatIndex],
+          nonRepeatingOuter.bottomEntry
+        );
+      }
+    }
+
+    return {
+      variant,
+      cards: parseCards(ids),
+      best: bestRepeat || best || bestRoyalty,
+      bestRoyalty,
+      bestRepeat,
+      legalBoards,
+      elapsedMs: now() - started,
+      mode,
+    };
+  }
+
   function solveHand(cardIds, options = {}) {
     const started = now();
     const variant = normalizeVariant(options.variant);
@@ -1490,12 +2375,13 @@
     bottomMasks.forEach((mask) => {
       const rowIds = idsForMask(ids, mask);
       const cacheKey = wildFiveCacheKey(rowIds, variant === "bdp" ? "bdp" : "high");
+      const memo = cacheKey ? wildFiveMemo(wildFiveBottomCaches, rowIds) : null;
       let candidate;
-      if (cacheKey && wildFiveBottomCache.has(cacheKey)) {
-        candidate = wildFiveBottomCache.get(cacheKey);
+      if (memo && memo.cache.has(cacheKey)) {
+        candidate = remapCachedJokerAssignments(memo.cache.get(cacheKey), rowIds);
       } else {
         candidate = bestCandidate(variantBottomCandidates(variant, rowIds), (entry) => variant !== "bdp" || entry.evaluation.qualifies);
-        if (cacheKey) setBoundedMemo(wildFiveBottomCache, cacheKey, candidate);
+        if (memo) setBoundedMemo(memo.cache, cacheKey, candidate, memo.limit);
       }
       if (!candidate) return;
       bottomEntries.push({ mask, candidate, estimate: candidate.evaluation.points * 1e8 + candidate.evaluation.quality });
@@ -1503,6 +2389,19 @@
     const beamLimit = Number.isFinite(options.beamLimit) ? Math.max(16, Math.floor(options.beamLimit)) : variant === "badugijack" || variant === "doubleblackjack" ? 260 : 360;
     const middlePool = mode === "fast" ? takeBeam(middleEntries, beamLimit, variant === "high") : middleEntries;
     const bottomPool = mode === "fast" ? takeBeam(bottomEntries, beamLimit) : bottomEntries;
+    if (variant !== "high" && !options.legacyIndependentSearch) {
+      return solveIndependentMiddleHand({
+        ids,
+        variant,
+        mode,
+        started,
+        fullMask,
+        middlePool,
+        middleCache,
+        bottomPool,
+        topMasks,
+      });
+    }
     const topCache = new Map();
     const topCandidateCache = new Map();
     let best = null;
@@ -1660,6 +2559,7 @@
     CATEGORY,
     VARIANTS,
     VARIANT_ORDER,
+    ACTIVE_VARIANT_ORDER,
     RULE_SECTIONS,
     normalizeVariant,
     variantCardCounts,
@@ -1667,6 +2567,8 @@
     supportsVariantCardCount,
     makeCard,
     evaluateHighFive,
+    evaluateHighFiveFast,
+    highFiveStrengthOnly,
     evaluateHighTop,
     evaluateDeuceSeven,
     evaluateBadeucey,
@@ -1677,6 +2579,8 @@
     evaluateBadugiJackConcrete,
     evaluateDoubleBlackjackConcrete,
     cribbageScore,
+    cribbageScoreTotal,
+    cribbageScoreTotalFast,
     evaluateCribbage,
     topRoyalty,
     highFiveRoyalty,

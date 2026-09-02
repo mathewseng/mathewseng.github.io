@@ -5,6 +5,75 @@ function cards(ids) {
   return ids.map(core.makeCard);
 }
 
+function exhaustiveWildEvaluation(ids, evaluator) {
+  const row = cards(ids);
+  const jokers = row.filter((card) => card.joker);
+  const blocked = new Set(row.filter((card) => !card.joker).map((card) => card.id));
+  const deck = ["s", "h", "d", "c"].flatMap((suit) => ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"].map((rank) => core.makeCard(`${rank}${suit}`))).filter((card) => !blocked.has(card.id));
+  let best = null;
+  const consider = (replacements) => {
+    let replacement = 0;
+    const evaluation = evaluator(row.map((card) => (card.joker ? replacements[replacement++] : card)));
+    if (!best || compareEvaluation(evaluation, best) > 0) best = evaluation;
+  };
+  if (!jokers.length) consider([]);
+  else if (jokers.length === 1) deck.forEach((card) => consider([card]));
+  else for (let first = 0; first < deck.length; first += 1) for (let second = first + 1; second < deck.length; second += 1) consider([deck[first], deck[second]]);
+  return best;
+}
+
+function compareEvaluation(left, right) {
+  if (Boolean(left.qualifies) !== Boolean(right.qualifies)) return left.qualifies ? 1 : -1;
+  if (Boolean(left.repeat) !== Boolean(right.repeat)) return left.repeat ? 1 : -1;
+  if ((left.points || 0) !== (right.points || 0)) return (left.points || 0) - (right.points || 0);
+  return (left.quality || 0) - (right.quality || 0);
+}
+
+function assertSameEvaluation(actual, expected, message) {
+  assert.equal(actual.qualifies, expected.qualifies, `${message}: qualification`);
+  assert.equal(actual.repeat, expected.repeat, `${message}: repeat`);
+  assert.equal(actual.points, expected.points, `${message}: royalties`);
+  assert.equal(actual.quality, expected.quality, `${message}: quality`);
+}
+
+for (let sample = 0; sample < 500; sample += 1) {
+  const ids = core.dealSeeded(5, 0, `FAST-HIGH-${sample}`);
+  const descriptive = core.evaluateHighFive(cards(ids));
+  const fast = core.evaluateHighFiveFast(cards(ids));
+  assert.equal(fast.category, descriptive.category, `fast high: category should match for ${ids.join(" ")}`);
+  assert.equal(fast.strength, descriptive.strength, `fast high: strength should match for ${ids.join(" ")}`);
+  assert.equal(core.highFiveStrengthOnly(cards(ids)), descriptive.strength, `packed high: strength should match for ${ids.join(" ")}`);
+  assert.deepEqual(fast.ranks, descriptive.ranks, `fast high: kickers should match for ${ids.join(" ")}`);
+  assert.equal(core.cribbageScoreTotalFast(cards(ids)), core.cribbageScoreTotal(cards(ids)), `packed cribbage: score should match for ${ids.join(" ")}`);
+}
+
+[
+  ["low", ["JK1", "JK2", "7s", "5h", "2d"], core.evaluateDeuceSeven],
+  ["badeucey", ["JK1", "JK2", "7s", "5h", "2d"], core.evaluateBadeucey],
+  ["bdp", ["JK1", "JK2", "8s", "5h", "2d"], core.evaluateBdpLow],
+  ["cribbage", ["JK1", "JK2", "Js", "8s", "7h"], core.evaluateCribbage],
+].forEach(([variant, ids, evaluator]) => {
+  const preview = core.previewRows(ids, { top: [], middle: ids, bottom: [] }, { variant });
+  const exhaustive = exhaustiveWildEvaluation(ids, evaluator);
+  assertSameEvaluation(preview.rowEvals.middle, exhaustive, `${variant}: optimized middle joker scan should match exhaustive search`);
+});
+
+const bdpTopJokers = ["JK1", "JK2", "As"];
+const bdpTopPreview = core.previewRows(bdpTopJokers, { top: bdpTopJokers, middle: [], bottom: [] }, { variant: "bdp" });
+assertSameEvaluation(
+  bdpTopPreview.rowEvals.top,
+  exhaustiveWildEvaluation(bdpTopJokers, core.evaluateBdpTop),
+  "bdp: optimized top joker scan should match exhaustive search"
+);
+
+const bdpBottomJokers = ["JK1", "JK2", "Ts", "Th", "2d"];
+const bdpBottomPreview = core.previewRows(bdpBottomJokers, { top: [], middle: [], bottom: bdpBottomJokers }, { variant: "bdp" });
+assertSameEvaluation(
+  bdpBottomPreview.rowEvals.bottom,
+  exhaustiveWildEvaluation(bdpBottomJokers, core.evaluateBdpBottom),
+  "bdp: optimized bottom joker scan should match exhaustive search"
+);
+
 const wheelLow = core.evaluateDeuceSeven(cards(["7s", "5h", "4d", "3c", "2s"]));
 assert.equal(wheelLow.qualifies, true, "low: 75432 should qualify");
 assert.equal(wheelLow.points, 4, "low: 7-high should score four");
@@ -49,20 +118,29 @@ const sevenHighBadeucey = core.evaluateBadeucey(cards(["8s", "7h", "6d", "5c", "
 assert.equal(sevenHighBadeucey.points, 6, "badeucey: 8-low plus 7-high Badugi should score six");
 
 assert.equal(core.VARIANT_ORDER.indexOf("bdp"), core.VARIANT_ORDER.indexOf("badeucey") + 1, "bdp: selector order should place BDP directly after Badeucey");
+assert.deepEqual(core.ACTIVE_VARIANT_ORDER, ["high", "low", "badeucey", "bdp", "cribbage"], "config: archived variants should stay out of production selectors");
+assert.equal(core.VARIANTS.badugijack.archived, true, "config: BadugiJack logic should remain registered as archived");
+assert.equal(core.VARIANTS.doubleblackjack.archived, true, "config: Double Blackjack logic should remain registered as archived");
 assert.deepEqual(core.variantCardCounts("high"), [14, 15, 16, 17], "config: High should retain all four card counts");
-assert.deepEqual(core.variantCardCounts("badeucey"), [16, 17], "config: Badeucey should start at sixteen cards");
+assert.deepEqual(core.variantCardCounts("badeucey"), [14, 15, 16, 17], "config: Badeucey should support fourteen through seventeen cards");
 assert.deepEqual(core.variantCardCounts("bdp"), [17], "config: BDP should use only seventeen cards");
 assert.deepEqual(
   core.variantScenarios("badeucey"),
   [
+    { cards: 14, jokers: 0 },
+    { cards: 15, jokers: 0 },
     { cards: 16, jokers: 0 },
     { cards: 17, jokers: 0 },
+    { cards: 14, jokers: 1 },
+    { cards: 15, jokers: 1 },
     { cards: 16, jokers: 1 },
     { cards: 17, jokers: 1 },
+    { cards: 14, jokers: 2 },
+    { cards: 15, jokers: 2 },
     { cards: 16, jokers: 2 },
     { cards: 17, jokers: 2 },
   ],
-  "config: Badeucey should expose six card/joker configurations"
+  "config: Badeucey should expose all twelve card/joker configurations"
 );
 assert.deepEqual(
   core.variantScenarios("bdp"),
@@ -199,15 +277,17 @@ assert.equal(threeCardBadugi.qualifies, true, "badugijack: three-card Badugi wit
 assert.equal(threeCardBadugi.badugi.points, 0, "badugijack: only a four-card Badugi earns royalties");
 
 const cribbageTwentyFour = core.evaluateCribbage(cards(["Js", "Jh", "5s", "5h", "5d"]));
-assert.equal(cribbageTwentyFour.points, 24, "cribbage: Js Jh 5s 5h 5d should score twenty-four");
+assert.equal(cribbageTwentyFour.cribbagePoints, 24, "cribbage: Js Jh 5s 5h 5d should score twenty-four raw points");
+assert.equal(cribbageTwentyFour.points, 14, "cribbage: royalties should equal the raw score minus ten");
 assert.equal(cribbageTwentyFour.breakdown.nobs, 2, "cribbage: each suited jack should score one");
-assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-four should repeat");
+assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-one or more should repeat");
 
 const doubleRuns = core.cribbageScore(cards(["6s", "7h", "7d", "8c", "8s"]));
 assert.equal(doubleRuns.runs, 12, "cribbage: 67788 should score four runs of three");
 
 const cribbageBreakdown = core.evaluateCribbage(cards(["Js", "8s", "8h", "7s", "6s"]));
-assert.equal(cribbageBreakdown.points, 17, "cribbage: J8876 with four spades should score seventeen");
+assert.equal(cribbageBreakdown.cribbagePoints, 17, "cribbage: J8876 with four spades should score seventeen raw points");
+assert.equal(cribbageBreakdown.points, 7, "cribbage: a seventeen-point middle should earn seven royalties");
 assert.deepEqual(
   cribbageBreakdown.scoreComponents.map(({ label, points }) => [label, points]),
   [
@@ -221,9 +301,38 @@ assert.deepEqual(
 );
 
 const partialCribbage = core.evaluateCribbage(cards(["7s", "8h"]));
-assert.equal(partialCribbage.points, 2, "cribbage: a partial fifteen should score immediately");
+assert.equal(partialCribbage.cribbagePoints, 2, "cribbage: a partial fifteen should show its raw score immediately");
+assert.equal(partialCribbage.points, 0, "cribbage: an incomplete row should not award royalties");
 assert.equal(partialCribbage.qualifies, false, "cribbage: a partial middle cannot qualify yet");
 assert.deepEqual(partialCribbage.scoreComponents.map(({ label }) => label), ["15"], "cribbage: partial score should expose its breakdown");
+
+const partialCribbagePreview = core.previewRows(
+  ["7s", "8h"],
+  { top: [], middle: ["7s", "8h"], bottom: [] },
+  { variant: "cribbage" }
+);
+assert.equal(partialCribbagePreview.rowEvals.middle.cribbagePoints, 2, "cribbage: live partial-row preview should use the variable-length scorer");
+const partialCribbageJokerPreview = core.previewRows(
+  ["JK1", "8h"],
+  { top: [], middle: ["JK1", "8h"], bottom: [] },
+  { variant: "cribbage" }
+);
+assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "cribbage: live partial-row joker preview should remain scoreable");
+
+[
+  [["As", "Ks", "Qs", "Js", "Ts"], 10, false, 0, false, false],
+  [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false],
+  [["As", "8s", "7s", "6s", "8h"], 20, true, 10, true, false],
+  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, true],
+].forEach(([ids, rawPoints, qualifies, royalties, fantasy, repeat]) => {
+  const evaluation = core.evaluateCribbage(cards(ids));
+  assert.equal(core.cribbageScoreTotal(cards(ids)), rawPoints, `cribbage: fast and descriptive scoring should agree at ${rawPoints} points`);
+  assert.equal(evaluation.cribbagePoints, rawPoints, `cribbage: ${rawPoints}-point threshold fixture`);
+  assert.equal(evaluation.qualifies, qualifies, `cribbage: ${rawPoints} raw points qualification`);
+  assert.equal(evaluation.points, royalties, `cribbage: ${rawPoints} raw points royalty conversion`);
+  assert.equal(evaluation.fantasy, fantasy, `cribbage: ${rawPoints} raw points Fantasyland entry`);
+  assert.equal(evaluation.repeat, repeat, `cribbage: ${rawPoints} raw points repeat threshold`);
+});
 
 const lowFoul = core.evaluateDeuceSeven(cards(["Js", "9h", "7d", "5c", "2s"]));
 assert.equal(lowFoul.name, "Jhi Foul", "low: an otherwise clean jack-low should name the high card and foul");
@@ -406,8 +515,9 @@ assert.equal(
 );
 
 assert.equal(core.buildSeed("2026-08-29", 16, 2, "badeucey", 0), "2026-08-29-16C-2J-BADEUCEY-0", "seed: canonical Badeucey format");
+assert.equal(core.buildSeed("2026-08-29", 14, 0, "badeucey", 0), "2026-08-29-14C-0J-BADEUCEY-0", "seed: fourteen-card Badeucey should be valid");
+assert.equal(core.buildSeed("2026-08-29", 15, 0, "badeucey", 0), "2026-08-29-15C-0J-BADEUCEY-0", "seed: fifteen-card Badeucey should be valid");
 assert.equal(core.buildSeed("2026-08-29", 17, 1, "bdp", 2), "2026-08-29-17C-1J-BDP-2", "seed: BDP should have its own seed label");
-assert.throws(() => core.buildSeed("2026-08-29", 15, 0, "badeucey", 0), /Badeucey Fantasyland needs 16 to 17 cards/, "seed: Badeucey should reject fifteen cards");
 assert.throws(() => core.buildSeed("2026-08-29", 16, 0, "bdp", 0), /BDP Fantasyland needs 17 cards/, "seed: BDP should reject sixteen cards");
 assert.equal(core.buildSeed("2026-08-29", 17, 1, "badugijack", 3), "2026-08-29-17C-1J-BADUGIJACK-3", "seed: BadugiJack should have its own seed label");
 assert.equal(core.buildSeed("2026-08-29", 16, 2, "doubleblackjack", 4), "2026-08-29-16C-2J-DOUBLEBLACKJACK-4", "seed: Double Blackjack should have its own seed label");
@@ -452,5 +562,29 @@ const doubleBlackjackSolveIds = ["6s", "6h", "2d", "9s", "7s", "5s", "Ah", "Kh",
 const doubleBlackjackSolved = core.solveHand(doubleBlackjackSolveIds, { variant: "doubleblackjack", mode: "exact" });
 assert.ok(doubleBlackjackSolved.best, "bounded search: Double Blackjack sample should find a legal board");
 assert.equal(doubleBlackjackSolved.best.repeat, true, "bounded search: Double Blackjack should preserve the suited-21 repeat line");
+
+function solverMetricDigest(result) {
+  return {
+    bestPoints: result.best?.points ?? null,
+    bestRepeats: Boolean(result.best?.repeat),
+    royaltyPoints: result.bestRoyalty?.points ?? null,
+    repeatPoints: result.bestRepeat?.points ?? null,
+  };
+}
+
+[
+  ["low", 14, 2, { mode: "exact" }],
+  ["badeucey", 14, 2, { mode: "exact" }],
+  ["cribbage", 14, 2, { mode: "exact" }],
+  ["low", 17, 2, { mode: "fast" }],
+  ["badeucey", 17, 2, { mode: "fast" }],
+  ["cribbage", 17, 2, { mode: "fast" }],
+  ["bdp", 17, 2, { mode: "fast", maskLimit: 160, beamLimit: 100 }],
+].forEach(([variant, cardCount, jokers, options]) => {
+  const ids = core.dealSeeded(cardCount, jokers, `BOARD-PARITY-${variant}-${cardCount}-${jokers}`);
+  const optimized = core.solveHand(ids, { variant, allowUnsupportedCardCount: true, ...options });
+  const legacy = core.solveHand(ids, { variant, allowUnsupportedCardCount: true, legacyIndependentSearch: true, ...options });
+  assert.deepEqual(solverMetricDigest(optimized), solverMetricDigest(legacy), `${variant}: optimized board search should preserve trainer metrics`);
+});
 
 console.log("variant core regression tests passed");
