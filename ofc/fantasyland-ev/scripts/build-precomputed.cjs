@@ -21,7 +21,7 @@ Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       const solverId = solverIdForVariant(variant);
       if (part.solver !== solverId || part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
       if (variant === "high" && Number(part.result.totals.qualifyCount) !== Number(part.result.samples)) throw new Error("High Fantasyland contains a false foul");
-      if (["badeucey", "cribbage"].includes(variant) && !hasCompleteRepeatDetails(part.result.totals, variant)) throw new Error("incomplete repeat-source detail data");
+      if (!hasCompleteRepeatDetails(part.result.totals, variant)) throw new Error("incomplete repeat-source detail data");
       results[variant][`${cards}-${jokers}`] = part.result;
     } catch (error) {
       missing.push(`${variant} ${cards}C/${jokers}J`);
@@ -35,15 +35,17 @@ const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "trainer-exact-high-20260902a+trainer-matched-badeucey-20260903a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c",
+  solver: "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c",
   results,
 };
 fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze(${JSON.stringify(dataset)});\n`);
 console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across all ${Core.ACTIVE_VARIANT_ORDER.length * scenarios.length} configurations.`);
 
 function solverIdForVariant(variant) {
-  if (variant === "high") return "trainer-exact-high-20260902a";
+  if (variant === "high") return "trainer-exact-high-20260903b";
+  if (variant === "low") return "trainer-matched-low-20260903a";
   if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
+  if (variant === "bdp") return "trainer-matched-bdp-20260903a";
   if (variant === "cribbage") return "trainer-matched-cribbage-20260903c";
   return "trainer-matched-variants-20260902c";
 }

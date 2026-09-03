@@ -409,6 +409,54 @@ assert.equal(
   "repeat detail: non-royal straight flushes should stay in their own bucket"
 );
 
+const highThreeSourceRows = {
+  top: ["2s", "2h", "2d"],
+  middle: ["3s", "3h", "3d", "3c", "4d"],
+  bottom: ["9s", "Ts", "Js", "Qs", "Ks"],
+};
+const highThreeSource = core.evaluateBoard(
+  [...highThreeSourceRows.top, ...highThreeSourceRows.middle, ...highThreeSourceRows.bottom],
+  highThreeSourceRows,
+  { variant: "high" }
+);
+assert.equal(highThreeSource.legal, true, "high repeat source: three-source fixture should be legal");
+assert.equal(highThreeSource.repeatMask, 7, "high repeat source: trips, middle quads, and a bottom straight flush should identify all three rows");
+assert.deepEqual(
+  trainer.repeatDetailForSolution(highThreeSource),
+  {
+    repeatMask: 7,
+    topTripsRank: 2,
+    middleCribbagePoints: null,
+    bottomKind: "straight-flush",
+    bottomQuadsRank: 0,
+  },
+  "high repeat detail: top trips and the exact bottom repeat type should be retained"
+);
+
+const lowThreeSourceRows = {
+  top: ["6s", "6h", "6d"],
+  middle: ["7s", "5h", "4d", "3c", "2s"],
+  bottom: ["As", "Ah", "Ad", "Ac", "Kd"],
+};
+const lowThreeSource = core.evaluateBoard(
+  [...lowThreeSourceRows.top, ...lowThreeSourceRows.middle, ...lowThreeSourceRows.bottom],
+  lowThreeSourceRows,
+  { variant: "low" }
+);
+assert.equal(lowThreeSource.legal, true, "low repeat source: three-source fixture should be legal");
+assert.equal(lowThreeSource.repeatMask, 7, "low repeat source: trips, a wheel low, and quads should identify all three rows");
+assert.deepEqual(
+  trainer.repeatDetailForSolution(lowThreeSource),
+  {
+    repeatMask: 7,
+    topTripsRank: 6,
+    middleCribbagePoints: null,
+    bottomKind: "quads",
+    bottomQuadsRank: 14,
+  },
+  "low repeat detail: top trips and bottom quads should retain their exact ranks"
+);
+
 const badeuceyMiddleOnlyRows = {
   top: ["Qs", "Jd", "9c"],
   middle: ["7s", "5h", "4d", "3c", "2s"],
@@ -517,6 +565,18 @@ const bdpBoard = core.evaluateBoard(bdpIds, bdpRows, { variant: "bdp" });
 assert.equal(bdpBoard.legal, true, "bdp board: independently qualifying rows should make a legal board");
 assert.equal(bdpBoard.points, 54, "bdp board: 3hi, 7hi, and triple bottom quads should total fifty-four");
 assert.equal(bdpBoard.repeat, true, "bdp board: bottom quads should repeat Fantasyland");
+assert.equal(bdpBoard.repeatMask, 4, "bdp repeat source: only the bottom row can repeat Fantasyland");
+assert.deepEqual(
+  trainer.repeatDetailForSolution(bdpBoard),
+  {
+    repeatMask: 4,
+    topTripsRank: 0,
+    middleCribbagePoints: null,
+    bottomKind: "quads",
+    bottomQuadsRank: 12,
+  },
+  "bdp repeat detail: bottom quads should retain their exact rank"
+);
 assert.deepEqual(bdpBoard.rowPoints, { top: 12, middle: 12, bottom: 30 }, "bdp board: row royalties should remain separate");
 
 const bdpJokerRows = { ...bdpRows, top: ["As", "2h", "JK1"] };

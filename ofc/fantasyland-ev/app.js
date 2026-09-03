@@ -3,7 +3,7 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v12";
+  const STORAGE_KEY = "ofcFantasylandEv.v13";
   const CACHE_SCHEMA_VERSION = 1;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
@@ -19,8 +19,8 @@
     6: { label: "Middle + Bottom", className: "source-middle-bottom", extraCards: 1 },
     7: { label: "All three", className: "source-all", extraCards: 2 },
   };
-  const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["badeucey", "cribbage"]);
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260902a+trainer-matched-badeucey-20260903a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
+  const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -381,7 +381,9 @@
       const count = finiteNumber(details.topTripsByRank[rank]);
       if (count) topEntries.push({ label: `Trip ${rankLabel(rank)}`, count });
     }
-    groups.appendChild(createFrequencyGroup("Top trips rank", "Share of top-row repeats", topEntries));
+    if (state.variant !== "bdp") {
+      groups.appendChild(createFrequencyGroup("Top trips rank", "Share of top-row repeats", topEntries));
+    }
 
     const bottomEntries = [
       { label: "Royal flush", count: finiteNumber(details.bottomRoyalFlush) },
@@ -624,7 +626,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260903i");
+          worker = new Worker("./worker.js?v=20260903j");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);

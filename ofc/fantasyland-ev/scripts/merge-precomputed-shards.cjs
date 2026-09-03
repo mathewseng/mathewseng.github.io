@@ -163,8 +163,10 @@ function finite(value) {
 }
 
 function solverIdForVariant(variant) {
-  if (variant === "high") return "trainer-exact-high-20260902a";
+  if (variant === "high") return "trainer-exact-high-20260903b";
+  if (variant === "low") return "trainer-matched-low-20260903a";
   if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
+  if (variant === "bdp") return "trainer-matched-bdp-20260903a";
   if (variant === "cribbage") return "trainer-matched-cribbage-20260903c";
   return "trainer-matched-variants-20260902c";
 }
