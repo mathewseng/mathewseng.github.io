@@ -4,6 +4,8 @@
   const VariantCore =
     typeof window !== "undefined" && window.OFCFantasylandCore
       ? window.OFCFantasylandCore
+      : typeof globalThis !== "undefined" && globalThis.OFCFantasylandCore
+        ? globalThis.OFCFantasylandCore
       : typeof require !== "undefined"
         ? require("../fantasyland-core.js")
         : null;
@@ -77,6 +79,7 @@
   const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
   const TRAINER_DROP_ANIMATION_MS = 250;
   const TRAINER_STORAGE_KEY = "ofcFantasylandTrainerState.v1";
+  const REPEAT_SOURCE_VARIANTS = new Set(["cribbage"]);
 
   const comboCache = new Map();
   // Cache row values only; assignments are remapped to each hand's joker indexes on read.
@@ -503,8 +506,7 @@
         : String(bestRepeat.points)
       : "--";
 
-    els.repeatBadge.className = `repeat-badge ${bestRepeat ? "yes" : "no"}`;
-    els.repeatBadge.textContent = bestRepeat ? "Repeat Fantasyland" : "No repeat";
+    renderSolutionRepeatBadge(bestRepeat, "high");
 
     if (!best) {
       clearSolution("No legal OFC board found.");
@@ -546,8 +548,7 @@
     setOptionalText(els.bestPoints, best ? String(best.points) : "--");
     setOptionalText(els.legalBoards, formatInteger(result.legalBoards));
     setOptionalText(els.repeatPoints, bestRepeat ? String(bestRepeat.points) : "--");
-    els.repeatBadge.className = `repeat-badge ${bestRepeat ? "yes" : "no"}`;
-    els.repeatBadge.textContent = bestRepeat ? "Repeat Fantasyland" : "No repeat";
+    renderSolutionRepeatBadge(bestRepeat, result.variant);
     if (!best) {
       clearSolution("No legal board found.");
       return;
@@ -575,6 +576,34 @@
     discardRow.appendChild(cards);
     frag.appendChild(discardRow);
     els.boardStack.replaceChildren(frag);
+  }
+
+  function renderSolutionRepeatBadge(solution, variant) {
+    els.repeatBadge.className = `repeat-badge ${solution ? "yes" : "no"}`;
+    els.repeatBadge.replaceChildren();
+    if (!solution) {
+      els.repeatBadge.textContent = "No repeat";
+      return;
+    }
+
+    const title = document.createElement("span");
+    title.textContent = "Repeat Fantasyland";
+    els.repeatBadge.appendChild(title);
+    const mask = Number(solution.repeatMask) || 0;
+    if (!REPEAT_SOURCE_VARIANTS.has(variant) || mask < 1 || mask > 7) return;
+    const source = document.createElement("small");
+    source.textContent = repeatSourceLabel(mask);
+    els.repeatBadge.classList.add("source-detail");
+    els.repeatBadge.appendChild(source);
+  }
+
+  function repeatSourceLabel(mask) {
+    const rows = [];
+    if (mask & 1) rows.push("Top");
+    if (mask & 2) rows.push("Middle");
+    if (mask & 4) rows.push("Bottom");
+    const extraCards = Math.max(0, rows.length - 1);
+    return `${rows.join(" + ")}${extraCards ? ` · +${extraCards} card${extraCards === 1 ? "" : "s"}` : ""}`;
   }
 
   function renderVariantBoardRow(label, candidate, cardById, assignments) {
@@ -3387,14 +3416,16 @@
 
         legalBoards += 1;
         const points = backRoyalty + fiveMiddleRoyalty[middleIndex] + topCandidate.royalty;
-        const repeats =
-          rowRepeats("top", topCandidate.eval, repeatRule) ||
-          rowRepeats("middle", five[middleIndex].eval, repeatRule) ||
-          rowRepeats("back", five[backIndex].eval, repeatRule);
+        const repeatMask =
+          (rowRepeats("top", topCandidate.eval, repeatRule) ? 1 : 0) |
+          (rowRepeats("middle", five[middleIndex].eval, repeatRule) ? 2 : 0) |
+          (rowRepeats("back", five[backIndex].eval, repeatRule) ? 4 : 0);
+        const repeats = repeatMask > 0;
 
         const solution = {
           points,
           repeat: repeats,
+          repeatMask,
           top: topCandidate,
           middle: five[middleIndex],
           back: five[backIndex],
@@ -3470,14 +3501,16 @@
 
         legalBoards += 1;
         const points = backRoyalty + fiveMiddleRoyalty[middleIndex] + topCandidate.royalty;
-        const repeats =
-          rowRepeats("top", topCandidate.eval, repeatRule) ||
-          rowRepeats("middle", five[middleIndex].eval, repeatRule) ||
-          rowRepeats("back", five[backIndex].eval, repeatRule);
+        const repeatMask =
+          (rowRepeats("top", topCandidate.eval, repeatRule) ? 1 : 0) |
+          (rowRepeats("middle", five[middleIndex].eval, repeatRule) ? 2 : 0) |
+          (rowRepeats("back", five[backIndex].eval, repeatRule) ? 4 : 0);
+        const repeats = repeatMask > 0;
 
         const solution = {
           points,
           repeat: repeats,
+          repeatMask,
           top: topCandidate,
           middle: five[middleIndex],
           back: five[backIndex],
@@ -4102,6 +4135,30 @@
     return `${(value * 100).toFixed(1)}%`;
   }
 
+  function repeatDetailForSolution(solution) {
+    const repeatMask = Math.trunc(finiteNumber(solution?.repeatMask));
+    const topEval = solution?.top?.eval || solution?.rowEvals?.top || null;
+    const middleEval = solution?.middle?.eval || solution?.rowEvals?.middle || null;
+    const bottomEval = solution?.bottom?.eval || solution?.back?.eval || solution?.rowEvals?.bottom || null;
+    const middleCribbagePoints = Number(middleEval?.cribbagePoints);
+    let bottomKind = "";
+
+    if (repeatMask & 4) {
+      if (bottomEval?.category === CATEGORY.QUADS) bottomKind = "quads";
+      if (bottomEval?.category === CATEGORY.STRAIGHT_FLUSH) {
+        bottomKind = bottomEval.mainRank === 14 ? "royal-flush" : "straight-flush";
+      }
+    }
+
+    return {
+      repeatMask,
+      topTripsRank: repeatMask & 1 ? Math.trunc(finiteNumber(topEval?.mainRank)) : 0,
+      middleCribbagePoints: Number.isFinite(middleCribbagePoints) ? Math.trunc(middleCribbagePoints) : null,
+      bottomKind,
+      bottomQuadsRank: bottomKind === "quads" ? Math.trunc(finiteNumber(bottomEval?.mainRank)) : 0,
+    };
+  }
+
   function yieldFrame() {
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
@@ -4132,6 +4189,7 @@
       trainerTimeEmoji,
       isTopLegalAgainstMiddle,
       cardIdToShare,
+      repeatDetailForSolution,
     };
   }
 
@@ -4156,6 +4214,7 @@
       trainerTimeEmoji,
       isTopLegalAgainstMiddle,
       cardIdToShare,
+      repeatDetailForSolution,
     };
   }
 })();

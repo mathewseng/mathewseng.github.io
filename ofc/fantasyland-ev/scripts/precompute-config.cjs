@@ -43,7 +43,7 @@ for (let offset = aggregate.samples; offset < rangeSamples; offset += 1) {
   const sample = sampleStart + offset;
   const seedText = `EV-PRECOMPUTED-v1-${variant}-${cards}C-${jokers}J-${sample}`;
   const ids = Core.dealSeeded(cards, jokers, Core.hashSeed(seedText).toString(16));
-  addSample(aggregate, solveSample(ids, variant));
+  addSample(aggregate, solveSample(ids, variant), variant);
   if (aggregate.samples - lastSaved >= checkpointSamples) savePart();
   if (Date.now() - lastReported >= 30000) {
     const percent = ((aggregate.samples / rangeSamples) * 100).toFixed(2);
@@ -93,6 +93,8 @@ function loadAggregate(filePath) {
       strategySum: finite(totals.strategySum),
       repeatCount: finite(totals.repeatCount),
       repeatPointSum: finite(totals.repeatPointSum),
+      repeatSources: Array.from({ length: 8 }, (_, index) => finite(totals.repeatSources?.[index])),
+      repeatDetails: copyRepeatDetails(totals.repeatDetails),
       qualifyCount: finite(totals.qualifyCount),
       distribution: Array.from({ length: 5 }, (_, index) => finite(totals.distribution?.[index])),
     };
@@ -108,14 +110,27 @@ function solveSample(ids, selectedVariant) {
 }
 
 function solverIdForVariant(selectedVariant) {
-  return selectedVariant === "high" ? "trainer-exact-high-20260902a" : "trainer-matched-variants-20260902c";
+  if (selectedVariant === "high") return "trainer-exact-high-20260902a";
+  if (selectedVariant === "cribbage") return "trainer-matched-cribbage-20260903c";
+  return "trainer-matched-variants-20260902c";
 }
 
 function createAggregate() {
-  return { samples: 0, immediateSum: 0, immediateSquared: 0, strategySum: 0, repeatCount: 0, repeatPointSum: 0, qualifyCount: 0, distribution: [0, 0, 0, 0, 0] };
+  return {
+    samples: 0,
+    immediateSum: 0,
+    immediateSquared: 0,
+    strategySum: 0,
+    repeatCount: 0,
+    repeatPointSum: 0,
+    repeatSources: Array(8).fill(0),
+    repeatDetails: createRepeatDetails(),
+    qualifyCount: 0,
+    distribution: [0, 0, 0, 0, 0],
+  };
 }
 
-function addSample(targetAggregate, solved) {
+function addSample(targetAggregate, solved, selectedVariant) {
   const immediate = solved.bestRoyalty ? finite(solved.bestRoyalty.points) : 0;
   const strategy = solved.best ? finite(solved.best.points) : 0;
   targetAggregate.samples += 1;
@@ -127,7 +142,48 @@ function addSample(targetAggregate, solved) {
   if (solved.bestRepeat) {
     targetAggregate.repeatCount += 1;
     targetAggregate.repeatPointSum += finite(solved.bestRepeat.points);
+    const repeatMask = Math.trunc(finite(solved.bestRepeat.repeatMask));
+    if (repeatMask < 1 || repeatMask > 7) throw new Error("Repeat solution is missing its row-source mask.");
+    targetAggregate.repeatSources[repeatMask] += 1;
+    const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
+    if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
+      targetAggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
+    }
+    if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
+      targetAggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
+    } else if (repeatDetail.bottomKind === "straight-flush") {
+      targetAggregate.repeatDetails.bottomStraightFlush += 1;
+    } else if (repeatDetail.bottomKind === "royal-flush") {
+      targetAggregate.repeatDetails.bottomRoyalFlush += 1;
+    }
   }
+  if (selectedVariant === "cribbage" && solved.best) {
+    const score = TrainerCore.repeatDetailForSolution(solved.best).middleCribbagePoints;
+    if (!Number.isInteger(score) || score < 0 || score >= targetAggregate.repeatDetails.cribbageMiddleByScore.length) {
+      throw new Error(`Unexpected Cribbage middle score: ${score}`);
+    }
+    targetAggregate.repeatDetails.cribbageMiddleByScore[score] += 1;
+  }
+}
+
+function createRepeatDetails() {
+  return {
+    topTripsByRank: Array(15).fill(0),
+    bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlush: 0,
+    bottomRoyalFlush: 0,
+    cribbageMiddleByScore: Array(30).fill(0),
+  };
+}
+
+function copyRepeatDetails(value) {
+  return {
+    topTripsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.topTripsByRank?.[index])),
+    bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomQuadsByRank?.[index])),
+    bottomStraightFlush: finite(value?.bottomStraightFlush),
+    bottomRoyalFlush: finite(value?.bottomRoyalFlush),
+    cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finite(value?.cribbageMiddleByScore?.[index])),
+  };
 }
 
 function finalizeAggregate(value) {
@@ -149,7 +205,9 @@ function finalizeAggregate(value) {
     foulRate: 1 - value.qualifyCount / n,
     standardError: Math.sqrt(variance / n),
     distribution: value.distribution.map((count) => count / n),
-    totals: { ...value, distribution: value.distribution.slice() },
+    repeatSources: value.repeatSources.map((count) => count / n),
+    repeatDetails: copyRepeatDetails(value.repeatDetails),
+    totals: { ...value, distribution: value.distribution.slice(), repeatDetails: copyRepeatDetails(value.repeatDetails) },
   };
 }
 

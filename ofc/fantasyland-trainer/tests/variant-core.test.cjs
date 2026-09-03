@@ -1,5 +1,19 @@
 const assert = require("assert").strict;
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
 const core = require("../../fantasyland-core.js");
+const trainer = require("../app.js");
+
+const workerContext = { console, performance: { now: () => Date.now() }, setTimeout };
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../../fantasyland-core.js"), "utf8"), workerContext);
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../app.js"), "utf8"), workerContext);
+assert.ok(workerContext.OFCFantasylandCore, "worker runtime should expose the Fantasyland variant core");
+assert.ok(workerContext.OFCSolverCore, "worker runtime should initialize the trainer solver from globalThis");
+assert.ok(
+  workerContext.OFCSolverCore.solveVariantHand(["As", "Ah", "Ad", "Ks", "Kh", "Kd", "Qs", "Qh", "Qd", "Js", "Jh", "Jd", "Ts", "Th"], "high").best,
+  "worker runtime should solve a Fantasyland hand"
+);
 
 function cards(ids) {
   return ids.map(core.makeCard);
@@ -280,7 +294,8 @@ const cribbageTwentyFour = core.evaluateCribbage(cards(["Js", "Jh", "5s", "5h", 
 assert.equal(cribbageTwentyFour.cribbagePoints, 24, "cribbage: Js Jh 5s 5h 5d should score twenty-four raw points");
 assert.equal(cribbageTwentyFour.points, 14, "cribbage: royalties should equal the raw score minus ten");
 assert.equal(cribbageTwentyFour.breakdown.nobs, 2, "cribbage: each suited jack should score one");
-assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-one or more should repeat");
+assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-two or more should repeat");
+assert.equal(cribbageTwentyFour.extraFantasyCard, true, "cribbage: twenty-two or more should award an extra Fantasyland card");
 
 const doubleRuns = core.cribbageScore(cards(["6s", "7h", "7d", "8c", "8s"]));
 assert.equal(doubleRuns.runs, 12, "cribbage: 67788 should score four runs of three");
@@ -320,11 +335,13 @@ const partialCribbageJokerPreview = core.previewRows(
 assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "cribbage: live partial-row joker preview should remain scoreable");
 
 [
-  [["As", "Ks", "Qs", "Js", "Ts"], 10, false, 0, false, false],
-  [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false],
-  [["As", "8s", "7s", "6s", "8h"], 20, true, 10, true, false],
-  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, true],
-].forEach(([ids, rawPoints, qualifies, royalties, fantasy, repeat]) => {
+  [["As", "Ks", "Qs", "Js", "Ts"], 10, false, 0, false, false, false],
+  [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false, false],
+  [["As", "Js", "3s", "2s", "Ah"], 17, true, 7, false, false, false],
+  [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, true, false, false],
+  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, false, false],
+  [["Ks", "Qs", "Js", "5s", "5h"], 22, true, 12, true, true, true],
+].forEach(([ids, rawPoints, qualifies, royalties, fantasy, repeat, extraFantasyCard]) => {
   const evaluation = core.evaluateCribbage(cards(ids));
   assert.equal(core.cribbageScoreTotal(cards(ids)), rawPoints, `cribbage: fast and descriptive scoring should agree at ${rawPoints} points`);
   assert.equal(evaluation.cribbagePoints, rawPoints, `cribbage: ${rawPoints}-point threshold fixture`);
@@ -332,7 +349,65 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   assert.equal(evaluation.points, royalties, `cribbage: ${rawPoints} raw points royalty conversion`);
   assert.equal(evaluation.fantasy, fantasy, `cribbage: ${rawPoints} raw points Fantasyland entry`);
   assert.equal(evaluation.repeat, repeat, `cribbage: ${rawPoints} raw points repeat threshold`);
+  assert.equal(evaluation.extraFantasyCard, extraFantasyCard, `cribbage: ${rawPoints} raw points extra-card threshold`);
 });
+
+const cribbageOuterRows = {
+  top: ["2c", "3d", "4h"],
+  bottom: ["As", "Ah", "Ad", "9c", "8d"],
+};
+[
+  [["Ks", "Qs", "Js", "5s", "Kh"], false, "21-point"],
+  [["Ks", "Qs", "Js", "5s", "5h"], true, "22-point"],
+].forEach(([middle, repeat, label]) => {
+  const rows = { ...cribbageOuterRows, middle };
+  const evaluation = core.evaluateBoard([...rows.top, ...middle, ...rows.bottom], rows, { variant: "cribbage" });
+  assert.equal(evaluation.legal, true, `cribbage board: ${label} fixture should be legal`);
+  assert.equal(evaluation.repeat, repeat, `cribbage board: ${label} middle repeat boundary`);
+  assert.equal(evaluation.repeatMask, repeat ? 2 : 0, `cribbage board: ${label} should identify the middle as its repeat source`);
+});
+
+for (let mask = 0; mask <= 7; mask += 1) {
+  assert.equal(
+    core.repeatMaskFromEvaluations({ repeat: Boolean(mask & 1) }, { repeat: Boolean(mask & 2) }, { repeat: Boolean(mask & 4) }),
+    mask,
+    `repeat source: mask ${mask} should preserve every row combination`
+  );
+}
+
+const cribbageThreeSourceRows = {
+  top: ["2s", "2h", "2d"],
+  middle: ["Ks", "Qs", "Js", "5s", "5h"],
+  bottom: ["As", "Ah", "Ad", "Ac", "8d"],
+};
+const cribbageThreeSource = core.evaluateBoard(
+  [...cribbageThreeSourceRows.top, ...cribbageThreeSourceRows.middle, ...cribbageThreeSourceRows.bottom],
+  cribbageThreeSourceRows,
+  { variant: "cribbage" }
+);
+assert.equal(cribbageThreeSource.legal, true, "cribbage repeat source: three-row fixture should be legal");
+assert.equal(cribbageThreeSource.repeatMask, 7, "cribbage repeat source: trips, 22+ middle, and quads should identify all three rows");
+assert.deepEqual(
+  trainer.repeatDetailForSolution(cribbageThreeSource),
+  {
+    repeatMask: 7,
+    topTripsRank: 2,
+    middleCribbagePoints: 22,
+    bottomKind: "quads",
+    bottomQuadsRank: 14,
+  },
+  "repeat detail: board evaluation should expose the top rank, middle score, and bottom quad rank"
+);
+assert.equal(
+  trainer.repeatDetailForSolution({ repeatMask: 4, rowEvals: { bottom: { category: core.CATEGORY.STRAIGHT_FLUSH, mainRank: 14 } } }).bottomKind,
+  "royal-flush",
+  "repeat detail: an ace-high straight flush should be separated as a royal flush"
+);
+assert.equal(
+  trainer.repeatDetailForSolution({ repeatMask: 4, rowEvals: { bottom: { category: core.CATEGORY.STRAIGHT_FLUSH, mainRank: 13 } } }).bottomKind,
+  "straight-flush",
+  "repeat detail: non-royal straight flushes should stay in their own bucket"
+);
 
 const lowFoul = core.evaluateDeuceSeven(cards(["Js", "9h", "7d", "5c", "2s"]));
 assert.equal(lowFoul.name, "Jhi Foul", "low: an otherwise clean jack-low should name the high card and foul");

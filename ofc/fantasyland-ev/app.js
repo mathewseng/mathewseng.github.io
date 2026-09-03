@@ -3,12 +3,24 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v9";
+  const STORAGE_KEY = "ofcFantasylandEv.v11";
+  const CACHE_SCHEMA_VERSION = 1;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
   const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
   const DECK_JOKER_COUNTS = [1, 2];
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260902a+trainer-matched-variants-20260902c";
+  const REPEAT_SOURCE_ORDER = [1, 2, 4, 3, 5, 6, 7];
+  const REPEAT_SOURCE_META = {
+    1: { label: "Top", className: "source-top" },
+    2: { label: "Middle", className: "source-middle" },
+    4: { label: "Bottom", className: "source-bottom" },
+    3: { label: "Top + Middle", className: "source-top-middle", extraCards: 1 },
+    5: { label: "Top + Bottom", className: "source-top-bottom", extraCards: 1 },
+    6: { label: "Middle + Bottom", className: "source-middle-bottom", extraCards: 1 },
+    7: { label: "All three", className: "source-all", extraCards: 2 },
+  };
+  const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["cribbage"]);
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260902a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -51,6 +63,7 @@
     settings: loadSettings(),
     cancelRun: null,
     precomputedSamples: 0,
+    repeatDetailScenario: "14-0",
   };
 
   const els = {};
@@ -92,6 +105,9 @@
       repeatChart: document.querySelector("#repeat-chart"),
       foulChart: document.querySelector("#foul-chart"),
       distributionChart: document.querySelector("#distribution-chart"),
+      repeatSourcePanel: document.querySelector("#repeat-source-panel"),
+      repeatSourceChart: document.querySelector("#repeat-source-chart"),
+      repeatSourceDetail: document.querySelector("#repeat-source-detail"),
       jokerProbabilityBody: document.querySelector("#joker-probability-body"),
       definitionTitle: document.querySelector("#definition-title"),
       definitionCopy: document.querySelector("#definition-copy"),
@@ -240,6 +256,8 @@
       els.foulChart.textContent = "Foul rates will appear here.";
       els.distributionChart.className = "distribution-chart empty-chart";
       els.distributionChart.textContent = "Royalty bands will appear here.";
+      els.repeatSourcePanel.hidden = true;
+      els.repeatSourceDetail?.replaceChildren();
       return;
     }
     const maxImmediate = Math.max(1, ...results.map((entry) => entry.result.immediate));
@@ -247,6 +265,186 @@
     renderBarChart(els.repeatChart, results, (result) => result.repeatRate, 1, formatPct);
     renderBarChart(els.foulChart, results, resultFoulRate, 1, formatPct);
     renderDistributionChart(results);
+    renderRepeatSourceChart(results);
+  }
+
+  function renderRepeatSourceChart(entries) {
+    const complete = PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(state.variant)
+      && entries.length > 0
+      && entries.every(({ result }) => hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result));
+    els.repeatSourcePanel.hidden = !complete;
+    if (!complete) {
+      els.repeatSourceChart.replaceChildren();
+      els.repeatSourceDetail?.replaceChildren();
+      return;
+    }
+
+    const entryKeys = new Set(entries.map(({ scenario }) => scenarioKey(scenario)));
+    if (!entryKeys.has(state.repeatDetailScenario)) state.repeatDetailScenario = scenarioKey(entries[0].scenario);
+    const fragment = document.createDocumentFragment();
+    entries.forEach(({ scenario, result }) => {
+      const key = scenarioKey(scenario);
+      const counts = result.totals.repeatSources;
+      const samples = finiteNumber(result.samples);
+      const sourceTotal = REPEAT_SOURCE_ORDER.reduce((sum, mask) => sum + finiteNumber(counts[mask]), 0);
+      const superTotal = [3, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(counts[mask]), 0);
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "repeat-source-row";
+      row.classList.toggle("is-selected", key === state.repeatDetailScenario);
+      row.dataset.jokers = String(scenario.jokers);
+      row.setAttribute("aria-pressed", String(key === state.repeatDetailScenario));
+      row.setAttribute("aria-label", `Show repeat details for ${scenario.cards} cards and ${scenario.jokers} jokers`);
+      const label = document.createElement("span");
+      label.textContent = `${scenario.cards}C / ${scenario.jokers}J`;
+      const track = document.createElement("div");
+      track.className = "repeat-source-track";
+      const ariaParts = [];
+      REPEAT_SOURCE_ORDER.forEach((mask) => {
+        const count = finiteNumber(counts[mask]);
+        if (!count) return;
+        const meta = REPEAT_SOURCE_META[mask];
+        const allHandsRate = count / samples;
+        const repeatShare = sourceTotal ? count / sourceTotal : 0;
+        const segment = document.createElement("i");
+        segment.className = meta.className;
+        segment.style.width = `${(allHandsRate * 100).toFixed(3)}%`;
+        segment.title = `${meta.label}: ${formatPct(allHandsRate)} of all hands, ${formatPct(repeatShare)} of repeats${meta.extraCards ? `, +${meta.extraCards} Fantasyland card${meta.extraCards === 1 ? "" : "s"}` : ""}`;
+        track.appendChild(segment);
+        ariaParts.push(`${meta.label} ${formatPct(allHandsRate)}`);
+      });
+      track.setAttribute("aria-label", ariaParts.join(", "));
+      const values = document.createElement("div");
+      values.className = "repeat-source-values";
+      values.innerHTML = `<strong>${formatPct(sourceTotal / samples)}</strong><small>${formatPct(superTotal / samples)} SF</small>`;
+      row.append(label, track, values);
+      row.addEventListener("click", () => {
+        state.repeatDetailScenario = key;
+        renderRepeatSourceChart(entries);
+      });
+      fragment.appendChild(row);
+    });
+    els.repeatSourceChart.replaceChildren(fragment);
+    renderRepeatSourceDetail(entries.find(({ scenario }) => scenarioKey(scenario) === state.repeatDetailScenario));
+  }
+
+  function hasCompleteRepeatSourceData(result) {
+    const counts = result?.totals?.repeatSources;
+    if (!Array.isArray(counts) || counts.length < 8) return false;
+    const sourceTotal = REPEAT_SOURCE_ORDER.reduce((sum, mask) => sum + finiteNumber(counts[mask]), 0);
+    return sourceTotal === finiteNumber(result.totals.repeatCount);
+  }
+
+  function hasCompleteRepeatDetailData(result) {
+    const totals = result?.totals;
+    const details = totals?.repeatDetails;
+    if (
+      !details
+      || !Array.isArray(details.topTripsByRank)
+      || details.topTripsByRank.length < 15
+      || !Array.isArray(details.bottomQuadsByRank)
+      || details.bottomQuadsByRank.length < 15
+      || !Array.isArray(details.cribbageMiddleByScore)
+      || details.cribbageMiddleByScore.length < 30
+    ) return false;
+    const sourceCounts = totals.repeatSources;
+    const topExpected = [1, 3, 5, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts?.[mask]), 0);
+    const bottomExpected = [4, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts?.[mask]), 0);
+    const topTotal = details.topTripsByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
+    const bottomTotal = details.bottomQuadsByRank.reduce((sum, count) => sum + finiteNumber(count), 0)
+      + finiteNumber(details.bottomStraightFlush)
+      + finiteNumber(details.bottomRoyalFlush);
+    const middleTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + finiteNumber(count), 0);
+    return topTotal === topExpected && bottomTotal === bottomExpected && middleTotal === finiteNumber(totals.qualifyCount);
+  }
+
+  function renderRepeatSourceDetail(entry) {
+    if (!els.repeatSourceDetail) return;
+    if (!entry) {
+      els.repeatSourceDetail.replaceChildren();
+      return;
+    }
+    const { scenario, result } = entry;
+    const details = result.totals.repeatDetails;
+    const section = document.createElement("section");
+    section.className = "repeat-source-detail-content";
+
+    const heading = document.createElement("header");
+    heading.className = "repeat-detail-heading";
+    heading.innerHTML = `<div><p class="eyebrow">Selected hand</p><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} solved hands</span>`;
+
+    const groups = document.createElement("div");
+    groups.className = "repeat-detail-groups";
+    const topEntries = [];
+    for (let rank = 14; rank >= 2; rank -= 1) {
+      const count = finiteNumber(details.topTripsByRank[rank]);
+      if (count) topEntries.push({ label: `Trip ${rankLabel(rank)}`, count });
+    }
+    groups.appendChild(createFrequencyGroup("Top trips rank", "Share of top-row repeats", topEntries));
+
+    const bottomEntries = [
+      { label: "Royal flush", count: finiteNumber(details.bottomRoyalFlush) },
+      { label: "Straight flush", count: finiteNumber(details.bottomStraightFlush) },
+    ].filter(({ count }) => count > 0);
+    for (let rank = 14; rank >= 2; rank -= 1) {
+      const count = finiteNumber(details.bottomQuadsByRank[rank]);
+      if (count) bottomEntries.push({ label: `Quads ${rankLabel(rank)}`, count });
+    }
+    groups.appendChild(createFrequencyGroup("Bottom repeat type", "Share of bottom-row repeats", bottomEntries));
+
+    if (state.variant === "cribbage") {
+      const cribbageEntries = [];
+      details.cribbageMiddleByScore.forEach((count, score) => {
+        if (finiteNumber(count)) cribbageEntries.push({ label: `${score} pts`, count: finiteNumber(count) });
+      });
+      const middleGroup = createFrequencyGroup(
+        "Middle Cribbage score",
+        "Raw points on each legal repeat-first board",
+        cribbageEntries,
+        "is-wide"
+      );
+      groups.appendChild(middleGroup);
+    }
+
+    section.append(heading, groups);
+    els.repeatSourceDetail.replaceChildren(section);
+  }
+
+  function createFrequencyGroup(title, subtitle, entries, extraClass = "") {
+    const group = document.createElement("section");
+    group.className = `repeat-detail-group ${extraClass}`.trim();
+    const header = document.createElement("header");
+    header.innerHTML = `<h4>${title}</h4><span>${subtitle}</span>`;
+    group.appendChild(header);
+    if (!entries.length) {
+      const empty = document.createElement("p");
+      empty.className = "repeat-detail-empty";
+      empty.textContent = "No matching repeats in this sample.";
+      group.appendChild(empty);
+      return group;
+    }
+    const total = entries.reduce((sum, item) => sum + item.count, 0);
+    const grid = document.createElement("div");
+    grid.className = "repeat-frequency-grid";
+    entries.forEach(({ label, count }) => {
+      const rate = total ? count / total : 0;
+      const item = document.createElement("div");
+      item.className = "repeat-frequency-item";
+      item.innerHTML = `<span>${label}</span><strong>${formatDetailPct(rate)}</strong><i style="width:${(rate * 100).toFixed(3)}%"></i>`;
+      item.title = `${formatInteger(count)} of ${formatInteger(total)}`;
+      grid.appendChild(item);
+    });
+    group.appendChild(grid);
+    return group;
+  }
+
+  function rankLabel(rank) {
+    return ({ 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank);
+  }
+
+  function formatDetailPct(rate) {
+    const percentage = finiteNumber(rate) * 100;
+    return `${percentage.toFixed(percentage > 0 && percentage < 1 ? 2 : 1)}%`;
   }
 
   function renderBarChart(target, entries, valueFor, max, formatter) {
@@ -425,7 +623,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260902d");
+          worker = new Worker("./worker.js?v=20260903h");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -460,7 +658,7 @@
         const seedText = `EV-${runSeed}-${variant}-${scenario.cards}C-${scenario.jokers}J-${sample}`;
         const ids = Core.dealSeeded(scenario.cards, scenario.jokers, Core.hashSeed(seedText).toString(16));
         const chunk = createAggregate();
-        addSample(chunk, solveSample(ids, variant));
+        addSample(chunk, solveSample(ids, variant), variant);
         onProgress(scenario, chunk);
       }
     }
@@ -468,7 +666,18 @@
   }
 
   function createAggregate() {
-    return { samples: 0, immediateSum: 0, immediateSquared: 0, strategySum: 0, repeatCount: 0, repeatPointSum: 0, qualifyCount: 0, distribution: [0, 0, 0, 0, 0] };
+    return {
+      samples: 0,
+      immediateSum: 0,
+      immediateSquared: 0,
+      strategySum: 0,
+      repeatCount: 0,
+      repeatPointSum: 0,
+      repeatSources: Array(8).fill(0),
+      repeatDetails: createRepeatDetails(),
+      qualifyCount: 0,
+      distribution: [0, 0, 0, 0, 0],
+    };
   }
 
   function mergeAggregate(target, source) {
@@ -478,6 +687,8 @@
     target.strategySum += finiteNumber(source.strategySum);
     target.repeatCount += finiteNumber(source.repeatCount);
     target.repeatPointSum += finiteNumber(source.repeatPointSum);
+    target.repeatSources = target.repeatSources.map((value, index) => value + finiteNumber(source.repeatSources?.[index]));
+    mergeRepeatDetails(target.repeatDetails, source.repeatDetails);
     target.qualifyCount += finiteNumber(source.qualifyCount);
     target.distribution = target.distribution.map((value, index) => value + finiteNumber(source.distribution?.[index]));
     return target;
@@ -493,6 +704,8 @@
         strategySum: finiteNumber(result.totals.strategySum),
         repeatCount: finiteNumber(result.totals.repeatCount),
         repeatPointSum: finiteNumber(result.totals.repeatPointSum),
+        repeatSources: Array.from({ length: 8 }, (_, index) => finiteNumber(result.totals.repeatSources?.[index])),
+        repeatDetails: copyRepeatDetails(result.totals.repeatDetails),
         qualifyCount: finiteNumber(result.totals.qualifyCount),
         distribution: Array.from({ length: 5 }, (_, index) => finiteNumber(result.totals.distribution?.[index])),
       };
@@ -522,6 +735,8 @@
       strategySum: finiteNumber(result.strategy) * samples,
       repeatCount,
       repeatPointSum: finiteNumber(result.repeatLine) * repeatCount,
+      repeatSources: Array(8).fill(0),
+      repeatDetails: createRepeatDetails(),
       qualifyCount: Math.round((1 - resultFoulRate(result)) * samples),
       distribution,
     };
@@ -533,7 +748,7 @@
     return solved;
   }
 
-  function addSample(aggregate, solved) {
+  function addSample(aggregate, solved, variant) {
     const immediate = solved.bestRoyalty ? finiteNumber(solved.bestRoyalty.points) : 0;
     const strategy = solved.best ? finiteNumber(solved.best.points) : 0;
     aggregate.samples += 1;
@@ -545,7 +760,57 @@
     if (solved.bestRepeat) {
       aggregate.repeatCount += 1;
       aggregate.repeatPointSum += finiteNumber(solved.bestRepeat.points);
+      const repeatMask = Math.trunc(finiteNumber(solved.bestRepeat.repeatMask));
+      if (repeatMask >= 1 && repeatMask <= 7) aggregate.repeatSources[repeatMask] += 1;
+      const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
+      if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
+        aggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
+      }
+      if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
+        aggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
+      } else if (repeatDetail.bottomKind === "straight-flush") {
+        aggregate.repeatDetails.bottomStraightFlush += 1;
+      } else if (repeatDetail.bottomKind === "royal-flush") {
+        aggregate.repeatDetails.bottomRoyalFlush += 1;
+      }
     }
+    if (variant === "cribbage" && solved.best) {
+      const score = TrainerCore.repeatDetailForSolution(solved.best).middleCribbagePoints;
+      if (!Number.isInteger(score) || score < 0 || score >= aggregate.repeatDetails.cribbageMiddleByScore.length) {
+        throw new Error(`Unexpected Cribbage middle score: ${score}`);
+      }
+      aggregate.repeatDetails.cribbageMiddleByScore[score] += 1;
+    }
+  }
+
+  function createRepeatDetails() {
+    return {
+      topTripsByRank: Array(15).fill(0),
+      bottomQuadsByRank: Array(15).fill(0),
+      bottomStraightFlush: 0,
+      bottomRoyalFlush: 0,
+      cribbageMiddleByScore: Array(30).fill(0),
+    };
+  }
+
+  function copyRepeatDetails(value) {
+    return {
+      topTripsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.topTripsByRank?.[index])),
+      bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomQuadsByRank?.[index])),
+      bottomStraightFlush: finiteNumber(value?.bottomStraightFlush),
+      bottomRoyalFlush: finiteNumber(value?.bottomRoyalFlush),
+      cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finiteNumber(value?.cribbageMiddleByScore?.[index])),
+    };
+  }
+
+  function mergeRepeatDetails(target, source) {
+    const incoming = copyRepeatDetails(source);
+    target.topTripsByRank = target.topTripsByRank.map((value, index) => value + incoming.topTripsByRank[index]);
+    target.bottomQuadsByRank = target.bottomQuadsByRank.map((value, index) => value + incoming.bottomQuadsByRank[index]);
+    target.bottomStraightFlush += incoming.bottomStraightFlush;
+    target.bottomRoyalFlush += incoming.bottomRoyalFlush;
+    target.cribbageMiddleByScore = target.cribbageMiddleByScore.map((value, index) => value + incoming.cribbageMiddleByScore[index]);
+    return target;
   }
 
   function finalizeAggregate(aggregate) {
@@ -567,6 +832,8 @@
       foulRate: 1 - aggregate.qualifyCount / n,
       standardError: Math.sqrt(variance / n),
       distribution: aggregate.distribution.map((count) => count / n),
+      repeatSources: aggregate.repeatSources.map((count) => count / n),
+      repeatDetails: copyRepeatDetails(aggregate.repeatDetails),
       totals: {
         samples: n,
         immediateSum: aggregate.immediateSum,
@@ -574,6 +841,8 @@
         strategySum: aggregate.strategySum,
         repeatCount: aggregate.repeatCount,
         repeatPointSum: aggregate.repeatPointSum,
+        repeatSources: aggregate.repeatSources.slice(),
+        repeatDetails: copyRepeatDetails(aggregate.repeatDetails),
         qualifyCount: aggregate.qualifyCount,
         distribution: aggregate.distribution.slice(),
       },
@@ -835,7 +1104,9 @@
     if (dataset?.schemaVersion !== 1 || dataset?.solver !== PRECOMPUTED_SOLVER_ID || target < 10000 || !dataset.results) return 0;
     const complete = Core.ACTIVE_VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
-      return finiteNumber(result?.samples) >= target && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples);
+      return finiteNumber(result?.samples) >= target
+        && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
+        && (!PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(variant) || hasCompleteRepeatSourceData(result));
     }));
     if (!complete) return 0;
 
@@ -895,8 +1166,24 @@
 
   function loadCache() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      return parsed && typeof parsed === "object" ? parsed : {};
+      return parseResultsCache(localStorage.getItem(STORAGE_KEY));
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function parseResultsCache(value) {
+    try {
+      const parsed = typeof value === "string" ? JSON.parse(value) : value;
+      if (
+        !parsed
+        || typeof parsed !== "object"
+        || parsed.schemaVersion !== CACHE_SCHEMA_VERSION
+        || parsed.solver !== PRECOMPUTED_SOLVER_ID
+        || !parsed.results
+        || typeof parsed.results !== "object"
+      ) return {};
+      return parsed.results;
     } catch (error) {
       return {};
     }
@@ -913,7 +1200,11 @@
 
   function saveCache() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.results));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        schemaVersion: CACHE_SCHEMA_VERSION,
+        solver: PRECOMPUTED_SOLVER_ID,
+        results: state.results,
+      }));
     } catch (error) {
       // Storage is optional; calculations still work without it.
     }
@@ -935,6 +1226,7 @@
     formatDuration,
     hypergeometricJokers,
     mergeAggregate,
+    parseResultsCache,
     sampleChunkSize,
     scenariosForVariant,
     solveSample,

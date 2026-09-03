@@ -205,9 +205,9 @@
         { label: "Nobs", items: ["Each J matching another card's suit: 1pt"] },
         { label: "Royalties", items: ["Raw cribbage score minus 10: 11 points = 1 royalty"] },
       ],
-      fantasy: "Pair of kings or better on top, 20 or more raw cribbage points in the middle, or quads or better on the bottom.",
-      repeat: "Trips on top, 21 or more raw cribbage points in the middle, or quads or better on the bottom.",
-      superFantasy: "Each additional Fantasyland condition achieved adds one card to the next Fantasyland hand.",
+      fantasy: "From natural play: pair of kings or better on top, 18 or more raw cribbage points in the middle, or quads or better on the bottom.",
+      repeat: "Trips on top, 22 or more raw cribbage points in the middle, or quads or better on the bottom.",
+      superFantasy: "A natural middle with 22 or more raw cribbage points adds one Fantasyland card. Every other additional Fantasyland condition also adds one card.",
     },
   ];
 
@@ -1093,8 +1093,9 @@
       qualifies: complete && cribbagePoints >= 11,
       points,
       cribbagePoints,
-      fantasy: complete && cribbagePoints >= 20,
-      repeat: complete && cribbagePoints >= 21,
+      fantasy: complete && cribbagePoints >= 18,
+      repeat: complete && cribbagePoints >= 22,
+      extraFantasyCard: complete && cribbagePoints >= 22,
       complete,
       quality: cribbagePoints,
       breakdown,
@@ -1706,6 +1707,10 @@
     return (rows.middle || []).length === 5;
   }
 
+  function repeatMaskFromEvaluations(top, middle, bottom) {
+    return (top?.repeat ? 1 : 0) | (middle?.repeat ? 2 : 0) | (bottom?.repeat ? 4 : 0);
+  }
+
   function mergeAssignments() {
     const result = new Map();
     Array.from(arguments).forEach((map) => map && map.forEach((card, id) => result.set(id, card)));
@@ -1737,12 +1742,14 @@
           : middleEval.qualifies && isTopLegalAgainstFive(top.evaluation, bottom.evaluation);
       if (!legal) return;
       const points = top.evaluation.points + middleEval.points + bottom.evaluation.points;
-      const repeat = top.evaluation.repeat || middleEval.repeat || bottom.evaluation.repeat;
+      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middleEval, bottom.evaluation);
+      const repeat = repeatMask > 0;
       const candidate = {
         legal: true,
         complete: true,
         points,
         repeat,
+        repeatMask,
         assignments: mergeAssignments(top.assignments, middle.assignments, bottom.assignments),
         rowEvals: { top: top.evaluation, middle: middleEval, bottom: bottom.evaluation },
         rowNames: { top: top.evaluation.name, middle: middleEval.name, bottom: bottom.evaluation.name },
@@ -2072,12 +2079,14 @@
         const top = chooseTop(ids, layoutTopMasks, availableMask, bottom.evaluation, topCache, topCandidateCache);
         if (!top) return;
         legalBoards += 1;
-        const repeat = top.evaluation.repeat || middle.evaluation.repeat || bottom.evaluation.repeat;
+        const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation);
+        const repeat = repeatMask > 0;
         const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
         const usedMask = top.mask | middleEntry.mask | bottomEntry.mask;
         const solution = {
           points,
           repeat,
+          repeatMask,
           usedMask,
           tieQuality: top.evaluation.quality + middle.evaluation.quality + bottom.evaluation.quality,
           top: { ids: top.ids, mask: top.mask, eval: top.evaluation, points: top.evaluation.points, assignments: top.assignments },
@@ -2199,10 +2208,12 @@
       const middle = middleCache.get(middleEntry.mask);
       const bottom = bottomEntry.candidate;
       const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
-      const repeat = top.evaluation.repeat || middle.evaluation.repeat || bottom.evaluation.repeat;
+      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation);
+      const repeat = repeatMask > 0;
       return {
         points,
         repeat,
+        repeatMask,
         usedMask: top.mask | middleEntry.mask | bottomEntry.mask,
         tieQuality: top.evaluation.quality + middle.evaluation.quality + bottom.evaluation.quality,
         top: { ids: top.ids, mask: top.mask, eval: top.evaluation, points: top.evaluation.points, assignments: top.assignments },
@@ -2422,12 +2433,14 @@
       const top = chooseTop(ids, topMasks, availableMask, topConstraint, topCache, topCandidateCache, variant);
       if (!top) return;
       legalBoards += 1;
-      const repeat = top.evaluation.repeat || middle.evaluation.repeat || bottom.evaluation.repeat;
+      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation);
+      const repeat = repeatMask > 0;
       const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
       const usedMask = top.mask | middleEntry.mask | bottomEntry.mask;
       const solution = {
         points,
         repeat,
+        repeatMask,
         usedMask,
         tieQuality: top.evaluation.quality + middle.evaluation.quality + bottom.evaluation.quality,
         top: { ids: top.ids, mask: top.mask, eval: top.evaluation, points: top.evaluation.points, assignments: top.assignments },
@@ -2586,6 +2599,7 @@
     highFiveRoyalty,
     isTopLegalAgainstFive,
     rowsComplete,
+    repeatMaskFromEvaluations,
     evaluateBoard,
     previewRows,
     solveHand,

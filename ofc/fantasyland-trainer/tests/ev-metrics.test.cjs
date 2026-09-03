@@ -17,6 +17,19 @@ vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
+const currentSolver = "trainer-exact-high-20260902a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
+
+assert.equal(
+  JSON.stringify(api.parseResultsCache(JSON.stringify({ schemaVersion: 1, solver: "outdated-solver", results: { cribbage: { stale: true } } }))),
+  "{}",
+  "results cached by an older solver should be discarded"
+);
+assert.equal(
+  JSON.stringify(api.parseResultsCache(JSON.stringify({ schemaVersion: 1, solver: currentSolver, results: { cribbage: { current: true } } }))),
+  JSON.stringify({ cribbage: { current: true } }),
+  "results cached by the current solver should be restored"
+);
+assert.equal(JSON.stringify(api.parseResultsCache("not-json")), "{}", "malformed cached results should be discarded");
 
 const delegatedVariants = [];
 const delegationContext = {
@@ -85,12 +98,21 @@ const aggregate = api.finalizeAggregate({
   strategySum: 18,
   repeatCount: 1,
   repeatPointSum: 8,
+  repeatSources: [0, 0, 1, 0, 0, 0, 0, 0],
+  repeatDetails: {
+    topTripsByRank: Array(15).fill(0),
+    bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlush: 0,
+    bottomRoyalFlush: 0,
+    cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 11 ? 3 : 0),
+  },
   qualifyCount: 3,
   distribution: [1, 1, 1, 1, 0],
 });
 assert.equal(aggregate.qualifyRate, 0.75, "EV aggregate should retain legal-board probability");
 assert.equal(aggregate.foulRate, 0.25, "EV aggregate foul chance should equal one minus legal-board probability");
 assert.equal(aggregate.totals.samples, 4, "EV aggregate should retain raw totals for cumulative runs");
+assert.equal(aggregate.totals.repeatSources[2], 1, "EV aggregate should retain the middle-row repeat source");
 
 const restored = api.aggregateFromResult(aggregate);
 assert.deepEqual(Array.from(restored.distribution), [1, 1, 1, 1, 0], "cumulative runs should restore exact distribution totals");
@@ -102,10 +124,22 @@ const merged = api.mergeAggregate(restored, {
   strategySum: 7,
   repeatCount: 1,
   repeatPointSum: 6,
+  repeatSources: [0, 1, 0, 0, 0, 0, 0, 0],
+  repeatDetails: {
+    topTripsByRank: Array.from({ length: 15 }, (_, rank) => rank === 14 ? 1 : 0),
+    bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlush: 0,
+    bottomRoyalFlush: 0,
+    cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 12 ? 2 : 0),
+  },
   qualifyCount: 2,
   distribution: [0, 1, 1, 0, 0],
 });
 assert.equal(merged.samples, 6, "cumulative runs should add sample counts");
+assert.deepEqual(Array.from(merged.repeatSources), [0, 1, 1, 0, 0, 0, 0, 0], "cumulative runs should merge repeat-source buckets");
+assert.equal(merged.repeatDetails.topTripsByRank[14], 1, "cumulative runs should merge top trips ranks");
+assert.equal(merged.repeatDetails.cribbageMiddleByScore[11], 3, "cumulative runs should retain existing Cribbage score frequencies");
+assert.equal(merged.repeatDetails.cribbageMiddleByScore[12], 2, "cumulative runs should add new Cribbage score frequencies");
 assert.equal(api.finalizeAggregate(merged).immediate, 28 / 6, "cumulative runs should calculate EV from all saved and new samples");
 
 assert.equal(api.sampleChunkSize(24), 1, "small runs should checkpoint each sample");
@@ -136,7 +170,7 @@ core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
 assert.equal(
   api.applyPrecomputedResults({
     schemaVersion: 1,
-    solver: "trainer-exact-high-20260902a+trainer-matched-variants-20260902c",
+    solver: currentSolver,
     samplesPerConfig: 10000,
     results: completeBaseline,
   }),

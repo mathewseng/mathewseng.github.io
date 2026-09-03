@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260902d" />
+    <link rel="stylesheet" href="./styles.css?v=20260903h" />
   </head>
   <body>
     <header class="site-header">
@@ -98,6 +98,23 @@
           </div>
           <div id="distribution-chart" class="distribution-chart empty-chart">Royalty bands will appear here.</div>
         </article>
+        <article id="repeat-source-panel" class="chart-panel repeat-source-panel" hidden>
+          <div class="panel-head repeat-source-head">
+            <div><p class="eyebrow">Repeat paths</p><h2>Repeat source by hand</h2></div>
+            <span>Bar width = repeat chance; multi-row = Super Fantasyland</span>
+          </div>
+          <div class="repeat-source-legend" aria-label="Repeat source legend">
+            <span><i class="source-top"></i>Top</span>
+            <span><i class="source-middle"></i>Middle</span>
+            <span><i class="source-bottom"></i>Bottom</span>
+            <span><i class="source-top-middle"></i>Top + Middle <b>+1 card</b></span>
+            <span><i class="source-top-bottom"></i>Top + Bottom <b>+1 card</b></span>
+            <span><i class="source-middle-bottom"></i>Middle + Bottom <b>+1 card</b></span>
+            <span><i class="source-all"></i>All three <b>+2 cards</b></span>
+          </div>
+          <div id="repeat-source-chart" class="repeat-source-chart"></div>
+          <div id="repeat-source-detail" class="repeat-source-detail" aria-live="polite"></div>
+        </article>
       </section>
 
       <section class="matrix-panel" aria-labelledby="matrix-title">
@@ -178,9 +195,9 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260902d"></script>
-    <script src="../fantasyland-trainer/app.js?v=20260902d"></script>
-    <script src="./precomputed.js?v=20260902d"></script>
-    <script src="./app.js?v=20260902d"></script>
+    <script src="../fantasyland-core.js?v=20260903h"></script>
+    <script src="../fantasyland-trainer/app.js?v=20260903h"></script>
+    <script src="./precomputed.js?v=20260903h"></script>
+    <script src="./app.js?v=20260903h"></script>
   </body>
 </html>

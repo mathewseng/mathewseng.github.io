@@ -22,7 +22,7 @@ selectedVariants.forEach((variant) => scenarios
   .forEach(({ cards, jokers }) => {
   const solverId = solverIdForVariant(variant);
   const outputPath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
-  const prefix = fs.existsSync(outputPath) ? readPart(outputPath, solverId) : emptyPart(variant, cards, jokers);
+  const prefix = fs.existsSync(outputPath) ? readPart(outputPath, solverId, true) || emptyPart(variant, cards, jokers) : emptyPart(variant, cards, jokers);
   if (prefix.result.totals.samples === target) {
     if (variant === "high" && prefix.result.totals.qualifyCount !== target) fail(`High Fantasyland false foul in ${cards}C/${jokers}J`);
     return;
@@ -41,7 +41,8 @@ selectedVariants.forEach((variant) => scenarios
 
   shardNames.forEach((name) => {
     const source = path.join(shardDirectory, name);
-    const part = readPart(source, solverId);
+    const part = readPart(source, solverId, true);
+    if (!part) return;
     if (part.variant !== variant || part.cards !== cards || part.jokers !== jokers) fail(`Mismatched shard metadata: ${source}`);
     const start = Number(part.sampleStart);
     const end = Number(part.sampleEnd);
@@ -90,11 +91,14 @@ function emptyPart(variant, cards, jokers) {
   };
 }
 
-function readPart(filePath, solverId) {
+function readPart(filePath, solverId, ignoreWrongSolver = false) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
     if (!parsed?.result?.totals) fail(`Missing raw totals: ${filePath}`);
-    if (parsed.solver !== solverId) fail(`Wrong solver data in ${filePath}: ${parsed.solver || "unknown"}`);
+    if (parsed.solver !== solverId) {
+      if (ignoreWrongSolver) return null;
+      fail(`Wrong solver data in ${filePath}: ${parsed.solver || "unknown"}`);
+    }
     return parsed;
   } catch (error) {
     fail(`Could not read ${filePath}: ${error.message}`);
@@ -102,7 +106,18 @@ function readPart(filePath, solverId) {
 }
 
 function createAggregate() {
-  return { samples: 0, immediateSum: 0, immediateSquared: 0, strategySum: 0, repeatCount: 0, repeatPointSum: 0, qualifyCount: 0, distribution: [0, 0, 0, 0, 0] };
+  return {
+    samples: 0,
+    immediateSum: 0,
+    immediateSquared: 0,
+    strategySum: 0,
+    repeatCount: 0,
+    repeatPointSum: 0,
+    repeatSources: Array(8).fill(0),
+    repeatDetails: createRepeatDetails(),
+    qualifyCount: 0,
+    distribution: [0, 0, 0, 0, 0],
+  };
 }
 
 function addTotals(targetAggregate, totals) {
@@ -112,6 +127,8 @@ function addTotals(targetAggregate, totals) {
   targetAggregate.strategySum += finite(totals.strategySum);
   targetAggregate.repeatCount += finite(totals.repeatCount);
   targetAggregate.repeatPointSum += finite(totals.repeatPointSum);
+  for (let index = 0; index < 8; index += 1) targetAggregate.repeatSources[index] += finite(totals.repeatSources?.[index]);
+  addRepeatDetails(targetAggregate.repeatDetails, totals.repeatDetails);
   targetAggregate.qualifyCount += finite(totals.qualifyCount);
   for (let index = 0; index < 5; index += 1) targetAggregate.distribution[index] += finite(totals.distribution?.[index]);
 }
@@ -135,7 +152,9 @@ function finalizeAggregate(value) {
     foulRate: 1 - value.qualifyCount / n,
     standardError: Math.sqrt(variance / n),
     distribution: value.distribution.map((count) => count / n),
-    totals: { ...value, distribution: value.distribution.slice() },
+    repeatSources: value.repeatSources.map((count) => count / n),
+    repeatDetails: copyRepeatDetails(value.repeatDetails),
+    totals: { ...value, distribution: value.distribution.slice(), repeatDetails: copyRepeatDetails(value.repeatDetails) },
   };
 }
 
@@ -144,7 +163,40 @@ function finite(value) {
 }
 
 function solverIdForVariant(variant) {
-  return variant === "high" ? "trainer-exact-high-20260902a" : "trainer-matched-variants-20260902c";
+  if (variant === "high") return "trainer-exact-high-20260902a";
+  if (variant === "cribbage") return "trainer-matched-cribbage-20260903c";
+  return "trainer-matched-variants-20260902c";
+}
+
+function createRepeatDetails() {
+  return {
+    topTripsByRank: Array(15).fill(0),
+    bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlush: 0,
+    bottomRoyalFlush: 0,
+    cribbageMiddleByScore: Array(30).fill(0),
+  };
+}
+
+function copyRepeatDetails(value) {
+  return {
+    topTripsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.topTripsByRank?.[index])),
+    bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomQuadsByRank?.[index])),
+    bottomStraightFlush: finite(value?.bottomStraightFlush),
+    bottomRoyalFlush: finite(value?.bottomRoyalFlush),
+    cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finite(value?.cribbageMiddleByScore?.[index])),
+  };
+}
+
+function addRepeatDetails(target, value) {
+  const incoming = copyRepeatDetails(value);
+  for (let index = 0; index < 15; index += 1) {
+    target.topTripsByRank[index] += incoming.topTripsByRank[index];
+    target.bottomQuadsByRank[index] += incoming.bottomQuadsByRank[index];
+  }
+  target.bottomStraightFlush += incoming.bottomStraightFlush;
+  target.bottomRoyalFlush += incoming.bottomRoyalFlush;
+  for (let index = 0; index < 30; index += 1) target.cribbageMiddleByScore[index] += incoming.cribbageMiddleByScore[index];
 }
 
 function parseArgs(values) {

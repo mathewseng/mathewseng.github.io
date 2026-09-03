@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260902d", "../fantasyland-trainer/app.js?v=20260902d");
+importScripts("../fantasyland-core.js?v=20260903h", "../fantasyland-trainer/app.js?v=20260903h");
 
 const Core = self.OFCFantasylandCore;
 const TrainerCore = self.OFCSolverCore;
@@ -36,7 +36,7 @@ function processChunk() {
     const sample = task.index + offset;
     const seedText = `EV-${task.runSeed}-${task.variant}-${task.scenario.cards}C-${task.scenario.jokers}J-${sample}`;
     const ids = Core.dealSeeded(task.scenario.cards, task.scenario.jokers, Core.hashSeed(seedText).toString(16));
-    addSample(aggregate, solveSample(ids, task.variant));
+    addSample(aggregate, solveSample(ids, task.variant), task.variant);
   }
 
   task.index += count;
@@ -58,7 +58,18 @@ function processChunk() {
 }
 
 function createAggregate() {
-  return { samples: 0, immediateSum: 0, immediateSquared: 0, strategySum: 0, repeatCount: 0, repeatPointSum: 0, qualifyCount: 0, distribution: [0, 0, 0, 0, 0] };
+  return {
+    samples: 0,
+    immediateSum: 0,
+    immediateSquared: 0,
+    strategySum: 0,
+    repeatCount: 0,
+    repeatPointSum: 0,
+    repeatSources: Array(8).fill(0),
+    repeatDetails: createRepeatDetails(),
+    qualifyCount: 0,
+    distribution: [0, 0, 0, 0, 0],
+  };
 }
 
 function solveSample(ids, variant) {
@@ -67,7 +78,7 @@ function solveSample(ids, variant) {
   return solved;
 }
 
-function addSample(aggregate, solved) {
+function addSample(aggregate, solved, variant) {
   const immediate = solved.bestRoyalty ? finiteNumber(solved.bestRoyalty.points) : 0;
   const strategy = solved.best ? finiteNumber(solved.best.points) : 0;
   aggregate.samples += 1;
@@ -79,7 +90,37 @@ function addSample(aggregate, solved) {
   if (solved.bestRepeat) {
     aggregate.repeatCount += 1;
     aggregate.repeatPointSum += finiteNumber(solved.bestRepeat.points);
+    const repeatMask = Math.trunc(finiteNumber(solved.bestRepeat.repeatMask));
+    if (repeatMask >= 1 && repeatMask <= 7) aggregate.repeatSources[repeatMask] += 1;
+    const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
+    if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
+      aggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
+    }
+    if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
+      aggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
+    } else if (repeatDetail.bottomKind === "straight-flush") {
+      aggregate.repeatDetails.bottomStraightFlush += 1;
+    } else if (repeatDetail.bottomKind === "royal-flush") {
+      aggregate.repeatDetails.bottomRoyalFlush += 1;
+    }
   }
+  if (variant === "cribbage" && solved.best) {
+    const score = TrainerCore.repeatDetailForSolution(solved.best).middleCribbagePoints;
+    if (!Number.isInteger(score) || score < 0 || score >= aggregate.repeatDetails.cribbageMiddleByScore.length) {
+      throw new Error(`Unexpected Cribbage middle score: ${score}`);
+    }
+    aggregate.repeatDetails.cribbageMiddleByScore[score] += 1;
+  }
+}
+
+function createRepeatDetails() {
+  return {
+    topTripsByRank: Array(15).fill(0),
+    bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlush: 0,
+    bottomRoyalFlush: 0,
+    cribbageMiddleByScore: Array(30).fill(0),
+  };
 }
 
 function royaltyBandIndex(points) {

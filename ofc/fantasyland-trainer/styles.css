@@ -1157,6 +1157,23 @@ kbd {
   color: var(--rose);
 }
 
+.repeat-badge.source-detail {
+  display: grid;
+  gap: 2px;
+  text-transform: none;
+}
+
+.repeat-badge.source-detail span {
+  text-transform: uppercase;
+}
+
+.repeat-badge.source-detail small {
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .score-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2811,8 +2828,8 @@ body.ev-page {
 }
 
 .rules-dialog {
-  width: min(760px, calc(100vw - 24px));
-  max-height: min(760px, calc(100dvh - 24px));
+  width: min(960px, calc(100vw - 24px));
+  max-height: min(820px, calc(100dvh - 24px));
   padding: 0;
   overflow: hidden;
   border: 1px solid rgba(205, 220, 238, 0.28);
@@ -2820,6 +2837,16 @@ body.ev-page {
   background: #080e14;
   color: var(--text);
   box-shadow: 0 24px 72px rgba(0, 0, 0, 0.56);
+}
+
+.rules-dialog:not([open]) {
+  display: none;
+}
+
+.rules-dialog[open] {
+  height: min(820px, calc(100dvh - 24px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .rules-dialog::backdrop {
@@ -2879,7 +2906,8 @@ body.ev-page {
 }
 
 .rules-content {
-  max-height: calc(100dvh - 164px);
+  min-height: 0;
+  max-height: none;
   overflow: auto;
   padding: 18px;
 }
@@ -2937,9 +2965,9 @@ body.ev-page {
 .royalty-groups {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   align-items: start;
-  gap: 16px;
+  gap: 18px 20px;
 }
 
 .royalty-group {
@@ -2961,6 +2989,7 @@ body.ev-page {
 
 .rules-article .royalty-list li {
   min-height: 28px;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 4px 0;
@@ -2972,13 +3001,17 @@ body.ev-page {
 }
 
 .royalty-list .rule-term {
+  flex: 1 1 auto;
+  min-width: 0;
   color: rgba(238, 245, 255, 0.76);
   font-weight: 700;
+  overflow-wrap: break-word;
 }
 
 .royalty-list .rule-detail {
   flex: 0 0 auto;
   text-align: right;
+  white-space: nowrap;
 }
 
 .rule-term {
