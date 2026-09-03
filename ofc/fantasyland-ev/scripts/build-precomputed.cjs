@@ -21,7 +21,7 @@ Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       const solverId = solverIdForVariant(variant);
       if (part.solver !== solverId || part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
       if (variant === "high" && Number(part.result.totals.qualifyCount) !== Number(part.result.samples)) throw new Error("High Fantasyland contains a false foul");
-      if (variant === "cribbage" && !hasCompleteRepeatDetails(part.result.totals)) throw new Error("incomplete repeat-source detail data");
+      if (["badeucey", "cribbage"].includes(variant) && !hasCompleteRepeatDetails(part.result.totals, variant)) throw new Error("incomplete repeat-source detail data");
       results[variant][`${cards}-${jokers}`] = part.result;
     } catch (error) {
       missing.push(`${variant} ${cards}C/${jokers}J`);
@@ -35,7 +35,7 @@ const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "trainer-exact-high-20260902a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c",
+  solver: "trainer-exact-high-20260902a+trainer-matched-badeucey-20260903a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c",
   results,
 };
 fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze(${JSON.stringify(dataset)});\n`);
@@ -43,6 +43,7 @@ console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across 
 
 function solverIdForVariant(variant) {
   if (variant === "high") return "trainer-exact-high-20260902a";
+  if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
   if (variant === "cribbage") return "trainer-matched-cribbage-20260903c";
   return "trainer-matched-variants-20260902c";
 }
@@ -51,7 +52,7 @@ function repeatSourceTotal(totals) {
   return Array.from({ length: 7 }, (_, index) => Number(totals?.repeatSources?.[index + 1]) || 0).reduce((sum, count) => sum + count, 0);
 }
 
-function hasCompleteRepeatDetails(totals) {
+function hasCompleteRepeatDetails(totals, variant) {
   const details = totals?.repeatDetails;
   if (
     repeatSourceTotal(totals) !== Number(totals?.repeatCount)
@@ -69,7 +70,8 @@ function hasCompleteRepeatDetails(totals) {
     + (Number(details.bottomStraightFlush) || 0)
     + (Number(details.bottomRoyalFlush) || 0);
   const cribbageTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + (Number(count) || 0), 0);
-  return topTotal === topExpected && bottomTotal === bottomExpected && cribbageTotal === Number(totals.qualifyCount);
+  const middleExpected = variant === "cribbage" ? Number(totals.qualifyCount) : 0;
+  return topTotal === topExpected && bottomTotal === bottomExpected && cribbageTotal === middleExpected;
 }
 
 function parseArgs(values) {

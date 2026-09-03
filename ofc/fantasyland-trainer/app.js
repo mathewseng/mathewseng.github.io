@@ -79,7 +79,7 @@
   const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
   const TRAINER_DROP_ANIMATION_MS = 250;
   const TRAINER_STORAGE_KEY = "ofcFantasylandTrainerState.v1";
-  const REPEAT_SOURCE_VARIANTS = new Set(["cribbage"]);
+  const REPEAT_SOURCE_VARIANTS = new Set(["badeucey", "cribbage"]);
 
   const comboCache = new Map();
   // Cache row values only; assignments are remapped to each hand's joker indexes on read.

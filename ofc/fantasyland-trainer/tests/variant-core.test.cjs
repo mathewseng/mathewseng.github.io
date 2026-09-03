@@ -409,6 +409,43 @@ assert.equal(
   "repeat detail: non-royal straight flushes should stay in their own bucket"
 );
 
+const badeuceyMiddleOnlyRows = {
+  top: ["Qs", "Jd", "9c"],
+  middle: ["7s", "5h", "4d", "3c", "2s"],
+  bottom: ["As", "Kh", "Qd", "Jc", "9h"],
+};
+const badeuceyMiddleOnly = core.evaluateBoard(
+  [...badeuceyMiddleOnlyRows.top, ...badeuceyMiddleOnlyRows.middle, ...badeuceyMiddleOnlyRows.bottom],
+  badeuceyMiddleOnlyRows,
+  { variant: "badeucey" }
+);
+assert.equal(badeuceyMiddleOnly.legal, true, "badeucey repeat source: middle-only fixture should be legal");
+assert.equal(badeuceyMiddleOnly.repeatMask, 2, "badeucey repeat source: the double wheel should identify the middle only");
+
+const badeuceyThreeSourceRows = {
+  top: ["6s", "6h", "6d"],
+  middle: ["7s", "5h", "4d", "3c", "2s"],
+  bottom: ["As", "Ah", "Ad", "Ac", "Kd"],
+};
+const badeuceyThreeSource = core.evaluateBoard(
+  [...badeuceyThreeSourceRows.top, ...badeuceyThreeSourceRows.middle, ...badeuceyThreeSourceRows.bottom],
+  badeuceyThreeSourceRows,
+  { variant: "badeucey" }
+);
+assert.equal(badeuceyThreeSource.legal, true, "badeucey repeat source: three-source fixture should be legal");
+assert.equal(badeuceyThreeSource.repeatMask, 7, "badeucey repeat source: trips, the double wheel, and quads should identify all three rows");
+assert.deepEqual(
+  trainer.repeatDetailForSolution(badeuceyThreeSource),
+  {
+    repeatMask: 7,
+    topTripsRank: 6,
+    middleCribbagePoints: null,
+    bottomKind: "quads",
+    bottomQuadsRank: 14,
+  },
+  "badeucey repeat detail: top trips and bottom quads should retain their exact ranks"
+);
+
 const lowFoul = core.evaluateDeuceSeven(cards(["Js", "9h", "7d", "5c", "2s"]));
 assert.equal(lowFoul.name, "Jhi Foul", "low: an otherwise clean jack-low should name the high card and foul");
 assert.equal(lowFoul.status, "foul", "low: a failed low should expose a danger state");

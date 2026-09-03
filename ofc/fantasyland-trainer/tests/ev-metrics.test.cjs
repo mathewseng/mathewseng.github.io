@@ -17,7 +17,7 @@ vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
-const currentSolver = "trainer-exact-high-20260902a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
+const currentSolver = "trainer-exact-high-20260902a+trainer-matched-badeucey-20260903a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
 
 assert.equal(
   JSON.stringify(api.parseResultsCache(JSON.stringify({ schemaVersion: 1, solver: "outdated-solver", results: { cribbage: { stale: true } } }))),
@@ -160,10 +160,20 @@ const completeBaseline = {};
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   completeBaseline[variant] = {};
   api.scenariosForVariant().forEach((scenario) => {
+    const totals = {
+      ...aggregate.totals,
+      samples: 10000,
+      repeatDetails: {
+        ...aggregate.totals.repeatDetails,
+        cribbageMiddleByScore: variant === "cribbage"
+          ? aggregate.totals.repeatDetails.cribbageMiddleByScore
+          : Array(30).fill(0),
+      },
+    };
     completeBaseline[variant][`${scenario.cards}-${scenario.jokers}`] = {
       ...aggregate,
       samples: 10000,
-      totals: { ...aggregate.totals, samples: 10000 },
+      totals,
     };
   });
 });

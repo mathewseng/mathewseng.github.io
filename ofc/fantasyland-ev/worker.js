@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260903h", "../fantasyland-trainer/app.js?v=20260903h");
+importScripts("../fantasyland-core.js?v=20260903i", "../fantasyland-trainer/app.js?v=20260903i");
 
 const Core = self.OFCFantasylandCore;
 const TrainerCore = self.OFCSolverCore;

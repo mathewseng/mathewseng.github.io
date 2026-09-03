@@ -3,7 +3,7 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v11";
+  const STORAGE_KEY = "ofcFantasylandEv.v12";
   const CACHE_SCHEMA_VERSION = 1;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
@@ -19,8 +19,8 @@
     6: { label: "Middle + Bottom", className: "source-middle-bottom", extraCards: 1 },
     7: { label: "All three", className: "source-all", extraCards: 2 },
   };
-  const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["cribbage"]);
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260902a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
+  const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["badeucey", "cribbage"]);
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260902a+trainer-matched-badeucey-20260903a+trainer-matched-variants-20260902c+trainer-matched-cribbage-20260903c";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -271,7 +271,7 @@
   function renderRepeatSourceChart(entries) {
     const complete = PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(state.variant)
       && entries.length > 0
-      && entries.every(({ result }) => hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result));
+      && entries.every(({ result }) => hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, state.variant));
     els.repeatSourcePanel.hidden = !complete;
     if (!complete) {
       els.repeatSourceChart.replaceChildren();
@@ -335,7 +335,7 @@
     return sourceTotal === finiteNumber(result.totals.repeatCount);
   }
 
-  function hasCompleteRepeatDetailData(result) {
+  function hasCompleteRepeatDetailData(result, variant) {
     const totals = result?.totals;
     const details = totals?.repeatDetails;
     if (
@@ -355,7 +355,8 @@
       + finiteNumber(details.bottomStraightFlush)
       + finiteNumber(details.bottomRoyalFlush);
     const middleTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + finiteNumber(count), 0);
-    return topTotal === topExpected && bottomTotal === bottomExpected && middleTotal === finiteNumber(totals.qualifyCount);
+    const middleExpected = variant === "cribbage" ? finiteNumber(totals.qualifyCount) : 0;
+    return topTotal === topExpected && bottomTotal === bottomExpected && middleTotal === middleExpected;
   }
 
   function renderRepeatSourceDetail(entry) {
@@ -623,7 +624,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260903h");
+          worker = new Worker("./worker.js?v=20260903i");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -1106,7 +1107,8 @@
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target
         && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
-        && (!PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(variant) || hasCompleteRepeatSourceData(result));
+        && (!PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(variant)
+          || (hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, variant)));
     }));
     if (!complete) return 0;
 
