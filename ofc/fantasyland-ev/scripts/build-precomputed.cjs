@@ -62,7 +62,7 @@ const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c+trainer-matched-jjjplus-20260903a",
+  solver: "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903d+trainer-matched-jjjplus-20260903a+trainer-matched-cribbage-jjjplus-20260903b",
   results,
   topRepeatJacksPlusResults,
 };
@@ -70,12 +70,16 @@ fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze($
 console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across ${(Core.ACTIVE_VARIANT_ORDER.length + JACKS_PLUS_VARIANTS.length) * scenarios.length} result configurations.`);
 
 function solverIdForVariant(variant, minimumTopRank = null) {
-  if (minimumTopRank !== null) return `trainer-matched-${variant}-jjjplus-20260903a`;
+  if (minimumTopRank !== null) {
+    return variant === "cribbage"
+      ? "trainer-matched-cribbage-jjjplus-20260903b"
+      : `trainer-matched-${variant}-jjjplus-20260903a`;
+  }
   if (variant === "high") return "trainer-exact-high-20260903b";
   if (variant === "low") return "trainer-matched-low-20260903a";
   if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
   if (variant === "bdp") return "trainer-matched-bdp-20260903a";
-  if (variant === "cribbage") return "trainer-matched-cribbage-20260903c";
+  if (variant === "cribbage") return "trainer-matched-cribbage-20260903d";
   return "trainer-matched-variants-20260902c";
 }
 

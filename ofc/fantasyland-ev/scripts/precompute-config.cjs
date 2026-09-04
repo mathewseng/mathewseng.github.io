@@ -126,12 +126,16 @@ function solveSample(ids, selectedVariant) {
 }
 
 function solverIdForVariant(selectedVariant, minimumTopRank = null) {
-  if (minimumTopRank !== null) return `trainer-matched-${selectedVariant}-jjjplus-20260903a`;
+  if (minimumTopRank !== null) {
+    return selectedVariant === "cribbage"
+      ? "trainer-matched-cribbage-jjjplus-20260903b"
+      : `trainer-matched-${selectedVariant}-jjjplus-20260903a`;
+  }
   if (selectedVariant === "high") return "trainer-exact-high-20260903b";
   if (selectedVariant === "low") return "trainer-matched-low-20260903a";
   if (selectedVariant === "badeucey") return "trainer-matched-badeucey-20260903a";
   if (selectedVariant === "bdp") return "trainer-matched-bdp-20260903a";
-  if (selectedVariant === "cribbage") return "trainer-matched-cribbage-20260903c";
+  if (selectedVariant === "cribbage") return "trainer-matched-cribbage-20260903d";
   return "trainer-matched-variants-20260902c";
 }
 

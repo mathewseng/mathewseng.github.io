@@ -313,7 +313,7 @@ const cribbageTwentyFour = core.evaluateCribbage(cards(["Js", "Jh", "5s", "5h", 
 assert.equal(cribbageTwentyFour.cribbagePoints, 24, "cribbage: Js Jh 5s 5h 5d should score twenty-four raw points");
 assert.equal(cribbageTwentyFour.points, 14, "cribbage: royalties should equal the raw score minus ten");
 assert.equal(cribbageTwentyFour.breakdown.nobs, 2, "cribbage: each suited jack should score one");
-assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-two or more should repeat");
+assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-one or more should repeat");
 assert.equal(cribbageTwentyFour.extraFantasyCard, true, "cribbage: twenty-two or more should award an extra Fantasyland card");
 
 const doubleRuns = core.cribbageScore(cards(["6s", "7h", "7d", "8c", "8s"]));
@@ -358,7 +358,7 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false, false],
   [["As", "Js", "3s", "2s", "Ah"], 17, true, 7, false, false, false],
   [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, true, false, false],
-  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, false, false],
+  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, true, false],
   [["Ks", "Qs", "Js", "5s", "5h"], 22, true, 12, true, true, true],
 ].forEach(([ids, rawPoints, qualifies, royalties, fantasy, repeat, extraFantasyCard]) => {
   const evaluation = core.evaluateCribbage(cards(ids));
@@ -376,7 +376,7 @@ const cribbageOuterRows = {
   bottom: ["As", "Ah", "Ad", "9c", "8d"],
 };
 [
-  [["Ks", "Qs", "Js", "5s", "Kh"], false, "21-point"],
+  [["Ks", "Qs", "Js", "5s", "Kh"], true, "21-point"],
   [["Ks", "Qs", "Js", "5s", "5h"], true, "22-point"],
 ].forEach(([middle, repeat, label]) => {
   const rows = { ...cribbageOuterRows, middle };
@@ -405,7 +405,7 @@ const cribbageThreeSource = core.evaluateBoard(
   { variant: "cribbage" }
 );
 assert.equal(cribbageThreeSource.legal, true, "cribbage repeat source: three-row fixture should be legal");
-assert.equal(cribbageThreeSource.repeatMask, 7, "cribbage repeat source: trips, 22+ middle, and quads should identify all three rows");
+assert.equal(cribbageThreeSource.repeatMask, 7, "cribbage repeat source: trips, 21+ middle, and quads should identify all three rows");
 assert.deepEqual(
   trainer.repeatDetailForSolution(cribbageThreeSource),
   {

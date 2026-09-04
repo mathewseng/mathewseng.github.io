@@ -15,6 +15,8 @@ const jacksPlusVariants = ["low", "badeucey", "cribbage"];
 assert.equal(dataset.schemaVersion, 1, "precomputed EV data should use the supported schema");
 assert.equal(dataset.samplesPerConfig, 10000, "precomputed EV data should contain 10,000 hands per configuration");
 assert.ok(dataset.solver.includes("trainer-matched-jjjplus-20260903a"), "precomputed EV data should identify the JJJ+ solver");
+assert.ok(dataset.solver.includes("trainer-matched-cribbage-20260903d"), "precomputed EV data should identify the 21+ Cribbage repeat solver");
+assert.ok(dataset.solver.includes("trainer-matched-cribbage-jjjplus-20260903b"), "precomputed EV data should identify the 21+ Cribbage JJJ+ solver");
 assert.deepEqual(Object.keys(dataset.results), core.ACTIVE_VARIANT_ORDER, "precomputed EV data should contain every active variant");
 assert.deepEqual(Object.keys(dataset.topRepeatJacksPlusResults), jacksPlusVariants, "precomputed EV data should contain every JJJ+ variant");
 

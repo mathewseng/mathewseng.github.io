@@ -21,7 +21,7 @@
   };
   const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
   const JACKS_PLUS_REPEAT_VARIANTS = new Set(["low", "badeucey", "cribbage"]);
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c+trainer-matched-jjjplus-20260903a";
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903d+trainer-matched-jjjplus-20260903a+trainer-matched-cribbage-jjjplus-20260903b";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -702,7 +702,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260903k");
+          worker = new Worker("./worker.js?v=20260903l");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
