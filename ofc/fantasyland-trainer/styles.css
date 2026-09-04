@@ -3051,6 +3051,121 @@ body.ev-page {
   background: var(--surface-2);
 }
 
+.cribbage-hand-reference-body {
+  min-width: 0;
+}
+
+.cribbage-hand-reference-body > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+}
+
+.cribbage-hand-reference-body h5 {
+  margin: 0 0 3px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.cribbage-hand-reference-body > header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.cribbage-score-group {
+  border-top: 1px solid var(--line);
+}
+
+.cribbage-score-heading {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.cribbage-score-heading > strong {
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.cribbage-score-heading mark {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(66, 230, 164, 0.12);
+  color: var(--accent);
+  font: inherit;
+}
+
+.cribbage-score-heading > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-align: right;
+}
+
+.cribbage-hand-list {
+  border-top: 1px solid rgba(205, 220, 238, 0.08);
+}
+
+.cribbage-hand-row {
+  min-width: 0;
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(205, 220, 238, 0.08);
+}
+
+.cribbage-hand-pattern {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.cribbage-hand-pattern small {
+  color: #f0b867;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.cribbage-hand-explanation {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.cribbage-hand-breakdown {
+  color: rgba(238, 245, 255, 0.56);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.cribbage-hand-breakdown strong {
+  color: var(--text);
+  font-weight: 850;
+}
+
+.cribbage-score-gap-note {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
 @media (max-width: 980px) {
   .trainer-panel {
     grid-template-rows: 50px auto minmax(0, 1fr);
@@ -3212,6 +3327,16 @@ body.ev-page {
     margin-bottom: 2px;
   }
 
+  .cribbage-hand-reference-body > header {
+    display: grid;
+    gap: 5px;
+  }
+
+  .cribbage-hand-row {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 7px;
+  }
+
   .solution-badugijack-split {
     grid-template-columns: 1fr;
   }
@@ -3298,6 +3423,10 @@ body.ev-page {
   .trainer-row-summary.is-split-score {
     gap: 7px;
     font-size: 0.58rem;
+  }
+
+  .cribbage-hand-row {
+    grid-template-columns: 98px minmax(0, 1fr);
   }
 }
 

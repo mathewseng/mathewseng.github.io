@@ -3124,6 +3124,7 @@
       }
       article.appendChild(section);
     });
+    if (active === "cribbage") article.appendChild(renderCribbage24PlusHands());
     const seedNote = document.createElement("p");
     seedNote.className = "rules-seed-note";
     seedNote.textContent = `Daily seed: YYYY-MM-DD-{14/15/16/17}C-{0/1/2}J-${VariantCore.VARIANTS[active].seedLabel}-{number}. The number starts at 0 and advances only when the hand cannot qualify.`;
@@ -3151,6 +3152,81 @@
       wrapper.appendChild(block);
     });
     return wrapper;
+  }
+
+  function renderCribbage24PlusHands() {
+    const section = document.createElement("section");
+    section.className = "cribbage-hand-reference";
+    const sectionTitle = document.createElement("h4");
+    sectionTitle.textContent = "24+ hands";
+
+    const reference = document.createElement("div");
+    reference.className = "cribbage-hand-reference-body";
+    const intro = document.createElement("header");
+    intro.innerHTML = `
+      <div>
+        <h5>Complete rank-combination list</h5>
+        <p>Five-card patterns after joker substitution. Suits are ignored.</p>
+      </div>
+    `;
+    reference.appendChild(intro);
+
+    VariantCore.CRIBBAGE_24_PLUS_HANDS.forEach((scoreGroup) => {
+      const group = document.createElement("div");
+      group.className = "cribbage-score-group";
+      const heading = document.createElement("div");
+      heading.className = "cribbage-score-heading";
+      heading.innerHTML = `
+        <strong><mark>${scoreGroup.score}</mark> points</strong>
+        <span>${scoreGroup.royalties} royalties</span>
+      `;
+      group.appendChild(heading);
+
+      const hands = document.createElement("div");
+      hands.className = "cribbage-hand-list";
+      scoreGroup.patterns.forEach((pattern) => {
+        const row = document.createElement("div");
+        row.className = "cribbage-hand-row";
+        const cards = document.createElement("strong");
+        cards.className = "cribbage-hand-pattern";
+        cards.textContent = pattern.label;
+        cards.setAttribute("aria-label", `${pattern.label.split("").join(" ")}${pattern.note ? `, ${pattern.note}` : ""}`);
+        if (pattern.note) {
+          const note = document.createElement("small");
+          note.textContent = ` (${pattern.note})`;
+          cards.appendChild(note);
+        }
+
+        const explanation = document.createElement("div");
+        explanation.className = "cribbage-hand-explanation";
+        const breakdown = document.createElement("span");
+        breakdown.className = "cribbage-hand-breakdown";
+        const visibleComponents = pattern.note
+          ? pattern.components.filter(([label]) => !/nobs?/i.test(label))
+          : pattern.components;
+        visibleComponents.forEach(([label, points], index) => {
+          if (index) breakdown.appendChild(document.createTextNode(" + "));
+          const term = document.createElement("span");
+          term.textContent = `${label} `;
+          const value = document.createElement("strong");
+          value.textContent = `${points}pt${points === 1 ? "" : "s"}`;
+          term.appendChild(value);
+          breakdown.appendChild(term);
+        });
+        explanation.appendChild(breakdown);
+        row.append(cards, explanation);
+        hands.appendChild(row);
+      });
+      group.appendChild(hands);
+      reference.appendChild(group);
+    });
+
+    const gapNote = document.createElement("p");
+    gapNote.className = "cribbage-score-gap-note";
+    gapNote.textContent = "No five-card hand scores 25, 26, or 27 points under these rules.";
+    reference.appendChild(gapNote);
+    section.append(sectionTitle, reference);
+    return section;
   }
 
   function appendRuleLine(item, line) {

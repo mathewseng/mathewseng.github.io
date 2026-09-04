@@ -211,6 +211,55 @@
     },
   ];
 
+  const CRIBBAGE_24_PLUS_HANDS = Object.freeze([
+    {
+      score: 29,
+      royalties: 19,
+      exactHands: 4,
+      patterns: [
+        {
+          label: "J5555",
+          ranks: [11, 5, 5, 5, 5],
+          exactHands: 4,
+          components: [["8 15s", 16], ["Quads", 12], ["Nobs", 1]],
+        },
+      ],
+    },
+    {
+      score: 28,
+      royalties: 18,
+      exactHands: 12,
+      patterns: [
+        { label: "K5555", ranks: [13, 5, 5, 5, 5], exactHands: 4, components: [["8 15s", 16], ["Quads", 12]] },
+        { label: "Q5555", ranks: [12, 5, 5, 5, 5], exactHands: 4, components: [["8 15s", 16], ["Quads", 12]] },
+        { label: "T5555", ranks: [10, 5, 5, 5, 5], exactHands: 4, components: [["8 15s", 16], ["Quads", 12]] },
+      ],
+    },
+    {
+      score: 24,
+      royalties: 14,
+      exactHands: 748,
+      patterns: [
+        { label: "A7777", ranks: [14, 7, 7, 7, 7], exactHands: 4, components: [["6 15s", 12], ["Quads", 12]] },
+        {
+          label: "JJ555",
+          ranks: [11, 11, 5, 5, 5],
+          exactHands: 12,
+          components: [["7 15s", 14], ["Boat", 8], ["2 Nobs", 2]],
+          note: "2 nobs",
+        },
+        { label: "98877", ranks: [9, 8, 8, 7, 7], exactHands: 144, components: [["4 15s", 8], ["2 Pairs", 4], ["4 Runs of 3", 12]] },
+        { label: "93333", ranks: [9, 3, 3, 3, 3], exactHands: 4, components: [["6 15s", 12], ["Quads", 12]] },
+        { label: "88776", ranks: [8, 8, 7, 7, 6], exactHands: 144, components: [["4 15s", 8], ["2 Pairs", 4], ["4 Runs of 3", 12]] },
+        { label: "74444", ranks: [7, 4, 4, 4, 4], exactHands: 4, components: [["6 15s", 12], ["Quads", 12]] },
+        { label: "66663", ranks: [6, 6, 6, 6, 3], exactHands: 4, components: [["6 15s", 12], ["Quads", 12]] },
+        { label: "66554", ranks: [6, 6, 5, 5, 4], exactHands: 144, components: [["4 15s", 8], ["2 Pairs", 4], ["4 Runs of 3", 12]] },
+        { label: "66544", ranks: [6, 6, 5, 4, 4], exactHands: 144, components: [["4 15s", 8], ["2 Pairs", 4], ["4 Runs of 3", 12]] },
+        { label: "65544", ranks: [6, 5, 5, 4, 4], exactHands: 144, components: [["4 15s", 8], ["2 Pairs", 4], ["4 Runs of 3", 12]] },
+      ],
+    },
+  ]);
+
   const virtualDeck = [];
   SUITS.forEach((suit) => RANKS.forEach((rank) => virtualDeck.push(makeCard(`${RANK_LABEL[rank]}${suit}`))));
   const virtualCardById = new Map(virtualDeck.map((card) => [card.id, card]));
@@ -2579,6 +2628,7 @@
     VARIANT_ORDER,
     ACTIVE_VARIANT_ORDER,
     RULE_SECTIONS,
+    CRIBBAGE_24_PLUS_HANDS,
     normalizeVariant,
     variantCardCounts,
     variantScenarios,

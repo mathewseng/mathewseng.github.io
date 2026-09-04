@@ -372,6 +372,70 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   assert.equal(evaluation.extraFantasyCard, extraFantasyCard, `cribbage: ${rawPoints} raw points extra-card threshold`);
 });
 
+const listedCribbageRepeatHands = new Map();
+const listedCribbageScoreCounts = new Map();
+core.CRIBBAGE_24_PLUS_HANDS.forEach((group) => {
+  const patternTotal = group.patterns.reduce((sum, pattern) => sum + pattern.exactHands, 0);
+  assert.equal(patternTotal, group.exactHands, `cribbage reference: ${group.score}-point pattern counts should match the group total`);
+  assert.equal(group.royalties, group.score - 10, `cribbage reference: ${group.score} points should convert to royalties`);
+  group.patterns.forEach((pattern) => {
+    assert.equal(
+      pattern.components.reduce((sum, [, points]) => sum + points, 0),
+      group.score,
+      `cribbage reference: ${pattern.label} components should total ${group.score}`
+    );
+    listedCribbageRepeatHands.set(`${group.score}|${pattern.ranks.join(",")}`, pattern.exactHands);
+  });
+  listedCribbageScoreCounts.set(group.score, group.exactHands);
+});
+const listedJacksFives = core.CRIBBAGE_24_PLUS_HANDS.flatMap(({ patterns }) => patterns).find(({ label }) => label === "JJ555");
+assert.equal(listedJacksFives.note, "2 nobs", "cribbage reference: JJ555 should carry the concise two-nobs qualifier");
+
+const actualCribbageRepeatHands = new Map();
+const actualCribbageScoreCounts = new Map();
+const cribbageReferenceDeck = ["s", "h", "d", "c"].flatMap((suit) =>
+  ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"].map((rank) => core.makeCard(`${rank}${suit}`))
+);
+for (let first = 0; first < 48; first += 1) {
+  for (let second = first + 1; second < 49; second += 1) {
+    for (let third = second + 1; third < 50; third += 1) {
+      for (let fourth = third + 1; fourth < 51; fourth += 1) {
+        for (let fifth = fourth + 1; fifth < 52; fifth += 1) {
+          const hand = [
+            cribbageReferenceDeck[first],
+            cribbageReferenceDeck[second],
+            cribbageReferenceDeck[third],
+            cribbageReferenceDeck[fourth],
+            cribbageReferenceDeck[fifth],
+          ];
+          const score = core.cribbageScoreTotalFast(hand);
+          if (score < 24) continue;
+          const ranks = hand.map(({ rank }) => rank).sort((left, right) => right - left);
+          const key = `${score}|${ranks.join(",")}`;
+          actualCribbageRepeatHands.set(key, (actualCribbageRepeatHands.get(key) || 0) + 1);
+          actualCribbageScoreCounts.set(score, (actualCribbageScoreCounts.get(score) || 0) + 1);
+        }
+      }
+    }
+  }
+}
+const sortedEntries = (map) => [...map.entries()].sort(([left], [right]) => String(left).localeCompare(String(right)));
+assert.deepEqual(
+  sortedEntries(actualCribbageRepeatHands),
+  sortedEntries(listedCribbageRepeatHands),
+  "cribbage reference: the listed rank patterns should exactly cover every natural five-card hand scoring 24+"
+);
+assert.deepEqual(
+  sortedEntries(actualCribbageScoreCounts),
+  sortedEntries(listedCribbageScoreCounts),
+  "cribbage reference: score-section counts should exactly match exhaustive deck enumeration"
+);
+assert.equal(
+  [...actualCribbageScoreCounts.values()].reduce((sum, count) => sum + count, 0),
+  764,
+  "cribbage reference: exactly 764 natural five-card hands should score 24+"
+);
+
 const cribbageOuterRows = {
   top: ["2c", "3d", "4h"],
   bottom: ["As", "Ah", "Ad", "9c", "8d"],
