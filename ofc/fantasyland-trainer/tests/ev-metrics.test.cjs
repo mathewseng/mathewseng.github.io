@@ -17,7 +17,7 @@ vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
-const currentSolver = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903d+trainer-matched-jjjplus-20260903a+trainer-matched-cribbage-jjjplus-20260903b";
+const currentSolver = "trainer-exact-high-20260904a+trainer-matched-low-20260904a+trainer-matched-badeucey-20260904a+trainer-matched-bdp-20260904a+trainer-matched-cribbage-20260904a+trainer-matched-jjjplus-20260904a+trainer-matched-cribbage-jjjplus-20260904a";
 const emptyCache = { results: {}, topRepeatJacksPlusResults: {} };
 
 assert.equal(
@@ -118,6 +118,7 @@ const aggregate = api.finalizeAggregate({
   repeatDetails: {
     topTripsByRank: Array(15).fill(0),
     bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
     bottomRoyalFlush: 0,
     cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 11 ? 3 : 0),
@@ -144,6 +145,7 @@ const merged = api.mergeAggregate(restored, {
   repeatDetails: {
     topTripsByRank: Array.from({ length: 15 }, (_, rank) => rank === 14 ? 1 : 0),
     bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
     bottomRoyalFlush: 0,
     cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 12 ? 2 : 0),

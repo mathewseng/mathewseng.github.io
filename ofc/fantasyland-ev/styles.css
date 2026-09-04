@@ -882,8 +882,8 @@ select {
 
 .repeat-detail-groups {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .repeat-detail-group {
@@ -902,11 +902,21 @@ select {
   font-size: 0.84rem;
 }
 
+.repeat-detail-group > header {
+  display: block;
+}
+
+.repeat-detail-group > header span {
+  display: block;
+  margin-top: 3px;
+  text-align: left;
+}
+
 .repeat-frequency-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
-  gap: 5px 15px;
-  margin-top: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-top: 8px;
 }
 
 .repeat-detail-group.is-single .repeat-frequency-grid {
@@ -916,7 +926,7 @@ select {
 .repeat-frequency-item {
   position: relative;
   min-width: 0;
-  min-height: 30px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -924,7 +934,8 @@ select {
   overflow: hidden;
   border-bottom: 1px solid #213041;
   color: var(--muted);
-  font-size: 0.68rem;
+  padding: 2px 3px 3px;
+  font-size: 0.66rem;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
@@ -944,15 +955,36 @@ select {
 .repeat-frequency-item strong {
   flex: 0 0 auto;
   color: var(--text);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .repeat-frequency-item i {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 2px;
+  height: 4px;
   background: var(--blue);
+  opacity: 0.82;
+}
+
+.repeat-frequency-item.has-count i {
+  min-width: 3px;
+}
+
+.repeat-frequency-item.is-aggregate {
+  min-height: 29px;
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.repeat-frequency-item.is-aggregate.starts-section {
+  margin-top: 8px;
+  border-top: 1px solid #33465a;
+}
+
+.repeat-frequency-item.is-repeat-qualifier span {
+  color: var(--text);
 }
 
 .repeat-detail-group:nth-child(2) .repeat-frequency-item i {
@@ -1602,8 +1634,7 @@ dd {
   }
 
   .repeat-frequency-grid {
-    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-    column-gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .repeat-detail-group.is-single .repeat-frequency-grid {

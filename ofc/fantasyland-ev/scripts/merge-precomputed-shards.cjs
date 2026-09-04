@@ -170,14 +170,14 @@ function finite(value) {
 function solverIdForVariant(variant, minimumTopRank = null) {
   if (minimumTopRank !== null) {
     return variant === "cribbage"
-      ? "trainer-matched-cribbage-jjjplus-20260903b"
-      : `trainer-matched-${variant}-jjjplus-20260903a`;
+      ? "trainer-matched-cribbage-jjjplus-20260904a"
+      : `trainer-matched-${variant}-jjjplus-20260904a`;
   }
-  if (variant === "high") return "trainer-exact-high-20260903b";
-  if (variant === "low") return "trainer-matched-low-20260903a";
-  if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
-  if (variant === "bdp") return "trainer-matched-bdp-20260903a";
-  if (variant === "cribbage") return "trainer-matched-cribbage-20260903d";
+  if (variant === "high") return "trainer-exact-high-20260904a";
+  if (variant === "low") return "trainer-matched-low-20260904a";
+  if (variant === "badeucey") return "trainer-matched-badeucey-20260904a";
+  if (variant === "bdp") return "trainer-matched-bdp-20260904a";
+  if (variant === "cribbage") return "trainer-matched-cribbage-20260904a";
   return "trainer-matched-variants-20260902c";
 }
 
@@ -185,6 +185,7 @@ function createRepeatDetails() {
   return {
     topTripsByRank: Array(15).fill(0),
     bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
     bottomRoyalFlush: 0,
     cribbageMiddleByScore: Array(30).fill(0),
@@ -195,6 +196,7 @@ function copyRepeatDetails(value) {
   return {
     topTripsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.topTripsByRank?.[index])),
     bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomQuadsByRank?.[index])),
+    bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomStraightFlushByRank?.[index])),
     bottomStraightFlush: finite(value?.bottomStraightFlush),
     bottomRoyalFlush: finite(value?.bottomRoyalFlush),
     cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finite(value?.cribbageMiddleByScore?.[index])),
@@ -206,6 +208,7 @@ function addRepeatDetails(target, value) {
   for (let index = 0; index < 15; index += 1) {
     target.topTripsByRank[index] += incoming.topTripsByRank[index];
     target.bottomQuadsByRank[index] += incoming.bottomQuadsByRank[index];
+    target.bottomStraightFlushByRank[index] += incoming.bottomStraightFlushByRank[index];
   }
   target.bottomStraightFlush += incoming.bottomStraightFlush;
   target.bottomRoyalFlush += incoming.bottomRoyalFlush;

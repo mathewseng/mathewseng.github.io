@@ -128,14 +128,14 @@ function solveSample(ids, selectedVariant) {
 function solverIdForVariant(selectedVariant, minimumTopRank = null) {
   if (minimumTopRank !== null) {
     return selectedVariant === "cribbage"
-      ? "trainer-matched-cribbage-jjjplus-20260903b"
-      : `trainer-matched-${selectedVariant}-jjjplus-20260903a`;
+      ? "trainer-matched-cribbage-jjjplus-20260904a"
+      : `trainer-matched-${selectedVariant}-jjjplus-20260904a`;
   }
-  if (selectedVariant === "high") return "trainer-exact-high-20260903b";
-  if (selectedVariant === "low") return "trainer-matched-low-20260903a";
-  if (selectedVariant === "badeucey") return "trainer-matched-badeucey-20260903a";
-  if (selectedVariant === "bdp") return "trainer-matched-bdp-20260903a";
-  if (selectedVariant === "cribbage") return "trainer-matched-cribbage-20260903d";
+  if (selectedVariant === "high") return "trainer-exact-high-20260904a";
+  if (selectedVariant === "low") return "trainer-matched-low-20260904a";
+  if (selectedVariant === "badeucey") return "trainer-matched-badeucey-20260904a";
+  if (selectedVariant === "bdp") return "trainer-matched-bdp-20260904a";
+  if (selectedVariant === "cribbage") return "trainer-matched-cribbage-20260904a";
   return "trainer-matched-variants-20260902c";
 }
 
@@ -175,10 +175,12 @@ function addSample(targetAggregate, solved, selectedVariant) {
     }
     if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
       targetAggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
-    } else if (repeatDetail.bottomKind === "straight-flush") {
-      targetAggregate.repeatDetails.bottomStraightFlush += 1;
-    } else if (repeatDetail.bottomKind === "royal-flush") {
-      targetAggregate.repeatDetails.bottomRoyalFlush += 1;
+    } else if (repeatDetail.bottomKind === "straight-flush" || repeatDetail.bottomKind === "royal-flush") {
+      if (repeatDetail.bottomKind === "royal-flush") targetAggregate.repeatDetails.bottomRoyalFlush += 1;
+      else targetAggregate.repeatDetails.bottomStraightFlush += 1;
+      if (repeatDetail.bottomStraightFlushRank >= 5 && repeatDetail.bottomStraightFlushRank <= 14) {
+        targetAggregate.repeatDetails.bottomStraightFlushByRank[repeatDetail.bottomStraightFlushRank] += 1;
+      }
     }
   }
   if (selectedVariant === "cribbage" && solved.best) {
@@ -194,6 +196,7 @@ function createRepeatDetails() {
   return {
     topTripsByRank: Array(15).fill(0),
     bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
     bottomRoyalFlush: 0,
     cribbageMiddleByScore: Array(30).fill(0),
@@ -204,6 +207,7 @@ function copyRepeatDetails(value) {
   return {
     topTripsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.topTripsByRank?.[index])),
     bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomQuadsByRank?.[index])),
+    bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomStraightFlushByRank?.[index])),
     bottomStraightFlush: finite(value?.bottomStraightFlush),
     bottomRoyalFlush: finite(value?.bottomRoyalFlush),
     cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finite(value?.cribbageMiddleByScore?.[index])),

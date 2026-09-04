@@ -4156,6 +4156,9 @@
       middleCribbagePoints: Number.isFinite(middleCribbagePoints) ? Math.trunc(middleCribbagePoints) : null,
       bottomKind,
       bottomQuadsRank: bottomKind === "quads" ? Math.trunc(finiteNumber(bottomEval?.mainRank)) : 0,
+      bottomStraightFlushRank: bottomKind === "straight-flush" || bottomKind === "royal-flush"
+        ? Math.trunc(finiteNumber(bottomEval?.mainRank))
+        : 0,
     };
   }
 

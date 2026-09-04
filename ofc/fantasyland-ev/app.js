@@ -3,7 +3,7 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v14";
+  const STORAGE_KEY = "ofcFantasylandEv.v15";
   const CACHE_SCHEMA_VERSION = 2;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
@@ -21,7 +21,7 @@
   };
   const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
   const JACKS_PLUS_REPEAT_VARIANTS = new Set(["low", "badeucey", "cribbage"]);
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903d+trainer-matched-jjjplus-20260903a+trainer-matched-cribbage-jjjplus-20260903b";
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260904a+trainer-matched-low-20260904a+trainer-matched-badeucey-20260904a+trainer-matched-bdp-20260904a+trainer-matched-cribbage-20260904a+trainer-matched-jjjplus-20260904a+trainer-matched-cribbage-jjjplus-20260904a";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -391,6 +391,8 @@
       || details.topTripsByRank.length < 15
       || !Array.isArray(details.bottomQuadsByRank)
       || details.bottomQuadsByRank.length < 15
+      || !Array.isArray(details.bottomStraightFlushByRank)
+      || details.bottomStraightFlushByRank.length < 15
       || !Array.isArray(details.cribbageMiddleByScore)
       || details.cribbageMiddleByScore.length < 30
     ) return false;
@@ -398,15 +400,20 @@
     const topExpected = [1, 3, 5, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts?.[mask]), 0);
     const bottomExpected = [4, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts?.[mask]), 0);
     const topTotal = details.topTripsByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
+    const rankedStraightFlushTotal = details.bottomStraightFlushByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
+    const straightFlushTotal = finiteNumber(details.bottomStraightFlush) + finiteNumber(details.bottomRoyalFlush);
     const bottomTotal = details.bottomQuadsByRank.reduce((sum, count) => sum + finiteNumber(count), 0)
-      + finiteNumber(details.bottomStraightFlush)
-      + finiteNumber(details.bottomRoyalFlush);
+      + rankedStraightFlushTotal;
     const middleTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + finiteNumber(count), 0);
     const middleExpected = variant === "cribbage" ? finiteNumber(totals.qualifyCount) : 0;
     const belowMinimumTopTrips = minimumTopRank === null
       ? 0
       : details.topTripsByRank.slice(0, minimumTopRank).reduce((sum, count) => sum + finiteNumber(count), 0);
-    return topTotal === topExpected && bottomTotal === bottomExpected && middleTotal === middleExpected && belowMinimumTopTrips === 0;
+    return topTotal === topExpected
+      && bottomTotal === bottomExpected
+      && rankedStraightFlushTotal === straightFlushTotal
+      && middleTotal === middleExpected
+      && belowMinimumTopTrips === 0;
   }
 
   function renderRepeatSourceDetail(entry) {
@@ -432,26 +439,35 @@
     const middleRepeatCount = [2, 3, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts[mask]), 0);
     const bottomRepeatCount = [4, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts[mask]), 0);
     const topEntries = [];
-    for (let rank = 14; rank >= 2; rank -= 1) {
-      const count = finiteNumber(details.topTripsByRank[rank]);
-      if (count) topEntries.push({ label: `Trip ${rankLabel(rank)}`, count });
+    const minimumTopRank = usesJacksPlusTopRepeat() ? 11 : 2;
+    if (state.variant !== "bdp") {
+      for (let rank = 14; rank >= minimumTopRank; rank -= 1) {
+        const count = finiteNumber(details.topTripsByRank[rank]);
+        topEntries.push({ label: repeatedRankLabel(rank, 3), count });
+      }
     }
     const topCondition = state.variant === "bdp"
       ? "Top does not trigger repeats in BDP"
       : `${usesJacksPlusTopRepeat() ? "Trip J or better" : "Trips"} · ${formatPct(topRepeatCount / samples)} of all hands`;
     groups.appendChild(createFrequencyGroup("Top", topCondition, topEntries, {
+      denominator: samples,
       emptyText: state.variant === "bdp" ? "No top-row repeat condition." : "No top-row repeats in this sample.",
     }));
 
     if (state.variant === "cribbage") {
-      const cribbageEntries = [];
-      details.cribbageMiddleByScore.forEach((count, score) => {
-        if (score >= 11) cribbageEntries.push({ label: `${score} pts`, count: finiteNumber(count) });
-      });
+      const cribbageEntries = [{ label: "24+ points", count: middleRepeatCount, className: "is-aggregate" }];
+      for (let score = details.cribbageMiddleByScore.length - 1; score >= 11; score -= 1) {
+        cribbageEntries.push({
+          label: `${score} points`,
+          count: finiteNumber(details.cribbageMiddleByScore[score]),
+          className: score >= 24 ? "is-repeat-qualifier" : "",
+        });
+      }
       groups.appendChild(createFrequencyGroup(
         "Middle",
-        `Raw Cribbage score on solved legal boards · ${formatPct(middleRepeatCount / samples)} repeat source`,
-        cribbageEntries
+        `24+ repeats · ${formatPct(middleRepeatCount / samples)} of all hands`,
+        cribbageEntries,
+        { denominator: samples }
       ));
     } else {
       const middleCondition = {
@@ -461,22 +477,30 @@
         bdp: "Middle does not trigger repeats in BDP",
       }[state.variant] || "Variant repeat condition";
       const middleEntries = middleRepeatCount
-        ? [{ label: middleCondition, count: middleRepeatCount, rate: middleRepeatCount / samples, denominator: samples }]
+        ? [{ label: middleCondition, count: middleRepeatCount }]
         : [];
       groups.appendChild(createFrequencyGroup("Middle", `${formatPct(middleRepeatCount / samples)} of all hands`, middleEntries, {
+        denominator: samples,
         emptyText: state.variant === "bdp" ? "No middle-row repeat condition." : "No middle-row repeats in this sample.",
       }));
     }
 
-    const bottomEntries = [
-      { label: "Royal flush", count: finiteNumber(details.bottomRoyalFlush) },
-      { label: "Straight flush", count: finiteNumber(details.bottomStraightFlush) },
-    ].filter(({ count }) => count > 0);
+    const straightFlushTotal = details.bottomStraightFlushByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
+    const quadsTotal = details.bottomQuadsByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
+    const bottomEntries = [{ label: "Straight flush", count: straightFlushTotal, className: "is-aggregate" }];
+    for (let rank = 14; rank >= 5; rank -= 1) {
+      bottomEntries.push({
+        label: straightFlushRunLabel(rank),
+        count: finiteNumber(details.bottomStraightFlushByRank[rank]),
+      });
+    }
+    bottomEntries.push({ label: "Quads", count: quadsTotal, className: "is-aggregate starts-section" });
     for (let rank = 14; rank >= 2; rank -= 1) {
       const count = finiteNumber(details.bottomQuadsByRank[rank]);
-      if (count) bottomEntries.push({ label: `Quads ${rankLabel(rank)}`, count });
+      bottomEntries.push({ label: repeatedRankLabel(rank, 4), count });
     }
     groups.appendChild(createFrequencyGroup("Bottom", `Repeat type · ${formatPct(bottomRepeatCount / samples)} of all hands`, bottomEntries, {
+      denominator: samples,
       emptyText: "No bottom-row repeats in this sample.",
     }));
 
@@ -499,13 +523,15 @@
       return group;
     }
     const total = entries.reduce((sum, item) => sum + item.count, 0);
+    const defaultDenominator = Number.isFinite(options.denominator) ? options.denominator : total;
     const grid = document.createElement("div");
     grid.className = "repeat-frequency-grid";
-    entries.forEach(({ label, count, rate: explicitRate, denominator }) => {
-      const rate = Number.isFinite(explicitRate) ? explicitRate : total ? count / total : 0;
-      const comparisonTotal = Number.isFinite(denominator) ? denominator : total;
+    entries.forEach(({ label, count, rate: explicitRate, denominator, className }) => {
+      const comparisonTotal = Number.isFinite(denominator) ? denominator : defaultDenominator;
+      const rate = Number.isFinite(explicitRate) ? explicitRate : comparisonTotal ? count / comparisonTotal : 0;
       const item = document.createElement("div");
-      item.className = "repeat-frequency-item";
+      item.className = `repeat-frequency-item ${className || ""}`.trim();
+      item.classList.toggle("has-count", count > 0);
       item.innerHTML = `<span>${label}</span><strong>${formatDetailPct(rate)}</strong><i style="width:${(rate * 100).toFixed(3)}%"></i>`;
       item.title = `${formatInteger(count)} of ${formatInteger(comparisonTotal)}`;
       grid.appendChild(item);
@@ -516,6 +542,17 @@
 
   function rankLabel(rank) {
     return ({ 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank);
+  }
+
+  function repeatedRankLabel(rank, count) {
+    return rankLabel(rank).repeat(count);
+  }
+
+  function straightFlushRunLabel(highRank) {
+    const ranks = highRank === 5
+      ? [5, 4, 3, 2, 14]
+      : Array.from({ length: 5 }, (_, index) => highRank - index);
+    return ranks.map(rankLabel).join("");
   }
 
   function formatDetailPct(rate) {
@@ -702,7 +739,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260903l");
+          worker = new Worker("./worker.js?v=20260904a");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -850,10 +887,12 @@
       }
       if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
         aggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
-      } else if (repeatDetail.bottomKind === "straight-flush") {
-        aggregate.repeatDetails.bottomStraightFlush += 1;
-      } else if (repeatDetail.bottomKind === "royal-flush") {
-        aggregate.repeatDetails.bottomRoyalFlush += 1;
+      } else if (repeatDetail.bottomKind === "straight-flush" || repeatDetail.bottomKind === "royal-flush") {
+        if (repeatDetail.bottomKind === "royal-flush") aggregate.repeatDetails.bottomRoyalFlush += 1;
+        else aggregate.repeatDetails.bottomStraightFlush += 1;
+        if (repeatDetail.bottomStraightFlushRank >= 5 && repeatDetail.bottomStraightFlushRank <= 14) {
+          aggregate.repeatDetails.bottomStraightFlushByRank[repeatDetail.bottomStraightFlushRank] += 1;
+        }
       }
     }
     if (variant === "cribbage" && solved.best) {
@@ -869,6 +908,7 @@
     return {
       topTripsByRank: Array(15).fill(0),
       bottomQuadsByRank: Array(15).fill(0),
+      bottomStraightFlushByRank: Array(15).fill(0),
       bottomStraightFlush: 0,
       bottomRoyalFlush: 0,
       cribbageMiddleByScore: Array(30).fill(0),
@@ -879,6 +919,7 @@
     return {
       topTripsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.topTripsByRank?.[index])),
       bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomQuadsByRank?.[index])),
+      bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomStraightFlushByRank?.[index])),
       bottomStraightFlush: finiteNumber(value?.bottomStraightFlush),
       bottomRoyalFlush: finiteNumber(value?.bottomRoyalFlush),
       cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finiteNumber(value?.cribbageMiddleByScore?.[index])),
@@ -889,6 +930,7 @@
     const incoming = copyRepeatDetails(source);
     target.topTripsByRank = target.topTripsByRank.map((value, index) => value + incoming.topTripsByRank[index]);
     target.bottomQuadsByRank = target.bottomQuadsByRank.map((value, index) => value + incoming.bottomQuadsByRank[index]);
+    target.bottomStraightFlushByRank = target.bottomStraightFlushByRank.map((value, index) => value + incoming.bottomStraightFlushByRank[index]);
     target.bottomStraightFlush += incoming.bottomStraightFlush;
     target.bottomRoyalFlush += incoming.bottomRoyalFlush;
     target.cribbageMiddleByScore = target.cribbageMiddleByScore.map((value, index) => value + incoming.cribbageMiddleByScore[index]);

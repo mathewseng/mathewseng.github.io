@@ -62,7 +62,7 @@ const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903d+trainer-matched-jjjplus-20260903a+trainer-matched-cribbage-jjjplus-20260903b",
+  solver: "trainer-exact-high-20260904a+trainer-matched-low-20260904a+trainer-matched-badeucey-20260904a+trainer-matched-bdp-20260904a+trainer-matched-cribbage-20260904a+trainer-matched-jjjplus-20260904a+trainer-matched-cribbage-jjjplus-20260904a",
   results,
   topRepeatJacksPlusResults,
 };
@@ -72,14 +72,14 @@ console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across 
 function solverIdForVariant(variant, minimumTopRank = null) {
   if (minimumTopRank !== null) {
     return variant === "cribbage"
-      ? "trainer-matched-cribbage-jjjplus-20260903b"
-      : `trainer-matched-${variant}-jjjplus-20260903a`;
+      ? "trainer-matched-cribbage-jjjplus-20260904a"
+      : `trainer-matched-${variant}-jjjplus-20260904a`;
   }
-  if (variant === "high") return "trainer-exact-high-20260903b";
-  if (variant === "low") return "trainer-matched-low-20260903a";
-  if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
-  if (variant === "bdp") return "trainer-matched-bdp-20260903a";
-  if (variant === "cribbage") return "trainer-matched-cribbage-20260903d";
+  if (variant === "high") return "trainer-exact-high-20260904a";
+  if (variant === "low") return "trainer-matched-low-20260904a";
+  if (variant === "badeucey") return "trainer-matched-badeucey-20260904a";
+  if (variant === "bdp") return "trainer-matched-bdp-20260904a";
+  if (variant === "cribbage") return "trainer-matched-cribbage-20260904a";
   return "trainer-matched-variants-20260902c";
 }
 
@@ -95,21 +95,28 @@ function hasCompleteRepeatDetails(totals, variant, minimumTopRank = null) {
     || details.topTripsByRank.length < 15
     || !Array.isArray(details?.bottomQuadsByRank)
     || details.bottomQuadsByRank.length < 15
+    || !Array.isArray(details?.bottomStraightFlushByRank)
+    || details.bottomStraightFlushByRank.length < 15
     || !Array.isArray(details?.cribbageMiddleByScore)
     || details.cribbageMiddleByScore.length < 30
   ) return false;
   const topExpected = [1, 3, 5, 7].reduce((sum, mask) => sum + (Number(totals.repeatSources[mask]) || 0), 0);
   const bottomExpected = [4, 5, 6, 7].reduce((sum, mask) => sum + (Number(totals.repeatSources[mask]) || 0), 0);
   const topTotal = details.topTripsByRank.reduce((sum, count) => sum + (Number(count) || 0), 0);
+  const rankedStraightFlushTotal = details.bottomStraightFlushByRank.reduce((sum, count) => sum + (Number(count) || 0), 0);
+  const straightFlushTotal = (Number(details.bottomStraightFlush) || 0) + (Number(details.bottomRoyalFlush) || 0);
   const bottomTotal = details.bottomQuadsByRank.reduce((sum, count) => sum + (Number(count) || 0), 0)
-    + (Number(details.bottomStraightFlush) || 0)
-    + (Number(details.bottomRoyalFlush) || 0);
+    + rankedStraightFlushTotal;
   const cribbageTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + (Number(count) || 0), 0);
   const middleExpected = variant === "cribbage" ? Number(totals.qualifyCount) : 0;
   const belowMinimumTopTrips = minimumTopRank === null
     ? 0
     : details.topTripsByRank.slice(0, minimumTopRank).reduce((sum, count) => sum + (Number(count) || 0), 0);
-  return topTotal === topExpected && bottomTotal === bottomExpected && cribbageTotal === middleExpected && belowMinimumTopTrips === 0;
+  return topTotal === topExpected
+    && bottomTotal === bottomExpected
+    && rankedStraightFlushTotal === straightFlushTotal
+    && cribbageTotal === middleExpected
+    && belowMinimumTopTrips === 0;
 }
 
 function parseArgs(values) {

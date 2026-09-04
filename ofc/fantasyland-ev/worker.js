@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260903l", "../fantasyland-trainer/app.js?v=20260903l");
+importScripts("../fantasyland-core.js?v=20260904a", "../fantasyland-trainer/app.js?v=20260904a");
 
 const Core = self.OFCFantasylandCore;
 const TrainerCore = self.OFCSolverCore;
@@ -104,10 +104,12 @@ function addSample(aggregate, solved, variant) {
     }
     if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
       aggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
-    } else if (repeatDetail.bottomKind === "straight-flush") {
-      aggregate.repeatDetails.bottomStraightFlush += 1;
-    } else if (repeatDetail.bottomKind === "royal-flush") {
-      aggregate.repeatDetails.bottomRoyalFlush += 1;
+    } else if (repeatDetail.bottomKind === "straight-flush" || repeatDetail.bottomKind === "royal-flush") {
+      if (repeatDetail.bottomKind === "royal-flush") aggregate.repeatDetails.bottomRoyalFlush += 1;
+      else aggregate.repeatDetails.bottomStraightFlush += 1;
+      if (repeatDetail.bottomStraightFlushRank >= 5 && repeatDetail.bottomStraightFlushRank <= 14) {
+        aggregate.repeatDetails.bottomStraightFlushByRank[repeatDetail.bottomStraightFlushRank] += 1;
+      }
     }
   }
   if (variant === "cribbage" && solved.best) {
@@ -123,6 +125,7 @@ function createRepeatDetails() {
   return {
     topTripsByRank: Array(15).fill(0),
     bottomQuadsByRank: Array(15).fill(0),
+    bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
     bottomRoyalFlush: 0,
     cribbageMiddleByScore: Array(30).fill(0),

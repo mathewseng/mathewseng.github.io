@@ -206,8 +206,8 @@
         { label: "Royalties", items: ["Raw cribbage score minus 10: 11 points = 1 royalty"] },
       ],
       fantasy: "From natural play: pair of kings or better on top, 18 or more raw cribbage points in the middle, or quads or better on the bottom.",
-      repeat: "Trips on top, 21 or more raw cribbage points in the middle, or quads or better on the bottom.",
-      superFantasy: "A natural middle with 22 or more raw cribbage points adds one Fantasyland card. Every other additional Fantasyland condition also adds one card.",
+      repeat: "Trips on top, 24 or more raw cribbage points in the middle, or quads or better on the bottom.",
+      superFantasy: "A natural middle with 24 or more raw cribbage points adds one Fantasyland card. Every other additional Fantasyland condition also adds one card.",
     },
   ];
 
@@ -1094,8 +1094,8 @@
       points,
       cribbagePoints,
       fantasy: complete && cribbagePoints >= 18,
-      repeat: complete && cribbagePoints >= 21,
-      extraFantasyCard: complete && cribbagePoints >= 22,
+      repeat: complete && cribbagePoints >= 24,
+      extraFantasyCard: complete && cribbagePoints >= 24,
       complete,
       quality: cribbagePoints,
       breakdown,

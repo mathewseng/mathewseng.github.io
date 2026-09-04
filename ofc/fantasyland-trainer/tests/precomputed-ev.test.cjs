@@ -14,9 +14,9 @@ const jacksPlusVariants = ["low", "badeucey", "cribbage"];
 
 assert.equal(dataset.schemaVersion, 1, "precomputed EV data should use the supported schema");
 assert.equal(dataset.samplesPerConfig, 10000, "precomputed EV data should contain 10,000 hands per configuration");
-assert.ok(dataset.solver.includes("trainer-matched-jjjplus-20260903a"), "precomputed EV data should identify the JJJ+ solver");
-assert.ok(dataset.solver.includes("trainer-matched-cribbage-20260903d"), "precomputed EV data should identify the 21+ Cribbage repeat solver");
-assert.ok(dataset.solver.includes("trainer-matched-cribbage-jjjplus-20260903b"), "precomputed EV data should identify the 21+ Cribbage JJJ+ solver");
+assert.ok(dataset.solver.includes("trainer-matched-jjjplus-20260904a"), "precomputed EV data should identify the JJJ+ solver");
+assert.ok(dataset.solver.includes("trainer-matched-cribbage-20260904a"), "precomputed EV data should identify the 24+ Cribbage repeat solver");
+assert.ok(dataset.solver.includes("trainer-matched-cribbage-jjjplus-20260904a"), "precomputed EV data should identify the 24+ Cribbage JJJ+ solver");
 assert.deepEqual(Object.keys(dataset.results), core.ACTIVE_VARIANT_ORDER, "precomputed EV data should contain every active variant");
 assert.deepEqual(Object.keys(dataset.topRepeatJacksPlusResults), jacksPlusVariants, "precomputed EV data should contain every JJJ+ variant");
 
@@ -63,11 +63,16 @@ function validateResult(result, variant, label) {
   const topExpected = [1, 3, 5, 7].reduce((sum, mask) => sum + totals.repeatSources[mask], 0);
   const bottomExpected = [4, 5, 6, 7].reduce((sum, mask) => sum + totals.repeatSources[mask], 0);
   const topTotal = details.topTripsByRank.reduce((sum, count) => sum + count, 0);
+  const straightFlushRankTotal = details.bottomStraightFlushByRank.reduce((sum, count) => sum + count, 0);
   const bottomTotal = details.bottomQuadsByRank.reduce((sum, count) => sum + count, 0)
-    + details.bottomStraightFlush
-    + details.bottomRoyalFlush;
+    + straightFlushRankTotal;
   assert.equal(topTotal, topExpected, `${label}: top rank detail should match top repeat sources`);
   assert.equal(bottomTotal, bottomExpected, `${label}: bottom type detail should match bottom repeat sources`);
+  assert.equal(
+    straightFlushRankTotal,
+    details.bottomStraightFlush + details.bottomRoyalFlush,
+    `${label}: straight-flush ranks should reconcile to the aggregate`
+  );
   assert.equal(
     details.cribbageMiddleByScore.reduce((sum, count) => sum + count, 0),
     variant === "cribbage" ? totals.qualifyCount : 0,

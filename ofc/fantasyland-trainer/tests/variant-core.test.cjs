@@ -313,8 +313,8 @@ const cribbageTwentyFour = core.evaluateCribbage(cards(["Js", "Jh", "5s", "5h", 
 assert.equal(cribbageTwentyFour.cribbagePoints, 24, "cribbage: Js Jh 5s 5h 5d should score twenty-four raw points");
 assert.equal(cribbageTwentyFour.points, 14, "cribbage: royalties should equal the raw score minus ten");
 assert.equal(cribbageTwentyFour.breakdown.nobs, 2, "cribbage: each suited jack should score one");
-assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-one or more should repeat");
-assert.equal(cribbageTwentyFour.extraFantasyCard, true, "cribbage: twenty-two or more should award an extra Fantasyland card");
+assert.equal(cribbageTwentyFour.repeat, true, "cribbage: twenty-four or more should repeat");
+assert.equal(cribbageTwentyFour.extraFantasyCard, true, "cribbage: twenty-four or more should award an extra Fantasyland card");
 
 const doubleRuns = core.cribbageScore(cards(["6s", "7h", "7d", "8c", "8s"]));
 assert.equal(doubleRuns.runs, 12, "cribbage: 67788 should score four runs of three");
@@ -358,8 +358,9 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false, false],
   [["As", "Js", "3s", "2s", "Ah"], 17, true, 7, false, false, false],
   [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, true, false, false],
-  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, true, false],
-  [["Ks", "Qs", "Js", "5s", "5h"], 22, true, 12, true, true, true],
+  [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, false, false],
+  [["Ks", "Qs", "Js", "5s", "5h"], 22, true, 12, true, false, false],
+  [["Js", "Jh", "5s", "5h", "5d"], 24, true, 14, true, true, true],
 ].forEach(([ids, rawPoints, qualifies, royalties, fantasy, repeat, extraFantasyCard]) => {
   const evaluation = core.evaluateCribbage(cards(ids));
   assert.equal(core.cribbageScoreTotal(cards(ids)), rawPoints, `cribbage: fast and descriptive scoring should agree at ${rawPoints} points`);
@@ -376,8 +377,9 @@ const cribbageOuterRows = {
   bottom: ["As", "Ah", "Ad", "9c", "8d"],
 };
 [
-  [["Ks", "Qs", "Js", "5s", "Kh"], true, "21-point"],
-  [["Ks", "Qs", "Js", "5s", "5h"], true, "22-point"],
+  [["Ks", "Qs", "Js", "5s", "Kh"], false, "21-point"],
+  [["Ks", "Qs", "Js", "5s", "5h"], false, "22-point"],
+  [["Js", "Jh", "5s", "5h", "5d"], true, "24-point"],
 ].forEach(([middle, repeat, label]) => {
   const rows = { ...cribbageOuterRows, middle };
   const evaluation = core.evaluateBoard([...rows.top, ...middle, ...rows.bottom], rows, { variant: "cribbage" });
@@ -396,7 +398,7 @@ for (let mask = 0; mask <= 7; mask += 1) {
 
 const cribbageThreeSourceRows = {
   top: ["2s", "2h", "2d"],
-  middle: ["Ks", "Qs", "Js", "5s", "5h"],
+  middle: ["Js", "Jh", "5s", "5h", "5d"],
   bottom: ["As", "Ah", "Ad", "Ac", "8d"],
 };
 const cribbageThreeSource = core.evaluateBoard(
@@ -405,15 +407,16 @@ const cribbageThreeSource = core.evaluateBoard(
   { variant: "cribbage" }
 );
 assert.equal(cribbageThreeSource.legal, true, "cribbage repeat source: three-row fixture should be legal");
-assert.equal(cribbageThreeSource.repeatMask, 7, "cribbage repeat source: trips, 21+ middle, and quads should identify all three rows");
+assert.equal(cribbageThreeSource.repeatMask, 7, "cribbage repeat source: trips, 24+ middle, and quads should identify all three rows");
 assert.deepEqual(
   trainer.repeatDetailForSolution(cribbageThreeSource),
   {
     repeatMask: 7,
     topTripsRank: 2,
-    middleCribbagePoints: 22,
+    middleCribbagePoints: 24,
     bottomKind: "quads",
     bottomQuadsRank: 14,
+    bottomStraightFlushRank: 0,
   },
   "repeat detail: board evaluation should expose the top rank, middle score, and bottom quad rank"
 );
@@ -421,6 +424,11 @@ assert.equal(
   trainer.repeatDetailForSolution({ repeatMask: 4, rowEvals: { bottom: { category: core.CATEGORY.STRAIGHT_FLUSH, mainRank: 14 } } }).bottomKind,
   "royal-flush",
   "repeat detail: an ace-high straight flush should be separated as a royal flush"
+);
+assert.equal(
+  trainer.repeatDetailForSolution({ repeatMask: 4, rowEvals: { bottom: { category: core.CATEGORY.STRAIGHT_FLUSH, mainRank: 14 } } }).bottomStraightFlushRank,
+  14,
+  "repeat detail: royal flushes should retain their high-card rank"
 );
 assert.equal(
   trainer.repeatDetailForSolution({ repeatMask: 4, rowEvals: { bottom: { category: core.CATEGORY.STRAIGHT_FLUSH, mainRank: 13 } } }).bottomKind,
@@ -448,6 +456,7 @@ assert.deepEqual(
     middleCribbagePoints: null,
     bottomKind: "straight-flush",
     bottomQuadsRank: 0,
+    bottomStraightFlushRank: 13,
   },
   "high repeat detail: top trips and the exact bottom repeat type should be retained"
 );
@@ -472,6 +481,7 @@ assert.deepEqual(
     middleCribbagePoints: null,
     bottomKind: "quads",
     bottomQuadsRank: 14,
+    bottomStraightFlushRank: 0,
   },
   "low repeat detail: top trips and bottom quads should retain their exact ranks"
 );
@@ -509,6 +519,7 @@ assert.deepEqual(
     middleCribbagePoints: null,
     bottomKind: "quads",
     bottomQuadsRank: 14,
+    bottomStraightFlushRank: 0,
   },
   "badeucey repeat detail: top trips and bottom quads should retain their exact ranks"
 );
@@ -593,6 +604,7 @@ assert.deepEqual(
     middleCribbagePoints: null,
     bottomKind: "quads",
     bottomQuadsRank: 12,
+    bottomStraightFlushRank: 0,
   },
   "bdp repeat detail: bottom quads should retain their exact rank"
 );
