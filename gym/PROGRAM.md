@@ -141,13 +141,18 @@ Current accessory references from September 1:
 
 ## Leg Day
 
-Current recorded baselines from August 10:
+Current recorded lower-body results:
 
-- Smith-machine squat: 115 lb × 10, 10, 10
+- Smith-machine squat on September 3: 115 lb × 10, then 135 lb × 8, 6 after a 25 lb warm-up
 - Leg press: 140 lb × 10, 10, 10
-- Smith-machine Romanian deadlift technique work: 25 lb × 10, 10
+- Smith-machine Romanian deadlift on September 3: 75 lb × 10, 10, 10 after a 25 lb warm-up
 - Standing calf raise: bodyweight × 25, then 35 lb per hand × 10, 10
-- Back-pain severity and RIR were not supplied; do not label these loads pain-free or ready to increase yet.
+- Back-pain severity and RIR were not supplied for the September 3 session; do not label the squat or RDL loads pain-free or ready to increase yet.
+
+Next lower-body progression:
+
+- Repeat 135 lb on the Smith squat and aim to improve the 8, 6 distribution with clean reps before adding load.
+- Keep the Smith RDL at 75 lb until the before-, during-, and after-session back-pain response is known.
 
 When the back feels normal:
 

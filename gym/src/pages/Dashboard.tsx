@@ -267,7 +267,7 @@ export default function Dashboard() {
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
               <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Pull → Legs next
+                Legs → Push next
               </Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
@@ -275,11 +275,11 @@ export default function Dashboard() {
                 Suggested next session
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Legs, rebuild the foundation.
+                Push, add one clean rep.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
-                Use the Smith squat or leg press as your main pattern, keep 2–4 reps in
-                reserve, and record back pain before and after the session.
+                Bench at 95 lb and improve the 7 / 7 / 9 distribution toward 8 / 8 / 8.
+                Keep 1–3 reps in reserve and skip max attempts.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -292,7 +292,7 @@ export default function Dashboard() {
                 </div>
                 <div className="h-9 w-px bg-current opacity-20" />
                 <div>
-                  <p className="text-2xl font-black">2–4</p>
+                  <p className="text-2xl font-black">1–3</p>
                   <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
                     target RIR
                   </p>
@@ -343,22 +343,23 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 1 context</p>
-                <h2 className="mt-1 text-lg font-black">Post-travel pull session</h2>
+                <p className="eyebrow">September 3 context</p>
+                <h2 className="mt-1 text-lg font-black">Short late-night leg session</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 11:20 PM, the night after returning from Barcelona, you completed 12
-              pull-ups across 5 / 4 / 3 and 75 minutes of back, shoulder, arm, and core
-              work. No 0–6 readiness or pain scores were supplied.
+              At 11:15 PM, you completed 25 minutes of Smith squats and RDLs, reaching 135
+              lb for 8 and 6 squat reps plus 75 lb for three sets of 10 RDLs. The
+              15-minute dry sauna is tracked separately. No 0–6 readiness or pain scores
+              were supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">12 pull-ups</Badge>
-              <Badge tone="quality">post-travel context</Badge>
-              <Badge tone="neutral">11:20 PM · 75 min</Badge>
+              <Badge tone="accent">135 lb squat</Badge>
+              <Badge tone="quality">15 min sauna</Badge>
+              <Badge tone="neutral">11:15 PM · 25 min</Badge>
             </div>
           </Surface>
         </div>
@@ -406,8 +407,8 @@ export default function Dashboard() {
         />
         <MetricCard
           label="Smith squat"
-          value="115 × 10"
-          detail="Three completed sets"
+          value="135 × 8"
+          detail="Heaviest recorded set"
           icon={TrendingUp}
         />
         <MetricCard

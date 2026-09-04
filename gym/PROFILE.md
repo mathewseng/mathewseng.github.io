@@ -24,7 +24,7 @@
 - A previous back injury caused at least one skipped leg day.
 - Back-sensitive movements should be modified when symptoms are active.
 - Recent Barcelona work travel lasted approximately two weeks; the athlete returned on August 31, 2026.
-- Readiness scores were not supplied for the first two post-travel sessions.
+- Readiness scores were not supplied for the first three post-travel sessions.
 - Training recommendations should account for sleep, travel disruption, illness, soreness, and back discomfort.
 - Context is entered with optional 0–6 ratings, not yes/no fields. Energy and sleep use `6 = best`; symptom and disruption fields use `6 = worst`.
 

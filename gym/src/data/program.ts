@@ -201,6 +201,8 @@ export const programTemplates: ProgramTemplate[] = [
         repRange: [6, 10],
         alternatives: ["leg-press", "smith-squat"],
         rirRange: [2, 4],
+        notes:
+          "Latest Smith result: 115 lb × 10, then 135 lb × 8, 6. Repeat 135 lb before adding load and record back pain before and after.",
       },
       {
         exerciseId: "split-squat",
@@ -238,6 +240,7 @@ export const programTemplates: ProgramTemplate[] = [
     rules: [
       "Do not automatically skip legs.",
       "Do not train through pain.",
+      "Latest Smith-RDL working baseline is 75 lb × 10, 10, 10; do not increase it until the back-pain response is known.",
       "Use supported or machine movements when symptoms call for them.",
       "Reduce load, range, and volume if back discomfort rises.",
     ],

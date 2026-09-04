@@ -139,12 +139,24 @@ export const currentBenchmarks: Benchmark[] = [
   {
     id: "smith-squat-baseline",
     exerciseId: "smith-squat",
-    label: "First precise Smith-squat baseline",
-    value: 115,
+    label: "Heaviest recorded Smith-squat load",
+    value: 135,
     unit: "lb",
     confirmed: true,
-    workoutId: "legs-2026-08-10",
-    notes: "115 lb × 10, 10, 10; the load includes the 25 lb Smith bar.",
+    workoutId: "legs-2026-09-03",
+    notes:
+      "135 lb × 8, 6 after 115 lb × 10; the load includes the 25 lb Smith bar. RIR and back-pain response were not supplied.",
+  },
+  {
+    id: "smith-rdl-working-baseline",
+    exerciseId: "romanian-deadlift",
+    label: "Smith-RDL working baseline",
+    value: 75,
+    unit: "lb",
+    confirmed: true,
+    workoutId: "legs-2026-09-03",
+    notes:
+      "75 lb × 10, 10, 10 after a 25 lb warm-up. Back-pain response and RIR were not supplied.",
   },
   {
     id: "leg-press-baseline",

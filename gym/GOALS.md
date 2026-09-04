@@ -184,11 +184,13 @@ Safety:
 
 Next action:
 
-- Repeat the August 10 Smith-squat and leg-press baselines while recording back pain before, during, and after training; then establish a controlled carry baseline.
+- Repeat the 135 lb Smith squat before adding load and record back pain before, during, and after training; keep the Smith RDL at 75 lb until its symptom response is known, then establish a controlled carry baseline.
 
 Current status:
 
-- Building foundation
+- Smith squat advanced to 135 lb × 8, 6 after 115 lb × 10 on September 3.
+- Smith RDL working baseline established at 75 lb × 10, 10, 10.
+- Building foundation; the missing back-pain response prevents labeling either result pain-free.
 
 ---
 
@@ -250,11 +252,12 @@ Stop conditions:
 
 Next action:
 
-- Repeat the August 10 lower-body session with a recorded 0–6 back-pain score and post-session symptom response; keep RDLs light and stop if symptoms increase.
+- Repeat 135 lb Smith squats before adding load, keep Smith RDLs at 75 lb, and record a 0–6 back-pain score before training plus the during- and after-session symptom response.
 
 Current status:
 
-- Foundation resumed; symptom response still unconfirmed
+- September 3: Smith squat reached 135 lb × 8, 6 and Smith RDL reached 75 lb × 10, 10, 10.
+- Foundation is progressing; symptom response remains unconfirmed.
 
 ## Status Integrity
 

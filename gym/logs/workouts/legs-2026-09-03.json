@@ -1,0 +1,87 @@
+{
+  "id": "legs-2026-09-03",
+  "date": "2026-09-03",
+  "startTime": "23:15",
+  "durationMinutes": 25,
+  "type": "legs",
+  "title": "Short Late-Night Leg Workout",
+  "chronologyIndex": 15,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Short late-night leg session followed by 15 minutes in a dry sauna. No numeric 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": ["short-leg-session", "late-night-training", "post-workout-dry-sauna"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-squat",
+      "name": "Smith-Machine Squat",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-03-smith-squat-warmup",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-09-03-smith-squat-115",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-03-smith-squat-135-1",
+          "weightLb": 135,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-09-03-smith-squat-135-2",
+          "weightLb": 135,
+          "reps": 6,
+          "completed": true
+        }
+      ],
+      "notes": "The 25 lb Smith bar was the warm-up. Working sets totaled 24 repetitions and 3,040 lb of volume. The two 135 lb sets establish the heaviest recorded Smith-squat load. RIR and back-pain response were not supplied."
+    },
+    {
+      "exerciseId": "romanian-deadlift",
+      "name": "Smith-Machine Romanian Deadlift",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-03-smith-rdl-warmup",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-09-03-smith-rdl-1",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-03-smith-rdl-2",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-03-smith-rdl-3",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "The 25 lb Smith bar was the warm-up. The three working sets establish a 75 lb × 10, 10, 10 Smith-RDL baseline. Back-pain response and RIR were not supplied, so this load is not labeled pain-free or ready to increase."
+    }
+  ],
+  "notes": "Workout started at 11:15 PM local time on September 3 and lasted 25 minutes. It contained eight completed sets, 74 completed repetitions, and 5,790 lb of volume including two 25 lb warm-up sets. Working sets totaled 54 repetitions and 5,290 lb. A 15-minute dry sauna followed the workout and is recorded separately from lifting duration and volume. No RIR, back-pain, energy, sleep, soreness, or illness scores were supplied."
+}

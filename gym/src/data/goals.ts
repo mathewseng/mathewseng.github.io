@@ -240,7 +240,7 @@ export const goals: Goal[] = [
       "Use a stable stance and stop if pain occurs.",
     ],
     notes:
-      "First precise lower-body load baselines were recorded on August 10: Smith squat 115 lb × 10, 10, 10 and leg press 140 lb × 10, 10, 10. Back-pain context was not supplied, so repeatability without symptoms is not yet confirmed.",
+      "The September 3 short leg session advanced the Smith squat to 135 lb × 8, 6 after 115 lb × 10 and established a 75 lb × 10, 10, 10 Smith-RDL working baseline. Back-pain context was not supplied, so repeatability without symptoms is not yet confirmed.",
   },
   {
     id: "consistent-ppl",
@@ -275,7 +275,7 @@ export const goals: Goal[] = [
       "pallof-press",
     ],
     progressionRules: [
-      "Repeat the August 10 lower-body baseline while recording back pain before, during, and after training.",
+      "Repeat 135 lb Smith squats before adding load, while recording back pain before, during, and after training.",
       "Use light Romanian deadlifts only if comfortable.",
       "Favor pain-free supported and machine options when needed.",
     ],
@@ -287,7 +287,7 @@ export const goals: Goal[] = [
       "Stop for worsening symptoms.",
     ],
     notes:
-      "The first precise Smith-squat and leg-press baselines were recorded on August 10, but no back-pain score or post-session symptom response was supplied.",
+      "The September 3 session recorded 135 lb Smith squats for 8 and 6 reps plus 75 lb Smith RDLs for three sets of 10. No back-pain score or post-session symptom response was supplied, so neither load is labeled pain-free or ready to increase.",
   },
 ];
 

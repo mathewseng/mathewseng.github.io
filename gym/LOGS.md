@@ -988,6 +988,65 @@ This completed the planned increase from the July 28 session. Equipment and per-
 
 ---
 
+# 15. Short Late-Night Leg Workout — September 3, 2026
+
+**Date:** 2026-09-03
+
+**Start time:** 11:15 PM local time
+
+**Lifting duration:** 25 minutes
+
+**Post-workout recovery:** 15 minutes in a dry sauna
+
+**Data quality:** Complete repetitions and entered loads; partial context
+
+## Context
+
+- Short late-night leg session.
+- No 0–6 energy, sleep, soreness, illness, back-pain, or general-pain scores were supplied.
+- No RIR values were supplied.
+- The dry-sauna time is recorded separately and is not included in lifting duration or volume.
+
+## Smith-Machine Squat
+
+- Warm-up: 25 lb × 10
+- 115 lb × 10
+- 135 lb × 8
+- 135 lb × 6
+
+Working sets:
+
+- 24 repetitions
+- 3,040 lb volume
+- 135 lb is the heaviest recorded Smith-squat load
+
+The recorded loads include the 25 lb Smith bar. Back-pain response and RIR were not supplied.
+
+## Smith-Machine Romanian Deadlift
+
+- Warm-up: 25 lb × 10
+- 75 lb × 10
+- 75 lb × 10
+- 75 lb × 10
+
+Working sets:
+
+- 30 repetitions
+- 2,250 lb volume
+- 75 lb × 10, 10, 10 establishes the first working-load baseline
+
+Back-pain response and RIR were not supplied, so this result is not labeled pain-free or ready to increase.
+
+## Session Totals
+
+- 8 completed sets
+- 74 completed repetitions including warm-ups
+- 5,790 lb entered-load volume including warm-ups
+- 54 working repetitions and 5,290 lb working volume excluding warm-ups
+- 15 minutes in a dry sauna after lifting, tracked separately
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1049,9 +1108,16 @@ This completed the planned increase from the July 28 session. Equipment and per-
 
 ## Smith-Machine Squat
 
-- First precise baseline: 115 lb × 10, 10, 10
+- Previous precise baseline: 115 lb × 10, 10, 10 on August 10
+- Latest working sets: 115 lb × 10, then 135 lb × 8, 6 on September 3
+- Heaviest recorded load: 135 lb × 8
 - Recorded load includes the 25 lb Smith bar.
 - Back-pain response was not supplied.
+
+## Smith-Machine Romanian Deadlift
+
+- Working baseline: 75 lb × 10, 10, 10 after a 25 lb warm-up on September 3
+- Back-pain response and RIR were not supplied.
 
 ## Leg Press
 

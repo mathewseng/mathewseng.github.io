@@ -2,6 +2,19 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-04 — September 3 Short Leg Workout
+
+### Added
+
+- Added the September 3 leg workout at 11:15 PM for 25 minutes with Smith-machine squats and Romanian deadlifts.
+- Recorded the separate 15-minute post-workout dry-sauna session without adding it to lifting duration or volume.
+
+### Changed
+
+- Advanced the heaviest recorded Smith-squat load to 135 lb for 8 and 6 repetitions after 115 lb × 10.
+- Established a 75 lb × 10, 10, 10 Smith-RDL working baseline.
+- Updated the dashboard, current benchmarks, lower-body goals, and next-session guidance while preserving the missing 0–6 readiness and back-pain ratings as unknown.
+
 ## 2026-09-02 — September 1 Pull Workout and Body-Weight Update
 
 ### Added

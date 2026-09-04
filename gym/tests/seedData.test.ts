@@ -214,8 +214,8 @@ describe("seed data integration", () => {
       ],
     });
     expect(squatBenchmark).toMatchObject({
-      value: 115,
-      workoutId: "legs-2026-08-10",
+      value: 135,
+      workoutId: "legs-2026-09-03",
     });
     expect(legPressBenchmark).toMatchObject({
       value: 140,
@@ -370,7 +370,71 @@ describe("seed data integration", () => {
       value: 80,
       workoutId: "pull-2026-09-01",
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-09-01");
+  });
+
+  it("records the September 3 short leg workout and separate sauna recovery", () => {
+    const workout = workouts.find((item) => item.id === "legs-2026-09-03");
+    const squat = workout?.exercises.find((entry) => entry.exerciseId === "smith-squat");
+    const rdl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "romanian-deadlift",
+    );
+    const squatProgress = getRepProgression(workouts, "smith-squat", 135, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "legs-2026-09-03");
+    const squatBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "smith-squat-baseline",
+    );
+    const rdlBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "smith-rdl-working-baseline",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-09-03",
+      startTime: "23:15",
+      durationMinutes: 25,
+      type: "legs",
+      chronologyIndex: 15,
+      dataQuality: "partial",
+      context: {
+        sourceLabels: expect.arrayContaining([
+          "short-leg-session",
+          "post-workout-dry-sauna",
+        ]),
+      },
+    });
+    expect(workout?.context).not.toHaveProperty("backPain");
+    expect(squat?.sets).toEqual([
+      expect.objectContaining({ weightLb: 25, reps: 10, warmup: true }),
+      expect.objectContaining({ weightLb: 115, reps: 10 }),
+      expect.objectContaining({ weightLb: 135, reps: 8 }),
+      expect.objectContaining({ weightLb: 135, reps: 6 }),
+    ]);
+    expect(rdl?.sets).toEqual([
+      expect.objectContaining({ weightLb: 25, reps: 10, warmup: true }),
+      expect.objectContaining({ weightLb: 75, reps: 10 }),
+      expect.objectContaining({ weightLb: 75, reps: 10 }),
+      expect.objectContaining({ weightLb: 75, reps: 10 }),
+    ]);
+    expect(squatProgress).toMatchObject({
+      setReps: [8, 6],
+      completedReps: 14,
+      completedVolumeLb: 1_890,
+    });
+    expect(calculateWorkoutTotals(workout!)).toMatchObject({
+      completedReps: 74,
+      completedVolumeLb: 5_790,
+      calculableSetCount: 8,
+      excludedSetCount: 0,
+    });
+    expect(squatBenchmark).toMatchObject({
+      value: 135,
+      workoutId: "legs-2026-09-03",
+    });
+    expect(rdlBenchmark).toMatchObject({
+      value: 75,
+      workoutId: "legs-2026-09-03",
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("legs-2026-09-03");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {
