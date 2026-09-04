@@ -374,11 +374,38 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
 
 const listedCribbageRepeatHands = new Map();
 const listedCribbageScoreCounts = new Map();
+const cribbageReferenceRankValue = (rank) => (rank === 14 ? 1 : rank);
+const cribbageReferenceRankLabel = (rank) => ({ 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank);
+const compareCribbageReferenceRanks = (left, right) => {
+  const leftRanks = left.ranks.map(cribbageReferenceRankValue).sort((a, b) => a - b);
+  const rightRanks = right.ranks.map(cribbageReferenceRankValue).sort((a, b) => a - b);
+  for (let index = 0; index < leftRanks.length; index += 1) {
+    if (leftRanks[index] !== rightRanks[index]) return leftRanks[index] - rightRanks[index];
+  }
+  return 0;
+};
+assert.deepEqual(
+  core.CRIBBAGE_24_PLUS_HANDS.map(({ score }) => score),
+  [24, 28, 29],
+  "cribbage reference: score sections should be listed from lowest to highest"
+);
 core.CRIBBAGE_24_PLUS_HANDS.forEach((group) => {
   const patternTotal = group.patterns.reduce((sum, pattern) => sum + pattern.exactHands, 0);
   assert.equal(patternTotal, group.exactHands, `cribbage reference: ${group.score}-point pattern counts should match the group total`);
   assert.equal(group.royalties, group.score - 10, `cribbage reference: ${group.score} points should convert to royalties`);
-  group.patterns.forEach((pattern) => {
+  group.patterns.forEach((pattern, index) => {
+    const ascendingLabel = pattern.ranks
+      .slice()
+      .sort((left, right) => cribbageReferenceRankValue(left) - cribbageReferenceRankValue(right))
+      .map(cribbageReferenceRankLabel)
+      .join("");
+    assert.equal(pattern.label, ascendingLabel, `cribbage reference: ${pattern.label} should show every rank low to high with ace low`);
+    if (index) {
+      assert.ok(
+        compareCribbageReferenceRanks(group.patterns[index - 1], pattern) <= 0,
+        `cribbage reference: ${pattern.label} should follow the previous hand in ascending rank order`
+      );
+    }
     assert.equal(
       pattern.components.reduce((sum, [, points]) => sum + points, 0),
       group.score,
@@ -388,8 +415,8 @@ core.CRIBBAGE_24_PLUS_HANDS.forEach((group) => {
   });
   listedCribbageScoreCounts.set(group.score, group.exactHands);
 });
-const listedJacksFives = core.CRIBBAGE_24_PLUS_HANDS.flatMap(({ patterns }) => patterns).find(({ label }) => label === "JJ555");
-assert.equal(listedJacksFives.note, "2 nobs", "cribbage reference: JJ555 should carry the concise two-nobs qualifier");
+const listedJacksFives = core.CRIBBAGE_24_PLUS_HANDS.flatMap(({ patterns }) => patterns).find(({ label }) => label === "555JJ");
+assert.equal(listedJacksFives.note, "2 nobs", "cribbage reference: 555JJ should carry the concise two-nobs qualifier");
 
 const actualCribbageRepeatHands = new Map();
 const actualCribbageScoreCounts = new Map();
