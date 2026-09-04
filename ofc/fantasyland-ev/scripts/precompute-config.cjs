@@ -5,7 +5,8 @@ const Core = require("../../fantasyland-core.js");
 const TrainerCore = require("../../fantasyland-trainer/app.js");
 const args = parseArgs(process.argv.slice(2));
 const variant = Core.normalizeVariant(args.variant);
-const solverId = solverIdForVariant(variant);
+const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Number(args["top-repeat-min-rank"]);
+const solverId = solverIdForVariant(variant, topRepeatMinRank);
 const cards = Number(args.cards);
 const jokers = Number(args.jokers);
 const target = Number(args.samples || 10000);
@@ -16,6 +17,9 @@ const sampleEnd = args.end === undefined ? target : Number(args.end);
 if (!Core.VARIANT_ORDER.includes(variant)) fail(`Unknown variant: ${args.variant || ""}`);
 if (![14, 15, 16, 17].includes(cards)) fail("--cards must be 14, 15, 16, or 17");
 if (![0, 1, 2].includes(jokers)) fail("--jokers must be 0, 1, or 2");
+if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
+  fail("--top-repeat-min-rank must be a rank from 2 through 14");
+}
 if (!Number.isSafeInteger(target) || target < 1) fail("--samples must be a positive whole number");
 if (!Number.isSafeInteger(sampleStart) || !Number.isSafeInteger(sampleEnd) || sampleStart < 0 || sampleEnd > target || sampleStart >= sampleEnd) {
   fail("--start and --end must define a non-empty range within --samples");
@@ -62,6 +66,7 @@ function savePart() {
     solver: solverId,
     generatedAt: new Date().toISOString(),
     variant,
+    topRepeatMinRank,
     cards,
     jokers,
     sampleStart,
@@ -83,7 +88,15 @@ function loadAggregate(filePath) {
     const intervalMatches = ranged
       ? parsedStart === sampleStart && parsedEnd === sampleEnd
       : parsedStart === 0 && finite(totals?.samples) <= target;
-    if (parsed?.solver !== solverId || parsed?.variant !== variant || parsed?.cards !== cards || parsed?.jokers !== jokers || !intervalMatches || !totals) {
+    if (
+      parsed?.solver !== solverId
+      || parsed?.variant !== variant
+      || parsed?.cards !== cards
+      || parsed?.jokers !== jokers
+      || (parsed?.topRepeatMinRank ?? null) !== topRepeatMinRank
+      || !intervalMatches
+      || !totals
+    ) {
       return createAggregate();
     }
     return {
@@ -104,12 +117,16 @@ function loadAggregate(filePath) {
 }
 
 function solveSample(ids, selectedVariant) {
-  const solved = TrainerCore.solveVariantHand(ids, selectedVariant, { allowUnsupportedCardCount: true });
+  const solved = TrainerCore.solveVariantHand(ids, selectedVariant, {
+    allowUnsupportedCardCount: true,
+    ...(topRepeatMinRank === null ? {} : { topRepeatMinRank }),
+  });
   if (selectedVariant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
   return solved;
 }
 
-function solverIdForVariant(selectedVariant) {
+function solverIdForVariant(selectedVariant, minimumTopRank = null) {
+  if (minimumTopRank !== null) return `trainer-matched-${selectedVariant}-jjjplus-20260903a`;
   if (selectedVariant === "high") return "trainer-exact-high-20260903b";
   if (selectedVariant === "low") return "trainer-matched-low-20260903a";
   if (selectedVariant === "badeucey") return "trainer-matched-badeucey-20260903a";
@@ -234,6 +251,6 @@ function parseArgs(values) {
 
 function fail(message) {
   console.error(message);
-  console.error("Usage: node precompute-config.cjs --variant high --cards 14 --jokers 0 --samples 10000 [--start N --end N] [--output PATH]");
+  console.error("Usage: node precompute-config.cjs --variant high --cards 14 --jokers 0 --samples 10000 [--start N --end N] [--output PATH] [--top-repeat-min-rank 11]");
   process.exit(1);
 }

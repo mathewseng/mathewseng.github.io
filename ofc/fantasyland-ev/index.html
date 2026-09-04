@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260903j" />
+    <link rel="stylesheet" href="./styles.css?v=20260903k" />
   </head>
   <body>
     <header class="site-header">
@@ -45,6 +45,17 @@
             <label><input type="radio" name="variant" value="badeucey" /><span>Badeucey</span></label>
             <label><input type="radio" name="variant" value="bdp" /><span>BDP</span></label>
             <label><input type="radio" name="variant" value="cribbage" /><span>Cribbage</span></label>
+          </div>
+          <div id="top-repeat-rule" class="top-repeat-rule" hidden>
+            <div>
+              <strong>Top repeat rule</strong>
+              <span>Require trip jacks or better for a top-row repeat.</span>
+            </div>
+            <label class="switch-control" for="top-repeat-jacks-plus">
+              <input id="top-repeat-jacks-plus" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"><i></i></span>
+              <b>JJJ+ only</b>
+            </label>
           </div>
         </div>
 
@@ -195,9 +206,9 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260903j"></script>
-    <script src="../fantasyland-trainer/app.js?v=20260903j"></script>
-    <script src="./precomputed.js?v=20260903j"></script>
-    <script src="./app.js?v=20260903j"></script>
+    <script src="../fantasyland-core.js?v=20260903k"></script>
+    <script src="../fantasyland-trainer/app.js?v=20260903k"></script>
+    <script src="./precomputed.js?v=20260903k"></script>
+    <script src="./app.js?v=20260903k"></script>
   </body>
 </html>

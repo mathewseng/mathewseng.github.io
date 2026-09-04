@@ -5,10 +5,13 @@ const Core = require("../../fantasyland-core.js");
 const args = parseArgs(process.argv.slice(2));
 const target = Number(args.samples || 10000);
 const inputDirectory = path.resolve(args.input || path.join(__dirname, "../precomputed-parts"));
+const jacksPlusInputDirectory = path.resolve(args["jacks-plus-input"] || path.join(inputDirectory, "jacks-plus"));
 const outputPath = path.resolve(args.output || path.join(__dirname, "../precomputed.js"));
 const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
 const results = {};
+const topRepeatJacksPlusResults = {};
 const missing = [];
+const JACKS_PLUS_VARIANTS = ["low", "badeucey", "cribbage"];
 
 if (!Number.isSafeInteger(target) || target < 10000) fail("The production baseline requires at least 10,000 samples per configuration.");
 
@@ -19,7 +22,7 @@ Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
     try {
       const part = JSON.parse(fs.readFileSync(filePath, "utf8"));
       const solverId = solverIdForVariant(variant);
-      if (part.solver !== solverId || part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
+      if (part.solver !== solverId || (part.topRepeatMinRank ?? null) !== null || part.variant !== variant || part.cards !== cards || part.jokers !== jokers || Number(part.result?.samples) < target || Number(part.result?.totals?.samples) !== Number(part.result?.samples)) throw new Error("incomplete");
       if (variant === "high" && Number(part.result.totals.qualifyCount) !== Number(part.result.samples)) throw new Error("High Fantasyland contains a false foul");
       if (!hasCompleteRepeatDetails(part.result.totals, variant)) throw new Error("incomplete repeat-source detail data");
       results[variant][`${cards}-${jokers}`] = part.result;
@@ -29,19 +32,45 @@ Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   });
 });
 
-if (missing.length) fail(`Incomplete precomputed rows (${missing.length}/${Core.ACTIVE_VARIANT_ORDER.length * scenarios.length}):\n${missing.join("\n")}`);
+JACKS_PLUS_VARIANTS.forEach((variant) => {
+  topRepeatJacksPlusResults[variant] = {};
+  scenarios.forEach(({ cards, jokers }) => {
+    const filePath = path.join(jacksPlusInputDirectory, `${variant}-${cards}-${jokers}.json`);
+    try {
+      const part = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      const solverId = solverIdForVariant(variant, 11);
+      if (
+        part.solver !== solverId
+        || part.variant !== variant
+        || part.cards !== cards
+        || part.jokers !== jokers
+        || part.topRepeatMinRank !== 11
+        || Number(part.result?.samples) < target
+        || Number(part.result?.totals?.samples) !== Number(part.result?.samples)
+      ) throw new Error("incomplete");
+      if (!hasCompleteRepeatDetails(part.result.totals, variant, 11)) throw new Error("incomplete repeat-source detail data");
+      topRepeatJacksPlusResults[variant][`${cards}-${jokers}`] = part.result;
+    } catch (error) {
+      missing.push(`${variant} JJJ+ ${cards}C/${jokers}J`);
+    }
+  });
+});
+
+if (missing.length) fail(`Incomplete precomputed rows (${missing.length}/${(Core.ACTIVE_VARIANT_ORDER.length + JACKS_PLUS_VARIANTS.length) * scenarios.length}):\n${missing.join("\n")}`);
 
 const dataset = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   samplesPerConfig: target,
-  solver: "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c",
+  solver: "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c+trainer-matched-jjjplus-20260903a",
   results,
+  topRepeatJacksPlusResults,
 };
 fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze(${JSON.stringify(dataset)});\n`);
-console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across all ${Core.ACTIVE_VARIANT_ORDER.length * scenarios.length} configurations.`);
+console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across ${(Core.ACTIVE_VARIANT_ORDER.length + JACKS_PLUS_VARIANTS.length) * scenarios.length} result configurations.`);
 
-function solverIdForVariant(variant) {
+function solverIdForVariant(variant, minimumTopRank = null) {
+  if (minimumTopRank !== null) return `trainer-matched-${variant}-jjjplus-20260903a`;
   if (variant === "high") return "trainer-exact-high-20260903b";
   if (variant === "low") return "trainer-matched-low-20260903a";
   if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
@@ -54,7 +83,7 @@ function repeatSourceTotal(totals) {
   return Array.from({ length: 7 }, (_, index) => Number(totals?.repeatSources?.[index + 1]) || 0).reduce((sum, count) => sum + count, 0);
 }
 
-function hasCompleteRepeatDetails(totals, variant) {
+function hasCompleteRepeatDetails(totals, variant, minimumTopRank = null) {
   const details = totals?.repeatDetails;
   if (
     repeatSourceTotal(totals) !== Number(totals?.repeatCount)
@@ -73,7 +102,10 @@ function hasCompleteRepeatDetails(totals, variant) {
     + (Number(details.bottomRoyalFlush) || 0);
   const cribbageTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + (Number(count) || 0), 0);
   const middleExpected = variant === "cribbage" ? Number(totals.qualifyCount) : 0;
-  return topTotal === topExpected && bottomTotal === bottomExpected && cribbageTotal === middleExpected;
+  const belowMinimumTopTrips = minimumTopRank === null
+    ? 0
+    : details.topTripsByRank.slice(0, minimumTopRank).reduce((sum, count) => sum + (Number(count) || 0), 0);
+  return topTotal === topExpected && bottomTotal === bottomExpected && cribbageTotal === middleExpected && belowMinimumTopTrips === 0;
 }
 
 function parseArgs(values) {

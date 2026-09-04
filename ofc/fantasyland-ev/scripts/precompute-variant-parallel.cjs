@@ -6,6 +6,7 @@ const variant = String(args.variant || "").toLowerCase();
 const samples = Number(args.samples || 10000);
 const workers = Number(args.workers || 8);
 const shards = Number(args.shards || workers);
+const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Number(args["top-repeat-min-rank"]);
 const output = path.resolve(args.output || path.join(__dirname, "../precomputed-parts"));
 const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
 const precomputeScript = path.join(__dirname, "precompute-config.cjs");
@@ -16,6 +17,9 @@ if (!variant) fail("--variant is required");
 if (!Number.isSafeInteger(samples) || samples < 1) fail("--samples must be a positive whole number");
 if (!Number.isSafeInteger(workers) || workers < 1) fail("--workers must be a positive whole number");
 if (!Number.isSafeInteger(shards) || shards < 1 || shards > samples) fail("--shards must be between 1 and the sample count");
+if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
+  fail("--top-repeat-min-rank must be a rank from 2 through 14");
+}
 
 const tasks = [];
 scenarios.forEach(({ cards, jokers }) => {
@@ -59,7 +63,7 @@ function launchNext() {
 
   const task = tasks[cursor];
   cursor += 1;
-  const child = spawn(process.execPath, [
+  const childArgs = [
     precomputeScript,
     "--variant", variant,
     "--cards", String(task.cards),
@@ -68,7 +72,9 @@ function launchNext() {
     "--start", String(task.start),
     "--end", String(task.end),
     "--output", output,
-  ], { stdio: ["ignore", "ignore", "pipe"] });
+  ];
+  if (topRepeatMinRank !== null) childArgs.push("--top-repeat-min-rank", String(topRepeatMinRank));
+  const child = spawn(process.execPath, childArgs, { stdio: ["ignore", "ignore", "pipe"] });
   let errorOutput = "";
   child.stderr.on("data", (chunk) => {
     errorOutput = (errorOutput + chunk.toString()).slice(-4000);
@@ -93,12 +99,14 @@ function launchNext() {
 
 function finish() {
   clearInterval(statusTimer);
-  const merge = spawn(process.execPath, [
+  const mergeArgs = [
     mergeScript,
     "--variant", variant,
     "--samples", String(samples),
     "--input", output,
-  ], { stdio: "inherit" });
+  ];
+  if (topRepeatMinRank !== null) mergeArgs.push("--top-repeat-min-rank", String(topRepeatMinRank));
+  const merge = spawn(process.execPath, mergeArgs, { stdio: "inherit" });
   merge.on("close", (code) => {
     process.exitCode = code || 0;
   });

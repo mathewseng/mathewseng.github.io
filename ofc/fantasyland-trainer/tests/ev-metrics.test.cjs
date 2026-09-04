@@ -17,19 +17,33 @@ vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
-const currentSolver = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c";
+const currentSolver = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c+trainer-matched-jjjplus-20260903a";
+const emptyCache = { results: {}, topRepeatJacksPlusResults: {} };
 
 assert.equal(
   JSON.stringify(api.parseResultsCache(JSON.stringify({ schemaVersion: 1, solver: "outdated-solver", results: { cribbage: { stale: true } } }))),
-  "{}",
+  JSON.stringify(emptyCache),
   "results cached by an older solver should be discarded"
 );
 assert.equal(
-  JSON.stringify(api.parseResultsCache(JSON.stringify({ schemaVersion: 1, solver: currentSolver, results: { cribbage: { current: true } } }))),
-  JSON.stringify({ cribbage: { current: true } }),
+  JSON.stringify(api.parseResultsCache(JSON.stringify({ schemaVersion: 2, solver: currentSolver, results: { cribbage: { current: true } } }))),
+  JSON.stringify(emptyCache),
+  "results cached without a separate JJJ+ result store should be discarded"
+);
+assert.equal(
+  JSON.stringify(api.parseResultsCache(JSON.stringify({
+    schemaVersion: 2,
+    solver: currentSolver,
+    results: { cribbage: { current: true } },
+    topRepeatJacksPlusResults: { cribbage: { restricted: true } },
+  }))),
+  JSON.stringify({
+    results: { cribbage: { current: true } },
+    topRepeatJacksPlusResults: { cribbage: { restricted: true } },
+  }),
   "results cached by the current solver should be restored"
 );
-assert.equal(JSON.stringify(api.parseResultsCache("not-json")), "{}", "malformed cached results should be discarded");
+assert.equal(JSON.stringify(api.parseResultsCache("not-json")), JSON.stringify(emptyCache), "malformed cached results should be discarded");
 
 const delegatedVariants = [];
 const delegationContext = {
@@ -50,8 +64,10 @@ const delegationContext = {
 };
 vm.runInNewContext(source, delegationContext, { filename: "fantasyland-ev-delegation.js" });
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => delegationContext.window.OFCFantasylandEV.solveSample(["As"], variant));
-assert.deepEqual(delegatedVariants.map(({ variant }) => variant), core.ACTIVE_VARIANT_ORDER, "every active EV variant should delegate to the trainer solver");
+delegationContext.window.OFCFantasylandEV.solveSample(["As"], "low", 11);
+assert.deepEqual(delegatedVariants.slice(0, -1).map(({ variant }) => variant), core.ACTIVE_VARIANT_ORDER, "every active EV variant should delegate to the trainer solver");
 assert.equal(delegatedVariants.every(({ options }) => options.allowUnsupportedCardCount === true), true, "EV delegation should retain off-rule analytical card counts");
+assert.equal(delegatedVariants[delegatedVariants.length - 1].options.topRepeatMinRank, 11, "JJJ+ EV samples should pass the top-repeat threshold into the trainer solver");
 
 const previousFalseFoul = ["Qs", "2s", "9h", "5h", "3c", "Th", "Tc", "Kh", "3h", "Ts", "As", "9c", "4c", "4d"];
 const exactHigh = api.solveSample(previousFalseFoul, "high");
@@ -177,12 +193,17 @@ core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
     };
   });
 });
+const completeJacksPlusBaseline = {};
+["low", "badeucey", "cribbage"].forEach((variant) => {
+  completeJacksPlusBaseline[variant] = completeBaseline[variant];
+});
 assert.equal(
   api.applyPrecomputedResults({
     schemaVersion: 1,
     solver: currentSolver,
     samplesPerConfig: 10000,
     results: completeBaseline,
+    topRepeatJacksPlusResults: completeJacksPlusBaseline,
   }),
   10000,
   "a complete 10k-per-row baseline should pass the production gate"

@@ -3,8 +3,8 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v13";
-  const CACHE_SCHEMA_VERSION = 1;
+  const STORAGE_KEY = "ofcFantasylandEv.v14";
+  const CACHE_SCHEMA_VERSION = 2;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
   const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
@@ -20,7 +20,8 @@
     7: { label: "All three", className: "source-all", extraCards: 2 },
   };
   const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c";
+  const JACKS_PLUS_REPEAT_VARIANTS = new Set(["low", "badeucey", "cribbage"]);
+  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260903b+trainer-matched-low-20260903a+trainer-matched-badeucey-20260903a+trainer-matched-bdp-20260903a+trainer-matched-cribbage-20260903c+trainer-matched-jjjplus-20260903a";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -55,12 +56,15 @@
     },
   };
 
+  const cached = loadCache();
+  const savedSettings = loadSettings();
   const state = {
     variant: "high",
     running: false,
     abort: false,
-    results: loadCache(),
-    settings: loadSettings(),
+    results: cached.results,
+    topRepeatJacksPlusResults: cached.topRepeatJacksPlusResults,
+    settings: savedSettings,
     cancelRun: null,
     precomputedSamples: 0,
     repeatDetailScenario: "14-0",
@@ -86,6 +90,8 @@
   function cacheElements() {
     Object.assign(els, {
       variantSummary: document.querySelector("#variant-summary"),
+      topRepeatRule: document.querySelector("#top-repeat-rule"),
+      topRepeatJacksPlus: document.querySelector("#top-repeat-jacks-plus"),
       sampleCount: document.querySelector("#sample-count"),
       sample100k: document.querySelector("#sample-100k"),
       sampleTotal: document.querySelector("#sample-total"),
@@ -129,6 +135,14 @@
         updateEstimate();
       });
     });
+    els.topRepeatJacksPlus.addEventListener("change", () => {
+      state.abort = state.running;
+      if (state.cancelRun) state.cancelRun();
+      state.settings.topRepeatJacksPlus = els.topRepeatJacksPlus.checked;
+      saveSettings();
+      renderVariant();
+      updateEstimate();
+    });
     els.run.addEventListener("click", runCalculator);
     els.stop.addEventListener("click", () => {
       state.abort = true;
@@ -153,14 +167,18 @@
     els.rulesDialog.addEventListener("click", (event) => {
       if (event.target === els.rulesDialog) closeRules();
     });
+    window.addEventListener("resize", fitRepeatSourceLabels);
   }
 
   function renderVariant() {
     const meta = Core.VARIANTS[state.variant];
     const scenarios = scenariosForVariant(state.variant);
     const configCount = scenarios.length;
+    const jacksPlus = usesJacksPlusTopRepeat();
     const includesHypotheticals = CARD_COUNTS.some((cards) => !Core.supportsVariantCardCount(state.variant, cards));
-    els.variantSummary.textContent = `${meta.short}${includesHypotheticals ? " Off-rule card counts are modeled as hypotheticals below." : ""}`;
+    els.topRepeatRule.hidden = !JACKS_PLUS_REPEAT_VARIANTS.has(state.variant);
+    els.topRepeatJacksPlus.checked = jacksPlus;
+    els.variantSummary.textContent = `${meta.short}${jacksPlus ? " Top-row repeats require JJJ or better." : ""}${includesHypotheticals ? " Off-rule card counts are modeled as hypotheticals below." : ""}`;
     const data = getVariantResults();
     renderMatrix(data, scenarios);
     renderDeckMatrix(data);
@@ -169,9 +187,10 @@
     const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
     const sampleSummary = resultSampleSummary(data, scenarios);
     els.matrixTitle.textContent = `14–17 card ${meta.label} matrix`;
-    els.matrixMeta.textContent = complete ? `${meta.label} - ${sampleSummary}` : "No samples yet";
+    const ruleLabel = jacksPlus ? " · JJJ+ top repeats" : "";
+    els.matrixMeta.textContent = complete ? `${meta.label}${ruleLabel} - ${sampleSummary}` : "No samples yet";
     if (!state.running) {
-      els.runStatus.textContent = complete ? `${meta.label} results loaded` : "Ready to calculate";
+      els.runStatus.textContent = complete ? `${meta.label}${ruleLabel} results loaded` : "Ready to calculate";
       els.runDetail.textContent = complete
         ? `${sampleSummary}; trainer-matched solver; ${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
         : `${configCount} configurations - completed samples save locally`;
@@ -271,7 +290,7 @@
   function renderRepeatSourceChart(entries) {
     const complete = PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(state.variant)
       && entries.length > 0
-      && entries.every(({ result }) => hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, state.variant));
+      && entries.every(({ result }) => hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, state.variant, currentTopRepeatMinRank()));
     els.repeatSourcePanel.hidden = !complete;
     if (!complete) {
       els.repeatSourceChart.replaceChildren();
@@ -309,15 +328,19 @@
         const segment = document.createElement("i");
         segment.className = meta.className;
         segment.style.width = `${(allHandsRate * 100).toFixed(3)}%`;
-        segment.title = `${meta.label}: ${formatPct(allHandsRate)} of all hands, ${formatPct(repeatShare)} of repeats${meta.extraCards ? `, +${meta.extraCards} Fantasyland card${meta.extraCards === 1 ? "" : "s"}` : ""}`;
+        segment.title = `${meta.label}: ${formatDetailPct(allHandsRate)} of all hands, ${formatDetailPct(repeatShare)} of repeats${meta.extraCards ? `, +${meta.extraCards} Fantasyland card${meta.extraCards === 1 ? "" : "s"}` : ""}`;
+        const segmentLabel = document.createElement("b");
+        segmentLabel.textContent = formatDetailPct(allHandsRate);
+        segment.appendChild(segmentLabel);
         track.appendChild(segment);
-        ariaParts.push(`${meta.label} ${formatPct(allHandsRate)}`);
+        ariaParts.push(`${meta.label} ${formatDetailPct(allHandsRate)}`);
       });
       track.setAttribute("aria-label", ariaParts.join(", "));
       const values = document.createElement("div");
       values.className = "repeat-source-values";
       values.innerHTML = `<strong>${formatPct(sourceTotal / samples)}</strong><small>${formatPct(superTotal / samples)} SF</small>`;
       row.append(label, track, values);
+      if (key === state.repeatDetailScenario) row.appendChild(createRepeatSourceBreakdown(counts, samples));
       row.addEventListener("click", () => {
         state.repeatDetailScenario = key;
         renderRepeatSourceChart(entries);
@@ -325,7 +348,31 @@
       fragment.appendChild(row);
     });
     els.repeatSourceChart.replaceChildren(fragment);
+    fitRepeatSourceLabels();
     renderRepeatSourceDetail(entries.find(({ scenario }) => scenarioKey(scenario) === state.repeatDetailScenario));
+  }
+
+  function createRepeatSourceBreakdown(counts, samples) {
+    const breakdown = document.createElement("span");
+    breakdown.className = "repeat-source-breakdown";
+    breakdown.setAttribute("aria-label", "All repeat-source percentages for this hand");
+    REPEAT_SOURCE_ORDER.forEach((mask) => {
+      const meta = REPEAT_SOURCE_META[mask];
+      const item = document.createElement("span");
+      item.innerHTML = `<i class="${meta.className}"></i><b>${meta.label}</b><strong>${formatDetailPct(finiteNumber(counts[mask]) / samples)}</strong>`;
+      breakdown.appendChild(item);
+    });
+    return breakdown;
+  }
+
+  function fitRepeatSourceLabels() {
+    if (!els.repeatSourceChart) return;
+    window.requestAnimationFrame(() => {
+      els.repeatSourceChart.querySelectorAll(".repeat-source-track > i > b").forEach((label) => {
+        const segment = label.parentElement;
+        label.classList.toggle("fits", segment.getBoundingClientRect().width >= label.scrollWidth + 10);
+      });
+    });
   }
 
   function hasCompleteRepeatSourceData(result) {
@@ -335,7 +382,7 @@
     return sourceTotal === finiteNumber(result.totals.repeatCount);
   }
 
-  function hasCompleteRepeatDetailData(result, variant) {
+  function hasCompleteRepeatDetailData(result, variant, minimumTopRank = null) {
     const totals = result?.totals;
     const details = totals?.repeatDetails;
     if (
@@ -356,7 +403,10 @@
       + finiteNumber(details.bottomRoyalFlush);
     const middleTotal = details.cribbageMiddleByScore.reduce((sum, count) => sum + finiteNumber(count), 0);
     const middleExpected = variant === "cribbage" ? finiteNumber(totals.qualifyCount) : 0;
-    return topTotal === topExpected && bottomTotal === bottomExpected && middleTotal === middleExpected;
+    const belowMinimumTopTrips = minimumTopRank === null
+      ? 0
+      : details.topTripsByRank.slice(0, minimumTopRank).reduce((sum, count) => sum + finiteNumber(count), 0);
+    return topTotal === topExpected && bottomTotal === bottomExpected && middleTotal === middleExpected && belowMinimumTopTrips === 0;
   }
 
   function renderRepeatSourceDetail(entry) {
@@ -372,17 +422,50 @@
 
     const heading = document.createElement("header");
     heading.className = "repeat-detail-heading";
-    heading.innerHTML = `<div><p class="eyebrow">Selected hand</p><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} solved hands</span>`;
+    heading.innerHTML = `<div><p class="eyebrow">Selected hand</p><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} sampled hands</span>`;
 
     const groups = document.createElement("div");
     groups.className = "repeat-detail-groups";
+    const sourceCounts = result.totals.repeatSources;
+    const samples = finiteNumber(result.samples);
+    const topRepeatCount = [1, 3, 5, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts[mask]), 0);
+    const middleRepeatCount = [2, 3, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts[mask]), 0);
+    const bottomRepeatCount = [4, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts[mask]), 0);
     const topEntries = [];
     for (let rank = 14; rank >= 2; rank -= 1) {
       const count = finiteNumber(details.topTripsByRank[rank]);
       if (count) topEntries.push({ label: `Trip ${rankLabel(rank)}`, count });
     }
-    if (state.variant !== "bdp") {
-      groups.appendChild(createFrequencyGroup("Top trips rank", "Share of top-row repeats", topEntries));
+    const topCondition = state.variant === "bdp"
+      ? "Top does not trigger repeats in BDP"
+      : `${usesJacksPlusTopRepeat() ? "Trip J or better" : "Trips"} · ${formatPct(topRepeatCount / samples)} of all hands`;
+    groups.appendChild(createFrequencyGroup("Top", topCondition, topEntries, {
+      emptyText: state.variant === "bdp" ? "No top-row repeat condition." : "No top-row repeats in this sample.",
+    }));
+
+    if (state.variant === "cribbage") {
+      const cribbageEntries = [];
+      details.cribbageMiddleByScore.forEach((count, score) => {
+        if (score >= 11) cribbageEntries.push({ label: `${score} pts`, count: finiteNumber(count) });
+      });
+      groups.appendChild(createFrequencyGroup(
+        "Middle",
+        `Raw Cribbage score on solved legal boards · ${formatPct(middleRepeatCount / samples)} repeat source`,
+        cribbageEntries
+      ));
+    } else {
+      const middleCondition = {
+        high: "Quads or better",
+        low: "7-5-4-3-2 wheel",
+        badeucey: "Wheel low + wheel Badugi",
+        bdp: "Middle does not trigger repeats in BDP",
+      }[state.variant] || "Variant repeat condition";
+      const middleEntries = middleRepeatCount
+        ? [{ label: middleCondition, count: middleRepeatCount, rate: middleRepeatCount / samples, denominator: samples }]
+        : [];
+      groups.appendChild(createFrequencyGroup("Middle", `${formatPct(middleRepeatCount / samples)} of all hands`, middleEntries, {
+        emptyText: state.variant === "bdp" ? "No middle-row repeat condition." : "No middle-row repeats in this sample.",
+      }));
     }
 
     const bottomEntries = [
@@ -393,48 +476,38 @@
       const count = finiteNumber(details.bottomQuadsByRank[rank]);
       if (count) bottomEntries.push({ label: `Quads ${rankLabel(rank)}`, count });
     }
-    groups.appendChild(createFrequencyGroup("Bottom repeat type", "Share of bottom-row repeats", bottomEntries));
-
-    if (state.variant === "cribbage") {
-      const cribbageEntries = [];
-      details.cribbageMiddleByScore.forEach((count, score) => {
-        if (finiteNumber(count)) cribbageEntries.push({ label: `${score} pts`, count: finiteNumber(count) });
-      });
-      const middleGroup = createFrequencyGroup(
-        "Middle Cribbage score",
-        "Raw points on each legal repeat-first board",
-        cribbageEntries,
-        "is-wide"
-      );
-      groups.appendChild(middleGroup);
-    }
+    groups.appendChild(createFrequencyGroup("Bottom", `Repeat type · ${formatPct(bottomRepeatCount / samples)} of all hands`, bottomEntries, {
+      emptyText: "No bottom-row repeats in this sample.",
+    }));
 
     section.append(heading, groups);
     els.repeatSourceDetail.replaceChildren(section);
   }
 
-  function createFrequencyGroup(title, subtitle, entries, extraClass = "") {
+  function createFrequencyGroup(title, subtitle, entries, options = {}) {
     const group = document.createElement("section");
-    group.className = `repeat-detail-group ${extraClass}`.trim();
+    group.className = `repeat-detail-group ${options.className || ""}`.trim();
+    group.classList.toggle("is-single", entries.length === 1);
     const header = document.createElement("header");
     header.innerHTML = `<h4>${title}</h4><span>${subtitle}</span>`;
     group.appendChild(header);
     if (!entries.length) {
       const empty = document.createElement("p");
       empty.className = "repeat-detail-empty";
-      empty.textContent = "No matching repeats in this sample.";
+      empty.textContent = options.emptyText || "No matching repeats in this sample.";
       group.appendChild(empty);
       return group;
     }
     const total = entries.reduce((sum, item) => sum + item.count, 0);
     const grid = document.createElement("div");
     grid.className = "repeat-frequency-grid";
-    entries.forEach(({ label, count }) => {
-      const rate = total ? count / total : 0;
+    entries.forEach(({ label, count, rate: explicitRate, denominator }) => {
+      const rate = Number.isFinite(explicitRate) ? explicitRate : total ? count / total : 0;
+      const comparisonTotal = Number.isFinite(denominator) ? denominator : total;
       const item = document.createElement("div");
       item.className = "repeat-frequency-item";
       item.innerHTML = `<span>${label}</span><strong>${formatDetailPct(rate)}</strong><i style="width:${(rate * 100).toFixed(3)}%"></i>`;
-      item.title = `${formatInteger(count)} of ${formatInteger(total)}`;
+      item.title = `${formatInteger(count)} of ${formatInteger(comparisonTotal)}`;
       grid.appendChild(item);
     });
     group.appendChild(grid);
@@ -503,11 +576,14 @@
       return;
     }
     const variant = state.variant;
+    const topRepeatMinRank = currentTopRepeatMinRank();
+    const resultStore = resultsStoreFor(topRepeatMinRank);
+    resultStore[variant] = resultStore[variant] || {};
     const scenarios = scenariosForVariant(variant);
     const total = samples * scenarios.length;
     const runSeed = Core.hashSeed(`${Date.now()}-${Math.random()}-${variant}`).toString(16).padStart(8, "0").toUpperCase();
     const started = performance.now();
-    const aggregates = new Map(scenarios.map((scenario) => [scenarioKey(scenario), aggregateFromResult(getVariantResults()[scenarioKey(scenario)])]));
+    const aggregates = new Map(scenarios.map((scenario) => [scenarioKey(scenario), aggregateFromResult(resultStore[variant][scenarioKey(scenario)])]));
     let completed = 0;
     let lastRender = 0;
     let lastSave = 0;
@@ -522,7 +598,8 @@
     const renderProgress = (force = false) => {
       const now = performance.now();
       if (!force && now - lastRender < 180) return;
-      const data = state.results[variant] || {};
+      if (state.variant !== variant || currentTopRepeatMinRank() !== topRepeatMinRank) return;
+      const data = resultStore[variant];
       renderMatrix(data, scenarios);
       renderDeckMatrix(data);
       renderCharts(data, scenarios);
@@ -535,8 +612,7 @@
       const cumulative = aggregates.get(key) || createAggregate();
       mergeAggregate(cumulative, chunk);
       aggregates.set(key, cumulative);
-      state.results[variant] = state.results[variant] || {};
-      state.results[variant][key] = finalizeAggregate(cumulative);
+      resultStore[variant][key] = finalizeAggregate(cumulative);
       completed += chunk.samples;
 
       const elapsed = performance.now() - started;
@@ -556,10 +632,10 @@
     let outcome;
     try {
       if (typeof Worker === "function") {
-        outcome = await runWorkerPool({ variant, scenarios, samples, runSeed, onProgress: handleProgress });
+        outcome = await runWorkerPool({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress: handleProgress });
         workersUsed = outcome.workersUsed;
       } else {
-        outcome = await runMainThread({ variant, scenarios, samples, runSeed, onProgress: handleProgress });
+        outcome = await runMainThread({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress: handleProgress });
       }
     } catch (error) {
       outcome = { stopped: true, error };
@@ -572,7 +648,7 @@
     renderProgress(true);
     saveCache();
     if (completed >= Math.min(12, total)) saveBenchmark(variant, (elapsedSeconds * 1000 * workersUsed) / completed);
-    if (state.variant !== variant) {
+    if (state.variant !== variant || currentTopRepeatMinRank() !== topRepeatMinRank) {
       state.abort = false;
       renderVariant();
       return;
@@ -586,14 +662,14 @@
     } else {
       els.runStatus.textContent = "Calculation complete";
       els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}; trainer-matched solver`;
-      els.matrixMeta.textContent = `${Core.VARIANTS[variant].label} - ${resultSampleSummary(state.results[variant], scenarios)}`;
+      els.matrixMeta.textContent = `${Core.VARIANTS[variant].label}${topRepeatMinRank === 11 ? " · JJJ+ top repeats" : ""} - ${resultSampleSummary(resultStore[variant], scenarios)}`;
       els.runProgress.style.width = "100%";
     }
     state.abort = false;
     updateEstimate();
   }
 
-  function runWorkerPool({ variant, scenarios, samples, runSeed, onProgress }) {
+  function runWorkerPool({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress }) {
     const workerCount = availableWorkerCount();
     const chunkSize = sampleChunkSize(samples);
     return new Promise((resolve, reject) => {
@@ -620,13 +696,13 @@
         const scenario = scenarios[queueIndex];
         const taskId = queueIndex;
         queueIndex += 1;
-        worker.postMessage({ type: "run", taskId, variant, scenario, samples, runSeed, chunkSize });
+        worker.postMessage({ type: "run", taskId, variant, scenario, samples, runSeed, chunkSize, topRepeatMinRank });
       };
 
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260903j");
+          worker = new Worker("./worker.js?v=20260903k");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -652,7 +728,7 @@
     });
   }
 
-  async function runMainThread({ variant, scenarios, samples, runSeed, onProgress }) {
+  async function runMainThread({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress }) {
     state.cancelRun = () => { state.abort = true; };
     for (const scenario of scenarios) {
       for (let sample = 0; sample < samples; sample += 1) {
@@ -661,7 +737,7 @@
         const seedText = `EV-${runSeed}-${variant}-${scenario.cards}C-${scenario.jokers}J-${sample}`;
         const ids = Core.dealSeeded(scenario.cards, scenario.jokers, Core.hashSeed(seedText).toString(16));
         const chunk = createAggregate();
-        addSample(chunk, solveSample(ids, variant), variant);
+        addSample(chunk, solveSample(ids, variant, topRepeatMinRank), variant);
         onProgress(scenario, chunk);
       }
     }
@@ -745,8 +821,11 @@
     };
   }
 
-  function solveSample(ids, variant) {
-    const solved = TrainerCore.solveVariantHand(ids, variant, { allowUnsupportedCardCount: true });
+  function solveSample(ids, variant, topRepeatMinRank = null) {
+    const solved = TrainerCore.solveVariantHand(ids, variant, {
+      allowUnsupportedCardCount: true,
+      ...(topRepeatMinRank === null ? {} : { topRepeatMinRank }),
+    });
     if (variant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
     return solved;
   }
@@ -866,6 +945,7 @@
     els.stop.hidden = !running;
     els.sampleCount.disabled = running;
     els.sample100k.disabled = running;
+    els.topRepeatJacksPlus.disabled = running;
   }
 
   function renderJokerProbabilities() {
@@ -951,7 +1031,10 @@
         section.appendChild(renderRoyaltyGroups(lines));
       } else {
         const list = document.createElement("ul");
-        lines.forEach((line) => {
+        const sectionLines = label === "Repeat Fantasyland" && JACKS_PLUS_REPEAT_VARIANTS.has(active) && state.settings.topRepeatJacksPlus
+          ? lines.concat("JJJ+ option: top trips below jacks do not count as a repeat.")
+          : lines;
+        sectionLines.forEach((line) => {
           const item = document.createElement("li");
           appendRuleLine(item, line);
           list.appendChild(item);
@@ -1024,8 +1107,20 @@
     item.appendChild(detail);
   }
 
-  function getVariantResults() {
-    return state.results[state.variant] || {};
+  function usesJacksPlusTopRepeat(variant = state.variant) {
+    return JACKS_PLUS_REPEAT_VARIANTS.has(variant) && Boolean(state.settings.topRepeatJacksPlus);
+  }
+
+  function currentTopRepeatMinRank() {
+    return usesJacksPlusTopRepeat() ? 11 : null;
+  }
+
+  function resultsStoreFor(topRepeatMinRank = null) {
+    return topRepeatMinRank === 11 ? state.topRepeatJacksPlusResults : state.results;
+  }
+
+  function getVariantResults(variant = state.variant, topRepeatMinRank = currentTopRepeatMinRank()) {
+    return resultsStoreFor(topRepeatMinRank)[variant] || {};
   }
 
   function scenarioKey(scenario) {
@@ -1104,15 +1199,28 @@
 
   function applyPrecomputedResults(dataset) {
     const target = finiteNumber(dataset?.samplesPerConfig);
-    if (dataset?.schemaVersion !== 1 || dataset?.solver !== PRECOMPUTED_SOLVER_ID || target < 10000 || !dataset.results) return 0;
+    if (
+      dataset?.schemaVersion !== 1
+      || dataset?.solver !== PRECOMPUTED_SOLVER_ID
+      || target < 10000
+      || !dataset.results
+      || !dataset.topRepeatJacksPlusResults
+    ) return 0;
     const complete = Core.ACTIVE_VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target
         && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
         && (!PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(variant)
-          || (hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, variant)));
+          || (hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, variant, null)));
     }));
-    if (!complete) return 0;
+    const jacksPlusComplete = Array.from(JACKS_PLUS_REPEAT_VARIANTS).every((variant) => EXACT_SCENARIOS.every((scenario) => {
+      const result = dataset.topRepeatJacksPlusResults?.[variant]?.[scenarioKey(scenario)];
+      return finiteNumber(result?.samples) >= target
+        && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
+        && hasCompleteRepeatSourceData(result)
+        && hasCompleteRepeatDetailData(result, variant, 11);
+    }));
+    if (!complete || !jacksPlusComplete) return 0;
 
     Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       state.results[variant] = state.results[variant] || {};
@@ -1121,6 +1229,15 @@
         const baseline = dataset.results[variant][key];
         const local = state.results[variant][key];
         if (!local || finiteNumber(local.samples) < finiteNumber(baseline.samples)) state.results[variant][key] = baseline;
+      });
+    });
+    JACKS_PLUS_REPEAT_VARIANTS.forEach((variant) => {
+      state.topRepeatJacksPlusResults[variant] = state.topRepeatJacksPlusResults[variant] || {};
+      EXACT_SCENARIOS.forEach((scenario) => {
+        const key = scenarioKey(scenario);
+        const baseline = dataset.topRepeatJacksPlusResults[variant][key];
+        const local = state.topRepeatJacksPlusResults[variant][key];
+        if (!local || finiteNumber(local.samples) < finiteNumber(baseline.samples)) state.topRepeatJacksPlusResults[variant][key] = baseline;
       });
     });
     saveCache();
@@ -1172,7 +1289,7 @@
     try {
       return parseResultsCache(localStorage.getItem(STORAGE_KEY));
     } catch (error) {
-      return {};
+      return { results: {}, topRepeatJacksPlusResults: {} };
     }
   }
 
@@ -1186,10 +1303,15 @@
         || parsed.solver !== PRECOMPUTED_SOLVER_ID
         || !parsed.results
         || typeof parsed.results !== "object"
-      ) return {};
-      return parsed.results;
+        || !parsed.topRepeatJacksPlusResults
+        || typeof parsed.topRepeatJacksPlusResults !== "object"
+      ) return { results: {}, topRepeatJacksPlusResults: {} };
+      return {
+        results: parsed.results,
+        topRepeatJacksPlusResults: parsed.topRepeatJacksPlusResults,
+      };
     } catch (error) {
-      return {};
+      return { results: {}, topRepeatJacksPlusResults: {} };
     }
   }
 
@@ -1208,6 +1330,7 @@
         schemaVersion: CACHE_SCHEMA_VERSION,
         solver: PRECOMPUTED_SOLVER_ID,
         results: state.results,
+        topRepeatJacksPlusResults: state.topRepeatJacksPlusResults,
       }));
     } catch (error) {
       // Storage is optional; calculations still work without it.

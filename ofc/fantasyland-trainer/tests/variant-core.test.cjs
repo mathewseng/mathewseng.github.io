@@ -103,6 +103,25 @@ const tenLow = core.evaluateDeuceSeven(cards(["Ts", "8h", "6d", "4c", "2s"]));
 assert.equal(tenLow.qualifies, true, "low: a clean ten-low should qualify");
 assert.equal(tenLow.points, 0, "low: ten-high should score zero");
 
+const lowNineTripsOnly = ["9s", "9h", "9d", "Ts", "8h", "7d", "5c", "2s", "As", "Kh", "Qd", "Jc", "Tc"];
+const normalTopRepeat = core.solveHand(lowNineTripsOnly, { variant: "low", allowUnsupportedCardCount: true });
+const jacksPlusTopRepeat = core.solveHand(lowNineTripsOnly, { variant: "low", allowUnsupportedCardCount: true, topRepeatMinRank: 11 });
+assert.ok(normalTopRepeat.bestRepeat, "low: trips below jacks should repeat under the normal rule");
+assert.equal(normalTopRepeat.bestRepeat.repeatMask, 1, "low: the fixture should repeat from top only");
+assert.equal(jacksPlusTopRepeat.bestRepeat, null, "low: trips below jacks should not repeat under the JJJ+ rule");
+assert.ok(jacksPlusTopRepeat.best, "low: restricting top repeats must still return the best legal royalty board");
+
+assert.equal(
+  core.repeatMaskFromEvaluations({ repeat: true, mainRank: 11 }, { repeat: false }, { repeat: false }, { topRepeatMinRank: 11 }),
+  1,
+  "repeat policy: trip jacks should qualify for JJJ+"
+);
+assert.equal(
+  core.repeatMaskFromEvaluations({ repeat: true, mainRank: 10 }, { repeat: true }, { repeat: true }, { topRepeatMinRank: 11 }),
+  6,
+  "repeat policy: JJJ+ should remove only the low top-trips bit"
+);
+
 [
   [["8s", "7h", "5d", "4c", "2s"], 2],
   [["9s", "7h", "5d", "4c", "2s"], 1],

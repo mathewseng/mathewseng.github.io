@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260903j", "../fantasyland-trainer/app.js?v=20260903j");
+importScripts("../fantasyland-core.js?v=20260903k", "../fantasyland-trainer/app.js?v=20260903k");
 
 const Core = self.OFCFantasylandCore;
 const TrainerCore = self.OFCSolverCore;
@@ -20,6 +20,9 @@ self.onmessage = (event) => {
     samples: message.samples,
     runSeed: message.runSeed,
     chunkSize: message.chunkSize,
+    topRepeatMinRank: message.topRepeatMinRank === null || message.topRepeatMinRank === undefined
+      ? null
+      : Number(message.topRepeatMinRank),
     index: 0,
   };
   setTimeout(processChunk, 0);
@@ -36,7 +39,7 @@ function processChunk() {
     const sample = task.index + offset;
     const seedText = `EV-${task.runSeed}-${task.variant}-${task.scenario.cards}C-${task.scenario.jokers}J-${sample}`;
     const ids = Core.dealSeeded(task.scenario.cards, task.scenario.jokers, Core.hashSeed(seedText).toString(16));
-    addSample(aggregate, solveSample(ids, task.variant), task.variant);
+    addSample(aggregate, solveSample(ids, task.variant, task.topRepeatMinRank), task.variant);
   }
 
   task.index += count;
@@ -72,8 +75,11 @@ function createAggregate() {
   };
 }
 
-function solveSample(ids, variant) {
-  const solved = TrainerCore.solveVariantHand(ids, variant, { allowUnsupportedCardCount: true });
+function solveSample(ids, variant, topRepeatMinRank = null) {
+  const solved = TrainerCore.solveVariantHand(ids, variant, {
+    allowUnsupportedCardCount: true,
+    ...(topRepeatMinRank === null ? {} : { topRepeatMinRank }),
+  });
   if (variant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
   return solved;
 }

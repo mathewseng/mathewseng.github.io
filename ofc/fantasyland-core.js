@@ -1707,8 +1707,11 @@
     return (rows.middle || []).length === 5;
   }
 
-  function repeatMaskFromEvaluations(top, middle, bottom) {
-    return (top?.repeat ? 1 : 0) | (middle?.repeat ? 2 : 0) | (bottom?.repeat ? 4 : 0);
+  function repeatMaskFromEvaluations(top, middle, bottom, options = {}) {
+    const minimumTopRank = Number(options.topRepeatMinRank);
+    const topRepeats = Boolean(top?.repeat)
+      && (!Number.isFinite(minimumTopRank) || Number(top?.mainRank) >= minimumTopRank);
+    return (topRepeats ? 1 : 0) | (middle?.repeat ? 2 : 0) | (bottom?.repeat ? 4 : 0);
   }
 
   function mergeAssignments() {
@@ -1742,7 +1745,7 @@
           : middleEval.qualifies && isTopLegalAgainstFive(top.evaluation, bottom.evaluation);
       if (!legal) return;
       const points = top.evaluation.points + middleEval.points + bottom.evaluation.points;
-      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middleEval, bottom.evaluation);
+      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middleEval, bottom.evaluation, options);
       const repeat = repeatMask > 0;
       const candidate = {
         legal: true,
@@ -2079,7 +2082,7 @@
         const top = chooseTop(ids, layoutTopMasks, availableMask, bottom.evaluation, topCache, topCandidateCache);
         if (!top) return;
         legalBoards += 1;
-        const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation);
+        const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation, options);
         const repeat = repeatMask > 0;
         const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
         const usedMask = top.mask | middleEntry.mask | bottomEntry.mask;
@@ -2172,6 +2175,7 @@
       middleCache,
       bottomPool,
       topMasks,
+      repeatOptions,
     } = context;
     const n = ids.length;
     const directMiddleLookup = n <= 15;
@@ -2208,7 +2212,7 @@
       const middle = middleCache.get(middleEntry.mask);
       const bottom = bottomEntry.candidate;
       const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
-      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation);
+      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation, repeatOptions);
       const repeat = repeatMask > 0;
       return {
         points,
@@ -2289,7 +2293,7 @@
         }
         if (!top) continue;
         const usedMask = bottomEntry.mask | topMask;
-        const outerRepeats = top.evaluation.repeat || bottom.evaluation.repeat;
+        const outerRepeats = repeatMaskFromEvaluations(top.evaluation, null, bottom.evaluation, repeatOptions) > 0;
         const points = top.evaluation.points + bottom.evaluation.points;
         const quality = top.evaluation.quality + bottom.evaluation.quality;
         const repeatTable = outerRepeats ? repeatingOuterByMask : nonRepeatingOuterByMask;
@@ -2411,6 +2415,7 @@
         middleCache,
         bottomPool,
         topMasks,
+        repeatOptions: options,
       });
     }
     const topCache = new Map();
@@ -2433,7 +2438,7 @@
       const top = chooseTop(ids, topMasks, availableMask, topConstraint, topCache, topCandidateCache, variant);
       if (!top) return;
       legalBoards += 1;
-      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation);
+      const repeatMask = repeatMaskFromEvaluations(top.evaluation, middle.evaluation, bottom.evaluation, options);
       const repeat = repeatMask > 0;
       const points = top.evaluation.points + middle.evaluation.points + bottom.evaluation.points;
       const usedMask = top.mask | middleEntry.mask | bottomEntry.mask;

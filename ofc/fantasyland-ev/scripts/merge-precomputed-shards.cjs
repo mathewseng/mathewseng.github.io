@@ -10,17 +10,21 @@ const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => 
 const selectedVariants = args.variant ? [String(args.variant).toLowerCase()] : Core.ACTIVE_VARIANT_ORDER;
 const selectedCards = args.cards === undefined ? null : Number(args.cards);
 const selectedJokers = args.jokers === undefined ? null : Number(args.jokers);
+const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Number(args["top-repeat-min-rank"]);
 
 if (!Number.isSafeInteger(target) || target < 1) fail("--samples must be a positive whole number");
 if (selectedVariants.some((variant) => !Core.VARIANT_ORDER.includes(variant))) fail(`Unknown variant: ${args.variant}`);
 if (selectedCards !== null && ![14, 15, 16, 17].includes(selectedCards)) fail("--cards must be 14, 15, 16, or 17");
 if (selectedJokers !== null && ![0, 1, 2].includes(selectedJokers)) fail("--jokers must be 0, 1, or 2");
+if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
+  fail("--top-repeat-min-rank must be a rank from 2 through 14");
+}
 
 let merged = 0;
 selectedVariants.forEach((variant) => scenarios
   .filter(({ cards, jokers }) => (selectedCards === null || cards === selectedCards) && (selectedJokers === null || jokers === selectedJokers))
   .forEach(({ cards, jokers }) => {
-  const solverId = solverIdForVariant(variant);
+  const solverId = solverIdForVariant(variant, topRepeatMinRank);
   const outputPath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
   const prefix = fs.existsSync(outputPath) ? readPart(outputPath, solverId, true) || emptyPart(variant, cards, jokers) : emptyPart(variant, cards, jokers);
   if (prefix.result.totals.samples === target) {
@@ -68,6 +72,7 @@ selectedVariants.forEach((variant) => scenarios
     solver: solverId,
     generatedAt: new Date().toISOString(),
     variant,
+    topRepeatMinRank,
     cards,
     jokers,
     sampleStart: 0,
@@ -95,9 +100,9 @@ function readPart(filePath, solverId, ignoreWrongSolver = false) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
     if (!parsed?.result?.totals) fail(`Missing raw totals: ${filePath}`);
-    if (parsed.solver !== solverId) {
+    if (parsed.solver !== solverId || (parsed.topRepeatMinRank ?? null) !== topRepeatMinRank) {
       if (ignoreWrongSolver) return null;
-      fail(`Wrong solver data in ${filePath}: ${parsed.solver || "unknown"}`);
+      fail(`Wrong solver or repeat policy in ${filePath}: ${parsed.solver || "unknown"}`);
     }
     return parsed;
   } catch (error) {
@@ -162,7 +167,8 @@ function finite(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
 
-function solverIdForVariant(variant) {
+function solverIdForVariant(variant, minimumTopRank = null) {
+  if (minimumTopRank !== null) return `trainer-matched-${variant}-jjjplus-20260903a`;
   if (variant === "high") return "trainer-exact-high-20260903b";
   if (variant === "low") return "trainer-matched-low-20260903a";
   if (variant === "badeucey") return "trainer-matched-badeucey-20260903a";
