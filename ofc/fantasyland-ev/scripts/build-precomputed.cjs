@@ -90,6 +90,15 @@ function solverIdForVariant(variant, minimumTopRank = null) {
 
 function withExactDistribution(result, baseResult) {
   if (!baseResult?.totals || baseResult.totals.distribution?.length !== 128) throw new Error("missing exact base distribution");
+  const unchangedFields = ["samples", "immediateSum", "immediateSquared", "qualifyCount"];
+  if (unchangedFields.some((field) => Number(result?.totals?.[field]) !== Number(baseResult.totals[field]))) {
+    throw new Error("JJJ+ repeat policy changed a non-repeat metric");
+  }
+  if (
+    !Array.isArray(result?.totals?.distribution)
+    || result.totals.distribution.length !== baseResult.totals.distribution.length
+    || result.totals.distribution.some((count, index) => Number(count) !== Number(baseResult.totals.distribution[index]))
+  ) throw new Error("JJJ+ repeat policy changed the royalty distribution");
   const repeatDetails = {
     ...result.repeatDetails,
     topBdpWheel: Number(result.repeatDetails?.topBdpWheel) || 0,
