@@ -2357,56 +2357,51 @@
       return bottomEntry.candidate.assignmentValue - current.bottomEntry.candidate.assignmentValue;
     };
 
-    for (let bottomIndex = 0; bottomIndex < bottomPool.length; bottomIndex += 1) {
-      const bottomEntry = bottomPool[bottomIndex];
+    const considerOuter = (topMask, bottomEntry) => {
       const bottom = bottomEntry.candidate;
-      for (let topIndex = 0; topIndex < eligibleTopMasks.length; topIndex += 1) {
-        const topMask = eligibleTopMasks[topIndex];
-        if (topMask & bottomEntry.mask) continue;
-        let topData = topCandidateCache.get(topMask);
-        if (!topData) {
-          const topIds = idsForMask(ids, topMask);
-          const candidates = variantTopCandidates(variant, topIds).slice().sort((left, right) => compareRowCandidate(right, left));
-          topData = { ids: topIds, candidates, bestByConstraint: new Map() };
-          topCandidateCache.set(topMask, topData);
-        }
-        const topConstraintKey = variant === "bdp" ? "qualify" : constraintKey(bottom.evaluation);
-        let top = topData.bestByConstraint.get(topConstraintKey);
-        if (top === undefined) {
-          top = null;
-          for (let candidateIndex = 0; candidateIndex < topData.candidates.length; candidateIndex += 1) {
-            const candidate = topData.candidates[candidateIndex];
-            const legal = variant === "bdp"
-              ? candidate.evaluation.qualifies
-              : isTopLegalAgainstFive(candidate.evaluation, bottom.evaluation);
-            if (legal) {
-              top = candidate;
-              break;
-            }
-          }
-          topData.bestByConstraint.set(topConstraintKey, top);
-        }
-        if (!top) continue;
-        const usedMask = bottomEntry.mask | topMask;
-        const outerRepeats = repeatMaskFromEvaluations(top.evaluation, null, bottom.evaluation, repeatOptions) > 0;
-        const points = top.evaluation.points + bottom.evaluation.points;
-        const quality = top.evaluation.quality + bottom.evaluation.quality;
-        const repeatTable = outerRepeats ? repeatingOuterByMask : nonRepeatingOuterByMask;
-        const keepAny = compareOuter(top, bottomEntry, points, quality, outerByMask[usedMask]) > 0;
-        const keepRepeatState = compareOuter(top, bottomEntry, points, quality, repeatTable[usedMask]) > 0;
-        if (!keepAny && !keepRepeatState) continue;
-        const outer = { points, quality, top, topMask, topIds: topData.ids, bottomEntry };
-        if (keepAny) outerByMask[usedMask] = outer;
-        if (keepRepeatState) repeatTable[usedMask] = outer;
+      let topData = topCandidateCache.get(topMask);
+      if (!topData) {
+        const topIds = idsForMask(ids, topMask);
+        const candidates = variantTopCandidates(variant, topIds).slice().sort((left, right) => compareRowCandidate(right, left));
+        topData = { ids: topIds, candidates, bestByConstraint: new Map() };
+        topCandidateCache.set(topMask, topData);
       }
-    }
+      const topConstraintKey = variant === "bdp" ? "qualify" : constraintKey(bottom.evaluation);
+      let top = topData.bestByConstraint.get(topConstraintKey);
+      if (top === undefined) {
+        top = null;
+        for (let candidateIndex = 0; candidateIndex < topData.candidates.length; candidateIndex += 1) {
+          const candidate = topData.candidates[candidateIndex];
+          const legal = variant === "bdp"
+            ? candidate.evaluation.qualifies
+            : isTopLegalAgainstFive(candidate.evaluation, bottom.evaluation);
+          if (legal) {
+            top = candidate;
+            break;
+          }
+        }
+        topData.bestByConstraint.set(topConstraintKey, top);
+      }
+      if (!top) return;
+      const usedMask = bottomEntry.mask | topMask;
+      const outerRepeats = repeatMaskFromEvaluations(top.evaluation, null, bottom.evaluation, repeatOptions) > 0;
+      const points = top.evaluation.points + bottom.evaluation.points;
+      const quality = top.evaluation.quality + bottom.evaluation.quality;
+      const repeatTable = outerRepeats ? repeatingOuterByMask : nonRepeatingOuterByMask;
+      const keepAny = compareOuter(top, bottomEntry, points, quality, outerByMask[usedMask]) > 0;
+      const keepRepeatState = compareOuter(top, bottomEntry, points, quality, repeatTable[usedMask]) > 0;
+      if (!keepAny && !keepRepeatState) return;
+      const outer = { points, quality, top, topMask, topIds: topData.ids, bottomEntry };
+      if (keepAny) outerByMask[usedMask] = outer;
+      if (keepRepeatState) repeatTable[usedMask] = outer;
+    };
 
-    for (let usedMask = 0; usedMask < outerByMask.length; usedMask += 1) {
+    const takeOuterMask = (usedMask) => {
       const outer = outerByMask[usedMask];
-      if (!outer) continue;
+      if (!outer) return;
       const availableMask = fullMask ^ usedMask;
       const middleIndex = middleIndexFor(availableMask);
-      if (middleIndex < 0) continue;
+      if (middleIndex < 0) return;
       const topEntry = { ...outer.top, mask: outer.topMask, ids: outer.topIds };
       legalBoards += 1;
       takeSolution(topEntry, middlePool[middleIndex], outer.bottomEntry);
@@ -2428,6 +2423,40 @@
           nonRepeatingOuter.bottomEntry
         );
       }
+    };
+
+    if (mode === "exact") {
+      const bottomByMask = new Array(1 << n);
+      bottomPool.forEach((entry) => { bottomByMask[entry.mask] = entry; });
+      const eligibleTopLookup = variant === "bdp" ? new Uint8Array(1 << n) : null;
+      if (eligibleTopLookup) eligibleTopMasks.forEach((mask) => { eligibleTopLookup[mask] = 1; });
+      combinationMasks(n, 8).forEach((usedMask) => {
+        const bits = [];
+        for (let index = 0; index < n; index += 1) {
+          const bit = 1 << index;
+          if (usedMask & bit) bits.push(bit);
+        }
+        for (let first = 0; first < 6; first += 1) {
+          for (let second = first + 1; second < 7; second += 1) {
+            for (let third = second + 1; third < 8; third += 1) {
+              const topMask = bits[first] | bits[second] | bits[third];
+              if (eligibleTopLookup && !eligibleTopLookup[topMask]) continue;
+              const bottomEntry = bottomByMask[usedMask ^ topMask];
+              if (bottomEntry) considerOuter(topMask, bottomEntry);
+            }
+          }
+        }
+        takeOuterMask(usedMask);
+      });
+    } else {
+      for (let bottomIndex = 0; bottomIndex < bottomPool.length; bottomIndex += 1) {
+        const bottomEntry = bottomPool[bottomIndex];
+        for (let topIndex = 0; topIndex < eligibleTopMasks.length; topIndex += 1) {
+          const topMask = eligibleTopMasks[topIndex];
+          if (!(topMask & bottomEntry.mask)) considerOuter(topMask, bottomEntry);
+        }
+      }
+      for (let usedMask = 0; usedMask < outerByMask.length; usedMask += 1) takeOuterMask(usedMask);
     }
 
     return {

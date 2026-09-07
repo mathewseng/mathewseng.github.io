@@ -933,6 +933,10 @@ function solverMetricDigest(result) {
   ["badeucey", 17, 2, { mode: "fast" }],
   ["cribbage", 17, 2, { mode: "fast" }],
   ["bdp", 17, 2, { mode: "fast", maskLimit: 160, beamLimit: 100 }],
+  ["low", 17, 2, { mode: "exact" }],
+  ["badeucey", 17, 2, { mode: "exact" }],
+  ["cribbage", 17, 2, { mode: "exact" }],
+  ["bdp", 17, 2, { mode: "exact" }],
 ].forEach(([variant, cardCount, jokers, options]) => {
   const ids = core.dealSeeded(cardCount, jokers, `BOARD-PARITY-${variant}-${cardCount}-${jokers}`);
   const optimized = core.solveHand(ids, { variant, allowUnsupportedCardCount: true, ...options });
