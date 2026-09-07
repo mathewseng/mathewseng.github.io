@@ -2274,6 +2274,14 @@
     const bestMiddle = directMiddleLookup ? null : buildBestMiddleSubsetTable(n, middlePool, middleCache);
     const bestRepeatingMiddle = directMiddleLookup ? null : buildBestMiddleSubsetTable(n, middlePool, middleCache, true);
     const topCandidateCache = new Map();
+    const eligibleTopMasks = variant === "bdp"
+      ? topMasks.filter((topMask) => {
+          const topIds = idsForMask(ids, topMask);
+          const candidates = variantTopCandidates(variant, topIds).slice().sort((left, right) => compareRowCandidate(right, left));
+          topCandidateCache.set(topMask, { ids: topIds, candidates, bestByConstraint: new Map() });
+          return candidates.some((candidate) => candidate.evaluation.qualifies);
+        })
+      : topMasks;
     const outerByMask = new Array(1 << n);
     const repeatingOuterByMask = new Array(1 << n);
     const nonRepeatingOuterByMask = new Array(1 << n);
@@ -2352,8 +2360,8 @@
     for (let bottomIndex = 0; bottomIndex < bottomPool.length; bottomIndex += 1) {
       const bottomEntry = bottomPool[bottomIndex];
       const bottom = bottomEntry.candidate;
-      for (let topIndex = 0; topIndex < topMasks.length; topIndex += 1) {
-        const topMask = topMasks[topIndex];
+      for (let topIndex = 0; topIndex < eligibleTopMasks.length; topIndex += 1) {
+        const topMask = eligibleTopMasks[topIndex];
         if (topMask & bottomEntry.mask) continue;
         let topData = topCandidateCache.get(topMask);
         if (!topData) {
