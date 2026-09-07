@@ -3082,7 +3082,14 @@
       button.className = variant === active ? "active" : "";
       button.setAttribute("aria-selected", String(variant === active));
       button.textContent = meta.compactLabel || meta.label;
-      button.addEventListener("click", () => renderVariantRules(variant));
+      button.addEventListener("click", () => {
+        const input = document.querySelector(`input[name="trainer-variant"][value="${variant}"]`);
+        if (input && !input.checked) {
+          input.checked = true;
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        renderVariantRules(variant);
+      });
       tabs.appendChild(button);
     });
     els.variantRulesTabs.replaceChildren(tabs);
@@ -3098,12 +3105,12 @@
     short.textContent = VariantCore.VARIANTS[active].short;
     heading.append(title, short);
     article.appendChild(heading);
-    const sections = [
-      ["Qualify", [rules.qualification]],
-      ["Royalties", rules.scoring],
-    ];
+    const sections = [];
+    if (rules.natural) sections.push(["Natural OFC", rules.natural]);
+    sections.push(["Fantasyland board", [rules.qualification]], ["Royalties", rules.scoring]);
     if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
     sections.push(["Repeat Fantasyland", [rules.repeat]]);
+    if (rules.stacking) sections.push(["Stacking / Super FL", [rules.stacking]]);
     if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
     sections.forEach(([label, lines]) => {
       const section = document.createElement("section");
@@ -3497,6 +3504,10 @@
           (rowRepeats("middle", five[middleIndex].eval, repeatRule) ? 2 : 0) |
           (rowRepeats("back", five[backIndex].eval, repeatRule) ? 4 : 0);
         const repeats = repeatMask > 0;
+        const tieStrength = backStrength + middleStrength + topCandidate.eval.strength;
+        const improvesBest = isBetterSolutionValues(points, repeats, tieStrength, best);
+        const improvesRepeat = repeats && isBetterSolutionValues(points, true, tieStrength, bestRepeat);
+        if (!improvesBest && !improvesRepeat) continue;
 
         const solution = {
           points,
@@ -3506,11 +3517,11 @@
           middle: five[middleIndex],
           back: five[backIndex],
           usedMask: topCandidate.mask | combo.fiveMasks[middleIndex] | combo.fiveMasks[backIndex],
-          tieStrength: backStrength + middleStrength + topCandidate.eval.strength,
+          tieStrength,
         };
 
-        if (isBetterSolution(solution, best)) best = solution;
-        if (repeats && isBetterSolution(solution, bestRepeat)) bestRepeat = solution;
+        if (improvesBest) best = solution;
+        if (improvesRepeat) bestRepeat = solution;
       }
     }
 
@@ -3743,10 +3754,14 @@
   }
 
   function isBetterSolution(candidate, current) {
+    return isBetterSolutionValues(candidate.points, candidate.repeat, candidate.tieStrength, current);
+  }
+
+  function isBetterSolutionValues(points, repeat, tieStrength, current) {
     if (!current) return true;
-    if (candidate.points !== current.points) return candidate.points > current.points;
-    if (candidate.repeat !== current.repeat) return candidate.repeat;
-    return candidate.tieStrength > current.tieStrength;
+    if (points !== current.points) return points > current.points;
+    if (repeat !== current.repeat) return repeat;
+    return tieStrength > current.tieStrength;
   }
 
   function rowRepeats(row, evalResult, rule) {
@@ -4229,6 +4244,7 @@
     return {
       repeatMask,
       topTripsRank: repeatMask & 1 ? Math.trunc(finiteNumber(topEval?.mainRank)) : 0,
+      topBdpWheel: Boolean((repeatMask & 1) && topEval?.wheel && topEval?.badugi),
       middleCribbagePoints: Number.isFinite(middleCribbagePoints) ? Math.trunc(middleCribbagePoints) : null,
       bottomKind,
       bottomQuadsRank: bottomKind === "quads" ? Math.trunc(finiteNumber(bottomEval?.mainRank)) : 0,
