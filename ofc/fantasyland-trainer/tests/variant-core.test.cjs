@@ -778,6 +778,16 @@ assert.equal(bdpSolved.best.top.eval.qualifies, true, "bdp solver: top must qual
 assert.equal(bdpSolved.best.middle.eval.qualifies, true, "bdp solver: middle must qualify as 2-7 low");
 assert.equal(bdpSolved.best.bottom.eval.qualifies, true, "bdp solver: bottom must qualify with a pair or better");
 
+const bdpNestedNaturals = ["4c", "8h", "Jc", "7h", "Td", "2s", "2c", "6s", "9h", "Qd", "Tc", "9s", "Ks", "3c", "5d"];
+let bdpPreviousRoyalty = -1;
+for (const cards of [14, 15, 16, 17]) {
+  const ids = bdpNestedNaturals.slice(0, cards - 2).concat(["JK1", "JK2"]);
+  const solved = trainer.solveVariantHand(ids, "bdp", { allowUnsupportedCardCount: true });
+  assert.equal(solved.mode, "exact", `bdp solver: ${cards}-card joker analysis should use the exact search`);
+  assert.ok(solved.bestRoyalty.points >= bdpPreviousRoyalty, `bdp solver: adding a card cannot lower the best royalty score at ${cards} cards`);
+  bdpPreviousRoyalty = solved.bestRoyalty.points;
+}
+
 const lowBoard = core.evaluateBoard(
   ["6s", "6h", "2d", "7s", "5h", "4d", "3c", "2s", "Kh", "Kd", "Kc", "9d", "9c", "Ah"],
   {

@@ -2579,15 +2579,7 @@
       options.maskLimit = bounds[0];
       options.beamLimit = bounds[1];
     }
-    if (variant === "bdp") {
-      const jokers = cardIds.filter((id) => cardFromId(id).joker).length;
-      if (jokers) {
-        const bounds = jokers >= 2 ? [160, 100] : [180, 120];
-        options.mode = "fast";
-        options.maskLimit = bounds[0];
-        options.beamLimit = bounds[1];
-      }
-    }
+    if (variant === "bdp") options.mode = "exact";
     if (variant === "doubleblackjack" && cardIds.some((id) => cardFromId(id).joker)) {
       options.maskLimit = 140;
       options.beamLimit = 96;
