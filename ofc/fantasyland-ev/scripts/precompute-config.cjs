@@ -153,15 +153,24 @@ function solveSample(ids, selectedVariant, minimumTopRank = null) {
 
 function pairedSolution(ids, selectedVariant, solved, minimumTopRank) {
   if (!solved.bestRepeat) return { ...solved, best: solved.bestRoyalty, bestRepeat: null };
-  const repeatMask = Core.repeatMaskFromEvaluations(
-    solved.bestRepeat.top?.eval,
-    solved.bestRepeat.middle?.eval,
-    solved.bestRepeat.bottom?.eval,
-    { topRepeatMinRank: minimumTopRank }
-  );
-  if (!repeatMask) return solveSample(ids, selectedVariant, minimumTopRank);
-  const bestRepeat = { ...solved.bestRepeat, repeat: true, repeatMask };
-  return { ...solved, best: bestRepeat, bestRepeat };
+  const restrictedRepeat = (solution) => {
+    if (!solution) return null;
+    const repeatMask = Core.repeatMaskFromEvaluations(
+      solution.top?.eval,
+      solution.middle?.eval,
+      solution.bottom?.eval,
+      { topRepeatMinRank: minimumTopRank }
+    );
+    return repeatMask ? { ...solution, repeat: true, repeatMask } : null;
+  };
+  const bestRepeat = restrictedRepeat(solved.bestRepeat);
+  if (bestRepeat) return { ...solved, best: bestRepeat, bestRepeat };
+
+  // A royalty-max board that satisfies the stricter rule is also the best
+  // restricted repeat board, so no second exhaustive search is necessary.
+  const bestRoyaltyRepeat = restrictedRepeat(solved.bestRoyalty);
+  if (bestRoyaltyRepeat) return { ...solved, best: bestRoyaltyRepeat, bestRepeat: bestRoyaltyRepeat };
+  return solveSample(ids, selectedVariant, minimumTopRank);
 }
 
 function solverIdForVariant(selectedVariant, minimumTopRank = null) {
