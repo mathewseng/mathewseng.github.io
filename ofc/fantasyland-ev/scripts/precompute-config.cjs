@@ -3,14 +3,18 @@ const path = require("path");
 
 const Core = require("../../fantasyland-core.js");
 const TrainerCore = require("../../fantasyland-trainer/app.js");
+const ROYALTY_DISTRIBUTION_SIZE = 128;
 const args = parseArgs(process.argv.slice(2));
 const variant = Core.normalizeVariant(args.variant);
 const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Number(args["top-repeat-min-rank"]);
+const pairedTopRepeatMinRank = args["paired-top-repeat-min-rank"] === undefined ? null : Number(args["paired-top-repeat-min-rank"]);
 const solverId = solverIdForVariant(variant, topRepeatMinRank);
+const pairedSolverId = pairedTopRepeatMinRank === null ? null : solverIdForVariant(variant, pairedTopRepeatMinRank);
 const cards = Number(args.cards);
 const jokers = Number(args.jokers);
 const target = Number(args.samples || 10000);
 const outputDirectory = path.resolve(args.output || path.join(__dirname, "../precomputed-parts"));
+const pairedOutputDirectory = args["paired-output"] ? path.resolve(args["paired-output"]) : null;
 const sampleStart = args.start === undefined ? 0 : Number(args.start);
 const sampleEnd = args.end === undefined ? target : Number(args.end);
 
@@ -20,21 +24,27 @@ if (![0, 1, 2].includes(jokers)) fail("--jokers must be 0, 1, or 2");
 if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
   fail("--top-repeat-min-rank must be a rank from 2 through 14");
 }
+if (pairedTopRepeatMinRank !== null && (!Number.isSafeInteger(pairedTopRepeatMinRank) || pairedTopRepeatMinRank < 2 || pairedTopRepeatMinRank > 14)) {
+  fail("--paired-top-repeat-min-rank must be a rank from 2 through 14");
+}
+if (Boolean(pairedOutputDirectory) !== (pairedTopRepeatMinRank !== null)) fail("--paired-output and --paired-top-repeat-min-rank must be used together");
+if (pairedOutputDirectory && topRepeatMinRank !== null) fail("A paired run must use the default repeat rule as its primary result");
 if (!Number.isSafeInteger(target) || target < 1) fail("--samples must be a positive whole number");
 if (!Number.isSafeInteger(sampleStart) || !Number.isSafeInteger(sampleEnd) || sampleStart < 0 || sampleEnd > target || sampleStart >= sampleEnd) {
   fail("--start and --end must define a non-empty range within --samples");
 }
 
-fs.mkdirSync(outputDirectory, { recursive: true });
 const ranged = sampleStart !== 0 || sampleEnd !== target;
-const shardDirectory = path.join(outputDirectory, "shards");
-if (ranged) fs.mkdirSync(shardDirectory, { recursive: true });
-const outputPath = ranged
-  ? path.join(shardDirectory, `${variant}-${cards}-${jokers}-${sampleStart}-${sampleEnd}.json`)
-  : path.join(outputDirectory, `${variant}-${cards}-${jokers}.json`);
+const outputPath = resultPath(outputDirectory);
+const pairedOutputPath = pairedOutputDirectory ? resultPath(pairedOutputDirectory) : null;
 const rangeSamples = sampleEnd - sampleStart;
 const checkpointSamples = ranged ? 25 : 100;
-const aggregate = loadAggregate(outputPath);
+let aggregate = loadAggregate(outputPath, solverId, topRepeatMinRank);
+let pairedAggregate = pairedOutputPath ? loadAggregate(pairedOutputPath, pairedSolverId, pairedTopRepeatMinRank) : null;
+if (pairedAggregate && aggregate.samples !== pairedAggregate.samples) {
+  aggregate = createAggregate();
+  pairedAggregate = createAggregate();
+}
 let lastSaved = aggregate.samples;
 let lastReported = Date.now();
 
@@ -47,7 +57,9 @@ for (let offset = aggregate.samples; offset < rangeSamples; offset += 1) {
   const sample = sampleStart + offset;
   const seedText = `EV-PRECOMPUTED-v1-${variant}-${cards}C-${jokers}J-${sample}`;
   const ids = Core.dealSeeded(cards, jokers, Core.hashSeed(seedText).toString(16));
-  addSample(aggregate, solveSample(ids, variant), variant);
+  const solved = solveSample(ids, variant, topRepeatMinRank);
+  addSample(aggregate, solved, variant);
+  if (pairedAggregate) addSample(pairedAggregate, pairedSolution(ids, variant, solved, pairedTopRepeatMinRank), variant);
   if (aggregate.samples - lastSaved >= checkpointSamples) savePart();
   if (Date.now() - lastReported >= 30000) {
     const percent = ((aggregate.samples / rangeSamples) * 100).toFixed(2);
@@ -61,25 +73,39 @@ savePart();
 console.log(`Complete: ${outputPath} (${aggregate.samples.toLocaleString()} samples)`);
 
 function savePart() {
+  writePart(outputPath, aggregate, solverId, topRepeatMinRank);
+  if (pairedAggregate) writePart(pairedOutputPath, pairedAggregate, pairedSolverId, pairedTopRepeatMinRank);
+  lastSaved = aggregate.samples;
+}
+
+function writePart(filePath, value, partSolverId, minimumTopRank) {
   const payload = {
     schemaVersion: 1,
-    solver: solverId,
+    solver: partSolverId,
     generatedAt: new Date().toISOString(),
     variant,
-    topRepeatMinRank,
+    topRepeatMinRank: minimumTopRank,
     cards,
     jokers,
     sampleStart,
     sampleEnd,
-    result: finalizeAggregate(aggregate),
+    result: finalizeAggregate(value),
   };
-  const temporaryPath = `${outputPath}.tmp`;
+  const temporaryPath = `${filePath}.tmp`;
   fs.writeFileSync(temporaryPath, `${JSON.stringify(payload)}\n`);
-  fs.renameSync(temporaryPath, outputPath);
-  lastSaved = aggregate.samples;
+  fs.renameSync(temporaryPath, filePath);
 }
 
-function loadAggregate(filePath) {
+function resultPath(directory) {
+  fs.mkdirSync(directory, { recursive: true });
+  const shardDirectory = path.join(directory, "shards");
+  if (ranged) fs.mkdirSync(shardDirectory, { recursive: true });
+  return ranged
+    ? path.join(shardDirectory, `${variant}-${cards}-${jokers}-${sampleStart}-${sampleEnd}.json`)
+    : path.join(directory, `${variant}-${cards}-${jokers}.json`);
+}
+
+function loadAggregate(filePath, expectedSolverId, expectedTopRepeatMinRank) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
     const totals = parsed?.result?.totals;
@@ -89,11 +115,11 @@ function loadAggregate(filePath) {
       ? parsedStart === sampleStart && parsedEnd === sampleEnd
       : parsedStart === 0 && finite(totals?.samples) <= target;
     if (
-      parsed?.solver !== solverId
+      parsed?.solver !== expectedSolverId
       || parsed?.variant !== variant
       || parsed?.cards !== cards
       || parsed?.jokers !== jokers
-      || (parsed?.topRepeatMinRank ?? null) !== topRepeatMinRank
+      || (parsed?.topRepeatMinRank ?? null) !== expectedTopRepeatMinRank
       || !intervalMatches
       || !totals
     ) {
@@ -109,33 +135,46 @@ function loadAggregate(filePath) {
       repeatSources: Array.from({ length: 8 }, (_, index) => finite(totals.repeatSources?.[index])),
       repeatDetails: copyRepeatDetails(totals.repeatDetails),
       qualifyCount: finite(totals.qualifyCount),
-      distribution: Array.from({ length: 5 }, (_, index) => finite(totals.distribution?.[index])),
+      distribution: Array.from({ length: ROYALTY_DISTRIBUTION_SIZE }, (_, index) => finite(totals.distribution?.[index])),
     };
   } catch (error) {
     return createAggregate();
   }
 }
 
-function solveSample(ids, selectedVariant) {
+function solveSample(ids, selectedVariant, minimumTopRank = null) {
   const solved = TrainerCore.solveVariantHand(ids, selectedVariant, {
     allowUnsupportedCardCount: true,
-    ...(topRepeatMinRank === null ? {} : { topRepeatMinRank }),
+    ...(minimumTopRank === null ? {} : { topRepeatMinRank: minimumTopRank }),
   });
   if (selectedVariant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
   return solved;
 }
 
+function pairedSolution(ids, selectedVariant, solved, minimumTopRank) {
+  if (!solved.bestRepeat) return { ...solved, best: solved.bestRoyalty, bestRepeat: null };
+  const repeatMask = Core.repeatMaskFromEvaluations(
+    solved.bestRepeat.top?.eval,
+    solved.bestRepeat.middle?.eval,
+    solved.bestRepeat.bottom?.eval,
+    { topRepeatMinRank: minimumTopRank }
+  );
+  if (!repeatMask) return solveSample(ids, selectedVariant, minimumTopRank);
+  const bestRepeat = { ...solved.bestRepeat, repeat: true, repeatMask };
+  return { ...solved, best: bestRepeat, bestRepeat };
+}
+
 function solverIdForVariant(selectedVariant, minimumTopRank = null) {
   if (minimumTopRank !== null) {
     return selectedVariant === "cribbage"
-      ? "trainer-matched-cribbage-jjjplus-20260904a"
-      : `trainer-matched-${selectedVariant}-jjjplus-20260904a`;
+      ? "trainer-exact-cribbage-jjjplus-exactdist-20260907b"
+      : `trainer-exact-${selectedVariant}-jjjplus-exactdist-20260907b`;
   }
-  if (selectedVariant === "high") return "trainer-exact-high-20260904a";
-  if (selectedVariant === "low") return "trainer-matched-low-20260904a";
-  if (selectedVariant === "badeucey") return "trainer-matched-badeucey-20260904a";
-  if (selectedVariant === "bdp") return "trainer-matched-bdp-20260904a";
-  if (selectedVariant === "cribbage") return "trainer-matched-cribbage-20260904a";
+  if (selectedVariant === "high") return "trainer-exact-high-exactdist-20260907a";
+  if (selectedVariant === "low") return "trainer-exact-low-exactdist-20260907b";
+  if (selectedVariant === "badeucey") return "trainer-exact-badeucey-exactdist-20260907b";
+  if (selectedVariant === "bdp") return "trainer-exact-bdp-wheel-exactdist-20260907b";
+  if (selectedVariant === "cribbage") return "trainer-exact-cribbage-exactdist-20260907b";
   return "trainer-matched-variants-20260902c";
 }
 
@@ -150,7 +189,7 @@ function createAggregate() {
     repeatSources: Array(8).fill(0),
     repeatDetails: createRepeatDetails(),
     qualifyCount: 0,
-    distribution: [0, 0, 0, 0, 0],
+    distribution: Array(ROYALTY_DISTRIBUTION_SIZE).fill(0),
   };
 }
 
@@ -161,7 +200,7 @@ function addSample(targetAggregate, solved, selectedVariant) {
   targetAggregate.immediateSum += immediate;
   targetAggregate.immediateSquared += immediate * immediate;
   targetAggregate.strategySum += strategy;
-  targetAggregate.distribution[royaltyBandIndex(immediate)] += 1;
+  targetAggregate.distribution[Math.max(0, Math.min(ROYALTY_DISTRIBUTION_SIZE - 1, Math.trunc(immediate)))] += 1;
   if (solved.best) targetAggregate.qualifyCount += 1;
   if (solved.bestRepeat) {
     targetAggregate.repeatCount += 1;
@@ -170,6 +209,7 @@ function addSample(targetAggregate, solved, selectedVariant) {
     if (repeatMask < 1 || repeatMask > 7) throw new Error("Repeat solution is missing its row-source mask.");
     targetAggregate.repeatSources[repeatMask] += 1;
     const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
+    if (repeatDetail.topBdpWheel) targetAggregate.repeatDetails.topBdpWheel += 1;
     if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
       targetAggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
     }
@@ -195,6 +235,7 @@ function addSample(targetAggregate, solved, selectedVariant) {
 function createRepeatDetails() {
   return {
     topTripsByRank: Array(15).fill(0),
+    topBdpWheel: 0,
     bottomQuadsByRank: Array(15).fill(0),
     bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
@@ -206,6 +247,7 @@ function createRepeatDetails() {
 function copyRepeatDetails(value) {
   return {
     topTripsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.topTripsByRank?.[index])),
+    topBdpWheel: finite(value?.topBdpWheel),
     bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomQuadsByRank?.[index])),
     bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomStraightFlushByRank?.[index])),
     bottomStraightFlush: finite(value?.bottomStraightFlush),
@@ -239,14 +281,6 @@ function finalizeAggregate(value) {
   };
 }
 
-function royaltyBandIndex(points) {
-  if (points <= 0) return 0;
-  if (points <= 5) return 1;
-  if (points <= 10) return 2;
-  if (points <= 20) return 3;
-  return 4;
-}
-
 function finite(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
@@ -259,6 +293,6 @@ function parseArgs(values) {
 
 function fail(message) {
   console.error(message);
-  console.error("Usage: node precompute-config.cjs --variant high --cards 14 --jokers 0 --samples 10000 [--start N --end N] [--output PATH] [--top-repeat-min-rank 11]");
+  console.error("Usage: node precompute-config.cjs --variant high --cards 14 --jokers 0 --samples 10000 [--start N --end N] [--output PATH] [--top-repeat-min-rank 11] [--paired-output PATH --paired-top-repeat-min-rank 11]");
   process.exit(1);
 }

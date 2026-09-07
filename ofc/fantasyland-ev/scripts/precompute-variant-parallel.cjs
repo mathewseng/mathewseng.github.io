@@ -7,7 +7,9 @@ const samples = Number(args.samples || 10000);
 const workers = Number(args.workers || 8);
 const shards = Number(args.shards || workers);
 const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Number(args["top-repeat-min-rank"]);
+const pairedTopRepeatMinRank = args["paired-top-repeat-min-rank"] === undefined ? null : Number(args["paired-top-repeat-min-rank"]);
 const output = path.resolve(args.output || path.join(__dirname, "../precomputed-parts"));
+const pairedOutput = args["paired-output"] ? path.resolve(args["paired-output"]) : null;
 const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
 const precomputeScript = path.join(__dirname, "precompute-config.cjs");
 const mergeScript = path.join(__dirname, "merge-precomputed-shards.cjs");
@@ -20,6 +22,11 @@ if (!Number.isSafeInteger(shards) || shards < 1 || shards > samples) fail("--sha
 if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
   fail("--top-repeat-min-rank must be a rank from 2 through 14");
 }
+if (pairedTopRepeatMinRank !== null && (!Number.isSafeInteger(pairedTopRepeatMinRank) || pairedTopRepeatMinRank < 2 || pairedTopRepeatMinRank > 14)) {
+  fail("--paired-top-repeat-min-rank must be a rank from 2 through 14");
+}
+if (Boolean(pairedOutput) !== (pairedTopRepeatMinRank !== null)) fail("--paired-output and --paired-top-repeat-min-rank must be used together");
+if (pairedOutput && topRepeatMinRank !== null) fail("A paired run must use the default repeat rule as its primary result");
 
 const tasks = [];
 scenarios.forEach(({ cards, jokers }) => {
@@ -74,6 +81,7 @@ function launchNext() {
     "--output", output,
   ];
   if (topRepeatMinRank !== null) childArgs.push("--top-repeat-min-rank", String(topRepeatMinRank));
+  if (pairedOutput) childArgs.push("--paired-output", pairedOutput, "--paired-top-repeat-min-rank", String(pairedTopRepeatMinRank));
   const child = spawn(process.execPath, childArgs, { stdio: ["ignore", "ignore", "pipe"] });
   let errorOutput = "";
   child.stderr.on("data", (chunk) => {
@@ -99,17 +107,27 @@ function launchNext() {
 
 function finish() {
   clearInterval(statusTimer);
+  mergeResults(output, topRepeatMinRank, (code) => {
+    if (code !== 0 || !pairedOutput) {
+      process.exitCode = code || 0;
+      return;
+    }
+    mergeResults(pairedOutput, pairedTopRepeatMinRank, (pairedCode) => {
+      process.exitCode = pairedCode || 0;
+    });
+  });
+}
+
+function mergeResults(input, minimumTopRank, done) {
   const mergeArgs = [
     mergeScript,
     "--variant", variant,
     "--samples", String(samples),
-    "--input", output,
+    "--input", input,
   ];
-  if (topRepeatMinRank !== null) mergeArgs.push("--top-repeat-min-rank", String(topRepeatMinRank));
+  if (minimumTopRank !== null) mergeArgs.push("--top-repeat-min-rank", String(minimumTopRank));
   const merge = spawn(process.execPath, mergeArgs, { stdio: "inherit" });
-  merge.on("close", (code) => {
-    process.exitCode = code || 0;
-  });
+  merge.on("close", done);
 }
 
 function parseArgs(values) {

@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const Core = require("../../fantasyland-core.js");
+const ROYALTY_DISTRIBUTION_SIZE = 128;
 const args = parseArgs(process.argv.slice(2));
 const target = Number(args.samples || 10000);
 const inputDirectory = path.resolve(args.input || path.join(__dirname, "../precomputed-parts"));
@@ -121,7 +122,7 @@ function createAggregate() {
     repeatSources: Array(8).fill(0),
     repeatDetails: createRepeatDetails(),
     qualifyCount: 0,
-    distribution: [0, 0, 0, 0, 0],
+    distribution: Array(ROYALTY_DISTRIBUTION_SIZE).fill(0),
   };
 }
 
@@ -135,7 +136,7 @@ function addTotals(targetAggregate, totals) {
   for (let index = 0; index < 8; index += 1) targetAggregate.repeatSources[index] += finite(totals.repeatSources?.[index]);
   addRepeatDetails(targetAggregate.repeatDetails, totals.repeatDetails);
   targetAggregate.qualifyCount += finite(totals.qualifyCount);
-  for (let index = 0; index < 5; index += 1) targetAggregate.distribution[index] += finite(totals.distribution?.[index]);
+  for (let index = 0; index < ROYALTY_DISTRIBUTION_SIZE; index += 1) targetAggregate.distribution[index] += finite(totals.distribution?.[index]);
 }
 
 function finalizeAggregate(value) {
@@ -170,20 +171,21 @@ function finite(value) {
 function solverIdForVariant(variant, minimumTopRank = null) {
   if (minimumTopRank !== null) {
     return variant === "cribbage"
-      ? "trainer-matched-cribbage-jjjplus-20260904a"
-      : `trainer-matched-${variant}-jjjplus-20260904a`;
+      ? "trainer-exact-cribbage-jjjplus-exactdist-20260907b"
+      : `trainer-exact-${variant}-jjjplus-exactdist-20260907b`;
   }
-  if (variant === "high") return "trainer-exact-high-20260904a";
-  if (variant === "low") return "trainer-matched-low-20260904a";
-  if (variant === "badeucey") return "trainer-matched-badeucey-20260904a";
-  if (variant === "bdp") return "trainer-matched-bdp-20260904a";
-  if (variant === "cribbage") return "trainer-matched-cribbage-20260904a";
+  if (variant === "high") return "trainer-exact-high-exactdist-20260907a";
+  if (variant === "low") return "trainer-exact-low-exactdist-20260907b";
+  if (variant === "badeucey") return "trainer-exact-badeucey-exactdist-20260907b";
+  if (variant === "bdp") return "trainer-exact-bdp-wheel-exactdist-20260907b";
+  if (variant === "cribbage") return "trainer-exact-cribbage-exactdist-20260907b";
   return "trainer-matched-variants-20260902c";
 }
 
 function createRepeatDetails() {
   return {
     topTripsByRank: Array(15).fill(0),
+    topBdpWheel: 0,
     bottomQuadsByRank: Array(15).fill(0),
     bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
@@ -195,6 +197,7 @@ function createRepeatDetails() {
 function copyRepeatDetails(value) {
   return {
     topTripsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.topTripsByRank?.[index])),
+    topBdpWheel: finite(value?.topBdpWheel),
     bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomQuadsByRank?.[index])),
     bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finite(value?.bottomStraightFlushByRank?.[index])),
     bottomStraightFlush: finite(value?.bottomStraightFlush),
@@ -210,6 +213,7 @@ function addRepeatDetails(target, value) {
     target.bottomQuadsByRank[index] += incoming.bottomQuadsByRank[index];
     target.bottomStraightFlushByRank[index] += incoming.bottomStraightFlushByRank[index];
   }
+  target.topBdpWheel += incoming.topBdpWheel;
   target.bottomStraightFlush += incoming.bottomStraightFlush;
   target.bottomRoyalFlush += incoming.bottomRoyalFlush;
   for (let index = 0; index < 30; index += 1) target.cribbageMiddleByScore[index] += incoming.cribbageMiddleByScore[index];
