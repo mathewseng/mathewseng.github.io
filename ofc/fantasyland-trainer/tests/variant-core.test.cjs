@@ -788,6 +788,12 @@ for (const cards of [14, 15, 16, 17]) {
   bdpPreviousRoyalty = solved.bestRoyalty.points;
 }
 
+for (const variant of ["low", "badeucey", "cribbage"]) {
+  const ids = core.dealSeeded(17, 2, core.hashSeed(`EXACT-TRAINER-${variant}`).toString(16));
+  const solved = trainer.solveVariantHand(ids, variant, { allowUnsupportedCardCount: true });
+  assert.equal(solved.mode, "exact", `${variant} solver: 17-card joker analysis should use the exact search`);
+}
+
 const lowBoard = core.evaluateBoard(
   ["6s", "6h", "2d", "7s", "5h", "4d", "3c", "2s", "Kh", "Kd", "Kc", "9d", "9c", "Ah"],
   {

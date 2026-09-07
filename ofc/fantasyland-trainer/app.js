@@ -2579,7 +2579,7 @@
       options.maskLimit = bounds[0];
       options.beamLimit = bounds[1];
     }
-    if (variant === "bdp") options.mode = "exact";
+    if (["low", "badeucey", "bdp", "cribbage"].includes(variant)) options.mode = "exact";
     if (variant === "doubleblackjack" && cardIds.some((id) => cardFromId(id).joker)) {
       options.maskLimit = 140;
       options.beamLimit = 96;
