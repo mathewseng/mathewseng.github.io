@@ -403,9 +403,9 @@
         if (!this.roster.has(this.clientId)) this.roster.set(this.clientId, this.playerRecord(true));
         this.roster.set(this.clientId, { ...this.roster.get(this.clientId), host: true, connected: true });
         this.saveSession();
-        this.emitRoster();
         this.emitStatus("connected", "You are now the host");
         if (this.onBecomeHost) this.onBecomeHost(clone(this.lastFullState));
+        this.emitRoster();
       } catch (error) {
         if (error?.code === "unavailable-id" && attempt < 10) {
           this.emitStatus("reconnecting", "Waiting to reclaim the table");
