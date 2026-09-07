@@ -197,8 +197,46 @@ assert.deepEqual(
   assert.equal(evaluation.qualifies, qualifies, `bdp top: ${ids.join(" ")} qualification`);
   assert.equal(evaluation.points, points, `bdp top: ${ids.join(" ")} royalties`);
   assert.equal(evaluation.name, label, `bdp top: ${ids.join(" ")} label`);
-  assert.equal(evaluation.repeat, false, "bdp top: top Badugi never repeats Fantasyland");
+  assert.equal(evaluation.repeat, ids.join(" ") === "As 2h 3d", "bdp top: only the A23 wheel repeats Fantasyland");
 });
+
+const naturalTriggerFixture = (rowEvals) => ({ legal: true, rowEvals });
+assert.deepEqual(
+  core.naturalFantasyTriggers("high", naturalTriggerFixture({ top: { category: core.CATEGORY.PAIR, mainRank: 12 } })).map(({ key }) => key),
+  ["top"],
+  "high natural: QQ top should enter Fantasyland"
+);
+assert.deepEqual(
+  core.naturalFantasyTriggers("low", naturalTriggerFixture({
+    top: { category: core.CATEGORY.PAIR, mainRank: 13 },
+    middle: { wheel: true },
+  })).map(({ key }) => key),
+  ["top", "low-wheel"],
+  "low natural: KK top and the low wheel should stack"
+);
+assert.deepEqual(
+  core.naturalFantasyTriggers("badeucey", naturalTriggerFixture({
+    top: { category: core.CATEGORY.TRIPS, mainRank: 2 },
+    middle: { low: { wheel: true }, badugi: { ranks: [5, 4, 3, 2] } },
+    bottom: { category: core.CATEGORY.QUADS },
+  })).map(({ key }) => key),
+  ["top", "low-wheel", "badugi-wheel", "bottom"],
+  "badeucey natural: all four entry conditions should stack"
+);
+assert.deepEqual(
+  core.naturalFantasyTriggers("bdp", naturalTriggerFixture({
+    top: { wheel: true },
+    middle: { wheel: true },
+    bottom: { category: core.CATEGORY.FLUSH },
+  })).map(({ key }) => key),
+  ["top-wheel", "low-wheel", "bottom"],
+  "BDP natural: all three entry conditions should stack"
+);
+assert.deepEqual(
+  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 18 } })).map(({ key }) => key),
+  ["middle"],
+  "cribbage natural: 18 middle points should enter Fantasyland"
+);
 
 [
   [["7s", "5h", "4d", "3c", "2s"], 12, "7hi"],
@@ -504,6 +542,7 @@ assert.deepEqual(
   {
     repeatMask: 7,
     topTripsRank: 2,
+    topBdpWheel: false,
     middleCribbagePoints: 24,
     bottomKind: "quads",
     bottomQuadsRank: 14,
@@ -544,6 +583,7 @@ assert.deepEqual(
   {
     repeatMask: 7,
     topTripsRank: 2,
+    topBdpWheel: false,
     middleCribbagePoints: null,
     bottomKind: "straight-flush",
     bottomQuadsRank: 0,
@@ -569,6 +609,7 @@ assert.deepEqual(
   {
     repeatMask: 7,
     topTripsRank: 6,
+    topBdpWheel: false,
     middleCribbagePoints: null,
     bottomKind: "quads",
     bottomQuadsRank: 14,
@@ -607,6 +648,7 @@ assert.deepEqual(
   {
     repeatMask: 7,
     topTripsRank: 6,
+    topBdpWheel: false,
     middleCribbagePoints: null,
     bottomKind: "quads",
     bottomQuadsRank: 14,
@@ -685,19 +727,20 @@ const bdpIds = Object.values(bdpRows).flat();
 const bdpBoard = core.evaluateBoard(bdpIds, bdpRows, { variant: "bdp" });
 assert.equal(bdpBoard.legal, true, "bdp board: independently qualifying rows should make a legal board");
 assert.equal(bdpBoard.points, 54, "bdp board: 3hi, 7hi, and triple bottom quads should total fifty-four");
-assert.equal(bdpBoard.repeat, true, "bdp board: bottom quads should repeat Fantasyland");
-assert.equal(bdpBoard.repeatMask, 4, "bdp repeat source: only the bottom row can repeat Fantasyland");
+assert.equal(bdpBoard.repeat, true, "bdp board: the top wheel and bottom quads should repeat Fantasyland");
+assert.equal(bdpBoard.repeatMask, 5, "bdp repeat source: top wheel and bottom quads should identify both rows");
 assert.deepEqual(
   trainer.repeatDetailForSolution(bdpBoard),
   {
-    repeatMask: 4,
+    repeatMask: 5,
     topTripsRank: 0,
+    topBdpWheel: true,
     middleCribbagePoints: null,
     bottomKind: "quads",
     bottomQuadsRank: 12,
     bottomStraightFlushRank: 0,
   },
-  "bdp repeat detail: bottom quads should retain their exact rank"
+  "bdp repeat detail: top wheel and bottom quads should retain their exact types"
 );
 assert.deepEqual(bdpBoard.rowPoints, { top: 12, middle: 12, bottom: 30 }, "bdp board: row royalties should remain separate");
 

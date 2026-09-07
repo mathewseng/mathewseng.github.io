@@ -17,7 +17,7 @@
       seedLabel: "HIGH",
       label: "High",
       middleSize: 5,
-      short: "Standard 3–5–5 OFC. Middle and bottom use normal high-poker rankings.",
+      short: "Natural Pineapple OFC with standard 3–5–5 high-poker rankings.",
     },
     low: {
       id: "low",
@@ -72,7 +72,11 @@
     {
       id: "high",
       title: "High",
-      qualification: "Normal OFC: bottom must beat middle, and middle must beat top.",
+      natural: [
+        "Deal five cards first and set all five face up. On each of four later draws, deal three cards, set two, and discard one face down.",
+        "Enter Fantasyland: pair of queens or better on top.",
+      ],
+      qualification: "Set 3 cards on top, 5 in the middle, and 5 on the bottom. Bottom must rank at least as high as middle, and middle at least as high as top.",
       scoring: [
         {
           label: "Top",
@@ -130,6 +134,10 @@
     {
       id: "low",
       title: "Low",
+      natural: [
+        "Deal five cards first and set all five face up. On each of four later draws, deal three cards, set two, and discard one face down.",
+        "Enter Fantasyland: pair of kings or better on top, or a 7-5-4-3-2 wheel in the middle.",
+      ],
       qualification: "Middle needs Thi or lower in 2–7 low. Pairs, straights, and flushes do not qualify; aces are high.",
       scoring: [{ label: "Middle", items: ["7hi: 4pts", "8hi: 2pts", "9hi: 1pt", "Thi: 0pts"] }],
       repeat: "Trips on top, 7-5-4-3-2 in the middle, or quads or better on the bottom.",
@@ -137,16 +145,25 @@
     {
       id: "badeucey",
       title: "Badeucey",
+      natural: [
+        "Deal five cards first and set all five face up. On each of four later draws, deal three cards, set two, and discard one face down.",
+        "Enter Fantasyland for each condition made: pair of kings or better on top; a 7-5-4-3-2 low wheel in the middle; a 5-4-3-2 four-suit Badugi wheel in the middle; or quads or better on the bottom.",
+      ],
       qualification: "Fantasyland uses 14 through 17 cards. The same five middle cards need both a qualifying 2–7 low and four unpaired cards of different suits for 2–5 Badugi. Aces are high.",
       scoring: [
         { label: "2–7 Low", items: ["7hi: 4pts", "8hi: 2pts", "9hi: 1pt", "Thi: 0pts"] },
         { label: "Badugi", items: ["5hi: 12pts", "6hi: 8pts", "7hi: 4pts", "8hi: 0pts", "9hi: 0pts", "Thi: 0pts"] },
       ],
       repeat: "Trips on top; both 7-5-4-3-2 low and a 5-4-3-2 Badugi in the middle; or quads or better on the bottom.",
+      stacking: "When several Natural OFC conditions are made together, each one counts. Stacking awards consecutive Fantasyland hands; Super Fantasyland adds one card for each extra condition, capped at 17 cards. All four conditions can be made together.",
     },
     {
       id: "bdp",
       title: "BDP",
+      natural: [
+        "Deal five cards first and set all five face up. On each of four later draws, deal three cards, set two, and discard one face down.",
+        "Enter Fantasyland for each condition made: an A-2-3 three-suit Badugi wheel on top; a 7-5-4-3-2 wheel in the middle; or a flush or better on the bottom.",
+      ],
       qualification: "Fantasyland uses 17 cards. Badugi, Deuce, Pair: top needs three unpaired cards of different suits with aces low; middle needs Thi or lower in 2–7 low; bottom needs a pair or better.",
       scoring: [
         { label: "Top · 3-card Badugi", items: ["3hi: 12pts", "4hi: 8pts", "5hi: 4pts", "6hi or higher: 0pts"] },
@@ -156,7 +173,8 @@
           items: ["Pair, Two Pair, Trips: 0pts", "Straight: 6pts", "Flush: 12pts", "Boat: 18pts", "Quads: 30pts", "Straight Flush: 45pts", "Royal Flush: 75pts"],
         },
       ],
-      repeat: "Quads or better on the bottom.",
+      repeat: "An A-2-3 three-suit Badugi wheel on top or quads or better on the bottom.",
+      stacking: "All BDP Fantasyland hands use 17 cards. When several Natural OFC conditions are made together, each one counts. Stacking awards consecutive Fantasyland hands; Super Fantasyland adds cards only up to the 17-card cap.",
     },
     {
       id: "badugijack",
@@ -193,6 +211,10 @@
     {
       id: "cribbage",
       title: "Cribbage",
+      natural: [
+        "Deal five cards first and set all five face up. On each of four later draws, deal three cards, set two, and discard one face down.",
+        "Enter Fantasyland: score at least 18 raw cribbage points in the middle.",
+      ],
       qualification: "Middle needs at least 11 raw cribbage points.",
       scoring: [
         { label: "Fifteens", items: ["Each combination totaling 15: 2pts", "T, J, Q, and K: value 10", "A: value 1"] },
@@ -205,9 +227,8 @@
         { label: "Nobs", items: ["Each J matching another card's suit: 1pt"] },
         { label: "Royalties", items: ["Raw cribbage score minus 10: 11 points = 1 royalty"] },
       ],
-      fantasy: "From natural play: pair of kings or better on top, 18 or more raw cribbage points in the middle, or quads or better on the bottom.",
       repeat: "Trips on top, 24 or more raw cribbage points in the middle, or quads or better on the bottom.",
-      superFantasy: "A natural middle with 24 or more raw cribbage points adds one Fantasyland card. Every other additional Fantasyland condition also adds one card.",
+      superFantasy: "A Natural OFC middle with 24 or more raw cribbage points receives one extra Fantasyland card.",
     },
   ];
 
@@ -742,11 +763,13 @@
     const badugi = complete ? bestBadugi(cards, 3, true) : null;
     const qualifies = Boolean(badugi);
     const points = !badugi ? 0 : badugi.high <= 3 ? 12 : badugi.high === 4 ? 8 : badugi.high === 5 ? 4 : 0;
+    const wheel = qualifies && badugi.ranks.join(",") === "3,2,1";
     const label = qualifies ? highCardLabel(badugi.high) : complete ? "Foul" : "";
     return {
       qualifies,
       points,
-      repeat: false,
+      repeat: wheel,
+      wheel,
       quality: qualifies ? badugi.quality : -1,
       badugi: badugi ? { ...badugi, points } : null,
       status: qualifies ? "ok" : complete ? "foul" : "pending",
@@ -771,7 +794,8 @@
     const high = ranks[0];
     const points = high <= 3 ? 12 : high === 4 ? 8 : high === 5 ? 4 : 0;
     const quality = ranks.reduce((value, rank) => value * 15 + (15 - rank), 0);
-    return 1e15 + points * 1e10 + quality;
+    const wheel = ranks[0] === 3 && ranks[1] === 2 && ranks[2] === 1;
+    return 1e15 + (wheel ? 1e14 : 0) + points * 1e10 + quality;
   }
 
   function evaluateBdpLow(cards) {
@@ -2618,6 +2642,40 @@
     throw new Error(`Could not find a qualifying ${VARIANTS[variant].label} hand.`);
   }
 
+  function naturalFantasyTriggers(variantValue, boardEvaluation) {
+    const variant = normalizeVariant(variantValue);
+    if (!boardEvaluation?.legal) return [];
+    const top = boardEvaluation.rowEvals?.top;
+    const middle = boardEvaluation.rowEvals?.middle;
+    const bottom = boardEvaluation.rowEvals?.bottom;
+    const triggers = [];
+    const topPairAtLeast = (minimumRank) => top?.category === CATEGORY.TRIPS
+      || (top?.category === CATEGORY.PAIR && top.mainRank >= minimumRank);
+
+    if (variant === "high" && topPairAtLeast(12)) {
+      triggers.push({ key: "top", row: "top", label: "QQ+ top" });
+    }
+    if (variant === "low") {
+      if (topPairAtLeast(13)) triggers.push({ key: "top", row: "top", label: "KK+ top" });
+      if (middle?.wheel) triggers.push({ key: "low-wheel", row: "middle", label: "7-5-4-3-2 low wheel" });
+    }
+    if (variant === "badeucey") {
+      if (topPairAtLeast(13)) triggers.push({ key: "top", row: "top", label: "KK+ top" });
+      if (middle?.low?.wheel) triggers.push({ key: "low-wheel", row: "middle", label: "7-5-4-3-2 low wheel" });
+      if (middle?.badugi?.ranks?.join(",") === "5,4,3,2") triggers.push({ key: "badugi-wheel", row: "middle", label: "5-4-3-2 Badugi wheel" });
+      if (bottom?.category >= CATEGORY.QUADS) triggers.push({ key: "bottom", row: "bottom", label: "Quads+ bottom" });
+    }
+    if (variant === "bdp") {
+      if (top?.wheel) triggers.push({ key: "top-wheel", row: "top", label: "A-2-3 Badugi wheel" });
+      if (middle?.wheel) triggers.push({ key: "low-wheel", row: "middle", label: "7-5-4-3-2 low wheel" });
+      if (bottom?.category >= CATEGORY.FLUSH) triggers.push({ key: "bottom", row: "bottom", label: "Flush+ bottom" });
+    }
+    if (variant === "cribbage" && middle?.cribbagePoints >= 18) {
+      triggers.push({ key: "middle", row: "middle", label: "18+ cribbage points" });
+    }
+    return triggers;
+  }
+
   function now() {
     return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
   }
@@ -2664,5 +2722,6 @@
     seededRandom,
     dealSeeded,
     findQualifyingDeal,
+    naturalFantasyTriggers,
   };
 });

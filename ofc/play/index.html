@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b10" />
+    <title>OFC Play</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css?v=20260907a" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <a class="brand" href="/ofc/" aria-label="OFC tools">
+          <span class="brand-mark">MS</span>
+          <span><strong>OFC Play</strong><small>Pineapple tables</small></span>
+        </a>
+        <div class="header-actions">
+          <span class="network-state" id="network-state" data-state="offline"><i></i><span>Offline</span></span>
+          <button class="icon-button" id="rules-button" type="button" aria-label="Open rules" title="Rules">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 0 1 4.6.9c0 1.8-2.4 2-2.4 3.6"></path><path d="M12 17h.01"></path></svg>
+          </button>
+          <button class="button quiet compact" id="leave-button" type="button" hidden>Leave</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="lobby" id="setup-view">
+          <div class="section-heading">
+            <p class="eyebrow">Live table</p>
+            <h1>Create or join a game</h1>
+          </div>
+
+          <div class="setup-layout">
+            <section class="setup-primary" aria-labelledby="connection-title">
+              <div class="panel-heading">
+                <div>
+                  <p class="step">01</p>
+                  <h2 id="connection-title">Table</h2>
+                </div>
+                <div class="segmented compact-segment" role="group" aria-label="Create or join">
+                  <button class="active" id="mode-create" type="button">Create</button>
+                  <button id="mode-join" type="button">Join</button>
+                </div>
+              </div>
+
+              <label class="field-label" for="player-name">Your name</label>
+              <input id="player-name" maxlength="24" autocomplete="nickname" placeholder="Player" />
+
+              <div id="join-fields" hidden>
+                <label class="field-label" for="room-code">Room code</label>
+                <input id="room-code" class="room-input" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="ABC234" />
+              </div>
+
+              <button class="button primary full" id="connect-button" type="button">Create table</button>
+              <button class="button quiet full" id="resume-button" type="button" hidden>Resume saved table</button>
+              <p class="form-error" id="setup-error" role="alert"></p>
+            </section>
+
+            <section class="settings-panel" aria-labelledby="settings-title">
+              <div class="panel-heading">
+                <div>
+                  <p class="step">02</p>
+                  <h2 id="settings-title">Game setup</h2>
+                </div>
+                <span class="setting-count" id="seat-summary">Heads-up</span>
+              </div>
+
+              <fieldset class="setting-block">
+                <legend>Variant</legend>
+                <div class="segmented variant-picker" id="variant-picker">
+                  <label><input type="radio" name="variant" value="high" checked /><span>High</span></label>
+                  <label><input type="radio" name="variant" value="low" /><span>Low</span></label>
+                  <label><input type="radio" name="variant" value="badeucey" /><span>Badeucey</span></label>
+                  <label><input type="radio" name="variant" value="bdp" /><span>BDP</span></label>
+                  <label><input type="radio" name="variant" value="cribbage" /><span>Cribbage</span></label>
+                </div>
+                <p class="variant-note" id="variant-note"></p>
+              </fieldset>
+
+              <div class="settings-grid">
+                <fieldset class="setting-block">
+                  <legend>Players</legend>
+                  <div class="segmented">
+                    <label><input type="radio" name="seats" value="2" checked /><span>2</span></label>
+                    <label><input type="radio" name="seats" value="3" /><span>3</span></label>
+                  </div>
+                </fieldset>
+
+                <fieldset class="setting-block">
+                  <legend>Jokers</legend>
+                  <div class="segmented">
+                    <label><input type="radio" name="jokers" value="off" checked /><span>Off</span></label>
+                    <label><input type="radio" name="jokers" value="on" /><span>On</span></label>
+                  </div>
+                </fieldset>
+
+                <fieldset class="setting-block">
+                  <legend>Button</legend>
+                  <div class="segmented">
+                    <label><input type="radio" name="buttonRule" value="move" checked /><span>Moves</span></label>
+                    <label><input type="radio" name="buttonRule" value="hold-fantasyland" /><span>Holds in FL</span></label>
+                  </div>
+                </fieldset>
+
+                <fieldset class="setting-block">
+                  <legend>Multiple FLs</legend>
+                  <div class="segmented">
+                    <label><input type="radio" name="fantasyMode" value="super" checked /><span>Super</span></label>
+                    <label><input type="radio" name="fantasyMode" value="stack" /><span>Stack</span></label>
+                  </div>
+                </fieldset>
+              </div>
+
+              <div class="toggle-list">
+                <label class="toggle-row" id="progressive-row">
+                  <span><strong>Progressive Fantasyland</strong><small>QQ 14 · KK 15 · AA 16 · trips 17</small></span>
+                  <input type="checkbox" id="progressive" checked /><i aria-hidden="true"></i>
+                </label>
+                <label class="toggle-row" id="ultimate-row">
+                  <span><strong>Ultimate repeat</strong><small>Keep the current Fantasyland card count</small></span>
+                  <input type="checkbox" id="ultimate" /><i aria-hidden="true"></i>
+                </label>
+                <label class="toggle-row" id="jjj-row" hidden>
+                  <span><strong>JJJ+ top repeat</strong><small>Top trips below jacks do not repeat</small></span>
+                  <input type="checkbox" id="jjj-plus" /><i aria-hidden="true"></i>
+                </label>
+                <label class="number-row" id="badeucey-row" hidden>
+                  <span><strong>Badeucey Fantasyland</strong><small>Cards dealt in Fantasyland</small></span>
+                  <select id="badeucey-cards" aria-label="Badeucey Fantasyland cards">
+                    <option>14</option><option>15</option><option selected>16</option><option>17</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="room-lobby" id="room-view" hidden>
+          <div class="room-code-block">
+            <span>Room</span>
+            <strong id="room-code-display">------</strong>
+            <button class="button secondary" id="copy-invite-button" type="button">Copy invite</button>
+          </div>
+          <div class="room-waiting">
+            <div class="section-heading compact-heading">
+              <p class="eyebrow">Players</p>
+              <h1 id="waiting-title">Waiting for the table</h1>
+            </div>
+            <div class="roster" id="roster"></div>
+            <div class="room-config" id="room-config"></div>
+            <button class="button primary full" id="start-button" type="button">Start game</button>
+            <p class="form-error" id="room-error" role="alert"></p>
+          </div>
+        </section>
+
+        <section class="table-view" id="table-view" hidden>
+          <header class="table-status">
+            <div>
+              <p class="eyebrow" id="game-label">High · Hand 1</p>
+              <h1 id="turn-label">Your turn</h1>
+            </div>
+            <div class="table-status-actions">
+              <button class="button quiet compact" id="ledger-button" type="button">Ledger</button>
+              <span class="room-chip" id="table-room-code">------</span>
+            </div>
+          </header>
+
+          <div class="score-strip" id="score-strip"></div>
+          <div class="opponents" id="opponents"></div>
+
+          <section class="player-area">
+            <div class="player-area-heading">
+              <div><span class="status-dot"></span><strong id="player-label">Your board</strong></div>
+              <span id="placement-counter">0 to set</span>
+            </div>
+            <div class="ofc-board" id="player-board"></div>
+
+            <div class="draw-area" id="draw-area">
+              <div class="draw-heading">
+                <strong id="draw-label">Cards</strong>
+                <span id="draw-instruction"></span>
+              </div>
+              <div class="draw-cards" id="draw-cards"></div>
+              <button class="discard-target" id="discard-target" type="button">
+                <span>Discard</span><small id="discard-count">0 / 0</small>
+              </button>
+              <div class="turn-actions">
+                <button class="button quiet" id="clear-turn-button" type="button">Reset turn</button>
+                <button class="button primary" id="confirm-turn-button" type="button" disabled>Confirm set</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="showdown" id="showdown-panel" hidden>
+            <div>
+              <p class="eyebrow">Hand complete</p>
+              <h2 id="showdown-title">Results</h2>
+            </div>
+            <div id="showdown-results"></div>
+            <button class="button primary" id="next-hand-button" type="button">Deal next hand</button>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="modal rules-modal" id="rules-modal">
+      <div class="modal-header">
+        <div><p class="eyebrow">Rules</p><h2>Natural and Fantasyland</h2></div>
+        <button class="icon-button" data-close-dialog="rules-modal" type="button" aria-label="Close rules">×</button>
+      </div>
+      <div class="modal-tabs" id="rules-tabs"></div>
+      <div class="modal-body" id="rules-content"></div>
+    </dialog>
+
+    <dialog class="modal ledger-modal" id="ledger-modal">
+      <div class="modal-header">
+        <div><p class="eyebrow">Local record</p><h2>Table ledger</h2></div>
+        <button class="icon-button" data-close-dialog="ledger-modal" type="button" aria-label="Close ledger">×</button>
+      </div>
+      <div class="ledger-totals" id="ledger-totals"></div>
+      <div class="ledger-list" id="ledger-list"></div>
+      <div class="modal-actions">
+        <button class="button secondary" id="copy-ledger-button" type="button">Copy ledger</button>
+        <button class="button primary" id="export-ledger-button" type="button">Export JSON</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../fantasyland-core.js?v=20260907a"></script>
+    <script src="../../shared/peer-room.js?v=20260907a"></script>
+    <script src="./game.js?v=20260907a"></script>
+    <script src="./app.js?v=20260907a"></script>
+  </body>
+</html>
