@@ -10,6 +10,7 @@
   const RANK_LABEL = { 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T", 9: "9", 8: "8", 7: "7", 6: "6", 5: "5", 4: "4", 3: "3", 2: "2" };
   const RANK_NAME = { 14: "aces", 13: "kings", 12: "queens", 11: "jacks", 10: "tens", 9: "nines", 8: "eights", 7: "sevens", 6: "sixes", 5: "fives", 4: "fours", 3: "threes", 2: "twos" };
   const CATEGORY = { HIGH: 0, PAIR: 1, TWO_PAIR: 2, TRIPS: 3, STRAIGHT: 4, FLUSH: 5, FULL_HOUSE: 6, QUADS: 7, STRAIGHT_FLUSH: 8 };
+  const cardCache = new Map();
   const VARIANT_ORDER = ["high", "low", "badeucey", "bdp", "badugijack", "doubleblackjack", "cribbage"];
   const VARIANTS = {
     high: {
@@ -332,11 +333,18 @@
   }
 
   function makeCard(id) {
-    if (/^JK[12]$/i.test(String(id))) return { id: String(id).toUpperCase(), rank: 0, suit: "", joker: true };
     const text = String(id);
+    if (/^JK[12]$/i.test(text)) {
+      const canonicalId = text.toUpperCase();
+      if (!cardCache.has(canonicalId)) cardCache.set(canonicalId, { id: canonicalId, rank: 0, suit: "", joker: true });
+      return cardCache.get(canonicalId);
+    }
     const rankText = text[0].toUpperCase();
     const rank = rankText === "A" ? 14 : rankText === "K" ? 13 : rankText === "Q" ? 12 : rankText === "J" ? 11 : rankText === "T" ? 10 : Number(rankText);
-    return { id: `${RANK_LABEL[rank]}${text[1].toLowerCase()}`, rank, suit: text[1].toLowerCase(), joker: false };
+    const suit = text[1].toLowerCase();
+    const canonicalId = `${RANK_LABEL[rank]}${suit}`;
+    if (!cardCache.has(canonicalId)) cardCache.set(canonicalId, { id: canonicalId, rank, suit, joker: false });
+    return cardCache.get(canonicalId);
   }
 
   function parseCards(ids) {
