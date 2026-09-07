@@ -334,17 +334,23 @@
 
   function makeCard(id) {
     const text = String(id);
+    const cached = cardCache.get(text);
+    if (cached) return cached;
     if (/^JK[12]$/i.test(text)) {
       const canonicalId = text.toUpperCase();
-      if (!cardCache.has(canonicalId)) cardCache.set(canonicalId, { id: canonicalId, rank: 0, suit: "", joker: true });
-      return cardCache.get(canonicalId);
+      const card = cardCache.get(canonicalId) || { id: canonicalId, rank: 0, suit: "", joker: true };
+      cardCache.set(canonicalId, card);
+      cardCache.set(text, card);
+      return card;
     }
     const rankText = text[0].toUpperCase();
     const rank = rankText === "A" ? 14 : rankText === "K" ? 13 : rankText === "Q" ? 12 : rankText === "J" ? 11 : rankText === "T" ? 10 : Number(rankText);
     const suit = text[1].toLowerCase();
     const canonicalId = `${RANK_LABEL[rank]}${suit}`;
-    if (!cardCache.has(canonicalId)) cardCache.set(canonicalId, { id: canonicalId, rank, suit, joker: false });
-    return cardCache.get(canonicalId);
+    const card = cardCache.get(canonicalId) || { id: canonicalId, rank, suit, joker: false };
+    cardCache.set(canonicalId, card);
+    cardCache.set(text, card);
+    return card;
   }
 
   function parseCards(ids) {
