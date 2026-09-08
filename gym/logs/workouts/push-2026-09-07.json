@@ -1,0 +1,245 @@
+{
+  "id": "push-2026-09-07",
+  "date": "2026-09-07",
+  "startTime": "22:00",
+  "durationMinutes": 110,
+  "type": "push",
+  "title": "Late-Night Push Workout with Bench Progress",
+  "chronologyIndex": 16,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-07-flat-1",
+          "weightLb": 95,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-09-07-flat-2",
+          "weightLb": 95,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-09-07-flat-3",
+          "weightLb": 95,
+          "reps": 9,
+          "completed": true
+        }
+      ],
+      "notes": "New best 95 lb working result: 25 completed repetitions and 2,375 lb completed volume. This is two more repetitions and 190 lb more volume than the previous best. Every set reached at least eight repetitions, completing the 95 lb × 8, 8, 8 progression milestone. No failed attempt was reported."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-07-incline-1",
+          "weightLb": 75,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-09-07-incline-2",
+          "weightLb": 75,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "2026-09-07-incline-3",
+          "weightLb": 75,
+          "reps": 6,
+          "completed": true
+        }
+      ],
+      "notes": "Twenty completed repetitions and 1,500 lb completed volume. Seventy-five pounds is the heaviest recorded Smith-incline load, up 10 lb from the previous heaviest documented load."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-07-pushdown-1",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-09-07-pushdown-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-07-pushdown-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Twenty-eight completed repetitions and 840 lb completed volume. The four-set August 3 session remains the highest total at 30 lb."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-07-overhead-1",
+          "weightLb": 20,
+          "reps": 8,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-overhead-2",
+          "weightLb": 20,
+          "reps": 8,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-overhead-3",
+          "weightLb": 20,
+          "reps": 8,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Equipment, attachment, and per-side loading were not supplied, so the entered load is preserved without further inference."
+    },
+    {
+      "exerciseId": "high-cable-chest-press",
+      "name": "High Cable Chest Press",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-07-high-cable-press-1",
+          "weightLb": 20,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-high-cable-press-2",
+          "weightLb": 20,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-high-cable-press-3",
+          "weightLb": 20,
+          "reps": 15,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "The cable setup and whether the stack value was per side were not supplied. The entered load is preserved without doubling."
+    },
+    {
+      "exerciseId": "mid-cable-fly",
+      "name": "Mid Cable Chest Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-07-mid-cable-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-mid-cable-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-mid-cable-fly-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Whether the stack value was per side was not supplied. The entered load is preserved without doubling."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-07-lateral-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-lateral-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-lateral-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Normalized from ‘cable shoulder side raise.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-07-front-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-front-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-07-front-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Normalized from ‘cable shoulder front raise.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    }
+  ],
+  "notes": "Workout started at 10:00 PM local time on September 7 and lasted 110 minutes. It contained 24 completed sets, 232 completed repetitions, and 6,995 lb of preserved entered-load volume without doubling ambiguous cable values. No 0–6 readiness or pain ratings and no RIR values were supplied."
+}

@@ -52,6 +52,13 @@ const benchProgress = [
     context:
       "7/7/9 completed after returning from two weeks of work travel; tied best session volume and set a new recent 95 lb top-set best.",
   },
+  {
+    label: "Sep 7",
+    value: 25,
+    secondary: 2375,
+    context:
+      "8/8/9 completed for a new 95 lb session-volume best and completion of the 8/8/8 milestone.",
+  },
 ];
 
 const inclineProgress = [
@@ -77,6 +84,11 @@ const inclineProgress = [
     label: "Aug 31",
     value: 9,
     context: "65 lb × 8/8/9; best full three-set result at this load.",
+  },
+  {
+    label: "Sep 7",
+    value: 7,
+    context: "75 lb × 7/7/6; heaviest recorded Smith-incline load.",
   },
 ];
 
@@ -107,6 +119,13 @@ const benchEstimateProgress = [
     secondary: 95,
     context:
       "Estimated from the completed nine-repetition final set after travel; not a max test.",
+  },
+  {
+    label: "Sep 7",
+    value: 123.5,
+    secondary: 95,
+    context:
+      "Estimated from the completed nine-repetition final set; session volume improved, but the estimate remains unchanged and is not a max test.",
   },
 ];
 
@@ -143,6 +162,7 @@ const pushdownProgress = [
     secondary: 780,
     context: "8/10/8 across three sets after returning from work travel.",
   },
+  { label: "Sep 7", value: 28, secondary: 840, context: "8/10/10 across three sets." },
 ];
 
 function recentTrainingWeeks(workouts: Workout[]) {
@@ -267,7 +287,7 @@ export default function Dashboard() {
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
               <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Legs → Push next
+                Push → Pull next
               </Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
@@ -275,11 +295,11 @@ export default function Dashboard() {
                 Suggested next session
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Push, add one clean rep.
+                Pull, rebuild the total.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
-                Bench at 95 lb and improve the 7 / 7 / 9 distribution toward 8 / 8 / 8.
-                Keep 1–3 reps in reserve and skip max attempts.
+                Start pull-ups submaximally and aim for at least 13 clean total reps, then
+                use pulldowns and a supported row. Keep early sets away from failure.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -292,7 +312,7 @@ export default function Dashboard() {
                 </div>
                 <div className="h-9 w-px bg-current opacity-20" />
                 <div>
-                  <p className="text-2xl font-black">1–3</p>
+                  <p className="text-2xl font-black">2–3</p>
                   <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
                     target RIR
                   </p>
@@ -334,8 +354,9 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                You reached 7 / 7 / 9 at 95 lb. Next, complete 8 / 8 / 8 before
-                considering the gym’s 10 lb jump.
+                You reached 8 / 8 / 9 at 95 lb and cleared the rep milestone. On a
+                healthy, recovered push day, begin a controlled 105 lb block toward 6 / 6
+                / 6.
               </p>
             </div>
           </Surface>
@@ -343,23 +364,22 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 3 context</p>
-                <h2 className="mt-1 text-lg font-black">Short late-night leg session</h2>
+                <p className="eyebrow">September 7 context</p>
+                <h2 className="mt-1 text-lg font-black">New bench-volume best</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 11:15 PM, you completed 25 minutes of Smith squats and RDLs, reaching 135
-              lb for 8 and 6 squat reps plus 75 lb for three sets of 10 RDLs. The
-              15-minute dry sauna is tracked separately. No 0–6 readiness or pain scores
-              were supplied.
+              At 10:00 PM, you completed 110 minutes of push work. Bench reached 8 / 8 / 9
+              at 95 lb, and incline moved to 75 lb for 7 / 7 / 6. No 0–6 readiness, pain,
+              or RIR scores were supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">135 lb squat</Badge>
-              <Badge tone="quality">15 min sauna</Badge>
-              <Badge tone="neutral">11:15 PM · 25 min</Badge>
+              <Badge tone="accent">25 bench reps</Badge>
+              <Badge tone="quality">95 lb milestone cleared</Badge>
+              <Badge tone="neutral">10:00 PM · 110 min</Badge>
             </div>
           </Surface>
         </div>
@@ -381,8 +401,8 @@ export default function Dashboard() {
         />
         <MetricCard
           label="Incline top set"
-          value="65 × 10"
-          detail="Best documented top set"
+          value="75 × 7"
+          detail="Heaviest recorded load"
           icon={TrendingUp}
         />
         <MetricCard
@@ -401,8 +421,8 @@ export default function Dashboard() {
         />
         <MetricCard
           label="Latest bench 3-set"
-          value="7 / 7 / 9"
-          detail="95 lb · tied top volume"
+          value="8 / 8 / 9"
+          detail="95 lb · new volume best"
           icon={BarChart3}
         />
         <MetricCard
@@ -537,20 +557,20 @@ export default function Dashboard() {
             <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
               <div className="bg-[var(--surface)] p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+4 reps</Badge>
+                  <Badge tone="accent">+6 reps</Badge>
                   <BarChart3 size={18} className="text-[var(--muted)]" />
                 </div>
                 <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
                   Bench at 95 lb
                 </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Aug 31</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Sep 7</p>
                 <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
                   <span>7 / 7 / 5</span>
                   <ArrowRight size={15} className="text-[var(--faint)]" />
-                  <span>7 / 7 / 9</span>
+                  <span>8 / 8 / 9</span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-                  19 → 23 reps · 1,805 → 2,185 lb known volume
+                  19 → 25 reps · 1,805 → 2,375 lb known volume
                 </p>
               </div>
               <div className="bg-[var(--surface)] p-5">

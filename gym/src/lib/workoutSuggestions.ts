@@ -194,18 +194,18 @@ function healthyTemplate(type: WorkoutType): SuggestedExercise[] {
   switch (type) {
     case "push":
       return [
-        exercise("smith-flat-bench", "Smith-machine flat bench", 3, [6, 8], [1, 3], {
-          weightLb: 95,
+        exercise("smith-flat-bench", "Smith-machine flat bench", 3, [5, 7], [2, 3], {
+          weightLb: 105,
           notes:
-            "Warm up first. Aim for 8/8/8 and 24 clean completed repetitions; do not test a maximum.",
+            "Warm up first. The 95 lb × 8/8/9 milestone is complete; on a healthy, recovered day, begin a controlled 105 lb block toward 6/6/6. Repeat 95 lb if those reps were not clean.",
         }),
         exercise(
           "smith-incline-bench",
           "Smith-machine incline bench",
           3,
-          [8, 10],
+          [6, 8],
           [1, 2],
-          { weightLb: 65 },
+          { weightLb: 75 },
         ),
         exercise("shoulder-press", "Shoulder press", 3, [8, 12], [1, 3]),
         exercise("triceps-pushdown", "Triceps pushdown", 3, [10, 12], [0, 2], {

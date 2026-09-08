@@ -15,7 +15,7 @@ export const goals: Goal[] = [
         label: "95 lb × 8, 8, 8",
         value: 95,
         unit: "lb",
-        achieved: false,
+        achieved: true,
       },
       {
         id: "bench-95-101010",
@@ -83,7 +83,7 @@ export const goals: Goal[] = [
       "Avoid repeated descending failed attempts.",
     ],
     notes:
-      "Current reported body weight is 150 lb after the Barcelona work trip. The bench target remains 145 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. Latest working performance is 95 lb × 7, 7, 9 for 23 completed repetitions, tying the best completed volume and setting a new recent 95 lb top-set best.",
+      "Current reported body weight is 150 lb after the Barcelona work trip. The bench target remains 145 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. The September 7 working result of 95 lb × 8, 8, 9 set a new best of 25 completed repetitions and 2,375 lb volume, completing the 8/8/8 milestone. RIR and readiness were not supplied.",
   },
   {
     id: "ten-strict-pullups",

@@ -1047,21 +1047,126 @@ Back-pain response and RIR were not supplied, so this result is not labeled pain
 
 ---
 
+# 16. Late-Night Push Workout with Bench Progress — September 7, 2026
+
+**Date:** 2026-09-07
+
+**Start time:** 10:00 PM local time
+
+**Duration:** 110 minutes
+
+**Data quality:** Complete repetitions and entered loads; partial context and ambiguous cable-loading conventions
+
+## Context
+
+- No 0–6 energy, sleep, soreness, illness, back-pain, or general-pain scores were supplied.
+- No RIR values were supplied.
+- Smith-machine identity follows the established bench equipment context.
+- Unspecified cable values are preserved exactly as entered and are not doubled.
+
+## Smith-Machine Flat Bench
+
+- 95 lb × 8
+- 95 lb × 8
+- 95 lb × 9
+
+Completed work:
+
+- 25 repetitions
+- 2,375 lb volume
+- New best completed repetition and volume totals at 95 lb
+- The 95 lb × 8, 8, 8 progression milestone is complete.
+
+This is two more repetitions and 190 lb more volume than the previous best. No failed repetition was reported, but RIR and execution quality were not supplied.
+
+## Smith-Machine Incline Bench
+
+- 75 lb × 7
+- 75 lb × 7
+- 75 lb × 6
+
+Completed work:
+
+- 20 repetitions
+- 1,500 lb volume
+- 75 lb is the heaviest recorded Smith-incline load
+
+## Triceps Pushdown
+
+- 30 lb × 8
+- 30 lb × 10
+- 30 lb × 10
+
+Completed work:
+
+- 28 repetitions
+- 840 lb volume
+
+## Overhead Triceps Extension
+
+- 20 lb × 8
+- 20 lb × 8
+- 20 lb × 8
+
+Equipment, attachment, and per-side loading were not supplied.
+
+## High Cable Chest Press
+
+- 20 lb × 15
+- 20 lb × 15
+- 20 lb × 15
+
+The cable setup and per-side loading convention were not supplied.
+
+## Mid Cable Chest Fly
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+The per-side loading convention was not supplied.
+
+## Cable Lateral Raise
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+Normalized from “cable shoulder side raise.” Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Cable Front Raise
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+Normalized from “cable shoulder front raise.” Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Session Totals
+
+- 24 completed sets
+- 232 completed repetitions
+- 6,995 lb preserved entered-load volume without doubling ambiguous cable values
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
 
 - Best confirmed heavy single: 115 lb
 - Failed attempts: 125 lb and 135 lb
-- Best documented completed three-set total: 23 reps, reached with 95 lb × 8, 7, 8 and 95 lb × 7, 7, 9
+- Best documented completed three-set total: 25 reps with 95 lb × 8, 8, 9 on September 7
 - Best recent completed working set at 95 lb: 9 reps
-- Best documented completed volume at 95 lb: 2,185 lb
+- Best documented completed volume at 95 lb: 2,375 lb
+- The 95 lb × 8, 8, 8 progression milestone is complete.
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
 
 - Best documented top set: 65 lb × 10
 - Best documented full result at 65 lb: 8, 8, 9
+- Heaviest recorded load: 75 lb × 7, 7, 6
 
 ## Shoulder Press
 
@@ -1144,8 +1249,9 @@ Back-pain response and RIR were not supplied, so this result is not labeled pain
 | 2026-08-03 | 7, 7, 7            |             21 |         1,995 lb |
 | 2026-08-12 | 8, 7, 8            |             23 |         2,185 lb |
 | 2026-08-31 | 7, 7, 9            |             23 |         2,185 lb |
+| 2026-09-07 | 8, 8, 9            |             25 |         2,375 lb |
 
-Change from July 14 to August 31: **+4 completed repetitions and +380 lb of completed volume**.
+Change from July 14 to September 7: **+6 completed repetitions and +570 lb of completed volume**.
 
 ### Triceps Pushdown at 30 lb
 
@@ -1157,12 +1263,13 @@ Change from July 14 to August 31: **+4 completed repetitions and +380 lb of comp
 | 2026-08-10                                | 10, 8, 6           |             24 |           720 lb |
 | 2026-08-12                                | 10, 9, 7           |             26 |           780 lb |
 | 2026-08-31                                | 8, 10, 8           |             26 |           780 lb |
+| 2026-09-07                                | 8, 10, 10          |             28 |           840 lb |
 
 Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.
 
 Change from August 10 to August 12: **+2 completed repetitions and +60 lb of completed volume** across three sets.
 
-August 31 tied the August 12 three-set total with a different repetition distribution.
+September 7 improved the latest three-set total to 28 repetitions and 840 lb volume.
 
 ### Pull-Up Session Repetitions
 

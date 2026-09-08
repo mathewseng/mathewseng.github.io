@@ -12,9 +12,10 @@ Current confirmed status:
 - Best successful heavy single: 115 lb
 - 125 lb: failed
 - 135 lb: failed
-- Latest working performance: 95 lb × 7, 7, 9
-- August 31 produced 23 completed repetitions, tying the best completed volume at this load, and the final set of 9 is the best recent 95 lb working set.
-- This workout followed approximately two weeks of work travel; no 0–6 readiness ratings were supplied.
+- Latest working performance: 95 lb × 8, 8, 9
+- September 7 produced a new best of 25 completed repetitions and 2,375 lb volume at this load.
+- The 95 lb × 8, 8, 8 milestone is complete; the final set of 9 ties the best recent 95 lb working set.
+- No 0–6 readiness ratings or RIR values were supplied.
 
 Definition of success:
 
@@ -27,7 +28,7 @@ Definition of success:
 
 Milestones:
 
-1. 95 lb × 8, 8, 8
+1. 95 lb × 8, 8, 8 — achieved September 7
 2. 95 lb × 10, 10, 10
 3. 105 lb × 6, 6, 6
 4. 105 lb × 8, 8, 8
@@ -45,7 +46,7 @@ Progression rule:
 
 Next action:
 
-- On a healthy, adequately recovered push day, complete 95 lb × 8, 8, 8 with clean repetitions before considering the 10 lb increase.
+- On a healthy, adequately recovered push day, begin a controlled 105 lb block and aim for 6, 6, 6. Repeat 95 lb instead if the September 7 sets were not clean.
 
 Current status:
 

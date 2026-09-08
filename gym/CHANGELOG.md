@@ -2,6 +2,18 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-08 — September 7 Push Workout
+
+### Added
+
+- Added the September 7 push workout at 10:00 PM for 110 minutes with Smith-machine bench and incline bench plus six triceps, chest, and shoulder accessories.
+
+### Changed
+
+- Advanced the 95 lb Smith-bench record to 8, 8, 9 for 25 completed repetitions and 2,375 lb volume, completing the 8/8/8 milestone.
+- Advanced the heaviest recorded Smith-incline load to 75 lb for 7, 7, and 6 repetitions.
+- Updated the dashboard, push program, goals, benchmarks, and next-session guidance while preserving missing 0–6 context and ambiguous cable loading conventions.
+
 ## 2026-09-04 — September 3 Short Leg Workout
 
 ### Added

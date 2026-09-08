@@ -17,20 +17,20 @@ export const programTemplates: ProgramTemplate[] = [
         exerciseId: "smith-flat-bench",
         label: "Smith-Machine Flat Bench",
         sets: 3,
-        repRange: [6, 8],
-        weightLb: 95,
-        rirRange: [1, 2],
+        repRange: [5, 7],
+        weightLb: 105,
+        rirRange: [2, 3],
         notes:
-          "Warm up first. The current result is 7/7/9 for 23 completed reps; aim for 8/8/8 next.",
+          "The September 7 result was 95 lb × 8/8/9, clearing the progression threshold. On a healthy, recovered day, begin a controlled 105 lb block and aim toward 6/6/6. If the 95 lb sets were not clean, repeat 95 lb instead.",
       },
       {
         exerciseId: "smith-incline-bench",
         label: "Smith-Machine Incline Bench",
         sets: 3,
-        repRange: [8, 10],
-        weightLb: 65,
+        repRange: [6, 8],
+        weightLb: 75,
         rirRange: [1, 2],
-        notes: "Build toward 3 × 10 before increasing.",
+        notes: "Latest result is 75 lb × 7/7/6. Repeat the load and build toward 8/8/8.",
       },
       {
         exerciseId: "shoulder-press",
@@ -70,7 +70,7 @@ export const programTemplates: ProgramTemplate[] = [
     rules: [
       "Do not test a one-repetition maximum by default.",
       "Do not repeat failed attempts.",
-      "Progress to 105 lb after at least 95 lb × 8/8/8; a 9–10 rep buffer may make the 10 lb jump more manageable.",
+      "The 95 lb × 8/8/8 threshold is complete. Hold 105 lb until at least 6/6/6 is controlled before building toward 8/8/8.",
     ],
   },
   {
