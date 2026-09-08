@@ -24,11 +24,14 @@
     setupError: $("setup-error"),
     seatSummary: $("seat-summary"),
     variantNote: $("variant-note"),
-    progressiveRow: $("progressive-row"),
+    dealerOptions: $("dealer-options"),
+    dealerOptionsList: $("dealer-options-list"),
+    dealerSelection: $("dealer-selection"),
+    dealerHeading: $("dealer-heading"),
+    dealerVariantButtons: $("dealer-variant-buttons"),
     ultimateRow: $("ultimate-row"),
     jjjRow: $("jjj-row"),
     badeuceyRow: $("badeucey-row"),
-    progressive: $("progressive"),
     ultimate: $("ultimate"),
     jjjPlus: $("jjj-plus"),
     badeuceyCards: $("badeucey-cards"),
@@ -93,6 +96,8 @@
   initialize();
 
   function initialize() {
+    els.dealerOptionsList.innerHTML = Game.VARIANTS.filter((id) => id !== "dealerschoice").map((id) =>
+      '<label class="toggle-row"><span><strong>' + escapeHtml(Game.VARIANT_LABELS[id]) + '</strong></span><input type="checkbox" name="dealerChoice" value="' + id + '" checked /><i aria-hidden="true"></i></label>').join("");
     els.playerName.value = localStorage.getItem("ofc.play.name") || "";
     const codeFromHash = cleanCode(location.hash.slice(1));
     if (codeFromHash) {
@@ -118,6 +123,10 @@
     });
     els.roomCode.addEventListener("input", () => {
       els.roomCode.value = cleanCode(els.roomCode.value);
+    });
+    els.dealerVariantButtons.addEventListener("click", (event) => {
+      const variant = event.target.closest("[data-choice]")?.dataset.choice;
+      if (variant) room.sendAction({ type: "choose_variant", variant });
     });
     els.connectButton.addEventListener("click", connect);
     els.resumeButton.addEventListener("click", resume);
@@ -153,7 +162,10 @@
     document.querySelectorAll("input[name='variant'], input[name='seats']").forEach((input) => {
       input.addEventListener("change", renderVariantSettings);
     });
-    els.progressive.addEventListener("change", renderVariantSettings);
+    document.querySelectorAll("input[name='variant']").forEach((input) => input.addEventListener("change", () => {
+      document.querySelector("input[name='fantasyMode'][value='" + (["high", "progressive"].includes(selectedVariant()) ? "none" : "super") + "']").checked = true;
+    }));
+    els.dealerOptionsList.addEventListener("change", renderVariantSettings);
     window.addEventListener("beforeunload", () => persistHostState());
   }
 
@@ -190,6 +202,7 @@
       if (!model) {
         model = { kind: "lobby", settings: readSettings(), players: latestRoster.map(copyPlayer) };
       }
+      room.maxPlayers = model.settings.seats;
       publishModel();
       showToast("Table recovered. You are the host.");
     };
@@ -235,6 +248,7 @@
           settings: readSettings(),
           players: latestRoster.map(copyPlayer),
         };
+        room.maxPlayers = model.settings.seats;
         publishModel();
       }
       history.replaceState(null, "", "#" + room.roomCode);
@@ -274,6 +288,11 @@
         if (model?.kind !== "game") throw new Error("No hand is active.");
         model = Game.submitPlacement(model, clientId, action.payload);
         model.kind = "game";
+        publishModel();
+      }
+      if (action.type === "choose_variant") {
+        if (model?.kind !== "game") throw new Error("No hand is active.");
+        model = Game.chooseVariant(model, clientId, action.variant);
         publishModel();
       }
       if (action.type === "next_hand") {
@@ -320,19 +339,19 @@
     els.modeCreate.classList.toggle("active", !joining);
     els.modeJoin.classList.toggle("active", joining);
     els.joinFields.hidden = !joining;
+    document.querySelector(".settings-panel").hidden = joining;
     els.connectButton.textContent = joining ? "Join table" : "Create table";
   }
 
   function renderVariantSettings() {
     const variant = selectedVariant();
-    const config = Core.VARIANTS[variant];
-    els.variantNote.textContent = config.short;
-    els.seatSummary.textContent = readRadio("seats") === "3" ? "3-way" : "Heads-up";
-    const high = variant === "high";
-    els.progressiveRow.hidden = !high;
-    els.ultimateRow.hidden = !high || !els.progressive.checked;
-    els.jjjRow.hidden = !["low", "badeucey", "cribbage"].includes(variant);
-    els.badeuceyRow.hidden = variant !== "badeucey";
+    els.variantNote.textContent = variant === "progressive" ? "High OFC. QQ: 14 cards, KK: 15, AA: 16, trips: 17." : variant === "dealerschoice" ? "BTN chooses after the opening five are dealt, before anyone sets." : Core.VARIANTS[variant].short;
+    els.seatSummary.textContent = readRadio("seats") === "3" ? "3-way" : readRadio("seats") === "2btn" ? "2 on the BTN" : "Heads-up";
+    els.ultimateRow.hidden = variant !== "progressive";
+    els.dealerOptions.hidden = variant !== "dealerschoice";
+    const available = variant === "dealerschoice" ? dealerChoices() : [variant];
+    els.jjjRow.hidden = !available.some((id) => ["low", "badeucey", "cribbage"].includes(id));
+    els.badeuceyRow.hidden = !available.includes("badeucey");
   }
 
   function renderResume() {
@@ -367,23 +386,31 @@
     els.roomView.hidden = true;
     els.tableView.hidden = false;
     const state = currentViewState();
-    const me = state.players.find((player) => player.id === room.clientId);
+    els.tableView.dataset.phase = state.phase;
+    const me = myHand(state);
     if (!me) {
       showError("This game is already seated.");
       return;
     }
-    const variant = Core.VARIANTS[state.settings.variant];
-    els.gameLabel.textContent = variant.label + " · Hand " + state.handNumber + (me.inFantasyland ? " · Fantasyland" : "");
+    els.gameLabel.textContent = Game.VARIANT_LABELS[state.handVariant || state.settings.variant] + " · Hand " + state.handNumber + (me.inFantasyland ? " · Fantasyland" : "");
     els.tableRoomCode.textContent = room.roomCode;
     els.turnLabel.textContent = turnText(state, me);
-    els.scoreStrip.style.setProperty("--seat-count", state.players.length);
-    els.scoreStrip.innerHTML = state.players.map((player) => {
-      const active = state.activePlayerId === player.id;
+    els.scoreStrip.style.setProperty("--seat-count", state.settings.seats);
+    els.scoreStrip.innerHTML = state.players.filter((p) => !p.extraHand).map((player) => {
+      const active = state.players.some((p) => p.id === state.activePlayerId && Game.ownerId(p) === player.id);
       const button = state.players[state.buttonIndex]?.id === player.id;
       return '<div class="score-player' + (active ? " active" : "") + '"><span>' + escapeHtml(player.name) + (button ? " · BTN" : "") + '</span><strong>' + signed(player.score) + '</strong></div>';
     }).join("");
 
-    const opponents = state.players.filter((player) => player.id !== room.clientId);
+    const choosing = state.phase === "choose-variant";
+    els.dealerSelection.hidden = !choosing;
+    if (choosing) {
+      const button = state.players[state.buttonIndex];
+      const canChoose = Game.ownerId(button) === room.clientId;
+      els.dealerHeading.textContent = canChoose ? "Choose this hand's variant" : button.name + " chooses the variant";
+      els.dealerVariantButtons.innerHTML = state.settings.dealerChoices.map((id) => '<button type="button" data-choice="' + id + '"' + (canChoose ? "" : " disabled") + '>' + escapeHtml(Game.VARIANT_LABELS[id]) + '</button>').join("");
+    }
+    const opponents = state.players.filter((player) => player.id !== me.id);
     els.opponents.style.setProperty("--opponent-count", Math.max(1, opponents.length));
     els.opponents.innerHTML = opponents.map(renderOpponent).join("");
     syncDraft(state, me);
@@ -397,7 +424,8 @@
     const status = model.phase === "showdown"
       ? (player.evaluation?.legal ? player.evaluation.points + " royalties" : "Fouled")
       : player.hiddenFantasy ? "Setting Fantasyland" : model.activePlayerId === player.id ? "Setting now" : "Waiting";
-    return '<section class="opponent-board"><div class="opponent-head"><strong>' + escapeHtml(player.name) + '</strong><span>' + escapeHtml(status) + '</span></div><div class="mini-board">' +
+    const name = player.name + (!player.extraHand && Game.ownerId(player) === room.clientId && model.settings.twoOnButton ? " · Hand 1" : "");
+    return '<section class="opponent-board"><div class="opponent-head"><strong>' + escapeHtml(name) + '</strong><span>' + escapeHtml(status) + '</span></div><div class="mini-board">' +
       ["top", "middle", "bottom"].map((row) => renderMiniRow(player, row)).join("") +
       '</div></section>';
   }
@@ -426,10 +454,10 @@
     const myTurn = state.phase === "placement" && state.activePlayerId === me.id;
     const board = draftBoard(me);
     const provisional = boardIsComplete(board)
-      ? Core.evaluateBoard(Object.values(board).flat(), board, evaluationOptions(state.settings))
+      ? Core.evaluateBoard(Object.values(board).flat(), board, evaluationOptions(state))
       : null;
     const evaluation = state.phase === "showdown" ? me.evaluation : provisional;
-    els.playerLabel.textContent = me.name + (me.inFantasyland ? " · Fantasyland" : "");
+    els.playerLabel.textContent = me.name + (!me.extraHand && state.settings.twoOnButton && state.players[state.buttonIndex].id === me.id ? " · Hand 1" : "") + (me.inFantasyland ? " · Fantasyland" : "");
     const expected = myTurn ? expectedPlaced(action) : 0;
     els.placementCounter.textContent = state.phase === "showdown"
       ? (me.evaluation?.legal ? me.evaluation.points + " royalties" : "Fouled")
@@ -457,9 +485,11 @@
     const myTurn = state.phase === "placement" && state.activePlayerId === me.id;
     els.drawArea.hidden = state.phase === "showdown";
     if (!myTurn) {
-      els.drawLabel.textContent = "Waiting";
-      els.drawInstruction.textContent = state.activePlayerId ? playerName(state.activePlayerId) + " is setting" : "";
-      els.drawCards.innerHTML = "";
+      els.drawLabel.textContent = state.phase === "choose-variant" ? "Your opening five" : "Waiting";
+      els.drawInstruction.textContent = state.phase === "choose-variant" ? "Waiting for the variant selection" : state.activePlayerId ? playerName(state.activePlayerId) + " is setting" : "";
+      els.drawCards.style.setProperty("--draw-columns", 5);
+      els.drawCards.style.setProperty("--mobile-columns", 5);
+      els.drawCards.innerHTML = state.phase === "choose-variant" ? me.draw.map((id) => cardHtml(id, { disabled: true })).join("") : "";
       els.discardTarget.hidden = true;
       els.confirmTurnButton.disabled = true;
       els.clearTurnButton.disabled = true;
@@ -473,7 +503,7 @@
     const displayCards = unassigned.concat(turnDiscards);
     const columns = Math.max(1, displayCards.length);
     els.drawCards.style.setProperty("--draw-columns", columns);
-    els.drawCards.style.setProperty("--mobile-columns", Math.max(1, Math.ceil(columns / 2)));
+    els.drawCards.style.setProperty("--mobile-columns", columns <= 5 ? columns : Math.ceil(columns / 2));
     els.drawCards.innerHTML = displayCards.map((cardId) => cardHtml(cardId, {
       selected: selectedCard === cardId,
       origin: turnDiscards.includes(cardId) ? "discard" : "hand",
@@ -489,7 +519,7 @@
     const showdown = state.phase === "showdown";
     els.showdownPanel.hidden = !showdown;
     if (!showdown) return;
-    const delta = Number(state.handResult?.deltas?.[me.id] || 0);
+    const delta = state.players.filter((p) => Game.ownerId(p) === room.clientId).reduce((sum, p) => sum + Number(state.handResult?.deltas?.[p.id] || 0), 0);
     els.showdownTitle.textContent = delta > 0 ? "Won " + delta + " points" : delta < 0 ? "Lost " + Math.abs(delta) + " points" : "Push";
     els.showdownResults.innerHTML = state.players.map((player) => {
       const points = Number(state.handResult?.deltas?.[player.id] || 0);
@@ -555,7 +585,7 @@
   }
 
   function assignCard(cardId, target) {
-    const me = model?.players?.find((player) => player.id === room.clientId);
+    const me = myHand(currentViewState());
     if (!me || model.activePlayerId !== me.id || !me.draw.includes(cardId)) return;
     delete turnAssignments[cardId];
     turnDiscards = turnDiscards.filter((id) => id !== cardId);
@@ -582,7 +612,7 @@
   }
 
   function confirmTurn() {
-    const me = model.players.find((player) => player.id === room.clientId);
+    const me = myHand(currentViewState());
     const action = currentAction(model);
     if (!draftReady(action, me)) return;
     const placements = me.draw.filter((cardId) => turnAssignments[cardId]).map((cardId) => ({
@@ -594,9 +624,10 @@
 
   function openLedger() {
     if (!model || model.kind !== "game") return;
-    els.ledgerTotals.innerHTML = model.players.map((player) => '<div class="ledger-total"><span>' + escapeHtml(player.name) + '</span><strong>' + signed(player.score) + '</strong></div>').join("");
+    const owners = model.players.filter((p) => !p.extraHand);
+    els.ledgerTotals.innerHTML = owners.map((player) => '<div class="ledger-total"><span>' + escapeHtml(player.name) + '</span><strong>' + signed(player.score) + '</strong></div>').join("");
     els.ledgerList.innerHTML = model.ledger.length ? model.ledger.slice().reverse().map((hand) => {
-      const deltas = model.players.map((player) => '<span class="' + (hand.deltas[player.id] > 0 ? "delta-positive" : hand.deltas[player.id] < 0 ? "delta-negative" : "") + '">' + escapeHtml(player.name) + " " + signed(hand.deltas[player.id] || 0) + '</span>').join("");
+      const deltas = owners.map((player) => '<span class="' + (hand.deltas[player.id] > 0 ? "delta-positive" : hand.deltas[player.id] < 0 ? "delta-negative" : "") + '">' + escapeHtml(player.name) + " " + signed(hand.deltas[player.id] || 0) + '</span>').join("");
       return '<div class="ledger-hand"><span>Hand ' + hand.handNumber + '</span><div class="ledger-deltas">' + deltas + '</div></div>';
     }).join("") : '<p class="rule-intro">No completed hands yet.</p>';
     els.ledgerModal.showModal();
@@ -625,9 +656,9 @@
   }
 
   function renderRules(variant) {
-    const active = Core.ACTIVE_VARIANT_ORDER;
+    const active = Game.VARIANTS;
     const rule = Core.RULE_SECTIONS.find((entry) => entry.id === variant) || Core.RULE_SECTIONS[0];
-    els.rulesTabs.innerHTML = active.map((id) => '<button type="button" data-rule-variant="' + id + '" class="' + (id === rule.id ? "active" : "") + '">' + escapeHtml(Core.VARIANTS[id].label) + '</button>').join("");
+    els.rulesTabs.innerHTML = active.map((id) => '<button type="button" data-rule-variant="' + id + '" class="' + (id === variant ? "active" : "") + '">' + escapeHtml(Game.VARIANT_LABELS[id]) + '</button>').join("");
     els.rulesTabs.querySelectorAll("button").forEach((button) => {
       button.addEventListener("click", () => {
         selectedRuleVariant = button.dataset.ruleVariant;
@@ -642,6 +673,11 @@
       });
     });
     const sections = [];
+    if (variant === "progressive") sections.push(ruleSection("Progressive", listHtml(["High scoring. Natural QQ earns 14 cards; KK 15; AA 16; trips 17.", "Ultimate on: repeats keep the current card count. Off: repeats start at 14 before any Super FL bonus."])));
+    if (variant === "dealerschoice") {
+      els.rulesContent.innerHTML = ruleSection("Dealer's Choice", listHtml(["All opening five-card sets are dealt before BTN chooses an enabled variant. No placements are allowed until the choice is made.", "The chosen variant applies to every board for that hand. Fantasyland hands receive their remaining cards after the choice.", "Only the first BTN hand's opening cards are visible when choosing in 2 on the BTN."])) + tableRules();
+      return;
+    }
     sections.push(ruleSection("Natural OFC", listHtml(rule.natural || [])));
     sections.push(ruleSection("Fantasyland board", "<p>" + escapeHtml(rule.qualification || "") + "</p>"));
     sections.push(ruleSection("Royalties", '<div class="royalty-groups">' + (rule.scoring || []).map((group) => '<div class="royalty-group"><h4>' + escapeHtml(group.label) + '</h4>' + listHtml(group.items) + '</div>').join("") + "</div>"));
@@ -649,7 +685,11 @@
     if (rule.repeat) sections.push(ruleSection("Repeat Fantasyland", "<p>" + escapeHtml(rule.repeat) + "</p>"));
     if (rule.stacking) sections.push(ruleSection("Stacking / Super", "<p>" + escapeHtml(rule.stacking) + "</p>"));
     if (rule.superFantasy) sections.push(ruleSection("Super Fantasyland", "<p>" + escapeHtml(rule.superFantasy) + "</p>"));
-    els.rulesContent.innerHTML = '<p class="rule-intro">' + escapeHtml(Core.VARIANTS[rule.id].short) + "</p>" + sections.join("");
+    els.rulesContent.innerHTML = '<p class="rule-intro">' + escapeHtml(Core.VARIANTS[rule.id].short) + "</p>" + sections.join("") + tableRules();
+  }
+
+  function tableRules() {
+    return ruleSection("2 on the BTN", listHtml(["Two players, three boards. BTN sets hand 1 then hand 2 on each natural draw. Hand 2's draw is hidden until its turn.", "Both BTN boards score against the opponent, never against each other. The ledger combines both results for BTN.", "When BTN moves, the new BTN gets the extra board. Any Fantasyland earned on a player's extra board is saved until their next BTN turn."])) + ruleSection("Multiple Fantasylands", listHtml(["None: one Fantasyland, no extra cards for multiple triggers. High repeats receive 14 cards.", "Stack: each trigger earns another Fantasyland hand in the queue.", "Super: each additional trigger adds a card, capped at 17."]));
   }
 
   function ruleSection(label, content) {
@@ -662,12 +702,12 @@
 
   function readSettings() {
     return Game.normalizeSettings({
-      seats: Number(readRadio("seats")),
+      seats: readRadio("seats"),
       variant: selectedVariant(),
       jokers: readRadio("jokers") === "on",
       buttonRule: readRadio("buttonRule"),
       fantasyMode: readRadio("fantasyMode"),
-      progressive: els.progressive.checked,
+      dealerChoices: dealerChoices(),
       ultimate: els.ultimate.checked,
       topRepeatJacksPlus: els.jjjPlus.checked,
       badeuceyFantasyCards: Number(els.badeuceyCards.value),
@@ -676,15 +716,16 @@
 
   function settingSummary(settings) {
     const values = [
-      Core.VARIANTS[settings.variant].label,
-      settings.seats === 3 ? "3-way" : "Heads-up",
+      Game.VARIANT_LABELS[settings.variant],
+      settings.twoOnButton ? "2 on the BTN" : settings.seats === 3 ? "3-way" : "Heads-up",
       settings.jokers ? "2 jokers" : "No jokers",
       settings.buttonRule === "move" ? "Moving BTN" : "BTN holds in FL",
-      settings.fantasyMode === "stack" ? "FL stacking" : "Super FL",
+      settings.fantasyMode === "stack" ? "FL stacking" : settings.fantasyMode === "none" ? "No multiple FLs" : "Super FL",
     ];
     if (settings.progressive) values.push(settings.ultimate ? "Progressive · ultimate" : "Progressive");
     if (settings.topRepeatJacksPlus) values.push("JJJ+ top repeat");
     if (settings.variant === "badeucey") values.push(settings.badeuceyFantasyCards + "-card FL");
+    if (settings.variant === "dealerschoice") values.push("Choices: " + settings.dealerChoices.map((id) => Game.VARIANT_LABELS[id]).join(", "));
     return values;
   }
 
@@ -728,9 +769,9 @@
     return Object.keys(Game.ROW_LIMITS).every((row) => board[row].length === Game.ROW_LIMITS[row]);
   }
 
-  function evaluationOptions(settings) {
-    const options = { variant: settings.variant };
-    if (settings.topRepeatJacksPlus) options.topRepeatMinRank = 11;
+  function evaluationOptions(state) {
+    const options = { variant: Game.scoringVariant(state) };
+    if (state.settings.topRepeatJacksPlus) options.topRepeatMinRank = 11;
     return options;
   }
 
@@ -763,6 +804,7 @@
   }
 
   function turnText(state, me) {
+    if (state.phase === "choose-variant") return "Dealer's Choice";
     if (state.phase === "showdown") return "Showdown";
     if (state.activePlayerId === me.id) return me.inFantasyland ? "Set your Fantasyland" : "Your turn";
     return playerName(state.activePlayerId) + " is setting";
@@ -775,6 +817,15 @@
   function currentViewState() {
     if (!model || !room.isHost || model.kind !== "game") return model;
     return Game.filterStateForPlayer(model, room.clientId);
+  }
+
+  function myHand(state) {
+    const mine = state?.players?.filter((p) => Game.ownerId(p) === room.clientId) || [];
+    return mine.find((p) => p.id === state.activePlayerId) || mine[0];
+  }
+
+  function dealerChoices() {
+    return Array.from(document.querySelectorAll("input[name='dealerChoice']:checked"), (input) => input.value);
   }
 
   function persistHostState() {
@@ -838,7 +889,7 @@
   }
 
   function cleanCode(value) {
-    return String(value || "").toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 6);
+    return String(value || "").split("#").pop().toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 6);
   }
 
   function initials(name) {

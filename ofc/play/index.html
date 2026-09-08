@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#070b10" />
     <title>OFC Play</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260907a" />
+    <link rel="stylesheet" href="./styles.css?v=20260908a" />
   </head>
   <body>
     <div class="app-shell">
@@ -49,7 +49,7 @@
 
               <div id="join-fields" hidden>
                 <label class="field-label" for="room-code">Room code</label>
-                <input id="room-code" class="room-input" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="ABC234" />
+                <input id="room-code" class="room-input" autocomplete="off" autocapitalize="characters" placeholder="Room code or invite link" />
               </div>
 
               <button class="button primary full" id="connect-button" type="button">Create table</button>
@@ -70,12 +70,19 @@
                 <legend>Variant</legend>
                 <div class="segmented variant-picker" id="variant-picker">
                   <label><input type="radio" name="variant" value="high" checked /><span>High</span></label>
+                  <label><input type="radio" name="variant" value="progressive" /><span>Progressive</span></label>
                   <label><input type="radio" name="variant" value="low" /><span>Low</span></label>
                   <label><input type="radio" name="variant" value="badeucey" /><span>Badeucey</span></label>
                   <label><input type="radio" name="variant" value="bdp" /><span>BDP</span></label>
                   <label><input type="radio" name="variant" value="cribbage" /><span>Cribbage</span></label>
+                  <label><input type="radio" name="variant" value="dealerschoice" /><span>Dealer's Choice</span></label>
                 </div>
                 <p class="variant-note" id="variant-note"></p>
+              </fieldset>
+
+              <fieldset class="setting-block dealer-options" id="dealer-options" hidden>
+                <legend>Available choices</legend>
+                <div class="choice-toggles" id="dealer-options-list"></div>
               </fieldset>
 
               <div class="settings-grid">
@@ -84,6 +91,7 @@
                   <div class="segmented">
                     <label><input type="radio" name="seats" value="2" checked /><span>2</span></label>
                     <label><input type="radio" name="seats" value="3" /><span>3</span></label>
+                    <label><input type="radio" name="seats" value="2btn" /><span>2 on the BTN</span></label>
                   </div>
                 </fieldset>
 
@@ -106,18 +114,15 @@
                 <fieldset class="setting-block">
                   <legend>Multiple FLs</legend>
                   <div class="segmented">
-                    <label><input type="radio" name="fantasyMode" value="super" checked /><span>Super</span></label>
+                    <label><input type="radio" name="fantasyMode" value="none" checked /><span>None</span></label>
+                    <label><input type="radio" name="fantasyMode" value="super" /><span>Super</span></label>
                     <label><input type="radio" name="fantasyMode" value="stack" /><span>Stack</span></label>
                   </div>
                 </fieldset>
               </div>
 
               <div class="toggle-list">
-                <label class="toggle-row" id="progressive-row">
-                  <span><strong>Progressive Fantasyland</strong><small>QQ 14 · KK 15 · AA 16 · trips 17</small></span>
-                  <input type="checkbox" id="progressive" checked /><i aria-hidden="true"></i>
-                </label>
-                <label class="toggle-row" id="ultimate-row">
+                <label class="toggle-row" id="ultimate-row" hidden>
                   <span><strong>Ultimate repeat</strong><small>Keep the current Fantasyland card count</small></span>
                   <input type="checkbox" id="ultimate" /><i aria-hidden="true"></i>
                 </label>
@@ -167,6 +172,10 @@
           </header>
 
           <div class="score-strip" id="score-strip"></div>
+          <section class="dealer-selection" id="dealer-selection" hidden>
+            <div><p class="eyebrow">Opening cards dealt</p><h2 id="dealer-heading">BTN chooses the game</h2></div>
+            <div class="segmented variant-picker" id="dealer-variant-buttons"></div>
+          </section>
           <div class="opponents" id="opponents"></div>
 
           <section class="player-area">
@@ -230,8 +239,8 @@
 
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="../fantasyland-core.js?v=20260907b"></script>
-    <script src="../../shared/peer-room.js?v=20260907a"></script>
-    <script src="./game.js?v=20260907a"></script>
-    <script src="./app.js?v=20260907a"></script>
+    <script src="../../shared/peer-room.js?v=20260908a"></script>
+    <script src="./game.js?v=20260908a"></script>
+    <script src="./app.js?v=20260908a"></script>
   </body>
 </html>

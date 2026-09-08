@@ -69,12 +69,19 @@
       this.clientId = session.clientId || this.clientId;
       this.name = session.name;
       this.roomCode = session.roomCode;
-      return session.isHost ? this.create(this.name, this.roomCode) : this.join(this.roomCode, this.name, { reconnecting: true });
+      if (session.isHost) {
+        try { return await this.create(this.name, this.roomCode); }
+        catch (error) {
+          if (error.code !== "unavailable-id") throw error;
+          // Another player may have recovered the table while this tab was away.
+        }
+      }
+      return this.join(this.roomCode, this.name, { reconnecting: true });
     }
 
     savedSession() {
       try {
-        const value = JSON.parse(localStorage.getItem(this.storageKey) || "null");
+        const value = JSON.parse(root.sessionStorage?.getItem(this.storageKey) || localStorage.getItem(this.storageKey) || "null");
         if (!value || Date.now() - Number(value.savedAt) > 12 * 60 * 60 * 1000) return null;
         return value;
       } catch (error) {
@@ -103,6 +110,7 @@
 
     publishState(fullState, viewForClient) {
       if (!this.isHost) return;
+      this.viewForClient = viewForClient;
       this.lastFullState = clone(fullState);
       this.lastRevision += 1;
       this.connections.forEach((connection, clientId) => {
@@ -130,7 +138,8 @@
       if (this.peer) this.peer.destroy();
       this.peer = null;
       this.connected = false;
-      localStorage.removeItem(this.storageKey);
+      root.sessionStorage?.removeItem(this.storageKey);
+      if (JSON.parse(localStorage.getItem(this.storageKey) || "null")?.clientId === this.clientId) localStorage.removeItem(this.storageKey);
       this.emitStatus("disconnected", "Left table");
     }
 
@@ -154,25 +163,22 @@
     }
 
     loadClientId() {
-      const key = `${this.storageKey}.clientId`;
-      let value = localStorage.getItem(key);
-      if (!value) {
-        value = typeof crypto !== "undefined" && crypto.randomUUID
+      // New tabs are new players. Only an explicit resume restores a saved identity.
+      return typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-        localStorage.setItem(key, value);
-      }
-      return value;
     }
 
     saveSession() {
-      localStorage.setItem(this.storageKey, JSON.stringify({
+      const session = JSON.stringify({
         clientId: this.clientId,
         name: this.name,
         roomCode: this.roomCode,
         isHost: this.isHost,
         savedAt: Date.now(),
-      }));
+      });
+      root.sessionStorage?.setItem(this.storageKey, session);
+      localStorage.setItem(this.storageKey, session);
     }
 
     openPeer(id) {
@@ -220,29 +226,46 @@
     connectToHost(reconnecting = false) {
       return new Promise((resolve, reject) => {
         const connection = this.peer.connect(this.hostPeerId(), { reliable: true, serialization: "json" });
-        const timeout = setTimeout(() => reject(new Error("Room not found or connection timed out.")), 12000);
-        connection.on("open", () => {
+        let settled = false;
+        const fail = (error) => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timeout);
+          this.peer.off("error", fail);
+          connection.close();
+          reject(peerError(error));
+        };
+        const timeout = setTimeout(() => fail(new Error("Room not found or connection timed out. Check the code and keep the host's page open.")), 20000);
+        this.peer.on("error", fail);
+        connection.on("data", (message) => {
+          if (settled) return;
+          if (message?.type === "error") return fail(new Error(message.message));
+          if (message?.type !== "welcome") return;
+          settled = true;
+          clearTimeout(timeout);
+          this.peer.off("error", fail);
           this.hostConnection = connection;
           this.connected = true;
           this.bindHostConnection(connection);
-          connection.send({ type: "hello", clientId: this.clientId, name: this.name, reconnecting });
+          this.handleClientMessage(message);
           this.startHealthMonitor();
           this.saveSession();
           this.emitStatus("connected", `Connected to ${this.roomCode}`);
           resolve();
         });
-        connection.on("error", (error) => {
-          clearTimeout(timeout);
-          reject(peerError(error));
+        connection.on("open", () => {
+          if (settled) return;
+          connection.send({ type: "hello", clientId: this.clientId, name: this.name, reconnecting });
         });
+        connection.on("error", fail);
+        connection.on("close", () => fail(new Error("The table declined or closed the connection.")));
       });
     }
 
     bindHostConnection(connection) {
       connection.on("data", (message) => this.handleClientMessage(message));
       connection.on("close", () => {
-        if (this.intentionalClose) return;
+        if (this.intentionalClose || this.hostConnection !== connection) return;
         this.connected = false;
         this.emitStatus("reconnecting", "Host disconnected; recovering table");
         this.scheduleMigration();
@@ -261,9 +284,14 @@
         if (!clientId) {
           if (message.type !== "hello") return;
           clientId = String(message.clientId || "");
+          if (clientId === this.clientId || this.connections.get(clientId)?.open) {
+            connection.send({ type: "error", message: "This player is already connected. Join as a new player instead of resuming." });
+            setTimeout(() => connection.close(), 100);
+            return;
+          }
           if (!clientId || (!this.roster.has(clientId) && this.roster.size >= this.maxPlayers)) {
             connection.send({ type: "error", message: "This table is full." });
-            connection.close();
+            setTimeout(() => connection.close(), 100);
             return;
           }
           this.connectionClients.set(connection.peer, clientId);
@@ -282,15 +310,18 @@
           });
           this.broadcastRoster();
           if (this.lastFullState) {
+            const view = this.viewForClient ? this.viewForClient(this.lastFullState, clientId) : this.lastFullState;
+            connection.send({ type: "state", revision: this.lastRevision, state: clone(view) });
             connection.send({ type: "recovery", revision: this.lastRevision, state: this.lastFullState });
           }
           this.emitRoster();
           return;
         }
+        if (this.connections.get(clientId) !== connection) return;
         this.handleHostMessage(clientId, message);
       });
       connection.on("close", () => {
-        if (!clientId) return;
+        if (!clientId || this.connections.get(clientId) !== connection) return;
         this.connections.delete(clientId);
         const player = this.roster.get(clientId);
         if (player) this.roster.set(clientId, { ...player, connected: false });
@@ -512,6 +543,7 @@
       this.playerOrder = [];
       this.lastFullState = null;
       this.lastRevision = 0;
+      this.viewForClient = null;
     }
   }
 

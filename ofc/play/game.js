@@ -7,14 +7,16 @@
   "use strict";
 
   const ROW_LIMITS = Object.freeze({ top: 3, middle: 5, bottom: 5 });
+  const VARIANTS = Object.freeze(["high", "progressive", "low", "badeucey", "bdp", "cribbage", "dealerschoice"]);
+  const VARIANT_LABELS = Object.freeze({ high: "High", progressive: "Progressive", low: "Low", badeucey: "Badeucey", bdp: "BDP", cribbage: "Cribbage", dealerschoice: "Dealer's Choice" });
   const DEFAULT_SETTINGS = Object.freeze({
     seats: 2,
     variant: "high",
     jokers: false,
     buttonRule: "move",
     topRepeatJacksPlus: false,
-    fantasyMode: "super",
-    progressive: true,
+    fantasyMode: "none",
+    progressive: false,
     ultimate: false,
     badeuceyFantasyCards: 16,
     pointValue: 1,
@@ -25,6 +27,7 @@
     const normalizedSettings = normalizeSettings(settings);
     const seats = players.slice(0, normalizedSettings.seats).map((player, seat) => ({
       id: String(player.id),
+      ownerId: String(player.id),
       name: cleanName(player.name),
       seat,
       score: 0,
@@ -47,6 +50,7 @@
       phase: "lobby",
       handNumber: 0,
       buttonIndex: 0,
+      extraHands: {},
       actionQueue: [],
       actionIndex: -1,
       activePlayerId: null,
@@ -59,17 +63,21 @@
 
   function normalizeSettings(settings = {}) {
     const merged = { ...DEFAULT_SETTINGS, ...settings };
-    const variant = Core?.normalizeVariant ? Core.normalizeVariant(merged.variant) : "high";
-    if (!Core?.ACTIVE_VARIANT_ORDER?.includes(variant)) throw new Error("Choose an active OFC variant.");
+    const variant = merged.variant === "high" && settings.progressive === true ? "progressive" : merged.variant;
+    if (!VARIANTS.includes(variant)) throw new Error("Choose an active OFC variant.");
+    const dealerChoices = [...new Set(settings.dealerChoices || VARIANTS.slice(0, -1))].filter((id) => VARIANTS.includes(id) && id !== "dealerschoice");
+    if (variant === "dealerschoice" && !dealerChoices.length) throw new Error("Enable at least one Dealer's Choice variant.");
     return {
-      seats: Number(merged.seats) === 3 ? 3 : 2,
+      seats: merged.twoOnButton ? 2 : Number(merged.seats) === 3 ? 3 : 2,
+      twoOnButton: merged.seats === "2btn" || Boolean(merged.twoOnButton),
       variant,
+      dealerChoices,
       jokers: Boolean(merged.jokers),
       buttonRule: merged.buttonRule === "hold-fantasyland" ? "hold-fantasyland" : "move",
       topRepeatJacksPlus: Boolean(merged.topRepeatJacksPlus),
-      fantasyMode: merged.fantasyMode === "stack" ? "stack" : "super",
-      progressive: variant === "high" && Boolean(merged.progressive),
-      ultimate: variant === "high" && Boolean(merged.progressive) && Boolean(merged.ultimate),
+      fantasyMode: ["none", "stack", "super"].includes(settings.fantasyMode) ? settings.fantasyMode : ["high", "progressive"].includes(variant) ? "none" : "super",
+      progressive: variant === "progressive",
+      ultimate: (variant === "progressive" || (variant === "dealerschoice" && dealerChoices.includes("progressive"))) && Boolean(merged.ultimate),
       badeuceyFantasyCards: clampWhole(merged.badeuceyFantasyCards, 14, 17, 16),
       pointValue: clampNumber(merged.pointValue, 0.01, 100000, 1),
     };
@@ -77,16 +85,27 @@
 
   function startHand(source) {
     const state = clone(source);
+    state.settings = normalizeSettings(state.settings);
     if (!Array.isArray(state.players) || state.players.length < 2) throw new Error("At least two seated players are required.");
     if (state.handNumber > 0) {
       const button = state.players[state.buttonIndex];
-      const hold = state.settings.buttonRule === "hold-fantasyland" && button?.fantasyQueue > 0;
-      if (!hold) state.buttonIndex = (state.buttonIndex + 1) % state.players.length;
+      const hold = state.settings.buttonRule === "hold-fantasyland" && state.players.some((p) => ownerId(p) === ownerId(button) && p.fantasyQueue > 0);
+      if (!hold) state.buttonIndex = (state.buttonIndex + 1) % state.settings.seats;
+    }
+    if (state.settings.twoOnButton) {
+      state.extraHands ||= {};
+      const previous = state.players.find((p) => p.extraHand);
+      if (previous) state.extraHands[ownerId(previous)] = previous;
+      state.players = state.players.filter((p) => !p.extraHand);
+      const button = state.players[state.buttonIndex];
+      const extra = state.extraHands[button.id] || { ...clone(button), fantasyQueue: 0, currentFantasyCards: 0 };
+      state.players.push({ ...extra, id: button.id + ":second", ownerId: button.id, name: button.name + " · Hand 2", extraHand: true, score: 0 });
     }
     state.handNumber += 1;
     state.phase = "placement";
     state.handResult = null;
     state.deck = shuffledDeck(state.settings.jokers ? 2 : 0, `${state.seed}-${state.handNumber}`);
+    state.handVariant = state.settings.variant === "dealerschoice" ? null : state.settings.variant;
     state.players.forEach((player) => {
       player.inFantasyland = player.fantasyQueue > 0;
       if (player.inFantasyland) player.fantasyQueue -= 1;
@@ -100,6 +119,15 @@
       player.hiddenFantasy = player.inFantasyland;
       player.evaluation = null;
     });
+    // Everyone gets their opening five before BTN chooses. Extra BTN draws stay hidden.
+    if (state.settings.variant === "dealerschoice") {
+      state.players.forEach((p) => { p.draw = drawCards(state, 5); });
+      state.phase = "choose-variant";
+      state.actionQueue = [];
+      state.actionIndex = -1;
+      state.activePlayerId = state.players[state.buttonIndex].id;
+      return state;
+    }
     state.actionQueue = buildActionQueue(state);
     state.actionIndex = -1;
     state.activePlayerId = null;
@@ -108,6 +136,16 @@
 
   function buildActionQueue(state) {
     const order = seatOrder(state);
+    if (state.settings.twoOnButton) {
+      const actions = [];
+      for (let round = 0; round < 5; round += 1) {
+        order.forEach((playerId) => {
+          const fantasy = playerById(state, playerId).inFantasyland;
+          if (!fantasy || round === 0) actions.push({ playerId, kind: fantasy ? "fantasy" : "natural", round });
+        });
+      }
+      return actions;
+    }
     const fantasy = order.filter((id) => playerById(state, id).inFantasyland)
       .map((playerId) => ({ playerId, kind: "fantasy", round: 0 }));
     const natural = order.filter((id) => !playerById(state, id).inFantasyland);
@@ -119,10 +157,29 @@
   }
 
   function seatOrder(state) {
-    return Array.from({ length: state.players.length }, (_, offset) => {
-      const index = (state.buttonIndex + 1 + offset) % state.players.length;
+    const order = Array.from({ length: state.settings.seats }, (_, offset) => {
+      const index = (state.buttonIndex + 1 + offset) % state.settings.seats;
       return state.players[index].id;
     });
+    if (state.settings.twoOnButton) order.push(state.players.find((p) => p.extraHand).id);
+    return order;
+  }
+
+  function chooseVariant(source, clientId, variant) {
+    if (source.phase !== "choose-variant") throw new Error("The variant is already chosen.");
+    if (ownerId(source.players[source.buttonIndex]) !== clientId) throw new Error("Only BTN can choose the variant.");
+    if (!source.settings.dealerChoices.includes(variant)) throw new Error("This variant is not enabled for this table.");
+    const state = clone(source);
+    state.handVariant = variant;
+    state.phase = "placement";
+    state.players.forEach((p) => {
+      if (p.inFantasyland) {
+        p.currentFantasyCards = variant === "bdp" ? 17 : variant === "badeucey" ? state.settings.badeuceyFantasyCards : p.currentFantasyCards;
+      }
+    });
+    state.actionQueue = buildActionQueue(state);
+    state.actionIndex = -1;
+    return advanceAction(state);
   }
 
   function advanceAction(source) {
@@ -132,7 +189,8 @@
     const action = state.actionQueue[state.actionIndex];
     const player = playerById(state, action.playerId);
     if (!player) throw new Error("The next player is no longer seated.");
-    player.draw = drawCards(state, action.kind === "fantasy" ? player.currentFantasyCards : action.round === 0 ? 5 : 3);
+    const count = action.kind === "fantasy" ? player.currentFantasyCards : action.round === 0 ? 5 : 3;
+    player.draw.push(...drawCards(state, count - player.draw.length));
     player.submitted = false;
     state.activePlayerId = player.id;
     return state;
@@ -141,9 +199,10 @@
   function submitPlacement(source, playerId, payload) {
     const state = clone(source);
     if (state.phase !== "placement") throw new Error("This hand is not accepting placements.");
-    if (state.activePlayerId !== playerId) throw new Error("Wait for your turn.");
+    const active = playerById(state, state.activePlayerId);
+    if (!active || ownerId(active) !== playerId) throw new Error("Wait for your turn.");
     const action = state.actionQueue[state.actionIndex];
-    const player = playerById(state, playerId);
+    const player = active;
     const draw = new Set(player.draw);
     const placements = Array.isArray(payload?.placements) ? payload.placements : [];
     const discards = Array.isArray(payload?.discards) ? payload.discards.map(String) : [];
@@ -186,15 +245,17 @@
     const deltas = new Map(state.players.map((player) => [player.id, 0]));
     for (let left = 0; left < state.players.length; left += 1) {
       for (let right = left + 1; right < state.players.length; right += 1) {
-        const result = scorePair(state.settings.variant, state.players[left], state.players[right]);
+        if (ownerId(state.players[left]) === ownerId(state.players[right])) continue;
+        const result = scorePair(scoringVariant(state), state.players[left], state.players[right]);
         pairResults.push(result);
         deltas.set(result.leftId, deltas.get(result.leftId) + result.points);
         deltas.set(result.rightId, deltas.get(result.rightId) - result.points);
       }
     }
     state.players.forEach((player) => {
-      player.score += deltas.get(player.id) || 0;
-      awardFantasyland(state.settings, player);
+      const owner = playerById(state, ownerId(player));
+      owner.score += deltas.get(player.id) || 0;
+      awardFantasyland(handSettings(state), player);
     });
     state.handResult = {
       handNumber: state.handNumber,
@@ -203,20 +264,22 @@
       deltas: Object.fromEntries(deltas),
       completedAt: new Date().toISOString(),
     };
+    const owners = state.players.filter((p) => !p.extraHand);
+    const ownerDeltas = Object.fromEntries(owners.map((p) => [p.id, state.players.filter((hand) => ownerId(hand) === p.id).reduce((sum, hand) => sum + (deltas.get(hand.id) || 0), 0)]));
     state.ledger.push({
       handNumber: state.handNumber,
       completedAt: state.handResult.completedAt,
-      variant: state.settings.variant,
-      deltas: Object.fromEntries(deltas),
-      totals: Object.fromEntries(state.players.map((player) => [player.id, player.score])),
-      players: Object.fromEntries(state.players.map((player) => [player.id, player.name])),
+      variant: state.handVariant || state.settings.variant,
+      deltas: ownerDeltas,
+      totals: Object.fromEntries(owners.map((player) => [player.id, player.score])),
+      players: Object.fromEntries(owners.map((player) => [player.id, player.name])),
     });
     return state;
   }
 
   function evaluatePlayer(state, player) {
-    const options = { variant: state.settings.variant };
-    if (state.settings.topRepeatJacksPlus && ["low", "badeucey", "cribbage"].includes(state.settings.variant)) {
+    const options = { variant: scoringVariant(state) };
+    if (state.settings.topRepeatJacksPlus && ["low", "badeucey", "cribbage"].includes(options.variant)) {
       options.topRepeatMinRank = 11;
     }
     return serializeEvaluation(Core.evaluateBoard(Object.values(player.board).flat(), player.board, options));
@@ -266,13 +329,13 @@
     if (player.inFantasyland) {
       awards = bitCount(evaluation.repeatMask);
       if (!awards) return;
-      if (settings.variant === "high" && settings.ultimate) nextCards = player.currentFantasyCards || 14;
+      if (settings.variant === "progressive" && settings.ultimate) nextCards = player.currentFantasyCards || 14;
     } else {
-      const triggers = Core.naturalFantasyTriggers(settings.variant, evaluation);
+      const triggers = Core.naturalFantasyTriggers(settings.variant === "progressive" ? "high" : settings.variant, evaluation);
       awards = triggers.length;
       if (settings.variant === "cribbage" && finite(evaluation.rowEvals?.middle?.cribbagePoints) >= 24) awards += 1;
       if (!awards) return;
-      if (settings.variant === "high" && settings.progressive) nextCards = progressiveHighCards(evaluation.rowEvals.top);
+      if (settings.variant === "progressive") nextCards = progressiveHighCards(evaluation.rowEvals.top);
     }
     if (settings.variant === "bdp") nextCards = 17;
     if (settings.fantasyMode === "stack") {
@@ -280,7 +343,7 @@
       player.nextFantasyCards = nextCards;
     } else {
       player.fantasyQueue = Math.max(player.fantasyQueue, 1);
-      player.nextFantasyCards = Math.min(17, nextCards + Math.max(0, awards - 1));
+      player.nextFantasyCards = Math.min(17, nextCards + (settings.fantasyMode === "super" ? Math.max(0, awards - 1) : 0));
     }
   }
 
@@ -300,9 +363,12 @@
   function filterStateForPlayer(source, clientId) {
     const state = clone(source);
     delete state.deck;
+    delete state.seed;
+    delete state.extraHands;
     state.players.forEach((player) => {
-      const mine = player.id === clientId;
-      if (!mine) player.draw = player.draw.map(() => "BACK");
+      const mine = ownerId(player) === clientId;
+      const locked = player.extraHand && state.activePlayerId !== player.id;
+      if (!mine || locked) player.draw = player.draw.map(() => "BACK");
       if (!mine) player.discards = player.discards.map(() => "BACK");
       if (!mine && player.hiddenFantasy && state.phase !== "showdown") {
         player.board = {
@@ -327,23 +393,23 @@
     return {
       exportedAt: new Date().toISOString(),
       settings: clone(state.settings),
-      players: state.players.map(({ id, name }) => ({ id, name })),
+      players: state.players.filter((p) => !p.extraHand).map(({ id, name }) => ({ id, name })),
       hands: clone(state.ledger),
-      totals: Object.fromEntries(state.players.map((player) => [player.name, player.score])),
+      totals: Object.fromEntries(state.players.filter((p) => !p.extraHand).map((player) => [player.name, player.score])),
     };
   }
 
   function ledgerText(state) {
     const lines = [
       "OFC Ledger",
-      `${Core.VARIANTS[state.settings.variant].label} · ${state.players.length}-handed · ${state.settings.jokers ? "2 jokers" : "no jokers"}`,
+      `${VARIANT_LABELS[state.settings.variant]} · ${state.settings.twoOnButton ? "2 on the BTN" : state.players.length + "-handed"} · ${state.settings.jokers ? "2 jokers" : "no jokers"}`,
       "",
     ];
     state.ledger.forEach((hand) => {
-      const deltas = state.players.map((player) => `${player.name} ${signed(hand.deltas[player.id] || 0)}`).join(" · ");
+      const deltas = state.players.filter((p) => !p.extraHand).map((player) => `${player.name} ${signed(hand.deltas[player.id] || 0)}`).join(" · ");
       lines.push(`Hand ${hand.handNumber}: ${deltas}`);
     });
-    lines.push("", "Totals", ...state.players.map((player) => `${player.name}: ${signed(player.score)} pts`));
+    lines.push("", "Totals", ...state.players.filter((p) => !p.extraHand).map((player) => `${player.name}: ${signed(player.score)} pts`));
     return lines.join("\n");
   }
 
@@ -383,6 +449,18 @@
 
   function playerById(state, id) {
     return state.players.find((player) => player.id === id);
+  }
+
+  function ownerId(player) { return player.ownerId || player.id; }
+
+  function handSettings(state) {
+    const variant = state.handVariant || state.settings.variant;
+    return { ...state.settings, variant, progressive: variant === "progressive", ultimate: variant === "progressive" && state.settings.ultimate };
+  }
+
+  function scoringVariant(state) {
+    const variant = state.handVariant || state.settings.variant;
+    return ["progressive", "dealerschoice"].includes(variant) ? "high" : variant;
   }
 
   function emptyBoard() {
@@ -438,6 +516,11 @@
 
   return {
     DEFAULT_SETTINGS,
+    VARIANTS,
+    VARIANT_LABELS,
+    ownerId,
+    scoringVariant,
+    chooseVariant,
     ROW_LIMITS,
     awardFantasyland,
     boardComplete,
