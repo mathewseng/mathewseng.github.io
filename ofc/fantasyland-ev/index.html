@@ -7,7 +7,7 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260904c" />
+    <link rel="stylesheet" href="./styles.css?v=20260907a" />
   </head>
   <body>
     <header class="site-header">
@@ -23,9 +23,9 @@
     <main class="page-shell">
       <section class="intro-band">
         <div>
-          <p class="eyebrow">Monte Carlo calculator</p>
+          <p class="eyebrow">Precomputed analysis</p>
           <h1>Fantasyland royalty EV</h1>
-          <p class="lede">Compare royalty EV, foul chance, and repeat-Fantasyland chance by cards in hand, exact jokers drawn, and total jokers in the deck.</p>
+          <p class="lede">Compare exact trainer-solver results for royalty EV, foul chance, and repeat Fantasyland by cards in hand, jokers drawn, and jokers in the deck.</p>
         </div>
         <button id="rules-open" class="rules-button" type="button" aria-haspopup="dialog"><span aria-hidden="true">i</span>Scoring rules</button>
       </section>
@@ -37,7 +37,7 @@
               <p class="eyebrow">Variant</p>
               <h2 id="variant-heading">Choose the OFC variant</h2>
             </div>
-            <p id="variant-summary" class="variant-summary">Standard 3-5-5 OFC with normal high-poker rankings.</p>
+            <p id="variant-summary" class="variant-summary">Natural Pineapple OFC with standard 3-5-5 high-poker rankings.</p>
           </div>
           <div class="variant-pills" role="radiogroup" aria-label="Fantasyland variant">
             <label><input type="radio" name="variant" value="high" checked /><span>High</span></label>
@@ -59,34 +59,12 @@
           </div>
         </div>
 
-        <div class="run-bar">
-          <div class="sample-control">
-            <label for="sample-count">New samples / config</label>
-            <span class="number-input-shell">
-              <input id="sample-count" type="number" min="1" step="1" inputmode="numeric" value="100" aria-describedby="sample-total" />
-              <button id="sample-100k" type="button" title="Set 100,000 samples per configuration">100K</button>
-            </span>
-            <small id="sample-total">1,200 hands total</small>
-          </div>
-          <div class="estimate-copy">
-            <span>Estimated time</span>
-            <strong id="estimate-time">Calculating...</strong>
-            <small id="estimate-detail">Calibrates to this device</small>
-          </div>
-          <div class="run-copy">
-            <strong id="run-status">Ready to calculate</strong>
-            <span id="run-detail">Loading configurations</span>
-          </div>
-          <div class="progress-track" aria-hidden="true"><span id="run-progress"></span></div>
-          <button id="run-calculator" class="primary-button" type="button">Run calculator</button>
-          <button id="stop-calculator" class="secondary-button" type="button" hidden>Stop</button>
-        </div>
       </section>
 
       <section class="chart-grid">
         <article class="chart-panel">
           <div class="panel-head"><div><p class="eyebrow">Royalties</p><h2>Royalty EV by hand</h2></div><span>Higher is better</span></div>
-          <div id="ev-chart" class="bar-chart empty-chart">Run the calculator to compare configurations.</div>
+          <div id="ev-chart" class="bar-chart empty-chart">Precomputed configurations will appear here.</div>
         </article>
         <article class="chart-panel">
           <div class="panel-head"><div><p class="eyebrow">Continuation</p><h2>Repeat probability</h2></div><span>Repeat line available</span></div>
@@ -99,29 +77,23 @@
         <article class="chart-panel distribution-panel">
           <div class="panel-head distribution-head">
             <div><p class="eyebrow">Outcomes</p><h2>Royalty distribution</h2></div>
-            <div class="distribution-legend" aria-label="Royalty bands">
-              <span><i class="band-zero"></i>0</span>
-              <span><i class="band-low"></i>1-5</span>
-              <span><i class="band-mid"></i>6-10</span>
-              <span><i class="band-high"></i>11-20</span>
-              <span><i class="band-elite"></i>21+</span>
-            </div>
+            <span>Every integer royalty score · mode marked</span>
           </div>
-          <div id="distribution-chart" class="distribution-chart empty-chart">Royalty bands will appear here.</div>
+          <div id="distribution-chart" class="distribution-chart empty-chart">Royalty outcomes will appear here.</div>
         </article>
         <article id="repeat-source-panel" class="chart-panel repeat-source-panel" hidden>
           <div class="panel-head repeat-source-head">
             <div><p class="eyebrow">Repeat paths</p><h2>Repeat source by hand</h2></div>
-            <span>Bar width = repeat chance; multi-row = Super Fantasyland</span>
+            <span id="repeat-source-note">Bar width = repeat chance; multi-row = Super Fantasyland</span>
           </div>
           <div class="repeat-source-legend" aria-label="Repeat source legend">
             <span><i class="source-top"></i>Top</span>
             <span><i class="source-middle"></i>Middle</span>
             <span><i class="source-bottom"></i>Bottom</span>
-            <span><i class="source-top-middle"></i>Top + Middle <b>+1 card</b></span>
-            <span><i class="source-top-bottom"></i>Top + Bottom <b>+1 card</b></span>
-            <span><i class="source-middle-bottom"></i>Middle + Bottom <b>+1 card</b></span>
-            <span><i class="source-all"></i>All three <b>+2 cards</b></span>
+            <span><i class="source-top-middle"></i>Top + Middle <b data-repeat-extra="2">+1 card</b></span>
+            <span><i class="source-top-bottom"></i>Top + Bottom <b data-repeat-extra="2">+1 card</b></span>
+            <span><i class="source-middle-bottom"></i>Middle + Bottom <b data-repeat-extra="2">+1 card</b></span>
+            <span><i class="source-all"></i>All three <b data-repeat-extra="3">+2 cards</b></span>
           </div>
           <div id="repeat-source-chart" class="repeat-source-chart"></div>
           <div id="repeat-source-detail" class="repeat-source-detail" aria-live="polite"></div>
@@ -190,7 +162,7 @@
             <div><dt>Repeat FL</dt><dd>Chance that at least one qualifying repeat line exists.</dd></div>
             <div><dt>Foul</dt><dd>Chance that the deal cannot make a legal board.</dd></div>
             <div><dt>Repeat-line</dt><dd>Average royalties on the best repeat line, only when one exists.</dd></div>
-            <div><dt>Recursive</dt><dd>Expected total royalties across future repeats, with finite-sample smoothing on the repeat rate.</dd></div>
+            <div><dt>Recursive</dt><dd>Expected total royalties across future repeats. Joker games weight later hands by 0J, 1J, and 2J draw probabilities from a 54-card deck.</dd></div>
             <div><dt>Deck mix</dt><dd>Weighted average over the possible joker counts drawn from a one- or two-joker deck.</dd></div>
           </dl>
         </article>
@@ -206,9 +178,9 @@
       <div id="rules-content" class="rules-content"></div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260904c"></script>
-    <script src="../fantasyland-trainer/app.js?v=20260904c"></script>
-    <script src="./precomputed.js?v=20260904c"></script>
-    <script src="./app.js?v=20260904c"></script>
+    <script src="../fantasyland-core.js?v=20260907a"></script>
+    <script src="../fantasyland-trainer/app.js?v=20260907a"></script>
+    <script src="./precomputed.js?v=20260907a"></script>
+    <script src="./app.js?v=20260907a"></script>
   </body>
 </html>

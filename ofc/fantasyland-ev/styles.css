@@ -34,7 +34,7 @@ html {
 
 body {
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -158,7 +158,7 @@ nav a:focus-visible {
 }
 
 h1 {
-  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  font-size: 3rem;
   line-height: 1.02;
   letter-spacing: 0;
 }
@@ -665,12 +665,10 @@ select {
 .source-all { background: #f06f78; }
 
 .distribution-chart {
-  min-height: 278px;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: center;
-  gap: 9px 22px;
-  padding: 15px;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
 }
 
 .repeat-source-head > span {
@@ -943,7 +941,7 @@ select {
 .repeat-frequency-item span,
 .repeat-frequency-item strong {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .repeat-frequency-item span {
@@ -960,11 +958,22 @@ select {
 
 .repeat-frequency-item i {
   position: absolute;
+  z-index: 1;
   bottom: 0;
   left: 0;
-  height: 4px;
+  height: 6px;
   background: var(--blue);
   opacity: 0.82;
+}
+
+.repeat-frequency-item::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  background: var(--track);
+  content: "";
 }
 
 .repeat-frequency-item.has-count i {
@@ -1001,31 +1010,99 @@ select {
 
 .distribution-row {
   min-width: 0;
-  display: grid;
-  grid-template-columns: 62px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--line);
 }
 
-.distribution-row > span {
+.distribution-row:last-child {
+  border-bottom: 0;
+}
+
+.distribution-row > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.distribution-row > header > strong {
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+.distribution-row > header > span {
   color: var(--muted);
   font-size: 0.66rem;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
 
-.distribution-bar {
-  min-width: 0;
-  height: 14px;
-  display: flex;
-  overflow: hidden;
-  border-radius: 3px;
-  background: var(--surface-3);
+.distribution-row > header b {
+  color: var(--text);
 }
 
-.distribution-bar i {
-  height: 100%;
+.distribution-viewport {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.distribution-plot {
+  height: 92px;
+  display: grid;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.distribution-bin {
   min-width: 0;
+  display: grid;
+  grid-template-rows: 58px 14px 14px;
+  justify-items: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.distribution-bin > div {
+  width: 100%;
+  height: 58px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.distribution-bin i {
+  width: min(18px, 72%);
+  min-height: 2px;
+  display: block;
+  border-radius: 2px 2px 0 0;
+  background: var(--blue);
+}
+
+.distribution-row[data-jokers="1"] .distribution-bin i { background: var(--orange); }
+.distribution-row[data-jokers="2"] .distribution-bin i { background: var(--violet); }
+
+.distribution-bin strong {
+  color: var(--muted);
+  font-size: 0.6rem;
+  line-height: 14px;
+}
+
+.distribution-bin small {
+  color: rgba(154, 171, 194, 0.68);
+  font-size: 0.5rem;
+  line-height: 14px;
+}
+
+.distribution-bin.is-mode i {
+  box-shadow: 0 0 0 2px rgba(238, 245, 255, 0.76);
+}
+
+.distribution-bin.is-mode strong,
+.distribution-bin.is-mode small {
+  color: var(--text);
 }
 
 .matrix-panel {

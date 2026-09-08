@@ -3,12 +3,13 @@
 
   const Core = window.OFCFantasylandCore;
   const TrainerCore = window.OFCSolverCore;
-  const STORAGE_KEY = "ofcFantasylandEv.v15";
-  const CACHE_SCHEMA_VERSION = 2;
+  const STORAGE_KEY = "ofcFantasylandEv.v16";
+  const CACHE_SCHEMA_VERSION = 3;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const CARD_COUNTS = [14, 15, 16, 17];
   const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
   const DECK_JOKER_COUNTS = [1, 2];
+  const ROYALTY_DISTRIBUTION_SIZE = 128;
   const REPEAT_SOURCE_ORDER = [1, 2, 4, 3, 5, 6, 7];
   const REPEAT_SOURCE_META = {
     1: { label: "Top", className: "source-top" },
@@ -21,7 +22,7 @@
   };
   const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
   const JACKS_PLUS_REPEAT_VARIANTS = new Set(["low", "badeucey", "cribbage"]);
-  const PRECOMPUTED_SOLVER_ID = "trainer-exact-high-20260904a+trainer-matched-low-20260904a+trainer-matched-badeucey-20260904a+trainer-matched-bdp-20260904a+trainer-matched-cribbage-20260904a+trainer-matched-jjjplus-20260904a+trainer-matched-cribbage-jjjplus-20260904a";
+  const PRECOMPUTED_SOLVER_ID = "trainer-exactdist-20260907b+trainer-exact-jjjplus-20260907b";
   const DEFAULT_SERIAL_MS = {
     high: 360,
     low: 240,
@@ -44,7 +45,7 @@
     },
     recursive: {
       title: "Recursive royalty EV",
-      copy: "Expected total royalties across this hand and future repeats. It uses a Jeffreys-smoothed repeat estimate so a small 100% sample does not imply infinite value.",
+      copy: "Expected total royalties across this hand and future repeats. Joker games model every future deal from a 54-card deck, weighted by the chance of drawing zero, one, or two jokers. Repeat estimates use Jeffreys smoothing.",
     },
     foul: {
       title: "Foul chance",
@@ -82,9 +83,7 @@
     cacheElements();
     bindEvents();
     state.precomputedSamples = applyPrecomputedResults(window.OFCFantasylandPrecomputed);
-    if (state.settings.sampleCount) els.sampleCount.value = state.settings.sampleCount;
     renderVariant();
-    updateEstimate();
   }
 
   function cacheElements() {
@@ -112,6 +111,7 @@
       foulChart: document.querySelector("#foul-chart"),
       distributionChart: document.querySelector("#distribution-chart"),
       repeatSourcePanel: document.querySelector("#repeat-source-panel"),
+      repeatSourceNote: document.querySelector("#repeat-source-note"),
       repeatSourceChart: document.querySelector("#repeat-source-chart"),
       repeatSourceDetail: document.querySelector("#repeat-source-detail"),
       jokerProbabilityBody: document.querySelector("#joker-probability-body"),
@@ -143,22 +143,24 @@
       renderVariant();
       updateEstimate();
     });
-    els.run.addEventListener("click", runCalculator);
-    els.stop.addEventListener("click", () => {
-      state.abort = true;
-      els.runStatus.textContent = "Stopping calculation";
-      if (state.cancelRun) state.cancelRun();
-    });
-    els.sampleCount.addEventListener("input", () => {
-      state.settings.sampleCount = els.sampleCount.value;
-      saveSettings();
-      updateEstimate();
-    });
-    els.sample100k.addEventListener("click", () => {
-      els.sampleCount.value = "100000";
-      els.sampleCount.dispatchEvent(new Event("input", { bubbles: true }));
-      els.sampleCount.focus();
-    });
+    if (els.run) {
+      els.run.addEventListener("click", runCalculator);
+      els.stop.addEventListener("click", () => {
+        state.abort = true;
+        els.runStatus.textContent = "Stopping calculation";
+        if (state.cancelRun) state.cancelRun();
+      });
+      els.sampleCount.addEventListener("input", () => {
+        state.settings.sampleCount = els.sampleCount.value;
+        saveSettings();
+        updateEstimate();
+      });
+      els.sample100k.addEventListener("click", () => {
+        els.sampleCount.value = "100000";
+        els.sampleCount.dispatchEvent(new Event("input", { bubbles: true }));
+        els.sampleCount.focus();
+      });
+    }
     document.querySelectorAll(".definition-link").forEach((button) => {
       button.addEventListener("click", () => showDefinition(button.dataset.definition));
     });
@@ -167,13 +169,15 @@
     els.rulesDialog.addEventListener("click", (event) => {
       if (event.target === els.rulesDialog) closeRules();
     });
-    window.addEventListener("resize", fitRepeatSourceLabels);
+    window.addEventListener("resize", () => {
+      fitRepeatSourceLabels();
+      centerDistributionModes();
+    });
   }
 
   function renderVariant() {
     const meta = Core.VARIANTS[state.variant];
     const scenarios = scenariosForVariant(state.variant);
-    const configCount = scenarios.length;
     const jacksPlus = usesJacksPlusTopRepeat();
     const includesHypotheticals = CARD_COUNTS.some((cards) => !Core.supportsVariantCardCount(state.variant, cards));
     els.topRepeatRule.hidden = !JACKS_PLUS_REPEAT_VARIANTS.has(state.variant);
@@ -183,19 +187,33 @@
     renderMatrix(data, scenarios);
     renderDeckMatrix(data);
     renderCharts(data, scenarios);
+    renderRepeatSourceLegend();
     renderJokerProbabilities();
     const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
     const sampleSummary = resultSampleSummary(data, scenarios);
     els.matrixTitle.textContent = `14–17 card ${meta.label} matrix`;
     const ruleLabel = jacksPlus ? " · JJJ+ top repeats" : "";
-    els.matrixMeta.textContent = complete ? `${meta.label}${ruleLabel} - ${sampleSummary}` : "No samples yet";
-    if (!state.running) {
+    els.matrixMeta.textContent = complete ? `${meta.label}${ruleLabel} · exact trainer solver · ${sampleSummary}` : "No samples yet";
+    if (!state.running && els.runStatus) {
       els.runStatus.textContent = complete ? `${meta.label}${ruleLabel} results loaded` : "Ready to calculate";
       els.runDetail.textContent = complete
         ? `${sampleSummary}; trainer-matched solver; ${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
-        : `${configCount} configurations - completed samples save locally`;
-      els.runProgress.style.width = complete === configCount ? "100%" : "0%";
+        : `${scenarios.length} configurations - completed samples save locally`;
+      els.runProgress.style.width = complete === scenarios.length ? "100%" : "0%";
     }
+  }
+
+  function renderRepeatSourceLegend() {
+    const capped = state.variant === "bdp";
+    if (els.repeatSourceNote) {
+      els.repeatSourceNote.textContent = capped
+        ? "Bar width = repeat chance; multi-row colors = multiple repeat paths"
+        : "Bar width = repeat chance; multi-row = Super Fantasyland";
+    }
+    document.querySelectorAll("[data-repeat-extra]").forEach((label) => {
+      const paths = Number(label.dataset.repeatExtra);
+      label.textContent = capped ? `${paths} paths` : `+${paths - 1} card${paths === 2 ? "" : "s"}`;
+    });
   }
 
   function renderMatrix(data = getVariantResults(), scenarios = scenariosForVariant()) {
@@ -212,7 +230,7 @@
         <td data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="repeatLine">${result && result.repeatLine !== null ? formatPoints(result.repeatLine) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="recursive">${result ? formatRecursive(result.recursive) : '<span class="cell-muted">--</span>'}</td>
+        <td data-value="recursive">${result ? formatRecursive(recursiveValueForScenario(data, scenario)) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="foul">${result ? formatPct(resultFoulRate(result)) : '<span class="cell-muted">--</span>'}</td>
         <td data-value="samples">${result ? formatInteger(result.samples) : '<span class="cell-muted">0</span>'}</td>
       `;
@@ -264,17 +282,43 @@
     );
   }
 
+  function recursiveValueForScenario(data, scenario) {
+    const current = data[scenarioKey(scenario)];
+    if (!current) return NaN;
+    const currentRepeat = recursiveRepeatRateFor(current);
+    if (scenario.jokers === 0) return finiteNumber(current.strategy) / Math.max(Number.EPSILON, 1 - currentRepeat);
+
+    let futureStrategy = 0;
+    let futureRepeat = 0;
+    for (let jokers = 0; jokers <= 2; jokers += 1) {
+      const future = data[scenarioKey({ cards: scenario.cards, jokers })];
+      if (!future) return NaN;
+      const weight = hypergeometricJokers(scenario.cards, jokers, 2);
+      futureStrategy += finiteNumber(future.strategy) * weight;
+      futureRepeat += recursiveRepeatRateFor(future) * weight;
+    }
+    const continuation = futureStrategy / Math.max(Number.EPSILON, 1 - futureRepeat);
+    return finiteNumber(current.strategy) + currentRepeat * continuation;
+  }
+
+  function recursiveRepeatRateFor(result) {
+    if (Number.isFinite(Number(result?.recursiveRepeatRate))) return Number(result.recursiveRepeatRate);
+    const samples = Math.max(0, finiteNumber(result?.samples));
+    const repeatCount = Math.max(0, finiteNumber(result?.totals?.repeatCount));
+    return samples ? (repeatCount + 0.5) / (samples + 1) : 0;
+  }
+
   function renderCharts(data, scenarios = scenariosForVariant()) {
     const results = scenarios.map((scenario) => ({ scenario, result: data[scenarioKey(scenario)] })).filter((entry) => entry.result);
     if (!results.length) {
       els.evChart.className = "bar-chart empty-chart";
-      els.evChart.textContent = "Run the calculator to compare configurations.";
+      els.evChart.textContent = "Precomputed configurations will appear here.";
       els.repeatChart.className = "bar-chart empty-chart";
       els.repeatChart.textContent = "Repeat rates will appear here.";
       els.foulChart.className = "bar-chart empty-chart";
       els.foulChart.textContent = "Foul rates will appear here.";
       els.distributionChart.className = "distribution-chart empty-chart";
-      els.distributionChart.textContent = "Royalty bands will appear here.";
+      els.distributionChart.textContent = "Royalty outcomes will appear here.";
       els.repeatSourcePanel.hidden = true;
       els.repeatSourceDetail?.replaceChildren();
       return;
@@ -328,7 +372,12 @@
         const segment = document.createElement("i");
         segment.className = meta.className;
         segment.style.width = `${(allHandsRate * 100).toFixed(3)}%`;
-        segment.title = `${meta.label}: ${formatDetailPct(allHandsRate)} of all hands, ${formatDetailPct(repeatShare)} of repeats${meta.extraCards ? `, +${meta.extraCards} Fantasyland card${meta.extraCards === 1 ? "" : "s"}` : ""}`;
+        const multiPathSuffix = meta.extraCards
+          ? state.variant === "bdp"
+            ? `, ${meta.extraCards + 1} repeat paths`
+            : `, +${meta.extraCards} Fantasyland card${meta.extraCards === 1 ? "" : "s"}`
+          : "";
+        segment.title = `${meta.label}: ${formatDetailPct(allHandsRate)} of all hands, ${formatDetailPct(repeatShare)} of repeats${multiPathSuffix}`;
         const segmentLabel = document.createElement("b");
         segmentLabel.textContent = formatDetailPct(allHandsRate);
         segment.appendChild(segmentLabel);
@@ -338,7 +387,8 @@
       track.setAttribute("aria-label", ariaParts.join(", "));
       const values = document.createElement("div");
       values.className = "repeat-source-values";
-      values.innerHTML = `<strong>${formatPct(sourceTotal / samples)}</strong><small>${formatPct(superTotal / samples)} SF</small>`;
+      const multiRowLabel = state.variant === "bdp" ? "multi" : "SF";
+      values.innerHTML = `<strong>${formatPct(sourceTotal / samples)}</strong><small>${formatPct(superTotal / samples)} ${multiRowLabel}</small>`;
       row.append(label, track, values);
       if (key === state.repeatDetailScenario) row.appendChild(createRepeatSourceBreakdown(counts, samples));
       row.addEventListener("click", () => {
@@ -389,6 +439,7 @@
       !details
       || !Array.isArray(details.topTripsByRank)
       || details.topTripsByRank.length < 15
+      || !Number.isFinite(Number(details.topBdpWheel))
       || !Array.isArray(details.bottomQuadsByRank)
       || details.bottomQuadsByRank.length < 15
       || !Array.isArray(details.bottomStraightFlushByRank)
@@ -399,7 +450,8 @@
     const sourceCounts = totals.repeatSources;
     const topExpected = [1, 3, 5, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts?.[mask]), 0);
     const bottomExpected = [4, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts?.[mask]), 0);
-    const topTotal = details.topTripsByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
+    const topTotal = details.topTripsByRank.reduce((sum, count) => sum + finiteNumber(count), 0)
+      + finiteNumber(details.topBdpWheel);
     const rankedStraightFlushTotal = details.bottomStraightFlushByRank.reduce((sum, count) => sum + finiteNumber(count), 0);
     const straightFlushTotal = finiteNumber(details.bottomStraightFlush) + finiteNumber(details.bottomRoyalFlush);
     const bottomTotal = details.bottomQuadsByRank.reduce((sum, count) => sum + finiteNumber(count), 0)
@@ -440,18 +492,20 @@
     const bottomRepeatCount = [4, 5, 6, 7].reduce((sum, mask) => sum + finiteNumber(sourceCounts[mask]), 0);
     const topEntries = [];
     const minimumTopRank = usesJacksPlusTopRepeat() ? 11 : 2;
-    if (state.variant !== "bdp") {
+    if (state.variant === "bdp") {
+      topEntries.push({ label: "A23", count: finiteNumber(details.topBdpWheel) });
+    } else {
       for (let rank = 14; rank >= minimumTopRank; rank -= 1) {
         const count = finiteNumber(details.topTripsByRank[rank]);
         topEntries.push({ label: repeatedRankLabel(rank, 3), count });
       }
     }
     const topCondition = state.variant === "bdp"
-      ? "Top does not trigger repeats in BDP"
+      ? `A23 Badugi wheel · ${formatPct(topRepeatCount / samples)} of all hands`
       : `${usesJacksPlusTopRepeat() ? "Trip J or better" : "Trips"} · ${formatPct(topRepeatCount / samples)} of all hands`;
     groups.appendChild(createFrequencyGroup("Top", topCondition, topEntries, {
       denominator: samples,
-      emptyText: state.variant === "bdp" ? "No top-row repeat condition." : "No top-row repeats in this sample.",
+      emptyText: "No top-row repeats in this sample.",
     }));
 
     if (state.variant === "cribbage") {
@@ -552,7 +606,8 @@
     const ranks = highRank === 5
       ? [5, 4, 3, 2, 14]
       : Array.from({ length: 5 }, (_, index) => highRank - index);
-    return ranks.map(rankLabel).join("");
+    const cards = ranks.map(rankLabel).join("");
+    return highRank === 14 ? `Royal flush · ${cards}` : cards;
   }
 
   function formatDetailPct(rate) {
@@ -579,29 +634,53 @@
   }
 
   function renderDistributionChart(entries) {
-    const labels = ["0 royalties", "1-5 royalties", "6-10 royalties", "11-20 royalties", "21 or more royalties"];
-    const classes = ["band-zero", "band-low", "band-mid", "band-high", "band-elite"];
     const fragment = document.createDocumentFragment();
     entries.forEach(({ scenario, result }) => {
+      const distribution = Array.from(result.distribution || [], (rate) => finiteNumber(rate));
+      let maximum = distribution.length - 1;
+      while (maximum > 0 && distribution[maximum] <= 0) maximum -= 1;
+      const bins = Array.from({ length: maximum + 1 }, (_, points) => ({ points, rate: distribution[points] || 0 }));
+      const mode = bins.reduce((best, bin) => (bin.rate > best.rate ? bin : best), bins[0]);
       const row = document.createElement("div");
       row.className = "distribution-row";
-      const label = document.createElement("span");
-      label.textContent = `${scenario.cards}C / ${scenario.jokers}J`;
-      const bar = document.createElement("div");
-      bar.className = "distribution-bar";
-      bar.setAttribute("aria-label", result.distribution.map((value, index) => `${labels[index]} ${formatPct(value)}`).join(", "));
-      result.distribution.forEach((value, index) => {
-        const segment = document.createElement("i");
-        segment.className = classes[index];
-        segment.style.width = `${(value * 100).toFixed(2)}%`;
-        segment.title = `${labels[index]}: ${formatPct(value)}`;
-        bar.appendChild(segment);
+      row.dataset.jokers = String(scenario.jokers);
+      const header = document.createElement("header");
+      header.innerHTML = `<strong>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</strong><span>Mode <b>${mode.points} royalties</b> · ${formatDetailPct(mode.rate)}</span>`;
+      const viewport = document.createElement("div");
+      viewport.className = "distribution-viewport";
+      viewport.dataset.modeIndex = String(mode.points);
+      const plot = document.createElement("div");
+      plot.className = "distribution-plot";
+      plot.style.gridTemplateColumns = `repeat(${bins.length}, minmax(30px, 1fr))`;
+      plot.style.minWidth = `${bins.length * 34}px`;
+      plot.setAttribute("aria-label", bins.map(({ points, rate }) => `${points} royalties ${formatDetailPct(rate)}`).join(", "));
+      bins.forEach(({ points, rate }) => {
+        const bin = document.createElement("div");
+        bin.className = "distribution-bin";
+        bin.classList.toggle("is-mode", points === mode.points);
+        bin.innerHTML = `<div><i style="height:${Math.max(2, (rate / mode.rate) * 100).toFixed(2)}%"></i></div><strong>${points}</strong><small>${formatDetailPct(rate)}</small>`;
+        bin.title = `${points} royalties: ${formatDetailPct(rate)}`;
+        plot.appendChild(bin);
       });
-      row.append(label, bar);
+      viewport.appendChild(plot);
+      row.append(header, viewport);
       fragment.appendChild(row);
     });
     els.distributionChart.className = "distribution-chart";
     els.distributionChart.replaceChildren(fragment);
+    window.requestAnimationFrame(centerDistributionModes);
+  }
+
+  function centerDistributionModes() {
+    if (!els.distributionChart) return;
+    els.distributionChart.querySelectorAll(".distribution-viewport").forEach((viewport) => {
+      const plot = viewport.firstElementChild;
+      const modeIndex = Number(viewport.dataset.modeIndex);
+      if (!plot || !Number.isInteger(modeIndex) || modeIndex < 0 || plot.children.length < 1) return;
+      const mode = plot.children[modeIndex];
+      if (!mode) return;
+      viewport.scrollLeft = Math.max(0, mode.offsetLeft + mode.offsetWidth / 2 - viewport.clientWidth / 2);
+    });
   }
 
   async function runCalculator() {
@@ -739,7 +818,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260904a");
+          worker = new Worker("./worker.js?v=20260907a");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -792,7 +871,7 @@
       repeatSources: Array(8).fill(0),
       repeatDetails: createRepeatDetails(),
       qualifyCount: 0,
-      distribution: [0, 0, 0, 0, 0],
+      distribution: Array(ROYALTY_DISTRIBUTION_SIZE).fill(0),
     };
   }
 
@@ -823,14 +902,14 @@
         repeatSources: Array.from({ length: 8 }, (_, index) => finiteNumber(result.totals.repeatSources?.[index])),
         repeatDetails: copyRepeatDetails(result.totals.repeatDetails),
         qualifyCount: finiteNumber(result.totals.qualifyCount),
-        distribution: Array.from({ length: 5 }, (_, index) => finiteNumber(result.totals.distribution?.[index])),
+        distribution: Array.from({ length: ROYALTY_DISTRIBUTION_SIZE }, (_, index) => finiteNumber(result.totals.distribution?.[index])),
       };
     }
 
     const samples = Math.max(0, Math.round(finiteNumber(result.samples)));
     const immediate = finiteNumber(result.immediate);
     const variance = Math.pow(finiteNumber(result.standardError), 2) * samples;
-    const rawDistribution = Array.from({ length: 5 }, (_, index) => finiteNumber(result.distribution?.[index]) * samples);
+    const rawDistribution = Array.from({ length: ROYALTY_DISTRIBUTION_SIZE }, (_, index) => finiteNumber(result.distribution?.[index]) * samples);
     const distribution = rawDistribution.map(Math.floor);
     let remainder = samples - distribution.reduce((sum, value) => sum + value, 0);
     const fractionalOrder = rawDistribution.map((value, index) => ({ index, fraction: value - Math.floor(value) })).sort((left, right) => right.fraction - left.fraction);
@@ -874,7 +953,7 @@
     aggregate.immediateSum += immediate;
     aggregate.immediateSquared += immediate * immediate;
     aggregate.strategySum += strategy;
-    aggregate.distribution[royaltyBandIndex(immediate)] += 1;
+    aggregate.distribution[Math.max(0, Math.min(ROYALTY_DISTRIBUTION_SIZE - 1, Math.trunc(immediate)))] += 1;
     if (solved.best) aggregate.qualifyCount += 1;
     if (solved.bestRepeat) {
       aggregate.repeatCount += 1;
@@ -882,6 +961,7 @@
       const repeatMask = Math.trunc(finiteNumber(solved.bestRepeat.repeatMask));
       if (repeatMask >= 1 && repeatMask <= 7) aggregate.repeatSources[repeatMask] += 1;
       const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
+      if (repeatDetail.topBdpWheel) aggregate.repeatDetails.topBdpWheel += 1;
       if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
         aggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
       }
@@ -907,6 +987,7 @@
   function createRepeatDetails() {
     return {
       topTripsByRank: Array(15).fill(0),
+      topBdpWheel: 0,
       bottomQuadsByRank: Array(15).fill(0),
       bottomStraightFlushByRank: Array(15).fill(0),
       bottomStraightFlush: 0,
@@ -918,6 +999,7 @@
   function copyRepeatDetails(value) {
     return {
       topTripsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.topTripsByRank?.[index])),
+      topBdpWheel: finiteNumber(value?.topBdpWheel),
       bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomQuadsByRank?.[index])),
       bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomStraightFlushByRank?.[index])),
       bottomStraightFlush: finiteNumber(value?.bottomStraightFlush),
@@ -929,6 +1011,7 @@
   function mergeRepeatDetails(target, source) {
     const incoming = copyRepeatDetails(source);
     target.topTripsByRank = target.topTripsByRank.map((value, index) => value + incoming.topTripsByRank[index]);
+    target.topBdpWheel += incoming.topBdpWheel;
     target.bottomQuadsByRank = target.bottomQuadsByRank.map((value, index) => value + incoming.bottomQuadsByRank[index]);
     target.bottomStraightFlushByRank = target.bottomStraightFlushByRank.map((value, index) => value + incoming.bottomStraightFlushByRank[index]);
     target.bottomStraightFlush += incoming.bottomStraightFlush;
@@ -971,14 +1054,6 @@
         distribution: aggregate.distribution.slice(),
       },
     };
-  }
-
-  function royaltyBandIndex(points) {
-    if (points <= 0) return 0;
-    if (points <= 5) return 1;
-    if (points <= 10) return 2;
-    if (points <= 20) return 3;
-    return 4;
   }
 
   function setRunningUi(running) {
@@ -1043,7 +1118,14 @@
       button.className = variant === active ? "active" : "";
       button.setAttribute("aria-selected", String(variant === active));
       button.textContent = Core.VARIANTS[variant].compactLabel || Core.VARIANTS[variant].label;
-      button.addEventListener("click", () => renderRules(variant));
+      button.addEventListener("click", () => {
+        const input = document.querySelector(`input[name="variant"][value="${variant}"]`);
+        if (input && !input.checked) {
+          input.checked = true;
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        renderRules(variant);
+      });
       tabFragment.appendChild(button);
     });
     els.rulesTabs.replaceChildren(tabFragment);
@@ -1059,9 +1141,12 @@
     short.textContent = Core.VARIANTS[active].short;
     heading.append(title, short);
     article.appendChild(heading);
-    const sections = [["Qualify", [rules.qualification]], ["Royalties", rules.scoring]];
+    const sections = [];
+    if (rules.natural) sections.push(["Natural OFC", rules.natural]);
+    sections.push(["Fantasyland board", [rules.qualification]], ["Royalties", rules.scoring]);
     if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
     sections.push(["Repeat Fantasyland", [rules.repeat]]);
+    if (rules.stacking) sections.push(["Stacking / Super FL", [rules.stacking]]);
     if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
     sections.forEach(([label, lines]) => {
       const section = document.createElement("section");
@@ -1328,6 +1413,7 @@
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target
         && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
+        && hasExactDistributionData(result)
         && (!PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(variant)
           || (hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, variant, null)));
     }));
@@ -1335,6 +1421,7 @@
       const result = dataset.topRepeatJacksPlusResults?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target
         && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
+        && hasExactDistributionData(result)
         && hasCompleteRepeatSourceData(result)
         && hasCompleteRepeatDetailData(result, variant, 11);
     }));
@@ -1367,6 +1454,13 @@
     return 1 - finiteNumber(result?.qualifyRate);
   }
 
+  function hasExactDistributionData(result) {
+    const counts = result?.totals?.distribution;
+    return Array.isArray(counts)
+      && counts.length === ROYALTY_DISTRIBUTION_SIZE
+      && counts.reduce((sum, count) => sum + finiteNumber(count), 0) === finiteNumber(result?.samples);
+  }
+
   function finiteNumber(value) {
     return Number.isFinite(Number(value)) ? Number(value) : 0;
   }
@@ -1380,7 +1474,7 @@
   }
 
   function formatRecursive(value) {
-    return Number.isFinite(value) ? formatPoints(value) : "infinite";
+    return Number.isFinite(value) ? formatPoints(value) : "--";
   }
 
   function formatInteger(value) {
@@ -1472,6 +1566,7 @@
     hypergeometricJokers,
     mergeAggregate,
     parseResultsCache,
+    recursiveValueForScenario,
     sampleChunkSize,
     scenariosForVariant,
     solveSample,

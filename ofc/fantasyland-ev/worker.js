@@ -1,9 +1,10 @@
 "use strict";
 
-importScripts("../fantasyland-core.js?v=20260904a", "../fantasyland-trainer/app.js?v=20260904a");
+importScripts("../fantasyland-core.js?v=20260907a", "../fantasyland-trainer/app.js?v=20260907a");
 
 const Core = self.OFCFantasylandCore;
 const TrainerCore = self.OFCSolverCore;
+const ROYALTY_DISTRIBUTION_SIZE = 128;
 let activeTask = null;
 
 self.onmessage = (event) => {
@@ -71,7 +72,7 @@ function createAggregate() {
     repeatSources: Array(8).fill(0),
     repeatDetails: createRepeatDetails(),
     qualifyCount: 0,
-    distribution: [0, 0, 0, 0, 0],
+    distribution: Array(ROYALTY_DISTRIBUTION_SIZE).fill(0),
   };
 }
 
@@ -91,7 +92,7 @@ function addSample(aggregate, solved, variant) {
   aggregate.immediateSum += immediate;
   aggregate.immediateSquared += immediate * immediate;
   aggregate.strategySum += strategy;
-  aggregate.distribution[royaltyBandIndex(immediate)] += 1;
+  aggregate.distribution[Math.max(0, Math.min(ROYALTY_DISTRIBUTION_SIZE - 1, Math.trunc(immediate)))] += 1;
   if (solved.best) aggregate.qualifyCount += 1;
   if (solved.bestRepeat) {
     aggregate.repeatCount += 1;
@@ -99,6 +100,7 @@ function addSample(aggregate, solved, variant) {
     const repeatMask = Math.trunc(finiteNumber(solved.bestRepeat.repeatMask));
     if (repeatMask >= 1 && repeatMask <= 7) aggregate.repeatSources[repeatMask] += 1;
     const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
+    if (repeatDetail.topBdpWheel) aggregate.repeatDetails.topBdpWheel += 1;
     if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
       aggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
     }
@@ -124,20 +126,13 @@ function addSample(aggregate, solved, variant) {
 function createRepeatDetails() {
   return {
     topTripsByRank: Array(15).fill(0),
+    topBdpWheel: 0,
     bottomQuadsByRank: Array(15).fill(0),
     bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
     bottomRoyalFlush: 0,
     cribbageMiddleByScore: Array(30).fill(0),
   };
-}
-
-function royaltyBandIndex(points) {
-  if (points <= 0) return 0;
-  if (points <= 5) return 1;
-  if (points <= 10) return 2;
-  if (points <= 20) return 3;
-  return 4;
 }
 
 function finiteNumber(value) {

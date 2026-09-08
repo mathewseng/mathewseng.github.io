@@ -17,7 +17,7 @@ vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
 const api = context.window.OFCFantasylandEV;
 const closeTo = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-12, `${message}: expected ${expected}, got ${actual}`);
-const currentSolver = "trainer-exact-high-20260904a+trainer-matched-low-20260904a+trainer-matched-badeucey-20260904a+trainer-matched-bdp-20260904a+trainer-matched-cribbage-20260904a+trainer-matched-jjjplus-20260904a+trainer-matched-cribbage-jjjplus-20260904a";
+const currentSolver = "trainer-exactdist-20260907b+trainer-exact-jjjplus-20260907b";
 const emptyCache = { results: {}, topRepeatJacksPlusResults: {} };
 
 assert.equal(
@@ -32,7 +32,7 @@ assert.equal(
 );
 assert.equal(
   JSON.stringify(api.parseResultsCache(JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     solver: currentSolver,
     results: { cribbage: { current: true } },
     topRepeatJacksPlusResults: { cribbage: { restricted: true } },
@@ -107,6 +107,20 @@ const twoJWeights = [0, 1, 2].map((jokers) => api.hypergeometricJokers(14, joker
 closeTo(twoJ.immediate, 10 * twoJWeights[0] + 20 * twoJWeights[1] + 30 * twoJWeights[2], "two-joker deck royalty EV should weight all exact joker counts");
 assert.equal(api.aggregateDeckResults({ "14-0": synthetic["14-0"] }, 14, 1), null, "deck aggregates should wait for every required exact-hand result");
 
+const recursiveSynthetic = {
+  "14-0": { strategy: 10, recursiveRepeatRate: 0.1 },
+  "14-1": { strategy: 20, recursiveRepeatRate: 0.3 },
+  "14-2": { strategy: 30, recursiveRepeatRate: 0.5 },
+};
+const futureStrategy = 10 * twoJWeights[0] + 20 * twoJWeights[1] + 30 * twoJWeights[2];
+const futureRepeat = 0.1 * twoJWeights[0] + 0.3 * twoJWeights[1] + 0.5 * twoJWeights[2];
+closeTo(api.recursiveValueForScenario(recursiveSynthetic, { cards: 14, jokers: 0 }), 10 / 0.9, "zero-joker recursive EV should remain in the 52-card game");
+closeTo(
+  api.recursiveValueForScenario(recursiveSynthetic, { cards: 14, jokers: 1 }),
+  20 + 0.3 * (futureStrategy / (1 - futureRepeat)),
+  "joker recursive EV should weight future 0J, 1J, and 2J Fantasyland deals from the 54-card deck"
+);
+
 const aggregate = api.finalizeAggregate({
   samples: 4,
   immediateSum: 20,
@@ -117,6 +131,7 @@ const aggregate = api.finalizeAggregate({
   repeatSources: [0, 0, 1, 0, 0, 0, 0, 0],
   repeatDetails: {
     topTripsByRank: Array(15).fill(0),
+    topBdpWheel: 0,
     bottomQuadsByRank: Array(15).fill(0),
     bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
@@ -124,7 +139,7 @@ const aggregate = api.finalizeAggregate({
     cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 11 ? 3 : 0),
   },
   qualifyCount: 3,
-  distribution: [1, 1, 1, 1, 0],
+  distribution: Array.from({ length: 128 }, (_, score) => score < 4 ? 1 : 0),
 });
 assert.equal(aggregate.qualifyRate, 0.75, "EV aggregate should retain legal-board probability");
 assert.equal(aggregate.foulRate, 0.25, "EV aggregate foul chance should equal one minus legal-board probability");
@@ -132,7 +147,7 @@ assert.equal(aggregate.totals.samples, 4, "EV aggregate should retain raw totals
 assert.equal(aggregate.totals.repeatSources[2], 1, "EV aggregate should retain the middle-row repeat source");
 
 const restored = api.aggregateFromResult(aggregate);
-assert.deepEqual(Array.from(restored.distribution), [1, 1, 1, 1, 0], "cumulative runs should restore exact distribution totals");
+assert.deepEqual(Array.from(restored.distribution), Array.from({ length: 128 }, (_, score) => score < 4 ? 1 : 0), "cumulative runs should restore exact distribution totals");
 assert.equal(restored.immediateSum, 20, "cumulative runs should restore immediate royalty totals");
 const merged = api.mergeAggregate(restored, {
   samples: 2,
@@ -144,6 +159,7 @@ const merged = api.mergeAggregate(restored, {
   repeatSources: [0, 1, 0, 0, 0, 0, 0, 0],
   repeatDetails: {
     topTripsByRank: Array.from({ length: 15 }, (_, rank) => rank === 14 ? 1 : 0),
+    topBdpWheel: 0,
     bottomQuadsByRank: Array(15).fill(0),
     bottomStraightFlushByRank: Array(15).fill(0),
     bottomStraightFlush: 0,
@@ -151,7 +167,7 @@ const merged = api.mergeAggregate(restored, {
     cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 12 ? 2 : 0),
   },
   qualifyCount: 2,
-  distribution: [0, 1, 1, 0, 0],
+  distribution: Array.from({ length: 128 }, (_, score) => score === 1 || score === 2 ? 1 : 0),
 });
 assert.equal(merged.samples, 6, "cumulative runs should add sample counts");
 assert.deepEqual(Array.from(merged.repeatSources), [0, 1, 1, 0, 0, 0, 0, 0], "cumulative runs should merge repeat-source buckets");
@@ -181,6 +197,7 @@ core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
     const totals = {
       ...aggregate.totals,
       samples: 10000,
+      distribution: Array.from({ length: 128 }, (_, score) => score === 5 ? 10000 : 0),
       repeatDetails: {
         ...aggregate.totals.repeatDetails,
         cribbageMiddleByScore: variant === "cribbage"
