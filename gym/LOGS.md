@@ -1150,6 +1150,84 @@ Normalized from “cable shoulder front raise.” Unilateral versus bilateral ex
 
 ---
 
+# 17. Short Pull Workout with Dumbbell Curls — September 8, 2026
+
+**Date:** 2026-09-08
+
+**Start time:** 10:00 PM local time
+
+**Lifting duration:** 40 minutes
+
+**Post-workout recovery:** 15 minutes in a dry sauna
+
+**Data quality:** Complete repetitions and entered loads; partial context and one ambiguous cable-loading convention
+
+## Context
+
+- Short late-night pull session.
+- No 0–6 energy, sleep, soreness, illness, back-pain, or general-pain scores were supplied.
+- No RIR values were supplied.
+- The dry-sauna time is recorded separately and is not included in lifting duration or volume.
+
+## Pull-Ups
+
+- 5 reps
+- 3 reps
+
+Completed work:
+
+- 8 total repetitions across two sets
+- Best set of 5 ties the existing best set
+
+Only two sets were recorded, and strict form was not explicitly confirmed. This is not treated as a matched regression from longer sessions.
+
+## Two-Arm Cable Biceps Curl
+
+- 30 lb × 8
+- 30 lb × 8
+
+Attachment and cable-machine identity were not supplied.
+
+## Face Pull
+
+- 50 lb × 10
+- 55 lb × 10
+- 60 lb × 10
+
+Ten repetitions were performed at each listed load. Attachment and cable-machine identity were not supplied.
+
+## Reverse Cable Fly
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+The per-side loading convention and execution style were not supplied. The stack value is preserved without doubling.
+
+## Incline Dumbbell Curl
+
+- 15 lb per dumbbell × 10
+- 15 lb per dumbbell × 8
+- 15 lb per dumbbell × 8
+
+## Spider Dumbbell Curl
+
+- 20 lb per dumbbell × 10
+- 20 lb per dumbbell × 8
+- 20 lb per dumbbell × 8
+
+This is the first complete three-set result at the recorded 20 lb top load.
+
+## Session Totals
+
+- 16 completed sets
+- 136 completed repetitions
+- 3,340 lb preserved entered-load volume
+- 2 bodyweight pull-up sets excluded from external-load volume
+- 15 minutes in a dry sauna after lifting, tracked separately
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1187,7 +1265,8 @@ Normalized from “cable shoulder front raise.” Unilateral versus bilateral ex
 - Best recorded set: 5
 - Best recorded session: 5, 5, 3
 - Session total: 13
-- Latest result: 5, 4, 3 for 12 total on September 1
+- Latest result: 5, 3 for 8 total across two sets on September 8
+- The latest result is not a matched comparison with longer sessions.
 
 ## Lat Pulldown
 
@@ -1205,11 +1284,12 @@ Normalized from “cable shoulder front raise.” Unilateral versus bilateral ex
 ## Two-Hand Cable Biceps Curl
 
 - First recorded baseline: 30 lb × 10, 10, 10
+- Latest short-session result: 30 lb × 8, 8 on September 8
 
 ## Spider Curl
 
-- Heaviest recorded load: 20 lb × 10
-- Equipment and per-hand loading were not restated for this session.
+- Heaviest recorded load: 20 lb per dumbbell
+- First complete result at that load: 10, 8, 8 on September 8
 
 ## Smith-Machine Squat
 
@@ -1278,5 +1358,6 @@ September 7 improved the latest three-set total to 28 repetitions and 840 lb vol
 | Baseline (date unknown) | 5, 5, 3            |            13 | Recorded as strict baseline     |
 | 2026-07-28              | 4, 3               |             7 | Strict standard not reconfirmed |
 | 2026-09-01              | 5, 4, 3            |            12 | Strict standard not reconfirmed |
+| 2026-09-08              | 5, 3               |             8 | Only two sets; form unconfirmed |
 
-The September 1 workout tied the best recorded set of 5 but did not exceed the 13-repetition baseline session total.
+The September 8 workout tied the best recorded set of 5. Its two-set total is not directly comparable with the longer baseline and September 1 sessions.

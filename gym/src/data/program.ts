@@ -136,7 +136,7 @@ export const programTemplates: ProgramTemplate[] = [
         sets: 5,
         reps: 3,
         notes:
-          "Latest session was 5/4/3 for 12 total after travel. Build back to five submaximal sets around 3 reps and avoid early-set failure.",
+          "The short September 8 session recorded 5/3 across only two sets. Return to five submaximal sets around 3 reps and avoid early-set failure.",
       },
       {
         exerciseId: "lat-pulldown",
@@ -169,7 +169,8 @@ export const programTemplates: ProgramTemplate[] = [
         setRange: [2, 3],
         repRange: [8, 15],
         alternatives: ["incline-curl", "hammer-curl", "cable-biceps-curl"],
-        notes: "Choose one or two curl variations.",
+        notes:
+          "Choose one or two curl variations. Latest complete dumbbell results: incline curl 15 lb × 10/8/8 and spider curl 20 lb × 10/8/8, per dumbbell.",
       },
       {
         exerciseId: "farmers-carry",

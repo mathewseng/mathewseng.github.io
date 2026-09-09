@@ -71,7 +71,8 @@ Progress at 105 lb after:
 
 - 5 submaximal sets
 - Begin around 3 repetitions per set
-- Latest result: 5, 4, 3 for 12 total on September 1; strict form was not explicitly confirmed
+- Latest result: 5, 3 for 8 total across only two sets on September 8; strict form was not explicitly confirmed
+- Treat the September 8 result as a short-session observation, not a matched regression from longer sessions.
 - Build back to five submaximal sets before pushing early-set effort
 - Add one total repetition per workout
 - Avoid early-set failure
@@ -140,6 +141,13 @@ Current accessory references from September 1:
 
 - Farmer's carry
 - 3 carries of 30–60 seconds
+
+### Current Curl References
+
+- Two-arm cable curl: 30 lb × 8, 8 on September 8
+- Incline dumbbell curl: 15 lb per dumbbell × 10, 8, 8
+- Spider dumbbell curl: 20 lb per dumbbell × 10, 8, 8
+- Choose one or two curl variations rather than requiring all of them every pull day.
 
 ## Leg Day
 

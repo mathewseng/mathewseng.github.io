@@ -1,0 +1,178 @@
+{
+  "id": "pull-2026-09-08",
+  "date": "2026-09-08",
+  "startTime": "22:00",
+  "durationMinutes": 40,
+  "type": "pull",
+  "title": "Short Pull Workout with Dumbbell Curls",
+  "chronologyIndex": 17,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Short late-night pull session followed by 15 minutes in a dry sauna. No numeric 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": [
+      "short-pull-session",
+      "late-night-training",
+      "post-workout-dry-sauna"
+    ]
+  },
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-08-pullup-1",
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-09-08-pullup-2",
+          "reps": 3,
+          "completed": true
+        }
+      ],
+      "notes": "Eight total repetitions across two recorded sets. The five-repetition first set ties the existing best set. Because only two sets were recorded and strict form was not explicitly confirmed, this is not treated as a matched regression from longer sessions."
+    },
+    {
+      "exerciseId": "cable-biceps-curl",
+      "name": "Two-Arm Cable Biceps Curl",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-08-cable-curl-1",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-09-08-cable-curl-2",
+          "weightLb": 30,
+          "reps": 8,
+          "completed": true
+        }
+      ],
+      "notes": "Normalized from ‘cable two arm curl.’ Attachment and cable-machine identity were not supplied."
+    },
+    {
+      "exerciseId": "face-pull",
+      "name": "Face Pull",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-08-face-pull-50",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-08-face-pull-55",
+          "weightLb": 55,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-08-face-pull-60",
+          "weightLb": 60,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Ten repetitions were performed at each listed load. Attachment and cable-machine identity were not supplied."
+    },
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-08-reverse-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-08-reverse-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-08-reverse-fly-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Per-side loading and execution style were not supplied. The entered stack value is preserved without doubling."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-08-incline-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-08-incline-curl-2",
+          "weightLb": 15,
+          "reps": 8,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-08-incline-curl-3",
+          "weightLb": 15,
+          "reps": 8,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Fifteen pounds is recorded per dumbbell. Default volume preserves the entered per-side load without silently doubling it."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-08-spider-curl-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-08-spider-curl-2",
+          "weightLb": 20,
+          "reps": 8,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-08-spider-curl-3",
+          "weightLb": 20,
+          "reps": 8,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Twenty pounds is recorded per dumbbell. This establishes the first complete three-set spider-curl result at 20 lb: 10, 8, 8. Default volume preserves the entered per-side load without silently doubling it."
+    }
+  ],
+  "notes": "Workout started at 10:00 PM local time on September 8 and lasted 40 minutes. It contained 16 completed sets, 136 completed repetitions, and 3,340 lb of preserved entered-load volume; the two bodyweight pull-up sets are excluded from external-load volume. A 15-minute dry sauna followed the workout and is recorded separately from lifting duration and volume. No RIR, pain, sleep, energy, soreness, or illness scores were supplied."
+}

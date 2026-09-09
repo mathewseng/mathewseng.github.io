@@ -2,6 +2,19 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-08 — September 8 Pull Workout
+
+### Added
+
+- Added the September 8 pull workout at 10:00 PM for 40 minutes with pull-ups, cable curls, face pulls, reverse cable flyes, and two dumbbell-curl variations.
+- Recorded the separate 15-minute post-workout dry-sauna session without adding it to lifting duration or volume.
+
+### Changed
+
+- Added the first complete three-set spider dumbbell-curl result at 20 lb per dumbbell: 10, 8, 8.
+- Updated the dashboard’s latest-session context, pull-up chart, pull programming, and next-session guidance from pull to legs.
+- Preserved the two-set pull-up result as a short-session observation rather than treating it as a matched regression, and left all missing 0–6 context values unknown.
+
 ## 2026-09-08 — September 7 Push Workout
 
 ### Added

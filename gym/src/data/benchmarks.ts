@@ -132,9 +132,9 @@ export const currentBenchmarks: Benchmark[] = [
     value: 20,
     unit: "lb",
     confirmed: true,
-    workoutId: "pull-2026-09-01",
+    workoutId: "pull-2026-09-08",
     notes:
-      "20 lb × 10. Equipment and per-hand loading were not explicitly restated for this session.",
+      "20 lb per dumbbell × 10, 8, 8. This is the first complete three-set result at the recorded top load.",
   },
   {
     id: "smith-squat-baseline",

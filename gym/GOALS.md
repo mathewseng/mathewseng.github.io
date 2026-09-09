@@ -65,7 +65,8 @@ Current status:
 - Best set: 5
 - Best session: 5, 5, 3
 - Total completed repetitions: 13
-- Latest session on September 1: 5, 4, 3 for 12 total after travel
+- Latest session on September 8: 5, 3 for 8 total across only two sets
+- The latest result is not a matched regression from longer sessions because fewer sets were performed.
 - Estimated maximum: approximately 5–6
 
 Strict standard:

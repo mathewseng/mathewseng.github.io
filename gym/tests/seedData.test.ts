@@ -509,7 +509,75 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-09-07");
+  });
+
+  it("records the September 8 short pull workout and separate sauna recovery", () => {
+    const workout = workouts.find((item) => item.id === "pull-2026-09-08");
+    const pullUps = workout?.exercises.find(
+      (entry) => entry.exerciseId === "strict-pull-up",
+    );
+    const cableCurl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "cable-biceps-curl",
+    );
+    const facePull = workout?.exercises.find((entry) => entry.exerciseId === "face-pull");
+    const reverseFly = workout?.exercises.find(
+      (entry) => entry.exerciseId === "reverse-cable-fly",
+    );
+    const inclineCurl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "incline-curl",
+    );
+    const spiderCurl = workout?.exercises.find(
+      (entry) => entry.exerciseId === "spider-curl",
+    );
+    const spiderBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "spider-curl-top-load",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-09-08",
+      startTime: "22:00",
+      durationMinutes: 40,
+      type: "pull",
+      chronologyIndex: 17,
+      dataQuality: "partial",
+      context: {
+        sourceLabels: expect.arrayContaining([
+          "short-pull-session",
+          "post-workout-dry-sauna",
+        ]),
+      },
+    });
+    expect(workout?.context).not.toHaveProperty("backPain");
+    expect(pullUps?.sets.map((set) => set.reps)).toEqual([5, 3]);
+    expect(cableCurl?.sets.map((set) => set.reps)).toEqual([8, 8]);
+    expect(facePull?.sets).toEqual([
+      expect.objectContaining({ weightLb: 50, reps: 10 }),
+      expect.objectContaining({ weightLb: 55, reps: 10 }),
+      expect.objectContaining({ weightLb: 60, reps: 10 }),
+    ]);
+    expect(reverseFly?.dataQuality).toBe("ambiguous");
+    expect(reverseFly?.sets.every((set) => set.perSide === undefined)).toBe(true);
+    expect(inclineCurl?.sets).toEqual([
+      expect.objectContaining({ weightLb: 15, reps: 10, perSide: true }),
+      expect.objectContaining({ weightLb: 15, reps: 8, perSide: true }),
+      expect.objectContaining({ weightLb: 15, reps: 8, perSide: true }),
+    ]);
+    expect(spiderCurl?.sets).toEqual([
+      expect.objectContaining({ weightLb: 20, reps: 10, perSide: true }),
+      expect.objectContaining({ weightLb: 20, reps: 8, perSide: true }),
+      expect.objectContaining({ weightLb: 20, reps: 8, perSide: true }),
+    ]);
+    expect(calculateWorkoutTotals(workout!)).toMatchObject({
+      completedReps: 136,
+      completedVolumeLb: 3_340,
+      calculableSetCount: 14,
+      excludedSetCount: 2,
+    });
+    expect(spiderBenchmark).toMatchObject({
+      value: 20,
+      workoutId: "pull-2026-09-08",
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-09-08");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

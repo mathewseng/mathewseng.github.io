@@ -143,6 +143,13 @@ const pullUpProgress = [
     context:
       "5/4/3 the night after returning from two weeks of work travel; strict form was not explicitly confirmed.",
   },
+  {
+    label: "Sep 8",
+    value: 5,
+    secondary: 8,
+    context:
+      "5/3 across only two sets in a 40-minute session; not a matched comparison with longer sessions. Strict form was not explicitly confirmed.",
+  },
 ];
 
 const pushdownProgress = [
@@ -287,7 +294,7 @@ export default function Dashboard() {
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
               <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Push → Pull next
+                Pull → Legs next
               </Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
@@ -295,11 +302,12 @@ export default function Dashboard() {
                 Suggested next session
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Pull, rebuild the total.
+                Legs, repeat before adding.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
-                Start pull-ups submaximally and aim for at least 13 clean total reps, then
-                use pulldowns and a supported row. Keep early sets away from failure.
+                Repeat the 135 lb Smith squat before increasing, and keep RDLs at 75 lb
+                until you can record the before-, during-, and after-session back
+                response.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -312,7 +320,7 @@ export default function Dashboard() {
                 </div>
                 <div className="h-9 w-px bg-current opacity-20" />
                 <div>
-                  <p className="text-2xl font-black">2–3</p>
+                  <p className="text-2xl font-black">2–4</p>
                   <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
                     target RIR
                   </p>
@@ -364,22 +372,23 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 7 context</p>
-                <h2 className="mt-1 text-lg font-black">New bench-volume best</h2>
+                <p className="eyebrow">September 8 context</p>
+                <h2 className="mt-1 text-lg font-black">Short late-night pull session</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 10:00 PM, you completed 110 minutes of push work. Bench reached 8 / 8 / 9
-              at 95 lb, and incline moved to 75 lb for 7 / 7 / 6. No 0–6 readiness, pain,
-              or RIR scores were supplied.
+              At 10:00 PM, you completed 40 minutes of pull work, including pull-ups at 5
+              / 3 and full three-set incline- and spider-curl results. The 15-minute dry
+              sauna is tracked separately. No 0–6 readiness, pain, or RIR scores were
+              supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">25 bench reps</Badge>
-              <Badge tone="quality">95 lb milestone cleared</Badge>
-              <Badge tone="neutral">10:00 PM · 110 min</Badge>
+              <Badge tone="accent">5 / 3 pull-ups</Badge>
+              <Badge tone="quality">15 min sauna</Badge>
+              <Badge tone="neutral">10:00 PM · 40 min</Badge>
             </div>
           </Surface>
         </div>

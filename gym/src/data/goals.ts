@@ -160,7 +160,7 @@ export const goals: Goal[] = [
       "Retest a maximum set after a recovery period.",
     ],
     notes:
-      "Best set: 5. Best session: 5, 5, 3 for 13 total. The September 1 post-travel session was 5, 4, 3 for 12 total; strict form was not explicitly confirmed. Estimated fresh maximum remains approximately 5–6.",
+      "Best set: 5. Best session: 5, 5, 3 for 13 total. The short September 8 session recorded 5 and 3 for 8 total across only two sets, so it is not a matched regression from the longer sessions. Strict form was not explicitly confirmed. Estimated fresh maximum remains approximately 5–6.",
   },
   {
     id: "build-muscle",
