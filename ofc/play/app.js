@@ -54,8 +54,9 @@
     drawLabel: $("draw-label"),
     drawInstruction: $("draw-instruction"),
     drawCards: $("draw-cards"),
-    discardTarget: $("discard-target"),
-    discardCount: $("discard-count"),
+    discardsButton: $("discards-button"),
+    discardsModal: $("discards-modal"),
+    discardsContent: $("discards-content"),
     clearTurnButton: $("clear-turn-button"),
     confirmTurnButton: $("confirm-turn-button"),
     showdownPanel: $("showdown-panel"),
@@ -85,10 +86,10 @@
   let model = null;
   let latestRoster = [];
   let selectedRuleVariant = "high";
-  let selectedCard = null;
   let selectedTarget = "bottom";
   let turnAssignments = {};
-  let turnDiscards = [];
+  const previewCache = new Map();
+  let dragController;
   let draftKey = "";
   let toastTimer = 0;
   let publishingRoster = false;
@@ -96,6 +97,7 @@
   initialize();
 
   function initialize() {
+    dragController = new window.OFCCardDrag(els.tableView, { canDrag: canMoveCard, resolve: resolveDrop, drop: assignCard });
     els.dealerOptionsList.innerHTML = Game.VARIANTS.filter((id) => id !== "dealerschoice").map((id) =>
       '<label class="toggle-row"><span><strong>' + escapeHtml(Game.VARIANT_LABELS[id]) + '</strong></span><input type="checkbox" name="dealerChoice" value="' + id + '" checked /><i aria-hidden="true"></i></label>').join("");
     els.playerName.value = localStorage.getItem("ofc.play.name") || "";
@@ -136,18 +138,11 @@
     els.nextHandButton.addEventListener("click", () => room.sendAction({ type: "next_hand" }));
     els.clearTurnButton.addEventListener("click", resetDraft);
     els.confirmTurnButton.addEventListener("click", confirmTurn);
-    els.discardTarget.addEventListener("click", () => selectTarget("discard"));
+    els.discardsButton.addEventListener("click", openDiscards);
     els.playerBoard.addEventListener("click", handleBoardClick);
     els.drawCards.addEventListener("click", handleDrawClick);
-    els.playerBoard.addEventListener("dragover", (event) => event.preventDefault());
-    els.playerBoard.addEventListener("drop", handleBoardDrop);
-    els.discardTarget.addEventListener("dragover", (event) => event.preventDefault());
-    els.discardTarget.addEventListener("drop", (event) => {
-      event.preventDefault();
-      assignCard(event.dataTransfer.getData("text/plain"), "discard");
-    });
-    els.drawCards.addEventListener("dragstart", handleDragStart);
-    els.playerBoard.addEventListener("dragstart", handleDragStart);
+    document.addEventListener("keydown", handleKeyboard);
+    window.addEventListener("resize", () => { if (els.ledgerModal.open) drawLedgerCharts(); });
     els.rulesButton.addEventListener("click", () => {
       selectedRuleVariant = model?.settings?.variant || selectedVariant();
       renderRules(selectedRuleVariant);
@@ -382,6 +377,7 @@
   }
 
   function renderGame() {
+    dragController.cancel();
     els.setupView.hidden = true;
     els.roomView.hidden = true;
     els.tableView.hidden = false;
@@ -417,6 +413,7 @@
     renderPlayerBoard(state, me);
     renderDraw(state, me);
     renderShowdown(state, me);
+    els.discardsButton.textContent = "Discards" + (state.players.filter((p) => Game.ownerId(p) === room.clientId).reduce((sum, p) => sum + p.discards.length, 0) ? " · " + state.players.filter((p) => Game.ownerId(p) === room.clientId).reduce((sum, p) => sum + p.discards.length, 0) : "");
     if (state.phase === "showdown") persistLedger(state);
   }
 
@@ -425,18 +422,19 @@
       ? (player.evaluation?.legal ? player.evaluation.points + " royalties" : "Fouled")
       : player.hiddenFantasy ? "Setting Fantasyland" : model.activePlayerId === player.id ? "Setting now" : "Waiting";
     const name = player.name + (!player.extraHand && Game.ownerId(player) === room.clientId && model.settings.twoOnButton ? " · Hand 1" : "");
+    const evaluation = Object.values(player.board).flat().includes("BACK") ? null : boardPreview(currentViewState(), player.board);
     return '<section class="opponent-board"><div class="opponent-head"><strong>' + escapeHtml(name) + '</strong><span>' + escapeHtml(status) + '</span></div><div class="mini-board">' +
-      ["top", "middle", "bottom"].map((row) => renderMiniRow(player, row)).join("") +
+      ["top", "middle", "bottom"].map((row) => renderMiniRow(player, row, evaluation)).join("") +
       '</div></section>';
   }
 
-  function renderMiniRow(player, row) {
+  function renderMiniRow(player, row, evaluation = player.evaluation) {
     const limit = Game.ROW_LIMITS[row];
     const cards = player.board[row] || [];
-    const assignments = player.evaluation?.assignments || {};
-    return '<div class="mini-row">' + Array.from({ length: limit }, (_, index) => cards[index]
-      ? cardHtml(cards[index], { assignments, disabled: true })
-      : '<span class="empty-slot"></span>').join("") + '</div>';
+    const assignments = evaluation?.assignments || {};
+    return '<div class="mini-row-group"><div class="mini-row">' + Array.from({ length: limit }, (_, index) => cards[index]
+      ? cardHtml(cards[index], { assignments, disabled: true, set: player.placedAt?.[cards[index]], latest: player.placedAt?.[cards[index]] === player.lastSet })
+      : '<span class="empty-slot"></span>').join("") + '</div><div class="mini-score">' + rowScoreHtml(evaluation?.rowEvals?.[row], row) + '</div></div>';
   }
 
   function syncDraft(state, me) {
@@ -444,8 +442,6 @@
     if (key === draftKey) return;
     draftKey = key;
     turnAssignments = {};
-    turnDiscards = [];
-    selectedCard = null;
     selectedTarget = "bottom";
   }
 
@@ -453,30 +449,29 @@
     const action = currentAction(state);
     const myTurn = state.phase === "placement" && state.activePlayerId === me.id;
     const board = draftBoard(me);
-    const provisional = boardIsComplete(board)
-      ? Core.evaluateBoard(Object.values(board).flat(), board, evaluationOptions(state))
-      : null;
-    const evaluation = state.phase === "showdown" ? me.evaluation : provisional;
+    const evaluation = boardPreview(state, board);
     els.playerLabel.textContent = me.name + (!me.extraHand && state.settings.twoOnButton && state.players[state.buttonIndex].id === me.id ? " · Hand 1" : "") + (me.inFantasyland ? " · Fantasyland" : "");
-    const expected = myTurn ? expectedPlaced(action) : 0;
     els.placementCounter.textContent = state.phase === "showdown"
       ? (me.evaluation?.legal ? me.evaluation.points + " royalties" : "Fouled")
-      : myTurn ? Object.keys(turnAssignments).length + " / " + expected + " set" : "Waiting";
+      : (evaluation.previewPoints || 0) + " royalties" + (evaluation.complete && !evaluation.legal ? " · Foul" : "");
+    els.placementCounter.classList.toggle("foul-text", Boolean(evaluation.complete && !evaluation.legal));
     els.playerBoard.innerHTML = ["top", "middle", "bottom"].map((row) => {
       const cards = board[row];
       const rowEvaluation = evaluation?.rowEvals?.[row];
       const selected = selectedTarget === row && myTurn;
-      return '<div class="board-row' + (selected ? " target" : "") + '" data-row="' + row + '"><div class="row-label"><strong>' + titleCase(row) + '</strong><small>' + cards.length + " / " + Game.ROW_LIMITS[row] + '</small></div><div class="board-cards">' +
+      return '<div class="board-row' + (selected ? " target" : "") + '" data-row="' + row + '" aria-label="' + titleCase(row) + (selected ? ", selected" : "") + '"><div class="row-label"><strong>' + titleCase(row) + '</strong>' + (selected ? '<kbd class="row-keys">↑ ↓</kbd>' : '') + '</div><div class="board-cards">' +
         Array.from({ length: Game.ROW_LIMITS[row] }, (_, index) => {
           const cardId = cards[index];
           if (!cardId) return '<span class="empty-slot"></span>';
           return cardHtml(cardId, {
             assignments: evaluation?.assignments || {},
             staged: Object.prototype.hasOwnProperty.call(turnAssignments, cardId),
+            set: turnAssignments[cardId] ? (action?.round || 0) + 1 : me.placedAt?.[cardId],
+            latest: turnAssignments[cardId] ? true : !Object.keys(turnAssignments).length && me.placedAt?.[cardId] === me.lastSet,
             origin: Object.prototype.hasOwnProperty.call(turnAssignments, cardId) ? "board" : "fixed",
           });
         }).join("") +
-        '</div><div class="row-score">' + rowScoreHtml(rowEvaluation) + '</div></div>';
+        '</div><div class="row-score">' + rowScoreHtml(rowEvaluation, row) + '</div></div>';
     }).join("");
   }
 
@@ -490,28 +485,24 @@
       els.drawCards.style.setProperty("--draw-columns", 5);
       els.drawCards.style.setProperty("--mobile-columns", 5);
       els.drawCards.innerHTML = state.phase === "choose-variant" ? me.draw.map((id) => cardHtml(id, { disabled: true })).join("") : "";
-      els.discardTarget.hidden = true;
       els.confirmTurnButton.disabled = true;
       els.clearTurnButton.disabled = true;
       return;
     }
     const expected = expectedPlaced(action);
     const expectedDiscards = me.draw.length - expected;
-    const unassigned = me.draw.filter((card) => !turnAssignments[card] && !turnDiscards.includes(card));
     els.drawLabel.textContent = action.kind === "fantasy" ? "Fantasyland hand" : action.round === 0 ? "Opening five" : "Draw " + action.round;
-    els.drawInstruction.textContent = expectedDiscards ? "Set " + expected + " · discard " + expectedDiscards : "Set all " + expected;
-    const displayCards = unassigned.concat(turnDiscards);
+    const remaining = expected - Object.keys(turnAssignments).length;
+    els.drawInstruction.textContent = remaining > 0 ? "Set " + remaining + " more" : expectedDiscards ? "Ready · " + expectedDiscards + " left to discard" : "Ready to confirm";
+    const displayCards = me.draw;
     const columns = Math.max(1, displayCards.length);
     els.drawCards.style.setProperty("--draw-columns", columns);
     els.drawCards.style.setProperty("--mobile-columns", columns <= 5 ? columns : Math.ceil(columns / 2));
-    els.drawCards.innerHTML = displayCards.map((cardId) => cardHtml(cardId, {
-      selected: selectedCard === cardId,
-      origin: turnDiscards.includes(cardId) ? "discard" : "hand",
-    })).join("");
-    els.discardTarget.hidden = expectedDiscards === 0;
-    els.discardTarget.classList.toggle("active", selectedTarget === "discard");
-    els.discardTarget.innerHTML = '<span>Discard</span><small>' + turnDiscards.length + " / " + expectedDiscards + '</small>';
-    els.clearTurnButton.disabled = Object.keys(turnAssignments).length === 0 && turnDiscards.length === 0;
+    els.drawCards.innerHTML = displayCards.map((cardId, index) => '<div class="hand-slot" data-hand-id="' + cardId + '">' + (turnAssignments[cardId] ? '<span class="empty-slot" aria-label="Card ' + (index + 1) + ', placed"></span>' : cardHtml(cardId, {
+      origin: "hand",
+      shortcut: index + 1,
+    })) + (index < 9 ? '<kbd class="hand-key" title="Press ' + (index + 1) + ' to place or recall">' + (index + 1) + '</kbd>' : '') + '</div>').join("");
+    els.clearTurnButton.disabled = Object.keys(turnAssignments).length === 0;
     els.confirmTurnButton.disabled = !draftReady(action, me);
   }
 
@@ -532,116 +523,183 @@
   function handleDrawClick(event) {
     const card = event.target.closest("[data-card-id]");
     if (!card) return;
-    const cardId = card.dataset.cardId;
-    if (card.dataset.origin === "discard") {
-      turnDiscards = turnDiscards.filter((id) => id !== cardId);
-      selectedCard = cardId;
-      renderGame();
-      return;
-    }
-    if (selectedTarget) {
-      assignCard(cardId, selectedTarget);
-    } else {
-      selectedCard = selectedCard === cardId ? null : cardId;
-      renderGame();
-    }
+    assignCard(card.dataset.cardId, selectedTarget);
   }
 
   function handleBoardClick(event) {
     const card = event.target.closest("[data-card-id]");
     if (card?.dataset.origin === "board") {
-      const cardId = card.dataset.cardId;
-      delete turnAssignments[cardId];
-      selectedCard = cardId;
-      renderGame();
+      assignCard(card.dataset.cardId, "hand");
       return;
     }
     const row = event.target.closest("[data-row]")?.dataset.row;
     if (!row) return;
-    if (selectedCard) assignCard(selectedCard, row);
-    else selectTarget(row);
+    selectTarget(row);
   }
 
-  function handleDragStart(event) {
-    const card = event.target.closest("[data-card-id]");
-    if (!card || card.dataset.origin === "fixed") {
-      event.preventDefault();
-      return;
+  function canMoveCard(id) {
+    const state = model;
+    const me = myHand(state);
+    return state?.phase === "placement" && state.activePlayerId === me?.id && me.draw.includes(id);
+  }
+
+  function resolveDrop(element, id) {
+    if (!canMoveCard(id) || !element) return null;
+    if (element.closest("#draw-cards")) {
+      return { target: "hand", rect: els.drawCards.querySelector('[data-hand-id="' + id + '"]').getBoundingClientRect() };
     }
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", card.dataset.cardId);
-  }
-
-  function handleBoardDrop(event) {
-    event.preventDefault();
-    const row = event.target.closest("[data-row]")?.dataset.row;
-    if (row) assignCard(event.dataTransfer.getData("text/plain"), row);
+    const row = element.closest("#player-board [data-row]");
+    if (!row) return null;
+    const key = row.dataset.row;
+    const me = myHand(model);
+    const cards = draftBoard(me)[key];
+    const index = cards.includes(id) ? cards.indexOf(id) : cards.length;
+    if (index >= Game.ROW_LIMITS[key] || (!turnAssignments[id] && Object.keys(turnAssignments).length >= expectedPlaced(currentAction(model)))) return null;
+    return { target: key, rect: row.querySelector(".board-cards").children[index].getBoundingClientRect() };
   }
 
   function selectTarget(target) {
     selectedTarget = target;
-    if (selectedCard) assignCard(selectedCard, target);
-    else renderGame();
+    renderGame();
   }
 
   function assignCard(cardId, target) {
     const me = myHand(currentViewState());
-    if (!me || model.activePlayerId !== me.id || !me.draw.includes(cardId)) return;
-    delete turnAssignments[cardId];
-    turnDiscards = turnDiscards.filter((id) => id !== cardId);
-    if (target === "discard") {
-      const allowed = me.draw.length - expectedPlaced(currentAction(model));
-      if (turnDiscards.length >= allowed) return showToast("The discard is full.");
-      turnDiscards.push(cardId);
-    } else {
-      const board = draftBoard(me);
-      if (board[target].length >= Game.ROW_LIMITS[target]) return showToast(titleCase(target) + " is full.");
+    if (!canMoveCard(cardId)) return;
+    if (target === "hand") delete turnAssignments[cardId];
+    else {
+      if (turnAssignments[cardId] === target) return;
+      if (!turnAssignments[cardId] && Object.keys(turnAssignments).length >= expectedPlaced(currentAction(model))) return showToast("This set is ready. Return a card to change it.");
+      if (draftBoard(me)[target].length >= Game.ROW_LIMITS[target]) return showToast(titleCase(target) + " is full.");
       turnAssignments[cardId] = target;
+      selectedTarget = target;
+      if (draftBoard(me)[target].length === Game.ROW_LIMITS[target]) {
+        const rows = ["bottom", "middle", "top"];
+        selectedTarget = rows[(rows.indexOf(target) + 1) % 3];
+      }
     }
-    selectedCard = null;
-    selectedTarget = target;
     renderGame();
   }
 
   function resetDraft() {
     turnAssignments = {};
-    turnDiscards = [];
-    selectedCard = null;
     selectedTarget = "bottom";
     renderGame();
   }
 
   function confirmTurn() {
+    if (dragController.drag) return;
     const me = myHand(currentViewState());
     const action = currentAction(model);
     if (!draftReady(action, me)) return;
-    const placements = me.draw.filter((cardId) => turnAssignments[cardId]).map((cardId) => ({
-      cardId,
-      row: turnAssignments[cardId],
-    }));
-    room.sendAction({ type: "place", payload: { placements, discards: turnDiscards.slice() } });
+    const placements = Object.entries(turnAssignments).map(([cardId, row]) => ({ cardId, row }));
+    room.sendAction({ type: "place", payload: { placements } });
+  }
+
+  function handleKeyboard(event) {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.repeat || event.target.closest("input, select, textarea, [contenteditable], dialog") || document.querySelector("dialog[open]") || dragController.drag) return;
+    const state = currentViewState();
+    const me = myHand(state);
+    if (!me || state.phase !== "placement" || state.activePlayerId !== me.id) return;
+    const rows = ["top", "middle", "bottom"];
+    if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+      event.preventDefault();
+      selectTarget(rows[(rows.indexOf(selectedTarget) + (event.key === "ArrowUp" ? 2 : 1)) % 3]);
+    } else if (/^[1-9]$/.test(event.key)) {
+      event.preventDefault();
+      const id = me.draw[Number(event.key) - 1];
+      if (id) assignCard(id, turnAssignments[id] ? "hand" : selectedTarget);
+    } else if (event.code === "Space") { event.preventDefault(); confirmTurn(); }
+    else if (event.key.toLowerCase() === "c") { event.preventDefault(); resetDraft(); }
+  }
+
+  function boardPreview(state, board) {
+    const key = JSON.stringify([Game.scoringVariant(state), state.settings.topRepeatJacksPlus, board]);
+    if (!previewCache.has(key)) {
+      if (previewCache.size > 100) previewCache.clear();
+      previewCache.set(key, Game.previewBoard(state, board));
+    }
+    return previewCache.get(key);
   }
 
   function openLedger() {
     if (!model || model.kind !== "game") return;
-    const owners = model.players.filter((p) => !p.extraHand);
+    const state = currentViewState();
+    const owners = state.players.filter((p) => !p.extraHand);
     els.ledgerTotals.innerHTML = owners.map((player) => '<div class="ledger-total"><span>' + escapeHtml(player.name) + '</span><strong>' + signed(player.score) + '</strong></div>').join("");
-    els.ledgerList.innerHTML = model.ledger.length ? model.ledger.slice().reverse().map((hand) => {
+    els.ledgerList.innerHTML = state.ledger.length ? state.ledger.slice().reverse().map((hand) => {
+      const displayBoards = (hand.boards || []).map((p) => ({ ...p, evaluation: Object.keys(p.evaluation.rowEvals || {}).length === 3 ? p.evaluation : { ...boardPreview({ ...state, handVariant: hand.variant }, p.board), legal: p.evaluation.legal, points: p.evaluation.points } }));
       const deltas = owners.map((player) => '<span class="' + (hand.deltas[player.id] > 0 ? "delta-positive" : hand.deltas[player.id] < 0 ? "delta-negative" : "") + '">' + escapeHtml(player.name) + " " + signed(hand.deltas[player.id] || 0) + '</span>').join("");
-      return '<div class="ledger-hand"><span>Hand ' + hand.handNumber + '</span><div class="ledger-deltas">' + deltas + '</div></div>';
+      const boards = displayBoards.map((p) => '<section class="history-board"><header><strong>' + escapeHtml(p.name) + '</strong><span>' + (p.evaluation.legal ? p.evaluation.points + ' royalties' : 'Foul') + '</span></header>' + ["top", "middle", "bottom"].map((row) => '<div class="history-row"><span>' + titleCase(row) + '</span><div class="history-cards">' + p.board[row].map((id) => cardHtml(id, { disabled: true, assignments: p.evaluation.assignments, set: p.placedAt?.[id] })).join("") + '</div><div class="history-score">' + rowScoreHtml(p.evaluation.rowEvals?.[row], row) + '</div></div>').join("") + (Game.ownerId(p) === room.clientId && p.discards.length ? '<div class="history-discard"><span>Discards</span><div class="history-cards">' + p.discards.map((id) => cardHtml(id, { disabled: true })).join("") + '</div></div>' : '') + '</section>').join("");
+      return '<details class="ledger-hand"><summary><span>Hand ' + hand.handNumber + '<small>' + escapeHtml(Game.VARIANT_LABELS[hand.variant] || hand.variant) + '</small></span><div class="ledger-deltas">' + deltas + '</div></summary><div class="history-boards">' + (boards || '<p>Board history was not recorded for this older hand.</p>') + '</div></details>';
     }).join("") : '<p class="rule-intro">No completed hands yet.</p>';
     els.ledgerModal.showModal();
+    drawLedgerCharts();
+  }
+
+  function openDiscards() {
+    const state = currentViewState();
+    const mine = state.players.filter((p) => Game.ownerId(p) === room.clientId);
+    els.discardsContent.innerHTML = mine.map((p) => '<section class="discard-history"><h3>' + escapeHtml(p.name) + '</h3>' + ((p.discardHistory || []).length ? p.discardHistory.map((entry) => '<div class="discard-history-row"><span>Set ' + entry.set + '</span><div class="history-cards">' + entry.cards.map((id) => cardHtml(id, { disabled: true, set: entry.set })).join("") + '</div></div>').join("") : p.discards.length ? '<div class="history-cards">' + p.discards.map((id) => cardHtml(id, { disabled: true })).join("") + '</div>' : '<p>No discards yet.</p>') + '</section>').join("");
+    els.discardsModal.showModal();
+  }
+
+  function drawLedgerCharts() {
+    const state = currentViewState();
+    const colors = ["#53b7ff", "#f0b85d", "#db8feb"];
+    const owners = state.players.filter((p) => !p.extraHand);
+    $("ledger-legend").innerHTML = owners.map((p, i) => '<span><i style="background:' + colors[i] + '"></i>' + escapeHtml(p.name) + '</span>').join("");
+    for (const [id, cumulative] of [["ledger-chart", true], ["hand-chart", false]]) {
+      const canvas = $(id);
+      const width = canvas.getBoundingClientRect().width;
+      const height = 210;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(ratio, ratio);
+      const series = owners.map((p) => cumulative ? [0, ...state.ledger.map((h) => Number(h.totals?.[p.id]) || 0)] : state.ledger.map((h) => Number(h.deltas?.[p.id]) || 0));
+      const values = series.flat();
+      const rawLow = Math.min(0, ...values), rawHigh = Math.max(0, ...values);
+      const step = Math.max(1, Math.ceil((rawHigh - rawLow) / 4));
+      const lo = rawHigh === rawLow ? -2 : Math.floor(rawLow / step) * step;
+      const hi = rawHigh === rawLow ? 2 : Math.ceil(rawHigh / step) * step;
+      const left = 42, right = Math.max(left + 1, width - 16), top = 16, bottom = height - 28;
+      const y = (value) => bottom - (value - lo) / (hi - lo) * (bottom - top);
+      ctx.font = "11px system-ui";
+      for (let value = lo; value <= hi; value += step) {
+        ctx.strokeStyle = "#30373e"; ctx.beginPath(); ctx.moveTo(left, y(value)); ctx.lineTo(right, y(value)); ctx.stroke();
+        ctx.fillStyle = "#a7b2be"; ctx.textAlign = "right"; ctx.fillText(String(Math.round(value)), left - 7, y(value) + 4);
+      }
+      ctx.textAlign = "center";
+      if (!state.ledger.length) { ctx.fillStyle = "#a7b2be"; ctx.fillText("Scores appear after the first hand", (left + right) / 2, height / 2); continue; }
+      const count = series[0].length;
+      const x = (index) => left + (right - left) * (cumulative ? index / Math.max(1, count - 1) : (index + 0.5) / count);
+      series.forEach((points, index) => {
+        ctx.strokeStyle = colors[index]; ctx.fillStyle = colors[index]; ctx.lineWidth = 2.5;
+        if (cumulative) {
+          ctx.beginPath(); points.forEach((value, i) => i ? ctx.lineTo(x(i), y(value)) : ctx.moveTo(x(i), y(value))); ctx.stroke();
+          points.forEach((value, i) => { ctx.beginPath(); ctx.arc(x(i), y(value), 3, 0, Math.PI * 2); ctx.fill(); });
+        } else {
+          const bar = Math.min(18, (right - left) / count / (owners.length + 1));
+          points.forEach((value, i) => ctx.fillRect(x(i) + (index - owners.length / 2) * bar, Math.min(y(0), y(value)), Math.max(1, bar - 2), Math.max(1, Math.abs(y(value) - y(0)))));
+        }
+      });
+      ctx.fillStyle = "#a7b2be";
+      for (let i = 0; i < count; i++) if (count < 9 || i === 0 || i === count - 1 || i % Math.ceil(count / 6) === 0) ctx.fillText(cumulative && i === 0 ? "Start" : String(state.ledger[cumulative ? i - 1 : i]?.handNumber), x(i), height - 9);
+      canvas.setAttribute("aria-label", (cumulative ? "Running score" : "Points per hand") + ": " + owners.map((p, i) => p.name + " " + series[i].join(", ")).join("; "));
+    }
   }
 
   async function copyLedger() {
     if (!model || model.kind !== "game") return;
-    await copyText(Game.ledgerText(model));
+    await copyText(Game.ledgerText(currentViewState()));
     showToast("Ledger copied.");
   }
 
   function exportLedger() {
     if (!model || model.kind !== "game") return;
-    const blob = new Blob([JSON.stringify(Game.exportLedger(model), null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(Game.exportLedger(currentViewState()), null, 2)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "ofc-" + room.roomCode.toLowerCase() + "-ledger.json";
@@ -749,7 +807,7 @@
   function draftReady(action, me) {
     if (!action || !me) return false;
     const expected = expectedPlaced(action);
-    return Object.keys(turnAssignments).length === expected && turnDiscards.length === me.draw.length - expected;
+    return model?.phase === "placement" && model.activePlayerId === me.id && Object.keys(turnAssignments).length === expected;
   }
 
   function draftBoard(me) {
@@ -758,28 +816,23 @@
       middle: me.board.middle.slice(),
       bottom: me.board.bottom.slice(),
     };
-    me.draw.forEach((cardId) => {
-      const row = turnAssignments[cardId];
-      if (row) board[row].push(cardId);
-    });
+    Object.entries(turnAssignments).forEach(([cardId, row]) => { if (me.draw.includes(cardId)) board[row].push(cardId); });
     return board;
   }
 
-  function boardIsComplete(board) {
-    return Object.keys(Game.ROW_LIMITS).every((row) => board[row].length === Game.ROW_LIMITS[row]);
-  }
-
-  function evaluationOptions(state) {
-    const options = { variant: Game.scoringVariant(state) };
-    if (state.settings.topRepeatJacksPlus) options.topRepeatMinRank = 11;
-    return options;
-  }
-
-  function rowScoreHtml(evaluation) {
+  function rowScoreHtml(evaluation, row) {
     if (!evaluation) return "";
+    if (evaluation.badugi && evaluation.low && evaluation.qualifies) return evaluation.scoreComponents.map((part) => '<span class="split-score"><span class="rank-description">' + escapeHtml(part.label + (part.key === "badugi" ? " Badugi" : " Low")) + '</span><strong class="royalty-value' + (part.points ? ' scoring' : '') + '">' + (part.points || 0) + ' pts</strong></span>').join("");
     const points = Number(evaluation.points || 0);
-    const name = evaluation.name || "";
-    return "<strong>" + escapeHtml(name) + "</strong><span>" + points + " pts</span>";
+    const categoryNames = ["High card", "Pair", "Two pair", "Trips", "Straight", "Flush", "Boat", "Quads", "Straight flush"];
+    let name = evaluation.name || "";
+    if (Number.isInteger(evaluation.category)) {
+      name = categoryNames[evaluation.category] || name;
+      if (evaluation.category === Core.CATEGORY.STRAIGHT_FLUSH && evaluation.mainRank === 14) name = "Royal flush";
+      if (row === "top" && [Core.CATEGORY.PAIR, Core.CATEGORY.TRIPS].includes(evaluation.category)) name += " " + (RANK_LABEL[evaluation.mainRank] || "").repeat(evaluation.category === Core.CATEGORY.PAIR ? 2 : 3);
+    }
+    const foul = evaluation.qualifies === false && evaluation.complete !== false;
+    return '<span class="rank-description' + (foul ? ' foul-text' : '') + '">' + escapeHtml(name) + (foul ? " · Foul" : "") + '</span><strong class="royalty-value' + (points ? ' scoring' : '') + '">' + points + ' pts</strong>';
   }
 
   function cardHtml(cardId, options = {}) {
@@ -792,8 +845,9 @@
     const classes = ["playing-card", originalJoker || card.joker ? "joker" : "suit-" + card.suit];
     if (options.staged) classes.push("staged");
     if (options.selected) classes.push("selected");
-    const attrs = options.disabled ? "" : ' data-card-id="' + escapeHtml(cardId) + '" data-origin="' + escapeHtml(options.origin || "hand") + '" draggable="true"';
-    return '<button class="' + classes.join(" ") + '" type="button"' + attrs + ' aria-label="' + escapeHtml(cardLabel(cardId)) + '"><span class="card-suit">' + suitSymbol + '</span><span class="card-rank">' + rank + '</span>' + (originalJoker ? '<span class="card-jk">JK</span>' : "") + "</button>";
+    const attrs = options.disabled ? ' tabindex="-1"' : ' data-card-id="' + escapeHtml(cardId) + '" data-origin="' + escapeHtml(options.origin || "hand") + '" draggable="false"';
+    const badge = options.set ? '<span class="set-badge' + (options.latest ? ' latest' : '') + '" title="Placed in set ' + options.set + '">' + options.set + '</span>' : '';
+    return '<button class="' + classes.join(" ") + '" type="button"' + attrs + ' aria-label="' + escapeHtml(cardLabel(cardId) + (options.set ? ', set ' + options.set : '')) + '"><span class="card-suit">' + suitSymbol + '</span><span class="card-rank">' + rank + '</span>' + badge + (originalJoker ? '<span class="card-jk">JK</span>' : "") + "</button>";
   }
 
   function cardLabel(cardId) {

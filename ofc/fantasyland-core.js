@@ -2766,6 +2766,7 @@
     repeatMaskFromEvaluations,
     evaluateBoard,
     previewRows,
+    previewVariantRow: (variant, role, ids) => ids.length ? bestCandidate(role === "top" ? variantTopCandidates(variant, ids) : role === "bottom" ? variantBottomCandidates(variant, ids) : variantMiddleCandidates(variant, { middle: ids })) : null,
     solveHand,
     hasQualifyingMiddle,
     buildSeed,

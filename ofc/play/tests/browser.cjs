@@ -41,10 +41,7 @@ async function placeTurn(page, state) {
     await page.locator('#player-board [data-row="' + row + '"] .row-label').click();
     await page.locator('#draw-cards [data-card-id="' + player.draw[index] + '"]').click();
   }
-  for (const card of player.draw.slice(rowPlan[action.round].length)) {
-    await page.locator("#discard-target").click();
-    await page.locator('#draw-cards [data-card-id="' + card + '"]').click();
-  }
+  assert.equal(await page.locator("#draw-cards .hand-slot").count(), player.draw.length, "hand positions stay fixed");
   assert.equal(await page.locator("#confirm-turn-button").isEnabled(), true);
   await page.locator("#confirm-turn-button").click();
 }
@@ -96,6 +93,53 @@ async function placeTurn(page, state) {
     await guest.locator("#dealer-selection").waitFor({ state: "hidden" });
     let state = await model(host, code);
     const pages = { [state.players[0].id]: host, [state.players[1].id]: guest };
+    const firstDraw = state.players.find((p) => p.id === state.activePlayerId).draw;
+    const card = guest.locator('#draw-cards [data-card-id="' + firstDraw[0] + '"]');
+    await card.waitFor({ state: "visible" });
+    await card.scrollIntoViewIfNeeded();
+    const source = await card.boundingBox();
+    const row = await guest.locator('#player-board [data-row="bottom"]').boundingBox();
+    await guest.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+    await guest.mouse.down();
+    await guest.mouse.move(row.x + row.width * 0.8, row.y + row.height / 2, { steps: 4 });
+    assert.equal(await guest.locator(".card-drag-ghost").count(), 1);
+    assert.equal(await card.evaluate((e) => getComputedStyle(e).visibility), "hidden");
+    await guest.mouse.up();
+    assert.equal(await guest.locator(".card-drag-ghost").count(), 1, "drop is animated, not snapped");
+    await guest.waitForTimeout(300);
+    assert.equal(await guest.locator('#player-board [data-row="bottom"] [data-card-id="' + firstDraw[0] + '"]').count(), 1);
+    assert.equal(await guest.locator('#draw-cards [data-hand-id="' + firstDraw[0] + '"] .empty-slot').count(), 1);
+    const placed = await guest.locator('#player-board [data-card-id="' + firstDraw[0] + '"]').boundingBox();
+    const bank = await guest.locator('#draw-cards [data-hand-id="' + firstDraw[0] + '"]').boundingBox();
+    await guest.mouse.move(placed.x + placed.width / 2, placed.y + placed.height / 2);
+    await guest.mouse.down();
+    await guest.mouse.move(bank.x + bank.width / 2, bank.y + bank.height / 2, { steps: 3 });
+    await guest.mouse.up();
+    await guest.waitForTimeout(300);
+    assert.equal(await card.count(), 1, "drag returns to original hand index");
+    await guest.keyboard.press("ArrowDown");
+    assert.equal(await guest.locator('#player-board [data-row="top"]').getAttribute("aria-label"), "Top, selected");
+    await guest.keyboard.press("1");
+    assert.equal(await guest.locator('#player-board [data-row="top"] [data-card-id="' + firstDraw[0] + '"]').count(), 1);
+    await guest.keyboard.press("1");
+    assert.equal(await card.count(), 1, "number shortcut recalls placed card");
+    await guest.keyboard.press("c");
+    await guest.setViewportSize({ width: 390, height: 844 });
+    await card.scrollIntoViewIfNeeded();
+    const touchCard = await card.boundingBox();
+    const touchRow = await guest.locator('#player-board [data-row="middle"]').boundingBox();
+    const touch = await context.newCDPSession(guest);
+    await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: touchCard.x + 15, y: touchCard.y + 20, id: 1 }] });
+    await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchRow.x + touchRow.width / 2, y: touchRow.y + 30, id: 1 }] });
+    assert.equal(await guest.locator(".card-drag-ghost").count(), 1);
+    await guest.screenshot({ path: "/tmp/ofc-touch-drag.png" });
+    await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await guest.waitForTimeout(300);
+    assert.equal(await guest.locator('#player-board [data-row="middle"] [data-card-id="' + firstDraw[0] + '"]').count(), 1);
+    await guest.keyboard.press("c");
+    assert.equal(await guest.locator(".hand-key").first().isVisible(), false);
+    await guest.setViewportSize({ width: 1440, height: 900 });
+    console.log("PASS animated drag/set/return, fixed indices, and wrapped keyboard controls");
     while (state.phase === "placement") {
       const player = state.players.find((p) => p.id === state.activePlayerId);
       const page = pages[player.ownerId];
@@ -124,6 +168,22 @@ async function placeTurn(page, state) {
     assert.equal(state.handResult.pairResults.length, 2);
     await guest.locator("#showdown-panel").waitFor({ state: "visible" });
     await host.screenshot({ path: "/tmp/ofc-showdown-desktop.png", fullPage: true });
+    await host.locator("#discards-button").click();
+    assert.equal(await host.locator("#discards-content .playing-card").count(), 8);
+    await host.locator('[data-close-dialog="discards-modal"]').click();
+    await host.locator("#ledger-button").click();
+    await host.locator(".ledger-hand summary").first().click();
+    assert.equal(await host.locator(".history-board").count(), 3);
+    assert.equal(await host.locator(".history-row").count(), 9);
+    await host.screenshot({ path: "/tmp/ofc-ledger-desktop.png", fullPage: true });
+    await host.setViewportSize({ width: 390, height: 844 });
+    await host.screenshot({ path: "/tmp/ofc-ledger-mobile.png", fullPage: true });
+    await host.locator(".history-board").last().scrollIntoViewIfNeeded();
+    await host.screenshot({ path: "/tmp/ofc-ledger-history-mobile.png" });
+    assert.equal(await host.locator("#ledger-chart").evaluate((canvas) => canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data.some((v) => v > 0)), true);
+    await host.locator('[data-close-dialog="ledger-modal"]').click();
+    await host.setViewportSize({ width: 1440, height: 900 });
+    console.log("PASS private discards, board history, and rendered ledger graphs");
     console.log("PASS complete 15-turn Dealer's Choice / 2 on BTN hand and settlement");
     await guest.reload();
     await guest.locator("#resume-button").click();

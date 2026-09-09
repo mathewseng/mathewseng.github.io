@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#070b10" />
     <title>OFC Play</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260908a" />
+    <link rel="stylesheet" href="./styles.css?v=20260909a" />
   </head>
   <body>
     <div class="app-shell">
@@ -166,6 +166,7 @@
               <h1 id="turn-label">Your turn</h1>
             </div>
             <div class="table-status-actions">
+              <button class="button quiet compact" id="discards-button" type="button">Discards</button>
               <button class="button quiet compact" id="ledger-button" type="button">Ledger</button>
               <span class="room-chip" id="table-room-code">------</span>
             </div>
@@ -191,12 +192,9 @@
                 <span id="draw-instruction"></span>
               </div>
               <div class="draw-cards" id="draw-cards"></div>
-              <button class="discard-target" id="discard-target" type="button">
-                <span>Discard</span><small id="discard-count">0 / 0</small>
-              </button>
               <div class="turn-actions">
-                <button class="button quiet" id="clear-turn-button" type="button">Reset turn</button>
-                <button class="button primary" id="confirm-turn-button" type="button" disabled>Confirm set</button>
+                <button class="button quiet" id="clear-turn-button" type="button">Reset <kbd>C</kbd></button>
+                <button class="button primary" id="confirm-turn-button" type="button" disabled>Confirm set <kbd>Space</kbd></button>
               </div>
             </div>
           </section>
@@ -228,6 +226,8 @@
         <button class="icon-button" data-close-dialog="ledger-modal" type="button" aria-label="Close ledger">×</button>
       </div>
       <div class="ledger-totals" id="ledger-totals"></div>
+      <section class="ledger-chart-section"><h3>Running score</h3><div id="ledger-legend" class="ledger-legend"></div><canvas id="ledger-chart" role="img" aria-label="Cumulative points by hand"></canvas></section>
+      <section class="ledger-chart-section"><h3>Points per hand</h3><canvas id="hand-chart" role="img" aria-label="Points won or lost in each hand"></canvas></section>
       <div class="ledger-list" id="ledger-list"></div>
       <div class="modal-actions">
         <button class="button secondary" id="copy-ledger-button" type="button">Copy ledger</button>
@@ -235,12 +235,18 @@
       </div>
     </dialog>
 
+    <dialog class="modal" id="discards-modal">
+      <div class="modal-header"><div><p class="eyebrow">Private history</p><h2>Your discards</h2></div><button class="icon-button" data-close-dialog="discards-modal" aria-label="Close discards" type="button">×</button></div>
+      <div class="modal-body" id="discards-content"></div>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="../fantasyland-core.js?v=20260907b"></script>
+    <script src="../fantasyland-core.js?v=20260909a"></script>
     <script src="../../shared/peer-room.js?v=20260908a"></script>
-    <script src="./game.js?v=20260908a"></script>
-    <script src="./app.js?v=20260908a"></script>
+    <script src="./game.js?v=20260909a"></script>
+    <script src="./card-drag.js?v=20260909a"></script>
+    <script src="./app.js?v=20260909a"></script>
   </body>
 </html>

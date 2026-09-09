@@ -113,6 +113,9 @@
         ? clampWhole(player.nextFantasyCards, 14, 17, baseFantasyCards(state.settings))
         : 0;
       player.board = emptyBoard();
+      player.placedAt = {};
+      player.lastSet = 0;
+      player.discardHistory = [];
       player.draw = [];
       player.discards = [];
       player.submitted = false;
@@ -205,7 +208,8 @@
     const player = active;
     const draw = new Set(player.draw);
     const placements = Array.isArray(payload?.placements) ? payload.placements : [];
-    const discards = Array.isArray(payload?.discards) ? payload.discards.map(String) : [];
+    const discards = Array.isArray(payload?.discards) ? payload.discards.map(String)
+      : player.draw.filter((id) => !placements.some((p) => String(p.cardId) === id));
     const expectedPlaced = action.kind === "fantasy" ? 13 : action.round === 0 ? 5 : 2;
     const expectedDiscards = player.draw.length - expectedPlaced;
     if (placements.length !== expectedPlaced || discards.length !== expectedDiscards) {
@@ -224,6 +228,11 @@
     });
     if (action.kind === "fantasy" && !boardComplete(nextBoard)) throw new Error("Fantasyland must set a complete 3-5-5 board.");
     player.board = nextBoard;
+    player.lastSet = action.kind === "fantasy" ? 1 : action.round + 1;
+    player.placedAt ||= {};
+    placements.forEach(({ cardId }) => { player.placedAt[cardId] = player.lastSet; });
+    player.discardHistory ||= [];
+    if (discards.length) player.discardHistory.push({ set: player.lastSet, cards: discards.slice() });
     player.discards.push(...discards);
     player.draw = [];
     player.submitted = true;
@@ -273,6 +282,7 @@
       deltas: ownerDeltas,
       totals: Object.fromEntries(owners.map((player) => [player.id, player.score])),
       players: Object.fromEntries(owners.map((player) => [player.id, player.name])),
+      boards: state.players.map((p) => ({ id: p.id, ownerId: ownerId(p), name: p.name, board: clone(p.board), placedAt: clone(p.placedAt || {}), evaluation: clone(p.evaluation), discards: p.discards.slice(), discardHistory: clone(p.discardHistory || []) })),
     });
     return state;
   }
@@ -283,6 +293,25 @@
       options.topRepeatMinRank = 11;
     }
     return serializeEvaluation(Core.evaluateBoard(Object.values(player.board).flat(), player.board, options));
+  }
+
+  function previewBoard(state, board) {
+    const variant = scoringVariant(state);
+    const ids = Object.values(board).flat();
+    const options = { variant, topRepeatMinRank: state.settings.topRepeatJacksPlus && ["low", "badeucey", "cribbage"].includes(variant) ? 11 : 2 };
+    const result = boardComplete(board) ? Core.evaluateBoard(ids, board, options) : Core.previewRows(ids, board, options);
+    for (const row of Object.keys(ROW_LIMITS)) {
+      if (result.rowEvals[row] || !board[row].length) continue;
+      const high = (row === "top" && variant !== "bdp") || (row === "bottom" && variant !== "bdp") || (row === "middle" && variant === "high");
+      if (!high && board[row].length < ROW_LIMITS[row] && !(row === "middle" && variant === "cribbage")) continue;
+      const candidate = Core.previewVariantRow(variant, row, board[row]);
+      if (candidate) {
+        result.rowEvals[row] = candidate.evaluation;
+        candidate.assignments.forEach((card, id) => result.assignments.set(id, card));
+      }
+    }
+    result.previewPoints = Object.values(result.rowEvals).reduce((sum, row) => sum + finite(row.points), 0);
+    return serializeEvaluation(result);
   }
 
   function scorePair(variant, left, right) {
@@ -370,7 +399,9 @@
       const locked = player.extraHand && state.activePlayerId !== player.id;
       if (!mine || locked) player.draw = player.draw.map(() => "BACK");
       if (!mine) player.discards = player.discards.map(() => "BACK");
+      if (!mine) player.discardHistory = (player.discardHistory || []).map((entry) => ({ ...entry, cards: entry.cards.map(() => "BACK") }));
       if (!mine && player.hiddenFantasy && state.phase !== "showdown") {
+        player.placedAt = {};
         player.board = {
           top: player.board.top.map(() => "BACK"),
           middle: player.board.middle.map(() => "BACK"),
@@ -378,6 +409,11 @@
         };
       }
     });
+    state.ledger.forEach((hand) => (hand.boards || []).forEach((board) => {
+      if (ownerId(board) === clientId) return;
+      board.discards = board.discards.map(() => "BACK");
+      board.discardHistory = (board.discardHistory || []).map((entry) => ({ ...entry, cards: entry.cards.map(() => "BACK") }));
+    }));
     return state;
   }
 
@@ -530,6 +566,7 @@
     filterStateForPlayer,
     ledgerText,
     normalizeSettings,
+    previewBoard,
     scorePair,
     startHand,
     submitPlacement,

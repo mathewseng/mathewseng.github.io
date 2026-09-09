@@ -252,3 +252,32 @@ for (const variant of Game.VARIANTS.filter((v) => v !== "dealerschoice")) {
   assert.ok(state.players.every((p) => Number.isFinite(p.score)));
 }
 console.log("Dealer's Choice, Progressive, multiple FL, and 2 on BTN tests passed.");
+
+{
+  let state = Game.createGame(people, {}, "auto-discard-history");
+  while (state.phase === "placement") {
+    const p = state.players.find((p) => p.id === state.activePlayerId);
+    const payload = placementForAction(state);
+    delete payload.discards;
+    state = Game.submitPlacement(state, Game.ownerId(p), payload);
+  }
+  for (const p of state.players) {
+    assert.equal(p.discards.length, 4);
+    assert.deepEqual(p.discardHistory.map((e) => e.set), [2, 3, 4, 5]);
+    assert.equal(Object.keys(p.placedAt).length, 13);
+    assert.equal(Object.values(p.placedAt).filter((n) => n === 1).length, 5);
+    assert.equal(p.lastSet, 5);
+  }
+  assert.equal(state.ledger[0].boards.length, 2);
+  const own = Game.filterStateForPlayer(state, "a");
+  assert.ok(own.ledger[0].boards.find((p) => p.id === "b").discards.every((id) => id === "BACK"));
+  assert.ok(own.ledger[0].boards.find((p) => p.id === "a").discards.every((id) => id !== "BACK"));
+  assert.ok(own.players.find((p) => p.id === "b").discardHistory.every((e) => e.cards.every((id) => id === "BACK")));
+  const preview = Game.previewBoard(state, { top: ["Qs", "Qh"], middle: ["7s", "7h", "JK1"], bottom: ["Ts", "Th", "Td", "Tc"] });
+  assert.equal(preview.rowEvals.top.points, 7);
+  assert.equal(preview.rowEvals.middle.points, 2);
+  assert.equal(preview.rowEvals.bottom.points, 10);
+  assert.equal(preview.previewPoints, 19);
+  assert.ok(/^7/.test(preview.assignments.JK1));
+}
+console.log("Auto discards, private history, set provenance, and live royalty tests passed.");
