@@ -1,0 +1,231 @@
+{
+  "id": "push-2026-09-14",
+  "date": "2026-09-14",
+  "startTime": "21:45",
+  "durationMinutes": 60,
+  "type": "push",
+  "title": "First 105 lb Bench Work Sets",
+  "chronologyIndex": 18,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Late-night push session followed by 15 minutes in a sauna. No numeric 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": ["late-night-training", "post-workout-sauna"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-14-flat-1",
+          "weightLb": 105,
+          "reps": 6,
+          "completed": true
+        },
+        {
+          "id": "2026-09-14-flat-2",
+          "weightLb": 105,
+          "reps": 6,
+          "completed": true
+        },
+        {
+          "id": "2026-09-14-flat-3",
+          "weightLb": 105,
+          "reps": 5,
+          "completed": true
+        }
+      ],
+      "notes": "First full three-set result at 105 lb: 17 completed repetitions and 1,785 lb completed volume. This is one repetition short of the 105 lb × 6, 6, 6 milestone. No failed bench repetition was reported, but RIR and execution quality were not supplied."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-14-incline-1",
+          "weightLb": 75,
+          "reps": 4,
+          "completed": true
+        },
+        {
+          "id": "2026-09-14-incline-failed-5th",
+          "weightLb": 75,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "Failed while attempting the fifth repetition after four completed repetitions."
+        }
+      ],
+      "notes": "Four completed repetitions followed by one failed repetition attempt. This was one set after the first full 105 lb flat-bench session, so it is preserved as a fatigue-affected observation rather than treated as a matched regression from September 7."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-14-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-14-pushdown-2",
+          "weightLb": 30,
+          "reps": 6,
+          "completed": true
+        },
+        {
+          "id": "2026-09-14-pushdown-3",
+          "weightLb": 30,
+          "reps": 6,
+          "completed": true
+        }
+      ],
+      "notes": "Normalized from ‘tricep pulldown.’ Twenty-two completed repetitions and 660 lb completed volume."
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-14-overhead-1",
+          "weightLb": 20,
+          "reps": 6,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-overhead-2",
+          "weightLb": 20,
+          "reps": 6,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-overhead-3",
+          "weightLb": 20,
+          "reps": 6,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Equipment, attachment, and per-side loading were not supplied, so the entered load is preserved without further inference."
+    },
+    {
+      "exerciseId": "high-cable-chest-press",
+      "name": "High Cable Chest Press",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-14-high-cable-press-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-high-cable-press-2",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-high-cable-press-3",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "The cable setup and whether the stack value was per side were not supplied. This matches the heaviest recorded load for this movement and establishes the first complete three-set result at 25 lb."
+    },
+    {
+      "exerciseId": "mid-cable-fly",
+      "name": "Cable Chest Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-14-cable-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-cable-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-cable-fly-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Cable height and per-side loading were not supplied. The entered load is preserved without doubling."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-14-lateral-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-lateral-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Normalized from ‘cable shoulder side raise.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-14-front-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        },
+        {
+          "id": "2026-09-14-front-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "dataQuality": "ambiguous"
+        }
+      ],
+      "notes": "Normalized from ‘cable shoulder front raise.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    }
+  ],
+  "notes": "Workout started at 9:45 PM local time on September 14 and lasted 60 minutes. It contained 20 completed sets, 161 completed repetitions, and 4,555 lb of preserved entered-load volume. The failed fifth incline repetition is recorded separately and excluded from completed repetitions and volume. A 15-minute sauna followed the workout and is recorded separately from lifting duration and volume. No RIR, pain, sleep, energy, soreness, or illness scores were supplied."
+}

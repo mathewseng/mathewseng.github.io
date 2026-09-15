@@ -1228,6 +1228,108 @@ This is the first complete three-set result at the recorded 20 lb top load.
 
 ---
 
+# 18. First 105 lb Bench Work Sets — September 14, 2026
+
+**Date:** 2026-09-14
+
+**Start time:** 9:45 PM local time
+
+**Lifting duration:** 60 minutes
+
+**Post-workout recovery:** 15 minutes in a sauna
+
+**Data quality:** Complete repetitions and entered loads; partial context and ambiguous cable-loading conventions
+
+## Context
+
+- Late-night push session.
+- No 0–6 energy, sleep, soreness, illness, back-pain, or general-pain scores were supplied.
+- No RIR values were supplied.
+- The sauna time is recorded separately and is not included in lifting duration or volume.
+
+## Smith-Machine Flat Bench
+
+- 105 lb × 6
+- 105 lb × 6
+- 105 lb × 5
+
+Completed work:
+
+- 17 repetitions
+- 1,785 lb volume
+- First full three-set result at 105 lb
+- One completed repetition short of the 105 lb × 6, 6, 6 milestone
+
+No failed flat-bench repetition was reported. RIR and execution quality were not supplied.
+
+## Smith-Machine Incline Bench
+
+- 75 lb × 4 completed
+- Failed while attempting the fifth repetition
+
+The failed attempt is recorded separately and excluded from completed repetitions and volume. This was one set after the first full 105 lb flat-bench session, so it is preserved as a fatigue-affected observation rather than treated as a matched regression from September 7.
+
+## Triceps Pushdown
+
+- 30 lb × 10
+- 30 lb × 6
+- 30 lb × 6
+
+Completed work:
+
+- 22 repetitions
+- 660 lb volume
+
+Normalized from “tricep pulldown.”
+
+## Overhead Triceps Extension
+
+- 20 lb × 6
+- 20 lb × 6
+- 20 lb × 6
+
+Equipment, attachment, and per-side loading were not supplied.
+
+## High Cable Chest Press
+
+- 25 lb × 10
+- 25 lb × 10
+- 25 lb × 10
+
+This matches the heaviest recorded load and establishes the first complete three-set result at 25 lb. The cable setup and per-side loading convention were not supplied.
+
+## Cable Chest Fly
+
+- 10 lb × 10
+- 10 lb × 10
+- 10 lb × 10
+
+Cable height and per-side loading were not supplied.
+
+## Cable Lateral Raise
+
+- 10 lb × 10
+- 10 lb × 10
+
+Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Cable Front Raise
+
+- 10 lb × 10
+- 10 lb × 10
+
+Unilateral versus bilateral execution and per-side loading were not supplied.
+
+## Session Totals
+
+- 20 completed sets
+- 161 completed repetitions
+- 4,555 lb preserved entered-load volume
+- 1 failed incline repetition attempt excluded from completed totals
+- 15 minutes in a sauna after lifting, tracked separately
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1238,6 +1340,8 @@ This is the first complete three-set result at the recorded 20 lb top load.
 - Best recent completed working set at 95 lb: 9 reps
 - Best documented completed volume at 95 lb: 2,375 lb
 - The 95 lb × 8, 8, 8 progression milestone is complete.
+- First 105 lb three-set result: 6, 6, 5 for 17 completed reps and 1,785 lb volume
+- The 105 lb × 6, 6, 6 milestone is one rep away.
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
@@ -1245,6 +1349,7 @@ This is the first complete three-set result at the recorded 20 lb top load.
 - Best documented top set: 65 lb × 10
 - Best documented full result at 65 lb: 8, 8, 9
 - Heaviest recorded load: 75 lb × 7, 7, 6
+- Latest observation: 75 lb × 4 followed by a failed fifth rep after heavier flat-bench work on September 14
 
 ## Shoulder Press
 
@@ -1259,6 +1364,12 @@ This is the first complete three-set result at the recorded 20 lb top load.
 
 - 30 lb × 9, 10, 8
 - Equipment and loading convention remain unrecorded.
+
+## High Cable Chest Press
+
+- Heaviest recorded load: 25 lb
+- First complete result at that load: 10, 10, 10 on September 14
+- Cable setup and per-side loading remain unknown.
 
 ## Strict Pull-Up
 
@@ -1344,12 +1455,23 @@ Change from July 14 to September 7: **+6 completed repetitions and +570 lb of co
 | 2026-08-12                                | 10, 9, 7           |             26 |           780 lb |
 | 2026-08-31                                | 8, 10, 8           |             26 |           780 lb |
 | 2026-09-07                                | 8, 10, 10          |             28 |           840 lb |
+| 2026-09-14                                | 10, 6, 6           |             22 |           660 lb |
 
 Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.
 
 Change from August 10 to August 12: **+2 completed repetitions and +60 lb of completed volume** across three sets.
 
 September 7 improved the latest three-set total to 28 repetitions and 840 lb volume.
+
+September 14 recorded 22 repetitions and 660 lb volume after the first full 105 lb flat-bench session.
+
+### Smith-Machine Flat Bench at 105 lb
+
+| Date       | Completed set reps | Completed reps | Completed volume |
+| ---------- | ------------------ | -------------: | ---------------: |
+| 2026-09-14 | 6, 6, 5            |             17 |         1,785 lb |
+
+Repeat 105 lb and add the final sixth repetition before progressing.
 
 ### Pull-Up Session Repetitions
 

@@ -2,6 +2,20 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-15 — September 14 Push Workout
+
+### Added
+
+- Added the September 14 push workout at 9:45 PM for 60 minutes, including the first full three-set Smith-bench result at 105 lb.
+- Recorded the failed fifth incline repetition separately from the four completed repetitions.
+- Recorded the separate 15-minute post-workout sauna without adding it to lifting duration or volume.
+
+### Changed
+
+- Established 105 lb × 6, 6, 5 as the current Smith-bench working baseline, one repetition short of the 6/6/6 milestone.
+- Added the first complete 25 lb × 10, 10, 10 high-cable chest-press result while preserving its unknown per-side loading convention.
+- Updated the dashboard, benchmarks, goals, and push prescription to repeat 105 lb, use 65 lb incline for controlled work, and suggest Pull next.
+
 ## 2026-09-08 — September 8 Pull Workout
 
 ### Added

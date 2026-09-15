@@ -24,21 +24,21 @@ Healthy-session reference:
 
 - September 7 result: 95 lb × 8, 8, 9 for 25 completed repetitions and a new volume best
 - The 95 lb × 8, 8, 8 milestone is complete.
-- On a healthy, recovered day, begin 105 lb for 3 working sets and aim toward 6, 6, 6.
-- Use approximately 2–3 reps in reserve while establishing the new load.
-- If the September 7 repetitions were not clean, consolidate at 95 lb instead.
-- No failed repetition was reported on September 7, but RIR and readiness were not supplied.
+- September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions.
+- Repeat 105 lb and complete 6, 6, 6 before adding repetitions beyond six or changing load.
+- Use approximately 2–3 reps in reserve while establishing the load; no failed flat-bench repetition was reported.
+- RIR, readiness, and execution quality were not supplied.
 
 Progress at 105 lb after:
 
-- First establish at least 6, 6, 6 with controlled repetitions.
+- Complete at least 6, 6, 6 with controlled repetitions; the current result is one rep short.
 - Then build toward 8, 8, 8 before adding load again.
 
 ### Smith-Machine Incline Bench
 
-- 75 lb for 3 sets of 6–8 when healthy
 - September 7 result at 75 lb: 7, 7, 6
-- Repeat 75 lb and build toward 8, 8, 8.
+- September 14 result after heavier flat bench: 75 lb × 4 followed by a failed fifth rep
+- Use 65 lb for 2–3 controlled sets of 8–10 next time before reconsidering 75 lb.
 - Best full result at 65 lb: 8, 8, 9
 - August 12 result at 55 lb: 9, 8, 8
 
@@ -50,7 +50,7 @@ Progress at 105 lb after:
 ### Triceps Pushdown
 
 - 30 lb for 3 sets of 10–12
-- Current three-set result: 30 lb × 8, 10, 10
+- Current three-set result: 30 lb × 10, 6, 6
 - Best session total: 30 lb × 10, 10, 10, 10
 - Build toward 12, 12, 12 before increasing
 

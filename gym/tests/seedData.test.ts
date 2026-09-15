@@ -577,7 +577,78 @@ describe("seed data integration", () => {
       value: 20,
       workoutId: "pull-2026-09-08",
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-09-08");
+  });
+
+  it("records the September 14 push workout and failed incline attempt", () => {
+    const workout = workouts.find((item) => item.id === "push-2026-09-14");
+    const benchProgress = getRepProgression(workouts, "smith-flat-bench", 105, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "push-2026-09-14");
+    const incline = workout?.exercises.find(
+      (entry) => entry.exerciseId === "smith-incline-bench",
+    );
+    const highCablePress = workout?.exercises.find(
+      (entry) => entry.exerciseId === "high-cable-chest-press",
+    );
+    const benchBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "flat-bench-105-session-total",
+    );
+    const highCableBenchmark = currentBenchmarks.find(
+      (benchmark) => benchmark.id === "high-cable-chest-press-top-load",
+    );
+
+    expect(workout).toMatchObject({
+      date: "2026-09-14",
+      startTime: "21:45",
+      durationMinutes: 60,
+      type: "push",
+      chronologyIndex: 18,
+      dataQuality: "partial",
+      context: {
+        sourceLabels: expect.arrayContaining(["post-workout-sauna"]),
+      },
+    });
+    expect(workout?.context).not.toHaveProperty("backPain");
+    expect(benchProgress).toMatchObject({
+      setReps: [6, 6, 5],
+      completedReps: 17,
+      completedVolumeLb: 1_785,
+    });
+    expect(incline?.sets).toEqual([
+      expect.objectContaining({ weightLb: 75, reps: 4, completed: true }),
+      expect.objectContaining({
+        weightLb: 75,
+        attemptedReps: 1,
+        completed: false,
+        failedAttempt: true,
+      }),
+    ]);
+    expect(highCablePress?.sets).toEqual([
+      expect.objectContaining({ weightLb: 25, reps: 10 }),
+      expect.objectContaining({ weightLb: 25, reps: 10 }),
+      expect.objectContaining({ weightLb: 25, reps: 10 }),
+    ]);
+    expect(highCablePress?.sets.every((set) => set.perSide === undefined)).toBe(true);
+    expect(calculateWorkoutTotals(workout!)).toMatchObject({
+      completedReps: 161,
+      completedVolumeLb: 4_555,
+      calculableSetCount: 20,
+      excludedSetCount: 1,
+    });
+    expect(benchBenchmark).toMatchObject({
+      value: 17,
+      workoutId: "push-2026-09-14",
+    });
+    expect(highCableBenchmark).toMatchObject({
+      value: 25,
+      workoutId: "push-2026-09-14",
+    });
+    expect(
+      benchGoal.milestones?.find((item) => item.id === "bench-105-666"),
+    ).toMatchObject({
+      achieved: false,
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-09-14");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

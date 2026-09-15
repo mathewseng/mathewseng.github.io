@@ -21,16 +21,17 @@ export const programTemplates: ProgramTemplate[] = [
         weightLb: 105,
         rirRange: [2, 3],
         notes:
-          "The September 7 result was 95 lb × 8/8/9, clearing the progression threshold. On a healthy, recovered day, begin a controlled 105 lb block and aim toward 6/6/6. If the 95 lb sets were not clean, repeat 95 lb instead.",
+          "Latest result is 105 lb × 6/6/5 for 17 completed reps. Repeat 105 lb and complete 6/6/6 before adding repetitions beyond six or changing load.",
       },
       {
         exerciseId: "smith-incline-bench",
         label: "Smith-Machine Incline Bench",
         sets: 3,
-        repRange: [6, 8],
-        weightLb: 75,
-        rirRange: [1, 2],
-        notes: "Latest result is 75 lb × 7/7/6. Repeat the load and build toward 8/8/8.",
+        repRange: [8, 10],
+        weightLb: 65,
+        rirRange: [2, 3],
+        notes:
+          "After the first full 105 lb flat-bench session, 75 lb incline ended at four reps with a failed fifth. Use 65 lb for 2–3 controlled sets of 8–10 before reconsidering 75 lb.",
       },
       {
         exerciseId: "shoulder-press",
@@ -46,7 +47,7 @@ export const programTemplates: ProgramTemplate[] = [
         repRange: [10, 12],
         weightLb: 15,
         rirRange: [0, 2],
-        notes: "Build toward 12/12/12 before increasing.",
+        notes: "Latest result is 30 lb × 10/6/6. Build back toward 10/10/10.",
       },
       {
         exerciseId: "cable-lateral-raise",
@@ -70,7 +71,8 @@ export const programTemplates: ProgramTemplate[] = [
     rules: [
       "Do not test a one-repetition maximum by default.",
       "Do not repeat failed attempts.",
-      "The 95 lb × 8/8/8 threshold is complete. Hold 105 lb until at least 6/6/6 is controlled before building toward 8/8/8.",
+      "The 95 lb × 8/8/8 threshold is complete. Repeat 105 lb after 6/6/5 and finish 6/6/6 before progressing.",
+      "Keep incline submaximal after heavy flat bench; use 65 lb next time because the September 14 set ended in failure at 75 lb.",
     ],
   },
   {

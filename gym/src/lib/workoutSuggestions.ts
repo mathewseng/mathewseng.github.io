@@ -197,15 +197,19 @@ function healthyTemplate(type: WorkoutType): SuggestedExercise[] {
         exercise("smith-flat-bench", "Smith-machine flat bench", 3, [5, 7], [2, 3], {
           weightLb: 105,
           notes:
-            "Warm up first. The 95 lb × 8/8/9 milestone is complete; on a healthy, recovered day, begin a controlled 105 lb block toward 6/6/6. Repeat 95 lb if those reps were not clean.",
+            "Warm up first. Latest result is 105 lb × 6/6/5; repeat the load and complete 6/6/6 without failure before progressing.",
         }),
         exercise(
           "smith-incline-bench",
           "Smith-machine incline bench",
           3,
-          [6, 8],
-          [1, 2],
-          { weightLb: 75 },
+          [8, 10],
+          [2, 3],
+          {
+            weightLb: 65,
+            notes:
+              "Use 65 lb for controlled work after the September 14 set at 75 lb ended with a failed fifth rep.",
+          },
         ),
         exercise("shoulder-press", "Shoulder press", 3, [8, 12], [1, 3]),
         exercise("triceps-pushdown", "Triceps pushdown", 3, [10, 12], [0, 2], {

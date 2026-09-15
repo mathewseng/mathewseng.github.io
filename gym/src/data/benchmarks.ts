@@ -24,6 +24,17 @@ export const currentBenchmarks: Benchmark[] = [
       "95 lb × 8, 8, 9 for 25 completed repetitions, completing the 8/8/8 milestone and setting a new volume best. The nine-repetition best set is tied.",
   },
   {
+    id: "flat-bench-105-session-total",
+    exerciseId: "smith-flat-bench",
+    label: "First 105 lb three-set baseline",
+    value: 17,
+    unit: "reps",
+    confirmed: true,
+    workoutId: "push-2026-09-14",
+    notes:
+      "105 lb × 6, 6, 5 for 17 completed repetitions and 1,785 lb volume; one rep short of the 6/6/6 milestone.",
+  },
+  {
     id: "incline-bench-top-set",
     exerciseId: "smith-incline-bench",
     label: "Heaviest recorded Smith-incline load",
@@ -31,7 +42,19 @@ export const currentBenchmarks: Benchmark[] = [
     unit: "lb",
     confirmed: true,
     workoutId: "push-2026-09-07",
-    notes: "75 lb × 7, 7, 6; the best recorded 65 lb set remains 10 repetitions.",
+    notes:
+      "75 lb × 7, 7, 6; the best recorded 65 lb set remains 10 repetitions. The September 14 session recorded 75 lb × 4 followed by a failed fifth rep after heavier flat-bench work.",
+  },
+  {
+    id: "high-cable-chest-press-top-load",
+    exerciseId: "high-cable-chest-press",
+    label: "Heaviest recorded high-cable press load",
+    value: 25,
+    unit: "lb",
+    confirmed: true,
+    workoutId: "push-2026-09-14",
+    notes:
+      "25 lb × 10, 10, 10. Cable setup and per-side loading were not supplied, so the entered stack value is preserved without doubling.",
   },
   {
     id: "shoulder-press-reference",
