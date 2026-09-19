@@ -26,12 +26,13 @@ import {
   lineChart,
   outcomes,
   legend,
-} from "./charts.mjs";
+} from "./charts.mjs?v=mobile-20260919";
 
 const $ = (id) => document.getElementById(id);
 const count = (n) => n.toLocaleString("en-US");
 const compact = (n) =>
   n >= 1e9 ? `${num(n / 1e9, 2)}B` : `${num(n / 1e6, 1)}M`;
+const phoneLayout = window.matchMedia("(max-width: 700px)");
 const state = {
   rows: [],
   filtered: [],
@@ -44,6 +45,8 @@ const state = {
   pins: [],
   page: 1,
   pageSize: 50,
+  pageSizeChosen: false,
+  columnsChosen: false,
   sort: [{ key: "mean", direction: -1 }],
   columns: [],
   numeric: [],
@@ -169,6 +172,7 @@ const columnDefs = [
 ];
 const numericDefs = columnDefs.filter((c) => !["hist", "mix"].includes(c.key));
 const presets = {
+  quick: ["mean", "survive5"],
   core: [
     "mean",
     "hist",
@@ -200,6 +204,57 @@ const presets = {
   all: columnDefs.map((c) => c.key),
 };
 state.columns = [...presets.core];
+
+function chartOptions() {
+  return phoneLayout.matches
+    ? {
+        compact: true,
+        width: Math.max(260, Math.min(620, window.innerWidth - 48)),
+        height: 230,
+      }
+    : {};
+}
+function setFiltersOpen(open) {
+  document
+    .querySelector(".filter-panel")
+    .classList.toggle("filters-open", open);
+  $("filter-toggle").setAttribute("aria-expanded", String(open));
+}
+function renderFilterCount() {
+  const active =
+    ["pairing", "suits", "high", "connected"].filter((id) => $(id).value)
+      .length +
+    state.numeric.filter((rule) => rule.value !== "").length +
+    Number($("pinned-only").checked);
+  $("filter-count").textContent = active;
+  $("filter-count").hidden = !active;
+  $("filter-apply").textContent =
+    `Show ${count(state.filtered.length)} matching hands`;
+}
+function syncResponsiveLayout() {
+  const phone = phoneLayout.matches;
+  const detail = $("hand-detail");
+  const container = phone
+    ? $("hand-dialog-content")
+    : document.querySelector(".explorer-workspace");
+  if (!phone && $("hand-dialog").open) $("hand-dialog").close();
+  if (detail.parentElement !== container) container.append(detail);
+  if (!state.columnsChosen) {
+    $("column-preset").value = phone ? "quick" : "core";
+    state.columns = [...presets[$("column-preset").value]];
+  }
+  if (!state.pageSizeChosen) {
+    state.pageSize = phone ? 25 : 50;
+    $("page-size").value = state.pageSize;
+  }
+}
+function showHandReport() {
+  if (!phoneLayout.matches) return;
+  const dialog = $("hand-dialog");
+  if (!dialog.open) dialog.showModal();
+  dialog.scrollTop = 0;
+  dialog.querySelector("[data-close]").focus({ preventScroll: true });
+}
 
 function card(c) {
   return `<span class="playing-card ${SUITS[c % 4]}" aria-label="${cardName(c)}"><span class="suit" aria-hidden="true">${SYMBOLS[c % 4]}</span><span class="rank" aria-hidden="true">${RANKS[Math.floor(c / 4)]}</span></span>`;
@@ -259,14 +314,15 @@ function applyFilters() {
   renderSummary();
   renderActive();
   const combos = state.stats?.combinations || 0;
-  $("population-label").textContent =
-    `${count(state.filtered.length)} / 16,432 classes · ${count(combos)} deals · ${pct(combos / 270725, 2)} of the deck`;
+  $("population-label").innerHTML =
+    `<strong>${count(state.filtered.length)}</strong> / 16,432 classes <span class="desktop-only">· ${count(combos)} deals </span>· ${pct(combos / 270725, 2)} of deals`;
   $("scope-weight").textContent =
     weight() === "deals"
       ? "Weighted by actual deals."
       : "Each suit-equivalent class has equal weight.";
   $("pin-count").textContent = state.pins.length;
   $("export-button").disabled = !state.filtered.length;
+  renderFilterCount();
 }
 function renderSummary() {
   const s = state.stats;
@@ -305,13 +361,13 @@ function renderSummary() {
   $("summary").innerHTML = items
     .map(
       ([label, value, unit, caption]) =>
-        `<div class="summary-item"><p class="metric-label">${label}</p><p class="metric-value">${value}<small>${unit}</small></p><p class="metric-caption">${caption}</p></div>`,
+        `<div class="summary-item" title="${esc(caption)}"><p class="metric-label">${label}</p><p class="metric-value">${value}<small>${unit}</small></p><p class="metric-caption">${caption}</p></div>`,
     )
     .join("");
 }
 function renderActive() {
   if (state.tab === "explorer") {
-    $("overview-hist").innerHTML = histogram(state.stats);
+    $("overview-hist").innerHTML = histogram(state.stats, chartOptions());
     $("overview-outcomes").innerHTML = outcomes(state.stats);
     renderTable();
     renderDetail();
@@ -320,6 +376,9 @@ function renderActive() {
   else renderLab();
 }
 function changeTab(tab) {
+  const returnToTop =
+    phoneLayout.matches &&
+    document.querySelector(".tabs").getBoundingClientRect().top <= 1;
   state.tab = tab;
   for (const name of ["explorer", "reports", "lab"])
     $(`${name}-view`).hidden = name !== tab;
@@ -330,6 +389,7 @@ function changeTab(tab) {
     else b.removeAttribute("aria-current");
   });
   renderActive();
+  if (returnToTop) $(`${tab}-view`).scrollIntoView({ block: "start" });
 }
 function renderTable() {
   const cols = state.columns.map((key) =>
@@ -344,7 +404,7 @@ function renderTable() {
     return `<th scope="col"${sortable ? ` aria-sort="${order}"` : ""} title="${esc(desc)}">${sortable ? `<button data-sort="${key}">${label} <span aria-hidden="true">${s ? (s.direction === 1 ? "↑" : "↓") : "↕"}</span>${s && state.sort.length > 1 ? `<sup>${state.sort.indexOf(s) + 1}</sup>` : ""}</button>` : label}</th>`;
   };
   $("hand-table").querySelector("thead").innerHTML =
-    `<tr>${header("hand", "Starting hand", "Cards are sorted A–2, then spades, hearts, diamonds, clubs. Suit labels maximize spades, then hearts, diamonds and clubs.")}${cols.map((c) => header(c.key, c.label, c.desc)).join("")}</tr>`;
+    `<tr>${header("hand", "Starting hand", "Cards are sorted A–2, then spades, hearts, diamonds, clubs. Suit labels maximize spades, then hearts, diamonds and clubs.")}${cols.map((c) => header(c.key, phoneLayout.matches && c.key === "mean" ? "Mean" : c.label, c.desc)).join("")}</tr>`;
   const metricCells = (r, agg = false) =>
     cols
       .map((c) => {
@@ -356,7 +416,7 @@ function renderTable() {
       .join("");
   let html = "";
   if (state.stats) {
-    html += `<tr class="aggregate-row"><td><span class="aggregate-label">FILTERED POPULATION<small>${count(state.filtered.length)} hand classes · ${weight() === "deals" ? "deal weighted" : "class weighted"}</small></span></td>${metricCells(state.stats, true)}</tr>`;
+    html += `<tr class="aggregate-row"><td><span class="aggregate-label">FILTERED POPULATION<small>${count(state.filtered.length)}<span class="desktop-only"> hand classes</span> · ${weight() === "deals" ? "deal weighted" : "class weighted"}</small></span></td>${metricCells(state.stats, true)}</tr>`;
     if (state.filtered.length !== state.rows.length)
       html += `<tr class="baseline-row"><td><span class="aggregate-label">All starting hands<small>Unfiltered reference</small></span></td>${metricCells(state.allStats, true)}</tr>`;
   }
@@ -391,7 +451,8 @@ function selectHand(id, scroll = false) {
   if (state.tab === "explorer") {
     renderTable();
     renderDetail();
-    if (scroll)
+    if (scroll && phoneLayout.matches) showHandReport();
+    else if (scroll)
       $("hand-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
   if (state.tab === "lab") renderLive();
@@ -417,14 +478,19 @@ function renderDetail() {
   const inFilter = state.filtered.some((h) => h.id === r.id);
   $("hand-detail").innerHTML = `
     <div class="detail-head"><div class="detail-eyebrow"><span>HAND INSPECTOR</span><span>${inFilter ? "IN CURRENT FILTER" : "OUTSIDE CURRENT FILTER"}</span></div>
-    <div class="detail-title">${cards(r.cards, true)}<button class="pin-button ${state.pins.includes(r.id) ? "pinned" : ""}" data-pin="${r.id}" aria-label="${state.pins.includes(r.id) ? "Unpin" : "Pin"} selected hand">${state.pins.includes(r.id) ? "●" : "○"}</button></div>
+    <div class="detail-title">${cards(r.cards, true)}<button class="pin-button ${state.pins.includes(r.id) ? "pinned" : ""}" data-pin="${r.id}" aria-label="${state.pins.includes(r.id) ? "Unpin" : "Pin"} selected hand" aria-pressed="${state.pins.includes(r.id)}"><span class="desktop-only">${state.pins.includes(r.id) ? "●" : "○"}</span><span class="mobile-only">${state.pins.includes(r.id) ? "Pinned ●" : "Pin +"}</span></button></div>
     <p class="detail-subtitle">${r.pairing} · ${r.suitedness}<br>${r.combinations} combinations · ${pct(r.combinations / 270725, 4)} of all deals</p></div>
     <dl class="detail-metrics"><div><dt>MEAN DRAWS</dt><dd>${num(r.mean, 3)} <small>±${num(1.96 * r.meanSE, 3)}</small></dd></div><div><dt>EXACT NEXT BUST</dt><dd>${pct(r.firstBust, 2)}</dd></div><div><dt>10TH–90TH PERCENTILE</dt><dd>${r.p10}–${r.p90} <small>draws</small></dd></div><div><dt>STANDARD DEVIATION</dt><dd>${num(r.sd, 3)}</dd></div></dl>
-    <div class="detail-histogram"><div class="detail-divider"></div><h3>Draws to bust</h3><div class="chart">${histogram(r, { small: true })}</div></div>
+    <div class="detail-histogram"><div class="detail-divider"></div><h3>Draws to bust</h3><div class="chart">${histogram(r, phoneLayout.matches ? chartOptions() : { small: true })}</div></div>
     <div class="detail-outcomes"><div class="detail-divider"></div><h3>Ranking at the first bust</h3><div class="outcome-list">${outcomes(r, true)}</div></div>
     <p class="detail-note">${count(r.trials)} simulated runouts. Mean ± approximate 95% MC interval. Outcome tooltips show 95% Wilson intervals; zero observations do not prove impossibility.</p>
     <details class="detail-draw-table"><summary>All draw probabilities & conditional risk</summary><table class="detail-table"><thead><tr><th>Draw</th><th>Bust here</th><th>Survive</th><th>Risk if reached</th></tr></thead><tbody>${r.hist.map((p, i) => `<tr><td>${i + 1}</td><td>${pct(p, 3)}</td><td>${pct(r.survival[i + 1], 3)}</td><td>${pct(r.hazard[i], 2)}</td></tr>`).join("")}</tbody></table><p class="detail-note">Survive = P(T &gt; k). Risk if reached = P(T = k | T ≥ k). All values in this table are Monte Carlo estimates.</p></details>
     <div class="detail-actions"><button class="primary" data-use-lab>Explore live outs ↗</button><button class="quiet" data-copy-hand>Copy hand link</button></div>`;
+  $("reopen-hand-cards").innerHTML = cards(r.cards);
+  $("reopen-hand").setAttribute(
+    "aria-label",
+    `Open selected hand report: ${r.name}`,
+  );
 }
 function renderComparison() {
   $("comparison-panel").hidden = state.pins.length < 2;
@@ -440,15 +506,18 @@ function renderComparison() {
 function renderReports() {
   const s = state.stats;
   $("survival-chart").innerHTML = s
-    ? lineChart([
-        { values: s.survival, color: "#55d7b1", label: "Filtered survival" },
-        {
-          values: state.allStats.survival,
-          color: "#6c7b88",
-          label: "All starting hands",
-          dashed: true,
-        },
-      ])
+    ? lineChart(
+        [
+          { values: s.survival, color: "#55d7b1", label: "Filtered survival" },
+          {
+            values: state.allStats.survival,
+            color: "#6c7b88",
+            label: "All starting hands",
+            dashed: true,
+          },
+        ],
+        chartOptions(),
+      )
     : emptyChart();
   $("hazard-chart").innerHTML = s
     ? lineChart(
@@ -459,12 +528,21 @@ function renderReports() {
             label: "Conditional bust risk",
           },
         ],
-        { start: 1, xLabel: "Draw number, conditional on reaching it" },
+        {
+          ...chartOptions(),
+          start: 1,
+          xLabel: phoneLayout.matches
+            ? "Draw number, if reached"
+            : "Draw number, conditional on reaching it",
+        },
       )
     : emptyChart();
   $("survival-chart").innerHTML +=
     '<div class="legend"><span><i class="swatch" style="background:#55d7b1"></i>Filtered population</span><span><i class="swatch" style="background:#6c7b88"></i>All hands (dashed)</span><span>Monte Carlo estimates</span></div>';
-  $("joint-chart").innerHTML = histogram(s, { stacked: true });
+  $("joint-chart").innerHTML = histogram(s, {
+    ...chartOptions(),
+    stacked: true,
+  });
   $("joint-legend").innerHTML = legend();
   renderTextures();
   renderHeatmap();
@@ -528,7 +606,7 @@ function renderScatter() {
     right = 12,
     top = 10,
     bottom = 35;
-  ctx.font = "9px system-ui";
+  ctx.font = phoneLayout.matches ? "12px system-ui" : "9px system-ui";
   ctx.lineWidth = 1;
   ctx.fillStyle = "#9da7af";
   ctx.strokeStyle = "#30363c";
@@ -660,7 +738,7 @@ function renderPayout() {
         label: "Chance of surviving target",
       },
     ],
-    { height: 210, xLabel: "Target safe draws" },
+    { height: 210, ...chartOptions(), xLabel: "Target safe draws" },
   );
   $("payout-table").innerHTML =
     `<table><thead><tr><th>Safe draws</th><th>Win chance</th><th>Fair return</th><th>At ${pct(edge, 1)} edge</th></tr></thead><tbody>${Array.from(
@@ -778,6 +856,22 @@ function resetFilters() {
 }
 
 function wireEvents() {
+  $("filter-toggle").addEventListener("click", () => {
+    setFiltersOpen($("filter-toggle").getAttribute("aria-expanded") !== "true");
+  });
+  $("filter-apply").addEventListener("click", () => {
+    setFiltersOpen(false);
+    $("filter-toggle").focus({ preventScroll: true });
+  });
+  $("reopen-hand").addEventListener("click", showHandReport);
+  $("hand-dialog").addEventListener("close", () => {
+    if (phoneLayout.matches && state.tab === "explorer") {
+      const hand = document.querySelector(
+        `#hand-table [data-hand="${state.selected}"]`,
+      );
+      (hand || $("reopen-hand")).focus({ preventScroll: true });
+    }
+  });
   document
     .querySelectorAll("[data-tab]")
     .forEach((b) =>
@@ -851,6 +945,11 @@ function wireEvents() {
       selectHand(Number(hand.dataset.hand), window.innerWidth < 850);
       return;
     }
+    const row = e.target.closest("#hand-table [data-row]");
+    if (row && phoneLayout.matches) {
+      selectHand(Number(row.dataset.row), true);
+      return;
+    }
     const draw = e.target.closest("[data-draw]");
     if (draw) {
       drawCard(Number(draw.dataset.draw));
@@ -858,6 +957,7 @@ function wireEvents() {
     }
     if (e.target.closest("[data-use-lab]")) {
       changeTab("lab");
+      $("hand-dialog").close();
       $("lab-view").scrollIntoView({ block: "start", behavior: "smooth" });
       return;
     }
@@ -907,11 +1007,13 @@ function wireEvents() {
     renderTable();
   });
   $("page-size").addEventListener("change", () => {
+    state.pageSizeChosen = true;
     state.pageSize = Number($("page-size").value);
     state.page = 1;
     renderTable();
   });
   $("column-preset").addEventListener("change", () => {
+    state.columnsChosen = true;
     state.columns = [...presets[$("column-preset").value]];
     renderTable();
   });
@@ -922,6 +1024,7 @@ function wireEvents() {
   $("column-choices").addEventListener("change", (e) => {
     const key = e.target.dataset.column;
     if (!key) return;
+    state.columnsChosen = true;
     if (e.target.checked) state.columns.push(key);
     else state.columns = state.columns.filter((k) => k !== key);
     $("column-preset").value = "custom";
@@ -986,17 +1089,29 @@ function wireEvents() {
     if (p) {
       selectHand(p.r.id);
       changeTab("explorer");
-      $("hand-detail").scrollIntoView({ block: "nearest", behavior: "smooth" });
+      if (phoneLayout.matches) showHandReport();
+      else
+        $("hand-detail").scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
     }
   });
   let resizeTimer;
+  let viewportWidth = window.innerWidth;
   window.addEventListener("resize", () => {
+    if (viewportWidth === window.innerWidth) return;
+    viewportWidth = window.innerWidth;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(renderScatter, 100);
+    resizeTimer = setTimeout(() => {
+      syncResponsiveLayout();
+      renderActive();
+    }, 120);
   });
   window.addEventListener("hashchange", () => {
     const id = Number(new URLSearchParams(location.hash.slice(1)).get("hand"));
-    if (Number.isInteger(id) && state.rows[id]) selectHand(id);
+    if (Number.isInteger(id) && state.rows[id])
+      selectHand(id, phoneLayout.matches);
   });
   document.addEventListener("keydown", (e) => {
     if (
@@ -1035,6 +1150,7 @@ async function init() {
       `${count(state.data.trialsPerHand)} runouts / class · ${count(state.data.classCount)} classes · ${count(state.data.dealCount)} deals · Seed ${state.data.seed}`;
     renderMethod();
     wireEvents();
+    syncResponsiveLayout();
     $("loading").hidden = true;
     $("app").hidden = false;
     applyFilters();

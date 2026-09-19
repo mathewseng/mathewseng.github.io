@@ -27,14 +27,17 @@ export const legend = () =>
     (c, i) =>
       `<span><i class="swatch" style="background:${COLORS[i]}"></i>${c}</span>`,
   ).join("");
-export function histogram(stat, { small = false, stacked = false } = {}) {
+export function histogram(
+  stat,
+  { small = false, stacked = false, compact = false, width, height } = {},
+) {
   if (!stat) return emptyChart();
-  const w = small ? 280 : 650,
-    h = small ? 140 : 215;
-  const left = small ? 28 : 38,
+  const w = width ?? (small ? 280 : 650),
+    h = height ?? (small ? 140 : 215);
+  const left = compact ? 40 : small ? 28 : 38,
     right = 12,
     top = 20,
-    bottom = 30,
+    bottom = compact ? 42 : 30,
     pw = w - left - right,
     ph = h - top - bottom;
   const ymax = Math.max(0.05, Math.ceil(Math.max(...stat.hist) * 20) / 20),
@@ -61,13 +64,13 @@ export function histogram(stat, { small = false, stacked = false } = {}) {
     } else {
       marks += `<rect x="${x}" y="${y}" width="${bw}" height="${(p / ymax) * ph}" rx="2" fill="${i + 1 === stat.mode ? "#70e0bb" : "#3a9b7d"}"><title>${title}</title></rect>`;
     }
-    if (!small && p >= 0.012)
+    if (!small && !compact && p >= 0.012)
       marks += `<text class="value-label" x="${x + bw / 2}" y="${y - 6}" text-anchor="middle">${pct(p, 1)}</text>`;
     if (!small || i % 2 === 0)
       marks += `<text x="${x + bw / 2}" y="${h - bottom + 15}" text-anchor="middle">${i + 1}</text>`;
   });
   if (!small)
-    marks += `<text class="axis-label" x="${w / 2}" y="${h - 1}" text-anchor="middle">Additional cards drawn, including bust card</text>`;
+    marks += `<text class="axis-label" x="${w / 2}" y="${h - 3}" text-anchor="middle">${compact ? "Draws, including the bust card" : "Additional cards drawn, including bust card"}</text>`;
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Bust distribution across 13 draws. Mean ${num(stat.mean)} draws.">${marks}</svg>`;
 }
 export function lineChart(
@@ -77,13 +80,14 @@ export function lineChart(
     xLabel = "Completed safe draws",
     width = 650,
     height = 255,
+    compact = false,
   } = {},
 ) {
   if (!series.length || !series[0].values.length) return emptyChart();
-  const left = 39,
+  const left = compact ? 44 : 39,
     right = 16,
     top = 18,
-    bottom = 36,
+    bottom = compact ? 42 : 36,
     pw = width - left - right,
     ph = height - top - bottom;
   const n = series[0].values.length,

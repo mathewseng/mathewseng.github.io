@@ -17,6 +17,7 @@ Outcomes are mutually exclusive and use the highest category at the first bust. 
 - Pin up to four hands for comparison. Pinned comparisons remain fixed across population filters.
 - Population reports: survival and hazard curves, weighted texture comparisons, per-class scatter plot, overlapping rank-pair heatmap, and joint draw/outcome distributions.
 - Game design lab: fixed-target survival payouts and an interactive draw simulator with exact next-card bust outs. These are mathematical scenarios, not a betting or payment interface.
+- Phones: compact metric columns and 25 rows by default, collapsible filters, a hand report sheet that returns to your table position, and charts sized for readable labels. The rank matrix and card deck scroll horizontally. Column and row-count choices survive viewport changes.
 
 Actual deal frequency weights each class by its number of represented combinations. Equal-class weighting is also available. Search accepts ranks (`AA`, `AKQJ`) or four exact cards (`As Kh Qd Jc`); exact hands are canonicalized across suit relabelings. Percent filters use percentage points (enter `20` for 20%); exported probabilities use 0–1 units.
 

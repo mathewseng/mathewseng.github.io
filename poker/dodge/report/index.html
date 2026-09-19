@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#111417" />
     <title>Dodge · Hand reports</title>
     <meta
@@ -10,7 +13,7 @@
       content="Explore all 16,432 four-card starting hands in Dodge. Simulated bust distributions, exact outs, survival curves, and game design tools."
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=mobile-20260919" />
   </head>
   <body>
     <header class="topbar">
@@ -22,7 +25,13 @@
       <div class="top-actions">
         <span class="dataset-status" id="dataset-status"
           >Loading simulations</span
-        ><button id="method-button" class="quiet">Rules & methodology</button
+        ><button
+          id="method-button"
+          class="quiet"
+          aria-label="Rules & methodology"
+        >
+          <span class="desktop-only">Rules & methodology</span
+          ><span class="mobile-only">Rules</span></button
         ><a href="/" class="site-link">MS ↗</a>
       </div>
     </header>
@@ -30,13 +39,23 @@
       <div class="page-heading">
         <div>
           <div class="breadcrumb">POKER / DODGE / REPORTS</div>
-          <h1>Every hand. Every way to bust.</h1>
+          <h1>
+            <span class="desktop-only">Every hand. Every way to bust.</span
+            ><span class="mobile-only">Dodge reports</span>
+          </h1>
           <p>
             Start with four cards. Keep drawing. Dodge a straight or better.
           </p>
         </div>
-        <button class="primary" id="export-button" disabled>
-          Export filtered CSV <span aria-hidden="true">↗</span>
+        <button
+          class="primary"
+          id="export-button"
+          aria-label="Export filtered CSV"
+          disabled
+        >
+          <span class="desktop-only">Export filtered CSV</span
+          ><span class="mobile-only">Export</span>
+          <span aria-hidden="true">↓</span>
         </button>
       </div>
       <div id="loading" class="loading" role="status">
@@ -45,10 +64,22 @@
       <div id="load-error" class="error" role="alert" hidden></div>
       <div id="app" hidden>
         <nav class="tabs" aria-label="Report views">
-          <button class="active" data-tab="explorer" aria-current="page">
-            Hand explorer <span>16,432</span></button
-          ><button data-tab="reports">Population reports</button
-          ><button data-tab="lab">Game design lab</button>
+          <button
+            class="active"
+            data-tab="explorer"
+            aria-current="page"
+            aria-label="Hand explorer"
+          >
+            <span class="tab-label desktop-only">Hand explorer</span
+            ><span class="tab-label mobile-only">Hands</span>
+            <span class="tab-count">16,432</span></button
+          ><button data-tab="reports" aria-label="Population reports">
+            <span class="desktop-only">Population reports</span
+            ><span class="mobile-only">Reports</span></button
+          ><button data-tab="lab" aria-label="Game design lab">
+            <span class="desktop-only">Game design lab</span
+            ><span class="mobile-only">Game lab</span>
+          </button>
         </nav>
         <section class="filter-panel" aria-label="Filter hand population">
           <div class="filters">
@@ -60,44 +91,57 @@
                 placeholder="AKQJ or As Kh Qd Jc"
                 autocomplete="off"
                 spellcheck="false"
+                aria-label="Find a hand or ranks"
             /></label>
-            <label
-              ><span>Pairing</span
-              ><select id="pairing">
-                <option value="">All pairings</option>
-              </select></label
+            <button
+              class="mobile-only filter-toggle"
+              id="filter-toggle"
+              aria-expanded="false"
+              aria-controls="advanced-filters"
             >
-            <label
-              ><span>Suits</span
-              ><select id="suits">
-                <option value="">All suit patterns</option>
-              </select></label
-            >
-            <label
-              ><span>High card</span
-              ><select id="high">
-                <option value="">Any rank</option>
-              </select></label
-            >
-            <label
-              title="Most distinct starting ranks in a valid five-rank straight window, including A2345."
-              ><span>Connectivity</span
-              ><select id="connected">
-                <option value="">Any connection</option>
-                <option value="4">4 in a straight window</option>
-                <option value="3">3 in a straight window</option>
-                <option value="2">2 in a straight window</option>
-                <option value="1">1 in a straight window</option>
-              </select></label
-            >
-            <label class="weight-field"
-              ><span>Aggregate weighting</span
-              ><select id="weighting">
-                <option value="deals">Actual deal frequency</option>
-                <option value="classes">Equal hand classes</option>
-              </select></label
-            >
-            <button class="quiet reset" id="reset-filters">Reset</button>
+              <span>Filters</span
+              ><span id="filter-count" class="filter-count" hidden></span
+              ><span class="filter-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="advanced-filters" class="advanced-filters">
+              <label
+                ><span>Pairing</span
+                ><select id="pairing">
+                  <option value="">All pairings</option>
+                </select></label
+              >
+              <label
+                ><span>Suits</span
+                ><select id="suits">
+                  <option value="">All patterns</option>
+                </select></label
+              >
+              <label
+                ><span>High card</span
+                ><select id="high">
+                  <option value="">Any rank</option>
+                </select></label
+              >
+              <label
+                title="Most distinct starting ranks in a valid five-rank straight window, including A2345."
+                ><span>Connectivity</span
+                ><select id="connected">
+                  <option value="">Any connection</option>
+                  <option value="4">4 in a straight window</option>
+                  <option value="3">3 in a straight window</option>
+                  <option value="2">2 in a straight window</option>
+                  <option value="1">1 in a straight window</option>
+                </select></label
+              >
+              <label class="weight-field"
+                ><span>Aggregate weighting</span
+                ><select id="weighting">
+                  <option value="deals">Actual deal frequency</option>
+                  <option value="classes">Equal hand classes</option>
+                </select></label
+              >
+              <button class="quiet reset" id="reset-filters">Reset</button>
+            </div>
           </div>
           <div class="filter-bottom">
             <div class="filter-tools">
@@ -110,6 +154,9 @@
             <p id="population-label" aria-live="polite"></p>
           </div>
           <div id="numeric-rules" class="numeric-rules"></div>
+          <button class="mobile-only filter-apply" id="filter-apply">
+            Show matching hands
+          </button>
         </section>
         <section
           id="summary"
@@ -118,8 +165,10 @@
         ></section>
         <p class="scope-note">
           Draws are <strong>additional cards, including the bust card</strong>.
-          Charts and aggregates follow your filters.
-          <span id="scope-weight"></span>
+          <span class="desktop-only"
+            >Charts and aggregates follow your filters.</span
+          >
+          <span id="scope-weight" class="desktop-only"></span>
         </p>
 
         <section id="explorer-view" class="view">
@@ -129,14 +178,19 @@
                 <div>
                   <h2>Starting hands</h2>
                   <p id="table-context">
-                    Click a hand to inspect · Shift-click headers to sort by
-                    multiple columns
+                    <span class="desktop-only"
+                      >Click a hand to inspect · Shift-click headers to sort by
+                      multiple columns</span
+                    ><span class="mobile-only"
+                      >Tap a hand for its full report.</span
+                    >
                   </p>
                 </div>
                 <div class="table-options">
                   <label class="sr-only" for="column-preset"
                     >Column preset</label
                   ><select id="column-preset">
+                    <option value="quick">Essential metrics</option>
                     <option value="core">Core metrics</option>
                     <option value="outcomes">Bust rankings</option>
                     <option value="survival">Survival</option>
@@ -164,6 +218,7 @@
                   <label
                     >Rows
                     <select id="page-size">
+                      <option>25</option>
                       <option>50</option>
                       <option>100</option>
                       <option>250</option>
@@ -189,6 +244,10 @@
               aria-label="Selected hand details"
             ></aside>
           </div>
+          <button id="reopen-hand" class="mobile-only reopen-hand">
+            <span>Selected hand</span><span id="reopen-hand-cards"></span
+            ><span aria-hidden="true">↗</span>
+          </button>
           <section
             id="comparison-panel"
             class="panel comparison-panel"
@@ -289,6 +348,9 @@
                 </div>
               </div>
               <div id="rank-heatmap" class="rank-heatmap"></div>
+              <p class="mobile-only mobile-hint">
+                Swipe to compare all ranks. Tap a cell to filter.
+              </p>
               <div class="heatmap-key">
                 <span>Shorter life</span><i></i><span>Longer life</span>
               </div>
@@ -377,6 +439,9 @@
                 class="outs-grid"
                 aria-label="Remaining deck and bust outs"
               ></div>
+              <p class="mobile-only mobile-hint">
+                Swipe the deck to reach lower ranks.
+              </p>
               <div id="outs-legend" class="legend"></div>
             </article>
           </div>
@@ -389,9 +454,26 @@
         </footer>
       </div>
     </main>
-    <dialog id="method-dialog">
+    <dialog
+      id="hand-dialog"
+      class="hand-dialog"
+      aria-labelledby="hand-dialog-title"
+    >
       <div class="dialog-heading">
-        <h2>Rules & methodology</h2>
+        <h2 id="hand-dialog-title">Hand report</h2>
+        <button
+          class="quiet"
+          data-close="hand-dialog"
+          aria-label="Close hand report"
+        >
+          Done
+        </button>
+      </div>
+      <div id="hand-dialog-content"></div>
+    </dialog>
+    <dialog id="method-dialog" aria-labelledby="method-title">
+      <div class="dialog-heading">
+        <h2 id="method-title">Rules & methodology</h2>
         <button
           data-close="method-dialog"
           class="quiet"
@@ -402,9 +484,9 @@
       </div>
       <div class="method-content" id="method-content"></div>
     </dialog>
-    <dialog id="columns-dialog">
+    <dialog id="columns-dialog" aria-labelledby="columns-title">
       <div class="dialog-heading">
-        <h2>Choose table columns</h2>
+        <h2 id="columns-title">Choose table columns</h2>
         <button
           data-close="columns-dialog"
           class="quiet"
@@ -416,6 +498,6 @@
       <div id="column-choices" class="column-choices"></div>
     </dialog>
     <div id="toast" class="toast" role="status" hidden></div>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=mobile-20260919"></script>
   </body>
 </html>
