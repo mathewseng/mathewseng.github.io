@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111417" />
+    <title>Dodge · Hand reports</title>
+    <meta
+      name="description"
+      content="Explore all 16,432 four-card starting hands in Dodge. Simulated bust distributions, exact outs, survival curves, and game design tools."
+    />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="/poker/" class="brand" aria-label="Back to poker"
+        ><span class="brand-mark">d<span>•</span></span
+        ><strong>DODGE</strong><span class="brand-separator"></span
+        ><span class="brand-section">RESEARCH</span></a
+      >
+      <div class="top-actions">
+        <span class="dataset-status" id="dataset-status"
+          >Loading simulations</span
+        ><button id="method-button" class="quiet">Rules & methodology</button
+        ><a href="/" class="site-link">MS ↗</a>
+      </div>
+    </header>
+    <main>
+      <div class="page-heading">
+        <div>
+          <div class="breadcrumb">POKER / DODGE / REPORTS</div>
+          <h1>Every hand. Every way to bust.</h1>
+          <p>
+            Start with four cards. Keep drawing. Dodge a straight or better.
+          </p>
+        </div>
+        <button class="primary" id="export-button" disabled>
+          Export filtered CSV <span aria-hidden="true">↗</span>
+        </button>
+      </div>
+      <div id="loading" class="loading" role="status">
+        <span class="loading-dot"></span>Loading the complete hand universe…
+      </div>
+      <div id="load-error" class="error" role="alert" hidden></div>
+      <div id="app" hidden>
+        <nav class="tabs" aria-label="Report views">
+          <button class="active" data-tab="explorer" aria-current="page">
+            Hand explorer <span>16,432</span></button
+          ><button data-tab="reports">Population reports</button
+          ><button data-tab="lab">Game design lab</button>
+        </nav>
+        <section class="filter-panel" aria-label="Filter hand population">
+          <div class="filters">
+            <label class="search-field"
+              ><span>Find a hand or ranks</span
+              ><input
+                id="search"
+                type="search"
+                placeholder="AKQJ or As Kh Qd Jc"
+                autocomplete="off"
+                spellcheck="false"
+            /></label>
+            <label
+              ><span>Pairing</span
+              ><select id="pairing">
+                <option value="">All pairings</option>
+              </select></label
+            >
+            <label
+              ><span>Suits</span
+              ><select id="suits">
+                <option value="">All suit patterns</option>
+              </select></label
+            >
+            <label
+              ><span>High card</span
+              ><select id="high">
+                <option value="">Any rank</option>
+              </select></label
+            >
+            <label
+              title="Most distinct starting ranks in a valid five-rank straight window, including A2345."
+              ><span>Connectivity</span
+              ><select id="connected">
+                <option value="">Any connection</option>
+                <option value="4">4 in a straight window</option>
+                <option value="3">3 in a straight window</option>
+                <option value="2">2 in a straight window</option>
+                <option value="1">1 in a straight window</option>
+              </select></label
+            >
+            <label class="weight-field"
+              ><span>Aggregate weighting</span
+              ><select id="weighting">
+                <option value="deals">Actual deal frequency</option>
+                <option value="classes">Equal hand classes</option>
+              </select></label
+            >
+            <button class="quiet reset" id="reset-filters">Reset</button>
+          </div>
+          <div class="filter-bottom">
+            <div class="filter-tools">
+              <button class="text-button" id="add-rule">+ Metric filter</button
+              ><label class="check-label"
+                ><input type="checkbox" id="pinned-only" /> Pinned hands
+                <span id="pin-count">0</span></label
+              >
+            </div>
+            <p id="population-label" aria-live="polite"></p>
+          </div>
+          <div id="numeric-rules" class="numeric-rules"></div>
+        </section>
+        <section
+          id="summary"
+          class="summary"
+          aria-label="Filtered population summary"
+        ></section>
+        <p class="scope-note">
+          Draws are <strong>additional cards, including the bust card</strong>.
+          Charts and aggregates follow your filters.
+          <span id="scope-weight"></span>
+        </p>
+
+        <section id="explorer-view" class="view">
+          <div class="explorer-workspace">
+            <article class="panel table-panel">
+              <div class="table-toolbar">
+                <div>
+                  <h2>Starting hands</h2>
+                  <p id="table-context">
+                    Click a hand to inspect · Shift-click headers to sort by
+                    multiple columns
+                  </p>
+                </div>
+                <div class="table-options">
+                  <label class="sr-only" for="column-preset"
+                    >Column preset</label
+                  ><select id="column-preset">
+                    <option value="core">Core metrics</option>
+                    <option value="outcomes">Bust rankings</option>
+                    <option value="survival">Survival</option>
+                    <option value="all">All metrics</option>
+                    <option value="custom" hidden>
+                      Custom columns
+                    </option></select
+                  ><button class="quiet" id="columns-button">Columns</button>
+                </div>
+              </div>
+              <div
+                class="table-scroll"
+                tabindex="0"
+                role="region"
+                aria-label="Sortable hand report, scroll horizontally for more metrics"
+              >
+                <table id="hand-table">
+                  <thead></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span id="page-status" aria-live="polite"></span>
+                <div>
+                  <label
+                    >Rows
+                    <select id="page-size">
+                      <option>50</option>
+                      <option>100</option>
+                      <option>250</option>
+                    </select></label
+                  ><button id="previous-page" aria-label="Previous page">
+                    ←</button
+                  ><label class="page-jump"
+                    >Page
+                    <input
+                      id="page-number"
+                      type="number"
+                      min="1"
+                      value="1"
+                      aria-label="Page number" /></label
+                  ><span id="page-total"></span
+                  ><button id="next-page" aria-label="Next page">→</button>
+                </div>
+              </div>
+            </article>
+            <aside
+              id="hand-detail"
+              class="panel detail-panel"
+              aria-label="Selected hand details"
+            ></aside>
+          </div>
+          <section
+            id="comparison-panel"
+            class="panel comparison-panel"
+            hidden
+          ></section>
+          <div class="explorer-charts">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>When does the hand bust?</h2>
+                  <p>
+                    Probability of busting on each draw · filtered population
+                  </p>
+                </div>
+                <span class="tag">DISTRIBUTION</span>
+              </div>
+              <div id="overview-hist" class="chart"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>What causes the bust?</h2>
+                  <p>Highest five-card ranking when play stops</p>
+                </div>
+              </div>
+              <div id="overview-outcomes" class="outcome-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="reports-view" class="view" hidden>
+          <div class="report-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Survival curve</h2>
+                  <p>
+                    Chance of completing k draws without busting · P(T &gt; k)
+                  </p>
+                </div>
+              </div>
+              <div id="survival-chart" class="chart tall"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>The next draw gets dangerous</h2>
+                  <p>Bust risk on draw k, conditional on reaching that draw</p>
+                </div>
+              </div>
+              <div id="hazard-chart" class="chart tall"></div>
+            </article>
+            <article class="panel full">
+              <div class="panel-heading">
+                <div>
+                  <h2>Starting texture changes the game</h2>
+                  <p>
+                    Mean draws to bust and the mix of finishing hands · click a
+                    group to filter
+                  </p>
+                </div>
+                <label
+                  ><span class="sr-only">Group hands by</span
+                  ><select id="group-by">
+                    <option value="suitedness">Suit pattern</option>
+                    <option value="pairing">Pairing</option>
+                    <option value="highCard">Highest rank</option>
+                    <option value="connectivity">Straight connectivity</option>
+                  </select></label
+                >
+              </div>
+              <div id="texture-chart" class="texture-chart"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Longevity vs. variability</h2>
+                  <p>One dot per hand class · select a dot to inspect</p>
+                </div>
+              </div>
+              <div class="scatter-wrap">
+                <canvas
+                  id="scatter"
+                  aria-label="Scatter plot of mean additional draws versus standard deviation"
+                ></canvas>
+                <div id="scatter-tooltip" class="scatter-tooltip" hidden></div>
+              </div>
+              <div class="legend" id="scatter-legend"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Which ranks survive together?</h2>
+                  <p>
+                    Mean draws for hands containing both ranks · overlapping
+                    groups
+                  </p>
+                </div>
+              </div>
+              <div id="rank-heatmap" class="rank-heatmap"></div>
+              <div class="heatmap-key">
+                <span>Shorter life</span><i></i><span>Longer life</span>
+              </div>
+            </article>
+            <article class="panel full">
+              <div class="panel-heading">
+                <div>
+                  <h2>How the bust changes with depth</h2>
+                  <p>
+                    Joint probability of draw number and finishing rank · each
+                    column is an unconditional probability
+                  </p>
+                </div>
+              </div>
+              <div id="joint-chart" class="chart tall"></div>
+              <div id="joint-legend" class="legend"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="lab-view" class="view" hidden>
+          <div class="lab-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Design a survival bet</h2>
+                  <p>A win means surviving every draw through the target.</p>
+                </div>
+                <span class="tag">SCENARIO</span>
+              </div>
+              <div class="lab-controls">
+                <label
+                  >Target safe draws <output id="target-label">5</output
+                  ><input
+                    id="target"
+                    type="range"
+                    min="1"
+                    max="12"
+                    value="5" /></label
+                ><label
+                  >Desired house edge
+                  <div class="input-unit">
+                    <input
+                      id="house-edge"
+                      type="number"
+                      min="0"
+                      max="50"
+                      step="0.5"
+                      value="5"
+                    /><span>%</span>
+                  </div></label
+                >
+              </div>
+              <div id="payout-summary" class="payout-summary"></div>
+              <p class="in-panel-note">
+                Multipliers are
+                <strong>total returns including the stake</strong>; a bust
+                returns zero. Payout = (1 − edge) ÷ win probability. Uses the
+                filtered population.
+              </p>
+              <div id="payout-chart" class="chart"></div>
+              <div id="payout-table" class="small-table"></div>
+            </article>
+            <article class="panel live-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Draw lab</h2>
+                  <p>Exact next-card outs for the selected hand and runout</p>
+                </div>
+                <button id="reset-runout" class="quiet">Reset runout</button>
+              </div>
+              <div id="live-hand" class="live-hand"></div>
+              <div id="live-stats" class="live-stats" aria-live="polite"></div>
+              <div class="draw-actions">
+                <button id="draw-random" class="primary">
+                  Draw a random card</button
+                ><button id="undo-draw" class="quiet">Undo</button>
+              </div>
+              <p class="in-panel-note">
+                Or choose a remaining card below. Outlined cards bust; muted
+                cards are already held. Newly drawn cards are underlined above.
+                Cards stay rank-first.
+              </p>
+              <div
+                id="outs-grid"
+                class="outs-grid"
+                aria-label="Remaining deck and bust outs"
+              ></div>
+              <div id="outs-legend" class="legend"></div>
+            </article>
+          </div>
+        </section>
+        <footer class="report-footer">
+          <span id="footer-provenance"></span
+          ><button id="footer-method" class="text-button">
+            How this was calculated ↗
+          </button>
+        </footer>
+      </div>
+    </main>
+    <dialog id="method-dialog">
+      <div class="dialog-heading">
+        <h2>Rules & methodology</h2>
+        <button
+          data-close="method-dialog"
+          class="quiet"
+          aria-label="Close methodology"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="method-content" id="method-content"></div>
+    </dialog>
+    <dialog id="columns-dialog">
+      <div class="dialog-heading">
+        <h2>Choose table columns</h2>
+        <button
+          data-close="columns-dialog"
+          class="quiet"
+          aria-label="Close column settings"
+        >
+          ✕
+        </button>
+      </div>
+      <div id="column-choices" class="column-choices"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
