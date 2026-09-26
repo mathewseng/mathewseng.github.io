@@ -7,7 +7,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | Path | What it is |
 | --- | --- |
 | `index.html` | Landing page listing every top-level project |
-| `gym/` | Form & Function training app (Vite + React; the only page with a build step) |
+| `gym/` | Gym Tracker training app (Vite + React; the only page with a build step) |
 | `cards/` | Card Table Workshop |
 | `microtonal-lab/` | Tuning explorer and browser instrument |
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/`, `fantasyland-report/` |

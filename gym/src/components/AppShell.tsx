@@ -53,11 +53,11 @@ function Brand({ onNavigate }: { onNavigate?: () => void } = {}) {
       onClick={onNavigate}
     >
       <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-sm font-black text-[var(--accent-ink)]">
-        F/
+        GT
       </span>
       <span>
         <strong className="block text-sm font-black tracking-[-0.02em]">
-          Form & Function
+          Gym Tracker
         </strong>
         <span className="block text-[0.67rem] font-bold tracking-wide text-[var(--muted)]">
           TRAINING LOG
@@ -97,7 +97,7 @@ export default function AppShell({ children }: PropsWithChildren) {
   }, [dark]);
 
   useEffect(() => {
-    document.title = `${pageNames[location.pathname] ?? "Form & Function"} — Form & Function`;
+    document.title = `${pageNames[location.pathname] ?? "Gym Tracker"} — Gym Tracker`;
     window.requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
   }, [location.pathname]);
 
@@ -205,7 +205,7 @@ export default function AppShell({ children }: PropsWithChildren) {
             <div className="hidden lg:block">
               <p className="eyebrow">Personal training system</p>
               <p className="mt-0.5 text-sm font-extrabold">
-                {pageNames[location.pathname] ?? "Form & Function"}
+                {pageNames[location.pathname] ?? "Gym Tracker"}
               </p>
             </div>
             <div className="flex items-center gap-2">

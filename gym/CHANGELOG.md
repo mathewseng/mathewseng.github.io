@@ -2,6 +2,14 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-26 — Rename to Gym Tracker
+
+### Changed
+
+- Renamed the app from Form & Function to Gym Tracker in the page title, header, browser tab titles, and social preview tags.
+- Changed the header mark from F/ to GT.
+- Replaced the title on the social card image (`public/og.png`) with GYM TRACKER; the rest of the card is unchanged.
+
 ## 2026-09-25 — September 21 Push and September 22 Pull Workouts
 
 ### Added
