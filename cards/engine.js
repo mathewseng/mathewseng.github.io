@@ -953,6 +953,54 @@
     return rng() < 0.06 + 0.05 * (claim.count - 1) + 0.08 * held;
   }
 
+  const FACE_CHANCES = { J: 1, Q: 2, K: 3, A: 4 };
+
+  /**
+   * Egyptian Ratscrew challenges on piles with rule.challenge: a face card or
+   * Ace gives the next player that many flips to answer with one of their own;
+   * if they can't, whoever laid the challenge wins the pile. Runs after play.
+   */
+  function resolveChallenges(before, state) {
+    for (const zone of Object.values(state.zones)) {
+      if (!zone.rule?.challenge) continue;
+      if (!zone.cards.length) { delete zone.challenge; continue; }
+      const old = before.zones[zone.id];
+      if (!old) continue;
+      const oldTop = old.cards[old.cards.length - 1];
+      const from = oldTop ? zone.cards.indexOf(oldTop) + 1 : 0;
+      const known = new Set(old.cards);
+      const added = zone.cards.slice(from).filter((id) => !known.has(id));
+      const flipper = before.players[before.turn.index]?.id;
+      if (!added.length || !flipper) continue;
+      let winner = null;
+      for (const id of added) {
+        const chances = FACE_CHANCES[state.cards[id]?.rank];
+        if (chances) { zone.challenge = { by: flipper, left: chances }; continue; }
+        if (!zone.challenge || zone.challenge.by === flipper) continue;
+        zone.challenge.left -= 1;
+        if (zone.challenge.left <= 0) { winner = zone.challenge.by; break; }
+      }
+      const home = (id) => resolveZones(state, `${zone.rule.slapTo || "stack"}@p:${id}`)[0];
+      const stack = home(flipper);
+      // Out of chances, or out of cards to answer with: the challenger takes it.
+      if (!winner && zone.challenge && zone.challenge.by !== flipper && stack && !state.zones[stack].cards.length) winner = zone.challenge.by;
+      if (winner) {
+        const size = zone.cards.length;
+        const target = home(winner);
+        if (target) moveCards(state, zone.cards.slice(), target, { index: 0 });
+        delete zone.challenge;
+        const player = playerById(state, winner);
+        if (player) { player.out = false; state.turn.index = state.players.indexOf(player); }
+        state.lastWinner = winner;
+        pushLog(state, winner, `👑 ${player?.name} wins the challenge and takes the pile (${size} card${size === 1 ? "" : "s"})`, "move");
+      } else if (zone.challenge && zone.challenge.by !== flipper) {
+        // Keep flipping until you answer or run out of chances.
+        const index = state.players.findIndex((player) => player.id === flipper);
+        if (index >= 0) state.turn.index = index;
+      }
+    }
+  }
+
   /** Why this pile can be slapped right now ("a pair"…), or "" when it can't. */
   function slapReason(state, zone) {
     const kind = zone?.rule?.slap;
@@ -1105,6 +1153,8 @@
     if (fallback) {
       next = reduce(next, { type: "runMacro", id: fallback.id }, playerId);
       if (next.turn.index !== before) return { state: next, did: "fallback" };
+      // A Ratscrew challenge keeps the turn here until it's answered.
+      if (next.rev !== state.rev && Object.values(next.zones).some((zone) => zone.challenge && zone.challenge.by !== playerId)) return { state: next, did: "fallback" };
       const retry = tryPlay(next);
       if (retry) return { state: retry.next, did: "play", cards: retry.cards };
     }
@@ -1260,6 +1310,7 @@
     if (rule.advance) parts.push("the turn passes after playing here");
     if (rule.flipTop) parts.push("the new top card turns face up");
     if (rule.claim) parts.push(`play 1 to 4 cards face down and claim they're the next rank in order; anyone can call it, and whoever is wrong takes the pile into their ${rule.claimTo}`);
+    if (rule.challenge) parts.push("a Jack, Queen, King or Ace challenges the next player to answer with a face card within 1, 2, 3 or 4 flips, or the challenger wins the pile");
     if (rule.slap) parts.push(`slap it when ${RULE_SLAP[rule.slap].charAt(0).toLowerCase() + RULE_SLAP[rule.slap].slice(1)} to win the pile into your ${rule.slapTo}; a wrong slap burns a card`);
     return parts.join("; ");
   }
@@ -2164,7 +2215,7 @@
     if (first) rule.first = first;
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
     if (wild.length) rule.wild = wild;
-    for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb"]) if (raw[flag]) rule[flag] = true;
+    for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb", "challenge"]) if (raw[flag]) rule[flag] = true;
     if (RULE_CLAIM[raw.claim] && raw.claim !== "none") {
       rule.claim = raw.claim;
       rule.claimTo = cleanText(raw.claimTo, 40, "") || "hand";
@@ -2256,6 +2307,7 @@
     if (!handler) throw new Error("Unknown action: " + action.type);
     const result = handler(state, action, actor, opts || {});
     if (result && result.state) return result.state;
+    if (TRIGGERING.has(action.type)) resolveChallenges(previous, state);
     checkGameOver(state);
     if (TRIGGERING.has(action.type) || (state.gameOver && !previous.gameOver)) runTriggers(previous, state, actor);
     state.rev = (state.rev || 0) + 1;
@@ -2817,6 +2869,7 @@
           moveCards(state, won, home, { index: 0 });
           player.out = false;
         }
+        delete zone.challenge;
         pushLog(state, player.id, `👋 ${player.name} slapped ${reason} and takes ${won.length} card${won.length === 1 ? "" : "s"}`, "move");
         state.turn.index = state.players.indexOf(player);
         state.lastWinner = player.id;

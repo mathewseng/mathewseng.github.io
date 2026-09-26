@@ -532,16 +532,16 @@
       rules: "Slapjack\n\nDeal the whole deck face down. In turn, flip your top card onto the pile (Flip). The moment a Jack lands, everyone races to slap the pile (the Slap button or Space): the first slap takes the whole pile under their stack and plays next. Slap anything else and you burn a card under the pile.\n\nRun out of cards and you're out. Last player holding cards wins. Switch the pile's slap rule (Edit group → Play rules) to pairs, sandwiches or the full Ratscrew set to invent variants.",
     },
     {
-      id: "rat-slap",
-      name: "Rat Slap",
+      id: "ratscrew",
+      name: "Egyptian Ratscrew",
       family: "Kids",
-      tagline: "Slap pairs, sandwiches, marriages and top-bottom matches",
-      description: "The slapping half of Egyptian Ratscrew: flip in turn and race to slap doubles, sandwiches, K-Q marriages or a top card matching the bottom.",
+      tagline: "Face-card challenges and slaps: pairs, sandwiches, marriages",
+      description: "Flip in turn. A face card or Ace challenges the next player to answer within 1–4 flips or lose the pile, and anyone can slap doubles, sandwiches, K-Q marriages or top-bottom matches.",
       players: { min: 2, max: 6, default: 3 },
       deck: { preset: "standard" },
       table: [
         deck(),
-        { key: "pile", name: "Pile", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { slap: "ratscrew", slapTo: "stack" } },
+        { key: "pile", name: "Pile", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { slap: "ratscrew", slapTo: "stack", challenge: true } },
       ],
       seat: [{ key: "stack", name: "Stack", kind: "pile", layout: "stack", visibility: "hidden", face: "down", evals: ["count"] }],
       macros: [
@@ -556,7 +556,7 @@
       triggers: [{ event: "empty", zone: "stack", macro: "Out" }],
       botFallback: "Flip",
       scoring: { label: "Cards" },
-      rules: "Rat Slap\n\nDeal the whole deck face down. In turn, flip your top card onto the pile. Slap the pile (Space) the moment you see a pair (two of a rank in a row), a sandwich (same rank with one card between), a marriage (King and Queen together) or a top card that matches the bottom one. First good slap takes the pile under your stack; a bad slap burns a card under the pile.\n\nOut of cards means out. Last player holding cards wins. Add Egyptian Ratscrew's face-card challenges as a house rule, or tune which slaps count in the pile's play rules.",
+      rules: "Egyptian Ratscrew\n\nDeal the whole deck face down. In turn, flip your top card onto the pile.\n\nChallenges: flip a Jack, Queen, King or Ace and the next player gets 1, 2, 3 or 4 flips to answer with a face card or Ace of their own (which challenges the next player in turn). If they can't, you win the pile and play next.\n\nSlaps: slap the pile (Space) the moment you see a pair, a sandwich (same rank with one card between), a marriage (King and Queen together) or a top card matching the bottom. First good slap takes the pile; a bad slap burns a card under it.\n\nOut of cards means out, unless you slap your way back in. Last player holding cards wins.",
     },
     {
       id: "cheat",

@@ -493,7 +493,9 @@
     }
     if (zone.rule?.slap) tools.unshift(`<button class="btn sm slap-btn" data-act="slap" title="Slap the pile (Space)">👋 Slap</button>`);
     if (zone.claim && zone.claim.by !== mySeatId()) tools.unshift(`<button class="btn sm slap-btn" data-act="call-bluff" title="Call the last claim: reveal it, and whoever is wrong takes the pile">🔍 Call!</button>`);
-    const claimBar = zone.rule?.claim ? `<div class="claim-bar">${zone.claim ? `<b>${esc(E.playerById(view, zone.claim.by)?.name || "?")}</b> claims <b>${zone.claim.count} × ${esc(RANK_WORD(zone.claim.rank))}</b>` : "No claim yet"} <span class="dim">· next: ${esc(RANK_WORD(E.nextClaimRank(zone)))}</span></div>` : "";
+    const challenged = zone.challenge ? view.players[view.turn.index] : null;
+    const challengeBar = zone.challenge ? `<div class="claim-bar">👑 <b>${esc(E.playerById(view, zone.challenge.by)?.name || "?")}</b> challenges: ${challenged ? `<b>${esc(challenged.name)}</b> has` : ""} <b>${zone.challenge.left}</b> flip${zone.challenge.left === 1 ? "" : "s"} to answer with a face card</div>` : "";
+    const claimBar = challengeBar + (zone.rule?.claim ? `<div class="claim-bar">${zone.claim ? `<b>${esc(E.playerById(view, zone.claim.by)?.name || "?")}</b> claims <b>${zone.claim.count} × ${esc(RANK_WORD(zone.claim.rank))}</b>` : "No claim yet"} <span class="dim">· next: ${esc(RANK_WORD(E.nextClaimRank(zone)))}</span></div>` : "");
     tools.push(`<button class="btn sm icon" data-act="menu" title="Group options">⋯</button>`);
     const evals = prefs.evals && cards.length ? evalsHTML(zone) : "";
     const manyClass = layout === "fan" ? (cards.length > 9 ? " many" : cards.length <= 3 ? " few" : "") : "";
@@ -1811,6 +1813,7 @@
             <label class="check"><input type="checkbox" name="rFlipTop"${rule.flipTop ? " checked" : ""}> Reveal the new top card</label>
             <label class="check"><input type="checkbox" name="rAceHigh"${rule.aceHigh ? " checked" : ""}> Aces high</label>
             <label class="check" title="Singles, pairs, triples…: same size as the last play, higher rank"><input type="checkbox" name="rClimb"${rule.climb ? " checked" : ""}> Climbing sets</label>
+            <label class="check" title="A J/Q/K/A gives the next player 1/2/3/4 flips to answer with a face card, or the challenger wins the pile"><input type="checkbox" name="rChallenge"${rule.challenge ? " checked" : ""}> Face-card challenges</label>
           </div>
         </div>
         <label class="field"><span>Advanced: evaluator specs <span class="dim">id@boardKey to rank against a specific board</span></span><input type="text" name="specs" value="${esc(specOverrides.join(", "))}" placeholder="poker-omaha@board-2"></label>
@@ -1851,7 +1854,7 @@
         const rule = {
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
           first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(), cost: form.rCost.value.trim(),
-          follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked, climb: form.rClimb.checked,
+          follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked, climb: form.rClimb.checked, challenge: form.rChallenge.checked,
           slap: form.rSlap.value, slapTo: form.rSlapTo.value.trim(), claim: form.rClaim.value, claimTo: z.rule?.claimTo || "",
         };
         const patch = {
@@ -4532,7 +4535,7 @@
     form.rSlap.value = rule.slap || "none";
     form.rClaim.value = rule.claim || "none";
     form.rSlapTo.value = rule.slapTo || "";
-    for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"], ["rClimb", "climb"]]) form[field].checked = Boolean(rule[key]);
+    for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"], ["rClimb", "climb"], ["rChallenge", "challenge"]]) form[field].checked = Boolean(rule[key]);
   }
 
   function actionTemplates(v) {

@@ -950,7 +950,7 @@ console.log("design diff tests passed");
 }
 console.log("trading tests passed");
 
-// Wizard styles for the new mechanics, Rat Slap, and design checks for slap/bluff targets.
+// Wizard styles for the new mechanics, Egyptian Ratscrew, and design checks for slap/bluff targets.
 {
   for (const style of ["slap", "bluff"]) {
     const table = Engine.createTable(Presets.fromWizard({ style, name: style, players: 3, target: 2 }), {});
@@ -958,7 +958,7 @@ console.log("trading tests passed");
     const out = Engine.playOut(table, { deal: table.macros[0].id, maxSteps: 20000 });
     assert.ok(out.finished, `${style} wizard game finishes`);
   }
-  const rat = Engine.createTable(Presets.get("rat-slap"), { players: 3 });
+  const rat = Engine.createTable(Presets.get("ratscrew"), { players: 3 });
   assert.equal(Engine.lintDesign(rat).filter((i) => i.level !== "info").length, 0);
   assert.ok(Engine.playOut(rat, { deal: "Deal out", maxSteps: 20000 }).finished);
   const pile = zone(rat, "pile");
@@ -966,3 +966,53 @@ console.log("trading tests passed");
   assert.ok(Engine.lintDesign(broken).some((i) => i.level === "error" && /nowhere/.test(i.message)));
 }
 console.log("wizard mechanics tests passed");
+
+// Ratscrew challenges: face cards demand an answer within 1–4 flips.
+{
+  let state = Engine.createTable(Presets.get("ratscrew"), { players: ["Ana", "Ben", "Cy"] });
+  const [ana, ben, cy] = state.players.map((player) => player.id);
+  const pile = zone(state, "pile").id;
+  state = act(state, { type: "setTurn", index: 0 });
+  // Stack everyone's top cards: Ana flips a Queen; Ben answers with 5 then 7 (two chances, no face): Ana wins.
+  state = pull(state, "Qh", zone(state, "stack", ana).id, "down");
+  state = pull(state, "9c 7c 5c", zone(state, "stack", ben).id, "down");
+  state = pull(state, "2d", zone(state, "stack", cy).id, "down");
+  state = run(state, "Flip", ana);
+  assert.deepEqual(state.zones[pile].challenge, { by: ana, left: 2 });
+  assert.equal(current(state), ben);
+  state = run(state, "Flip", ben);
+  assert.equal(current(state), ben, "Ben keeps flipping while the challenge stands");
+  assert.equal(state.zones[pile].challenge.left, 1);
+  state = run(state, "Flip", ben);
+  assert.equal(state.zones[pile].cards.length, 0);
+  assert.match(state.log.map((entry) => entry.text).join("\n"), /Ana wins the challenge and takes the pile \(3 cards\)/);
+  assert.equal(current(state), ana, "the winner plays next");
+  // An answered challenge passes on: Ana flips a Jack, Ben answers with a King, Cy must answer in 3.
+  let s2 = Engine.createTable(Presets.get("ratscrew"), { players: ["Ana", "Ben", "Cy"] });
+  s2 = act(s2, { type: "setTurn", index: 0 });
+  s2 = pull(s2, "Jh", zone(s2, "stack", s2.players[0].id).id, "down");
+  s2 = pull(s2, "Kd", zone(s2, "stack", s2.players[1].id).id, "down");
+  s2 = pull(s2, "3c 4c", zone(s2, "stack", s2.players[2].id).id, "down");
+  s2 = run(s2, "Flip", s2.players[0].id);
+  s2 = run(s2, "Flip", s2.players[1].id);
+  assert.deepEqual(s2.zones[pile].challenge, { by: s2.players[1].id, left: 3 });
+  assert.equal(current(s2), s2.players[2].id);
+  // Cy runs out of cards before answering: Ben takes the pile.
+  s2 = run(s2, "Flip", s2.players[2].id);
+  s2 = run(s2, "Flip", s2.players[2].id);
+  assert.equal(s2.zones[pile].cards.length, 0, "out of cards to answer with");
+  assert.match(s2.log.map((entry) => entry.text).join("\n"), /Ben wins the challenge/);
+  // A good slap ends a challenge.
+  let s3 = Engine.createTable(Presets.get("ratscrew"), { players: 2 });
+  s3 = act(s3, { type: "setTurn", index: 0 });
+  s3 = pull(s3, "Kh Ks", zone(s3, "pile").id, "up");
+  s3.zones[pile].challenge = { by: s3.players[0].id, left: 3 };
+  s3 = act(s3, { type: "slap", zone: pile, player: s3.players[1].id }, null);
+  assert.equal(s3.zones[pile].challenge, undefined);
+  // Bot games with challenges and slaps finish.
+  for (let i = 0; i < 5; i += 1) {
+    const out = Engine.playOut(Engine.createTable(Presets.get("ratscrew"), { players: 3 }), { deal: "Deal out", maxSteps: 30000 });
+    assert.ok(out.finished, `ratscrew finishes (${out.steps} steps)`);
+  }
+}
+console.log("ratscrew challenge tests passed");
