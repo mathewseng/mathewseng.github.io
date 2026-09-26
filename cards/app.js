@@ -1310,6 +1310,7 @@
         <div class="field"><span>Ranks <button class="btn sm ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn sm${ranks.includes(rank) ? " primary" : ""}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
         <div class="field"><span>Card back <span class="dim">blank = your display setting</span></span>
           <div class="row tight"><input type="color" value="${esc(draft.back?.color || "#2b57c2")}" data-deck-back="color" title="Back color"${draft.back?.color ? "" : ' style="opacity:.5"'}><input type="text" value="${esc(draft.back?.text || "")}" maxlength="14" placeholder="Name on the back" data-deck-back="text" class="grow" style="flex:1;width:auto">${draft.back?.color || draft.back?.text ? `<button class="btn sm ghost" data-act="back-clear">Clear</button>` : ""}</div></div>
+        <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
           <div class="list">${draft.custom.map((item, i) => `<div class="custom-row">
@@ -1324,6 +1325,7 @@
               <input type="number" value="${item.value}" placeholder="pts" style="width:62px" data-custom="${i}" data-k="value" title="Points">
               <input type="text" value="${esc(item.text)}" placeholder="Rules text" style="flex:1 1 60%" data-custom="${i}" data-k="text">
               <input type="url" value="${esc(item.image || "")}" placeholder="Art image https://… (optional)" style="flex:1 1 30%" data-custom="${i}" data-k="image" title="An https link to card art">
+              <input type="text" value="${esc(item.home || "")}" list="homeGroups" placeholder="Starts in (deck)" style="width:120px" data-custom="${i}" data-k="home" title="A table group these cards start in, e.g. a market pile">
             </div>`).join("")}</div>
           <div class="row tight"><button class="btn sm" data-act="custom-add">+ Custom card</button><button class="btn sm" data-act="custom-import">Import from spreadsheet…</button>${draft.custom.length ? `<button class="btn sm" data-act="custom-export">Export CSV</button>` : ""}</div>
         </details>
@@ -1533,7 +1535,7 @@
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
-    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
+    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], "Deck-building": ["●", "🏰", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
     return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}" data-search="${esc(`${preset.name} ${preset.family} ${preset.tagline || ""} ${preset.description || ""}`.toLowerCase())}">
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
@@ -1694,6 +1696,7 @@
             <label class="field"><span>Empty group starts with</span><input type="text" name="rFirst" value="${esc(rule.first || "")}" maxlength="8" placeholder="any card (e.g. A, K)"></label>
             <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
             <label class="field"><span>The group must form</span><select name="rMeld">${optionList(E.RULE_MELD, rule.meld)}</select></label>
+            <label class="field"><span>Taking a card costs <span class="dim">its value in a counter</span></span><input type="text" name="rCost" list="ruleCounters" value="${esc(rule.cost || "")}" placeholder="e.g. Coins"><datalist id="ruleCounters">${[...v.counterDefs, ...v.tableCounters].map((def) => `<option value="${esc(def.name)}">`).join("")}</datalist></label>
             <label class="field"><span>Only during phase</span><input type="text" name="rPhase" list="rulePhases" value="${esc(rule.phase || "")}" placeholder="any phase"><datalist id="rulePhases">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist></label>
           </div>
           <div class="row">
@@ -1741,7 +1744,7 @@
         if (form.topOnly.checked) ctx.topOnly = true;
         const rule = {
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
-          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(),
+          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(), cost: form.rCost.value.trim(),
           follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked,
         };
         const patch = {
@@ -3735,8 +3738,8 @@
 
   // ====================================================== CUSTOM CARD CSV
   const COLOR_NAMES = { red: "#d9434b", yellow: "#b98a00", green: "#23915a", blue: "#3b63d9", black: "#2a2d36", purple: "#7a52e0", violet: "#7a52e0", orange: "#e07b28", pink: "#d6488f", teal: "#159a9c", gray: "#6b7280", grey: "#6b7280", white: "#9ca3af", gold: "#c9a227", brown: "#8b5a2b" };
-  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text", "image"];
-  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text", image: "image", art: "image", picture: "image", url: "image" };
+  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text", "image", "home"];
+  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text", image: "image", art: "image", picture: "image", url: "image", home: "home", pile: "home", starts: "home" };
 
   function splitRow(line, delimiter) {
     const out = [];
@@ -3783,13 +3786,14 @@
         icon: item.icon || "",
         text: item.text || "",
         image: item.image || "",
+        home: item.home || "",
       };
     }).filter(Boolean);
   }
 
   function customCardsCsv(items) {
     const quote = (cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`;
-    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text", "image"];
+    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text", "image", "home"];
     return [header.join(","), ...items.map((item) => CUSTOM_COLUMNS.map((key) => quote(item[key])).join(","))].join("\n");
   }
 
@@ -4138,6 +4142,7 @@
     form.rOrder.value = rule.order || "any";
     form.rMeld.value = rule.meld || "none";
     form.rPhase.value = rule.phase || "";
+    form.rCost.value = rule.cost || "";
     form.rFirst.value = rule.first || "";
     form.rWild.value = (rule.wild || []).join(", ");
     for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"]]) form[field].checked = Boolean(rule[key]);

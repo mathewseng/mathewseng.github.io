@@ -618,3 +618,53 @@ console.log("formula tests passed");
   assert.equal(Engine.viewFor(state, a).cards[card], undefined);
 }
 console.log("peek and show tests passed");
+
+// Deck-building: custom cards start in market piles, buying costs coins, decks reshuffle.
+{
+  Engine.setRng(Engine.seededRng("market"));
+  let state = Engine.createTable(Presets.get("market-builder"), { players: 2 });
+  assert.equal(zone(state, "copper").cards.length, 60);
+  assert.equal(zone(state, "castle").cards.length, 12);
+  assert.equal(zone(state, "trash").cards.length, 0);
+  state = run(state, "Set up");
+  const [a, b] = state.players.map((p) => p.id);
+  for (const id of [a, b]) {
+    assert.equal(zone(state, "hand", id).cards.length, 5);
+    assert.equal(zone(state, "deck", id).cards.length, 5);
+  }
+  state = act(state, { type: "setTurn", index: 0 });
+  state = run(state, "Play treasures");
+  const coinsDef = state.counterDefs[0];
+  const coins = state.players[0].counters[coinsDef.id];
+  const coppers = zone(state, "play", a).cards.filter((id) => state.cards[id].label === "Copper").length;
+  assert.equal(coins, coppers, "coins = coppers in play");
+  const silver = zone(state, "silver").cards.slice(-1);
+  const gold = zone(state, "gold").cards.slice(-1);
+  assert.throws(() => act(state, { type: "move", cards: gold, to: zone(state, "discard", a).id }, a), /costs 6 Coins/);
+  if (coins >= 3) {
+    state = act(state, { type: "move", cards: silver, to: zone(state, "discard", a).id }, a);
+    assert.equal(state.players[0].counters[coinsDef.id], coins - 3);
+    assert.equal(zone(state, "silver").cards.length, 39);
+  }
+  state = run(state, "End turn");
+  assert.equal(zone(state, "hand", a).cards.length, 5);
+  assert.equal(state.players[0].counters[coinsDef.id], 0);
+  // Second turn for A empties the deck, so the third turn reshuffles the discard.
+  state = act(state, { type: "setTurn", index: 0 });
+  state = run(state, "End turn");
+  state = act(state, { type: "setTurn", index: 0 });
+  state = run(state, "End turn");
+  assert.equal(zone(state, "hand", a).cards.length, 5, "drew five after reshuffling");
+  // Buying the last castle ends the game with victory points.
+  state = act(state, { type: "setRules", mode: "off" });
+  state = act(state, { type: "move", cards: zone(state, "castle").cards.slice(0, 11), to: zone(state, "discard", b).id }, null);
+  state = act(state, { type: "setRules", mode: "enforce" });
+  state = act(state, { type: "setTurn", index: 0 });
+  const def = state.counterDefs[0];
+  state = act(state, { type: "counter", player: a, id: def.id, value: 8 });
+  state = act(state, { type: "move", cards: zone(state, "castle").cards.slice(-1), to: zone(state, "discard", a).id }, a);
+  assert.ok(state.gameOver, "game over when the castles run out");
+  assert.deepEqual(state.gameOver.winners, [b]);
+  assert.equal(Engine.lintDesign(Engine.createTable(Presets.get("market-builder"), {})).filter((i) => i.level === "error").length, 0);
+}
+console.log("deck-building tests passed");
