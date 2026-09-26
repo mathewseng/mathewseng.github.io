@@ -648,7 +648,50 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: false,
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-09-14");
+    expect(workoutsNewestFirst[2]?.id).toBe("push-2026-09-14");
+  });
+
+  it("loads the September 21 and 22 sessions with the interrupted bench rep excluded", () => {
+    const push = workouts.find((item) => item.id === "push-2026-09-21");
+    const pull = workouts.find((item) => item.id === "pull-2026-09-22");
+    const bench = push?.exercises.find((item) => item.exerciseId === "smith-flat-bench");
+    const pullups = pull?.exercises.find((item) => item.exerciseId === "strict-pull-up");
+
+    expect(push).toMatchObject({
+      date: "2026-09-21",
+      startTime: "21:45",
+      durationMinutes: 60,
+      chronologyIndex: 19,
+    });
+    expect(bench?.sets).toHaveLength(2);
+    expect(bench?.sets[1]).toMatchObject({
+      reps: 5,
+      attemptedReps: 1,
+      completed: true,
+    });
+    expect(bench?.sets[1]).not.toHaveProperty("failedAttempt");
+    expect(calculateWorkoutTotals(push!)).toMatchObject({
+      completedReps: 141,
+      completedVolumeLb: 3_705,
+      calculableSetCount: 15,
+    });
+    expect(pull).toMatchObject({
+      date: "2026-09-22",
+      startTime: "23:00",
+      durationMinutes: 60,
+      chronologyIndex: 20,
+    });
+    expect(pullups?.sets.map((set) => set.reps)).toEqual([5, 4, 5]);
+    expect(calculateWorkoutTotals(pull!)).toMatchObject({
+      completedReps: 199,
+      completedVolumeLb: 4_825,
+      calculableSetCount: 17,
+      excludedSetCount: 3,
+    });
+    expect(workoutsNewestFirst.slice(0, 2).map((workout) => workout.id)).toEqual([
+      "pull-2026-09-22",
+      "push-2026-09-21",
+    ]);
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

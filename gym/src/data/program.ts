@@ -21,7 +21,7 @@ export const programTemplates: ProgramTemplate[] = [
         weightLb: 105,
         rirRange: [2, 3],
         notes:
-          "Latest result is 105 lb × 6/6/5 for 17 completed reps. Repeat 105 lb and complete 6/6/6 before adding repetitions beyond six or changing load.",
+          "The latest full three-set result is 105 lb × 6/6/5. September 21 recorded 6/5 across two sets after laughter interrupted the attempted sixth rep of set two. Repeat 105 lb and complete 6/6/6 before progressing.",
       },
       {
         exerciseId: "smith-incline-bench",
@@ -45,9 +45,10 @@ export const programTemplates: ProgramTemplate[] = [
         label: "Triceps Pushdown",
         sets: 3,
         repRange: [10, 12],
-        weightLb: 15,
+        weightLb: 30,
         rirRange: [0, 2],
-        notes: "Latest result is 30 lb × 10/6/6. Build back toward 10/10/10.",
+        notes:
+          "September 21 reached 30 lb × 10/10/10. Build toward 12/12/12 with consistent form.",
       },
       {
         exerciseId: "cable-lateral-raise",
@@ -71,7 +72,7 @@ export const programTemplates: ProgramTemplate[] = [
     rules: [
       "Do not test a one-repetition maximum by default.",
       "Do not repeat failed attempts.",
-      "The 95 lb × 8/8/8 threshold is complete. Repeat 105 lb after 6/6/5 and finish 6/6/6 before progressing.",
+      "The 95 lb × 8/8/8 threshold is complete. Repeat 105 lb and finish a full 6/6/6 before progressing; September 21 had only two bench sets after an interruption.",
       "Keep incline submaximal after heavy flat bench; use 65 lb next time because the September 14 set ended in failure at 75 lb.",
     ],
   },
@@ -138,7 +139,7 @@ export const programTemplates: ProgramTemplate[] = [
         sets: 5,
         reps: 3,
         notes:
-          "The short September 8 session recorded 5/3 across only two sets. Return to five submaximal sets around 3 reps and avoid early-set failure.",
+          "September 22 recorded 5/4/5 across three sets for 14 total reps, with strict form unconfirmed. Build toward five submaximal sets while maintaining clean form.",
       },
       {
         exerciseId: "lat-pulldown",
@@ -172,7 +173,7 @@ export const programTemplates: ProgramTemplate[] = [
         repRange: [8, 15],
         alternatives: ["incline-curl", "hammer-curl", "cable-biceps-curl"],
         notes:
-          "Choose one or two curl variations. Latest complete dumbbell results: incline curl 15 lb × 10/8/8 and spider curl 20 lb × 10/8/8, per dumbbell.",
+          "Choose one or two curl variations. September 22: incline curl 15 lb × 10/10/10/10 and spider curl 20 lb × 10/10/10/20, per dumbbell.",
       },
       {
         exerciseId: "farmers-carry",

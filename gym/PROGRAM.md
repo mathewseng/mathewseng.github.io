@@ -25,6 +25,7 @@ Healthy-session reference:
 - September 7 result: 95 lb × 8, 8, 9 for 25 completed repetitions and a new volume best
 - The 95 lb × 8, 8, 8 milestone is complete.
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions.
+- September 21 recorded 105 lb × 6, 5 across only two sets; laughter interrupted the attempted sixth rep of set two.
 - Repeat 105 lb and complete 6, 6, 6 before adding repetitions beyond six or changing load.
 - Use approximately 2–3 reps in reserve while establishing the load; no failed flat-bench repetition was reported.
 - RIR, readiness, and execution quality were not supplied.
@@ -50,7 +51,7 @@ Progress at 105 lb after:
 ### Triceps Pushdown
 
 - 30 lb for 3 sets of 10–12
-- Current three-set result: 30 lb × 10, 6, 6
+- Current three-set result: 30 lb × 10, 10, 10 on September 21
 - Best session total: 30 lb × 10, 10, 10, 10
 - Build toward 12, 12, 12 before increasing
 
@@ -71,8 +72,8 @@ Progress at 105 lb after:
 
 - 5 submaximal sets
 - Begin around 3 repetitions per set
-- Latest result: 5, 3 for 8 total across only two sets on September 8; strict form was not explicitly confirmed
-- Treat the September 8 result as a short-session observation, not a matched regression from longer sessions.
+- Latest result: 5, 4, 5 for 14 total across three sets on September 22; strict form was not explicitly confirmed.
+- The 13-rep strict baseline remains the confirmed strict benchmark until form is verified for a higher total.
 - Build back to five submaximal sets before pushing early-set effort
 - Add one total repetition per workout
 - Avoid early-set failure
@@ -147,6 +148,8 @@ Current accessory references from September 1:
 - Two-arm cable curl: 30 lb × 8, 8 on September 8
 - Incline dumbbell curl: 15 lb per dumbbell × 10, 8, 8
 - Spider dumbbell curl: 20 lb per dumbbell × 10, 8, 8
+- September 22 incline dumbbell curl: 15 lb per dumbbell × 10, 10, 10, 10
+- September 22 spider dumbbell curl: 20 lb per dumbbell × 10, 10, 10, 20
 - Choose one or two curl variations rather than requiring all of them every pull day.
 
 ## Leg Day

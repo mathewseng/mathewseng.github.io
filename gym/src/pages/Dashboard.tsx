@@ -163,6 +163,12 @@ const pullUpProgress = [
     context:
       "5/3 across only two sets in a 40-minute session; not a matched comparison with longer sessions. Strict form was not explicitly confirmed.",
   },
+  {
+    label: "Sep 22",
+    value: 5,
+    secondary: 14,
+    context: "5/4/5 across three sets; strict form was not explicitly confirmed.",
+  },
 ];
 
 const pushdownProgress = [
@@ -184,6 +190,7 @@ const pushdownProgress = [
   },
   { label: "Sep 7", value: 28, secondary: 840, context: "8/10/10 across three sets." },
   { label: "Sep 14", value: 22, secondary: 660, context: "10/6/6 across three sets." },
+  { label: "Sep 21", value: 30, secondary: 900, context: "10/10/10 across three sets." },
 ];
 
 function recentTrainingWeeks(workouts: Workout[]) {
@@ -308,7 +315,7 @@ export default function Dashboard() {
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
               <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Push → Pull next
+                Pull → Legs next
               </Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
@@ -316,12 +323,12 @@ export default function Dashboard() {
                 Suggested next session
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Pull, restore full volume.
+                Legs, build carefully.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
-                Return to five submaximal pull-up sets around three reps, then use a
-                pulldown and supported row. Aim for at least 13 clean total pull-ups
-                without chasing early-set failure.
+                Your latest session was Pull on September 22. For the next leg session,
+                use controlled Smith squats and supported work, and record how your back
+                feels before and after.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -376,8 +383,9 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                You reached 6 / 6 / 5 at 105 lb—one completed rep short of the next
-                milestone. Repeat 105 lb and finish 6 / 6 / 6 before progressing.
+                Your last full three-set bench result remains 6 / 6 / 5 at 105 lb.
+                September 21 had two sets of 6 / 5; laughter interrupted the sixth rep of
+                set two. Repeat 105 lb and complete 6 / 6 / 6 before progressing.
               </p>
             </div>
           </Surface>
@@ -385,23 +393,22 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 14 context</p>
-                <h2 className="mt-1 text-lg font-black">First 105 lb work sets</h2>
+                <p className="eyebrow">September 22 context</p>
+                <h2 className="mt-1 text-lg font-black">14 pull-ups across three sets</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 9:45 PM, you completed 60 minutes of push work. Bench reached 105 lb for
-              6 / 6 / 5. Incline ended at four completed reps with a failed fifth at 75
-              lb, so the next incline session steps back to controlled 65 lb work. The
-              15-minute sauna is tracked separately.
+              At 11 PM, you completed 60 minutes of pull work: pull-ups 5 / 4 / 5, reverse
+              cable fly 15 lb for 10 / 10 / 15, and spider curls 20 lb for 10 / 10 / 10 /
+              20. Strict pull-up form and 0–6 readiness scores were not supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">105 lb · 17 reps</Badge>
-              <Badge tone="quality">1 rep to 6 / 6 / 6</Badge>
-              <Badge tone="neutral">9:45 PM · 60 min</Badge>
+              <Badge tone="accent">14 pull-ups</Badge>
+              <Badge tone="quality">20 lb spider curl · 20 reps</Badge>
+              <Badge tone="neutral">11 PM · 60 min</Badge>
             </div>
           </Surface>
         </div>
@@ -442,9 +449,9 @@ export default function Dashboard() {
           icon={Dumbbell}
         />
         <MetricCard
-          label="Latest bench 3-set"
+          label="Last full bench 3-set"
           value="6 / 6 / 5"
-          detail="105 lb · one rep to milestone"
+          detail="Sep 14 · Sep 21 was two sets (6 / 5)"
           icon={BarChart3}
         />
         <MetricCard
@@ -552,8 +559,8 @@ export default function Dashboard() {
           height={190}
         />
         <ProgressChart
-          title="Strict pull-up baseline"
-          description="Best set and session total; one honest data point is still one data point."
+          title="Pull-up history"
+          description="Best set and session total; only the undated baseline was explicitly confirmed strict."
           data={pullUpProgress}
           valueSuffix="best-set reps"
           secondaryLabel="Session total"

@@ -75,7 +75,8 @@ export const currentBenchmarks: Benchmark[] = [
     unit: "lb",
     confirmed: true,
     workoutId: "push-2026-08-03",
-    notes: "30 lb × 10, 10, 10, 10.",
+    notes:
+      "30 lb × 10, 10, 10, 10 is the best four-set result. September 21 recorded 10, 10, 10 across three sets at the same load.",
   },
   {
     id: "overhead-triceps-reference",
@@ -95,7 +96,8 @@ export const currentBenchmarks: Benchmark[] = [
     unit: "reps",
     confirmed: true,
     workoutId: "strict-pull-up-baseline",
-    notes: "Best session was 5, 5, 3.",
+    notes:
+      "The confirmed strict baseline was 5, 5, 3. September 22 logged 5, 4, 5, but strict form was not explicitly reconfirmed.",
   },
   {
     id: "strict-pullup-session-total",
@@ -105,7 +107,8 @@ export const currentBenchmarks: Benchmark[] = [
     unit: "reps",
     confirmed: true,
     workoutId: "strict-pull-up-baseline",
-    notes: "Estimated fresh maximum was approximately 5–6.",
+    notes:
+      "The confirmed strict baseline total is 13. September 22 logged 14 reps across three sets, but strict form was not explicitly reconfirmed.",
   },
   {
     id: "lat-pulldown-top-set",
@@ -157,7 +160,7 @@ export const currentBenchmarks: Benchmark[] = [
     confirmed: true,
     workoutId: "pull-2026-09-08",
     notes:
-      "20 lb per dumbbell × 10, 8, 8. This is the first complete three-set result at the recorded top load.",
+      "20 lb per dumbbell × 10, 8, 8 was the first complete three-set result at this load. September 22 advanced to 10, 10, 10, 20 across four sets.",
   },
   {
     id: "smith-squat-baseline",

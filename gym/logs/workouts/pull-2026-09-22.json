@@ -1,0 +1,153 @@
+{
+  "id": "pull-2026-09-22",
+  "date": "2026-09-22",
+  "startTime": "23:00",
+  "durationMinutes": 60,
+  "type": "pull",
+  "title": "Pull with Cables and Dumbbell Curls",
+  "chronologyIndex": 20,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Late-night pull session. No 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": ["late-night-training"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        { "id": "2026-09-22-pullup-1", "reps": 5, "completed": true },
+        { "id": "2026-09-22-pullup-2", "reps": 4, "completed": true },
+        { "id": "2026-09-22-pullup-3", "reps": 5, "completed": true }
+      ],
+      "notes": "Fourteen total reps across three sets. Strict form was not explicitly confirmed."
+    },
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-22-reverse-fly-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-22-reverse-fly-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-22-reverse-fly-3",
+          "weightLb": 15,
+          "reps": 15,
+          "completed": true
+        }
+      ],
+      "notes": "Cable setup, per-side loading, and form quality were not supplied."
+    },
+    {
+      "exerciseId": "standing-cable-row",
+      "name": "Cable Row",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-22-row-1", "weightLb": 20, "reps": 10, "completed": true },
+        { "id": "2026-09-22-row-2", "weightLb": 20, "reps": 10, "completed": true },
+        { "id": "2026-09-22-row-3", "weightLb": 20, "reps": 10, "completed": true }
+      ],
+      "notes": "Mapped to the gym's standing cable-row option because no seated cable-row station is available. Exact setup and whether 20 lb was per side were not supplied."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-22-incline-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-22-incline-curl-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-22-incline-curl-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-22-incline-curl-4",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "15 lb per dumbbell. Entered-load volume preserves the per-dumbbell value without doubling."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-22-spider-curl-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-22-spider-curl-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-22-spider-curl-3",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-22-spider-curl-4",
+          "weightLb": 20,
+          "reps": 20,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "20 lb per dumbbell. Last set reached 20 reps. Entered-load volume preserves the per-dumbbell value without doubling."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-22-ab-crunch-1", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-22-ab-crunch-2", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-22-ab-crunch-3", "weightLb": 70, "reps": 10, "completed": true }
+      ]
+    }
+  ],
+  "notes": "Workout began at 11:00 PM and lasted 60 minutes. It contained 20 completed sets, 199 completed repetitions, and 4,825 lb of preserved entered-load volume; bodyweight pull-ups are excluded from external-load volume. The 20 lb spider-curl final set reached 20 reps. No 0–6 context scores or sauna were reported."
+}

@@ -197,7 +197,7 @@ function healthyTemplate(type: WorkoutType): SuggestedExercise[] {
         exercise("smith-flat-bench", "Smith-machine flat bench", 3, [5, 7], [2, 3], {
           weightLb: 105,
           notes:
-            "Warm up first. Latest result is 105 lb × 6/6/5; repeat the load and complete 6/6/6 without failure before progressing.",
+            "Warm up first. The last full three-set result is 105 lb × 6/6/5; September 21 had 6/5 across two sets after an interruption. Repeat 105 lb and complete 6/6/6 before progressing.",
         }),
         exercise(
           "smith-incline-bench",

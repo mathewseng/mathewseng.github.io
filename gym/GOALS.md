@@ -16,6 +16,7 @@ Current confirmed status:
 - September 7 produced a new best of 25 completed repetitions and 2,375 lb volume at this load.
 - The 95 lb × 8, 8, 8 milestone is complete; the final set of 9 ties the best recent 95 lb working set.
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions, one rep short of the next milestone.
+- September 21 recorded 105 lb × 6, 5 across two sets; laughter interrupted the attempted sixth rep of set two. This was not reported as a strength failure.
 - No failed flat-bench repetition was reported, but no 0–6 readiness ratings or RIR values were supplied.
 
 Definition of success:
@@ -66,8 +67,8 @@ Current status:
 - Best set: 5
 - Best session: 5, 5, 3
 - Total completed repetitions: 13
-- Latest session on September 8: 5, 3 for 8 total across only two sets
-- The latest result is not a matched regression from longer sessions because fewer sets were performed.
+- Latest session on September 22: 5, 4, 5 for 14 total across three sets; strict form was not explicitly confirmed.
+- The strict 13-rep baseline remains the confirmed strict benchmark until form is verified for a higher total.
 - Estimated maximum: approximately 5–6
 
 Strict standard:

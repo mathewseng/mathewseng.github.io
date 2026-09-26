@@ -1,0 +1,110 @@
+{
+  "id": "push-2026-09-21",
+  "date": "2026-09-21",
+  "startTime": "21:45",
+  "durationMinutes": 60,
+  "type": "push",
+  "title": "Push with Incline Walk and 105 lb Bench",
+  "chronologyIndex": 19,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Ten-minute incline walk during the workout and 7.5 minutes in a sauna afterward. No 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": ["late-night-training", "incline-walk", "post-workout-sauna"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "partial",
+      "sets": [
+        { "id": "2026-09-21-bench-1", "weightLb": 105, "reps": 6, "completed": true },
+        {
+          "id": "2026-09-21-bench-2",
+          "weightLb": 105,
+          "reps": 5,
+          "completed": true,
+          "attemptedReps": 1,
+          "notes": "The sixth rep was interrupted because his girlfriend made him laugh; this is not recorded as a strength failure."
+        }
+      ],
+      "notes": "Two reported sets: 6 and 5 completed reps at 105 lb. The interrupted sixth rep on set two is excluded from completed reps and volume. No third bench set was reported."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-21-pushdown-1", "weightLb": 30, "reps": 10, "completed": true },
+        { "id": "2026-09-21-pushdown-2", "weightLb": 30, "reps": 10, "completed": true },
+        { "id": "2026-09-21-pushdown-3", "weightLb": 30, "reps": 10, "completed": true }
+      ]
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-21-lateral-1", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-21-lateral-2", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-21-lateral-3", "weightLb": 10, "reps": 10, "completed": true }
+      ],
+      "notes": "Single-arm versus bilateral execution and per-side loading were not specified."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-21-front-1", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-21-front-2", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-21-front-3", "weightLb": 10, "reps": 10, "completed": true }
+      ],
+      "notes": "Single-arm versus bilateral execution and per-side loading were not specified."
+    },
+    {
+      "exerciseId": "mid-cable-fly",
+      "name": "Single-Arm Cable Chest Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-21-fly-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-21-fly-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-21-fly-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Single-arm execution was specified; 15 lb is the entered load for each arm. Cable height was not specified."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-21-ab-crunch-1", "weightLb": 60, "reps": 10, "completed": true }
+      ]
+    }
+  ],
+  "notes": "Workout began at 9:45 PM and lasted 60 minutes, including a 10-minute incline walk. Resistance work comprised 15 completed sets, 141 completed repetitions, and 3,705 lb of preserved entered-load volume. The second bench set ended after five completed reps when laughter interrupted the sixth attempt; it was not identified as a strength failure. A 7.5-minute sauna was reported separately. No 0–6 context scores were supplied."
+}

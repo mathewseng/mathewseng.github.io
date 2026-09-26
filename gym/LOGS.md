@@ -1330,6 +1330,37 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 
 ---
 
+# 19. Push with Incline Walk and 105 lb Bench — September 21, 2026
+
+**Start:** 9:45 PM local time · **Duration:** 60 minutes · **Sauna:** 7.5 minutes
+
+- Incline walk: 10 minutes during the workout
+- Smith flat bench: 105 lb × 6, 5. The attempted sixth rep of set two was interrupted by laughter; it is not counted or labeled a strength failure. No third set was reported.
+- Triceps pushdown: 30 lb × 10, 10, 10
+- Cable lateral raise: 10 lb × 10, 10, 10
+- Cable front raise: 10 lb × 10, 10, 10
+- Single-arm cable chest fly: 15 lb per arm × 10, 10, 10; cable height unreported
+- Cable ab crunch: 60 lb × 10
+
+Resistance totals: **15 completed sets, 141 completed reps, 3,705 lb preserved entered-load volume**. The incline walk and sauna are outside resistance volume. No 0–6 readiness or pain scores were supplied. Shoulder-raise loading convention was not supplied.
+
+---
+
+# 20. Pull with Cables and Dumbbell Curls — September 22, 2026
+
+**Start:** 11:00 PM local time · **Duration:** 60 minutes
+
+- Pull-ups: 5, 4, 5 (**14 total**; strict form not explicitly confirmed)
+- Reverse cable fly: 15 lb × 10, 10, 15
+- Cable row: 20 lb × 10, 10, 10; mapped to standing cable row because this gym lacks a seated station. Setup and per-side loading unreported.
+- Incline dumbbell curl: 15 lb per dumbbell × 10, 10, 10, 10
+- Spider dumbbell curl: 20 lb per dumbbell × 10, 10, 10, 20
+- Cable ab crunch: 70 lb × 10, 10, 10
+
+Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load volume**. Bodyweight pull-ups are excluded from external-load volume. No 0–6 readiness or pain scores were supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1341,6 +1372,7 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 - Best documented completed volume at 95 lb: 2,375 lb
 - The 95 lb × 8, 8, 8 progression milestone is complete.
 - First 105 lb three-set result: 6, 6, 5 for 17 completed reps and 1,785 lb volume
+- September 21: 105 lb × 6, 5 across two sets; laughter interrupted the attempted sixth rep of set two
 - The 105 lb × 6, 6, 6 milestone is one rep away.
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
@@ -1359,6 +1391,7 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 ## Triceps Pushdown
 
 - 30 lb × 10, 10, 10, 10
+- Latest three-set result: 30 lb × 10, 10, 10 on September 21
 
 ## Overhead Triceps Extension
 
@@ -1376,8 +1409,8 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 - Best recorded set: 5
 - Best recorded session: 5, 5, 3
 - Session total: 13
-- Latest result: 5, 3 for 8 total across two sets on September 8
-- The latest result is not a matched comparison with longer sessions.
+- Latest result: 5, 4, 5 for 14 total across three sets on September 22; strict form was not reconfirmed.
+- The 13-rep strict baseline remains the confirmed strict benchmark.
 
 ## Lat Pulldown
 
@@ -1400,7 +1433,7 @@ Unilateral versus bilateral execution and per-side loading were not supplied.
 ## Spider Curl
 
 - Heaviest recorded load: 20 lb per dumbbell
-- First complete result at that load: 10, 8, 8 on September 8
+- September 22 result: 10, 10, 10, 20 at 20 lb per dumbbell
 
 ## Smith-Machine Squat
 
@@ -1456,6 +1489,7 @@ Change from July 14 to September 7: **+6 completed repetitions and +570 lb of co
 | 2026-08-31                                | 8, 10, 8           |             26 |           780 lb |
 | 2026-09-07                                | 8, 10, 10          |             28 |           840 lb |
 | 2026-09-14                                | 10, 6, 6           |             22 |           660 lb |
+| 2026-09-21                                | 10, 10, 10         |             30 |           900 lb |
 
 Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.
 
@@ -1465,13 +1499,16 @@ September 7 improved the latest three-set total to 28 repetitions and 840 lb vol
 
 September 14 recorded 22 repetitions and 660 lb volume after the first full 105 lb flat-bench session.
 
+September 21 returned to 30 reps and 900 lb volume across three sets.
+
 ### Smith-Machine Flat Bench at 105 lb
 
 | Date       | Completed set reps | Completed reps | Completed volume |
 | ---------- | ------------------ | -------------: | ---------------: |
 | 2026-09-14 | 6, 6, 5            |             17 |         1,785 lb |
+| 2026-09-21 | 6, 5               |             11 |         1,155 lb |
 
-Repeat 105 lb and add the final sixth repetition before progressing.
+September 21 had two sets. Laughter interrupted the sixth attempt of set two, so this is not a matched three-set comparison or a confirmed strength failure. Repeat 105 lb and complete 6, 6, 6 before progressing.
 
 ### Pull-Up Session Repetitions
 
@@ -1481,5 +1518,6 @@ Repeat 105 lb and add the final sixth repetition before progressing.
 | 2026-07-28              | 4, 3               |             7 | Strict standard not reconfirmed |
 | 2026-09-01              | 5, 4, 3            |            12 | Strict standard not reconfirmed |
 | 2026-09-08              | 5, 3               |             8 | Only two sets; form unconfirmed |
+| 2026-09-22              | 5, 4, 5            |            14 | Strict form not confirmed       |
 
-The September 8 workout tied the best recorded set of 5. Its two-set total is not directly comparable with the longer baseline and September 1 sessions.
+September 22 logged 14 reps across three sets, one above the 13-rep strict baseline total. Strict form was not reconfirmed, so the strict benchmark remains 13.

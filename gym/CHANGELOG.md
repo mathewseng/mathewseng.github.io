@@ -2,6 +2,20 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-25 — September 21 Push and September 22 Pull Workouts
+
+### Added
+
+- Logged both workouts with start times, 60-minute durations, sets, and entered loads.
+- Recorded the September 21 incline walk and 7.5-minute sauna outside resistance volume.
+- Preserved the interrupted sixth bench attempt as a note without counting it as a completed rep or a strength failure.
+
+### Changed
+
+- Updated the dashboard to show September 22 as the latest workout and suggest Legs next.
+- Updated pushdown, pull-up, and curl history. The September 22 pull-ups total 14 reps; strict form remains unconfirmed.
+- Preserved unknown 0–6 readiness and pain scores and ambiguous cable loading conventions.
+
 ## 2026-09-15 — September 14 Push Workout
 
 ### Added
