@@ -1235,6 +1235,7 @@
       <div class="grid-2">
         <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
         <label class="check" style="grid-column:1/-1"><input type="checkbox" data-must-play${v.mustPlay ? " checked" : ""}> Players must play if they can before using the “can't play” action</label>
+        <label class="check" style="grid-column:1/-1" title="No turns: bots play whenever they can, and when nobody can move a bot runs the “can't play” action. Give piles the play rule “Any player, any time”."><input type="checkbox" data-realtime${v.realtime ? " checked" : ""}> Real time: everyone plays at once (Speed, Spit, Nertz)</label>
         <label class="field"><span>Each turn a bot plays</span><select data-plays-per-turn><option value="1"${v.playsPerTurn !== 0 ? " selected" : ""}>One card</option><option value="0"${v.playsPerTurn === 0 ? " selected" : ""}>Until it's stuck</option></select></label>
         <label class="field"><span>Bots play</span><select data-bot-style>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${style === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
       </div>
@@ -1948,7 +1949,7 @@
             <div class="step-fields">
               <select data-step="${i}" data-f="op">${Object.entries(E.MACRO_OPS).map(([op, def]) => `<option value="${op}"${step.op === op ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select>
               ${E.MACRO_OPS[step.op].fields.map((field) => fieldHTML(step, i, field)).join("")}
-              ${step.op === "deal" || step.op === "clear" ? `<label class="check small" title="Each player moves from their own group to their own group"><input type="checkbox" data-step="${i}" data-f="perSeat"${step.perSeat ? " checked" : ""}> per seat</label>` : ""}
+              ${step.op === "deal" || step.op === "clear" || step.op === "refill" ? `<label class="check small" title="Each player moves from their own group to their own group"><input type="checkbox" data-step="${i}" data-f="perSeat"${step.perSeat ? " checked" : ""}> per seat</label>` : ""}
             </div>
             <div class="row tight"><button type="button" class="btn sm icon" data-step-up="${i}" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="btn sm icon ghost" data-step-del="${i}">✕</button></div>
           </div>`).join("")}</div>
@@ -2826,6 +2827,7 @@
       if (d.botFallback !== undefined) return dispatch({ type: "setBotFallback", macro: el.value });
       if (d.playsPerTurn !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", playsPerTurn: Number(el.value) });
       if (d.mustPlay !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", mustPlay: el.checked });
+      if (d.realtime !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", realtime: el.checked });
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
@@ -4158,6 +4160,53 @@
     }, low + Math.random() * (high - low));
   }
 
+  // ============================================================ REAL TIME
+  const realtime = { timers: new Map(), stuck: null };
+  const REALTIME_PACE = { slow: 1900, normal: 1100, fast: 420 };
+  function stopRealtime() {
+    realtime.timers.forEach((timer) => clearTimeout(timer));
+    realtime.timers.clear();
+    clearTimeout(realtime.stuck);
+    realtime.stuck = null;
+  }
+  /** Real-time designs: every bot plays on its own clock, and when nobody can move a bot runs the "can't play" action. */
+  function scheduleRealtime() {
+    if (!state?.realtime || net.mode === "client" || bots.paused || replay.active || (state.gameOver && !state.gameOver.dismissed)) { stopRealtime(); return; }
+    const pace = REALTIME_PACE[prefs.botSpeed || "normal"] || 1100;
+    for (const bot of state.players.filter((player) => player.bot && !player.out)) {
+      if (realtime.timers.has(bot.id)) continue;
+      realtime.timers.set(bot.id, setTimeout(() => {
+        realtime.timers.delete(bot.id);
+        if (!state?.realtime || bots.paused) return;
+        const play = E.pickPlay(state, bot.id, bot.botStyle || prefs.botStyle || "random");
+        if (play) {
+          const before = state;
+          try {
+            state = E.reduce(state, { type: "move", cards: play.cards || [play.card], to: play.to }, bot.id);
+            history.push(before);
+            future = [];
+            afterChange();
+            return;
+          } catch (error) { state = before; }
+        }
+        scheduleRealtime();
+      }, pace * (0.6 + Math.random() * 0.9)));
+    }
+    const fallback = state.botFallback && state.players.some((player) => player.bot);
+    if (!fallback || realtime.stuck) return;
+    const stuck = () => state.players.every((player) => player.out || !E.legalPlays(state, player.id).length);
+    if (!stuck()) return;
+    realtime.stuck = setTimeout(() => {
+      realtime.stuck = null;
+      if (!state?.realtime || bots.paused || !stuck()) return scheduleRealtime();
+      const bot = state.players.find((player) => player.bot && !player.out) || state.players.find((player) => player.bot);
+      history.push(state);
+      future = [];
+      state = E.reduce(state, { type: "runMacro", id: state.botFallback }, bot.id);
+      afterChange();
+    }, pace + 600);
+  }
+
   // ================================================================ BOTS
   const bots = { timer: null, paused: false, streak: 0, idleRev: -1 };
   const BOT_DELAY = { slow: 1100, normal: 480, fast: 60 };
@@ -4169,6 +4218,8 @@
     scheduleBotSlap();
     scheduleBotCall();
     scheduleBotTrade();
+    if (state?.realtime) { scheduleRealtime(); return; }
+    stopRealtime();
     if (net.mode === "client" || bots.paused || !state || drag || replay.active) return;
     const player = state.players[state.turn.index];
     if (!player?.bot || player.out || (state.gameOver && !state.gameOver.dismissed) || state.rev === bots.idleRev) return;

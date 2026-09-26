@@ -1016,3 +1016,36 @@ console.log("wizard mechanics tests passed");
   }
 }
 console.log("ratscrew challenge tests passed");
+
+// Real time (Speed): any player plays any time, ranks wrap, per-seat refill, win check.
+{
+  let state = Engine.createTable(Presets.get("speed"), {});
+  assert.equal(state.realtime, true);
+  const [ana, ben] = state.players.map((player) => player.id);
+  state = run(state, "Deal");
+  assert.equal(zone(state, "hand", ana).cards.length, 5);
+  assert.equal(zone(state, "stock", ben).cards.length, 15);
+  const left = zone(state, "left").id;
+  state = act(state, { type: "clearZone", zone: left, to: zone(state, "deck").id });
+  state = pull(state, "Kc", left, "up");
+  state = pull(state, "As", zone(state, "hand", ben).id, "down");
+  const spare = zone(state, "hand", ben).cards.find((id) => id !== cardIn(state, "As"));
+  state = act(state, { type: "move", cards: [spare], to: zone(state, "deck").id }, null);
+  state = act(state, { type: "setTurn", index: 0 });
+  // Ben plays out of turn, and A on K wraps.
+  state = act(state, { type: "move", cards: [cardIn(state, "As")], to: left }, ben);
+  assert.equal(state.zones[left].cards.slice(-1)[0], cardIn(state, "As"));
+  assert.equal(zone(state, "hand", ben).cards.length, 5, "per-seat refill topped Ben back up");
+  assert.equal(zone(state, "stock", ben).cards.length, 14);
+  state = pull(state, "7h", zone(state, "hand", ana).id, "down");
+  assert.throws(() => act(state, { type: "move", cards: [cardIn(state, "7h")], to: left }, ana), /one higher or lower/);
+  assert.ok(Engine.describeRule(state.zones[left].rule, state.zones[left]).includes("King and Ace wrap"));
+  // Toggle and round-trip the flag.
+  const off = act(state, { type: "setBotFallback", macro: state.botFallback, realtime: false });
+  assert.equal(off.realtime, false);
+  assert.equal(Engine.toPreset(state).realtime, true);
+  assert.ok(Engine.diffDesigns(Engine.toPreset(state), Engine.toPreset(off)).some((change) => /Real time/.test(change.text)));
+  const out = Engine.playOut(Engine.createTable(Presets.get("speed"), {}), { deal: "Deal", maxSteps: 6000 });
+  assert.ok(out.finished && /played every card/.test(out.state.gameOver.reason));
+}
+console.log("real-time tests passed");

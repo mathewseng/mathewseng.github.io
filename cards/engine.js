@@ -56,6 +56,7 @@
     owner: "Owner (dealer for table groups)",
     turn: "Current player",
     ownerTurn: "Owner, on their turn",
+    players: "Any player, any time (real time)",
     nobody: "Nobody (actions only)",
   };
   const RULE_ACCEPT = {
@@ -418,6 +419,7 @@
     state.botFallback = findMacro(state, preset.botFallback)?.id || "";
     state.playsPerTurn = preset.playsPerTurn === 0 ? 0 : 1;
     state.mustPlay = Boolean(preset.mustPlay);
+    state.realtime = Boolean(preset.realtime);
     state.meta = sanitizeMeta(preset.meta || {
       family: preset.family,
       tagline: preset.tagline,
@@ -798,6 +800,7 @@
       case "turn": return current === actor;
       case "ownerTurn": return owner === actor && current === actor;
       case "nobody": return false;
+      case "players": return state.players.some((player) => player.id === actor);
       default: return true;
     }
   }
@@ -853,7 +856,9 @@
       const a = rankValue(card, rule.aceHigh);
       const b = rankValue(top, rule.aceHigh);
       if (a != null && b != null) {
-        const ok = { up: a > b, down: a < b, atLeast: a >= b, atMost: a <= b, upOne: a === b + 1, downOne: a === b - 1, adjacent: Math.abs(a - b) === 1 }[order];
+        // Wrapping rank order: King and Ace count as neighbours.
+        const wrapped = Boolean(rule.wrap) && Math.abs(a - b) === 12;
+        const ok = { up: a > b, down: a < b, atLeast: a >= b, atMost: a <= b, upOne: a === b + 1 || (wrapped && a < b), downOne: a === b - 1 || (wrapped && a > b), adjacent: Math.abs(a - b) === 1 || wrapped }[order];
         if (ok === false) return `${name} can't go on ${cardName(top)}: ${RULE_ORDER[order].toLowerCase()}.`;
       }
     }
@@ -1299,7 +1304,7 @@
     if (rule.take) parts.push(`only ${whoPhrase(rule.take, zone).replace(/,$/, "")} may take from here`);
     if (rule.first) parts.push(`starts with ${rankWord(rule.first)}`);
     if (rule.accept) parts.push(RULE_ACCEPT[rule.accept].toLowerCase());
-    if (rule.order) parts.push(RULE_ORDER[rule.order].toLowerCase() + (rule.aceHigh ? " (aces high)" : ""));
+    if (rule.order) parts.push(RULE_ORDER[rule.order].toLowerCase() + (rule.aceHigh ? " (aces high)" : "") + (rule.wrap ? " (King and Ace wrap)" : ""));
     if (rule.wild?.length) parts.push(`${rule.wild.join(", ")} ${rule.wild.length === 1 ? "is" : "are"} wild`);
     if (rule.meld) parts.push(`must form ${RULE_MELD[rule.meld].toLowerCase()}`);
     if (rule.phase) parts.push(`only during ${rule.phase}`);
@@ -1560,7 +1565,7 @@
       case "shuffle": return `Shuffle ${step.zone || "deck"}`;
       case "cut": return `Cut ${step.zone || "deck"}`;
       case "sort": return `Sort ${step.zone} by ${step.by || "rank"}`;
-      case "refill": return `Refill every ${step.to || "hand"} to ${step.count || 1} from ${step.from || "deck"}`;
+      case "refill": return `Refill every ${step.to || "hand"} to ${step.count || 1} from ${step.perSeat ? `their own ${step.from || "stack"}` : step.from || "deck"}`;
       case "peekTop": return `${who(step.who)} peek${step.who === "all" || step.who === "others" ? "" : "s"} at the top ${step.count || 1} of ${step.zone || "deck"}`;
       case "passZones": return `Pass every ${step.zone || "hand"} ${step.dir === "right" ? "right" : "left"}`;
       case "findWinner": return `Winner of ${step.zone || "trick"}${step.evaluator ? " by " + step.evaluator : ""}${step.low ? " (lowest)" : ""}`;
@@ -1806,6 +1811,22 @@
         for (const id of zones(step.zone)) sortZone(state, id, step.by);
         break;
       case "refill": {
+        if (step.perSeat) {
+          // Each player tops up their own group from their own pile (e.g. Speed).
+          const want = clampInt(step.count, 1, 60, 1);
+          let dealt = 0;
+          for (const player of state.players) {
+            const from = resolveZones(state, `${step.from || "stack"}@p:${player.id}`, actor, ctx)[0];
+            const to = resolveZones(state, `${step.to || "hand"}@p:${player.id}`, actor, ctx)[0];
+            if (!from || !to || from === to) continue;
+            while (state.zones[to].cards.length < want && state.zones[from].cards.length) {
+              moveCards(state, [state.zones[from].cards[state.zones[from].cards.length - 1]], to, {});
+              dealt += 1;
+            }
+          }
+          if (dealt) pushLog(state, actor, `Each player refilled ${step.to || "hand"} to ${want}`);
+          break;
+        }
         const from = zones(step.from || "deck")[0];
         const want = clampInt(step.count, 1, 60, 1);
         const targets = zones(step.to || "hand").filter((id) => id !== from);
@@ -2215,7 +2236,7 @@
     if (first) rule.first = first;
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
     if (wild.length) rule.wild = wild;
-    for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb", "challenge"]) if (raw[flag]) rule[flag] = true;
+    for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb", "challenge", "wrap"]) if (raw[flag]) rule[flag] = true;
     if (RULE_CLAIM[raw.claim] && raw.claim !== "none") {
       rule.claim = raw.claim;
       rule.claimTo = cleanText(raw.claimTo, 40, "") || "hand";
@@ -2931,6 +2952,7 @@
       state.botFallback = findMacro(state, action.macro)?.id || "";
       if ("playsPerTurn" in action) state.playsPerTurn = Number(action.playsPerTurn) === 0 ? 0 : 1;
       if ("mustPlay" in action) state.mustPlay = Boolean(action.mustPlay);
+      if ("realtime" in action) state.realtime = Boolean(action.realtime);
     },
     setGuestMode(state, action) {
       if (action.mode === "play" || action.mode === "full") state.guestMode = action.mode;
@@ -3119,6 +3141,7 @@
     field("Bots", "If a bot can't play", before.botFallback || "", after.botFallback || "", (value) => value || "pass");
     field("Bots", "Plays per turn", before.playsPerTurn === 0 ? "until stuck" : "one", after.playsPerTurn === 0 ? "until stuck" : "one");
     field("Bots", "Must play when able", Boolean(before.mustPlay), Boolean(after.mustPlay), (value) => (value ? "yes" : "no"));
+    field("Flow", "Real time", Boolean(before.realtime), Boolean(after.realtime), (value) => (value ? "everyone plays at once" : "turn by turn"));
     field("Flow", "Phases", (before.phases || []).join(", "), (after.phases || []).join(", "), (value) => value || "none");
     const groups = (area, a, b) => {
       const key = (zone) => zone.key || String(zone.name || "").toLowerCase();
@@ -3190,6 +3213,7 @@
       botFallback: state.botFallback ? macroLabel(state, state.botFallback) : "",
       playsPerTurn: state.playsPerTurn === 0 ? 0 : 1,
       mustPlay: Boolean(state.mustPlay),
+      realtime: Boolean(state.realtime),
       meta: clone(state.meta),
       scoring: { target: state.scores.target, rounds: state.scores.maxRounds, lowWins: state.scores.lowWins, label: state.scores.label, chips: state.chipStart, peg: state.pegTarget },
       rules: state.notes,
