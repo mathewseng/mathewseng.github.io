@@ -1128,10 +1128,12 @@
     const style = prefs.botStyle || "random";
     return `<div class="row tight">
         <button class="btn sm" data-act="bot-turn" title="Make a legal play for whoever's turn it is">🤖 Auto-play this turn</button>
+        <button class="btn sm" data-act="hint" title="What would the smart bot play? (H)">💡 Hint</button>
         ${count ? `<button class="btn sm${bots.paused ? " primary" : ""}" data-act="bots-pause">${bots.paused ? "Resume bots" : "Pause bots"}</button>` : ""}
       </div>
       <div class="grid-2">
         <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <label class="field"><span>Each turn a bot plays</span><select data-plays-per-turn><option value="1"${v.playsPerTurn !== 0 ? " selected" : ""}>One card</option><option value="0"${v.playsPerTurn === 0 ? " selected" : ""}>Until it's stuck</option></select></label>
         <label class="field"><span>Bots play</span><select data-bot-style>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${style === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
       </div>
       <div class="field"><span>Speed</span><div class="seg">${["slow", "normal", "fast"].map((id) => `<button data-act="bot-speed" data-speed="${id}" class="${speed === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
@@ -1526,7 +1528,7 @@
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
-    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
+    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
     return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}" data-search="${esc(`${preset.name} ${preset.family} ${preset.tagline || ""} ${preset.description || ""}`.toLowerCase())}">
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
@@ -1948,7 +1950,7 @@
   }
 
   function openHelp() {
-    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
+    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
     openDialog(head("How it works") + `<div class="dlg-body">
       <p class="hint"><b>Cards</b>: tap to select (tap several), drag to move — dragging a selected card moves the whole selection. Double-click flips. Right-click (or long-press menu ⋯) for more.</p>
       <p class="hint"><b>Groups</b> are any hand, board, pile or row. Each has a layout, visibility (private hands, public boards, hidden decks) and optional <b>scoring badges</b> — poker, Omaha, lowball, badugi, blackjack, baccarat, cribbage hand &amp; pegging, gin deadwood, OFC royalties, hearts, trick winner, sums. Comparable groups are ranked and the best gets a 🏆.</p>
@@ -2479,6 +2481,7 @@
       case "print-cards": printSheet(false); break;
       case "print-all": printSheet(true); break;
       case "replay": startReplay(); break;
+      case "hint": showHint(); break;
       case "rec-start": startRecording(); break;
       case "rec-stop": stopRecording(); break;
       case "reset-pacing": Object.assign(pacing, { game: null }); trackPacing(net.mode === "client" ? view : state); renderPane(); break;
@@ -2657,6 +2660,7 @@
       if (d.playerName) return dispatch({ type: "updatePlayer", player: d.playerName, patch: { name: el.value } });
       if (d.playerTeam) return dispatch({ type: "updatePlayer", player: d.playerTeam, patch: { team: el.value } });
       if (d.botFallback !== undefined) return dispatch({ type: "setBotFallback", macro: el.value });
+      if (d.playsPerTurn !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", playsPerTurn: Number(el.value) });
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
@@ -2814,6 +2818,7 @@
         case "m": if (selection.size) moveMenu($("#selectionBar"), orderedSelection()); break;
         case "delete": case "backspace": if (selection.size) handleSelectionBar({ dataset: { sel: "discard" } }); break;
         case "a": { const hand = myHandZone(); if (hand) { view.zones[hand].cards.forEach((id) => selection.add(id)); render(); } break; }
+        case "h": showHint(); break;
         case "arrowright": moveKbdFocus(1); break;
         case "arrowleft": moveKbdFocus(-1); break;
         case " ": {
@@ -3619,6 +3624,7 @@
     add("Tools", "Simulate an action", () => openTab("tools"));
     add("Tools", "Record result", () => recordResult(state || v));
     add("Tools", "Replay recent moves", startReplay);
+    add("Tools", "Hint: suggest a play", showHint, "H");
     add("Tools", "Roll a die", () => dispatch({ type: "roll", sides: 6, count: 1 }));
     add("Tools", "Flip a coin", () => dispatch({ type: "coin" }));
     for (const tab of ["play", "scores", "seats", "deck", "tools", "log", "rules"]) add("Panels", `Open ${tab[0].toUpperCase() + tab.slice(1)}`, () => openTab(tab));
@@ -4391,6 +4397,24 @@
     if (!issues.length) return `<p class="check-ok">✓ No problems found: references, turn passing, deal sizes and the end of the game all check out.</p>`;
     const icon = { error: "⛔", warn: "⚠️", info: "ℹ️" };
     return `<div class="list">${issues.map((issue) => `<div class="issue issue-${issue.level}"><span>${icon[issue.level]}</span><span>${esc(issue.message)}</span></div>`).join("")}</div>`;
+  }
+
+  // ================================================================ HINT
+  /** Ask the smart bot what it would play for you, and point at it. */
+  function showHint() {
+    const source = net.mode === "client" ? view : state;
+    const me = net.mode === "client" ? mySeatId() : actingId();
+    if (!source || !me) return toast("Take a seat (or leave X-ray) to get a hint.");
+    if (source.players[source.turn.index]?.id !== me && Object.values(source.zones).some((zone) => zone.rule?.place === "turn")) return toast("It isn't your turn.");
+    let play = null;
+    try { play = E.pickPlay(source, me, "smart"); } catch (error) { play = null; }
+    if (!play) return toast("No legal play right now: draw or pass.", "warn");
+    selection.clear();
+    selection.add(play.card);
+    render();
+    const card = view.cards[play.card];
+    showPing({ zone: play.to, name: "Hint", color: "#f4c95d" });
+    toast(`💡 ${card?.visible ? (card.custom ? card.label : E.cardName(card)) : "That card"} → ${view.zones[play.to]?.name || "?"} (press P to play it)`);
   }
 
   // ============================================================== INIT

@@ -523,3 +523,30 @@ console.log("deal-until and smart bot tests passed");
   assert.match(Engine.lintDesign(noPass).map((issue) => issue.message).join("\n"), /nothing passes the turn/);
 }
 console.log("design check tests passed");
+
+// Plays per turn, Kings in the Corner and Golf.
+{
+  Engine.setRng(Engine.seededRng("kings"));
+  const out = Engine.playOut(Engine.createTable(Presets.get("kings-corner"), { players: 3 }), { deal: "Deal", maxSteps: 30000 });
+  assert.ok(out.finished, `kings in the corner finishes (${out.steps} steps)`);
+  let state = Engine.createTable(Presets.get("kings-corner"), { players: 2 });
+  state = run(state, "Deal");
+  const me = current(state);
+  state = act(state, { type: "nextTurn" });
+  state = act(state, { type: "nextTurn" });
+  assert.equal(zone(state, "hand", me).cards.length, 8, "the turn trigger drew a card when the turn came back");
+  state = act(state, { type: "setRules", mode: "enforce" });
+  const corner = zone(state, "corner-1").id;
+  state = pull(state, "Kh Qs", zone(state, "hand", me).id);
+  assert.throws(() => act(state, { type: "move", cards: [cardIn(state, "Qs")], to: corner }, me), /must start with King/);
+  state = act(state, { type: "move", cards: [cardIn(state, "Kh")], to: corner }, me);
+  state = act(state, { type: "move", cards: [cardIn(state, "Qs")], to: corner }, me);
+  assert.equal(current(state), me, "several plays per turn");
+  const golf = Engine.createTable(Presets.get("golf"), { players: 3 });
+  let g = run(golf, "Deal");
+  assert.ok(g.players.every((p) => zone(g, "grid", p.id).cards.filter((id) => g.cards[id].faceUp).length === 2));
+  g = run(g, "Score hole");
+  assert.equal(g.turn.round, 2);
+  assert.equal(Engine.lintDesign(golf).filter((issue) => issue.level === "error").length, 0);
+}
+console.log("kings corner and golf tests passed");

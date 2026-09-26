@@ -367,6 +367,7 @@
       rulesMode: "warn",
       guestMode: "play",
       botFallback: "",
+      playsPerTurn: 1,
       gameOver: null,
       lastWinner: null,
       log: [],
@@ -402,6 +403,7 @@
     linkMacroRefs(state);
     state.rulesMode = RULES_MODES[preset.rulesMode] ? preset.rulesMode : "warn";
     state.botFallback = findMacro(state, preset.botFallback)?.id || "";
+    state.playsPerTurn = preset.playsPerTurn === 0 ? 0 : 1;
     state.meta = sanitizeMeta(preset.meta || {
       family: preset.family,
       tagline: preset.tagline,
@@ -966,7 +968,8 @@
       const advances = Boolean(source.zones[play.to]?.rule?.advance) && source.rulesMode !== "off";
       const before = source.turn.index;
       let next = reduce(source, { type: "move", cards: [play.card], to: play.to }, playerId);
-      if (!advances && next.turn.index === before && next.players[before]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
+      // One play per turn unless the design lets players keep going until they're stuck.
+      if (!advances && source.playsPerTurn !== 0 && next.turn.index === before && next.players[before]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
       return next;
     };
     const played = tryPlay(state);
@@ -2326,6 +2329,7 @@
     },
     setBotFallback(state, action) {
       state.botFallback = findMacro(state, action.macro)?.id || "";
+      if ("playsPerTurn" in action) state.playsPerTurn = Number(action.playsPerTurn) === 0 ? 0 : 1;
     },
     setGuestMode(state, action) {
       if (action.mode === "play" || action.mode === "full") state.guestMode = action.mode;
@@ -2515,6 +2519,7 @@
       schemes: clone(state.schemes),
       rulesMode: state.rulesMode,
       botFallback: state.botFallback ? macroLabel(state, state.botFallback) : "",
+      playsPerTurn: state.playsPerTurn === 0 ? 0 : 1,
       meta: clone(state.meta),
       scoring: { target: state.scores.target, rounds: state.scores.maxRounds, lowWins: state.scores.lowWins, label: state.scores.label, chips: state.chipStart, peg: state.pegTarget },
       rules: state.notes,
