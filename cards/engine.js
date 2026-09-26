@@ -369,6 +369,7 @@
       guestMode: "play",
       botFallback: "",
       playsPerTurn: 1,
+      mustPlay: false,
       gameOver: null,
       lastWinner: null,
       log: [],
@@ -405,6 +406,7 @@
     state.rulesMode = RULES_MODES[preset.rulesMode] ? preset.rulesMode : "warn";
     state.botFallback = findMacro(state, preset.botFallback)?.id || "";
     state.playsPerTurn = preset.playsPerTurn === 0 ? 0 : 1;
+    state.mustPlay = Boolean(preset.mustPlay);
     state.meta = sanitizeMeta(preset.meta || {
       family: preset.family,
       tagline: preset.tagline,
@@ -2536,6 +2538,10 @@
     runMacro(state, action, actor) {
       const macro = action.steps ? { label: "Quick action", steps: action.steps } : findMacro(state, action.id);
       if (!macro) throw new Error("That action no longer exists.");
+      // "Must play if able": the can't-play action (e.g. Draw) is only for players with no legal play.
+      if (state.mustPlay && actor && macro.id && macro.id === state.botFallback && state.players[state.turn.index]?.id === actor && legalPlays(state, actor).length) {
+        applyCheck(state, { hard: [], soft: [`You have a legal play, so you can't ${macro.label.toLowerCase()} yet.`] }, actor);
+      }
       pushLog(state, actor, `▶ ${macro.label}`, "macro");
       runSteps(state, macro.steps, actor, {});
     },
@@ -2566,6 +2572,7 @@
     setBotFallback(state, action) {
       state.botFallback = findMacro(state, action.macro)?.id || "";
       if ("playsPerTurn" in action) state.playsPerTurn = Number(action.playsPerTurn) === 0 ? 0 : 1;
+      if ("mustPlay" in action) state.mustPlay = Boolean(action.mustPlay);
     },
     setGuestMode(state, action) {
       if (action.mode === "play" || action.mode === "full") state.guestMode = action.mode;
@@ -2756,6 +2763,7 @@
       rulesMode: state.rulesMode,
       botFallback: state.botFallback ? macroLabel(state, state.botFallback) : "",
       playsPerTurn: state.playsPerTurn === 0 ? 0 : 1,
+      mustPlay: Boolean(state.mustPlay),
       meta: clone(state.meta),
       scoring: { target: state.scores.target, rounds: state.scores.maxRounds, lowWins: state.scores.lowWins, label: state.scores.label, chips: state.chipStart, peg: state.pegTarget },
       rules: state.notes,

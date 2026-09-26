@@ -477,6 +477,7 @@
         { event: "empty", zone: "hand", macro: "Out!" },
       ],
       botFallback: "Draw",
+      mustPlay: true,
       scoring: { target: 200, label: "Points" },
       rules: "Crazy Eights\n\nOn your turn, play a card matching the top discard by suit or rank, or draw. 8s are wild: play one any time and name the next suit.\n\nWhen someone plays their last card they score the penalty points left in every other hand (8 = 50, faces 10, others pip value). First to 200 wins.\n\nAutomated: plays are checked against the discard, the turn passes after a play, the stock reshuffles itself, and going out scores the round.",
     },

@@ -686,3 +686,20 @@ console.log("deck-building tests passed");
   assert.ok(smartWins >= 7, `smart buyer won ${smartWins}/10`);
   console.log(`market builder: smart won ${smartWins}/10`);
 }
+
+// Must play if able.
+{
+  let state = Engine.createTable(Presets.get("crazy-eights"), { players: ["Ana", "Ben"] });
+  assert.equal(state.mustPlay, true);
+  state = act(state, { type: "setRules", mode: "enforce" });
+  state = run(state, "Deal");
+  state = act(state, { type: "setTurn", index: 0 });
+  const ana = state.players[0].id;
+  const keep = ["8c"].map((spec) => cardIn(state, spec));
+  state = act(state, { type: "move", cards: keep, to: zone(state, "hand", ana).id });
+  assert.throws(() => run(state, "Draw", ana), /legal play/);
+  state = act(state, { type: "setBotFallback", macro: state.botFallback, mustPlay: false });
+  state = run(state, "Draw", ana);
+  assert.equal(Engine.toPreset(Engine.createTable(Presets.get("crazy-eights"), {})).mustPlay, true);
+}
+console.log("must-play tests passed");

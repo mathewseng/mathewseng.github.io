@@ -25,7 +25,7 @@
     size: "m", felt: "green", back: "classic", four: false, motion: true, evals: true,
     tab: "play", side: window.innerWidth > 820, viewMode: "hands",
   }, load(STORE.prefs, {}));
-  function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); }
+  function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); if (view) renderDock(); }
   function applyPrefs() {
     document.body.dataset.size = prefs.size;
     document.body.dataset.felt = prefs.felt;
@@ -730,6 +730,7 @@
     fitRows();
     renderGameOver();
     renderSelectionBar();
+    renderDock();
     renderPane();
     playLayout(before);
     scheduleBots();
@@ -1138,6 +1139,7 @@
       </div>
       <div class="grid-2">
         <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <label class="check" style="grid-column:1/-1"><input type="checkbox" data-must-play${v.mustPlay ? " checked" : ""}> Players must play if they can before using the “can't play” action</label>
         <label class="field"><span>Each turn a bot plays</span><select data-plays-per-turn><option value="1"${v.playsPerTurn !== 0 ? " selected" : ""}>One card</option><option value="0"${v.playsPerTurn === 0 ? " selected" : ""}>Until it's stuck</option></select></label>
         <label class="field"><span>Bots play</span><select data-bot-style>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${style === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
       </div>
@@ -1429,7 +1431,11 @@
         + block("Pacing", pacingHTML(v))
         + block("Turn timer", timerBlock)
         + block("Equity calculator", equityBlock)
-        + block("Display", display);
+        + block("Display", display)
+        + block("Developer", `<p class="hint">The whole table is one JSON object. Copy it for bug reports or version control, or paste a table or game design to load it.</p>
+            <div class="row tight"><button class="btn sm" data-act="dev-copy">Copy table JSON</button><span class="small dim">${Object.keys(v.cards).length} cards · ${Object.keys(v.zones).length} groups · ${JSON.stringify(v).length.toLocaleString()} bytes</span></div>
+            <textarea id="devJson" data-fk="dev" placeholder="Paste table or design JSON here" style="min-height:80px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px"></textarea>
+            <div class="row"><button class="btn sm" data-act="dev-load">Load pasted JSON</button></div>`);
     },
 
     log() {
@@ -1464,6 +1470,8 @@
           <span class="grow"></span>
           <button class="btn sm" data-act="rules-template" title="Insert an outline for a rules document">Template</button>
           <button class="btn sm" data-act="rules-generate" title="Write the rules from this table's setup">Generate from table</button>
+          <button class="btn sm icon" data-act="rules-copy" title="Copy the rules document">⧉</button>
+          <button class="btn sm icon" data-act="rules-download" title="Download as Markdown">⤓</button>
         </div>
         ${preview ? `<div class="rules-preview">${renderMarkdown(v.notes)}</div>` : `<textarea class="rules-area" id="rulesText" data-fk="rules" placeholder="Write the rules of the game you're designing. Markdown works: # headings, - lists, **bold**.">${esc(v.notes)}</textarea>`}
         <p class="hint">Shared with everyone at the table and saved with the design. Saved when you click away.</p>`;
@@ -2432,6 +2440,20 @@
       case "rules-view": prefs.rulesView = el.dataset.view; savePrefs(); renderPane(); break;
       case "rules-template": dispatch({ type: "setNotes", notes: v.notes && v.notes.trim() ? v.notes + "\n\n" + rulesTemplate(v) : rulesTemplate(v) }); break;
       case "rules-generate": generateRules(); break;
+      case "rules-copy": navigator.clipboard?.writeText(v.notes || "").then(() => toast("Rules copied", "good"), () => toast("Couldn't copy", "error")); break;
+      case "rules-download": download(fileSafe(v.title) + "-rules.md", v.notes || E.describeGame(v), "text/markdown"); break;
+      case "dev-copy": navigator.clipboard?.writeText(JSON.stringify(net.mode === "client" ? v : state, null, 2)).then(() => toast("Table JSON copied", "good"), () => toast("Couldn't copy", "error")); break;
+      case "dev-load": {
+        const text = $("#devJson").value.trim();
+        if (!text) return toast("Paste a table or design JSON first.", "error");
+        try {
+          const data = JSON.parse(text);
+          if (data.zones && data.cards) { if (net.mode === "client") return toast("Only the host can load a table.", "error"); replaceState(E.migrate(data), "Table loaded from JSON"); }
+          else if (data.table || data.seat) startFromDesign({ ...data, id: data.id || "pasted" });
+          else throw new Error("That JSON isn't a table or a design");
+        } catch (error) { toast("Couldn't load: " + error.message, "error"); }
+        break;
+      }
       case "rules-mode": dispatch({ type: "setRules", mode: el.dataset.mode }); break;
       case "cycle-rules": dispatch({ type: "setRules", mode: { off: "warn", warn: "enforce", enforce: "off" }[v.rulesMode] || "warn" }); break;
       case "edit-zone-rules": {
@@ -2686,6 +2708,7 @@
       if (d.playerTeam) return dispatch({ type: "updatePlayer", player: d.playerTeam, patch: { team: el.value } });
       if (d.botFallback !== undefined) return dispatch({ type: "setBotFallback", macro: el.value });
       if (d.playsPerTurn !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", playsPerTurn: Number(el.value) });
+      if (d.mustPlay !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", mustPlay: el.checked });
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
@@ -2758,6 +2781,10 @@
     $("#selectionBar").addEventListener("click", (event) => {
       const el = event.target.closest("[data-sel]");
       if (el) handleSelectionBar(el);
+    });
+    $("#dock").addEventListener("click", (event) => {
+      const act = event.target.closest("[data-act]");
+      if (act) handleAct(act, event);
     });
     $("#turnStrip").addEventListener("click", (event) => {
       const act = event.target.closest("[data-act]");
@@ -4588,6 +4615,17 @@
     const below = rect.bottom + 14 + 170 < window.innerHeight;
     bubble.style.top = (below ? rect.bottom + 14 : Math.max(12, rect.top - 14 - bubble.offsetHeight)) + "px";
     bubble.style.left = Math.max(12, Math.min(window.innerWidth - width - 12, rect.left + rect.width / 2 - width / 2)) + "px";
+  }
+
+  // ================================================================ DOCK
+  /** On phones, keep the main actions one tap away while the panel is closed. */
+  function renderDock() {
+    const dock = $("#dock");
+    const show = window.innerWidth <= 820 && !prefs.side && !selection.size && !replay.active && view && view.macros.length > 0;
+    dock.hidden = !show;
+    if (!show) return;
+    dock.innerHTML = view.macros.slice(0, 3).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("")
+      + `<button class="btn sm" data-act="hint" title="Hint">💡</button><button class="btn sm primary" data-act="next-turn">Next ›</button>`;
   }
 
   // ============================================================== INIT
