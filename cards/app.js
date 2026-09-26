@@ -111,6 +111,7 @@
   // ------------------------------------------------------------ dispatch
   function dispatch(action) {
     if (!state) return;
+    bots.streak = 0;
     if (net.mode === "client") {
       try { net.room.sendAction(action); } catch (error) { toast(error.message, "error"); }
       return;
@@ -156,9 +157,9 @@
   }
 
   function afterChange() {
-    if (net.mode !== "client") {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => store(STORE.table, state), 250);
+    if (net.mode !== "client" && !saveTimer) {
+      // Throttled, not debounced, so a stream of bot moves still gets saved.
+      saveTimer = setTimeout(() => { saveTimer = null; store(STORE.table, state); }, 250);
     }
     if (net.mode === "host") publish();
     announceNewLog(state);
@@ -194,6 +195,8 @@
     if (state) history.push(state);
     future = [];
     state = next;
+    bots.paused = false;
+    bots.idleRev = -1;
     lastLogKey = logKey(next.log[next.log.length - 1]);
     selection.clear();
     passRevealed = null;
@@ -470,6 +473,8 @@
     if (v.scores.rounds.some((round) => player.id in round.scores) || v.scores.target) tags.push(`<span class="score-tag" title="${esc(v.scores.label)}">${E.fmt(total)} pts</span>`);
     if (v.chipStart || player.chips) tags.push(`<span class="chip-tag" title="Chips">● ${E.fmt(player.chips)}</span>`);
     for (const def of v.counterDefs) tags.push(`<span class="counter-tag" title="${esc(def.name)}">${esc(def.name)} ${E.fmt(player.counters[def.id] ?? 0)}</span>`);
+    if (player.team) tags.unshift(`<span class="team-tag" title="Team">${esc(player.team)}</span>`);
+    if (player.bot) tags.unshift(`<span class="bot-tag" title="Bot: plays random legal cards on its turn">🤖</span>`);
     const net = player.clientId ? ` <span class="dim small" title="Seat claimed by a connected player">📶</span>` : "";
     return `<article class="seat${current ? " current" : ""}${me ? " me" : ""}${player.out ? " out" : ""}" style="--c:${esc(player.color)}" data-seat="${player.id}">
       <header class="seat-head">
@@ -622,6 +627,7 @@
     renderSelectionBar();
     renderPane();
     playLayout(before);
+    scheduleBots();
     const pass = $("#passScreen");
     if (net.mode === "local" && prefs.viewMode === "pass" && state.players.length) {
       const current = state.players[state.turn.index];
@@ -759,6 +765,8 @@
       { label: "Make them dealer", run: () => dispatch({ type: "setTurn", dealer: index }) },
       { label: "Rename…", run: () => { const name = prompt("Player name", player.name); if (name) dispatch({ type: "updatePlayer", player: playerId, patch: { name } }); } },
       { label: player.out ? "Bring back in" : "Sit out / eliminate", run: () => dispatch({ type: "updatePlayer", player: playerId, patch: { out: !player.out } }) },
+      { label: player.bot ? "Make human" : "🤖 Make a bot", run: () => dispatch({ type: "updatePlayer", player: playerId, patch: { bot: !player.bot } }) },
+      { label: "Set team…", run: () => { const team = prompt("Team name (blank for none)", player.team || ""); if (team !== null) dispatch({ type: "updatePlayer", player: playerId, patch: { team } }); } },
       { label: "Reveal their cards", run: () => E.orderedZones(v, playerId).forEach((zone) => dispatch({ type: "flipZone", zone: zone.id, face: "up" })) },
       { label: "Add group to this seat…", run: () => openZoneDialog(null, { area: playerId }) },
       "-",
@@ -995,6 +1003,22 @@
     }).join("");
   }
 
+  function botsHTML(v) {
+    const count = v.players.filter((player) => player.bot).length;
+    const speed = prefs.botSpeed || "normal";
+    const style = prefs.botStyle || "random";
+    return `<div class="row tight">
+        <button class="btn sm" data-act="bot-turn" title="Make a legal play for whoever's turn it is">🤖 Auto-play this turn</button>
+        ${count ? `<button class="btn sm${bots.paused ? " primary" : ""}" data-act="bots-pause">${bots.paused ? "Resume bots" : "Pause bots"}</button>` : ""}
+      </div>
+      <div class="grid-2">
+        <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <label class="field"><span>Bots play</span><select data-bot-style><option value="random"${style === "random" ? " selected" : ""}>A random legal card</option><option value="low"${style === "low" ? " selected" : ""}>Their lowest legal card</option><option value="high"${style === "high" ? " selected" : ""}>Their highest legal card</option></select></label>
+      </div>
+      <div class="field"><span>Speed</span><div class="seg">${["slow", "normal", "fast"].map((id) => `<button data-act="bot-speed" data-speed="${id}" class="${speed === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
+      <p class="hint">${count ? `${count} bot${count === 1 ? "" : "s"} at the table.` : "Make any seat a bot from the Players tab or its name menu."} Bots play legal cards from their hand to groups with play rules, so give your play areas rules (Rules tab) and fill a table with bots to playtest whole games.</p>`;
+  }
+
   const PANES = {
     play() {
       const v = view;
@@ -1030,6 +1054,7 @@
       return block("Turn", turn)
         + block("Actions", `<div class="macro-grid">${macros}</div>${v.macros.length ? "" : `<p class="hint">Actions are one-tap macros: shuffle, deal, flip, collect, pass turn… Build your game's flow here.</p>`}`, `<button class="btn sm" data-act="new-macro">+ New action</button>`)
         + block("Deal", quick)
+        + block("Bots", botsHTML(v))
         + block("Standings", standingsHTML());
     },
 
@@ -1104,7 +1129,12 @@
         <div class="row tight"><input id="counterName" type="text" placeholder="Counter name (Bid, Tricks, Lives…)" class="grow" style="width:auto;flex:1"><select id="counterScope" style="width:auto"><option value="player">Per player</option><option value="table">Table</option></select><button class="btn sm" data-act="add-counter">Add</button></div>`;
       const custom = `<div class="list">${v.schemes.map((scheme) => `<div class="list-row"><span class="grow small"><b>${esc(scheme.name)}</b><br><span class="muted">${esc(E.describeScheme(scheme))}</span></span><button class="btn sm" data-act="edit-scheme" data-id="${scheme.id}">Edit</button></div>`).join("") || `<p class="hint">Define card values, suit bonuses, specific cards (Q♠ = 13), and set, run and flush bonuses. Attach them to groups as badges, and add them up with the “Score groups” action step.</p>`}</div>
         <div class="row"><button class="btn sm" data-act="new-scheme">+ New scoring rule</button></div>`;
+      const teamNames = Array.from(new Set(v.players.map((player) => player.team).filter(Boolean)));
+      const teamTotals = teamNames.map((team) => [team, v.players.filter((player) => player.team === team).reduce((sum, player) => sum + (totals[player.id] || 0), 0), v.players.filter((player) => player.team === team)]);
+      const bestTeam = teamTotals.length ? (v.scores.lowWins ? Math.min : Math.max)(...teamTotals.map(([, total]) => total)) : null;
+      const teams = teamTotals.map(([team, total, members]) => `<div class="list-row"><span class="grow small"><b>${esc(team)}</b> <span class="muted">${members.map((member) => esc(member.name)).join(" & ")}</span></span><strong class="mono" style="${total === bestTeam ? "color:var(--gold)" : ""}">${E.fmt(total)}</strong></div>`).join("");
       return block("Quick score", quick + race)
+        + (teams ? block("Teams", `<div class="list">${teams}</div><p class="hint">Team totals add up each member's score. Set teams in the Players tab.</p>`) : "")
         + block("Score sheet", sheet)
         + block("End of game", settings)
         + block("Custom scoring", custom)
@@ -1118,11 +1148,12 @@
       const v = view;
       const rows = v.players.map((player, i) => `<div class="list-row" style="--c:${esc(player.color)}">
           <input type="color" value="${esc(player.color)}" data-player-color="${player.id}" title="Color">
-          <div class="grow"><input type="text" value="${esc(player.name)}" data-player-name="${player.id}" data-fk="pn-${player.id}"></div>
+          <div class="grow player-fields"><input type="text" value="${esc(player.name)}" data-player-name="${player.id}" data-fk="pn-${player.id}"><input type="text" value="${esc(player.team || "")}" data-player-team="${player.id}" data-fk="pt-${player.id}" placeholder="team" title="Team" maxlength="16"></div>
           <button class="btn sm icon${i === v.turn.dealer ? " primary" : ""}" data-act="set-dealer" data-index="${i}" title="Dealer">D</button>
           <button class="btn sm icon${i === v.turn.index ? " primary" : ""}" data-act="set-turn" data-index="${i}" title="Current turn">▶</button>
           <button class="btn sm icon" data-act="player-up" data-player="${player.id}" title="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
           <button class="btn sm icon${player.out ? " danger" : ""}" data-act="player-out" data-player="${player.id}" title="${player.out ? "Sitting out" : "Sit out"}">⏸</button>
+          <button class="btn sm icon${player.bot ? " primary" : ""}" data-act="toggle-bot" data-player="${player.id}" title="${player.bot ? "Bot (click for human)" : "Make a bot"}">🤖</button>
           <button class="btn sm icon ghost" data-act="remove-player" data-player="${player.id}" title="Remove">✕</button>
         </div>`).join("");
       const tpl = v.seatTemplate.map((entry) => `<div class="list-row">
@@ -1199,8 +1230,11 @@
           <select id="pullFace" style="width:auto"><option value="">Group default</option><option value="up">Face up</option><option value="down">Face down</option></select>
           <button class="btn sm primary" data-act="pull-cards">Put them there</button></div>
         <p class="hint">Pulls those exact cards from the deck (or wherever they are), so you can test a specific situation.</p>`;
+      const printBlock = `<div class="row tight"><button class="btn sm" data-act="print-cards">${spec.custom.length ? "Print custom cards & rules" : "Print deck & rules"}</button>${spec.custom.length ? `<button class="btn sm" data-act="print-all">Include standard cards</button>` : ""}</div>
+        <p class="hint">Opens a printable sheet at poker size (63 × 88 mm), with the rules document on its own page, for paper playtests.</p>`;
       return block("Deck builder", builder)
         + block("Set up a scenario", scenario)
+        + block("Print & play", printBlock)
         + block("Unseen cards", `<div class="small muted">From your point of view: ${N} unseen · ${Object.keys(v.cards).length} in play</div>${grid}`)
         + block("Next card odds", `<div class="list">${bars}</div>`)
         + block("Outs calculator", calc)
@@ -1255,7 +1289,13 @@
         const t = new Date(entry.t);
         return `<div class="log-item k-${esc(entry.kind)}"><time>${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}</time><div>${entry.who ? `<b>${esc(entry.who)}</b> ` : ""}<span>${esc(entry.text)}</span></div></div>`;
       }).join("");
+      const rewind = net.mode !== "client" && history.length ? history.slice(-12).map((snap, i, list) => {
+        const steps = list.length - i;
+        const last = snap.log[snap.log.length - 1];
+        return `<div class="list-row"><span class="grow small">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : "Start"}</span><button class="btn sm" data-act="rewind" data-steps="${steps}" title="Undo ${steps} step${steps === 1 ? "" : "s"}">↶ ${steps}</button></div>`;
+      }).reverse().join("") : "";
       return block("Table chat", `<div class="row tight"><input id="chatInput" type="text" placeholder="Say something or note a ruling…" class="grow" style="flex:1;width:auto" data-fk="chat"><button class="btn sm primary" data-act="chat">Send</button></div>`)
+        + (rewind ? block("Rewind", `<details><summary class="small muted" style="cursor:pointer">Go back to an earlier moment (${history.length} step${history.length === 1 ? "" : "s"} saved)</summary><div class="list" style="margin-top:8px">${rewind}</div></details>`) : "")
         + block("Playtest feedback", `<div class="row tight"><input id="feedbackInput" type="text" placeholder="What felt slow, confusing or fun?" class="grow" style="flex:1;width:auto" data-fk="feedback"><button class="btn sm" data-act="feedback">Add</button></div><p class="hint">Feedback notes go in the log for everyone, and export with it.</p>`)
         + `<div class="row tight"><div class="phase-chips">${filters.map(([id, label]) => `<button data-act="log-filter" data-filter="${id}" class="${logFilter === id ? "on" : ""}">${label}</button>`).join("")}</div><span class="grow"></span><button class="btn sm" data-act="export-log">Export</button></div>
           <div class="log">${items || `<p class="hint">Nothing here yet.</p>`}</div>`;
@@ -1439,7 +1479,7 @@
     const groups = Array.from(new Set(pickable.map((def) => def.group)));
     const schemes = v.schemes || [];
     const rule = z.rule || {};
-    const optionList = (map, value) => Object.entries(map).map(([id, label]) => `<option value="${id}"${(value || "") === id || (!value && (id === "any" || id === "anyone")) ? " selected" : ""}>${esc(label)}</option>`).join("");
+    const optionList = (map, value) => Object.entries(map).map(([id, label]) => `<option value="${id}"${(value || "") === id || (!value && (id === "any" || id === "anyone" || id === "none")) ? " selected" : ""}>${esc(label)}</option>`).join("");
     const tableZones = E.orderedZones(v, "table");
     const sel = (name, list, value) => `<select name="${name}">${list.map(([id, label]) => `<option value="${id}"${value === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>`;
     const areaSelect = creating ? `<label class="field"><span>Where</span><select name="area">
@@ -1485,6 +1525,7 @@
             <label class="field"><span>Rank order</span><select name="rOrder">${optionList(E.RULE_ORDER, rule.order)}</select></label>
             <label class="field"><span>Empty group starts with</span><input type="text" name="rFirst" value="${esc(rule.first || "")}" maxlength="8" placeholder="any card (e.g. A, K)"></label>
             <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
+            <label class="field"><span>The group must form</span><select name="rMeld">${optionList(E.RULE_MELD, rule.meld)}</select></label>
           </div>
           <div class="row">
             <label class="check"><input type="checkbox" name="rFollow"${rule.follow ? " checked" : ""}> Must follow the led suit</label>
@@ -1523,7 +1564,7 @@
         if (form.topOnly.checked) ctx.topOnly = true;
         const rule = {
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
-          first: form.rFirst.value.trim(), wild: form.rWild.value,
+          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value,
           follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked,
         };
         const patch = {
@@ -1735,6 +1776,7 @@
       <p class="hint"><b>Play rules</b> live on groups: whose turn it is, follow suit, match suit or rank, build up or down, wild ranks, one card each, pass the turn after playing. The Rules tab switches checks off, to warnings (great for playtests) or enforced.</p>
       <p class="hint"><b>Triggers</b> fire actions by themselves: when a trick is full, when the deck runs out, when a hand empties, when a phase starts, when the game ends. <b>Custom scoring</b> (Scores tab) defines card values and bonuses you can attach to any group.</p>
       <p class="hint"><b>Design tools</b>: save games to My games with version history, share them as links, generate a rules document from the table, simulate deals thousands of times, replay deals with seeded shuffles, and track playtest results by seat.</p>
+      <p class="hint"><b>Bots</b> (Players tab, 🤖) make random legal plays under your rules, so a table full of bots playtests whole hands; set what they do when stuck in Play → Bots. Seats can have <b>teams</b>, groups can require <b>sets or runs</b>, Log → Rewind jumps back in time, and Deck → Print & play makes a paper prototype.</p>
       <p class="hint"><b>View</b>: “All hands” for one shared screen, “Pass &amp; play” hides hands between turns, “X-ray” shows everything for design work, or pick a seat. Online rooms keep hands private per player.</p>
       <div class="kbd-list">${keys.map(([k, d]) => `<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join("")}</div>
     </div><div class="dlg-foot"><button class="btn primary" value="cancel">Got it</button></div>`);
@@ -2236,6 +2278,18 @@
       case "export-log": download(fileSafe(v.title) + "-log.txt", v.log.map((entry) => `${new Date(entry.t).toLocaleString()}\t${entry.kind}\t${entry.who || ""}\t${entry.text}`).join("\n"), "text/plain"); break;
       case "log-filter": logFilter = el.dataset.filter; renderPane(); break;
       case "play-again": restartSameSetup(); break;
+      case "bot-turn": {
+        const current = state?.players[state.turn.index];
+        if (net.mode === "client") return toast("Only the host runs bots.", "error");
+        if (current) botTurn(current.id, true);
+        break;
+      }
+      case "bots-pause": bots.paused = !bots.paused; bots.idleRev = -1; renderPane(); scheduleBots(); break;
+      case "bot-speed": prefs.botSpeed = el.dataset.speed; savePrefs(); renderPane(); break;
+      case "toggle-bot": { const p = E.playerById(v, el.dataset.player); if (p) dispatch({ type: "updatePlayer", player: p.id, patch: { bot: !p.bot } }); break; }
+      case "print-cards": printSheet(false); break;
+      case "print-all": printSheet(true); break;
+      case "rewind": { const steps = Number(el.dataset.steps) || 1; for (let i = 0; i < steps; i += 1) undo(); break; }
       case "dismiss-over": dispatch({ type: "dismissGameOver" }); break;
       case "open-tab": openTab(el.dataset.tab); break;
       case "export-preset": { const preset = E.toPreset(state || v); download(fileSafe(preset.name) + ".game.json", JSON.stringify(preset, null, 2)); break; }
@@ -2405,6 +2459,9 @@
       if (d.cfg === "peg") return dispatch({ type: "scoreConfig", pegTarget: el.checked ? (view.scores.target || 121) : 0 });
       if (d.chips) return dispatch({ type: "setChips", player: d.chips, value: Number(el.value) });
       if (d.playerName) return dispatch({ type: "updatePlayer", player: d.playerName, patch: { name: el.value } });
+      if (d.playerTeam) return dispatch({ type: "updatePlayer", player: d.playerTeam, patch: { team: el.value } });
+      if (d.botFallback !== undefined) return dispatch({ type: "setBotFallback", macro: el.value });
+      if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
       if (d.deck) { deckDraft[d.deck] = d.deck === "preset" ? el.value : Number(el.value); if (d.deck === "preset") deckDraft.ranks = null; renderPane(); return; }
       if (d.deckSuit) { const s = d.deckSuit; deckDraft.suits = el.checked ? Array.from(new Set(deckDraft.suits.concat(s))) : deckDraft.suits.filter((x) => x !== s); if (!deckDraft.suits.length) deckDraft.suits = [s]; renderPane(); return; }
@@ -3478,6 +3535,113 @@
     if ($("#simTarget")) sim.cfg.target = $("#simTarget").value;
     if ($("#simEval")) sim.cfg.evaluator = $("#simEval").value;
     if ($("#simTrials")) sim.cfg.trials = Number($("#simTrials").value) || 1000;
+  }
+
+  // ================================================================ BOTS
+  const bots = { timer: null, paused: false, streak: 0, idleRev: -1 };
+  const BOT_DELAY = { slow: 1100, normal: 480, fast: 60 };
+
+  function pickPlay(source, playerId) {
+    const plays = E.legalPlays(source, playerId);
+    if (!plays.length) return null;
+    const onTable = plays.filter((play) => source.zones[play.to]?.area === "table");
+    const pool = onTable.length ? onTable : plays;
+    const style = prefs.botStyle || "random";
+    if (style === "random") return pool[Math.floor(Math.random() * pool.length)];
+    const value = (play) => E.RANK_ORDER[source.cards[play.card]?.rank] ?? Number(source.cards[play.card]?.rank) ?? 0;
+    return pool.slice().sort((a, b) => (style === "low" ? value(a) - value(b) : value(b) - value(a)))[0];
+  }
+
+  /** Let a bot take its turn when it's up (local and host only). */
+  function scheduleBots() {
+    clearTimeout(bots.timer);
+    bots.timer = null;
+    if (net.mode === "client" || bots.paused || !state || drag) return;
+    const player = state.players[state.turn.index];
+    if (!player?.bot || player.out || (state.gameOver && !state.gameOver.dismissed) || state.rev === bots.idleRev) return;
+    bots.timer = setTimeout(() => botTurn(player.id), BOT_DELAY[prefs.botSpeed || "normal"] ?? 480);
+  }
+
+  function holdsCards(source, playerId) {
+    return E.orderedZones(source, playerId).some((zone) => (zone.visibility !== "public" || zone.kind === "hand") && zone.cards.length);
+  }
+
+  /** One move: a legal play, else the "can't play" action and a retry, else pass the turn. */
+  function botTurn(playerId, manual = false) {
+    bots.timer = null;
+    if (!state || state.players[state.turn.index]?.id !== playerId) return;
+    if (!manual) {
+      bots.streak += 1;
+      if (bots.streak > 800) {
+        bots.paused = true;
+        bots.streak = 0;
+        toast("Bots paused after 800 moves in a row.", "warn");
+        renderPane();
+        return;
+      }
+    }
+    const playFrom = (play) => {
+      const advances = Boolean(state.zones[play.to]?.rule?.advance) && state.rulesMode !== "off";
+      const before = state.turn.index;
+      const error = applyLocal({ type: "move", cards: [play.card], to: play.to }, playerId, { quiet: true });
+      if (!error && !advances && state.turn.index === before && state.players[before]?.id === playerId) applyLocal({ type: "nextTurn" }, playerId, { quiet: true });
+      return !error;
+    };
+    const play = pickPlay(state, playerId);
+    if (play && playFrom(play)) return;
+    const fallback = state.botFallback ? E.findMacro(state, state.botFallback) : null;
+    if (!fallback && !holdsCards(state, playerId)) {
+      bots.idleRev = state.rev;
+      if (manual) toast("Nothing to play: no cards, and no “can't play” action is set.", "warn");
+      return;
+    }
+    const before = state.turn.index;
+    if (fallback) {
+      applyLocal({ type: "runMacro", id: fallback.id }, playerId, { quiet: true });
+      if (state.turn.index !== before) return;
+      const retry = pickPlay(state, playerId);
+      if (retry && playFrom(retry)) return;
+    }
+    if (state.players[state.turn.index]?.id === playerId) applyLocal({ type: "nextTurn" }, playerId, { quiet: true });
+  }
+
+  // ======================================================== PRINT & PLAY
+  function printSheet(includeStandard) {
+    const v = view;
+    const spec = E.normalizeDeckSpec(v.deckSpec);
+    const cards = [];
+    for (const item of spec.custom) {
+      for (let i = 0; i < item.count; i += 1) cards.push({ id: "p" + cards.length, custom: true, visible: true, faceUp: true, label: item.label, text: item.text, color: item.color, value: item.value, icon: item.icon, suit: item.suit || "x", rank: item.rank || item.label });
+    }
+    if (includeStandard || !cards.length) {
+      const copies = (E.DECK_PRESETS[spec.preset]?.copies || 1) * spec.decks;
+      for (let c = 0; c < copies; c += 1) for (const suit of spec.suits) for (const rank of deckRanksFor(spec)) cards.push({ id: "p" + cards.length, visible: true, faceUp: true, rank, suit });
+      for (let j = 0; j < spec.jokers; j += 1) cards.push({ id: "p" + cards.length, visible: true, faceUp: true, rank: "JK", suit: "x", jokerColor: j % 2 ? "red" : "black" });
+    }
+    const zone = { id: "print", visibility: "public" };
+    const faces = cards.map((card, i) => cardHTML(card, zone, i)).join("");
+    const win = window.open("", "_blank");
+    if (!win) return toast("Allow pop-ups to open the print sheet.", "error");
+    const css = new URL("./styles.css", location.href).href;
+    win.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(v.title)}: print & play</title><link rel="stylesheet" href="${esc(css)}">
+      <style>
+        html, body { height: auto; overflow: visible; background: #fff; color: #111; }
+        body { padding: 10mm; font-family: system-ui, sans-serif; --cw: 63mm; --ch: 88mm; }
+        h1 { font-size: 20pt; margin: 0 0 2mm; } .meta { color: #555; margin: 0 0 6mm; }
+        .sheet { display: grid; grid-template-columns: repeat(auto-fill, 63mm); gap: 3mm; }
+        .card { box-shadow: none; outline: 0; border: 0.3mm solid #999; break-inside: avoid; cursor: default; }
+        .card.red { color: #c81e35; }
+        .print-rules { break-before: page; max-width: 170mm; font-size: 11pt; line-height: 1.5; }
+        .print-rules h3 { text-transform: uppercase; letter-spacing: 0.05em; font-size: 10pt; margin-top: 6mm; }
+        @page { margin: 8mm; }
+        @media print { body { padding: 0; } .no-print { display: none; } }
+      </style></head><body>
+      <div class="no-print" style="margin-bottom:6mm"><button onclick="print()">Print</button></div>
+      <h1>${esc(v.title)}</h1><p class="meta">${cards.length} cards · poker size (63 × 88 mm)</p>
+      <div class="sheet">${faces}</div>
+      ${v.notes && v.notes.trim() ? `<section class="print-rules">${renderMarkdown(v.notes)}</section>` : ""}
+      </body></html>`);
+    win.document.close();
   }
 
   // ============================================================== INIT

@@ -336,8 +336,11 @@
       description: "Stock and discard, with the best meld arrangement and deadwood computed live.",
       players: { min: 2, max: 2, default: 2 },
       deck: { preset: "standard" },
-      table: [deck({ name: "Stock" }), discard()],
-      seat: [hand({ evals: ["gin-deadwood"] }), { key: "melds", name: "Melds", kind: "pile", layout: "spread", visibility: "public", face: "up", evals: ["set-summary"] }],
+      table: [deck({ name: "Stock" }), discard({ rule: { place: "turn", advance: true } })],
+      seat: [
+        hand({ evals: ["gin-deadwood"] }),
+        ...[1, 2, 3].map((n) => ({ key: "meld-" + n, name: "Meld " + n, kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { place: "owner", meld: "setOrRun" } })),
+      ],
       phases: ["Draw", "Discard", "Knock"],
       macros: [
         { label: "Deal", steps: [collect(), { op: "nextDealer" }, deal("hand", 10), deal("discard", 1, "up"), { op: "setTurn", who: "next" }] },
@@ -346,7 +349,7 @@
         { label: "Lay down", hint: "Reveal hands for the knock", steps: [flip("hand"), phase("Knock")] },
       ],
       scoring: { target: 100, label: "Points" },
-      rules: "Gin Rummy\n\n• 10 cards each; draw from stock or discard, then discard one.\n• Knock with 10 or less deadwood; gin (0 deadwood) scores 25 bonus, big gin 31.\n• Undercut: defender's deadwood ≤ knocker's → defender scores difference + 25.\n• Game to 100.",
+      rules: "Gin Rummy\n\n• Meld groups only accept a set (one rank) or a run (one suit, in sequence); discarding passes the turn.\n• 10 cards each; draw from stock or discard, then discard one.\n• Knock with 10 or less deadwood; gin (0 deadwood) scores 25 bonus, big gin 31.\n• Undercut: defender's deadwood ≤ knocker's → defender scores difference + 25.\n• Game to 100.",
     },
     {
       id: "hearts",
@@ -382,6 +385,7 @@
       table: [deck(), trick({ ctx: { trump: "s" } })],
       seat: [hand(), { key: "tricks", name: "Tricks", kind: "pile", layout: "stack", visibility: "public", face: "down" }],
       counters: [{ name: "Bid" }, { name: "Tricks" }, { name: "Bags" }],
+      teams: ["North–South", "East–West"],
       macros: [
         { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }, { op: "setTurn", who: "next" }] },
         takeTrick("down", [{ op: "counter", who: "winner", name: "Tricks", amount: 1 }]),
@@ -401,6 +405,7 @@
       table: [deck(), { key: "kitty", name: "Kitty", kind: "pile", layout: "stack", visibility: "hidden", face: "down" }, trick()],
       seat: [hand(), { key: "tricks", name: "Tricks", kind: "pile", layout: "stack", visibility: "public", face: "down" }],
       counters: [{ name: "Tricks" }],
+      teams: ["North–South", "East–West"],
       macros: [
         { label: "Deal", steps: [collect(), { op: "nextDealer" }, deal("hand", 5), { op: "clear", from: "deck", to: "kitty", face: "down" }, flip("kitty", "up", 1), { op: "setTurn", who: "next" }] },
         takeTrick("down", [{ op: "counter", who: "winner", name: "Tricks", amount: 1 }]),
@@ -431,6 +436,7 @@
         { event: "empty", zone: "stock", macro: "Reshuffle stock" },
         { event: "empty", zone: "hand", macro: "Out!" },
       ],
+      botFallback: "Draw",
       scoring: { target: 200, label: "Points" },
       rules: "Crazy Eights\n\nOn your turn, play a card matching the top discard by suit or rank, or draw. 8s are wild: play one any time and name the next suit.\n\nWhen someone plays their last card they score the penalty points left in every other hand (8 = 50, faces 10, others pip value). First to 200 wins.\n\nAutomated: plays are checked against the discard, the turn passes after a play, the stock reshuffles itself, and going out scores the round.",
     },
@@ -504,6 +510,7 @@
         { event: "empty", zone: "draw pile", macro: "Reshuffle" },
         { event: "empty", zone: "hand", macro: "Out!" },
       ],
+      botFallback: "Draw 1",
       scoring: { target: 500, label: "Points" },
       rules: "Color Clash\n\n• Deal 7 each and turn one card up.\n• On your turn play a card matching the discard's color or number/symbol, or draw one.\n• Skip, Reverse and Draw Two are colored action cards; Wilds let you name the next color.\n• First to empty their hand scores every card left in the other hands: numbers at face value, actions 20, wilds 50. First to 500 wins.\n\nEverything here is custom cards: open the Deck tab to see how the deck is defined, or import your own from a spreadsheet.",
     },

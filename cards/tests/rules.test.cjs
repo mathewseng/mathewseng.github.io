@@ -304,3 +304,78 @@ const totalCards = (state) => Object.values(state.zones).reduce((sum, entry) => 
 }
 
 console.log("rules tests passed");
+
+// Bots: legal plays follow the rules; a whole Hearts hand can be auto-played.
+{
+  let state = Engine.createTable(Presets.get("hearts"), { players: 4 });
+  state = run(state, "Deal all");
+  const leader = current(state);
+  const opening = Engine.legalPlays(state, leader);
+  assert.equal(opening.length, 13, "any card can lead");
+  assert.ok(opening.every((play) => play.to === zone(state, "trick").id));
+  assert.equal(Engine.legalPlays(state, state.players.find((p) => p.id !== leader).id).length, 0, "not your turn, nothing is legal");
+  let guard = 0;
+  while (zone(state, "hand", current(state)).cards.length && guard < 60) {
+    const plays = Engine.legalPlays(state, current(state));
+    assert.ok(plays.length > 0);
+    const led = zone(state, "trick").cards[0];
+    if (led) {
+      const suit = state.cards[led].suit;
+      const hand = zone(state, "hand", current(state)).cards;
+      if (hand.some((id) => state.cards[id].suit === suit)) assert.ok(plays.every((play) => state.cards[play.card].suit === suit), "bots must follow suit");
+    }
+    const play = plays[Math.floor(Math.random() * plays.length)];
+    state = act(state, { type: "move", cards: [play.card], to: play.to }, current(state));
+    guard += 1;
+  }
+  assert.equal(guard, 52);
+  assert.equal(Object.values(Engine.totals(state)).reduce((a, b) => a + b, 0), 26);
+}
+
+// Melds: sets and runs, with wild jokers filling gaps.
+{
+  const cards = (text) => text.split(" ").map((spec) => (spec === "JK" ? { rank: "JK", suit: "x" } : Engine.parseCardSpec(spec)));
+  assert.equal(Engine.meldOk(cards("7h 7s 7d"), { meld: "set" }), true);
+  assert.equal(Engine.meldOk(cards("7h 7s 8d"), { meld: "set" }), false);
+  assert.equal(Engine.meldOk(cards("5h 6h 7h"), { meld: "run" }), true);
+  assert.equal(Engine.meldOk(cards("5h 7h"), { meld: "run" }), false);
+  assert.equal(Engine.meldOk([...cards("5h 7h"), { rank: "JK", suit: "x" }], { meld: "run" }), true);
+  assert.equal(Engine.meldOk(cards("Qh Kh Ah"), { meld: "run" }), true, "aces high");
+  assert.equal(Engine.meldOk(cards("Ah 2h 3h"), { meld: "run" }), true, "aces low");
+  assert.equal(Engine.meldOk(cards("5h 6s 7h"), { meld: "setOrRun" }), false);
+  let state = Engine.createTable(Presets.get("sandbox"), { players: 1 });
+  const me = state.players[0].id;
+  state = act(state, { type: "addZone", area: "table", zone: { name: "Meld", rule: { meld: "run", place: "anyone" } } });
+  state = act(state, { type: "setRules", mode: "enforce" });
+  const meld = zone(state, "meld").id;
+  state = pull(state, "4c 5c 6c 9d", zone(state, "hand", me).id, "up");
+  state = act(state, { type: "move", cards: ["4c", "5c"].map((spec) => cardIn(state, spec)), to: meld }, me);
+  assert.throws(() => act(state, { type: "move", cards: [cardIn(state, "9d")], to: meld }, me), /must be a run/);
+  state = act(state, { type: "move", cards: [cardIn(state, "6c")], to: meld }, me);
+  assert.equal(zone(state, "meld").cards.length, 3);
+  assert.match(Engine.describeGame(state), /must form a run/);
+}
+
+// Refill up to N, group limits, and teams from presets.
+{
+  let state = Engine.createTable(Presets.get("five-card-draw"), { players: 3 });
+  state = act(state, { type: "runMacro", steps: [{ op: "refill", from: "deck", to: "hand", count: 5 }] });
+  assert.ok(state.players.every((p) => zone(state, "hand", p.id).cards.length === 5));
+  const first = state.players[0].id;
+  state = act(state, { type: "move", cards: zone(state, "hand", first).cards.slice(0, 2), to: zone(state, "muck").id });
+  state = act(state, { type: "runMacro", steps: [{ op: "refill", from: "deck", to: "hand", count: 5 }] });
+  assert.equal(zone(state, "hand", first).cards.length, 5);
+  assert.equal(zone(state, "deck").cards.length, 52 - 17);
+  let ofc = Engine.createTable(Presets.get("ofc"), { players: 2 });
+  ofc = act(ofc, { type: "setRules", mode: "enforce" });
+  const p1 = ofc.players[0].id;
+  ofc = pull(ofc, "As Ks Qs Js", zone(ofc, "draw", p1).id, "up");
+  assert.throws(() => act(ofc, { type: "move", cards: ["As", "Ks", "Qs", "Js"].map((spec) => cardIn(ofc, spec)), to: zone(ofc, "top", p1).id }, p1), /at most 3/);
+  const spades = Engine.createTable(Presets.get("spades"), { players: 4 });
+  assert.deepEqual(spades.players.map((p) => p.team), ["North–South", "East–West", "North–South", "East–West"]);
+  const c8 = Engine.createTable(Presets.get("crazy-eights"), { players: 2 });
+  assert.equal(Engine.findMacro(c8, c8.botFallback).label, "Draw");
+  assert.equal(Engine.toPreset(c8).botFallback, "Draw");
+}
+
+console.log("bot, meld and refill tests passed");

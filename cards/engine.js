@@ -76,6 +76,12 @@
     downOne: "Exactly one lower",
     adjacent: "One higher or lower",
   };
+  const RULE_MELD = {
+    none: "Any mix of cards",
+    set: "A set (all one rank)",
+    run: "A run (one suit, in sequence)",
+    setOrRun: "A set or a run",
+  };
   const RULES_MODES = { off: "Off", warn: "Warn", enforce: "Enforce" };
 
   const DEFAULT_DECK = Object.freeze({ preset: "standard", decks: 1, jokers: 0, suits: STD_SUITS.slice(), ranks: null, custom: [] });
@@ -314,6 +320,8 @@
       counters: {},
       out: false,
       note: "",
+      bot: Boolean(options.bot),
+      team: cleanText(options.team, 16, ""),
     };
     state.players.push(player);
     for (const template of state.seatTemplate || []) makeZone(state, player.id, template);
@@ -344,6 +352,7 @@
       meta: {},
       rulesMode: "warn",
       guestMode: "play",
+      botFallback: "",
       gameOver: null,
       lastWinner: null,
       log: [],
@@ -378,6 +387,7 @@
     state.triggers = clone(preset.triggers || []).map((trigger) => sanitizeTrigger(state, trigger));
     linkMacroRefs(state);
     state.rulesMode = RULES_MODES[preset.rulesMode] ? preset.rulesMode : "warn";
+    state.botFallback = findMacro(state, preset.botFallback)?.id || "";
     state.meta = sanitizeMeta(preset.meta || {
       family: preset.family,
       tagline: preset.tagline,
@@ -392,8 +402,10 @@
     const names = Array.isArray(options.players)
       ? options.players
       : Array.from({ length: clampInt(options.players ?? preset.players?.default ?? 2, 0, 12, 2) }, (_, i) => `Player ${i + 1}`);
-    names.forEach((name) => {
-      const player = createPlayer(state, typeof name === "object" ? name : { name });
+    names.forEach((name, index) => {
+      const options = typeof name === "object" ? { ...name } : { name };
+      if (!options.team && Array.isArray(preset.teams) && preset.teams.length) options.team = preset.teams[index % preset.teams.length];
+      const player = createPlayer(state, options);
       state.counterDefs.forEach((def) => { player.counters[def.id] = def.start; });
     });
     state.scores.rounds = [{ id: nextId(state, "r"), label: "Round 1", scores: {} }];
@@ -814,7 +826,7 @@
     if (opts.strict) {
       for (const zone of sources.values()) if (isPrivateTo(zone, actor)) hard.push(`${zoneLabel(state, zone)} is private.`);
     }
-    if (!actor || state.rulesMode === "off") return { hard, soft };
+    if (!actor || (state.rulesMode === "off" && !opts.force)) return { hard, soft };
     for (const zone of sources.values()) {
       if (zone.id === toId) continue;
       const take = zone.rule?.take;
@@ -835,7 +847,55 @@
       }
       top = card;
     }
+    if (rule.meld && rule.meld !== "none") {
+      const all = [...target.cards, ...ids.filter((id) => !target.cards.includes(id))].map((id) => state.cards[id]).filter(Boolean);
+      if (!meldOk(all, rule)) soft.push(`${target.name} must be ${RULE_MELD[rule.meld].toLowerCase()}.`);
+    }
+    if (target.limit && target.cards.length + ids.filter((id) => !target.cards.includes(id)).length > target.limit) soft.push(`${target.name} holds at most ${target.limit}.`);
     return { hard, soft };
+  }
+
+  /** Does this pile form a valid (possibly unfinished) set or run? Jokers and wild ranks fill gaps. */
+  function meldOk(cards, rule) {
+    const wild = (rule.wild || []).map(normRank);
+    const isWild = (card) => card.rank === "JK" || wild.includes(normRank(card.rank));
+    const plain = cards.filter((card) => !isWild(card));
+    const wilds = cards.length - plain.length;
+    if (plain.length <= 1) return true;
+    const isSet = plain.every((card) => normRank(card.rank) === normRank(plain[0].rank));
+    const isRun = (aceHigh) => {
+      if (!plain.every((card) => sameText(card.suit, plain[0].suit))) return false;
+      const values = plain.map((card) => rankValue(card, aceHigh));
+      if (values.some((value) => value == null) || new Set(values).size !== values.length) return false;
+      const sorted = values.slice().sort((a, b) => a - b);
+      return sorted[sorted.length - 1] - sorted[0] + 1 - sorted.length <= wilds;
+    };
+    const run = isRun(false) || isRun(true);
+    if (rule.meld === "set") return isSet;
+    if (rule.meld === "run") return run;
+    return isSet || run;
+  }
+
+  /**
+   * Every single-card play this player could legally make right now: from
+   * their own groups to any group with play rules (checked as if enforced).
+   */
+  function legalPlays(state, playerId) {
+    const player = playerById(state, playerId);
+    if (!player) return [];
+    const sources = orderedZones(state, playerId).filter((zone) => zone.visibility !== "public" || zone.kind === "hand");
+    const targets = [...orderedZones(state, "table"), ...orderedZones(state, playerId)].filter((zone) => zone.rule && zone.rule.place);
+    const out = [];
+    for (const from of sources) {
+      for (const cardId of from.cards) {
+        for (const to of targets) {
+          if (to.id === from.id) continue;
+          const check = checkMove(state, [cardId], to.id, playerId, { force: true });
+          if (!check.hard.length && !check.soft.length) out.push({ card: cardId, from: from.id, to: to.id });
+        }
+      }
+    }
+    return out;
   }
 
   function applyCheck(state, result, actor) {
@@ -853,6 +913,7 @@
     if (rule.accept) parts.push(RULE_ACCEPT[rule.accept].toLowerCase());
     if (rule.order) parts.push(RULE_ORDER[rule.order].toLowerCase() + (rule.aceHigh ? " (aces high)" : ""));
     if (rule.wild?.length) parts.push(`${rule.wild.join(", ")} ${rule.wild.length === 1 ? "is" : "are"} wild`);
+    if (rule.meld) parts.push(`must form ${RULE_MELD[rule.meld].toLowerCase()}`);
     if (rule.follow) parts.push("must follow the led suit when able");
     if (rule.once) parts.push("one card per player");
     if (rule.advance) parts.push("the turn passes after playing here");
@@ -929,6 +990,7 @@
     clear: { label: "Move all", fields: ["from", "to", "face", "keep"] },
     collect: { label: "Collect all into", fields: ["to", "shuffle"] },
     sort: { label: "Sort", fields: ["zone", "by"] },
+    refill: { label: "Refill up to", fields: ["from", "to", "count"] },
     passZones: { label: "Pass groups around", fields: ["zone", "dir"] },
     findWinner: { label: "Find winner", fields: ["zone", "evaluator", "low"] },
     score: { label: "Score points", fields: ["who", "amount"] },
@@ -982,6 +1044,7 @@
       case "shuffle": return `Shuffle ${step.zone || "deck"}`;
       case "cut": return `Cut ${step.zone || "deck"}`;
       case "sort": return `Sort ${step.zone} by ${step.by || "rank"}`;
+      case "refill": return `Refill every ${step.to || "hand"} to ${step.count || 1} from ${step.from || "deck"}`;
       case "passZones": return `Pass every ${step.zone || "hand"} ${step.dir === "right" ? "right" : "left"}`;
       case "findWinner": return `Winner of ${step.zone || "trick"}${step.evaluator ? " by " + step.evaluator : ""}${step.low ? " (lowest)" : ""}`;
       case "score": return `${signed(step.amount)} pts → ${who(step.who)}`;
@@ -1204,6 +1267,24 @@
       case "sort":
         for (const id of zones(step.zone)) sortZone(state, id, step.by);
         break;
+      case "refill": {
+        const from = zones(step.from || "deck")[0];
+        const want = clampInt(step.count, 1, 60, 1);
+        const targets = zones(step.to || "hand").filter((id) => id !== from);
+        if (!from || !targets.length) break;
+        let dealt = 0;
+        for (let pass = 0; pass < want; pass += 1) {
+          for (const id of targets) {
+            const source = state.zones[from];
+            if (!source.cards.length) break;
+            if (state.zones[id].cards.length >= want) continue;
+            moveCards(state, [source.cards[source.cards.length - 1]], id, {});
+            dealt += 1;
+          }
+        }
+        if (dealt) pushLog(state, actor, `Refilled ${step.to || "hand"} to ${want} (${dealt} card${dealt === 1 ? "" : "s"})`);
+        break;
+      }
       case "passZones": {
         const n = passZones(state, step.zone, step.dir);
         if (n) pushLog(state, actor, `Passed every ${step.zone || "hand"} ${step.dir === "right" ? "right" : "left"}`);
@@ -1468,6 +1549,7 @@
     if (RULE_WHO[raw.take] && raw.take !== "anyone") rule.take = raw.take;
     if (RULE_ACCEPT[raw.accept] && raw.accept !== "any") rule.accept = raw.accept;
     if (RULE_ORDER[raw.order] && raw.order !== "any") rule.order = raw.order;
+    if (RULE_MELD[raw.meld] && raw.meld !== "none") rule.meld = raw.meld;
     const first = cleanText(raw.first, 8, "");
     if (first) rule.first = first;
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
@@ -1843,6 +1925,8 @@
       if ("color" in patch && /^#[0-9a-f]{6}$/i.test(patch.color)) player.color = patch.color;
       if ("out" in patch) player.out = Boolean(patch.out);
       if ("note" in patch) player.note = cleanText(patch.note, 120, "");
+      if ("bot" in patch) player.bot = Boolean(patch.bot);
+      if ("team" in patch) player.team = cleanText(patch.team, 16, "");
     },
 
     movePlayer(state, action) {
@@ -2037,6 +2121,7 @@
     deleteMacro(state, action) {
       state.macros = state.macros.filter((entry) => entry.id !== action.id);
       state.triggers = state.triggers.filter((trigger) => trigger.macro !== action.id);
+      if (state.botFallback === action.id) state.botFallback = "";
     },
 
     // ------------------------------------------------------ rules & design
@@ -2044,6 +2129,9 @@
       if (!RULES_MODES[action.mode]) return;
       state.rulesMode = action.mode;
       pushLog(state, actor, `Play rules: ${RULES_MODES[action.mode].toLowerCase()}`);
+    },
+    setBotFallback(state, action) {
+      state.botFallback = findMacro(state, action.macro)?.id || "";
     },
     setGuestMode(state, action) {
       if (action.mode === "play" || action.mode === "full") state.guestMode = action.mode;
@@ -2201,6 +2289,8 @@
     for (const player of state.players) {
       player.counters = player.counters || {};
       player.chips = Number(player.chips) || 0;
+      player.bot = Boolean(player.bot);
+      player.team = cleanText(player.team, 16, "");
     }
     return state;
   }
@@ -2229,6 +2319,7 @@
       triggers: state.triggers.map(({ id, ...rest }) => ({ ...clone(rest), macro: macroLabel(state, rest.macro) })),
       schemes: clone(state.schemes),
       rulesMode: state.rulesMode,
+      botFallback: state.botFallback ? macroLabel(state, state.botFallback) : "",
       meta: clone(state.meta),
       scoring: { target: state.scores.target, rounds: state.scores.maxRounds, lowWins: state.scores.lowWins, label: state.scores.label, chips: state.chipStart, peg: state.pegTarget },
       rules: state.notes,
@@ -2378,6 +2469,9 @@
     STOP_CMP,
     PIP_DEFAULT,
     checkMove,
+    legalPlays,
+    meldOk,
+    RULE_MELD,
     evalInput,
     evaluateSpec,
     findZoneRef,

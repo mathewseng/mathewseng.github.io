@@ -56,6 +56,8 @@ body[data-back="gold"] { --back-a: #8a6414; --back-b: #d6a531; }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
+  /* Card height follows the card width set on body by the size preference. */
+  --ch: calc(var(--cw) * 1.4);
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -230,6 +232,9 @@ body.side-collapsed .side { display: none; }
 .score-tag { background: rgba(255, 255, 255, 0.08); }
 .chip-tag { background: rgba(244, 201, 93, 0.14); color: var(--gold); }
 .counter-tag { background: rgba(159, 125, 255, 0.16); color: #c7b6ff; }
+.team-tag { display: inline-flex; align-items: center; min-height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 750; background: rgba(69, 214, 255, 0.12); color: var(--cyan); }
+.bot-tag { display: inline-grid; place-items: center; min-height: 20px; padding: 0 5px; border-radius: 999px; font-size: 12px; background: rgba(255, 255, 255, 0.08); }
+.player-fields { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 4px; }
 .seat-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
 
 /* --------------------------------------------------------------- zones */
@@ -681,6 +686,7 @@ dialog[open] { animation: pop 0.18s var(--ease); }
 .browse-card .card { cursor: pointer; }
 .browse-card.on { border-color: var(--cyan); background: rgba(69, 214, 255, 0.1); }
 .inspect-body { justify-items: center; }
+.inspect-card { --ch: calc(var(--cw) * 1.4); }
 .inspect-card .card { transform: none !important; cursor: default; }
 
 dialog.palette-dialog { width: min(620px, calc(100vw - 24px)); margin-top: 10vh; }
