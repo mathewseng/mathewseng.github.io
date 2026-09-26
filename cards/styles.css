@@ -952,3 +952,9 @@ body[data-motion="0"] *, body[data-motion="0"] *::before { animation-duration: 0
 .diff-line.added b { color: #6ee7a8; }
 .diff-line.removed b { color: #ff7a7a; }
 .diff-line.changed b { color: var(--gold); }
+.offers { display: grid; gap: 6px; margin: 0 0 12px; position: sticky; top: 6px; z-index: 30; }
+.offer { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); }
+.offer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 12px; border-radius: 12px; background: linear-gradient(90deg, rgba(110, 231, 168, 0.14), var(--panel-2)); border: 1px solid rgba(110, 231, 168, 0.4); font-size: 13px; }
+.offer .grow { flex: 1 1 240px; min-width: 0; }
+.offer-cards { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.offer-cards .card { position: relative; }

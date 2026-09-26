@@ -912,3 +912,40 @@ console.log("bluffing tests passed");
   assert.equal(back.find((change) => change.area === "Actions" && change.text === "Bonus")?.kind, "removed");
 }
 console.log("design diff tests passed");
+
+// Trading: offers need consent, show cards only to the two traders, and move cards and chips together.
+{
+  let state = Engine.createTable(Presets.get("holdem"), { players: ["Ana", "Ben", "Cy"] });
+  const [ana, ben, cy] = state.players.map((player) => player.id);
+  state = pull(state, "As Kd", zone(state, "hand", ana).id, "down");
+  state = pull(state, "2c 3c", zone(state, "hand", ben).id, "down");
+  const offered = [cardIn(state, "As"), cardIn(state, "Kd")];
+  assert.throws(() => act(state, { type: "offerTrade", to: ana, cards: offered }, ana), /another player/);
+  state = act(state, { type: "offerTrade", to: ben, cards: offered, want: 1, chips: 50 }, ana, { strict: true });
+  assert.match(lastLog(state), /Ana offers Ben 2 cards \+ 50 chips for 1 card/);
+  const offer = state.offers[0];
+  assert.deepEqual(Engine.viewFor(state, ben).offers[0].show, ["A♠", "K♦"]);
+  assert.equal(Engine.viewFor(state, cy).offers[0].show, null, "bystanders see only the count");
+  assert.equal(Engine.viewFor(state, cy).offers[0].cards, undefined);
+  assert.equal(Engine.viewFor(state, cy).offers[0].count, 2);
+  // Only Ben can accept, and he must pick exactly one card to give back.
+  assert.throws(() => act(state, { type: "answerTrade", id: offer.id, accept: true, cards: [] }, cy, { strict: true }), /isn't yours/);
+  assert.throws(() => act(state, { type: "answerTrade", id: offer.id, accept: true, cards: [] }, ben, { strict: true }), /Pick 1/);
+  assert.throws(() => act(state, { type: "answerTrade", id: offer.id, accept: true, cards: [cardIn(state, "As")] }, ben, { strict: true }), /Pick 1/, "can't give back the other player's card");
+  const done = act(state, { type: "answerTrade", id: offer.id, accept: true, cards: [cardIn(state, "2c")] }, ben, { strict: true });
+  assert.ok(zone(done, "hand", ben).cards.includes(cardIn(done, "As")) && zone(done, "hand", ben).cards.includes(cardIn(done, "Kd")));
+  assert.ok(zone(done, "hand", ana).cards.includes(cardIn(done, "2c")));
+  assert.equal(done.players[0].chips, 950);
+  assert.equal(done.players[1].chips, 1050);
+  assert.equal(done.offers.length, 0);
+  // Declining and withdrawing both clear the offer; moved cards void it.
+  assert.equal(act(state, { type: "answerTrade", id: offer.id, accept: false }, ben, { strict: true }).offers.length, 0);
+  assert.equal(act(state, { type: "answerTrade", id: offer.id, accept: false }, ana, { strict: true }).offers.length, 0);
+  const moved = act(state, { type: "move", cards: [cardIn(state, "As")], to: zone(state, "board").id }, ana);
+  assert.throws(() => act(moved, { type: "answerTrade", id: offer.id, accept: true, cards: [cardIn(moved, "2c")] }, ben), /moved/);
+  // A new offer to the same player replaces the old one.
+  const again = act(state, { type: "offerTrade", to: ben, cards: [offered[0]], want: 0 }, ana);
+  assert.equal(again.offers.length, 1);
+  assert.equal(again.offers[0].cards.length, 1);
+}
+console.log("trading tests passed");

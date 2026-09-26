@@ -665,9 +665,80 @@
       <button class="btn sm icon" data-sel="mark" title="Mark">●</button>
       ${discardZone ? `<button class="btn sm" data-sel="discard" title="Move to ${esc(discardZone.name)} (Del)">${esc(discardZone.name)}</button>` : ""}
       <button class="btn sm" data-sel="deck" title="Return to the deck">To deck</button>
+      ${tradeOwner(ids) ? `<button class="btn sm" data-sel="offer" title="Offer these cards to another player in a trade">🤝 Offer</button>` : ""}
       <button class="btn sm icon ghost" data-sel="clear" title="Clear selection (Esc)">✕</button>`;
     const plays = [...legalMap.entries()].filter(([, verdict]) => verdict.ok).slice(0, 3);
     bar.querySelector(".count").insertAdjacentHTML("afterend", plays.map(([zoneId], i) => `<button class="btn sm good" data-sel="play" data-to="${zoneId}" title="${i === 0 ? "Play (P or Enter)" : "Play"}">Play ▸ ${esc(v.zones[zoneId]?.name || "")}</button>`).join(""));
+  }
+
+  /** The seat that owns every selected card, if this screen may trade for it. */
+  function tradeOwner(ids) {
+    const v = view;
+    if (!v || v.players.length < 2) return null;
+    const owners = new Set(ids.map((id) => Object.values(v.zones).find((zone) => zone.cards.includes(id))?.area));
+    if (owners.size !== 1) return null;
+    const owner = [...owners][0];
+    if (!v.players.some((player) => player.id === owner)) return null;
+    return net.mode === "local" || owner === mySeatId() ? owner : null;
+  }
+
+  function openOfferDialog(ids) {
+    const v = view;
+    const owner = tradeOwner(ids);
+    if (!owner) return;
+    const others = v.players.filter((player) => player.id !== owner);
+    openDialog(head(`Offer ${ids.length} card${ids.length === 1 ? "" : "s"}`) + `<div class="dlg-body">
+        <div class="offer-cards">${ids.map((id) => cardHTML(v.cards[id], Object.values(v.zones).find((zone) => zone.cards.includes(id)), 0)).join("")}</div>
+        <div class="grid-2">
+          <label class="field"><span>To</span><select name="to">${others.map((player) => `<option value="${player.id}">${esc(player.name)}${player.bot ? " (bot)" : ""}</option>`).join("")}</select></label>
+          <label class="field"><span>Cards they give back</span><input type="number" name="want" min="0" max="20" value="${Math.min(ids.length, 1)}"></label>
+          <label class="field"><span>Chips <span class="dim">+ you add, − you ask for</span></span><input type="number" name="chips" value="0" step="10"></label>
+          <label class="field"><span>Note <span class="dim">optional</span></span><input type="text" name="note" maxlength="80" placeholder="e.g. for any heart"></label>
+        </div>
+        <p class="hint">They see your cards and choose whether to accept. Nothing moves until they do; you can withdraw any time.</p>
+      </div>
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="send">Send offer</button></div>`, {
+      onSubmit(form) {
+        dispatch({ type: "offerTrade", player: owner, to: form.to.value, cards: ids, want: Number(form.want.value) || 0, chips: Number(form.chips.value) || 0, note: form.note.value });
+        selection.clear();
+        render();
+      },
+    });
+  }
+
+  /** Open trade offers: the two traders (or everyone on a shared screen) can answer. */
+  function renderOffers() {
+    const box = $("#offers");
+    const v = view;
+    const me = mySeatId();
+    const offers = (v?.offers || []).filter((offer) => net.mode === "local" || offer.from === me || offer.to === me);
+    box.hidden = !offers.length;
+    if (!offers.length) { box.innerHTML = ""; return; }
+    const name = (id) => esc(v.players.find((player) => player.id === id)?.name || "?");
+    box.innerHTML = offers.map((offer) => {
+      const gives = [offer.show ? offer.show.map((text) => `<b class="mono">${esc(text)}</b>`).join(" ") : offer.count ? `${offer.count} card${offer.count === 1 ? "" : "s"}` : "", offer.chips > 0 ? `${E.fmt(offer.chips)} chips` : ""].filter(Boolean).join(" + ");
+      const asks = [offer.want ? `${offer.want} card${offer.want === 1 ? "" : "s"}` : "", offer.chips < 0 ? `${E.fmt(-offer.chips)} chips` : ""].filter(Boolean).join(" + ") || "nothing";
+      const canAnswer = net.mode === "local" || offer.to === me;
+      const canWithdraw = net.mode === "local" || offer.from === me;
+      return `<div class="offer" data-offer="${esc(offer.id)}"><span class="grow">🤝 <b>${name(offer.from)}</b> offers <b>${name(offer.to)}</b> ${gives} for ${asks}${offer.note ? ` <span class="dim">“${esc(offer.note)}”</span>` : ""}${canAnswer && offer.want ? ` <span class="dim">· select ${offer.want} of ${name(offer.to)}'s cards, then accept</span>` : ""}</span>
+        ${canAnswer ? `<button class="btn sm good" data-offer-act="accept">Accept</button><button class="btn sm" data-offer-act="decline">Decline</button>` : ""}
+        ${canWithdraw && !canAnswer ? `<button class="btn sm" data-offer-act="withdraw">Withdraw</button>` : ""}
+        ${canWithdraw && net.mode === "local" ? `<button class="btn sm icon ghost" data-offer-act="withdraw" title="Withdraw">✕</button>` : ""}</div>`;
+    }).join("");
+  }
+
+  function answerOffer(el) {
+    const id = el.closest("[data-offer]").dataset.offer;
+    const offer = view.offers?.find((entry) => entry.id === id);
+    if (!offer) return;
+    const act = el.dataset.offerAct;
+    if (act === "decline") return dispatch({ type: "answerTrade", id, accept: false, player: offer.to });
+    if (act === "withdraw") return dispatch({ type: "answerTrade", id, accept: false, player: offer.from });
+    const back = orderedSelection().filter((cardId) => Object.values(view.zones).find((zone) => zone.cards.includes(cardId))?.area === offer.to);
+    if (back.length !== offer.want) return toast(`Select ${offer.want} of ${view.players.find((player) => player.id === offer.to)?.name}'s cards to give back, then Accept.`, "warn");
+    dispatch({ type: "answerTrade", id, accept: true, cards: back, player: offer.to });
+    selection.clear();
+    render();
   }
 
   function fmtTime(seconds) {
@@ -746,6 +817,7 @@
     }
     fitRows();
     renderGameOver();
+    renderOffers();
     renderSelectionBar();
     renderDock();
     if (scoreboardOpen && dialog().open && dialog().classList.contains("scoreboard-dialog")) {
@@ -2090,7 +2162,7 @@
   }
 
   // What guests may do. "Play only" rooms keep the design in the host's hands.
-  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo", "slap", "callBluff"]);
+  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo", "slap", "callBluff", "offerTrade", "answerTrade"]);
   const GUEST_SPECTATE = new Set(["chat", "feedback", "claimSeat", "releaseSeat"]);
 
   function hostHandle(clientId, action) {
@@ -2593,6 +2665,7 @@
     switch (el.dataset.sel) {
       case "play": if (el.dataset.to) dispatch({ type: "move", cards: ids, to: el.dataset.to }); break;
       case "flip": dispatch({ type: "flip", cards: ids }); break;
+      case "offer": openOfferDialog(ids); return;
       case "move": moveMenu(el, ids); return;
       case "group": openZoneDialog(null, { cards: ids, area: E.zoneOf(v, ids[0])?.area || "table" }); return;
       case "peek": dispatch({ type: "peek", cards: ids }); break;
@@ -2820,6 +2893,11 @@
     $("#selectionBar").addEventListener("click", (event) => {
       const el = event.target.closest("[data-sel]");
       if (el) handleSelectionBar(el);
+    });
+    $("#offers").addEventListener("click", (event) => {
+      event.stopPropagation();
+      const el = event.target.closest("[data-offer-act]");
+      if (el) answerOffer(el);
     });
     $("#dock").addEventListener("click", (event) => {
       const act = event.target.closest("[data-act]");
@@ -4024,6 +4102,31 @@
       scheduleBots();
     }, CLAIM_WINDOW[prefs.botSpeed || "normal"] ?? 1300);
   }
+  const tradeWatch = { timer: null, key: "" };
+  /** Bots answer offers made to them: a fair-or-better card count (and no chips asked) gets a yes. */
+  function scheduleBotTrade() {
+    if (net.mode === "client" || !state || bots.paused) return;
+    const offer = (state.offers || []).find((entry) => E.playerById(state, entry.to)?.bot);
+    const key = offer ? offer.id : "";
+    if (key === tradeWatch.key) return;
+    clearTimeout(tradeWatch.timer);
+    tradeWatch.key = key;
+    if (!offer) return;
+    tradeWatch.timer = setTimeout(() => {
+      tradeWatch.key = "";
+      const live = (state.offers || []).find((entry) => entry.id === offer.id);
+      if (!live) return;
+      const hand = E.orderedZones(state, live.to).find((zone) => zone.kind === "hand") || E.orderedZones(state, live.to)[0];
+      const fair = live.cards.length >= live.want && live.chips >= 0 && (hand?.cards.length || 0) >= live.want;
+      const back = fair ? hand.cards.slice().sort(() => Math.random() - 0.5).slice(0, live.want) : [];
+      try {
+        history.push(state);
+        future = [];
+        state = E.reduce(state, { type: "answerTrade", id: live.id, accept: fair, cards: back, player: live.to }, live.to);
+        afterChange();
+      } catch (error) { history.pop(); toast(error.message, "warn"); }
+    }, 900 + Math.random() * 700);
+  }
   const SLAP_DELAY = { slow: [900, 1600], normal: [550, 1050], fast: [260, 520] };
   const slapWatch = { timer: null, key: "" };
   /** Bots react to a slappable pile after a human-ish delay, so you can beat them to it. */
@@ -4059,6 +4162,7 @@
     bots.timer = null;
     scheduleBotSlap();
     scheduleBotCall();
+    scheduleBotTrade();
     if (net.mode === "client" || bots.paused || !state || drag || replay.active) return;
     const player = state.players[state.turn.index];
     if (!player?.bot || player.out || (state.gameOver && !state.gameOver.dismissed) || state.rev === bots.idleRev) return;

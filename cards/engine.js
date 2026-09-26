@@ -732,6 +732,7 @@
       for (const zone of Object.values(view.zones)) {
         for (const id of zone.cards) view.cards[id].visible = true;
       }
+      view.offers = (state.offers || []).map((offer) => ({ ...offer, count: offer.cards.length, show: offer.cards.map((id) => cardName(state.cards[id])) }));
       return view;
     }
     const cards = {};
@@ -754,6 +755,13 @@
       });
     }
     view.cards = cards;
+    // Trade offers: everyone sees who offered what count; the two traders see the cards.
+    view.offers = (state.offers || []).map((offer) => ({
+      ...offer,
+      cards: undefined,
+      count: offer.cards.length,
+      show: viewerId === offer.from || viewerId === offer.to || viewerId === "*hands" ? offer.cards.map((id) => cardName(state.cards[id])) : null,
+    }));
     return view;
   }
 
@@ -1946,7 +1954,7 @@
   };
 
   // Only play actions fire triggers; setup changes (collecting, editing groups…) never do.
-  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter", "slap", "callBluff"]);
+  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter", "slap", "callBluff", "answerTrade"]);
 
   /** Display name for a zone reference such as "trick" or "hand@current". */
   function refName(state, ref) {
@@ -2720,6 +2728,55 @@
       state.counterDefs = state.counterDefs.filter((def) => def.id !== action.id);
       state.tableCounters = state.tableCounters.filter((def) => def.id !== action.id);
       state.players.forEach((player) => { delete player.counters[action.id]; });
+    },
+    offerTrade(state, action, actor, opts) {
+      const from = playerById(state, opts.strict ? actor : action.player || actor);
+      if (!from) throw new Error("Take a seat to offer a trade.");
+      const to = playerById(state, action.to);
+      if (!to || to.id === from.id) throw new Error("Pick another player to trade with.");
+      const ids = resolveCards(state, action.cards).filter((id) => zoneOf(state, id)?.area === from.id);
+      const want = clampInt(action.want, 0, 20, 0);
+      const chips = clampInt(action.chips, -1000000, 1000000, 0);
+      if (!ids.length && chips <= 0) throw new Error("Offer some of your cards or chips.");
+      if (chips > 0 && (Number(from.chips) || 0) < chips) throw new Error(`You only have ${fmt(from.chips || 0)} chips.`);
+      // One open offer per pair: a new one replaces the old.
+      state.offers = (state.offers || []).filter((offer) => offer.from !== from.id || offer.to !== to.id);
+      state.offers.push({ id: nextId(state, "o"), from: from.id, to: to.id, cards: ids, want, chips, note: cleanText(action.note, 80, "") });
+      const gives = [ids.length ? `${ids.length} card${ids.length === 1 ? "" : "s"}` : "", chips > 0 ? `${fmt(chips)} chips` : ""].filter(Boolean).join(" + ");
+      const asks = [want ? `${want} card${want === 1 ? "" : "s"}` : "", chips < 0 ? `${fmt(-chips)} chips` : ""].filter(Boolean).join(" + ") || "nothing";
+      pushLog(state, from.id, `🤝 ${from.name} offers ${to.name} ${gives} for ${asks}`, "move");
+    },
+    answerTrade(state, action, actor, opts) {
+      const offers = state.offers || [];
+      const offer = offers.find((entry) => entry.id === action.id);
+      if (!offer) throw new Error("That offer is gone.");
+      const who = playerById(state, opts.strict ? actor : action.player || actor);
+      const from = playerById(state, offer.from);
+      const to = playerById(state, offer.to);
+      if (!who || (who.id !== offer.to && who.id !== offer.from)) throw new Error("That offer isn't yours to answer.");
+      if (!action.accept) {
+        state.offers = offers.filter((entry) => entry !== offer);
+        pushLog(state, who.id, who.id === offer.from ? `${who.name} withdrew the offer to ${to?.name}` : `${who.name} declined ${from?.name}'s offer`, "info");
+        return;
+      }
+      if (who.id !== offer.to) throw new Error(`Only ${to?.name} can accept.`);
+      if (!from || offer.cards.some((id) => zoneOf(state, id)?.area !== from.id)) throw new Error("The offered cards have moved; the offer is off.");
+      const back = resolveCards(state, action.cards || []).filter((id) => zoneOf(state, id)?.area === who.id);
+      if (back.length !== offer.want) throw new Error(`Pick ${offer.want} of your cards to give back.`);
+      if (offer.chips > 0 && (Number(from.chips) || 0) < offer.chips) throw new Error(`${from.name} can't cover ${fmt(offer.chips)} chips any more.`);
+      if (offer.chips < 0 && (Number(who.chips) || 0) < -offer.chips) throw new Error(`You need ${fmt(-offer.chips)} chips for this trade.`);
+      const handOf = (id) => (orderedZones(state, id).find((zone) => zone.key === "hand") || orderedZones(state, id).find((zone) => zone.kind === "hand") || orderedZones(state, id)[0])?.id;
+      const toHand = handOf(who.id);
+      const fromHand = handOf(from.id);
+      if (!toHand || !fromHand) throw new Error("Both players need a hand to trade into.");
+      moveCards(state, offer.cards.slice(), toHand);
+      moveCards(state, back, fromHand);
+      from.chips = (Number(from.chips) || 0) - offer.chips;
+      who.chips = (Number(who.chips) || 0) + offer.chips;
+      // Other offers that promised the cards that just moved are now void.
+      const moved = new Set([...offer.cards, ...back]);
+      state.offers = offers.filter((entry) => entry !== offer && !entry.cards.some((id) => moved.has(id)));
+      pushLog(state, who.id, `🤝 ${who.name} accepted ${from.name}'s trade`, "move");
     },
     callBluff(state, action, actor, opts) {
       const zone = state.zones[action.zone];
