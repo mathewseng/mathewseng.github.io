@@ -147,7 +147,7 @@
 
       .summary-panel {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--card);
@@ -270,11 +270,6 @@
       .status.source {
         border-color: rgba(47, 101, 184, 0.35);
         color: var(--blue);
-      }
-
-      .status.legacy {
-        border-color: rgba(154, 106, 16, 0.35);
-        color: var(--gold);
       }
 
       .project-card p {
@@ -569,16 +564,12 @@
           </p>
           <div class="summary-panel" aria-label="Repository summary">
             <div>
-              <strong>9</strong>
+              <strong>11</strong>
               <span>live apps</span>
             </div>
             <div>
-              <strong>2</strong>
-              <span>source projects</span>
-            </div>
-            <div>
               <strong>1</strong>
-              <span>legacy path</span>
+              <span>source project</span>
             </div>
           </div>
         </div>
@@ -883,28 +874,12 @@
         </div>
 
         <div class="source-list">
-          <a class="source-item" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/flight-attendant-monitor">
+          <a class="source-item" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml">
             <div>
-              <h3>Atlanta Flight-Attendant Job Monitor</h3>
-              <p>Python monitor for ATL-based flight-attendant openings with source parsing and email reporting.</p>
+              <h3>Jazz Piano ML</h3>
+              <p>Python pipeline for jazz piano MIDI normalization, tokenization, transcription backends, and a small symbolic transformer.</p>
             </div>
-            <span class="source-path">flight-attendant-monitor/</span>
-          </a>
-
-          <a class="source-item" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/market-prediction">
-            <div>
-              <h3>Market Prediction</h3>
-              <p>Reserved project folder in the repo. Linked here so the directory reflects the repository honestly.</p>
-            </div>
-            <span class="source-path">market-prediction/</span>
-          </a>
-
-          <a class="source-item" href="/ofc-solver/">
-            <div>
-              <h3>Legacy OFC Solver Path</h3>
-              <p>Combined solver and trainer path kept for compatibility while the canonical OFC pages live under `/ofc/`.</p>
-            </div>
-            <span class="status legacy">Legacy</span>
+            <span class="source-path">jazz-piano-ml/</span>
           </a>
         </div>
       </section>

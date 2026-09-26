@@ -1,5 +1,0 @@
-.env
-.state/
-.venv/
-monitor.log
-__pycache__/
