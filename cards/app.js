@@ -25,7 +25,7 @@
     size: "m", felt: "green", back: "classic", four: false, motion: true, evals: true,
     tab: "play", side: window.innerWidth > 820, viewMode: "hands",
   }, load(STORE.prefs, {}));
-  function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); }
+  function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); if (view) renderDock(); }
   function applyPrefs() {
     document.body.dataset.size = prefs.size;
     document.body.dataset.felt = prefs.felt;
@@ -730,6 +730,7 @@
     fitRows();
     renderGameOver();
     renderSelectionBar();
+    renderDock();
     renderPane();
     playLayout(before);
     scheduleBots();
@@ -850,6 +851,10 @@
     items.push({ label: "Move to…", run: () => moveMenu(point, ids) });
     items.push({ label: "Put in new group", run: () => openZoneDialog(null, { cards: ids }) });
     if (card.visible) items.push({ label: "Inspect (I)", run: () => inspectCard(cardId) });
+    if (card.visible && !card.faceUp) {
+      const others = view.players.filter((player) => player.id !== mySeatId());
+      if (others.length) items.push({ label: "Show to…", run: () => showMenu(point, [{ heading: "Show only to" }, ...others.map((player) => ({ label: player.name, sw: player.color, run: () => dispatch({ type: "showTo", cards: ids, player: player.id }) }))]) });
+    }
     if (net.mode !== "local") items.push({ label: "📍 Ping for everyone", run: () => emit({ kind: "ping", card: cardId, zone: E.zoneOf(view, cardId)?.id || null }) });
     items.push({ label: "Rotate 90°", run: () => dispatch({ type: "rotate", cards: ids }) });
     items.push({ heading: "Mark" });
@@ -893,6 +898,7 @@
   let suppressClick = 0;
   let hoverCard = null;
   let kbdFocus = null;
+  let lastClicked = null;
 
   /** Arrow keys walk through your hand (or the current player's); Space selects. */
   function moveKbdFocus(step) {
@@ -1133,6 +1139,7 @@
       </div>
       <div class="grid-2">
         <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <label class="check" style="grid-column:1/-1"><input type="checkbox" data-must-play${v.mustPlay ? " checked" : ""}> Players must play if they can before using the “can't play” action</label>
         <label class="field"><span>Each turn a bot plays</span><select data-plays-per-turn><option value="1"${v.playsPerTurn !== 0 ? " selected" : ""}>One card</option><option value="0"${v.playsPerTurn === 0 ? " selected" : ""}>Until it's stuck</option></select></label>
         <label class="field"><span>Bots play</span><select data-bot-style>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${style === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
       </div>
@@ -1305,6 +1312,7 @@
         <div class="field"><span>Ranks <button class="btn sm ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn sm${ranks.includes(rank) ? " primary" : ""}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
         <div class="field"><span>Card back <span class="dim">blank = your display setting</span></span>
           <div class="row tight"><input type="color" value="${esc(draft.back?.color || "#2b57c2")}" data-deck-back="color" title="Back color"${draft.back?.color ? "" : ' style="opacity:.5"'}><input type="text" value="${esc(draft.back?.text || "")}" maxlength="14" placeholder="Name on the back" data-deck-back="text" class="grow" style="flex:1;width:auto">${draft.back?.color || draft.back?.text ? `<button class="btn sm ghost" data-act="back-clear">Clear</button>` : ""}</div></div>
+        <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
           <div class="list">${draft.custom.map((item, i) => `<div class="custom-row">
@@ -1319,6 +1327,7 @@
               <input type="number" value="${item.value}" placeholder="pts" style="width:62px" data-custom="${i}" data-k="value" title="Points">
               <input type="text" value="${esc(item.text)}" placeholder="Rules text" style="flex:1 1 60%" data-custom="${i}" data-k="text">
               <input type="url" value="${esc(item.image || "")}" placeholder="Art image https://… (optional)" style="flex:1 1 30%" data-custom="${i}" data-k="image" title="An https link to card art">
+              <input type="text" value="${esc(item.home || "")}" list="homeGroups" placeholder="Starts in (deck)" style="width:120px" data-custom="${i}" data-k="home" title="A table group these cards start in, e.g. a market pile">
             </div>`).join("")}</div>
           <div class="row tight"><button class="btn sm" data-act="custom-add">+ Custom card</button><button class="btn sm" data-act="custom-import">Import from spreadsheet…</button>${draft.custom.length ? `<button class="btn sm" data-act="custom-export">Export CSV</button>` : ""}</div>
         </details>
@@ -1422,7 +1431,11 @@
         + block("Pacing", pacingHTML(v))
         + block("Turn timer", timerBlock)
         + block("Equity calculator", equityBlock)
-        + block("Display", display);
+        + block("Display", display)
+        + block("Developer", `<p class="hint">The whole table is one JSON object. Copy it for bug reports or version control, or paste a table or game design to load it.</p>
+            <div class="row tight"><button class="btn sm" data-act="dev-copy">Copy table JSON</button><span class="small dim">${Object.keys(v.cards).length} cards · ${Object.keys(v.zones).length} groups · ${JSON.stringify(v).length.toLocaleString()} bytes</span></div>
+            <textarea id="devJson" data-fk="dev" placeholder="Paste table or design JSON here" style="min-height:80px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px"></textarea>
+            <div class="row"><button class="btn sm" data-act="dev-load">Load pasted JSON</button></div>`);
     },
 
     log() {
@@ -1457,6 +1470,8 @@
           <span class="grow"></span>
           <button class="btn sm" data-act="rules-template" title="Insert an outline for a rules document">Template</button>
           <button class="btn sm" data-act="rules-generate" title="Write the rules from this table's setup">Generate from table</button>
+          <button class="btn sm icon" data-act="rules-copy" title="Copy the rules document">⧉</button>
+          <button class="btn sm icon" data-act="rules-download" title="Download as Markdown">⤓</button>
         </div>
         ${preview ? `<div class="rules-preview">${renderMarkdown(v.notes)}</div>` : `<textarea class="rules-area" id="rulesText" data-fk="rules" placeholder="Write the rules of the game you're designing. Markdown works: # headings, - lists, **bold**.">${esc(v.notes)}</textarea>`}
         <p class="hint">Shared with everyone at the table and saved with the design. Saved when you click away.</p>`;
@@ -1528,7 +1543,7 @@
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
-    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
+    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], "Deck-building": ["●", "🏰", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
     return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}" data-search="${esc(`${preset.name} ${preset.family} ${preset.tagline || ""} ${preset.description || ""}`.toLowerCase())}">
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
@@ -1689,6 +1704,8 @@
             <label class="field"><span>Empty group starts with</span><input type="text" name="rFirst" value="${esc(rule.first || "")}" maxlength="8" placeholder="any card (e.g. A, K)"></label>
             <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
             <label class="field"><span>The group must form</span><select name="rMeld">${optionList(E.RULE_MELD, rule.meld)}</select></label>
+            <label class="field"><span>Taking a card costs <span class="dim">its value in a counter</span></span><input type="text" name="rCost" list="ruleCounters" value="${esc(rule.cost || "")}" placeholder="e.g. Coins"><datalist id="ruleCounters">${[...v.counterDefs, ...v.tableCounters].map((def) => `<option value="${esc(def.name)}">`).join("")}</datalist></label>
+            <label class="field"><span>Only during phase</span><input type="text" name="rPhase" list="rulePhases" value="${esc(rule.phase || "")}" placeholder="any phase"><datalist id="rulePhases">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist></label>
           </div>
           <div class="row">
             <label class="check"><input type="checkbox" name="rFollow"${rule.follow ? " checked" : ""}> Must follow the led suit</label>
@@ -1735,7 +1752,7 @@
         if (form.topOnly.checked) ctx.topOnly = true;
         const rule = {
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
-          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value,
+          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(), cost: form.rCost.value.trim(),
           follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked,
         };
         const patch = {
@@ -1955,7 +1972,7 @@
   }
 
   function openHelp() {
-    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
+    const keys = [["Shift+click", "Select a run of cards"], ["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
     openDialog(head("How it works") + `<div class="dlg-body">
       <p class="hint"><b>Cards</b>: tap to select (tap several), drag to move — dragging a selected card moves the whole selection. Double-click flips. Right-click (or long-press menu ⋯) for more.</p>
       <p class="hint"><b>Groups</b> are any hand, board, pile or row. Each has a layout, visibility (private hands, public boards, hidden decks) and optional <b>scoring badges</b> — poker, Omaha, lowball, badugi, blackjack, baccarat, cribbage hand &amp; pegging, gin deadwood, OFC royalties, hearts, trick winner, sums. Comparable groups are ranked and the best gets a 🏆.</p>
@@ -2046,7 +2063,7 @@
   }
 
   // What guests may do. "Play only" rooms keep the design in the host's hands.
-  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback"]);
+  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo"]);
   const GUEST_SPECTATE = new Set(["chat", "feedback", "claimSeat", "releaseSeat"]);
 
   function hostHandle(clientId, action) {
@@ -2423,6 +2440,20 @@
       case "rules-view": prefs.rulesView = el.dataset.view; savePrefs(); renderPane(); break;
       case "rules-template": dispatch({ type: "setNotes", notes: v.notes && v.notes.trim() ? v.notes + "\n\n" + rulesTemplate(v) : rulesTemplate(v) }); break;
       case "rules-generate": generateRules(); break;
+      case "rules-copy": navigator.clipboard?.writeText(v.notes || "").then(() => toast("Rules copied", "good"), () => toast("Couldn't copy", "error")); break;
+      case "rules-download": download(fileSafe(v.title) + "-rules.md", v.notes || E.describeGame(v), "text/markdown"); break;
+      case "dev-copy": navigator.clipboard?.writeText(JSON.stringify(net.mode === "client" ? v : state, null, 2)).then(() => toast("Table JSON copied", "good"), () => toast("Couldn't copy", "error")); break;
+      case "dev-load": {
+        const text = $("#devJson").value.trim();
+        if (!text) return toast("Paste a table or design JSON first.", "error");
+        try {
+          const data = JSON.parse(text);
+          if (data.zones && data.cards) { if (net.mode === "client") return toast("Only the host can load a table.", "error"); replaceState(E.migrate(data), "Table loaded from JSON"); }
+          else if (data.table || data.seat) startFromDesign({ ...data, id: data.id || "pasted" });
+          else throw new Error("That JSON isn't a table or a design");
+        } catch (error) { toast("Couldn't load: " + error.message, "error"); }
+        break;
+      }
       case "rules-mode": dispatch({ type: "setRules", mode: el.dataset.mode }); break;
       case "cycle-rules": dispatch({ type: "setRules", mode: { off: "warn", warn: "enforce", enforce: "off" }[v.rulesMode] || "warn" }); break;
       case "edit-zone-rules": {
@@ -2582,7 +2613,14 @@
       const card = event.target.closest(".card[data-card-id]");
       if (card) {
         const id = card.dataset.cardId;
-        if (selection.has(id)) selection.delete(id); else selection.add(id);
+        const zone = E.zoneOf(view, id);
+        if (event.shiftKey && lastClicked && zone && zone.cards.includes(lastClicked)) {
+          // Shift-click selects the run of cards between the last click and this one.
+          const [a, b] = [zone.cards.indexOf(lastClicked), zone.cards.indexOf(id)].sort((x, y) => x - y);
+          zone.cards.slice(a, b + 1).forEach((cid) => selection.add(cid));
+        } else if (selection.has(id)) selection.delete(id);
+        else selection.add(id);
+        lastClicked = id;
         render();
         return;
       }
@@ -2670,6 +2708,7 @@
       if (d.playerTeam) return dispatch({ type: "updatePlayer", player: d.playerTeam, patch: { team: el.value } });
       if (d.botFallback !== undefined) return dispatch({ type: "setBotFallback", macro: el.value });
       if (d.playsPerTurn !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", playsPerTurn: Number(el.value) });
+      if (d.mustPlay !== undefined) return dispatch({ type: "setBotFallback", macro: view.botFallback || "", mustPlay: el.checked });
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
@@ -2742,6 +2781,10 @@
     $("#selectionBar").addEventListener("click", (event) => {
       const el = event.target.closest("[data-sel]");
       if (el) handleSelectionBar(el);
+    });
+    $("#dock").addEventListener("click", (event) => {
+      const act = event.target.closest("[data-act]");
+      if (act) handleAct(act, event);
     });
     $("#turnStrip").addEventListener("click", (event) => {
       const act = event.target.closest("[data-act]");
@@ -3177,7 +3220,7 @@
           <div class="grid-2">
             <label class="field"><span>When</span><select name="event">${Object.entries(E.TRIGGER_EVENTS).map(([id, def]) => `<option value="${id}"${draft.event === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
             ${fields.includes("zone") ? `<label class="field"><span>Group <span class="dim">a table group, or a seat group for every player</span></span><input type="text" name="zone" list="triggerRefs" value="${esc(draft.zone)}" required></label>` : ""}
-            ${fields.includes("n") ? (draft.event === "score" ? `<label class="field"><span>Score</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
+            ${fields.includes("n") ? (draft.event === "allFull" ? `<label class="field"><span>Cards in each</span><input type="number" name="n" min="1" max="500" value="${draft.n || 1}"></label>` : draft.event === "score" ? `<label class="field"><span>Score</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
             ${fields.includes("card") ? `<label class="field"><span>Card <span class="dim">rank, name or card like Qs; blank = any</span></span><input type="text" name="card" maxlength="24" value="${esc(draft.card || "")}" placeholder="e.g. Skip, 8, Qs"></label>` : ""}
             ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label>` : ""}
             <label class="field"><span>Only during phase <span class="dim">optional</span></span><input type="text" name="during" list="phaseNames" value="${esc(draft.during || "")}" placeholder="any phase"></label>
@@ -3722,8 +3765,8 @@
 
   // ====================================================== CUSTOM CARD CSV
   const COLOR_NAMES = { red: "#d9434b", yellow: "#b98a00", green: "#23915a", blue: "#3b63d9", black: "#2a2d36", purple: "#7a52e0", violet: "#7a52e0", orange: "#e07b28", pink: "#d6488f", teal: "#159a9c", gray: "#6b7280", grey: "#6b7280", white: "#9ca3af", gold: "#c9a227", brown: "#8b5a2b" };
-  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text", "image"];
-  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text", image: "image", art: "image", picture: "image", url: "image" };
+  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text", "image", "home"];
+  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text", image: "image", art: "image", picture: "image", url: "image", home: "home", pile: "home", starts: "home" };
 
   function splitRow(line, delimiter) {
     const out = [];
@@ -3770,13 +3813,14 @@
         icon: item.icon || "",
         text: item.text || "",
         image: item.image || "",
+        home: item.home || "",
       };
     }).filter(Boolean);
   }
 
   function customCardsCsv(items) {
     const quote = (cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`;
-    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text", "image"];
+    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text", "image", "home"];
     return [header.join(","), ...items.map((item) => CUSTOM_COLUMNS.map((key) => quote(item[key])).join(","))].join("\n");
   }
 
@@ -3920,7 +3964,8 @@
     const base = E.clone(state);
     const deal = base.macros.find((macro) => macro.id === botGames.cfg.deal) || base.macros[0];
     if (!deal) return toast("Build a deal action first.", "error");
-    if (!base.scores.target && !base.scores.maxRounds) return toast("Set how the game ends first (Scores → End of game), or games never finish.", "error");
+    const endsByAction = base.macros.some((macro) => macro.steps.some((step) => step.op === "endGame"));
+    if (!base.scores.target && !base.scores.maxRounds && !endsByAction) return toast("Set how the game ends first (Scores → End of game), or games never finish.", "error");
     let other = null;
     if (botGames.cfg.against) {
       const [designId, version] = botGames.cfg.against.split("#");
@@ -3929,7 +3974,7 @@
       if (!source) return toast("That saved design is gone.", "error");
       const table = E.createTable(source, { players: base.players.map((player) => ({ name: player.name, botStyle: player.botStyle })) });
       const otherDeal = table.macros.find((macro) => macro.label === deal.label) || table.macros[0];
-      if (!otherDeal || (!table.scores.target && !table.scores.maxRounds)) return toast("The comparison design needs a deal action and an end condition.", "error");
+      if (!otherDeal || (!table.scores.target && !table.scores.maxRounds && !table.macros.some((macro) => macro.steps.some((step) => step.op === "endGame")))) return toast("The comparison design needs a deal action and an end condition.", "error");
       other = { table, deal: otherDeal, name: (source.name || "Saved design") + (version !== undefined ? ` (version ${new Date(design.versions[Number(version)].t).toLocaleDateString()})` : "") };
     }
     const games = Math.max(1, Math.min(500, Number(botGames.cfg.games) || 30));
@@ -3956,7 +4001,7 @@
   function botGamesHTML(v) {
     const r = botGames.result;
     const c = botGames.compare;
-    const ends = v.scores.target ? `first to ${E.fmt(v.scores.target)}` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds` : "no end condition";
+    const ends = v.scores.target ? `first to ${E.fmt(v.scores.target)}` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds` : v.macros.some((macro) => macro.steps.some((step) => step.op === "endGame")) ? "until an action ends it" : "no end condition";
     const library = loadLibrary();
     const againstOptions = library.flatMap((design) => [[design.id, design.name], ...(design.versions || []).map((version, i) => [`${design.id}#${i}`, `${design.name}, version from ${new Date(version.t).toLocaleString()}`])]);
     const seatRows = r ? r.wins.map((wins, seat) => {
@@ -4124,6 +4169,8 @@
     form.rAccept.value = rule.accept || "any";
     form.rOrder.value = rule.order || "any";
     form.rMeld.value = rule.meld || "none";
+    form.rPhase.value = rule.phase || "";
+    form.rCost.value = rule.cost || "";
     form.rFirst.value = rule.first || "";
     form.rWild.value = (rule.wild || []).join(", ");
     for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"]]) form[field].checked = Boolean(rule[key]);
@@ -4146,6 +4193,8 @@
       score: { label: "Score hands", hint: "Each player scores their hand, then a new round", steps: [{ op: "scoreZones", zone: handKey }, { op: "nextRound" }] },
       showdown: { label: "Showdown", hint: "Reveal, find the best hand, award the pot", steps: [{ op: "flip", zone: handKey, face: "up" }, { op: "findWinner", zone: handKey }, { op: "awardPot", who: "winner" }] },
       draft: { label: "Pass hands left", steps: [{ op: "passZones", zone: handKey, dir: "left" }] },
+      mulligan: { label: "Mulligan", hint: "Shuffle your hand back and draw one fewer", steps: [{ op: "clear", from: handKey + "@current", to: deckKey, face: "down" }, { op: "shuffle", zone: deckKey }, { op: "deal", from: deckKey, to: handKey + "@current", count: 4 }] },
+      peek: { label: "See the future", hint: "Current player looks at the top three cards", steps: [{ op: "peekTop", zone: deckKey, count: 3, who: "current" }] },
     };
   }
 
@@ -4568,6 +4617,17 @@
     bubble.style.left = Math.max(12, Math.min(window.innerWidth - width - 12, rect.left + rect.width / 2 - width / 2)) + "px";
   }
 
+  // ================================================================ DOCK
+  /** On phones, keep the main actions one tap away while the panel is closed. */
+  function renderDock() {
+    const dock = $("#dock");
+    const show = window.innerWidth <= 820 && !prefs.side && !selection.size && !replay.active && view && view.macros.length > 0;
+    dock.hidden = !show;
+    if (!show) return;
+    dock.innerHTML = view.macros.slice(0, 3).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("")
+      + `<button class="btn sm" data-act="hint" title="Hint">💡</button><button class="btn sm primary" data-act="next-turn">Next ›</button>`;
+  }
+
   // ============================================================== INIT
   function init() {
     applyPrefs();
@@ -4589,6 +4649,10 @@
       else if (firstVisit && !load(STORE.seen, false)) openNewGame();
     });
     window.addEventListener("hashchange", () => openLinkFromHash());
+    // Offline support and "install as an app" (served over https or localhost only).
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
   }
 
   init();

@@ -52,6 +52,28 @@
     return { preset: "none", custom };
   }
 
+  // Market Builder: a small deck-builder made of custom cards that start in market piles.
+  function marketDeck() {
+    const stack = (label, count, extra) => {
+      const out = [];
+      for (let left = count; left > 0; left -= 20) out.push({ label, count: Math.min(20, left), ...extra });
+      return out;
+    };
+    return {
+      preset: "none",
+      back: { color: "#6b4f2a", text: "MARKET" },
+      custom: [
+        ...stack("Copper", 60, { suit: "Treasure", color: "#b87333", value: 0, icon: "●", text: "+1 coin", home: "copper" }),
+        ...stack("Silver", 40, { suit: "Treasure", color: "#8a949e", value: 3, icon: "●●", text: "+2 coins", home: "silver" }),
+        ...stack("Gold", 30, { suit: "Treasure", color: "#c9a227", value: 6, icon: "●●●", text: "+3 coins", home: "gold" }),
+        ...stack("Acre", 24, { suit: "Victory", color: "#3f8f4e", value: 2, icon: "🌾", text: "1 victory point", home: "acre" }),
+        ...stack("Manor", 12, { suit: "Victory", color: "#2f6fb0", value: 5, icon: "🏠", text: "3 victory points", home: "manor" }),
+        ...stack("Castle", 12, { suit: "Victory", color: "#7a3fb0", value: 8, icon: "🏰", text: "6 victory points", home: "castle" }),
+      ],
+    };
+  }
+  const marketPile = (key, name) => ({ key, name, kind: "pile", layout: "stack", visibility: "public", face: "up", rule: { place: "nobody", cost: "Coins" } });
+
   const PRESETS = [
     {
       id: "sandbox",
@@ -359,20 +381,26 @@
       description: "Four players, 13 cards each. The trick group names the winner; won tricks count heart points.",
       players: { min: 3, max: 6, default: 4 },
       deck: { preset: "standard" },
-      table: [deck(), trick()],
-      seat: [hand({ evals: ["hearts-points"] }), { key: "tricks", name: "Tricks won", kind: "pile", layout: "overlap", visibility: "public", face: "up", evals: ["hearts-points"] }],
+      table: [deck(), trick({ rule: { place: "turn", follow: true, once: true, advance: true, phase: "Play" } })],
+      seat: [
+        hand({ evals: ["hearts-points"] }),
+        { key: "pass", name: "Pass", kind: "pile", layout: "spread", visibility: "owner", face: "down", limit: 3, rule: { place: "owner", phase: "Pass" } },
+        { key: "tricks", name: "Tricks won", kind: "pile", layout: "overlap", visibility: "public", face: "up", evals: ["hearts-points"] },
+      ],
       phases: ["Pass", "Play"],
       macros: [
         { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }, phase("Pass"), { op: "setTurn", who: "next" }] },
+        { label: "Pass cards", hint: "Runs by itself once everyone has put 3 cards in Pass", steps: [{ op: "passZones", zone: "pass", dir: "left" }, { op: "clear", from: "pass", to: "hand", perSeat: true }, { op: "sort", zone: "hand", by: "suit" }, phase("Play"), { op: "setTurn", who: "next" }, say("Cards passed left")] },
         takeTrick(),
         { label: "Score hand", hint: "Everyone scores the hearts in their tricks", steps: [{ op: "scoreZones", zone: "tricks", evaluator: "hearts-points" }, say("Hand scored"), { op: "nextRound" }] },
       ],
       triggers: [
+        { event: "allFull", zone: "pass", n: 3, macro: "Pass cards" },
         { event: "count", zone: "trick", n: 0, macro: "Take trick" },
         { event: "allEmpty", zone: "hand", macro: "Score hand" },
       ],
       scoring: { target: 100, lowWins: true, label: "Points" },
-      rules: "Hearts\n\n• Pass 3 cards (left, right, across, hold).\n• 2♣ leads. Follow suit if you can. Hearts can't lead until broken.\n• Each heart = 1, Q♠ = 13. Shooting the moon: 0 for you, 26 for everyone else.\n• Game ends at 100; lowest score wins.\n\nAutomated: the trick checks follow-suit and turn order, the winner takes it and leads, and each hand is scored when every hand is empty.",
+      rules: "Hearts\n\n• Pass 3 cards (left, right, across, hold).\n• 2♣ leads. Follow suit if you can. Hearts can't lead until broken.\n• Each heart = 1, Q♠ = 13. Shooting the moon: 0 for you, 26 for everyone else.\n• Game ends at 100; lowest score wins.\n\nAutomated: put 3 cards in your Pass pile and when everyone has, they pass left and play starts; the trick checks follow-suit and turn order, the winner takes it and leads, and each hand is scored when every hand is empty. (Passing is always to the left here: edit the Pass cards action to rotate it.)",
     },
     {
       id: "spades",
@@ -449,6 +477,7 @@
         { event: "empty", zone: "hand", macro: "Out!" },
       ],
       botFallback: "Draw",
+      mustPlay: true,
       scoring: { target: 200, label: "Points" },
       rules: "Crazy Eights\n\nOn your turn, play a card matching the top discard by suit or rank, or draw. 8s are wild: play one any time and name the next suit.\n\nWhen someone plays their last card they score the penalty points left in every other hand (8 = 50, faces 10, others pip value). First to 200 wins.\n\nAutomated: plays are checked against the discard, the turn passes after a play, the stock reshuffles itself, and going out scores the round.",
     },
@@ -607,6 +636,65 @@
       ],
       scoring: { rounds: 9, lowWins: true, label: "Strokes" },
       rules: "Golf\n\n• Each player has a 2×3 grid of face-down cards and turns two face up.\n• On your turn draw from the pile (or take the discard), then swap it with any grid card (drag it into your grid and the replaced card to the discard), or discard it.\n• When a player's grid is all face up, everyone else gets one more turn, then Score hole.\n• Strokes: A = 1, 2 = −2, 3–10 face value, J/Q = 10, K = 0. Nine holes; lowest total wins.",
+    },
+    {
+      id: "market-builder",
+      name: "Market Builder",
+      family: "Deck-building",
+      tagline: "Buy cards with coins, grow your deck, grab the castles",
+      description: "Everyone starts with a small deck of coins and acres. Play your coins, buy better cards from the market, and when the castles run out the most victory points wins.",
+      players: { min: 2, max: 4, default: 2 },
+      deck: marketDeck(),
+      rulesMode: "enforce",
+      table: [
+        { key: "trash", name: "Trash", kind: "deck", layout: "stack", visibility: "public", face: "up" },
+        marketPile("copper", "Copper · 0"),
+        marketPile("silver", "Silver · 3"),
+        marketPile("gold", "Gold · 6"),
+        marketPile("acre", "Acre · 2"),
+        marketPile("manor", "Manor · 5"),
+        marketPile("castle", "Castle · 8"),
+      ],
+      seat: [
+        { key: "deck", name: "Deck", kind: "deck", layout: "stack", visibility: "hidden", face: "down" },
+        hand({ evals: ["points:treasure"] }),
+        { key: "play", name: "In play", kind: "row", layout: "spread", visibility: "public", face: "up", evals: ["points:treasure"], rule: { place: "owner" } },
+        { key: "discard", name: "Discard", kind: "discard", layout: "stack", visibility: "public", face: "up" },
+      ],
+      counters: [{ name: "Coins" }],
+      schemes: [
+        { id: "treasure", name: "Coins", ranks: { A: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, T: 0, J: 0, Q: 0, K: 0 }, customValues: false, cards: "Copper=1, Silver=2, Gold=3" },
+        { id: "vp", name: "Victory points", ranks: { A: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, T: 0, J: 0, Q: 0, K: 0 }, customValues: false, cards: "Acre=1, Manor=3, Castle=6" },
+      ],
+      macros: [
+        { label: "Set up", hint: "7 Copper and 3 Acres each, then draw 5", steps: [
+          { op: "deal", from: "copper", to: "deck", count: 7 }, { op: "deal", from: "acre", to: "deck", count: 3 },
+          { op: "shuffle", zone: "deck" }, { op: "deal", from: "deck", to: "hand", count: 5, perSeat: true },
+          { op: "setCounter", who: "all", name: "Coins", amount: 0 }, { op: "setTurn", who: "next" }, { op: "runAction", macro: "Play treasures" },
+        ] },
+        { label: "Play treasures", hint: "Runs by itself at the start of each turn: lay out your hand and count your coins", steps: [{ op: "clear", from: "hand@current", to: "play@current", face: "up" }, { op: "counterFormula", who: "current", name: "Coins", formula: "play_value" }] },
+        { label: "End turn", hint: "Discard everything, draw 5, pass", steps: [
+          { op: "clear", from: "play@current", to: "discard@current", face: "up" }, { op: "clear", from: "hand@current", to: "discard@current", face: "up" },
+          { op: "setCounter", who: "current", name: "Coins", amount: 0 }, { op: "runAction", macro: "Draw 5" }, { op: "nextTurn" },
+        ] },
+        { label: "Draw 5", hint: "Refill to 5, reshuffling your discard if the deck runs out", steps: [
+          { op: "refill", from: "deck@current", to: "hand@current", count: 5 }, { op: "stopIf", zone: "hand@current", cmp: ">=", n: 5 },
+          { op: "clear", from: "discard@current", to: "deck@current", face: "down" }, { op: "shuffle", zone: "deck@current" },
+          { op: "refill", from: "deck@current", to: "hand@current", count: 5 },
+        ] },
+        { label: "Final score", hint: "Count everyone's victory points and end the game", steps: [
+          { op: "clear", from: "hand", to: "deck", perSeat: true }, { op: "clear", from: "play", to: "deck", perSeat: true }, { op: "clear", from: "discard", to: "deck", perSeat: true },
+          { op: "scoreZones", zone: "deck", evaluator: "points:vp" }, { op: "endGame" },
+        ] },
+      ],
+      triggers: [
+        { event: "turn", macro: "Play treasures" },
+        { event: "empty", zone: "castle", macro: "Final score" },
+      ],
+      botFallback: "End turn",
+      playsPerTurn: 0,
+      scoring: { label: "Victory points" },
+      rules: "Market Builder\n\n• Press Set up: everyone gets 7 Copper and 3 Acres, shuffled, and draws 5.\n• At the start of your turn your hand is laid out and your coins counted (Coins counter). Buy: drag cards from the market piles to your Discard. Each card costs the number on its pile, paid automatically; you can't overspend.\n• Press End turn: everything goes to your discard, you draw 5 (reshuffling your discard when your deck runs out), and play passes.\n• When the last Castle is bought the game ends: Acre 1, Manor 3, Castle 6 victory points.\n\nBuilt entirely from general tools: custom cards that start in their own piles, a cost rule on the market, counters, formulas and triggers.",
     },
     {
       id: "klondike",
