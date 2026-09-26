@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
-const { PeerRoom } = require("./peer-room.js");
+const { PeerRoom } = require("../peer-room.js");
 
 class Connection extends EventEmitter {
   constructor(peer) { super(); this.peer = peer; this.open = true; this.messages = []; }

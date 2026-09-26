@@ -29,6 +29,9 @@ jobs:
           cache: npm
           cache-dependency-path: gym/package-lock.json
 
+      - name: Test site pages
+        run: node scripts/run-tests.mjs
+
       - name: Install dependencies
         working-directory: gym
         run: npm ci
@@ -62,9 +65,17 @@ jobs:
             --exclude '.openai' \
             --exclude '_site' \
             --exclude 'gym' \
+            --exclude 'jazz-piano-ml' \
             --exclude 'node_modules' \
             --exclude 'redirects.json' \
+            --exclude 'package.json' \
+            --exclude '.gitignore' \
+            --exclude '.DS_Store' \
+            --exclude '*.md' \
             --exclude 'scripts' \
+            --exclude 'simulation' \
+            --exclude 'solver' \
+            --exclude 'tests' \
             ./ _site/
           mkdir -p _site/gym
           cp -R gym/dist/. _site/gym/

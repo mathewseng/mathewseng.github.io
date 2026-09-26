@@ -478,7 +478,7 @@ class MultiplayerManager {
                 this.playerOrder = hostFirst;
             }
             
-            // Notify main.js to restore game state
+            // Notify app.js to restore game state
             if (this.onBecomeHost) {
                 this.onBecomeHost(this.lastFullGameState);
             }

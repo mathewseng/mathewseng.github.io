@@ -364,11 +364,11 @@ Bob: -$2 total
 ```
 ultimate-omaha/
 ├── index.html      # Main HTML structure
-├── style.css       # All styles
+├── styles.css      # All styles
 ├── poker.js        # Hand evaluation, deck management
 ├── game.js         # Game state, betting, payouts
 ├── multiplayer.js  # PeerJS networking
-└── main.js         # UI controller, event handling
+└── app.js          # UI controller, event handling
 ```
 
 ### 5.2 Key Classes
@@ -397,7 +397,7 @@ ultimate-omaha/
 - `broadcastGameState(state)` - Filtered per-player state
 - `filterStateForPlayer(state, playerId)` - Hide other hole cards
 
-**`GameController` (main.js)** - UI Controller
+**`GameController` (app.js)** - UI Controller
 - `updateGameUI(state)` - Render game state
 - `updatePlayersArea(players, phase, results)` - Player boxes
 - `updateActionButtons(state, myPlayer)` - Action area

@@ -376,15 +376,15 @@ Carol: -$1 total
 ```
 edge-the-dealer/
 ├── index.html              # Main HTML structure
-├── style.css               # All styles (imports ../ultimate-omaha/style.css)
+├── styles.css              # All styles (imports ../ultimate-omaha/styles.css)
 ├── game.js                 # Game state, draw logic, showdown resolution
-├── main.js                 # UI controller, event handling, multiplayer orchestration
-└── EDGE_THE_DEALER_PRD.md  # This document
+├── app.js                  # UI controller, event handling, multiplayer orchestration
+└── docs/PRD.md             # This document
 
 Shared dependencies (from ../ultimate-omaha/):
 ├── poker.js                # Hand evaluation, deck management
 ├── multiplayer.js          # PeerJS networking, host migration
-└── style.css               # Base styles (imported via @import)
+└── styles.css              # Base styles (imported via @import)
 ```
 
 ### 5.2 Key Classes
@@ -420,7 +420,7 @@ Shared dependencies (from ../ultimate-omaha/):
 - `filterStateForPlayer(state, playerId)` - Hide other players' hole cards
 - `sendToHost(data)` / `sendToPeer(peerId, data)` - Direct messaging
 
-**`EdgeTheDealerController` (main.js)** - UI Controller
+**`EdgeTheDealerController` (app.js)** - UI Controller
 - `updateGameUI(state)` - Render full game state to DOM
 - `updateDealerCards(state)` - Render dealer's 7 cards (grouped)
 - `updateHoleCards(cards, canSelect)` - Render player's hand with selection
