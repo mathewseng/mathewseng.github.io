@@ -1,0 +1,13 @@
+{
+  "name": "Card Table Workshop",
+  "short_name": "Card Workshop",
+  "description": "Design, playtest and play card games: rules, triggers, custom decks, bots and online rooms.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

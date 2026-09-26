@@ -4649,6 +4649,10 @@
       else if (firstVisit && !load(STORE.seen, false)) openNewGame();
     });
     window.addEventListener("hashchange", () => openLinkFromHash());
+    // Offline support and "install as an app" (served over https or localhost only).
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
   }
 
   init();
