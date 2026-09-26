@@ -1,6 +1,6 @@
 # blackjack_solver
 
-Rust source for the `/blackjack-strategy/` browser solver.
+Rust source for the `/blackjack/strategy/` browser solver.
 
 ## Commands
 

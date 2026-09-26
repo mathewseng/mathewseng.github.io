@@ -147,7 +147,7 @@
 
       .summary-panel {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--card);
@@ -560,12 +560,16 @@
         </div>
         <div>
           <p class="intro-copy">
-            A clean index for the public projects in this repo. Most run directly in the browser; utility projects link to their source.
+            Every project runs directly in the browser. Poker, OFC, and blackjack each open to a hub of their tools.
           </p>
           <div class="summary-panel" aria-label="Repository summary">
             <div>
-              <strong>11</strong>
-              <span>live apps</span>
+              <strong>6</strong>
+              <span>projects</span>
+            </div>
+            <div>
+              <strong>14</strong>
+              <span>live pages</span>
             </div>
             <div>
               <strong>1</strong>
@@ -651,45 +655,20 @@
             <div class="project-body">
               <div>
                 <div class="project-title">
-                  <h3>Mixed Poker</h3>
+                  <h3>Poker</h3>
                   <span class="status live">Live</span>
                 </div>
-                <p>Peer-to-peer cash tables for 30 hold'em, Omaha, stud, draw, Badugi, Dramaha, and Archie games.</p>
+                <p>Mixed-game cash tables, Poker Rush, Ultimate Omaha and Edge the Dealer prototypes, Dodge reports, and hand-ranking odds.</p>
               </div>
               <div class="meta-row">
                 <span>multiplayer</span>
                 <span>mixed games</span>
-                <span>peer-to-peer</span>
+                <span>research</span>
               </div>
             </div>
           </a>
 
-          <a class="project-card" href="/poker/dodge/report/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-cards">
-                <span class="mini-card spade">A</span>
-                <span class="mini-card heart">K</span>
-                <span class="mini-card diamond">8</span>
-                <span class="mini-card club">3</span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Dodge Reports</h3>
-                  <span class="status live">Research</span>
-                </div>
-                <p>Draw until a straight or better busts your hand. Explore all 16,432 starting hands, survival curves, bust outs, and game design scenarios.</p>
-              </div>
-              <div class="meta-row">
-                <span>poker</span>
-                <span>simulations</span>
-                <span>reports</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/blackjack-strategy/">
+          <a class="project-card" href="/blackjack/">
             <div class="preview" aria-hidden="true">
               <div class="mini-table">
                 <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
@@ -700,10 +679,10 @@
             <div class="project-body">
               <div>
                 <div class="project-title">
-                  <h3>Blackjack Strategy Lab</h3>
+                  <h3>Blackjack</h3>
                   <span class="status live">Live</span>
                 </div>
-                <p>Browser strategy chart with EV views, rules controls, and count-index tooling.</p>
+                <p>Strategy Lab: rules-aware basic strategy chart with EV views and Hi-Lo count indices from a Rust/WASM solver.</p>
               </div>
               <div class="meta-row">
                 <span>blackjack</span>
@@ -738,100 +717,6 @@
                 <span>audio</span>
                 <span>tuning</span>
                 <span>canvas</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/poker-rush/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-grid">
-                <span></span><span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span><span></span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Poker Rush</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Seeded poker sprint with daily, random, and multiplayer modes.</p>
-              </div>
-              <div class="meta-row">
-                <span>poker</span>
-                <span>daily</span>
-                <span>game</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/poker/calculations/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-table">
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Poker Calculations</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Hand-ranking probability table generated by an exhaustive Rust solver with Monte Carlo fallback.</p>
-              </div>
-              <div class="meta-row">
-                <span>poker</span>
-                <span>odds</span>
-                <span>Rust</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/edge-the-dealer/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-board">
-                <span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Edge the Dealer</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Table-game prototype focused on quick decisions and compact play flow.</p>
-              </div>
-              <div class="meta-row">
-                <span>cards</span>
-                <span>prototype</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/ultimate-omaha/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-cards">
-                <span class="mini-card heart">A</span>
-                <span class="mini-card club">9</span>
-                <span class="mini-card diamond">8</span>
-                <span class="mini-card spade">7</span>
-                <span class="mini-card gold">5</span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Ultimate Omaha</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Omaha table-game prototype with local game logic and multiplayer files.</p>
-              </div>
-              <div class="meta-row">
-                <span>omaha</span>
-                <span>cards</span>
               </div>
             </div>
           </a>
@@ -885,7 +770,7 @@
       </section>
 
       <footer>
-        Built as static pages. No login, no build step, no backend for the public apps.
+        Static pages on GitHub Pages. No login and no backend.
       </footer>
     </main>
   </body>

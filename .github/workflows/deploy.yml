@@ -63,10 +63,15 @@ jobs:
             --exclude '_site' \
             --exclude 'gym' \
             --exclude 'node_modules' \
+            --exclude 'redirects.json' \
+            --exclude 'scripts' \
             ./ _site/
           mkdir -p _site/gym
           cp -R gym/dist/. _site/gym/
           touch _site/.nojekyll
+
+      - name: Add redirects for moved pages
+        run: node scripts/build-redirects.mjs _site
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

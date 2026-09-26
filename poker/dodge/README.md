@@ -1,6 +1,6 @@
 # Dodge reports
 
-Static, dependency-free report at `/poker/dodge/report/`. Serve the repository over HTTP; no build or backend is required. All simulations are precomputed and checked into `data/hands.json`.
+Static, dependency-free report at `/poker/dodge/`. Serve the repository over HTTP; no build or backend is required. All simulations are precomputed and checked into `data/hands.json`.
 
 ## Rules
 
@@ -28,10 +28,10 @@ Cards use the site's GTO Wizard-inspired four-color treatment. Each class maximi
 From the repository root:
 
 ```sh
-clang++ -O3 -std=c++17 -pthread poker/dodge/report/simulation/generate.cpp -o /tmp/dodge-sim
+clang++ -O3 -std=c++17 -pthread poker/dodge/simulation/generate.cpp -o /tmp/dodge-sim
 /tmp/dodge-sim --self-test
-/tmp/dodge-sim 1000000 10 poker/dodge/report/data/hands.json
-node --test poker/dodge/report/tests/report.test.mjs
+/tmp/dodge-sim 1000000 10 poker/dodge/data/hands.json
+node --test poker/dodge/tests/report.test.mjs
 python3 -m http.server 4173 --bind 127.0.0.1
 ```
 

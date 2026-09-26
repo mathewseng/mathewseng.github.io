@@ -20,7 +20,7 @@ import {
   wilson,
 } from "../engine.mjs";
 const require = createRequire(import.meta.url);
-const evaluator = require("../../../evaluator.js");
+const evaluator = require("../../play/evaluator.js");
 const data = JSON.parse(
   fs.readFileSync(new URL("../data/hands.json", import.meta.url), "utf8"),
 );
@@ -174,7 +174,7 @@ test("Monte Carlo matches exact first- and second-draw probabilities for every c
 test("deal-weighted survival matches the independent exact rank-DP dataset through 13 held cards", () => {
   const exact = JSON.parse(
     fs.readFileSync(
-      new URL("../../../calculations/data/probabilities.json", import.meta.url),
+      new URL("../../calculations/data/probabilities.json", import.meta.url),
       "utf8",
     ),
   );

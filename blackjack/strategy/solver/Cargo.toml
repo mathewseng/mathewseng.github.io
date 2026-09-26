@@ -2,7 +2,7 @@
 name = "blackjack_solver"
 version = "0.1.0"
 edition = "2021"
-description = "Rules-aware blackjack basic strategy and Hi-Lo index solver for the static /blackjack-strategy app."
+description = "Rules-aware blackjack basic strategy and Hi-Lo index solver for the static /blackjack/strategy/ app."
 publish = false
 
 [lib]

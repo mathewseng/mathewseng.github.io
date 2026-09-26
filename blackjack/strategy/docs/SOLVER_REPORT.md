@@ -1,6 +1,6 @@
 # Solver Report
 
-Generated for the `/blackjack-strategy/` static app on 2026-04-25.
+Generated for the `/blackjack/strategy/` static app on 2026-04-25.
 
 ## Engine
 

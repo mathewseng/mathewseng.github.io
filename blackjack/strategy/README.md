@@ -1,6 +1,6 @@
 # Blackjack Strategy Lab
 
-Static GitHub Pages app at `/blackjack-strategy/`.
+Static GitHub Pages app at `/blackjack/strategy/`.
 
 ## What ships
 
@@ -14,7 +14,7 @@ Static GitHub Pages app at `/blackjack-strategy/`.
 ## Build
 
 ```sh
-cd blackjack-strategy/solver
+cd blackjack/strategy/solver
 cargo fmt --check
 cargo check
 RUSTFLAGS='-C target-cpu=mvp -C target-feature=-call-indirect-overlong,-reference-types,-multivalue,-bulk-memory,-mutable-globals,-sign-ext' cargo build --release --target wasm32-unknown-unknown --lib
@@ -26,7 +26,7 @@ cp target/wasm32-unknown-unknown/release/blackjack_solver.wasm ../assets/blackja
 ## Tests
 
 ```sh
-node --test blackjack-strategy/tests/solver-regression.test.mjs
+node --test blackjack/strategy/tests/solver-regression.test.mjs
 ```
 
 The regression suite validates physical-card dead-card removal, normalized EV/probability output, bounded index generation, published Hi-Lo source rows, Custom-vs-source index audit deltas, and a representative matrix of rule/count settings.
