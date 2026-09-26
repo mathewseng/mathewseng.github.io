@@ -1,29 +1,136 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="blackjack">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#05070b" />
-    <meta name="description" content="Blackjack strategy tools backed by a Rust/WASM expected-value solver." />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Blackjack basic strategy and Hi-Lo count indices from a Rust solver compiled to WebAssembly." />
     <title>Blackjack</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%23f4c95d'%3E♠%3C/text%3E%3C/svg%3E" />
     <link rel="stylesheet" href="../shared/hub.css" />
+    <script src="../shared/hub.js" defer></script>
   </head>
   <body>
-    <main>
-      <a class="back" href="/">Home</a>
-      <p class="eyebrow">Strategy and EV</p>
-      <h1>Blackjack</h1>
+    <div class="shell">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Blackjack</span>
+        </nav>
+        <nav class="switcher" aria-label="Game families">
+          <a href="/ofc/" data-to="ofc">OFC</a>
+          <a href="/poker/" data-to="poker">Poker</a>
+          <a href="/blackjack/" data-to="blackjack" aria-current="page">Blackjack</a>
+        </nav>
+      </header>
 
-      <section class="grid" aria-label="Blackjack tool directory">
-        <a class="card" href="/blackjack/strategy/">
-          <h2>Strategy Lab</h2>
-          <p>Rules-aware basic strategy chart with EV views, rules controls, and Hi-Lo count indices.</p>
-        </a>
-        <a class="card" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md">
-          <h2>Solver Report</h2>
-          <p>Benchmarks and verification notes for the Rust solver behind the Strategy Lab.</p>
-        </a>
+      <main>
+        <section class="hero" aria-labelledby="hub-title">
+          <div>
+            <p class="eyebrow">Strategy &amp; EV</p>
+            <h1 id="hub-title">Blackjack</h1>
+            <p class="lede">Rules-aware basic strategy and Hi-Lo count indices, solved right in your browser by a Rust engine compiled to WebAssembly.</p>
+            <ul class="facts" aria-label="At a glance">
+            <li><b>280</b> chart cells</li>
+            <li><b>~20 µs</b> per solve</li>
+            <li>Hi-Lo indices</li>
+            </ul>
+          </div>
+          <div class="fan" aria-hidden="true">
+            <div class="fan-inner">
+          <div class="pcard" style="--k: -0.8; --y: 0px; --n: 0"><span class="idx">A<i>♠</i></span><span class="pip">♠</span><span class="idx flip">A<i>♠</i></span></div>
+          <div class="pcard red" style="--k: 0.8; --y: 0px; --n: 1"><span class="idx">K<i>♥</i></span><span class="pip">♥</span><span class="idx flip">K<i>♥</i></span></div>
+          <div class="chip"></div>
+            </div>
+          </div>
+        </section>
+
+      <section class="group" aria-labelledby="group-tools">
+        <div class="group-head">
+          <h2 id="group-tools">Tools</h2>
+          <span>1 tool</span>
+        </div>
+        <ul class="tiles" role="list">
+          <li class="wide">
+            <a class="tile tile--featured" href="/blackjack/strategy/" style="--i: 0">
+              <div class="tile-main">
+              <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span>
+              <div>
+                <h3>Strategy Lab</h3>
+                <p>Pick the table rules and get the full basic strategy chart with EV views and Hi-Lo count indices, solved in your browser.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>WebAssembly</span><span>Hi-Lo</span><span>EV views</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+              </div>
+              </div>
+              <div class="preview" aria-hidden="true">
+                <div class="chart">
+                  <div class="chart-grid"><b></b><b>2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b>9</b><b class="on">T</b><b>A</b><b>8</b><span class="H" style="--c: 0"></span><span class="H" style="--c: 1"></span><span class="H" style="--c: 2"></span><span class="H" style="--c: 3"></span><span class="H" style="--c: 4"></span><span class="H" style="--c: 5"></span><span class="H" style="--c: 6"></span><span class="H" style="--c: 7"></span><span class="H on" style="--c: 8"></span><span class="H" style="--c: 9"></span><b>9</b><span class="H" style="--c: 10"></span><span class="D" style="--c: 11"></span><span class="D" style="--c: 12"></span><span class="D" style="--c: 13"></span><span class="D" style="--c: 14"></span><span class="H" style="--c: 15"></span><span class="H" style="--c: 16"></span><span class="H" style="--c: 17"></span><span class="H on" style="--c: 18"></span><span class="H" style="--c: 19"></span><b>10</b><span class="D" style="--c: 20"></span><span class="D" style="--c: 21"></span><span class="D" style="--c: 22"></span><span class="D" style="--c: 23"></span><span class="D" style="--c: 24"></span><span class="D" style="--c: 25"></span><span class="D" style="--c: 26"></span><span class="D" style="--c: 27"></span><span class="H on" style="--c: 28"></span><span class="H" style="--c: 29"></span><b>11</b><span class="D" style="--c: 30"></span><span class="D" style="--c: 31"></span><span class="D" style="--c: 32"></span><span class="D" style="--c: 33"></span><span class="D" style="--c: 34"></span><span class="D" style="--c: 35"></span><span class="D" style="--c: 36"></span><span class="D" style="--c: 37"></span><span class="D on" style="--c: 38"></span><span class="H" style="--c: 39"></span><b>12</b><span class="H" style="--c: 40"></span><span class="H" style="--c: 41"></span><span class="S" style="--c: 42"></span><span class="S" style="--c: 43"></span><span class="S" style="--c: 44"></span><span class="H" style="--c: 45"></span><span class="H" style="--c: 46"></span><span class="H" style="--c: 47"></span><span class="H on" style="--c: 48"></span><span class="H" style="--c: 49"></span><b>13</b><span class="S" style="--c: 50"></span><span class="S" style="--c: 51"></span><span class="S" style="--c: 52"></span><span class="S" style="--c: 53"></span><span class="S" style="--c: 54"></span><span class="H" style="--c: 55"></span><span class="H" style="--c: 56"></span><span class="H" style="--c: 57"></span><span class="H on" style="--c: 58"></span><span class="H" style="--c: 59"></span><b>14</b><span class="S" style="--c: 60"></span><span class="S" style="--c: 61"></span><span class="S" style="--c: 62"></span><span class="S" style="--c: 63"></span><span class="S" style="--c: 64"></span><span class="H" style="--c: 65"></span><span class="H" style="--c: 66"></span><span class="H" style="--c: 67"></span><span class="H on" style="--c: 68"></span><span class="H" style="--c: 69"></span><b>15</b><span class="S" style="--c: 70"></span><span class="S" style="--c: 71"></span><span class="S" style="--c: 72"></span><span class="S" style="--c: 73"></span><span class="S" style="--c: 74"></span><span class="H" style="--c: 75"></span><span class="H" style="--c: 76"></span><span class="H" style="--c: 77"></span><span class="H on" style="--c: 78"></span><span class="H" style="--c: 79"></span><b class="on">16</b><span class="S on" style="--c: 80"></span><span class="S on" style="--c: 81"></span><span class="S on" style="--c: 82"></span><span class="S on" style="--c: 83"></span><span class="S on" style="--c: 84"></span><span class="H on" style="--c: 85"></span><span class="H on" style="--c: 86"></span><span class="H on" style="--c: 87"></span><span class="H hit-me" style="--c: 88"></span><span class="H on" style="--c: 89"></span><b>17</b><span class="S" style="--c: 90"></span><span class="S" style="--c: 91"></span><span class="S" style="--c: 92"></span><span class="S" style="--c: 93"></span><span class="S" style="--c: 94"></span><span class="S" style="--c: 95"></span><span class="S" style="--c: 96"></span><span class="S" style="--c: 97"></span><span class="S on" style="--c: 98"></span><span class="S" style="--c: 99"></span></div>
+                  <div class="chart-key">
+                    <div><span style="--swatch: var(--hit)">Hit</span><span style="--swatch: var(--stand)">Stand</span><span style="--swatch: var(--double)">Double</span></div>
+                    <div><strong>16 v 10</strong> · Hit</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </li>
+        </ul>
       </section>
-    </main>
+      <section class="group" aria-labelledby="group-reference">
+        <div class="group-head">
+          <h2 id="group-reference">Reference</h2>
+          <span>3 tools</span>
+        </div>
+        <ul class="tiles" role="list">
+          <li>
+            <a class="tile" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" target="_blank" rel="noopener" style="--i: 1">
+              <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+              <div>
+                <h3>Solver Report<span class="visually-hidden"> (opens GitHub)</span></h3>
+                <p>Engine details and benchmark results for the Rust solver behind the Strategy Lab.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>GitHub</span><span>Benchmarks</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="tile" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md" target="_blank" rel="noopener" style="--i: 2">
+              <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+              <div>
+                <h3>Metrics Notes<span class="visually-hidden"> (opens GitHub)</span></h3>
+                <p>How house edge and player EV are estimated, and the rule adjustments the model applies.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>GitHub</span><span>Methodology</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="tile" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs" target="_blank" rel="noopener" style="--i: 3">
+              <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+              <div>
+                <h3>Rust Solver<span class="visually-hidden"> (opens GitHub)</span></h3>
+                <p>The solver library that builds the strategy chart and count indices before compiling to WebAssembly.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>GitHub</span><span>Rust</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </section>
+      </main>
+
+      <footer class="foot">
+        <a href="/">mathewseng.github.io</a>
+        <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/blackjack" target="_blank" rel="noopener">View source on GitHub ↗</a>
+      </footer>
+    </div>
   </body>
 </html>

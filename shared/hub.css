@@ -1,104 +1,1213 @@
-/* Shared layout for family hub pages: /ofc/, /poker/, /blackjack/. */
+/* Shared design for the family hub pages: /ofc/, /poker/, /blackjack/.
+   Each page picks its accent with data-family on <html>. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
 
 :root {
   color-scheme: dark;
-  --bg: #05070b;
-  --surface: #0b1118;
-  --surface-2: #101923;
-  --line: rgba(193, 207, 224, 0.14);
-  --text: #eef5ff;
-  --muted: #93a3b8;
-  --accent: #37d99e;
+  --page: #08090d;
+  --surface: #10141c;
+  --surface-2: #151a24;
+  --glass: rgba(16, 20, 28, 0.66);
+  --line: rgba(148, 163, 184, 0.13);
+  --line-strong: rgba(148, 163, 184, 0.24);
+  --ink: #eef4ff;
+  --muted: #9aa7b7;
+  --soft: #6f7b8b;
+  --accent: #8fd9b6;
+  --accent-2: #8ab4ff;
+  --hit: #ff8b83;
+  --stand: #8fd9b6;
+  --double: #f4c95d;
+  --card-red: #d4364e;
+  --card-black: #151922;
+  --radius: 18px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-* {
+[data-family="ofc"] {
+  --accent: #8fd9b6;
+  --accent-2: #7cc8ff;
+}
+
+[data-family="poker"] {
+  --accent: #ff8b83;
+  --accent-2: #ffb77a;
+}
+
+[data-family="blackjack"] {
+  --accent: #f4c95d;
+  --accent-2: #ffe7a3;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--page);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
+  overflow-x: clip;
 }
 
-main {
-  width: min(880px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 42px 0;
+/* A soft accent light over the top of the page, plus a faint dot grid. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::before {
+  top: -38vmax;
+  right: -24vmax;
+  width: 88vmax;
+  height: 88vmax;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, color-mix(in oklab, var(--accent) 20%, transparent), transparent 72%),
+    radial-gradient(closest-side at 30% 70%, color-mix(in oklab, var(--accent-2) 10%, transparent), transparent 70%);
+  animation: aura 26s ease-in-out infinite alternate;
+}
+
+body::after {
+  inset: 0;
+  background-image: radial-gradient(rgba(226, 232, 240, 0.07) 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 10%, transparent 75%);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 38%, transparent);
+  color: #fff;
 }
 
 a {
   color: inherit;
 }
 
-.back {
-  display: inline-block;
-  margin-bottom: 24px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-
-.back:hover {
-  color: var(--accent);
-}
-
-p,
 h1,
-h2 {
+h2,
+h3,
+p {
   margin: 0;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.shell {
+  width: min(1120px, 100% - 32px);
+  margin-inline: auto;
+  padding: 18px 0 48px;
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 6px 0;
+  animation: fade 0.6s var(--ease) backwards;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.crumbs a:hover {
+  color: var(--ink);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: linear-gradient(160deg, var(--surface-2), var(--surface));
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+
+.crumbs a:hover .mark {
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+.crumb-sep {
+  color: var(--soft);
+}
+
+.crumb-current {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.switcher {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  view-transition-name: hub-switcher;
+}
+
+.switcher a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.switcher a::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot);
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+
+.switcher a[data-to="ofc"] {
+  --dot: #8fd9b6;
+}
+
+.switcher a[data-to="poker"] {
+  --dot: #ff8b83;
+}
+
+.switcher a[data-to="blackjack"] {
+  --dot: #f4c95d;
+}
+
+.switcher a:hover {
+  color: var(--ink);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.switcher a:hover::before,
+.switcher a[aria-current="page"]::before {
+  opacity: 1;
+}
+
+.switcher a[aria-current="page"] {
+  color: var(--ink);
+  background: rgba(148, 163, 184, 0.12);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px 40px;
+  padding: 56px 0 44px;
+}
+
 .eyebrow {
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  animation: rise 0.7s var(--ease) 0.05s backwards;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.hero h1 {
+  margin-top: 16px;
+  padding-bottom: 0.06em;
+  font-size: clamp(3.1rem, 9vw, 6rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  background: linear-gradient(175deg, #fff 35%, color-mix(in oklab, var(--accent) 55%, #fff) 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  view-transition-name: hub-title;
+  animation: rise 0.8s var(--ease) 0.1s backwards;
+}
+
+.lede {
+  max-width: 35rem;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 1.07rem;
+  line-height: 1.65;
+  animation: rise 0.8s var(--ease) 0.18s backwards;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+  animation: rise 0.8s var(--ease) 0.26s backwards;
+}
+
+.facts li {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.facts b {
+  margin-right: 3px;
+  color: var(--ink);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fanned playing cards beside the title. */
+.fan {
+  --tx: 0;
+  --ty: 0;
+  position: relative;
+  height: 290px;
+  display: grid;
+  place-items: center;
+  perspective: 1000px;
+}
+
+.fan::before {
+  content: "";
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 26%, transparent), transparent);
+  filter: blur(8px);
+  animation: glow 7s ease-in-out infinite alternate;
+}
+
+.fan-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform: rotateY(calc(var(--tx) * 9deg)) rotateX(calc(var(--ty) * -7deg));
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease);
+}
+
+.pcard {
+  --w: 116px;
+  position: absolute;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  padding: 8px;
+  border-radius: calc(var(--w) * 0.1);
+  background: linear-gradient(155deg, #ffffff 0%, #f1f2f5 55%, #e3e6ec 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8),
+    0 0 0 1px rgba(8, 9, 13, 0.35),
+    0 24px 44px -18px rgba(0, 0, 0, 0.85);
+  color: var(--card-black);
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  translate: calc(var(--k) * 34px) var(--y, 0px);
+  rotate: calc(var(--k) * 9deg);
+  transform-origin: 50% 115%;
+  transition:
+    translate 0.6s var(--spring),
+    rotate 0.6s var(--spring);
+  animation:
+    deal 0.9s var(--ease) backwards,
+    bob 6s ease-in-out infinite;
+  animation-delay:
+    calc(var(--n) * 90ms + 0.25s),
+    calc(var(--n) * -1.1s);
+}
+
+.pcard.red {
+  color: var(--card-red);
+}
+
+.pcard.joker {
+  color: color-mix(in oklab, var(--accent) 70%, #0b3b2a);
+}
+
+.fan:hover .pcard {
+  translate: calc(var(--k) * 46px) calc(var(--y, 0px) - 6px);
+  rotate: calc(var(--k) * 12deg);
+}
+
+.pcard .idx {
+  position: absolute;
+  top: 8px;
+  left: 9px;
+  display: grid;
+  justify-items: center;
+  font-size: calc(var(--w) * 0.18);
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+.pcard .idx i {
+  font-size: 0.78em;
+  font-style: normal;
+}
+
+.pcard .idx.flip {
+  top: auto;
+  left: auto;
+  right: 9px;
+  bottom: 8px;
+  rotate: 180deg;
+}
+
+.pcard .pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--w) * 0.44);
+  line-height: 1;
+}
+
+.chip {
+  position: absolute;
+  left: 12%;
+  bottom: 6%;
+  width: 70px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in oklab, var(--accent) 88%, #000) 0 40%, rgba(255, 255, 255, 0.9) 41% 44%, transparent 45%),
+    repeating-conic-gradient(#f8fafc 0 12deg, color-mix(in oklab, var(--accent) 85%, #000) 12deg 45deg);
+  box-shadow:
+    inset 0 0 0 5px color-mix(in oklab, var(--accent) 85%, #000),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.35),
+    0 16px 30px -12px rgba(0, 0, 0, 0.9);
+  translate: 0 0 30px;
+  animation:
+    deal 0.9s var(--ease) 0.7s backwards,
+    spin 40s linear infinite;
+}
+
+/* ---------- Groups and tiles ---------- */
+
+.group {
+  margin-top: 28px;
+}
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.group-head h2 {
+  color: var(--muted);
   font-size: 0.76rem;
-  font-weight: 850;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.group-head span {
+  color: var(--soft);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tiles > li {
+  display: grid;
+}
+
+.tiles > .wide {
+  grid-column: 1 / -1;
+}
+
+.tile {
+  --mx: 50%;
+  --my: 0%;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 212px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(170deg, var(--surface-2), var(--surface) 60%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 48px -32px rgba(0, 0, 0, 0.9);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    translate 0.45s var(--ease),
+    box-shadow 0.45s var(--ease),
+    border-color 0.45s;
+  animation: rise 0.8s var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 0.3s);
+}
+
+/* Soft light that follows the pointer (position set by hub.js). */
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(460px circle at var(--mx) var(--my), color-mix(in oklab, var(--accent) 11%, transparent), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.45s;
+  pointer-events: none;
+}
+
+/* Accent edge that brightens nearest the pointer. */
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(280px circle at var(--mx) var(--my), var(--accent), transparent 70%);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.45s;
+  pointer-events: none;
+}
+
+.tile:hover,
+.tile:focus-visible {
+  translate: 0 -4px;
+  border-color: var(--line-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 34px 64px -30px color-mix(in oklab, var(--accent) 38%, #000);
+}
+
+.tile:hover::before,
+.tile:hover::after,
+.tile:focus-visible::before,
+.tile:focus-visible::after {
+  opacity: 1;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.tile:active {
+  translate: 0 -1px;
+  transition-duration: 0.1s;
+}
+
+.tile-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  background: color-mix(in oklab, var(--accent) 11%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 24%, transparent);
+  color: var(--accent);
+  transition:
+    scale 0.45s var(--spring),
+    rotate 0.45s var(--spring);
+}
+
+.tile:hover .tile-icon {
+  scale: 1.07;
+  rotate: -5deg;
+}
+
+.tile svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tile h3 {
+  font-size: 1.14rem;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+.tile p {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.tile-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tags span {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.06);
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.go {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  transition:
+    background-color 0.3s,
+    border-color 0.3s,
+    color 0.3s,
+    translate 0.45s var(--spring);
+}
+
+.go svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.tile:hover .go,
+.tile:focus-visible .go {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0b0d12;
+  translate: 3px 0;
+}
+
+.tile[target="_blank"]:hover .go,
+.tile[target="_blank"]:focus-visible .go {
+  translate: 2px -2px;
+}
+
+/* Featured tile: text on the left, a live preview on the right. */
+.tile--featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  min-height: 280px;
+  padding: 28px;
+}
+
+.tile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tile--featured h3 {
+  font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  letter-spacing: -0.025em;
+}
+
+.tile--featured p {
+  max-width: 30rem;
+  font-size: 1rem;
+}
+
+.preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 60%),
+    rgba(8, 9, 13, 0.55);
+  overflow: hidden;
+}
+
+/* Mini cards used inside previews. */
+.mc {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 32px;
+  aspect-ratio: 5 / 7;
+  border-radius: 5px;
+  background: linear-gradient(160deg, #fff, #e8eaef);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.8);
+  color: var(--card-black);
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mc i {
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
+.mc.red {
+  color: var(--card-red);
+}
+
+/* Poker: a table with action moving around the seats. */
+.table {
+  position: relative;
+  width: min(100% - 56px, 340px);
+  aspect-ratio: 2 / 1.12;
+  margin: 28px;
+}
+
+.felt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at 50% 35%, #1b5e45 0%, #0f3527 55%, #0a2119 100%);
+  box-shadow:
+    inset 0 0 0 6px #2a1d17,
+    inset 0 0 0 7px rgba(255, 255, 255, 0.08),
+    inset 0 18px 40px rgba(0, 0, 0, 0.45),
+    0 20px 40px -20px rgba(0, 0, 0, 0.9);
+}
+
+.board {
+  display: flex;
+  gap: 5px;
+}
+
+.board .mc {
+  animation: flip 0.7s var(--ease) backwards;
+  animation-delay: calc(var(--c) * 120ms + 0.8s);
+}
+
+.pot {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #e2e8f0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.seat {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background-color: #232a37;
+  background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.1), transparent 70%);
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 6px 12px -6px #000;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  translate: -50% -50%;
+  animation: turn 9s var(--ease) infinite;
+  animation-delay: calc(var(--s) * 1.5s);
+}
+
+/* OFC: a Pineapple board with Fantasyland on the top row. */
+.ofc-board {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+}
+
+.ofc-row {
+  display: grid;
+  grid-template-columns: 58px repeat(5, 32px) auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.ofc-row .royalty {
+  grid-column: 7;
+  justify-self: start;
+}
+
+.ofc-row > b {
+  color: var(--soft);
+  font-size: 0.66rem;
+  font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-h1 {
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 1;
-  letter-spacing: 0;
+.ofc-row .mc {
+  animation: rise 0.6s var(--ease) backwards;
+  animation-delay: calc(var(--c) * 60ms + 0.7s);
 }
 
-.grid {
+.slot {
+  width: 32px;
+  aspect-ratio: 5 / 7;
+  border: 1.5px dashed color-mix(in oklab, var(--accent) 60%, transparent);
+  border-radius: 5px;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.royalty {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.royalty.quiet {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--soft);
+}
+
+/* Blackjack: a slice of the hard-total chart with one lookup highlighted. */
+.chart {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-  margin-top: 22px;
+  gap: 10px;
+  padding: 20px;
 }
 
-a.card {
-  min-height: 150px;
+.chart-grid {
   display: grid;
-  align-content: space-between;
-  gap: 18px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  text-decoration: none;
+  grid-template-columns: 22px repeat(10, 17px);
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
 }
 
-a.card:hover,
-a.card:focus-visible {
-  border-color: rgba(55, 217, 158, 0.55);
-  background: var(--surface-2);
-  outline: none;
+.chart-grid b {
+  display: grid;
+  place-items: center;
+  height: 17px;
+  color: var(--soft);
+  font-size: 0.6rem;
+  font-weight: 700;
 }
 
-h2 {
-  font-size: 1.08rem;
+.chart-grid b.on {
+  color: var(--accent);
 }
 
-.card p {
+.chart-grid span {
+  height: 17px;
+  border-radius: 3px;
+  opacity: 0.32;
+  animation: cell 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--c) * 6ms + 0.6s);
+}
+
+.chart-grid span.on {
+  opacity: 0.9;
+}
+
+.chart-grid .H {
+  background: var(--hit);
+}
+
+.chart-grid .S {
+  background: var(--stand);
+}
+
+.chart-grid .D {
+  background: var(--double);
+}
+
+.chart-grid span.hit-me {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--page), 0 0 0 3.5px var(--accent);
+  animation:
+    cell 0.5s var(--ease) backwards,
+    ping 2.2s ease-out 1.6s infinite;
+}
+
+.chart-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.chart-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+}
+
+.chart-key span::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--swatch);
+}
+
+.chart-key strong {
+  color: var(--ink);
+}
+
+/* ---------- Footer ---------- */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--soft);
+  font-size: 0.84rem;
+}
+
+.foot a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.foot a:hover {
+  color: var(--accent);
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    translate: 0 70px;
+    rotate: 0deg;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.7;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+
+@keyframes aura {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -6vmax 4vmax;
+  }
+}
+
+@keyframes flip {
+  from {
+    opacity: 0;
+    rotate: y 90deg;
+  }
+}
+
+@keyframes turn {
+  0%,
+  13% {
+    background-color: var(--accent);
+    color: #0b0d12;
+    box-shadow:
+      0 0 0 1px var(--accent),
+      0 0 0 6px color-mix(in oklab, var(--accent) 22%, transparent),
+      0 6px 16px -4px color-mix(in oklab, var(--accent) 60%, #000);
+  }
+  18%,
+  100% {
+    background-color: #232a37;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes cell {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+@keyframes ping {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--page),
+      0 0 0 3.5px var(--accent);
+  }
+  70%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--page),
+      0 0 0 12px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 880px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding-top: 36px;
+  }
+
+  .fan {
+    height: 230px;
+    order: -1;
+  }
+
+  .pcard {
+    --w: 96px;
+  }
+
+  .chip {
+    left: 22%;
+    width: 58px;
+  }
+
+  .tile--featured {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .switcher {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .switcher a {
+    flex: 1;
+    justify-content: center;
+    padding-inline: 8px;
+  }
+
+  .fan {
+    height: 200px;
+  }
+
+  .pcard {
+    --w: 84px;
+    translate: calc(var(--k) * 26px) var(--y, 0px);
+  }
+
+  .fan:hover .pcard {
+    translate: calc(var(--k) * 30px) var(--y, 0px);
+  }
+
+  .chip {
+    left: 8%;
+    width: 50px;
+  }
+
+  .tile,
+  .tile--featured {
+    padding: 18px;
+  }
+
+  .ofc-board {
+    padding: 18px 14px;
+  }
+
+  .ofc-row {
+    grid-template-columns: 54px repeat(5, 28px);
+  }
+
+  .ofc-row > b {
+    letter-spacing: 0.06em;
+  }
+
+  .ofc-row .mc,
+  .ofc-row .slot {
+    width: 28px;
+  }
+
+  .ofc-row .royalty {
+    grid-column: 2 / -1;
+    margin: 0 0 4px;
+  }
 }
