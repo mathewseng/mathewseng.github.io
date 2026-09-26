@@ -803,6 +803,14 @@ body[data-back-label="1"] .card.back.custom-back::after { content: ""; }
 .preset-search { min-height: 38px; font-size: 14px; }
 .card.kbd-focus { outline-color: var(--gold); outline-offset: 2px; }
 
+.pill.rec { color: #fff; background: #c8203a; border-color: #ff5c66; cursor: pointer; animation: rec-pulse 1.4s ease-in-out infinite; }
+@keyframes rec-pulse { 50% { box-shadow: 0 0 0 4px rgba(255, 92, 102, 0.25); } }
+.check-ok { margin: 0; color: var(--green); font-size: 13px; }
+.issue { display: grid; grid-template-columns: 20px 1fr; gap: 6px; padding: 6px 8px; border-radius: 8px; font-size: 12.5px; line-height: 1.4; background: var(--panel-3); }
+.issue-error { background: rgba(255, 92, 102, 0.1); color: #ffc9cd; }
+.issue-warn { background: rgba(244, 201, 93, 0.08); color: #ffe3a3; }
+.issue-info { color: var(--muted); }
+
 /* --------------------------------------------------------- responsive */
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 320px; }

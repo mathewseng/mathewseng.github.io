@@ -2609,6 +2609,80 @@
     return parts.join("; ") + (scheme.low ? "; lower is better." : ".");
   }
 
+  /**
+   * Check a design for problems a playtest would trip over: dangling
+   * references, turns that never pass, decks too small for the deal, games
+   * that never end. Returns [{ level: "error" | "warn" | "info", message }].
+   */
+  function lintDesign(state) {
+    const issues = [];
+    const add = (level, message) => issues.push({ level, message });
+    const keys = new Set();
+    for (const zone of orderedZones(state, "table")) { keys.add((zone.key || "").toLowerCase()); keys.add(zone.name.toLowerCase()); }
+    for (const tpl of state.seatTemplate) { keys.add((tpl.key || "").toLowerCase()); keys.add(String(tpl.name).toLowerCase()); }
+    keys.delete("");
+    const refOk = (ref) => {
+      if (!ref) return true;
+      if (state.zones[ref]) return true;
+      return keys.has(String(ref).split("@")[0].trim().toLowerCase());
+    };
+    const api = evaluators();
+    const evalOk = (spec) => {
+      if (!spec) return true;
+      const id = String(spec).split("@")[0];
+      if (id.startsWith("points:")) return state.schemes.some((scheme) => scheme.id === id.slice(7));
+      return !api || api.EVALUATORS.some((def) => def.id === id);
+    };
+    const counters = new Set([...state.counterDefs, ...state.tableCounters].map((def) => def.name.toLowerCase()));
+    const size = Object.keys(state.cards).length || deckSize(state.deckSpec);
+    const seats = Math.max(1, state.players.filter((player) => !player.out).length);
+    for (const macro of state.macros) {
+      if (!macro.steps.length) add("warn", `Action “${macro.label}” has no steps.`);
+      let dealt = 0;
+      for (const step of macro.steps) {
+        const where = `Action “${macro.label}” (${describeStep(step, state)})`;
+        for (const field of ["zone", "from", "to"]) {
+          if (step[field] && !refOk(step[field])) add("error", `${where} uses “${step[field]}”, which isn't a group.`);
+        }
+        if (step.evaluator && !evalOk(step.evaluator)) add("error", `${where} scores with a missing evaluator.`);
+        if (step.op === "runAction" && !findMacro(state, step.macro)) add("error", `${where} runs an action that no longer exists.`);
+        if (step.op === "counter" && !counters.has(String(step.name || "").toLowerCase())) add("error", `${where} changes a counter that doesn't exist.`);
+        if (step.op === "collect") dealt = 0;
+        if (step.op === "deal" && !step.perSeat) {
+          const perSeat = state.seatTemplate.some((tpl) => sameText(tpl.key, String(step.to || "").split("@")[0])) && !String(step.to).includes("@");
+          dealt += (Number(step.count) || 1) * (perSeat ? seats : 1);
+          if (dealt > size) add("warn", `${where}: dealing ${dealt} cards needs more than the ${size} in the deck with ${seats} players.`);
+        }
+      }
+    }
+    for (const trigger of state.triggers) {
+      const label = trigger.label || describeTrigger(trigger, state);
+      if (!findMacro(state, trigger.macro)) add("error", `Trigger “${label}” runs an action that no longer exists.`);
+      if (TRIGGER_EVENTS[trigger.event]?.fields.includes("zone") && !refOk(trigger.zone)) add("error", `Trigger “${label}” watches “${trigger.zone}”, which isn't a group.`);
+      for (const phase of [trigger.event === "phase" ? trigger.phase : "", trigger.during]) {
+        if (phase && state.phases.length && !state.phases.some((entry) => sameText(entry, phase))) add("warn", `Trigger “${label}” mentions the phase “${phase}”, which isn't in the phase list.`);
+      }
+    }
+    const allZones = [...orderedZones(state, "table"), ...state.seatTemplate];
+    for (const zone of allZones) {
+      for (const spec of zone.evals || []) if (!evalOk(spec)) add("error", `${zone.name} is scored by something that no longer exists (${spec}).`);
+      for (const key of ["board", "starter"]) if (zone.ctx?.[key] && !refOk(zone.ctx[key])) add("error", `${zone.name}'s ${key} group “${zone.ctx[key]}” doesn't exist.`);
+    }
+    const ruled = allZones.filter((zone) => zone.rule && zone.rule.place);
+    const turnBased = ruled.some((zone) => zone.rule.place === "turn" || zone.rule.place === "ownerTurn");
+    const passes = allZones.some((zone) => zone.rule?.advance) || state.macros.some((macro) => macro.steps.some((step) => ["nextTurn", "setTurn"].includes(step.op))) || state.triggers.some((trigger) => trigger.event === "turn");
+    if (turnBased && !passes) add("warn", "Groups only accept the current player, but nothing passes the turn: add “Turn passes after playing here” or a Next turn step.");
+    if (!ruled.length) add("info", "No group says who may play to it, so bots and play hints have nothing to work with.");
+    if (!state.scores.target && !state.scores.maxRounds && !state.triggers.some((trigger) => trigger.event === "gameOver")) add("info", "The game never ends on its own: set a target score or round limit (Scores → End of game) to use Bot games and results.");
+    const deckRanksKnown = new Set([...deckRanks(normalizeDeckSpec(state.deckSpec)), ...normalizeDeckSpec(state.deckSpec).custom.map((item) => normRank(item.rank || item.label))].map(normRank));
+    for (const zone of allZones) {
+      for (const wild of zone.rule?.wild || []) if (!deckRanksKnown.has(normRank(wild)) && normRank(wild) !== "jk") add("warn", `${zone.name} treats “${wild}” as wild, but no card in the deck has that rank.`);
+    }
+    if (state.players.length && state.seatTemplate.length === 0 && !orderedZones(state, "table").some((zone) => zone.kind !== "deck")) add("info", "There's nowhere to put cards yet: add a group to the table or every seat.");
+    const order = { error: 0, warn: 1, info: 2 };
+    return issues.sort((a, b) => order[a.level] - order[b.level]);
+  }
+
   function summary(state) {
     const zones = Object.values(state.zones);
     const inPlay = zones.filter((zone) => zone.kind !== "deck").reduce((sum, zone) => sum + zone.cards.length, 0);
@@ -2649,6 +2723,7 @@
     toPreset,
     summary,
     describeGame,
+    lintDesign,
     describeScheme,
     describeRule,
     describeTrigger,

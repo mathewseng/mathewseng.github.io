@@ -504,3 +504,22 @@ console.log("wizard tests passed");
   console.log(`smart bots: hearts ${smartPoints} vs ${otherPoints.toFixed(0)}, draft ${smartBetter}/20`);
 }
 console.log("deal-until and smart bot tests passed");
+
+// Design check.
+{
+  for (const preset of Presets.PRESETS) {
+    const errors = Engine.lintDesign(Engine.createTable(preset, {})).filter((issue) => issue.level === "error");
+    assert.deepEqual(errors, [], `${preset.id} has no design errors`);
+  }
+  let state = Engine.createTable(Presets.get("hearts"), { players: 4 });
+  state = act(state, { type: "saveMacro", macro: { label: "Broken", steps: [{ op: "deal", from: "deck", to: "nowhere", count: 1 }, { op: "counter", name: "Lives", amount: 1 }, { op: "deal", from: "deck", to: "hand", count: 20 }] } });
+  state = act(state, { type: "saveTrigger", trigger: { event: "phase", phase: "Bidding", macro: "Broken" } });
+  const text = Engine.lintDesign(state).map((issue) => `${issue.level}: ${issue.message}`).join("\n");
+  assert.match(text, /error: .*“nowhere”, which isn't a group/);
+  assert.match(text, /error: .*counter that doesn't exist/);
+  assert.match(text, /warn: .*dealing 81 cards needs more than the 52/);
+  assert.match(text, /warn: .*phase “Bidding”/);
+  const noPass = Engine.createTable({ table: [{ key: "deck", name: "Deck", kind: "deck" }, { key: "pile", name: "Pile", rule: { place: "turn" } }], seat: [{ key: "hand", name: "Hand", kind: "hand" }] }, { players: 2 });
+  assert.match(Engine.lintDesign(noPass).map((issue) => issue.message).join("\n"), /nothing passes the turn/);
+}
+console.log("design check tests passed");

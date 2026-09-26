@@ -122,7 +122,9 @@
       try { net.room.sendAction(action); } catch (error) { toast(error.message, "error"); }
       return;
     }
-    applyLocal(action, actingId());
+    const before = state;
+    const error = applyLocal(action, actingId());
+    if (!error && recorder.on) { recordAction(before, action); renderTop(); }
   }
 
   /** Apply an action to the local/host state. Returns an error message, or "" on success. */
@@ -144,6 +146,7 @@
 
   function undo() {
     if (net.mode === "client") return dispatch({ type: "__undo" });
+    if (recorder.on && recorder.groups.length) recorder.steps.splice(recorder.steps.length - recorder.groups.pop());
     if (!history.length) return toast("Nothing to undo");
     future.push(state);
     state = history.pop();
@@ -603,6 +606,7 @@
     const hasRules = Object.values(v.zones).some((zone) => zone.rule && Object.keys(zone.rule).length);
     if (hasRules) parts.push(`<button class="pill rules-pill mode-${esc(v.rulesMode)}" data-act="cycle-rules" title="Rule checks: ${esc(v.rulesMode)} (click to change)">§ ${esc(E.RULES_MODES[v.rulesMode] || "Warn")}</button>`);
     if (prefs.seed) parts.push(`<span class="pill round" title="Seeded shuffles: ${esc(prefs.seed)}">🌱</span>`);
+    if (recorder.on) parts.unshift(`<button class="pill rec" data-act="rec-stop" title="Stop and save as an action">● Rec ${recorder.steps.length} · Stop</button>`);
     $("#turnStrip").innerHTML = parts.join("");
 
     const select = $("#viewSelect");
@@ -1167,7 +1171,7 @@
           <button class="btn" data-act="collect">Collect all & shuffle</button>
           <button class="btn" data-act="reveal-all">Reveal hands</button></div>`;
       return block("Turn", turn)
-        + block("Actions", `<div class="macro-grid">${macros}</div>${v.macros.length ? "" : `<p class="hint">Actions are one-tap macros: shuffle, deal, flip, collect, pass turn… Build your game's flow here.</p>`}`, `<button class="btn sm" data-act="new-macro">+ New action</button>`)
+        + block("Actions", `<div class="macro-grid">${macros}</div>${v.macros.length ? "" : `<p class="hint">Actions are one-tap macros: shuffle, deal, flip, collect, pass turn… Build your game's flow here.</p>`}`, `<button class="btn sm" data-act="${recorder.on ? "rec-stop" : "rec-start"}" title="Record moves you make as a new action">${recorder.on ? "■ Stop" : "● Record"}</button><button class="btn sm" data-act="new-macro">+ New action</button>`)
         + block("Deal", quick)
         + block("Bots", botsHTML(v))
         + block("Standings", standingsHTML());
@@ -1481,7 +1485,8 @@
         <div class="row tight"><button class="btn sm" data-act="share-design">Share link</button><button class="btn sm" data-act="export-preset">Export file</button><button class="btn sm" data-act="import">Import…</button></div>`;
       const snapshots = `<div class="list">${saves.map((entry, i) => `<div class="list-row"><span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">${new Date(entry.t).toLocaleString()}</span></span><button class="btn sm" data-act="load-save" data-i="${i}">Load</button><button class="btn sm icon ghost" data-act="del-save" data-i="${i}">✕</button></div>`).join("") || `<p class="hint">Snapshots of the whole table (cards in place, scores and all).</p>`}</div>
           <div class="row"><button class="btn" data-act="save-table">Save snapshot</button><button class="btn" data-act="export-table">Export file</button><button class="btn" data-act="share-table" title="A link holding the whole table, hidden cards included">Share link</button></div>`;
-      return block("Rules document", doc)
+      return block("Design check", designCheckHTML(v))
+        + block("Rules document", doc)
         + block("Rule checks", checks)
         + block("Automation", triggers)
         + block("Game design", design)
@@ -1770,10 +1775,10 @@
   }
 
   // --------------------------------------------------------- macro editor
-  function openMacroDialog(macroId) {
+  function openMacroDialog(macroId, initial = null) {
     const v = view;
     const existing = macroId ? v.macros.find((m) => m.id === macroId) : null;
-    const draft = existing ? E.clone(existing) : { label: "New action", hint: "", steps: [{ op: "deal", from: "deck", to: v.seatTemplate[0]?.key || "hand", count: 1 }] };
+    const draft = existing ? E.clone(existing) : initial ? E.clone(initial) : { label: "New action", hint: "", steps: [{ op: "deal", from: "deck", to: v.seatTemplate[0]?.key || "hand", count: 1 }] };
     const refs = new Set(["deck"]);
     E.orderedZones(v, "table").forEach((zone) => refs.add(zone.key || zone.name.toLowerCase()));
     v.seatTemplate.forEach((tpl) => { for (const scope of ["", "@current", "@after", "@dealer", "@me", "@next", "@winner", "@subject", "@others"]) refs.add(tpl.key + scope); });
@@ -2474,6 +2479,8 @@
       case "print-cards": printSheet(false); break;
       case "print-all": printSheet(true); break;
       case "replay": startReplay(); break;
+      case "rec-start": startRecording(); break;
+      case "rec-stop": stopRecording(); break;
       case "reset-pacing": Object.assign(pacing, { game: null }); trackPacing(net.mode === "client" ? view : state); renderPane(); break;
       case "rewind": { const steps = Number(el.dataset.steps) || 1; for (let i = 0; i < steps; i += 1) undo(); break; }
       case "dismiss-over": dispatch({ type: "dismissGameOver" }); break;
@@ -3599,6 +3606,8 @@
     }
     add("Design", "Design a new game (wizard)", openWizard);
     add("Design", "New action", () => openMacroDialog(null));
+    add("Design", recorder.on ? "Stop recording" : "Record an action", recorder.on ? stopRecording : startRecording);
+    add("Design", "Check design", () => { openTab("rules"); document.querySelector("#pane")?.scrollTo({ top: 0 }); });
     add("Design", "New trigger", () => openTriggerDialog(null));
     add("Design", "New scoring rule", () => openSchemeDialog(null));
     add("Design", "Save to My games", () => saveDesign());
@@ -4298,6 +4307,90 @@
       style.removeProperty("--back-label");
       delete document.body.dataset.backLabel;
     }
+  }
+
+  // ============================================================ RECORDER
+  const recorder = { on: false, steps: [], groups: [], skipped: 0 };
+
+  /** How a recorded move names a group: table groups by key, seat groups relative to whose turn it is. */
+  function recordRef(source, zoneId) {
+    const zone = source.zones[zoneId];
+    if (!zone) return String(zoneId || "");
+    const key = zone.key || zone.name.toLowerCase();
+    if (zone.area === "table") return key;
+    if (zone.area === source.players[source.turn.index]?.id) return key + "@current";
+    if (zone.area === source.players[source.turn.dealer]?.id) return key + "@dealer";
+    if (zone.area === E.playerAfter(source)?.id) return key + "@after";
+    return key + "@p:" + zone.area;
+  }
+
+  function recordAction(before, action) {
+    const ref = (id) => recordRef(before, id);
+    const deckId = E.findDeckZone(before)?.id;
+    const steps = [];
+    const face = action.face ? { face: action.face } : {};
+    switch (action.type) {
+      case "move": {
+        const ids = (action.cards || []).map((id) => E.resolveCard(before, id)).filter(Boolean);
+        const from = ids.length ? E.zoneOf(before, ids[0]) : null;
+        const to = before.zones[action.to];
+        if (!from || !to || from.id === to.id) break;
+        steps.push(from.cards.length === ids.length ? { op: "clear", from: ref(from.id), to: ref(to.id), ...face } : { op: "deal", from: ref(from.id), to: ref(to.id), count: ids.length, ...face });
+        break;
+      }
+      case "draw": steps.push({ op: "deal", from: ref(action.from || deckId), to: ref(action.to), count: action.count || 1, ...face }); break;
+      case "deal": steps.push({ op: "deal", from: ref(action.from), to: before.zones[action.to] ? ref(action.to) : String(action.to), count: action.count || 1, ...face }); break;
+      case "shuffle": steps.push({ op: "shuffle", zone: ref(action.zone) }); break;
+      case "cut": steps.push({ op: "cut", zone: ref(action.zone) }); break;
+      case "flipZone": steps.push({ op: "flip", zone: ref(action.zone), face: action.face || "up" }); break;
+      case "flip": {
+        const ids = (action.cards || []).map((id) => E.resolveCard(before, id)).filter(Boolean);
+        const zone = ids.length ? E.zoneOf(before, ids[0]) : null;
+        if (zone) steps.push({ op: "flip", zone: ref(zone.id), face: action.face || "up", count: ids.length });
+        break;
+      }
+      case "collect": steps.push({ op: "collect", to: ref(action.to || deckId), shuffle: action.shuffle !== false }); break;
+      case "clearZone": steps.push({ op: "clear", from: ref(action.zone), to: ref(action.to || deckId), ...face }); break;
+      case "sort": steps.push({ op: "sort", zone: ref(action.zone), by: action.by || "rank" }); break;
+      case "nextTurn": if (!action.back) steps.push({ op: "nextTurn" }); break;
+      case "passDeal": steps.push({ op: "nextDealer" }, { op: "setTurn", who: "next" }); break;
+      case "setTurn": if (action.who) steps.push({ op: "setTurn", who: action.who }); break;
+      case "nextRound": steps.push({ op: "nextRound" }); break;
+      case "setPhase": steps.push({ op: "phase", text: action.phase }); break;
+      case "nextPhase": steps.push({ op: "nextPhase" }); break;
+      case "reverseDirection": steps.push({ op: "reverse" }); break;
+      case "runMacro": if (action.id) steps.push({ op: "runAction", macro: action.id }); else steps.push(...E.clone(action.steps || [])); break;
+      case "adjustScore": steps.push({ op: "score", who: action.player === before.players[before.turn.index]?.id ? "current" : "all", amount: action.delta }); break;
+      case "revealAll": steps.push(...before.seatTemplate.filter((tpl) => tpl.visibility !== "public").map((tpl) => ({ op: "flip", zone: tpl.key, face: "up" }))); break;
+      case "ante": steps.push({ op: "ante", amount: action.amount }); break;
+      default: break;
+    }
+    if (!steps.length) { recorder.skipped += 1; return; }
+    recorder.steps.push(...steps);
+    recorder.groups.push(steps.length);
+  }
+
+  function startRecording() {
+    if (net.mode === "client") return toast("Only the host can record actions.", "error");
+    Object.assign(recorder, { on: true, steps: [], groups: [], skipped: 0 });
+    toast("Recording: deal, move, flip, shuffle and pass turns as usual, then press Stop.", "good");
+    render();
+  }
+
+  function stopRecording() {
+    const steps = recorder.steps.slice(0, 40);
+    const skipped = recorder.skipped;
+    Object.assign(recorder, { on: false, steps: [], groups: [], skipped: 0 });
+    render();
+    if (!steps.length) return toast("Nothing was recorded.");
+    openMacroDialog(null, { label: "Recorded action", hint: skipped ? `${skipped} move${skipped === 1 ? "" : "s"} couldn't be recorded` : "", steps });
+  }
+
+  function designCheckHTML(v) {
+    const issues = E.lintDesign(v);
+    if (!issues.length) return `<p class="check-ok">✓ No problems found: references, turn passing, deal sizes and the end of the game all check out.</p>`;
+    const icon = { error: "⛔", warn: "⚠️", info: "ℹ️" };
+    return `<div class="list">${issues.map((issue) => `<div class="issue issue-${issue.level}"><span>${icon[issue.level]}</span><span>${esc(issue.message)}</span></div>`).join("")}</div>`;
   }
 
   // ============================================================== INIT
