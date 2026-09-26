@@ -170,6 +170,7 @@
     if (net.mode === "host") publish();
     announceNewLog(state);
     announceTurn(state);
+    trackPacing(state);
     pruneSelection();
     render();
   }
@@ -390,6 +391,7 @@
       if (!card.faceUp && zone.visibility === "hidden") cls.push("private");
     }
     if (selection.has(card.id)) cls.push("selected");
+    if (kbdFocus === card.id) cls.push("kbd-focus");
     if (card.rot) cls.push("rot" + card.rot);
     const mark = card.mark ? ` data-mark style="--mark:${esc(card.mark)};${extra}"` : extra ? ` style="${extra}"` : "";
     const custom = visible && card.custom ? ` style="--cc:${esc(card.color || "#9f7dff")};${extra}"` : "";
@@ -710,6 +712,7 @@
     view = computeView();
     const before = captureLayout();
     const backsBefore = new Map($$(".card[data-card-id]").map((el) => [el.dataset.cardId, el.classList.contains("back")]));
+    applyDesignBack(view);
     renderTop();
     renderTable();
     if (prefs.motion && backsBefore.size) {
@@ -885,6 +888,18 @@
   let drag = null;
   let suppressClick = 0;
   let hoverCard = null;
+  let kbdFocus = null;
+
+  /** Arrow keys walk through your hand (or the current player's); Space selects. */
+  function moveKbdFocus(step) {
+    const zoneId = myHandZone();
+    const cards = zoneId ? view.zones[zoneId]?.cards || [] : [];
+    if (!cards.length) return;
+    const at = cards.indexOf(kbdFocus);
+    kbdFocus = cards[at < 0 ? (step > 0 ? 0 : cards.length - 1) : (at + step + cards.length) % cards.length];
+    render();
+    document.querySelector(`.card[data-card-id="${CSS.escape(kbdFocus)}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
 
   function orderedSelection() {
     const order = [];
@@ -1235,7 +1250,7 @@
       const teams = teamTotals.map(([team, total, members]) => `<div class="list-row"><span class="grow small"><b>${esc(team)}</b> <span class="muted">${members.map((member) => esc(member.name)).join(" & ")}</span></span><strong class="mono" style="${total === bestTeam ? "color:var(--gold)" : ""}">${E.fmt(total)}</strong></div>`).join("");
       return block("Quick score", quick + race)
         + (teams ? block("Teams", `<div class="list">${teams}</div><p class="hint">Team totals add up each member's score. Set teams in the Players tab.</p>`) : "")
-        + block("Score sheet", sheet)
+        + block("Score sheet", scoreChartHTML(v) + sheet)
         + block("End of game", settings)
         + block("Custom scoring", custom)
         + block("Playtest results", resultsHTML(v))
@@ -1282,6 +1297,8 @@
         </div>
         <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span style="color:${suit === "h" || suit === "d" ? "#ff7b8e" : "inherit"};font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
         <div class="field"><span>Ranks <button class="btn sm ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn sm${ranks.includes(rank) ? " primary" : ""}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
+        <div class="field"><span>Card back <span class="dim">blank = your display setting</span></span>
+          <div class="row tight"><input type="color" value="${esc(draft.back?.color || "#2b57c2")}" data-deck-back="color" title="Back color"${draft.back?.color ? "" : ' style="opacity:.5"'}><input type="text" value="${esc(draft.back?.text || "")}" maxlength="14" placeholder="Name on the back" data-deck-back="text" class="grow" style="flex:1;width:auto">${draft.back?.color || draft.back?.text ? `<button class="btn sm ghost" data-act="back-clear">Clear</button>` : ""}</div></div>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
           <div class="list">${draft.custom.map((item, i) => `<div class="custom-row">
@@ -1396,6 +1413,7 @@
         + block("Bot games", botGamesHTML(v))
         + block("Dice & randomness", diceBlock)
         + block("Seeded shuffles", seedBlock)
+        + block("Pacing", pacingHTML(v))
         + block("Turn timer", timerBlock)
         + block("Equity calculator", equityBlock)
         + block("Display", display);
@@ -1504,7 +1522,7 @@
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
     const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
-    return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}">
+    return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}" data-search="${esc(`${preset.name} ${preset.family} ${preset.tagline || ""} ${preset.description || ""}`.toLowerCase())}">
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
       <p>${esc(preset.tagline || preset.description)}</p>
@@ -1517,6 +1535,7 @@
     return [...P.PRESETS, ...load(STORE.presets, [])];
   }
 
+  let presetQuery = "";
   function openNewGame() {
     let selected = state?.presetId && allPresets().some((p) => p.id === state.presetId) ? state.presetId : "holdem";
     const draw = () => {
@@ -1526,7 +1545,8 @@
       const range = preset.players || { min: 1, max: 12, default: 2 };
       const count = Math.max(range.min, Math.min(range.max, state?.players.length || range.default));
       return head("New game") + `<div class="dlg-body">
-          ${families.map((family) => `<div><div class="area-label" style="color:var(--muted)">${esc(family)}</div><div class="preset-grid">${presets.filter((p) => p.family === family).map((p) => presetCard(p, selected)).join("")}</div></div>`).join("")}
+          <input type="search" class="preset-search" placeholder="Search ${presets.length} games: name, family, idea…" aria-label="Search games" value="${esc(presetQuery)}">
+          ${families.map((family) => `<div class="preset-family"><div class="area-label" style="color:var(--muted)">${esc(family)}</div><div class="preset-grid">${presets.filter((p) => p.family === family).map((p) => presetCard(p, selected)).join("")}</div></div>`).join("")}
         </div>
         <div class="dlg-foot">
           <span class="grow small muted">${esc(preset.description || "")}</span>
@@ -1537,7 +1557,18 @@
           <button class="btn primary" value="start">Start ${esc(preset.name)}</button>
         </div>`;
     };
+    const filter = (form) => {
+      const words = presetQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      $$("[data-preset]", form).forEach((el) => { el.hidden = !words.every((word) => el.dataset.search.includes(word)); });
+      $$(".preset-family", form).forEach((el) => { el.hidden = !$$("[data-preset]:not([hidden])", el).length; });
+    };
     const bind = (form) => {
+      filter(form);
+      form.addEventListener("input", (event) => {
+        if (!event.target.classList.contains("preset-search")) return;
+        presetQuery = event.target.value;
+        filter(form);
+      });
       form.addEventListener("click", (event) => {
         if (event.target.closest("[data-wizard]")) { openWizard(); return; }
         const del = event.target.closest("[data-del-preset]");
@@ -1555,6 +1586,7 @@
           selected = card.dataset.preset;
           const scroll = form.querySelector(".dlg-body").scrollTop;
           form.innerHTML = draw();
+          filter(form);
           form.querySelector(".dlg-body").scrollTop = scroll;
         }
       });
@@ -1911,7 +1943,7 @@
   }
 
   function openHelp() {
-    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
+    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
     openDialog(head("How it works") + `<div class="dlg-body">
       <p class="hint"><b>Cards</b>: tap to select (tap several), drag to move — dragging a selected card moves the whole selection. Double-click flips. Right-click (or long-press menu ⋯) for more.</p>
       <p class="hint"><b>Groups</b> are any hand, board, pile or row. Each has a layout, visibility (private hands, public boards, hidden decks) and optional <b>scoring badges</b> — poker, Omaha, lowball, badugi, blackjack, baccarat, cribbage hand &amp; pegging, gin deadwood, OFC royalties, hearts, trick winner, sums. Comparable groups are ranked and the best gets a 🏆.</p>
@@ -1937,6 +1969,7 @@
       state = next;
       announceNewLog(state);
       announceTurn(state);
+      trackPacing(state);
       pruneSelection();
       render();
     };
@@ -2337,6 +2370,7 @@
       case "deck-ranks-reset": deckDraft.ranks = null; renderPane(); break;
       case "custom-add": customOpen = true; deckDraft.custom.push({ label: "New card", text: "", color: "#9f7dff", value: 0, count: 1, suit: "", rank: "", icon: "" }); renderPane(); break;
       case "custom-import": openCustomImport(); break;
+      case "back-clear": deckDraft.back = { color: "", text: "" }; renderPane(); break;
       case "custom-export": download(fileSafe(v.title) + "-cards.csv", customCardsCsv(deckDraft.custom), "text/csv"); break;
       case "custom-del": deckDraft.custom.splice(Number(el.dataset.i), 1); renderPane(); break;
       case "rebuild-deck":
@@ -2440,6 +2474,7 @@
       case "print-cards": printSheet(false); break;
       case "print-all": printSheet(true); break;
       case "replay": startReplay(); break;
+      case "reset-pacing": Object.assign(pacing, { game: null }); trackPacing(net.mode === "client" ? view : state); renderPane(); break;
       case "rewind": { const steps = Number(el.dataset.steps) || 1; for (let i = 0; i < steps; i += 1) undo(); break; }
       case "dismiss-over": dispatch({ type: "dismissGameOver" }); break;
       case "open-tab": openTab(el.dataset.tab); break;
@@ -2618,6 +2653,7 @@
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
+      if (d.deckBack) { deckDraft.back = { ...(deckDraft.back || {}), [d.deckBack]: el.value }; renderPane(); return; }
       if (d.deck) { deckDraft[d.deck] = d.deck === "preset" ? el.value : Number(el.value); if (d.deck === "preset") deckDraft.ranks = null; renderPane(); return; }
       if (d.deckSuit) { const s = d.deckSuit; deckDraft.suits = el.checked ? Array.from(new Set(deckDraft.suits.concat(s))) : deckDraft.suits.filter((x) => x !== s); if (!deckDraft.suits.length) deckDraft.suits = [s]; renderPane(); return; }
       if (d.custom !== undefined) { const item = deckDraft.custom[Number(d.custom)]; item[d.k] = ["value", "count"].includes(d.k) ? Number(el.value) : el.value; renderPane(); return; }
@@ -2771,6 +2807,14 @@
         case "m": if (selection.size) moveMenu($("#selectionBar"), orderedSelection()); break;
         case "delete": case "backspace": if (selection.size) handleSelectionBar({ dataset: { sel: "discard" } }); break;
         case "a": { const hand = myHandZone(); if (hand) { view.zones[hand].cards.forEach((id) => selection.add(id)); render(); } break; }
+        case "arrowright": moveKbdFocus(1); break;
+        case "arrowleft": moveKbdFocus(-1); break;
+        case " ": {
+          if (!kbdFocus || !view.cards[kbdFocus]) return;
+          if (selection.has(kbdFocus)) selection.delete(kbdFocus); else selection.add(kbdFocus);
+          render();
+          break;
+        }
         case "p":
         case "enter": {
           const first = [...legalMap.entries()].find(([, verdict]) => verdict.ok);
@@ -3260,6 +3304,7 @@
     const names = over.winners.map((id) => E.playerById(v, id)?.name).filter(Boolean);
     const standings = v.players.slice().sort((a, b) => (v.scores.lowWins ? totals[a.id] - totals[b.id] : totals[b.id] - totals[a.id]));
     el.hidden = false;
+    if (confettiFor !== over.t) { confettiFor = over.t; confetti(); playSound("win"); }
     el.innerHTML = `<div class="go-title">🏁 ${esc(names.join(" & "))} win${names.length > 1 ? "" : "s"}!</div>
       <div class="small muted">${esc(over.reason)}</div>
       <div class="go-standings">${standings.map((player, i) => `<span style="--c:${esc(player.color)}"><i class="swatch"></i>${i + 1}. ${esc(player.name)} <b>${E.fmt(totals[player.id])}</b></span>`).join("")}</div>
@@ -4152,6 +4197,107 @@
       return "";
     });
     return ["win", "warn", "shuffle", "flip", "card", "chat"].find((kind) => kinds.includes(kind)) || "";
+  }
+
+  // ============================================================ CHARTS
+  function scoreChartHTML(v) {
+    const rounds = v.scores.rounds;
+    const hasScores = rounds.some((round) => Object.keys(round.scores).length);
+    if (!hasScores || !v.players.length) return "";
+    const series = v.players.map((player) => {
+      let total = 0;
+      return [0, ...rounds.map((round) => (total += Number(round.scores[player.id]) || 0))];
+    });
+    const values = series.flat();
+    const max = Math.max(1, v.scores.target || 0, ...values);
+    const min = Math.min(0, ...values);
+    const W = 300;
+    const H = 110;
+    const n = Math.max(1, rounds.length);
+    const x = (i) => ((i / n) * W).toFixed(1);
+    const y = (value) => (H - ((value - min) / (max - min || 1)) * H).toFixed(1);
+    const lines = series.map((points, i) => {
+      const color = esc(v.players[i].color);
+      const last = points.length - 1;
+      return `<polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${points.map((value, j) => `${x(j)},${y(value)}`).join(" ")}"/><circle cx="${x(last)}" cy="${y(points[last])}" r="3" fill="${color}"/>`;
+    }).join("");
+    const target = v.scores.target ? `<line x1="0" x2="${W}" y1="${y(v.scores.target)}" y2="${y(v.scores.target)}" stroke="rgba(244,201,93,.7)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : "";
+    const zero = min < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="rgba(255,255,255,.18)" vector-effect="non-scaling-stroke"/>` : "";
+    return `<div class="score-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Running totals by round">${zero}${target}${lines}</svg>
+      <div class="chart-legend">${v.players.map((player, i) => `<span style="--c:${esc(player.color)}"><i class="swatch"></i>${esc(player.name)} ${E.fmt(series[i][series[i].length - 1])}</span>`).join("")}${v.scores.target ? `<span class="dim">- - target ${E.fmt(v.scores.target)}</span>` : ""}</div></div>`;
+  }
+
+  // ============================================================ PACING
+  const pacing = { game: null, current: null, since: 0, byPlayer: {}, turns: 0, longest: null };
+
+  /** Time each turn locally, so designers can see how long turns take. */
+  function trackPacing(source) {
+    if (!source) return;
+    const game = source.startedAt || 0;
+    const current = source.players[source.turn.index]?.id || null;
+    const now = Date.now();
+    if (pacing.game !== game) {
+      Object.assign(pacing, { game, current, since: now, byPlayer: {}, turns: 0, longest: null });
+      return;
+    }
+    if (current === pacing.current) return;
+    if (pacing.current) {
+      const ms = now - pacing.since;
+      const entry = pacing.byPlayer[pacing.current] || (pacing.byPlayer[pacing.current] = { ms: 0, turns: 0 });
+      entry.ms += ms;
+      entry.turns += 1;
+      pacing.turns += 1;
+      if (!pacing.longest || ms > pacing.longest.ms) pacing.longest = { ms, player: pacing.current };
+    }
+    pacing.current = current;
+    pacing.since = now;
+  }
+
+  const seconds = (ms) => (ms < 60000 ? `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s` : `${Math.floor(ms / 60000)} m ${Math.round((ms % 60000) / 1000)} s`);
+
+  function pacingHTML(v) {
+    if (!pacing.turns) return `<p class="hint">Turn times appear here once the turn has passed a few times. Timing is local to this browser.</p>`;
+    const entries = v.players.map((player) => ({ player, stat: pacing.byPlayer[player.id] })).filter((entry) => entry.stat);
+    const slowest = Math.max(...entries.map((entry) => entry.stat.ms / entry.stat.turns));
+    const total = entries.reduce((sum, entry) => sum + entry.stat.ms, 0);
+    return `<div class="stat-row"><div><b>${pacing.turns}</b><span>turns</span></div><div><b>${seconds(total / pacing.turns)}</b><span>avg turn</span></div><div><b>${seconds(pacing.longest.ms)}</b><span>longest (${esc(E.playerById(v, pacing.longest.player)?.name || "?")})</span></div></div>
+      <div class="list">${entries.map(({ player, stat }) => {
+        const avg = stat.ms / stat.turns;
+        return `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label">${player.bot ? "🤖 " : ""}${esc(player.name)}</span><div class="prob-bar grow"><span style="width:${(avg / slowest) * 100}%;background:linear-gradient(90deg, color-mix(in srgb, ${esc(player.color)} 35%, transparent), ${esc(player.color)})"></span><em>${seconds(avg)} × ${stat.turns}</em></div></div>`;
+      }).join("")}</div>
+      <div class="row"><button class="btn sm" data-act="reset-pacing">Reset timing</button></div>`;
+  }
+
+  // ========================================================== CONFETTI
+  let confettiFor = null;
+  function confetti() {
+    if (!prefs.motion) return;
+    const colors = ["#45d6ff", "#ff5c92", "#bdf46b", "#f4c95d", "#9f7dff", "#ff9f43"];
+    const layer = document.createElement("div");
+    layer.className = "confetti";
+    layer.innerHTML = Array.from({ length: 90 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(1.6 + Math.random() * 1.2).toFixed(2)}s;--drift:${(Math.random() * 160 - 80).toFixed(0)}px;--spin:${(Math.random() * 720 - 360).toFixed(0)}deg"></i>`).join("");
+    document.body.appendChild(layer);
+    setTimeout(() => layer.remove(), 3200);
+  }
+
+  // ======================================================== DESIGN BACK
+  function applyDesignBack(v) {
+    const back = v?.deckSpec?.back || {};
+    const style = document.body.style;
+    if (back.color) {
+      style.setProperty("--back-a", `color-mix(in srgb, ${back.color} 72%, #000)`);
+      style.setProperty("--back-b", back.color);
+    } else {
+      style.removeProperty("--back-a");
+      style.removeProperty("--back-b");
+    }
+    if (back.text) {
+      style.setProperty("--back-label", JSON.stringify(back.text));
+      document.body.dataset.backLabel = "1";
+    } else {
+      style.removeProperty("--back-label");
+      delete document.body.dataset.backLabel;
+    }
   }
 
   // ============================================================== INIT

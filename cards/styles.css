@@ -784,6 +784,25 @@ body[data-jumbo="1"] .card .face-art { inset: 38% 14% 10% 34%; font-size: calc(v
 .card-preview { --cw: 44px; --ch: 62px; flex: none; }
 .card-preview .card { cursor: default; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
 
+.score-chart { display: grid; gap: 6px; }
+.score-chart svg { width: 100%; height: 110px; border-radius: 8px; background: #0c1017; border: 1px solid var(--line); }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; font-weight: 700; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.chart-legend .swatch { display: inline-block; width: 8px; height: 8px; }
+
+.confetti { position: fixed; inset: 0; z-index: 500; pointer-events: none; overflow: hidden; }
+.confetti i { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; animation: confetti-fall linear forwards; }
+@keyframes confetti-fall {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--drift), 105vh) rotate(var(--spin)); opacity: 0.6; }
+}
+
+.card.back::before { content: var(--back-label); position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; transform: rotate(-28deg); color: rgba(255, 255, 255, 0.82); font-weight: 900; font-size: calc(var(--cw) * 0.15); letter-spacing: 0.04em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); pointer-events: none; }
+body[data-back-label="1"] .card.back.custom-back::after { content: ""; }
+
+.preset-search { min-height: 38px; font-size: 14px; }
+.card.kbd-focus { outline-color: var(--gold); outline-offset: 2px; }
+
 /* --------------------------------------------------------- responsive */
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 320px; }

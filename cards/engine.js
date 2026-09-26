@@ -196,6 +196,10 @@
       ? spec.ranks.filter((rank) => STD_RANKS.includes(rank))
       : null;
     const custom = Array.isArray(spec.custom) ? spec.custom.slice(0, 120).map(normalizeCustomCard) : [];
+    const back = {
+      color: /^#[0-9a-f]{6}$/i.test(spec.back?.color || "") ? spec.back.color : "",
+      text: cleanText(spec.back?.text, 14, "").replace(/["'\\<>]/g, ""),
+    };
     return {
       preset,
       decks: clampInt(spec.decks, 1, 8, 1),
@@ -203,6 +207,7 @@
       suits: suits.length ? suits : STD_SUITS.slice(),
       ranks,
       custom,
+      back,
     };
   }
 
