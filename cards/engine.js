@@ -220,7 +220,14 @@
       suit: cleanText(item.suit, 12, ""),
       rank: cleanText(item.rank, 8, ""),
       icon: cleanText(item.icon, 4, ""),
+      image: cleanImageUrl(item.image),
     };
+  }
+
+  /** Card art links: plain https URLs only, with nothing that could break out of CSS url(). */
+  function cleanImageUrl(value) {
+    const url = String(value || "").trim();
+    return url.length <= 400 && /^https:\/\/[^\s"'()<>\\]+$/i.test(url) ? url : "";
   }
 
   function customCard(state, item, extra = {}) {
@@ -235,6 +242,7 @@
       color: clean.color,
       value: clean.value,
       icon: clean.icon,
+      image: clean.image,
       faceUp: false,
       ...extra,
     };

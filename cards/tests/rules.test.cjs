@@ -429,3 +429,26 @@ console.log("bot, meld and refill tests passed");
   console.log(`autoplay: hearts ${hearts.steps} steps / ${hearts.deals} deals, crazy eights ${c8.steps}, color clash ${clash.steps}`);
 }
 console.log("card effect and autoplay tests passed");
+
+// The design wizard produces playable games for every style.
+{
+  Engine.setRng(Engine.seededRng("wizard"));
+  for (const style of Object.keys(Presets.WIZARD_STYLES)) {
+    const design = Presets.fromWizard({ style, name: "Test " + style, min: 2, max: 5, players: 4, target: style === "tricks" ? 10 : style === "draft" ? 3 : 100, trickScoring: "tricks" });
+    const state = Engine.createTable(design, { players: 4 });
+    assert.equal(state.players.length, 4, style);
+    assert.ok(state.macros.length >= 3, style);
+    for (const macro of state.macros) Engine.reduce(state, { type: "runMacro", id: macro.id });
+    if (style === "shedding" || style === "tricks") {
+      const out = Engine.playOut(state, { deal: state.macros[0].id, maxSteps: 30000 });
+      assert.ok(out.finished, `${style} game finishes (${out.steps} steps)`);
+    }
+    assert.match(Engine.describeGame(state), new RegExp(`# Test ${style}`));
+  }
+  const hearts = Presets.fromWizard({ style: "tricks", trickScoring: "hearts", target: 50 });
+  assert.equal(hearts.scoring.lowWins, true);
+  const wild = Presets.fromWizard({ style: "shedding", wild: "8, 2", match: "suit" });
+  assert.deepEqual(wild.table[1].rule.wild, ["8", "2"]);
+  assert.equal(wild.table[1].rule.accept, "suit");
+}
+console.log("wizard tests passed");

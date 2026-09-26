@@ -716,7 +716,15 @@ details.custom-cards[open] summary::before { content: "▾ "; }
 
 .card.custom .c-glyph { position: absolute; top: 28%; left: 0; right: 0; height: 34%; display: grid; place-items: center; color: var(--cc); font-weight: 900; font-size: calc(var(--cw) * 0.36); line-height: 1; }
 .card.custom .c-glyph + .c-text { top: 62%; }
+.card.custom .c-art { position: absolute; top: 28%; left: 7%; right: 7%; height: 32%; border-radius: calc(var(--cw) * 0.04); background: center / cover no-repeat, color-mix(in srgb, var(--cc) 15%, transparent); }
+.card.custom .c-art + .c-text { top: 63%; }
 .card.custom .c-suit { position: absolute; left: 7%; bottom: 5%; font-size: calc(var(--cw) * 0.1); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cc); max-width: 58%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.tpl-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.tpl-chips .muted { margin-right: 4px; }
+.chip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); font-size: 12px; font-weight: 650; }
+.chip:hover { border-color: var(--cyan); }
+.chip.on { border-color: var(--cyan); background: rgba(69, 214, 255, 0.12); }
 
 /* --------------------------------------------------------- responsive */
 @media (max-width: 1100px) {

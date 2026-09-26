@@ -570,9 +570,125 @@
 
   const FAMILIES = Array.from(new Set(PRESETS.map((preset) => preset.family)));
 
+  const WIZARD_STYLES = {
+    shedding: { label: "Shedding", hint: "Match the top card of a discard pile; first to empty their hand wins the hand." },
+    tricks: { label: "Trick-taking", hint: "Follow suit, highest card wins the trick, score tricks or points in them." },
+    draft: { label: "Drafting", hint: "Pick one card from a pack, pass the rest, build the best hand." },
+    poker: { label: "Poker-style", hint: "Private hands plus a shared board, ranked like poker, with chips." },
+    sandbox: { label: "Freeform", hint: "Hands and a free play area; add your own rules later." },
+  };
+
+  const num = (value, min, max, fallback) => {
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+  };
+
+  /** Build a playable game design from a few wizard answers. */
+  function fromWizard(o = {}) {
+    const style = WIZARD_STYLES[o.style] ? o.style : "shedding";
+    const name = String(o.name || "").trim().slice(0, 48) || "My game";
+    const min = num(o.min, 1, 12, 2);
+    const max = Math.max(min, num(o.max, 1, 12, 6));
+    const handSize = num(o.handSize, 0, 30, style === "tricks" ? 0 : style === "poker" ? 2 : 7);
+    const target = num(o.target, 0, 100000, 0);
+    const rounds = num(o.rounds, 0, 999, 0);
+    const wild = String(o.wild || "").split(",").map((rank) => rank.trim()).filter(Boolean);
+    const table = [deck({ name: "Draw pile", rule: { place: "nobody" } })];
+    const seat = [];
+    const macros = [];
+    const triggers = [];
+    const schemes = [];
+    let phases = [];
+    let botFallback = "";
+    let lowWins = Boolean(o.lowWins);
+    let chips = 0;
+    const handZone = (extra = {}) => hand({ visibility: o.openHands ? "public" : "owner", face: o.openHands ? "up" : "down", ...extra });
+    const dealSteps = (count, extra = []) => [collect(), { op: "nextDealer" }, ...(count ? [deal("hand", count)] : []), ...extra];
+    switch (style) {
+      case "shedding": {
+        schemes.push({ id: "penalty", name: "Cards left", low: true });
+        seat.push(handZone({ evals: ["points:penalty"] }));
+        table.push(discard({ rule: { place: "turn", accept: o.match || "suitOrRank", advance: true, ...(wild.length ? { wild } : {}) } }));
+        macros.push(
+          { label: "Deal", steps: dealSteps(handSize || 7, [deal("discard", 1, "up"), { op: "setTurn", who: "next" }]) },
+          { label: "Draw", hint: "Current player draws", steps: [deal("hand@current", 1, undefined, "draw pile")] },
+          { label: "Pass", steps: [{ op: "nextTurn" }] },
+          { label: "Reshuffle", hint: "Discards except the top become the draw pile", steps: [{ op: "clear", from: "discard", to: "draw pile", face: "down", keep: 1 }, { op: "shuffle", zone: "draw pile" }] },
+          { label: "Out!", hint: "Whoever went out scores the cards left in other hands", steps: [{ op: "scoreZones", zone: "hand", evaluator: "points:penalty", target: "winner" }, say("{winner} went out!"), { op: "nextRound" }, { op: "runAction", macro: "Deal" }] },
+        );
+        triggers.push({ event: "empty", zone: "draw pile", macro: "Reshuffle" }, { event: "empty", zone: "hand", macro: "Out!" });
+        botFallback = "Draw";
+        break;
+      }
+      case "tricks": {
+        const hearts = o.trickScoring === "hearts";
+        seat.push(handZone(), { key: "tricks", name: "Tricks won", kind: "pile", layout: "overlap", visibility: "public", face: "up", ...(hearts ? { evals: ["hearts-points"] } : {}) });
+        table.push(trick(o.trump ? { ctx: { trump: o.trump } } : {}));
+        macros.push(
+          { label: "Deal", hint: "Deal the whole deck", steps: [collect(), { op: "nextDealer" }, deal("hand", handSize || 13), { op: "sort", zone: "hand", by: "suit" }, { op: "setTurn", who: "next" }] },
+          { label: "Take trick", hint: "The winner takes the trick and leads", steps: [{ op: "findWinner", zone: "trick" }, { op: "clear", from: "trick", to: "tricks@winner" }, ...(hearts ? [] : [{ op: "score", who: "winner", amount: 1 }]), { op: "setTurn", who: "winner" }] },
+          { label: "End of hand", steps: [...(hearts ? [{ op: "scoreZones", zone: "tricks", evaluator: "hearts-points" }] : []), say("Hand over"), { op: "nextRound" }] },
+        );
+        triggers.push({ event: "count", zone: "trick", n: 0, macro: "Take trick" }, { event: "allEmpty", zone: "hand", macro: "End of hand" });
+        if (hearts) lowWins = true;
+        break;
+      }
+      case "draft": {
+        seat.push(hand({ key: "pack", name: "Pack" }), { key: "picks", name: "Picks", kind: "hand", layout: "spread", visibility: "owner", face: "down", limit: handSize || 5, evals: ["poker-high"], rule: { place: "owner" } });
+        macros.push(
+          { label: "Deal packs", steps: [collect(), deal("pack", handSize || 5)] },
+          { label: "Pass packs", steps: [{ op: "passZones", zone: "pack", dir: "left" }] },
+          { label: "Showdown", steps: [flip("picks"), { op: "findWinner", zone: "picks" }, { op: "score", who: "winner", amount: 1 }, { op: "nextRound" }] },
+        );
+        triggers.push({ event: "allEmpty", zone: "pack", macro: "Showdown" });
+        break;
+      }
+      case "poker": {
+        table.push(board({ evals: ["poker-high"] }), muck());
+        seat.push(handZone({ evals: ["poker-high"], ctx: { board: "board" } }));
+        phases = ["Deal", "Board", "Showdown"];
+        chips = 1000;
+        macros.push(
+          { label: "New hand", steps: dealSteps(handSize || 2, [{ op: "ante", amount: 10 }, phase("Deal"), { op: "setTurn", who: "next" }]) },
+          { label: "Board card", steps: [deal("board", 1, "up"), phase("Board")] },
+          { label: "Showdown", steps: [flip("hand"), { op: "findWinner", zone: "hand" }, { op: "awardPot", who: "winner" }, phase("Showdown")] },
+        );
+        break;
+      }
+      default: {
+        table.push({ key: "felt", name: "Felt", kind: "free", layout: "free", visibility: "public", face: "up", wide: true }, discard());
+        seat.push(handZone({ evals: ["set-summary"] }));
+        macros.push(
+          { label: "Deal", steps: dealSteps(handSize || 5) },
+          { label: "Draw 1", steps: [deal("hand@current", 1, undefined, "draw pile")] },
+          { label: "Collect & shuffle", steps: [collect()] },
+        );
+      }
+    }
+    return {
+      id: "wizard-" + style,
+      name,
+      family: WIZARD_STYLES[style].label,
+      tagline: String(o.tagline || "").slice(0, 90) || `A ${WIZARD_STYLES[style].label.toLowerCase()} game`,
+      description: WIZARD_STYLES[style].hint,
+      players: { min, max, default: Math.max(min, Math.min(max, num(o.players, 1, 12, Math.min(max, 4)))) },
+      deck: { preset: o.deck || "standard", decks: num(o.decks, 1, 8, 1), jokers: num(o.jokers, 0, 8, 0) },
+      table,
+      seat,
+      macros,
+      triggers,
+      schemes,
+      phases,
+      rulesMode: ["off", "warn", "enforce"].includes(o.rulesMode) ? o.rulesMode : "warn",
+      botFallback,
+      scoring: { target, rounds, lowWins, chips, label: style === "poker" ? "Chips" : "Points" },
+      rules: "",
+    };
+  }
+
   function get(id) {
     return PRESETS.find((preset) => preset.id === id) || PRESETS[0];
   }
 
-  return { PRESETS, FAMILIES, get };
+  return { PRESETS, FAMILIES, WIZARD_STYLES, get, fromWizard };
 });

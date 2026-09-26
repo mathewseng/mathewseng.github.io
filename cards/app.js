@@ -348,7 +348,8 @@
     if (card.custom) {
       const glyph = card.icon || (String(card.label || "").length <= 3 ? card.label : "");
       const suit = card.suit && card.suit !== "x" ? `<div class="c-suit">${esc(card.suit)}</div>` : "";
-      return `<div class="c-title">${esc(card.label || card.rank)}</div>${glyph ? `<div class="c-glyph">${esc(glyph)}</div>` : ""}<div class="c-text">${esc(card.text || "")}</div>${suit}${card.value ? `<div class="c-val">${esc(card.value)}</div>` : ""}`;
+      const art = card.image && /^https:\/\/[^\s"'()<>\\]+$/i.test(card.image) ? `<div class="c-art" style="background-image:url('${esc(card.image)}')"></div>` : "";
+      return `<div class="c-title">${esc(card.label || card.rank)}</div>${art || (glyph ? `<div class="c-glyph">${esc(glyph)}</div>` : "")}<div class="c-text">${esc(card.text || "")}</div>${suit}${card.value ? `<div class="c-val">${esc(card.value)}</div>` : ""}`;
     }
     if (card.rank === "JK") {
       return `<span class="corner tl"><b>★</b></span><span class="pip">JOKER</span><span class="corner br"><b>★</b></span>`;
@@ -1205,7 +1206,8 @@
               <input type="text" value="${esc(item.suit || "")}" placeholder="Suit / color" style="width:100px" data-custom="${i}" data-k="suit" title="Suit, used by rules">
               <input type="text" value="${esc(item.rank || "")}" placeholder="Rank" style="width:70px" data-custom="${i}" data-k="rank" title="Rank, used by rules (numbers can be ordered)">
               <input type="number" value="${item.value}" placeholder="pts" style="width:62px" data-custom="${i}" data-k="value" title="Points">
-              <input type="text" value="${esc(item.text)}" placeholder="Rules text" style="flex-basis:100%" data-custom="${i}" data-k="text">
+              <input type="text" value="${esc(item.text)}" placeholder="Rules text" style="flex:1 1 60%" data-custom="${i}" data-k="text">
+              <input type="url" value="${esc(item.image || "")}" placeholder="Art image https://… (optional)" style="flex:1 1 30%" data-custom="${i}" data-k="image" title="An https link to card art">
             </div>`).join("")}</div>
           <div class="row tight"><button class="btn sm" data-act="custom-add">+ Custom card</button><button class="btn sm" data-act="custom-import">Import from spreadsheet…</button>${draft.custom.length ? `<button class="btn sm" data-act="custom-export">Export CSV</button>` : ""}</div>
         </details>
@@ -1426,12 +1428,14 @@
           <span class="grow small muted">${esc(preset.description || "")}</span>
           <label class="row tight small">Players <input name="players" type="number" min="${range.min}" max="${range.max}" value="${count}" style="width:64px"></label>
           <label class="check small"><input type="checkbox" name="keepNames" ${state?.players.length ? "checked" : ""}> Keep names</label>
+          <button type="button" class="btn" data-wizard>✨ Design your own…</button>
           <button class="btn" value="cancel">Cancel</button>
           <button class="btn primary" value="start">Start ${esc(preset.name)}</button>
         </div>`;
     };
     const bind = (form) => {
       form.addEventListener("click", (event) => {
+        if (event.target.closest("[data-wizard]")) { openWizard(); return; }
         const del = event.target.closest("[data-del-preset]");
         if (del) {
           event.preventDefault();
@@ -1502,6 +1506,7 @@
         ${v.players.map((player) => `<option value="${player.id}"${area === player.id ? " selected" : ""}>Only ${esc(player.name)}'s seat</option>`).join("")}
       </select></label>` : "";
     const html = head(creating ? "New group" : `Edit “${z.name}”`) + `<div class="dlg-body">
+        ${creating ? `<div class="tpl-chips"><span class="small muted">Start from</span>${Object.entries(ZONE_TEMPLATES).map(([id, tpl]) => `<button type="button" class="chip" data-ztpl="${id}">${esc(tpl.label)}</button>`).join("")}</div>` : ""}
         <div class="grid-2">
           <label class="field"><span>Name</span><input type="text" name="name" value="${esc(z.name)}" maxlength="32" required></label>
           ${areaSelect || `<label class="field"><span>Kind</span>${sel("kind", KINDS, z.kind)}</label>`}
@@ -1559,6 +1564,14 @@
       </div>`;
     openDialog(html, {
       wide: true,
+      bind(form) {
+        form.addEventListener("click", (event) => {
+          const chip = event.target.closest("[data-ztpl]");
+          if (!chip) return;
+          applyZoneTemplate(form, ZONE_TEMPLATES[chip.dataset.ztpl]);
+          $$("[data-ztpl]", form).forEach((el) => el.classList.toggle("on", el === chip));
+        });
+      },
       onSubmit(form, value) {
         if (value === "delete") {
           dispatch({ type: "removeZone", zone: zoneId, allSeats: Boolean(form.allSeats?.checked) });
@@ -1658,8 +1671,10 @@
         default: return "";
       }
     };
+    const templates = actionTemplates(v);
     const draw = () => head(existing ? "Edit action" : "New action") + `<div class="dlg-body">
         ${refList}
+        ${existing ? "" : `<div class="tpl-chips"><span class="small muted">Start from</span>${Object.entries(templates).map(([id, tpl]) => `<button type="button" class="chip" data-atpl="${id}">${esc(tpl.label)}</button>`).join("")}</div>`}
         <div class="grid-2">
           <label class="field"><span>Button label</span><input type="text" name="label" value="${esc(draft.label)}" maxlength="28"></label>
           <label class="field"><span>Hint</span><input type="text" name="hint" value="${esc(draft.hint)}" maxlength="80" placeholder="Shown under the button"></label>
@@ -1715,6 +1730,7 @@
         else if (t.dataset.stepDel !== undefined) { sync(form); draft.steps.splice(Number(t.dataset.stepDel), 1); redraw(form); }
         else if (t.dataset.stepUp !== undefined) { sync(form); const i = Number(t.dataset.stepUp); [draft.steps[i - 1], draft.steps[i]] = [draft.steps[i], draft.steps[i - 1]]; redraw(form); }
         else if (t.hasAttribute("data-test-run")) { sync(form); dispatch({ type: "runMacro", steps: draft.steps }); toast("Ran once — Undo to revert"); }
+        else if (t.dataset.atpl) { const tpl = templates[t.dataset.atpl]; draft.label = tpl.label; draft.hint = tpl.hint || ""; draft.steps = E.clone(tpl.steps); redraw(form); }
         else if (t.dataset.macroMove) { dispatch({ type: "moveMacro", id: macroId, dir: Number(t.dataset.macroMove) }); }
       });
     };
@@ -1798,6 +1814,7 @@
       <p class="hint"><b>Play rules</b> live on groups: whose turn it is, follow suit, match suit or rank, build up or down, wild ranks, one card each, pass the turn after playing. The Rules tab switches checks off, to warnings (great for playtests) or enforced.</p>
       <p class="hint"><b>Triggers</b> fire actions by themselves: when a trick is full, when the deck runs out, when a hand empties, when a phase starts, when the game ends. <b>Custom scoring</b> (Scores tab) defines card values and bonuses you can attach to any group.</p>
       <p class="hint"><b>Design tools</b>: save games to My games with version history, share them as links, generate a rules document from the table, simulate deals thousands of times, replay deals with seeded shuffles, and track playtest results by seat.</p>
+      <p class="hint"><b>Start fast</b>: New game → ✨ Design your own builds a playable table from a few answers, and new groups and actions have one-click templates (hand, discard, trick, foundation, meld… deal, draw, take trick, reshuffle, showdown…).</p>
       <p class="hint"><b>Bots</b> (Players tab, 🤖) make random legal plays under your rules, so a table full of bots playtests whole hands; set what they do when stuck in Play → Bots. Seats can have <b>teams</b>, groups can require <b>sets or runs</b>, Log → Rewind jumps back in time, and Deck → Print & play makes a paper prototype.</p>
       <p class="hint"><b>View</b>: “All hands” for one shared screen, “Pass &amp; play” hides hands between turns, “X-ray” shows everything for design work, or pick a seat. Online rooms keep hands private per player.</p>
       <div class="kbd-list">${keys.map(([k, d]) => `<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join("")}</div>
@@ -3396,6 +3413,7 @@
       add("Groups", `Edit ${zone.name}`, () => openZoneDialog(zone.id));
       add("Groups", `Shuffle ${zone.name}`, () => dispatch({ type: "shuffle", zone: zone.id }));
     }
+    add("Design", "Design a new game (wizard)", openWizard);
     add("Design", "New action", () => openMacroDialog(null));
     add("Design", "New trigger", () => openTriggerDialog(null));
     add("Design", "New scoring rule", () => openSchemeDialog(null));
@@ -3476,8 +3494,8 @@
 
   // ====================================================== CUSTOM CARD CSV
   const COLOR_NAMES = { red: "#d9434b", yellow: "#b98a00", green: "#23915a", blue: "#3b63d9", black: "#2a2d36", purple: "#7a52e0", violet: "#7a52e0", orange: "#e07b28", pink: "#d6488f", teal: "#159a9c", gray: "#6b7280", grey: "#6b7280", white: "#9ca3af", gold: "#c9a227", brown: "#8b5a2b" };
-  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text"];
-  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text" };
+  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text", "image"];
+  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text", image: "image", art: "image", picture: "image", url: "image" };
 
   function splitRow(line, delimiter) {
     const out = [];
@@ -3523,19 +3541,20 @@
         rank: item.rank || "",
         icon: item.icon || "",
         text: item.text || "",
+        image: item.image || "",
       };
     }).filter(Boolean);
   }
 
   function customCardsCsv(items) {
     const quote = (cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`;
-    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text"];
+    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text", "image"];
     return [header.join(","), ...items.map((item) => CUSTOM_COLUMNS.map((key) => quote(item[key])).join(","))].join("\n");
   }
 
   function openCustomImport() {
     openDialog(head("Import custom cards") + `<div class="dlg-body">
-        <p class="hint">Paste rows from a spreadsheet (tab or comma separated). Columns in order: <code>name, copies, color, points, suit, rank, icon, text</code>, or give a header row naming them in any order. Colors can be hex (#d9434b) or names (red, blue…).</p>
+        <p class="hint">Paste rows from a spreadsheet (tab or comma separated). Columns in order: <code>name, copies, color, points, suit, rank, icon, text, image</code>, or give a header row naming them in any order. Colors can be hex (#d9434b) or names (red, blue…); image is an optional https link to card art.</p>
         <textarea name="rows" style="min-height:200px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px" placeholder="name,copies,color,points,suit,rank,icon,text&#10;Skip,2,red,20,Red,Skip,⊘,The next player loses a turn&#10;7,2,blue,7,Blue,7"></textarea>
         <label class="check"><input type="checkbox" name="replace"> Replace the existing custom cards</label>
         <label class="check"><input type="checkbox" name="none"> Custom cards only (drop the standard 52)</label>
@@ -3696,7 +3715,7 @@
     const spec = E.normalizeDeckSpec(v.deckSpec);
     const cards = [];
     for (const item of spec.custom) {
-      for (let i = 0; i < item.count; i += 1) cards.push({ id: "p" + cards.length, custom: true, visible: true, faceUp: true, label: item.label, text: item.text, color: item.color, value: item.value, icon: item.icon, suit: item.suit || "x", rank: item.rank || item.label });
+      for (let i = 0; i < item.count; i += 1) cards.push({ id: "p" + cards.length, custom: true, visible: true, faceUp: true, label: item.label, text: item.text, color: item.color, value: item.value, icon: item.icon, image: item.image, suit: item.suit || "x", rank: item.rank || item.label });
     }
     if (includeStandard || !cards.length) {
       const copies = (E.DECK_PRESETS[spec.preset]?.copies || 1) * spec.decks;
@@ -3727,6 +3746,134 @@
       ${v.notes && v.notes.trim() ? `<section class="print-rules">${renderMarkdown(v.notes)}</section>` : ""}
       </body></html>`);
     win.document.close();
+  }
+
+  // ============================================================== WIZARD
+  function openWizard() {
+    if (net.mode === "client") return toast("Only the host can start a new game.", "error");
+    const draft = { name: "", style: "shedding", min: 2, max: 6, players: 4, deck: "standard", decks: 1, jokers: 0, handSize: "", openHands: false, match: "suitOrRank", wild: "", trickScoring: "tricks", trump: "", target: 100, rounds: 0, lowWins: false, rulesMode: "warn" };
+    const styleFields = () => {
+      if (draft.style === "shedding") return `<div class="grid-2">
+          <label class="field"><span>A card played must</span><select name="match">${[["suitOrRank", "Match suit or rank"], ["suit", "Match suit"], ["rank", "Match rank"], ["color", "Match color"]].map(([id, label]) => `<option value="${id}"${draft.match === id ? " selected" : ""}>${label}</option>`).join("")}</select></label>
+          <label class="field"><span>Wild ranks <span class="dim">optional</span></span><input type="text" name="wild" value="${esc(draft.wild)}" placeholder="e.g. 8"></label></div>`;
+      if (draft.style === "tricks") return `<div class="grid-2">
+          <label class="field"><span>Scoring</span><select name="trickScoring"><option value="tricks"${draft.trickScoring === "tricks" ? " selected" : ""}>1 point per trick</option><option value="hearts"${draft.trickScoring === "hearts" ? " selected" : ""}>Hearts points, lowest wins</option></select></label>
+          <label class="field"><span>Trump suit</span><select name="trump"><option value="">None</option>${["s", "h", "d", "c"].map((suit) => `<option value="${suit}"${draft.trump === suit ? " selected" : ""}>${SUIT_SYMBOL[suit]}</option>`).join("")}</select></label></div>`;
+      return "";
+    };
+    const draw = () => head("Design a new game") + `<div class="dlg-body">
+        <p class="hint">Answer a few questions and get a playable table: groups with play rules, one-tap actions, automatic triggers, scoring and a rules draft. Everything stays editable.</p>
+        <div class="grid-2">
+          <label class="field"><span>Name</span><input type="text" name="name" maxlength="48" value="${esc(draft.name)}" placeholder="My game" required></label>
+          <label class="field"><span>Style</span><select name="style">${Object.entries(P.WIZARD_STYLES).map(([id, def]) => `<option value="${id}"${draft.style === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
+        </div>
+        <p class="hint" style="margin-top:-6px">${esc(P.WIZARD_STYLES[draft.style].hint)}</p>
+        <div class="grid-3">
+          <label class="field"><span>Fewest players</span><input type="number" name="min" min="1" max="12" value="${draft.min}"></label>
+          <label class="field"><span>Most players</span><input type="number" name="max" min="1" max="12" value="${draft.max}"></label>
+          <label class="field"><span>Start with</span><input type="number" name="players" min="1" max="12" value="${draft.players}"></label>
+          <label class="field"><span>Deck</span><select name="deck">${Object.entries(E.DECK_PRESETS).filter(([id]) => id !== "none").map(([id, deck]) => `<option value="${id}"${draft.deck === id ? " selected" : ""}>${esc(deck.label)}</option>`).join("")}</select></label>
+          <label class="field"><span>Decks</span><input type="number" name="decks" min="1" max="8" value="${draft.decks}"></label>
+          <label class="field"><span>Jokers</span><input type="number" name="jokers" min="0" max="8" value="${draft.jokers}"></label>
+          <label class="field"><span>Cards per hand</span><input type="number" name="handSize" min="0" max="30" value="${esc(draft.handSize)}" placeholder="${draft.style === "tricks" ? "13" : draft.style === "poker" ? "2" : draft.style === "draft" ? "5" : "7"}"></label>
+          <label class="field"><span>Hands are</span><select name="openHands"><option value="0">Private</option><option value="1"${draft.openHands ? " selected" : ""}>Open (face up)</option></select></label>
+          <label class="field"><span>Rule checks</span><select name="rulesMode">${Object.entries(E.RULES_MODES).map(([id, label]) => `<option value="${id}"${draft.rulesMode === id ? " selected" : ""}>${label}</option>`).join("")}</select></label>
+        </div>
+        ${styleFields()}
+        <div class="grid-3">
+          <label class="field"><span>Game ends at</span><input type="number" name="target" min="0" value="${draft.target || ""}" placeholder="no target"></label>
+          <label class="field"><span>Or after rounds</span><input type="number" name="rounds" min="0" value="${draft.rounds || ""}" placeholder="no limit"></label>
+          <label class="check" style="align-self:end;min-height:32px"><input type="checkbox" name="lowWins"${draft.lowWins ? " checked" : ""}> Lowest total wins</label>
+        </div>
+      </div>
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="create">Create game</button></div>`;
+    const sync = (form) => {
+      for (const key of ["name", "style", "deck", "match", "wild", "trickScoring", "trump", "rulesMode"]) if (form[key]) draft[key] = form[key].value;
+      for (const key of ["min", "max", "players", "decks", "jokers", "target", "rounds"]) if (form[key]) draft[key] = Number(form[key].value) || 0;
+      draft.handSize = form.handSize.value;
+      draft.openHands = form.openHands.value === "1";
+      draft.lowWins = form.lowWins.checked;
+    };
+    openDialog(draw(), {
+      wide: true,
+      bind(form) {
+        form.addEventListener("change", (event) => {
+          if (event.target.name !== "style") return;
+          sync(form);
+          form.innerHTML = draw();
+        });
+      },
+      onSubmit(form) {
+        sync(form);
+        const design = P.fromWizard(draft);
+        const count = Math.max(design.players.min, Math.min(design.players.max, draft.players || design.players.default));
+        const next = E.createTable(design, { players: Array.from({ length: count }, (_, i) => state?.players[i] ? { name: state.players[i].name, color: state.players[i].color, clientId: state.players[i].clientId } : { name: `Player ${i + 1}` }) });
+        next.notes = E.describeGame(next);
+        next.rev = (state?.rev || 0) + 1;
+        replaceState(next, `Designed “${design.name}”. Press ${design.macros[0].label} to play, and save it from Rules when you like it.`);
+        prefs.tab = "rules";
+        prefs.rulesView = "preview";
+        prefs.side = true;
+        savePrefs();
+        store(STORE.seen, true);
+        renderPane();
+      },
+    });
+  }
+
+  // ============================================================ TEMPLATES
+  const ZONE_TEMPLATES = {
+    hand: { label: "Hand", name: "Hand", area: "seats", kind: "hand", layout: "fan", visibility: "owner", face: "down" },
+    draw: { label: "Draw pile", name: "Draw pile", area: "table", kind: "deck", layout: "stack", visibility: "hidden", face: "down", rule: { place: "nobody" } },
+    discard: { label: "Discard (match)", name: "Discard", area: "table", kind: "discard", layout: "stack", visibility: "public", face: "up", rule: { place: "turn", accept: "suitOrRank", advance: true } },
+    trick: { label: "Trick", name: "Trick", area: "table", kind: "board", layout: "spread", visibility: "public", face: "up", evals: ["trick"], rule: { place: "turn", follow: true, once: true, advance: true } },
+    board: { label: "Board", name: "Board", area: "table", kind: "board", layout: "spread", visibility: "public", face: "up", evals: ["poker-high"] },
+    foundation: { label: "Foundation", name: "Foundation", area: "table", kind: "pile", layout: "stack", visibility: "public", face: "up", rule: { first: "A", accept: "suit", order: "upOne" } },
+    column: { label: "Tableau column", name: "Column", area: "table", kind: "pile", layout: "overlap", visibility: "public", face: "keep", rule: { first: "K", accept: "altColor", order: "downOne", flipTop: true } },
+    meld: { label: "Meld", name: "Meld", area: "seats", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { place: "owner", meld: "setOrRun" } },
+    felt: { label: "Play area", name: "Play area", area: "table", kind: "free", layout: "free", visibility: "public", face: "up", wide: true },
+    won: { label: "Won pile", name: "Won", area: "seats", kind: "pile", layout: "stack", visibility: "public", face: "down", evals: ["count"] },
+  };
+
+  function applyZoneTemplate(form, tpl) {
+    form.name.value = tpl.name;
+    if (form.area && tpl.area && [...form.area.options].some((option) => option.value === tpl.area)) form.area.value = tpl.area;
+    form.kind.value = tpl.kind;
+    form.layout.value = tpl.layout;
+    form.visibility.value = tpl.visibility;
+    form.face.value = tpl.face;
+    form.limit.value = tpl.limit || 0;
+    form.wide.checked = Boolean(tpl.wide);
+    $$('input[name="eval"]', form).forEach((box) => { box.checked = (tpl.evals || []).includes(box.value); });
+    const rule = tpl.rule || {};
+    form.rPlace.value = rule.place || "anyone";
+    form.rTake.value = rule.take || "anyone";
+    form.rAccept.value = rule.accept || "any";
+    form.rOrder.value = rule.order || "any";
+    form.rMeld.value = rule.meld || "none";
+    form.rFirst.value = rule.first || "";
+    form.rWild.value = (rule.wild || []).join(", ");
+    for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"]]) form[field].checked = Boolean(rule[key]);
+  }
+
+  function actionTemplates(v) {
+    const handKey = v.seatTemplate.find((tpl) => tpl.kind === "hand")?.key || v.seatTemplate[0]?.key || "hand";
+    const deckKey = E.findDeckZone(v)?.key || "deck";
+    const tableZones = E.orderedZones(v, "table");
+    const discardKey = tableZones.find((zone) => zone.kind === "discard")?.key || "discard";
+    const trickKey = tableZones.find((zone) => (zone.evals || []).includes("trick"))?.key || "trick";
+    const wonKey = v.seatTemplate.find((tpl) => tpl.kind === "pile")?.key || "tricks";
+    return {
+      deal: { label: "Deal", hint: "Shuffle and deal five each", steps: [{ op: "collect", to: deckKey, shuffle: true }, { op: "nextDealer" }, { op: "deal", from: deckKey, to: handKey, count: 5 }, { op: "setTurn", who: "next" }] },
+      draw: { label: "Draw 1", hint: "Current player draws", steps: [{ op: "deal", from: deckKey, to: handKey + "@current", count: 1 }] },
+      refill: { label: "Refill hands", hint: "Everyone draws back up to five", steps: [{ op: "refill", from: deckKey, to: handKey, count: 5 }] },
+      pass: { label: "Pass", steps: [{ op: "nextTurn" }] },
+      trick: { label: "Take trick", hint: "Winner takes the trick and leads", steps: [{ op: "findWinner", zone: trickKey }, { op: "clear", from: trickKey, to: wonKey + "@winner" }, { op: "setTurn", who: "winner" }] },
+      reshuffle: { label: "Reshuffle", hint: "Discards except the top become the deck", steps: [{ op: "clear", from: discardKey, to: deckKey, face: "down", keep: 1 }, { op: "shuffle", zone: deckKey }] },
+      score: { label: "Score hands", hint: "Each player scores their hand, then a new round", steps: [{ op: "scoreZones", zone: handKey }, { op: "nextRound" }] },
+      showdown: { label: "Showdown", hint: "Reveal, find the best hand, award the pot", steps: [{ op: "flip", zone: handKey, face: "up" }, { op: "findWinner", zone: handKey }, { op: "awardPot", who: "winner" }] },
+      draft: { label: "Pass hands left", steps: [{ op: "passZones", zone: handKey, dir: "left" }] },
+    };
   }
 
   // ============================================================== INIT
