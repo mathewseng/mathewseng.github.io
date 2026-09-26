@@ -938,3 +938,5 @@ body[data-motion="0"] *, body[data-motion="0"] *::before { animation-duration: 0
   30% { transform: scale(0.9) rotate(-2deg); }
   100% { transform: none; }
 }
+.claim-bar { margin: 0 0 6px; padding: 5px 8px; border-radius: 8px; background: rgba(244, 201, 93, 0.1); border: 1px solid rgba(244, 201, 93, 0.3); font-size: 12px; }
+.claim-bar b { color: var(--gold); }

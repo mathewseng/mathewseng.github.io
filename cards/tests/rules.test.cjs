@@ -832,3 +832,60 @@ console.log("card balance tests passed");
   assert.ok(out.finished, `slapjack finishes (${out.steps} steps)`);
 }
 console.log("slap tests passed");
+
+// Bluffing: claims, calls both ways, privacy of the claim, bots.
+{
+  let state = Engine.createTable(Presets.get("cheat"), { players: ["Ana", "Ben", "Cy"] });
+  const [ana, ben, cy] = state.players.map((player) => player.id);
+  const pile = zone(state, "pile").id;
+  state = act(state, { type: "setTurn", index: 0 });
+  state = pull(state, "Ah Ad 7c", zone(state, "hand", ana).id, "down");
+  assert.equal(Engine.nextClaimRank(state.zones[pile]), "A");
+  state = act(state, { type: "move", cards: [cardIn(state, "Ah"), cardIn(state, "Ad")], to: pile }, ana);
+  assert.deepEqual({ by: state.zones[pile].claim.by, rank: state.zones[pile].claim.rank, count: state.zones[pile].claim.count }, { by: ana, rank: "A", count: 2 });
+  assert.match(lastLog(state), /Ana claims 2 × Aces/);
+  assert.equal(current(state), ben, "turn passes after a claim");
+  assert.ok(state.zones[pile].cards.every((id) => !state.cards[id].faceUp));
+  // Guests see the claim but not which cards made it.
+  const benView = Engine.viewFor(state, ben);
+  const viewPile = Object.values(benView.zones).find((z) => z.key === "pile");
+  assert.equal(viewPile.claim.count, 2);
+  assert.equal(viewPile.claim.cards, undefined);
+  assert.throws(() => act(state, { type: "callBluff", zone: pile, player: ana }, ana, { strict: true }), /own claim/);
+  // A true claim: the caller takes the pile.
+  let called = act(state, { type: "callBluff", zone: pile, player: ben }, ben, { strict: true });
+  assert.match(lastLog(called), /True! Ben takes the pile \(2 cards\)/);
+  assert.equal(called.zones[pile].cards.length, 0);
+  assert.equal(called.zones[pile].claim, undefined);
+  // A lie: Ben claims 2s with a 9; Cy calls and Ben takes it.
+  state = pull(state, "9s", zone(state, "hand", ben).id, "down");
+  state = act(state, { type: "move", cards: [cardIn(state, "9s")], to: pile }, ben);
+  assert.equal(state.zones[pile].claim.rank, "2");
+  const benHand = zone(state, "hand", ben).cards.length;
+  state = act(state, { type: "callBluff", zone: pile, player: cy }, cy);
+  assert.match(lastLog(state), /A bluff! Ben takes the pile \(3 cards\)/);
+  assert.equal(zone(state, "hand", ben).cards.length, benHand + 3);
+  assert.throws(() => act(state, { type: "callBluff", zone: pile, player: cy }, cy), /no claim/);
+  // Too many cards at once is against the rules.
+  state = pull(state, "2c 2d 2h 2s 3c", zone(state, "hand", cy).id, "down");
+  const ranks = zone(state, "hand", cy).cards.slice(0, 5);
+  state = act(state, { type: "setRules", mode: "enforce" });
+  state = act(state, { type: "setTurn", index: 2 });
+  assert.throws(() => act(state, { type: "move", cards: ranks, to: pile }, cy), /one to four/);
+  // Bots: honest when they hold the rank, and a hand that proves a lie always calls.
+  let fresh = run(Engine.createTable(Presets.get("cheat"), { players: 3 }), "Deal");
+  const who = current(fresh);
+  const play = Engine.claimPlay(fresh, who, fresh.zones[pile] || Object.values(fresh.zones).find((z) => z.key === "pile"));
+  const needed = Engine.nextClaimRank(Object.values(fresh.zones).find((z) => z.key === "pile"));
+  const holds = zone(fresh, "hand", who).cards.some((id) => fresh.cards[id].rank === needed);
+  assert.equal(play.bluff, !holds);
+  if (!play.bluff) assert.ok(play.cards.every((id) => fresh.cards[id].rank === needed));
+  const counts = {};
+  for (const id of zone(fresh, "hand", who).cards) counts[fresh.cards[id].rank] = (counts[fresh.cards[id].rank] || 0) + 1;
+  const [rank, held] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  const fake = { rule: { claim: "sequence", claimTo: "hand" }, claim: { by: "nobody", rank, count: 5 - held } };
+  assert.equal(Engine.botCalls(fresh, who, fake), true, `holding ${held} of ${rank} disproves a claim of ${5 - held}`);
+  const out = Engine.playOut(Engine.createTable(Presets.get("cheat"), { players: 4 }), { deal: "Deal", maxSteps: 8000 });
+  assert.ok(out.finished, `cheat finishes (${out.steps} steps)`);
+}
+console.log("bluffing tests passed");

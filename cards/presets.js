@@ -532,6 +532,27 @@
       rules: "Slapjack\n\nDeal the whole deck face down. In turn, flip your top card onto the pile (Flip). The moment a Jack lands, everyone races to slap the pile (the Slap button or Space): the first slap takes the whole pile under their stack and plays next. Slap anything else and you burn a card under the pile.\n\nRun out of cards and you're out. Last player holding cards wins. Switch the pile's slap rule (Edit group → Play rules) to pairs, sandwiches or the full Ratscrew set to invent variants.",
     },
     {
+      id: "cheat",
+      name: "Cheat",
+      family: "Shedding",
+      tagline: "Play face down, claim the next rank, call the liars",
+      description: "Bluffing: play 1–4 cards face down claiming the next rank (Aces, then 2s…). Anyone can call Cheat; whoever is wrong takes the pile.",
+      players: { min: 3, max: 6, default: 4 },
+      deck: { preset: "standard" },
+      table: [
+        deck(),
+        { key: "pile", name: "Pile", kind: "pile", layout: "stack", visibility: "hidden", face: "down", rule: { place: "turn", claim: "sequence", claimTo: "hand", advance: true } },
+      ],
+      seat: [hand({ evals: ["set-summary"] })],
+      macros: [
+        { label: "Deal", hint: "Deal the whole deck", steps: [collect(), { op: "nextDealer" }, deal("hand", 52), { op: "sort", zone: "hand", by: "rank" }, { op: "setTurn", who: "next" }] },
+        { label: "Out", hint: "Runs by itself when a hand empties", steps: [{ op: "score", who: "subject", amount: 1 }, { op: "endGame", text: "{subject} got rid of every card" }] },
+      ],
+      triggers: [{ event: "empty", zone: "hand", macro: "Out" }],
+      scoring: { label: "Wins" },
+      rules: "Cheat (also called BS or I Doubt It)\n\nDeal every card. On your turn, play one to four cards face down on the pile and claim they're all the next rank: the first player claims Aces, the next 2s, then 3s and so on, wrapping after Kings. You may lie.\n\nAny other player can call Cheat on the last claim (Call! on the pile). The cards are revealed: if the claim was a lie, the liar takes the whole pile; if it was true, the caller does. First to empty their hand wins.\n\nBots play honestly when they can, bluff when they must, and call claims their own hand proves impossible.",
+    },
+    {
       id: "go-fish",
       name: "Go Fish",
       family: "Kids",

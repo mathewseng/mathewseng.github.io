@@ -89,6 +89,10 @@
     sandwich: "Pair or sandwich (top and third match)",
     ratscrew: "Pair, sandwich, K-Q marriage or top matches bottom",
   };
+  const RULE_CLAIM = {
+    none: "No bluffing",
+    sequence: "Face down, claiming the next rank (A, 2, 3…)",
+  };
   const RULES_MODES = { off: "Off", warn: "Warn", enforce: "Enforce" };
 
   const DEFAULT_DECK = Object.freeze({ preset: "standard", decks: 1, jokers: 0, suits: STD_SUITS.slice(), ranks: null, custom: [] });
@@ -737,6 +741,7 @@
       ? (card, zone) => card.faceUp || zone.visibility === "owner" || (Array.isArray(card.peek) && card.peek.length > 0)
       : (card, zone) => canSee(state, card, zone, viewerId);
     for (const zone of Object.values(view.zones)) {
+      if (zone.claim) zone.claim = { by: zone.claim.by, rank: zone.claim.rank, count: zone.claim.count };
       zone.cards = zone.cards.map((id, index) => {
         const card = state.cards[id];
         if (sees(card, state.zones[zone.id])) {
@@ -881,6 +886,7 @@
     if (rule.place && !whoAllows(state, rule.place, target, actor)) soft.push(`Only ${whoPhrase(rule.place, target)} may play to ${target.name}.`);
     if (rule.phase && !sameText(rule.phase, state.turn.phase)) soft.push(`${target.name} only takes cards during ${rule.phase}.`);
     if (rule.once && (ids.length > 1 || target.cards.some((id) => state.cards[id]?.playedBy === actor))) soft.push(`One card each in ${target.name}.`);
+    if (rule.claim && ids.length > 4) soft.push("Play one to four cards at a time.");
     if (rule.climb) {
       const problem = climbProblem(state, rule, target, ids);
       if (problem) soft.push(problem);
@@ -906,6 +912,39 @@
   }
 
   /** Climbing (President-style): a set of one rank, the same size as the last play, and higher. */
+  /** The rank the next player must claim on a bluffing pile. */
+  function nextClaimRank(zone) {
+    return STD_RANKS[(Number(zone?.claimSeq) || 0) % STD_RANKS.length];
+  }
+
+  /** A bot's bluffing play: every card of the claimed rank if it has any, else one or two of its least useful cards. */
+  function claimPlay(state, playerId, zone) {
+    const hand = orderedZones(state, playerId).find((entry) => entry.key === (zone.rule.claimTo || "hand")) || orderedZones(state, playerId).find((entry) => entry.kind === "hand");
+    if (!hand?.cards.length) return null;
+    const rank = nextClaimRank(zone);
+    const honest = hand.cards.filter((id) => state.cards[id]?.rank === rank).slice(0, 4);
+    if (honest.length) return { card: honest[0], cards: honest, to: zone.id, from: hand.id, bluff: false };
+    // Lie with the ranks furthest from coming up again soon.
+    const distance = (id) => (STD_RANKS.indexOf(state.cards[id]?.rank) - STD_RANKS.indexOf(rank) + STD_RANKS.length) % STD_RANKS.length;
+    const sorted = hand.cards.slice().sort((a, b) => distance(a) - distance(b));
+    const count = sorted.length > 6 && rng() < 0.3 ? 2 : 1;
+    return { card: sorted[0], cards: sorted.slice(0, count), to: zone.id, from: hand.id, bluff: true };
+  }
+
+  /**
+   * Would this bot call the standing claim? Always when its own hand proves
+   * the claim impossible, otherwise now and then (more often on big claims).
+   */
+  function botCalls(state, playerId, zone) {
+    const claim = zone?.claim;
+    if (!claim || claim.by === playerId) return false;
+    const hand = orderedZones(state, playerId).find((entry) => entry.key === (zone.rule.claimTo || "hand"));
+    const held = (hand?.cards || []).filter((id) => state.cards[id]?.rank === claim.rank).length;
+    const copies = Math.max(4, Object.values(state.cards).filter((card) => card.rank === claim.rank).length);
+    if (held + claim.count > copies) return true;
+    return rng() < 0.06 + 0.05 * (claim.count - 1) + 0.08 * held;
+  }
+
   /** Why this pile can be slapped right now ("a pair"…), or "" when it can't. */
   function slapReason(state, zone) {
     const kind = zone?.rule?.slap;
@@ -1090,6 +1129,14 @@
         for (const card of result.cards) mine[cardKey(card)] = (mine[cardKey(card)] || 0) + 1;
       }
       state = result.state;
+      // Bluffs: after a claim, the other players (in turn order) may call it.
+      if (result.did === "play") {
+        for (const zone of orderedZones(state, "table")) {
+          if (!zone.claim || state.gameOver) continue;
+          const caller = dealOrder(state).find((other) => other.id !== zone.claim.by && botCalls(state, other.id, zone));
+          if (caller) state = reduce(state, { type: "callBluff", zone: zone.id, player: caller.id }, caller.id);
+        }
+      }
       // Real-time slaps: whenever a pile can be slapped, a random player gets there first.
       for (const zone of orderedZones(state, "table")) {
         if (state.gameOver || !slapReason(state, zone)) continue;
@@ -1130,7 +1177,7 @@
     for (const from of sources) {
       for (const cardId of from.cards) {
         for (const to of targets) {
-          if (to.id === from.id || to.rule.climb) continue;
+          if (to.id === from.id || to.rule.climb || to.rule.claim) continue;
           const check = checkMove(state, [cardId], to.id, playerId, { force: true });
           if (!check.hard.length && !check.soft.length) out.push({ card: cardId, from: from.id, to: to.id });
         }
@@ -1153,6 +1200,13 @@
           }
         }
       }
+    }
+    // Bluffing piles: one considered play, honest when possible.
+    for (const to of targets.filter((zone) => zone.rule.claim)) {
+      const play = claimPlay(state, playerId, to);
+      if (!play) continue;
+      const check = checkMove(state, play.cards, to.id, playerId, { force: true });
+      if (!check.hard.length && !check.soft.length) out.push(play);
     }
     // Buying: the top card of a market pile (a group with a cost) into your own discard pile.
     const discard = orderedZones(state, playerId).find((zone) => zone.kind === "discard");
@@ -1197,6 +1251,7 @@
     if (rule.once) parts.push("one card per player");
     if (rule.advance) parts.push("the turn passes after playing here");
     if (rule.flipTop) parts.push("the new top card turns face up");
+    if (rule.claim) parts.push(`play 1 to 4 cards face down and claim they're the next rank in order; anyone can call it, and whoever is wrong takes the pile into their ${rule.claimTo}`);
     if (rule.slap) parts.push(`slap it when ${RULE_SLAP[rule.slap].charAt(0).toLowerCase() + RULE_SLAP[rule.slap].slice(1)} to win the pile into your ${rule.slapTo}; a wrong slap burns a card`);
     return parts.join("; ");
   }
@@ -1891,7 +1946,7 @@
   };
 
   // Only play actions fire triggers; setup changes (collecting, editing groups…) never do.
-  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter", "slap"]);
+  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter", "slap", "callBluff"]);
 
   /** Display name for a zone reference such as "trick" or "hand@current". */
   function refName(state, ref) {
@@ -2102,6 +2157,10 @@
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
     if (wild.length) rule.wild = wild;
     for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb"]) if (raw[flag]) rule[flag] = true;
+    if (RULE_CLAIM[raw.claim] && raw.claim !== "none") {
+      rule.claim = raw.claim;
+      rule.claimTo = cleanText(raw.claimTo, 40, "") || "hand";
+    }
     if (RULE_SLAP[raw.slap] && raw.slap !== "none") {
       rule.slap = raw.slap;
       rule.slapTo = cleanText(raw.slapTo, 40, "") || "hand";
@@ -2218,6 +2277,14 @@
         pushLog(state, actor, `${visibleName}: ${zoneLabel(state, from)} → ${zoneLabel(state, target)}`);
       }
       if (sameZone) return;
+      if (target.rule?.claim && actor) {
+        const rank = nextClaimRank(target);
+        ids.forEach((id) => { state.cards[id].faceUp = false; });
+        target.claim = { by: actor, rank, count: ids.length, cards: ids.slice() };
+        target.claimSeq = (Number(target.claimSeq) || 0) + 1;
+        const plural = ({ A: "Aces", J: "Jacks", Q: "Queens", K: "Kings", T: "10s" })[rank] || `${rank}s`;
+        pushLog(state, actor, `🗣 ${playerById(state, actor)?.name} claims ${ids.length} × ${plural}`, "move");
+      }
       for (const zone of sources) {
         const top = state.cards[zone.cards[zone.cards.length - 1]];
         if (zone.rule?.flipTop && top && !top.faceUp) top.faceUp = true;
@@ -2653,6 +2720,25 @@
       state.counterDefs = state.counterDefs.filter((def) => def.id !== action.id);
       state.tableCounters = state.tableCounters.filter((def) => def.id !== action.id);
       state.players.forEach((player) => { delete player.counters[action.id]; });
+    },
+    callBluff(state, action, actor, opts) {
+      const zone = state.zones[action.zone];
+      const claim = zone?.claim;
+      if (!claim) throw new Error("There's no claim to call.");
+      const caller = playerById(state, opts.strict ? actor : action.player || actor);
+      if (!caller) throw new Error("Pick a seat to call from.");
+      if (caller.id === claim.by) throw new Error("You can't call your own claim.");
+      const claimer = playerById(state, claim.by);
+      const shown = claim.cards.map((id) => state.cards[id]).filter(Boolean);
+      const lie = shown.some((card) => card.rank !== claim.rank);
+      const loser = lie ? claimer : caller;
+      const home = loser ? resolveZones(state, `${zone.rule.claimTo || "hand"}@p:${loser.id}`)[0] : null;
+      const size = zone.cards.length;
+      const reveal = shown.map((card) => cardName(card)).join(" ");
+      if (home) moveCards(state, zone.cards.slice(), home);
+      delete zone.claim;
+      state.lastWinner = (lie ? caller : claimer)?.id || null;
+      pushLog(state, caller.id, `🔍 ${caller.name} calls it: ${reveal}. ${lie ? `A bluff! ${claimer?.name}` : `True! ${caller.name}`} takes the pile (${size} card${size === 1 ? "" : "s"})`, lie ? "round" : "warn");
     },
     slap(state, action, actor, opts) {
       const zone = state.zones[action.zone];
@@ -3169,6 +3255,10 @@
     RULE_MELD,
     RULE_SLAP,
     slapReason,
+    RULE_CLAIM,
+    nextClaimRank,
+    claimPlay,
+    botCalls,
     evalInput,
     evaluateSpec,
     findZoneRef,

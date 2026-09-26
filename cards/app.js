@@ -11,6 +11,7 @@
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const SUIT_SYMBOL = { s: "♠", h: "♥", d: "♦", c: "♣", x: "★" };
   const RANK_SHOW = (rank) => (rank === "T" ? "10" : rank);
+  const RANK_WORD = (rank) => ({ A: "Aces", J: "Jacks", Q: "Queens", K: "Kings" }[rank] || RANK_SHOW(rank) + "s");
   const MARK_COLORS = [["#ff5c66", "Red"], ["#f4c95d", "Gold"], ["#45d6ff", "Cyan"], ["#bdf46b", "Green"], ["#9f7dff", "Violet"]];
 
   const STORE = { table: "ctw.table.v1", prefs: "ctw.prefs.v1", presets: "ctw.presets.v1", saves: "ctw.saves.v1", seen: "ctw.seen.v1", name: "ctw.name.v1", results: "ctw.results.v1", toured: "ctw.toured.v1" };
@@ -491,6 +492,8 @@
       tools.push(`<button class="btn sm icon" data-act="flip" title="Flip all">⟲</button>`);
     }
     if (zone.rule?.slap) tools.unshift(`<button class="btn sm slap-btn" data-act="slap" title="Slap the pile (Space)">👋 Slap</button>`);
+    if (zone.claim && zone.claim.by !== mySeatId()) tools.unshift(`<button class="btn sm slap-btn" data-act="call-bluff" title="Call the last claim: reveal it, and whoever is wrong takes the pile">🔍 Call!</button>`);
+    const claimBar = zone.rule?.claim ? `<div class="claim-bar">${zone.claim ? `<b>${esc(E.playerById(view, zone.claim.by)?.name || "?")}</b> claims <b>${zone.claim.count} × ${esc(RANK_WORD(zone.claim.rank))}</b>` : "No claim yet"} <span class="dim">· next: ${esc(RANK_WORD(E.nextClaimRank(zone)))}</span></div>` : "";
     tools.push(`<button class="btn sm icon" data-act="menu" title="Group options">⋯</button>`);
     const evals = prefs.evals && cards.length ? evalsHTML(zone) : "";
     const manyClass = layout === "fan" ? (cards.length > 9 ? " many" : cards.length <= 3 ? " few" : "") : "";
@@ -506,7 +509,7 @@
         ${visIcon(zone)}${ruleIcon(zone)}
         <div class="zone-tools">${tools.join("")}</div>
       </header>
-      ${zone.note ? `<div class="zone-note">${esc(zone.note)}</div>` : ""}
+      ${zone.note ? `<div class="zone-note">${esc(zone.note)}</div>` : ""}${claimBar}
       <div class="cards layout-${layout}${manyClass}" data-drop="${zone.id}"${fanStyle}>${body}</div>
       ${evals}
     </section>`;
@@ -1724,6 +1727,7 @@
             <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
             <label class="field"><span>The group must form</span><select name="rMeld">${optionList(E.RULE_MELD, rule.meld)}</select></label>
             <label class="field"><span>Taking a card costs <span class="dim">its value in a counter</span></span><input type="text" name="rCost" list="ruleCounters" value="${esc(rule.cost || "")}" placeholder="e.g. Coins"><datalist id="ruleCounters">${[...v.counterDefs, ...v.tableCounters].map((def) => `<option value="${esc(def.name)}">`).join("")}</datalist></label>
+            <label class="field"><span>Bluffing <span class="dim">claims anyone can call</span></span><select name="rClaim">${optionList(E.RULE_CLAIM, rule.claim)}</select></label>
             <label class="field"><span>Slap the pile when <span class="dim">real-time, first slap wins it</span></span><select name="rSlap">${optionList(E.RULE_SLAP, rule.slap)}</select></label>
             <label class="field"><span>Slapped pile goes to <span class="dim">the slapper's group</span></span><input type="text" name="rSlapTo" value="${esc(rule.slapTo || "")}" maxlength="40" placeholder="hand"></label>
             <label class="field"><span>Only during phase</span><input type="text" name="rPhase" list="rulePhases" value="${esc(rule.phase || "")}" placeholder="any phase"><datalist id="rulePhases">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist></label>
@@ -1776,7 +1780,7 @@
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
           first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(), cost: form.rCost.value.trim(),
           follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked, climb: form.rClimb.checked,
-          slap: form.rSlap.value, slapTo: form.rSlapTo.value.trim(),
+          slap: form.rSlap.value, slapTo: form.rSlapTo.value.trim(), claim: form.rClaim.value, claimTo: z.rule?.claimTo || "",
         };
         const patch = {
           name: form.name.value, kind: form.kind.value, layout: form.layout.value, visibility: form.visibility.value, face: form.face.value,
@@ -2086,7 +2090,7 @@
   }
 
   // What guests may do. "Play only" rooms keep the design in the host's hands.
-  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo", "slap"]);
+  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo", "slap", "callBluff"]);
   const GUEST_SPECTATE = new Set(["chat", "feedback", "claimSeat", "releaseSeat"]);
 
   function hostHandle(clientId, action) {
@@ -2330,6 +2334,7 @@
         break;
       }
       case "slap": slapPile(el.closest("[data-zone-id]").dataset.zoneId); break;
+      case "call-bluff": callBluff(el.closest("[data-zone-id]").dataset.zoneId, el); break;
       case "draw": {
         const zoneId = el.closest("[data-zone-id]").dataset.zoneId;
         const hand = myHandZone();
@@ -3941,6 +3946,45 @@
     el.classList.add("slapped");
     setTimeout(() => el.classList.remove("slapped"), 400);
   }
+  /** Call the standing claim. On a shared screen with several humans, pick who's calling. */
+  function callBluff(zoneId, anchor) {
+    const zone = view.zones[zoneId];
+    if (!zone?.claim) return;
+    const send = (player) => dispatch({ type: "callBluff", zone: zoneId, player });
+    if (net.mode !== "local" || mySeatId()) return send(mySeatId());
+    const humans = state.players.filter((player) => !player.bot && player.id !== zone.claim.by);
+    if (humans.length === 1) return send(humans[0].id);
+    const callers = humans.length ? humans : state.players.filter((player) => player.id !== zone.claim.by);
+    showMenu(anchor, callers.map((player) => ({ label: `${player.name} calls`, run: () => send(player.id) })));
+  }
+  const CLAIM_WINDOW = { slow: 2200, normal: 1300, fast: 450 };
+  const claimWatch = { timer: null, key: "", done: "" };
+  /** After each claim, bots think it over before anyone plays on, giving humans time to call too. */
+  function scheduleBotCall() {
+    if (net.mode === "client" || !state || bots.paused || replay.active) return;
+    const zone = E.orderedZones(state, "table").find((entry) => entry.claim);
+    const key = zone ? `${zone.id}:${zone.claimSeq}:${zone.cards.length}` : "";
+    if (key === claimWatch.key) return;
+    clearTimeout(claimWatch.timer);
+    claimWatch.key = key;
+    const botSeats = state.players.filter((player) => player.bot);
+    if (!zone || !botSeats.length) { claimWatch.done = key; return; }
+    claimWatch.timer = setTimeout(() => {
+      claimWatch.done = key;
+      const live = state.zones[zone.id];
+      if (live?.claim && `${zone.id}:${live.claimSeq}:${live.cards.length}` === key && !(state.gameOver && !state.gameOver.dismissed)) {
+        const caller = E.dealOrder(state).find((player) => player.bot && E.botCalls(state, player.id, live));
+        if (caller) {
+          history.push(state);
+          future = [];
+          state = E.reduce(state, { type: "callBluff", zone: zone.id, player: caller.id }, caller.id);
+          afterChange();
+          return;
+        }
+      }
+      scheduleBots();
+    }, CLAIM_WINDOW[prefs.botSpeed || "normal"] ?? 1300);
+  }
   const SLAP_DELAY = { slow: [900, 1600], normal: [550, 1050], fast: [260, 520] };
   const slapWatch = { timer: null, key: "" };
   /** Bots react to a slappable pile after a human-ish delay, so you can beat them to it. */
@@ -3975,11 +4019,13 @@
     clearTimeout(bots.timer);
     bots.timer = null;
     scheduleBotSlap();
+    scheduleBotCall();
     if (net.mode === "client" || bots.paused || !state || drag || replay.active) return;
     const player = state.players[state.turn.index];
     if (!player?.bot || player.out || (state.gameOver && !state.gameOver.dismissed) || state.rev === bots.idleRev) return;
     // Everyone freezes while a pile is up for grabs; the slap (a bot's, if nobody beats it) moves play on.
     if (E.orderedZones(state, "table").some((zone) => E.slapReason(state, zone))) return;
+    if (claimWatch.key && claimWatch.done !== claimWatch.key) return;
     bots.timer = setTimeout(() => botTurn(player.id), BOT_DELAY[prefs.botSpeed || "normal"] ?? 480);
   }
 
@@ -4315,6 +4361,7 @@
     form.rFirst.value = rule.first || "";
     form.rWild.value = (rule.wild || []).join(", ");
     form.rSlap.value = rule.slap || "none";
+    form.rClaim.value = rule.claim || "none";
     form.rSlapTo.value = rule.slapTo || "";
     for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"], ["rClimb", "climb"]]) form[field].checked = Boolean(rule[key]);
   }
@@ -4467,7 +4514,7 @@
   function soundForLog(entries) {
     const kinds = entries.map((entry) => {
       if (entry.kind === "round" && /Game over/.test(entry.text)) return "win";
-      if (/^[👋✋]/u.test(entry.text)) return "slap";
+      if (/^[👋✋🔍]/u.test(entry.text)) return "slap";
       if (entry.kind === "warn") return "warn";
       if (entry.kind === "chat" || entry.kind === "feedback") return "chat";
       if (/^(Shuffled|Collected)/.test(entry.text)) return "shuffle";
@@ -4679,7 +4726,8 @@
     const card = view.cards[play.card];
     showPing({ zone: play.to, name: "Hint", color: "#f4c95d" });
     const what = card?.visible ? (card.custom ? card.label : E.cardName(card)) : "That card";
-    toast(`💡 ${play.cards?.length > 1 ? `${play.cards.length} × ${what.replace(/[♠♥♦♣]/g, "")}` : what}${play.buy ? " (buy)" : ""} → ${view.zones[play.to]?.name || "?"} (press P to play it)`);
+    const claim = view.zones[play.to]?.rule?.claim ? ` as ${RANK_WORD(E.nextClaimRank(view.zones[play.to]))}${play.bluff ? ", a bluff: you have none" : ""}` : "";
+    toast(`💡 ${play.cards?.length > 1 ? `${play.cards.length} × ${what.replace(/[♠♥♦♣]/g, "")}` : what}${play.buy ? " (buy)" : ""} → ${view.zones[play.to]?.name || "?"}${claim} (press P to play it)`);
   }
 
   // ================================================================== QR
