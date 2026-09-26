@@ -851,6 +851,7 @@
     if (!target || (sources.size === 1 && sources.has(toId))) return { hard, soft };
     const rule = target.rule || {};
     if (rule.place && !whoAllows(state, rule.place, target, actor)) soft.push(`Only ${whoPhrase(rule.place, target)} may play to ${target.name}.`);
+    if (rule.phase && !sameText(rule.phase, state.turn.phase)) soft.push(`${target.name} only takes cards during ${rule.phase}.`);
     if (rule.once && (ids.length > 1 || target.cards.some((id) => state.cards[id]?.playedBy === actor))) soft.push(`One card each in ${target.name}.`);
     let top = target.cards.length ? state.cards[target.cards[target.cards.length - 1]] : null;
     for (const id of ids) {
@@ -1058,6 +1059,7 @@
     if (rule.order) parts.push(RULE_ORDER[rule.order].toLowerCase() + (rule.aceHigh ? " (aces high)" : ""));
     if (rule.wild?.length) parts.push(`${rule.wild.join(", ")} ${rule.wild.length === 1 ? "is" : "are"} wild`);
     if (rule.meld) parts.push(`must form ${RULE_MELD[rule.meld].toLowerCase()}`);
+    if (rule.phase) parts.push(`only during ${rule.phase}`);
     if (rule.follow) parts.push("must follow the led suit when able");
     if (rule.once) parts.push("one card per player");
     if (rule.advance) parts.push("the turn passes after playing here");
@@ -1250,6 +1252,7 @@
     sort: { label: "Sort", fields: ["zone", "by"] },
     refill: { label: "Refill up to", fields: ["from", "to", "count"] },
     dealUntil: { label: "Deal until", fields: ["from", "to", "face", "evaluator", "cmp", "n"] },
+    peekTop: { label: "Peek at top cards", fields: ["zone", "count", "who"] },
     passZones: { label: "Pass groups around", fields: ["zone", "dir"] },
     findWinner: { label: "Find winner", fields: ["zone", "evaluator", "low"] },
     score: { label: "Score points", fields: ["who", "amount"] },
@@ -1307,6 +1310,7 @@
       case "cut": return `Cut ${step.zone || "deck"}`;
       case "sort": return `Sort ${step.zone} by ${step.by || "rank"}`;
       case "refill": return `Refill every ${step.to || "hand"} to ${step.count || 1} from ${step.from || "deck"}`;
+      case "peekTop": return `${who(step.who)} peek${step.who === "all" || step.who === "others" ? "" : "s"} at the top ${step.count || 1} of ${step.zone || "deck"}`;
       case "passZones": return `Pass every ${step.zone || "hand"} ${step.dir === "right" ? "right" : "left"}`;
       case "findWinner": return `Winner of ${step.zone || "trick"}${step.evaluator ? " by " + step.evaluator : ""}${step.low ? " (lowest)" : ""}`;
       case "score": return `${signed(step.amount)} pts → ${who(step.who)}`;
@@ -1619,6 +1623,15 @@
         if (compare(measured, step.cmp || "==", Number(step.n) || 0)) return "stop";
         break;
       }
+      case "peekTop": {
+        const zone = state.zones[zones(step.zone || "deck")[0]];
+        if (!zone) break;
+        const ids = zone.cards.slice(-clampInt(step.count, 1, 60, 1));
+        const viewers = playersFor(state, step.who, ctx, actor);
+        for (const id of ids) state.cards[id].peek = Array.from(new Set([...(state.cards[id].peek || []), ...viewers.map((player) => player.id)]));
+        pushLog(state, actor, `${viewers.map((player) => player.name).join(", ")} looked at the top ${ids.length} of ${zone.name}`);
+        break;
+      }
       case "dealUntil": {
         const from = zones(step.from || "deck")[0];
         const to = zones(step.to)[0];
@@ -1716,6 +1729,7 @@
     empty: { label: "A group becomes empty", fields: ["zone"] },
     allEmpty: { label: "Every copy of a group is empty", fields: ["zone"] },
     count: { label: "A group reaches N cards", fields: ["zone", "n"] },
+    allFull: { label: "Every copy of a group reaches N cards", fields: ["zone", "n"] },
     phase: { label: "A phase starts", fields: ["phase"] },
     turn: { label: "The turn passes", fields: [] },
     round: { label: "A new round starts", fields: [] },
@@ -1743,6 +1757,7 @@
       case "played": return `When ${trigger.card ? `a ${trigger.card}` : "a card"} is played to ${name || "a group"}`;
       case "empty": return `When ${name || "a group"} is empty`;
       case "allEmpty": return `When every ${name || "group"} is empty`;
+      case "allFull": return `When every ${name || "group"} has ${n || 1} card${(n || 1) === 1 ? "" : "s"}`;
       case "count": return `When ${name || "a group"} has ${n || "one card per player"}${n ? " card" + (n === 1 ? "" : "s") : ""}`;
       case "phase": return `When the ${trigger.phase || "?"} phase starts`;
       case "turn": return "When the turn passes";
@@ -1809,6 +1824,15 @@
           const emptyNow = ids.every((id) => !count(state, id));
           const emptyBefore = ids.every((id) => !count(before, id));
           if (emptyNow && !emptyBefore) out.push({ trigger, subject: actor || state.players[state.turn.index]?.id || null });
+          break;
+        }
+        case "allFull": {
+          const ids = resolveZones(state, trigger.zone);
+          const need = Number(trigger.n) || 1;
+          if (!ids.length) break;
+          const fullNow = ids.every((id) => (count(state, id) || 0) >= need);
+          const fullBefore = ids.every((id) => (count(before, id) || 0) >= need);
+          if (fullNow && !fullBefore) out.push({ trigger, subject: actor || state.players[state.turn.index]?.id || null });
           break;
         }
         case "phase":
@@ -1887,6 +1911,8 @@
     if (RULE_ACCEPT[raw.accept] && raw.accept !== "any") rule.accept = raw.accept;
     if (RULE_ORDER[raw.order] && raw.order !== "any") rule.order = raw.order;
     if (RULE_MELD[raw.meld] && raw.meld !== "none") rule.meld = raw.meld;
+    const phase = cleanText(raw.phase, 40, "");
+    if (phase) rule.phase = phase;
     const first = cleanText(raw.first, 8, "");
     if (first) rule.first = first;
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
@@ -2042,6 +2068,15 @@
         card.peek = Array.from(new Set([...(card.peek || []), actor]));
       }
       pushLog(state, actor, `Peeked at ${ids.length} card${ids.length === 1 ? "" : "s"}`);
+    },
+
+    showTo(state, action, actor, opts) {
+      const ids = resolveCards(state, action.cards);
+      const viewer = playerById(state, action.player);
+      if (!ids.length || !viewer) return;
+      guardPrivate(state, ids.map((id) => zoneOf(state, id)), actor, opts);
+      for (const id of ids) state.cards[id].peek = Array.from(new Set([...(state.cards[id].peek || []), viewer.id]));
+      pushLog(state, actor, `Showed ${ids.length} card${ids.length === 1 ? "" : "s"} to ${viewer.name}`);
     },
 
     rotate(state, action) {

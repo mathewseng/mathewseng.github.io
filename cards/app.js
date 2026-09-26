@@ -850,6 +850,10 @@
     items.push({ label: "Move to…", run: () => moveMenu(point, ids) });
     items.push({ label: "Put in new group", run: () => openZoneDialog(null, { cards: ids }) });
     if (card.visible) items.push({ label: "Inspect (I)", run: () => inspectCard(cardId) });
+    if (card.visible && !card.faceUp) {
+      const others = view.players.filter((player) => player.id !== mySeatId());
+      if (others.length) items.push({ label: "Show to…", run: () => showMenu(point, [{ heading: "Show only to" }, ...others.map((player) => ({ label: player.name, sw: player.color, run: () => dispatch({ type: "showTo", cards: ids, player: player.id }) }))]) });
+    }
     if (net.mode !== "local") items.push({ label: "📍 Ping for everyone", run: () => emit({ kind: "ping", card: cardId, zone: E.zoneOf(view, cardId)?.id || null }) });
     items.push({ label: "Rotate 90°", run: () => dispatch({ type: "rotate", cards: ids }) });
     items.push({ heading: "Mark" });
@@ -893,6 +897,7 @@
   let suppressClick = 0;
   let hoverCard = null;
   let kbdFocus = null;
+  let lastClicked = null;
 
   /** Arrow keys walk through your hand (or the current player's); Space selects. */
   function moveKbdFocus(step) {
@@ -1689,6 +1694,7 @@
             <label class="field"><span>Empty group starts with</span><input type="text" name="rFirst" value="${esc(rule.first || "")}" maxlength="8" placeholder="any card (e.g. A, K)"></label>
             <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
             <label class="field"><span>The group must form</span><select name="rMeld">${optionList(E.RULE_MELD, rule.meld)}</select></label>
+            <label class="field"><span>Only during phase</span><input type="text" name="rPhase" list="rulePhases" value="${esc(rule.phase || "")}" placeholder="any phase"><datalist id="rulePhases">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist></label>
           </div>
           <div class="row">
             <label class="check"><input type="checkbox" name="rFollow"${rule.follow ? " checked" : ""}> Must follow the led suit</label>
@@ -1735,7 +1741,7 @@
         if (form.topOnly.checked) ctx.topOnly = true;
         const rule = {
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
-          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value,
+          first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(),
           follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked,
         };
         const patch = {
@@ -1955,7 +1961,7 @@
   }
 
   function openHelp() {
-    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
+    const keys = [["Shift+click", "Select a run of cards"], ["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
     openDialog(head("How it works") + `<div class="dlg-body">
       <p class="hint"><b>Cards</b>: tap to select (tap several), drag to move — dragging a selected card moves the whole selection. Double-click flips. Right-click (or long-press menu ⋯) for more.</p>
       <p class="hint"><b>Groups</b> are any hand, board, pile or row. Each has a layout, visibility (private hands, public boards, hidden decks) and optional <b>scoring badges</b> — poker, Omaha, lowball, badugi, blackjack, baccarat, cribbage hand &amp; pegging, gin deadwood, OFC royalties, hearts, trick winner, sums. Comparable groups are ranked and the best gets a 🏆.</p>
@@ -2046,7 +2052,7 @@
   }
 
   // What guests may do. "Play only" rooms keep the design in the host's hands.
-  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback"]);
+  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo"]);
   const GUEST_SPECTATE = new Set(["chat", "feedback", "claimSeat", "releaseSeat"]);
 
   function hostHandle(clientId, action) {
@@ -2582,7 +2588,14 @@
       const card = event.target.closest(".card[data-card-id]");
       if (card) {
         const id = card.dataset.cardId;
-        if (selection.has(id)) selection.delete(id); else selection.add(id);
+        const zone = E.zoneOf(view, id);
+        if (event.shiftKey && lastClicked && zone && zone.cards.includes(lastClicked)) {
+          // Shift-click selects the run of cards between the last click and this one.
+          const [a, b] = [zone.cards.indexOf(lastClicked), zone.cards.indexOf(id)].sort((x, y) => x - y);
+          zone.cards.slice(a, b + 1).forEach((cid) => selection.add(cid));
+        } else if (selection.has(id)) selection.delete(id);
+        else selection.add(id);
+        lastClicked = id;
         render();
         return;
       }
@@ -3177,7 +3190,7 @@
           <div class="grid-2">
             <label class="field"><span>When</span><select name="event">${Object.entries(E.TRIGGER_EVENTS).map(([id, def]) => `<option value="${id}"${draft.event === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
             ${fields.includes("zone") ? `<label class="field"><span>Group <span class="dim">a table group, or a seat group for every player</span></span><input type="text" name="zone" list="triggerRefs" value="${esc(draft.zone)}" required></label>` : ""}
-            ${fields.includes("n") ? (draft.event === "score" ? `<label class="field"><span>Score</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
+            ${fields.includes("n") ? (draft.event === "allFull" ? `<label class="field"><span>Cards in each</span><input type="number" name="n" min="1" max="500" value="${draft.n || 1}"></label>` : draft.event === "score" ? `<label class="field"><span>Score</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
             ${fields.includes("card") ? `<label class="field"><span>Card <span class="dim">rank, name or card like Qs; blank = any</span></span><input type="text" name="card" maxlength="24" value="${esc(draft.card || "")}" placeholder="e.g. Skip, 8, Qs"></label>` : ""}
             ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label>` : ""}
             <label class="field"><span>Only during phase <span class="dim">optional</span></span><input type="text" name="during" list="phaseNames" value="${esc(draft.during || "")}" placeholder="any phase"></label>
@@ -4124,6 +4137,7 @@
     form.rAccept.value = rule.accept || "any";
     form.rOrder.value = rule.order || "any";
     form.rMeld.value = rule.meld || "none";
+    form.rPhase.value = rule.phase || "";
     form.rFirst.value = rule.first || "";
     form.rWild.value = (rule.wild || []).join(", ");
     for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"]]) form[field].checked = Boolean(rule[key]);
@@ -4146,6 +4160,8 @@
       score: { label: "Score hands", hint: "Each player scores their hand, then a new round", steps: [{ op: "scoreZones", zone: handKey }, { op: "nextRound" }] },
       showdown: { label: "Showdown", hint: "Reveal, find the best hand, award the pot", steps: [{ op: "flip", zone: handKey, face: "up" }, { op: "findWinner", zone: handKey }, { op: "awardPot", who: "winner" }] },
       draft: { label: "Pass hands left", steps: [{ op: "passZones", zone: handKey, dir: "left" }] },
+      mulligan: { label: "Mulligan", hint: "Shuffle your hand back and draw one fewer", steps: [{ op: "clear", from: handKey + "@current", to: deckKey, face: "down" }, { op: "shuffle", zone: deckKey }, { op: "deal", from: deckKey, to: handKey + "@current", count: 4 }] },
+      peek: { label: "See the future", hint: "Current player looks at the top three cards", steps: [{ op: "peekTop", zone: deckKey, count: 3, who: "current" }] },
     };
   }
 

@@ -85,6 +85,15 @@ const totalCards = (state) => Object.values(state.zones).reduce((sum, entry) => 
   state = act(state, { type: "setRules", mode: "enforce" });
   state = run(state, "Deal all");
   assert.equal(state.players[state.turn.index].name, "Cy");
+  // Everyone passes three cards; when the last Pass pile fills, the cards move left and play starts.
+  assert.throws(() => act(state, { type: "move", cards: [zone(state, "hand", current(state)).cards[0]], to: zone(state, "trick").id }, current(state)), /only takes cards during Play/);
+  const passed = state.players.map((p) => zone(state, "hand", p.id).cards.slice(0, 3));
+  state.players.forEach((p, i) => { state = act(state, { type: "move", cards: passed[i], to: zone(state, "pass", p.id).id }, p.id); });
+  assert.equal(state.turn.phase, "Play");
+  state.players.forEach((p, i) => {
+    assert.equal(zone(state, "hand", p.id).cards.length, 13);
+    assert.ok(passed[(i + 3) % 4].every((id) => zone(state, "hand", p.id).cards.includes(id)), "cards passed left");
+  });
   const trickId = zone(state, "trick").id;
   // Illegal: a second card from the same player, or not following suit.
   const leader = current(state);
@@ -309,6 +318,7 @@ console.log("rules tests passed");
 {
   let state = Engine.createTable(Presets.get("hearts"), { players: 4 });
   state = run(state, "Deal all");
+  state = act(state, { type: "setPhase", phase: "Play" });
   const leader = current(state);
   const opening = Engine.legalPlays(state, leader);
   assert.equal(opening.length, 13, "any card can lead");
@@ -488,7 +498,7 @@ console.log("wizard tests passed");
   assert.ok(smartPoints < otherPoints * 0.8, `smart ${smartPoints} vs random avg ${otherPoints.toFixed(1)}`);
   // Smart drafting builds better hands than random.
   let smartBetter = 0;
-  for (let game = 0; game < 20; game += 1) {
+  for (let game = 0; game < 200; game += 1) {
     let state = Engine.createTable(Presets.get("draft-poker"), { players: [{ name: "Smart", botStyle: "smart" }, { name: "Random", botStyle: "random" }] });
     state = run(state, "Deal packs");
     for (let pick = 0; pick < 5; pick += 1) {
@@ -500,8 +510,8 @@ console.log("wizard tests passed");
     }
     if (state.lastWinner === state.players[0].id) smartBetter += 1;
   }
-  assert.ok(smartBetter >= 13, `smart drafter won ${smartBetter}/20`);
-  console.log(`smart bots: hearts ${smartPoints} vs ${otherPoints.toFixed(0)}, draft ${smartBetter}/20`);
+  assert.ok(smartBetter >= 115, `smart drafter won ${smartBetter}/200`);
+  console.log(`smart bots: hearts ${smartPoints} vs ${otherPoints.toFixed(0)}, draft ${smartBetter}/200`);
 }
 console.log("deal-until and smart bot tests passed");
 
@@ -590,3 +600,21 @@ console.log("kings corner and golf tests passed");
   assert.equal(Engine.lintDesign(Engine.createTable(Presets.get("spades"), {})).filter((i) => i.level === "error").length, 0);
 }
 console.log("formula tests passed");
+
+// Peeking at the top of the deck and showing a card to one player.
+{
+  let state = Engine.createTable(Presets.get("holdem"), { players: 3 });
+  const [a, b, c] = state.players.map((p) => p.id);
+  state = act(state, { type: "setTurn", index: 0 });
+  state = act(state, { type: "runMacro", steps: [{ op: "peekTop", zone: "deck", count: 3, who: "current" }] });
+  const top = zone(state, "deck").cards.slice(-3);
+  assert.ok(top.every((id) => Engine.viewFor(state, a).cards[id]?.visible));
+  assert.ok(top.every((id) => !Engine.viewFor(state, b).cards[id]));
+  state = run(state, "New hand");
+  const card = zone(state, "hand", b).cards[0];
+  assert.throws(() => act(state, { type: "showTo", cards: [card], player: c }, a, { strict: true }), /private/);
+  state = act(state, { type: "showTo", cards: [card], player: c }, b, { strict: true });
+  assert.ok(Engine.viewFor(state, c).cards[card]?.visible);
+  assert.equal(Engine.viewFor(state, a).cards[card], undefined);
+}
+console.log("peek and show tests passed");
