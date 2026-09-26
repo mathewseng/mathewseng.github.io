@@ -1128,6 +1128,146 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Custom points (user-defined scoring rules)
+  // ---------------------------------------------------------------------------
+  const SUIT_WORDS = { S: 0, H: 1, D: 2, C: 3, "♠": 0, "♥": 1, "♦": 2, "♣": 3, SPADES: 0, HEARTS: 1, DIAMONDS: 2, CLUBS: 3 };
+
+  // "Qs=13, 8=50, hearts=1, Wild=50" → exact card, rank, suit and custom-label values.
+  function parseValueRules(text) {
+    const out = { exact: {}, rank: {}, suit: {}, label: {} };
+    String(text || "")
+      .split(/[,;\n]+/)
+      .forEach((part) => {
+        const m = /^\s*([^=]+?)\s*=\s*(-?\d+(?:\.\d+)?)\s*$/.exec(part);
+        if (!m) return;
+        const key = m[1].trim();
+        const value = Number(m[2]);
+        const card = parseCard(key);
+        if (card && card.suit !== "x") {
+          out.exact[RANK_VAL[card.rank] + ":" + SUIT_IDX[card.suit]] = value;
+          return;
+        }
+        const up = key.toUpperCase();
+        if (/^(10|[2-9TJQKA])$/.test(up)) {
+          out.rank[RANK_VAL[up]] = value;
+          return;
+        }
+        if (SUIT_WORDS[up] !== undefined) {
+          out.suit[SUIT_WORDS[up]] = value;
+          return;
+        }
+        out.label[key.toLowerCase()] = value;
+      });
+    return out;
+  }
+
+  function evalCustomPoints(cards, ctx) {
+    const scheme = ctx.scheme;
+    if (!scheme) return null;
+    const p = prep(cards);
+    const customs = (cards || []).map((c, i) => ({ c, i })).filter(({ c }) => c && c.custom && c.rank != null);
+    if (!p.std.length && !p.jokers.length && !customs.length) return null;
+    const rules = parseValueRules(scheme.cards);
+    const rankTable = scheme.ranks || {};
+    const suitBonus = scheme.suits || {};
+    const breakdown = [];
+    const used = new Set();
+    let base = 0;
+    p.std.forEach((c) => {
+      const code = RANK_CODE[c.r];
+      let value = rules.exact[c.r + ":" + c.s];
+      if (value === undefined) {
+        value = rules.rank[c.r] !== undefined ? rules.rank[c.r] : rules.suit[c.s] !== undefined ? rules.suit[c.s] : Number(rankTable[code]) || 0;
+        value += Number(suitBonus[SUIT_CHARS[c.s]]) || 0;
+      }
+      if (value) used.add(c.i);
+      base += value;
+    });
+    p.jokers.forEach((c) => {
+      const value = rules.label.joker !== undefined ? rules.label.joker : Number(scheme.joker) || 0;
+      if (value) used.add(c.i);
+      base += value;
+    });
+    customs.forEach(({ c, i }) => {
+      const byLabel = rules.label[String(c.label || "").toLowerCase()];
+      const byRank = rules.label[String(c.rank).toLowerCase()];
+      const value = byLabel !== undefined ? byLabel : byRank !== undefined ? byRank : scheme.customValues !== false ? Number(c.value) || 0 : 0;
+      if (value) used.add(i);
+      base += value;
+    });
+    if (base) breakdown.push({ label: "Cards", points: base });
+    // Sets
+    const byRank = {};
+    p.std.forEach((c) => (byRank[c.r] = byRank[c.r] || []).push(c));
+    const sets = { pair: 0, trips: 0, quads: 0 };
+    Object.values(byRank).forEach((group) => {
+      const kind = group.length >= 4 ? "quads" : group.length === 3 ? "trips" : group.length === 2 ? "pair" : "";
+      if (!kind || !scheme[kind]) return;
+      sets[kind] += 1;
+      group.forEach((c) => used.add(c.i));
+    });
+    const setNames = { pair: "Pair", trips: "Three of a kind", quads: "Four of a kind" };
+    Object.keys(sets).forEach((kind) => {
+      if (sets[kind]) breakdown.push({ label: `${setNames[kind]}${sets[kind] > 1 ? " ×" + sets[kind] : ""}`, points: sets[kind] * scheme[kind] });
+    });
+    // Runs (aces count low or high)
+    if (scheme.run) {
+      const min = Math.max(2, Number(scheme.runMin) || 3);
+      const pools = scheme.runSuited ? [0, 1, 2, 3].map((s) => p.std.filter((c) => c.s === s)) : [p.std];
+      let runCards = 0;
+      let runs = 0;
+      pools.forEach((pool) => {
+        const has = {};
+        pool.forEach((c) => {
+          (has[c.r] = has[c.r] || []).push(c);
+          if (c.r === 14) (has[1] = has[1] || []).push(c);
+        });
+        const seen = new Set();
+        for (let r = 1; r <= 14; ) {
+          if (!has[r]) {
+            r++;
+            continue;
+          }
+          let e = r;
+          while (e + 1 <= 14 && has[e + 1]) e++;
+          const len = e - r + 1;
+          const key = r + "-" + e;
+          if (len >= min && !seen.has(key) && !(r === 1 && len === 1)) {
+            seen.add(key);
+            runs += 1;
+            runCards += len;
+            for (let q = r; q <= e; q++) used.add(has[q][0].i);
+          }
+          r = e + 1;
+        }
+      });
+      if (runs) breakdown.push({ label: `Run${runs > 1 ? "s ×" + runs : ""} (${runCards} cards)`, points: runCards * scheme.run });
+    }
+    // Flush
+    if (scheme.flush) {
+      const counts = [0, 0, 0, 0];
+      p.std.forEach((c) => counts[c.s]++);
+      const bestSuit = counts.indexOf(Math.max(...counts));
+      if (counts[bestSuit] >= (Number(scheme.flushMin) || 5)) {
+        breakdown.push({ label: `Flush ${SUIT_SYM[bestSuit]}`, points: scheme.flush });
+        p.std.forEach((c) => c.s === bestSuit && used.add(c.i));
+      }
+    }
+    const total = Math.round(breakdown.reduce((sum, part) => sum + part.points, 0) * 100) / 100;
+    return makeResult({
+      label: `${total} point${total === 1 ? "" : "s"}`,
+      short: String(total),
+      detail: breakdown.length ? breakdown.map((part) => `${part.label} ${part.points}`).join(" · ") : "No points",
+      score: scheme.low ? -total : total,
+      value: total,
+      used: [...used].sort((a, b) => a - b),
+      breakdown,
+      tone: scheme.low ? (total === 0 ? "good" : "neutral") : total > 0 ? "good" : "neutral",
+      partial: p.hidden > 0,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Registry
   // ---------------------------------------------------------------------------
   const DEFS = [
@@ -1151,6 +1291,7 @@
     ["set-summary", "Set summary", "Sets", "General", "Rank groups and longest suit.", {}, evalSetSummary],
     ["high-card", "High card", "High", "General", "Single highest card (aces high).", {}, evalHighCard],
     ["count", "Card count", "Count", "General", "Number of cards.", {}, evalCount],
+    ["custom-points", "Custom points", "Points", "Custom", "Your own scoring rules (attach one from the Scores tab).", { hidden: true }, evalCustomPoints],
   ];
 
   const FNS = {};

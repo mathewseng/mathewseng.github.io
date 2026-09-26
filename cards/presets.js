@@ -28,6 +28,29 @@
   const flip = (zone, face = "up", count) => ({ op: "flip", zone, face, ...(count ? { count } : {}) });
   const say = (text) => ({ op: "log", text });
   const phase = (text) => ({ op: "phase", text });
+  // A trick: players play in turn, must follow suit, one card each; the turn passes after each play.
+  const trick = (extra = {}) => ({ key: "trick", name: "Trick", kind: "board", layout: "spread", visibility: "public", face: "up", evals: ["trick"], rule: { place: "turn", follow: true, once: true, advance: true }, ...extra });
+  const takeTrick = (face, extra = []) => ({
+    label: "Take trick",
+    hint: "The trick's winner takes it and leads next",
+    steps: [{ op: "findWinner", zone: "trick" }, { op: "clear", from: "trick", to: "tricks@winner", ...(face ? { face } : {}) }, ...extra, { op: "setTurn", who: "winner" }],
+  });
+
+  // Color Clash: a custom-card shedding deck built entirely from custom cards.
+  const CLASH_COLORS = [["Red", "#d9434b"], ["Yellow", "#b98a00"], ["Green", "#23915a"], ["Blue", "#3b63d9"]];
+  function clashDeck() {
+    const custom = [];
+    for (const [suit, color] of CLASH_COLORS) {
+      custom.push({ label: "0", rank: "0", suit, color, value: 0, count: 1 });
+      for (let n = 1; n <= 9; n += 1) custom.push({ label: String(n), rank: String(n), suit, color, value: n, count: 2 });
+      custom.push({ label: "Skip", rank: "Skip", suit, color, value: 20, count: 2, icon: "⊘", text: "The next player loses their turn." });
+      custom.push({ label: "Reverse", rank: "Reverse", suit, color, value: 20, count: 2, icon: "⇄", text: "Reverse the direction of play." });
+      custom.push({ label: "Draw Two", rank: "+2", suit, color, value: 20, count: 2, icon: "+2", text: "The next player draws two and loses their turn." });
+    }
+    custom.push({ label: "Wild", rank: "Wild", suit: "Wild", color: "#2a2d36", value: 50, count: 4, icon: "✦", text: "Name the next color." });
+    custom.push({ label: "Wild Draw Four", rank: "Wild+4", suit: "Wild", color: "#2a2d36", value: 50, count: 4, icon: "+4", text: "Name the color; the next player draws four." });
+    return { preset: "none", custom };
+  }
 
   const PRESETS = [
     {
@@ -263,7 +286,7 @@
       table: [
         deck(),
         { key: "starter", name: "Starter", kind: "pile", layout: "stack", visibility: "public", face: "up", limit: 1 },
-        { key: "pegging", name: "Pegging", kind: "board", layout: "overlap", visibility: "public", face: "up", evals: ["cribbage-pegging"] },
+        { key: "pegging", name: "Pegging", kind: "board", layout: "overlap", visibility: "public", face: "up", evals: ["cribbage-pegging"], rule: { place: "turn", advance: true } },
         { key: "crib", name: "Crib", kind: "pile", layout: "spread", visibility: "hidden", face: "down", evals: ["cribbage-hand"], ctx: { starter: "starter", isCrib: true } },
       ],
       seat: [
@@ -333,15 +356,20 @@
       description: "Four players, 13 cards each. The trick group names the winner; won tricks count heart points.",
       players: { min: 3, max: 6, default: 4 },
       deck: { preset: "standard" },
-      table: [deck(), { key: "trick", name: "Trick", kind: "board", layout: "spread", visibility: "public", face: "up", evals: ["trick"] }],
+      table: [deck(), trick()],
       seat: [hand({ evals: ["hearts-points"] }), { key: "tricks", name: "Tricks won", kind: "pile", layout: "overlap", visibility: "public", face: "up", evals: ["hearts-points"] }],
       phases: ["Pass", "Play"],
       macros: [
-        { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }, phase("Pass")] },
-        { label: "Take trick", hint: "Current player takes the trick", steps: [{ op: "clear", from: "trick", to: "tricks@current" }] },
+        { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }, phase("Pass"), { op: "setTurn", who: "next" }] },
+        takeTrick(),
+        { label: "Score hand", hint: "Everyone scores the hearts in their tricks", steps: [{ op: "scoreZones", zone: "tricks", evaluator: "hearts-points" }, say("Hand scored"), { op: "nextRound" }] },
+      ],
+      triggers: [
+        { event: "count", zone: "trick", n: 0, macro: "Take trick" },
+        { event: "allEmpty", zone: "hand", macro: "Score hand" },
       ],
       scoring: { target: 100, lowWins: true, label: "Points" },
-      rules: "Hearts\n\n• Pass 3 cards (left, right, across, hold).\n• 2♣ leads. Follow suit if you can. Hearts can't lead until broken.\n• Each heart = 1, Q♠ = 13. Shooting the moon: 0 for you, 26 for everyone else.\n• Game ends at 100; lowest score wins.",
+      rules: "Hearts\n\n• Pass 3 cards (left, right, across, hold).\n• 2♣ leads. Follow suit if you can. Hearts can't lead until broken.\n• Each heart = 1, Q♠ = 13. Shooting the moon: 0 for you, 26 for everyone else.\n• Game ends at 100; lowest score wins.\n\nAutomated: the trick checks follow-suit and turn order, the winner takes it and leads, and each hand is scored when every hand is empty.",
     },
     {
       id: "spades",
@@ -351,13 +379,14 @@
       description: "Partnership trick-taking with spades as trump. Bid and trick counters on every seat.",
       players: { min: 4, max: 4, default: 4 },
       deck: { preset: "standard" },
-      table: [deck(), { key: "trick", name: "Trick", kind: "board", layout: "spread", visibility: "public", face: "up", evals: ["trick"], ctx: { trump: "s" } }],
+      table: [deck(), trick({ ctx: { trump: "s" } })],
       seat: [hand(), { key: "tricks", name: "Tricks", kind: "pile", layout: "stack", visibility: "public", face: "down" }],
       counters: [{ name: "Bid" }, { name: "Tricks" }, { name: "Bags" }],
       macros: [
-        { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }] },
-        { label: "Take trick", steps: [{ op: "clear", from: "trick", to: "tricks@current", face: "down" }] },
+        { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }, { op: "setTurn", who: "next" }] },
+        takeTrick("down", [{ op: "counter", who: "winner", name: "Tricks", amount: 1 }]),
       ],
+      triggers: [{ event: "count", zone: "trick", n: 0, macro: "Take trick" }],
       scoring: { target: 500, label: "Points" },
       rules: "Spades\n\n• Partners sit across. Bid tricks; spades are always trump.\n• Make your bid: 10 × bid + 1 per overtrick (bag). 10 bags = −100.\n• Nil bid: +/−100.",
     },
@@ -369,13 +398,14 @@
       description: "Four players, five cards each, a four-card kitty with the top card turned.",
       players: { min: 4, max: 4, default: 4 },
       deck: { preset: "euchre" },
-      table: [deck(), { key: "kitty", name: "Kitty", kind: "pile", layout: "stack", visibility: "hidden", face: "down" }, { key: "trick", name: "Trick", kind: "board", layout: "spread", visibility: "public", face: "up", evals: ["trick"] }],
+      table: [deck(), { key: "kitty", name: "Kitty", kind: "pile", layout: "stack", visibility: "hidden", face: "down" }, trick()],
       seat: [hand(), { key: "tricks", name: "Tricks", kind: "pile", layout: "stack", visibility: "public", face: "down" }],
       counters: [{ name: "Tricks" }],
       macros: [
-        { label: "Deal", steps: [collect(), { op: "nextDealer" }, deal("hand", 5), { op: "clear", from: "deck", to: "kitty", face: "down" }, flip("kitty", "up", 1)] },
-        { label: "Take trick", steps: [{ op: "clear", from: "trick", to: "tricks@current", face: "down" }] },
+        { label: "Deal", steps: [collect(), { op: "nextDealer" }, deal("hand", 5), { op: "clear", from: "deck", to: "kitty", face: "down" }, flip("kitty", "up", 1), { op: "setTurn", who: "next" }] },
+        takeTrick("down", [{ op: "counter", who: "winner", name: "Tricks", amount: 1 }]),
       ],
+      triggers: [{ event: "count", zone: "trick", n: 0, macro: "Take trick" }],
       scoring: { target: 10, label: "Points" },
       rules: "Euchre\n\n• 9–A deck. Right bower (J of trump) is highest, left bower (other J of same color) second.\n• Set the trick group's trump in its settings once trump is named (bowers are not modelled — workshop them!).\n• Makers: 3–4 tricks = 1, march = 2. Euchred = 2 to defenders. Game to 10.",
     },
@@ -387,15 +417,22 @@
       description: "Shedding game with a face-up discard pile and a stock.",
       players: { min: 2, max: 7, default: 4 },
       deck: { preset: "standard" },
-      table: [deck({ name: "Stock" }), discard()],
-      seat: [hand({ evals: ["pip-sum"] })],
+      table: [deck({ name: "Stock" }), discard({ rule: { place: "turn", accept: "suitOrRank", wild: ["8"], advance: true } })],
+      seat: [hand({ evals: ["points:c8"] })],
+      schemes: [{ id: "c8", name: "Penalty points", low: true, ranks: { 8: 50 } }],
       macros: [
         { label: "Deal", steps: [collect(), deal("hand", 7), deal("discard", 1, "up"), { op: "setTurn", who: "next" }] },
         { label: "Draw", steps: [deal("hand@current", 1)] },
-        { label: "Next player", steps: [{ op: "nextTurn" }] },
+        { label: "Pass", steps: [{ op: "nextTurn" }] },
+        { label: "Reshuffle stock", hint: "Discards except the top card become the stock", steps: [{ op: "clear", from: "discard", to: "stock", face: "down", keep: 1 }, { op: "shuffle", zone: "stock" }] },
+        { label: "Out!", hint: "The player who went out scores everyone else's cards", steps: [{ op: "scoreZones", zone: "hand", evaluator: "points:c8", target: "winner" }, say("{winner} went out!"), { op: "nextRound" }] },
       ],
-      scoring: { target: 100, lowWins: true, label: "Points" },
-      rules: "Crazy Eights\n\nMatch the top discard by suit or rank; 8s are wild and name a suit. First out wins; others score penalty points (8 = 50, faces 10, others pip).",
+      triggers: [
+        { event: "empty", zone: "stock", macro: "Reshuffle stock" },
+        { event: "empty", zone: "hand", macro: "Out!" },
+      ],
+      scoring: { target: 200, label: "Points" },
+      rules: "Crazy Eights\n\nOn your turn, play a card matching the top discard by suit or rank, or draw. 8s are wild: play one any time and name the next suit.\n\nWhen someone plays their last card they score the penalty points left in every other hand (8 = 50, faces 10, others pip value). First to 200 wins.\n\nAutomated: plays are checked against the discard, the turn passes after a play, the stock reshuffles itself, and going out scores the round.",
     },
     {
       id: "war",
@@ -408,17 +445,17 @@
       table: [deck()],
       seat: [
         { key: "stack", name: "Stack", kind: "pile", layout: "stack", visibility: "hidden", face: "down" },
-        { key: "battle", name: "Battle", kind: "board", layout: "overlap", visibility: "public", face: "up", evals: ["high-card"] },
+        { key: "battle", name: "Battle", kind: "board", layout: "overlap", visibility: "public", face: "up", evals: ["high-card"], ctx: { topOnly: true } },
         { key: "won", name: "Won", kind: "pile", layout: "stack", visibility: "public", face: "down" },
       ],
       macros: [
         { label: "Deal out", steps: [collect(), deal("stack", 26)] },
-        { label: "Battle!", steps: [{ op: "deal", from: "stack", to: "battle", count: 1, face: "up", perSeat: true }] },
-        { label: "War (3 down)", steps: [{ op: "deal", from: "stack", to: "battle", count: 3, face: "down", perSeat: true }, { op: "deal", from: "stack", to: "battle", count: 1, face: "up", perSeat: true }] },
-        { label: "Winner takes", hint: "Current player collects all battle cards", steps: [{ op: "clear", from: "battle", to: "won@current", face: "down" }] },
+        { label: "Battle!", steps: [{ op: "deal", from: "stack", to: "battle", count: 1, face: "up", perSeat: true }, { op: "findWinner", zone: "battle" }] },
+        { label: "War (3 down)", steps: [{ op: "deal", from: "stack", to: "battle", count: 3, face: "down", perSeat: true }, { op: "deal", from: "stack", to: "battle", count: 1, face: "up", perSeat: true }, { op: "findWinner", zone: "battle" }] },
+        { label: "Winner takes", hint: "The last battle's winner collects every battle card", steps: [{ op: "clear", from: "battle", to: "won@winner", face: "down" }] },
       ],
       scoring: { label: "Cards" },
-      rules: "War\n\nFlip the top card; higher card takes both. On a tie, go to war: three face down, one up.\n\nSet the winner as the current player (click their name) then press “Winner takes”.",
+      rules: "War\n\nFlip the top card; the higher card takes both. On a tie, go to war: three face down, one up.\n\nBattle! names the winner from the top cards; Winner takes moves every battle card to their Won pile.",
     },
     {
       id: "go-fish",
@@ -438,6 +475,62 @@
       rules: "Go Fish\n\nAsk another player for a rank; if they have any, they hand them over. Otherwise go fish. Four of a kind makes a book.",
     },
     {
+      id: "color-clash",
+      name: "Color Clash",
+      family: "Shedding",
+      tagline: "108 custom cards: match color or number",
+      description: "A shedding game built only from custom cards, with action cards, wilds, automatic turn passing and reshuffles.",
+      players: { min: 2, max: 8, default: 4 },
+      deck: clashDeck(),
+      table: [
+        deck({ name: "Draw pile", rule: { place: "nobody" } }),
+        discard({ rule: { place: "turn", accept: "suitOrRank", wild: ["Wild", "Wild+4"], advance: true } }),
+      ],
+      seat: [hand({ evals: ["points:clash"] })],
+      schemes: [{ id: "clash", name: "Card points", low: true, ranks: { A: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, T: 0, J: 0, Q: 0, K: 0 }, customValues: true }],
+      phases: ["Play"],
+      macros: [
+        { label: "Deal 7", steps: [collect(), { op: "nextDealer" }, deal("hand", 7), deal("discard", 1, "up"), { op: "setTurn", who: "next" }, phase("Play")] },
+        { label: "Draw 1", hint: "Current player draws", steps: [deal("hand@current", 1)] },
+        { label: "Pass", steps: [{ op: "nextTurn" }] },
+        { label: "Skip", hint: "After a Skip: the next player loses their turn", steps: [{ op: "nextTurn" }] },
+        { label: "Reverse", steps: [{ op: "reverse" }, say("Direction reversed")] },
+        { label: "Draw 2 & skip", hint: "After a Draw Two", steps: [deal("hand@current", 2), { op: "nextTurn" }] },
+        { label: "Draw 4 & skip", hint: "After a Wild Draw Four", steps: [deal("hand@current", 4), { op: "nextTurn" }] },
+        { label: "Reshuffle", hint: "Discards except the top become the draw pile", steps: [{ op: "clear", from: "discard", to: "draw pile", face: "down", keep: 1 }, { op: "shuffle", zone: "draw pile" }] },
+        { label: "Out!", hint: "Whoever went out scores the other hands", steps: [{ op: "scoreZones", zone: "hand", evaluator: "points:clash", target: "winner" }, say("{winner} is out!"), { op: "nextRound" }] },
+      ],
+      triggers: [
+        { event: "empty", zone: "draw pile", macro: "Reshuffle" },
+        { event: "empty", zone: "hand", macro: "Out!" },
+      ],
+      scoring: { target: 500, label: "Points" },
+      rules: "Color Clash\n\n• Deal 7 each and turn one card up.\n• On your turn play a card matching the discard's color or number/symbol, or draw one.\n• Skip, Reverse and Draw Two are colored action cards; Wilds let you name the next color.\n• First to empty their hand scores every card left in the other hands: numbers at face value, actions 20, wilds 50. First to 500 wins.\n\nEverything here is custom cards: open the Deck tab to see how the deck is defined, or import your own from a spreadsheet.",
+    },
+    {
+      id: "draft-poker",
+      name: "Draft Poker",
+      family: "Drafting",
+      tagline: "Pick one, pass the pack, build the best hand",
+      description: "Everyone drafts from a pack that rotates around the table; after five picks the best poker hand wins the round.",
+      players: { min: 2, max: 6, default: 4 },
+      deck: { preset: "standard" },
+      table: [deck(), muck()],
+      seat: [
+        hand({ key: "pack", name: "Pack", evals: ["set-summary"] }),
+        { key: "picks", name: "Picks", kind: "hand", layout: "spread", visibility: "owner", face: "down", limit: 5, evals: ["poker-high"], rule: { place: "owner" } },
+      ],
+      phases: ["Pick", "Showdown"],
+      macros: [
+        { label: "Deal packs", hint: "Five cards to every pack", steps: [collect(), deal("pack", 5), phase("Pick")] },
+        { label: "Pass packs", hint: "Everyone passes their pack left", steps: [{ op: "passZones", zone: "pack", dir: "left" }] },
+        { label: "Showdown", steps: [flip("picks"), { op: "findWinner", zone: "picks", evaluator: "poker-high" }, { op: "score", who: "winner", amount: 1 }, phase("Showdown"), { op: "nextRound" }] },
+      ],
+      triggers: [{ event: "allEmpty", zone: "pack", macro: "Showdown" }],
+      scoring: { target: 5, label: "Rounds" },
+      rules: "Draft Poker\n\n• Everyone gets a pack of five.\n• Pick one card from your pack into your Picks, then press Pass packs.\n• When every pack is empty, the picks are revealed and the best poker hand scores a point. First to 5 rounds wins.\n\nA small demo of drafting: “Pass groups around” rotates any per-seat group, and the showdown fires on its own when the packs run out.",
+    },
+    {
       id: "klondike",
       name: "Klondike Solitaire",
       family: "Solitaire",
@@ -445,11 +538,12 @@
       description: "Classic solitaire layout built from ordinary groups, showing how far the zone system stretches.",
       players: { min: 1, max: 1, default: 1 },
       deck: { preset: "standard" },
+      rulesMode: "enforce",
       table: [
-        deck({ name: "Stock" }),
-        { key: "waste", name: "Waste", kind: "discard", layout: "stack", visibility: "public", face: "up" },
-        ...["♠", "♥", "♦", "♣"].map((suit, i) => ({ key: "f" + (i + 1), name: "Foundation " + suit, kind: "pile", layout: "stack", visibility: "public", face: "up" })),
-        ...[1, 2, 3, 4, 5, 6, 7].map((n) => ({ key: "t" + n, name: "Column " + n, kind: "pile", layout: "overlap", visibility: "public", face: "keep" })),
+        deck({ name: "Stock", rule: { place: "nobody" } }),
+        { key: "waste", name: "Waste", kind: "discard", layout: "stack", visibility: "public", face: "up", rule: { place: "nobody" } },
+        ...["♠", "♥", "♦", "♣"].map((suit, i) => ({ key: "f" + (i + 1), name: "Foundation " + (i + 1), kind: "pile", layout: "stack", visibility: "public", face: "up", rule: { first: "A", accept: "suit", order: "upOne" } })),
+        ...[1, 2, 3, 4, 5, 6, 7].map((n) => ({ key: "t" + n, name: "Column " + n, kind: "pile", layout: "overlap", visibility: "public", face: "keep", rule: { first: "K", accept: "altColor", order: "downOne", flipTop: true } })),
       ],
       seat: [],
       macros: [
@@ -459,7 +553,7 @@
         { label: "Recycle waste", steps: [{ op: "clear", from: "waste", to: "stock", face: "down" }] },
       ],
       scoring: {},
-      rules: "Klondike\n\nBuild foundations up by suit from Ace to King. Tableau builds down in alternating colors. Turn cards from the stock to the waste.",
+      rules: "Klondike\n\nBuild foundations up by suit from Ace to King. Tableau builds down in alternating colors; only a King fills an empty column. Turn cards from the stock to the waste.\n\nRules are enforced: illegal moves are refused, and a column turns its new top card face up when you move cards off it. Switch the rules to Warn or Off (Rules tab) to experiment.",
     },
   ];
 

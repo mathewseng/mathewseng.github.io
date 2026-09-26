@@ -13,7 +13,7 @@
   const RANK_SHOW = (rank) => (rank === "T" ? "10" : rank);
   const MARK_COLORS = [["#ff5c66", "Red"], ["#f4c95d", "Gold"], ["#45d6ff", "Cyan"], ["#bdf46b", "Green"], ["#9f7dff", "Violet"]];
 
-  const STORE = { table: "ctw.table.v1", prefs: "ctw.prefs.v1", presets: "ctw.presets.v1", saves: "ctw.saves.v1", seen: "ctw.seen.v1", name: "ctw.name.v1" };
+  const STORE = { table: "ctw.table.v1", prefs: "ctw.prefs.v1", presets: "ctw.presets.v1", saves: "ctw.saves.v1", seen: "ctw.seen.v1", name: "ctw.name.v1", results: "ctw.results.v1" };
   function load(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (error) { return fallback; }
   }
@@ -97,6 +97,17 @@
     return (zones.find((zone) => zone.key === "hand") || zones.find((zone) => zone.kind === "hand") || zones[0])?.id || null;
   }
 
+  /**
+   * Who is acting for play rules. Locally that's your seat, or the current
+   * player on a shared screen; X-ray is referee mode (no rules). A host who
+   * hasn't taken a seat referees too.
+   */
+  function actingId() {
+    if (net.mode === "host") return mySeatId();
+    if (prefs.viewMode === "xray") return null;
+    return mySeatId() || state?.players[state.turn.index]?.id || null;
+  }
+
   // ------------------------------------------------------------ dispatch
   function dispatch(action) {
     if (!state) return;
@@ -104,21 +115,23 @@
       try { net.room.sendAction(action); } catch (error) { toast(error.message, "error"); }
       return;
     }
-    applyLocal(action, mySeatId());
+    applyLocal(action, actingId());
   }
 
-  function applyLocal(action, actor) {
+  /** Apply an action to the local/host state. Returns an error message, or "" on success. */
+  function applyLocal(action, actor, opts = {}) {
     try {
-      const next = E.reduce(state, action, actor);
+      const next = E.reduce(state, action, actor, opts);
       history.push(state);
       if (history.length > 120) history.shift();
       future = [];
       state = next;
       afterChange();
-      return true;
+      return "";
     } catch (error) {
-      toast(error.message || String(error), "error");
-      return false;
+      const message = error.message || String(error);
+      if (!opts.quiet) toast(message, "error");
+      return message;
     }
   }
 
@@ -128,6 +141,7 @@
     future.push(state);
     state = history.pop();
     state.rev = (future[future.length - 1].rev || 0) + 1;
+    lastLogKey = logKey(state.log[state.log.length - 1]);
     afterChange();
   }
 
@@ -137,6 +151,7 @@
     history.push(state);
     state = future.pop();
     state.rev = (history[history.length - 1].rev || 0) + 1;
+    lastLogKey = logKey(state.log[state.log.length - 1]);
     afterChange();
   }
 
@@ -146,14 +161,40 @@
       saveTimer = setTimeout(() => store(STORE.table, state), 250);
     }
     if (net.mode === "host") publish();
+    announceNewLog(state);
     pruneSelection();
     render();
+  }
+
+  // Toast rule warnings and other people's chat as they land in the log.
+  let lastLogKey = null;
+  const logKey = (entry) => (entry ? `${entry.t}|${entry.who}|${entry.text}` : "");
+  function announceNewLog(source) {
+    const log = source?.log || [];
+    const lastKey = logKey(log[log.length - 1]);
+    if (lastLogKey === null) { lastLogKey = lastKey; return; }
+    let i = log.length - 1;
+    while (i >= 0 && logKey(log[i]) !== lastLogKey) i -= 1;
+    lastLogKey = lastKey;
+    if (i < 0) return; // a different table or room: nothing new to announce
+    const myName = mySeat(source)?.name;
+    for (const entry of log.slice(i + 1).slice(-6)) {
+      if (entry.kind === "warn") toast(entry.text, "warn");
+      else if (entry.kind === "chat" && net.mode !== "local" && entry.who !== myName && prefs.tab !== "log") toast(`💬 ${entry.who}: ${entry.text}`);
+      else if (entry.kind === "round" && /Game over/.test(entry.text)) toast(entry.text, "good");
+    }
+  }
+
+  function mySeat(source = state) {
+    const id = mySeatId(source);
+    return id ? source.players.find((player) => player.id === id) : null;
   }
 
   function replaceState(next, message) {
     if (state) history.push(state);
     future = [];
     state = next;
+    lastLogKey = logKey(next.log[next.log.length - 1]);
     selection.clear();
     passRevealed = null;
     afterChange();
@@ -177,39 +218,31 @@
   function cardsOf(v, zone) {
     return zone.cards.map((id) => {
       const card = v.cards[id] || {};
-      return card.visible && !card.custom ? { rank: card.rank, suit: card.suit } : card.custom ? { rank: card.rank, suit: "x", custom: true } : { rank: null, suit: null };
+      if (!card.visible || card.rank == null) return { rank: null, suit: null };
+      return card.custom ? { rank: card.rank, suit: "x", custom: true, value: Number(card.value) || 0, label: card.label } : { rank: card.rank, suit: card.suit };
     });
   }
 
-  function zoneByRef(v, ref, area) {
-    if (!ref) return null;
-    if (v.zones[ref]) return v.zones[ref];
-    const key = String(ref).toLowerCase();
-    const match = (zone) => (zone.key || "").toLowerCase() === key || zone.name.toLowerCase() === key;
-    return E.orderedZones(v, "table").find(match) || (area ? E.orderedZones(v, area).find(match) : null) || null;
+  /** Evaluator definition for a spec id, including the table's own scoring schemes ("points:<id>"). */
+  function evalDef(id, source = view || state) {
+    if (String(id).startsWith("points:")) {
+      const scheme = (source?.schemes || []).find((entry) => entry.id === id.slice(7));
+      return scheme ? { id, label: scheme.name, short: scheme.name, group: "Your scoring", description: E.describeScheme(scheme) } : null;
+    }
+    return EVAL_DEFS[id] || null;
   }
 
   function evaluateZone(v, zone) {
     const out = [];
     for (const spec of zone.evals || []) {
-      const { id, board } = parseSpec(spec);
-      const def = EVAL_DEFS[id];
+      const { id } = parseSpec(spec);
+      const def = evalDef(id, v);
       if (!def) continue;
-      const ctx = { ...(zone.ctx || {}) };
-      const boardZone = zoneByRef(v, board || ctx.board, zone.area);
-      delete ctx.board;
-      if (boardZone && boardZone.id !== zone.id) ctx.board = cardsOf(v, boardZone).filter((card) => card.rank);
-      const starterZone = zoneByRef(v, ctx.starter, zone.area);
-      delete ctx.starter;
-      if (starterZone && starterZone.cards.length) {
-        const top = cardsOf(v, starterZone).slice(-1)[0];
-        if (top?.rank) ctx.starter = top;
-      }
+      const input = E.evalInput(v, zone, spec, true);
       let result = null;
-      const own = cardsOf(v, zone);
-      const anyVisible = own.some((card) => card.rank);
-      try { result = anyVisible ? V.evaluate(id, own, ctx) : null; } catch (error) { result = null; }
-      out.push({ spec, id, def, result, boardZone, place: 0, best: false });
+      const anyVisible = input.cards.some((card) => card.rank);
+      try { result = anyVisible ? V.evaluate(input.id, input.cards, input.ctx) : null; } catch (error) { result = null; }
+      out.push({ spec, id, def, result, boardZone: input.boardZone, place: 0, best: false });
     }
     return out;
   }
@@ -297,7 +330,9 @@
 
   function cardFace(card) {
     if (card.custom) {
-      return `<div class="c-title">${esc(card.label || card.rank)}</div><div class="c-text">${esc(card.text || "")}</div>${card.value ? `<div class="c-val">${esc(card.value)}</div>` : ""}`;
+      const glyph = card.icon || (String(card.label || "").length <= 3 ? card.label : "");
+      const suit = card.suit && card.suit !== "x" ? `<div class="c-suit">${esc(card.suit)}</div>` : "";
+      return `<div class="c-title">${esc(card.label || card.rank)}</div>${glyph ? `<div class="c-glyph">${esc(glyph)}</div>` : ""}<div class="c-text">${esc(card.text || "")}</div>${suit}${card.value ? `<div class="c-val">${esc(card.value)}</div>` : ""}`;
     }
     if (card.rank === "JK") {
       return `<span class="corner tl"><b>★</b></span><span class="pip">JOKER</span><span class="corner br"><b>★</b></span>`;
@@ -335,6 +370,13 @@
     const custom = visible && card.custom ? ` style="--cc:${esc(card.color || "#9f7dff")};${extra}"` : "";
     const title = visible ? (card.custom ? card.label : E.cardName(card)) + (card.faceUp ? "" : " (hidden from others)") : "Face-down card";
     return `<div class="${cls.filter(Boolean).join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${zone.id}" title="${esc(title)}"${custom || mark}>${visible ? cardFace(card) : ""}</div>`;
+  }
+
+  function ruleIcon(zone) {
+    const text = E.describeRule(zone.rule || {}, zone);
+    if (!text) return "";
+    const mode = view?.rulesMode || "warn";
+    return `<span class="zone-rule${mode === "off" ? " off" : ""}" title="${esc("Play rules (" + mode + "): " + text)}">§</span>`;
   }
 
   function visIcon(zone) {
@@ -387,7 +429,7 @@
       <header class="zone-head">
         <span class="zone-name" title="${esc(zone.name)}">${esc(zone.name)}</span>
         <span class="zone-count">${cards.length}${zone.limit ? "/" + zone.limit : ""}</span>
-        ${visIcon(zone)}
+        ${visIcon(zone)}${ruleIcon(zone)}
         <div class="zone-tools">${tools.join("")}</div>
       </header>
       ${zone.note ? `<div class="zone-note">${esc(zone.note)}</div>` : ""}
@@ -464,6 +506,9 @@
     if (v.pot) parts.push(`<span class="pill" style="color:var(--gold)">Pot ${E.fmt(v.pot)}</span>`);
     if (timer.running || timer.left !== timer.total) parts.push(`<span class="pill${timer.left <= 10 ? " phase" : ""}" data-act="timer-toggle" title="Turn timer">⏱ ${fmtTime(timer.left)}</span>`);
     if (v.turn.dir < 0) parts.push(`<span class="pill round" title="Counter-clockwise">↺</span>`);
+    const hasRules = Object.values(v.zones).some((zone) => zone.rule && Object.keys(zone.rule).length);
+    if (hasRules) parts.push(`<button class="pill rules-pill mode-${esc(v.rulesMode)}" data-act="cycle-rules" title="Rule checks: ${esc(v.rulesMode)} (click to change)">§ ${esc(E.RULES_MODES[v.rulesMode] || "Warn")}</button>`);
+    if (prefs.seed) parts.push(`<span class="pill round" title="Seeded shuffles: ${esc(prefs.seed)}">🌱</span>`);
     $("#turnStrip").innerHTML = parts.join("");
 
     const select = $("#viewSelect");
@@ -482,6 +527,7 @@
     $("#redoBtn").disabled = net.mode !== "client" && !future.length;
     const roomBtn = $("#roomBtn");
     roomBtn.classList.toggle("good", net.mode !== "local");
+    $("#reactBtn").hidden = net.mode === "local";
     $("#roomLabel").textContent = net.mode === "local" ? "Online" : net.code || "Room";
   }
 
@@ -572,6 +618,7 @@
     renderTop();
     renderTable();
     fitRows();
+    renderGameOver();
     renderSelectionBar();
     renderPane();
     playLayout(before);
@@ -598,7 +645,8 @@
       if (item.heading) return `<div class="menu-label">${esc(item.heading)}</div>`;
       return `<button data-i="${i}" class="${item.danger ? "danger" : ""}">${item.sw ? `<span class="sw" style="--c:${esc(item.sw)}"></span>` : ""}${esc(item.label)}</button>`;
     }).join("");
-    document.body.appendChild(menu);
+    // A modal dialog sits in the top layer, so menus opened from one must live inside it.
+    (dialog().open ? dialog() : document.body).appendChild(menu);
     const rect = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { left: anchor.x, right: anchor.x, top: anchor.y, bottom: anchor.y };
     const mw = menu.offsetWidth;
     const mh = menu.offsetHeight;
@@ -649,7 +697,9 @@
     const has = zone.cards.length > 0;
     const hand = myHandZone();
     const items = [
-      { label: "Edit group & scoring…", run: () => openZoneDialog(zoneId) },
+      { label: "Edit group, rules & scoring…", run: () => openZoneDialog(zoneId) },
+      { label: "Browse cards…", run: () => openBrowseDialog(zoneId) },
+      ...(net.mode !== "local" ? [{ label: "📍 Ping for everyone", run: () => emit({ kind: "ping", zone: zoneId }) }] : []),
       "-",
     ];
     if (has) {
@@ -688,6 +738,8 @@
     if (!card.visible && mySeatId()) items.push({ label: "Peek (only you)", run: () => dispatch({ type: "peek", cards: ids }) });
     items.push({ label: "Move to…", run: () => moveMenu(point, ids) });
     items.push({ label: "Put in new group", run: () => openZoneDialog(null, { cards: ids }) });
+    if (card.visible) items.push({ label: "Inspect (I)", run: () => inspectCard(cardId) });
+    if (net.mode !== "local") items.push({ label: "📍 Ping for everyone", run: () => emit({ kind: "ping", card: cardId, zone: E.zoneOf(view, cardId)?.id || null }) });
     items.push({ label: "Rotate 90°", run: () => dispatch({ type: "rotate", cards: ids }) });
     items.push({ heading: "Mark" });
     for (const [color, name] of MARK_COLORS) items.push({ label: name, sw: color, run: () => dispatch({ type: "mark", cards: ids, color }) });
@@ -726,6 +778,7 @@
   // ===================================================== DRAG AND DROP
   let drag = null;
   let suppressClick = 0;
+  let hoverCard = null;
 
   function orderedSelection() {
     const order = [];
@@ -738,6 +791,16 @@
     const el = event.target.closest(".card[data-card-id]");
     if (!el || !el.closest("#table")) return;
     drag = { el, id: el.dataset.cardId, x: event.clientX, y: event.clientY, pointerId: event.pointerId, started: false, offX: event.clientX - el.getBoundingClientRect().left, offY: event.clientY - el.getBoundingClientRect().top };
+    if (event.pointerType === "touch") {
+      // Long-press a card to inspect it.
+      const pending = drag;
+      pending.press = setTimeout(() => {
+        if (drag !== pending || pending.started) return;
+        drag = null;
+        suppressClick = performance.now() + 500;
+        inspectCard(pending.id);
+      }, 520);
+    }
   }
 
   function startDrag(event) {
@@ -783,6 +846,7 @@
     if (!drag || event.pointerId !== drag.pointerId) return;
     if (!drag.started) {
       if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 7) return;
+      clearTimeout(drag.press);
       startDrag(event);
     }
     event.preventDefault();
@@ -813,6 +877,7 @@
     if (!drag || event.pointerId !== drag.pointerId) return;
     const d = drag;
     drag = null;
+    clearTimeout(d.press);
     if (!d.started) return;
     suppressClick = performance.now() + 250;
     d.ghost.remove();
@@ -840,6 +905,7 @@
 
   function onPointerCancel() {
     if (!drag) return;
+    clearTimeout(drag.press);
     drag.ghost?.remove();
     $$(".dragging").forEach((el) => el.classList.remove("dragging"));
     $$(".zone.drop-hover").forEach((el) => el.classList.remove("drop-hover"));
@@ -946,9 +1012,9 @@
         </div>
         <div class="phase-chips">${v.phases.map((phase) => `<button data-act="set-phase" data-phase="${esc(phase)}" class="${phase === v.turn.phase ? "on" : ""}">${esc(phase)}</button>`).join("")}
           <button data-act="edit-phases" title="Edit phases">✎ phases</button></div>`;
-      const macros = v.macros.map((macro, i) => `<button class="macro" data-act="macro" data-id="${macro.id}" title="${esc(macro.hint || macro.steps.map(E.describeStep).join(" → "))}">
+      const macros = v.macros.map((macro, i) => `<button class="macro" data-act="macro" data-id="${macro.id}" title="${esc(macro.hint || macro.steps.map((step) => E.describeStep(step, v)).join(" → "))}">
           ${esc(macro.label)}${i < 9 ? `<kbd>${i + 1}</kbd>` : ""}
-          <small>${esc(macro.hint || macro.steps.map(E.describeStep).join(" → "))}</small>
+          <small>${esc(macro.hint || macro.steps.map((step) => E.describeStep(step, v)).join(" → "))}</small>
           <span class="btn sm icon ghost edit" data-act="edit-macro" data-id="${macro.id}" title="Edit">✎</span>
         </button>`).join("");
       const quick = `
@@ -1006,11 +1072,13 @@
         <tfoot><tr><td>Total</td>${v.players.map((player) => `<td class="${leaders.has(player.id) ? "lead" : ""}">${E.fmt(totals[player.id])}</td>`).join("")}<td></td></tr></tfoot>
       </table></div>
       <div class="row"><button class="btn sm" data-act="add-round">+ Round</button><button class="btn sm" data-act="export-csv">Export CSV</button><button class="btn sm danger" data-act="reset-scores">Reset</button></div>`;
-      const settings = `<div class="grid-3">
+      const settings = `<div class="grid-2">
           <label class="field"><span>Label</span><input type="text" value="${esc(v.scores.label)}" data-cfg="label" data-fk="cfg-label"></label>
-          <label class="field"><span>Target</span><input type="number" min="0" value="${target || ""}" placeholder="none" data-cfg="target" data-fk="cfg-target"></label>
-          <label class="field"><span>Winner</span><select data-cfg="lowWins" data-fk="cfg-low"><option value="0">Highest</option><option value="1"${v.scores.lowWins ? " selected" : ""}>Lowest</option></select></label>
+          <label class="field"><span>Winner</span><select data-cfg="lowWins" data-fk="cfg-low"><option value="0">Highest total</option><option value="1"${v.scores.lowWins ? " selected" : ""}>Lowest total</option></select></label>
+          <label class="field"><span>Game ends at</span><input type="number" min="0" value="${target || ""}" placeholder="no target" data-cfg="target" data-fk="cfg-target"></label>
+          <label class="field"><span>Or after rounds</span><input type="number" min="0" value="${v.scores.maxRounds || ""}" placeholder="no limit" data-cfg="maxRounds" data-fk="cfg-rounds"></label>
         </div>
+        <p class="hint">When either end condition is met, the game ends and the result is recorded for playtest stats.</p>
         <label class="check"><input type="checkbox" data-cfg="peg"${v.pegTarget ? " checked" : ""}> Cribbage-style pegs (shows front & back peg)</label>`;
       const chips = `
         <div class="pot"><div><div class="small muted">Pot</div><strong>${E.fmt(v.pot)}</strong></div>
@@ -1034,9 +1102,13 @@
           ${v.players.map((player) => `<tr><td><span class="swatch" style="--c:${esc(player.color)};display:inline-block;width:8px;height:8px"></span> ${esc(player.name)}</td>${v.counterDefs.map((def) => `<td><div class="row tight" style="justify-content:center;flex-wrap:nowrap"><button class="btn sm icon" data-act="counter" data-player="${player.id}" data-id="${def.id}" data-delta="-1">−</button><span class="mono" style="min-width:24px">${E.fmt(player.counters[def.id] ?? 0)}</span><button class="btn sm icon" data-act="counter" data-player="${player.id}" data-id="${def.id}" data-delta="1">+</button></div></td>`).join("")}</tr>`).join("")}
         </tbody></table></div>` : ""}
         <div class="row tight"><input id="counterName" type="text" placeholder="Counter name (Bid, Tricks, Lives…)" class="grow" style="width:auto;flex:1"><select id="counterScope" style="width:auto"><option value="player">Per player</option><option value="table">Table</option></select><button class="btn sm" data-act="add-counter">Add</button></div>`;
+      const custom = `<div class="list">${v.schemes.map((scheme) => `<div class="list-row"><span class="grow small"><b>${esc(scheme.name)}</b><br><span class="muted">${esc(E.describeScheme(scheme))}</span></span><button class="btn sm" data-act="edit-scheme" data-id="${scheme.id}">Edit</button></div>`).join("") || `<p class="hint">Define card values, suit bonuses, specific cards (Q♠ = 13), and set, run and flush bonuses. Attach them to groups as badges, and add them up with the “Score groups” action step.</p>`}</div>
+        <div class="row"><button class="btn sm" data-act="new-scheme">+ New scoring rule</button></div>`;
       return block("Quick score", quick + race)
         + block("Score sheet", sheet)
-        + block("Scoring rules", settings)
+        + block("End of game", settings)
+        + block("Custom scoring", custom)
+        + block("Playtest results", resultsHTML(v))
         + block("Chips & pot", v.chipStart || v.pot || v.players.some((player) => player.chips) ? chips : `<p class="hint">No chips in this game. Give everyone a stack to track bets, antes and pots.</p>
           <div class="row tight"><input id="chipStart" type="number" min="1" value="100" style="width:90px"><button class="btn sm primary" data-act="enable-chips">Enable chips</button></div>`)
         + block("Counters & trackers", counters);
@@ -1054,7 +1126,7 @@
           <button class="btn sm icon ghost" data-act="remove-player" data-player="${player.id}" title="Remove">✕</button>
         </div>`).join("");
       const tpl = v.seatTemplate.map((entry) => `<div class="list-row">
-          <span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">· ${esc(entry.layout)} · ${esc(entry.visibility)}${entry.evals?.length ? " · " + entry.evals.map((spec) => EVAL_DEFS[parseSpec(spec).id]?.short || spec).join(", ") : ""}</span></span>
+          <span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">· ${esc(entry.layout)} · ${esc(entry.visibility)}${entry.evals?.length ? " · " + entry.evals.map((spec) => evalDef(parseSpec(spec).id, v)?.short || spec).join(", ") : ""}</span></span>
           <button class="btn sm" data-act="edit-template" data-key="${esc(entry.key)}">Edit</button>
         </div>`).join("") || `<p class="hint">No per-seat groups. Add a Hand so every player gets one.</p>`;
       return block("Players", `<div class="list">${rows}</div>
@@ -1078,16 +1150,21 @@
         </div>
         <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span style="color:${suit === "h" || suit === "d" ? "#ff7b8e" : "inherit"};font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
         <div class="field"><span>Ranks <button class="btn sm ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn sm${ranks.includes(rank) ? " primary" : ""}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
-        <div class="field"><span>Custom cards (for new mechanics)</span>
-          <div class="list">${draft.custom.map((item, i) => `<div class="list-row" style="flex-wrap:wrap">
-              <input type="color" value="${esc(item.color)}" data-custom="${i}" data-k="color">
-              <input type="text" value="${esc(item.label)}" placeholder="Name" style="width:110px" data-custom="${i}" data-k="label">
-              <input type="number" value="${item.value}" title="Value" style="width:56px" data-custom="${i}" data-k="value">
-              <input type="number" min="1" max="20" value="${item.count}" title="Copies" style="width:52px" data-custom="${i}" data-k="count">
-              <button class="btn sm icon ghost" data-act="custom-del" data-i="${i}">✕</button>
-              <input type="text" value="${esc(item.text)}" placeholder="Rules text" class="grow" style="flex-basis:100%" data-custom="${i}" data-k="text">
+        <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
+          <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
+          <div class="list">${draft.custom.map((item, i) => `<div class="custom-row">
+              <input type="color" value="${esc(item.color)}" data-custom="${i}" data-k="color" title="Card color">
+              <input type="text" value="${esc(item.label)}" placeholder="Name" class="grow" data-custom="${i}" data-k="label" title="Printed name">
+              <input type="text" value="${esc(item.icon || "")}" placeholder="Icon" maxlength="4" style="width:54px" data-custom="${i}" data-k="icon" title="Emoji or symbol shown large">
+              <input type="number" min="1" max="20" value="${item.count}" style="width:54px" data-custom="${i}" data-k="count" title="Copies">
+              <button class="btn sm icon ghost" data-act="custom-del" data-i="${i}" title="Remove">✕</button>
+              <input type="text" value="${esc(item.suit || "")}" placeholder="Suit / color" style="width:100px" data-custom="${i}" data-k="suit" title="Suit, used by rules">
+              <input type="text" value="${esc(item.rank || "")}" placeholder="Rank" style="width:70px" data-custom="${i}" data-k="rank" title="Rank, used by rules (numbers can be ordered)">
+              <input type="number" value="${item.value}" placeholder="pts" style="width:62px" data-custom="${i}" data-k="value" title="Points">
+              <input type="text" value="${esc(item.text)}" placeholder="Rules text" style="flex-basis:100%" data-custom="${i}" data-k="text">
             </div>`).join("")}</div>
-          <button class="btn sm" data-act="custom-add">+ Custom card</button></div>
+          <div class="row tight"><button class="btn sm" data-act="custom-add">+ Custom card</button><button class="btn sm" data-act="custom-import">Import from spreadsheet…</button>${draft.custom.length ? `<button class="btn sm" data-act="custom-export">Export CSV</button>` : ""}</div>
+        </details>
         <div class="row"><span class="grow muted">${size} cards</span><button class="btn primary" data-act="rebuild-deck">Rebuild & shuffle</button></div>
         <p class="hint">Rebuilding collects every card from the table.</p>`;
       const unseen = unseenCards(v);
@@ -1117,10 +1194,16 @@
           <select id="acSuit" style="width:auto">${["s", "h", "d", "c"].map((suit) => `<option value="${suit}">${SUIT_SYMBOL[suit]}</option>`).join("")}</select>
           <select id="acTo" style="width:auto;max-width:150px">${zoneOptions(E.findDeckZone(v)?.id)}</select>
           <button class="btn sm" data-act="add-card">Add card</button></div>`;
-      return block("Unseen cards", `<div class="small muted">From your point of view: ${N} unseen · ${Object.keys(v.cards).length} in play</div>${grid}`)
+      const scenario = `<div class="row tight"><input id="pullSpecs" type="text" placeholder="As Kd 10h, or custom card names" class="grow" style="flex:1;width:auto" data-fk="pull"></div>
+        <div class="row tight"><select id="pullTo" style="width:auto;max-width:160px">${zoneOptions(E.orderedZones(v, "table").find((zone) => zone.kind === "board")?.id || "")}</select>
+          <select id="pullFace" style="width:auto"><option value="">Group default</option><option value="up">Face up</option><option value="down">Face down</option></select>
+          <button class="btn sm primary" data-act="pull-cards">Put them there</button></div>
+        <p class="hint">Pulls those exact cards from the deck (or wherever they are), so you can test a specific situation.</p>`;
+      return block("Deck builder", builder)
+        + block("Set up a scenario", scenario)
+        + block("Unseen cards", `<div class="small muted">From your point of view: ${N} unseen · ${Object.keys(v.cards).length} in play</div>${grid}`)
         + block("Next card odds", `<div class="list">${bars}</div>`)
         + block("Outs calculator", calc)
-        + block("Deck builder", builder)
         + block("Add a single card", addCard);
     },
 
@@ -1154,33 +1237,84 @@
         <label class="check"><input type="checkbox" data-pref-bool="four"${prefs.four ? " checked" : ""}> Four-color deck (blue ♦, green ♣)</label>
         <label class="check"><input type="checkbox" data-pref-bool="evals"${prefs.evals ? " checked" : ""}> Show scoring badges under groups</label>
         <label class="check"><input type="checkbox" data-pref-bool="motion"${prefs.motion ? " checked" : ""}> Animations</label>`;
-      return block("Dice & randomness", diceBlock) + block("Turn timer", timerBlock) + block("Equity calculator", equityBlock) + block("Display", display);
+      const seedBlock = `<div class="row tight"><input id="seedInput" type="text" value="${esc(prefs.seed || "")}" placeholder="any word or number" class="grow" style="flex:1;width:auto" data-fk="seed"><button class="btn sm primary" data-act="seed-apply">Use seed</button>${prefs.seed ? `<button class="btn sm" data-act="seed-clear">Random</button>` : ""}</div>
+        <p class="hint">${prefs.seed ? `Shuffles follow seed <b>${esc(prefs.seed)}</b>. The same actions in the same order give the same deals, so a tricky situation can be replayed.` : "Set a seed to make shuffles repeatable, so a deal can be replayed exactly."}</p>`;
+      return block("Deal simulator", simulatorHTML(v))
+        + block("Dice & randomness", diceBlock)
+        + block("Seeded shuffles", seedBlock)
+        + block("Turn timer", timerBlock)
+        + block("Equity calculator", equityBlock)
+        + block("Display", display);
     },
 
     log() {
       const v = view;
-      const items = v.log.slice().reverse().map((entry) => {
+      const filters = [["all", "All"], ["chat", "Chat"], ["feedback", "Feedback"], ["warn", "Rules"], ["score", "Scores"], ["macro", "Actions"]];
+      const keep = (entry) => logFilter === "all" || entry.kind === logFilter || (logFilter === "score" && entry.kind === "chips") || (logFilter === "macro" && entry.kind === "round");
+      const items = v.log.slice().reverse().filter(keep).map((entry) => {
         const t = new Date(entry.t);
         return `<div class="log-item k-${esc(entry.kind)}"><time>${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}</time><div>${entry.who ? `<b>${esc(entry.who)}</b> ` : ""}<span>${esc(entry.text)}</span></div></div>`;
       }).join("");
       return block("Table chat", `<div class="row tight"><input id="chatInput" type="text" placeholder="Say something or note a ruling…" class="grow" style="flex:1;width:auto" data-fk="chat"><button class="btn sm primary" data-act="chat">Send</button></div>`)
-        + `<div class="log">${items}</div>`;
+        + block("Playtest feedback", `<div class="row tight"><input id="feedbackInput" type="text" placeholder="What felt slow, confusing or fun?" class="grow" style="flex:1;width:auto" data-fk="feedback"><button class="btn sm" data-act="feedback">Add</button></div><p class="hint">Feedback notes go in the log for everyone, and export with it.</p>`)
+        + `<div class="row tight"><div class="phase-chips">${filters.map(([id, label]) => `<button data-act="log-filter" data-filter="${id}" class="${logFilter === id ? "on" : ""}">${label}</button>`).join("")}</div><span class="grow"></span><button class="btn sm" data-act="export-log">Export</button></div>
+          <div class="log">${items || `<p class="hint">Nothing here yet.</p>`}</div>`;
     },
 
     rules() {
       const v = view;
       const saves = load(STORE.saves, []);
-      const customs = load(STORE.presets, []);
-      return block("Rules & design notes", `<textarea class="rules-area" id="rulesText" data-fk="rules" placeholder="Write the rules of the game you're designing…">${esc(v.notes)}</textarea><p class="hint">Shared with everyone at the table. Saved when you click away.</p>`)
-        + block("Game design", `<p class="hint">Save the whole setup — groups, seat template, deck, actions, phases, scoring and these rules — as a reusable game in the New game gallery.</p>
-          <div class="row"><button class="btn primary" data-act="save-preset">Save as my game</button><button class="btn" data-act="export-preset">Export design</button><button class="btn" data-act="import">Import…</button></div>
-          ${customs.length ? `<div class="small muted">${customs.length} saved design${customs.length > 1 ? "s" : ""} in this browser.</div>` : ""}`)
-        + block("Saved tables", `<div class="list">${saves.map((entry, i) => `<div class="list-row"><span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">${new Date(entry.t).toLocaleString()}</span></span><button class="btn sm" data-act="load-save" data-i="${i}">Load</button><button class="btn sm icon ghost" data-act="del-save" data-i="${i}">✕</button></div>`).join("") || `<p class="hint">Snapshots of the whole table (cards in place, scores and all).</p>`}</div>
-          <div class="row"><button class="btn" data-act="save-table">Save snapshot</button><button class="btn" data-act="export-table">Export file</button></div>`);
+      const library = loadLibrary();
+      const linked = v.designId ? library.find((entry) => entry.id === v.designId) : null;
+      const mode = v.rulesMode || "warn";
+      const preview = prefs.rulesView === "preview";
+      const doc = `<div class="row tight">
+          <div class="seg"><button data-act="rules-view" data-view="edit" class="${preview ? "" : "on"}">Edit</button><button data-act="rules-view" data-view="preview" class="${preview ? "on" : ""}">Preview</button></div>
+          <span class="grow"></span>
+          <button class="btn sm" data-act="rules-template" title="Insert an outline for a rules document">Template</button>
+          <button class="btn sm" data-act="rules-generate" title="Write the rules from this table's setup">Generate from table</button>
+        </div>
+        ${preview ? `<div class="rules-preview">${renderMarkdown(v.notes)}</div>` : `<textarea class="rules-area" id="rulesText" data-fk="rules" placeholder="Write the rules of the game you're designing. Markdown works: # headings, - lists, **bold**.">${esc(v.notes)}</textarea>`}
+        <p class="hint">Shared with everyone at the table and saved with the design. Saved when you click away.</p>`;
+      const ruled = [...E.orderedZones(v, "table"), ...v.seatTemplate.map((tpl) => ({ ...tpl, seat: true }))].filter((zone) => E.describeRule(zone.rule || {}, zone));
+      const checks = `<div class="seg">${Object.entries(E.RULES_MODES).map(([id, label]) => `<button data-act="rules-mode" data-mode="${id}" class="${mode === id ? "on" : ""}">${label}</button>`).join("")}</div>
+        <p class="hint">${{ off: "Rules are ignored: move anything anywhere.", warn: "Illegal plays go through but are flagged, which is ideal for playtesting.", enforce: "Illegal plays are refused." }[mode]} X-ray view is referee mode and skips checks.</p>
+        <div class="list">${ruled.map((zone) => `<div class="list-row"><span class="grow small"><b>${esc(zone.name)}</b>${zone.seat ? ' <span class="dim">(every seat)</span>' : ""}<br><span class="muted">${esc(E.describeRule(zone.rule, zone))}</span></span><button class="btn sm" data-act="edit-zone-rules" data-zone="${esc(zone.seat ? "seat:" + zone.key : zone.id)}">Edit</button></div>`).join("") || `<p class="hint">No group has play rules yet. Open a group's ⋯ → Edit group, rules & scoring to add them: whose turn, follow suit, match suit or rank, build up or down, wild cards…</p>`}</div>`;
+      const triggers = `<div class="list">${v.triggers.map((trigger) => `<div class="list-row${trigger.off ? " is-off" : ""}">
+          <input type="checkbox" data-trigger-toggle="${trigger.id}"${trigger.off ? "" : " checked"} title="Enabled" aria-label="Enabled">
+          <span class="grow small">${esc(trigger.label || E.describeTrigger(trigger, v))} <span class="muted">→ ${esc(E.findMacro(v, trigger.macro)?.label || "missing action")}</span></span>
+          <button class="btn sm" data-act="edit-trigger" data-id="${trigger.id}">Edit</button>
+        </div>`).join("") || `<p class="hint">Triggers run an action on their own: take the trick when everyone has played, reshuffle when the deck runs out, score when a hand empties.</p>`}</div>
+        <div class="row"><button class="btn sm" data-act="new-trigger">+ New trigger</button></div>`;
+      const meta = v.meta || {};
+      const info = `<div class="grid-2">
+          <label class="field"><span>Family</span><input type="text" data-meta="family" data-fk="meta-family" value="${esc(meta.family || "")}" maxlength="24" placeholder="e.g. Trick-taking"></label>
+          <label class="field"><span>Tagline</span><input type="text" data-meta="tagline" data-fk="meta-tagline" value="${esc(meta.tagline || "")}" maxlength="90" placeholder="A one-line pitch"></label>
+          <label class="field"><span>Fewest players</span><input type="number" data-meta="min" data-fk="meta-min" min="1" max="12" value="${meta.players?.min || 1}"></label>
+          <label class="field"><span>Most players</span><input type="number" data-meta="max" data-fk="meta-max" min="1" max="12" value="${meta.players?.max || 12}"></label>
+        </div>
+        <label class="field"><span>Description</span><textarea data-meta="description" data-fk="meta-desc" style="min-height:64px" maxlength="400">${esc(meta.description || "")}</textarea></label>`;
+      const design = `<p class="hint">${linked ? `This table is <b>${esc(linked.name)}</b> from My games${linked.versions?.length ? `, with ${linked.versions.length} earlier version${linked.versions.length === 1 ? "" : "s"}` : ""}.` : "Save everything (groups, rules, actions, triggers, scoring, deck and the rules document) as a reusable game."}</p>
+        <div class="row">
+          <button class="btn primary" data-act="save-preset">${linked ? "Save changes" : "Save to My games"}</button>
+          ${linked ? `<button class="btn" data-act="save-preset-new">Save as new</button>` : ""}
+          <button class="btn" data-act="open-library">My games (${library.length})</button>
+        </div>
+        <div class="row tight"><button class="btn sm" data-act="share-design">Share link</button><button class="btn sm" data-act="export-preset">Export file</button><button class="btn sm" data-act="import">Import…</button></div>`;
+      const snapshots = `<div class="list">${saves.map((entry, i) => `<div class="list-row"><span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">${new Date(entry.t).toLocaleString()}</span></span><button class="btn sm" data-act="load-save" data-i="${i}">Load</button><button class="btn sm icon ghost" data-act="del-save" data-i="${i}">✕</button></div>`).join("") || `<p class="hint">Snapshots of the whole table (cards in place, scores and all).</p>`}</div>
+          <div class="row"><button class="btn" data-act="save-table">Save snapshot</button><button class="btn" data-act="export-table">Export file</button><button class="btn" data-act="share-table" title="A link holding the whole table, hidden cards included">Share link</button></div>`;
+      return block("Rules document", doc)
+        + block("Rule checks", checks)
+        + block("Automation", triggers)
+        + block("Game design", design)
+        + block("Game info", info)
+        + block("Saved tables", snapshots);
     },
   };
 
   const quickDeal = { count: 1, face: "" };
+  let logFilter = "all";
+  let customOpen = false;
   const diceCfg = { count: 1, sides: 6 };
   const equityCfg = { evaluator: "poker-high", key: "hand", board: "", size: 5 };
   let deckDraft = null;
@@ -1209,7 +1343,7 @@
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
-    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["b", "b"];
+    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
     return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}">
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
@@ -1301,7 +1435,11 @@
     };
     const selectedEvals = new Set(z.evals.map((spec) => parseSpec(spec).id));
     const specOverrides = z.evals.filter((spec) => spec.includes("@"));
-    const groups = Array.from(new Set(V.EVALUATORS.map((def) => def.group)));
+    const pickable = V.EVALUATORS.filter((def) => !def.hidden);
+    const groups = Array.from(new Set(pickable.map((def) => def.group)));
+    const schemes = v.schemes || [];
+    const rule = z.rule || {};
+    const optionList = (map, value) => Object.entries(map).map(([id, label]) => `<option value="${id}"${(value || "") === id || (!value && (id === "any" || id === "anyone")) ? " selected" : ""}>${esc(label)}</option>`).join("");
     const tableZones = E.orderedZones(v, "table");
     const sel = (name, list, value) => `<select name="${name}">${list.map(([id, label]) => `<option value="${id}"${value === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>`;
     const areaSelect = creating ? `<label class="field"><span>Where</span><select name="area">
@@ -1322,7 +1460,10 @@
         </div>
         <label class="check"><input type="checkbox" name="wide"${z.wide ? " checked" : ""}> Full width</label>
         <div class="field"><span>Scoring & ranking badges</span>
-          <div class="eval-picker">${groups.map((group) => `<h4>${esc(group)}</h4>${V.EVALUATORS.filter((def) => def.group === group).map((def) => `<label><input type="checkbox" name="eval" value="${def.id}"${selectedEvals.has(def.id) ? " checked" : ""}><span>${esc(def.label)}<small>${esc(def.description || "")}</small></span></label>`).join("")}`).join("")}</div>
+          <div class="eval-picker">${groups.map((group) => `<h4>${esc(group)}</h4>${pickable.filter((def) => def.group === group).map((def) => `<label><input type="checkbox" name="eval" value="${def.id}"${selectedEvals.has(def.id) ? " checked" : ""}><span>${esc(def.label)}<small>${esc(def.description || "")}</small></span></label>`).join("")}`).join("")}
+            <h4>Your scoring rules</h4>
+            ${schemes.map((scheme) => `<label><input type="checkbox" name="eval" value="points:${esc(scheme.id)}"${selectedEvals.has("points:" + scheme.id) ? " checked" : ""}><span>${esc(scheme.name)}<small>${esc(E.describeScheme(scheme))}</small></span></label>`).join("") || `<p class="hint" style="grid-column:1/-1">Build point values, set and run bonuses in Scores → Custom scoring, then attach them here.</p>`}
+          </div>
         </div>
         <div class="grid-3">
           <label class="field"><span>Board / community group</span><select name="board"><option value="">(none)</option>${tableZones.map((t) => `<option value="${esc(t.key || t.id)}"${z.ctx.board === (t.key || t.id) ? " selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label>
@@ -1334,6 +1475,24 @@
           <label class="check"><input type="checkbox" name="isCrib"${z.ctx.isCrib ? " checked" : ""}> Cribbage crib (5-card flush only)</label>
           <label class="check"><input type="checkbox" name="jokersWild"${z.ctx.jokersWild ? " checked" : ""}> Jokers wild</label>
           <label class="check"><input type="checkbox" name="faceTen"${z.ctx.faceTen ? " checked" : ""}> Face cards = 10 (sum)</label>
+          <label class="check"><input type="checkbox" name="topOnly"${z.ctx.topOnly ? " checked" : ""}> Score only the top card</label>
+        </div>
+        <div class="field rules-box"><span>Play rules <span class="dim">judged when a player moves cards here; the Rules tab switches checks off, to warnings, or enforced</span></span>
+          <div class="grid-3">
+            <label class="field"><span>Who may play here</span><select name="rPlace">${optionList(E.RULE_WHO, rule.place)}</select></label>
+            <label class="field"><span>Who may take from here</span><select name="rTake">${optionList(E.RULE_WHO, rule.take)}</select></label>
+            <label class="field"><span>A card played must</span><select name="rAccept">${optionList(E.RULE_ACCEPT, rule.accept)}</select></label>
+            <label class="field"><span>Rank order</span><select name="rOrder">${optionList(E.RULE_ORDER, rule.order)}</select></label>
+            <label class="field"><span>Empty group starts with</span><input type="text" name="rFirst" value="${esc(rule.first || "")}" maxlength="8" placeholder="any card (e.g. A, K)"></label>
+            <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
+          </div>
+          <div class="row">
+            <label class="check"><input type="checkbox" name="rFollow"${rule.follow ? " checked" : ""}> Must follow the led suit</label>
+            <label class="check"><input type="checkbox" name="rOnce"${rule.once ? " checked" : ""}> One card per player</label>
+            <label class="check"><input type="checkbox" name="rAdvance"${rule.advance ? " checked" : ""}> Turn passes after playing here</label>
+            <label class="check"><input type="checkbox" name="rFlipTop"${rule.flipTop ? " checked" : ""}> Reveal the new top card</label>
+            <label class="check"><input type="checkbox" name="rAceHigh"${rule.aceHigh ? " checked" : ""}> Aces high</label>
+          </div>
         </div>
         <label class="field"><span>Advanced: evaluator specs <span class="dim">id@boardKey to rank against a specific board</span></span><input type="text" name="specs" value="${esc(specOverrides.join(", "))}" placeholder="poker-omaha@board-2"></label>
         ${seatZone ? `<label class="check"><input type="checkbox" name="allSeats" checked> Apply to this group at every seat</label>` : ""}
@@ -1352,7 +1511,7 @@
         }
         const evals = $$('input[name="eval"]:checked', form).map((el) => el.value);
         const extra = form.specs.value.split(",").map((s) => s.trim()).filter(Boolean);
-        for (const spec of extra) if (EVAL_DEFS[parseSpec(spec).id] && !evals.includes(spec)) evals.push(spec);
+        for (const spec of extra) if (evalDef(parseSpec(spec).id, v) && !evals.includes(spec)) evals.push(spec);
         const ctx = {};
         if (form.board.value) ctx.board = form.board.value;
         if (form.starter.value) ctx.starter = form.starter.value;
@@ -1361,9 +1520,15 @@
         if (form.isCrib.checked) ctx.isCrib = true;
         if (form.jokersWild.checked) ctx.jokersWild = true;
         if (form.faceTen.checked) ctx.faceTen = true;
+        if (form.topOnly.checked) ctx.topOnly = true;
+        const rule = {
+          place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
+          first: form.rFirst.value.trim(), wild: form.rWild.value,
+          follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked,
+        };
         const patch = {
           name: form.name.value, kind: form.kind.value, layout: form.layout.value, visibility: form.visibility.value, face: form.face.value,
-          limit: Number(form.limit.value) || 0, note: form.note.value, wide: form.wide.checked, evals: evals.filter((spec, i) => !extra.includes(spec) || evals.indexOf(spec) === i), ctx,
+          limit: Number(form.limit.value) || 0, note: form.note.value, wide: form.wide.checked, evals: evals.filter((spec, i) => !extra.includes(spec) || evals.indexOf(spec) === i), ctx, rule,
         };
         // Plain ids covered by an @board override stay only if also ticked.
         if (creating) {
@@ -1407,18 +1572,32 @@
     const draft = existing ? E.clone(existing) : { label: "New action", hint: "", steps: [{ op: "deal", from: "deck", to: v.seatTemplate[0]?.key || "hand", count: 1 }] };
     const refs = new Set(["deck"]);
     E.orderedZones(v, "table").forEach((zone) => refs.add(zone.key || zone.name.toLowerCase()));
-    v.seatTemplate.forEach((tpl) => { refs.add(tpl.key); refs.add(tpl.key + "@current"); refs.add(tpl.key + "@dealer"); refs.add(tpl.key + "@me"); refs.add(tpl.key + "@next"); });
-    const refList = `<datalist id="zoneRefs">${Array.from(refs).filter(Boolean).map((ref) => `<option value="${esc(ref)}">`).join("")}</datalist>`;
+    v.seatTemplate.forEach((tpl) => { for (const scope of ["", "@current", "@after", "@dealer", "@me", "@next", "@winner", "@subject", "@others"]) refs.add(tpl.key + scope); });
+    const refList = `<datalist id="zoneRefs">${Array.from(refs).filter(Boolean).map((ref) => `<option value="${esc(ref)}">`).join("")}</datalist>
+      <datalist id="counterNames">${[...v.counterDefs, ...v.tableCounters].map((def) => `<option value="${esc(def.name)}">`).join("")}</datalist>`;
+    const selectOf = (i, field, map, val, blank) => `<select data-step="${i}" data-f="${field}">${blank ? `<option value="">${esc(blank)}</option>` : ""}${Object.entries(map).map(([id, label]) => `<option value="${esc(id)}"${String(val) === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>`;
+    const evalChoices = () => Object.fromEntries([...V.EVALUATORS.filter((def) => !def.hidden).map((def) => [def.id, def.label]), ...v.schemes.map((scheme) => ["points:" + scheme.id, "★ " + scheme.name])]);
     const fieldHTML = (step, i, field) => {
       const val = step[field] ?? "";
       switch (field) {
         case "zone": case "from": case "to":
           return `<input type="text" list="zoneRefs" data-step="${i}" data-f="${field}" value="${esc(val)}" placeholder="${field}">`;
         case "count": return `<input type="number" min="1" max="60" data-step="${i}" data-f="count" value="${esc(val || (step.op === "flip" ? "" : 1))}" placeholder="${step.op === "flip" ? "all" : "1"}">`;
-        case "amount": return `<input type="number" min="0" data-step="${i}" data-f="amount" value="${esc(val)}" placeholder="amount">`;
+        case "amount": return `<input type="number" ${step.op === "ante" ? 'min="0"' : ""} data-step="${i}" data-f="amount" value="${esc(val)}" placeholder="${step.op === "ante" ? "amount" : "±points"}">`;
+        case "keep": return `<input type="number" min="0" max="99" data-step="${i}" data-f="keep" value="${esc(val)}" placeholder="keep top" title="Leave this many cards on top">`;
+        case "dir": return selectOf(i, "dir", { left: "to the left", right: "to the right" }, val || "left");
+        case "evaluator": return selectOf(i, "evaluator", evalChoices(), val, "group's own scoring");
+        case "low": return `<label class="check small"><input type="checkbox" data-step="${i}" data-f="low"${step.low ? " checked" : ""}> lowest wins</label>`;
+        case "sign": return selectOf(i, "sign", { "+": "add", "-": "subtract" }, val || "+");
+        case "target": return selectOf(i, "target", { owner: "to each owner", winner: "all to the winner" }, val || "owner");
+        case "name": return `<input type="text" list="counterNames" data-step="${i}" data-f="name" value="${esc(val)}" placeholder="counter">`;
+        case "cmp": return selectOf(i, "cmp", E.STOP_CMP, val || "==");
+        case "n": return `<input type="number" data-step="${i}" data-f="n" value="${esc(val ?? 0)}" placeholder="cards">`;
+        case "macro": return selectOf(i, "macro", Object.fromEntries(v.macros.map((m) => [m.id, m.label])), val, "choose an action");
+        case "times": return `<input type="number" min="1" max="100" data-step="${i}" data-f="times" value="${esc(val || 1)}" title="Times">`;
         case "face": return `<select data-step="${i}" data-f="face"><option value="">${step.op === "flip" ? "toggle" : "default"}</option><option value="up"${val === "up" ? " selected" : ""}>up</option><option value="down"${val === "down" ? " selected" : ""}>down</option></select>`;
         case "by": return `<select data-step="${i}" data-f="by">${["rank", "aceLow", "suit", "reverse"].map((b) => `<option${val === b ? " selected" : ""}>${b}</option>`).join("")}</select>`;
-        case "who": return `<select data-step="${i}" data-f="who"><option value="next"${val === "next" ? " selected" : ""}>left of dealer</option><option value="dealer"${val === "dealer" ? " selected" : ""}>dealer</option></select>`;
+        case "who": return step.op === "setTurn" ? selectOf(i, "who", E.TURN_OPTIONS, val || "next") : selectOf(i, "who", E.WHO_OPTIONS, val || (step.op === "awardPot" ? "winner" : "current"));
         case "shuffle": return `<label class="check small"><input type="checkbox" data-step="${i}" data-f="shuffle"${step.shuffle !== false ? " checked" : ""}> shuffle</label>`;
         case "text": return `<input type="text" data-step="${i}" data-f="text" value="${esc(val)}" placeholder="text">`;
         default: return "";
@@ -1440,7 +1619,8 @@
             <div class="row tight"><button type="button" class="btn sm icon" data-step-up="${i}" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="btn sm icon ghost" data-step-del="${i}">✕</button></div>
           </div>`).join("")}</div>
         <div class="row"><button type="button" class="btn sm" data-step-add>+ Step</button></div>
-        <p class="hint">Targets use group keys: <code>deck</code>, <code>board</code>, <code>hand</code> (every seat, left of dealer first), <code>hand@current</code>, <code>hand@dealer</code>, <code>hand@me</code>, <code>hand@next</code>.</p>
+        <p class="hint">Targets use group keys: <code>deck</code>, <code>board</code>, <code>hand</code> (every seat, left of dealer first), <code>hand@current</code>, <code>hand@after</code> (the next player), <code>hand@dealer</code>, <code>hand@me</code>, <code>hand@next</code> (left of dealer), <code>hand@winner</code> (set by Find winner), <code>hand@subject</code> (the player a trigger fired for), <code>hand@others</code>.</p>
+        <p class="hint">Announcements can say <code>{winner}</code>, <code>{current}</code>, <code>{next}</code>, <code>{dealer}</code>, <code>{subject}</code>, <code>{round}</code>, <code>{phase}</code> and <code>{pot}</code>. “Stop if” ends the action early; “Run another action” reuses one you've built.</p>
       </div>
       <div class="dlg-foot">
         ${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button><button type="button" class="btn sm icon" data-macro-move="-1" title="Earlier">←</button><button type="button" class="btn sm icon" data-macro-move="1" title="Later">→</button>` : ""}
@@ -1456,7 +1636,7 @@
         if (!step) return;
         const f = el.dataset.f;
         let value = el.type === "checkbox" ? el.checked : el.value;
-        if (["count", "amount"].includes(f)) value = value === "" ? undefined : Number(value);
+        if (["count", "amount", "keep", "n", "times"].includes(f)) value = value === "" ? undefined : Number(value);
         if (value === "" || value === undefined) delete step[f];
         else step[f] = value;
       });
@@ -1507,10 +1687,16 @@
             return `<div class="list-row"><span class="swatch" style="--c:${esc(seat?.color || "#555")}"></span><span class="grow small"><b>${esc(member.name)}</b>${member.host ? " · host" : ""}${member.connected ? "" : " · reconnecting"}</span><span class="small muted">${seat ? esc(seat.name) : "spectating"}</span></div>`;
           }).join("")}</div>
           <p class="hint">You are ${net.mode === "host" ? "hosting — the table lives in your browser. If you leave, another player takes over." : "connected as a guest"}. Choose your seat with the view menu at the top.</p>
+          ${net.mode === "host" ? `<label class="field"><span>Guests can</span><select name="guestMode">
+              <option value="play"${view.guestMode !== "full" ? " selected" : ""}>Play only: move cards, run actions, score</option>
+              <option value="full"${view.guestMode === "full" ? " selected" : ""}>Co-design: also edit groups, rules, actions and players</option>
+            </select></label>` : `<p class="hint">Room permissions: <b>${view.guestMode === "full" ? "co-design" : "play only"}</b>.</p>`}
+          <p class="hint">Hands stay private: nobody can take, flip or peek at another player's private cards. Alt-click a card or group (or use its menu) to ping it for everyone, and 😀 in the top bar to react.</p>
         </div>
         <div class="dlg-foot"><button class="btn danger" value="leave" style="margin-right:auto">Leave room</button><button class="btn primary" value="cancel">Done</button></div>`;
       openDialog(html, {
         bind(form) {
+          form.guestMode?.addEventListener("change", () => dispatch({ type: "setGuestMode", mode: form.guestMode.value }));
           form.querySelector("[data-copy]").addEventListener("click", () => {
             navigator.clipboard?.writeText(link).then(() => toast("Invite link copied", "good"), () => { $("#inviteLink").select(); });
           });
@@ -1541,11 +1727,14 @@
   }
 
   function openHelp() {
-    const keys = [["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
+    const keys = [["Ctrl/⌘+K or /", "Command palette: run anything"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
     openDialog(head("How it works") + `<div class="dlg-body">
       <p class="hint"><b>Cards</b>: tap to select (tap several), drag to move — dragging a selected card moves the whole selection. Double-click flips. Right-click (or long-press menu ⋯) for more.</p>
       <p class="hint"><b>Groups</b> are any hand, board, pile or row. Each has a layout, visibility (private hands, public boards, hidden decks) and optional <b>scoring badges</b> — poker, Omaha, lowball, badugi, blackjack, baccarat, cribbage hand &amp; pegging, gin deadwood, OFC royalties, hearts, trick winner, sums. Comparable groups are ranked and the best gets a 🏆.</p>
-      <p class="hint"><b>Actions</b> are macros built from steps (shuffle, deal, flip, collect, ante, next turn…) so you can script a game's flow and iterate on it.</p>
+      <p class="hint"><b>Actions</b> are macros built from steps (shuffle, deal, flip, collect, pass groups around, find the winner, score groups, change counters, stop if…) so you can script a game's flow and iterate on it.</p>
+      <p class="hint"><b>Play rules</b> live on groups: whose turn it is, follow suit, match suit or rank, build up or down, wild ranks, one card each, pass the turn after playing. The Rules tab switches checks off, to warnings (great for playtests) or enforced.</p>
+      <p class="hint"><b>Triggers</b> fire actions by themselves: when a trick is full, when the deck runs out, when a hand empties, when a phase starts, when the game ends. <b>Custom scoring</b> (Scores tab) defines card values and bonuses you can attach to any group.</p>
+      <p class="hint"><b>Design tools</b>: save games to My games with version history, share them as links, generate a rules document from the table, simulate deals thousands of times, replay deals with seeded shuffles, and track playtest results by seat.</p>
       <p class="hint"><b>View</b>: “All hands” for one shared screen, “Pass &amp; play” hides hands between turns, “X-ray” shows everything for design work, or pick a seat. Online rooms keep hands private per player.</p>
       <div class="kbd-list">${keys.map(([k, d]) => `<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join("")}</div>
     </div><div class="dlg-foot"><button class="btn primary" value="cancel">Got it</button></div>`);
@@ -1560,6 +1749,7 @@
     room.onState = (next) => {
       if (net.mode !== "client") return;
       state = next;
+      announceNewLog(state);
       pruneSelection();
       render();
     };
@@ -1570,6 +1760,7 @@
       render();
     };
     room.onStatus = (status, message) => toast(message, status === "connected" ? "good" : "");
+    room.onEvent = (from, event) => handleRoomEvent(from, event);
     room.onError = (error) => toast(error.message, "error");
     room.onBecomeHost = (full) => {
       net.mode = "host";
@@ -1620,19 +1811,91 @@
     }
   }
 
+  // What guests may do. "Play only" rooms keep the design in the host's hands.
+  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback"]);
+  const GUEST_SPECTATE = new Set(["chat", "feedback", "claimSeat", "releaseSeat"]);
+
   function hostHandle(clientId, action) {
-    if (!action || typeof action !== "object") return;
+    if (!action || typeof action !== "object" || typeof action.type !== "string") return;
     const actor = state.players.find((player) => player.clientId === clientId)?.id || null;
-    if (action.type === "__undo") return undo();
-    if (action.type === "__redo") return redo();
-    if (action.type === "load") return toast("A guest tried to replace the table — ignored.");
+    const reject = (message) => net.room?.broadcastEvent({ kind: "reject", to: clientId, message });
+    if (action.type === "__undo" || action.type === "__redo") {
+      if (state.guestMode !== "full") return reject("Only the host can undo in this room.");
+      return action.type === "__undo" ? undo() : redo();
+    }
+    if (action.type === "load") return reject("Only the host can replace the table.");
+    if (!actor && !GUEST_SPECTATE.has(action.type)) return reject("Take a seat from the view menu to play.");
+    if (state.guestMode !== "full" && !GUEST_PLAY.has(action.type)) return reject("The host has limited guests to playing. Ask them to open the room to co-designers.");
     if (action.type === "claimSeat") {
       const target = state.players.find((player) => player.id === action.player);
-      if (target && target.clientId && target.clientId !== clientId && net.roster.some((m) => m.id === target.clientId && m.connected)) return;
+      if (target && target.clientId && target.clientId !== clientId && net.roster.some((m) => m.id === target.clientId && m.connected)) return reject(`${target.name}'s seat is taken.`);
       action = { ...action, clientId };
     }
     if (action.type === "releaseSeat") action = { ...action, clientId };
-    applyLocal(action, actor);
+    const error = applyLocal(action, actor, { strict: true, quiet: true });
+    if (error) reject(error);
+  }
+
+  // ---------------------------------------------------------- room events
+  const REACTIONS = ["👍", "👎", "😂", "😮", "🤔", "🎉", "🔥", "⏳"];
+
+  /** Send an ephemeral event (ping, reaction) to everyone in the room, including yourself. */
+  function emit(event) {
+    if (!net.room || net.mode === "local") return;
+    const me = mySeat();
+    const full = { ...event, name: me?.name || load(STORE.name, "") || "Someone", color: me?.color || "#45d6ff", seat: me?.id || null };
+    try { net.room.sendEvent(full); } catch (error) { toast(error.message, "error"); return; }
+    if (net.mode === "client") handleRoomEvent(net.room.clientId, full);
+  }
+
+  function handleRoomEvent(from, event) {
+    if (!event || typeof event !== "object") return;
+    if (event.kind === "reject") {
+      if (event.to === net.room?.clientId && from === net.room?.hostClientId) toast(String(event.message || "Not allowed"), "error");
+      return;
+    }
+    if (event.kind === "ping") return showPing(event);
+    if (event.kind === "react" && REACTIONS.includes(event.emoji)) return showReaction(event);
+  }
+
+  function safeColor(color) {
+    return /^#[0-9a-f]{6}$/i.test(color || "") ? color : "#45d6ff";
+  }
+
+  function showPing(event) {
+    const card = event.card ? document.querySelector(`.card[data-card-id="${CSS.escape(String(event.card))}"]`) : null;
+    const target = card || (event.zone ? document.querySelector(`.zone[data-zone-id="${CSS.escape(String(event.zone))}"]`) : null);
+    if (!target) return;
+    target.style.setProperty("--ping", safeColor(event.color));
+    target.classList.remove("pinged");
+    void target.offsetWidth;
+    target.classList.add("pinged");
+    setTimeout(() => target.classList.remove("pinged"), 1800);
+    const rect = target.getBoundingClientRect();
+    floatLabel(`📍 ${event.name || ""}`, rect.left + rect.width / 2, rect.top, event.color);
+  }
+
+  function showReaction(event) {
+    const seat = event.seat ? document.querySelector(`.seat[data-seat="${CSS.escape(String(event.seat))}"]`) : null;
+    const rect = seat ? seat.getBoundingClientRect() : { left: window.innerWidth / 2 - 20, width: 40, top: 80 };
+    floatLabel(`${event.emoji} ${event.name || ""}`, rect.left + rect.width / 2, Math.max(60, rect.top + 10), event.color, true);
+  }
+
+  function floatLabel(text, x, y, color, big = false) {
+    const el = document.createElement("div");
+    el.className = "float-label" + (big ? " big" : "");
+    el.textContent = text;
+    el.style.left = Math.max(10, Math.min(window.innerWidth - 10, x)) + "px";
+    el.style.top = Math.max(10, y) + "px";
+    el.style.setProperty("--c", safeColor(color));
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+  }
+
+  function pingTarget(el) {
+    const card = el.closest(".card[data-card-id]");
+    const zone = el.closest("[data-zone-id]") || (card ? document.querySelector(`.zone[data-zone-id="${CSS.escape(card.dataset.zone)}"]`) : null);
+    emit({ kind: "ping", card: card?.dataset.cardId || null, zone: zone?.dataset.zoneId || card?.dataset.zone || null });
   }
 
   function publish() {
@@ -1696,7 +1959,7 @@
   }
   const fileSafe = (text) => String(text || "table").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "table";
 
-  function importFile() {
+  function importFile(onDone) {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json,application/json";
@@ -1708,13 +1971,15 @@
         if (data.zones && data.cards) {
           if (net.mode === "client") return toast("Only the host can load a table.", "error");
           replaceState(E.migrate(data), "Table loaded");
-        } else if (data.table || data.seat) {
-          const presets = load(STORE.presets, []);
-          data.id = data.id && !P.PRESETS.some((p) => p.id === data.id) ? data.id : "custom-" + Date.now().toString(36);
-          data.custom = true;
-          data.family = data.family || "Custom";
-          store(STORE.presets, presets.filter((p) => p.id !== data.id).concat(data));
-          toast(`Imported “${data.name}” — find it in New game`, "good");
+        } else if (Array.isArray(data.designs) || data.table || data.seat) {
+          const list = (Array.isArray(data.designs) ? data.designs : [data]).filter((entry) => entry && (entry.table || entry.seat));
+          const now = Date.now();
+          const added = list.map((entry, i) => ({ ...entry, id: "custom-" + now.toString(36) + i, custom: true, family: entry.family || "Custom", createdAt: entry.createdAt || now, updatedAt: now, versions: Array.isArray(entry.versions) ? entry.versions : [] }));
+          if (!added.length) throw new Error("No game designs in that file");
+          store(STORE.presets, loadLibrary().concat(added));
+          toast(added.length === 1 ? `Imported “${added[0].name}” into My games` : `Imported ${added.length} games into My games`, "good");
+          onDone?.();
+          renderPane();
         } else throw new Error("Unrecognised file");
       } catch (error) { toast("Couldn't import: " + error.message, "error"); }
     };
@@ -1883,7 +2148,9 @@
 
       // deck
       case "deck-ranks-reset": deckDraft.ranks = null; renderPane(); break;
-      case "custom-add": deckDraft.custom.push({ label: "Wild", text: "", color: "#9f7dff", value: 0, count: 1 }); renderPane(); break;
+      case "custom-add": customOpen = true; deckDraft.custom.push({ label: "New card", text: "", color: "#9f7dff", value: 0, count: 1, suit: "", rank: "", icon: "" }); renderPane(); break;
+      case "custom-import": openCustomImport(); break;
+      case "custom-export": download(fileSafe(v.title) + "-cards.csv", customCardsCsv(deckDraft.custom), "text/csv"); break;
       case "custom-del": deckDraft.custom.splice(Number(el.dataset.i), 1); renderPane(); break;
       case "rebuild-deck":
         if (confirm("Collect every card and rebuild the deck?")) { dispatch({ type: "rebuildDeck", spec: deckDraft }); deckDraft = null; }
@@ -1902,18 +2169,75 @@
 
       // log & rules
       case "chat": { const input = $("#chatInput"); if (input.value.trim()) { dispatch({ type: "chat", text: input.value }); input.value = ""; } break; }
-      case "save-preset": {
-        const preset = E.toPreset(state || v);
-        const name = prompt("Name this game design", preset.name);
-        if (!name) return;
-        preset.name = name;
-        preset.tagline = "Your design";
-        const presets = load(STORE.presets, []).filter((p) => p.name !== name);
-        presets.push(preset);
-        if (store(STORE.presets, presets)) toast(`Saved “${name}” to New game`, "good"); else toast("Browser storage is unavailable — use Export.", "error");
-        renderPane();
+      case "save-preset":
+      case "save-preset-new": {
+        const asNew = act === "save-preset-new";
+        const linked = !asNew && v.designId && loadLibrary().some((entry) => entry.id === v.designId);
+        if (linked) {
+          const note = prompt("What changed? (optional, kept in the version history)", "");
+          if (note === null) return;
+          saveDesign({ note });
+        } else {
+          const name = prompt("Name this game", v.title);
+          if (!name) return;
+          if (name !== v.title && net.mode !== "client") dispatch({ type: "setTitle", title: name });
+          saveDesign({ asNew: true });
+        }
         break;
       }
+      case "rules-view": prefs.rulesView = el.dataset.view; savePrefs(); renderPane(); break;
+      case "rules-template": dispatch({ type: "setNotes", notes: v.notes && v.notes.trim() ? v.notes + "\n\n" + rulesTemplate(v) : rulesTemplate(v) }); break;
+      case "rules-generate": generateRules(); break;
+      case "rules-mode": dispatch({ type: "setRules", mode: el.dataset.mode }); break;
+      case "cycle-rules": dispatch({ type: "setRules", mode: { off: "warn", warn: "enforce", enforce: "off" }[v.rulesMode] || "warn" }); break;
+      case "edit-zone-rules": {
+        const ref = el.dataset.zone;
+        if (!ref.startsWith("seat:")) { openZoneDialog(ref); break; }
+        const key = ref.slice(5);
+        const seat = v.players.find((player) => E.orderedZones(v, player.id).some((zone) => zone.key === key));
+        const zone = seat && E.orderedZones(v, seat.id).find((entry) => entry.key === key);
+        if (zone) openZoneDialog(zone.id); else toast("Add a player to edit seat groups.", "error");
+        break;
+      }
+      case "new-trigger": openTriggerDialog(null); break;
+      case "edit-trigger": openTriggerDialog(el.dataset.id); break;
+      case "open-library": openLibrary(); break;
+      case "share-design": shareLink("design", stripDesign(E.toPreset(net.mode === "client" ? v : state))); break;
+      case "share-table": shareLink("table", net.mode === "client" ? v : state); break;
+      case "new-scheme": openSchemeDialog(null); break;
+      case "edit-scheme": openSchemeDialog(el.dataset.id); break;
+      case "record-result": if (recordResult(net.mode === "client" ? v : state)) renderPane(); break;
+      case "export-results": {
+        const rows = [["date", "game", "rounds", "minutes", "player", "seat", "total", "won"]];
+        for (const entry of loadResults()) for (const player of entry.players) rows.push([new Date(entry.t).toISOString(), entry.title, entry.rounds, Math.round((entry.durationMs || 0) / 60000), player.name, player.seat + 1, player.total, player.won ? 1 : 0]);
+        download("card-table-results.csv", rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n"), "text/csv");
+        break;
+      }
+      case "clear-results":
+        if (confirm("Delete every recorded result for this game?")) {
+          store(STORE.results, loadResults().filter((entry) => !((v.designId && entry.designId === v.designId) || entry.title === v.title)));
+          renderPane();
+        }
+        break;
+      case "simulate": readSimCfg(); runSimulation(); break;
+      case "seed-apply": setSeed($("#seedInput").value); render(); break;
+      case "seed-clear": setSeed(""); render(); break;
+      case "pull-cards": {
+        const specs = $("#pullSpecs").value.trim();
+        if (!specs) return toast("List the cards, e.g. As Kd 10h", "error");
+        dispatch({ type: "pullCards", specs, to: $("#pullTo").value, face: $("#pullFace").value || undefined });
+        break;
+      }
+      case "feedback": {
+        const input = $("#feedbackInput");
+        if (input.value.trim()) { dispatch({ type: "feedback", text: input.value }); input.value = ""; }
+        break;
+      }
+      case "export-log": download(fileSafe(v.title) + "-log.txt", v.log.map((entry) => `${new Date(entry.t).toLocaleString()}\t${entry.kind}\t${entry.who || ""}\t${entry.text}`).join("\n"), "text/plain"); break;
+      case "log-filter": logFilter = el.dataset.filter; renderPane(); break;
+      case "play-again": restartSameSetup(); break;
+      case "dismiss-over": dispatch({ type: "dismissGameOver" }); break;
+      case "open-tab": openTab(el.dataset.tab); break;
       case "export-preset": { const preset = E.toPreset(state || v); download(fileSafe(preset.name) + ".game.json", JSON.stringify(preset, null, 2)); break; }
       case "export-table": download(fileSafe(v.title) + ".table.json", JSON.stringify(net.mode === "client" ? v : state, null, 2)); break;
       case "import": importFile(); break;
@@ -1979,6 +2303,7 @@
 
     table.addEventListener("click", (event) => {
       if (performance.now() < suppressClick) return;
+      if (event.altKey && net.mode !== "local" && event.target.closest(".card[data-card-id], [data-zone-id]")) { pingTarget(event.target); return; }
       const act = event.target.closest("[data-act]");
       if (act) return handleAct(act, event);
       const addZone = event.target.closest("[data-add-zone]");
@@ -2020,6 +2345,7 @@
     });
     // Highlight the cards an evaluator used.
     table.addEventListener("mouseover", (event) => {
+      hoverCard = event.target.closest(".card[data-card-id]")?.dataset.cardId || null;
       const badge = event.target.closest(".eval");
       $$(".card.used").forEach((el) => el.classList.remove("used"));
       if (!badge) return;
@@ -2061,6 +2387,17 @@
       const el = event.target;
       const d = el.dataset;
       if (d.round && d.player) return dispatch({ type: "setRoundScore", round: d.round, player: d.player, value: el.value });
+      if (d.meta) {
+        const meta = d.meta === "min" || d.meta === "max" ? { players: { ...(view.meta?.players || {}), [d.meta]: Number(el.value) } } : { [d.meta]: el.value };
+        return dispatch({ type: "setMeta", meta });
+      }
+      if (d.triggerToggle) {
+        const trigger = view.triggers.find((entry) => entry.id === d.triggerToggle);
+        if (trigger) dispatch({ type: "saveTrigger", trigger: { ...trigger, off: !el.checked } });
+        return;
+      }
+      if (d.cfg === "maxRounds") return dispatch({ type: "scoreConfig", maxRounds: Number(el.value) || 0 });
+      if (["simMacro", "simTarget", "simEval", "simTrials"].includes(el.id)) return readSimCfg();
       if (d.roundLabel) return dispatch({ type: "renameRound", round: d.roundLabel, label: el.value });
       if (d.cfg === "label") return dispatch({ type: "scoreConfig", label: el.value });
       if (d.cfg === "target") return dispatch({ type: "scoreConfig", target: Number(el.value) });
@@ -2099,6 +2436,12 @@
         dispatch({ type: "bet", player: el.dataset.betInput, amount: Number(el.value) });
       } else if (el.id === "counterName") {
         handleAct({ dataset: { act: "add-counter" } }, event);
+      } else if (el.id === "feedbackInput") {
+        handleAct({ dataset: { act: "feedback" } }, event);
+      } else if (el.id === "pullSpecs") {
+        handleAct({ dataset: { act: "pull-cards" } }, event);
+      } else if (el.id === "seedInput") {
+        handleAct({ dataset: { act: "seed-apply" } }, event);
       }
     });
 
@@ -2128,6 +2471,7 @@
     $("#redoBtn").addEventListener("click", redo);
     $("#newBtn").addEventListener("click", openNewGame);
     $("#roomBtn").addEventListener("click", () => openRoomDialog());
+    $("#reactBtn").addEventListener("click", (event) => showMenu(event.currentTarget, REACTIONS.map((emoji) => ({ label: emoji, run: () => emit({ kind: "react", emoji }) }))));
     $("#addSeatBtn").addEventListener("click", () => dispatch({ type: "addPlayer" }));
     $("#sideToggle").addEventListener("click", () => { prefs.side = !prefs.side; savePrefs(); });
     $("#menuBtn").addEventListener("click", (event) => {
@@ -2179,6 +2523,7 @@
       const mod = event.ctrlKey || event.metaKey;
       if (mod && event.key.toLowerCase() === "z" && !typing) { event.preventDefault(); if (event.shiftKey) redo(); else undo(); return; }
       if (mod && event.key.toLowerCase() === "y" && !typing) { event.preventDefault(); redo(); return; }
+      if (mod && event.key.toLowerCase() === "k" && !dialog().open) { event.preventDefault(); openPalette(); return; }
       if (typing || mod || event.altKey) return;
       const key = event.key;
       if (key === "Escape") { closeMenu(); if (selection.size) { selection.clear(); render(); } return; }
@@ -2195,25 +2540,967 @@
         case "n": openNewGame(); break;
         case "\\": prefs.side = !prefs.side; savePrefs(); break;
         case "?": openHelp(); break;
+        case "/": openPalette(); break;
+        case "i": if (hoverCard && view.cards[hoverCard]) inspectCard(hoverCard); else return; break;
         default: return;
       }
       event.preventDefault();
     });
   }
 
+  // ======================================================= RULES DOCUMENT
+  function inlineMarkdown(text) {
+    return esc(text)
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/(^|[\s(])_(.+?)_(?=$|[\s).,;:!?])/g, "$1<i>$2</i>")
+      .replace(/`(.+?)`/g, "<code>$1</code>");
+  }
+
+  /** A small, safe Markdown renderer for rules documents (headings, lists, bold, italics, code). */
+  function renderMarkdown(text) {
+    let html = "";
+    let list = null;
+    const close = () => { if (list) { html += `</${list}>`; list = null; } };
+    for (const raw of String(text || "").split("\n")) {
+      const line = raw.replace(/\s+$/, "");
+      let m;
+      if (!line.trim()) { close(); continue; }
+      if ((m = /^(#{1,3})\s+(.*)$/.exec(line))) {
+        close();
+        const level = m[1].length + 1;
+        html += `<h${level}>${inlineMarkdown(m[2])}</h${level}>`;
+      } else if ((m = /^\s*[-*•]\s+(.*)$/.exec(line))) {
+        if (list !== "ul") { close(); html += "<ul>"; list = "ul"; }
+        html += `<li>${inlineMarkdown(m[1])}</li>`;
+      } else if ((m = /^\s*\d+[.)]\s+(.*)$/.exec(line))) {
+        if (list !== "ol") { close(); html += "<ol>"; list = "ol"; }
+        html += `<li>${inlineMarkdown(m[1])}</li>`;
+      } else {
+        close();
+        html += `<p>${inlineMarkdown(line)}</p>`;
+      }
+    }
+    close();
+    return html || `<p class="muted">Nothing written yet. Try “Template” or “Generate from table”.</p>`;
+  }
+
+  function rulesTemplate(v) {
+    const players = v.meta?.players;
+    return [
+      `# ${v.title}`,
+      "",
+      "## Overview",
+      "What is the goal of the game, in one or two sentences?",
+      "",
+      "## Players & components",
+      `- ${players ? `${players.min}–${players.max}` : v.players.length} players`,
+      `- ${E.deckSize(v.deckSpec)} cards`,
+      "",
+      "## Setup",
+      "1. Shuffle and deal…",
+      "",
+      "## On your turn",
+      "1. …",
+      "",
+      "## Scoring",
+      "- …",
+      "",
+      "## End of the game",
+      "- …",
+      "",
+      "## Playtest questions",
+      "- What felt slow or confusing?",
+    ].join("\n");
+  }
+
+  // ============================================================= LIBRARY
+  function loadLibrary() {
+    const list = load(STORE.presets, []);
+    return Array.isArray(list) ? list.filter((entry) => entry && entry.id && entry.name) : [];
+  }
+
+  function stripDesign(design) {
+    const { versions, ...rest } = design;
+    return E.clone(rest);
+  }
+
+  /** Save the current table's design into "My games". Updating keeps the old one as a version. */
+  function saveDesign({ asNew = false, note = "" } = {}) {
+    const source = net.mode === "client" ? view : state;
+    const library = loadLibrary();
+    const design = E.toPreset(source);
+    const now = Date.now();
+    const existing = !asNew && source.designId ? library.find((entry) => entry.id === source.designId) : null;
+    design.tagline = source.meta?.tagline || design.tagline || "Your design";
+    if (existing) {
+      design.id = existing.id;
+      design.createdAt = existing.createdAt || now;
+      design.versions = [{ t: existing.updatedAt || existing.createdAt || now, note: existing.note || "", design: stripDesign(existing) }, ...(existing.versions || [])].slice(0, 12);
+    } else {
+      design.id = "custom-" + now.toString(36) + Math.floor(Math.random() * 1296).toString(36);
+      design.createdAt = now;
+      design.versions = [];
+    }
+    design.updatedAt = now;
+    design.note = String(note || "").slice(0, 140);
+    const next = existing ? library.map((entry) => (entry.id === design.id ? design : entry)) : library.concat(design);
+    if (!store(STORE.presets, next)) {
+      toast("Browser storage is full or unavailable. Use Export instead.", "error");
+      return null;
+    }
+    if (net.mode !== "client") dispatch({ type: "linkDesign", id: design.id });
+    toast(existing ? `Saved “${design.name}” (version ${design.versions.length + 1})` : `Saved “${design.name}” to My games`, "good");
+    renderPane();
+    return design;
+  }
+
+  function startFromDesign(design, players) {
+    if (net.mode === "client") return toast("Only the host can start a new game.", "error");
+    const range = design.players || { min: 1, max: 12, default: 2 };
+    const count = players || Math.max(range.min || 1, Math.min(range.max || 12, state?.players.length || range.default || 2));
+    const names = Array.from({ length: count }, (_, i) => {
+      const old = state?.players[i];
+      return old ? { name: old.name, color: old.color, clientId: old.clientId } : { name: `Player ${i + 1}` };
+    });
+    const next = E.createTable(design, { players: names });
+    next.rev = (state?.rev || 0) + 1;
+    replaceState(next, `${design.name} ready`);
+    store(STORE.seen, true);
+  }
+
+  function openLibrary() {
+    const draw = () => {
+      const library = loadLibrary().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      const current = (net.mode === "client" ? view : state)?.designId;
+      const rows = library.map((design) => `<div class="lib-row${design.id === current ? " on" : ""}">
+          <div class="grow">
+            <div class="row tight"><b>${esc(design.name)}</b><span class="pill small-pill">${esc(design.family || "Custom")}</span>${design.id === current ? `<span class="pill small-pill good-pill">This table</span>` : ""}</div>
+            <div class="small muted">${esc(design.tagline || design.description || "")}</div>
+            <div class="small dim">${design.updatedAt ? "Updated " + new Date(design.updatedAt).toLocaleString() : ""}${design.versions?.length ? ` · ${design.versions.length} earlier version${design.versions.length === 1 ? "" : "s"}` : ""}${design.note ? ` · “${esc(design.note)}”` : ""}</div>
+          </div>
+          <div class="row tight lib-actions">
+            <button type="button" class="btn sm primary" data-lib="play" data-id="${esc(design.id)}">Play</button>
+            <button type="button" class="btn sm" data-lib="more" data-id="${esc(design.id)}">More ▾</button>
+          </div>
+        </div>`).join("");
+      return head("My games") + `<div class="dlg-body">
+          <p class="hint">Designs saved in this browser: groups, rules, actions, triggers, scoring, deck and the rules document. Saving over a design keeps the previous one as a version you can restore.</p>
+          <div class="list">${rows || `<div class="empty-state"><div>No saved games yet.</div><div class="small">Build a table, then Rules → Save to My games.</div></div>`}</div>
+        </div>
+        <div class="dlg-foot">
+          <button type="button" class="btn" data-lib="import">Import file…</button>
+          <button type="button" class="btn" data-lib="export-all" ${library.length ? "" : "disabled"}>Export all</button>
+          <span class="grow"></span>
+          <button type="button" class="btn primary" data-lib="save">${current && library.some((d) => d.id === current) ? "Save changes to this game" : "Save this table as a game"}</button>
+          <button class="btn" value="cancel">Close</button>
+        </div>`;
+    };
+    const bind = (form) => {
+      form.addEventListener("click", (event) => {
+        const el = event.target.closest("[data-lib]");
+        if (!el) return;
+        const library = loadLibrary();
+        const design = library.find((entry) => entry.id === el.dataset.id);
+        const redraw = () => { form.innerHTML = draw(); };
+        switch (el.dataset.lib) {
+          case "play": closeDialog(); startFromDesign(design); break;
+          case "save": saveDesign(); redraw(); break;
+          case "import": importFile(redraw); break;
+          case "export-all": download("card-table-designs.json", JSON.stringify({ designs: library.map(stripDesign) }, null, 2)); break;
+          case "more": {
+            const versions = (design.versions || []).map((version, i) => ({
+              label: `Restore ${new Date(version.t).toLocaleString()}${version.note ? " · " + version.note : ""}`,
+              run: () => {
+                const restored = { ...version.design, id: design.id, createdAt: design.createdAt, updatedAt: Date.now(), note: `Restored ${new Date(version.t).toLocaleDateString()}` };
+                restored.versions = [{ t: design.updatedAt || Date.now(), note: design.note || "", design: stripDesign(design) }, ...design.versions.filter((_, j) => j !== i)].slice(0, 12);
+                store(STORE.presets, library.map((entry) => (entry.id === design.id ? restored : entry)));
+                toast("Version restored", "good");
+                redraw();
+              },
+            }));
+            showMenu(el, [
+              { label: "Share link…", run: () => shareLink("design", stripDesign(design)) },
+              { label: "Export file", run: () => download(fileSafe(design.name) + ".game.json", JSON.stringify(stripDesign(design), null, 2)) },
+              { label: "Duplicate", run: () => {
+                const now = Date.now();
+                store(STORE.presets, library.concat({ ...stripDesign(design), id: "custom-" + now.toString(36), name: design.name + " copy", createdAt: now, updatedAt: now, versions: [] }));
+                redraw();
+              } },
+              { label: "Rename…", run: () => {
+                const name = prompt("Game name", design.name);
+                if (!name) return;
+                store(STORE.presets, library.map((entry) => (entry.id === design.id ? { ...entry, name: name.slice(0, 48) } : entry)));
+                redraw();
+              } },
+              ...(versions.length ? [{ heading: "Versions" }, ...versions] : []),
+              "-",
+              { label: "Delete", danger: true, run: () => {
+                if (!confirm(`Delete “${design.name}” and its versions from this browser?`)) return;
+                store(STORE.presets, library.filter((entry) => entry.id !== design.id));
+                redraw();
+              } },
+            ]);
+            break;
+          }
+          default: break;
+        }
+      });
+    };
+    openDialog(draw(), { wide: true, bind });
+  }
+
+  // --------------------------------------------------------- share links
+  function toBase64Url(bytes) {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function fromBase64Url(text) {
+    const binary = atob(String(text).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+  }
+
+  async function encodePayload(value) {
+    const bytes = new TextEncoder().encode(JSON.stringify(value));
+    if (typeof CompressionStream === "function") {
+      const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      return "z" + toBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+    }
+    return "j" + toBase64Url(bytes);
+  }
+
+  async function decodePayload(text) {
+    const kind = text[0];
+    const bytes = fromBase64Url(text.slice(1));
+    if (kind === "z") {
+      if (typeof DecompressionStream !== "function") throw new Error("This browser can't open compressed links.");
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return JSON.parse(await new Response(stream).text());
+    }
+    if (kind === "j") return JSON.parse(new TextDecoder().decode(bytes));
+    throw new Error("Unrecognised link.");
+  }
+
+  async function shareLink(kind, payload) {
+    try {
+      const link = `${location.origin}${location.pathname}#${kind}=${await encodePayload(payload)}`;
+      const title = kind === "design" ? "Share this game design" : "Share this table";
+      const note = kind === "design"
+        ? "Anyone with the link can add this design to their games: groups, rules, actions, triggers, scoring and deck. No cards in play are included."
+        : "The link holds the whole table, including every hidden card. Share it with co-designers, not opponents.";
+      openDialog(head(title) + `<div class="dlg-body">
+          <p class="hint">${note}</p>
+          <textarea readonly id="shareLinkText" style="min-height:90px;font-size:12px">${esc(link)}</textarea>
+          <div class="small dim">${link.length.toLocaleString()} characters</div>
+        </div>
+        <div class="dlg-foot"><button type="button" class="btn primary" data-copy-link>Copy link</button><button class="btn" value="cancel">Done</button></div>`, {
+        bind(form) {
+          form.querySelector("[data-copy-link]").addEventListener("click", () => {
+            navigator.clipboard?.writeText(link).then(() => toast("Link copied", "good"), () => { $("#shareLinkText").select(); toast("Select the text and copy it"); });
+          });
+        },
+      });
+    } catch (error) {
+      toast("Couldn't make a link: " + error.message, "error");
+    }
+  }
+
+  async function openLinkFromHash() {
+    const match = /^#(design|table)=(.+)$/.exec(location.hash || "");
+    if (!match) return false;
+    const clear = () => window.history.replaceState(null, "", location.pathname + location.search);
+    let payload;
+    try { payload = await decodePayload(match[2]); } catch (error) { clear(); toast("That link couldn't be opened: " + error.message, "error"); return false; }
+    if (match[1] === "design") {
+      if (!payload || !(payload.table || payload.seat)) { clear(); toast("That link isn't a game design.", "error"); return false; }
+      openDialog(head("Game design from a link") + `<div class="dlg-body">
+          <div><div class="small muted">${esc(payload.family || "Custom")}</div><h3 style="margin:2px 0 6px">${esc(payload.name || "Untitled")}</h3><p class="hint">${esc(payload.tagline || payload.description || "")}</p></div>
+          <p class="hint">Adds it to My games in this browser. Nothing is uploaded anywhere.</p>
+        </div>
+        <div class="dlg-foot"><button class="btn" value="cancel">Ignore</button><button class="btn" value="add">Add to My games</button><button class="btn primary" value="play">Add & play</button></div>`, {
+        onSubmit(form, value) {
+          const library = loadLibrary();
+          const now = Date.now();
+          const design = { ...payload, id: "custom-" + now.toString(36), custom: true, createdAt: now, updatedAt: now, versions: [], note: "From a shared link" };
+          store(STORE.presets, library.concat(design));
+          toast(`Added “${design.name}” to My games`, "good");
+          if (value === "play") startFromDesign(design);
+        },
+      });
+    } else {
+      openDialog(head("Table from a link") + `<div class="dlg-body"><p class="hint">Open the shared table “${esc(payload?.title || "Untitled")}”? Your current table stays in Undo.</p></div>
+        <div class="dlg-foot"><button class="btn" value="cancel">Ignore</button><button class="btn primary" value="open">Open table</button></div>`, {
+        onSubmit() {
+          try { replaceState(E.migrate(payload), "Shared table opened"); } catch (error) { toast(error.message, "error"); }
+        },
+      });
+    }
+    clear();
+    return true;
+  }
+
+  // ============================================================ TRIGGERS
+  function openTriggerDialog(triggerId) {
+    const v = view;
+    const existing = triggerId ? v.triggers.find((entry) => entry.id === triggerId) : null;
+    const draft = existing ? E.clone(existing) : { event: "empty", zone: E.orderedZones(v, "table")[0]?.key || "", n: 0, phase: v.phases[0] || "", macro: v.macros[0]?.id || "", label: "", off: false };
+    const refs = new Set();
+    E.orderedZones(v, "table").forEach((zone) => refs.add(zone.key || zone.name.toLowerCase()));
+    v.seatTemplate.forEach((tpl) => refs.add(tpl.key));
+    const draw = () => {
+      const fields = E.TRIGGER_EVENTS[draft.event].fields;
+      return head(existing ? "Edit trigger" : "New trigger") + `<div class="dlg-body">
+          <datalist id="triggerRefs">${Array.from(refs).filter(Boolean).map((ref) => `<option value="${esc(ref)}">`).join("")}</datalist>
+          <div class="grid-2">
+            <label class="field"><span>When</span><select name="event">${Object.entries(E.TRIGGER_EVENTS).map(([id, def]) => `<option value="${id}"${draft.event === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
+            ${fields.includes("zone") ? `<label class="field"><span>Group <span class="dim">a table group, or a seat group for every player</span></span><input type="text" name="zone" list="triggerRefs" value="${esc(draft.zone)}" required></label>` : ""}
+            ${fields.includes("n") ? `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>` : ""}
+            ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label><datalist id="phaseNames">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist>` : ""}
+            <label class="field"><span>Run action</span><select name="macro">${v.macros.map((macro) => `<option value="${macro.id}"${draft.macro === macro.id ? " selected" : ""}>${esc(macro.label)}</option>`).join("")}</select></label>
+            <label class="field"><span>Label <span class="dim">optional</span></span><input type="text" name="label" maxlength="60" value="${esc(draft.label)}" placeholder="${esc(E.describeTrigger(draft, v))}"></label>
+          </div>
+          <label class="check"><input type="checkbox" name="on"${draft.off ? "" : " checked"}> Enabled</label>
+          <p class="hint">Triggers fire after play (moves, draws, actions, turns), never while you set up or collect. Inside the action, <code>@subject</code> and <code>@winner</code> mean the player it fired for: whoever emptied their hand, played the last card, or won the game.</p>
+          ${v.macros.length ? "" : `<p class="hint" style="color:var(--gold)">Build an action first (Play → + New action). A trigger runs one.</p>`}
+        </div>
+        <div class="dlg-foot">${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save" ${v.macros.length ? "" : "disabled"}>Save</button></div>`;
+    };
+    const sync = (form) => {
+      draft.event = form.event.value;
+      if (form.zone) draft.zone = form.zone.value;
+      if (form.n) draft.n = Number(form.n.value) || 0;
+      if (form.phase) draft.phase = form.phase.value;
+      if (form.macro) draft.macro = form.macro.value;
+      draft.label = form.label.value;
+      draft.off = !form.on.checked;
+    };
+    openDialog(draw(), {
+      bind(form) {
+        form.addEventListener("change", (event) => {
+          if (event.target.name !== "event") return;
+          sync(form);
+          form.innerHTML = draw();
+        });
+      },
+      onSubmit(form, value) {
+        if (value === "delete") return dispatch({ type: "deleteTrigger", id: triggerId });
+        sync(form);
+        dispatch({ type: "saveTrigger", trigger: { ...draft, id: existing?.id } });
+      },
+    });
+  }
+
+  // ====================================================== SCORING RULES
+  const RANK_LABELS = E.STD_RANKS.map((rank) => [rank, RANK_SHOW(rank)]);
+
+  function openSchemeDialog(schemeId, opts = {}) {
+    const v = view;
+    const existing = schemeId ? v.schemes.find((entry) => entry.id === schemeId) : null;
+    const scheme = existing ? E.clone(existing) : E.sanitizeScheme(E.emptyState(), { name: "Card points" });
+    if (!existing) scheme.id = "s" + Date.now().toString(36);
+    const sample = opts.sample || selectionText() || "A♠ K♠ Q♠ 5♥ 5♦ 7♣";
+    const zones = [...E.orderedZones(v, "table"), ...v.seatTemplate.map((tpl) => ({ ...tpl, seat: true }))];
+    const num = (name, value, extra = "") => `<input type="number" name="${name}" value="${esc(value)}" step="any" ${extra}>`;
+    const html = head(existing ? `Edit “${scheme.name}”` : "New scoring rule") + `<div class="dlg-body">
+        <div class="grid-2">
+          <label class="field"><span>Name</span><input type="text" name="name" maxlength="28" value="${esc(scheme.name)}" required></label>
+          <label class="check" style="align-self:end;min-height:32px"><input type="checkbox" name="low"${scheme.low ? " checked" : ""}> Lower totals are better (penalty points)</label>
+        </div>
+        <div class="field"><span>Card values</span>
+          <div class="value-grid">${RANK_LABELS.map(([rank, label]) => `<label><span>${label}</span>${num("rank-" + rank, scheme.ranks[rank])}</label>`).join("")}<label><span>Joker</span>${num("joker", scheme.joker)}</label></div>
+          <div class="row tight"><button type="button" class="btn sm" data-preset-values="pip">Pips (faces 10)</button><button type="button" class="btn sm" data-preset-values="rank">Rank (J11 Q12 K13 A14)</button><button type="button" class="btn sm" data-preset-values="zero">All zero</button></div>
+        </div>
+        <div class="field"><span>Suit bonus <span class="dim">added to every card of the suit</span></span>
+          <div class="value-grid four">${E.STD_SUITS.map((suit) => `<label><span class="${suit === "h" || suit === "d" ? "red-text" : ""}">${SUIT_SYMBOL[suit]}</span>${num("suit-" + suit, scheme.suits[suit])}</label>`).join("")}</div>
+        </div>
+        <label class="field"><span>Specific cards <span class="dim">override values: <code>Qs=13, 8=50, hearts=1, Wild=50</code></span></span><input type="text" name="cards" value="${esc(scheme.cards)}" placeholder="Qs=13, 8=50"></label>
+        <label class="check"><input type="checkbox" name="customValues"${scheme.customValues ? " checked" : ""}> Custom cards score their printed value</label>
+        <div class="field"><span>Combination bonuses</span>
+          <div class="grid-3">
+            <label class="field"><span>Each pair</span>${num("pair", scheme.pair)}</label>
+            <label class="field"><span>Three of a kind</span>${num("trips", scheme.trips)}</label>
+            <label class="field"><span>Four of a kind</span>${num("quads", scheme.quads)}</label>
+            <label class="field"><span>Run, per card</span>${num("run", scheme.run)}</label>
+            <label class="field"><span>Shortest run</span>${num("runMin", scheme.runMin, 'min="2" max="13"')}</label>
+            <label class="check" style="align-self:end"><input type="checkbox" name="runSuited"${scheme.runSuited ? " checked" : ""}> Runs must share a suit</label>
+            <label class="field"><span>Flush bonus</span>${num("flush", scheme.flush)}</label>
+            <label class="field"><span>Cards for a flush</span>${num("flushMin", scheme.flushMin, 'min="2" max="13"')}</label>
+          </div>
+        </div>
+        <div class="card-block">
+          <label class="field"><span>Try it <span class="dim">cards like “As Kd 10h”, custom card names, or Joker</span></span><input type="text" name="sample" value="${esc(sample)}"></label>
+          <div id="schemePreview" class="scheme-preview"></div>
+        </div>
+        <label class="field"><span>Attach to a group <span class="dim">shows as a badge and can be scored by actions</span></span><select name="attach"><option value="">(don't attach)</option>${zones.map((zone) => `<option value="${esc(zone.seat ? "seat:" + zone.key : zone.id)}">${esc(zone.name)}${zone.seat ? " (every seat)" : ""}${(zone.evals || []).includes("points:" + scheme.id) ? " ✓" : ""}</option>`).join("")}</select></label>
+      </div>
+      <div class="dlg-foot">${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save">Save</button></div>`;
+    const read = (form) => {
+      const out = { id: scheme.id, name: form.name.value, low: form.low.checked, ranks: {}, suits: {}, joker: form.joker.value, cards: form.cards.value, customValues: form.customValues.checked };
+      for (const rank of E.STD_RANKS) out.ranks[rank] = form["rank-" + rank].value;
+      for (const suit of E.STD_SUITS) out.suits[suit] = form["suit-" + suit].value;
+      for (const key of ["pair", "trips", "quads", "run", "runMin", "flush", "flushMin"]) out[key] = form[key].value;
+      out.runSuited = form.runSuited.checked;
+      return E.sanitizeScheme(E.emptyState(), out);
+    };
+    const preview = (form) => {
+      const clean = read(form);
+      const cards = parseSampleCards(form.sample.value);
+      const result = cards.length ? V.evaluate("custom-points", cards, { scheme: clean }) : null;
+      $("#schemePreview").innerHTML = result
+        ? `<strong>${esc(result.label)}</strong>${result.breakdown?.length ? `<div class="breakdown-row">${result.breakdown.map((part) => `<span>${esc(part.label)} ${esc(E.fmt(part.points))}</span>`).join("")}</div>` : ""}`
+        : `<span class="muted small">Type some cards to see how they score.</span>`;
+    };
+    openDialog(html, {
+      wide: true,
+      bind(form) {
+        preview(form);
+        form.addEventListener("input", () => preview(form));
+        form.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-preset-values]");
+          if (!button) return;
+          const kind = button.dataset.presetValues;
+          for (const rank of E.STD_RANKS) {
+            form["rank-" + rank].value = kind === "zero" ? 0 : kind === "rank" ? E.RANK_ORDER[rank] : E.PIP_DEFAULT[rank];
+          }
+          preview(form);
+        });
+      },
+      onSubmit(form, value) {
+        if (value === "delete") {
+          if (confirm(`Delete “${scheme.name}”? Groups using it lose that badge.`)) dispatch({ type: "deleteScheme", id: scheme.id });
+          return;
+        }
+        const clean = read(form);
+        dispatch({ type: "saveScheme", scheme: clean });
+        const attach = form.attach.value;
+        if (attach) {
+          const spec = "points:" + clean.id;
+          const zone = attach.startsWith("seat:")
+            ? E.orderedZones(view, view.players.find((player) => E.orderedZones(view, player.id).some((z) => z.key === attach.slice(5)))?.id || "").find((z) => z.key === attach.slice(5))
+            : view.zones[attach];
+          if (zone && !(zone.evals || []).includes(spec)) dispatch({ type: "updateZone", zone: zone.id, patch: { evals: [...(zone.evals || []), spec].slice(0, 6) }, allSeats: attach.startsWith("seat:") });
+        }
+      },
+    });
+  }
+
+  /** Cards typed by a designer: "As Kd 10h", "Joker", or custom card names. */
+  function parseSampleCards(text) {
+    const out = [];
+    const customs = [...(view?.deckSpec?.custom || [])];
+    for (const token of String(text || "").split(/[,\s]+/).filter(Boolean)) {
+      const std = V.parseCard(token);
+      if (std) { out.push(std); continue; }
+      const custom = customs.find((item) => item.label.toLowerCase() === token.toLowerCase() || (item.rank || "").toLowerCase() === token.toLowerCase());
+      if (custom) out.push({ rank: custom.rank || custom.label, suit: "x", custom: true, label: custom.label, value: custom.value });
+    }
+    return out;
+  }
+
+  function selectionText() {
+    if (!view || !selection.size) return "";
+    return Array.from(selection).map((id) => view.cards[id]).filter((card) => card?.visible).map((card) => (card.custom ? card.label : RANK_SHOW(card.rank) + card.suit)).join(" ");
+  }
+
+  // ============================================================ GAME OVER
+  function renderGameOver() {
+    const el = $("#gameOver");
+    const v = view;
+    const over = v?.gameOver;
+    if (!over || over.dismissed) { el.hidden = true; return; }
+    const totals = E.totals(v);
+    const names = over.winners.map((id) => E.playerById(v, id)?.name).filter(Boolean);
+    const standings = v.players.slice().sort((a, b) => (v.scores.lowWins ? totals[a.id] - totals[b.id] : totals[b.id] - totals[a.id]));
+    el.hidden = false;
+    el.innerHTML = `<div class="go-title">🏁 ${esc(names.join(" & "))} win${names.length > 1 ? "" : "s"}!</div>
+      <div class="small muted">${esc(over.reason)}</div>
+      <div class="go-standings">${standings.map((player, i) => `<span style="--c:${esc(player.color)}"><i class="swatch"></i>${i + 1}. ${esc(player.name)} <b>${E.fmt(totals[player.id])}</b></span>`).join("")}</div>
+      <div class="row">
+        ${net.mode !== "client" ? `<button class="btn sm primary" data-act="play-again">Play again</button>` : ""}
+        <button class="btn sm" data-act="open-tab" data-tab="scores">Results & stats</button>
+        <button class="btn sm ghost" data-act="dismiss-over">Keep playing</button>
+      </div>`;
+    if (net.mode !== "client") recordResult(state, true);
+  }
+
+  function restartSameSetup() {
+    if (net.mode === "client") return toast("Only the host can restart.", "error");
+    const preset = E.toPreset(state);
+    const next = E.createTable(preset, { players: state.players.map((p) => ({ name: p.name, color: p.color, clientId: p.clientId })) });
+    next.title = state.title;
+    next.designId = state.designId || null;
+    replaceState(next, "Fresh start");
+  }
+
+  // ============================================================= RESULTS
+  function loadResults() {
+    const list = load(STORE.results, []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  /** Record a finished (or abandoned) game for playtest stats. Auto-records each game-over once. */
+  function recordResult(source, auto = false) {
+    if (!source || !source.players.length) return false;
+    const key = auto ? `over:${source.startedAt || 0}:${source.gameOver?.t || 0}` : `manual:${Date.now()}`;
+    const results = loadResults();
+    if (results.some((entry) => entry.key === key)) return false;
+    const totals = E.totals(source);
+    const best = source.gameOver?.winners || E.leaders(source);
+    results.unshift({
+      key,
+      title: source.title,
+      designId: source.designId || null,
+      t: Date.now(),
+      rounds: source.turn.round,
+      durationMs: source.startedAt ? Date.now() - source.startedAt : 0,
+      lowWins: Boolean(source.scores.lowWins),
+      players: source.players.map((player, seat) => ({ name: player.name, seat, total: totals[player.id] || 0, won: best.includes(player.id) })),
+    });
+    store(STORE.results, results.slice(0, 500));
+    if (!auto) toast("Result recorded", "good");
+    return true;
+  }
+
+  function resultsHTML(v) {
+    const all = loadResults();
+    const mine = all.filter((entry) => (v.designId && entry.designId === v.designId) || entry.title === v.title);
+    if (!mine.length) return `<p class="hint">Finished games are recorded automatically when someone hits the target or the round limit. For other games, record the result yourself.</p>
+      <div class="row"><button class="btn sm" data-act="record-result">Record current result</button></div>`;
+    const seats = Math.max(...mine.map((entry) => entry.players.length));
+    const wins = Array.from({ length: seats }, () => 0);
+    const played = Array.from({ length: seats }, () => 0);
+    let rounds = 0;
+    let duration = 0;
+    for (const entry of mine) {
+      rounds += entry.rounds || 0;
+      duration += entry.durationMs || 0;
+      entry.players.forEach((player) => { played[player.seat] += 1; if (player.won) wins[player.seat] += 1; });
+    }
+    const minutes = Math.round(duration / mine.length / 60000);
+    const seatRows = wins.map((count, seat) => {
+      const rate = played[seat] ? count / played[seat] : 0;
+      return `<div class="row tight" style="flex-wrap:nowrap"><span class="small" style="width:52px">Seat ${seat + 1}</span><div class="prob-bar grow"><span style="width:${rate * 100}%"></span><em>${pct(rate)} · ${count}/${played[seat]}</em></div></div>`;
+    }).join("");
+    const recent = mine.slice(0, 8).map((entry) => `<div class="log-item"><time>${new Date(entry.t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</time><div>${entry.players.filter((player) => player.won).map((player) => `<b>${esc(player.name)}</b>`).join(" & ") || "—"} <span class="muted small">${entry.players.map((player) => `${esc(player.name)} ${E.fmt(player.total)}`).join(" · ")}</span></div></div>`).join("");
+    return `<div class="stat-row"><div><b>${mine.length}</b><span>games</span></div><div><b>${(rounds / mine.length).toFixed(1)}</b><span>avg rounds</span></div><div><b>${minutes || "<1"}</b><span>avg minutes</span></div></div>
+      <div class="small muted">Win rate by seat (seat 1 is first at the table)</div>
+      <div class="list">${seatRows}</div>
+      <div class="log">${recent}</div>
+      <div class="row"><button class="btn sm" data-act="record-result">Record current result</button><button class="btn sm" data-act="export-results">Export CSV</button><button class="btn sm danger" data-act="clear-results">Clear</button></div>`;
+  }
+
+  // =========================================================== SIMULATOR
+  const sim = { running: false, progress: 0, result: null, cfg: { macro: "", target: "", evaluator: "", trials: 1000 } };
+  let seededFn = null;
+
+  function simTargets(v) {
+    const out = [];
+    for (const tpl of v.seatTemplate) out.push(["seat:" + tpl.key, `Every ${tpl.name} (compare seats)`]);
+    for (const zone of E.orderedZones(v, "table")) if (zone.kind !== "deck") out.push(["zone:" + zone.id, zone.name]);
+    return out;
+  }
+
+  function runSimulation() {
+    if (net.mode === "client") return toast("Only the host can simulate: it needs every card.", "error");
+    if (sim.running) return;
+    const base = E.clone(state);
+    base.log = [];
+    base.gameOver = null;
+    const macro = base.macros.find((entry) => entry.id === sim.cfg.macro) || base.macros[0];
+    if (!macro) return toast("Build an action (e.g. a deal) to simulate.", "error");
+    const target = sim.cfg.target || simTargets(base)[0]?.[0];
+    if (!target) return toast("Add a group to measure.", "error");
+    const trials = Math.max(50, Math.min(20000, Number(sim.cfg.trials) || 1000));
+    const counts = new Map();
+    const seatWins = [];
+    let valueSum = 0;
+    let valueN = 0;
+    let ties = 0;
+    let failures = 0;
+    let done = 0;
+    const started = performance.now();
+    const previousRng = E.getRng();
+    E.setRng(Math.random);
+    sim.running = true;
+    sim.progress = 0;
+    const [kind, ref] = [target.slice(0, target.indexOf(":")), target.slice(target.indexOf(":") + 1)];
+    const chunk = () => {
+      const end = Math.min(trials, done + 200);
+      for (; done < end; done += 1) {
+        let s;
+        try { s = E.reduce(base, { type: "runMacro", id: macro.id }, null); } catch (error) { failures += 1; continue; }
+        const zones = kind === "seat" ? s.players.map((player) => E.orderedZones(s, player.id).find((zone) => zone.key === ref) || null) : [s.zones[ref]];
+        let best = null;
+        let bestSeat = -1;
+        let tied = false;
+        zones.forEach((zone, seat) => {
+          if (!zone) return;
+          const spec = sim.cfg.evaluator || zone.evals?.[0];
+          if (!spec) return;
+          const result = E.evaluateSpec(s, zone, spec);
+          if (!result) return;
+          const label = result.short || result.label;
+          counts.set(label, (counts.get(label) || 0) + 1);
+          if (Number.isFinite(Number(result.value))) { valueSum += Number(result.value); valueN += 1; }
+          if (best === null || result.score > best) { best = result.score; bestSeat = seat; tied = false; }
+          else if (result.score === best) tied = true;
+          seatWins[seat] = seatWins[seat] || 0;
+        });
+        if (zones.length > 1 && bestSeat >= 0) { if (tied) ties += 1; else seatWins[bestSeat] = (seatWins[bestSeat] || 0) + 1; }
+      }
+      sim.progress = done / trials;
+      if (done < trials && sim.running) {
+        if (prefs.tab === "tools") renderPane();
+        setTimeout(chunk, 0);
+        return;
+      }
+      E.setRng(previousRng);
+      sim.running = false;
+      const samples = Array.from(counts.values()).reduce((a, b) => a + b, 0);
+      sim.result = {
+        macro: macro.label,
+        target: simTargets(base).find(([value]) => value === target)?.[1] || target,
+        trials: done,
+        failures,
+        ms: performance.now() - started,
+        samples,
+        rows: Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([label, count]) => [label, count / Math.max(1, samples)]),
+        average: valueN ? valueSum / valueN : null,
+        seats: kind === "seat" ? { wins: seatWins.map((count) => (count || 0) / Math.max(1, done)), ties: ties / Math.max(1, done) } : null,
+      };
+      renderPane();
+    };
+    renderPane();
+    setTimeout(chunk, 0);
+  }
+
+  function simulatorHTML(v) {
+    const targets = simTargets(v);
+    const evaluators = [["", "Group's own scoring"], ...V.EVALUATORS.filter((def) => !def.hidden).map((def) => [def.id, def.label]), ...v.schemes.map((scheme) => ["points:" + scheme.id, "★ " + scheme.name])];
+    const r = sim.result;
+    const rows = r ? r.rows.slice(0, 14).map(([label, p]) => `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label" title="${esc(label)}">${esc(label)}</span><div class="prob-bar grow"><span style="width:${p * 100}%"></span><em>${pct(p)}</em></div></div>`).join("") : "";
+    const seats = r?.seats ? r.seats.wins.map((p, i) => `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label">${esc(v.players[i]?.name || "Seat " + (i + 1))}</span><div class="prob-bar grow"><span style="width:${p * 100}%"></span><em>${pct(p)}</em></div></div>`).join("") : "";
+    return `<div class="grid-2">
+        <label class="field"><span>Run action</span><select id="simMacro">${v.macros.map((macro) => `<option value="${macro.id}"${sim.cfg.macro === macro.id ? " selected" : ""}>${esc(macro.label)}</option>`).join("")}</select></label>
+        <label class="field"><span>Then measure</span><select id="simTarget">${targets.map(([value, label]) => `<option value="${esc(value)}"${sim.cfg.target === value ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <label class="field"><span>Scored by</span><select id="simEval">${evaluators.map(([value, label]) => `<option value="${esc(value)}"${sim.cfg.evaluator === value ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <label class="field"><span>Trials</span><input id="simTrials" type="number" min="50" max="20000" step="50" value="${sim.cfg.trials}"></label>
+      </div>
+      <div class="row"><button class="btn primary" data-act="simulate" ${sim.running ? "disabled" : ""}>${sim.running ? `Running… ${Math.round(sim.progress * 100)}%` : "Simulate"}</button><span class="muted small">Runs the action on a copy of the table: your game isn't touched.</span></div>
+      ${r ? `<div class="small dim">${r.trials.toLocaleString()} × “${esc(r.macro)}” → ${esc(r.target)} in ${Math.round(r.ms)} ms${r.failures ? ` · ${r.failures} failed` : ""}${r.average !== null ? ` · average value ${r.average.toFixed(2)}` : ""}</div>
+        <div class="list">${rows || `<p class="hint">Nothing to score. Is an evaluator attached to that group?</p>`}</div>
+        ${seats ? `<div class="small muted">Best hand by seat${r.seats.ties ? ` (ties ${pct(r.seats.ties)})` : ""}</div><div class="list">${seats}</div>` : ""}` : ""}`;
+  }
+
+  function setSeed(seed) {
+    const clean = String(seed || "").trim().slice(0, 40);
+    prefs.seed = clean;
+    savePrefs();
+    if (clean) {
+      seededFn = E.seededRng(clean);
+      E.setRng(seededFn);
+      toast(`Shuffles now follow seed “${clean}”`, "good");
+    } else {
+      seededFn = null;
+      E.setRng(() => {
+        const buffer = new Uint32Array(1);
+        crypto.getRandomValues(buffer);
+        return buffer[0] / 4294967296;
+      });
+      toast("Shuffles are random again");
+    }
+  }
+
+  // ====================================================== BROWSE / INSPECT
+  function openBrowseDialog(zoneId) {
+    const picked = new Set();
+    const draw = () => {
+      const v = view;
+      const zone = v.zones[zoneId];
+      if (!zone) return head("Browse") + `<div class="dlg-body"><p class="hint">That group is gone.</p></div><div class="dlg-foot"><button class="btn" value="cancel">Close</button></div>`;
+      const cards = zone.cards.map((id, index) => ({ card: v.cards[id], index })).filter((entry) => entry.card).reverse();
+      const hand = myHandZone();
+      return head(`${zone.name} · ${zone.cards.length} card${zone.cards.length === 1 ? "" : "s"}`) + `<div class="dlg-body">
+          <p class="hint">${zone.layout === "stack" ? "Top of the pile first. " : "Last card first. "}Tap cards to pick them, then move them anywhere.${cards.some((entry) => !entry.card.visible) ? " Face-down cards stay hidden unless you're in X-ray view." : ""}</p>
+          <div class="browse-grid">${cards.map(({ card, index }) => `<button type="button" class="browse-card${picked.has(card.id) ? " on" : ""}" data-pick="${esc(card.id)}">${cardHTML(card, zone, index)}</button>`).join("") || `<p class="muted">Empty.</p>`}</div>
+        </div>
+        <div class="dlg-foot">
+          <span class="grow small muted">${picked.size} picked</span>
+          <button type="button" class="btn sm" data-browse="all">Pick all</button>
+          ${hand && hand !== zoneId ? `<button type="button" class="btn sm" data-browse="hand" ${picked.size ? "" : "disabled"}>To my hand</button>` : ""}
+          <select id="browseTo" style="width:auto;max-width:180px">${zoneOptions("", {})}</select>
+          <button type="button" class="btn sm primary" data-browse="move" ${picked.size ? "" : "disabled"}>Move</button>
+          <button class="btn" value="cancel">Done</button>
+        </div>`;
+    };
+    const redraw = (form) => { form.innerHTML = draw(); };
+    openDialog(draw(), {
+      wide: true,
+      bind(form) {
+        form.addEventListener("click", (event) => {
+          const pick = event.target.closest("[data-pick]");
+          if (pick) {
+            const id = pick.dataset.pick;
+            if (picked.has(id)) picked.delete(id); else picked.add(id);
+            redraw(form);
+            return;
+          }
+          const button = event.target.closest("[data-browse]");
+          if (!button) return;
+          const zone = view.zones[zoneId];
+          if (button.dataset.browse === "all") { zone?.cards.forEach((id) => picked.add(id)); redraw(form); return; }
+          const to = button.dataset.browse === "hand" ? myHandZone() : $("#browseTo").value;
+          const ids = (zone?.cards || []).filter((id) => picked.has(id));
+          if (!to || !ids.length) return;
+          dispatch({ type: "move", cards: ids, to });
+          picked.clear();
+          redraw(form);
+        });
+      },
+    });
+  }
+
+  function inspectCard(cardId) {
+    const v = view;
+    const card = v?.cards[cardId];
+    if (!card) return;
+    const zone = E.zoneOf(v, cardId);
+    const index = zone ? zone.cards.indexOf(cardId) : 0;
+    const facts = [];
+    if (card.visible) facts.push(card.custom ? `<b>${esc(card.label)}</b>` : `<b>${esc(E.cardName(card))}</b>`);
+    else facts.push("<b>Face-down card</b>");
+    if (card.custom && card.visible) {
+      if (card.suit && card.suit !== "x") facts.push(`Suit: ${esc(card.suit)}`);
+      if (card.rank && card.rank !== card.label) facts.push(`Rank: ${esc(card.rank)}`);
+      if (card.value) facts.push(`Value: ${esc(card.value)}`);
+      if (card.text) facts.push(esc(card.text));
+    }
+    if (zone) facts.push(`In ${esc(E.zoneLabel(v, zone))}`);
+    if (card.playedBy) facts.push(`Played by ${esc(E.playerById(v, card.playedBy)?.name || "?")}`);
+    openDialog(head("Card") + `<div class="dlg-body inspect-body"><div class="inspect-card" style="--cw:min(220px, 56vw)">${cardHTML({ ...card }, zone || { visibility: "public" }, index)}</div><div class="list">${facts.map((fact) => `<div class="small">${fact}</div>`).join("")}</div></div>
+      <div class="dlg-foot"><button class="btn primary" value="cancel">Close</button></div>`);
+  }
+
+  // ====================================================== COMMAND PALETTE
+  function paletteCommands() {
+    const v = view;
+    const list = [];
+    const add = (group, label, run, hint = "") => list.push({ group, label, run, hint });
+    v.macros.forEach((macro, i) => add("Actions", macro.label, () => dispatch({ type: "runMacro", id: macro.id }), (i < 9 ? `${i + 1} · ` : "") + (macro.hint || macro.steps.map((step) => E.describeStep(step, v)).join(" → "))));
+    add("Turn", "Next player", () => dispatch({ type: "nextTurn" }), "T");
+    add("Turn", "Previous player", () => dispatch({ type: "nextTurn", back: true }), "Shift+T");
+    add("Turn", "Next phase", () => dispatch({ type: "nextPhase" }));
+    add("Turn", "Next round", () => dispatch({ type: "nextRound" }));
+    add("Turn", "Pass the deal", () => dispatch({ type: "passDeal" }));
+    add("Table", "Collect all & shuffle", () => dispatch({ type: "collect", shuffle: true }));
+    add("Table", "Reveal every hand", () => dispatch({ type: "revealAll" }));
+    add("Table", "Undo", undo, "Ctrl+Z");
+    add("Table", "Redo", redo, "Ctrl+Shift+Z");
+    add("Table", "New group on the table", () => openZoneDialog(null, { area: "table" }));
+    add("Table", "New group at every seat", () => openZoneDialog(null, { area: "seats" }));
+    add("Table", "Add player", () => dispatch({ type: "addPlayer" }));
+    for (const zone of E.orderedZones(v, "table")) {
+      add("Groups", `Browse ${zone.name}`, () => openBrowseDialog(zone.id));
+      add("Groups", `Edit ${zone.name}`, () => openZoneDialog(zone.id));
+      add("Groups", `Shuffle ${zone.name}`, () => dispatch({ type: "shuffle", zone: zone.id }));
+    }
+    add("Design", "New action", () => openMacroDialog(null));
+    add("Design", "New trigger", () => openTriggerDialog(null));
+    add("Design", "New scoring rule", () => openSchemeDialog(null));
+    add("Design", "Save to My games", () => saveDesign());
+    add("Design", "My games…", openLibrary);
+    add("Design", "Share design link", () => shareLink("design", stripDesign(E.toPreset(state || v))));
+    add("Design", "Share table link (includes hidden cards)", () => shareLink("table", net.mode === "client" ? v : state));
+    add("Design", "Generate rules from table", () => { prefs.tab = "rules"; prefs.side = true; savePrefs(); dispatch({ type: "setNotes", notes: E.describeGame(state || v) }); });
+    for (const [mode, label] of Object.entries(E.RULES_MODES)) add("Rules", `Rule checks: ${label}`, () => dispatch({ type: "setRules", mode }));
+    add("Tools", "Simulate an action", () => openTab("tools"));
+    add("Tools", "Record result", () => recordResult(state || v));
+    add("Tools", "Roll a die", () => dispatch({ type: "roll", sides: 6, count: 1 }));
+    add("Tools", "Flip a coin", () => dispatch({ type: "coin" }));
+    for (const tab of ["play", "scores", "seats", "deck", "tools", "log", "rules"]) add("Panels", `Open ${tab[0].toUpperCase() + tab.slice(1)}`, () => openTab(tab));
+    add("Panels", "How it works & shortcuts", openHelp, "?");
+    if (net.mode === "local") {
+      for (const [mode, label] of [["hands", "All hands"], ["xray", "X-ray (referee)"], ["pass", "Pass & play"]]) add("View", `View: ${label}`, () => setViewMode(mode));
+      for (const player of v.players) add("View", `View as ${player.name}`, () => setViewMode("seat:" + player.id));
+    }
+    for (const preset of allPresets()) add("New game", preset.name, () => startFromDesign(preset), preset.family);
+    return list;
+  }
+
+  function openTab(tab) {
+    prefs.tab = tab;
+    prefs.side = true;
+    savePrefs();
+    renderPane();
+  }
+
+  function setViewMode(mode) {
+    prefs.viewMode = mode;
+    passRevealed = null;
+    savePrefs();
+    selection.clear();
+    render();
+  }
+
+  function openPalette() {
+    const commands = paletteCommands();
+    let query = "";
+    let active = 0;
+    const matches = () => {
+      const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+      return commands.filter((command) => words.every((word) => `${command.group} ${command.label} ${command.hint}`.toLowerCase().includes(word))).slice(0, 60);
+    };
+    const list = () => {
+      const found = matches();
+      active = Math.min(active, Math.max(0, found.length - 1));
+      return found.map((command, i) => `<button type="button" class="pal-item${i === active ? " on" : ""}" data-i="${i}"><span class="pal-group">${esc(command.group)}</span><span class="grow">${esc(command.label)}</span><span class="pal-hint">${esc(command.hint)}</span></button>`).join("") || `<div class="muted small" style="padding:10px">No matches</div>`;
+    };
+    openDialog(`<div class="dlg-body palette"><input type="search" id="palInput" placeholder="Type a command, action, group or game…" autocomplete="off"><div class="pal-list" id="palList">${list()}</div></div>`, {
+      bind(form) {
+        const input = form.querySelector("#palInput");
+        const refresh = () => { form.querySelector("#palList").innerHTML = list(); form.querySelector(".pal-item.on")?.scrollIntoView({ block: "nearest" }); };
+        const runAt = (i) => {
+          const command = matches()[i];
+          if (!command) return;
+          closeDialog();
+          command.run();
+        };
+        input.addEventListener("input", () => { query = input.value; active = 0; refresh(); });
+        input.addEventListener("keydown", (event) => {
+          const count = matches().length;
+          if (event.key === "ArrowDown") { active = (active + 1) % Math.max(1, count); refresh(); event.preventDefault(); }
+          else if (event.key === "ArrowUp") { active = (active - 1 + count) % Math.max(1, count); refresh(); event.preventDefault(); }
+          else if (event.key === "Enter") { event.preventDefault(); runAt(active); }
+        });
+        form.addEventListener("click", (event) => {
+          const item = event.target.closest(".pal-item");
+          if (item) runAt(Number(item.dataset.i));
+        });
+        setTimeout(() => input.focus(), 0);
+      },
+    });
+    dialog().classList.add("palette-dialog");
+  }
+
+  // ====================================================== CUSTOM CARD CSV
+  const COLOR_NAMES = { red: "#d9434b", yellow: "#b98a00", green: "#23915a", blue: "#3b63d9", black: "#2a2d36", purple: "#7a52e0", violet: "#7a52e0", orange: "#e07b28", pink: "#d6488f", teal: "#159a9c", gray: "#6b7280", grey: "#6b7280", white: "#9ca3af", gold: "#c9a227", brown: "#8b5a2b" };
+  const CUSTOM_COLUMNS = ["label", "count", "color", "value", "suit", "rank", "icon", "text"];
+  const COLUMN_ALIASES = { name: "label", title: "label", label: "label", card: "label", copies: "count", count: "count", qty: "count", quantity: "count", color: "color", colour: "color", points: "value", value: "value", score: "value", suit: "suit", group: "suit", rank: "rank", number: "rank", icon: "icon", symbol: "icon", emoji: "icon", text: "text", rules: "text", effect: "text", description: "text" };
+
+  function splitRow(line, delimiter) {
+    const out = [];
+    let cell = "";
+    let quoted = false;
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i];
+      if (quoted) {
+        if (ch === '"' && line[i + 1] === '"') { cell += '"'; i += 1; }
+        else if (ch === '"') quoted = false;
+        else cell += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === delimiter) { out.push(cell); cell = ""; }
+      else cell += ch;
+    }
+    out.push(cell);
+    return out.map((value) => value.trim());
+  }
+
+  /** Rows pasted from a spreadsheet → custom card types. A header row may name/reorder the columns. */
+  function parseCustomRows(text) {
+    const lines = String(text || "").split(/\r?\n/).filter((line) => line.trim());
+    if (!lines.length) return [];
+    const delimiter = lines[0].includes("\t") ? "\t" : lines[0].includes(";") && !lines[0].includes(",") ? ";" : ",";
+    let columns = CUSTOM_COLUMNS;
+    const first = splitRow(lines[0], delimiter).map((cell) => cell.toLowerCase());
+    if (first.some((cell) => COLUMN_ALIASES[cell]) && !first.some((cell) => /^\d+$/.test(cell))) {
+      columns = first.map((cell) => COLUMN_ALIASES[cell] || "");
+      lines.shift();
+    }
+    return lines.map((line) => {
+      const cells = splitRow(line, delimiter);
+      const item = {};
+      columns.forEach((key, i) => { if (key && cells[i]) item[key] = cells[i]; });
+      if (!item.label) return null;
+      const named = COLOR_NAMES[String(item.color || "").toLowerCase()] || COLOR_NAMES[String(item.suit || "").toLowerCase()];
+      return {
+        label: item.label.slice(0, 24),
+        count: Math.max(1, Math.min(20, Number(item.count) || 1)),
+        color: /^#[0-9a-f]{6}$/i.test(item.color || "") ? item.color : named || "#9f7dff",
+        value: Number(item.value) || 0,
+        suit: item.suit || "",
+        rank: item.rank || "",
+        icon: item.icon || "",
+        text: item.text || "",
+      };
+    }).filter(Boolean);
+  }
+
+  function customCardsCsv(items) {
+    const quote = (cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`;
+    const header = ["name", "copies", "color", "points", "suit", "rank", "icon", "text"];
+    return [header.join(","), ...items.map((item) => CUSTOM_COLUMNS.map((key) => quote(item[key])).join(","))].join("\n");
+  }
+
+  function openCustomImport() {
+    openDialog(head("Import custom cards") + `<div class="dlg-body">
+        <p class="hint">Paste rows from a spreadsheet (tab or comma separated). Columns in order: <code>name, copies, color, points, suit, rank, icon, text</code>, or give a header row naming them in any order. Colors can be hex (#d9434b) or names (red, blue…).</p>
+        <textarea name="rows" style="min-height:200px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px" placeholder="name,copies,color,points,suit,rank,icon,text&#10;Skip,2,red,20,Red,Skip,⊘,The next player loses a turn&#10;7,2,blue,7,Blue,7"></textarea>
+        <label class="check"><input type="checkbox" name="replace"> Replace the existing custom cards</label>
+        <label class="check"><input type="checkbox" name="none"> Custom cards only (drop the standard 52)</label>
+      </div>
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="import">Add to deck builder</button></div>`, {
+      onSubmit(form) {
+        const items = parseCustomRows(form.rows.value);
+        if (!items.length) { toast("No rows with a name were found.", "error"); return false; }
+        if (!deckDraft) deckDraft = E.clone(E.normalizeDeckSpec(view.deckSpec));
+        deckDraft.custom = (form.replace.checked ? [] : deckDraft.custom).concat(items).slice(0, 120);
+        if (form.none.checked) { deckDraft.preset = "none"; deckDraft.ranks = null; }
+        customOpen = true;
+        prefs.tab = "deck";
+        savePrefs();
+        renderPane();
+        toast(`${items.length} card type${items.length === 1 ? "" : "s"} added. Press Rebuild & shuffle to use them.`, "good");
+      },
+    });
+  }
+
+  function generateRules() {
+    const source = net.mode === "client" ? view : state;
+    if (source.notes && source.notes.trim() && !confirm("Replace the rules document with one generated from the table? Undo brings yours back.")) return;
+    dispatch({ type: "setNotes", notes: E.describeGame(source) });
+    prefs.rulesView = "preview";
+    savePrefs();
+    renderPane();
+  }
+
+  function readSimCfg() {
+    if ($("#simMacro")) sim.cfg.macro = $("#simMacro").value;
+    if ($("#simTarget")) sim.cfg.target = $("#simTarget").value;
+    if ($("#simEval")) sim.cfg.evaluator = $("#simEval").value;
+    if ($("#simTrials")) sim.cfg.trials = Number($("#simTrials").value) || 1000;
+  }
+
   // ============================================================== INIT
   function init() {
     applyPrefs();
     bindEvents();
+    if (prefs.seed) {
+      seededFn = E.seededRng(prefs.seed);
+      E.setRng(seededFn);
+    }
     const saved = load(STORE.table, null);
     try { state = saved ? E.migrate(saved) : null; } catch (error) { state = null; }
     const firstVisit = !state;
     if (!state) state = E.createTable(P.get("holdem"), { players: 4 });
+    lastLogKey = logKey(state.log[state.log.length - 1]);
     render();
-    const params = new URLSearchParams(location.search);
-    const code = params.get("room");
-    if (code) openRoomDialog(code.toUpperCase());
-    else if (firstVisit && !load(STORE.seen, false)) openNewGame();
+    openLinkFromHash().then((opened) => {
+      if (opened) return;
+      const code = new URLSearchParams(location.search).get("room");
+      if (code) openRoomDialog(code.toUpperCase());
+      else if (firstVisit && !load(STORE.seen, false)) openNewGame();
+    });
+    window.addEventListener("hashchange", () => openLinkFromHash());
   }
 
   init();

@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+require("../evaluators.js");
 const Engine = require("../engine.js");
 const Presets = require("../presets.js");
 
@@ -193,6 +194,6 @@ for (const preset of Presets.PRESETS) {
   }
   assert.ok(Engine.viewFor(state, state.players[0]?.id || "__spectator"));
 }
-assert.equal(Presets.PRESETS.length, 21);
+assert.equal(Presets.PRESETS.length, 23);
 
 console.log("engine tests passed");
