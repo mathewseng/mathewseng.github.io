@@ -3937,7 +3937,8 @@
     const base = E.clone(state);
     const deal = base.macros.find((macro) => macro.id === botGames.cfg.deal) || base.macros[0];
     if (!deal) return toast("Build a deal action first.", "error");
-    if (!base.scores.target && !base.scores.maxRounds) return toast("Set how the game ends first (Scores → End of game), or games never finish.", "error");
+    const endsByAction = base.macros.some((macro) => macro.steps.some((step) => step.op === "endGame"));
+    if (!base.scores.target && !base.scores.maxRounds && !endsByAction) return toast("Set how the game ends first (Scores → End of game), or games never finish.", "error");
     let other = null;
     if (botGames.cfg.against) {
       const [designId, version] = botGames.cfg.against.split("#");
@@ -3946,7 +3947,7 @@
       if (!source) return toast("That saved design is gone.", "error");
       const table = E.createTable(source, { players: base.players.map((player) => ({ name: player.name, botStyle: player.botStyle })) });
       const otherDeal = table.macros.find((macro) => macro.label === deal.label) || table.macros[0];
-      if (!otherDeal || (!table.scores.target && !table.scores.maxRounds)) return toast("The comparison design needs a deal action and an end condition.", "error");
+      if (!otherDeal || (!table.scores.target && !table.scores.maxRounds && !table.macros.some((macro) => macro.steps.some((step) => step.op === "endGame")))) return toast("The comparison design needs a deal action and an end condition.", "error");
       other = { table, deal: otherDeal, name: (source.name || "Saved design") + (version !== undefined ? ` (version ${new Date(design.versions[Number(version)].t).toLocaleDateString()})` : "") };
     }
     const games = Math.max(1, Math.min(500, Number(botGames.cfg.games) || 30));
@@ -3973,7 +3974,7 @@
   function botGamesHTML(v) {
     const r = botGames.result;
     const c = botGames.compare;
-    const ends = v.scores.target ? `first to ${E.fmt(v.scores.target)}` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds` : "no end condition";
+    const ends = v.scores.target ? `first to ${E.fmt(v.scores.target)}` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds` : v.macros.some((macro) => macro.steps.some((step) => step.op === "endGame")) ? "until an action ends it" : "no end condition";
     const library = loadLibrary();
     const againstOptions = library.flatMap((design) => [[design.id, design.name], ...(design.versions || []).map((version, i) => [`${design.id}#${i}`, `${design.name}, version from ${new Date(version.t).toLocaleString()}`])]);
     const seatRows = r ? r.wins.map((wins, seat) => {

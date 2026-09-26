@@ -669,9 +669,9 @@
         { label: "Set up", hint: "7 Copper and 3 Acres each, then draw 5", steps: [
           { op: "deal", from: "copper", to: "deck", count: 7 }, { op: "deal", from: "acre", to: "deck", count: 3 },
           { op: "shuffle", zone: "deck" }, { op: "deal", from: "deck", to: "hand", count: 5, perSeat: true },
-          { op: "setCounter", who: "all", name: "Coins", amount: 0 }, { op: "setTurn", who: "next" },
+          { op: "setCounter", who: "all", name: "Coins", amount: 0 }, { op: "setTurn", who: "next" }, { op: "runAction", macro: "Play treasures" },
         ] },
-        { label: "Play treasures", hint: "Lay out your hand and count your coins", steps: [{ op: "clear", from: "hand@current", to: "play@current", face: "up" }, { op: "counterFormula", who: "current", name: "Coins", formula: "play_value" }] },
+        { label: "Play treasures", hint: "Runs by itself at the start of each turn: lay out your hand and count your coins", steps: [{ op: "clear", from: "hand@current", to: "play@current", face: "up" }, { op: "counterFormula", who: "current", name: "Coins", formula: "play_value" }] },
         { label: "End turn", hint: "Discard everything, draw 5, pass", steps: [
           { op: "clear", from: "play@current", to: "discard@current", face: "up" }, { op: "clear", from: "hand@current", to: "discard@current", face: "up" },
           { op: "setCounter", who: "current", name: "Coins", amount: 0 }, { op: "runAction", macro: "Draw 5" }, { op: "nextTurn" },
@@ -686,9 +686,14 @@
           { op: "scoreZones", zone: "deck", evaluator: "points:vp" }, { op: "endGame" },
         ] },
       ],
-      triggers: [{ event: "empty", zone: "castle", macro: "Final score" }],
+      triggers: [
+        { event: "turn", macro: "Play treasures" },
+        { event: "empty", zone: "castle", macro: "Final score" },
+      ],
+      botFallback: "End turn",
+      playsPerTurn: 0,
       scoring: { label: "Victory points" },
-      rules: "Market Builder\n\n• Press Set up: everyone gets 7 Copper and 3 Acres, shuffled, and draws 5.\n• On your turn press Play treasures (your coins show in the Coins counter), then buy: drag cards from the market piles to your Discard. Each card costs the number on its pile, paid automatically; you can't overspend.\n• Press End turn: everything goes to your discard, you draw 5 (reshuffling your discard when your deck runs out), and play passes.\n• When the last Castle is bought the game ends: Acre 1, Manor 3, Castle 6 victory points.\n\nBuilt entirely from general tools: custom cards that start in their own piles, a cost rule on the market, counters, formulas and triggers.",
+      rules: "Market Builder\n\n• Press Set up: everyone gets 7 Copper and 3 Acres, shuffled, and draws 5.\n• At the start of your turn your hand is laid out and your coins counted (Coins counter). Buy: drag cards from the market piles to your Discard. Each card costs the number on its pile, paid automatically; you can't overspend.\n• Press End turn: everything goes to your discard, you draw 5 (reshuffling your discard when your deck runs out), and play passes.\n• When the last Castle is bought the game ends: Acre 1, Manor 3, Castle 6 victory points.\n\nBuilt entirely from general tools: custom cards that start in their own piles, a cost rule on the market, counters, formulas and triggers.",
     },
     {
       id: "klondike",

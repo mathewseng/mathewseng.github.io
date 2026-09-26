@@ -629,7 +629,7 @@ console.log("peek and show tests passed");
   state = run(state, "Set up");
   const [a, b] = state.players.map((p) => p.id);
   for (const id of [a, b]) {
-    assert.equal(zone(state, "hand", id).cards.length, 5);
+    assert.equal(zone(state, "hand", id).cards.length + zone(state, "play", id).cards.length, 5, "five drawn (the first player's are already in play)");
     assert.equal(zone(state, "deck", id).cards.length, 5);
   }
   state = act(state, { type: "setTurn", index: 0 });
@@ -649,6 +649,7 @@ console.log("peek and show tests passed");
   state = run(state, "End turn");
   assert.equal(zone(state, "hand", a).cards.length, 5);
   assert.equal(state.players[0].counters[coinsDef.id], 0);
+  assert.equal(zone(state, "hand", b).cards.length, 0, "the next player's treasures were laid out automatically");
   // Second turn for A empties the deck, so the third turn reshuffles the discard.
   state = act(state, { type: "setTurn", index: 0 });
   state = run(state, "End turn");
@@ -668,3 +669,20 @@ console.log("peek and show tests passed");
   assert.equal(Engine.lintDesign(Engine.createTable(Presets.get("market-builder"), {})).filter((i) => i.level === "error").length, 0);
 }
 console.log("deck-building tests passed");
+
+// Bots can play a whole deck-building game.
+{
+  Engine.setRng(Engine.seededRng("market-bots"));
+  const start = Engine.createTable(Presets.get("market-builder"), { players: [{ name: "Smart", botStyle: "smart" }, { name: "Random", botStyle: "random" }] });
+  let smartWins = 0;
+  let finished = 0;
+  for (let game = 0; game < 10; game += 1) {
+    const out = Engine.playOut(start, { deal: "Set up", maxSteps: 20000 });
+    if (!out.finished) continue;
+    finished += 1;
+    if (out.state.gameOver.winners[0] === out.state.players[0].id) smartWins += 1;
+  }
+  assert.equal(finished, 10, "every market game ends");
+  assert.ok(smartWins >= 7, `smart buyer won ${smartWins}/10`);
+  console.log(`market builder: smart won ${smartWins}/10`);
+}

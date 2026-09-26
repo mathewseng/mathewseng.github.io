@@ -930,6 +930,7 @@
     const card = state.cards[play.card];
     const rank = rankValue(card, true) ?? (Number(card.value) || 0);
     const jitter = rng() * 0.01;
+    if (play.buy) return 1000 + (Number(card.value) || 0) * 10 + jitter;
     if ((target.evals || []).includes("trick")) {
       const trial = [...target.cards, play.card];
       const result = evaluateSpec(state, { ...target, cards: trial }, "trick");
@@ -1057,6 +1058,16 @@
           const check = checkMove(state, [cardId], to.id, playerId, { force: true });
           if (!check.hard.length && !check.soft.length) out.push({ card: cardId, from: from.id, to: to.id });
         }
+      }
+    }
+    // Buying: the top card of a market pile (a group with a cost) into your own discard pile.
+    const discard = orderedZones(state, playerId).find((zone) => zone.kind === "discard");
+    if (discard) {
+      for (const market of orderedZones(state, "table")) {
+        if (!market.rule?.cost || !market.cards.length) continue;
+        const cardId = market.cards[market.cards.length - 1];
+        const check = checkMove(state, [cardId], discard.id, playerId, { force: true });
+        if (!check.hard.length && !check.soft.length) out.push({ card: cardId, from: market.id, to: discard.id, buy: true });
       }
     }
     return out;
