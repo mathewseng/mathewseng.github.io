@@ -1,777 +1,182 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="home">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#08090d" />
     <meta
       name="description"
       content="Project directory for Mathew Seng: browser tools, card games, music experiments, and small utility projects."
     />
     <title>Mathew Seng Projects</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --page: #08090d;
-        --ink: #eef4ff;
-        --muted: #9aa7b7;
-        --soft: #707d8d;
-        --card: #121620;
-        --line: #283141;
-        --line-strong: #394456;
-        --green: #8fd9b6;
-        --blue: #8ab4ff;
-        --red: #ff8b83;
-        --gold: #f4c95d;
-        --violet: #b6a6ff;
-        --charcoal: #eef4ff;
-        font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html {
-        min-height: 100%;
-      }
-
-      body {
-        min-height: 100vh;
-        margin: 0;
-        background: var(--page);
-        color: var(--ink);
-      }
-
-      a {
-        color: inherit;
-      }
-
-      p,
-      h1,
-      h2,
-      h3 {
-        margin: 0;
-      }
-
-      .page-shell {
-        width: min(1180px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 28px 0 44px;
-      }
-
-      .topbar {
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding-bottom: 24px;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--muted);
-        font-size: 0.95rem;
-        font-weight: 760;
-      }
-
-      .brand-mark {
-        width: 34px;
-        height: 34px;
-        display: grid;
-        place-items: center;
-        border: 1px solid var(--line-strong);
-        border-radius: 8px;
-        background: var(--card);
-        color: var(--ink);
-        font-size: 0.82rem;
-        font-weight: 850;
-      }
-
-      .repo-link {
-        min-height: 34px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 12px;
-        border: 1px solid var(--line-strong);
-        border-radius: 8px;
-        background: var(--card);
-        color: var(--ink);
-        font-size: 0.86rem;
-        font-weight: 740;
-        text-decoration: none;
-      }
-
-      .repo-link:hover,
-      .repo-link:focus-visible {
-        border-color: var(--ink);
-        outline: none;
-      }
-
-      .intro {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
-        gap: 24px;
-        align-items: end;
-        padding: 24px 0 30px;
-        border-top: 1px solid var(--line);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .eyebrow {
-        margin-bottom: 10px;
-        color: var(--green);
-        font-size: 0.78rem;
-        font-weight: 850;
-        letter-spacing: 0;
-        text-transform: uppercase;
-      }
-
-      h1 {
-        max-width: 780px;
-        font-size: 3.7rem;
-        line-height: 0.98;
-        letter-spacing: 0;
-      }
-
-      .intro-copy {
-        color: var(--muted);
-        font-size: 1rem;
-        line-height: 1.55;
-      }
-
-      .summary-panel {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--card);
-        overflow: hidden;
-      }
-
-      .summary-panel div {
-        min-width: 0;
-        padding: 13px;
-      }
-
-      .summary-panel div + div {
-        border-left: 1px solid var(--line);
-      }
-
-      .summary-panel strong {
-        display: block;
-        margin-bottom: 3px;
-        font-size: 1.25rem;
-        line-height: 1;
-      }
-
-      .summary-panel span {
-        color: var(--muted);
-        font-size: 0.76rem;
-        font-weight: 760;
-      }
-
-      .section {
-        padding-top: 30px;
-      }
-
-      .section-head {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 12px;
-      }
-
-      .section-head h2 {
-        font-size: 1.05rem;
-        letter-spacing: 0;
-      }
-
-      .section-head p {
-        color: var(--muted);
-        font-size: 0.86rem;
-      }
-
-      .project-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .project-card {
-        min-height: 244px;
-        display: grid;
-        grid-template-rows: 86px minmax(0, 1fr);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--card);
-        color: inherit;
-        text-decoration: none;
-        overflow: hidden;
-      }
-
-      .project-card:hover,
-      .project-card:focus-visible {
-        border-color: var(--charcoal);
-        outline: none;
-      }
-
-      .preview {
-        position: relative;
-        display: grid;
-        align-content: center;
-        padding: 12px;
-        border-bottom: 1px solid var(--line);
-        background: #10141d;
-        overflow: hidden;
-      }
-
-      .project-body {
-        display: grid;
-        gap: 14px;
-        align-content: space-between;
-        padding: 14px;
-      }
-
-      .project-title {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .project-title h3 {
-        font-size: 1.06rem;
-        line-height: 1.18;
-        letter-spacing: 0;
-      }
-
-      .status {
-        flex: 0 0 auto;
-        padding: 4px 7px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        color: var(--muted);
-        font-size: 0.7rem;
-        font-weight: 780;
-      }
-
-      .status.live {
-        border-color: rgba(19, 121, 91, 0.35);
-        color: var(--green);
-      }
-
-      .status.source {
-        border-color: rgba(47, 101, 184, 0.35);
-        color: var(--blue);
-      }
-
-      .project-card p {
-        color: var(--muted);
-        font-size: 0.9rem;
-        line-height: 1.45;
-      }
-
-      .meta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .meta-row span {
-        padding: 4px 7px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        color: var(--muted);
-        font-size: 0.72rem;
-        font-weight: 720;
-      }
-
-      .mini-cards,
-      .mini-grid,
-      .mini-table,
-      .mini-bars,
-      .mini-terminal,
-      .mini-board {
-        width: 100%;
-      }
-
-      .mini-cards {
-        display: flex;
-        gap: 6px;
-      }
-
-      .mini-card {
-        width: 34px;
-        height: 48px;
-        display: grid;
-        place-items: center;
-        border-radius: 6px;
-        color: #fff;
-        font-size: 1.18rem;
-        font-weight: 780;
-      }
-
-      .mini-card.spade {
-        background: #505050;
-      }
-
-      .mini-card.heart {
-        background: #a90800;
-      }
-
-      .mini-card.diamond {
-        background: #303fc6;
-      }
-
-      .mini-card.club {
-        background: #05a82b;
-      }
-
-      .mini-card.gold {
-        background: var(--gold);
-      }
-
-      .mini-table {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 4px;
-      }
-
-      .mini-table span {
-        height: 12px;
-        border-radius: 3px;
-        background: #2a3140;
-      }
-
-      .mini-table span:nth-child(3n) {
-        background: #386958;
-      }
-
-      .mini-table span:nth-child(4n) {
-        background: #38598f;
-      }
-
-      .mini-grid {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 5px;
-      }
-
-      .mini-grid span {
-        height: 18px;
-        border-radius: 5px;
-        background: #2b3342;
-      }
-
-      .mini-grid span:nth-child(2n) {
-        background: #2f6b58;
-      }
-
-      .mini-grid span:nth-child(5n) {
-        background: #8c672a;
-      }
-
-      .mini-bars {
-        display: flex;
-        align-items: end;
-        gap: 5px;
-        height: 52px;
-      }
-
-      .mini-bars span {
-        flex: 1 1 auto;
-        min-width: 0;
-        border-radius: 5px 5px 0 0;
-        background: var(--violet);
-      }
-
-      .mini-bars span:nth-child(2n) {
-        background: var(--green);
-      }
-
-      .mini-terminal {
-        display: grid;
-        gap: 6px;
-        padding: 10px;
-        border-radius: 7px;
-        background: #20252b;
-      }
-
-      .mini-terminal span {
-        height: 7px;
-        border-radius: 999px;
-        background: #9aa7b7;
-      }
-
-      .mini-terminal span:nth-child(2) {
-        width: 72%;
-      }
-
-      .mini-terminal span:nth-child(3) {
-        width: 48%;
-        background: #8fd9b6;
-      }
-
-      .mini-board {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 5px;
-      }
-
-      .mini-board span {
-        height: 26px;
-        border-radius: 5px;
-        background: #242a31;
-      }
-
-      .mini-board span:nth-child(3n) {
-        background: var(--red);
-      }
-
-      .mini-board span:nth-child(4n) {
-        background: var(--blue);
-      }
-
-      .source-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .source-item {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 14px;
-        align-items: center;
-        padding: 14px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--card);
-        text-decoration: none;
-      }
-
-      .source-item:hover,
-      .source-item:focus-visible {
-        border-color: var(--charcoal);
-        outline: none;
-      }
-
-      .source-item h3 {
-        margin-bottom: 4px;
-        font-size: 1rem;
-      }
-
-      .source-item p {
-        color: var(--muted);
-        font-size: 0.88rem;
-        line-height: 1.4;
-      }
-
-      .source-path {
-        color: var(--soft);
-        font-size: 0.76rem;
-        font-weight: 760;
-        white-space: nowrap;
-      }
-
-      footer {
-        margin-top: 34px;
-        padding-top: 18px;
-        border-top: 1px solid var(--line);
-        color: var(--muted);
-        font-size: 0.84rem;
-      }
-
-      @media (max-width: 920px) {
-        .intro {
-          grid-template-columns: 1fr;
-          align-items: start;
-        }
-
-        .project-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        h1 {
-          font-size: 3rem;
-        }
-      }
-
-      @media (max-width: 640px) {
-        .page-shell {
-          width: min(100% - 20px, 1180px);
-          padding-top: 14px;
-        }
-
-        .topbar,
-        .section-head {
-          align-items: stretch;
-          flex-direction: column;
-        }
-
-        .repo-link {
-          justify-content: flex-start;
-        }
-
-        h1 {
-          font-size: 2.35rem;
-        }
-
-        .summary-panel,
-        .project-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .summary-panel div + div {
-          border-top: 1px solid var(--line);
-          border-left: 0;
-        }
-
-        .source-item {
-          grid-template-columns: 1fr;
-        }
-
-        .source-path {
-          white-space: normal;
-        }
-      }
-    </style>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%238ab4ff'%3E♦%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="shared/hub.css" />
+    <script src="shared/hub.js" defer></script>
   </head>
   <body>
-    <main class="page-shell">
-      <nav class="topbar" aria-label="Main">
-        <a class="brand" href="/">
-          <span class="brand-mark" aria-hidden="true">MS</span>
-          <span>mathewseng.github.io</span>
-        </a>
-        <a class="repo-link" href="https://github.com/mathewseng/mathewseng.github.io">GitHub repository</a>
-      </nav>
-
-      <header class="intro">
-        <div>
-          <p class="eyebrow">Project directory</p>
-          <h1>Browser tools, card games, and small experiments.</h1>
-        </div>
-        <div>
-          <p class="intro-copy">
-            Every live project runs directly in the browser. Poker, OFC, and blackjack each open to a hub of their tools.
-          </p>
-          <div class="summary-panel" aria-label="Repository summary">
-            <div>
-              <strong>6</strong>
-              <span>projects</span>
-            </div>
-            <div>
-              <strong>14</strong>
-              <span>live pages</span>
-            </div>
-            <div>
-              <strong>1</strong>
-              <span>source project</span>
-            </div>
-          </div>
-        </div>
+    <div class="shell">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <span class="mark" aria-hidden="true">MS</span>
+          <span class="crumb-current" aria-current="page">Projects</span>
+        </nav>
+        <nav class="switcher" aria-label="Game hubs">
+          <a href="/ofc/" data-to="ofc">OFC</a>
+          <a href="/poker/" data-to="poker">Poker</a>
+          <a href="/blackjack/" data-to="blackjack">Blackjack</a>
+        </nav>
       </header>
 
-      <section class="section" aria-labelledby="live-title">
-        <div class="section-head">
+      <main>
+        <section class="hero hero--home" aria-labelledby="home-title">
           <div>
-            <p class="eyebrow">Live pages</p>
-            <h2 id="live-title">Open in browser</h2>
+            <p class="eyebrow">Project directory</p>
+            <h1 id="home-title">Browser tools, <em>card games</em>, and small experiments.</h1>
+            <p class="lede">
+              Everything here runs directly in the browser, with no login and no backend. Poker, OFC, and blackjack each
+              open to a hub of their tools.
+            </p>
+            <ul class="facts" aria-label="At a glance">
+              <li><b>6</b> projects</li>
+              <li><b>14</b> live pages</li>
+              <li><b>3</b> game hubs</li>
+            </ul>
           </div>
-          <p>Static apps and game prototypes hosted from this repo.</p>
-        </div>
-
-        <div class="project-grid">
-          <a class="project-card" href="/gym/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-bars">
-                <span style="height: 32%"></span>
-                <span style="height: 48%"></span>
-                <span style="height: 42%"></span>
-                <span style="height: 68%"></span>
-                <span style="height: 58%"></span>
-                <span style="height: 82%"></span>
-                <span style="height: 72%"></span>
-                <span style="height: 94%"></span>
-              </div>
+          <div class="fan" aria-hidden="true">
+            <div class="fan-inner">
+              <div class="pcard" style="--k: -1.5; --y: 12px; --n: 0"><span class="idx">A<i>♠</i></span><span class="pip">♠</span><span class="idx flip">A<i>♠</i></span></div>
+              <div class="pcard red" style="--k: -0.5; --y: 2px; --n: 1"><span class="idx">A<i>♥</i></span><span class="pip">♥</span><span class="idx flip">A<i>♥</i></span></div>
+              <div class="pcard" style="--k: 0.5; --y: 2px; --n: 2"><span class="idx">A<i>♣</i></span><span class="pip">♣</span><span class="idx flip">A<i>♣</i></span></div>
+              <div class="pcard red" style="--k: 1.5; --y: 12px; --n: 3"><span class="idx">A<i>♦</i></span><span class="pip">♦</span><span class="idx flip">A<i>♦</i></span></div>
+              <div class="chip" style="--accent: #8fd9b6"></div>
+              <div class="chip chip--alt" style="--accent: #ff8b83"></div>
             </div>
-            <div class="project-body">
+          </div>
+        </section>
+
+      <section class="group" aria-labelledby="group-hubs">
+        <div class="group-head">
+          <h2 id="group-hubs">Game hubs</h2>
+          <span>3 hubs</span>
+        </div>
+        <ul class="tiles" role="list">
+          <li>
+            <a class="tile" href="/poker/" style="--i: 0; --accent: #ff8b83; --accent-2: #ffb77a">
+              <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="mc red" style="--k: -2; --y: 6px">10<i>♥</i></span><span class="mc red" style="--k: -1; --y: 3px">J<i>♥</i></span><span class="mc red" style="--k: 0; --y: 0px">Q<i>♥</i></span><span class="mc red" style="--k: 1; --y: 3px">K<i>♥</i></span><span class="mc red" style="--k: 2; --y: 6px">A<i>♥</i></span></div></div>
               <div>
-                <div class="project-title">
-                  <h3>Form &amp; Function</h3>
-                  <span class="status live">Live</span>
-                </div>
+                <h3>Poker</h3>
+                <p>Mixed-game cash tables, Poker Rush, Ultimate Omaha and Edge the Dealer, Dodge reports, and hand-ranking odds.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>Hub</span><span>6 tools</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="tile" href="/ofc/" style="--i: 1; --accent: #8fd9b6; --accent-2: #7cc8ff">
+              <div class="tile-art" aria-hidden="true"><div class="art-ofc"><div><span class="red">♥</span><span>♠</span><span class="open"></span></div><div><span>♣</span><span class="red">♦</span><span>♠</span><span>♣</span><span class="red">♦</span></div><div><span class="red">♥</span><span class="red">♥</span><span class="red">♥</span><span class="red">♥</span><span class="red">♥</span></div></div></div>
+              <div>
+                <h3>OFC Tools</h3>
+                <p>Pineapple tables with friends, plus a Fantasyland trainer, EV matrix, and royalty reports.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>Hub</span><span>4 tools</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="tile" href="/blackjack/" style="--i: 2; --accent: #f4c95d; --accent-2: #ffe7a3">
+              <div class="tile-art" aria-hidden="true"><div class="art-chart"><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H hit-me"></span><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span></div></div>
+              <div>
+                <h3>Blackjack</h3>
+                <p>Rules-aware basic strategy and Hi-Lo count indices from a Rust solver compiled to WebAssembly.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>Hub</span><span>Strategy Lab</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" aria-labelledby="group-apps">
+        <div class="group-head">
+          <h2 id="group-apps">Apps &amp; experiments</h2>
+          <span>3 apps</span>
+        </div>
+        <ul class="tiles" role="list">
+          <li>
+            <a class="tile" href="/cards/" style="--i: 3; --accent: #b6a6ff; --accent-2: #8ab4ff">
+              <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="mc" style="--k: -2; --y: 6px">5<i>♣</i></span><span class="mc red" style="--k: -1; --y: 3px">5<i>♥</i></span><span class="mc red" style="--k: 0; --y: 0px">J<i>♦</i></span><span class="mc" style="--k: 1; --y: 3px">A<i>♠</i></span><span class="mc star" style="--k: 2; --y: 6px"><i>★</i></span></div></div>
+              <div>
+                <h3>Card Table Workshop</h3>
+                <p>Card game design workbench: rules and triggers, custom decks and scoring, a deal simulator, share links, and private online rooms.</p>
+              </div>
+              <div class="tile-foot">
+                <div class="tags"><span>Game design</span><span>Multiplayer</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="tile" href="/gym/" style="--i: 4; --accent: #8ab4ff; --accent-2: #8fd9b6">
+              <div class="tile-art" aria-hidden="true"><div class="art-bars"><span style="--h: 32%; --c: 0"></span><span style="--h: 48%; --c: 1"></span><span style="--h: 42%; --c: 2"></span><span style="--h: 68%; --c: 3"></span><span style="--h: 58%; --c: 4"></span><span style="--h: 82%; --c: 5"></span><span style="--h: 72%; --c: 6"></span><span style="--h: 94%; --c: 7"></span></div></div>
+              <div>
+                <h3>Form &amp; Function</h3>
                 <p>Recovery-aware training calendar with workout history, progress charts, goals, nutrition, and local export.</p>
               </div>
-              <div class="meta-row">
-                <span>fitness</span>
-                <span>calendar</span>
-                <span>React</span>
+              <div class="tile-foot">
+                <div class="tags"><span>Fitness</span><span>React</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
               </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/ofc/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-cards">
-                <span class="mini-card spade">A</span>
-                <span class="mini-card heart">K</span>
-                <span class="mini-card diamond">Q</span>
-                <span class="mini-card club">J</span>
-              </div>
-            </div>
-            <div class="project-body">
+            </a>
+          </li>
+          <li>
+            <a class="tile" href="/microtonal-lab/" style="--i: 5; --accent: #f0abfc; --accent-2: #b6a6ff">
+              <div class="tile-art" aria-hidden="true"><div class="art-wave"><span style="--h: 17%; --c: 0"></span><span style="--h: 29%; --c: 1"></span><span style="--h: 34%; --c: 2"></span><span style="--h: 28%; --c: 3"></span><span style="--h: 32%; --c: 4"></span><span style="--h: 56%; --c: 5"></span><span style="--h: 71%; --c: 6"></span><span style="--h: 57%; --c: 7"></span><span style="--h: 40%; --c: 8"></span><span style="--h: 55%; --c: 9"></span><span style="--h: 87%; --c: 10"></span><span style="--h: 88%; --c: 11"></span><span style="--h: 57%; --c: 12"></span><span style="--h: 44%; --c: 13"></span><span style="--h: 70%; --c: 14"></span><span style="--h: 92%; --c: 15"></span><span style="--h: 74%; --c: 16"></span><span style="--h: 43%; --c: 17"></span><span style="--h: 43%; --c: 18"></span><span style="--h: 63%; --c: 19"></span><span style="--h: 64%; --c: 20"></span><span style="--h: 42%; --c: 21"></span><span style="--h: 26%; --c: 22"></span><span style="--h: 28%; --c: 23"></span><span style="--h: 28%; --c: 24"></span><span style="--h: 19%; --c: 25"></span></div></div>
               <div>
-                <div class="project-title">
-                  <h3>OFC Tools</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Fantasyland trainer, solver tools, EV matrix, and royalty distribution report for open-face Chinese poker.</p>
-              </div>
-              <div class="meta-row">
-                <span>cards</span>
-                <span>trainer</span>
-                <span>solver</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/poker/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-cards">
-                <span class="mini-card heart">Q</span>
-                <span class="mini-card diamond">A</span>
-                <span class="mini-card club">9</span>
-                <span class="mini-card spade">2</span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Poker</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Mixed-game cash tables, Poker Rush, Ultimate Omaha and Edge the Dealer prototypes, Dodge reports, and hand-ranking odds.</p>
-              </div>
-              <div class="meta-row">
-                <span>multiplayer</span>
-                <span>mixed games</span>
-                <span>research</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/blackjack/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-table">
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Blackjack</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Strategy Lab: rules-aware basic strategy chart with EV views and Hi-Lo count indices from a Rust/WASM solver.</p>
-              </div>
-              <div class="meta-row">
-                <span>blackjack</span>
-                <span>EV</span>
-                <span>WASM</span>
-              </div>
-            </div>
-          </a>
-
-          <a class="project-card" href="/microtonal-lab/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-bars">
-                <span style="height: 35%"></span>
-                <span style="height: 56%"></span>
-                <span style="height: 42%"></span>
-                <span style="height: 74%"></span>
-                <span style="height: 48%"></span>
-                <span style="height: 65%"></span>
-                <span style="height: 88%"></span>
-                <span style="height: 52%"></span>
-              </div>
-            </div>
-            <div class="project-body">
-              <div>
-                <div class="project-title">
-                  <h3>Microtonal Lab</h3>
-                  <span class="status live">Live</span>
-                </div>
+                <h3>Microtonal Lab</h3>
                 <p>Interactive tuning explorer and browser instrument for equal, just, and world scales.</p>
               </div>
-              <div class="meta-row">
-                <span>audio</span>
-                <span>tuning</span>
-                <span>canvas</span>
+              <div class="tile-foot">
+                <div class="tags"><span>Audio</span><span>Tuning</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
               </div>
-            </div>
-          </a>
+            </a>
+          </li>
+        </ul>
+      </section>
 
-          <a class="project-card" href="/cards/">
-            <div class="preview" aria-hidden="true">
-              <div class="mini-cards">
-                <span class="mini-card club">5</span>
-                <span class="mini-card heart">5</span>
-                <span class="mini-card diamond">J</span>
-                <span class="mini-card spade">A</span>
-                <span class="mini-card gold">★</span>
-              </div>
-            </div>
-            <div class="project-body">
+      <section class="group" aria-labelledby="group-source">
+        <div class="group-head">
+          <h2 id="group-source">Source only</h2>
+          <span>1 project</span>
+        </div>
+        <ul class="tiles" role="list">
+          <li>
+            <a class="tile tile--row" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" target="_blank" rel="noopener" style="--i: 6; --accent: #7cc8ff; --accent-2: #b6a6ff">
+              <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
               <div>
-                <div class="project-title">
-                  <h3>Card Table Workshop</h3>
-                  <span class="status live">Live</span>
-                </div>
-                <p>Card game design workbench: play rules and triggers, custom decks and scoring, a deal simulator, saved games with share links, and private online rooms.</p>
+                <h3>Jazz Piano ML<span class="visually-hidden"> (opens GitHub)</span></h3>
+                <p>Python pipeline for jazz piano MIDI normalization, tokenization, transcription backends, and a small symbolic transformer.</p>
               </div>
-              <div class="meta-row">
-                <span>cards</span>
-                <span>game design</span>
-                <span>multiplayer</span>
+              <div class="tile-foot">
+                <div class="tags"><span>Python</span><span>Source only</span></div>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
               </div>
-            </div>
-          </a>
-        </div>
+            </a>
+          </li>
+        </ul>
       </section>
+      </main>
 
-      <section class="section" aria-labelledby="utility-title">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Utilities and source</p>
-            <h2 id="utility-title">Repo projects</h2>
-          </div>
-          <p>Useful code that is not primarily a public browser page.</p>
-        </div>
-
-        <div class="source-list">
-          <a class="source-item" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml">
-            <div>
-              <h3>Jazz Piano ML</h3>
-              <p>Python pipeline for jazz piano MIDI normalization, tokenization, transcription backends, and a small symbolic transformer.</p>
-            </div>
-            <span class="source-path">jazz-piano-ml/</span>
-          </a>
-        </div>
-      </section>
-
-      <footer>
-        Static pages on GitHub Pages. No login and no backend.
+      <footer class="foot">
+        <span>Static pages on GitHub Pages.</span>
+        <a href="https://github.com/mathewseng/mathewseng.github.io" target="_blank" rel="noopener">View source on GitHub ↗</a>
       </footer>
-    </main>
+    </div>
   </body>
 </html>
