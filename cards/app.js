@@ -74,6 +74,10 @@
 
   function computeView() {
     if (!state) return null;
+    if (replay.active) {
+      const frame = replay.frames[replay.index] || state;
+      return E.viewFor(frame, prefs.viewMode === "xray" ? "*" : "*hands");
+    }
     if (net.mode === "client") return state;
     if (net.mode === "host") return E.viewFor(state, mySeatId() || "__spectator");
     const mode = prefs.viewMode;
@@ -111,6 +115,7 @@
   // ------------------------------------------------------------ dispatch
   function dispatch(action) {
     if (!state) return;
+    if (replay.active) { toast("Exit the replay to keep playing."); return; }
     bots.streak = 0;
     if (net.mode === "client") {
       try { net.room.sendAction(action); } catch (error) { toast(error.message, "error"); }
@@ -402,6 +407,34 @@
     return "";
   }
 
+  // ------------------------------------------------------- legal targets
+  let legalMap = new Map();
+
+  /** For the cards in hand (selected or dragged): which ruled groups would accept them, and why not. */
+  function computeLegal(ids) {
+    const map = new Map();
+    const source = net.mode === "client" ? view : state;
+    const actor = net.mode === "client" ? mySeatId() : actingId();
+    if (!ids.length || !source || !actor || source.rulesMode === "off" || replay.active) return map;
+    const real = ids.map((id) => E.resolveCard(source, id)).filter(Boolean);
+    if (!real.length) return map;
+    for (const zone of Object.values(source.zones)) {
+      if (!zone.rule || !Object.keys(zone.rule).length || real.every((id) => zone.cards.includes(id))) continue;
+      const result = E.checkMove(source, real, zone.id, actor, { force: true });
+      map.set(zone.id, { ok: !result.hard.length && !result.soft.length, why: result.hard[0] || result.soft[0] || "" });
+    }
+    return map;
+  }
+
+  function applyLegalClasses(map) {
+    $$(".zone[data-zone-id]").forEach((el) => {
+      const verdict = map.get(el.dataset.zoneId);
+      el.classList.toggle("legal", Boolean(verdict?.ok));
+      el.classList.toggle("illegal", Boolean(verdict && !verdict.ok));
+      if (verdict && !verdict.ok) el.dataset.why = verdict.why; else delete el.dataset.why;
+    });
+  }
+
   function zoneHTML(zone) {
     const v = view;
     const cards = zone.cards.map((id) => v.cards[id]).filter(Boolean);
@@ -442,7 +475,9 @@
     // Tilted outer cards swing past their slot; pad the fan so they stay inside the group.
     const fanTilt = layout === "fan" ? (Math.min(6, 44 / Math.max(1, cards.length)) * (cards.length - 1) / 2) * Math.PI / 180 : 0;
     const fanStyle = layout === "fan" ? ` style="--fan-pad:${Math.max(0.1, 0.5 * Math.cos(fanTilt) + 1.68 * Math.sin(fanTilt) - 0.36).toFixed(3)}"` : "";
-    return `<section class="zone kind-${zone.kind}${zone.wide || layout === "free" ? " wide" : ""}${inSel ? " can-drop" : ""}" data-zone-id="${zone.id}">
+    const verdict = legalMap.get(zone.id);
+    const legalClass = verdict ? (verdict.ok ? " legal" : " illegal") : "";
+    return `<section class="zone kind-${zone.kind}${zone.wide || layout === "free" ? " wide" : ""}${inSel ? " can-drop" : ""}${legalClass}" data-zone-id="${zone.id}"${verdict && !verdict.ok ? ` data-why="${esc(verdict.why)}"` : ""}>
       <header class="zone-head">
         <span class="zone-name" title="${esc(zone.name)}">${esc(zone.name)}</span>
         <span class="zone-count">${cards.length}${zone.limit ? "/" + zone.limit : ""}</span>
@@ -502,6 +537,7 @@
   }
 
   function renderTable() {
+    legalMap = computeLegal(orderedSelection());
     const v = view;
     evalCache = evaluateAll(v);
     $("#tableZones").innerHTML = E.orderedZones(v, "table").map(zoneHTML).join("") || `<div class="muted small">No table groups yet.</div>`;
@@ -570,6 +606,8 @@
       ${discardZone ? `<button class="btn sm" data-sel="discard" title="Move to ${esc(discardZone.name)} (Del)">${esc(discardZone.name)}</button>` : ""}
       <button class="btn sm" data-sel="deck" title="Return to the deck">To deck</button>
       <button class="btn sm icon ghost" data-sel="clear" title="Clear selection (Esc)">✕</button>`;
+    const plays = [...legalMap.entries()].filter(([, verdict]) => verdict.ok).slice(0, 3);
+    bar.querySelector(".count").insertAdjacentHTML("afterend", plays.map(([zoneId], i) => `<button class="btn sm good" data-sel="play" data-to="${zoneId}" title="${i === 0 ? "Play (P or Enter)" : "Play"}">Play ▸ ${esc(v.zones[zoneId]?.name || "")}</button>`).join(""));
   }
 
   function fmtTime(seconds) {
@@ -842,6 +880,7 @@
     if (ids.length > 1) ghost.insertAdjacentHTML("beforeend", `<span class="count">${ids.length}</span>`);
     document.body.appendChild(ghost);
     drag.ghost = ghost;
+    applyLegalClasses(computeLegal(ids));
     ids.forEach((id) => document.querySelector(`.card[data-card-id="${CSS.escape(id)}"]`)?.classList.add("dragging"));
     moveGhost(event);
   }
@@ -903,6 +942,7 @@
     if (!d.started) return;
     suppressClick = performance.now() + 250;
     d.ghost.remove();
+    applyLegalClasses(legalMap);
     $$(".dragging").forEach((el) => el.classList.remove("dragging"));
     $$(".zone.drop-hover").forEach((el) => el.classList.remove("drop-hover"));
     const target = dropTargetAt(event.clientX, event.clientY);
@@ -1027,10 +1067,10 @@
       </div>
       <div class="grid-2">
         <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
-        <label class="field"><span>Bots play</span><select data-bot-style><option value="random"${style === "random" ? " selected" : ""}>A random legal card</option><option value="low"${style === "low" ? " selected" : ""}>Their lowest legal card</option><option value="high"${style === "high" ? " selected" : ""}>Their highest legal card</option></select></label>
+        <label class="field"><span>Bots play</span><select data-bot-style>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${style === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
       </div>
       <div class="field"><span>Speed</span><div class="seg">${["slow", "normal", "fast"].map((id) => `<button data-act="bot-speed" data-speed="${id}" class="${speed === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
-      <p class="hint">${count ? `${count} bot${count === 1 ? "" : "s"} at the table.` : "Make any seat a bot from the Players tab or its name menu."} Bots play legal cards from their hand to groups with play rules, so give your play areas rules (Rules tab) and fill a table with bots to playtest whole games.</p>`;
+      <p class="hint">${count ? `${count} bot${count === 1 ? "" : "s"} at the table.` : "Make any seat a bot from the Players tab or its name menu."} Bots play legal cards from their hand to groups with play rules. Smart bots duck or win tricks, shed their most costly cards and build the best hand; give seats different styles in the Players tab and compare them with Tools → Bot games.</p>`;
   }
 
   const PANES = {
@@ -1168,6 +1208,7 @@
           <button class="btn sm icon" data-act="player-up" data-player="${player.id}" title="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
           <button class="btn sm icon${player.out ? " danger" : ""}" data-act="player-out" data-player="${player.id}" title="${player.out ? "Sitting out" : "Sit out"}">⏸</button>
           <button class="btn sm icon${player.bot ? " primary" : ""}" data-act="toggle-bot" data-player="${player.id}" title="${player.bot ? "Bot (click for human)" : "Make a bot"}">🤖</button>
+          ${player.bot ? `<select class="bot-style" data-bot-seat="${player.id}" title="How this bot plays"><option value="">Table default</option>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${player.botStyle === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>` : ""}
           <button class="btn sm icon ghost" data-act="remove-player" data-player="${player.id}" title="Remove">✕</button>
         </div>`).join("");
       const tpl = v.seatTemplate.map((entry) => `<div class="list-row">
@@ -1324,7 +1365,7 @@
         return `<div class="list-row"><span class="grow small">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : "Start"}</span><button class="btn sm" data-act="rewind" data-steps="${steps}" title="Undo ${steps} step${steps === 1 ? "" : "s"}">↶ ${steps}</button></div>`;
       }).reverse().join("") : "";
       return block("Table chat", `<div class="row tight"><input id="chatInput" type="text" placeholder="Say something or note a ruling…" class="grow" style="flex:1;width:auto" data-fk="chat"><button class="btn sm primary" data-act="chat">Send</button></div>`)
-        + (rewind ? block("Rewind", `<details><summary class="small muted" style="cursor:pointer">Go back to an earlier moment (${history.length} step${history.length === 1 ? "" : "s"} saved)</summary><div class="list" style="margin-top:8px">${rewind}</div></details>`) : "")
+        + (rewind ? block("Rewind & replay", `<div class="row tight"><button class="btn sm primary" data-act="replay">⏵ Replay the last ${history.length} step${history.length === 1 ? "" : "s"}</button></div><details><summary class="small muted" style="cursor:pointer">Or jump straight back to a moment</summary><div class="list" style="margin-top:8px">${rewind}</div></details>`) : "")
         + block("Playtest feedback", `<div class="row tight"><input id="feedbackInput" type="text" placeholder="What felt slow, confusing or fun?" class="grow" style="flex:1;width:auto" data-fk="feedback"><button class="btn sm" data-act="feedback">Add</button></div><p class="hint">Feedback notes go in the log for everyone, and export with it.</p>`)
         + `<div class="row tight"><div class="phase-chips">${filters.map(([id, label]) => `<button data-act="log-filter" data-filter="${id}" class="${logFilter === id ? "on" : ""}">${label}</button>`).join("")}</div><span class="grow"></span><button class="btn sm" data-act="export-log">Export</button></div>
           <div class="log">${items || `<p class="hint">Nothing here yet.</p>`}</div>`;
@@ -1667,13 +1708,13 @@
         case "amount": return `<input type="number" ${step.op === "ante" ? 'min="0"' : ""} data-step="${i}" data-f="amount" value="${esc(val)}" placeholder="${step.op === "ante" ? "amount" : "±points"}">`;
         case "keep": return `<input type="number" min="0" max="99" data-step="${i}" data-f="keep" value="${esc(val)}" placeholder="keep top" title="Leave this many cards on top">`;
         case "dir": return selectOf(i, "dir", { left: "to the left", right: "to the right" }, val || "left");
-        case "evaluator": return selectOf(i, "evaluator", evalChoices(), val, "group's own scoring");
+        case "evaluator": return selectOf(i, "evaluator", evalChoices(), val, step.op === "stopIf" ? "count cards" : "group's own scoring");
         case "low": return `<label class="check small"><input type="checkbox" data-step="${i}" data-f="low"${step.low ? " checked" : ""}> lowest wins</label>`;
         case "sign": return selectOf(i, "sign", { "+": "add", "-": "subtract" }, val || "+");
         case "target": return selectOf(i, "target", { owner: "to each owner", winner: "all to the winner" }, val || "owner");
         case "name": return `<input type="text" list="counterNames" data-step="${i}" data-f="name" value="${esc(val)}" placeholder="counter">`;
-        case "cmp": return selectOf(i, "cmp", E.STOP_CMP, val || "==");
-        case "n": return `<input type="number" data-step="${i}" data-f="n" value="${esc(val ?? 0)}" placeholder="cards">`;
+        case "cmp": return selectOf(i, "cmp", E.STOP_CMP, val || (step.op === "dealUntil" ? ">=" : "=="));
+        case "n": return `<input type="number" data-step="${i}" data-f="n" value="${esc(val ?? 0)}" placeholder="${step.evaluator || step.op === "dealUntil" ? "value" : "cards"}">`;
         case "macro": return selectOf(i, "macro", Object.fromEntries(v.macros.map((m) => [m.id, m.label])), val, "choose an action");
         case "times": return `<input type="number" min="1" max="100" data-step="${i}" data-f="times" value="${esc(val || 1)}" title="Times">`;
         case "face": return `<select data-step="${i}" data-f="face"><option value="">${step.op === "flip" ? "toggle" : "default"}</option><option value="up"${val === "up" ? " selected" : ""}>up</option><option value="down"${val === "down" ? " selected" : ""}>down</option></select>`;
@@ -2348,6 +2389,7 @@
       case "toggle-bot": { const p = E.playerById(v, el.dataset.player); if (p) dispatch({ type: "updatePlayer", player: p.id, patch: { bot: !p.bot } }); break; }
       case "print-cards": printSheet(false); break;
       case "print-all": printSheet(true); break;
+      case "replay": startReplay(); break;
       case "rewind": { const steps = Number(el.dataset.steps) || 1; for (let i = 0; i < steps; i += 1) undo(); break; }
       case "dismiss-over": dispatch({ type: "dismissGameOver" }); break;
       case "open-tab": openTab(el.dataset.tab); break;
@@ -2376,6 +2418,7 @@
     const ids = orderedSelection();
     const v = view;
     switch (el.dataset.sel) {
+      case "play": if (el.dataset.to) dispatch({ type: "move", cards: ids, to: el.dataset.to }); break;
       case "flip": dispatch({ type: "flip", cards: ids }); break;
       case "move": moveMenu(el, ids); return;
       case "group": openZoneDialog(null, { cards: ids, area: E.zoneOf(v, ids[0])?.area || "table" }); return;
@@ -2523,6 +2566,7 @@
       if (d.playerTeam) return dispatch({ type: "updatePlayer", player: d.playerTeam, patch: { team: el.value } });
       if (d.botFallback !== undefined) return dispatch({ type: "setBotFallback", macro: el.value });
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
+      if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
       if (d.deck) { deckDraft[d.deck] = d.deck === "preset" ? el.value : Number(el.value); if (d.deck === "preset") deckDraft.ranks = null; renderPane(); return; }
       if (d.deckSuit) { const s = d.deckSuit; deckDraft.suits = el.checked ? Array.from(new Set(deckDraft.suits.concat(s))) : deckDraft.suits.filter((x) => x !== s); if (!deckDraft.suits.length) deckDraft.suits = [s]; renderPane(); return; }
@@ -2575,6 +2619,13 @@
     });
     $(".sheet-handle").addEventListener("click", () => { prefs.side = false; savePrefs(); });
 
+    $("#replayBar").addEventListener("click", (event) => {
+      const el = event.target.closest("[data-rp]");
+      if (el && el.dataset.rp !== "seek") handleReplay(el);
+    });
+    $("#replayBar").addEventListener("input", (event) => {
+      if (event.target.dataset.rp === "seek") replayTo(Number(event.target.value));
+    });
     $("#selectionBar").addEventListener("click", (event) => {
       const el = event.target.closest("[data-sel]");
       if (el) handleSelectionBar(el);
@@ -2644,6 +2695,15 @@
       if (mod && event.key.toLowerCase() === "k" && !dialog().open) { event.preventDefault(); openPalette(); return; }
       if (typing || mod || event.altKey) return;
       const key = event.key;
+      if (replay.active) {
+        if (key === "ArrowLeft") replayTo(replay.index - 1);
+        else if (key === "ArrowRight") replayTo(replay.index + 1);
+        else if (key === " ") handleReplay({ dataset: { rp: "play" } });
+        else if (key === "Escape") stopReplay();
+        else return;
+        event.preventDefault();
+        return;
+      }
       if (key === "Escape") { closeMenu(); if (selection.size) { selection.clear(); render(); } return; }
       if (/^[1-9]$/.test(key)) { const macro = view.macros[Number(key) - 1]; if (macro) dispatch({ type: "runMacro", id: macro.id }); return; }
       switch (key.toLowerCase()) {
@@ -2655,6 +2715,15 @@
         case "m": if (selection.size) moveMenu($("#selectionBar"), orderedSelection()); break;
         case "delete": case "backspace": if (selection.size) handleSelectionBar({ dataset: { sel: "discard" } }); break;
         case "a": { const hand = myHandZone(); if (hand) { view.zones[hand].cards.forEach((id) => selection.add(id)); render(); } break; }
+        case "p":
+        case "enter": {
+          const first = [...legalMap.entries()].find(([, verdict]) => verdict.ok);
+          if (!selection.size || !first) return;
+          dispatch({ type: "move", cards: orderedSelection(), to: first[0] });
+          selection.clear();
+          render();
+          break;
+        }
         case "n": openNewGame(); break;
         case "\\": prefs.side = !prefs.side; savePrefs(); break;
         case "?": openHelp(); break;
@@ -3439,6 +3508,7 @@
     for (const [mode, label] of Object.entries(E.RULES_MODES)) add("Rules", `Rule checks: ${label}`, () => dispatch({ type: "setRules", mode }));
     add("Tools", "Simulate an action", () => openTab("tools"));
     add("Tools", "Record result", () => recordResult(state || v));
+    add("Tools", "Replay recent moves", startReplay);
     add("Tools", "Roll a die", () => dispatch({ type: "roll", sides: 6, count: 1 }));
     add("Tools", "Flip a coin", () => dispatch({ type: "coin" }));
     for (const tab of ["play", "scores", "seats", "deck", "tools", "log", "rules"]) add("Panels", `Open ${tab[0].toUpperCase() + tab.slice(1)}`, () => openTab(tab));
@@ -3613,7 +3683,7 @@
   function scheduleBots() {
     clearTimeout(bots.timer);
     bots.timer = null;
-    if (net.mode === "client" || bots.paused || !state || drag) return;
+    if (net.mode === "client" || bots.paused || !state || drag || replay.active) return;
     const player = state.players[state.turn.index];
     if (!player?.bot || player.out || (state.gameOver && !state.gameOver.dismissed) || state.rev === bots.idleRev) return;
     bots.timer = setTimeout(() => botTurn(player.id), BOT_DELAY[prefs.botSpeed || "normal"] ?? 480);
@@ -3699,7 +3769,7 @@
       }
       E.setRng(previousRng);
       botGames.running = false;
-      botGames.result = { ...tally, deal: deal.label, ms: performance.now() - started, names: base.players.map((player) => player.name) };
+      botGames.result = { ...tally, deal: deal.label, ms: performance.now() - started, names: base.players.map((player) => `${player.name} · ${(player.botStyle || prefs.botStyle || "random")}`) };
       renderPane();
     };
     renderPane();
@@ -3888,6 +3958,76 @@
       showdown: { label: "Showdown", hint: "Reveal, find the best hand, award the pot", steps: [{ op: "flip", zone: handKey, face: "up" }, { op: "findWinner", zone: handKey }, { op: "awardPot", who: "winner" }] },
       draft: { label: "Pass hands left", steps: [{ op: "passZones", zone: handKey, dir: "left" }] },
     };
+  }
+
+  // ============================================================== REPLAY
+  const replay = { active: false, frames: [], index: 0, timer: null };
+
+  function startReplay() {
+    if (net.mode === "client") return toast("Replays use the host's history.", "error");
+    if (!history.length) return toast("Nothing to replay yet: make some moves first.");
+    replay.frames = [...history, state];
+    replay.index = 0;
+    replay.active = true;
+    selection.clear();
+    closeDialog();
+    render();
+    renderReplayBar();
+  }
+
+  function stopReplay() {
+    clearInterval(replay.timer);
+    replay.timer = null;
+    replay.active = false;
+    replay.frames = [];
+    $("#replayBar").hidden = true;
+    render();
+  }
+
+  function replayTo(index) {
+    replay.index = Math.max(0, Math.min(replay.frames.length - 1, index));
+    render();
+    renderReplayBar();
+  }
+
+  function renderReplayBar() {
+    const bar = $("#replayBar");
+    if (!replay.active) { bar.hidden = true; return; }
+    const frame = replay.frames[replay.index];
+    const last = frame.log[frame.log.length - 1];
+    bar.hidden = false;
+    bar.innerHTML = `<span class="replay-tag">Replay</span>
+      <button class="btn sm icon" data-rp="first" title="First">⏮</button>
+      <button class="btn sm icon" data-rp="prev" title="Back (←)">◀</button>
+      <button class="btn sm icon${replay.timer ? " primary" : ""}" data-rp="play" title="Play / pause (space)">${replay.timer ? "⏸" : "⏵"}</button>
+      <button class="btn sm icon" data-rp="next" title="Forward (→)">▶</button>
+      <input type="range" min="0" max="${replay.frames.length - 1}" value="${replay.index}" data-rp="seek" aria-label="Replay position">
+      <span class="replay-step small mono">${replay.index + 1}/${replay.frames.length}</span>
+      <span class="replay-text small grow">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : ""}</span>
+      ${replay.index < replay.frames.length - 1 ? `<button class="btn sm" data-rp="resume" title="Undo back to this moment and keep playing from here">Play from here</button>` : ""}
+      <button class="btn sm primary" data-rp="exit">Exit</button>`;
+  }
+
+  function handleReplay(el) {
+    const action = el.dataset.rp;
+    if (action === "first") replayTo(0);
+    else if (action === "prev") replayTo(replay.index - 1);
+    else if (action === "next") replayTo(replay.index + 1);
+    else if (action === "exit") stopReplay();
+    else if (action === "resume") {
+      const steps = replay.frames.length - 1 - replay.index;
+      stopReplay();
+      for (let i = 0; i < steps; i += 1) undo();
+      toast(`Back ${steps} step${steps === 1 ? "" : "s"}: carry on from here (Redo still works)`, "good");
+    } else if (action === "play") {
+      if (replay.timer) { clearInterval(replay.timer); replay.timer = null; renderReplayBar(); return; }
+      if (replay.index >= replay.frames.length - 1) replay.index = 0;
+      replay.timer = setInterval(() => {
+        if (replay.index >= replay.frames.length - 1) { clearInterval(replay.timer); replay.timer = null; renderReplayBar(); return; }
+        replayTo(replay.index + 1);
+      }, 650);
+      renderReplayBar();
+    }
   }
 
   // ============================================================== INIT

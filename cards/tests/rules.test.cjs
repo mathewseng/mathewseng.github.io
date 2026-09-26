@@ -452,3 +452,55 @@ console.log("card effect and autoplay tests passed");
   assert.equal(wild.table[1].rule.accept, "suit");
 }
 console.log("wizard tests passed");
+
+// Deal-until, value conditions, and smart bots.
+{
+  Engine.setRng(Engine.seededRng("dealer"));
+  for (let i = 0; i < 20; i += 1) {
+    let state = Engine.createTable(Presets.get("blackjack"), { players: 2 });
+    state = run(state, "Deal round");
+    state = run(state, "Dealer plays");
+    const dealer = zone(state, "dealer");
+    const total = V.evaluate("blackjack", dealer.cards.map((id) => ({ rank: state.cards[id].rank, suit: state.cards[id].suit })), {}).value;
+    assert.ok(total >= 17, `dealer stops at 17+ (${total})`);
+    const withoutLast = V.evaluate("blackjack", dealer.cards.slice(0, -1).map((id) => ({ rank: state.cards[id].rank, suit: state.cards[id].suit })), {}).value;
+    if (dealer.cards.length > 2) assert.ok(withoutLast < 17, "dealer didn't overdraw");
+    assert.ok(dealer.cards.every((id) => state.cards[id].faceUp));
+  }
+  let state = Engine.createTable(Presets.get("blackjack"), { players: 1 });
+  state = pull(state, "Kh 9d", zone(state, "dealer").id, "up");
+  const stopped = act(state, { type: "runMacro", steps: [{ op: "stopIf", zone: "dealer", evaluator: "blackjack", cmp: ">=", n: 17 }, { op: "log", text: "not reached" }] });
+  assert.notEqual(lastLog(stopped), "not reached");
+}
+{
+  // A smart Hearts bot takes fewer points than random bots.
+  Engine.setRng(Engine.seededRng("smart-hearts"));
+  const design = Presets.get("hearts");
+  let smartPoints = 0;
+  let otherPoints = 0;
+  for (let game = 0; game < 12; game += 1) {
+    const start = Engine.createTable(design, { players: [{ name: "Smart", botStyle: "smart" }, "R1", "R2", "R3"] });
+    const out = Engine.playOut(start, { deal: "Deal all", maxSteps: 20000 });
+    const totals = Engine.totals(out.state);
+    smartPoints += totals[out.state.players[0].id];
+    otherPoints += (totals[out.state.players[1].id] + totals[out.state.players[2].id] + totals[out.state.players[3].id]) / 3;
+  }
+  assert.ok(smartPoints < otherPoints * 0.8, `smart ${smartPoints} vs random avg ${otherPoints.toFixed(1)}`);
+  // Smart drafting builds better hands than random.
+  let smartBetter = 0;
+  for (let game = 0; game < 20; game += 1) {
+    let state = Engine.createTable(Presets.get("draft-poker"), { players: [{ name: "Smart", botStyle: "smart" }, { name: "Random", botStyle: "random" }] });
+    state = run(state, "Deal packs");
+    for (let pick = 0; pick < 5; pick += 1) {
+      for (const player of state.players) {
+        const play = Engine.pickPlay(state, player.id, player.botStyle);
+        state = act(state, { type: "move", cards: [play.card], to: play.to }, player.id);
+      }
+      if (pick < 4) state = run(state, "Pass packs");
+    }
+    if (state.lastWinner === state.players[0].id) smartBetter += 1;
+  }
+  assert.ok(smartBetter >= 13, `smart drafter won ${smartBetter}/20`);
+  console.log(`smart bots: hearts ${smartPoints} vs ${otherPoints.toFixed(0)}, draft ${smartBetter}/20`);
+}
+console.log("deal-until and smart bot tests passed");

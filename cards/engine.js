@@ -329,6 +329,7 @@
       out: false,
       note: "",
       bot: Boolean(options.bot),
+      botStyle: BOT_STYLES[options.botStyle] ? options.botStyle : "",
       team: cleanText(options.team, 16, ""),
     };
     state.players.push(player);
@@ -888,12 +889,60 @@
     return orderedZones(state, playerId).some((zone) => (zone.visibility !== "public" || zone.kind === "hand") && zone.cards.length);
   }
 
-  /** A bot's choice among its legal plays: random (seeded shuffles make it repeatable), lowest or highest. */
+  const BOT_STYLES = { random: "Random legal card", smart: "Smart (plays to the scoring)", low: "Lowest legal card", high: "Highest legal card" };
+
+  /**
+   * How good a play looks to the "smart" bot. Trick groups: in low-score games
+   * duck under the winning card (or dump the most dangerous card), otherwise
+   * win as cheaply as possible. Table piles: shed the card worth the most in
+   * your hand's scoring, keeping wilds. Your own scored groups: build the best
+   * hand one card at a time.
+   */
+  function scorePlay(state, playerId, play) {
+    const target = state.zones[play.to];
+    const card = state.cards[play.card];
+    const rank = rankValue(card, true) ?? (Number(card.value) || 0);
+    const jitter = rng() * 0.01;
+    if ((target.evals || []).includes("trick")) {
+      const trial = [...target.cards, play.card];
+      const result = evaluateSpec(state, { ...target, cards: trial }, "trick");
+      const wins = result && result.winnerIndex === trial.length - 1;
+      const danger = Number(evaluateSpec(state, { ...target, cards: [play.card] }, "hearts-points")?.value) || 0;
+      if (state.scores.lowWins) return (wins ? -100 - rank - danger * 3 : 100 + rank + danger * 5) + jitter;
+      return (wins ? 200 - rank : -rank) + jitter;
+    }
+    if (target.area === "table") {
+      const from = state.zones[play.from];
+      const spec = from.evals?.[0];
+      const wild = (target.rule?.wild || []).map(normRank).includes(normRank(card.rank));
+      let shed = rank;
+      if (spec) {
+        const before = Number(evaluateSpec(state, from, spec)?.value) || 0;
+        const after = Number(evaluateSpec(state, { ...from, cards: from.cards.filter((id) => id !== play.card) }, spec)?.value) || 0;
+        shed = before - after;
+      }
+      return shed - (wild ? 1000 : 0) + jitter;
+    }
+    const spec = target.evals?.[0];
+    if (spec) return (Number(evaluateSpec(state, { ...target, cards: [...target.cards, play.card] }, spec)?.score) || 0) + jitter;
+    return jitter;
+  }
+
+  /** A bot's choice among its legal plays (random choices follow seeded shuffles). */
   function pickPlay(state, playerId, style = "random") {
     const plays = legalPlays(state, playerId);
     if (!plays.length) return null;
     const onTable = plays.filter((play) => state.zones[play.to]?.area === "table");
     const pool = onTable.length ? onTable : plays;
+    if (style === "smart") {
+      let best = null;
+      let bestScore = -Infinity;
+      for (const play of pool) {
+        const score = scorePlay(state, playerId, play);
+        if (score > bestScore) { best = play; bestScore = score; }
+      }
+      return best;
+    }
     if (style !== "low" && style !== "high") return pool[Math.floor(rng() * pool.length)];
     const value = (play) => rankValue(state.cards[play.card], true) ?? 0;
     return pool.slice().sort((a, b) => (style === "low" ? value(a) - value(b) : value(b) - value(a)))[0];
@@ -905,8 +954,9 @@
    * the bot holds nothing and has no fallback, so nothing changed).
    */
   function botStep(state, playerId, opts = {}) {
+    const style = BOT_STYLES[playerById(state, playerId)?.botStyle] ? playerById(state, playerId).botStyle : opts.style;
     const tryPlay = (source) => {
-      const play = pickPlay(source, playerId, opts.style);
+      const play = pickPlay(source, playerId, style);
       if (!play) return null;
       const advances = Boolean(source.zones[play.to]?.rule?.advance) && source.rulesMode !== "off";
       const before = source.turn.index;
@@ -1077,6 +1127,7 @@
     collect: { label: "Collect all into", fields: ["to", "shuffle"] },
     sort: { label: "Sort", fields: ["zone", "by"] },
     refill: { label: "Refill up to", fields: ["from", "to", "count"] },
+    dealUntil: { label: "Deal until", fields: ["from", "to", "face", "evaluator", "cmp", "n"] },
     passZones: { label: "Pass groups around", fields: ["zone", "dir"] },
     findWinner: { label: "Find winner", fields: ["zone", "evaluator", "low"] },
     score: { label: "Score points", fields: ["who", "amount"] },
@@ -1091,7 +1142,7 @@
     nextRound: { label: "Next round", fields: [] },
     phase: { label: "Set phase", fields: ["text"] },
     nextPhase: { label: "Next phase", fields: [] },
-    stopIf: { label: "Stop if", fields: ["zone", "cmp", "n"] },
+    stopIf: { label: "Stop if", fields: ["zone", "evaluator", "cmp", "n"] },
     runAction: { label: "Run another action", fields: ["macro", "times"] },
     log: { label: "Announce", fields: ["text"] },
   };
@@ -1140,7 +1191,8 @@
       case "awardPot": return `Pot → ${who(step.who, "winner")}`;
       case "setTurn": return `Turn → ${(TURN_OPTIONS[step.who || "next"] || step.who).toLowerCase()}`;
       case "phase": return `Phase: ${step.text}`;
-      case "stopIf": return `Stop if ${step.zone} ${STOP_CMP[step.cmp || "=="] || step.cmp} ${step.n ?? 0}`;
+      case "stopIf": return `Stop if ${step.zone}${step.evaluator ? " scores" : " has"} ${STOP_CMP[step.cmp || "=="] || step.cmp} ${step.n ?? 0}${step.evaluator ? "" : " cards"}`;
+      case "dealUntil": return `Deal ${step.from || "deck"} → ${step.to} until it scores ${STOP_CMP[step.cmp || ">="] || step.cmp} ${step.n ?? 0}`;
       case "runAction": {
         const macro = state ? findMacro(state, step.macro) : null;
         return `Run “${macro?.label || step.macro || "?"}”${Number(step.times) > 1 ? " ×" + step.times : ""}`;
@@ -1281,6 +1333,19 @@
     return resolveZones(state, ref, actor, ctx).reduce((sum, id) => sum + state.zones[id].cards.length, 0);
   }
 
+  /** Total evaluator value of the groups a reference names (e.g. a blackjack total). */
+  function valueIn(state, ref, spec, actor, ctx) {
+    return resolveZones(state, ref, actor, ctx).reduce((sum, id) => {
+      const zone = state.zones[id];
+      const result = evaluateSpec(state, zone, spec || zone.evals?.[0]);
+      return sum + (Number(result?.value) || 0);
+    }, 0);
+  }
+
+  function compare(a, cmp, b) {
+    return { "==": a === b, "!=": a !== b, ">": a > b, ">=": a >= b, "<": a < b, "<=": a <= b }[cmp || "=="];
+  }
+
   function runSteps(state, steps, actor, ctx = {}) {
     for (const step of steps || []) {
       if (runStep(state, step, actor, ctx) === "stop") return "stop";
@@ -1408,10 +1473,21 @@
       case "phase": state.turn.phase = cleanText(fillText(state, step.text, ctx), 40, ""); break;
       case "nextPhase": HANDLERS.nextPhase(state, {}, actor); break;
       case "stopIf": {
-        const count = countIn(state, step.zone, actor, ctx);
-        const n = Number(step.n) || 0;
-        const hit = { "==": count === n, "!=": count !== n, ">": count > n, ">=": count >= n, "<": count < n, "<=": count <= n }[step.cmp || "=="];
-        if (hit) return "stop";
+        const measured = step.evaluator ? valueIn(state, step.zone, step.evaluator, actor, ctx) : countIn(state, step.zone, actor, ctx);
+        if (compare(measured, step.cmp || "==", Number(step.n) || 0)) return "stop";
+        break;
+      }
+      case "dealUntil": {
+        const from = zones(step.from || "deck")[0];
+        const to = zones(step.to)[0];
+        if (!from || !to || from === to) break;
+        const target = Number(step.n) || 0;
+        let dealt = 0;
+        while (dealt < 20 && state.zones[from].cards.length && !compare(valueIn(state, to, step.evaluator, actor, ctx), step.cmp || ">=", target)) {
+          moveCards(state, takeTop(state, from, 1), to, { face: step.face || undefined });
+          dealt += 1;
+        }
+        pushLog(state, actor, `${zoneLabel(state, state.zones[to])} drew ${dealt} (now ${fmt(valueIn(state, to, step.evaluator, actor, ctx))})`);
         break;
       }
       case "runAction": {
@@ -2038,6 +2114,7 @@
       if ("out" in patch) player.out = Boolean(patch.out);
       if ("note" in patch) player.note = cleanText(patch.note, 120, "");
       if ("bot" in patch) player.bot = Boolean(patch.bot);
+      if ("botStyle" in patch) player.botStyle = BOT_STYLES[patch.botStyle] ? patch.botStyle : "";
       if ("team" in patch) player.team = cleanText(patch.team, 16, "");
     },
 
@@ -2402,6 +2479,7 @@
       player.counters = player.counters || {};
       player.chips = Number(player.chips) || 0;
       player.bot = Boolean(player.bot);
+      player.botStyle = BOT_STYLES[player.botStyle] ? player.botStyle : "";
       player.team = cleanText(player.team, 16, "");
     }
     return state;
@@ -2583,6 +2661,8 @@
     checkMove,
     legalPlays,
     pickPlay,
+    scorePlay,
+    BOT_STYLES,
     botStep,
     playOut,
     cardMatches,
