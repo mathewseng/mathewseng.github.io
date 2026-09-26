@@ -47,23 +47,31 @@ const pageNames: Record<string, string> = {
 
 function Brand({ onNavigate }: { onNavigate?: () => void } = {}) {
   return (
-    <NavLink
-      to="/"
-      className="flex min-h-11 items-center gap-2.5 sm:gap-3"
-      onClick={onNavigate}
+    <nav
+      aria-label="Breadcrumb"
+      className="flex min-h-11 items-center gap-2.5 text-[0.92rem] text-[var(--muted)]"
     >
-      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-sm font-black text-[var(--accent-ink)]">
-        GT
-      </span>
-      <span>
-        <strong className="block text-sm font-black tracking-[-0.02em]">
-          Gym Tracker
-        </strong>
-        <span className="block text-[0.67rem] font-bold tracking-wide text-[var(--muted)]">
-          TRAINING LOG
+      <a
+        href="/"
+        className="flex items-center gap-2.5 transition-colors hover:text-[var(--ink)]"
+      >
+        <span className="mark" aria-hidden="true">
+          MS
         </span>
+        Projects
+      </a>
+      <span aria-hidden="true" className="text-[var(--faint)]">
+        /
       </span>
-    </NavLink>
+      <NavLink
+        to="/"
+        end
+        className="font-semibold text-[var(--ink)]"
+        onClick={onNavigate}
+      >
+        Gym Tracker
+      </NavLink>
+    </nav>
   );
 }
 
@@ -152,7 +160,7 @@ export default function AppShell({ children }: PropsWithChildren) {
       <aside
         inert={mobileMenuOpen}
         aria-hidden={mobileMenuOpen}
-        className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[var(--line)] bg-[var(--surface)] p-5 lg:flex lg:flex-col"
+        className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_72%,transparent)] p-5 backdrop-blur-xl lg:flex lg:flex-col"
       >
         <Brand />
         <nav className="mt-9 grid gap-1" aria-label="Primary navigation">
@@ -163,9 +171,9 @@ export default function AppShell({ children }: PropsWithChildren) {
               end={end}
               className={({ isActive }) =>
                 clsx(
-                  "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors",
+                  "flex min-h-11 items-center gap-3 rounded-full px-3.5 text-sm font-semibold transition-colors",
                   isActive
-                    ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                    ? "bg-[var(--surface-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--line-strong)] [&>svg]:text-[var(--accent)]"
                     : "text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]",
                 )
               }
@@ -186,7 +194,7 @@ export default function AppShell({ children }: PropsWithChildren) {
           </NavLink>
           <NavLink
             to="/settings"
-            className="flex min-h-11 items-center justify-between rounded-xl px-3 text-sm font-bold text-[var(--muted)] hover:bg-[var(--surface-soft)]"
+            className="flex min-h-11 items-center justify-between rounded-full px-3.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]"
           >
             <span className="flex items-center gap-3">
               <Settings size={17} /> Data & settings
@@ -204,12 +212,12 @@ export default function AppShell({ children }: PropsWithChildren) {
             </div>
             <div className="hidden lg:block">
               <p className="eyebrow">Personal training system</p>
-              <p className="mt-0.5 text-sm font-extrabold">
+              <p className="mt-0.5 text-sm font-bold">
                 {pageNames[location.pathname] ?? "Gym Tracker"}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-[var(--muted)] sm:flex">
+              <div className="hidden items-center gap-2 rounded-full border border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_70%,transparent)] px-3.5 py-2 text-xs font-semibold text-[var(--muted)] backdrop-blur-md sm:flex">
                 <Trophy size={15} className="text-[var(--orange)]" />
                 Bench goal{" "}
                 <span className="text-[var(--ink)]">
@@ -290,9 +298,9 @@ export default function AppShell({ children }: PropsWithChildren) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
                     clsx(
-                      "flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-extrabold",
+                      "flex min-h-12 items-center gap-3 rounded-full px-3.5 text-sm font-semibold",
                       isActive
-                        ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                        ? "bg-[var(--surface-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--line-strong)] [&>svg]:text-[var(--accent)]"
                         : "text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]",
                     )
                   }
@@ -306,9 +314,9 @@ export default function AppShell({ children }: PropsWithChildren) {
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
                   clsx(
-                    "flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-extrabold",
+                    "flex min-h-12 items-center gap-3 rounded-full px-3.5 text-sm font-semibold",
                     isActive
-                      ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                      ? "bg-[var(--surface-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--line-strong)] [&>svg]:text-[var(--accent)]"
                       : "text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]",
                   )
                 }

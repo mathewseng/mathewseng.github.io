@@ -179,7 +179,7 @@ export default function Exercises() {
                   aria-pressed={selected?.id === exercise.id}
                   className={
                     selected?.id === exercise.id
-                      ? "flex w-full items-center justify-between gap-3 rounded-xl bg-[var(--accent)] px-3 py-3 text-left text-[var(--accent-ink)]"
+                      ? "flex w-full items-center justify-between gap-3 rounded-xl bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] px-3 py-3 text-left shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--accent)_45%,transparent)]"
                       : "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left hover:bg-[var(--surface-soft)]"
                   }
                 >
@@ -190,7 +190,7 @@ export default function Exercises() {
                     <span
                       className={
                         selected?.id === exercise.id
-                          ? "mt-0.5 block text-[0.65rem] font-semibold opacity-70"
+                          ? "mt-0.5 block text-[0.65rem] font-semibold text-[var(--accent)]"
                           : "mt-0.5 block text-[0.65rem] font-semibold text-[var(--muted)]"
                       }
                     >
@@ -211,19 +211,12 @@ export default function Exercises() {
 
         {selected ? (
           <div className="min-w-0">
-            <Surface
-              raised
-              className="overflow-hidden bg-[var(--accent)] p-5 text-[var(--accent-ink)] sm:p-6"
-            >
+            <Surface raised className="surface-feature overflow-hidden p-5 sm:p-6">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="max-w-2xl">
                   <div className="flex flex-wrap gap-2">
-                    <Badge className="!border-white/15 !bg-white/10 !text-current">
-                      {selected.category}
-                    </Badge>
-                    <Badge className="!border-white/15 !bg-white/10 !text-current">
-                      {selected.equipment.join(" · ")}
-                    </Badge>
+                    <Badge tone="accent">{selected.category}</Badge>
+                    <Badge tone="accent">{selected.equipment.join(" · ")}</Badge>
                   </div>
                   <h2
                     ref={detailHeadingRef}
@@ -232,9 +225,11 @@ export default function Exercises() {
                   >
                     {selected.canonicalName}
                   </h2>
-                  <p className="mt-3 text-sm leading-6 opacity-75">{selected.notes}</p>
+                  <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+                    {selected.notes}
+                  </p>
                 </div>
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[var(--accent)]">
                   <Dumbbell size={22} />
                 </span>
               </div>
@@ -242,7 +237,7 @@ export default function Exercises() {
                 {selected.muscleGroups.map((muscle) => (
                   <span
                     key={muscle}
-                    className="rounded-full border border-white/15 px-3 py-1 text-[0.68rem] font-bold"
+                    className="rounded-full border border-[var(--line-strong)] px-3 text-[var(--muted)] py-1 text-[0.68rem] font-bold"
                   >
                     {muscle}
                   </span>

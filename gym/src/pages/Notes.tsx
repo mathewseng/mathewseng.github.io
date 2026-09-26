@@ -40,25 +40,22 @@ export default function Notes() {
         description="The details that make a number comparable—or tell you when it should not be compared at all."
       />
 
-      <Surface
-        raised
-        className="mb-5 overflow-hidden bg-[var(--accent)] p-5 text-[var(--accent-ink)] sm:p-6"
-      >
+      <Surface raised className="surface-feature mb-5 overflow-hidden p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-3xl">
-            <Badge className="!border-white/15 !bg-white/10 !text-current">
+            <Badge tone="accent">
               <NotebookText size={12} /> Living reference
             </Badge>
             <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">
               Good tracking remembers the setup.
             </h2>
-            <p className="mt-2 text-sm leading-6 opacity-75">
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
               A 95 lb Smith bench, a free-weight barbell bench, and a different Smith
               machine are not automatically the same record. These notes preserve the
               conditions around the work.
             </p>
           </div>
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[var(--accent)]">
             <Dumbbell size={24} />
           </span>
         </div>

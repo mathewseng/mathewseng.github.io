@@ -2,6 +2,19 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-26 — Match the site's hub design
+
+### Changed
+
+- Restyled the app to match the landing page and game hubs: near-black background with an accent glow and dot grid, the Inter/system type stack, blue accent, gradient cards, pill buttons and navigation, and an "MS Projects / Gym Tracker" breadcrumb that links back to the site.
+- Replaced the solid accent panels on the dashboard, exercise detail, session builder, and notes with dark featured cards.
+- Moved the light theme to the same cool neutral palette, recoloured calendar workout types and the readiness gauge to the site palette, and set the browser theme colour to match.
+- Page sections now rise in on load; reduced-motion settings turn this off.
+
+### Fixed
+
+- Buttons now use their intended font size and weight. An unlayered `font: inherit` reset had been overriding every button's type styles.
+
 ## 2026-09-26 — Rename to Gym Tracker
 
 ### Changed

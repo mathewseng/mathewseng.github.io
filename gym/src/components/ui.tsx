@@ -32,7 +32,7 @@ export function Badge({
 }>) {
   const tones = {
     neutral: "border-[var(--line)] bg-[var(--surface-soft)] text-[var(--muted)]",
-    accent: "border-transparent bg-[var(--acid-soft)] text-[var(--ink)]",
+    accent: "border-transparent bg-[var(--acid-soft)] text-[var(--accent)]",
     warm: "border-transparent bg-orange-500/12 text-[var(--orange)]",
     danger: "border-transparent bg-red-500/12 text-[var(--danger)]",
     quality: "border-dashed border-[var(--line-strong)] text-[var(--muted)]",
@@ -65,8 +65,10 @@ export function PageHeader({
   return (
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-3xl">
-        {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
-        <h1 className="text-3xl font-black tracking-[-0.045em] sm:text-4xl">{title}</h1>
+        {eyebrow ? <p className="eyebrow-accent mb-3">{eyebrow}</p> : null}
+        <h1 className="page-title text-3xl font-black tracking-[-0.045em] sm:text-5xl">
+          {title}
+        </h1>
         {description ? (
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {description}

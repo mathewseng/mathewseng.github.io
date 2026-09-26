@@ -50,9 +50,9 @@ const workoutTypes: WorkoutType[] = ["push", "pull", "legs", "full-body"];
 function readinessColor(level: string): string {
   switch (level) {
     case "high":
-      return "var(--acid)";
+      return "var(--accent-2)";
     case "moderate":
-      return "#86efac";
+      return "#f4c95d";
     case "low":
       return "var(--orange)";
     default:
@@ -249,30 +249,27 @@ export default function Suggested() {
             title="Today’s plan"
             description="A deterministic suggestion—not an AI coach claim."
           />
-          <Surface
-            raised
-            className="overflow-hidden bg-[var(--accent)] text-[var(--accent-ink)]"
-          >
+          <Surface raised className="surface-feature overflow-hidden">
             <div className="p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge className="!border-white/15 !bg-white/10 !text-current">
+                    <Badge tone="accent">
                       <Sparkles size={12} /> {suggestion.sessionType}
                     </Badge>
-                    <Badge className="!border-white/15 !bg-white/10 !text-current">
+                    <Badge tone="accent">
                       <Clock3 size={12} /> {suggestion.desiredDurationMinutes} min
                     </Badge>
                   </div>
                   <h2 className="mt-5 text-3xl font-black tracking-[-0.05em] sm:text-4xl">
                     {suggestion.title}
                   </h2>
-                  <p className="mt-3 max-w-xl text-sm leading-6 opacity-75">
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
                     Volume is set to {Math.round(suggestion.volumeMultiplier * 100)}% of
                     the standard template based on the recorded readiness signals.
                   </p>
                 </div>
-                <div className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full border-[10px] border-white/10">
+                <div className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full border-[10px] border-[var(--surface-soft)]">
                   <div
                     className="absolute inset-[-10px] rounded-full border-[10px] border-transparent"
                     style={{
@@ -282,19 +279,19 @@ export default function Suggested() {
                   />
                   <div className="text-center">
                     <p className="text-2xl font-black">{suggestion.readiness.score}</p>
-                    <p className="text-[0.58rem] font-bold uppercase tracking-wide opacity-65">
+                    <p className="text-[0.58rem] font-bold uppercase tracking-wide text-[var(--muted)]">
                       of 6
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
+              <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-4">
                 <span className="text-xs font-extrabold capitalize">
                   {suggestion.readiness.level} readiness
                 </span>
-                <span className="h-1 w-1 rounded-full bg-current opacity-50" />
-                <span className="text-xs opacity-70">
+                <span className="h-1 w-1 rounded-full bg-[var(--faint)]" />
+                <span className="text-xs text-[var(--muted)]">
                   {requestedType === "auto"
                     ? `Rotated from ${lastWorkoutType}`
                     : "Session type overridden by you"}

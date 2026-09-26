@@ -303,29 +303,25 @@ export default function Dashboard() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.7fr)]">
         <Surface
           raised
-          className="relative min-h-[20rem] overflow-hidden bg-[var(--accent)] p-5 text-[var(--accent-ink)] sm:min-h-[22rem] sm:p-7"
+          className="surface-feature relative min-h-[20rem] overflow-hidden p-5 sm:min-h-[22rem] sm:p-7"
         >
           <div
-            className="absolute inset-y-0 right-0 w-1/2 opacity-15 dot-grid"
+            className="absolute inset-y-0 right-0 w-1/2 opacity-70 dot-grid [mask-image:linear-gradient(to_left,#000,transparent)]"
             aria-hidden="true"
           />
           <div className="relative flex h-full flex-col">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="!border-white/15 !bg-white/10 !text-current">
+              <Badge tone="accent">
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
-              <Badge className="!border-white/15 !bg-white/10 !text-current">
-                Pull → Legs next
-              </Badge>
+              <Badge tone="accent">Pull → Legs next</Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] opacity-70">
-                Suggested next session
-              </p>
+              <p className="eyebrow-accent">Suggested next session</p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
                 Legs, build carefully.
               </h2>
-              <p className="mt-4 max-w-lg text-sm leading-6 opacity-75">
+              <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
                 Your latest session was Pull on September 22. For the next leg session,
                 use controlled Smith squats and supported work, and record how your back
                 feels before and after.
@@ -335,22 +331,19 @@ export default function Dashboard() {
               <div className="flex items-center gap-5">
                 <div>
                   <p className="text-2xl font-black">45–60</p>
-                  <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-wide text-[var(--muted)]">
                     minutes
                   </p>
                 </div>
-                <div className="h-9 w-px bg-current opacity-20" />
+                <div className="h-9 w-px bg-[var(--line-strong)]" />
                 <div>
                   <p className="text-2xl font-black">2–3</p>
-                  <p className="text-[0.66rem] font-bold uppercase tracking-wide opacity-65">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-wide text-[var(--muted)]">
                     target RIR
                   </p>
                 </div>
               </div>
-              <Link
-                to="/suggested"
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--accent-ink)] px-4 text-sm font-extrabold text-[var(--accent)]"
-              >
+              <Link to="/suggested" className="button-primary">
                 Tune readiness <ArrowRight size={16} />
               </Link>
             </div>

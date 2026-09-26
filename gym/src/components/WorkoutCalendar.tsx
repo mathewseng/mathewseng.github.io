@@ -52,13 +52,14 @@ function getMonthCells(month: Date): Date[] {
   });
 }
 
+// Colours from the site's shared palette (landing page and hubs).
 const typeColor: Record<Workout["type"], string> = {
-  push: "#d9ff52",
-  pull: "#7dd3fc",
-  legs: "#ffb88b",
-  "full-body": "#c4b5fd",
-  upper: "#86efac",
-  other: "#d4d4d4",
+  push: "#8ab4ff",
+  pull: "#8fd9b6",
+  legs: "#ffb77a",
+  "full-body": "#b6a6ff",
+  upper: "#f4c95d",
+  other: "#9aa7b7",
 };
 
 export default function WorkoutCalendar({
@@ -174,7 +175,7 @@ export default function WorkoutCalendar({
                   {dayWorkouts.slice(0, compact ? 1 : 2).map((workout) => (
                     <span
                       key={workout.id}
-                      className="h-2 w-2 rounded-full sm:block sm:h-auto sm:w-auto sm:truncate sm:rounded-md sm:px-1.5 sm:py-1 sm:text-[0.68rem] sm:font-extrabold sm:uppercase sm:tracking-wide sm:text-[#10130f]"
+                      className="h-2 w-2 rounded-full sm:block sm:h-auto sm:w-auto sm:truncate sm:rounded-md sm:px-1.5 sm:py-1 sm:text-[0.68rem] sm:font-extrabold sm:uppercase sm:tracking-wide sm:text-[#0b0d12]"
                       style={{ backgroundColor: typeColor[workout.type] }}
                       aria-hidden="true"
                     >
