@@ -1543,7 +1543,7 @@
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
-    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], "Deck-building": ["●", "🏰", "b"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
+    const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], "Deck-building": ["●", "🏰", "b"], Climbing: ["9♠", "9♥", "K♣"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
     return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}" data-search="${esc(`${preset.name} ${preset.family} ${preset.tagline || ""} ${preset.description || ""}`.toLowerCase())}">
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
@@ -1713,6 +1713,7 @@
             <label class="check"><input type="checkbox" name="rAdvance"${rule.advance ? " checked" : ""}> Turn passes after playing here</label>
             <label class="check"><input type="checkbox" name="rFlipTop"${rule.flipTop ? " checked" : ""}> Reveal the new top card</label>
             <label class="check"><input type="checkbox" name="rAceHigh"${rule.aceHigh ? " checked" : ""}> Aces high</label>
+            <label class="check" title="Singles, pairs, triples…: same size as the last play, higher rank"><input type="checkbox" name="rClimb"${rule.climb ? " checked" : ""}> Climbing sets</label>
           </div>
         </div>
         <label class="field"><span>Advanced: evaluator specs <span class="dim">id@boardKey to rank against a specific board</span></span><input type="text" name="specs" value="${esc(specOverrides.join(", "))}" placeholder="poker-omaha@board-2"></label>
@@ -1753,7 +1754,7 @@
         const rule = {
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
           first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(), cost: form.rCost.value.trim(),
-          follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked,
+          follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked, climb: form.rClimb.checked,
         };
         const patch = {
           name: form.name.value, kind: form.kind.value, layout: form.layout.value, visibility: form.visibility.value, face: form.face.value,
@@ -4173,7 +4174,7 @@
     form.rCost.value = rule.cost || "";
     form.rFirst.value = rule.first || "";
     form.rWild.value = (rule.wild || []).join(", ");
-    for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"]]) form[field].checked = Boolean(rule[key]);
+    for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"], ["rClimb", "climb"]]) form[field].checked = Boolean(rule[key]);
   }
 
   function actionTemplates(v) {
@@ -4529,11 +4530,12 @@
     try { play = E.pickPlay(source, me, "smart"); } catch (error) { play = null; }
     if (!play) return toast("No legal play right now: draw or pass.", "warn");
     selection.clear();
-    selection.add(play.card);
+    (play.cards || [play.card]).forEach((id) => selection.add(id));
     render();
     const card = view.cards[play.card];
     showPing({ zone: play.to, name: "Hint", color: "#f4c95d" });
-    toast(`💡 ${card?.visible ? (card.custom ? card.label : E.cardName(card)) : "That card"} → ${view.zones[play.to]?.name || "?"} (press P to play it)`);
+    const what = card?.visible ? (card.custom ? card.label : E.cardName(card)) : "That card";
+    toast(`💡 ${play.cards?.length > 1 ? `${play.cards.length} × ${what.replace(/[♠♥♦♣]/g, "")}` : what}${play.buy ? " (buy)" : ""} → ${view.zones[play.to]?.name || "?"} (press P to play it)`);
   }
 
   // ================================================================== QR

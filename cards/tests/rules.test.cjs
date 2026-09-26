@@ -703,3 +703,35 @@ console.log("deck-building tests passed");
   assert.equal(Engine.toPreset(Engine.createTable(Presets.get("crazy-eights"), {})).mustPlay, true);
 }
 console.log("must-play tests passed");
+
+// Climbing: sets that match size and beat rank; passes clear the pile; finishers score.
+{
+  Engine.setRng(Engine.seededRng("president"));
+  let state = Engine.createTable(Presets.get("president"), { players: 4 });
+  state = run(state, "Deal");
+  assert.ok(state.players.every((p) => zone(state, "hand", p.id).cards.length === 13));
+  const p0 = current(state);
+  const pile = zone(state, "pile").id;
+  // Rig: current player gets a pair of 5s, the next a pair of 9s and a single king.
+  const give = (specs, to) => { state = act(state, { type: "move", cards: specs.map((spec) => cardIn(state, spec)), to: zone(state, "hand", to).id }); };
+  const order = state.players.map((p) => p.id);
+  const next = order[(order.indexOf(p0) + 1) % 4];
+  give(["5s", "5h"], p0);
+  give(["9s", "9h", "Kd"], next);
+  assert.throws(() => act(state, { type: "move", cards: ["5s", "9s"].map((s) => cardIn(state, s)), to: pile }, p0), /one rank/);
+  state = act(state, { type: "move", cards: ["5s", "5h"].map((s) => cardIn(state, s)), to: pile }, p0);
+  assert.equal(current(state), next);
+  assert.throws(() => act(state, { type: "move", cards: [cardIn(state, "Kd")], to: pile }, next), /Play 2 cards/);
+  const plays = Engine.legalPlays(state, next);
+  assert.ok(plays.some((play) => play.cards.length === 2), "bots see pair plays");
+  assert.ok(plays.every((play) => play.cards.length === 2));
+  state = act(state, { type: "move", cards: ["9s", "9h"].map((s) => cardIn(state, s)), to: pile }, next);
+  // Everyone else passes: the pile clears and the 9s player leads.
+  for (let i = 0; i < 3; i += 1) state = run(state, "Pass", current(state));
+  assert.equal(zone(state, "pile").cards.length, 0);
+  assert.equal(current(state), next);
+  const out = Engine.playOut(Engine.createTable(Presets.get("president"), { players: 4 }), { deal: "Deal", maxSteps: 40000 });
+  assert.ok(out.finished, `president finishes (${out.steps} steps)`);
+  assert.equal(Engine.lintDesign(Engine.createTable(Presets.get("president"), {})).filter((i) => i.level === "error").length, 0);
+}
+console.log("climbing tests passed");

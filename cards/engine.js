@@ -874,16 +874,21 @@
     if (rule.place && !whoAllows(state, rule.place, target, actor)) soft.push(`Only ${whoPhrase(rule.place, target)} may play to ${target.name}.`);
     if (rule.phase && !sameText(rule.phase, state.turn.phase)) soft.push(`${target.name} only takes cards during ${rule.phase}.`);
     if (rule.once && (ids.length > 1 || target.cards.some((id) => state.cards[id]?.playedBy === actor))) soft.push(`One card each in ${target.name}.`);
-    let top = target.cards.length ? state.cards[target.cards[target.cards.length - 1]] : null;
-    for (const id of ids) {
-      const card = state.cards[id];
-      if (!card) continue;
-      const problem = placeProblem(state, rule, target, card, top, zoneOf(state, id));
-      if (problem) {
-        soft.push(problem);
-        break;
+    if (rule.climb) {
+      const problem = climbProblem(state, rule, target, ids);
+      if (problem) soft.push(problem);
+    } else {
+      let top = target.cards.length ? state.cards[target.cards[target.cards.length - 1]] : null;
+      for (const id of ids) {
+        const card = state.cards[id];
+        if (!card) continue;
+        const problem = placeProblem(state, rule, target, card, top, zoneOf(state, id));
+        if (problem) {
+          soft.push(problem);
+          break;
+        }
+        top = card;
       }
-      top = card;
     }
     if (rule.meld && rule.meld !== "none") {
       const all = [...target.cards, ...ids.filter((id) => !target.cards.includes(id))].map((id) => state.cards[id]).filter(Boolean);
@@ -891,6 +896,25 @@
     }
     if (target.limit && target.cards.length + ids.filter((id) => !target.cards.includes(id)).length > target.limit) soft.push(`${target.name} holds at most ${target.limit}.`);
     return { hard, soft };
+  }
+
+  /** Climbing (President-style): a set of one rank, the same size as the last play, and higher. */
+  function climbProblem(state, rule, target, ids) {
+    const cards = ids.map((id) => state.cards[id]).filter(Boolean);
+    if (!cards.length) return "";
+    const rank = normRank(cards[0].rank);
+    if (cards.some((card) => normRank(card.rank) !== rank)) return "Play cards of one rank together.";
+    if (!target.cards.length) return "";
+    const pile = target.cards.map((id) => state.cards[id]);
+    const top = pile[pile.length - 1];
+    let previous = 0;
+    for (let i = pile.length - 1; i >= 0 && normRank(pile[i].rank) === normRank(top.rank); i -= 1) previous += 1;
+    if (cards.length !== previous) return `Play ${previous} card${previous === 1 ? "" : "s"} to match the last play.`;
+    const aceHigh = rule.aceHigh !== false;
+    const a = rankValue(cards[0], aceHigh);
+    const b = rankValue(top, aceHigh);
+    if (a != null && b != null && a <= b) return `Beat the ${cardName(top)}: play a higher rank.`;
+    return "";
   }
 
   /** Does this pile form a valid (possibly unfinished) set or run? Jokers and wild ranks fill gaps. */
@@ -933,6 +957,7 @@
     const rank = rankValue(card, true) ?? (Number(card.value) || 0);
     const jitter = rng() * 0.01;
     if (play.buy) return 1000 + (Number(card.value) || 0) * 10 + jitter;
+    if (target.rule?.climb) return (play.cards?.length || 1) * 30 - rank + jitter;
     if ((target.evals || []).includes("trick")) {
       const trial = [...target.cards, play.card];
       const result = evaluateSpec(state, { ...target, cards: trial }, "trick");
@@ -990,7 +1015,7 @@
       if (!play) return null;
       const advances = Boolean(source.zones[play.to]?.rule?.advance) && source.rulesMode !== "off";
       const before = source.turn.index;
-      let next = reduce(source, { type: "move", cards: [play.card], to: play.to }, playerId);
+      let next = reduce(source, { type: "move", cards: play.cards || [play.card], to: play.to }, playerId);
       // One play per turn unless the design lets players keep going until they're stuck.
       if (!advances && source.playsPerTurn !== 0 && next.turn.index === before && next.players[before]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
       return next;
@@ -1056,9 +1081,27 @@
     for (const from of sources) {
       for (const cardId of from.cards) {
         for (const to of targets) {
-          if (to.id === from.id) continue;
+          if (to.id === from.id || to.rule.climb) continue;
           const check = checkMove(state, [cardId], to.id, playerId, { force: true });
           if (!check.hard.length && !check.soft.length) out.push({ card: cardId, from: from.id, to: to.id });
+        }
+      }
+    }
+    // Climbing groups take sets: every size of every rank you hold.
+    for (const to of targets.filter((zone) => zone.rule.climb)) {
+      for (const from of sources) {
+        if (from.id === to.id) continue;
+        const byRank = new Map();
+        for (const id of from.cards) {
+          const key = normRank(state.cards[id]?.rank);
+          byRank.set(key, [...(byRank.get(key) || []), id]);
+        }
+        for (const group of byRank.values()) {
+          for (let size = 1; size <= group.length; size += 1) {
+            const cards = group.slice(0, size);
+            const check = checkMove(state, cards, to.id, playerId, { force: true });
+            if (!check.hard.length && !check.soft.length) out.push({ card: cards[0], cards, from: from.id, to: to.id });
+          }
         }
       }
     }
@@ -1100,6 +1143,7 @@
     if (rule.meld) parts.push(`must form ${RULE_MELD[rule.meld].toLowerCase()}`);
     if (rule.phase) parts.push(`only during ${rule.phase}`);
     if (rule.cost) parts.push(`taking a card costs its value in ${rule.cost}`);
+    if (rule.climb) parts.push("play a set of one rank that matches the last play's size and beats its rank");
     if (rule.follow) parts.push("must follow the led suit when able");
     if (rule.once) parts.push("one card per player");
     if (rule.advance) parts.push("the turn passes after playing here");
@@ -1311,7 +1355,9 @@
     endGame: { label: "End the game", fields: [] },
     phase: { label: "Set phase", fields: ["text"] },
     nextPhase: { label: "Next phase", fields: [] },
-    stopIf: { label: "Stop if", fields: ["zone", "evaluator", "cmp", "n"] },
+    stopIf: { label: "Stop if", fields: ["zone", "evaluator", "cmp", "n", "formula"] },
+    sitOut: { label: "Sit out", fields: ["who"] },
+    bringBack: { label: "Bring everyone back", fields: [] },
     runAction: { label: "Run another action", fields: ["macro", "times"] },
     log: { label: "Announce", fields: ["text"] },
   };
@@ -1364,7 +1410,10 @@
       case "awardPot": return `Pot → ${who(step.who, "winner")}`;
       case "setTurn": return `Turn → ${(TURN_OPTIONS[step.who || "next"] || step.who).toLowerCase()}`;
       case "phase": return `Phase: ${step.text}`;
-      case "stopIf": return `Stop if ${step.zone}${step.evaluator ? " scores" : " has"} ${STOP_CMP[step.cmp || "=="] || step.cmp} ${step.n ?? 0}${step.evaluator ? "" : " cards"}`;
+      case "sitOut": return `${who(step.who)} sit${step.who === "all" || step.who === "others" ? "" : "s"} out`;
+      case "bringBack": return "Everyone back in";
+      case "stopIf": if (step.formula) return `Stop if ${step.formula}`;
+        return `Stop if ${step.zone}${step.evaluator ? " scores" : " has"} ${STOP_CMP[step.cmp || "=="] || step.cmp} ${step.n ?? 0}${step.evaluator ? "" : " cards"}`;
       case "dealUntil": return `Deal ${step.from || "deck"} → ${step.to} until it scores ${STOP_CMP[step.cmp || ">="] || step.cmp} ${step.n ?? 0}`;
       case "runAction": {
         const macro = state ? findMacro(state, step.macro) : null;
@@ -1660,7 +1709,17 @@
       case "endGame": endGameNow(state); break;
       case "phase": state.turn.phase = cleanText(fillText(state, step.text, ctx), 40, ""); break;
       case "nextPhase": HANDLERS.nextPhase(state, {}, actor); break;
+      case "sitOut":
+        for (const player of playersFor(state, step.who, ctx, actor)) player.out = true;
+        if (state.players[state.turn.index]?.out) advanceTurn(state, 1);
+        break;
+      case "bringBack": state.players.forEach((player) => { player.out = false; }); break;
       case "stopIf": {
+        if (step.formula) {
+          const viewer = state.players[state.turn.index]?.id || state.players[0]?.id;
+          if (viewer && evalFormula(step.formula, formulaVars(state, viewer))) return "stop";
+          break;
+        }
         const measured = step.evaluator ? valueIn(state, step.zone, step.evaluator, actor, ctx) : countIn(state, step.zone, actor, ctx);
         if (compare(measured, step.cmp || "==", Number(step.n) || 0)) return "stop";
         break;
@@ -1754,6 +1813,7 @@
       const index = indexOf(who === "winner" ? ctx.winner || state.lastWinner : ctx.subject);
       if (index >= 0) state.turn.index = index;
     } else if (who !== "current" && Number.isInteger(Number(who))) state.turn.index = clampInt(who, 0, n - 1, 0);
+    if (state.players[state.turn.index]?.out) advanceTurn(state, 1);
   }
 
   function nextRound(state, actor) {
@@ -1973,7 +2033,7 @@
     if (first) rule.first = first;
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
     if (wild.length) rule.wild = wild;
-    for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh"]) if (raw[flag]) rule[flag] = true;
+    for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb"]) if (raw[flag]) rule[flag] = true;
     return rule;
   }
 
@@ -2896,7 +2956,7 @@
         if (step.evaluator && !evalOk(step.evaluator)) add("error", `${where} scores with a missing evaluator.`);
         if (step.op === "runAction" && !findMacro(state, step.macro)) add("error", `${where} runs an action that no longer exists.`);
         if ((step.op === "counter" || step.op === "setCounter" || step.op === "counterFormula") && !counters.has(String(step.name || "").toLowerCase())) add("error", `${where} changes a counter that doesn't exist.`);
-        if ((step.op === "scoreFormula" || step.op === "counterFormula") && state.players.length) {
+        if ((step.op === "scoreFormula" || step.op === "counterFormula" || (step.op === "stopIf" && step.formula)) && state.players.length) {
           try { evalFormula(step.formula, formulaVars(state, state.players[0].id)); } catch (error) { add("error", `${where}: ${error.message}`); }
         }
         if (step.op === "collect") dealt = 0;
