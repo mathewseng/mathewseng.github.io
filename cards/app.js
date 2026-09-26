@@ -2453,6 +2453,7 @@
       case "bot-games":
         botGames.cfg.deal = $("#bgDeal")?.value || botGames.cfg.deal;
         botGames.cfg.games = Number($("#bgGames")?.value) || botGames.cfg.games;
+        botGames.cfg.against = $("#bgAgainst")?.value || "";
         runBotGames();
         break;
       case "seed-apply": setSeed($("#seedInput").value); render(); break;
@@ -2653,6 +2654,7 @@
       if (["simMacro", "simTarget", "simEval", "simTrials"].includes(el.id)) return readSimCfg();
       if (el.id === "bgDeal") { botGames.cfg.deal = el.value; return; }
       if (el.id === "bgGames") { botGames.cfg.games = Number(el.value) || 30; return; }
+      if (el.id === "bgAgainst") { botGames.cfg.against = el.value; return; }
       if (d.roundLabel) return dispatch({ type: "renameRound", round: d.roundLabel, label: el.value });
       if (d.cfg === "label") return dispatch({ type: "scoreConfig", label: el.value });
       if (d.cfg === "target") return dispatch({ type: "scoreConfig", target: Number(el.value) });
@@ -3846,72 +3848,117 @@
   }
 
   // ========================================================= BOT GAMES
-  const botGames = { running: false, progress: 0, result: null, cfg: { deal: "", games: 30, maxSteps: 6000 } };
+  const botGames = { running: false, progress: 0, result: null, compare: null, cfg: { deal: "", games: 30, maxSteps: 6000, against: "" } };
 
-  function runBotGames() {
+  /** Autoplay `games` whole games from `base` in small time slices; resolves with the tally. */
+  function playBatch(base, dealId, games, onProgress) {
+    return new Promise((resolve) => {
+      const seats = base.players.length;
+      const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0 };
+      const next = () => {
+        const budget = performance.now() + 40;
+        while (tally.games < games && performance.now() < budget) {
+          let out;
+          try { out = E.playOut(base, { deal: dealId, maxSteps: botGames.cfg.maxSteps, style: prefs.botStyle || "random" }); } catch (error) { out = null; }
+          tally.games += 1;
+          if (!out) continue;
+          tally.steps += out.steps;
+          tally.longest = Math.max(tally.longest, out.steps);
+          tally.rounds += out.state.turn.round;
+          const totals = E.totals(out.state);
+          out.state.players.forEach((player, seat) => { tally.scores[seat] += totals[player.id] || 0; });
+          if (out.finished) {
+            tally.finished += 1;
+            const winners = out.state.gameOver.winners;
+            if (winners.length > 1) tally.ties += 1;
+            else tally.wins[out.state.players.findIndex((player) => player.id === winners[0])] += 1;
+          }
+        }
+        onProgress(tally.games / games);
+        if (tally.games < games && botGames.running) setTimeout(next, 0);
+        else resolve(tally);
+      };
+      setTimeout(next, 0);
+    });
+  }
+
+  function batchSummary(tally) {
+    const rates = tally.wins.map((wins) => (tally.finished ? wins / tally.finished : 0));
+    return {
+      ...tally,
+      rates,
+      spread: rates.length ? Math.max(...rates) - Math.min(...rates) : 0,
+      avgSteps: tally.steps / Math.max(1, tally.games),
+      avgRounds: tally.rounds / Math.max(1, tally.games),
+    };
+  }
+
+  async function runBotGames() {
     if (net.mode === "client") return toast("Only the host can run bot games.", "error");
     if (botGames.running) return;
     const base = E.clone(state);
     const deal = base.macros.find((macro) => macro.id === botGames.cfg.deal) || base.macros[0];
     if (!deal) return toast("Build a deal action first.", "error");
     if (!base.scores.target && !base.scores.maxRounds) return toast("Set how the game ends first (Scores → End of game), or games never finish.", "error");
+    let other = null;
+    if (botGames.cfg.against) {
+      const [designId, version] = botGames.cfg.against.split("#");
+      const design = loadLibrary().find((entry) => entry.id === designId);
+      const source = version !== undefined ? design?.versions?.[Number(version)]?.design : design;
+      if (!source) return toast("That saved design is gone.", "error");
+      const table = E.createTable(source, { players: base.players.map((player) => ({ name: player.name, botStyle: player.botStyle })) });
+      const otherDeal = table.macros.find((macro) => macro.label === deal.label) || table.macros[0];
+      if (!otherDeal || (!table.scores.target && !table.scores.maxRounds)) return toast("The comparison design needs a deal action and an end condition.", "error");
+      other = { table, deal: otherDeal, name: (source.name || "Saved design") + (version !== undefined ? ` (version ${new Date(design.versions[Number(version)].t).toLocaleDateString()})` : "") };
+    }
     const games = Math.max(1, Math.min(500, Number(botGames.cfg.games) || 30));
-    const seats = base.players.length;
-    const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0 };
     const previousRng = E.getRng();
     E.setRng(Math.random);
     botGames.running = true;
     botGames.progress = 0;
-    const started = performance.now();
-    const next = () => {
-      const budget = performance.now() + 40;
-      while (tally.games < games && performance.now() < budget) {
-        let out;
-        try { out = E.playOut(base, { deal: deal.id, maxSteps: botGames.cfg.maxSteps, style: prefs.botStyle || "random" }); } catch (error) { out = null; }
-        tally.games += 1;
-        if (!out) continue;
-        tally.steps += out.steps;
-        tally.longest = Math.max(tally.longest, out.steps);
-        tally.rounds += out.state.turn.round;
-        const totals = E.totals(out.state);
-        out.state.players.forEach((player, seat) => { tally.scores[seat] += totals[player.id] || 0; });
-        if (out.finished) {
-          tally.finished += 1;
-          const winners = out.state.gameOver.winners;
-          if (winners.length > 1) tally.ties += 1;
-          else tally.wins[out.state.players.findIndex((player) => player.id === winners[0])] += 1;
-        }
-      }
-      botGames.progress = tally.games / games;
-      if (tally.games < games && botGames.running) {
-        if (prefs.tab === "tools") renderPane();
-        setTimeout(next, 0);
-        return;
-      }
-      E.setRng(previousRng);
-      botGames.running = false;
-      botGames.result = { ...tally, deal: deal.label, ms: performance.now() - started, names: base.players.map((player) => `${player.name} · ${(player.botStyle || prefs.botStyle || "random")}`) };
-      renderPane();
-    };
+    botGames.compare = null;
     renderPane();
-    setTimeout(next, 0);
+    const started = performance.now();
+    const progress = (offset, share) => (fraction) => {
+      botGames.progress = offset + fraction * share;
+      if (prefs.tab === "tools") renderPane();
+    };
+    const mine = await playBatch(base, deal.id, games, progress(0, other ? 0.5 : 1));
+    const theirs = other && botGames.running ? await playBatch(other.table, other.deal.id, games, progress(0.5, 0.5)) : null;
+    E.setRng(previousRng);
+    botGames.running = false;
+    botGames.result = { ...batchSummary(mine), deal: deal.label, ms: performance.now() - started, names: base.players.map((player) => `${player.name} · ${player.botStyle || prefs.botStyle || "random"}`) };
+    botGames.compare = theirs ? { ...batchSummary(theirs), name: other.name } : null;
+    renderPane();
   }
 
   function botGamesHTML(v) {
     const r = botGames.result;
+    const c = botGames.compare;
     const ends = v.scores.target ? `first to ${E.fmt(v.scores.target)}` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds` : "no end condition";
+    const library = loadLibrary();
+    const againstOptions = library.flatMap((design) => [[design.id, design.name], ...(design.versions || []).map((version, i) => [`${design.id}#${i}`, `${design.name}, version from ${new Date(version.t).toLocaleString()}`])]);
     const seatRows = r ? r.wins.map((wins, seat) => {
-      const rate = r.finished ? wins / r.finished : 0;
+      const rate = r.rates[seat];
       return `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label">${esc(r.names[seat] || "Seat " + (seat + 1))}</span><div class="prob-bar grow"><span style="width:${rate * 100}%"></span><em>${pct(rate)} · avg ${E.fmt(Math.round((r.scores[seat] / Math.max(1, r.games)) * 10) / 10)}</em></div></div>`;
     }).join("") : "";
+    const fairness = (sum) => sum.spread <= 0.1 ? "balanced" : sum.spread <= 0.25 ? "slightly uneven" : "uneven";
+    const compareTable = r && c ? `<table class="compare"><thead><tr><th></th><th>This table</th><th>${esc(c.name)}</th></tr></thead><tbody>
+        <tr><td>Finished</td><td>${r.finished}/${r.games}</td><td>${c.finished}/${c.games}</td></tr>
+        <tr><td>Avg moves</td><td>${Math.round(r.avgSteps)}</td><td>${Math.round(c.avgSteps)}</td></tr>
+        <tr><td>Avg rounds</td><td>${r.avgRounds.toFixed(1)}</td><td>${c.avgRounds.toFixed(1)}</td></tr>
+        <tr><td>Seat spread</td><td>${pct(r.spread)}</td><td>${pct(c.spread)}</td></tr>
+        <tr><td>Ties</td><td>${r.ties}</td><td>${c.ties}</td></tr>
+      </tbody></table>` : "";
     return `<div class="grid-2">
         <label class="field"><span>Start each round with</span><select id="bgDeal">${v.macros.map((macro) => `<option value="${macro.id}"${botGames.cfg.deal === macro.id ? " selected" : ""}>${esc(macro.label)}</option>`).join("")}</select></label>
         <label class="field"><span>Games</span><input id="bgGames" type="number" min="1" max="500" value="${botGames.cfg.games}"></label>
       </div>
-      <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays random legal cards to the end (${esc(ends)}).</span></div>
-      ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.steps / Math.max(1, r.games))} moves, ${(r.rounds / Math.max(1, r.games)).toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
-        <div class="small muted">Win rate and average final score by seat</div><div class="list">${seatRows}</div>` : ""}
-      <p class="hint">Needs play rules on the groups where cards are played, and an end condition. Use it to spot seat-order advantages or games that drag on.</p>`;
+      ${againstOptions.length ? `<label class="field"><span>Compare with <span class="dim">A/B test against a saved design or version</span></span><select id="bgAgainst"><option value="">Nothing</option>${againstOptions.map(([id, label]) => `<option value="${esc(id)}"${botGames.cfg.against === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>` : ""}
+      <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays legal cards to the end (${esc(ends)}).</span></div>
+      ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.avgSteps)} moves, ${r.avgRounds.toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
+        <div class="small muted">Win rate and average final score by seat: <b>${fairness(r)}</b> (spread ${pct(r.spread)}${r.finished < 40 ? "; small sample, run more games for a clearer picture" : ""})</div><div class="list">${seatRows}</div>${compareTable}` : ""}
+      <p class="hint">Needs play rules where cards are played and an end condition. Use it to spot seat-order advantages, games that drag on, or whether a rule change helps (save a version, change the rule, then compare).</p>`;
   }
 
   // ======================================================== PRINT & PLAY

@@ -813,6 +813,11 @@ body[data-back-label="1"] .card.back.custom-back::after { content: ""; }
 
 .step-fields input.formula-input { flex: 1 1 280px; min-width: 200px; width: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 
+table.compare { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+table.compare th, table.compare td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+table.compare th:first-child, table.compare td:first-child { text-align: left; color: var(--muted); }
+table.compare th { font-size: 11px; color: var(--muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* --------------------------------------------------------- responsive */
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 320px; }
