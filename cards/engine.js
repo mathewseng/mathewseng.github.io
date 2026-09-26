@@ -82,6 +82,13 @@
     run: "A run (one suit, in sequence)",
     setOrRun: "A set or a run",
   };
+  const RULE_SLAP = {
+    none: "No slapping",
+    jack: "Top card is a Jack",
+    pair: "Top two cards match",
+    sandwich: "Pair or sandwich (top and third match)",
+    ratscrew: "Pair, sandwich, K-Q marriage or top matches bottom",
+  };
   const RULES_MODES = { off: "Off", warn: "Warn", enforce: "Enforce" };
 
   const DEFAULT_DECK = Object.freeze({ preset: "standard", decks: 1, jokers: 0, suits: STD_SUITS.slice(), ranks: null, custom: [] });
@@ -899,6 +906,28 @@
   }
 
   /** Climbing (President-style): a set of one rank, the same size as the last play, and higher. */
+  /** Why this pile can be slapped right now ("a pair"…), or "" when it can't. */
+  function slapReason(state, zone) {
+    const kind = zone?.rule?.slap;
+    const ids = zone?.cards || [];
+    if (!kind || !ids.length) return "";
+    const at = (i) => state.cards[ids[ids.length - 1 - i]];
+    const name = (card) => (card ? (card.custom ? card.label : card.rank) : null);
+    const top = at(0);
+    const second = at(1);
+    const third = at(2);
+    if (!top || !top.faceUp) return "";
+    if (kind === "jack") return top.rank === "J" ? "a Jack" : "";
+    if (second?.faceUp && name(top) === name(second)) return "a pair";
+    if (kind === "pair") return "";
+    if (third?.faceUp && name(top) === name(third)) return "a sandwich";
+    if (kind === "sandwich") return "";
+    if (second?.faceUp && ((top.rank === "K" && second.rank === "Q") || (top.rank === "Q" && second.rank === "K"))) return "a marriage";
+    const bottom = at(ids.length - 1);
+    if (ids.length > 2 && bottom?.faceUp && name(top) === name(bottom)) return "top and bottom";
+    return "";
+  }
+
   function climbProblem(state, rule, target, ids) {
     const cards = ids.map((id) => state.cards[id]).filter(Boolean);
     if (!cards.length) return "";
@@ -1018,10 +1047,10 @@
       let next = reduce(source, { type: "move", cards: play.cards || [play.card], to: play.to }, playerId);
       // One play per turn unless the design lets players keep going until they're stuck.
       if (!advances && source.playsPerTurn !== 0 && next.turn.index === before && next.players[before]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
-      return next;
+      return { next, cards: (play.cards || [play.card]).map((id) => source.cards[id]).filter(Boolean) };
     };
     const played = tryPlay(state);
-    if (played) return { state: played, did: "play" };
+    if (played) return { state: played.next, did: "play", cards: played.cards };
     const fallback = state.botFallback ? findMacro(state, state.botFallback) : null;
     if (!fallback && !holdsCards(state, playerId)) return { state, did: "idle" };
     let next = state;
@@ -1030,7 +1059,7 @@
       next = reduce(next, { type: "runMacro", id: fallback.id }, playerId);
       if (next.turn.index !== before) return { state: next, did: "fallback" };
       const retry = tryPlay(next);
-      if (retry) return { state: retry, did: "play" };
+      if (retry) return { state: retry.next, did: "play", cards: retry.cards };
     }
     if (next.players[next.turn.index]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
     return { state: next, did: "pass" };
@@ -1050,12 +1079,23 @@
     let steps = 0;
     let idle = 0;
     let deals = 0;
+    const played = opts.trackCards ? {} : null;
     if (deal) { state = reduce(state, { type: "runMacro", id: deal.id }); deals += 1; }
     while (steps < maxSteps && !state.gameOver) {
       const player = state.players[state.turn.index];
       steps += 1;
       const result = player && !player.out ? botStep(state, player.id, opts) : { state: reduce(state, { type: "nextTurn" }), did: "pass" };
+      if (played && result.cards) {
+        const mine = played[player.id] || (played[player.id] = {});
+        for (const card of result.cards) mine[cardKey(card)] = (mine[cardKey(card)] || 0) + 1;
+      }
       state = result.state;
+      // Real-time slaps: whenever a pile can be slapped, a random player gets there first.
+      for (const zone of orderedZones(state, "table")) {
+        if (state.gameOver || !slapReason(state, zone)) continue;
+        const slapper = state.players[Math.floor(rng() * state.players.length)];
+        if (slapper) state = reduce(state, { type: "slap", zone: zone.id, player: slapper.id }, slapper.id);
+      }
       if (state.log.length > 60) state.log = state.log.slice(-10);
       if (result.did !== "idle") { idle = 0; continue; }
       idle += 1;
@@ -1065,7 +1105,16 @@
       deals += 1;
       idle = 0;
     }
-    return { state, steps, deals, finished: Boolean(state.gameOver) };
+    const out = { state, steps, deals, finished: Boolean(state.gameOver) };
+    if (played) out.cardsPlayed = played;
+    return out;
+  }
+
+  /** How card-balance reports group cards: custom cards by name, standard cards by rank. */
+  function cardKey(card) {
+    if (!card) return "?";
+    if (card.custom) return card.label || card.rank || "Card";
+    return card.rank === "JK" ? "Joker" : card.rank;
   }
 
   /**
@@ -1148,6 +1197,7 @@
     if (rule.once) parts.push("one card per player");
     if (rule.advance) parts.push("the turn passes after playing here");
     if (rule.flipTop) parts.push("the new top card turns face up");
+    if (rule.slap) parts.push(`slap it when ${RULE_SLAP[rule.slap].charAt(0).toLowerCase() + RULE_SLAP[rule.slap].slice(1)} to win the pile into your ${rule.slapTo}; a wrong slap burns a card`);
     return parts.join("; ");
   }
 
@@ -1352,7 +1402,7 @@
     reverse: { label: "Reverse direction", fields: [] },
     nextDealer: { label: "Pass the deal", fields: [] },
     nextRound: { label: "Next round", fields: [] },
-    endGame: { label: "End the game", fields: [] },
+    endGame: { label: "End the game", fields: ["text"] },
     phase: { label: "Set phase", fields: ["text"] },
     nextPhase: { label: "Next phase", fields: [] },
     stopIf: { label: "Stop if", fields: ["zone", "evaluator", "cmp", "n", "formula"] },
@@ -1706,7 +1756,7 @@
         pushLog(state, actor, `Play direction: ${state.turn.dir > 0 ? "clockwise" : "counter-clockwise"}`);
         break;
       case "nextRound": nextRound(state, actor); break;
-      case "endGame": endGameNow(state); break;
+      case "endGame": endGameNow(state, step.text ? cleanText(fillText(state, step.text, ctx), 80, "") || undefined : undefined); break;
       case "phase": state.turn.phase = cleanText(fillText(state, step.text, ctx), 40, ""); break;
       case "nextPhase": HANDLERS.nextPhase(state, {}, actor); break;
       case "sitOut":
@@ -1841,7 +1891,7 @@
   };
 
   // Only play actions fire triggers; setup changes (collecting, editing groups…) never do.
-  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter"]);
+  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter", "slap"]);
 
   /** Display name for a zone reference such as "trick" or "hand@current". */
   function refName(state, ref) {
@@ -2052,6 +2102,10 @@
     const wild = (Array.isArray(raw.wild) ? raw.wild : String(raw.wild || "").split(",")).map((rank) => cleanText(rank, 12, "")).filter(Boolean).slice(0, 12);
     if (wild.length) rule.wild = wild;
     for (const flag of ["follow", "once", "advance", "flipTop", "aceHigh", "climb"]) if (raw[flag]) rule[flag] = true;
+    if (RULE_SLAP[raw.slap] && raw.slap !== "none") {
+      rule.slap = raw.slap;
+      rule.slapTo = cleanText(raw.slapTo, 40, "") || "hand";
+    }
     return rule;
   }
 
@@ -2600,6 +2654,35 @@
       state.tableCounters = state.tableCounters.filter((def) => def.id !== action.id);
       state.players.forEach((player) => { delete player.counters[action.id]; });
     },
+    slap(state, action, actor, opts) {
+      const zone = state.zones[action.zone];
+      if (!zone?.rule?.slap) throw new Error("That pile can't be slapped.");
+      // Guests always slap as themselves; a shared screen can name the slapper.
+      const player = playerById(state, opts.strict ? actor : action.player || actor);
+      if (!player) throw new Error("Pick a seat to slap with.");
+      const topId = zone.cards[zone.cards.length - 1];
+      // Two players slapped the same card: the later slap just missed, no penalty.
+      if (action.top !== undefined && action.top !== topId) {
+        pushLog(state, player.id, `${player.name} slapped too late`, "info");
+        return;
+      }
+      const home = resolveZones(state, `${zone.rule.slapTo || "hand"}@p:${player.id}`)[0];
+      const reason = slapReason(state, zone);
+      if (reason) {
+        const won = zone.cards.slice();
+        if (home) {
+          moveCards(state, won, home, { index: 0 });
+          player.out = false;
+        }
+        pushLog(state, player.id, `👋 ${player.name} slapped ${reason} and takes ${won.length} card${won.length === 1 ? "" : "s"}`, "move");
+        state.turn.index = state.players.indexOf(player);
+        state.lastWinner = player.id;
+        return;
+      }
+      const burn = home ? state.zones[home].cards[state.zones[home].cards.length - 1] : null;
+      if (burn) moveCards(state, [burn], zone.id, { index: 0, face: "up" });
+      pushLog(state, player.id, `✋ ${player.name} slapped wrong${burn ? " and burns a card under the pile" : ""}`, "warn");
+    },
     counter(state, action) {
       const delta = Number(action.delta) || 0;
       const set = action.value !== undefined ? Number(action.value) : null;
@@ -2981,7 +3064,8 @@
         if (step.op === "collect") dealt = 0;
         if (step.op === "deal" && !step.perSeat) {
           const perSeat = state.seatTemplate.some((tpl) => sameText(tpl.key, String(step.to || "").split("@")[0])) && !String(step.to).includes("@");
-          dealt += (Number(step.count) || 1) * (perSeat ? seats : 1);
+          // A count as big as the deck means "deal it all out", however many play.
+          dealt = (Number(step.count) || 1) >= size ? size : dealt + (Number(step.count) || 1) * (perSeat ? seats : 1);
           if (dealt > size) add("warn", `${where}: dealing ${dealt} cards needs more than the ${size} in the deck with ${seats} players.`);
         }
       }
@@ -3068,6 +3152,7 @@
     RULE_ORDER,
     RULES_MODES,
     TRIGGER_EVENTS,
+    cardKey,
     WHO_OPTIONS,
     TURN_OPTIONS,
     STOP_CMP,
@@ -3082,6 +3167,8 @@
     cardMatches,
     meldOk,
     RULE_MELD,
+    RULE_SLAP,
+    slapReason,
     evalInput,
     evaluateSpec,
     findZoneRef,

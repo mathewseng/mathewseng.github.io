@@ -765,3 +765,70 @@ console.log("climbing tests passed");
   assert.ok(doom);
 }
 console.log("counter trigger tests passed");
+
+// Card balance tracking in bot games.
+{
+  const out = Engine.playOut(Engine.createTable(Presets.get("color-clash"), { players: 3 }), { deal: "Deal", maxSteps: 6000, trackCards: true });
+  const played = Object.values(out.cardsPlayed || {});
+  assert.ok(played.length >= 2, "several players played cards");
+  const keys = played.flatMap((counts) => Object.keys(counts));
+  assert.ok(keys.some((key) => /Skip|Reverse|Draw|Wild|\d/.test(key)), JSON.stringify(played).slice(0, 200));
+  assert.ok(played.every((counts) => Object.values(counts).every((n) => Number.isInteger(n) && n > 0)));
+  assert.equal(Engine.cardKey({ rank: "Q", suit: "s" }), "Q");
+  assert.equal(Engine.cardKey({ custom: true, label: "Skip" }), "Skip");
+  const plain = Engine.playOut(Engine.createTable(Presets.get("crazy-eights"), { players: 2 }), { deal: "Deal", maxSteps: 3000 });
+  assert.equal(plain.cardsPlayed, undefined, "only tracked on request");
+}
+console.log("card balance tests passed");
+
+// Slapping: Slapjack flow, wrong and late slaps, rule variants, guests slap as themselves.
+{
+  let state = Engine.createTable(Presets.get("slapjack"), { players: ["Ana", "Ben", "Cy"] });
+  const [ana, ben, cy] = state.players.map((player) => player.id);
+  const pile = zone(state, "pile");
+  state = run(state, "Deal out");
+  assert.equal(zone(state, "stack", ana).cards.length + zone(state, "stack", ben).cards.length + zone(state, "stack", cy).cards.length, 52);
+  state = pull(state, "3h 7c", pile.id, "up");
+  assert.equal(Engine.slapReason(state, state.zones[pile.id]), "");
+  const benBefore = zone(state, "stack", ben).cards.length;
+  state = act(state, { type: "slap", zone: pile.id, player: ben }, null);
+  assert.equal(zone(state, "stack", ben).cards.length, benBefore - 1, "wrong slap burns a card");
+  assert.equal(state.zones[pile.id].cards.length, 3);
+  assert.match(lastLog(state), /Ben slapped wrong/);
+  state = pull(state, "Jd", pile.id, "up");
+  assert.equal(Engine.slapReason(state, state.zones[pile.id]), "a Jack");
+  const top = state.zones[pile.id].cards.slice(-1)[0];
+  const cyBefore = zone(state, "stack", cy).cards.length;
+  state = act(state, { type: "slap", zone: pile.id, top, player: cy }, null);
+  assert.equal(state.zones[pile.id].cards.length, 0);
+  assert.equal(zone(state, "stack", cy).cards.length, cyBefore + 4);
+  assert.ok(zone(state, "stack", cy).cards.slice(0, 4).every((id) => !state.cards[id].faceUp), "won cards go face down under the stack");
+  assert.equal(state.players[state.turn.index].id, cy, "the slapper plays next");
+  const afterWin = zone(state, "stack", ana).cards.length;
+  state = act(state, { type: "slap", zone: pile.id, top, player: ana }, null);
+  assert.match(lastLog(state), /too late/);
+  assert.equal(zone(state, "stack", ana).cards.length, afterWin, "a late slap costs nothing");
+  // A guest can't slap as someone else.
+  state = pull(state, "Jc", pile.id, "up");
+  const jc = state.zones[pile.id].cards.slice(-1)[0];
+  state = act(state, { type: "slap", zone: pile.id, top: jc, player: cy }, ben, { strict: true });
+  assert.match(lastLog(state), /Ben slapped a Jack/);
+  // Rule variants.
+  const variant = (slap, specs) => {
+    let s = act(state, { type: "updateZone", zone: pile.id, patch: { rule: { slap, slapTo: "stack" } } });
+    s = act(s, { type: "clearZone", zone: pile.id, to: zone(s, "deck").id });
+    s = pull(s, specs, pile.id, "up");
+    return Engine.slapReason(s, s.zones[pile.id]);
+  };
+  assert.equal(variant("pair", "4s 9h 9d"), "a pair");
+  assert.equal(variant("pair", "9h 4s 9d"), "");
+  assert.equal(variant("sandwich", "9h 4s 9d"), "a sandwich");
+  assert.equal(variant("ratscrew", "2c Kh Qd"), "a marriage");
+  assert.equal(variant("ratscrew", "5c 8h 2d 5s"), "top and bottom");
+  assert.equal(variant("ratscrew", "5c 8h 2d 6s"), "");
+  assert.match(Engine.describeRule(state.zones[pile.id].rule, state.zones[pile.id]), /slap it when top card is a jack to win the pile into your stack/i);
+  // Bot games finish with slaps.
+  const out = Engine.playOut(Engine.createTable(Presets.get("slapjack"), { players: 3 }), { deal: "Deal out", maxSteps: 20000 });
+  assert.ok(out.finished, `slapjack finishes (${out.steps} steps)`);
+}
+console.log("slap tests passed");

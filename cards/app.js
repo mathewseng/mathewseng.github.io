@@ -487,9 +487,10 @@
       tools.push(`<button class="btn sm" data-act="draw" title="Draw one to your hand (or the current player's)">Draw</button>`);
       tools.push(`<button class="btn sm" data-act="deal" title="Deal from here">Deal</button>`);
       tools.push(`<button class="btn sm icon" data-act="shuffle" title="Shuffle">⤮</button>`);
-    } else if (cards.length) {
+    } else if (cards.length && !zone.rule?.slap) {
       tools.push(`<button class="btn sm icon" data-act="flip" title="Flip all">⟲</button>`);
     }
+    if (zone.rule?.slap) tools.unshift(`<button class="btn sm slap-btn" data-act="slap" title="Slap the pile (Space)">👋 Slap</button>`);
     tools.push(`<button class="btn sm icon" data-act="menu" title="Group options">⋯</button>`);
     const evals = prefs.evals && cards.length ? evalsHTML(zone) : "";
     const manyClass = layout === "fan" ? (cards.length > 9 ? " many" : cards.length <= 3 ? " few" : "") : "";
@@ -1723,6 +1724,8 @@
             <label class="field"><span>Wild ranks</span><input type="text" name="rWild" value="${esc((rule.wild || []).join(", "))}" placeholder="e.g. 8, or Wild"></label>
             <label class="field"><span>The group must form</span><select name="rMeld">${optionList(E.RULE_MELD, rule.meld)}</select></label>
             <label class="field"><span>Taking a card costs <span class="dim">its value in a counter</span></span><input type="text" name="rCost" list="ruleCounters" value="${esc(rule.cost || "")}" placeholder="e.g. Coins"><datalist id="ruleCounters">${[...v.counterDefs, ...v.tableCounters].map((def) => `<option value="${esc(def.name)}">`).join("")}</datalist></label>
+            <label class="field"><span>Slap the pile when <span class="dim">real-time, first slap wins it</span></span><select name="rSlap">${optionList(E.RULE_SLAP, rule.slap)}</select></label>
+            <label class="field"><span>Slapped pile goes to <span class="dim">the slapper's group</span></span><input type="text" name="rSlapTo" value="${esc(rule.slapTo || "")}" maxlength="40" placeholder="hand"></label>
             <label class="field"><span>Only during phase</span><input type="text" name="rPhase" list="rulePhases" value="${esc(rule.phase || "")}" placeholder="any phase"><datalist id="rulePhases">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist></label>
           </div>
           <div class="row">
@@ -1773,6 +1776,7 @@
           place: form.rPlace.value, take: form.rTake.value, accept: form.rAccept.value, order: form.rOrder.value,
           first: form.rFirst.value.trim(), wild: form.rWild.value, meld: form.rMeld.value, phase: form.rPhase.value.trim(), cost: form.rCost.value.trim(),
           follow: form.rFollow.checked, once: form.rOnce.checked, advance: form.rAdvance.checked, flipTop: form.rFlipTop.checked, aceHigh: form.rAceHigh.checked, climb: form.rClimb.checked,
+          slap: form.rSlap.value, slapTo: form.rSlapTo.value.trim(),
         };
         const patch = {
           name: form.name.value, kind: form.kind.value, layout: form.layout.value, visibility: form.visibility.value, face: form.face.value,
@@ -1848,7 +1852,7 @@
         case "by": return `<select data-step="${i}" data-f="by">${["rank", "aceLow", "suit", "reverse"].map((b) => `<option${val === b ? " selected" : ""}>${b}</option>`).join("")}</select>`;
         case "who": return step.op === "setTurn" ? selectOf(i, "who", E.TURN_OPTIONS, val || "next") : selectOf(i, "who", E.WHO_OPTIONS, val || (step.op === "awardPot" ? "winner" : /Formula$/.test(step.op) ? "all" : "current"));
         case "shuffle": return `<label class="check small"><input type="checkbox" data-step="${i}" data-f="shuffle"${step.shuffle !== false ? " checked" : ""}> shuffle</label>`;
-        case "text": return `<input type="text" data-step="${i}" data-f="text" value="${esc(val)}" placeholder="text">`;
+        case "text": return `<input type="text" data-step="${i}" data-f="text" value="${esc(val)}" placeholder="${step.op === "endGame" ? "reason (optional), e.g. the deck ran out" : "text"}">`;
         default: return "";
       }
     };
@@ -2082,7 +2086,7 @@
   }
 
   // What guests may do. "Play only" rooms keep the design in the host's hands.
-  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo"]);
+  const GUEST_PLAY = new Set(["move", "flip", "flipZone", "peek", "rotate", "mark", "shuffle", "cut", "draw", "drawBottom", "deal", "sort", "arrange", "clearZone", "revealAll", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "bet", "award", "transfer", "counter", "chat", "roll", "coin", "randomPlayer", "claimSeat", "releaseSeat", "dismissGameOver", "feedback", "showTo", "slap"]);
   const GUEST_SPECTATE = new Set(["chat", "feedback", "claimSeat", "releaseSeat"]);
 
   function hostHandle(clientId, action) {
@@ -2325,6 +2329,7 @@
         selection.clear(); render();
         break;
       }
+      case "slap": slapPile(el.closest("[data-zone-id]").dataset.zoneId); break;
       case "draw": {
         const zoneId = el.closest("[data-zone-id]").dataset.zoneId;
         const hand = myHandZone();
@@ -2917,6 +2922,7 @@
         case "arrowright": moveKbdFocus(1); break;
         case "arrowleft": moveKbdFocus(-1); break;
         case " ": {
+          if (!kbdFocus && E.orderedZones(view, "table").some((zone) => zone.rule?.slap)) { event.preventDefault(); slapPile(); break; }
           if (!kbdFocus || !view.cards[kbdFocus]) return;
           if (selection.has(kbdFocus)) selection.delete(kbdFocus); else selection.add(kbdFocus);
           render();
@@ -3912,6 +3918,54 @@
     if ($("#simTrials")) sim.cfg.trials = Number($("#simTrials").value) || 1000;
   }
 
+  // ================================================================ SLAPS
+  /** Who slaps from this screen: your seat, else the first human seat, else whoever's turn it is. */
+  function slapperId() {
+    if (net.mode !== "local") return mySeatId();
+    return mySeatId() || state.players.find((player) => !player.bot)?.id || state.players[state.turn.index]?.id || null;
+  }
+  function slapPile(zoneId) {
+    const zone = zoneId ? view.zones[zoneId] : E.orderedZones(view, "table").find((entry) => entry.rule?.slap);
+    if (!zone) return;
+    const who = slapperId();
+    if (!who) return toast("Take a seat to slap.", "error");
+    if (view.gameOver && !view.gameOver.dismissed) return;
+    flashSlap(zone.id);
+    dispatch({ type: "slap", zone: zone.id, top: zone.cards[zone.cards.length - 1], player: who });
+  }
+  function flashSlap(zoneId) {
+    const el = document.querySelector(`[data-zone-id="${zoneId}"] .cards`);
+    if (!el || !prefs.motion) return;
+    el.classList.remove("slapped");
+    void el.offsetWidth;
+    el.classList.add("slapped");
+    setTimeout(() => el.classList.remove("slapped"), 400);
+  }
+  const SLAP_DELAY = { slow: [900, 1600], normal: [550, 1050], fast: [260, 520] };
+  const slapWatch = { timer: null, key: "" };
+  /** Bots react to a slappable pile after a human-ish delay, so you can beat them to it. */
+  function scheduleBotSlap() {
+    if (net.mode === "client" || !state || bots.paused || replay.active || (state.gameOver && !state.gameOver.dismissed)) return;
+    const zone = E.orderedZones(state, "table").find((entry) => E.slapReason(state, entry));
+    const key = zone ? `${zone.id}:${zone.cards[zone.cards.length - 1]}:${zone.cards.length}` : "";
+    if (key === slapWatch.key) return;
+    clearTimeout(slapWatch.timer);
+    slapWatch.key = key;
+    const botSeats = state.players.filter((player) => player.bot);
+    if (!zone || !botSeats.length) return;
+    const [low, high] = SLAP_DELAY[prefs.botSpeed || "normal"] || SLAP_DELAY.normal;
+    slapWatch.timer = setTimeout(() => {
+      const live = state.zones[zone.id];
+      if (!live || `${zone.id}:${live.cards[live.cards.length - 1]}:${live.cards.length}` !== key || !E.slapReason(state, live)) return;
+      const bot = botSeats[Math.floor(Math.random() * botSeats.length)];
+      history.push(state);
+      future = [];
+      state = E.reduce(state, { type: "slap", zone: zone.id, top: live.cards[live.cards.length - 1], player: bot.id }, bot.id);
+      flashSlap(zone.id);
+      afterChange();
+    }, low + Math.random() * (high - low));
+  }
+
   // ================================================================ BOTS
   const bots = { timer: null, paused: false, streak: 0, idleRev: -1 };
   const BOT_DELAY = { slow: 1100, normal: 480, fast: 60 };
@@ -3920,9 +3974,12 @@
   function scheduleBots() {
     clearTimeout(bots.timer);
     bots.timer = null;
+    scheduleBotSlap();
     if (net.mode === "client" || bots.paused || !state || drag || replay.active) return;
     const player = state.players[state.turn.index];
     if (!player?.bot || player.out || (state.gameOver && !state.gameOver.dismissed) || state.rev === bots.idleRev) return;
+    // Everyone freezes while a pile is up for grabs; the slap (a bot's, if nobody beats it) moves play on.
+    if (E.orderedZones(state, "table").some((zone) => E.slapReason(state, zone))) return;
     bots.timer = setTimeout(() => botTurn(player.id), BOT_DELAY[prefs.botSpeed || "normal"] ?? 480);
   }
 
@@ -3968,12 +4025,12 @@
   function playBatch(base, dealId, games, onProgress) {
     return new Promise((resolve) => {
       const seats = base.players.length;
-      const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0, rows: [] };
+      const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0, rows: [], cards: {} };
       const next = () => {
         const budget = performance.now() + 40;
         while (tally.games < games && performance.now() < budget) {
           let out;
-          try { out = E.playOut(base, { deal: dealId, maxSteps: botGames.cfg.maxSteps, style: prefs.botStyle || "random" }); } catch (error) { out = null; }
+          try { out = E.playOut(base, { deal: dealId, maxSteps: botGames.cfg.maxSteps, style: prefs.botStyle || "random", trackCards: true }); } catch (error) { out = null; }
           tally.games += 1;
           if (!out) continue;
           tally.steps += out.steps;
@@ -3986,6 +4043,15 @@
             const winners = out.state.gameOver.winners;
             if (winners.length > 1) tally.ties += 1;
             else tally.wins[out.state.players.findIndex((player) => player.id === winners[0])] += 1;
+            // Card balance: what share of each card's plays came from the eventual winner.
+            for (const [playerId, counts] of Object.entries(out.cardsPlayed || {})) {
+              const share = winners.includes(playerId) ? 1 / winners.length : 0;
+              for (const [key, n] of Object.entries(counts)) {
+                const entry = tally.cards[key] || (tally.cards[key] = { seen: 0, won: 0 });
+                entry.seen += n;
+                entry.won += n * share;
+              }
+            }
           }
           tally.rows.push({ game: tally.games, finished: out.finished, moves: out.steps, rounds: out.state.turn.round, winners: (out.state.gameOver?.winners || []).map((id) => out.state.players.findIndex((player) => player.id === id) + 1).join(" "), scores: out.state.players.map((player) => totals[player.id] || 0) });
         }
@@ -4048,6 +4114,28 @@
     renderPane();
   }
 
+  /**
+   * Which cards the winners played: each card's share of plays made by the
+   * eventual winner, against the winners' share of all plays (the line).
+   */
+  function cardBalanceHTML(r) {
+    const all = Object.values(r.cards).reduce((sum, entry) => ({ seen: sum.seen + entry.seen, won: sum.won + entry.won }), { seen: 0, won: 0 });
+    if (!all.seen) return "";
+    const baseline = all.won / all.seen;
+    const minSeen = Math.max(10, Math.round(r.finished * 0.5));
+    const rows = Object.entries(r.cards).filter(([, entry]) => entry.seen >= minSeen).map(([key, entry]) => ({ key, rate: entry.won / entry.seen, seen: entry.seen }));
+    if (rows.length < 3) return "";
+    rows.sort((a, b) => b.rate - a.rate);
+    const pick = rows.length > 10 ? [...rows.slice(0, 5), null, ...rows.slice(-5)] : rows;
+    const label = (key) => (E.STD_RANKS.includes(key) ? RANK_SHOW(key) : key);
+    const line = (row) => {
+      if (!row) return `<div class="small dim" style="text-align:center">⋯</div>`;
+      const lift = row.rate / baseline - 1;
+      return `<div class="row tight" style="flex-wrap:nowrap" title="${pct(row.rate)} of ${row.seen} plays"><span class="small sim-label">${esc(label(row.key))}</span><div class="prob-bar grow balance${lift > 0.1 ? " hot" : lift < -0.1 ? " cold" : ""}"><span style="width:${Math.min(100, (row.rate / baseline) * 50)}%"></span><i style="left:50%"></i></div><span class="small balance-val">${lift >= 0 ? "+" : "−"}${Math.abs(Math.round(lift * 100))}%</span></div>`;
+    };
+    return `<details class="balance-box" open><summary class="small"><b>Card balance</b> <span class="muted">· share of each card's plays made by the eventual winner (centre line = winners' share of all plays, ${pct(baseline)})</span></summary><div class="list">${pick.map(line).join("")}</div><p class="hint">Cards well above the line show up in winning hands more than their share: maybe too strong. Well below: too weak, or the card losing players get stuck with. Needs a decent sample; run 100+ games.</p></details>`;
+  }
+
   function botGamesHTML(v) {
     const r = botGames.result;
     const c = botGames.compare;
@@ -4074,6 +4162,7 @@
       <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays legal cards to the end (${esc(ends)}).</span></div>
       ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.avgSteps)} moves, ${r.avgRounds.toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
         <div class="small muted">Win rate and average final score by seat: <b>${fairness(r)}</b> (spread ${pct(r.spread)}${r.finished < 40 ? "; small sample, run more games for a clearer picture" : ""})</div><div class="list">${seatRows}</div>${compareTable}` : ""}
+      ${r ? cardBalanceHTML(r) : ""}
       ${r ? `<div class="row"><button class="btn sm" data-act="bot-games-csv">Export games CSV</button></div>` : ""}
       <p class="hint">Needs play rules where cards are played and an end condition. Use it to spot seat-order advantages, games that drag on, or whether a rule change helps (save a version, change the rule, then compare).</p>`;
   }
@@ -4202,6 +4291,7 @@
     meld: { label: "Meld", name: "Meld", area: "seats", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { place: "owner", meld: "setOrRun" } },
     felt: { label: "Play area", name: "Play area", area: "table", kind: "free", layout: "free", visibility: "public", face: "up", wide: true },
     won: { label: "Won pile", name: "Won", area: "seats", kind: "pile", layout: "stack", visibility: "public", face: "down", evals: ["count"] },
+    slap: { label: "Slap pile", name: "Pile", area: "table", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { slap: "pair", slapTo: "stack" } },
   };
 
   function applyZoneTemplate(form, tpl) {
@@ -4224,6 +4314,8 @@
     form.rCost.value = rule.cost || "";
     form.rFirst.value = rule.first || "";
     form.rWild.value = (rule.wild || []).join(", ");
+    form.rSlap.value = rule.slap || "none";
+    form.rSlapTo.value = rule.slapTo || "";
     for (const [field, key] of [["rFollow", "follow"], ["rOnce", "once"], ["rAdvance", "advance"], ["rFlipTop", "flipTop"], ["rAceHigh", "aceHigh"], ["rClimb", "climb"]]) form[field].checked = Boolean(rule[key]);
   }
 
@@ -4365,6 +4457,7 @@
         case "turn": tone(660, 0, 0.16); tone(880, 0.12, 0.26); break;
         case "win": [523, 659, 784, 1047].forEach((freq, i) => tone(freq, i * 0.11, 0.32, "triangle", 0.05)); break;
         case "warn": tone(196, 0, 0.2, "square", 0.025); break;
+        case "slap": hiss(0, 0.12, 0.16, 900); tone(140, 0, 0.1, "triangle", 0.06); break;
         case "chat": tone(988, 0, 0.12, "sine", 0.035); break;
         default: break;
       }
@@ -4374,6 +4467,7 @@
   function soundForLog(entries) {
     const kinds = entries.map((entry) => {
       if (entry.kind === "round" && /Game over/.test(entry.text)) return "win";
+      if (/^[👋✋]/u.test(entry.text)) return "slap";
       if (entry.kind === "warn") return "warn";
       if (entry.kind === "chat" || entry.kind === "feedback") return "chat";
       if (/^(Shuffled|Collected)/.test(entry.text)) return "shuffle";
@@ -4381,7 +4475,7 @@
       if (/→|Dealt|drew|Refilled/.test(entry.text)) return "card";
       return "";
     });
-    return ["win", "warn", "shuffle", "flip", "card", "chat"].find((kind) => kinds.includes(kind)) || "";
+    return ["win", "slap", "warn", "shuffle", "flip", "card", "chat"].find((kind) => kinds.includes(kind)) || "";
   }
 
   // ============================================================ CHARTS

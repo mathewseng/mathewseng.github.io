@@ -505,6 +505,33 @@
       rules: "War\n\nFlip the top card; the higher card takes both. On a tie, go to war: three face down, one up.\n\nBattle! names the winner from the top cards; Winner takes moves every battle card to their Won pile.",
     },
     {
+      id: "slapjack",
+      name: "Slapjack",
+      family: "Kids",
+      tagline: "Flip in turn, slap every Jack first",
+      description: "Real time: take turns flipping onto the pile and race to slap Jacks. Wrong slaps burn a card. Space slaps.",
+      players: { min: 2, max: 6, default: 3 },
+      deck: { preset: "standard" },
+      table: [
+        deck(),
+        { key: "pile", name: "Pile", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { slap: "jack", slapTo: "stack" } },
+      ],
+      seat: [{ key: "stack", name: "Stack", kind: "pile", layout: "stack", visibility: "hidden", face: "down", evals: ["count"] }],
+      macros: [
+        { label: "Deal out", hint: "Everyone back in, deal the whole deck", steps: [{ op: "bringBack" }, collect(), deal("stack", 52), { op: "setTurn", who: "next" }] },
+        { label: "Flip", hint: "Turn your top card onto the pile", steps: [{ op: "deal", from: "stack@current", to: "pile", count: 1, face: "up" }, { op: "nextTurn" }] },
+        { label: "Out", hint: "Runs by itself when a stack runs dry", steps: [
+          say("{subject} is out of cards"), { op: "sitOut", who: "subject" },
+          { op: "stopIf", formula: "players > 1" },
+          { op: "scoreZones", zone: "stack", evaluator: "count" }, { op: "endGame", text: "one player holds the cards" },
+        ] },
+      ],
+      triggers: [{ event: "empty", zone: "stack", macro: "Out" }],
+      botFallback: "Flip",
+      scoring: { label: "Cards" },
+      rules: "Slapjack\n\nDeal the whole deck face down. In turn, flip your top card onto the pile (Flip). The moment a Jack lands, everyone races to slap the pile (the Slap button or Space): the first slap takes the whole pile under their stack and plays next. Slap anything else and you burn a card under the pile.\n\nRun out of cards and you're out. Last player holding cards wins. Switch the pile's slap rule (Edit group → Play rules) to pairs, sandwiches or the full Ratscrew set to invent variants.",
+    },
+    {
       id: "go-fish",
       name: "Go Fish",
       family: "Kids",
@@ -713,7 +740,7 @@
       seat: [hand({ evals: ["set-summary"] })],
       tableCounters: [{ name: "Passes" }],
       macros: [
-        { label: "Deal", hint: "Everyone back in, deal the whole deck", steps: [{ op: "bringBack" }, collect(), { op: "nextDealer" }, deal("hand", 20), { op: "sort", zone: "hand", by: "rankAsc" }, { op: "setCounter", name: "Passes", amount: 0 }, { op: "setTurn", who: "next" }] },
+        { label: "Deal", hint: "Everyone back in, deal the whole deck", steps: [{ op: "bringBack" }, collect(), { op: "nextDealer" }, deal("hand", 52), { op: "sort", zone: "hand", by: "rankAsc" }, { op: "setCounter", name: "Passes", amount: 0 }, { op: "setTurn", who: "next" }] },
         { label: "Pass", hint: "When everyone else has passed, the pile clears and the last player leads", steps: [
           { op: "counter", name: "Passes", amount: 1 }, { op: "nextTurn" },
           { op: "stopIf", formula: "passes < players - 1" },

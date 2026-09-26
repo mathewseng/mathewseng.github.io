@@ -194,6 +194,6 @@ for (const preset of Presets.PRESETS) {
   }
   assert.ok(Engine.viewFor(state, state.players[0]?.id || "__spectator"));
 }
-assert.equal(Presets.PRESETS.length, 27);
+assert.equal(Presets.PRESETS.length, 28);
 
 console.log("engine tests passed");

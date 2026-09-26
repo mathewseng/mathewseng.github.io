@@ -839,6 +839,12 @@ table.compare th { font-size: 11px; color: var(--muted); max-width: 120px; overf
 .dock .btn.primary { margin-left: auto; }
 
 .browse-search { min-height: 36px; }
+.prob-bar.balance { position: relative; }
+.prob-bar.balance i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.55; border-radius: 1px; }
+.prob-bar.balance.hot > span { background: linear-gradient(90deg, var(--gold), #ff8a5b); }
+.prob-bar.balance.cold > span { background: linear-gradient(90deg, #5b7cff, #7a8bb0); }
+.balance-box summary { cursor: pointer; padding: 4px 0; }
+.balance-box .list { margin: 6px 0 8px; }
 .cards.shuffling { animation: shuffle-wiggle 0.6s var(--ease); }
 @keyframes shuffle-wiggle {
   0%, 100% { transform: none; }
@@ -923,3 +929,12 @@ body[data-contrast="1"] .zone-name, body[data-contrast="1"] .area-label { color:
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 body[data-motion="0"] *, body[data-motion="0"] *::before { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+.balance-val { width: 44px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.zone-tools .btn.slap-btn { background: linear-gradient(180deg, #ff9f6b, #f0703c); color: #1a0d05; border-color: transparent; font-weight: 850; font-size: 12px; padding: 0 10px; }
+.slap-btn:hover { filter: brightness(1.08); }
+.cards.slapped { animation: slap-hit 0.36s var(--ease); }
+@keyframes slap-hit {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.9) rotate(-2deg); }
+  100% { transform: none; }
+}
