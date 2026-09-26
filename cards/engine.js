@@ -471,6 +471,14 @@
     return zones.find((zone) => zone.key === "deck") || zones.find((zone) => zone.kind === "deck") || zones[0] || null;
   }
 
+  /** Per-player tallies for the social mechanics (slaps, calls, challenges, trades). */
+  function bump(state, playerId, key) {
+    if (!playerId) return;
+    state.stats = state.stats || {};
+    const entry = state.stats[playerId] || (state.stats[playerId] = {});
+    entry[key] = (entry[key] || 0) + 1;
+  }
+
   function pushLog(state, actor, text, kind = "action") {
     const who = actor ? playerById(state, actor)?.name || "Someone" : "";
     state.log.push({ t: Date.now(), who, text, kind });
@@ -997,6 +1005,7 @@
         const player = playerById(state, winner);
         if (player) { player.out = false; state.turn.index = state.players.indexOf(player); }
         state.lastWinner = winner;
+        bump(state, winner, "challenges");
         pushLog(state, winner, `👑 ${player?.name} wins the challenge and takes the pile (${size} card${size === 1 ? "" : "s"})`, "move");
       } else if (zone.challenge && zone.challenge.by !== flipper) {
         // Keep flipping until you answer or run out of chances.
@@ -2849,6 +2858,8 @@
       // Other offers that promised the cards that just moved are now void.
       const moved = new Set([...offer.cards, ...back]);
       state.offers = offers.filter((entry) => entry !== offer && !entry.cards.some((id) => moved.has(id)));
+      bump(state, who.id, "trades");
+      bump(state, from.id, "trades");
       pushLog(state, who.id, `🤝 ${who.name} accepted ${from.name}'s trade`, "move");
     },
     callBluff(state, action, actor, opts) {
@@ -2861,6 +2872,8 @@
       const claimer = playerById(state, claim.by);
       const shown = claim.cards.map((id) => state.cards[id]).filter(Boolean);
       const lie = shown.some((card) => card.rank !== claim.rank);
+      bump(state, caller.id, "calls");
+      if (lie) { bump(state, caller.id, "rightCalls"); bump(state, claim.by, "caught"); }
       const loser = lie ? claimer : caller;
       const home = loser ? resolveZones(state, `${zone.rule.claimTo || "hand"}@p:${loser.id}`)[0] : null;
       const size = zone.cards.length;
@@ -2891,6 +2904,7 @@
           player.out = false;
         }
         delete zone.challenge;
+        bump(state, player.id, "slaps");
         pushLog(state, player.id, `👋 ${player.name} slapped ${reason} and takes ${won.length} card${won.length === 1 ? "" : "s"}`, "move");
         state.turn.index = state.players.indexOf(player);
         state.lastWinner = player.id;
@@ -2898,6 +2912,7 @@
       }
       const burn = home ? state.zones[home].cards[state.zones[home].cards.length - 1] : null;
       if (burn) moveCards(state, [burn], zone.id, { index: 0, face: "up" });
+      bump(state, player.id, "wrongSlaps");
       pushLog(state, player.id, `✋ ${player.name} slapped wrong${burn ? " and burns a card under the pile" : ""}`, "warn");
     },
     counter(state, action) {

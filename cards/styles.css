@@ -958,3 +958,5 @@ body[data-motion="0"] *, body[data-motion="0"] *::before { animation-duration: 0
 .offer .grow { flex: 1 1 240px; min-width: 0; }
 .offer-cards { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .offer-cards .card { position: relative; }
+.talk-row .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.talk-stats { display: flex; gap: 10px; font-variant-numeric: tabular-nums; }

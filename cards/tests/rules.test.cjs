@@ -1064,3 +1064,27 @@ console.log("real-time tests passed");
   assert.ok(out.finished, `real-time shedding finishes (${out.steps})`);
 }
 console.log("real-time wizard tests passed");
+
+// Table talk: per-player tallies for slaps, calls, challenges and trades.
+{
+  let state = Engine.createTable(Presets.get("slapjack"), { players: ["Ana", "Ben"] });
+  const [ana, ben] = state.players.map((player) => player.id);
+  const pile = zone(state, "pile").id;
+  state = run(state, "Deal out");
+  state = pull(state, "3h", pile, "up");
+  state = act(state, { type: "slap", zone: pile, player: ben }, null);
+  state = pull(state, "Jd", pile, "up");
+  state = act(state, { type: "slap", zone: pile, player: ben }, null);
+  assert.deepEqual(state.stats[ben], { wrongSlaps: 1, slaps: 1 });
+  assert.equal(state.stats[ana], undefined);
+  let cheat = Engine.createTable(Presets.get("cheat"), { players: ["Ana", "Ben", "Cy"] });
+  const cp = zone(cheat, "pile").id;
+  cheat = act(cheat, { type: "setTurn", index: 0 });
+  cheat = pull(cheat, "9s", zone(cheat, "hand", cheat.players[0].id).id, "down");
+  cheat = act(cheat, { type: "move", cards: [cardIn(cheat, "9s")], to: cp }, cheat.players[0].id);
+  cheat = act(cheat, { type: "callBluff", zone: cp, player: cheat.players[1].id }, cheat.players[1].id);
+  assert.deepEqual(cheat.stats[cheat.players[1].id], { calls: 1, rightCalls: 1 });
+  assert.deepEqual(cheat.stats[cheat.players[0].id], { caught: 1 });
+  assert.ok(Engine.viewFor(cheat, cheat.players[2].id).stats, "tallies are public");
+}
+console.log("table talk tests passed");

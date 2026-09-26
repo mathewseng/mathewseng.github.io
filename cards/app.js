@@ -1360,6 +1360,7 @@
       const teams = teamTotals.map(([team, total, members]) => `<div class="list-row"><span class="grow small"><b>${esc(team)}</b> <span class="muted">${members.map((member) => esc(member.name)).join(" & ")}</span></span><strong class="mono" style="${total === bestTeam ? "color:var(--gold)" : ""}">${E.fmt(total)}</strong></div>`).join("");
       return block("Quick score", quick + race, `<button class="btn sm" data-act="scoreboard" title="Big scoreboard for the table">⛶ Scoreboard</button>`)
         + (teams ? block("Teams", `<div class="list">${teams}</div><p class="hint">Team totals add up each member's score. Set teams in the Players tab.</p>`) : "")
+        + tableTalkHTML(v)
         + block("Score sheet", scoreChartHTML(v) + sheet)
         + block("End of game", settings)
         + block("Custom scoring", custom)
@@ -5049,6 +5050,25 @@
     if (!show) return;
     dock.innerHTML = view.macros.slice(0, 3).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("")
       + `<button class="btn sm" data-act="hint" title="Hint">💡</button><button class="btn sm primary" data-act="next-turn">Next ›</button>`;
+  }
+
+  /** Slaps, calls, challenges and trades per player, once any have happened. */
+  function tableTalkHTML(v) {
+    const stats = v.stats || {};
+    const rows = v.players.filter((player) => stats[player.id]);
+    if (!rows.length) return "";
+    const cell = (value, title) => `<span title="${esc(title)}">${value}</span>`;
+    const line = (player) => {
+      const s = stats[player.id];
+      const bits = [];
+      if (s.slaps || s.wrongSlaps) bits.push(cell(`👋 ${s.slaps || 0}/${(s.slaps || 0) + (s.wrongSlaps || 0)}`, "Good slaps / all slaps"));
+      if (s.calls) bits.push(cell(`🔍 ${s.rightCalls || 0}/${s.calls}`, "Calls that caught a bluff / all calls"));
+      if (s.caught) bits.push(cell(`🤥 ${s.caught}`, "Times caught bluffing"));
+      if (s.challenges) bits.push(cell(`👑 ${s.challenges}`, "Challenges won"));
+      if (s.trades) bits.push(cell(`🤝 ${s.trades}`, "Trades made"));
+      return `<div class="list-row talk-row" style="--c:${esc(player.color)}"><span class="grow small"><i class="swatch"></i> <b>${esc(player.name)}</b></span><span class="talk-stats small">${bits.join("")}</span></div>`;
+    };
+    return block("Table talk", `<div class="list">${rows.map(line).join("")}</div><p class="hint">Playtest reflexes and reads: who slaps well, who calls right, who gets caught.</p>`);
   }
 
   // ========================================================== SCOREBOARD
