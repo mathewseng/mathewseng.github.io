@@ -925,6 +925,34 @@ function solverMetricDigest(result) {
   };
 }
 
+for (const variant of ["low", "badeucey", "bdp", "cribbage"]) {
+  for (const jokers of [0, 1, 2]) {
+    const ids = core.dealSeeded(13, jokers, `13-CARD-EV-${variant}-${jokers}`);
+    for (const topRepeatMinRank of variant === "bdp" ? [2] : [2, 11]) {
+      const options = { variant, mode: "exact", allowUnsupportedCardCount: true, topRepeatMinRank };
+      const solved = trainer.solveVariantHand(ids, variant, options);
+      const reference = core.solveHand(ids, { ...options, legacyIndependentSearch: true });
+      assert.deepEqual(solverMetricDigest(solved), solverMetricDigest(reference), `${variant} 13C/${jokers}J: exact search parity`);
+      for (const solution of [solved.bestRoyalty, solved.bestRepeat].filter(Boolean)) {
+        const rows = Object.fromEntries(["top", "middle", "bottom"].map((role) => [role, solution[role].ids]));
+        const placed = Object.values(rows).flat();
+        assert.equal(new Set(placed).size, 13, "13-card analysis must use every dealt card exactly once");
+        assert.deepEqual(placed.slice().sort(), ids.slice().sort());
+        const scored = core.evaluateBoard(ids, rows, options);
+        assert.ok(scored.legal);
+        assert.equal(scored.points, solution.points);
+        assert.equal(scored.repeat, solution.repeat);
+      }
+    }
+  }
+}
+
+for (const variant of ["low", "badeucey", "bdp"]) {
+  const unqualifiable = "As Ks Qs Js Ts 9s 8s 7s 6s 5s 4s 3s 2s".split(" ");
+  const solved = trainer.solveVariantHand(unqualifiable, variant, { allowUnsupportedCardCount: true });
+  assert.equal(solved.best, null, `${variant}: a 13-card all-spade deal cannot qualify in the middle/top`);
+}
+
 [
   ["low", 14, 2, { mode: "exact" }],
   ["badeucey", 14, 2, { mode: "exact" }],

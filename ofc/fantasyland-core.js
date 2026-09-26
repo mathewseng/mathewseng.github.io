@@ -323,8 +323,8 @@
   // Analysis may include hypothetical deals without changing playable rules.
   function analysisCardCounts(value) {
     return ["badeucey", "bdp"].includes(normalizeVariant(value))
-      ? [14, 15, 16, 17, 18, 19]
-      : [14, 15, 16, 17];
+      ? [13, 14, 15, 16, 17, 18, 19]
+      : [13, 14, 15, 16, 17];
   }
 
   function analysisScenarios(value) {

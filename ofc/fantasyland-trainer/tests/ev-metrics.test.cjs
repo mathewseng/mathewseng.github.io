@@ -75,7 +75,7 @@ assert.ok(exactHigh.best, "EV High samples must use the trainer's complete solve
 
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   const scenarios = Array.from(api.scenariosForVariant(variant), (scenario) => ({ cards: scenario.cards, jokers: scenario.jokers }));
-  const counts = ["badeucey", "bdp"].includes(variant) ? [14, 15, 16, 17, 18, 19] : [14, 15, 16, 17];
+  const counts = ["badeucey", "bdp"].includes(variant) ? [13, 14, 15, 16, 17, 18, 19] : [13, 14, 15, 16, 17];
   assert.equal(scenarios.length, counts.length * 3, `${variant}: EV should include every exact-hand configuration`);
   assert.deepEqual(
     [...new Set(scenarios.map((scenario) => scenario.cards))],
@@ -84,7 +84,7 @@ core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   );
 });
 
-[14, 15, 16, 17, 18, 19].forEach((cards) => {
+[13, 14, 15, 16, 17, 18, 19].forEach((cards) => {
   [1, 2].forEach((deckJokers) => {
     const sum = Array.from({ length: deckJokers + 1 }, (_, jokers) => api.hypergeometricJokers(cards, jokers, deckJokers)).reduce((total, value) => total + value, 0);
     closeTo(sum, 1, `${cards} cards / ${deckJokers}J deck probabilities should sum to one`);

@@ -17,13 +17,13 @@ fs.mkdirSync(output, { recursive: true });
       for (const variant of ["badeucey", "bdp", "high", "low", "cribbage"]) {
         await page.locator(`label:has(input[name="variant"][value="${variant}"])`).click();
         const extended = ["badeucey", "bdp"].includes(variant);
-        const expected = extended ? 18 : 12;
+        const expected = extended ? 21 : 15;
         assert.equal(await page.locator("#matrix-body tr").count(), expected);
         assert.equal(await page.locator("#ev-chart .chart-row").count(), expected);
         assert.equal(await page.locator("#repeat-source-chart .repeat-source-row").count(), expected);
         assert.equal(await page.locator("#distribution-chart .distribution-row").count(), expected);
-        assert.equal(await page.locator("#deck-matrix-body tr").count(), extended ? 12 : 8);
-        assert.equal(await page.locator("#joker-probability-body tr").count(), extended ? 12 : 8);
+        assert.equal(await page.locator("#deck-matrix-body tr").count(), extended ? 14 : 10);
+        assert.equal(await page.locator("#joker-probability-body tr").count(), extended ? 14 : 10);
         assert.match(await page.locator("#matrix-meta").innerText(), /10,000 samples\/config/);
         assert.ok(!/NaN|Infinity|undefined/.test(await page.locator("main").innerText()));
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no page-wide horizontal overflow");
@@ -33,27 +33,26 @@ fs.mkdirSync(output, { recursive: true });
           assert.ok(metadata.y >= heading.y + heading.height, "mobile matrix metadata sits below the title");
           assert.ok(heading.height < 45, "matrix title is not squeezed into a narrow column");
         }
-        if (!extended) continue;
-        for (const cards of [18, 19]) for (const jokers of [0, 1, 2]) {
+        for (const cards of extended ? [13, 18, 19] : [13]) for (const jokers of [0, 1, 2]) {
           const row = page.locator(`#matrix-body tr[data-config="${cards}-${jokers}"]`);
           assert.equal(await row.locator('[data-value="samples"]').innerText(), "10,000");
           const expectedEv = await page.evaluate(({ variant, cards, jokers }) => window.OFCFantasylandPrecomputed.results[variant][`${cards}-${jokers}`].immediate, { variant, cards, jokers });
           assert.equal(Number(await row.locator('[data-value="immediate"]').innerText()), Number(expectedEv.toFixed(2)));
         }
-        await page.locator('button[aria-label="Show repeat details for 19 cards and 2 jokers"]').click();
-        assert.match(await page.locator("#repeat-source-detail").innerText(), /19 cards \/ 2 jokers/);
+        await page.locator('button[aria-label="Show repeat details for 13 cards and 2 jokers"]').click();
+        assert.match(await page.locator("#repeat-source-detail").innerText(), /13 cards \/ 2 jokers/);
         await page.locator("#repeat-source-panel").screenshot({ path: `${output}/${variant}-${width}-repeats.png` });
         await page.locator('section[aria-labelledby="matrix-title"]').screenshot({ path: `${output}/${variant}-${width}-matrix.png` });
-        if (variant === "badeucey") {
+        if (["low", "badeucey", "cribbage"].includes(variant)) {
           await page.locator('label:has(#top-repeat-jacks-plus)').click();
-          const expectedRepeat = await page.evaluate(() => window.OFCFantasylandPrecomputed.topRepeatJacksPlusResults.badeucey["19-2"].repeatRate);
-          const actual = await page.locator('#matrix-body [data-config="19-2"] [data-value="repeat"]').innerText();
+          const expectedRepeat = await page.evaluate((variant) => window.OFCFantasylandPrecomputed.topRepeatJacksPlusResults[variant]["13-2"].repeatRate, variant);
+          const actual = await page.locator('#matrix-body [data-config="13-2"] [data-value="repeat"]').innerText();
           assert.equal(actual, `${(expectedRepeat * 100).toFixed(1)}%`);
-          assert.equal(await page.locator("#matrix-body tr").count(), 18);
+          assert.equal(await page.locator("#matrix-body tr").count(), expected);
           await page.reload();
-          await page.locator('label:has(input[name="variant"][value="badeucey"])').click();
+          await page.locator(`label:has(input[name="variant"][value="${variant}"])`).click();
           assert.equal(await page.locator("#top-repeat-jacks-plus").isChecked(), true);
-          assert.equal(await page.locator("#ev-chart .chart-row").count(), 18, "cached data retains extended rows");
+          assert.equal(await page.locator("#ev-chart .chart-row").count(), expected, "cached data retains extended rows");
           await page.locator('label:has(#top-repeat-jacks-plus)').click();
         }
       }

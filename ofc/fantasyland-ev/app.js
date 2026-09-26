@@ -66,7 +66,7 @@
     settings: savedSettings,
     cancelRun: null,
     precomputedSamples: 0,
-    repeatDetailScenario: "14-0",
+    repeatDetailScenario: "13-0",
   };
 
   const els = {};
@@ -817,7 +817,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260925a");
+          worker = new Worker("./worker.js?v=20260925b");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);

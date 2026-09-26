@@ -4,8 +4,9 @@ const trainer = require("../app.js");
 
 for (const variant of core.ACTIVE_VARIANT_ORDER) {
   const extended = ["badeucey", "bdp"].includes(variant);
-  assert.deepEqual(core.analysisCardCounts(variant), extended ? [14, 15, 16, 17, 18, 19] : [14, 15, 16, 17]);
-  assert.equal(core.analysisScenarios(variant).length, extended ? 18 : 12);
+  assert.deepEqual(core.analysisCardCounts(variant), extended ? [13, 14, 15, 16, 17, 18, 19] : [13, 14, 15, 16, 17]);
+  assert.equal(core.analysisScenarios(variant).length, extended ? 21 : 15);
+  assert.equal(core.supportsVariantCardCount(variant, 13), false);
   assert.equal(core.supportsVariantCardCount(variant, 18), false, "EV expansion must not change playable rules");
   assert.equal(core.supportsVariantCardCount(variant, 19), false);
   assert.throws(() => core.solveHand(core.dealSeeded(20, 0, "limit"), { variant, allowUnsupportedCardCount: true }), RangeError);

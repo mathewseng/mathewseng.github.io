@@ -24,7 +24,7 @@ assert.equal(firstCachedEvaluation.strength, remappedEvaluation.strength, "cache
 assert.ok(remappedEvaluation.assignments.has(20), "cached joker assignments must be remapped to the current hand indexes");
 assert.ok(!remappedEvaluation.assignments.has(0), "cached joker assignments must not leak indexes from an earlier hand");
 
-for (const cards of [14, 15, 16, 17]) {
+for (const cards of [13, 14, 15, 16, 17]) {
   for (const jokers of [0, 1, 2]) {
     const sampleCount = jokers === 2 ? 2 : jokers === 1 ? 3 : 8;
     for (let sample = 0; sample < sampleCount; sample += 1) {
