@@ -163,6 +163,7 @@
     }
     if (net.mode === "host") publish();
     announceNewLog(state);
+    announceTurn(state);
     pruneSelection();
     render();
   }
@@ -184,6 +185,18 @@
       else if (entry.kind === "chat" && net.mode !== "local" && entry.who !== myName && prefs.tab !== "log") toast(`💬 ${entry.who}: ${entry.text}`);
       else if (entry.kind === "round" && /Game over/.test(entry.text)) toast(entry.text, "good");
     }
+  }
+
+  // Online: tell a player when the turn comes to them, in a toast and the tab title.
+  let wasMyTurn = false;
+  const baseTitle = document.title;
+  function announceTurn(source) {
+    if (net.mode === "local" || !source) { wasMyTurn = false; document.title = baseTitle; return; }
+    const mine = mySeatId(source);
+    const now = Boolean(mine) && source.players[source.turn.index]?.id === mine;
+    if (now && !wasMyTurn) toast("Your turn", "good");
+    document.title = now ? "● Your turn · " + baseTitle : baseTitle;
+    wasMyTurn = now;
   }
 
   function mySeat(source = state) {
@@ -1274,6 +1287,7 @@
       const seedBlock = `<div class="row tight"><input id="seedInput" type="text" value="${esc(prefs.seed || "")}" placeholder="any word or number" class="grow" style="flex:1;width:auto" data-fk="seed"><button class="btn sm primary" data-act="seed-apply">Use seed</button>${prefs.seed ? `<button class="btn sm" data-act="seed-clear">Random</button>` : ""}</div>
         <p class="hint">${prefs.seed ? `Shuffles follow seed <b>${esc(prefs.seed)}</b>. The same actions in the same order give the same deals, so a tricky situation can be replayed.` : "Set a seed to make shuffles repeatable, so a deal can be replayed exactly."}</p>`;
       return block("Deal simulator", simulatorHTML(v))
+        + block("Bot games", botGamesHTML(v))
         + block("Dice & randomness", diceBlock)
         + block("Seeded shuffles", seedBlock)
         + block("Turn timer", timerBlock)
@@ -1725,7 +1739,8 @@
           <div class="row"><input type="text" readonly value="${esc(link)}" class="grow" style="flex:1;width:auto" id="inviteLink"><button type="button" class="btn" data-copy>Copy invite</button></div>
           <div class="list">${net.roster.map((member) => {
             const seat = view.players.find((p) => p.clientId === member.id);
-            return `<div class="list-row"><span class="swatch" style="--c:${esc(seat?.color || "#555")}"></span><span class="grow small"><b>${esc(member.name)}</b>${member.host ? " · host" : ""}${member.connected ? "" : " · reconnecting"}</span><span class="small muted">${seat ? esc(seat.name) : "spectating"}</span></div>`;
+            const canFree = net.mode === "host" && seat && member.id !== net.room?.clientId;
+            return `<div class="list-row"><span class="swatch" style="--c:${esc(seat?.color || "#555")}"></span><span class="grow small"><b>${esc(member.name)}</b>${member.host ? " · host" : ""}${member.connected ? "" : " · reconnecting"}</span><span class="small muted">${seat ? esc(seat.name) : "spectating"}</span>${canFree ? `<button type="button" class="btn sm ghost" data-free-seat="${esc(member.id)}" title="Free this seat for someone else">Free seat</button>` : ""}</div>`;
           }).join("")}</div>
           <p class="hint">You are ${net.mode === "host" ? "hosting — the table lives in your browser. If you leave, another player takes over." : "connected as a guest"}. Choose your seat with the view menu at the top.</p>
           ${net.mode === "host" ? `<label class="field"><span>Guests can</span><select name="guestMode">
@@ -1738,6 +1753,13 @@
       openDialog(html, {
         bind(form) {
           form.guestMode?.addEventListener("change", () => dispatch({ type: "setGuestMode", mode: form.guestMode.value }));
+          form.addEventListener("click", (event) => {
+            const free = event.target.closest("[data-free-seat]");
+            if (!free) return;
+            dispatch({ type: "releaseSeat", clientId: free.dataset.freeSeat });
+            free.closest(".list-row").querySelector(".muted").textContent = "spectating";
+            free.remove();
+          });
           form.querySelector("[data-copy]").addEventListener("click", () => {
             navigator.clipboard?.writeText(link).then(() => toast("Invite link copied", "good"), () => { $("#inviteLink").select(); });
           });
@@ -1792,6 +1814,7 @@
       if (net.mode !== "client") return;
       state = next;
       announceNewLog(state);
+      announceTurn(state);
       pruneSelection();
       render();
     };
@@ -2262,6 +2285,11 @@
         }
         break;
       case "simulate": readSimCfg(); runSimulation(); break;
+      case "bot-games":
+        botGames.cfg.deal = $("#bgDeal")?.value || botGames.cfg.deal;
+        botGames.cfg.games = Number($("#bgGames")?.value) || botGames.cfg.games;
+        runBotGames();
+        break;
       case "seed-apply": setSeed($("#seedInput").value); render(); break;
       case "seed-clear": setSeed(""); render(); break;
       case "pull-cards": {
@@ -2452,6 +2480,8 @@
       }
       if (d.cfg === "maxRounds") return dispatch({ type: "scoreConfig", maxRounds: Number(el.value) || 0 });
       if (["simMacro", "simTarget", "simEval", "simTrials"].includes(el.id)) return readSimCfg();
+      if (el.id === "bgDeal") { botGames.cfg.deal = el.value; return; }
+      if (el.id === "bgGames") { botGames.cfg.games = Number(el.value) || 30; return; }
       if (d.roundLabel) return dispatch({ type: "renameRound", round: d.roundLabel, label: el.value });
       if (d.cfg === "label") return dispatch({ type: "scoreConfig", label: el.value });
       if (d.cfg === "target") return dispatch({ type: "scoreConfig", target: Number(el.value) });
@@ -2900,7 +2930,7 @@
   function openTriggerDialog(triggerId) {
     const v = view;
     const existing = triggerId ? v.triggers.find((entry) => entry.id === triggerId) : null;
-    const draft = existing ? E.clone(existing) : { event: "empty", zone: E.orderedZones(v, "table")[0]?.key || "", n: 0, phase: v.phases[0] || "", macro: v.macros[0]?.id || "", label: "", off: false };
+    const draft = existing ? E.clone(existing) : { event: "played", zone: E.orderedZones(v, "table").find((zone) => zone.rule?.place)?.key || E.orderedZones(v, "table")[0]?.key || "", n: 0, phase: v.phases[0] || "", card: "", during: "", macro: v.macros[0]?.id || "", label: "", off: false };
     const refs = new Set();
     E.orderedZones(v, "table").forEach((zone) => refs.add(zone.key || zone.name.toLowerCase()));
     v.seatTemplate.forEach((tpl) => refs.add(tpl.key));
@@ -2912,12 +2942,15 @@
             <label class="field"><span>When</span><select name="event">${Object.entries(E.TRIGGER_EVENTS).map(([id, def]) => `<option value="${id}"${draft.event === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
             ${fields.includes("zone") ? `<label class="field"><span>Group <span class="dim">a table group, or a seat group for every player</span></span><input type="text" name="zone" list="triggerRefs" value="${esc(draft.zone)}" required></label>` : ""}
             ${fields.includes("n") ? `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>` : ""}
-            ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label><datalist id="phaseNames">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist>` : ""}
+            ${fields.includes("card") ? `<label class="field"><span>Card <span class="dim">rank, name or card like Qs; blank = any</span></span><input type="text" name="card" maxlength="24" value="${esc(draft.card || "")}" placeholder="e.g. Skip, 8, Qs"></label>` : ""}
+            ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label>` : ""}
+            <label class="field"><span>Only during phase <span class="dim">optional</span></span><input type="text" name="during" list="phaseNames" value="${esc(draft.during || "")}" placeholder="any phase"></label>
+            <datalist id="phaseNames">${v.phases.map((phase) => `<option value="${esc(phase)}">`).join("")}</datalist>
             <label class="field"><span>Run action</span><select name="macro">${v.macros.map((macro) => `<option value="${macro.id}"${draft.macro === macro.id ? " selected" : ""}>${esc(macro.label)}</option>`).join("")}</select></label>
             <label class="field"><span>Label <span class="dim">optional</span></span><input type="text" name="label" maxlength="60" value="${esc(draft.label)}" placeholder="${esc(E.describeTrigger(draft, v))}"></label>
           </div>
           <label class="check"><input type="checkbox" name="on"${draft.off ? "" : " checked"}> Enabled</label>
-          <p class="hint">Triggers fire after play (moves, draws, actions, turns), never while you set up or collect. Inside the action, <code>@subject</code> and <code>@winner</code> mean the player it fired for: whoever emptied their hand, played the last card, or won the game.</p>
+          <p class="hint">Triggers fire after play (moves, draws, actions, turns), never while you set up or collect. Inside the action, <code>@subject</code> and <code>@winner</code> mean the player it fired for: whoever played the card, emptied their hand, played the last card, or won the game. “A card is played” is how you give cards effects, e.g. Skip → next turn.</p>
           ${v.macros.length ? "" : `<p class="hint" style="color:var(--gold)">Build an action first (Play → + New action). A trigger runs one.</p>`}
         </div>
         <div class="dlg-foot">${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save" ${v.macros.length ? "" : "disabled"}>Save</button></div>`;
@@ -2927,6 +2960,8 @@
       if (form.zone) draft.zone = form.zone.value;
       if (form.n) draft.n = Number(form.n.value) || 0;
       if (form.phase) draft.phase = form.phase.value;
+      if (form.card) draft.card = form.card.value;
+      draft.during = form.during.value;
       if (form.macro) draft.macro = form.macro.value;
       draft.label = form.label.value;
       draft.off = !form.on.checked;
@@ -3541,17 +3576,6 @@
   const bots = { timer: null, paused: false, streak: 0, idleRev: -1 };
   const BOT_DELAY = { slow: 1100, normal: 480, fast: 60 };
 
-  function pickPlay(source, playerId) {
-    const plays = E.legalPlays(source, playerId);
-    if (!plays.length) return null;
-    const onTable = plays.filter((play) => source.zones[play.to]?.area === "table");
-    const pool = onTable.length ? onTable : plays;
-    const style = prefs.botStyle || "random";
-    if (style === "random") return pool[Math.floor(Math.random() * pool.length)];
-    const value = (play) => E.RANK_ORDER[source.cards[play.card]?.rank] ?? Number(source.cards[play.card]?.rank) ?? 0;
-    return pool.slice().sort((a, b) => (style === "low" ? value(a) - value(b) : value(b) - value(a)))[0];
-  }
-
   /** Let a bot take its turn when it's up (local and host only). */
   function scheduleBots() {
     clearTimeout(bots.timer);
@@ -3562,11 +3586,7 @@
     bots.timer = setTimeout(() => botTurn(player.id), BOT_DELAY[prefs.botSpeed || "normal"] ?? 480);
   }
 
-  function holdsCards(source, playerId) {
-    return E.orderedZones(source, playerId).some((zone) => (zone.visibility !== "public" || zone.kind === "hand") && zone.cards.length);
-  }
-
-  /** One move: a legal play, else the "can't play" action and a retry, else pass the turn. */
+  /** One bot move, computed by the engine and applied as a single undoable step. */
   function botTurn(playerId, manual = false) {
     bots.timer = null;
     if (!state || state.players[state.turn.index]?.id !== playerId) return;
@@ -3580,29 +3600,94 @@
         return;
       }
     }
-    const playFrom = (play) => {
-      const advances = Boolean(state.zones[play.to]?.rule?.advance) && state.rulesMode !== "off";
-      const before = state.turn.index;
-      const error = applyLocal({ type: "move", cards: [play.card], to: play.to }, playerId, { quiet: true });
-      if (!error && !advances && state.turn.index === before && state.players[before]?.id === playerId) applyLocal({ type: "nextTurn" }, playerId, { quiet: true });
-      return !error;
-    };
-    const play = pickPlay(state, playerId);
-    if (play && playFrom(play)) return;
-    const fallback = state.botFallback ? E.findMacro(state, state.botFallback) : null;
-    if (!fallback && !holdsCards(state, playerId)) {
+    let result;
+    try {
+      result = E.botStep(state, playerId, { style: prefs.botStyle || "random" });
+    } catch (error) {
+      bots.paused = true;
+      toast("Bots paused: " + (error.message || error), "error");
+      renderPane();
+      return;
+    }
+    if (result.did === "idle") {
       bots.idleRev = state.rev;
       if (manual) toast("Nothing to play: no cards, and no “can't play” action is set.", "warn");
       return;
     }
-    const before = state.turn.index;
-    if (fallback) {
-      applyLocal({ type: "runMacro", id: fallback.id }, playerId, { quiet: true });
-      if (state.turn.index !== before) return;
-      const retry = pickPlay(state, playerId);
-      if (retry && playFrom(retry)) return;
-    }
-    if (state.players[state.turn.index]?.id === playerId) applyLocal({ type: "nextTurn" }, playerId, { quiet: true });
+    history.push(state);
+    if (history.length > 120) history.shift();
+    future = [];
+    state = result.state;
+    afterChange();
+  }
+
+  // ========================================================= BOT GAMES
+  const botGames = { running: false, progress: 0, result: null, cfg: { deal: "", games: 30, maxSteps: 6000 } };
+
+  function runBotGames() {
+    if (net.mode === "client") return toast("Only the host can run bot games.", "error");
+    if (botGames.running) return;
+    const base = E.clone(state);
+    const deal = base.macros.find((macro) => macro.id === botGames.cfg.deal) || base.macros[0];
+    if (!deal) return toast("Build a deal action first.", "error");
+    if (!base.scores.target && !base.scores.maxRounds) return toast("Set how the game ends first (Scores → End of game), or games never finish.", "error");
+    const games = Math.max(1, Math.min(500, Number(botGames.cfg.games) || 30));
+    const seats = base.players.length;
+    const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0 };
+    const previousRng = E.getRng();
+    E.setRng(Math.random);
+    botGames.running = true;
+    botGames.progress = 0;
+    const started = performance.now();
+    const next = () => {
+      const budget = performance.now() + 40;
+      while (tally.games < games && performance.now() < budget) {
+        let out;
+        try { out = E.playOut(base, { deal: deal.id, maxSteps: botGames.cfg.maxSteps, style: prefs.botStyle || "random" }); } catch (error) { out = null; }
+        tally.games += 1;
+        if (!out) continue;
+        tally.steps += out.steps;
+        tally.longest = Math.max(tally.longest, out.steps);
+        tally.rounds += out.state.turn.round;
+        const totals = E.totals(out.state);
+        out.state.players.forEach((player, seat) => { tally.scores[seat] += totals[player.id] || 0; });
+        if (out.finished) {
+          tally.finished += 1;
+          const winners = out.state.gameOver.winners;
+          if (winners.length > 1) tally.ties += 1;
+          else tally.wins[out.state.players.findIndex((player) => player.id === winners[0])] += 1;
+        }
+      }
+      botGames.progress = tally.games / games;
+      if (tally.games < games && botGames.running) {
+        if (prefs.tab === "tools") renderPane();
+        setTimeout(next, 0);
+        return;
+      }
+      E.setRng(previousRng);
+      botGames.running = false;
+      botGames.result = { ...tally, deal: deal.label, ms: performance.now() - started, names: base.players.map((player) => player.name) };
+      renderPane();
+    };
+    renderPane();
+    setTimeout(next, 0);
+  }
+
+  function botGamesHTML(v) {
+    const r = botGames.result;
+    const ends = v.scores.target ? `first to ${E.fmt(v.scores.target)}` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds` : "no end condition";
+    const seatRows = r ? r.wins.map((wins, seat) => {
+      const rate = r.finished ? wins / r.finished : 0;
+      return `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label">${esc(r.names[seat] || "Seat " + (seat + 1))}</span><div class="prob-bar grow"><span style="width:${rate * 100}%"></span><em>${pct(rate)} · avg ${E.fmt(Math.round((r.scores[seat] / Math.max(1, r.games)) * 10) / 10)}</em></div></div>`;
+    }).join("") : "";
+    return `<div class="grid-2">
+        <label class="field"><span>Start each round with</span><select id="bgDeal">${v.macros.map((macro) => `<option value="${macro.id}"${botGames.cfg.deal === macro.id ? " selected" : ""}>${esc(macro.label)}</option>`).join("")}</select></label>
+        <label class="field"><span>Games</span><input id="bgGames" type="number" min="1" max="500" value="${botGames.cfg.games}"></label>
+      </div>
+      <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays random legal cards to the end (${esc(ends)}).</span></div>
+      ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.steps / Math.max(1, r.games))} moves, ${(r.rounds / Math.max(1, r.games)).toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
+        <div class="small muted">Win rate and average final score by seat</div><div class="list">${seatRows}</div>` : ""}
+      <p class="hint">Needs play rules on the groups where cards are played, and an end condition. Use it to spot seat-order advantages or games that drag on.</p>`;
   }
 
   // ======================================================== PRINT & PLAY

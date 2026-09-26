@@ -147,7 +147,7 @@ const totalCards = (state) => Object.values(state.zones).reduce((sum, entry) => 
   assert.throws(() => act(state, { type: "move", cards: [cardIn(state, "7h")], to: discard }, ana), /suit or rank/);
   state = act(state, { type: "setRules", mode: "warn" });
   state = act(state, { type: "move", cards: [cardIn(state, "7h")], to: discard }, ana);
-  assert.equal(zone(state, "hand", ana).cards.length, 0);
+  assert.equal(zone(state, "hand", ana).cards.length, 7, "going out deals the next hand");
   assert.equal(Engine.totals(state)[ana], benPenalty, "going out scores the other hand");
   assert.equal(state.turn.round, 2);
   // Emptying the stock reshuffles the discards (keeping the top card).
@@ -379,3 +379,53 @@ console.log("rules tests passed");
 }
 
 console.log("bot, meld and refill tests passed");
+
+// Card-played triggers drive action cards; bots can play whole games to the end.
+{
+  Engine.setRng(Engine.seededRng("clash"));
+  let state = Engine.createTable(Presets.get("color-clash"), { players: ["Ana", "Ben", "Cy"] });
+  state = act(state, { type: "setRules", mode: "enforce" });
+  state = run(state, "Deal 7");
+  const discard = zone(state, "discard").id;
+  const [ana, ben, cy] = state.players.map((p) => p.id);
+  const give = (label, suit, to) => {
+    const id = Object.values(state.cards).find((card) => card.label === label && card.suit === suit && !zone(state, "discard").cards.includes(card.id)).id;
+    state = act(state, { type: "move", cards: [id], to: zone(state, "hand", to).id });
+    return id;
+  };
+  // Put a red 5 on the discard, then Ana plays a red Skip: Ben is skipped.
+  state = act(state, { type: "move", cards: [Object.values(state.cards).find((c) => c.label === "5" && c.suit === "Red").id], to: discard });
+  state = act(state, { type: "setTurn", index: 0 });
+  const skip = give("Skip", "Red", ana);
+  state = act(state, { type: "move", cards: [skip], to: discard }, ana);
+  assert.equal(current(state), cy, "Skip jumps over Ben");
+  // Cy plays a red Draw Two: Ana draws two and loses her turn.
+  const anaCards = zone(state, "hand", ana).cards.length;
+  const plus2 = give("Draw Two", "Red", cy);
+  state = act(state, { type: "move", cards: [plus2], to: discard }, cy);
+  assert.equal(zone(state, "hand", ana).cards.length, anaCards + 2);
+  assert.equal(current(state), ben);
+  // Ben plays a red Reverse: direction flips and play goes back to Cy.
+  const rev = give("Reverse", "Red", ben);
+  state = act(state, { type: "move", cards: [rev], to: discard }, ben);
+  assert.equal(state.turn.dir, -1);
+  assert.equal(current(state), ana, "after Ben's reverse, play goes the other way from Ben");
+  // Triggers can be limited to a phase.
+  state = act(state, { type: "saveMacro", macro: { label: "Cheer", steps: [{ op: "log", text: "cheer" }] } });
+  state = act(state, { type: "saveTrigger", trigger: { event: "played", zone: "discard", macro: "Cheer", during: "Bonus" } });
+  const cheerCard = give("3", "Red", ana);
+  state = act(state, { type: "move", cards: [cheerCard], to: discard }, ana);
+  assert.equal(state.log.some((e) => e.text === "cheer"), false);
+}
+{
+  Engine.setRng(Engine.seededRng("autoplay"));
+  const hearts = Engine.playOut(Engine.createTable(Presets.get("hearts"), { players: 4 }), { deal: "Deal all", maxSteps: 20000 });
+  assert.ok(hearts.finished, `hearts finished in ${hearts.steps} steps`);
+  assert.ok(Object.values(Engine.totals(hearts.state)).some((t) => t >= 100));
+  const c8 = Engine.playOut(Engine.createTable(Presets.get("crazy-eights"), { players: 3 }), { deal: "Deal", maxSteps: 20000 });
+  assert.ok(c8.finished, `crazy eights finished in ${c8.steps} steps`);
+  const clash = Engine.playOut(Engine.createTable(Presets.get("color-clash"), { players: 4 }), { deal: "Deal 7", maxSteps: 40000 });
+  assert.ok(clash.finished, `color clash finished in ${clash.steps} steps`);
+  console.log(`autoplay: hearts ${hearts.steps} steps / ${hearts.deals} deals, crazy eights ${c8.steps}, color clash ${clash.steps}`);
+}
+console.log("card effect and autoplay tests passed");

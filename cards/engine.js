@@ -876,6 +876,84 @@
     return isSet || run;
   }
 
+  function holdsCards(state, playerId) {
+    return orderedZones(state, playerId).some((zone) => (zone.visibility !== "public" || zone.kind === "hand") && zone.cards.length);
+  }
+
+  /** A bot's choice among its legal plays: random (seeded shuffles make it repeatable), lowest or highest. */
+  function pickPlay(state, playerId, style = "random") {
+    const plays = legalPlays(state, playerId);
+    if (!plays.length) return null;
+    const onTable = plays.filter((play) => state.zones[play.to]?.area === "table");
+    const pool = onTable.length ? onTable : plays;
+    if (style !== "low" && style !== "high") return pool[Math.floor(rng() * pool.length)];
+    const value = (play) => rankValue(state.cards[play.card], true) ?? 0;
+    return pool.slice().sort((a, b) => (style === "low" ? value(a) - value(b) : value(b) - value(a)))[0];
+  }
+
+  /**
+   * One bot turn: a legal play; else the table's "can't play" action and a
+   * retry; else pass. Returns the new state and what happened ("idle" means
+   * the bot holds nothing and has no fallback, so nothing changed).
+   */
+  function botStep(state, playerId, opts = {}) {
+    const tryPlay = (source) => {
+      const play = pickPlay(source, playerId, opts.style);
+      if (!play) return null;
+      const advances = Boolean(source.zones[play.to]?.rule?.advance) && source.rulesMode !== "off";
+      const before = source.turn.index;
+      let next = reduce(source, { type: "move", cards: [play.card], to: play.to }, playerId);
+      if (!advances && next.turn.index === before && next.players[before]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
+      return next;
+    };
+    const played = tryPlay(state);
+    if (played) return { state: played, did: "play" };
+    const fallback = state.botFallback ? findMacro(state, state.botFallback) : null;
+    if (!fallback && !holdsCards(state, playerId)) return { state, did: "idle" };
+    let next = state;
+    const before = next.turn.index;
+    if (fallback) {
+      next = reduce(next, { type: "runMacro", id: fallback.id }, playerId);
+      if (next.turn.index !== before) return { state: next, did: "fallback" };
+      const retry = tryPlay(next);
+      if (retry) return { state: retry, did: "play" };
+    }
+    if (next.players[next.turn.index]?.id === playerId) next = reduce(next, { type: "nextTurn" }, playerId);
+    return { state: next, did: "pass" };
+  }
+
+  /**
+   * Autoplay a whole game with every seat as a bot, starting each round with
+   * the `deal` action whenever nobody can move. Used to balance-test designs.
+   */
+  function playOut(start, opts = {}) {
+    let state = clone(start);
+    state.log = [];
+    state.gameOver = null;
+    state.players.forEach((player) => { player.bot = true; });
+    const deal = opts.deal ? findMacro(state, opts.deal) : null;
+    const maxSteps = clampInt(opts.maxSteps, 10, 50000, 4000);
+    let steps = 0;
+    let idle = 0;
+    let deals = 0;
+    if (deal) { state = reduce(state, { type: "runMacro", id: deal.id }); deals += 1; }
+    while (steps < maxSteps && !state.gameOver) {
+      const player = state.players[state.turn.index];
+      steps += 1;
+      const result = player && !player.out ? botStep(state, player.id, opts) : { state: reduce(state, { type: "nextTurn" }), did: "pass" };
+      state = result.state;
+      if (state.log.length > 60) state.log = state.log.slice(-10);
+      if (result.did !== "idle") { idle = 0; continue; }
+      idle += 1;
+      if (idle < state.players.length) { state = reduce(state, { type: "nextTurn" }); continue; }
+      if (!deal || deals > 500) break;
+      state = reduce(state, { type: "runMacro", id: deal.id });
+      deals += 1;
+      idle = 0;
+    }
+    return { state, steps, deals, finished: Boolean(state.gameOver) };
+  }
+
   /**
    * Every single-card play this player could legally make right now: from
    * their own groups to any group with play rules (checked as if enforced).
@@ -1408,6 +1486,7 @@
   // --------------------------------------------------------------- triggers
 
   const TRIGGER_EVENTS = {
+    played: { label: "A card is played to a group", fields: ["zone", "card"] },
     empty: { label: "A group becomes empty", fields: ["zone"] },
     allEmpty: { label: "Every copy of a group is empty", fields: ["zone"] },
     count: { label: "A group reaches N cards", fields: ["zone", "n"] },
@@ -1434,6 +1513,7 @@
     const n = Number(trigger.n) || 0;
     const name = refName(state, trigger.zone);
     switch (trigger.event) {
+      case "played": return `When ${trigger.card ? `a ${trigger.card}` : "a card"} is played to ${name || "a group"}`;
       case "empty": return `When ${name || "a group"} is empty`;
       case "allEmpty": return `When every ${name || "group"} is empty`;
       case "count": return `When ${name || "a group"} has ${n || "one card per player"}${n ? " card" + (n === 1 ? "" : "s") : ""}`;
@@ -1455,12 +1535,34 @@
     return top?.playedBy || state.players[state.turn.index]?.id || null;
   }
 
+  /** Does a card match a trigger's card filter: "Qs", a rank ("8", "Skip"), a label or a suit word? */
+  function cardMatches(card, filter) {
+    if (!filter) return true;
+    const spec = parseCardSpec(filter);
+    if (spec?.joker) return card.rank === "JK";
+    if (spec) return !card.custom && card.rank === spec.rank && card.suit === spec.suit;
+    return normRank(card.rank) === normRank(filter) || sameText(card.label, filter) || sameText(card.suit, filter) || sameText(suitWord(card.suit), filter);
+  }
+
   function firedTriggers(before, state, actor) {
     const out = [];
     const count = (source, id) => source.zones[id]?.cards.length;
     for (const trigger of state.triggers || []) {
       if (trigger.off) continue;
+      if (trigger.during && !sameText(trigger.during, state.turn.phase)) continue;
       switch (trigger.event) {
+        case "played": {
+          for (const id of resolveZones(state, trigger.zone)) {
+            const was = new Set(before.zones[id]?.cards || []);
+            if (!before.zones[id]) continue;
+            for (const cardId of state.zones[id].cards) {
+              const card = state.cards[cardId];
+              if (was.has(cardId) || !card?.playedBy || !cardMatches(card, trigger.card)) continue;
+              out.push({ trigger, subject: card.playedBy });
+            }
+          }
+          break;
+        }
         case "empty":
         case "count": {
           const need = trigger.event === "count" ? Number(trigger.n) || activeCount(state) : 0;
@@ -1592,6 +1694,8 @@
       zone: cleanText(raw.zone, 40, ""),
       n: clampInt(raw.n, 0, 500, 0),
       phase: cleanText(raw.phase, 40, ""),
+      card: cleanText(raw.card, 24, ""),
+      during: cleanText(raw.during, 40, ""),
       macro: String(raw.macro || "").slice(0, 40),
       label: cleanText(raw.label, 60, ""),
       off: Boolean(raw.off),
@@ -2470,6 +2574,10 @@
     PIP_DEFAULT,
     checkMove,
     legalPlays,
+    pickPlay,
+    botStep,
+    playOut,
+    cardMatches,
     meldOk,
     RULE_MELD,
     evalInput,
