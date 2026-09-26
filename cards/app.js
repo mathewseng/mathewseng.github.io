@@ -33,6 +33,7 @@
     document.body.dataset.four = prefs.four ? "1" : "0";
     document.body.dataset.motion = prefs.motion ? "1" : "0";
     document.body.dataset.jumbo = prefs.jumbo ? "1" : "0";
+    document.body.dataset.contrast = prefs.contrast ? "1" : "0";
     document.body.classList.toggle("side-collapsed", !prefs.side);
   }
 
@@ -191,6 +192,14 @@
     if (i < 0) return; // a different table or room: nothing new to announce
     const sound = soundForLog(log.slice(i + 1));
     if (sound) playSound(sound);
+    if (sound === "shuffle" && prefs.motion) {
+      requestAnimationFrame(() => $$(".zone.kind-deck .cards, .cards.layout-stack").forEach((el) => {
+        el.classList.remove("shuffling");
+        void el.offsetWidth;
+        el.classList.add("shuffling");
+        setTimeout(() => el.classList.remove("shuffling"), 650);
+      }));
+    }
     const myName = mySeat(source)?.name;
     for (const entry of log.slice(i + 1).slice(-6)) {
       if (entry.kind === "warn") toast(entry.text, "warn");
@@ -217,6 +226,10 @@
   }
 
   function replaceState(next, message) {
+    if (!state || next.title !== state.title || next.players.length !== state.players.length) {
+      botGames.result = null;
+      botGames.compare = null;
+    }
     if (state) history.push(state);
     future = [];
     state = next;
@@ -731,6 +744,10 @@
     renderGameOver();
     renderSelectionBar();
     renderDock();
+    if (scoreboardOpen && dialog().open && dialog().classList.contains("scoreboard-dialog")) {
+      const body = dialog().querySelector(".scoreboard");
+      if (body) { const scroll = body.scrollTop; openScoreboard(); dialog().querySelector(".scoreboard").scrollTop = scroll; }
+    } else scoreboardOpen = false;
     renderPane();
     playLayout(before);
     scheduleBots();
@@ -1261,7 +1278,7 @@
       const teamTotals = teamNames.map((team) => [team, v.players.filter((player) => player.team === team).reduce((sum, player) => sum + (totals[player.id] || 0), 0), v.players.filter((player) => player.team === team)]);
       const bestTeam = teamTotals.length ? (v.scores.lowWins ? Math.min : Math.max)(...teamTotals.map(([, total]) => total)) : null;
       const teams = teamTotals.map(([team, total, members]) => `<div class="list-row"><span class="grow small"><b>${esc(team)}</b> <span class="muted">${members.map((member) => esc(member.name)).join(" & ")}</span></span><strong class="mono" style="${total === bestTeam ? "color:var(--gold)" : ""}">${E.fmt(total)}</strong></div>`).join("");
-      return block("Quick score", quick + race)
+      return block("Quick score", quick + race, `<button class="btn sm" data-act="scoreboard" title="Big scoreboard for the table">⛶ Scoreboard</button>`)
         + (teams ? block("Teams", `<div class="list">${teams}</div><p class="hint">Team totals add up each member's score. Set teams in the Players tab.</p>`) : "")
         + block("Score sheet", scoreChartHTML(v) + sheet)
         + block("End of game", settings)
@@ -1421,6 +1438,7 @@
         <label class="check"><input type="checkbox" data-pref-bool="motion"${prefs.motion ? " checked" : ""}> Animations</label>
         <label class="check"><input type="checkbox" data-pref-bool="jumbo"${prefs.jumbo ? " checked" : ""}> Jumbo indexes (easier to read on phones)</label>
         <label class="check"><input type="checkbox" data-pref-bool="sound"${prefs.sound ? " checked" : ""}> Sound effects</label>
+        <label class="check"><input type="checkbox" data-pref-bool="contrast"${prefs.contrast ? " checked" : ""}> High contrast</label>
         <div class="field"><span>Seats</span><div class="seg">${[["grid", "Grid"], ["around", "Around the table"]].map(([id, label]) => `<button data-pref="layout" data-val="${id}" class="${(prefs.layout || "grid") === id ? "on" : ""}">${label}</button>`).join("")}</div></div>`;
       const seedBlock = `<div class="row tight"><input id="seedInput" type="text" value="${esc(prefs.seed || "")}" placeholder="any word or number" class="grow" style="flex:1;width:auto" data-fk="seed"><button class="btn sm primary" data-act="seed-apply">Use seed</button>${prefs.seed ? `<button class="btn sm" data-act="seed-clear">Random</button>` : ""}</div>
         <p class="hint">${prefs.seed ? `Shuffles follow seed <b>${esc(prefs.seed)}</b>. The same actions in the same order give the same deals, so a tricky situation can be replayed.` : "Set a seed to make shuffles repeatable, so a deal can be replayed exactly."}</p>`;
@@ -2487,6 +2505,15 @@
         }
         break;
       case "simulate": readSimCfg(); runSimulation(); break;
+      case "scoreboard": openScoreboard(); break;
+      case "bot-games-csv": {
+        const r = botGames.result;
+        if (!r) break;
+        const header = ["game", "finished", "moves", "rounds", "winning seats", ...r.names.map((name) => `score: ${name}`)];
+        const lines = [header, ...r.rows.map((row) => [row.game, row.finished ? 1 : 0, row.moves, row.rounds, row.winners, ...row.scores])];
+        download(fileSafe(v.title) + "-bot-games.csv", lines.map((line) => line.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n"), "text/csv");
+        break;
+      }
       case "bot-games":
         botGames.cfg.deal = $("#bgDeal")?.value || botGames.cfg.deal;
         botGames.cfg.games = Number($("#bgGames")?.value) || botGames.cfg.games;
@@ -3221,7 +3248,8 @@
           <div class="grid-2">
             <label class="field"><span>When</span><select name="event">${Object.entries(E.TRIGGER_EVENTS).map(([id, def]) => `<option value="${id}"${draft.event === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
             ${fields.includes("zone") ? `<label class="field"><span>Group <span class="dim">a table group, or a seat group for every player</span></span><input type="text" name="zone" list="triggerRefs" value="${esc(draft.zone)}" required></label>` : ""}
-            ${fields.includes("n") ? (draft.event === "allFull" ? `<label class="field"><span>Cards in each</span><input type="number" name="n" min="1" max="500" value="${draft.n || 1}"></label>` : draft.event === "score" ? `<label class="field"><span>Score</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
+            ${fields.includes("n") ? (draft.event === "allFull" ? `<label class="field"><span>Cards in each</span><input type="number" name="n" min="1" max="500" value="${draft.n || 1}"></label>` : draft.event === "score" || draft.event === "counter" ? `<label class="field"><span>${draft.event === "counter" ? "Reaches" : "Score"}</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
+            ${fields.includes("counter") ? `<label class="field"><span>Counter</span><select name="counter">${[...v.counterDefs.map((def) => [def.name, "per player"]), ...v.tableCounters.map((def) => [def.name, "table"])].map(([name, where]) => `<option value="${esc(name)}"${String(draft.counter || "").toLowerCase() === name.toLowerCase() ? " selected" : ""}>${esc(name)} (${where})</option>`).join("") || `<option value="">Add a counter first (Scores tab)</option>`}</select></label>` : ""}
             ${fields.includes("card") ? `<label class="field"><span>Card <span class="dim">rank, name or card like Qs; blank = any</span></span><input type="text" name="card" maxlength="24" value="${esc(draft.card || "")}" placeholder="e.g. Skip, 8, Qs"></label>` : ""}
             ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label>` : ""}
             <label class="field"><span>Only during phase <span class="dim">optional</span></span><input type="text" name="during" list="phaseNames" value="${esc(draft.during || "")}" placeholder="any phase"></label>
@@ -3241,6 +3269,7 @@
       if (form.n) draft.n = Number(form.n.value) || 0;
       if (form.phase) draft.phase = form.phase.value;
       if (form.card) draft.card = form.card.value;
+      if (form.counter) draft.counter = form.counter.value;
       draft.during = form.during.value;
       if (form.macro) draft.macro = form.macro.value;
       draft.label = form.label.value;
@@ -3585,8 +3614,10 @@
   }
 
   // ====================================================== BROWSE / INSPECT
+  let browseQuery = "";
   function openBrowseDialog(zoneId) {
     const picked = new Set();
+    browseQuery = "";
     const draw = () => {
       const v = view;
       const zone = v.zones[zoneId];
@@ -3595,7 +3626,8 @@
       const hand = myHandZone();
       return head(`${zone.name} · ${zone.cards.length} card${zone.cards.length === 1 ? "" : "s"}`) + `<div class="dlg-body">
           <p class="hint">${zone.layout === "stack" ? "Top of the pile first. " : "Last card first. "}Tap cards to pick them, then move them anywhere.${cards.some((entry) => !entry.card.visible) ? " Face-down cards stay hidden unless you're in X-ray view." : ""}</p>
-          <div class="browse-grid">${cards.map(({ card, index }) => `<button type="button" class="browse-card${picked.has(card.id) ? " on" : ""}" data-pick="${esc(card.id)}">${cardHTML(card, zone, index)}</button>`).join("") || `<p class="muted">Empty.</p>`}</div>
+          ${cards.filter((entry) => entry.card.visible).length > 8 ? `<input type="search" class="browse-search" placeholder="Find cards: rank, suit or name" value="${esc(browseQuery)}">` : ""}
+          <div class="browse-grid">${cards.map(({ card, index }) => `<button type="button" class="browse-card${picked.has(card.id) ? " on" : ""}" data-pick="${esc(card.id)}" data-find="${esc(card.visible ? (card.custom ? `${card.label} ${card.suit} ${card.rank}` : `${E.cardName(card)} ${RANK_SHOW(card.rank)} ${E.SUIT_INFO[card.suit]?.name || ""}`).toLowerCase() : "hidden")}">${cardHTML(card, zone, index)}</button>`).join("") || `<p class="muted">Empty.</p>`}</div>
         </div>
         <div class="dlg-foot">
           <span class="grow small muted">${picked.size} picked</span>
@@ -3606,10 +3638,23 @@
           <button class="btn" value="cancel">Done</button>
         </div>`;
     };
-    const redraw = (form) => { form.innerHTML = draw(); };
+    const filterBrowse = (form) => {
+      const words = browseQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      $$("[data-find]", form).forEach((el) => { el.hidden = !words.every((word) => el.dataset.find.includes(word)); });
+    };
+    const redraw = (form) => {
+      form.innerHTML = draw();
+      filterBrowse(form);
+    };
     openDialog(draw(), {
       wide: true,
       bind(form) {
+        filterBrowse(form);
+        form.addEventListener("input", (event) => {
+          if (!event.target.classList.contains("browse-search")) return;
+          browseQuery = event.target.value;
+          filterBrowse(form);
+        });
         form.addEventListener("click", (event) => {
           const pick = event.target.closest("[data-pick]");
           if (pick) {
@@ -3677,6 +3722,8 @@
       add("Groups", `Edit ${zone.name}`, () => openZoneDialog(zone.id));
       add("Groups", `Shuffle ${zone.name}`, () => dispatch({ type: "shuffle", zone: zone.id }));
     }
+    const mySeat = mySeatId() || v.players[v.turn.index]?.id;
+    if (mySeat) for (const zone of E.orderedZones(v, mySeat)) add("Groups", `Browse my ${zone.name}`, () => openBrowseDialog(zone.id));
     add("Design", "Design a new game (wizard)", openWizard);
     add("Design", "New action", () => openMacroDialog(null));
     add("Design", recorder.on ? "Stop recording" : "Record an action", recorder.on ? stopRecording : startRecording);
@@ -3692,6 +3739,7 @@
     add("Tools", "Simulate an action", () => openTab("tools"));
     add("Tools", "Record result", () => recordResult(state || v));
     add("Tools", "Replay recent moves", startReplay);
+    add("Tools", "Big scoreboard", openScoreboard);
     add("Tools", "Hint: suggest a play", showHint, "H");
     add("Tools", "Roll a die", () => dispatch({ type: "roll", sides: 6, count: 1 }));
     add("Tools", "Flip a coin", () => dispatch({ type: "coin" }));
@@ -3920,7 +3968,7 @@
   function playBatch(base, dealId, games, onProgress) {
     return new Promise((resolve) => {
       const seats = base.players.length;
-      const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0 };
+      const tally = { games: 0, finished: 0, steps: 0, rounds: 0, wins: Array(seats).fill(0), ties: 0, scores: Array(seats).fill(0), longest: 0, rows: [] };
       const next = () => {
         const budget = performance.now() + 40;
         while (tally.games < games && performance.now() < budget) {
@@ -3939,6 +3987,7 @@
             if (winners.length > 1) tally.ties += 1;
             else tally.wins[out.state.players.findIndex((player) => player.id === winners[0])] += 1;
           }
+          tally.rows.push({ game: tally.games, finished: out.finished, moves: out.steps, rounds: out.state.turn.round, winners: (out.state.gameOver?.winners || []).map((id) => out.state.players.findIndex((player) => player.id === id) + 1).join(" "), scores: out.state.players.map((player) => totals[player.id] || 0) });
         }
         onProgress(tally.games / games);
         if (tally.games < games && botGames.running) setTimeout(next, 0);
@@ -4025,6 +4074,7 @@
       <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays legal cards to the end (${esc(ends)}).</span></div>
       ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.avgSteps)} moves, ${r.avgRounds.toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
         <div class="small muted">Win rate and average final score by seat: <b>${fairness(r)}</b> (spread ${pct(r.spread)}${r.finished < 40 ? "; small sample, run more games for a clearer picture" : ""})</div><div class="list">${seatRows}</div>${compareTable}` : ""}
+      ${r ? `<div class="row"><button class="btn sm" data-act="bot-games-csv">Export games CSV</button></div>` : ""}
       <p class="hint">Needs play rules where cards are played and an end condition. Use it to spot seat-order advantages, games that drag on, or whether a rule change helps (save a version, change the rule, then compare).</p>`;
   }
 
@@ -4629,6 +4679,26 @@
     dock.innerHTML = view.macros.slice(0, 3).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("")
       + `<button class="btn sm" data-act="hint" title="Hint">💡</button><button class="btn sm primary" data-act="next-turn">Next ›</button>`;
   }
+
+  // ========================================================== SCOREBOARD
+  function openScoreboard() {
+    const draw = () => {
+      const v = view;
+      const totals = E.totals(v);
+      const ranked = v.players.slice().sort((a, b) => (v.scores.lowWins ? totals[a.id] - totals[b.id] : totals[b.id] - totals[a.id]));
+      const top = ranked.length ? totals[ranked[0].id] : 0;
+      return head(`${v.title} · round ${v.turn.round}`) + `<div class="dlg-body scoreboard">
+          <div class="sb-grid">${ranked.map((player, i) => `<div class="sb-row${totals[player.id] === top ? " lead" : ""}" style="--c:${esc(player.color)}"><span class="sb-place">${i + 1}</span><span class="sb-name"><i class="swatch"></i>${esc(player.name)}${player.team ? `<small>${esc(player.team)}</small>` : ""}</span><span class="sb-score">${E.fmt(totals[player.id])}</span></div>`).join("")}</div>
+          ${scoreChartHTML(v)}
+          <p class="small muted">${v.scores.target ? `Playing to ${E.fmt(v.scores.target)}${v.scores.lowWins ? ", lowest wins" : ""}.` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds${v.scores.lowWins ? ", lowest wins" : ""}.` : ""} This board updates live.</p>
+        </div>
+        <div class="dlg-foot"><button class="btn primary" value="cancel">Close</button></div>`;
+    };
+    openDialog(draw(), { wide: true });
+    dialog().classList.add("scoreboard-dialog");
+    scoreboardOpen = true;
+  }
+  let scoreboardOpen = false;
 
   // ============================================================== INIT
   function init() {

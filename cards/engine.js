@@ -1836,11 +1836,12 @@
     turn: { label: "The turn passes", fields: [] },
     round: { label: "A new round starts", fields: [] },
     score: { label: "A player's score reaches N", fields: ["n"] },
+    counter: { label: "A counter reaches N", fields: ["counter", "n"] },
     gameOver: { label: "The game ends", fields: [] },
   };
 
   // Only play actions fire triggers; setup changes (collecting, editing groups…) never do.
-  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards"]);
+  const TRIGGERING = new Set(["move", "draw", "drawBottom", "deal", "clearZone", "runMacro", "nextTurn", "passDeal", "nextRound", "setPhase", "nextPhase", "setTurn", "adjustScore", "setRoundScore", "flip", "flipZone", "revealAll", "pullCards", "counter"]);
 
   /** Display name for a zone reference such as "trick" or "hand@current". */
   function refName(state, ref) {
@@ -1865,6 +1866,7 @@
       case "turn": return "When the turn passes";
       case "round": return "When a new round starts";
       case "score": return `When a player's score reaches ${fmt(n)}`;
+      case "counter": return `When ${trigger.counter || "a counter"} reaches ${fmt(n)}`;
       case "gameOver": return "When the game ends";
       default: return trigger.event;
     }
@@ -1954,6 +1956,22 @@
           const was = totals(before);
           const n = Number(trigger.n) || 0;
           for (const player of state.players) if ((was[player.id] ?? 0) < n && now[player.id] >= n) out.push({ trigger, subject: player.id });
+          break;
+        }
+        case "counter": {
+          const n = Number(trigger.n) || 0;
+          const def = state.counterDefs.find((entry) => sameText(entry.name, trigger.counter));
+          if (def) {
+            for (const player of state.players) {
+              const previous = playerById(before, player.id);
+              if (!previous) continue;
+              if ((Number(previous.counters?.[def.id]) || 0) < n && (Number(player.counters?.[def.id]) || 0) >= n) out.push({ trigger, subject: player.id });
+            }
+            break;
+          }
+          const tracker = state.tableCounters.find((entry) => sameText(entry.name, trigger.counter));
+          const old = before.tableCounters.find((entry) => entry.id === tracker?.id);
+          if (tracker && old && (Number(old.value) || 0) < n && (Number(tracker.value) || 0) >= n) out.push({ trigger, subject: actor || state.players[state.turn.index]?.id || null });
           break;
         }
         default: break;
@@ -2072,6 +2090,7 @@
       n: clampInt(raw.n, 0, 100000, 0),
       phase: cleanText(raw.phase, 40, ""),
       card: cleanText(raw.card, 24, ""),
+      counter: cleanText(raw.counter, 20, ""),
       during: cleanText(raw.during, 40, ""),
       macro: String(raw.macro || "").slice(0, 40),
       label: cleanText(raw.label, 60, ""),
@@ -2971,6 +2990,7 @@
       const label = trigger.label || describeTrigger(trigger, state);
       if (!findMacro(state, trigger.macro)) add("error", `Trigger “${label}” runs an action that no longer exists.`);
       if (TRIGGER_EVENTS[trigger.event]?.fields.includes("zone") && !refOk(trigger.zone)) add("error", `Trigger “${label}” watches “${trigger.zone}”, which isn't a group.`);
+      if (trigger.event === "counter" && !counters.has(String(trigger.counter || "").toLowerCase())) add("error", `Trigger “${label}” watches the counter “${trigger.counter}”, which doesn't exist.`);
       for (const phase of [trigger.event === "phase" ? trigger.phase : "", trigger.during]) {
         if (phase && state.phases.length && !state.phases.some((entry) => sameText(entry, phase))) add("warn", `Trigger “${label}” mentions the phase “${phase}”, which isn't in the phase list.`);
       }

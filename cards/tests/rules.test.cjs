@@ -735,3 +735,33 @@ console.log("must-play tests passed");
   assert.equal(Engine.lintDesign(Engine.createTable(Presets.get("president"), {})).filter((i) => i.level === "error").length, 0);
 }
 console.log("climbing tests passed");
+
+// Counter triggers: three strikes sits a player out; a table counter ends the game.
+{
+  let state = Engine.createTable(Presets.get("sandbox"), { players: ["Ana", "Ben", "Cy"] });
+  state = act(state, { type: "addCounter", name: "Strikes", start: 0 });
+  state = act(state, { type: "addCounter", name: "Doom", scope: "table", start: 0 });
+  state = act(state, { type: "saveMacro", macro: { label: "Out", steps: [{ op: "sitOut", who: "subject" }, { op: "log", text: "{subject} struck out" }] } });
+  state = act(state, { type: "saveMacro", macro: { label: "Doomsday", steps: [{ op: "endGame" }] } });
+  state = act(state, { type: "saveTrigger", trigger: { event: "counter", counter: "strikes", n: 3, macro: "Out" } });
+  state = act(state, { type: "saveTrigger", trigger: { event: "counter", counter: "Doom", n: 2, macro: "Doomsday" } });
+  assert.equal(Engine.describeTrigger(state.triggers[0], state), "When strikes reaches 3");
+  assert.equal(Engine.lintDesign(state).filter((i) => /counter/.test(i.message)).length, 0);
+  const [ana, ben] = state.players;
+  const def = state.counterDefs[0];
+  state = act(state, { type: "counter", player: ben.id, id: def.id, delta: 2 });
+  assert.ok(!state.players[1].out);
+  state = act(state, { type: "counter", player: ben.id, id: def.id, delta: 1 });
+  assert.ok(state.players[1].out, "third strike sits Ben out");
+  assert.ok(state.log.some((entry) => entry.text === "Ben struck out"));
+  state = act(state, { type: "counter", player: ben.id, id: def.id, delta: 1 });
+  assert.equal(state.log.filter((entry) => entry.text === "Ben struck out").length, 1, "fires only on crossing");
+  assert.ok(!state.players[0].out && ana);
+  const doom = state.tableCounters[0];
+  state = act(state, { type: "runMacro", steps: [{ op: "counter", name: "Doom", amount: 2 }] });
+  assert.ok(state.gameOver, "table counter trigger ended the game");
+  let bad = act(state, { type: "saveTrigger", trigger: { event: "counter", counter: "Nope", n: 1, macro: "Out" } });
+  assert.ok(Engine.lintDesign(bad).some((i) => i.level === "error" && /counter “Nope”/.test(i.message)));
+  assert.ok(doom);
+}
+console.log("counter trigger tests passed");
