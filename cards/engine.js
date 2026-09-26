@@ -1124,6 +1124,120 @@
     try { return api.evaluate(input.id, input.cards, input.ctx); } catch (error) { return null; }
   }
 
+  // -------------------------------------------------------------- formulas
+
+  /**
+   * A tiny, safe expression language for scoring (no eval): numbers, names,
+   * + - * / %, comparisons, && || !, a ? b : c, and min/max/abs/floor/ceil/round.
+   */
+  function evalFormula(expr, vars = {}) {
+    const text = String(expr || "");
+    const tokens = [];
+    const re = /\s*(\d+(?:\.\d+)?|[A-Za-z_][A-Za-z0-9_]*|<=|>=|==|!=|&&|\|\||[-+*/%()?:,<>!])/y;
+    let at = 0;
+    while (at < text.length) {
+      re.lastIndex = at;
+      const m = re.exec(text);
+      if (!m) {
+        if (/^\s*$/.test(text.slice(at))) break;
+        throw new Error(`Can't read “${text.slice(at).trim().slice(0, 12)}” in the formula.`);
+      }
+      tokens.push(m[1]);
+      at = re.lastIndex;
+    }
+    let i = 0;
+    const peek = () => tokens[i];
+    const take = (tok) => { if (tokens[i] !== tok) throw new Error(`Expected “${tok}” in the formula.`); i += 1; };
+    const FUNCS = { min: Math.min, max: Math.max, abs: Math.abs, floor: Math.floor, ceil: Math.ceil, round: Math.round };
+    const primary = () => {
+      const tok = tokens[i++];
+      if (tok === undefined) throw new Error("The formula ends too soon.");
+      if (tok === "(") { const value = ternary(); take(")"); return value; }
+      if (/^\d/.test(tok)) return Number(tok);
+      if (/^[A-Za-z_]/.test(tok)) {
+        const name = tok.toLowerCase();
+        if (peek() === "(") {
+          i += 1;
+          const args = [];
+          if (peek() !== ")") { args.push(ternary()); while (peek() === ",") { i += 1; args.push(ternary()); } }
+          take(")");
+          if (!FUNCS[name]) throw new Error(`Unknown function “${tok}”.`);
+          return FUNCS[name](...args);
+        }
+        if (name === "true") return 1;
+        if (name === "false") return 0;
+        if (!(name in vars)) throw new Error(`Unknown name “${tok}”. Try: ${Object.keys(vars).slice(0, 8).join(", ")}.`);
+        return Number(vars[name]) || 0;
+      }
+      throw new Error(`Unexpected “${tok}” in the formula.`);
+    };
+    const unary = () => {
+      if (peek() === "-") { i += 1; return -unary(); }
+      if (peek() === "+") { i += 1; return unary(); }
+      if (peek() === "!") { i += 1; return unary() ? 0 : 1; }
+      return primary();
+    };
+    const mul = () => {
+      let value = unary();
+      while (["*", "/", "%"].includes(peek())) {
+        const op = tokens[i++];
+        const right = unary();
+        value = op === "*" ? value * right : op === "/" ? (right ? value / right : 0) : right ? value % right : 0;
+      }
+      return value;
+    };
+    const add = () => {
+      let value = mul();
+      while (peek() === "+" || peek() === "-") value = tokens[i++] === "+" ? value + mul() : value - mul();
+      return value;
+    };
+    const cmp = () => {
+      const value = add();
+      const op = peek();
+      if (!["<", "<=", ">", ">=", "==", "!="].includes(op)) return value;
+      i += 1;
+      const right = add();
+      return { "<": value < right, "<=": value <= right, ">": value > right, ">=": value >= right, "==": value === right, "!=": value !== right }[op] ? 1 : 0;
+    };
+    const and = () => { let value = cmp(); while (peek() === "&&") { i += 1; const right = cmp(); value = value && right ? 1 : 0; } return value; };
+    const or = () => { let value = and(); while (peek() === "||") { i += 1; const right = and(); value = value || right ? 1 : 0; } return value; };
+    const ternary = () => {
+      const test = or();
+      if (peek() !== "?") return test;
+      i += 1;
+      const yes = ternary();
+      take(":");
+      const no = ternary();
+      return test ? yes : no;
+    };
+    const result = ternary();
+    if (i < tokens.length) throw new Error(`Unexpected “${tokens[i]}” in the formula.`);
+    return Number.isFinite(result) ? Math.round(result * 1000) / 1000 : 0;
+  }
+
+  const varName = (text) => String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
+  /** The names a formula can use for one player. */
+  function formulaVars(state, playerId) {
+    const vars = {};
+    const player = playerById(state, playerId);
+    const t = totals(state);
+    for (const def of state.counterDefs) vars[varName(def.name)] = Number(player?.counters?.[def.id]) || 0;
+    for (const tracker of state.tableCounters) vars[varName(tracker.name)] = Number(tracker.value) || 0;
+    for (const zone of orderedZones(state, playerId)) {
+      const key = varName(zone.key || zone.name);
+      vars[key + "_cards"] = zone.cards.length;
+      if (zone.evals?.[0]) vars[key + "_value"] = Number(evaluateSpec(state, zone, zone.evals[0])?.value) || 0;
+    }
+    for (const zone of orderedZones(state, "table")) vars[varName(zone.key || zone.name) + "_cards"] = zone.cards.length;
+    vars.score = t[playerId] || 0;
+    vars.round = state.turn.round;
+    vars.players = activeCount(state);
+    vars.chips = Number(player?.chips) || 0;
+    vars.pot = Number(state.pot) || 0;
+    return vars;
+  }
+
   // ---------------------------------------------------------------- macros
 
   const MACRO_OPS = {
@@ -1141,6 +1255,9 @@
     score: { label: "Score points", fields: ["who", "amount"] },
     scoreZones: { label: "Score groups", fields: ["zone", "evaluator", "sign", "target"] },
     counter: { label: "Change counter", fields: ["who", "name", "amount"] },
+    setCounter: { label: "Set counter", fields: ["who", "name", "amount"] },
+    scoreFormula: { label: "Score by formula", fields: ["who", "formula"] },
+    counterFormula: { label: "Counter by formula", fields: ["who", "name", "formula"] },
     ante: { label: "Everyone antes", fields: ["amount"] },
     awardPot: { label: "Award pot", fields: ["who"] },
     nextTurn: { label: "Next turn", fields: [] },
@@ -1195,6 +1312,9 @@
       case "score": return `${signed(step.amount)} pts → ${who(step.who)}`;
       case "scoreZones": return `Score each ${step.zone}${step.evaluator ? " (" + step.evaluator + ")" : ""}${step.target === "winner" ? " → winner" : ""}${step.sign === "-" ? ", subtract" : ""}`;
       case "counter": return `${step.name || "Counter"} ${signed(step.amount)} → ${who(step.who)}`;
+      case "setCounter": return `${step.name || "Counter"} = ${fmt(step.amount)} for ${who(step.who)}`;
+      case "scoreFormula": return `Score ${who(step.who, "all")}: ${step.formula || "?"}`;
+      case "counterFormula": return `${step.name || "Counter"} = ${step.formula || "?"} for ${who(step.who, "all")}`;
       case "ante": return `Ante ${step.amount}`;
       case "awardPot": return `Pot → ${who(step.who, "winner")}`;
       case "setTurn": return `Turn → ${(TURN_OPTIONS[step.who || "next"] || step.who).toLowerCase()}`;
@@ -1228,6 +1348,7 @@
   }
 
   function playersFor(state, who, ctx = {}, actor = null) {
+    if (String(who || "").startsWith("p:")) return [playerById(state, String(who).slice(2))].filter(Boolean);
     const active = state.players.filter((player) => !player.out);
     switch (who) {
       case "dealer": return [state.players[state.turn.dealer]].filter(Boolean);
@@ -1324,17 +1445,17 @@
     if (toWinner && receiver && pool) addScore(state, receiver, sign * pool, actor, `others' ${step.zone}`);
   }
 
-  function bumpCounter(state, step, ctx, actor) {
+  function bumpCounter(state, step, ctx, actor, set = false) {
     const name = String(step.name || "").trim().toLowerCase();
-    const delta = Number(step.amount) || 0;
+    const amount = Number(step.amount) || 0;
     const def = state.counterDefs.find((entry) => entry.name.toLowerCase() === name);
     if (def) {
-      for (const player of playersFor(state, step.who, ctx, actor)) player.counters[def.id] = (Number(player.counters[def.id]) || 0) + delta;
+      for (const player of playersFor(state, step.who, ctx, actor)) player.counters[def.id] = set ? amount : (Number(player.counters[def.id]) || 0) + amount;
       return;
     }
     const tracker = state.tableCounters.find((entry) => entry.name.toLowerCase() === name);
     if (!tracker) throw new Error(`No counter named “${step.name}”.`);
-    tracker.value += delta;
+    tracker.value = set ? amount : tracker.value + amount;
   }
 
   function countIn(state, ref, actor, ctx) {
@@ -1455,6 +1576,19 @@
         break;
       case "scoreZones": scoreZones(state, step, actor, ctx); break;
       case "counter": bumpCounter(state, step, ctx, actor); break;
+      case "setCounter": bumpCounter(state, step, ctx, actor, true); break;
+      case "scoreFormula": {
+        const players = playersFor(state, step.who || "all", ctx, actor);
+        const points = players.map((player) => [player, evalFormula(step.formula, formulaVars(state, player.id))]);
+        for (const [player, value] of points) addScore(state, player.id, value, actor, "formula");
+        break;
+      }
+      case "counterFormula": {
+        const players = playersFor(state, step.who || "all", ctx, actor);
+        const values = players.map((player) => [player, evalFormula(step.formula, formulaVars(state, player.id))]);
+        for (const [player, value] of values) bumpCounter(state, { ...step, amount: value, who: "p:" + player.id }, ctx, actor, true);
+        break;
+      }
       case "ante": {
         const amount = Math.max(0, Number(step.amount) || 0);
         for (const player of state.players) {
@@ -1585,6 +1719,7 @@
     phase: { label: "A phase starts", fields: ["phase"] },
     turn: { label: "The turn passes", fields: [] },
     round: { label: "A new round starts", fields: [] },
+    score: { label: "A player's score reaches N", fields: ["n"] },
     gameOver: { label: "The game ends", fields: [] },
   };
 
@@ -1612,6 +1747,7 @@
       case "phase": return `When the ${trigger.phase || "?"} phase starts`;
       case "turn": return "When the turn passes";
       case "round": return "When a new round starts";
+      case "score": return `When a player's score reaches ${fmt(n)}`;
       case "gameOver": return "When the game ends";
       default: return trigger.event;
     }
@@ -1687,6 +1823,13 @@
         case "gameOver":
           if (state.gameOver && !before.gameOver) out.push({ trigger, subject: state.gameOver.winners?.[0] || null });
           break;
+        case "score": {
+          const now = totals(state);
+          const was = totals(before);
+          const n = Number(trigger.n) || 0;
+          for (const player of state.players) if ((was[player.id] ?? 0) < n && now[player.id] >= n) out.push({ trigger, subject: player.id });
+          break;
+        }
         default: break;
       }
     }
@@ -1784,7 +1927,7 @@
       id: keepId && /^[a-z0-9]{1,16}$/i.test(raw.id || "") ? raw.id : nextId(state, "g"),
       event: TRIGGER_EVENTS[raw.event] ? raw.event : "empty",
       zone: cleanText(raw.zone, 40, ""),
-      n: clampInt(raw.n, 0, 500, 0),
+      n: clampInt(raw.n, 0, 100000, 0),
       phase: cleanText(raw.phase, 40, ""),
       card: cleanText(raw.card, 24, ""),
       during: cleanText(raw.during, 40, ""),
@@ -2651,7 +2794,10 @@
         }
         if (step.evaluator && !evalOk(step.evaluator)) add("error", `${where} scores with a missing evaluator.`);
         if (step.op === "runAction" && !findMacro(state, step.macro)) add("error", `${where} runs an action that no longer exists.`);
-        if (step.op === "counter" && !counters.has(String(step.name || "").toLowerCase())) add("error", `${where} changes a counter that doesn't exist.`);
+        if ((step.op === "counter" || step.op === "setCounter" || step.op === "counterFormula") && !counters.has(String(step.name || "").toLowerCase())) add("error", `${where} changes a counter that doesn't exist.`);
+        if ((step.op === "scoreFormula" || step.op === "counterFormula") && state.players.length) {
+          try { evalFormula(step.formula, formulaVars(state, state.players[0].id)); } catch (error) { add("error", `${where}: ${error.message}`); }
+        }
         if (step.op === "collect") dealt = 0;
         if (step.op === "deal" && !step.perSeat) {
           const perSeat = state.seatTemplate.some((tpl) => sameText(tpl.key, String(step.to || "").split("@")[0])) && !String(step.to).includes("@");
@@ -2729,6 +2875,8 @@
     summary,
     describeGame,
     lintDesign,
+    evalFormula,
+    formulaVars,
     describeScheme,
     describeRule,
     describeTrigger,

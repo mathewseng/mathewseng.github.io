@@ -389,10 +389,22 @@
       macros: [
         { label: "Deal all", steps: [collect(), { op: "nextDealer" }, deal("hand", 13), { op: "sort", zone: "hand", by: "suit" }, { op: "setTurn", who: "next" }] },
         takeTrick("down", [{ op: "counter", who: "winner", name: "Tricks", amount: 1 }]),
+        { label: "Score hand", hint: "Made your bid: 10 × bid + overtricks; missed it: −10 × bid", steps: [
+          { op: "scoreFormula", who: "all", formula: "tricks >= bid ? 10 * bid + (tricks - bid) : -10 * bid" },
+          { op: "counterFormula", who: "all", name: "Bags", formula: "bags + max(tricks - bid, 0)" },
+          { op: "scoreFormula", who: "all", formula: "bags >= 10 ? -100 : 0" },
+          { op: "counterFormula", who: "all", name: "Bags", formula: "bags >= 10 ? bags - 10 : bags" },
+          { op: "setCounter", who: "all", name: "Tricks", amount: 0 },
+          say("Hand scored: set your bids for the next hand"),
+          { op: "nextRound" },
+        ] },
       ],
-      triggers: [{ event: "count", zone: "trick", n: 0, macro: "Take trick" }],
+      triggers: [
+        { event: "count", zone: "trick", n: 0, macro: "Take trick" },
+        { event: "allEmpty", zone: "hand", macro: "Score hand" },
+      ],
       scoring: { target: 500, label: "Points" },
-      rules: "Spades\n\n• Partners sit across. Bid tricks; spades are always trump.\n• Make your bid: 10 × bid + 1 per overtrick (bag). 10 bags = −100.\n• Nil bid: +/−100.",
+      rules: "Spades\n\n• Partners sit across. Before each hand, set your Bid counter (Scores → Counters). Spades are always trump.\n• Make your bid: 10 × bid + 1 per overtrick (bag); miss it: −10 × bid. 10 bags = −100.\n• Nil bid: +/−100 (score it by hand).\n\nAutomated: tricks resolve and count themselves, and when the hands run out a formula scores everyone (Score hand shows the formula).",
     },
     {
       id: "euchre",

@@ -550,3 +550,43 @@ console.log("design check tests passed");
   assert.equal(Engine.lintDesign(golf).filter((issue) => issue.level === "error").length, 0);
 }
 console.log("kings corner and golf tests passed");
+
+// Formula scoring, counters and score triggers; Spades scores itself.
+{
+  assert.equal(Engine.evalFormula("tricks >= bid ? 10 * bid + (tricks - bid) : -10 * bid", { tricks: 5, bid: 4 }), 41);
+  assert.equal(Engine.evalFormula("tricks >= bid ? 10 * bid + (tricks - bid) : -10 * bid", { tricks: 2, bid: 4 }), -40);
+  assert.equal(Engine.evalFormula("max(1, 2 * 3) + abs(-2) % 3 - -1", {}), 9);
+  assert.equal(Engine.evalFormula("!(a > 1) || b == 2 && true", { a: 5, b: 2 }), 1);
+  assert.throws(() => Engine.evalFormula("tricks +", { tricks: 1 }), /ends too soon/);
+  assert.throws(() => Engine.evalFormula("nope * 2", { tricks: 1 }), /Unknown name “nope”/);
+  assert.throws(() => Engine.evalFormula("alert(1)", {}), /Unknown function/);
+  assert.throws(() => Engine.evalFormula("1; 2", {}), /Can't read/);
+  Engine.setRng(Engine.seededRng("spades"));
+  let state = Engine.createTable(Presets.get("spades"), { players: 4 });
+  state = act(state, { type: "setRules", mode: "enforce" });
+  const [bid] = state.counterDefs;
+  for (const player of state.players) state = act(state, { type: "counter", player: player.id, id: bid.id, value: 3 });
+  state = run(state, "Deal all");
+  let plays = 0;
+  while (zone(state, "hand", current(state)).cards.length && plays < 60) {
+    const play = Engine.pickPlay(state, current(state), "smart");
+    state = act(state, { type: "move", cards: [play.card], to: play.to }, current(state));
+    plays += 1;
+  }
+  assert.equal(plays, 52);
+  assert.equal(state.turn.round, 2, "the hand scored itself");
+  const tricks = state.counterDefs.find((def) => def.name === "Tricks");
+  assert.ok(state.players.every((p) => p.counters[tricks.id] === 0), "trick counters reset");
+  const scored = Engine.totals(state);
+  for (const player of state.players) assert.ok(scored[player.id] === -30 || scored[player.id] >= 30, `score ${scored[player.id]}`);
+  // A score trigger fires once when a player crosses the line.
+  let s2 = Engine.createTable(Presets.get("sandbox"), { players: 2 });
+  s2 = act(s2, { type: "saveMacro", macro: { label: "Halfway", steps: [{ op: "log", text: "{subject} is halfway" }] } });
+  s2 = act(s2, { type: "saveTrigger", trigger: { event: "score", n: 50, macro: "Halfway" } });
+  s2 = act(s2, { type: "adjustScore", player: s2.players[1].id, delta: 60 });
+  s2 = act(s2, { type: "adjustScore", player: s2.players[1].id, delta: 5 });
+  assert.equal(s2.log.filter((e) => /halfway/.test(e.text)).length, 1);
+  assert.equal(lastLog(s2).includes("halfway"), false);
+  assert.equal(Engine.lintDesign(Engine.createTable(Presets.get("spades"), {})).filter((i) => i.level === "error").length, 0);
+}
+console.log("formula tests passed");

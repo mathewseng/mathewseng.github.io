@@ -1806,9 +1806,10 @@
         case "n": return `<input type="number" data-step="${i}" data-f="n" value="${esc(val ?? 0)}" placeholder="${step.evaluator || step.op === "dealUntil" ? "value" : "cards"}">`;
         case "macro": return selectOf(i, "macro", Object.fromEntries(v.macros.map((m) => [m.id, m.label])), val, "choose an action");
         case "times": return `<input type="number" min="1" max="100" data-step="${i}" data-f="times" value="${esc(val || 1)}" title="Times">`;
+        case "formula": return `<input type="text" class="formula-input" data-step="${i}" data-f="formula" value="${esc(val)}" placeholder="e.g. tricks >= bid ? 10 * bid : -10 * bid" spellcheck="false">`;
         case "face": return `<select data-step="${i}" data-f="face"><option value="">${step.op === "flip" ? "toggle" : "default"}</option><option value="up"${val === "up" ? " selected" : ""}>up</option><option value="down"${val === "down" ? " selected" : ""}>down</option></select>`;
         case "by": return `<select data-step="${i}" data-f="by">${["rank", "aceLow", "suit", "reverse"].map((b) => `<option${val === b ? " selected" : ""}>${b}</option>`).join("")}</select>`;
-        case "who": return step.op === "setTurn" ? selectOf(i, "who", E.TURN_OPTIONS, val || "next") : selectOf(i, "who", E.WHO_OPTIONS, val || (step.op === "awardPot" ? "winner" : "current"));
+        case "who": return step.op === "setTurn" ? selectOf(i, "who", E.TURN_OPTIONS, val || "next") : selectOf(i, "who", E.WHO_OPTIONS, val || (step.op === "awardPot" ? "winner" : /Formula$/.test(step.op) ? "all" : "current"));
         case "shuffle": return `<label class="check small"><input type="checkbox" data-step="${i}" data-f="shuffle"${step.shuffle !== false ? " checked" : ""}> shuffle</label>`;
         case "text": return `<input type="text" data-step="${i}" data-f="text" value="${esc(val)}" placeholder="text">`;
         default: return "";
@@ -1833,6 +1834,7 @@
           </div>`).join("")}</div>
         <div class="row"><button type="button" class="btn sm" data-step-add>+ Step</button></div>
         <p class="hint">Targets use group keys: <code>deck</code>, <code>board</code>, <code>hand</code> (every seat, left of dealer first), <code>hand@current</code>, <code>hand@after</code> (the next player), <code>hand@dealer</code>, <code>hand@me</code>, <code>hand@next</code> (left of dealer), <code>hand@winner</code> (set by Find winner), <code>hand@subject</code> (the player a trigger fired for), <code>hand@others</code>.</p>
+        ${draft.steps.some((step) => /Formula$/.test(step.op)) ? `<p class="hint">Formulas can use ${Object.keys(v.players.length ? E.formulaVars(v, v.players[0].id) : { score: 0, round: 0 }).map((name) => `<code>${esc(name)}</code>`).join(" ")}, numbers, <code>+ - * / %</code>, comparisons, <code>&amp;&amp; || !</code>, <code>a ? b : c</code> and <code>min max abs floor ceil round</code>.</p>` : ""}
         <p class="hint">Announcements can say <code>{winner}</code>, <code>{current}</code>, <code>{next}</code>, <code>{dealer}</code>, <code>{subject}</code>, <code>{round}</code>, <code>{phase}</code> and <code>{pot}</code>. “Stop if” ends the action early; “Run another action” reuses one you've built.</p>
       </div>
       <div class="dlg-foot">
@@ -3153,7 +3155,7 @@
           <div class="grid-2">
             <label class="field"><span>When</span><select name="event">${Object.entries(E.TRIGGER_EVENTS).map(([id, def]) => `<option value="${id}"${draft.event === id ? " selected" : ""}>${esc(def.label)}</option>`).join("")}</select></label>
             ${fields.includes("zone") ? `<label class="field"><span>Group <span class="dim">a table group, or a seat group for every player</span></span><input type="text" name="zone" list="triggerRefs" value="${esc(draft.zone)}" required></label>` : ""}
-            ${fields.includes("n") ? `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>` : ""}
+            ${fields.includes("n") ? (draft.event === "score" ? `<label class="field"><span>Score</span><input type="number" name="n" min="0" max="100000" value="${draft.n || 0}"></label>` : `<label class="field"><span>Cards <span class="dim">0 = one per active player</span></span><input type="number" name="n" min="0" max="500" value="${draft.n || 0}"></label>`) : ""}
             ${fields.includes("card") ? `<label class="field"><span>Card <span class="dim">rank, name or card like Qs; blank = any</span></span><input type="text" name="card" maxlength="24" value="${esc(draft.card || "")}" placeholder="e.g. Skip, 8, Qs"></label>` : ""}
             ${fields.includes("phase") ? `<label class="field"><span>Phase</span><input type="text" name="phase" list="phaseNames" value="${esc(draft.phase)}"></label>` : ""}
             <label class="field"><span>Only during phase <span class="dim">optional</span></span><input type="text" name="during" list="phaseNames" value="${esc(draft.during || "")}" placeholder="any phase"></label>
