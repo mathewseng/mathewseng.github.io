@@ -540,7 +540,8 @@
   function seatHTML(player, index) {
     const v = view;
     const zones = E.orderedZones(v, player.id);
-    const current = index === v.turn.index;
+    // Real-time games have no turns to highlight.
+    const current = index === v.turn.index && !v.realtime;
     const dealer = index === v.turn.dealer;
     const me = mySeatId() === player.id;
     const total = E.totals(v)[player.id] || 0;
