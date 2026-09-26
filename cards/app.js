@@ -1247,7 +1247,20 @@
         <p class="hint">Pulls those exact cards from the deck (or wherever they are), so you can test a specific situation.</p>`;
       const printBlock = `<div class="row tight"><button class="btn sm" data-act="print-cards">${spec.custom.length ? "Print custom cards & rules" : "Print deck & rules"}</button>${spec.custom.length ? `<button class="btn sm" data-act="print-all">Include standard cards</button>` : ""}</div>
         <p class="hint">Opens a printable sheet at poker size (63 × 88 mm), with the rules document on its own page, for paper playtests.</p>`;
+      const customUnseen = new Map();
+      const typeKey = (label, suit) => `${label}|${suit && suit !== "x" ? suit : ""}`;
+      for (const item of spec.custom) {
+        const entry = customUnseen.get(typeKey(item.label, item.suit)) || { item, total: 0, seen: 0 };
+        entry.total += item.count;
+        customUnseen.set(typeKey(item.label, item.suit), entry);
+      }
+      for (const card of Object.values(v.cards)) {
+        const entry = card.custom && card.visible ? customUnseen.get(typeKey(card.label, card.suit)) : null;
+        if (entry) entry.seen += 1;
+      }
+      const customRows = Array.from(customUnseen.values()).map(({ item, total, seen }) => `<span class="unseen-chip" style="--cc:${esc(item.color)}" title="${esc(item.suit || "")}">${esc(item.label)}${item.suit ? ` <i>${esc(item.suit)}</i>` : ""} <b>${total - seen}</b>/${total}</span>`).join("");
       return block("Deck builder", builder)
+        + (customRows ? block("Unseen custom cards", `<div class="unseen-chips">${customRows}</div><p class="hint">Copies you can't see from your seat, out of each type's total.</p>`) : "")
         + block("Set up a scenario", scenario)
         + block("Print & play", printBlock)
         + block("Unseen cards", `<div class="small muted">From your point of view: ${N} unseen · ${Object.keys(v.cards).length} in play</div>${grid}`)
@@ -1763,7 +1776,8 @@
               <option value="play"${view.guestMode !== "full" ? " selected" : ""}>Play only: move cards, run actions, score</option>
               <option value="full"${view.guestMode === "full" ? " selected" : ""}>Co-design: also edit groups, rules, actions and players</option>
             </select></label>` : `<p class="hint">Room permissions: <b>${view.guestMode === "full" ? "co-design" : "play only"}</b>.</p>`}
-          <p class="hint">Hands stay private: nobody can take, flip or peek at another player's private cards. Alt-click a card or group (or use its menu) to ping it for everyone, and 😀 in the top bar to react.</p>
+          <p class="hint">Hands stay private in the app: nobody can take, flip or peek at another player's private cards. Alt-click a card or group (or use its menu) to ping it for everyone, and 😀 in the top bar to react.</p>
+          <p class="hint">So a game survives the host leaving, every browser in the room keeps a backup copy of the whole table, which someone could read with developer tools. Rooms are for friendly playtests, not stakes.</p>
         </div>
         <div class="dlg-foot"><button class="btn danger" value="leave" style="margin-right:auto">Leave room</button><button class="btn primary" value="cancel">Done</button></div>`;
       openDialog(html, {
