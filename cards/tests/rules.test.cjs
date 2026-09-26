@@ -889,3 +889,26 @@ console.log("slap tests passed");
   assert.ok(out.finished, `cheat finishes (${out.steps} steps)`);
 }
 console.log("bluffing tests passed");
+
+// Design diffs: readable changes between two saved designs.
+{
+  let state = Engine.createTable(Presets.get("crazy-eights"), { players: 3 });
+  const before = Engine.toPreset(state);
+  assert.deepEqual(Engine.diffDesigns(before, before), []);
+  const discard = zone(state, "discard");
+  state = act(state, { type: "updateZone", zone: discard.id, patch: { rule: { ...discard.rule, wild: ["8", "2"] } } });
+  state = act(state, { type: "saveMacro", macro: { label: "Bonus", steps: [{ op: "score", who: "current", amount: 5 }] } });
+  state = act(state, { type: "addZone", area: "table", zone: { name: "Graveyard" } });
+  state = act(state, { type: "rebuildDeck", spec: { preset: "standard", jokers: 2 } });
+  state = act(state, { type: "setRules", mode: "enforce" });
+  const changes = Engine.diffDesigns(before, Engine.toPreset(state));
+  const find = (area, pattern) => changes.find((change) => change.area === area && pattern.test(change.text));
+  assert.ok(find("Rules", /warn → enforce/));
+  assert.ok(find("Table groups", /Discard: rules .*8 is wild.* → .*8, 2 are wild/));
+  assert.equal(find("Table groups", /Graveyard/)?.kind, "added");
+  assert.equal(find("Actions", /^Bonus/)?.kind, "added");
+  assert.ok(find("Deck", /52 cards\) → .*2 jokers \(54 cards\)/));
+  const back = Engine.diffDesigns(Engine.toPreset(state), before);
+  assert.equal(back.find((change) => change.area === "Actions" && change.text === "Bonus")?.kind, "removed");
+}
+console.log("design diff tests passed");

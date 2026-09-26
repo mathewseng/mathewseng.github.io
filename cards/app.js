@@ -1518,7 +1518,7 @@
       const design = `<p class="hint">${linked ? `This table is <b>${esc(linked.name)}</b> from My games${linked.versions?.length ? `, with ${linked.versions.length} earlier version${linked.versions.length === 1 ? "" : "s"}` : ""}.` : "Save everything (groups, rules, actions, triggers, scoring, deck and the rules document) as a reusable game."}</p>
         <div class="row">
           <button class="btn primary" data-act="save-preset">${linked ? "Save changes" : "Save to My games"}</button>
-          ${linked ? `<button class="btn" data-act="save-preset-new">Save as new</button>` : ""}
+          ${linked ? `<button class="btn" data-act="save-preset-new">Save as new</button><button class="btn" data-act="design-diff">What changed?</button>` : ""}
           <button class="btn" data-act="open-library">My games (${library.length})</button>
         </div>
         <div class="row tight"><button class="btn sm" data-act="share-design">Share link</button><button class="btn sm" data-act="export-preset">Export file</button><button class="btn sm" data-act="import">Import…</button></div>`;
@@ -2516,6 +2516,7 @@
         break;
       case "simulate": readSimCfg(); runSimulation(); break;
       case "scoreboard": openScoreboard(); break;
+      case "design-diff": { const linked = loadLibrary().find((entry) => entry.id === v.designId); if (linked) openDiffDialog(linked, "saved", "table"); break; }
       case "bot-games-csv": {
         const r = botGames.result;
         if (!r) break;
@@ -3024,6 +3025,43 @@
     return Array.isArray(list) ? list.filter((entry) => entry && entry.id && entry.name) : [];
   }
 
+  /** Compare two versions of a saved design (or the live table) and list what changed. */
+  function openDiffDialog(design, fromKey, toKey) {
+    const sources = [
+      ...(design.id === view.designId ? [["table", "This table, unsaved", () => E.toPreset(state || view)]] : []),
+      ["saved", `Saved ${design.updatedAt ? new Date(design.updatedAt).toLocaleString() : ""}${design.note ? " · " + design.note : ""}`, () => stripDesign(design)],
+      ...(design.versions || []).map((version, i) => [`v${i}`, `${new Date(version.t).toLocaleString()}${version.note ? " · " + version.note : ""}`, () => version.design]),
+    ];
+    const pick = (key) => sources.find(([id]) => id === key) || sources[0];
+    let from = pick(fromKey)[0];
+    let to = pick(toKey)[0];
+    const options = (value) => sources.map(([id, label]) => `<option value="${id}"${id === value ? " selected" : ""}>${esc(label)}</option>`).join("");
+    const draw = () => {
+      const changes = E.diffDesigns(pick(from)[2](), pick(to)[2]());
+      const areas = [...new Set(changes.map((change) => change.area))];
+      const mark = { added: "+", removed: "−", changed: "~" };
+      return head(`What changed in ${design.name}`) + `<div class="dlg-body">
+          <div class="grid-2">
+            <label class="field"><span>From</span><select name="from">${options(from)}</select></label>
+            <label class="field"><span>To</span><select name="to">${options(to)}</select></label>
+          </div>
+          ${changes.length ? areas.map((area) => `<div class="diff-area"><h3 class="small">${esc(area)}</h3>${changes.filter((change) => change.area === area).map((change) => `<div class="diff-line ${change.kind}"><b>${mark[change.kind]}</b><span>${esc(change.text)}</span></div>`).join("")}</div>`).join("") : `<p class="hint">No design changes between these two. (Cards on the table, scores and players aren't part of a design.)</p>`}
+        </div>
+        <div class="dlg-foot"><button class="btn" value="cancel">Close</button></div>`;
+    };
+    openDialog(draw(), {
+      wide: true,
+      bind(form) {
+        form.addEventListener("change", (event) => {
+          if (event.target.name === "from") from = event.target.value;
+          else if (event.target.name === "to") to = event.target.value;
+          else return;
+          form.innerHTML = draw();
+        });
+      },
+    });
+  }
+
   function stripDesign(design) {
     const { versions, ...rest } = design;
     return E.clone(rest);
@@ -3137,6 +3175,7 @@
                 store(STORE.presets, library.map((entry) => (entry.id === design.id ? { ...entry, name: name.slice(0, 48) } : entry)));
                 redraw();
               } },
+              ...(versions.length || design.id === view.designId ? [{ label: "What changed…", run: () => openDiffDialog(design, versions.length ? "v0" : "saved", design.id === view.designId ? "table" : "saved") }] : []),
               ...(versions.length ? [{ heading: "Versions" }, ...versions] : []),
               "-",
               { label: "Delete", danger: true, run: () => {
@@ -4160,6 +4199,29 @@
     renderPane();
   }
 
+  /** How long games ran, in moves: spot designs that drag on or end too fast. */
+  function lengthHistogramHTML(r) {
+    const moves = r.rows.map((row) => row.moves).sort((a, b) => a - b);
+    if (moves.length < 5) return "";
+    const lo = moves[0];
+    const hi = moves[moves.length - 1];
+    const bins = 12;
+    const width = Math.max(1, Math.ceil((hi - lo + 1) / bins));
+    const counts = Array(bins).fill(0);
+    const capped = Array(bins).fill(0);
+    r.rows.forEach((row) => {
+      const bin = Math.min(bins - 1, Math.floor((row.moves - lo) / width));
+      counts[bin] += 1;
+      if (!row.finished) capped[bin] += 1;
+    });
+    const peak = Math.max(...counts);
+    const median = moves[Math.floor(moves.length / 2)];
+    const p90 = moves[Math.floor(moves.length * 0.9)];
+    return `<div class="histo-box"><div class="small"><b>Game length</b> <span class="muted">· moves per game: median ${median}, 90% within ${p90}, range ${lo}–${hi}</span></div>
+      <div class="histo" role="img" aria-label="Histogram of game lengths">${counts.map((count, i) => `<span style="height:${peak ? Math.max(count ? 6 : 0, (count / peak) * 100) : 0}%" class="${capped[i] ? "capped" : ""}" title="${lo + i * width}–${lo + (i + 1) * width - 1} moves: ${count} game${count === 1 ? "" : "s"}${capped[i] ? `, ${capped[i]} hit the move limit` : ""}"></span>`).join("")}</div>
+      <div class="histo-axis small dim"><span>${lo}</span><span>${hi}</span></div></div>`;
+  }
+
   /**
    * Which cards the winners played: each card's share of plays made by the
    * eventual winner, against the winners' share of all plays (the line).
@@ -4208,6 +4270,7 @@
       <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays legal cards to the end (${esc(ends)}).</span></div>
       ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.avgSteps)} moves, ${r.avgRounds.toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
         <div class="small muted">Win rate and average final score by seat: <b>${fairness(r)}</b> (spread ${pct(r.spread)}${r.finished < 40 ? "; small sample, run more games for a clearer picture" : ""})</div><div class="list">${seatRows}</div>${compareTable}` : ""}
+      ${r ? lengthHistogramHTML(r) : ""}
       ${r ? cardBalanceHTML(r) : ""}
       ${r ? `<div class="row"><button class="btn sm" data-act="bot-games-csv">Export games CSV</button></div>` : ""}
       <p class="hint">Needs play rules where cards are played and an end condition. Use it to spot seat-order advantages, games that drag on, or whether a rule change helps (save a version, change the rule, then compare).</p>`;

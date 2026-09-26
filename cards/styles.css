@@ -940,3 +940,15 @@ body[data-motion="0"] *, body[data-motion="0"] *::before { animation-duration: 0
 }
 .claim-bar { margin: 0 0 6px; padding: 5px 8px; border-radius: 8px; background: rgba(244, 201, 93, 0.1); border: 1px solid rgba(244, 201, 93, 0.3); font-size: 12px; }
 .claim-bar b { color: var(--gold); }
+.histo-box { display: grid; gap: 4px; }
+.histo { display: grid; grid-template-columns: repeat(12, 1fr); align-items: end; gap: 3px; height: 64px; padding: 4px; border-radius: 8px; background: #0c1017; border: 1px solid var(--line); }
+.histo span { display: block; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, rgba(69, 214, 255, 0.85), rgba(69, 214, 255, 0.35)); }
+.histo span.capped { background: linear-gradient(180deg, #ff8a5b, rgba(255, 138, 91, 0.35)); }
+.histo-axis { display: flex; justify-content: space-between; }
+.diff-area { display: grid; gap: 4px; margin-bottom: 10px; }
+.diff-area h3 { margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+.diff-line { display: grid; grid-template-columns: 18px 1fr; gap: 6px; padding: 6px 8px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); font-size: 13px; overflow-wrap: anywhere; }
+.diff-line b { text-align: center; }
+.diff-line.added b { color: #6ee7a8; }
+.diff-line.removed b { color: #ff7a7a; }
+.diff-line.changed b { color: var(--gold); }

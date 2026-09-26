@@ -2986,6 +2986,74 @@
   }
 
   /** Extract a reusable game design (no cards in play) from a table. */
+  /**
+   * What changed between two saved designs (preset-shaped), as readable lines:
+   * [{ kind: "added" | "removed" | "changed", area, text }].
+   */
+  function diffDesigns(before, after) {
+    const out = [];
+    const add = (kind, area, text) => out.push({ kind, area, text });
+    const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    const deckText = (spec) => {
+      const clean = normalizeDeckSpec(spec || {});
+      return `${DECK_PRESETS[clean.preset]?.label || clean.preset}${clean.decks > 1 ? ` ×${clean.decks}` : ""}${clean.jokers ? ` + ${clean.jokers} jokers` : ""}${clean.custom.length ? ` + ${clean.custom.reduce((sum, item) => sum + (item.count || 1), 0)} custom cards` : ""} (${deckSize(clean)} cards)`;
+    };
+    const field = (area, label, a, b, show = (value) => String(value ?? "none")) => { if (!same(a, b)) add("changed", area, `${label}: ${show(a)} → ${show(b)}`); };
+    field("Game", "Name", before.name, after.name);
+    field("Game", "Players", before.players && `${before.players.min}–${before.players.max}`, after.players && `${after.players.min}–${after.players.max}`);
+    if (deckText(before.deck) !== deckText(after.deck)) add("changed", "Deck", `${deckText(before.deck)} → ${deckText(after.deck)}`);
+    field("Rules", "Rule checks", before.rulesMode || "warn", after.rulesMode || "warn");
+    field("Scoring", "Target", before.scoring?.target || 0, after.scoring?.target || 0, (value) => (value ? fmt(value) : "none"));
+    field("Scoring", "Round limit", before.scoring?.rounds || 0, after.scoring?.rounds || 0, (value) => (value ? String(value) : "none"));
+    field("Scoring", "Winner", Boolean(before.scoring?.lowWins), Boolean(after.scoring?.lowWins), (value) => (value ? "lowest" : "highest"));
+    field("Bots", "If a bot can't play", before.botFallback || "", after.botFallback || "", (value) => value || "pass");
+    field("Bots", "Plays per turn", before.playsPerTurn === 0 ? "until stuck" : "one", after.playsPerTurn === 0 ? "until stuck" : "one");
+    field("Bots", "Must play when able", Boolean(before.mustPlay), Boolean(after.mustPlay), (value) => (value ? "yes" : "no"));
+    field("Flow", "Phases", (before.phases || []).join(", "), (after.phases || []).join(", "), (value) => value || "none");
+    const groups = (area, a, b) => {
+      const key = (zone) => zone.key || String(zone.name || "").toLowerCase();
+      const old = new Map((a || []).map((zone) => [key(zone), zone]));
+      const now = new Map((b || []).map((zone) => [key(zone), zone]));
+      for (const [k, zone] of now) {
+        const prev = old.get(k);
+        if (!prev) { add("added", area, `${zone.name}${zone.rule && describeRule(zone.rule, zone) ? `: ${describeRule(zone.rule, zone)}` : ""}`); continue; }
+        const bits = [];
+        for (const f of ["name", "kind", "layout", "visibility", "face", "limit"]) if (!same(prev[f], zone[f])) bits.push(`${f} ${prev[f] ?? "—"} → ${zone[f] ?? "—"}`);
+        if (!same(prev.evals || [], zone.evals || [])) bits.push(`scoring ${(prev.evals || []).join(", ") || "none"} → ${(zone.evals || []).join(", ") || "none"}`);
+        const ruleBefore = describeRule(prev.rule || {}, prev);
+        const ruleAfter = describeRule(zone.rule || {}, zone);
+        if (ruleBefore !== ruleAfter) bits.push(`rules “${ruleBefore || "none"}” → “${ruleAfter || "none"}”`);
+        if (bits.length) add("changed", area, `${zone.name}: ${bits.join("; ")}`);
+      }
+      for (const [k, zone] of old) if (!now.has(k)) add("removed", area, zone.name);
+    };
+    groups("Table groups", before.table, after.table);
+    groups("Seat groups", before.seat, after.seat);
+    const old = new Map((before.macros || []).map((macro) => [macro.label, macro]));
+    const now = new Map((after.macros || []).map((macro) => [macro.label, macro]));
+    const steps = (macro) => (macro.steps || []).map((step) => describeStep(step));
+    for (const [label, macro] of now) {
+      const prev = old.get(label);
+      if (!prev) add("added", "Actions", `${label}: ${steps(macro).join(" → ") || "no steps"}`);
+      else if (!same(steps(prev), steps(macro))) add("changed", "Actions", `${label}: ${steps(prev).join(" → ") || "no steps"} ⟶ ${steps(macro).join(" → ") || "no steps"}`);
+    }
+    for (const label of old.keys()) if (!now.has(label)) add("removed", "Actions", label);
+    const trig = (trigger) => `${describeTrigger(trigger)}${trigger.during ? ` (during ${trigger.during})` : ""} → ${trigger.macro}${trigger.off ? " (off)" : ""}`;
+    const tBefore = new Set((before.triggers || []).map(trig));
+    const tAfter = new Set((after.triggers || []).map(trig));
+    for (const text of tAfter) if (!tBefore.has(text)) add("added", "Triggers", text);
+    for (const text of tBefore) if (!tAfter.has(text)) add("removed", "Triggers", text);
+    const names = (list) => new Set((list || []).map((item) => item.name));
+    for (const [area, a, b] of [["Counters", before.counters, after.counters], ["Table counters", before.tableCounters, after.tableCounters], ["Scoring rules", before.schemes, after.schemes]]) {
+      const x = names(a);
+      const y = names(b);
+      for (const name of y) if (!x.has(name)) add("added", area, name);
+      for (const name of x) if (!y.has(name)) add("removed", area, name);
+    }
+    if ((before.rules || "") !== (after.rules || "")) add("changed", "Rules document", `${(before.rules || "").length} → ${(after.rules || "").length} characters`);
+    return out;
+  }
+
   function toPreset(state) {
     const table = orderedZones(state, "table").map(templateFrom);
     return {
@@ -3239,6 +3307,7 @@
     RULES_MODES,
     TRIGGER_EVENTS,
     cardKey,
+    diffDesigns,
     WHO_OPTIONS,
     TURN_OPTIONS,
     STOP_CMP,
