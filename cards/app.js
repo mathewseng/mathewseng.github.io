@@ -32,6 +32,7 @@
     document.body.dataset.back = prefs.back;
     document.body.dataset.four = prefs.four ? "1" : "0";
     document.body.dataset.motion = prefs.motion ? "1" : "0";
+    document.body.dataset.jumbo = prefs.jumbo ? "1" : "0";
     document.body.classList.toggle("side-collapsed", !prefs.side);
   }
 
@@ -184,6 +185,8 @@
     while (i >= 0 && logKey(log[i]) !== lastLogKey) i -= 1;
     lastLogKey = lastKey;
     if (i < 0) return; // a different table or room: nothing new to announce
+    const sound = soundForLog(log.slice(i + 1));
+    if (sound) playSound(sound);
     const myName = mySeat(source)?.name;
     for (const entry of log.slice(i + 1).slice(-6)) {
       if (entry.kind === "warn") toast(entry.text, "warn");
@@ -199,7 +202,7 @@
     if (net.mode === "local" || !source) { wasMyTurn = false; document.title = baseTitle; return; }
     const mine = mySeatId(source);
     const now = Boolean(mine) && source.players[source.turn.index]?.id === mine;
-    if (now && !wasMyTurn) toast("Your turn", "good");
+    if (now && !wasMyTurn) { toast("Your turn", "good"); playSound("turn"); }
     document.title = now ? "● Your turn · " + baseTitle : baseTitle;
     wasMyTurn = now;
   }
@@ -366,8 +369,8 @@
     if (card.rank === "A") return corners + `<span class="pip" style="font-size:calc(var(--cw)*.62)">${sym}</span>`;
     const layout = PIP_LAYOUT[Number(rank)];
     if (!layout) return corners + `<span class="pip">${sym}</span>`;
-    const pips = layout.map(([x, y]) => `<span style="position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%)${y > 55 ? " rotate(180deg)" : ""};font-size:calc(var(--cw)*.2);line-height:1">${sym}</span>`).join("");
-    return corners + pips;
+    const pips = layout.map(([x, y]) => `<span class="p" style="position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%)${y > 55 ? " rotate(180deg)" : ""};font-size:calc(var(--cw)*.2);line-height:1">${sym}</span>`).join("");
+    return corners + pips + `<span class="jumbo-suit">${sym}</span>`;
   }
 
   function cardHTML(card, zone, index, extra = "") {
@@ -536,10 +539,44 @@
     </article>`;
   }
 
+  /** Seats around a central felt: you at the bottom, everyone else clockwise from your left. */
+  function aroundHTML(v) {
+    const players = v.players;
+    const mine = mySeatId();
+    const bottomIndex = Math.max(0, players.findIndex((player) => player.id === mine));
+    const others = [...players.slice(bottomIndex + 1), ...players.slice(0, bottomIndex)];
+    const k = others.length;
+    const side = k >= 2 ? Math.max(1, Math.floor(k / 4)) : 0;
+    const left = others.slice(0, side).reverse();
+    const top = others.slice(side, k - side);
+    const right = others.slice(k - side);
+    const seat = (player) => seatHTML(player, players.indexOf(player));
+    return `<div class="around">
+        <div class="ar-top">${top.map(seat).join("")}</div>
+        <div class="ar-left">${left.map(seat).join("")}</div>
+        <div class="ar-center"><div class="ar-felt">
+          <div class="area-label"><span>Table</span><button class="btn sm ghost" data-add-zone="table">+ Group</button><button class="btn sm ghost" data-act="add-player">+ Player</button></div>
+          <div class="table-zones">${E.orderedZones(v, "table").map(zoneHTML).join("") || `<div class="muted small">No table groups yet.</div>`}</div>
+        </div></div>
+        <div class="ar-right">${right.map(seat).join("")}</div>
+        <div class="ar-bottom">${players.length ? seat(players[bottomIndex]) : `<button class="btn primary" data-act="add-player">+ Add player</button>`}</div>
+      </div>`;
+  }
+
   function renderTable() {
     legalMap = computeLegal(orderedSelection());
     const v = view;
     evalCache = evaluateAll(v);
+    const around = prefs.layout === "around" && window.innerWidth > 900 && v.players.length > 1;
+    $("#around").hidden = !around;
+    $$("#table > .table-section").forEach((el) => { el.hidden = around; });
+    if (around) {
+      $("#around").innerHTML = aroundHTML(v);
+      $("#tableZones").innerHTML = "";
+      $("#seats").innerHTML = "";
+      return;
+    }
+    $("#around").innerHTML = "";
     $("#tableZones").innerHTML = E.orderedZones(v, "table").map(zoneHTML).join("") || `<div class="muted small">No table groups yet.</div>`;
     const seats = $("#seats");
     seats.classList.toggle("wide-seats", v.seatTemplate.length > 2 || v.players.length <= 2);
@@ -672,8 +709,17 @@
     if (!state) return;
     view = computeView();
     const before = captureLayout();
+    const backsBefore = new Map($$(".card[data-card-id]").map((el) => [el.dataset.cardId, el.classList.contains("back")]));
     renderTop();
     renderTable();
+    if (prefs.motion && backsBefore.size) {
+      // Hidden cards carry placeholder ids, so a card that just turned up face-up is new here too.
+      $$(".card[data-card-id]").forEach((el) => {
+        const was = backsBefore.get(el.dataset.cardId);
+        const back = el.classList.contains("back");
+        if ((was !== undefined && was !== back) || (was === undefined && !back)) el.classList.add("flip-in");
+      });
+    }
     fitRows();
     renderGameOver();
     renderSelectionBar();
@@ -1239,6 +1285,7 @@
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
           <div class="list">${draft.custom.map((item, i) => `<div class="custom-row">
+              <div class="card-preview">${cardHTML({ id: "preview-" + i, custom: true, visible: true, faceUp: true, label: item.label, text: item.text, color: item.color, value: item.value, icon: item.icon, image: item.image, suit: item.suit || "x", rank: item.rank || item.label }, { id: "preview", visibility: "public" }, i)}</div>
               <input type="color" value="${esc(item.color)}" data-custom="${i}" data-k="color" title="Card color">
               <input type="text" value="${esc(item.label)}" placeholder="Name" class="grow" data-custom="${i}" data-k="label" title="Printed name">
               <input type="text" value="${esc(item.icon || "")}" placeholder="Icon" maxlength="4" style="width:54px" data-custom="${i}" data-k="icon" title="Emoji or symbol shown large">
@@ -1339,7 +1386,10 @@
         <div class="field"><span>Card back</span><div class="seg">${["classic", "crimson", "forest", "violet", "noir", "gold"].map((id) => `<button data-pref="back" data-val="${id}" class="${prefs.back === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
         <label class="check"><input type="checkbox" data-pref-bool="four"${prefs.four ? " checked" : ""}> Four-color deck (blue ♦, green ♣)</label>
         <label class="check"><input type="checkbox" data-pref-bool="evals"${prefs.evals ? " checked" : ""}> Show scoring badges under groups</label>
-        <label class="check"><input type="checkbox" data-pref-bool="motion"${prefs.motion ? " checked" : ""}> Animations</label>`;
+        <label class="check"><input type="checkbox" data-pref-bool="motion"${prefs.motion ? " checked" : ""}> Animations</label>
+        <label class="check"><input type="checkbox" data-pref-bool="jumbo"${prefs.jumbo ? " checked" : ""}> Jumbo indexes (easier to read on phones)</label>
+        <label class="check"><input type="checkbox" data-pref-bool="sound"${prefs.sound ? " checked" : ""}> Sound effects</label>
+        <div class="field"><span>Seats</span><div class="seg">${[["grid", "Grid"], ["around", "Around the table"]].map(([id, label]) => `<button data-pref="layout" data-val="${id}" class="${(prefs.layout || "grid") === id ? "on" : ""}">${label}</button>`).join("")}</div></div>`;
       const seedBlock = `<div class="row tight"><input id="seedInput" type="text" value="${esc(prefs.seed || "")}" placeholder="any word or number" class="grow" style="flex:1;width:auto" data-fk="seed"><button class="btn sm primary" data-act="seed-apply">Use seed</button>${prefs.seed ? `<button class="btn sm" data-act="seed-clear">Random</button>` : ""}</div>
         <p class="hint">${prefs.seed ? `Shuffles follow seed <b>${esc(prefs.seed)}</b>. The same actions in the same order give the same deals, so a tricky situation can be replayed.` : "Set a seed to make shuffles repeatable, so a deal can be replayed exactly."}</p>`;
       return block("Deal simulator", simulatorHTML(v))
@@ -2572,7 +2622,7 @@
       if (d.deckSuit) { const s = d.deckSuit; deckDraft.suits = el.checked ? Array.from(new Set(deckDraft.suits.concat(s))) : deckDraft.suits.filter((x) => x !== s); if (!deckDraft.suits.length) deckDraft.suits = [s]; renderPane(); return; }
       if (d.custom !== undefined) { const item = deckDraft.custom[Number(d.custom)]; item[d.k] = ["value", "count"].includes(d.k) ? Number(el.value) : el.value; renderPane(); return; }
       if (d.hyperDraws !== undefined) { hyper.draws = Math.max(1, Number(el.value) || 1); renderPane(); return; }
-      if (d.prefBool) { prefs[d.prefBool] = el.checked; savePrefs(); render(); return; }
+      if (d.prefBool) { prefs[d.prefBool] = el.checked; savePrefs(); if (d.prefBool === "sound" && el.checked) playSound("turn"); render(); return; }
       if (el.id === "rulesText") return dispatch({ type: "setNotes", notes: el.value });
       if (el.id === "timerAuto") { timer.autoNext = el.checked; return; }
       if (el.id === "timerSecs") { timer.total = Math.max(5, Number(el.value) || 60); if (!timer.running) timer.left = timer.total; renderTop(); return; }
@@ -2684,6 +2734,12 @@
 
     document.addEventListener("click", (event) => { if (openMenu && !openMenu.contains(event.target) && !event.target.closest("[data-act='menu'],#menuBtn,[data-sel='move'],[data-sel='mark'],[data-act='seat-menu'],.eval[data-value]")) closeMenu(); }, true);
     window.addEventListener("resize", closeMenu);
+    let wasWide = window.innerWidth > 900;
+    window.addEventListener("resize", () => {
+      const wide = window.innerWidth > 900;
+      if (wide !== wasWide && prefs.layout === "around") render();
+      wasWide = wide;
+    });
     if (typeof ResizeObserver === "function") new ResizeObserver(() => fitRows()).observe($("#table"));
     $("#table").addEventListener("scroll", closeMenu);
 
@@ -3513,6 +3569,9 @@
     add("Tools", "Flip a coin", () => dispatch({ type: "coin" }));
     for (const tab of ["play", "scores", "seats", "deck", "tools", "log", "rules"]) add("Panels", `Open ${tab[0].toUpperCase() + tab.slice(1)}`, () => openTab(tab));
     add("Panels", "How it works & shortcuts", openHelp, "?");
+    add("Display", prefs.sound ? "Turn sound effects off" : "Turn sound effects on", () => { prefs.sound = !prefs.sound; savePrefs(); playSound("turn"); renderPane(); });
+    add("Display", prefs.layout === "around" ? "Seats: grid" : "Seats: around the table", () => { prefs.layout = prefs.layout === "around" ? "grid" : "around"; savePrefs(); render(); });
+    add("Display", prefs.jumbo ? "Normal card indexes" : "Jumbo card indexes", () => { prefs.jumbo = !prefs.jumbo; savePrefs(); render(); });
     if (net.mode === "local") {
       for (const [mode, label] of [["hands", "All hands"], ["xray", "X-ray (referee)"], ["pass", "Pass & play"]]) add("View", `View: ${label}`, () => setViewMode(mode));
       for (const player of v.players) add("View", `View as ${player.name}`, () => setViewMode("seat:" + player.id));
@@ -4028,6 +4087,71 @@
       }, 650);
       renderReplayBar();
     }
+  }
+
+  // =============================================================== SOUND
+  const sfx = { ctx: null, noise: null };
+
+  /** Tiny synthesized sound effects (no audio files). Off unless turned on in Tools → Display. */
+  function playSound(kind) {
+    if (!prefs.sound) return;
+    try {
+      const ctx = sfx.ctx || (sfx.ctx = new (window.AudioContext || window.webkitAudioContext)());
+      if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime;
+      const tone = (freq, start, dur, type = "sine", level = 0.05) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(level, now + start);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + start);
+        osc.stop(now + start + dur + 0.02);
+      };
+      const hiss = (start, dur, level = 0.05, cutoff = 2500) => {
+        if (!sfx.noise) {
+          sfx.noise = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
+          const data = sfx.noise.getChannelData(0);
+          for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+        }
+        const src = ctx.createBufferSource();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        src.buffer = sfx.noise;
+        filter.type = "highpass";
+        filter.frequency.value = cutoff;
+        gain.gain.setValueAtTime(level, now + start);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+        src.connect(filter).connect(gain).connect(ctx.destination);
+        src.start(now + start);
+        src.stop(now + start + dur + 0.02);
+      };
+      switch (kind) {
+        case "card": hiss(0, 0.07, 0.08, 2600); break;
+        case "flip": hiss(0, 0.05, 0.06, 4200); tone(1500, 0, 0.04, "triangle", 0.015); break;
+        case "shuffle": for (let i = 0; i < 8; i += 1) hiss(i * 0.04, 0.05, 0.05, 1800 + i * 150); break;
+        case "turn": tone(660, 0, 0.16); tone(880, 0.12, 0.26); break;
+        case "win": [523, 659, 784, 1047].forEach((freq, i) => tone(freq, i * 0.11, 0.32, "triangle", 0.05)); break;
+        case "warn": tone(196, 0, 0.2, "square", 0.025); break;
+        case "chat": tone(988, 0, 0.12, "sine", 0.035); break;
+        default: break;
+      }
+    } catch (error) { /* audio unavailable */ }
+  }
+
+  function soundForLog(entries) {
+    const kinds = entries.map((entry) => {
+      if (entry.kind === "round" && /Game over/.test(entry.text)) return "win";
+      if (entry.kind === "warn") return "warn";
+      if (entry.kind === "chat" || entry.kind === "feedback") return "chat";
+      if (/^(Shuffled|Collected)/.test(entry.text)) return "shuffle";
+      if (/^Revealed/.test(entry.text)) return "flip";
+      if (/→|Dealt|drew|Refilled/.test(entry.text)) return "card";
+      return "";
+    });
+    return ["win", "warn", "shuffle", "flip", "card", "chat"].find((kind) => kinds.includes(kind)) || "";
   }
 
   // ============================================================== INIT
