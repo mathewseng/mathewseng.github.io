@@ -13,7 +13,7 @@
   const RANK_SHOW = (rank) => (rank === "T" ? "10" : rank);
   const MARK_COLORS = [["#ff5c66", "Red"], ["#f4c95d", "Gold"], ["#45d6ff", "Cyan"], ["#bdf46b", "Green"], ["#9f7dff", "Violet"]];
 
-  const STORE = { table: "ctw.table.v1", prefs: "ctw.prefs.v1", presets: "ctw.presets.v1", saves: "ctw.saves.v1", seen: "ctw.seen.v1", name: "ctw.name.v1", results: "ctw.results.v1" };
+  const STORE = { table: "ctw.table.v1", prefs: "ctw.prefs.v1", presets: "ctw.presets.v1", saves: "ctw.saves.v1", seen: "ctw.seen.v1", name: "ctw.name.v1", results: "ctw.results.v1", toured: "ctw.toured.v1" };
   function load(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (error) { return fallback; }
   }
@@ -1614,6 +1614,7 @@
         next.rev = (state?.rev || 0) + 1;
         replaceState(next, `${preset.name} ready — ${n} player${n > 1 ? "s" : ""}`);
         store(STORE.seen, true);
+        if (!load(STORE.toured, false) && !navigator.webdriver) setTimeout(startTour, 450);
       },
     });
   }
@@ -1898,12 +1899,13 @@
       const html = head("Online table") + `<div class="dlg-body">
           <div><div class="small muted">Room code</div><div class="room-code">${esc(net.code)}</div></div>
           <div class="row"><input type="text" readonly value="${esc(link)}" class="grow" style="flex:1;width:auto" id="inviteLink"><button type="button" class="btn" data-copy>Copy invite</button></div>
+          <div class="qr-box" id="roomQr" hidden title="Scan to join from a phone"></div>
           <div class="list">${net.roster.map((member) => {
             const seat = view.players.find((p) => p.clientId === member.id);
             const canFree = net.mode === "host" && seat && member.id !== net.room?.clientId;
             return `<div class="list-row"><span class="swatch" style="--c:${esc(seat?.color || "#555")}"></span><span class="grow small"><b>${esc(member.name)}</b>${member.host ? " · host" : ""}${member.connected ? "" : " · reconnecting"}</span><span class="small muted">${seat ? esc(seat.name) : "spectating"}</span>${canFree ? `<button type="button" class="btn sm ghost" data-free-seat="${esc(member.id)}" title="Free this seat for someone else">Free seat</button>` : ""}</div>`;
           }).join("")}</div>
-          <p class="hint">You are ${net.mode === "host" ? "hosting — the table lives in your browser. If you leave, another player takes over." : "connected as a guest"}. Choose your seat with the view menu at the top.</p>
+          <p class="hint">You are ${net.mode === "host" ? "hosting — the table lives in your browser. If you leave, another player takes over" : "connected as a guest"}. Choose your seat with the view menu at the top.</p>
           ${net.mode === "host" ? `<label class="field"><span>Guests can</span><select name="guestMode">
               <option value="play"${view.guestMode !== "full" ? " selected" : ""}>Play only: move cards, run actions, score</option>
               <option value="full"${view.guestMode === "full" ? " selected" : ""}>Co-design: also edit groups, rules, actions and players</option>
@@ -1914,6 +1916,7 @@
         <div class="dlg-foot"><button class="btn danger" value="leave" style="margin-right:auto">Leave room</button><button class="btn primary" value="cancel">Done</button></div>`;
       openDialog(html, {
         bind(form) {
+          showQr(form.querySelector("#roomQr"), link);
           form.guestMode?.addEventListener("change", () => dispatch({ type: "setGuestMode", mode: form.guestMode.value }));
           form.addEventListener("click", (event) => {
             const free = event.target.closest("[data-free-seat]");
@@ -1964,7 +1967,9 @@
       <p class="hint"><b>Bots</b> (Players tab, 🤖) make random legal plays under your rules, so a table full of bots playtests whole hands; set what they do when stuck in Play → Bots. Seats can have <b>teams</b>, groups can require <b>sets or runs</b>, Log → Rewind jumps back in time, and Deck → Print & play makes a paper prototype.</p>
       <p class="hint"><b>View</b>: “All hands” for one shared screen, “Pass &amp; play” hides hands between turns, “X-ray” shows everything for design work, or pick a seat. Online rooms keep hands private per player.</p>
       <div class="kbd-list">${keys.map(([k, d]) => `<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join("")}</div>
-    </div><div class="dlg-foot"><button class="btn primary" value="cancel">Got it</button></div>`);
+    </div><div class="dlg-foot"><button type="button" class="btn" data-start-tour>Take the tour</button><button class="btn primary" value="cancel">Got it</button></div>`, {
+      bind(form) { form.querySelector("[data-start-tour]").addEventListener("click", startTour); },
+    });
   }
 
   // ============================================================ NETWORK
@@ -2720,6 +2725,13 @@
     });
     $(".sheet-handle").addEventListener("click", () => { prefs.side = false; savePrefs(); });
 
+    $("#tour").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-tour]");
+      if (!button) return;
+      if (button.dataset.tour === "skip") endTour();
+      else { tour.step += button.dataset.tour === "back" ? -1 : 1; showTourStep(); }
+    });
+    window.addEventListener("resize", () => { if (tour.step >= 0) showTourStep(); });
     $("#replayBar").addEventListener("click", (event) => {
       const el = event.target.closest("[data-rp]");
       if (el && el.dataset.rp !== "seek") handleReplay(el);
@@ -2802,6 +2814,14 @@
       if (mod && event.key.toLowerCase() === "k" && !dialog().open) { event.preventDefault(); openPalette(); return; }
       if (typing || mod || event.altKey) return;
       const key = event.key;
+      if (tour.step >= 0) {
+        if (key === "Escape") endTour();
+        else if (key === "ArrowRight" || key === "Enter") { tour.step += 1; showTourStep(); }
+        else if (key === "ArrowLeft") { tour.step = Math.max(0, tour.step - 1); showTourStep(); }
+        else return;
+        event.preventDefault();
+        return;
+      }
       if (replay.active) {
         if (key === "ArrowLeft") replayTo(replay.index - 1);
         else if (key === "ArrowRight") replayTo(replay.index + 1);
@@ -3633,6 +3653,7 @@
     add("Tools", "Flip a coin", () => dispatch({ type: "coin" }));
     for (const tab of ["play", "scores", "seats", "deck", "tools", "log", "rules"]) add("Panels", `Open ${tab[0].toUpperCase() + tab.slice(1)}`, () => openTab(tab));
     add("Panels", "How it works & shortcuts", openHelp, "?");
+    add("Panels", "Take the tour", startTour);
     add("Display", prefs.sound ? "Turn sound effects off" : "Turn sound effects on", () => { prefs.sound = !prefs.sound; savePrefs(); playSound("turn"); renderPane(); });
     add("Display", prefs.layout === "around" ? "Seats: grid" : "Seats: around the table", () => { prefs.layout = prefs.layout === "around" ? "grid" : "around"; savePrefs(); render(); });
     add("Display", prefs.jumbo ? "Normal card indexes" : "Jumbo card indexes", () => { prefs.jumbo = !prefs.jumbo; savePrefs(); render(); });
@@ -4464,6 +4485,87 @@
     const card = view.cards[play.card];
     showPing({ zone: play.to, name: "Hint", color: "#f4c95d" });
     toast(`💡 ${card?.visible ? (card.custom ? card.label : E.cardName(card)) : "That card"} → ${view.zones[play.to]?.name || "?"} (press P to play it)`);
+  }
+
+  // ================================================================== QR
+  let qrLoading = null;
+  function loadQr() {
+    if (window.qrcode) return Promise.resolve(window.qrcode);
+    if (!qrLoading) {
+      qrLoading = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js";
+        script.onload = () => (window.qrcode ? resolve(window.qrcode) : reject(new Error("QR unavailable")));
+        script.onerror = () => { qrLoading = null; reject(new Error("QR unavailable")); };
+        document.head.appendChild(script);
+      });
+    }
+    return qrLoading;
+  }
+
+  function showQr(el, text) {
+    if (!el) return;
+    loadQr().then((qrcode) => {
+      const qr = qrcode(0, "M");
+      qr.addData(text);
+      qr.make();
+      el.innerHTML = qr.createSvgTag(4, 2);
+      el.hidden = false;
+    }).catch(() => { el.hidden = true; });
+  }
+
+  // ================================================================ TOUR
+  const TOUR = [
+    { target: "#newBtn", title: "Start or design a game", text: "Pick one of the ready-made games, or ✨ Design your own from a few answers. Everything is editable afterwards.", tab: null },
+    { target: ".macro-grid", title: "One-tap actions", text: "Actions script the flow: deal, flip, find the winner, score… Press 1–9 or click. ● Record turns what you do by hand into a new action.", tab: "play" },
+    { target: "#seats .zone, #around .zone", title: "Cards and groups", text: "Tap cards to select, drag to move, double-click to flip. Places a card can legally go glow green; H asks the smart bot for a hint.", tab: null },
+    { target: '#tabs [data-tab="rules"]', title: "Rules and automation", text: "Give groups play rules, add triggers and scoring formulas, generate the rules document, and run the design check.", tab: null },
+    { target: '#tabs [data-tab="tools"]', title: "Playtest like a lab", text: "Bots, whole-game simulations with A/B comparisons, deal odds, seeded replays, pacing and results by seat.", tab: null },
+    { target: "#roomBtn", title: "Play together", text: "Open an online room: hands stay private and friends join by link or QR code. Ctrl/⌘+K finds any command.", tab: null },
+  ];
+  const tour = { step: -1 };
+
+  function startTour() {
+    closeDialog();
+    tour.step = 0;
+    showTourStep();
+  }
+
+  function endTour() {
+    tour.step = -1;
+    $("#tour").hidden = true;
+    store(STORE.toured, true);
+  }
+
+  function showTourStep() {
+    const step = TOUR[tour.step];
+    if (!step) return endTour();
+    if (step.tab || step.target.startsWith("#tabs") || step.target === ".macro-grid") {
+      prefs.side = true;
+      if (step.tab) prefs.tab = step.tab;
+      savePrefs();
+      render();
+    }
+    const target = $$(step.target).find((el) => el.getBoundingClientRect().width > 0);
+    if (!target) { tour.step += 1; return showTourStep(); }
+    target.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const rect = target.getBoundingClientRect();
+    const layer = $("#tour");
+    layer.hidden = false;
+    const pad = 6;
+    const spot = layer.querySelector(".tour-spot");
+    spot.style.left = rect.left - pad + "px";
+    spot.style.top = rect.top - pad + "px";
+    spot.style.width = rect.width + pad * 2 + "px";
+    spot.style.height = rect.height + pad * 2 + "px";
+    const bubble = layer.querySelector(".tour-bubble");
+    bubble.innerHTML = `<div class="small muted">${tour.step + 1} of ${TOUR.length}</div><h3>${esc(step.title)}</h3><p>${esc(step.text)}</p>
+      <div class="row tight"><button class="btn sm ghost" data-tour="skip">Skip</button><span class="grow"></span>${tour.step ? `<button class="btn sm" data-tour="back">Back</button>` : ""}<button class="btn sm primary" data-tour="next">${tour.step === TOUR.length - 1 ? "Done" : "Next"}</button></div>`;
+    const width = Math.min(320, window.innerWidth - 24);
+    bubble.style.width = width + "px";
+    const below = rect.bottom + 14 + 170 < window.innerHeight;
+    bubble.style.top = (below ? rect.bottom + 14 : Math.max(12, rect.top - 14 - bubble.offsetHeight)) + "px";
+    bubble.style.left = Math.max(12, Math.min(window.innerWidth - width - 12, rect.left + rect.width / 2 - width / 2)) + "px";
   }
 
   // ============================================================== INIT

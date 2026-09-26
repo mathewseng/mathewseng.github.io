@@ -818,6 +818,16 @@ table.compare th, table.compare td { padding: 4px 6px; border-bottom: 1px solid 
 table.compare th:first-child, table.compare td:first-child { text-align: left; color: var(--muted); }
 table.compare th { font-size: 11px; color: var(--muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+.qr-box { justify-self: center; padding: 8px; border-radius: 10px; background: #fff; line-height: 0; }
+.qr-box svg { width: 164px; height: 164px; }
+
+.tour { position: fixed; inset: 0; z-index: 600; pointer-events: none; }
+.tour-bubble { pointer-events: auto; }
+.tour-spot { position: fixed; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(3, 5, 9, 0.66); outline: 2px solid var(--cyan); transition: all 0.25s var(--ease); pointer-events: none; }
+.tour-bubble { position: fixed; display: grid; gap: 6px; padding: 14px; border-radius: 14px; border: 1px solid var(--line-strong); background: var(--panel); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); animation: pop 0.2s var(--ease); }
+.tour-bubble h3 { margin: 0; font-size: 16px; }
+.tour-bubble p { margin: 0 0 4px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
 /* --------------------------------------------------------- responsive */
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 320px; }
