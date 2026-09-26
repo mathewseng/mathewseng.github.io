@@ -9,7 +9,7 @@ const context = { window: {} };
 vm.runInNewContext(source, context, { filename: "fantasyland-ev/precomputed.js" });
 
 const dataset = context.window.OFCFantasylandPrecomputed;
-const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => `${cards}-${jokers}`));
+const scenarios = (variant) => core.analysisScenarios(variant).map(({ cards, jokers }) => `${cards}-${jokers}`);
 const jacksPlusVariants = ["low", "badeucey", "cribbage"];
 
 assert.equal(dataset.schemaVersion, 1, "precomputed EV data should use the supported schema");
@@ -20,13 +20,15 @@ assert.deepEqual(Object.keys(dataset.results), core.ACTIVE_VARIANT_ORDER, "preco
 assert.deepEqual(Object.keys(dataset.topRepeatJacksPlusResults), jacksPlusVariants, "precomputed EV data should contain every JJJ+ variant");
 
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
-  scenarios.forEach((scenario) => validateResult(dataset.results[variant][scenario], variant, `${variant} ${scenario}`));
-  validateRecursiveValues(dataset.results[variant], `${variant}`);
+  assert.deepEqual(Object.keys(dataset.results[variant]), scenarios(variant), `${variant}: all and only supported EV configurations`);
+  scenarios(variant).forEach((scenario) => validateResult(dataset.results[variant][scenario], variant, `${variant} ${scenario}`));
+  validateRecursiveValues(dataset.results[variant], variant, `${variant}`);
 });
 
 jacksPlusVariants.forEach((variant) => {
   let reducedRepeatConfigs = 0;
-  scenarios.forEach((scenario) => {
+  assert.deepEqual(Object.keys(dataset.topRepeatJacksPlusResults[variant]), scenarios(variant));
+  scenarios(variant).forEach((scenario) => {
     const normal = dataset.results[variant][scenario];
     const restricted = dataset.topRepeatJacksPlusResults[variant][scenario];
     validateResult(restricted, variant, `${variant} JJJ+ ${scenario}`);
@@ -43,7 +45,7 @@ jacksPlusVariants.forEach((variant) => {
     if (restricted.totals.repeatCount < normal.totals.repeatCount) reducedRepeatConfigs += 1;
   });
   assert.ok(reducedRepeatConfigs > 0, `${variant}: JJJ+ should reduce repeat availability in at least one configuration`);
-  validateRecursiveValues(dataset.topRepeatJacksPlusResults[variant], `${variant} JJJ+`);
+  validateRecursiveValues(dataset.topRepeatJacksPlusResults[variant], variant, `${variant} JJJ+`);
 });
 
 function validateResult(result, variant, label) {
@@ -51,6 +53,9 @@ function validateResult(result, variant, label) {
   const totals = result.totals;
   assert.equal(result.samples, dataset.samplesPerConfig, `${label}: sample count`);
   assert.equal(totals.samples, result.samples, `${label}: raw sample count`);
+  assert.ok(totals.repeatCount >= 0 && totals.repeatCount <= totals.qualifyCount && totals.qualifyCount <= totals.samples, `${label}: repeats must be a subset of legal deals`);
+  assert.ok(totals.strategySum <= totals.immediateSum, `${label}: repeat-first cannot exceed the unrestricted royalty optimum`);
+  assert.ok(totals.distribution.every((count) => Number.isSafeInteger(count) && count >= 0), `${label}: distribution counts must be nonnegative integers`);
   assert.equal(result.immediate, totals.immediateSum / result.samples, `${label}: immediate EV denominator`);
   assert.equal(result.strategy, totals.strategySum / result.samples, `${label}: strategy EV denominator`);
   assert.equal(result.repeatRate, totals.repeatCount / result.samples, `${label}: repeat-rate denominator`);
@@ -88,8 +93,8 @@ function validateResult(result, variant, label) {
   if (variant === "high") assert.equal(totals.qualifyCount, result.samples, `${label}: High Fantasyland cannot foul`);
 }
 
-function validateRecursiveValues(results, label) {
-  [14, 15, 16, 17].forEach((cards) => {
+function validateRecursiveValues(results, variant, label) {
+  core.analysisCardCounts(variant).forEach((cards) => {
     const exact = [0, 1, 2].map((jokers) => results[`${cards}-${jokers}`]);
     const weights = [0, 1, 2].map((jokers) => jokerProbability(cards, jokers));
     const futureStrategy = exact.reduce((sum, result, jokers) => sum + result.strategy * weights[jokers], 0);

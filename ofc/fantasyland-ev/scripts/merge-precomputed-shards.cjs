@@ -7,23 +7,22 @@ const args = parseArgs(process.argv.slice(2));
 const target = Number(args.samples || 10000);
 const inputDirectory = path.resolve(args.input || path.join(__dirname, "../precomputed-parts"));
 const shardDirectory = path.join(inputDirectory, "shards");
-const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
 const selectedVariants = args.variant ? [String(args.variant).toLowerCase()] : Core.ACTIVE_VARIANT_ORDER;
-const selectedCards = args.cards === undefined ? null : Number(args.cards);
+const selectedCards = args.cards === undefined ? null : args.cards.split(",").map(Number);
 const selectedJokers = args.jokers === undefined ? null : Number(args.jokers);
 const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Number(args["top-repeat-min-rank"]);
 
 if (!Number.isSafeInteger(target) || target < 1) fail("--samples must be a positive whole number");
 if (selectedVariants.some((variant) => !Core.VARIANT_ORDER.includes(variant))) fail(`Unknown variant: ${args.variant}`);
-if (selectedCards !== null && ![14, 15, 16, 17].includes(selectedCards)) fail("--cards must be 14, 15, 16, or 17");
+if (selectedCards !== null && selectedCards.some((cards) => !selectedVariants.some((variant) => Core.analysisCardCounts(variant).includes(cards)))) fail("Unsupported analysis card count");
 if (selectedJokers !== null && ![0, 1, 2].includes(selectedJokers)) fail("--jokers must be 0, 1, or 2");
 if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
   fail("--top-repeat-min-rank must be a rank from 2 through 14");
 }
 
 let merged = 0;
-selectedVariants.forEach((variant) => scenarios
-  .filter(({ cards, jokers }) => (selectedCards === null || cards === selectedCards) && (selectedJokers === null || jokers === selectedJokers))
+selectedVariants.forEach((variant) => Core.analysisScenarios(variant)
+  .filter(({ cards, jokers }) => (selectedCards === null || selectedCards.includes(cards)) && (selectedJokers === null || jokers === selectedJokers))
   .forEach(({ cards, jokers }) => {
   const solverId = solverIdForVariant(variant, topRepeatMinRank);
   const outputPath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);

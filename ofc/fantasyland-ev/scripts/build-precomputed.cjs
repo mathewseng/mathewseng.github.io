@@ -7,18 +7,18 @@ const target = Number(args.samples || 10000);
 const inputDirectory = path.resolve(args.input || path.join(__dirname, "../precomputed-parts"));
 const jacksPlusInputDirectory = path.resolve(args["jacks-plus-input"] || path.join(inputDirectory, "jacks-plus"));
 const outputPath = path.resolve(args.output || path.join(__dirname, "../precomputed.js"));
-const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
 const results = {};
 const topRepeatJacksPlusResults = {};
 const missing = [];
 const JACKS_PLUS_VARIANTS = ["low", "badeucey", "cribbage"];
+const configCount = [...Core.ACTIVE_VARIANT_ORDER, ...JACKS_PLUS_VARIANTS].reduce((sum, variant) => sum + Core.analysisScenarios(variant).length, 0);
 const DATASET_SOLVER_ID = "trainer-exactdist-20260907b+trainer-exact-jjjplus-20260907b";
 
 if (!Number.isSafeInteger(target) || target < 10000) fail("The production baseline requires at least 10,000 samples per configuration.");
 
 Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   results[variant] = {};
-  scenarios.forEach(({ cards, jokers }) => {
+  Core.analysisScenarios(variant).forEach(({ cards, jokers }) => {
     const filePath = path.join(inputDirectory, `${variant}-${cards}-${jokers}.json`);
     try {
       const part = JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -35,7 +35,7 @@ Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
 
 JACKS_PLUS_VARIANTS.forEach((variant) => {
   topRepeatJacksPlusResults[variant] = {};
-  scenarios.forEach(({ cards, jokers }) => {
+  Core.analysisScenarios(variant).forEach(({ cards, jokers }) => {
     const filePath = path.join(jacksPlusInputDirectory, `${variant}-${cards}-${jokers}.json`);
     try {
       const part = JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -61,7 +61,7 @@ JACKS_PLUS_VARIANTS.forEach((variant) => {
 applyRecursiveEv(results, Core.ACTIVE_VARIANT_ORDER);
 applyRecursiveEv(topRepeatJacksPlusResults, JACKS_PLUS_VARIANTS);
 
-if (missing.length) fail(`Incomplete precomputed rows (${missing.length}/${(Core.ACTIVE_VARIANT_ORDER.length + JACKS_PLUS_VARIANTS.length) * scenarios.length}):\n${missing.join("\n")}`);
+if (missing.length) fail(`Incomplete precomputed rows (${missing.length}/${configCount}):\n${missing.join("\n")}`);
 
 const dataset = {
   schemaVersion: 1,
@@ -72,7 +72,7 @@ const dataset = {
   topRepeatJacksPlusResults,
 };
 fs.writeFileSync(outputPath, `window.OFCFantasylandPrecomputed = Object.freeze(${JSON.stringify(dataset)});\n`);
-console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across ${(Core.ACTIVE_VARIANT_ORDER.length + JACKS_PLUS_VARIANTS.length) * scenarios.length} result configurations.`);
+console.log(`Wrote ${outputPath} with ${target.toLocaleString()} samples across ${configCount} result configurations.`);
 
 function solverIdForVariant(variant, minimumTopRank = null) {
   if (minimumTopRank !== null) {
@@ -125,7 +125,7 @@ function repeatSourceTotal(totals) {
 
 function applyRecursiveEv(store, variants) {
   variants.forEach((variant) => {
-    [14, 15, 16, 17].forEach((cards) => {
+    Core.analysisCardCounts(variant).forEach((cards) => {
       const exact = [0, 1, 2].map((jokers) => store[variant]?.[`${cards}-${jokers}`]);
       if (exact.some((result) => !result)) return;
       const weights = [0, 1, 2].map((jokers) => jokerProbability(cards, jokers, 2));

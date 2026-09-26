@@ -19,7 +19,7 @@ const sampleStart = args.start === undefined ? 0 : Number(args.start);
 const sampleEnd = args.end === undefined ? target : Number(args.end);
 
 if (!Core.VARIANT_ORDER.includes(variant)) fail(`Unknown variant: ${args.variant || ""}`);
-if (![14, 15, 16, 17].includes(cards)) fail("--cards must be 14, 15, 16, or 17");
+if (!Core.analysisCardCounts(variant).includes(cards)) fail(`--cards must be one of ${Core.analysisCardCounts(variant).join(", ")} for ${variant}`);
 if (![0, 1, 2].includes(jokers)) fail("--jokers must be 0, 1, or 2");
 if (topRepeatMinRank !== null && (!Number.isSafeInteger(topRepeatMinRank) || topRepeatMinRank < 2 || topRepeatMinRank > 14)) {
   fail("--top-repeat-min-rank must be a rank from 2 through 14");

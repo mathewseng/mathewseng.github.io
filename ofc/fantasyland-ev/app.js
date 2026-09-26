@@ -6,8 +6,6 @@
   const STORAGE_KEY = "ofcFantasylandEv.v16";
   const CACHE_SCHEMA_VERSION = 3;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
-  const CARD_COUNTS = [14, 15, 16, 17];
-  const EXACT_SCENARIOS = [0, 1, 2].flatMap((jokers) => CARD_COUNTS.map((cards) => ({ cards, jokers })));
   const DECK_JOKER_COUNTS = [1, 2];
   const ROYALTY_DISTRIBUTION_SIZE = 128;
   const REPEAT_SOURCE_ORDER = [1, 2, 4, 3, 5, 6, 7];
@@ -179,7 +177,8 @@
     const meta = Core.VARIANTS[state.variant];
     const scenarios = scenariosForVariant(state.variant);
     const jacksPlus = usesJacksPlusTopRepeat();
-    const includesHypotheticals = CARD_COUNTS.some((cards) => !Core.supportsVariantCardCount(state.variant, cards));
+    const cardCounts = Core.analysisCardCounts(state.variant);
+    const includesHypotheticals = cardCounts.some((cards) => !Core.supportsVariantCardCount(state.variant, cards));
     els.topRepeatRule.hidden = !JACKS_PLUS_REPEAT_VARIANTS.has(state.variant);
     els.topRepeatJacksPlus.checked = jacksPlus;
     els.variantSummary.textContent = `${meta.short}${jacksPlus ? " Top-row repeats require JJJ or better." : ""}${includesHypotheticals ? " Off-rule card counts are modeled as hypotheticals below." : ""}`;
@@ -191,7 +190,7 @@
     renderJokerProbabilities();
     const complete = scenarios.filter((scenario) => data[scenarioKey(scenario)]).length;
     const sampleSummary = resultSampleSummary(data, scenarios);
-    els.matrixTitle.textContent = `14–17 card ${meta.label} matrix`;
+    els.matrixTitle.textContent = `${cardCounts[0]}–${cardCounts[cardCounts.length - 1]} card ${meta.label} matrix`;
     const ruleLabel = jacksPlus ? " · JJJ+ top repeats" : "";
     els.matrixMeta.textContent = complete ? `${meta.label}${ruleLabel} · exact trainer solver · ${sampleSummary}` : "No samples yet";
     if (!state.running && els.runStatus) {
@@ -242,14 +241,14 @@
 
   function renderDeckMatrix(data = getVariantResults()) {
     if (!els.deckMatrixBody) return;
-    const complete = EXACT_SCENARIOS.every((scenario) => data[scenarioKey(scenario)]);
+    const complete = scenariosForVariant().every((scenario) => data[scenarioKey(scenario)]);
     if (els.deckMatrixMeta) {
       els.deckMatrixMeta.textContent = complete
         ? "Weighted from exact-hand results"
         : "Complete exact-hand results to calculate";
     }
     const fragment = document.createDocumentFragment();
-    CARD_COUNTS.forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
+    Core.analysisCardCounts(state.variant).forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
       const result = aggregateDeckResults(data, cards, deckJokers);
       const row = document.createElement("tr");
       row.dataset.deckConfig = `${cards}-${deckJokers}`;
@@ -818,7 +817,7 @@
       for (let index = 0; index < workerCount; index += 1) {
         let worker;
         try {
-          worker = new Worker("./worker.js?v=20260907a");
+          worker = new Worker("./worker.js?v=20260925a");
         } catch (error) {
           workers.forEach((item) => item.terminate());
           reject(error);
@@ -1067,7 +1066,7 @@
 
   function renderJokerProbabilities() {
     const fragment = document.createDocumentFragment();
-    CARD_COUNTS.forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
+    Core.analysisCardCounts(state.variant).forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
       const probabilities = [0, 1, 2].map((jokers) => (jokers <= deckJokers ? hypergeometricJokers(cards, jokers, deckJokers) : null));
       const row = document.createElement("tr");
       row.innerHTML = `
@@ -1330,13 +1329,13 @@
     return `${scenario.cards}-${scenario.jokers}`;
   }
 
-  function scenariosForVariant() {
-    return EXACT_SCENARIOS;
+  function scenariosForVariant(variant = state.variant) {
+    return Core.analysisScenarios(variant);
   }
 
   function parseSampleCount() {
     const value = Number(els.sampleCount?.value);
-    if (!Number.isFinite(value) || value < 1 || !Number.isSafeInteger(value) || value > Math.floor(Number.MAX_SAFE_INTEGER / EXACT_SCENARIOS.length)) return null;
+    if (!Number.isFinite(value) || value < 1 || !Number.isSafeInteger(value) || value > Math.floor(Number.MAX_SAFE_INTEGER / scenariosForVariant().length)) return null;
     return value;
   }
 
@@ -1352,7 +1351,7 @@
       els.estimateDetail.textContent = "Waiting for a valid sample count";
       return;
     }
-    const total = samples * EXACT_SCENARIOS.length;
+    const total = samples * scenariosForVariant().length;
     const workers = availableWorkerCount();
     const calibrated = finiteNumber(state.settings.benchmarks?.[state.variant]?.serialMsPerDeal) > 0;
     els.sampleTotal.textContent = `${formatInteger(total)} hands total`;
@@ -1363,7 +1362,7 @@
   function estimateRunMs(samples, variant = state.variant) {
     const saved = finiteNumber(state.settings.benchmarks?.[variant]?.serialMsPerDeal);
     const serialMs = saved > 0 ? saved : DEFAULT_SERIAL_MS[variant] || 220;
-    return (samples * EXACT_SCENARIOS.length * serialMs) / availableWorkerCount();
+    return (samples * scenariosForVariant(variant).length * serialMs) / availableWorkerCount();
   }
 
   function saveBenchmark(variant, serialMsPerDeal) {
@@ -1379,7 +1378,7 @@
 
   function availableWorkerCount() {
     const hardware = typeof navigator !== "undefined" ? finiteNumber(navigator.hardwareConcurrency) : 1;
-    return Math.min(EXACT_SCENARIOS.length, 8, Math.max(1, Math.floor(hardware || 2) - 1));
+    return Math.min(scenariosForVariant().length, 8, Math.max(1, Math.floor(hardware || 2) - 1));
   }
 
   function sampleChunkSize(samples) {
@@ -1390,7 +1389,7 @@
     return 25;
   }
 
-  function resultSampleSummary(data, scenarios = EXACT_SCENARIOS) {
+  function resultSampleSummary(data, scenarios = scenariosForVariant()) {
     const counts = scenarios.map((scenario) => finiteNumber(data?.[scenarioKey(scenario)]?.samples)).filter((value) => value > 0);
     if (!counts.length) return "no samples";
     const minimum = Math.min(...counts);
@@ -1409,7 +1408,7 @@
       || !dataset.results
       || !dataset.topRepeatJacksPlusResults
     ) return 0;
-    const complete = Core.ACTIVE_VARIANT_ORDER.every((variant) => EXACT_SCENARIOS.every((scenario) => {
+    const complete = Core.ACTIVE_VARIANT_ORDER.every((variant) => scenariosForVariant(variant).every((scenario) => {
       const result = dataset.results?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target
         && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
@@ -1417,7 +1416,7 @@
         && (!PRECOMPUTED_REPEAT_SOURCE_VARIANTS.has(variant)
           || (hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, variant, null)));
     }));
-    const jacksPlusComplete = Array.from(JACKS_PLUS_REPEAT_VARIANTS).every((variant) => EXACT_SCENARIOS.every((scenario) => {
+    const jacksPlusComplete = Array.from(JACKS_PLUS_REPEAT_VARIANTS).every((variant) => scenariosForVariant(variant).every((scenario) => {
       const result = dataset.topRepeatJacksPlusResults?.[variant]?.[scenarioKey(scenario)];
       return finiteNumber(result?.samples) >= target
         && finiteNumber(result?.totals?.samples) === finiteNumber(result?.samples)
@@ -1429,7 +1428,7 @@
 
     Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       state.results[variant] = state.results[variant] || {};
-      EXACT_SCENARIOS.forEach((scenario) => {
+      scenariosForVariant(variant).forEach((scenario) => {
         const key = scenarioKey(scenario);
         const baseline = dataset.results[variant][key];
         const local = state.results[variant][key];
@@ -1438,7 +1437,7 @@
     });
     JACKS_PLUS_REPEAT_VARIANTS.forEach((variant) => {
       state.topRepeatJacksPlusResults[variant] = state.topRepeatJacksPlusResults[variant] || {};
-      EXACT_SCENARIOS.forEach((scenario) => {
+      scenariosForVariant(variant).forEach((scenario) => {
         const key = scenarioKey(scenario);
         const baseline = dataset.topRepeatJacksPlusResults[variant][key];
         const local = state.topRepeatJacksPlusResults[variant][key];

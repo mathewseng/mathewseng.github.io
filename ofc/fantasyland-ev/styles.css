@@ -1758,6 +1758,17 @@ dd {
     padding: 11px 12px;
   }
 
+  .matrix-panel > .panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .matrix-panel > .panel-head > span {
+    white-space: normal;
+    line-height: 1.4;
+  }
+
   .distribution-head {
     display: grid;
     align-items: start;

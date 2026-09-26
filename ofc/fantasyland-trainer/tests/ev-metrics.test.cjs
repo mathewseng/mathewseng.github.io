@@ -75,20 +75,22 @@ assert.ok(exactHigh.best, "EV High samples must use the trainer's complete solve
 
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   const scenarios = Array.from(api.scenariosForVariant(variant), (scenario) => ({ cards: scenario.cards, jokers: scenario.jokers }));
-  assert.equal(scenarios.length, 12, `${variant}: EV should include all twelve exact-hand configurations`);
+  const counts = ["badeucey", "bdp"].includes(variant) ? [14, 15, 16, 17, 18, 19] : [14, 15, 16, 17];
+  assert.equal(scenarios.length, counts.length * 3, `${variant}: EV should include every exact-hand configuration`);
   assert.deepEqual(
     [...new Set(scenarios.map((scenario) => scenario.cards))],
-    [14, 15, 16, 17],
-    `${variant}: EV should include 14 through 17 cards, including off-rule hypotheticals`
+    counts,
+    `${variant}: EV should include its analysis counts, including off-rule hypotheticals`
   );
 });
 
-[14, 15, 16, 17].forEach((cards) => {
+[14, 15, 16, 17, 18, 19].forEach((cards) => {
   [1, 2].forEach((deckJokers) => {
     const sum = Array.from({ length: deckJokers + 1 }, (_, jokers) => api.hypergeometricJokers(cards, jokers, deckJokers)).reduce((total, value) => total + value, 0);
     closeTo(sum, 1, `${cards} cards / ${deckJokers}J deck probabilities should sum to one`);
   });
   closeTo(api.hypergeometricJokers(cards, 1, 1), cards / 53, `${cards} cards from a one-joker deck should draw the joker with n/53 probability`);
+  closeTo(api.hypergeometricJokers(cards, 2, 2), cards * (cards - 1) / (54 * 53), `${cards} cards: both jokers have the exact inclusion probability`);
 });
 
 const synthetic = {
@@ -193,7 +195,7 @@ assert.equal(
 const completeBaseline = {};
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   completeBaseline[variant] = {};
-  api.scenariosForVariant().forEach((scenario) => {
+  api.scenariosForVariant(variant).forEach((scenario) => {
     const totals = {
       ...aggregate.totals,
       samples: 10000,

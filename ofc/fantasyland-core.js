@@ -320,6 +320,17 @@
     return [0, 1, 2].flatMap((jokers) => cardCounts.map((cards) => ({ cards, jokers })));
   }
 
+  // Analysis may include hypothetical deals without changing playable rules.
+  function analysisCardCounts(value) {
+    return ["badeucey", "bdp"].includes(normalizeVariant(value))
+      ? [14, 15, 16, 17, 18, 19]
+      : [14, 15, 16, 17];
+  }
+
+  function analysisScenarios(value) {
+    return [0, 1, 2].flatMap((jokers) => analysisCardCounts(value).map((cards) => ({ cards, jokers })));
+  }
+
   function supportsVariantCardCount(value, cards) {
     return variantCardCounts(value).includes(Number(cards));
   }
@@ -2227,14 +2238,21 @@
   function buildBestMiddleSubsetTable(n, middlePool, middleCache, repeatOnly = false) {
     const table = new Int32Array(1 << n);
     table.fill(-1);
+    const preference = new Int32Array(middlePool.length);
+    middlePool.map((entry, index) => index)
+      .sort((a, b) => compareMiddlePointEntries(middlePool[a], middlePool[b], middleCache))
+      .forEach((index, rank) => { preference[index] = rank; });
+    let populated = false;
     middlePool.forEach((entry, index) => {
       const candidate = middleCache.get(entry.mask);
       if (!candidate || (repeatOnly && !candidate.evaluation.repeat)) return;
       const currentIndex = table[entry.mask];
-      if (currentIndex < 0 || compareMiddlePointEntries(entry, middlePool[currentIndex], middleCache) > 0) {
+      if (currentIndex < 0 || preference[index] > preference[currentIndex]) {
         table[entry.mask] = index;
+        populated = true;
       }
     });
+    if (!populated) return table;
 
     for (let bit = 0; bit < n; bit += 1) {
       const bitMask = 1 << bit;
@@ -2243,7 +2261,7 @@
         const sourceIndex = table[mask ^ bitMask];
         if (sourceIndex < 0) continue;
         const currentIndex = table[mask];
-        if (currentIndex < 0 || compareMiddlePointEntries(middlePool[sourceIndex], middlePool[currentIndex], middleCache) > 0) {
+        if (currentIndex < 0 || preference[sourceIndex] > preference[currentIndex]) {
           table[mask] = sourceIndex;
         }
       }
@@ -2263,6 +2281,7 @@
       bottomPool,
       topMasks,
       repeatOptions,
+      wideSearch,
     } = context;
     const n = ids.length;
     const directMiddleLookup = n <= 15;
@@ -2339,6 +2358,15 @@
     };
 
     const takeSolution = (top, middleEntry, bottomEntry) => {
+      if (n > 17 && wideSearch !== false) {
+        const middleEval = middleCache.get(middleEntry.mask).evaluation;
+        const bottomEval = bottomEntry.candidate.evaluation;
+        const points = top.evaluation.points + middleEval.points + bottomEval.points;
+        const quality = top.evaluation.quality + middleEval.quality + bottomEval.quality;
+        const improves = (current) => !current || points > current.points || (points === current.points && quality > current.tieQuality);
+        const repeats = repeatMaskFromEvaluations(top.evaluation, middleEval, bottomEval, repeatOptions) > 0;
+        if (!improves(bestRoyalty) && !(repeats && improves(bestRepeat))) return;
+      }
       const solution = solutionFor(top, middleEntry, bottomEntry);
       if (!bestRoyalty || solution.points > bestRoyalty.points || (solution.points === bestRoyalty.points && solution.tieQuality > bestRoyalty.tieQuality)) {
         bestRoyalty = solution;
@@ -2425,7 +2453,46 @@
       }
     };
 
-    if (mode === "exact") {
+    if (mode === "exact" && n > 17 && wideSearch !== false) {
+      // Sorted upper bounds only skip boards that cannot improve either
+      // optimum. Middle lookup still considers every qualifying subset.
+      const tops = eligibleTopMasks.map((mask) => {
+        let data = topCandidateCache.get(mask);
+        if (!data) {
+          const topIds = idsForMask(ids, mask);
+          data = { ids: topIds, candidates: variantTopCandidates(variant, topIds).slice().sort((a, b) => compareRowCandidate(b, a)) };
+        }
+        const candidates = data.candidates.filter((candidate) => variant !== "bdp" || candidate.evaluation.qualifies);
+        return { mask, ids: data.ids, candidates, upper: Math.max(...candidates.map((candidate) => candidate.evaluation.points)) };
+      }).filter((entry) => entry.candidates.length).sort((a, b) => b.upper - a.upper);
+      const bottoms = bottomPool.slice().sort((a, b) => b.candidate.evaluation.points - a.candidate.evaluation.points);
+      const maxMiddle = Math.max(0, ...middlePool.map((entry) => middleCache.get(entry.mask).evaluation.points));
+      const repeatPossible = bestRepeatingMiddle[fullMask] >= 0
+        || tops.some((entry) => entry.candidates.some((top) => repeatMaskFromEvaluations(top.evaluation, null, null, repeatOptions)))
+        || bottoms.some((entry) => repeatMaskFromEvaluations(null, null, entry.candidate.evaluation, repeatOptions));
+      const couldImprove = (upper) => !bestRoyalty || upper >= bestRoyalty.points
+        || (repeatPossible && (!bestRepeat || upper >= bestRepeat.points));
+      for (const bottomEntry of bottoms) {
+        const bottom = bottomEntry.candidate;
+        if (!tops.length || !couldImprove(bottom.evaluation.points + tops[0].upper + maxMiddle)) break;
+        for (const topEntry of tops) {
+          if (!couldImprove(bottom.evaluation.points + topEntry.upper + maxMiddle)) break;
+          if (bottomEntry.mask & topEntry.mask) continue;
+          const availableMask = fullMask ^ (bottomEntry.mask | topEntry.mask);
+          const middleIndex = middleIndexFor(availableMask);
+          if (middleIndex < 0) continue;
+          const candidate = topEntry.candidates.find((top) => variant === "bdp" || isTopLegalAgainstFive(top.evaluation, bottom.evaluation));
+          if (!candidate) continue;
+          legalBoards += 1;
+          const top = { ...candidate, mask: topEntry.mask, ids: topEntry.ids };
+          takeSolution(top, middlePool[middleIndex], bottomEntry);
+          if (!repeatMaskFromEvaluations(top.evaluation, null, bottom.evaluation, repeatOptions)) {
+            const repeatIndex = middleIndexFor(availableMask, true);
+            if (repeatIndex >= 0 && repeatIndex !== middleIndex) takeSolution(top, middlePool[repeatIndex], bottomEntry);
+          }
+        }
+      }
+    } else if (mode === "exact") {
       const bottomByMask = new Array(1 << n);
       bottomPool.forEach((entry) => { bottomByMask[entry.mask] = entry; });
       const eligibleTopLookup = variant === "bdp" ? new Uint8Array(1 << n) : null;
@@ -2480,7 +2547,8 @@
     const variantMeta = VARIANTS[variant];
     const boardSize = variantMeta.boardSize || 3 + variantMeta.middleSize + 5;
     if (options.allowUnsupportedCardCount) {
-      if (n < boardSize || n > 17) throw new RangeError(`${variantMeta.label} analysis needs ${boardSize} to 17 cards.`);
+      const maximum = Math.max(...analysisCardCounts(variant));
+      if (n < boardSize || n > maximum) throw new RangeError(`${variantMeta.label} analysis needs ${boardSize} to ${maximum} cards.`);
     } else {
       assertVariantCardCount(variant, n);
     }
@@ -2530,6 +2598,7 @@
     const bottomPool = mode === "fast" ? takeBeam(bottomEntries, beamLimit) : bottomEntries;
     if (variant !== "high" && !options.legacyIndependentSearch) {
       return solveIndependentMiddleHand({
+        wideSearch: options.wideSearch,
         ids,
         variant,
         mode,
@@ -2741,6 +2810,8 @@
     normalizeVariant,
     variantCardCounts,
     variantScenarios,
+    analysisCardCounts,
+    analysisScenarios,
     supportsVariantCardCount,
     makeCard,
     evaluateHighFive,

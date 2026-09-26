@@ -1,5 +1,6 @@
 const { spawn } = require("child_process");
 const path = require("path");
+const Core = require("../../fantasyland-core.js");
 
 const args = parseArgs(process.argv.slice(2));
 const variant = String(args.variant || "").toLowerCase();
@@ -10,12 +11,15 @@ const topRepeatMinRank = args["top-repeat-min-rank"] === undefined ? null : Numb
 const pairedTopRepeatMinRank = args["paired-top-repeat-min-rank"] === undefined ? null : Number(args["paired-top-repeat-min-rank"]);
 const output = path.resolve(args.output || path.join(__dirname, "../precomputed-parts"));
 const pairedOutput = args["paired-output"] ? path.resolve(args["paired-output"]) : null;
-const scenarios = [0, 1, 2].flatMap((jokers) => [14, 15, 16, 17].map((cards) => ({ cards, jokers })));
+const cardCounts = args.cards ? args.cards.split(",").map(Number) : Core.analysisCardCounts(variant);
+const scenarios = Core.analysisScenarios(variant).filter(({ cards }) => cardCounts.includes(cards));
 const precomputeScript = path.join(__dirname, "precompute-config.cjs");
 const mergeScript = path.join(__dirname, "merge-precomputed-shards.cjs");
 const children = new Set();
 
 if (!variant) fail("--variant is required");
+if (!Core.VARIANT_ORDER.includes(variant)) fail("Unknown variant");
+if (!cardCounts.length || cardCounts.some((cards) => !Core.analysisCardCounts(variant).includes(cards))) fail("--cards must list supported analysis counts separated by commas");
 if (!Number.isSafeInteger(samples) || samples < 1) fail("--samples must be a positive whole number");
 if (!Number.isSafeInteger(workers) || workers < 1) fail("--workers must be a positive whole number");
 if (!Number.isSafeInteger(shards) || shards < 1 || shards > samples) fail("--shards must be between 1 and the sample count");
@@ -124,6 +128,7 @@ function mergeResults(input, minimumTopRank, done) {
     "--variant", variant,
     "--samples", String(samples),
     "--input", input,
+    "--cards", cardCounts.join(","),
   ];
   if (minimumTopRank !== null) mergeArgs.push("--top-repeat-min-rank", String(minimumTopRank));
   const merge = spawn(process.execPath, mergeArgs, { stdio: "inherit" });
