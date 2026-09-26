@@ -919,7 +919,7 @@
       case "shedding": {
         schemes.push({ id: "penalty", name: "Cards left", low: true });
         seat.push(handZone({ evals: ["points:penalty"] }));
-        table.push(discard({ rule: { place: "turn", accept: o.match || "suitOrRank", advance: true, ...(wild.length ? { wild } : {}) } }));
+        table.push(discard({ rule: o.realtime ? { place: "players", accept: o.match || "suitOrRank", ...(wild.length ? { wild } : {}) } : { place: "turn", accept: o.match || "suitOrRank", advance: true, ...(wild.length ? { wild } : {}) } }));
         macros.push(
           { label: "Deal", steps: dealSteps(handSize || 7, [deal("discard", 1, "up"), { op: "setTurn", who: "next" }]) },
           { label: "Draw", hint: "Current player draws", steps: [deal("hand@current", 1, undefined, "draw pile")] },
@@ -1016,6 +1016,7 @@
       phases,
       rulesMode: ["off", "warn", "enforce"].includes(o.rulesMode) ? o.rulesMode : "warn",
       botFallback,
+      realtime: Boolean(o.realtime) && style === "shedding",
       scoring: { target, rounds, lowWins, chips, label: style === "poker" ? "Chips" : "Points" },
       rules: "",
     };

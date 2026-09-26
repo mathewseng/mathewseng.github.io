@@ -1049,3 +1049,18 @@ console.log("ratscrew challenge tests passed");
   assert.ok(out.finished && /played every card/.test(out.state.gameOver.reason));
 }
 console.log("real-time tests passed");
+
+// Real-time shedding from the wizard, and the rules document says so.
+{
+  const design = Presets.fromWizard({ style: "shedding", name: "Frenzy", players: 3, realtime: true, target: 30 });
+  const table = Engine.createTable(design, {});
+  assert.equal(table.realtime, true);
+  const discard = Object.values(table.zones).find((z) => z.kind === "discard");
+  assert.equal(discard.rule.place, "players");
+  assert.equal(discard.rule.advance, undefined);
+  assert.match(Engine.describeGame(table), /Real time: there are no turns/);
+  assert.doesNotMatch(Engine.describeGame(Engine.createTable(Presets.fromWizard({ style: "shedding" }), {})), /Real time/);
+  const out = Engine.playOut(table, { deal: table.macros[0].id, maxSteps: 30000 });
+  assert.ok(out.finished, `real-time shedding finishes (${out.steps})`);
+}
+console.log("real-time wizard tests passed");

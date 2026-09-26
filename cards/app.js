@@ -4484,7 +4484,8 @@
     const styleFields = () => {
       if (draft.style === "shedding") return `<div class="grid-2">
           <label class="field"><span>A card played must</span><select name="match">${[["suitOrRank", "Match suit or rank"], ["suit", "Match suit"], ["rank", "Match rank"], ["color", "Match color"]].map(([id, label]) => `<option value="${id}"${draft.match === id ? " selected" : ""}>${label}</option>`).join("")}</select></label>
-          <label class="field"><span>Wild ranks <span class="dim">optional</span></span><input type="text" name="wild" value="${esc(draft.wild)}" placeholder="e.g. 8"></label></div>`;
+          <label class="field"><span>Wild ranks <span class="dim">optional</span></span><input type="text" name="wild" value="${esc(draft.wild)}" placeholder="e.g. 8"></label>
+          <label class="check" style="grid-column:1/-1"><input type="checkbox" name="realtime"${draft.realtime ? " checked" : ""}> Real time: no turns, everyone plays at once</label></div>`;
       if (draft.style === "tricks") return `<div class="grid-2">
           <label class="field"><span>Scoring</span><select name="trickScoring"><option value="tricks"${draft.trickScoring === "tricks" ? " selected" : ""}>1 point per trick</option><option value="hearts"${draft.trickScoring === "hearts" ? " selected" : ""}>Hearts points, lowest wins</option></select></label>
           <label class="field"><span>Trump suit</span><select name="trump"><option value="">None</option>${["s", "h", "d", "c"].map((suit) => `<option value="${suit}"${draft.trump === suit ? " selected" : ""}>${SUIT_SYMBOL[suit]}</option>`).join("")}</select></label></div>`;
@@ -4524,6 +4525,7 @@
       draft.handSize = form.handSize.value;
       draft.openHands = form.openHands.value === "1";
       draft.lowWins = form.lowWins.checked;
+      if (form.realtime) draft.realtime = form.realtime.checked;
     };
     openDialog(draw(), {
       wide: true,

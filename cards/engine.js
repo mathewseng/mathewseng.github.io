@@ -3268,7 +3268,8 @@
     const tableZones = orderedZones(state, "table");
     if (tableZones.length) lines.push("", "## The table", ...tableZones.map((zone) => describeZone(state, zone)));
     if (state.seatTemplate.length) lines.push("", "## Each player has", ...state.seatTemplate.map((zone) => describeZone(state, zone)));
-    if (state.phases.length) lines.push("", "## Turn structure", `- Phases: ${state.phases.join(" → ")}.`);
+    if (state.realtime) lines.push("", "## Turn structure", "- Real time: there are no turns. Everyone plays whenever they can; when nobody can move, run the “can't play” action.");
+    if (state.phases.length) lines.push(...(state.realtime ? [] : ["", "## Turn structure"]), `- Phases: ${state.phases.join(" → ")}.`);
     if (state.macros.length) {
       lines.push("", "## Actions");
       state.macros.forEach((macro, index) => {
