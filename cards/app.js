@@ -14,6 +14,9 @@
   const RANK_WORD = (rank) => ({ A: "Aces", J: "Jacks", Q: "Queens", K: "Kings" }[rank] || RANK_SHOW(rank) + "s");
   const MARK_COLORS = [["#ff5c66", "Red"], ["#f4c95d", "Gold"], ["#45d6ff", "Cyan"], ["#bdf46b", "Green"], ["#9f7dff", "Violet"]];
 
+  /** Phone layout: narrow screens, or short touch screens (a phone held sideways). */
+  const COMPACT = window.matchMedia ? window.matchMedia("(max-width: 820px), (max-height: 500px) and (pointer: coarse)") : { matches: window.innerWidth <= 820 };
+  const isCompact = () => COMPACT.matches;
   const STORE = { table: "ctw.table.v1", prefs: "ctw.prefs.v1", presets: "ctw.presets.v1", saves: "ctw.saves.v1", seen: "ctw.seen.v1", name: "ctw.name.v1", results: "ctw.results.v1", toured: "ctw.toured.v1" };
   function load(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (error) { return fallback; }
@@ -24,7 +27,7 @@
 
   const prefs = Object.assign({
     size: "m", felt: "green", back: "classic", four: false, motion: true, evals: true,
-    tab: "play", side: window.innerWidth > 820, viewMode: "hands",
+    tab: "play", side: !isCompact(), viewMode: "hands",
   }, load(STORE.prefs, {}));
   function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); if (view) renderDock(); }
   function applyPrefs() {
@@ -56,7 +59,9 @@
     const el = document.createElement("div");
     el.className = "toast " + kind;
     el.textContent = message;
-    $("#toasts").appendChild(el);
+    const box = $("#toasts");
+    box.appendChild(el);
+    while (box.children.length > 3) box.firstElementChild.remove();
     setTimeout(() => el.remove(), kind === "error" ? 4200 : 2400);
   }
 
@@ -239,6 +244,8 @@
     lastLogKey = logKey(next.log[next.log.length - 1]);
     selection.clear();
     passRevealed = null;
+    // A different game starts at the top of the table.
+    $("#table")?.scrollTo({ top: 0 });
     afterChange();
     if (message) toast(message, "good");
   }
@@ -361,13 +368,13 @@
   const PIP_LAYOUT = {
     2: [[50, 20], [50, 80]],
     3: [[50, 20], [50, 50], [50, 80]],
-    4: [[32, 20], [68, 20], [32, 80], [68, 80]],
-    5: [[32, 20], [68, 20], [50, 50], [32, 80], [68, 80]],
-    6: [[32, 20], [68, 20], [32, 50], [68, 50], [32, 80], [68, 80]],
-    7: [[32, 20], [68, 20], [50, 35], [32, 50], [68, 50], [32, 80], [68, 80]],
-    8: [[32, 20], [68, 20], [50, 35], [32, 50], [68, 50], [50, 65], [32, 80], [68, 80]],
-    9: [[32, 18], [68, 18], [32, 39], [68, 39], [50, 50], [32, 61], [68, 61], [32, 82], [68, 82]],
-    10: [[32, 18], [68, 18], [50, 29], [32, 39], [68, 39], [32, 61], [68, 61], [50, 71], [32, 82], [68, 82]],
+    4: [[35, 20], [65, 20], [35, 80], [65, 80]],
+    5: [[35, 20], [65, 20], [50, 50], [35, 80], [65, 80]],
+    6: [[35, 20], [65, 20], [35, 50], [65, 50], [35, 80], [65, 80]],
+    7: [[35, 20], [65, 20], [50, 35], [35, 50], [65, 50], [35, 80], [65, 80]],
+    8: [[35, 20], [65, 20], [50, 35], [35, 50], [65, 50], [50, 65], [35, 80], [65, 80]],
+    9: [[35, 18], [65, 18], [35, 39], [65, 39], [50, 50], [35, 61], [65, 61], [35, 82], [65, 82]],
+    10: [[35, 18], [65, 18], [50, 28.5], [35, 39], [65, 39], [35, 61], [65, 61], [50, 71.5], [35, 82], [65, 82]],
   };
 
   function cardFace(card) {
@@ -382,12 +389,13 @@
     }
     const sym = SUIT_SYMBOL[card.suit] || "";
     const rank = RANK_SHOW(card.rank);
-    const corners = `<span class="corner tl"><b>${rank}</b><i>${sym}</i></span><span class="corner br"><b>${rank}</b><i>${sym}</i></span>`;
-    if (["J", "Q", "K"].includes(card.rank)) return corners + `<span class="face-art">${card.rank}<small>${sym}</small></span>`;
-    if (card.rank === "A") return corners + `<span class="pip" style="font-size:calc(var(--cw)*.62)">${sym}</span>`;
+    const ten = rank.length > 1 ? " ten" : "";
+    const corners = `<span class="corner tl${ten}"><b>${rank}</b><i>${sym}</i></span><span class="corner br${ten}"><b>${rank}</b><i>${sym}</i></span>`;
+    if (["J", "Q", "K"].includes(card.rank)) return corners + `<span class="face-art"><i class="fs">${sym}</i><b>${card.rank}</b><i class="fs down">${sym}</i></span><span class="jumbo-suit">${sym}</span>`;
+    if (card.rank === "A") return corners + `<span class="pip ace">${sym}</span>`;
     const layout = PIP_LAYOUT[Number(rank)];
     if (!layout) return corners + `<span class="pip">${sym}</span>`;
-    const pips = layout.map(([x, y]) => `<span class="p" style="position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%)${y > 55 ? " rotate(180deg)" : ""};font-size:calc(var(--cw)*.2);line-height:1">${sym}</span>`).join("");
+    const pips = layout.map(([x, y]) => `<span class="p${y > 55 ? " down" : ""}" style="left:${x}%;top:${y}%">${sym}</span>`).join("");
     return corners + pips + `<span class="jumbo-suit">${sym}</span>`;
   }
 
@@ -410,10 +418,10 @@
     if (selection.has(card.id)) cls.push("selected");
     if (kbdFocus === card.id) cls.push("kbd-focus");
     if (card.rot) cls.push("rot" + card.rot);
-    const mark = card.mark ? ` data-mark style="--mark:${esc(card.mark)};${extra}"` : extra ? ` style="${extra}"` : "";
-    const custom = visible && card.custom ? ` style="--cc:${esc(card.color || "#9f7dff")};${extra}"` : "";
+    const styles = [visible && card.custom ? `--cc:${esc(card.color || "#9f7dff")}` : "", card.mark ? `--mark:${esc(card.mark)}` : "", extra].filter(Boolean).join(";");
+    const attrs = (card.mark ? " data-mark" : "") + (styles ? ` style="${styles}"` : "");
     const title = visible ? (card.custom ? card.label : E.cardName(card)) + (card.faceUp ? "" : " (hidden from others)") : "Face-down card";
-    return `<div class="${cls.filter(Boolean).join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${zone.id}" title="${esc(title)}"${custom || mark}>${visible ? cardFace(card) : ""}</div>`;
+    return `<div class="${cls.filter(Boolean).join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${zone.id}" title="${esc(title)}"${attrs}>${visible ? cardFace(card) : ""}</div>`;
   }
 
   function ruleIcon(zone) {
@@ -1017,17 +1025,30 @@
     if (event.button !== 0) return;
     const el = event.target.closest(".card[data-card-id]");
     if (!el || !el.closest("#table")) return;
-    drag = { el, id: el.dataset.cardId, x: event.clientX, y: event.clientY, pointerId: event.pointerId, started: false, offX: event.clientX - el.getBoundingClientRect().left, offY: event.clientY - el.getBoundingClientRect().top };
-    if (event.pointerType === "touch") {
-      // Long-press a card to inspect it.
+    drag = { el, id: el.dataset.cardId, x: event.clientX, y: event.clientY, pointerId: event.pointerId, touch: event.pointerType === "touch", started: false, offX: event.clientX - el.getBoundingClientRect().left, offY: event.clientY - el.getBoundingClientRect().top };
+    if (drag.touch) {
+      // Touch: a quick swipe scrolls the table; hold briefly to pick the card up; hold longer to inspect it.
       const pending = drag;
+      pending.arm = setTimeout(() => {
+        if (drag !== pending || pending.started) return;
+        pending.armed = true;
+        el.classList.add("armed");
+        navigator.vibrate?.(8);
+      }, 170);
       pending.press = setTimeout(() => {
         if (drag !== pending || pending.started) return;
+        endTouchArm(pending);
         drag = null;
         suppressClick = performance.now() + 500;
         inspectCard(pending.id);
-      }, 520);
+      }, 560);
     }
+  }
+
+  function endTouchArm(d) {
+    clearTimeout(d.arm);
+    clearTimeout(d.press);
+    d.el.classList.remove("armed");
   }
 
   function startDrag(event) {
@@ -1074,7 +1095,13 @@
     if (!drag || event.pointerId !== drag.pointerId) return;
     if (!drag.started) {
       if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 7) return;
-      clearTimeout(drag.press);
+      if (drag.touch && !drag.armed) {
+        // Moved before the hold: that's a scroll, not a drag.
+        endTouchArm(drag);
+        drag = null;
+        return;
+      }
+      endTouchArm(drag);
       startDrag(event);
     }
     event.preventDefault();
@@ -1105,7 +1132,8 @@
     if (!drag || event.pointerId !== drag.pointerId) return;
     const d = drag;
     drag = null;
-    clearTimeout(d.press);
+    if (d.touch) endTouchArm(d);
+    else clearTimeout(d.press);
     if (!d.started) return;
     suppressClick = performance.now() + 250;
     d.ghost.remove();
@@ -1134,6 +1162,7 @@
 
   function onPointerCancel() {
     if (!drag) return;
+    if (drag.touch) endTouchArm(drag);
     clearTimeout(drag.press);
     drag.ghost?.remove();
     $$(".dragging").forEach((el) => el.classList.remove("dragging"));
@@ -1372,9 +1401,10 @@
 
     seats() {
       const v = view;
-      const rows = v.players.map((player, i) => `<div class="list-row" style="--c:${esc(player.color)}">
+      const rows = v.players.map((player, i) => `<div class="list-row player-row" style="--c:${esc(player.color)}">
           <input type="color" value="${esc(player.color)}" data-player-color="${player.id}" title="Color">
-          <div class="grow player-fields"><input type="text" value="${esc(player.name)}" data-player-name="${player.id}" data-fk="pn-${player.id}"><input type="text" value="${esc(player.team || "")}" data-player-team="${player.id}" data-fk="pt-${player.id}" placeholder="team" title="Team" maxlength="16"></div>
+          <div class="grow player-fields"><input type="text" value="${esc(player.name)}" data-player-name="${player.id}" data-fk="pn-${player.id}" aria-label="Name"><input type="text" value="${esc(player.team || "")}" data-player-team="${player.id}" data-fk="pt-${player.id}" placeholder="team" title="Team" aria-label="Team" maxlength="16"></div>
+          <div class="player-controls">
           <button class="btn sm icon${i === v.turn.dealer ? " primary" : ""}" data-act="set-dealer" data-index="${i}" title="Dealer">D</button>
           <button class="btn sm icon${i === v.turn.index ? " primary" : ""}" data-act="set-turn" data-index="${i}" title="Current turn">▶</button>
           <button class="btn sm icon" data-act="player-up" data-player="${player.id}" title="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
@@ -1382,6 +1412,7 @@
           <button class="btn sm icon${player.bot ? " primary" : ""}" data-act="toggle-bot" data-player="${player.id}" title="${player.bot ? "Bot (click for human)" : "Make a bot"}">🤖</button>
           ${player.bot ? `<select class="bot-style" data-bot-seat="${player.id}" title="How this bot plays"><option value="">Table default</option>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${player.botStyle === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>` : ""}
           <button class="btn sm icon ghost" data-act="remove-player" data-player="${player.id}" title="Remove">✕</button>
+          </div>
         </div>`).join("");
       const tpl = v.seatTemplate.map((entry) => `<div class="list-row">
           <span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">· ${esc(entry.layout)} · ${esc(entry.visibility)}${entry.evals?.length ? " · " + entry.evals.map((spec) => evalDef(parseSpec(spec).id, v)?.short || spec).join(", ") : ""}</span></span>
@@ -1634,7 +1665,14 @@
       }
     });
     if (bind) bind(form);
-    if (!dlg.open) dlg.showModal();
+    if (!dlg.open) {
+      dlg.showModal();
+      // Start focus on the dialog itself rather than ringing the close button.
+      if (document.activeElement?.matches(".dlg-head .btn")) {
+        form.tabIndex = -1;
+        form.focus({ preventScroll: true });
+      }
+    }
     return form;
   }
   function closeDialog() { if (dialog().open) dialog().close(); }
@@ -1669,13 +1707,17 @@
           <input type="search" class="preset-search" placeholder="Search ${presets.length} games: name, family, idea…" aria-label="Search games" value="${esc(presetQuery)}">
           ${families.map((family) => `<div class="preset-family"><div class="area-label" style="color:var(--muted)">${esc(family)}</div><div class="preset-grid">${presets.filter((p) => p.family === family).map((p) => presetCard(p, selected)).join("")}</div></div>`).join("")}
         </div>
-        <div class="dlg-foot">
-          <span class="grow small muted">${esc(preset.description || "")}</span>
-          <label class="row tight small">Players <input name="players" type="number" min="${range.min}" max="${range.max}" value="${count}" style="width:64px"></label>
-          <label class="check small"><input type="checkbox" name="keepNames" ${state?.players.length ? "checked" : ""}> Keep names</label>
-          <button type="button" class="btn" data-wizard>✨ Design your own…</button>
-          <button class="btn" value="cancel">Cancel</button>
-          <button class="btn primary" value="start">Start ${esc(preset.name)}</button>
+        <div class="dlg-foot newgame-foot">
+          <span class="grow small muted ng-desc">${esc(preset.description || "")}</span>
+          <div class="ng-options">
+            <label class="row tight small">Players <input name="players" type="number" min="${range.min}" max="${range.max}" value="${count}" style="width:64px"></label>
+            <label class="check small"><input type="checkbox" name="keepNames" ${state?.players.length ? "checked" : ""}> Keep names</label>
+          </div>
+          <div class="ng-buttons">
+            <button type="button" class="btn" data-wizard>✨ Design your own…</button>
+            <button class="btn desktop-only" value="cancel">Cancel</button>
+            <button class="btn primary" value="start">Start ${esc(preset.name)}</button>
+          </div>
         </div>`;
     };
     const filter = (form) => {
@@ -2640,6 +2682,7 @@
       case "print-all": printSheet(true); break;
       case "replay": startReplay(); break;
       case "hint": showHint(); break;
+      case "open-side": prefs.side = true; savePrefs(); renderPane(); break;
       case "rec-start": startRecording(); break;
       case "rec-stop": stopRecording(); break;
       case "reset-pacing": Object.assign(pacing, { game: null }); trackPacing(net.mode === "client" ? view : state); renderPane(); break;
@@ -2709,6 +2752,8 @@
     document.addEventListener("pointermove", onPointerMove, { passive: false });
     document.addEventListener("pointerup", onPointerUp);
     document.addEventListener("pointercancel", onPointerCancel);
+    // Once a touch has picked a card up, stop the browser from scrolling instead.
+    document.addEventListener("touchmove", (event) => { if (drag && drag.touch && (drag.armed || drag.started)) event.preventDefault(); }, { passive: false });
     table.addEventListener("dragstart", (event) => event.preventDefault());
 
     table.addEventListener("click", (event) => {
@@ -2876,7 +2921,7 @@
     $("#tabs").addEventListener("click", (event) => {
       const tab = event.target.closest("[data-tab]");
       if (!tab) return;
-      if (prefs.tab === tab.dataset.tab && window.innerWidth <= 820 && prefs.side) { prefs.side = false; savePrefs(); return; }
+      if (prefs.tab === tab.dataset.tab && isCompact() && prefs.side) { prefs.side = false; savePrefs(); return; }
       prefs.tab = tab.dataset.tab;
       prefs.side = true;
       if (prefs.tab === "deck") deckDraft = null;
@@ -2884,6 +2929,16 @@
       renderPane();
     });
     $(".sheet-handle").addEventListener("click", () => { prefs.side = false; savePrefs(); });
+    // Phones: swipe the sheet's handle or tab bar down to put it away.
+    const sheetTop = $(".side > div");
+    let swipe = null;
+    sheetTop.addEventListener("touchstart", (event) => { swipe = { y: event.touches[0].clientY, t: performance.now() }; }, { passive: true });
+    sheetTop.addEventListener("touchend", (event) => {
+      if (!swipe) return;
+      const dy = event.changedTouches[0].clientY - swipe.y;
+      if (dy > 48 && performance.now() - swipe.t < 700 && isCompact()) { prefs.side = false; savePrefs(); }
+      swipe = null;
+    }, { passive: true });
 
     $("#tour").addEventListener("click", (event) => {
       const button = event.target.closest("[data-tour]");
@@ -2926,7 +2981,17 @@
     $("#addSeatBtn").addEventListener("click", () => dispatch({ type: "addPlayer" }));
     $("#sideToggle").addEventListener("click", () => { prefs.side = !prefs.side; savePrefs(); });
     $("#menuBtn").addEventListener("click", (event) => {
+      // Phones fold the view picker and the online button into this menu.
+      const compact = isCompact();
+      const select = $("#viewSelect");
+      const views = compact ? [
+        { label: net.mode === "local" ? "Play online…" : `Online room ${net.code || ""}…`, run: () => $("#roomBtn").click() },
+        { heading: "View as" },
+        ...[...select.options].map((option) => ({ label: `${option.value === select.value ? "✓ " : "   "}${option.textContent}`, run: () => { select.value = option.value; select.dispatchEvent(new Event("change")); } })),
+        "-",
+      ] : [];
       showMenu(event.currentTarget, [
+        ...views,
         { label: "How it works & shortcuts", run: openHelp },
         { label: "Collect all & shuffle", run: () => dispatch({ type: "collect", shuffle: true }) },
         { label: "Reveal every hand", run: () => dispatch({ type: "revealAll" }) },
@@ -3768,7 +3833,7 @@
           <div class="browse-grid">${cards.map(({ card, index }) => `<button type="button" class="browse-card${picked.has(card.id) ? " on" : ""}" data-pick="${esc(card.id)}" data-find="${esc(card.visible ? (card.custom ? `${card.label} ${card.suit} ${card.rank}` : `${E.cardName(card)} ${RANK_SHOW(card.rank)} ${E.SUIT_INFO[card.suit]?.name || ""}`).toLowerCase() : "hidden")}">${cardHTML(card, zone, index)}</button>`).join("") || `<p class="muted">Empty.</p>`}</div>
         </div>
         <div class="dlg-foot">
-          <span class="grow small muted">${picked.size} picked</span>
+          <span class="grow small muted nowrap">${picked.size} picked</span>
           <button type="button" class="btn sm" data-browse="all">Pick all</button>
           ${hand && hand !== zoneId ? `<button type="button" class="btn sm" data-browse="hand" ${picked.size ? "" : "disabled"}>To my hand</button>` : ""}
           <select id="browseTo" style="width:auto;max-width:180px">${zoneOptions("", {})}</select>
@@ -5045,11 +5110,14 @@
   /** On phones, keep the main actions one tap away while the panel is closed. */
   function renderDock() {
     const dock = $("#dock");
-    const show = window.innerWidth <= 820 && !prefs.side && !selection.size && !replay.active && view && view.macros.length > 0;
+    const show = isCompact() && !prefs.side && !selection.size && !replay.active && view && view.macros.length > 0;
     dock.hidden = !show;
     if (!show) return;
-    dock.innerHTML = view.macros.slice(0, 3).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("")
-      + `<button class="btn sm" data-act="hint" title="Hint">💡</button><button class="btn sm primary" data-act="next-turn">Next ›</button>`;
+    const macros = view.macros.slice(0, 6).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("");
+    const next = view.realtime ? "" : `<button class="btn sm primary" data-act="next-turn">Next ›</button>`;
+    dock.innerHTML = `<button class="btn sm icon" data-act="open-side" title="Controls" aria-label="Open controls"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+      <div class="dock-scroll">${macros}</div>
+      <button class="btn sm icon" data-act="hint" title="Hint" aria-label="Hint">💡</button>${next}`;
   }
 
   /** Slaps, calls, challenges and trades per player, once any have happened. */
@@ -5079,7 +5147,7 @@
       const ranked = v.players.slice().sort((a, b) => (v.scores.lowWins ? totals[a.id] - totals[b.id] : totals[b.id] - totals[a.id]));
       const top = ranked.length ? totals[ranked[0].id] : 0;
       return head(`${v.title} · round ${v.turn.round}`) + `<div class="dlg-body scoreboard">
-          <div class="sb-grid">${ranked.map((player, i) => `<div class="sb-row${totals[player.id] === top ? " lead" : ""}" style="--c:${esc(player.color)}"><span class="sb-place">${i + 1}</span><span class="sb-name"><i class="swatch"></i>${esc(player.name)}${player.team ? `<small>${esc(player.team)}</small>` : ""}</span><span class="sb-score">${E.fmt(totals[player.id])}</span></div>`).join("")}</div>
+          <div class="sb-grid">${ranked.map((player, i) => `<div class="sb-row${totals[player.id] === top && ranked.some((other) => totals[other.id] !== top) ? " lead" : ""}" style="--c:${esc(player.color)}"><span class="sb-place">${i + 1}</span><span class="sb-name"><i class="swatch"></i>${esc(player.name)}${player.team ? `<small>${esc(player.team)}</small>` : ""}</span><span class="sb-score">${E.fmt(totals[player.id])}</span></div>`).join("")}</div>
           ${scoreChartHTML(v)}
           <p class="small muted">${v.scores.target ? `Playing to ${E.fmt(v.scores.target)}${v.scores.lowWins ? ", lowest wins" : ""}.` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds${v.scores.lowWins ? ", lowest wins" : ""}.` : ""} This board updates live.</p>
         </div>

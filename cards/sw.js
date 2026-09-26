@@ -1,5 +1,5 @@
 // Card Table Workshop offline support: network first, falling back to the last copy we saw.
-const CACHE = "card-workshop-v2";
+const CACHE = "card-workshop-v3";
 const CORE = ["./", "./index.html", "./styles.css", "./app.js", "./engine.js", "./evaluators.js", "./presets.js", "../shared/peer-room.js", "./icon.svg", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
