@@ -949,3 +949,20 @@ console.log("design diff tests passed");
   assert.equal(again.offers[0].cards.length, 1);
 }
 console.log("trading tests passed");
+
+// Wizard styles for the new mechanics, Rat Slap, and design checks for slap/bluff targets.
+{
+  for (const style of ["slap", "bluff"]) {
+    const table = Engine.createTable(Presets.fromWizard({ style, name: style, players: 3, target: 2 }), {});
+    assert.equal(Engine.lintDesign(table).filter((i) => i.level !== "info").length, 0, style);
+    const out = Engine.playOut(table, { deal: table.macros[0].id, maxSteps: 20000 });
+    assert.ok(out.finished, `${style} wizard game finishes`);
+  }
+  const rat = Engine.createTable(Presets.get("rat-slap"), { players: 3 });
+  assert.equal(Engine.lintDesign(rat).filter((i) => i.level !== "info").length, 0);
+  assert.ok(Engine.playOut(rat, { deal: "Deal out", maxSteps: 20000 }).finished);
+  const pile = zone(rat, "pile");
+  const broken = act(rat, { type: "updateZone", zone: pile.id, patch: { rule: { slap: "pair", slapTo: "nowhere" } } });
+  assert.ok(Engine.lintDesign(broken).some((i) => i.level === "error" && /nowhere/.test(i.message)));
+}
+console.log("wizard mechanics tests passed");

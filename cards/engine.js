@@ -3258,6 +3258,12 @@
     const counters = new Set([...state.counterDefs, ...state.tableCounters].map((def) => def.name.toLowerCase()));
     const size = Object.keys(state.cards).length || deckSize(state.deckSpec);
     const seats = Math.max(1, state.players.filter((player) => !player.out).length);
+    const seatKeys = new Set(state.seatTemplate.flatMap((tpl) => [String(tpl.key || "").toLowerCase(), String(tpl.name).toLowerCase()]));
+    for (const zone of orderedZones(state, "table")) {
+      if (zone.rule?.slap && !seatKeys.has(String(zone.rule.slapTo || "hand").toLowerCase())) add("error", `${zone.name} sends slapped piles to “${zone.rule.slapTo}”, which isn't a seat group.`);
+      if (zone.rule?.claim && !seatKeys.has(String(zone.rule.claimTo || "hand").toLowerCase())) add("error", `${zone.name} sends called piles to “${zone.rule.claimTo}”, which isn't a seat group.`);
+      if (zone.rule?.claim && !zone.rule.place) add("warn", `${zone.name} takes bluffs but doesn't say who may play there, so bots won't bluff.`);
+    }
     for (const macro of state.macros) {
       if (!macro.steps.length) add("warn", `Action “${macro.label}” has no steps.`);
       let dealt = 0;

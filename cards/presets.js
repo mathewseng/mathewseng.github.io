@@ -532,6 +532,33 @@
       rules: "Slapjack\n\nDeal the whole deck face down. In turn, flip your top card onto the pile (Flip). The moment a Jack lands, everyone races to slap the pile (the Slap button or Space): the first slap takes the whole pile under their stack and plays next. Slap anything else and you burn a card under the pile.\n\nRun out of cards and you're out. Last player holding cards wins. Switch the pile's slap rule (Edit group → Play rules) to pairs, sandwiches or the full Ratscrew set to invent variants.",
     },
     {
+      id: "rat-slap",
+      name: "Rat Slap",
+      family: "Kids",
+      tagline: "Slap pairs, sandwiches, marriages and top-bottom matches",
+      description: "The slapping half of Egyptian Ratscrew: flip in turn and race to slap doubles, sandwiches, K-Q marriages or a top card matching the bottom.",
+      players: { min: 2, max: 6, default: 3 },
+      deck: { preset: "standard" },
+      table: [
+        deck(),
+        { key: "pile", name: "Pile", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { slap: "ratscrew", slapTo: "stack" } },
+      ],
+      seat: [{ key: "stack", name: "Stack", kind: "pile", layout: "stack", visibility: "hidden", face: "down", evals: ["count"] }],
+      macros: [
+        { label: "Deal out", hint: "Everyone back in, deal the whole deck", steps: [{ op: "bringBack" }, collect(), deal("stack", 52), { op: "setTurn", who: "next" }] },
+        { label: "Flip", hint: "Turn your top card onto the pile", steps: [{ op: "deal", from: "stack@current", to: "pile", count: 1, face: "up" }, { op: "nextTurn" }] },
+        { label: "Out", hint: "Runs by itself when a stack runs dry", steps: [
+          say("{subject} is out of cards"), { op: "sitOut", who: "subject" },
+          { op: "stopIf", formula: "players > 1" },
+          { op: "scoreZones", zone: "stack", evaluator: "count" }, { op: "endGame", text: "one player holds the cards" },
+        ] },
+      ],
+      triggers: [{ event: "empty", zone: "stack", macro: "Out" }],
+      botFallback: "Flip",
+      scoring: { label: "Cards" },
+      rules: "Rat Slap\n\nDeal the whole deck face down. In turn, flip your top card onto the pile. Slap the pile (Space) the moment you see a pair (two of a rank in a row), a sandwich (same rank with one card between), a marriage (King and Queen together) or a top card that matches the bottom one. First good slap takes the pile under your stack; a bad slap burns a card under the pile.\n\nOut of cards means out. Last player holding cards wins. Add Egyptian Ratscrew's face-card challenges as a house rule, or tune which slaps count in the pile's play rules.",
+    },
+    {
       id: "cheat",
       name: "Cheat",
       family: "Shedding",
@@ -822,6 +849,8 @@
     tricks: { label: "Trick-taking", hint: "Follow suit, highest card wins the trick, score tricks or points in them." },
     draft: { label: "Drafting", hint: "Pick one card from a pack, pass the rest, build the best hand." },
     poker: { label: "Poker-style", hint: "Private hands plus a shared board, ranked like poker, with chips." },
+    slap: { label: "Slapping", hint: "Flip in turn onto a pile and race to slap it when the right cards show; last player holding cards wins." },
+    bluff: { label: "Bluffing", hint: "Play face down claiming the next rank; anyone can call it, and whoever is wrong takes the pile." },
     sandbox: { label: "Freeform", hint: "Hands and a free play area; add your own rules later." },
   };
 
@@ -900,6 +929,30 @@
           { label: "Board card", steps: [deal("board", 1, "up"), phase("Board")] },
           { label: "Showdown", steps: [flip("hand"), { op: "findWinner", zone: "hand" }, { op: "awardPot", who: "winner" }, phase("Showdown")] },
         );
+        break;
+      }
+      case "slap": {
+        const slap = ["jack", "pair", "sandwich", "ratscrew"].includes(o.slap) ? o.slap : "pair";
+        table.push({ key: "pile", name: "Pile", kind: "pile", layout: "overlap", visibility: "public", face: "up", rule: { slap, slapTo: "stack" } });
+        seat.push({ key: "stack", name: "Stack", kind: "pile", layout: "stack", visibility: "hidden", face: "down", evals: ["count"] });
+        macros.push(
+          { label: "Deal out", hint: "Everyone back in, deal the whole deck", steps: [{ op: "bringBack" }, collect(), deal("stack", 52), { op: "setTurn", who: "next" }] },
+          { label: "Flip", hint: "Turn your top card onto the pile", steps: [{ op: "deal", from: "stack@current", to: "pile", count: 1, face: "up" }, { op: "nextTurn" }] },
+          { label: "Out", hint: "Runs by itself when a stack runs dry", steps: [say("{subject} is out of cards"), { op: "sitOut", who: "subject" }, { op: "stopIf", formula: "players > 1" }, { op: "scoreZones", zone: "stack", evaluator: "count" }, { op: "endGame", text: "one player holds the cards" }] },
+        );
+        triggers.push({ event: "empty", zone: "stack", macro: "Out" });
+        botFallback = "Flip";
+        break;
+      }
+      case "bluff": {
+        table.push({ key: "pile", name: "Pile", kind: "pile", layout: "stack", visibility: "hidden", face: "down", rule: { place: "turn", claim: "sequence", claimTo: "hand", advance: true } });
+        seat.push(hand({ evals: ["set-summary"] }));
+        macros.push(
+          { label: "Deal", hint: "Deal the whole deck", steps: [collect(), { op: "nextDealer" }, deal("hand", handSize || 52), { op: "sort", zone: "hand", by: "rank" }, { op: "setTurn", who: "next" }] },
+          { label: "Out", hint: "Runs by itself when a hand empties", steps: [{ op: "score", who: "subject", amount: 1 }, say("{subject} is out!"), { op: "nextRound" }, { op: "runAction", macro: "Deal" }] },
+          { label: "Sort hands", hint: "Order every hand by rank", steps: [{ op: "sort", zone: "hand", by: "rank" }] },
+        );
+        triggers.push({ event: "empty", zone: "hand", macro: "Out" });
         break;
       }
       default: {

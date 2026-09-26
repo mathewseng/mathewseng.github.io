@@ -2071,7 +2071,7 @@
   }
 
   function openHelp() {
-    const keys = [["Shift+click", "Select a run of cards"], ["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
+    const keys = [["Shift+click", "Select a run of cards"], ["Ctrl/⌘+K or /", "Command palette: run anything"], ["H", "Hint: what would the smart bot play?"], ["← → then Space", "Walk through your hand and select cards"], ["P or Enter", "Play the selection to the first legal group"], ["1–9", "Run action 1–9"], ["T", "Next player"], ["Shift+T", "Previous player"], ["D", "Draw 1 to your / current hand"], ["S", "Shuffle the deck"], ["F", "Flip selected cards"], ["G", "Group selected cards"], ["M", "Move selected to…"], ["I", "Inspect the card under the pointer (long-press on touch)"], ["Del", "Discard selected"], ["A", "Select all in your hand"], ["Space", "Slap the pile (games with slapping)"], ["Alt+click", "Ping a card or group (online)"], ["Esc", "Clear selection / close"], ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"], ["N", "New game"], ["\\", "Toggle side panel"], ["?", "This help"]];
     openDialog(head("How it works") + `<div class="dlg-body">
       <p class="hint"><b>Cards</b>: tap to select (tap several), drag to move — dragging a selected card moves the whole selection. Double-click flips. Right-click (or long-press menu ⋯) for more.</p>
       <p class="hint"><b>Groups</b> are any hand, board, pile or row. Each has a layout, visibility (private hands, public boards, hidden decks) and optional <b>scoring badges</b> — poker, Omaha, lowball, badugi, blackjack, baccarat, cribbage hand &amp; pegging, gin deadwood, OFC royalties, hearts, trick winner, sums. Comparable groups are ranked and the best gets a 🏆.</p>
@@ -4422,7 +4422,7 @@
   // ============================================================== WIZARD
   function openWizard() {
     if (net.mode === "client") return toast("Only the host can start a new game.", "error");
-    const draft = { name: "", style: "shedding", min: 2, max: 6, players: 4, deck: "standard", decks: 1, jokers: 0, handSize: "", openHands: false, match: "suitOrRank", wild: "", trickScoring: "tricks", trump: "", target: 100, rounds: 0, lowWins: false, rulesMode: "warn" };
+    const draft = { name: "", style: "shedding", min: 2, max: 6, players: 4, deck: "standard", decks: 1, jokers: 0, handSize: "", openHands: false, match: "suitOrRank", wild: "", trickScoring: "tricks", trump: "", slap: "pair", target: 100, rounds: 0, lowWins: false, rulesMode: "warn" };
     const styleFields = () => {
       if (draft.style === "shedding") return `<div class="grid-2">
           <label class="field"><span>A card played must</span><select name="match">${[["suitOrRank", "Match suit or rank"], ["suit", "Match suit"], ["rank", "Match rank"], ["color", "Match color"]].map(([id, label]) => `<option value="${id}"${draft.match === id ? " selected" : ""}>${label}</option>`).join("")}</select></label>
@@ -4430,6 +4430,8 @@
       if (draft.style === "tricks") return `<div class="grid-2">
           <label class="field"><span>Scoring</span><select name="trickScoring"><option value="tricks"${draft.trickScoring === "tricks" ? " selected" : ""}>1 point per trick</option><option value="hearts"${draft.trickScoring === "hearts" ? " selected" : ""}>Hearts points, lowest wins</option></select></label>
           <label class="field"><span>Trump suit</span><select name="trump"><option value="">None</option>${["s", "h", "d", "c"].map((suit) => `<option value="${suit}"${draft.trump === suit ? " selected" : ""}>${SUIT_SYMBOL[suit]}</option>`).join("")}</select></label></div>`;
+      if (draft.style === "slap") return `<div class="grid-2">
+          <label class="field"><span>Slap the pile when</span><select name="slap">${["jack", "pair", "sandwich", "ratscrew"].map((id) => `<option value="${id}"${draft.slap === id ? " selected" : ""}>${esc(E.RULE_SLAP[id])}</option>`).join("")}</select></label></div>`;
       return "";
     };
     const draw = () => head("Design a new game") + `<div class="dlg-body">
@@ -4459,7 +4461,7 @@
       </div>
       <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="create">Create game</button></div>`;
     const sync = (form) => {
-      for (const key of ["name", "style", "deck", "match", "wild", "trickScoring", "trump", "rulesMode"]) if (form[key]) draft[key] = form[key].value;
+      for (const key of ["name", "style", "deck", "match", "wild", "trickScoring", "trump", "slap", "rulesMode"]) if (form[key]) draft[key] = form[key].value;
       for (const key of ["min", "max", "players", "decks", "jokers", "target", "rounds"]) if (form[key]) draft[key] = Number(form[key].value) || 0;
       draft.handSize = form.handSize.value;
       draft.openHands = form.openHands.value === "1";
