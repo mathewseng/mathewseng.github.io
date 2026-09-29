@@ -17,21 +17,21 @@ export const programTemplates: ProgramTemplate[] = [
         exerciseId: "smith-flat-bench",
         label: "Smith-Machine Flat Bench",
         sets: 3,
-        repRange: [5, 7],
+        repRange: [6, 8],
         weightLb: 105,
         rirRange: [2, 3],
         notes:
-          "The latest full three-set result is 105 lb × 6/6/5. September 21 recorded 6/5 across two sets after laughter interrupted the attempted sixth rep of set two. Repeat 105 lb and complete 6/6/6 before progressing.",
+          "September 28 completed 105 lb × 6/6/6. Keep 105 lb and add controlled reps toward 8/8/8 before taking the gym’s next 10 lb loading jump; record RIR and rep quality.",
       },
       {
         exerciseId: "smith-incline-bench",
         label: "Smith-Machine Incline Bench",
         sets: 3,
-        repRange: [8, 10],
-        weightLb: 65,
+        repRange: [6, 10],
+        weightLb: 75,
         rirRange: [2, 3],
         notes:
-          "After the first full 105 lb flat-bench session, 75 lb incline ended at four reps with a failed fifth. Use 65 lb for 2–3 controlled sets of 8–10 before reconsidering 75 lb.",
+          "September 28 completed 75 lb × 6/6/6 after flat bench. Stay at 75 lb and build controlled reps before increasing load; adjust down if technique deteriorates.",
       },
       {
         exerciseId: "shoulder-press",
@@ -63,17 +63,17 @@ export const programTemplates: ProgramTemplate[] = [
         label: "Overhead Triceps Extension",
         setRange: [2, 3],
         repRange: [10, 12],
-        weightLb: 30,
+        weightLb: 20,
         rirRange: [0, 2],
         notes:
-          "Latest log is 30 lb × 9/10/8, but its equipment and loading convention were not recorded. Keep the conservative template load unless the setup is confirmed to match; increase after stable repetitions across all sets.",
+          "September 28 recorded 20 lb × 10/10/10; the prior 30 lb × 9/10/8 used an unspecified setup. Match the equipment before comparing loads or increasing them.",
       },
     ],
     rules: [
       "Do not test a one-repetition maximum by default.",
       "Do not repeat failed attempts.",
-      "The 95 lb × 8/8/8 threshold is complete. Repeat 105 lb and finish a full 6/6/6 before progressing; September 21 had only two bench sets after an interruption.",
-      "Keep incline submaximal after heavy flat bench; use 65 lb next time because the September 14 set ended in failure at 75 lb.",
+      "The 105 lb × 6/6/6 milestone is complete. Build toward controlled 8/8/8 at 105 lb before the next 10 lb loading jump.",
+      "September 28 completed 75 lb incline for 6/6/6; add reps gradually and avoid repeated failed attempts.",
     ],
   },
   {

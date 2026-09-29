@@ -96,6 +96,11 @@ const inclineProgress = [
     context:
       "75 lb × 4 followed by a failed fifth rep after the first full 105 lb flat-bench session; one fatigue-affected set, not a matched test.",
   },
+  {
+    label: "Sep 28",
+    value: 6,
+    context: "75 lb × 6/6/6 after flat bench; three completed sets.",
+  },
 ];
 
 const benchEstimateProgress = [
@@ -139,6 +144,13 @@ const benchEstimateProgress = [
     secondary: 105,
     context:
       "Estimated from a completed six-repetition set at 105 lb; not a confirmed maximum or a max-test recommendation.",
+  },
+  {
+    label: "Sep 28",
+    value: 126,
+    secondary: 105,
+    context:
+      "The six-repetition top set at 105 lb gives the same estimate as September 14, while three-set volume improved to 18 reps. This is not a confirmed maximum.",
   },
 ];
 
@@ -191,6 +203,7 @@ const pushdownProgress = [
   { label: "Sep 7", value: 28, secondary: 840, context: "8/10/10 across three sets." },
   { label: "Sep 14", value: 22, secondary: 660, context: "10/6/6 across three sets." },
   { label: "Sep 21", value: 30, secondary: 900, context: "10/10/10 across three sets." },
+  { label: "Sep 28", value: 30, secondary: 900, context: "10/10/10 across three sets." },
 ];
 
 function recentTrainingWeeks(workouts: Workout[]) {
@@ -314,17 +327,17 @@ export default function Dashboard() {
               <Badge tone="accent">
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
-              <Badge tone="accent">Pull → Legs next</Badge>
+              <Badge tone="accent">Push → Pull next</Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
               <p className="eyebrow-accent">Suggested next session</p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Legs, build carefully.
+                Pull, add clean volume.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
-                Your latest session was Pull on September 22. For the next leg session,
-                use controlled Smith squats and supported work, and record how your back
-                feels before and after.
+                After the September 28 push session, return to pull-ups, a cable row, rear
+                delts, and curls. Build clean total pull-up reps while keeping the effort
+                controlled.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -376,9 +389,9 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                Your last full three-set bench result remains 6 / 6 / 5 at 105 lb.
-                September 21 had two sets of 6 / 5; laughter interrupted the sixth rep of
-                set two. Repeat 105 lb and complete 6 / 6 / 6 before progressing.
+                You completed 6 / 6 / 6 at 105 lb on September 28. Keep 105 lb and add
+                controlled reps toward 8 / 8 / 8 before the next 10 lb loading jump.
+                Record RIR and rep quality next time.
               </p>
             </div>
           </Surface>
@@ -386,22 +399,25 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 22 context</p>
-                <h2 className="mt-1 text-lg font-black">14 pull-ups across three sets</h2>
+                <p className="eyebrow">September 28 context</p>
+                <h2 className="mt-1 text-lg font-black">
+                  105 lb bench milestone complete
+                </h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 11 PM, you completed 60 minutes of pull work: pull-ups 5 / 4 / 5, reverse
-              cable fly 15 lb for 10 / 10 / 15, and spider curls 20 lb for 10 / 10 / 10 /
-              20. Strict pull-up form and 0–6 readiness scores were not supplied.
+              At 10:45 PM, you completed 85 minutes of push work. Bench reached 105 lb for
+              6 / 6 / 6, and incline bench reached 75 lb for 6 / 6 / 6. The 145 lb bench
+              goal still depends on a confirmed clean single. RIR and 0–6 readiness scores
+              were not supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">14 pull-ups</Badge>
-              <Badge tone="quality">20 lb spider curl · 20 reps</Badge>
-              <Badge tone="neutral">11 PM · 60 min</Badge>
+              <Badge tone="accent">105 lb · 18 reps</Badge>
+              <Badge tone="quality">6 / 6 / 6 achieved</Badge>
+              <Badge tone="neutral">10:45 PM · 85 min</Badge>
             </div>
           </Surface>
         </div>
@@ -443,8 +459,8 @@ export default function Dashboard() {
         />
         <MetricCard
           label="Last full bench 3-set"
-          value="6 / 6 / 5"
-          detail="Sep 14 · Sep 21 was two sets (6 / 5)"
+          value="6 / 6 / 6"
+          detail="105 lb · Sep 28 milestone"
           icon={BarChart3}
         />
         <MetricCard

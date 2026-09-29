@@ -26,13 +26,13 @@ export const currentBenchmarks: Benchmark[] = [
   {
     id: "flat-bench-105-session-total",
     exerciseId: "smith-flat-bench",
-    label: "First 105 lb three-set baseline",
-    value: 17,
+    label: "Best 105 lb three-set total",
+    value: 18,
     unit: "reps",
     confirmed: true,
-    workoutId: "push-2026-09-14",
+    workoutId: "push-2026-09-28",
     notes:
-      "105 lb × 6, 6, 5 for 17 completed repetitions and 1,785 lb volume; one rep short of the 6/6/6 milestone.",
+      "105 lb × 6, 6, 6 for 18 completed repetitions and 1,890 lb entered-load volume on September 28; the 6/6/6 working-set milestone is complete. RIR and execution details were not supplied.",
   },
   {
     id: "incline-bench-top-set",
@@ -43,7 +43,7 @@ export const currentBenchmarks: Benchmark[] = [
     confirmed: true,
     workoutId: "push-2026-09-07",
     notes:
-      "75 lb × 7, 7, 6; the best recorded 65 lb set remains 10 repetitions. The September 14 session recorded 75 lb × 4 followed by a failed fifth rep after heavier flat-bench work.",
+      "75 lb × 7, 7, 6 remains the best at this load by reps. September 28 recorded three completed sets of six at 75 lb after the fatigue-affected September 14 set of four.",
   },
   {
     id: "high-cable-chest-press-top-load",

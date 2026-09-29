@@ -24,7 +24,7 @@ export const profile: TrainingProfile = {
     "A previous back injury caused at least one skipped leg day.",
     "Back-sensitive movements should be modified when symptoms are active.",
     "Recent Barcelona work travel lasted approximately two weeks; the athlete returned on August 31, 2026.",
-    "Readiness scores were not supplied for the eight sessions logged from August 31 through September 22 after travel.",
+    "Readiness scores were not supplied for the nine sessions logged from August 31 through September 28 after travel.",
     "Recommendations should account for sleep, travel, illness, soreness, and back discomfort.",
   ],
   mainGoalIds: [

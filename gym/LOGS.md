@@ -1361,6 +1361,22 @@ Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load
 
 ---
 
+# 21. 105 lb Bench Milestone Push Workout — September 28, 2026
+
+**Start:** 10:45 PM local time · **Duration:** 85 minutes
+
+- Smith flat bench: 105 lb × 6, 6, 6 — **18 completed reps, 1,890 lb volume; 6/6/6 milestone achieved**
+- Smith incline bench: 75 lb × 6, 6, 6
+- Triceps pushdown: 30 lb × 10, 10, 10
+- Overhead triceps extension: 20 lb × 10, 10, 10
+- Cable lateral raise: 10 lb × 10, 10, 10
+- Cable front raise: 10 lb × 10, 10, 10
+- Cable ab crunch: 70 lb × 10, 10, 10
+
+Totals: **21 completed sets, 186 completed reps, 7,440 lb preserved entered-load volume**. RIR, rep execution details, and 0–6 readiness or pain scores were not supplied. The overhead-extension setup and shoulder-raise loading convention remain unknown.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1373,7 +1389,7 @@ Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load
 - The 95 lb × 8, 8, 8 progression milestone is complete.
 - First 105 lb three-set result: 6, 6, 5 for 17 completed reps and 1,785 lb volume
 - September 21: 105 lb × 6, 5 across two sets; laughter interrupted the attempted sixth rep of set two
-- The 105 lb × 6, 6, 6 milestone is one rep away.
+- September 28: 105 lb × 6, 6, 6 for 18 completed reps and 1,890 lb volume. The working-set milestone is complete.
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
@@ -1381,7 +1397,7 @@ Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load
 - Best documented top set: 65 lb × 10
 - Best documented full result at 65 lb: 8, 8, 9
 - Heaviest recorded load: 75 lb × 7, 7, 6
-- Latest observation: 75 lb × 4 followed by a failed fifth rep after heavier flat-bench work on September 14
+- Latest full result: 75 lb × 6, 6, 6 on September 28 after flat bench
 
 ## Shoulder Press
 
@@ -1391,7 +1407,7 @@ Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load
 ## Triceps Pushdown
 
 - 30 lb × 10, 10, 10, 10
-- Latest three-set result: 30 lb × 10, 10, 10 on September 21
+- Latest three-set result: 30 lb × 10, 10, 10 on September 28
 
 ## Overhead Triceps Extension
 
@@ -1490,6 +1506,7 @@ Change from July 14 to September 7: **+6 completed repetitions and +570 lb of co
 | 2026-09-07                                | 8, 10, 10          |             28 |           840 lb |
 | 2026-09-14                                | 10, 6, 6           |             22 |           660 lb |
 | 2026-09-21                                | 10, 10, 10         |             30 |           900 lb |
+| 2026-09-28                                | 10, 10, 10         |             30 |           900 lb |
 
 Change from the return session to August 3: **+17 completed repetitions and +510 lb of completed volume**.
 
@@ -1507,8 +1524,9 @@ September 21 returned to 30 reps and 900 lb volume across three sets.
 | ---------- | ------------------ | -------------: | ---------------: |
 | 2026-09-14 | 6, 6, 5            |             17 |         1,785 lb |
 | 2026-09-21 | 6, 5               |             11 |         1,155 lb |
+| 2026-09-28 | 6, 6, 6            |             18 |         1,890 lb |
 
-September 21 had two sets. Laughter interrupted the sixth attempt of set two, so this is not a matched three-set comparison or a confirmed strength failure. Repeat 105 lb and complete 6, 6, 6 before progressing.
+September 21 had two sets. Laughter interrupted the sixth attempt of set two, so this is not a matched three-set comparison or a confirmed strength failure. September 28 completed the 6, 6, 6 milestone. Build a controlled rep buffer toward 8, 8, 8 before increasing load.
 
 ### Pull-Up Session Repetitions
 

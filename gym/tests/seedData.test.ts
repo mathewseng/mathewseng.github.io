@@ -636,8 +636,8 @@ describe("seed data integration", () => {
       excludedSetCount: 1,
     });
     expect(benchBenchmark).toMatchObject({
-      value: 17,
-      workoutId: "push-2026-09-14",
+      value: 18,
+      workoutId: "push-2026-09-28",
     });
     expect(highCableBenchmark).toMatchObject({
       value: 25,
@@ -646,9 +646,9 @@ describe("seed data integration", () => {
     expect(
       benchGoal.milestones?.find((item) => item.id === "bench-105-666"),
     ).toMatchObject({
-      achieved: false,
+      achieved: true,
     });
-    expect(workoutsNewestFirst[2]?.id).toBe("push-2026-09-14");
+    expect(workoutsNewestFirst[3]?.id).toBe("push-2026-09-14");
   });
 
   it("loads the September 21 and 22 sessions with the interrupted bench rep excluded", () => {
@@ -688,10 +688,49 @@ describe("seed data integration", () => {
       calculableSetCount: 17,
       excludedSetCount: 3,
     });
-    expect(workoutsNewestFirst.slice(0, 2).map((workout) => workout.id)).toEqual([
+    expect(workoutsNewestFirst.slice(1, 3).map((workout) => workout.id)).toEqual([
       "pull-2026-09-22",
       "push-2026-09-21",
     ]);
+  });
+
+  it("records the September 28 bench milestone and full push session", () => {
+    const workout = workouts.find((item) => item.id === "push-2026-09-28");
+    const bench = workout?.exercises.find(
+      (item) => item.exerciseId === "smith-flat-bench",
+    );
+    const incline = workout?.exercises.find(
+      (item) => item.exerciseId === "smith-incline-bench",
+    );
+    const benchProgress = getRepProgression(workouts, "smith-flat-bench", 105, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === "push-2026-09-28");
+
+    expect(workout).toMatchObject({
+      date: "2026-09-28",
+      startTime: "22:45",
+      durationMinutes: 85,
+      type: "push",
+      chronologyIndex: 21,
+    });
+    expect(bench?.sets.map((set) => set.reps)).toEqual([6, 6, 6]);
+    expect(incline?.sets.map((set) => set.reps)).toEqual([6, 6, 6]);
+    expect(benchProgress).toMatchObject({
+      completedReps: 18,
+      completedVolumeLb: 1_890,
+    });
+    expect(calculateWorkoutTotals(workout!)).toMatchObject({
+      completedReps: 186,
+      completedVolumeLb: 7_440,
+      calculableSetCount: 21,
+      excludedSetCount: 0,
+    });
+    expect(
+      benchGoal.milestones?.find((item) => item.id === "bench-105-666"),
+    ).toMatchObject({
+      achieved: true,
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-09-28");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

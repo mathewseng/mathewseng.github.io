@@ -17,6 +17,7 @@ Current confirmed status:
 - The 95 lb × 8, 8, 8 milestone is complete; the final set of 9 ties the best recent 95 lb working set.
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions, one rep short of the next milestone.
 - September 21 recorded 105 lb × 6, 5 across two sets; laughter interrupted the attempted sixth rep of set two. This was not reported as a strength failure.
+- September 28 completed 105 lb × 6, 6, 6 across three sets, achieving the working-set milestone.
 - No failed flat-bench repetition was reported, but no 0–6 readiness ratings or RIR values were supplied.
 
 Definition of success:
@@ -32,7 +33,7 @@ Milestones:
 
 1. 95 lb × 8, 8, 8 — achieved September 7
 2. 95 lb × 10, 10, 10
-3. 105 lb × 6, 6, 6
+3. 105 lb × 6, 6, 6 — achieved September 28
 4. 105 lb × 8, 8, 8
 5. 115 lb × 5
 6. 125 lb × 1
@@ -48,7 +49,7 @@ Progression rule:
 
 Next action:
 
-- Repeat 105 lb on a healthy, adequately recovered push day and complete 6, 6, 6 without failure before progressing.
+- Build controlled repetitions toward 105 lb × 8, 8, 8 before taking the next 10 lb loading jump; record RIR and rep quality.
 
 Current status:
 

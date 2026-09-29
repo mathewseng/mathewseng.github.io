@@ -2,6 +2,18 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-29 — September 28 Push Workout
+
+### Added
+
+- Logged the 10:45 PM, 85-minute push session with 21 completed sets across bench, incline, triceps, shoulder, and core work.
+
+### Changed
+
+- Marked the Smith-bench 105 lb × 6/6/6 working-set milestone achieved while retaining the 115 lb confirmed heavy single and 145 lb goal.
+- Updated the dashboard, benchmarks, goals, and push guidance to build controlled repetitions at 105 lb before the next load increase.
+- Recorded 75 lb incline bench × 6/6/6 as the latest full result; retained missing 0–6 context scores and ambiguous cable setup as unknown.
+
 ## 2026-09-26 — Match the site's hub design
 
 ### Changed

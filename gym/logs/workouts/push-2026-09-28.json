@@ -1,0 +1,101 @@
+{
+  "id": "push-2026-09-28",
+  "date": "2026-09-28",
+  "startTime": "22:45",
+  "durationMinutes": 85,
+  "type": "push",
+  "title": "105 lb Bench Milestone Push Workout",
+  "chronologyIndex": 21,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Late-night push session. No numeric 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": ["late-night-training"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-28-bench-1", "weightLb": 105, "reps": 6, "completed": true },
+        { "id": "2026-09-28-bench-2", "weightLb": 105, "reps": 6, "completed": true },
+        { "id": "2026-09-28-bench-3", "weightLb": 105, "reps": 6, "completed": true }
+      ],
+      "notes": "First recorded completion of the 105 lb × 6/6/6 milestone: 18 completed reps and 1,890 lb entered-load volume. RIR and rep execution details were not supplied."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-28-incline-1", "weightLb": 75, "reps": 6, "completed": true },
+        { "id": "2026-09-28-incline-2", "weightLb": 75, "reps": 6, "completed": true },
+        { "id": "2026-09-28-incline-3", "weightLb": 75, "reps": 6, "completed": true }
+      ],
+      "notes": "Three completed six-rep sets at 75 lb. This follows the single fatigue-affected 75 lb × 4 set with a failed fifth attempt on September 14."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-28-pushdown-1", "weightLb": 30, "reps": 10, "completed": true },
+        { "id": "2026-09-28-pushdown-2", "weightLb": 30, "reps": 10, "completed": true },
+        { "id": "2026-09-28-pushdown-3", "weightLb": 30, "reps": 10, "completed": true }
+      ],
+      "notes": "Normalized from ‘tricep pulldown.’"
+    },
+    {
+      "exerciseId": "overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-28-overhead-1", "weightLb": 20, "reps": 10, "completed": true },
+        { "id": "2026-09-28-overhead-2", "weightLb": 20, "reps": 10, "completed": true },
+        { "id": "2026-09-28-overhead-3", "weightLb": 20, "reps": 10, "completed": true }
+      ],
+      "notes": "Equipment, attachment, and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-28-lateral-1", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-28-lateral-2", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-28-lateral-3", "weightLb": 10, "reps": 10, "completed": true }
+      ],
+      "notes": "Normalized from ‘shoulder side raise.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-28-front-1", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-28-front-2", "weightLb": 10, "reps": 10, "completed": true },
+        { "id": "2026-09-28-front-3", "weightLb": 10, "reps": 10, "completed": true }
+      ],
+      "notes": "Normalized from ‘shoulder front raise.’ Unilateral versus bilateral execution and per-side loading were not supplied."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-28-ab-crunch-1", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-28-ab-crunch-2", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-28-ab-crunch-3", "weightLb": 70, "reps": 10, "completed": true }
+      ]
+    }
+  ],
+  "notes": "Workout began at 10:45 PM local time and lasted 85 minutes. It contained 21 completed sets, 186 completed repetitions, and 7,440 lb of preserved entered-load volume. The Smith flat-bench 105 lb × 6/6/6 working-set milestone was completed. No 0–6 energy, sleep, soreness, illness, or pain scores, RIR, or sauna were reported."
+}

@@ -26,20 +26,21 @@ Healthy-session reference:
 - The 95 lb × 8, 8, 8 milestone is complete.
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions.
 - September 21 recorded 105 lb × 6, 5 across only two sets; laughter interrupted the attempted sixth rep of set two.
-- Repeat 105 lb and complete 6, 6, 6 before adding repetitions beyond six or changing load.
-- Use approximately 2–3 reps in reserve while establishing the load; no failed flat-bench repetition was reported.
+- September 28 completed 105 lb × 6, 6, 6, achieving the working-set milestone.
+- Stay at 105 lb and build controlled reps toward 8, 8, 8 before changing load.
+- Aim for approximately 2–3 reps in reserve while building the repetition buffer.
 - RIR, readiness, and execution quality were not supplied.
 
 Progress at 105 lb after:
 
-- Complete at least 6, 6, 6 with controlled repetitions; the current result is one rep short.
-- Then build toward 8, 8, 8 before adding load again.
+- The 6, 6, 6 milestone is complete; build toward 8, 8, 8 before adding load again.
 
 ### Smith-Machine Incline Bench
 
 - September 7 result at 75 lb: 7, 7, 6
 - September 14 result after heavier flat bench: 75 lb × 4 followed by a failed fifth rep
-- Use 65 lb for 2–3 controlled sets of 8–10 next time before reconsidering 75 lb.
+- September 28 result at 75 lb: 6, 6, 6 after flat bench.
+- Stay at 75 lb and add controlled reps before increasing load.
 - Best full result at 65 lb: 8, 8, 9
 - August 12 result at 55 lb: 9, 8, 8
 
@@ -51,7 +52,7 @@ Progress at 105 lb after:
 ### Triceps Pushdown
 
 - 30 lb for 3 sets of 10–12
-- Current three-set result: 30 lb × 10, 10, 10 on September 21
+- Current three-set result: 30 lb × 10, 10, 10 on September 28
 - Best session total: 30 lb × 10, 10, 10, 10
 - Build toward 12, 12, 12 before increasing
 
@@ -63,7 +64,8 @@ Progress at 105 lb after:
 ### Overhead Triceps Extension
 
 - Current top result: 30 lb × 9, 10, 8
-- Use 30 lb for 2–3 sets of 8–12 only when the equipment and loading convention match
+- September 28 result: 20 lb × 10, 10, 10; equipment and loading convention were not supplied.
+- Use 20 lb for controlled sets when the setup matches September 28; compare the older 30 lb result only if equipment matches.
 - Increase only after stable repetitions across all sets
 
 ## Pull Day
