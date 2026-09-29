@@ -1365,7 +1365,7 @@ Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load
 
 **Start:** 10:45 PM local time · **Duration:** 85 minutes
 
-- Smith flat bench: 105 lb × 6, 6, 6 — **18 completed reps, 1,890 lb volume; 6/6/6 milestone achieved**
+- Smith flat bench: 105 lb × 6, 6, 6 — **18 completed reps, 1,890 lb volume; 6/6/6 repetition milestone achieved**. Athlete later clarified the final rep of set three was a hard grind at **0 RIR**.
 - Smith incline bench: 75 lb × 6, 6, 6
 - Triceps pushdown: 30 lb × 10, 10, 10
 - Overhead triceps extension: 20 lb × 10, 10, 10
@@ -1373,7 +1373,7 @@ Totals: **20 completed sets, 199 completed reps, 4,825 lb preserved entered-load
 - Cable front raise: 10 lb × 10, 10, 10
 - Cable ab crunch: 70 lb × 10, 10, 10
 
-Totals: **21 completed sets, 186 completed reps, 7,440 lb preserved entered-load volume**. RIR, rep execution details, and 0–6 readiness or pain scores were not supplied. The overhead-extension setup and shoulder-raise loading convention remain unknown.
+Totals: **21 completed sets, 186 completed reps, 7,440 lb preserved entered-load volume**. RIR on other sets, form details, and 0–6 readiness or pain scores were not supplied. The overhead-extension setup and shoulder-raise loading convention remain unknown.
 
 ---
 
@@ -1389,7 +1389,7 @@ Totals: **21 completed sets, 186 completed reps, 7,440 lb preserved entered-load
 - The 95 lb × 8, 8, 8 progression milestone is complete.
 - First 105 lb three-set result: 6, 6, 5 for 17 completed reps and 1,785 lb volume
 - September 21: 105 lb × 6, 5 across two sets; laughter interrupted the attempted sixth rep of set two
-- September 28: 105 lb × 6, 6, 6 for 18 completed reps and 1,890 lb volume. The working-set milestone is complete.
+- September 28: 105 lb × 6, 6, 6 for 18 completed reps and 1,890 lb volume. The repetition milestone is complete; the final rep was a hard grind at 0 RIR.
 - Estimated maximum must be labeled as an estimate, not a confirmed record
 
 ## Smith-Machine Incline Bench
@@ -1526,7 +1526,7 @@ September 21 returned to 30 reps and 900 lb volume across three sets.
 | 2026-09-21 | 6, 5               |             11 |         1,155 lb |
 | 2026-09-28 | 6, 6, 6            |             18 |         1,890 lb |
 
-September 21 had two sets. Laughter interrupted the sixth attempt of set two, so this is not a matched three-set comparison or a confirmed strength failure. September 28 completed the 6, 6, 6 milestone. Build a controlled rep buffer toward 8, 8, 8 before increasing load.
+September 21 had two sets. Laughter interrupted the sixth attempt of set two, so this is not a matched three-set comparison or a confirmed strength failure. September 28 completed the 6, 6, 6 repetition milestone, but its final rep was at 0 RIR. Build a comfortable 6, 6, 6 before adding reps toward 8, 8, 8 or increasing load.
 
 ### Pull-Up Session Repetitions
 

@@ -17,11 +17,11 @@ export const programTemplates: ProgramTemplate[] = [
         exerciseId: "smith-flat-bench",
         label: "Smith-Machine Flat Bench",
         sets: 3,
-        repRange: [6, 8],
+        repRange: [5, 7],
         weightLb: 105,
-        rirRange: [2, 3],
+        rirRange: [1, 2],
         notes:
-          "September 28 completed 105 lb × 6/6/6. Keep 105 lb and add controlled reps toward 8/8/8 before taking the gym’s next 10 lb loading jump; record RIR and rep quality.",
+          "September 28 completed 105 lb × 6/6/6, but the final rep was a hard grind at 0 RIR. Keep 105 lb and target controlled sets around 5–6 reps with 1–2 RIR. Once 6/6/6 is repeatable without a grind, add reps toward 8/8/8 before the next 10 lb jump.",
       },
       {
         exerciseId: "smith-incline-bench",
@@ -72,7 +72,7 @@ export const programTemplates: ProgramTemplate[] = [
     rules: [
       "Do not test a one-repetition maximum by default.",
       "Do not repeat failed attempts.",
-      "The 105 lb × 6/6/6 milestone is complete. Build toward controlled 8/8/8 at 105 lb before the next 10 lb loading jump.",
+      "The 105 lb × 6/6/6 repetition milestone is complete, but the last rep was at 0 RIR. Repeat the load with controlled reps and some reserve before pushing toward 8/8/8; do not force a rep target through a grind every session.",
       "September 28 completed 75 lb incline for 6/6/6; add reps gradually and avoid repeated failed attempts.",
     ],
   },

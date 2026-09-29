@@ -150,7 +150,7 @@ const benchEstimateProgress = [
     value: 126,
     secondary: 105,
     context:
-      "The six-repetition top set at 105 lb gives the same estimate as September 14, while three-set volume improved to 18 reps. This is not a confirmed maximum.",
+      "The final six-repetition set at 105 lb was a hard grind at 0 RIR. The estimate is about 126 lb, but this is not a confirmed maximum.",
   },
 ];
 
@@ -389,9 +389,9 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                You completed 6 / 6 / 6 at 105 lb on September 28. Keep 105 lb and add
-                controlled reps toward 8 / 8 / 8 before the next 10 lb loading jump.
-                Record RIR and rep quality next time.
+                You completed 6 / 6 / 6 at 105 lb on September 28, but the final rep was a
+                hard grind at 0 RIR. Keep 105 lb and make 6 / 6 / 6 repeatable with
+                controlled form and some reserve before adding reps.
               </p>
             </div>
           </Surface>
@@ -410,9 +410,9 @@ export default function Dashboard() {
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
               At 10:45 PM, you completed 85 minutes of push work. Bench reached 105 lb for
-              6 / 6 / 6, and incline bench reached 75 lb for 6 / 6 / 6. The 145 lb bench
-              goal still depends on a confirmed clean single. RIR and 0–6 readiness scores
-              were not supplied.
+              6 / 6 / 6, and incline bench reached 75 lb for 6 / 6 / 6. The final flat
+              bench rep was a hard grind at 0 RIR. The 145 lb bench goal still depends on
+              a confirmed clean single; readiness scores were not supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge tone="accent">105 lb · 18 reps</Badge>

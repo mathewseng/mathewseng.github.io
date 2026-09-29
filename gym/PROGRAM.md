@@ -26,14 +26,14 @@ Healthy-session reference:
 - The 95 lb × 8, 8, 8 milestone is complete.
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions.
 - September 21 recorded 105 lb × 6, 5 across only two sets; laughter interrupted the attempted sixth rep of set two.
-- September 28 completed 105 lb × 6, 6, 6, achieving the working-set milestone.
-- Stay at 105 lb and build controlled reps toward 8, 8, 8 before changing load.
-- Aim for approximately 2–3 reps in reserve while building the repetition buffer.
-- RIR, readiness, and execution quality were not supplied.
+- September 28 completed 105 lb × 6, 6, 6, achieving the repetition milestone; the final rep of set three was a hard grind at 0 RIR.
+- Stay at 105 lb and aim for controlled sets around 5–6 reps with 1–2 reps in reserve.
+- Make 6, 6, 6 repeatable without a grind, then build toward 8, 8, 8 before changing load.
+- RIR on the first two sets, readiness, and form details were not supplied.
 
 Progress at 105 lb after:
 
-- The 6, 6, 6 milestone is complete; build toward 8, 8, 8 before adding load again.
+- The 6, 6, 6 repetition milestone is complete; build a comfortable 6, 6, 6 before adding reps toward 8, 8, 8 or increasing load.
 
 ### Smith-Machine Incline Bench
 

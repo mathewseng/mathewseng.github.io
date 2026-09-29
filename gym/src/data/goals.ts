@@ -83,7 +83,7 @@ export const goals: Goal[] = [
       "Avoid repeated descending failed attempts.",
     ],
     notes:
-      "Current reported body weight is 150 lb after the Barcelona work trip. The bench target remains 145 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. September 28 completed 105 lb × 6, 6, 6 across three sets, achieving that working-set milestone. Build a controlled repetition buffer toward 8/8/8 at 105 lb before the next 10 lb loading jump. RIR, readiness, and execution details were not supplied.",
+      "Current reported body weight is 150 lb after the Barcelona work trip. The bench target remains 145 lb. Best confirmed heavy single is 115 lb; 125 lb and 135 lb attempts failed. September 28 completed 105 lb × 6, 6, 6 across three sets, achieving that repetition milestone, but the final rep was a hard grind at 0 RIR. Keep 105 lb and build the same result with a rep in reserve before adding reps toward 8/8/8 and taking the next 10 lb loading jump. Readiness and form details were not supplied.",
   },
   {
     id: "ten-strict-pullups",

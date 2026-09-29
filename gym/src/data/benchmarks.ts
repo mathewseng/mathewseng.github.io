@@ -32,7 +32,7 @@ export const currentBenchmarks: Benchmark[] = [
     confirmed: true,
     workoutId: "push-2026-09-28",
     notes:
-      "105 lb × 6, 6, 6 for 18 completed repetitions and 1,890 lb entered-load volume on September 28; the 6/6/6 working-set milestone is complete. RIR and execution details were not supplied.",
+      "105 lb × 6, 6, 6 for 18 completed repetitions and 1,890 lb entered-load volume on September 28. The final rep was a hard grind at 0 RIR; form details and earlier-set RIR were not supplied.",
   },
   {
     id: "incline-bench-top-set",

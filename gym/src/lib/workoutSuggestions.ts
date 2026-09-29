@@ -194,10 +194,10 @@ function healthyTemplate(type: WorkoutType): SuggestedExercise[] {
   switch (type) {
     case "push":
       return [
-        exercise("smith-flat-bench", "Smith-machine flat bench", 3, [6, 8], [2, 3], {
+        exercise("smith-flat-bench", "Smith-machine flat bench", 3, [5, 7], [1, 2], {
           weightLb: 105,
           notes:
-            "Warm up first. September 28 completed 105 lb × 6/6/6. Stay at 105 lb and add controlled reps toward 8/8/8 before the next loading jump; record RIR and rep quality.",
+            "Warm up first. September 28 completed 105 lb × 6/6/6 with the final rep at 0 RIR. Keep 105 lb and aim for controlled sets around 5–6 reps, leaving 1–2 reps in reserve; build a comfortable 6/6/6 before adding reps or load.",
         }),
         exercise(
           "smith-incline-bench",

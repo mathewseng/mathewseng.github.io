@@ -2,6 +2,11 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-29 — September 28 Bench Effort Clarification
+
+- Recorded the final 105 lb bench set at 0 RIR after the athlete clarified the sixth rep was a hard grind with no additional rep available.
+- Updated the bench guidance to repeat 105 lb with controlled reps and some reserve before adding reps or load. Earlier-set RIR and form remain unknown.
+
 ## 2026-09-29 — September 28 Push Workout
 
 ### Added

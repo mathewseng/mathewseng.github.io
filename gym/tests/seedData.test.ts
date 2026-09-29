@@ -714,6 +714,7 @@ describe("seed data integration", () => {
       chronologyIndex: 21,
     });
     expect(bench?.sets.map((set) => set.reps)).toEqual([6, 6, 6]);
+    expect(bench?.sets[2]).toMatchObject({ rir: 0, completed: true });
     expect(incline?.sets.map((set) => set.reps)).toEqual([6, 6, 6]);
     expect(benchProgress).toMatchObject({
       completedReps: 18,

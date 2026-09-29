@@ -21,9 +21,16 @@
       "sets": [
         { "id": "2026-09-28-bench-1", "weightLb": 105, "reps": 6, "completed": true },
         { "id": "2026-09-28-bench-2", "weightLb": 105, "reps": 6, "completed": true },
-        { "id": "2026-09-28-bench-3", "weightLb": 105, "reps": 6, "completed": true }
+        {
+          "id": "2026-09-28-bench-3",
+          "weightLb": 105,
+          "reps": 6,
+          "completed": true,
+          "rir": 0,
+          "notes": "The sixth rep was a hard grind; no additional rep was available. Form details were not supplied."
+        }
       ],
-      "notes": "First recorded completion of the 105 lb × 6/6/6 milestone: 18 completed reps and 1,890 lb entered-load volume. RIR and rep execution details were not supplied."
+      "notes": "First recorded completion of the 105 lb × 6/6/6 repetition milestone: 18 completed reps and 1,890 lb entered-load volume. Athlete later clarified that the final rep of set three was a hard grind at 0 RIR. RIR on the first two sets and form details were not supplied."
     },
     {
       "exerciseId": "smith-incline-bench",
@@ -97,5 +104,5 @@
       ]
     }
   ],
-  "notes": "Workout began at 10:45 PM local time and lasted 85 minutes. It contained 21 completed sets, 186 completed repetitions, and 7,440 lb of preserved entered-load volume. The Smith flat-bench 105 lb × 6/6/6 working-set milestone was completed. No 0–6 energy, sleep, soreness, illness, or pain scores, RIR, or sauna were reported."
+  "notes": "Workout began at 10:45 PM local time and lasted 85 minutes. It contained 21 completed sets, 186 completed repetitions, and 7,440 lb of preserved entered-load volume. The Smith flat-bench 105 lb × 6/6/6 repetition milestone was completed, with the sixth rep of set three a hard grind at 0 RIR. No 0–6 energy, sleep, soreness, illness, or pain scores, other RIR values, or sauna were reported."
 }
