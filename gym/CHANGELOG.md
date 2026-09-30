@@ -2,6 +2,12 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-09-30 — September 29 Pull Workout
+
+- Logged the 10:30 PM, 80-minute pull workout with pull-ups, cable back work, curls, leg raises, and ab crunches.
+- Updated the dashboard's latest session, pull-up history, and next-session guidance to Legs.
+- Kept the 30 leg raises as an aggregate total and preserved unknown cable setups, strict pull-up form, and 0–6 readiness scores.
+
 ## 2026-09-29 — September 28 Bench Effort Clarification
 
 - Recorded the final 105 lb bench set at 0 RIR after the athlete clarified the sixth rep was a hard grind with no additional rep available.

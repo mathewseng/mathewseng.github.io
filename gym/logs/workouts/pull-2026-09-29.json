@@ -1,0 +1,214 @@
+{
+  "id": "pull-2026-09-29",
+  "date": "2026-09-29",
+  "startTime": "22:30",
+  "durationMinutes": 80,
+  "type": "pull",
+  "title": "Pull with Face Pulls, Cable Rows, and Curls",
+  "chronologyIndex": 22,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Late-night pull session. No numeric 0–6 readiness or pain ratings were supplied.",
+    "sourceLabels": ["late-night-training", "day-after-push"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        { "id": "2026-09-29-pullup-1", "reps": 5, "completed": true },
+        { "id": "2026-09-29-pullup-2", "reps": 4, "completed": true },
+        { "id": "2026-09-29-pullup-3", "reps": 3, "completed": true }
+      ],
+      "notes": "Twelve total reps across three sets. Strict form was not explicitly confirmed."
+    },
+    {
+      "exerciseId": "straight-arm-cable-pulldown",
+      "name": "Cable Lat Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-29-lat-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-29-lat-pushdown-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-29-lat-pushdown-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Mapped from ‘lat pushdown’ using the earlier cable-lat-pushdown convention. Elbow position, attachment, and machine identity were not supplied."
+    },
+    {
+      "exerciseId": "face-pull",
+      "name": "Face Pull",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        { "id": "2026-09-29-face-pull-1", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-29-face-pull-2", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-29-face-pull-3", "weightLb": 70, "reps": 10, "completed": true }
+      ],
+      "notes": "Highest reported face-pull stack value so far. Cable machine, attachment, and form quality were not supplied, so loads may not be directly comparable with earlier sessions."
+    },
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-29-reverse-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-29-reverse-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-29-reverse-fly-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Per-side loading, cable setup, and form quality were not supplied."
+    },
+    {
+      "exerciseId": "standing-cable-row",
+      "name": "Cable Row",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        { "id": "2026-09-29-row-30", "weightLb": 30, "reps": 10, "completed": true },
+        { "id": "2026-09-29-row-35", "weightLb": 35, "reps": 10, "completed": true },
+        { "id": "2026-09-29-row-40", "weightLb": 40, "reps": 10, "completed": true }
+      ],
+      "notes": "Ten reps at each listed load. Mapped to the gym's standing cable-row option because no seated cable-row station is available. Exact setup and whether loads were per side were not supplied."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-29-incline-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-29-incline-curl-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-29-incline-curl-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "15 lb per dumbbell, consistent with earlier incline-dumbbell-curl logs. Entered-load volume is not doubled."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-29-spider-curl-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-29-spider-curl-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-09-29-spider-curl-3",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "20 lb per dumbbell, consistent with earlier spider-dumbbell-curl logs. Entered-load volume is not doubled."
+    },
+    {
+      "exerciseId": "leg-raise",
+      "name": "Leg Raise",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-29-leg-raises-total",
+          "reps": 30,
+          "completed": true,
+          "dataQuality": "partial"
+        }
+      ],
+      "notes": "Thirty total repetitions were reported without a set breakdown or equipment variation. Stored as one aggregate entry, not a confirmed single 30-rep set."
+    },
+    {
+      "exerciseId": "cable-biceps-curl",
+      "name": "Cable Biceps Curl",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-29-cable-curl-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-29-cable-curl-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        { "id": "2026-09-29-cable-curl-3", "weightLb": 30, "reps": 10, "completed": true }
+      ],
+      "notes": "Single-arm versus bilateral execution, attachment, and cable-machine identity were not supplied."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        { "id": "2026-09-29-ab-crunch-1", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-29-ab-crunch-2", "weightLb": 70, "reps": 10, "completed": true },
+        { "id": "2026-09-29-ab-crunch-3", "weightLb": 70, "reps": 10, "completed": true }
+      ]
+    }
+  ],
+  "notes": "Workout began at 10:30 PM local time and lasted 80 minutes. It contained 27 known exercise sets plus one aggregate leg-raise entry, 282 completed repetitions, and 8,400 lb of preserved entered-load volume. Bodyweight pull-ups and leg raises are excluded from external-load volume. No 0–6 readiness or pain scores, RIR, or sauna were reported."
+}

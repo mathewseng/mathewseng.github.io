@@ -1377,6 +1377,25 @@ Totals: **21 completed sets, 186 completed reps, 7,440 lb preserved entered-load
 
 ---
 
+# 22. Pull with Face Pulls, Cable Rows, and Curls — September 29, 2026
+
+**Start:** 10:30 PM local time · **Duration:** 80 minutes
+
+- Pull-ups: 5, 4, 3 (**12 total**; strict form not explicitly confirmed)
+- Cable lat pushdown: 30 lb × 10, 10, 10; mapped to the earlier straight-arm cable-pulldown convention, with elbow position unreported
+- Face pulls: 70 lb × 10, 10, 10; highest entered face-pull stack value, with equipment and form unreported
+- Reverse cable fly: 10 lb × 10, 10, 10
+- Cable row: 30 lb × 10, 35 lb × 10, 40 lb × 10; per-side loading and setup unreported
+- Incline dumbbell curl: 15 lb per dumbbell × 10, 10, 10
+- Spider dumbbell curl: 20 lb per dumbbell × 10, 10, 10
+- Leg raises: 30 total reps; set breakdown and variation unreported
+- Cable biceps curl: 30 lb × 10, 10, 10; single-arm versus bilateral setup unreported
+- Cable ab crunch: 70 lb × 10, 10, 10
+
+Totals: **27 known exercise sets plus one aggregate leg-raise entry, 282 completed reps, and 8,400 lb preserved entered-load volume**. Pull-ups and leg raises are excluded from external-load volume. No 0–6 readiness or pain scores or RIR were supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1425,7 +1444,7 @@ Totals: **21 completed sets, 186 completed reps, 7,440 lb preserved entered-load
 - Best recorded set: 5
 - Best recorded session: 5, 5, 3
 - Session total: 13
-- Latest result: 5, 4, 5 for 14 total across three sets on September 22; strict form was not reconfirmed.
+- Latest result: 5, 4, 3 for 12 total across three sets on September 29; strict form was not reconfirmed.
 - The 13-rep strict baseline remains the confirmed strict benchmark.
 
 ## Lat Pulldown
@@ -1537,5 +1556,6 @@ September 21 had two sets. Laughter interrupted the sixth attempt of set two, so
 | 2026-09-01              | 5, 4, 3            |            12 | Strict standard not reconfirmed |
 | 2026-09-08              | 5, 3               |             8 | Only two sets; form unconfirmed |
 | 2026-09-22              | 5, 4, 5            |            14 | Strict form not confirmed       |
+| 2026-09-29              | 5, 4, 3            |            12 | Strict form not confirmed       |
 
-September 22 logged 14 reps across three sets, one above the 13-rep strict baseline total. Strict form was not reconfirmed, so the strict benchmark remains 13.
+September 22 logged 14 reps and September 29 logged 12, each across three sets. Strict form was not reconfirmed, so the strict benchmark remains 13.

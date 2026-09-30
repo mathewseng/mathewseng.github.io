@@ -68,7 +68,7 @@ Current status:
 - Best set: 5
 - Best session: 5, 5, 3
 - Total completed repetitions: 13
-- Latest session on September 22: 5, 4, 5 for 14 total across three sets; strict form was not explicitly confirmed.
+- Latest session on September 29: 5, 4, 3 for 12 total across three sets; strict form was not explicitly confirmed.
 - The strict 13-rep baseline remains the confirmed strict benchmark until form is verified for a higher total.
 - Estimated maximum: approximately 5–6
 

@@ -648,7 +648,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[3]?.id).toBe("push-2026-09-14");
+    expect(workoutsNewestFirst[4]?.id).toBe("push-2026-09-14");
   });
 
   it("loads the September 21 and 22 sessions with the interrupted bench rep excluded", () => {
@@ -688,7 +688,7 @@ describe("seed data integration", () => {
       calculableSetCount: 17,
       excludedSetCount: 3,
     });
-    expect(workoutsNewestFirst.slice(1, 3).map((workout) => workout.id)).toEqual([
+    expect(workoutsNewestFirst.slice(2, 4).map((workout) => workout.id)).toEqual([
       "pull-2026-09-22",
       "push-2026-09-21",
     ]);
@@ -731,7 +731,42 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("push-2026-09-28");
+    expect(workoutsNewestFirst[1]?.id).toBe("push-2026-09-28");
+  });
+
+  it("loads the September 29 pull workout without inventing leg-raise sets", () => {
+    const workout = workouts.find((item) => item.id === "pull-2026-09-29");
+    const pullups = workout?.exercises.find(
+      (item) => item.exerciseId === "strict-pull-up",
+    );
+    const rows = workout?.exercises.find(
+      (item) => item.exerciseId === "standing-cable-row",
+    );
+    const legRaises = workout?.exercises.find((item) => item.exerciseId === "leg-raise");
+
+    expect(workout).toMatchObject({
+      date: "2026-09-29",
+      startTime: "22:30",
+      durationMinutes: 80,
+      type: "pull",
+      chronologyIndex: 22,
+    });
+    expect(pullups?.sets.map((set) => set.reps)).toEqual([5, 4, 3]);
+    expect(rows?.sets.map((set) => [set.weightLb, set.reps])).toEqual([
+      [30, 10],
+      [35, 10],
+      [40, 10],
+    ]);
+    expect(rows?.sets.every((set) => set.perSide === undefined)).toBe(true);
+    expect(legRaises?.sets).toHaveLength(1);
+    expect(legRaises?.sets[0]).toMatchObject({ reps: 30, dataQuality: "partial" });
+    expect(calculateWorkoutTotals(workout!)).toMatchObject({
+      completedReps: 282,
+      completedVolumeLb: 8_400,
+      calculableSetCount: 24,
+      excludedSetCount: 4,
+    });
+    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-09-29");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {
