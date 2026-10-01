@@ -2,6 +2,12 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-10-01 — September 30 Leg Workout
+
+- Logged the 9:30 PM, 50-minute session with squats, Smith hip thrusts, and cable kickbacks.
+- Updated the squat benchmark to 135 lb × 10, 10 and next-session guidance to Push.
+- Added cable glute kickbacks to the exercise library and preserved unknown per-leg repetitions, effort, warm-up status, and symptom ratings.
+
 ## 2026-09-30 — September 29 Pull Workout
 
 - Logged the 10:30 PM, 80-minute pull workout with pull-ups, cable back work, curls, leg raises, and ab crunches.

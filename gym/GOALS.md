@@ -193,7 +193,7 @@ Next action:
 
 Current status:
 
-- Smith squat advanced to 135 lb × 8, 6 after 115 lb × 10 on September 3.
+- Smith squat advanced from 135 lb × 8, 6 on September 3 to 10, 10 on September 30.
 - Smith RDL working baseline established at 75 lb × 10, 10, 10.
 - Building foundation; the missing back-pain response prevents labeling either result pain-free.
 
@@ -261,7 +261,7 @@ Next action:
 
 Current status:
 
-- September 3: Smith squat reached 135 lb × 8, 6 and Smith RDL reached 75 lb × 10, 10, 10.
+- September 30: Smith squat reached 135 lb × 10, 10; hip thrust reached 75 lb × 10. Smith RDL remains at its September 3 baseline of 75 lb × 10, 10, 10.
 - Foundation is progressing; symptom response remains unconfirmed.
 
 ## Status Integrity

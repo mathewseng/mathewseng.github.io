@@ -334,17 +334,17 @@ export default function Dashboard() {
               <Badge tone="accent">
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
-              <Badge tone="accent">Pull → Legs next</Badge>
+              <Badge tone="accent">Legs → Push next</Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
               <p className="eyebrow-accent">Suggested next session</p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Legs, build carefully.
+                Push, build the rep buffer.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
-                After the September 29 pull session, return to a controlled leg workout.
-                Your last logged leg day was September 3; record back symptoms before and
-                after so the next progression has useful context.
+                After the September 30 leg session, return to Push when recovered. Keep
+                bench at 105 lb and build controlled repetitions with some reserve; the
+                last September 28 set reached 0 RIR.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -406,22 +406,23 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 29 context</p>
-                <h2 className="mt-1 text-lg font-black">Pull and core in 80 minutes</h2>
+                <p className="eyebrow">September 30 context</p>
+                <h2 className="mt-1 text-lg font-black">Legs and glutes in 50 minutes</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 10:30 PM, you logged pull-ups 5 / 4 / 3, face pulls at 70 lb for three
-              sets of 10, cable rows at 30 / 35 / 40 lb, curls, and core work. Cable
-              setups, pull-up form, and 0–6 readiness scores were not supplied.
+              At 9:30 PM, you completed squats at 25 / 115 / 135 / 135 lb, Smith hip
+              thrusts at 25 / 25 / 45 / 75 lb, and cable kickbacks at 10 / 20 / 20 / 25
+              lb, all for 10 reps. Kickback reps per leg, effort, and back-pain response
+              were not supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">12 pull-ups</Badge>
-              <Badge tone="quality">70 lb face pulls</Badge>
-              <Badge tone="neutral">10:30 PM · 80 min</Badge>
+              <Badge tone="accent">135 lb squat × 10, 10</Badge>
+              <Badge tone="quality">75 lb hip thrust × 10</Badge>
+              <Badge tone="neutral">9:30 PM · 50 min</Badge>
             </div>
           </Surface>
         </div>

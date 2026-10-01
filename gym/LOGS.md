@@ -1396,6 +1396,18 @@ Totals: **27 known exercise sets plus one aggregate leg-raise entry, 282 complet
 
 ---
 
+# 23. Legs with Smith Squats, Hip Thrusts, and Cable Kickbacks — September 30, 2026
+
+**Start:** 9:30 PM local time · **Duration:** 50 minutes
+
+- Smith-machine squat: 25, 115, 135, 135 lb × 10 each
+- Smith-machine hip thrust: 25, 25, 45, 75 lb × 10 each
+- Cable kickback: 10, 20, 20, 25 lb × 10 each; repetitions per leg and whether both sides were completed unconfirmed
+
+Totals: **12 recorded sets, 120 entered reps, and 6,550 lb entered-load volume**. No doubling for kickbacks. Warm-up status, RIR, and 0–6 readiness or back-pain ratings were not supplied. The two 135 lb squat sets improved from 8, 6 on September 3 to 10, 10.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
@@ -1473,8 +1485,8 @@ Totals: **27 known exercise sets plus one aggregate leg-raise entry, 282 complet
 ## Smith-Machine Squat
 
 - Previous precise baseline: 115 lb × 10, 10, 10 on August 10
-- Latest working sets: 115 lb × 10, then 135 lb × 8, 6 on September 3
-- Heaviest recorded load: 135 lb × 8
+- Latest result: 25 lb × 10, 115 lb × 10, then 135 lb × 10, 10 on September 30
+- Heaviest recorded load: 135 lb × 10
 - Recorded load includes the 25 lb Smith bar.
 - Back-pain response was not supplied.
 

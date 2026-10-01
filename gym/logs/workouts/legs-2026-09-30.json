@@ -1,0 +1,117 @@
+{
+  "id": "legs-2026-09-30",
+  "date": "2026-09-30",
+  "startTime": "21:30",
+  "durationMinutes": 50,
+  "type": "legs",
+  "title": "Legs with Smith Squats, Hip Thrusts, and Cable Kickbacks",
+  "chronologyIndex": 23,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "No numeric 0–6 readiness or back-pain ratings were supplied."
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-squat",
+      "name": "Smith-Machine Squat",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-09-30-squat-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-squat-2",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-squat-3",
+          "weightLb": 135,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-squat-4",
+          "weightLb": 135,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Smith-machine variant follows prior squat logs and available gym equipment. Warm-up status was not specified. Both 135 lb sets reached 10 reps, up from 8 and 6 on September 3. RIR and back-pain response were not supplied."
+    },
+    {
+      "exerciseId": "hip-thrust",
+      "name": "Smith-Machine Hip Thrust",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-09-30-hip-thrust-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-hip-thrust-2",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-hip-thrust-3",
+          "weightLb": 45,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-hip-thrust-4",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "First recorded hip-thrust session. Loads preserved as reported; warm-up status, RIR, and symptom response were not supplied."
+    },
+    {
+      "exerciseId": "cable-glute-kickback",
+      "name": "Cable Glute Kickback",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-09-30-kickback-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-kickback-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-kickback-3",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-09-30-kickback-4",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Ten reps at each reported load. Whether reps were per leg and whether both legs were completed was not specified; no doubling of reps or volume."
+    }
+  ],
+  "notes": "Started at 9:30 PM local time and lasted 50 minutes. Twelve recorded sets, 120 entered repetitions, and 6,550 lb entered-load volume. Kickback side convention is unconfirmed. Warm-up status, RIR, and readiness/pain ratings were not supplied."
+}

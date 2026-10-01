@@ -206,7 +206,7 @@ export const programTemplates: ProgramTemplate[] = [
         alternatives: ["leg-press", "smith-squat"],
         rirRange: [2, 4],
         notes:
-          "Latest Smith result: 115 lb × 10, then 135 lb × 8, 6. Repeat 135 lb before adding load and record back pain before and after.",
+          "September 30: 115 lb × 10, then 135 lb × 10, 10 after 25 lb × 10. Repeat controlled reps at 135 lb until effort and back-pain response are recorded before adding load.",
       },
       {
         exerciseId: "split-squat",

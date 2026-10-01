@@ -510,6 +510,18 @@ export const exercises: ExerciseDefinition[] = [
     notes: "Record equipment and use a pain-free range.",
   }),
   defineExercise({
+    id: "cable-glute-kickback",
+    canonicalName: "Cable Glute Kickback",
+    aliases: ["Cable kickback", "Cable kickbacks"],
+    category: "legs",
+    muscleGroups: ["glutes"],
+    equipment: ["cable machine", "ankle strap"],
+    weightMayBePerSide: true,
+    mayStressBack: true,
+    defaultRepRange: [10, 15],
+    notes: "Record repetitions per leg and keep the torso controlled.",
+  }),
+  defineExercise({
     id: "calf-raise",
     canonicalName: "Calf Raise",
     aliases: [],

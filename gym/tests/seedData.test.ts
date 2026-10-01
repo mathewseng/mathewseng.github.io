@@ -215,7 +215,7 @@ describe("seed data integration", () => {
     });
     expect(squatBenchmark).toMatchObject({
       value: 135,
-      workoutId: "legs-2026-09-03",
+      workoutId: "legs-2026-09-30",
     });
     expect(legPressBenchmark).toMatchObject({
       value: 140,
@@ -428,7 +428,7 @@ describe("seed data integration", () => {
     });
     expect(squatBenchmark).toMatchObject({
       value: 135,
-      workoutId: "legs-2026-09-03",
+      workoutId: "legs-2026-09-30",
     });
     expect(rdlBenchmark).toMatchObject({
       value: 75,
@@ -648,7 +648,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[4]?.id).toBe("push-2026-09-14");
+    expect(workoutsNewestFirst[5]?.id).toBe("push-2026-09-14");
   });
 
   it("loads the September 21 and 22 sessions with the interrupted bench rep excluded", () => {
@@ -688,7 +688,7 @@ describe("seed data integration", () => {
       calculableSetCount: 17,
       excludedSetCount: 3,
     });
-    expect(workoutsNewestFirst.slice(2, 4).map((workout) => workout.id)).toEqual([
+    expect(workoutsNewestFirst.slice(3, 5).map((workout) => workout.id)).toEqual([
       "pull-2026-09-22",
       "push-2026-09-21",
     ]);
@@ -731,7 +731,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[1]?.id).toBe("push-2026-09-28");
+    expect(workoutsNewestFirst[2]?.id).toBe("push-2026-09-28");
   });
 
   it("loads the September 29 pull workout without inventing leg-raise sets", () => {
@@ -766,7 +766,7 @@ describe("seed data integration", () => {
       calculableSetCount: 24,
       excludedSetCount: 4,
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("pull-2026-09-29");
+    expect(workoutsNewestFirst[0]?.id).toBe("legs-2026-09-30");
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

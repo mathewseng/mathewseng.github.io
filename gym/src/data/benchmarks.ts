@@ -169,9 +169,9 @@ export const currentBenchmarks: Benchmark[] = [
     value: 135,
     unit: "lb",
     confirmed: true,
-    workoutId: "legs-2026-09-03",
+    workoutId: "legs-2026-09-30",
     notes:
-      "135 lb × 8, 6 after 115 lb × 10; the load includes the 25 lb Smith bar. RIR and back-pain response were not supplied.",
+      "September 30: 135 lb × 10, 10 after 25 lb × 10 and 115 lb × 10, improving the September 3 result of 8, 6. Loads follow the prior Smith-bar convention. RIR and back-pain response were not supplied.",
   },
   {
     id: "smith-rdl-working-baseline",
