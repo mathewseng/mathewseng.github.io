@@ -1,7 +1,10 @@
 // Spot solver: type any hands, board, button and cube state, then solve.
-import { parseCards, cardName, dealTable, VARIANTS } from "./engine.mjs";
+// In a two-player spot the second hand may be left blank: the first seat is
+// then solved against the opponent's full range.
+import { parseCards, cardName, dealTable } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt } from "./ui.js";
-import { cubeSituation, renderCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
+import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
+import { computeView, historyFromCube } from "./table-view.js";
 
 export function initSpot({ pool, sim }) {
   const st = { n: 2, token: 0, result: null };
@@ -20,10 +23,10 @@ export function initSpot({ pool, sim }) {
     wrap.replaceChildren();
     for (let i = 0; i < st.n; i++) {
       const label = el("label", "field");
-      label.append(el("span", "label", `Seat ${i + 1} (6 cards)`));
+      label.append(el("span", "label", `Seat ${i + 1} (6 cards${st.n === 2 && i === 1 ? ", or blank for unknown" : ""})`));
       const input = el("input");
       input.id = `spot-hand-${i}`;
-      input.placeholder = "e.g. As Ad Kh 9h 7c 2s";
+      input.placeholder = st.n === 2 && i === 1 ? "blank = unknown hand" : "e.g. As Ad Kh 9h 7c 2s";
       input.autocomplete = "off";
       input.spellcheck = false;
       input.value = values[i] ?? "";
@@ -61,7 +64,12 @@ export function initSpot({ pool, sim }) {
     const hands = [];
     const seen = new Set();
     for (let i = 0; i < st.n; i++) {
-      const cards = parseCards($(`spot-hand-${i}`).value);
+      const text = $(`spot-hand-${i}`).value.trim();
+      if (!text && st.n === 2 && i === 1) {
+        hands.push(null);
+        continue;
+      }
+      const cards = parseCards(text);
       if (cards.length !== 6) throw new Error(`Seat ${i + 1} needs exactly 6 cards (got ${cards.length}).`);
       for (const c of cards) {
         if (seen.has(c)) throw new Error(`${cardName(c)} appears twice.`);
@@ -75,14 +83,9 @@ export function initSpot({ pool, sim }) {
       if (seen.has(c)) throw new Error(`${cardName(c)} appears twice.`);
       seen.add(c);
     }
-    return {
-      hands,
-      board,
-      btn: Number($("spot-btn").value),
-      variant: $("spot-variant").value,
-      cube: parseCubeState($("spot-cube-state").value),
-      precision: $("spot-precision").value,
-    };
+    const cube = parseCubeState($("spot-cube-state").value);
+    const street = board.length === 0 ? 0 : board.length - 2;
+    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
   }
   async function solve() {
     const err = $("spot-error");
@@ -96,12 +99,23 @@ export function initSpot({ pool, sim }) {
       return;
     }
     const token = ++st.token;
-    st.result = { spot, stats: null };
+    st.result = { spot, view: null };
     render();
     try {
-      const stats = await pool.stats(spot.hands, spot.board, { precision: spot.precision });
+      const view = await computeView(pool, {
+        hands: spot.hands,
+        board: spot.board,
+        street: spot.street,
+        variant: spot.variant,
+        btn: spot.btn,
+        cube: spot.cube,
+        cubeEnabled: spot.hands.length === 2,
+        history: historyFromCube(spot.cube, spot.variant, spot.street),
+        forceTabled: spot.tabled,
+        precision: spot.precision,
+      });
       if (token !== st.token) return;
-      st.result.stats = stats;
+      st.result.view = view;
       render();
     } catch (error) {
       err.textContent = `Computation failed: ${error.message}`;
@@ -112,31 +126,30 @@ export function initSpot({ pool, sim }) {
     const r = st.result;
     $("spot-empty").hidden = Boolean(r);
     if (!r) return;
-    const { spot, stats } = r;
+    const { spot, view } = r;
     const names = spot.hands.map((_, i) => `Seat ${i + 1}`);
-    const street = spot.board.length === 0 ? 0 : spot.board.length - 2;
     const bc = $("spot-board-cards");
     bc.replaceChildren();
     for (let i = 0; i < 5; i++) bc.append(i < spot.board.length ? cardEl(spot.board[i]) : el("span", "slot"));
     const meta = $("spot-meta");
     meta.replaceChildren();
-    const s1 = el("span");
-    s1.append(`${["Preflop", "Flop", "Turn", "River"][street]} · `);
-    if (stats) s1.append(el("b", "", `${stats.exact ? "exact" : "sampled"}, ${fmtInt(stats.count)} runouts, ${stats.ms.toFixed(0)} ms`));
-    else s1.append(el("span", "muted", "computing…"));
-    meta.append(s1);
+    meta.append(el("span", "", ["Preflop", "Flop", "Turn", "River"][spot.street]));
+    if (view) {
+      meta.append(el("span", "tag info-tag", view.mode === "perfect" ? "Tabled · perfect information" : "Hidden hands · numbers vs range"));
+      if (view.mode === "perfect") meta.append(el("span", "", `${view.stats.exact ? "exact" : "sampled"}, ${fmtInt(view.stats.count)} runouts, ${view.stats.ms.toFixed(0)} ms`));
+      else if (view.decision) meta.append(el("span", "", `solver ${view.decision.solve.ms} ms`));
+    } else meta.append(el("span", "muted", "computing…"));
     const panel = $("spot-cube");
     panel.hidden = spot.hands.length !== 2;
     if (spot.hands.length === 2) {
-      const situation = cubeSituation({ stats, street, btn: spot.btn, variant: spot.variant, cube: spot.cube });
-      renderCubePanel(panel, { faceEl: $("spot-cube-face"), titleEl: $("spot-cube-title"), subEl: $("spot-cube-sub"), bodyEl: $("spot-cube-body") }, situation, {
-        names,
-        cube: spot.cube,
-        street,
-        btn: spot.btn,
-      });
+      const els = { faceEl: $("spot-cube-face"), titleEl: $("spot-cube-title"), subEl: $("spot-cube-sub"), bodyEl: $("spot-cube-body") };
+      if (!view || view.mode === "hidden") renderHiddenCubePanel(panel, els, view, { names, cube: spot.cube, street: spot.street, btn: spot.btn, hands: spot.hands });
+      else {
+        const situation = cubeSituation({ stats: view.stats, street: spot.street, btn: spot.btn, variant: spot.variant, cube: spot.cube });
+        renderCubePanel(panel, els, situation, { names, cube: spot.cube, street: spot.street, btn: spot.btn });
+      }
     }
-    renderSeats($("spot-seats"), { hands: spot.hands, board: spot.board, stats, names, btn: spot.hands.length === 2 ? spot.btn : undefined, pending: !stats });
+    renderSeats($("spot-seats"), { hands: spot.hands, board: spot.board, stats: view?.stats ?? null, names, btn: spot.hands.length === 2 ? spot.btn : undefined, pending: !view });
   }
   return {
     shown() {
@@ -147,4 +160,3 @@ export function initSpot({ pool, sim }) {
     },
   };
 }
-void VARIANTS;

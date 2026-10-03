@@ -1,28 +1,17 @@
 // Online multiplayer: peer-to-peer rooms on the shared PeerRoom module. The
 // host owns the game state; every client computes its own equities locally
 // because all hands are face up.
-import {
-  VARIANTS,
-  DROP_UNIT,
-  dealTable,
-  settle,
-  flopActor,
-  riverActor,
-  riverAfterFlop,
-  analyzeDecision,
-  flipHist,
-  gradeChoice,
-  cardName,
-} from "./engine.mjs";
-import { $, el, button, cardEl, renderSeats, renderDecisionTable, cubeFace, signed, STREET_CARDS, streetName } from "./ui.js";
+import { VARIANTS, DROP_UNIT, dealTable, settle, flopActor, riverActor, cardName } from "./engine.mjs";
+import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, STREET_CARDS, streetName } from "./ui.js";
 import { fillVariantSelect } from "./cube-view.js";
+import { computeView, actionState, gradeHidden } from "./table-view.js";
 
 const NAME_KEY = "222.player-name";
 const hostKey = (code) => `222.host.${code}`;
 
 export function initOnline({ pool }) {
   const PeerRoom = window.PeerRoom;
-  const st = { model: null, stats: null, statsKey: null, token: 0, timer: null, roster: [], analysis: null, analysisKey: null };
+  const st = { model: null, view: null, viewKey: null, token: 0, timer: null, roster: [] };
   const lobby = $("online-lobby"),
     roomView = $("online-room");
   fillVariantSelect($("on-variant"), "both");
@@ -160,7 +149,8 @@ export function initOnline({ pool }) {
     try {
       localStorage.setItem(hostKey(room.roomCode), JSON.stringify(st.model));
     } catch {}
-    room.publishState(st.model, (state) => clientView(state));
+    updateTabled();
+    room.publishState(st.model, (state, clientId) => clientView(state, clientId));
     scheduleAuto();
   }
   function loadHostState(code) {
@@ -170,10 +160,17 @@ export function initOnline({ pool }) {
       return null;
     }
   }
-  function clientView(state) {
+  // Undealt board cards are never sent; other players' hands are hidden until tabled.
+  function clientView(state, clientId) {
     if (!state.hand) return state;
     const h = state.hand;
-    return { ...state, hand: { ...h, board: h.board.slice(0, STREET_CARDS[h.street]) } };
+    const hands = h.tabled ? h.hands : h.hands.map((cards, i) => (h.playerIds[i] === clientId ? cards : null));
+    return { ...state, hand: { ...h, hands, board: h.board.slice(0, STREET_CARDS[h.street]) } };
+  }
+  function updateTabled() {
+    const h = st.model?.hand;
+    if (!h) return;
+    h.tabled = actionState({ variant: h.variant, street: h.street, btn: h.btn, cube: h.cube, cubeEnabled: h.cubeEnabled, n: h.playerIds.length, history: h.history }).tabled;
   }
   function log(text, strong = false) {
     st.model.log.unshift({ text, strong });
@@ -227,6 +224,8 @@ export function initOnline({ pool }) {
       responder: null,
       result: null,
       lastDecision: null,
+      history: { flop: null, river: null, ended: false },
+      tabled: false,
     };
     log(`Hand ${number}: ${active[btn].name} has the button.`, true);
   }
@@ -274,6 +273,7 @@ export function initOnline({ pool }) {
       } else if (choice === "noDouble") {
         log(`${pname(seat)} does not ${verb}.`);
         h.phase = "street";
+        settleHistory(h, "N");
       } else throw new Error("Choose double or no double.");
       h.lastDecision = { street: h.street, kind: "double", chooser: seat, actor: h.actor, choice, level };
     } else if (h.phase === "response") {
@@ -286,6 +286,7 @@ export function initOnline({ pool }) {
         h.cube = { level: level * 2, owner: seat };
         log(`${pname(seat)} takes. Cube at ${h.cube.level}.`);
         h.phase = "street";
+        settleHistory(h, "T");
       } else if (choice === "beaver") {
         h.phase = "beaverReply";
         log(`${pname(seat)} beavers to ${level * 4}!`, true);
@@ -300,12 +301,17 @@ export function initOnline({ pool }) {
         h.cube = { level: level * 4, owner: h.responder };
         log(`${pname(seat)} takes the beaver. Cube at ${h.cube.level}.`);
         h.phase = "street";
+        settleHistory(h, "BT");
       } else throw new Error("Choose take or drop.");
     } else throw new Error("No cube decision is pending.");
     if (h.phase === "street") {
       h.actor = null;
       h.responder = null;
     }
+  }
+  function settleHistory(h, outcome) {
+    if (h.street === 1) h.history.flop = outcome;
+    else h.history.river = "done";
   }
   function applyScores(nets) {
     const h = hand();
@@ -321,6 +327,7 @@ export function initOnline({ pool }) {
     nets[1 - winnerSeat] = -points;
     applyScores(nets);
     h.phase = "over";
+    h.history.ended = true;
     h.result = { nets, reason };
     log(`${pname(winnerSeat)} wins ${points} points: ${reason}.`, true);
   }
@@ -330,6 +337,7 @@ export function initOnline({ pool }) {
     const nets = r.net.map((x) => x * h.cube.level);
     applyScores(nets);
     h.phase = "over";
+    h.history.ended = true;
     h.result = { nets, reason: "showdown", perHand: r.perHand, scoop: r.scoop, pairs: r.pairs };
     log(`Showdown: ${h.playerIds.map((_, i) => `${pname(i)} ${signed(nets[i], 0)}`).join(", ")}.`, true);
   }
@@ -388,7 +396,8 @@ export function initOnline({ pool }) {
     const meta = $("on-meta");
     meta.replaceChildren();
     meta.append(el("span", "", `Hand ${h.number} · ${names.length} players${h.cubeEnabled ? ` · ${VARIANTS[h.variant].name}` : ""}`));
-    if (st.stats) meta.append(el("span", "", `${st.stats.exact ? "Exact" : "Sampled"}: ${st.stats.count.toLocaleString("en-US")} runouts`));
+    meta.append(el("span", "tag info-tag", h.tabled ? "Tabled · perfect information" : "Hidden · numbers vs range"));
+    if (st.view?.mode === "perfect") meta.append(el("span", "", `${st.view.stats.exact ? "Exact" : "Sampled"}: ${st.view.stats.count.toLocaleString("en-US")} runouts`));
     const cp = $("on-cube-panel");
     cp.hidden = !h.cubeEnabled;
     if (h.cubeEnabled) {
@@ -428,7 +437,7 @@ export function initOnline({ pool }) {
       prompt.textContent = `Hand over (${h.result.reason}).${mine}${isHost ? "" : " Waiting for the next deal."}`;
     }
     if (h.phase === "over" && h.result.perHand) actions.append(resultTable(h, names));
-    renderSeats($("on-seats"), { hands: h.hands, board, stats: st.stats, names, btn: h.btn, highlight: me >= 0 ? me : undefined, pending: !st.stats });
+    renderSeats($("on-seats"), { hands: h.hands, board, stats: st.view?.stats ?? null, names, btn: h.btn, highlight: me >= 0 ? me : undefined, pending: !st.view });
     computeStats();
     renderAnalysis();
   }
@@ -446,50 +455,58 @@ export function initOnline({ pool }) {
     });
     return t;
   }
+  function viewSpec(h, street = h.street) {
+    return {
+      hands: h.hands,
+      board: h.board.slice(0, STREET_CARDS[street]),
+      street,
+      variant: h.variant,
+      btn: h.btn,
+      cube: h.cube,
+      cubeEnabled: h.cubeEnabled,
+      history: h.history,
+      precision: "standard",
+    };
+  }
   async function computeStats() {
     const h = st.model?.hand;
     if (!h) return;
-    const board = h.board.slice(0, STREET_CARDS[h.street]);
-    const key = JSON.stringify([h.number, h.hands, board]);
-    if (st.statsKey === key) return;
-    st.statsKey = key;
-    st.stats = null;
+    const key = JSON.stringify([h.number, h.hands, h.board.slice(0, STREET_CARDS[h.street]), h.cube, h.history, h.tabled]);
+    if (st.viewKey === key) return;
+    st.viewKey = key;
+    st.view = null;
     const token = ++st.token;
     try {
-      const stats = await pool.stats(h.hands, board, { precision: "standard" });
+      const view = await computeView(pool, viewSpec(h));
       if (token !== st.token) return;
-      st.stats = stats;
-      st.cache = st.cache || new Map();
-      st.cache.set(key, stats);
+      st.view = view;
+      st.decisionViews = st.decisionViews || new Map();
+      if (view.decision) st.decisionViews.set(`${h.number}:${h.street}`, view);
       render();
     } catch (error) {
       console.error(error);
     }
   }
+  // Your own last cube decision, graded against the equilibrium.
   function renderAnalysis() {
     const h = st.model?.hand;
     const wrap = $("on-analysis-wrap");
     const body = $("on-analysis");
     const d = h?.lastDecision;
-    if (!h || !d || !h.cubeEnabled) {
+    const me = h ? h.playerIds.indexOf(room.clientId) : -1;
+    if (!h || !d || !h.cubeEnabled || d.chooser !== me) {
       wrap.hidden = true;
       return;
     }
-    const board = h.board.slice(0, STREET_CARDS[d.street]);
-    const key = JSON.stringify([h.number, h.hands, board]);
-    const stats = key === st.statsKey ? st.stats : st.cache?.get(key);
-    if (!stats) {
+    const view = st.decisionViews?.get(`${h.number}:${d.street}`);
+    if (!view?.decision) {
       wrap.hidden = true;
       return;
     }
     wrap.hidden = false;
-    const names = playersInHand().map((p) => p.name);
-    const hist = d.actor === 0 ? stats.hist : flipHist(stats.hist);
-    const a = analyzeDecision({ hist, level: d.level, riverAfter: d.street === 1 ? riverAfterFlop(VARIANTS[h.variant]) : "none" });
-    const grade = gradeChoice(a, d.kind, d.choice);
     body.replaceChildren();
-    const label = `${streetName(d.street)}: ${names[d.chooser]} chose ${d.choice === "noDouble" ? "no double" : d.choice}`;
-    renderDecisionTable(body, a, d.kind, grade, { level: d.level, preview: false, label });
+    const grade = gradeHidden(view.decision.data, d.kind, d.level, d.choice);
+    renderOptionTable(body, grade, { level: d.level, preview: false, chooser: "your", note: `${streetName(d.street)}: you chose ${d.choice === "noDouble" ? "no double" : d.choice}` });
   }
   function renderRoster() {
     const list = $("on-roster");

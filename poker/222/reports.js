@@ -22,8 +22,11 @@ export function initReports() {
 
 function render(body, data) {
   body.replaceChildren();
+  if (data.equilibrium) renderEquilibrium(body, data.equilibrium);
+  const h = el("h2", "section-title", "Face-up play (hands tabled)");
+  body.append(h);
   const intro = el("p", "muted");
-  intro.textContent = `${fmtInt(data.meta.deals)} random two-player deals, each played under optimal cube strategy in all three variants (hands face up, button on seat 1). Every flop decision enumerates all 666 turn-and-river runouts; river decisions are exact. Generated ${new Date(data.meta.generatedAt).toLocaleDateString()}.`;
+  intro.textContent = `For comparison: ${fmtInt(data.meta.deals)} random two-player deals, each played with both hands face up under optimal cube strategy in all three variants (button on seat 1). Every flop decision enumerates all 666 turn-and-river runouts; river decisions are exact. Generated ${new Date(data.meta.generatedAt).toLocaleDateString()}.`;
   body.append(intro);
   const kpis = el("div", "report-grid");
   for (const id of ["flop", "river", "both"]) kpis.append(variantCard(id, data.variants[id], data.meta.deals));
@@ -36,6 +39,68 @@ function render(body, data) {
   extra.append(showdownCard(data.showdown));
   extra.append(comparisonCard(data));
   body.append(extra);
+}
+function renderEquilibrium(body, eq) {
+  body.append(el("h2", "section-title", "Hidden-information equilibrium"));
+  const intro = el("p", "muted");
+  intro.textContent = `${fmtInt(eq.boards)} random boards, each solved with the sampled-hand CFR solver (${eq.precision} precision) with both hands hidden. Frequencies are averaged over the button's whole range on each board; the river rows of the flop-and-river variant are weighted by how often each cube state is reached.`;
+  body.append(intro);
+  const grid = el("div", "report-grid");
+  for (const id of ["flop", "river", "both"]) {
+    const v = eq.variants[id];
+    const card = el("div", "report-card");
+    card.append(el("h2", "", VARIANTS[id].name), el("p", "lede", VARIANTS[id].blurb));
+    const k = el("div", "kpis");
+    k.append(kpi("Button value", `${signed(v.value)} pts`, "equilibrium, per deal"));
+    const f = v.flop ?? v.river;
+    k.append(kpi(v.flop ? "Flop doubles" : "River doubles", pct(f.double, 1), "share of range"));
+    k.append(kpi("Reply: drop / take / beaver", `${pct(f.drop, 0)} / ${pct(f.take, 0)} / ${pct(f.beaver, 0)}`, "given a double"));
+    card.append(k);
+    const t = el("table", "report-table");
+    t.append(row(["Decision", "Frequency"], true));
+    if (v.flop) {
+      t.append(row(["Flop: button doubles", pct(v.flop.double)]));
+      t.append(row(["   reply: drop / take / beaver", `${pct(v.flop.drop)} / ${pct(v.flop.take)} / ${pct(v.flop.beaver)}`]));
+      t.append(row(["   beaver taken", pct(v.flop.beaverTake)]));
+    }
+    if (v.river && !v.river.c1) {
+      t.append(row(["River: button doubles", pct(v.river.double)]));
+      t.append(row(["   reply: drop / take / beaver", `${pct(v.river.drop)} / ${pct(v.river.take)} / ${pct(v.river.beaver)}`]));
+    }
+    if (v.river?.c1) {
+      for (const [id2, label] of [["c1", "cube centered: non-button doubles"], ["o2", "non-button owns at 2: redoubles"], ["o4", "non-button owns at 4: redoubles"]]) {
+        const r = v.river[id2];
+        t.append(row([`River, ${label}`, `${pct(r.double)} (state reached ${pct(r.reach, 0)})`]));
+        t.append(row(["   reply: drop / take / beaver", `${pct(r.drop)} / ${pct(r.take)} / ${pct(r.beaver)}`]));
+      }
+    }
+    const wrap = el("div", "table-wrap");
+    wrap.append(t);
+    card.append(wrap);
+    if (f.hist) card.append(freqHistogram(f.hist, v.flop ? "How often the button doubles, by board" : "How often the button doubles on the river, by board"));
+    grid.append(card);
+  }
+  body.append(grid);
+}
+function freqHistogram(hist, title) {
+  const wrap = el("div");
+  wrap.append(el("h3", "", title));
+  const t = el("table", "report-table");
+  const max = Math.max(...hist, 1e-9);
+  hist.forEach((p, i) => {
+    const tr = el("tr");
+    tr.append(el("td", "", `${i * 10}–${i * 10 + 10}% of range`), el("td", "num", pct(p, 0)));
+    const bar = el("td");
+    const b = el("div", "bar");
+    const fill = el("i");
+    fill.style.width = `${(p / max) * 100}%`;
+    b.append(fill);
+    bar.append(b);
+    tr.append(bar);
+    t.append(tr);
+  });
+  wrap.append(t);
+  return wrap;
 }
 function kpi(label, value, note) {
   const k = el("div", "kpi");

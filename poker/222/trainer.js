@@ -1,19 +1,11 @@
-// Cube trainer: play the two-player cube game against the exact solver.
-import {
-  VARIANTS,
-  DROP_UNIT,
-  dealTable,
-  settle,
-  flopActor,
-  riverActor,
-  riverAfterFlop,
-  analyzeDecision,
-  flipHist,
-  gradeChoice,
-  cardName,
-} from "./engine.mjs";
-import { $, el, button, cardEl, renderSeats, renderDecisionTable, cubeFace, signed, pct, STREET_CARDS, streetName, metric, evColor } from "./ui.js";
+// Cube trainer: play the two-player cube game against the equilibrium bot.
+// The bot's cards stay hidden while any cube action remains; your numbers are
+// against its range. Once no action is left the hands are tabled and the
+// remaining streets show perfect-information equities.
+import { VARIANTS, DROP_UNIT, dealTable, settle, cardName } from "./engine.mjs";
+import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, pct, STREET_CARDS, streetName, metric, evColor } from "./ui.js";
 import { ownerLabel, fillVariantSelect } from "./cube-view.js";
+import { computeView, gradeHidden, sampleAction } from "./table-view.js";
 
 const YOU = 0,
   BOT = 1;
@@ -28,10 +20,10 @@ export function initTrainer({ pool }) {
     street: 0,
     view: 0,
     cube: { level: 1, owner: null },
+    history: { flop: null, river: null, ended: false },
     phase: "idle",
     actor: null,
     responder: null,
-    pending: null,
     score: 0,
     played: 0,
     decisions: 0,
@@ -39,7 +31,8 @@ export function initTrainer({ pool }) {
     lost: 0,
     log: [],
     snapshots: [],
-    shown: null,
+    preview: null,
+    decisionsThisHand: [],
     token: 0,
     timer: null,
   };
@@ -68,114 +61,108 @@ export function initTrainer({ pool }) {
     tr.token++;
     const mode = $("tr-seat").value;
     tr.btn = mode === "btn" ? YOU : mode === "opp" ? BOT : tr.played % 2 === 0 ? YOU : BOT;
-    tr.variantId = tr.variant;
     const t = dealTable(2);
     tr.hands = t.hands;
     tr.board = t.board;
     tr.street = 0;
     tr.view = 0;
     tr.cube = { level: 1, owner: null };
+    tr.history = { flop: null, river: null, ended: false };
     tr.phase = "street";
     tr.actor = null;
     tr.responder = null;
-    tr.pending = null;
     tr.snapshots = [];
-    tr.shown = null;
+    tr.preview = null;
     tr.decisionsThisHand = [];
+    tr.result = null;
     trLog(`New hand (${variant().name}). ${NAMES[tr.btn]} ${you(tr.btn) ? "are" : "is"} on the button.`, true);
     computeStreet();
   }
-  function snapshot(s = tr.street) {
-    return tr.snapshots[s];
+  function spec(street = tr.street) {
+    return {
+      hands: tr.hands,
+      board: visibleBoard(street),
+      street,
+      variant: tr.variant,
+      btn: tr.btn,
+      cube: tr.cube,
+      cubeEnabled: true,
+      history: tr.history,
+      precision: precision(),
+    };
   }
   async function computeStreet() {
     const s = tr.street;
     const token = ++tr.token;
-    tr.snapshots[s] = { stats: null, cube: { ...tr.cube } };
+    tr.snapshots[s] = { view: null, cube: { ...tr.cube } };
     render();
     try {
-      const stats = await pool.stats(tr.hands, visibleBoard(s), { precision: precision() });
+      const view = await computeView(pool, spec());
       if (token !== tr.token) return;
-      tr.snapshots[s].stats = stats;
-      afterStats();
+      tr.snapshots[s].view = view;
+      afterView(view);
     } catch (error) {
       console.error(error);
       $("tr-prompt").textContent = `Computation failed: ${error.message}`;
     }
   }
-  function analysis() {
-    const snap = snapshot();
-    if (!snap?.stats) return null;
-    const hist = tr.actor === 0 ? snap.stats.hist : flipHist(snap.stats.hist);
-    return analyzeDecision({ hist, level: tr.cube.level, riverAfter: tr.street === 1 ? riverAfterFlop(variant()) : "none" });
-  }
-  // Called once the current street's statistics are ready.
-  function afterStats() {
-    if (tr.phase === "street") {
-      const actor = tr.street === 1 ? flopActor(variant(), tr.btn, tr.cube) : tr.street === 3 ? riverActor(variant(), tr.btn, tr.cube) : null;
-      if (actor != null) {
-        tr.phase = "decision";
-        tr.actor = actor;
-        tr.responder = 1 - actor;
-      }
+  const current = () => tr.snapshots[tr.street]?.view ?? null;
+  const decisionData = () => current()?.decision?.data ?? null;
+  function afterView(view) {
+    if (tr.phase === "street" && view.decision) {
+      tr.phase = "decision";
+      tr.actor = view.decision.actor;
+      tr.responder = view.decision.responder;
     }
     render();
     runBot();
   }
   function runBot() {
     clearTimeout(tr.timer);
-    const a = analysis();
-    if (!a) return;
+    const data = decisionData();
+    if (!data) return;
     const token = tr.token;
+    const peek = $("tr-peek").checked;
     if (tr.phase === "decision" && tr.actor === BOT) {
-      tr.timer = setTimeout(() => token === tr.token && decide(BOT, a.best === "double" ? "double" : "noDouble"), 650);
+      tr.timer = setTimeout(() => token === tr.token && decide(BOT, sampleAction(data, "double")), 650);
     } else if (tr.phase === "response" && tr.responder === BOT) {
-      tr.timer = setTimeout(() => token === tr.token && respond(BOT, a.response), 650);
+      tr.timer = setTimeout(() => token === tr.token && respond(BOT, sampleAction(data, "response")), 650);
     } else if (tr.phase === "beaverReply" && tr.actor === BOT) {
-      tr.timer = setTimeout(() => token === tr.token && replyBeaver(BOT, a.beaverReply), 650);
-    } else if (tr.phase === "decision" && tr.actor === YOU && $("tr-peek").checked) {
-      tr.shown = { a, kind: "double", grade: gradeChoice(a, "double", null), preview: true, chooser: YOU, level: tr.cube.level, street: tr.street };
-      render();
-    } else if (tr.phase === "response" && tr.responder === YOU && $("tr-peek").checked) {
-      tr.shown = { a, kind: "response", grade: gradeChoice(a, "response", null), preview: true, chooser: YOU, level: tr.cube.level, street: tr.street };
-      render();
-    } else if (tr.phase === "beaverReply" && tr.actor === YOU && $("tr-peek").checked) {
-      tr.shown = { a, kind: "beaverReply", grade: gradeChoice(a, "beaverReply", null), preview: true, chooser: YOU, level: tr.cube.level, street: tr.street };
+      tr.timer = setTimeout(() => token === tr.token && replyBeaver(BOT, sampleAction(data, "beaverReply")), 650);
+    } else if (peek && ((tr.phase === "decision" && tr.actor === YOU) || (tr.phase === "response" && tr.responder === YOU) || (tr.phase === "beaverReply" && tr.actor === YOU))) {
+      const kind = tr.phase === "decision" ? "double" : tr.phase === "response" ? "response" : "beaverReply";
+      tr.preview = { kind, grade: gradeHidden(data, kind, tr.cube.level, null), chooser: YOU, level: tr.cube.level, street: tr.street, preview: true };
       render();
     }
   }
-  function record(seat, kind, chosen, a) {
-    const grade = gradeChoice(a, kind, chosen);
+  function record(seat, kind, chosen) {
+    const data = decisionData();
+    const grade = gradeHidden(data, kind, tr.cube.level, chosen);
     if (seat === YOU) {
       tr.decisions++;
-      if (grade.error > 1e-6) tr.errors++;
+      if (grade.error > 0.005) tr.errors++;
       tr.lost += grade.error;
     }
-    tr.shown = { a, kind, grade, chooser: seat, level: tr.cube.level, street: tr.street, preview: false };
-    tr.decisionsThisHand.unshift(tr.shown);
+    tr.preview = null;
+    tr.decisionsThisHand.unshift({ kind, grade, chooser: seat, level: tr.cube.level, street: tr.street, preview: false });
   }
   function decide(seat, choice) {
-    if (tr.phase !== "decision" || tr.actor !== seat) return;
-    const a = analysis();
-    if (!a) return;
-    record(seat, "double", choice, a);
+    if (tr.phase !== "decision" || tr.actor !== seat || !decisionData()) return;
+    record(seat, "double", choice);
     const verb = tr.cube.level > 1 ? "redouble" : "double";
     if (choice === "double") {
       tr.phase = "response";
-      tr.pending = "double";
       trLog(`${NAMES[seat]} ${verbFor(seat, verb)} to ${tr.cube.level * 2}.`, true);
     } else {
       trLog(`${NAMES[seat]} ${you(seat) ? "do" : "does"} not ${verb}.`);
-      continueHand();
+      resolve("N");
     }
     render();
     runBot();
   }
   function respond(seat, choice) {
-    if (tr.phase !== "response" || tr.responder !== seat) return;
-    const a = analysis();
-    if (!a) return;
-    record(seat, "response", choice, a);
+    if (tr.phase !== "response" || tr.responder !== seat || !decisionData()) return;
+    record(seat, "response", choice);
     if (choice === "drop") {
       trLog(`${NAMES[seat]} ${verbFor(seat, "drop")}.`);
       finish(tr.actor, DROP_UNIT * tr.cube.level, `${NAMES[seat].toLowerCase()} dropped`);
@@ -184,20 +171,17 @@ export function initTrainer({ pool }) {
     if (choice === "take") {
       tr.cube = { level: tr.cube.level * 2, owner: seat };
       trLog(`${NAMES[seat]} ${verbFor(seat, "take")}. Cube at ${tr.cube.level}, ${NAMES[seat].toLowerCase()} own${you(seat) ? "" : "s"} it.`);
-      continueHand();
+      resolve("T");
     } else {
       tr.phase = "beaverReply";
-      tr.pending = "beaver";
       trLog(`${NAMES[seat]} ${verbFor(seat, "beaver")} to ${tr.cube.level * 4}!`, true);
     }
     render();
     runBot();
   }
   function replyBeaver(seat, choice) {
-    if (tr.phase !== "beaverReply" || tr.actor !== seat) return;
-    const a = analysis();
-    if (!a) return;
-    record(seat, "beaverReply", choice, a);
+    if (tr.phase !== "beaverReply" || tr.actor !== seat || !decisionData()) return;
+    record(seat, "beaverReply", choice);
     if (choice === "drop") {
       trLog(`${NAMES[seat]} ${verbFor(seat, "drop")} the beaver.`);
       finish(tr.responder, 2 * DROP_UNIT * tr.cube.level, `${NAMES[seat].toLowerCase()} dropped the beaver`);
@@ -205,25 +189,50 @@ export function initTrainer({ pool }) {
     }
     tr.cube = { level: tr.cube.level * 4, owner: tr.responder };
     trLog(`${NAMES[seat]} ${verbFor(seat, "take")} the beaver. Cube at ${tr.cube.level}, ${NAMES[tr.responder].toLowerCase()} own${you(tr.responder) ? "" : "s"} it.`);
-    continueHand();
+    resolve("BT");
     render();
     runBot();
   }
-  function continueHand() {
+  // The pending action is settled; record it in the history and, if hands are
+  // now tabled, recompute this street with perfect information.
+  function resolve(outcome) {
+    if (tr.street === 1) tr.history.flop = outcome;
+    else tr.history.river = "done";
     tr.phase = "street";
-    tr.pending = null;
     tr.actor = null;
     tr.responder = null;
     tr.snapshots[tr.street].cubeAfter = { ...tr.cube };
+    const before = current();
+    if (before && !before.tabled) {
+      const token = ++tr.token;
+      computeView(pool, spec())
+        .then((view) => {
+          if (token !== tr.token) return;
+          if (view.tabled) {
+            tr.snapshots[tr.street].view = view;
+            trLog("No cube action remains: hands are tabled.");
+            render();
+          }
+        })
+        .catch(console.error);
+    }
   }
   function finish(winner, points, reason) {
     const net = winner === YOU ? points : -points;
     tr.score += net;
     tr.played++;
     tr.phase = "over";
-    tr.pending = null;
+    tr.history.ended = true;
     tr.result = { net, reason };
     trLog(`${NAMES[winner]} win${you(winner) ? "" : "s"} ${points} point${points === 1 ? "" : "s"}: ${reason}.`, true);
+    const token = ++tr.token;
+    computeView(pool, spec())
+      .then((view) => {
+        if (token !== tr.token) return;
+        tr.snapshots[tr.street].view = view;
+        render();
+      })
+      .catch(console.error);
     render();
   }
   function showdown() {
@@ -232,9 +241,18 @@ export function initTrainer({ pool }) {
     tr.score += net;
     tr.played++;
     tr.phase = "over";
+    tr.history.ended = true;
     tr.result = { net, settle: r, reason: "showdown" };
     const detail = r.pairs[0].hands.map((d, h) => `hand ${h + 1} ${d > 0 ? "you" : d < 0 ? "bot" : "tie"}`).join(", ");
     trLog(`Showdown: ${detail}${r.pairs[0].bonus ? ` and a scoop` : ""}. Net ${signed(r.net[YOU], 0)} × cube ${tr.cube.level} = ${signed(net, 0)} for you.`, true);
+    const token = ++tr.token;
+    computeView(pool, spec())
+      .then((view) => {
+        if (token !== tr.token) return;
+        tr.snapshots[tr.street].view = view;
+        render();
+      })
+      .catch(console.error);
     render();
   }
   function next() {
@@ -245,7 +263,7 @@ export function initTrainer({ pool }) {
     }
     tr.street++;
     tr.view = tr.street;
-    tr.shown = tr.shown && !tr.shown.preview ? tr.shown : null;
+    tr.preview = null;
     const cards = tr.board.slice(STREET_CARDS[tr.street - 1], STREET_CARDS[tr.street]);
     trLog(`${streetName(tr.street)}: ${cards.map(cardName).join(" ")}.`);
     computeStreet();
@@ -263,26 +281,23 @@ export function initTrainer({ pool }) {
     $("tr-cube-face").replaceChildren(cubeFace(tr.cube.level, ownerLabel(tr.cube, NAMES), true));
     const steps = $("tr-streets");
     steps.replaceChildren();
-    for (let s = 0; s < 4; s++) {
-      const b = button(streetName(s), `${s === tr.view ? "active" : s < tr.street ? "done" : ""}`, () => setView(s), tr.phase === "idle" || s > tr.street);
-      steps.append(b);
-    }
+    for (let s = 0; s < 4; s++) steps.append(button(streetName(s), `${s === tr.view ? "active" : s < tr.street ? "done" : ""}`, () => setView(s), tr.phase === "idle" || s > tr.street));
     const live = tr.view === tr.street;
     $("tr-view-note").textContent = tr.phase === "idle" ? "" : live ? "" : `Reviewing the ${streetName(tr.view).toLowerCase()}. Click ${streetName(tr.street)} to return to the live street.`;
     const snap = tr.snapshots[tr.view];
+    const view = snap?.view ?? null;
     const board = tr.phase === "idle" ? [] : visibleBoard(tr.view);
     const bc = $("tr-board-cards");
     bc.replaceChildren();
     for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i], i >= STREET_CARDS[tr.view - 1] && live ? "new" : "") : el("span", "slot"));
     const meta = $("tr-meta");
     meta.replaceChildren();
-    if (snap?.stats) {
-      const s = snap.stats;
-      meta.append(spanb(`${s.exact ? "Exact" : "Sampled"}: `, `${s.count.toLocaleString("en-US")} runouts`));
-      const cubeAt = snap.cube;
-      meta.append(spanb("Cube then: ", `${cubeAt.level} ${cubeAt.owner == null ? "centered" : `(${NAMES[cubeAt.owner]})`}`));
+    if (view) {
+      meta.append(el("span", "tag info-tag", view.tabled ? "Tabled · perfect information" : "Hidden · numbers vs range"));
+      if (view.mode === "perfect") meta.append(spanb(`${view.stats.exact ? "Exact" : "Sampled"}: `, `${view.stats.count.toLocaleString("en-US")} runouts`));
+      else if (view.stats.conditioned) meta.append(el("span", "muted", "Range conditioned on the flop cube action"));
+      meta.append(spanb("Cube then: ", `${snap.cube.level} ${snap.cube.owner == null ? "centered" : `(${NAMES[snap.cube.owner]})`}`));
     } else if (tr.phase !== "idle") meta.append(el("span", "muted", "Computing…"));
-    // prompt + actions
     const prompt = $("tr-prompt");
     const actions = $("tr-actions");
     actions.replaceChildren();
@@ -291,7 +306,7 @@ export function initTrainer({ pool }) {
     const verb = level > 1 ? "Redouble" : "Double";
     if (tr.phase === "idle") prompt.textContent = "Press New hand to deal.";
     else if (!live) prompt.textContent = `Viewing the ${streetName(tr.view).toLowerCase()} numbers.`;
-    else if (!snap?.stats) prompt.textContent = "Computing equities…";
+    else if (!view) prompt.textContent = "Computing equities and the equilibrium…";
     else if (tr.phase === "street") {
       prompt.textContent = tr.street === 3 ? "River dealt. Go to showdown." : `${streetName(tr.street)} dealt. ${tr.street === 0 ? "No action before the flop." : "No action here."}`;
       actions.append(button(tr.street === 3 ? "Showdown" : `Deal ${streetName(tr.street + 1).toLowerCase()}`, "primary", next));
@@ -321,9 +336,12 @@ export function initTrainer({ pool }) {
       prompt.textContent = `Hand over: ${signed(tr.result.net, 0)} for you (${tr.result.reason}).`;
       actions.append(button("New hand", "primary", newHand));
     }
-    // seats
     if (tr.phase === "idle") $("tr-seats").replaceChildren();
-    else renderSeats($("tr-seats"), { hands: tr.hands, board, stats: snap?.stats ?? null, names: NAMES, btn: tr.btn, highlight: YOU, pending: !snap?.stats });
+    else {
+      const tabled = view ? view.tabled : false;
+      const shown = [tr.hands[YOU], tabled || tr.phase === "over" ? tr.hands[BOT] : null];
+      renderSeats($("tr-seats"), { hands: shown, board, stats: view?.stats ?? null, names: NAMES, btn: tr.btn, highlight: YOU, pending: !view });
+    }
     renderAnalysis();
     renderSession();
     const log = $("tr-log");
@@ -339,7 +357,7 @@ export function initTrainer({ pool }) {
     const body = $("tr-analysis-body");
     body.replaceChildren();
     const note = $("tr-analysis-note");
-    const list = tr.shown?.preview ? [tr.shown, ...(tr.decisionsThisHand ?? [])] : tr.decisionsThisHand ?? [];
+    const list = tr.preview ? [tr.preview, ...tr.decisionsThisHand] : tr.decisionsThisHand;
     if (!list.length) {
       $("tr-analysis-title").textContent = "Cube analysis";
       note.hidden = false;
@@ -353,12 +371,12 @@ export function initTrainer({ pool }) {
       const block = el("div", "decision-block");
       block.append(el("h3", "", `${sh.preview ? "Preview: " : ""}${streetName(sh.street)} ${kindLabel} (${who})`));
       const table = el("div");
-      renderDecisionTable(table, sh.a, sh.kind, sh.grade, { level: sh.level, preview: sh.preview, label: `Equities for ${who.toLowerCase()} at cube ${sh.level}` });
+      renderOptionTable(table, sh.grade, { preview: sh.preview, level: sh.level, chooser: sh.chooser === YOU ? "you" : "the bot" });
       block.append(table);
       if (!sh.preview && sh.chooser === YOU) {
-        const verdict = el("p", `small ${sh.grade.error > 1e-6 ? "error" : ""}`);
-        verdict.textContent = sh.grade.error > 1e-6 ? `Mistake: ${sh.grade.error.toFixed(2)} points given up.` : "Correct.";
-        if (sh.grade.error <= 1e-6) verdict.style.color = "var(--green)";
+        const verdict = el("p", `small ${sh.grade.error > 0.005 ? "error" : ""}`);
+        verdict.textContent = sh.grade.error > 0.005 ? `Mistake: ${sh.grade.error.toFixed(2)} points given up against the equilibrium.` : "Correct (or part of the equilibrium mix).";
+        if (sh.grade.error <= 0.005) verdict.style.color = "var(--green)";
         block.append(verdict);
       }
       body.append(block);

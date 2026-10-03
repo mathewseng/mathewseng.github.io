@@ -34,6 +34,10 @@ listeners.set("reports", () => reports.load());
 listeners.set("online", () => online.shown());
 listeners.set("spot", () => spot.shown());
 
+addEventListener("hashchange", () => {
+  const name = location.hash.replace("#", "").split("/")[0];
+  if (views.includes(name) && $(`view-${name}`).hidden) showTab(name);
+});
 const hash = location.hash.replace("#", "");
 const first = hash.split("/")[0];
 if (/^[A-Z2-9]{4,6}$/.test(first)) {

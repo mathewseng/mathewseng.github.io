@@ -515,7 +515,171 @@ export function finishStats(stats, n) {
       categories: [0, 1, 2].map((h) => Array.from(stats.categories.subarray((i * 3 + h) * 9, (i * 3 + h) * 9 + 9), (x) => x / c)),
     });
   const hist = n === 2 ? Array.from(stats.hist, (x) => x / c) : null;
+  if (hist) {
+    players[0].hist = hist;
+    players[1].hist = hist.slice().reverse();
+  }
   return { count: stats.count, players, hist };
+}
+
+// Statistics for one hand against a range of opponent hands. opponents is
+// null (uniform over the unseen cards) or { hands, weights }. With a weighted
+// range and at most one card to come the result is exact; otherwise sampled.
+export function rangeStats(hero, boardCards, { opponents = null, samples = 20000, rng = Math.random } = {}) {
+  const need = 5 - boardCards.length;
+  const h = hero.slice().sort((a, b) => b - a);
+  const used = new Set([...h, ...boardCards]);
+  const deck = FULL_DECK.filter((c) => !used.has(c));
+  const out = {
+    count: 0,
+    weight: 0,
+    ev: 0,
+    evHand: new Float64Array(3),
+    evScoop: 0,
+    win: new Float64Array(3),
+    tie: new Float64Array(3),
+    scoop: 0,
+    hist: new Float64Array(2 * MAX_NET + 1),
+    exact: false,
+  };
+  const board = new Board();
+  const vh = new Int32Array(3),
+    vo = new Int32Array(3),
+    buf = new Int32Array(6);
+  const full = boardCards.slice();
+  const evaluate = (opp, w) => {
+    board.set(full);
+    splitHand(h, board, vh, buf);
+    splitHand(opp, board, vo, buf);
+    let wins = 0,
+      net = 0;
+    for (let k = 0; k < 3; k++) {
+      if (vh[k] > vo[k]) {
+        wins++;
+        out.win[k] += w;
+        out.evHand[k] += w * POINTS[k];
+        net += POINTS[k];
+      } else if (vh[k] < vo[k]) {
+        out.evHand[k] -= w * POINTS[k];
+        net -= POINTS[k];
+      } else out.tie[k] += w;
+    }
+    if (wins === 3) {
+      out.scoop += w;
+      out.evScoop += w * SCOOP_BONUS;
+      net += SCOOP_BONUS;
+    } else if (vh[0] < vo[0] && vh[1] < vo[1] && vh[2] < vo[2]) {
+      out.evScoop -= w * SCOOP_BONUS;
+      net -= SCOOP_BONUS;
+    }
+    out.ev += w * net;
+    out.hist[net + MAX_NET] += w;
+    out.weight += w;
+    out.count++;
+  };
+  if (opponents) {
+    const list = [];
+    opponents.hands.forEach((hand, i) => {
+      const w = opponents.weights[i];
+      if (w > 0 && !hand.some((c) => used.has(c))) list.push({ hand: hand.slice().sort((a, b) => b - a), w });
+    });
+    if (!list.length) return finishRange(out);
+    if (need <= 1) {
+      out.exact = true;
+      for (const { hand, w } of list) {
+        if (need === 0) evaluate(hand, w);
+        else {
+          const rest = deck.filter((c) => !hand.includes(c));
+          const wr = w / rest.length;
+          for (const c of rest) {
+            full[boardCards.length] = c;
+            evaluate(hand, wr);
+          }
+          full.length = boardCards.length;
+        }
+      }
+      return finishRange(out);
+    }
+    const cum = [];
+    let acc = 0;
+    for (const o of list) cum.push((acc += o.w));
+    const arr = deck.slice();
+    for (let s = 0; s < samples; s++) {
+      const u = rng() * acc;
+      let lo = 0,
+        hi = cum.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] < u) lo = mid + 1;
+        else hi = mid;
+      }
+      const opp = list[lo].hand;
+      let k = 0;
+      while (k < need) {
+        const i = k + Math.floor(rng() * (arr.length - k));
+        const c = arr[i];
+        if (opp.includes(c)) continue;
+        arr[i] = arr[k];
+        arr[k] = c;
+        full[boardCards.length + k] = c;
+        k++;
+      }
+      evaluate(opp, 1);
+    }
+    full.length = boardCards.length;
+    return finishRange(out);
+  }
+  const arr = deck.slice();
+  const m = arr.length;
+  const opp = new Array(6);
+  for (let s = 0; s < samples; s++) {
+    for (let k = 0; k < 6 + need; k++) {
+      const i = k + Math.floor(rng() * (m - k));
+      const c = arr[i];
+      arr[i] = arr[k];
+      arr[k] = c;
+      if (k < 6) opp[k] = c;
+      else full[boardCards.length + k - 6] = c;
+    }
+    evaluate(opp, 1);
+  }
+  full.length = boardCards.length;
+  return finishRange(out);
+}
+function finishRange(out) {
+  return out;
+}
+export function mergeRange(parts) {
+  const o = parts[0];
+  for (let p = 1; p < parts.length; p++) {
+    const s = parts[p];
+    o.count += s.count;
+    o.weight += s.weight;
+    o.ev += s.ev;
+    o.evScoop += s.evScoop;
+    o.scoop += s.scoop;
+    for (let k = 0; k < 3; k++) {
+      o.evHand[k] += s.evHand[k];
+      o.win[k] += s.win[k];
+      o.tie[k] += s.tie[k];
+    }
+    for (let k = 0; k < o.hist.length; k++) o.hist[k] += s.hist[k];
+  }
+  return o;
+}
+export function finishRangeStats(r) {
+  const w = r.weight || 1;
+  return {
+    ev: r.ev / w,
+    evHand: Array.from(r.evHand, (x) => x / w),
+    evScoop: r.evScoop / w,
+    win: Array.from(r.win, (x) => x / w),
+    tie: Array.from(r.tie, (x) => x / w),
+    scoop: r.scoop / w,
+    hist: Array.from(r.hist, (x) => x / w),
+    count: r.count,
+    exact: r.exact,
+  };
 }
 export function completions(n, boardLength) {
   return binomial(52 - 6 * n - boardLength, 5 - boardLength);

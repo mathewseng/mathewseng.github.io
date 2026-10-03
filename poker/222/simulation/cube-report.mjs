@@ -20,6 +20,7 @@ import {
   riverAfterFlop,
   riverActor,
 } from "../engine.mjs";
+import { solve } from "../solver.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const emptyCounts = () => ({ n: 0, double: 0, noDouble: 0, tooGood: 0, drop: 0, take: 0, beaver: 0, beaverTake: 0, beaverDrop: 0 });
@@ -138,6 +139,65 @@ function merge(a, b) {
     if (x.riverWindow) x.riverWindow.forEach((bin, i) => mergeCounts(bin, y.riverWindow[i]));
   }
 }
+// Hidden-information equilibrium over random boards (button = seat 0, hands unknown).
+const eqCounts = () => ({ n: 0, double: 0, drop: 0, take: 0, beaver: 0, beaverTake: 0, value: 0, hist: new Array(10).fill(0) });
+function addEq(c, freq, value) {
+  c.n++;
+  c.double += freq.double;
+  c.drop += freq.drop;
+  c.take += freq.take;
+  c.beaver += freq.beaver;
+  c.beaverTake += freq.beaverTake;
+  c.value += value;
+  c.hist[Math.min(9, Math.floor(freq.double * 10))]++;
+}
+export function runEquilibrium(boards, seed, precision = "standard") {
+  const rng = makeRng(seed);
+  const out = {
+    boards,
+    precision,
+    flop: { flop: eqCounts() },
+    river: { river: eqCounts() },
+    both: { flop: eqCounts(), river: { c1: { ...eqCounts(), reach: 0 }, o2: { ...eqCounts(), reach: 0 }, o4: { ...eqCounts(), reach: 0 } } },
+  };
+  for (let b = 0; b < boards; b++) {
+    const { board } = dealTable(2, rng);
+    const s1 = solve({ board: board.slice(0, 3), variant: "flop", stage: "flop", precision, seed: (seed + b * 31) >>> 0 });
+    addEq(out.flop.flop, s1.flop.freq, s1.flop.value);
+    const s2 = solve({ board: board.slice(0, 3), variant: "both", stage: "flop", precision, seed: (seed + b * 37) >>> 0 });
+    addEq(out.both.flop, s2.flop.freq, s2.flop.value);
+    for (const id of ["c1", "o2", "o4"]) {
+      const r = s2.river[id];
+      out.both.river[id].reach += r.reach;
+      // Weight river frequencies by how often the state is reached.
+      out.both.river[id].n += r.reach;
+      out.both.river[id].double += r.reach * r.freq.double;
+      out.both.river[id].drop += r.reach * r.freq.drop;
+      out.both.river[id].take += r.reach * r.freq.take;
+      out.both.river[id].beaver += r.reach * r.freq.beaver;
+      out.both.river[id].beaverTake += r.reach * r.freq.beaverTake;
+      out.both.river[id].value += r.reach * r.value;
+    }
+    const s3 = solve({ board, variant: "river", stage: "river", level: 1, actorSide: 0, precision, seed: (seed + b * 41) >>> 0 });
+    addEq(out.river.river, s3.river.now.freq, s3.river.now.value);
+  }
+  return out;
+}
+function mergeEq(a, b) {
+  const add = (x, y) => {
+    for (const k of Object.keys(y)) if (typeof y[k] === "number") x[k] += y[k];
+    if (y.hist) y.hist.forEach((v, i) => (x.hist[i] += v));
+  };
+  a.boards += b.boards;
+  add(a.flop.flop, b.flop.flop);
+  add(a.river.river, b.river.river);
+  add(a.both.flop, b.both.flop);
+  for (const id of ["c1", "o2", "o4"]) add(a.both.river[id], b.both.river[id]);
+}
+function finishEq(c, weighted = false) {
+  const n = c.n || 1;
+  return { boards: weighted ? undefined : c.n, reach: weighted ? c.reach / (c.boardsTotal || 1) : undefined, double: c.double / n, drop: c.drop / n, take: c.take / n, beaver: c.beaver / n, beaverTake: c.beaverTake / n, value: c.value / n, hist: c.hist ? c.hist.map((x) => x / n) : undefined };
+}
 export function runDeals(deals, seed) {
   const rng = makeRng(seed);
   const rep = emptyReport();
@@ -148,31 +208,58 @@ export function runDeals(deals, seed) {
   return rep;
 }
 if (!isMainThread) {
-  parentPort.postMessage(runDeals(workerData.deals, workerData.seed));
+  if (workerData.kind === "equilibrium") parentPort.postMessage(runEquilibrium(workerData.boards, workerData.seed, workerData.precision));
+  else parentPort.postMessage(runDeals(workerData.deals, workerData.seed));
 } else {
   const deals = Number(process.argv[2] || 20000);
   const threads = Number(process.argv[3] || Math.max(1, os.cpus().length - 1));
   const seed = Number(process.argv[4] || 20261003);
+  const boards = Number(process.argv[5] || 600);
   const t0 = Date.now();
+  const spawn = (workerData) =>
+    new Promise((resolve, reject) => {
+      const w = new Worker(fileURLToPath(import.meta.url), { workerData });
+      w.on("message", resolve);
+      w.on("error", reject);
+    });
   const per = Math.ceil(deals / threads);
   const jobs = [];
   for (let i = 0; i < threads; i++) {
     const n = Math.min(per, deals - i * per);
     if (n <= 0) break;
-    jobs.push(
-      new Promise((resolve, reject) => {
-        const w = new Worker(fileURLToPath(import.meta.url), { workerData: { deals: n, seed: (seed + i * 104729) >>> 0 } });
-        w.on("message", resolve);
-        w.on("error", reject);
-      }),
-    );
+    jobs.push(spawn({ kind: "deals", deals: n, seed: (seed + i * 104729) >>> 0 }));
   }
   const parts = await Promise.all(jobs);
   const rep = parts[0];
   for (let i = 1; i < parts.length; i++) merge(rep, parts[i]);
+  const perB = Math.ceil(boards / threads);
+  const eqJobs = [];
+  for (let i = 0; i < threads; i++) {
+    const n = Math.min(perB, boards - i * perB);
+    if (n <= 0) break;
+    eqJobs.push(spawn({ kind: "equilibrium", boards: n, seed: (seed + 7 + i * 7919) >>> 0, precision: "standard" }));
+  }
+  const eqParts = await Promise.all(eqJobs);
+  const eq = eqParts[0];
+  for (let i = 1; i < eqParts.length; i++) mergeEq(eq, eqParts[i]);
+  for (const id of ["c1", "o2", "o4"]) eq.both.river[id].boardsTotal = eq.boards;
+  const equilibrium = {
+    boards: eq.boards,
+    precision: eq.precision,
+    variants: {
+      flop: { flop: finishEq(eq.flop.flop), value: eq.flop.flop.value / (eq.flop.flop.n || 1) },
+      river: { river: finishEq(eq.river.river), value: eq.river.river.value / (eq.river.river.n || 1) },
+      both: {
+        flop: finishEq(eq.both.flop),
+        value: eq.both.flop.value / (eq.both.flop.n || 1),
+        river: Object.fromEntries(["c1", "o2", "o4"].map((id) => [id, finishEq(eq.both.river[id], true)])),
+      },
+    },
+  };
   const D = rep.deals;
   const out = {
     meta: { deals: D, seed, threads, generatedAt: new Date().toISOString(), dropUnit: DROP_UNIT, seconds: (Date.now() - t0) / 1000 },
+    equilibrium,
     showdown: { hist: rep.showdown.hist.map((n) => n / D), scoop: rep.showdown.scoop / D, meanAbs: rep.showdown.absSum / D },
     variants: {},
   };
@@ -189,7 +276,8 @@ if (!isMainThread) {
   }
   const path = join(here, "..", "data", "cube-report.json");
   writeFileSync(path, JSON.stringify(out));
-  console.log(`Wrote ${path}: ${D} deals in ${out.meta.seconds.toFixed(1)} s`);
+  console.log(`Wrote ${path}: ${D} face-up deals and ${equilibrium.boards} equilibrium boards in ${out.meta.seconds.toFixed(1)} s`);
+  for (const id of ["flop", "river", "both"]) console.log("equilibrium", id, JSON.stringify(equilibrium.variants[id], (k, v) => (typeof v === "number" ? +v.toFixed(3) : v)));
   for (const id of ["flop", "river", "both"]) {
     const v = out.variants[id];
     console.log(id, "btnEV", v.outcome.btnMean.toFixed(3), "flop double", v.flop ? (v.flop.double / v.flop.n).toFixed(3) : "-", "river double", v.river ? (v.river.double / v.river.n).toFixed(3) : "-", "drops", (v.outcome.drops / D).toFixed(3));

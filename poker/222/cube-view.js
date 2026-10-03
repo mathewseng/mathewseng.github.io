@@ -9,7 +9,8 @@ import {
   flipHist,
   gradeChoice,
 } from "./engine.mjs";
-import { el, signed, pct, cubeFace, renderDecisionTable, metric, evColor, pctColor, paint } from "./ui.js";
+import { el, signed, pct, cubeFace, renderDecisionTable, renderOptionTable, metric, evColor, pctColor, paint } from "./ui.js";
+import { hiddenOptions } from "./table-view.js";
 
 export function ownerLabel(cube, names) {
   return cube.owner == null ? "centered" : names[cube.owner];
@@ -92,6 +93,52 @@ export function renderCubePanel(panel, { faceEl, titleEl, subEl, bodyEl }, situa
   renderDecisionTable(t2, a, "response", gradeChoice(a, "response", null), { level: cube.level, preview: true });
   d2.append(t2);
   wrap.append(d1, d2);
+  bodyEl.append(wrap);
+}
+// Panel for the hidden-information model: the pending decision's equilibrium
+// (or a note when no action is pending on this street).
+export function renderHiddenCubePanel(panel, { faceEl, titleEl, subEl, bodyEl }, view, { names, cube, street, btn, hands }) {
+  const known = (seat) => !hands || Boolean(hands[seat]);
+  faceEl.replaceChildren(cubeFace(cube.level, ownerLabel(cube, names)));
+  bodyEl.replaceChildren();
+  const streetWord = ["Preflop", "Flop", "Turn", "River"][street];
+  const d = view?.decision;
+  if (!d) {
+    const v = view?.action?.variant;
+    titleEl.textContent = `${streetWord}: hands hidden, no cube action here`;
+    subEl.textContent = !view
+      ? "Computing…"
+      : v?.riverActor && street < 3
+        ? `${v.name}. Seat numbers are against the opponent's ${view.stats?.conditioned ? "range after the flop cube action" : "full range"}. The river cube decision is solved when the river is dealt.`
+        : `${v?.name ?? ""}. Seat numbers are against the opponent's full range; the flop cube decision is solved when the flop is dealt.`;
+    return;
+  }
+  const data = d.data;
+  const actorName = names[d.actor],
+    other = names[d.responder];
+  const verb = cube.level > 1 ? "redouble" : "double";
+  const mix = data.actor.pDouble;
+  titleEl.textContent = known(d.actor) ? `${streetWord}: ${actorName} to act — equilibrium ${verb}s ${pct(mix, 0)} with this hand` : `${streetWord}: ${actorName} to act (hand unknown)`;
+  subEl.textContent = `Hidden hands. Equities are for each seat's actual hand against the opponent's equilibrium range, in points at cube ${cube.level}. Across the whole range ${actorName} ${verb}s ${pct(data.freq.double, 0)} of hands; a ${verb} is dropped ${pct(data.freq.drop, 0)}, taken ${pct(data.freq.take, 0)} and beavered ${pct(data.freq.beaver, 0)} of the time.`;
+  const row = el("div", "cube-stats");
+  const value = d.kind === "flop" ? data.value : d.solve.river.now.value * (d.actor === btn ? 1 : -1);
+  row.append(metric(`${names[btn]} value`, signed(value), { heat: evColor(value, 5 * cube.level) }));
+  if (known(d.actor)) row.append(metric(`${actorName} ${verb}s`, pct(mix, 0), { heat: pctColor(mix) }));
+  row.append(metric("Range doubles", pct(data.freq.double, 0), { heat: pctColor(data.freq.double) }), metric("Solve", `${d.solve.sampled.pairs.toLocaleString("en-US")} hand pairs`, {}));
+  bodyEl.append(row);
+  const wrap = el("div", "cube-tables");
+  const block = (title, kind, chooser) => {
+    const box = el("div");
+    box.append(el("h3", "", title));
+    const t = el("div");
+    renderOptionTable(t, hiddenOptions(data, kind, cube.level), { preview: true, level: cube.level, chooser });
+    box.append(t);
+    wrap.append(box);
+  };
+  if (known(d.actor)) block(`${actorName}: ${verb} or not`, "double", actorName);
+  if (known(d.responder)) block(`${other}: reply to a ${verb}`, "response", other);
+  if (known(d.actor)) block(`${actorName}: reply to a beaver`, "beaverReply", actorName);
+  if (!known(d.actor) || !known(d.responder)) bodyEl.append(el("p", "muted small", "Tables are shown only for known hands; the unknown seat is represented by its full range."));
   bodyEl.append(wrap);
 }
 export function fillVariantSelect(select, value = "both") {

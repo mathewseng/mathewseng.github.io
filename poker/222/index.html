@@ -53,9 +53,13 @@
             <select id="precision">
               <option value="fast">Fast</option>
               <option value="standard" selected>Standard</option>
-              <option value="exact">Exact</option>
+              <option value="exact">Exact / deep</option>
             </select>
           </div>
+          <label class="control check" title="Show perfect-information numbers even while a cube action remains">
+            <input type="checkbox" id="sim-tabled" />
+            <span>Table hands</span>
+          </label>
           <div class="spacer"></div>
           <div class="buttons">
             <button id="sim-board" class="quiet">New board</button>
@@ -134,8 +138,9 @@
             <label class="field"><span class="label">Precision</span><select id="spot-precision">
               <option value="fast">Fast</option>
               <option value="standard" selected>Standard</option>
-              <option value="exact">Exact</option>
+              <option value="exact">Exact / deep</option>
             </select></label>
+            <label class="control check"><input type="checkbox" id="spot-tabled" /><span>Table hands (perfect information)</span></label>
             <div class="buttons">
               <button type="button" id="spot-random" class="quiet">Random spot</button>
               <button type="button" id="spot-from-sim" class="quiet">Copy from simulator</button>
@@ -188,7 +193,7 @@
             <select id="tr-precision">
               <option value="fast">Fast</option>
               <option value="standard" selected>Standard</option>
-              <option value="exact">Exact</option>
+              <option value="exact">Exact / deep</option>
             </select>
           </div>
           <div class="spacer"></div>
@@ -322,7 +327,7 @@
       <div class="dialog-body">
         <h3>The game</h3>
         <ul>
-          <li>Two to seven players each get six cards. A five-card board is dealt flop, turn, river. All cards are face up: 222 is a flipping game.</li>
+          <li>Two to seven players each get six cards. A five-card board is dealt flop, turn, river. Hole cards are private while a cube action remains; once no action is left (or at a table with no cube) every hand is tabled and the rest is a flip.</li>
           <li>Once a flop is out, each six-card hand is split automatically into three two-card Omaha hands. Each uses exactly two hole cards and exactly three board cards.</li>
           <li><b>Hand 1</b> is the two hole cards used by the best Omaha hand you can make from all six. <b>Hand 2</b> is the best pair from the remaining four. <b>Hand 3</b> is the last two cards.</li>
           <li>When several pairs make the same best hand, the higher-ranked cards are used, then the higher suit: spades, hearts, diamonds, clubs.</li>
@@ -339,8 +344,9 @@
         <ul>
           <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The opponent may <b>drop</b> (the doubler wins 5 points per unit of the cube before the double), <b>take</b> (the cube doubles and the taker owns it; only the owner may redouble), or <b>beaver</b> (take and immediately redouble while keeping the cube; the doubler may then take at four times or drop for twice the usual cost).</li>
           <li><b>Flop cube:</b> the button may double on the flop. <b>River cube:</b> the button may double on the river. <b>Flop and river:</b> the button may double on the flop; on the river the non-button may double if the cube is still centered, otherwise the cube owner may redouble.</li>
-          <li>Showdown pays the net points times the cube. The game is played face up, so the solver values every decision exactly: flop decisions enumerate every turn and river, with the river cube resolved by backward induction. The equities shown are in points at the current cube.</li>
-          <li>"Too good to double" means the opponent would drop a double, yet playing on for the full score is worth more than the 5-point drop.</li>
+          <li>Showdown pays the net points times the cube.</li>
+          <li><b>Hidden information.</b> While a cube action remains, each seat's numbers are against the opponent's range: every hand the opponent could hold given the cards you see, weighted by the equilibrium strategy once a cube action has been taken. The solver samples hands for both players and turn-and-river runouts and runs counterfactual regret minimization over the whole cube tree (flop decision, replies, beaver, and the river decision for the flop-and-river variant), so strategies can be mixed. Equities are for your actual hand against the opponent's equilibrium range, in points at the current cube.</li>
+          <li><b>Tabled.</b> Once no cube action remains the hands are turned up and the numbers are exact (or finely sampled) over every runout. Tick "Table hands" in the simulator or spot solver to see the face-up analysis of a pending decision, where "too good to double" means the opponent would drop yet playing on is worth more than the drop.</li>
         </ul>
       </div>
     </dialog>

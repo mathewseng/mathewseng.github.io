@@ -106,12 +106,24 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
   const n = hands.length;
   const flopOut = board.length >= 3;
   const maxHand = POINTS.map((p) => p * (n - 1));
+  const rangeMode = stats?.mode === "range";
   hands.forEach((hand, i) => {
     const seat = el("section", `seat${highlight === i ? " me" : ""}${pending ? " pending" : ""}`);
     const head = el("div", "seat-head");
     const title = el("h3", "", names?.[i] ?? `Seat ${i + 1}`);
     head.append(title);
     if (btn === i) head.append(el("span", "tag btn-tag", "BTN"));
+    if (!hand) {
+      head.append(el("span", "tag", "Hidden"));
+      seat.append(head);
+      const row = el("div", "cards");
+      for (let k = 0; k < 6; k++) row.append(cardBack());
+      seat.append(row);
+      seat.append(el("p", "muted small", "Cards stay hidden until no cube action remains."));
+      container.append(seat);
+      return;
+    }
+    if (rangeMode) head.append(el("span", "tag range-tag", stats.conditioned ? "vs range after cube action" : "vs range"));
     const p = stats?.players?.[i];
     const total = el("div", "seat-total");
     const evNode = el("b", "", p ? signed(p.ev) : "…");
@@ -174,9 +186,8 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
       metric("Scoop EV", p ? signed(scoopEv) : "…", { heat: p ? evColor(scoopEv, SCOOP_BONUS * (n - 1) * 0.5) : null, note: "pts" }),
       metric("Scoop", p ? pct(p.scoop) : "…", { heat: p ? pctColor(p.scoop, 0, 0.5) : null }),
     );
-    if (n === 2 && p) {
-      const hist = stats.hist;
-      const scooped = hist ? hist[i === 0 ? 0 : 2 * MAX_NET] : null;
+    if (n === 2 && p?.hist) {
+      const scooped = p.hist[0];
       foot.append(metric("Get scooped", pct(scooped), { heat: pctColor(1 - scooped, 0.5, 1) }));
     }
     seat.append(foot);
@@ -241,6 +252,36 @@ export function renderDecisionTable(container, a, kind, grade, { chooser, level,
   else parts.push(`Dropping the beaver costs ${(-a.beaverDrop).toFixed(0)}; taking plays on at ${4 * level}`);
   if (label) parts.unshift(label);
   notes.textContent = parts.join(" · ");
+  container.append(notes);
+}
+// Option table for a hidden-information decision. grade: { options: [{id, label, eq, prob}], best, chosen?, error? }.
+export function renderOptionTable(container, grade, { preview = false, level = 1, note, chooser } = {}) {
+  container.replaceChildren();
+  const table = el("table", "cube-table");
+  const head = el("tr");
+  head.append(el("th", "", "Option"), el("th", "num", "Mix"), el("th", "num", "Equity (pts)"), el("th", "num", "Loss"), el("th", "", ""));
+  table.append(head);
+  const bestEq = grade.options.find((o) => o.id === grade.best).eq;
+  for (const o of grade.options) {
+    const tr = el("tr", `${o.id === grade.best ? "best" : ""}${!preview && o.id === grade.chosen ? " chosen" : ""}`);
+    const mix = el("td", "num");
+    const mixV = el("span", "stat-value", pct(o.prob, 0));
+    paint(mixV, pctColor(o.prob, 0, 1));
+    mix.append(mixV);
+    const eq = el("td", "num");
+    paint(eq, evColor(o.eq, 10 * level));
+    eq.textContent = signed(o.eq);
+    const loss = el("td", "num muted", o.id === grade.best ? "—" : signed(o.eq - bestEq));
+    const flag = el("td", "flag");
+    if (o.id === grade.best) flag.append(el("span", "tag good", "Best"));
+    if (!preview && o.id === grade.chosen) flag.append(el("span", `tag ${grade.error > 0.005 ? "bad" : "good"}`, grade.error > 0.005 ? `Chosen · −${grade.error.toFixed(2)}` : "Chosen ✓"));
+    tr.append(el("td", "", o.label), mix, eq, loss, flag);
+    table.append(tr);
+  }
+  container.append(table);
+  const notes = el("p", "muted cube-notes");
+  const whose = !chooser ? "this" : chooser === "you" || chooser === "your" ? "your" : `${chooser}'s`;
+  notes.textContent = [note, `Mix is how often the equilibrium takes each option with ${whose} hand; equities are against the opponent's equilibrium range at cube ${level}.`].filter(Boolean).join(" · ");
   container.append(notes);
 }
 function labelFor(kind, o, a) {

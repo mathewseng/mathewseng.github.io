@@ -1,7 +1,11 @@
 // Table simulator: 2–7 players, step through the streets, edit any card.
-import { FULL_DECK, dealTable, shuffledDeck, remainingDeck, VARIANTS } from "./engine.mjs";
-import { $, el, button, cardEl, renderSeats, fmtInt, signed, STREET_CARDS, streetName } from "./ui.js";
-import { cubeSituation, renderCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
+// Two-player tables follow the information model: numbers are against the
+// opponent's range while a cube action remains, and perfect information once
+// hands are tabled (or when "Table hands" is ticked).
+import { dealTable, shuffledDeck, remainingDeck } from "./engine.mjs";
+import { $, el, button, cardEl, renderSeats, fmtInt, STREET_CARDS, streetName } from "./ui.js";
+import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
+import { computeView, historyFromCube } from "./table-view.js";
 
 export function initSimulator({ pool }) {
   const sim = {
@@ -13,9 +17,8 @@ export function initSimulator({ pool }) {
     variant: "both",
     cube: { level: 1, owner: null },
     selected: null,
-    stats: null,
+    view: null,
     token: 0,
-    cache: new Map(),
   };
   const names = () => sim.hands.map((_, i) => `Seat ${i + 1}`);
   const visibleBoard = () => sim.board.slice(0, STREET_CARDS[sim.street]);
@@ -33,17 +36,18 @@ export function initSimulator({ pool }) {
   fillVariantSelect($("sim-variant"), sim.variant);
   $("sim-variant").addEventListener("change", () => {
     sim.variant = $("sim-variant").value;
-    render();
+    recompute();
   });
   $("sim-btn").addEventListener("change", () => {
     sim.btn = Number($("sim-btn").value);
-    render();
+    recompute();
   });
   $("sim-cube-state").addEventListener("change", () => {
     sim.cube = parseCubeState($("sim-cube-state").value);
-    render();
+    recompute();
   });
-  $("precision").addEventListener("change", () => recompute());
+  $("sim-tabled").addEventListener("change", recompute);
+  $("precision").addEventListener("change", recompute);
   $("sim-deal").addEventListener("click", newDeal);
   $("sim-board").addEventListener("click", () => {
     const deck = shuffledDeck().filter((c) => !sim.hands.some((h) => h.includes(c)));
@@ -67,26 +71,28 @@ export function initSimulator({ pool }) {
     sim.street = Math.max(0, Math.min(3, s));
     recompute();
   }
-  function key() {
-    return JSON.stringify([sim.hands, visibleBoard(), precision()]);
+  function spec() {
+    return {
+      hands: sim.hands,
+      board: visibleBoard(),
+      street: sim.street,
+      variant: sim.variant,
+      btn: sim.btn,
+      cube: sim.cube,
+      cubeEnabled: sim.n === 2,
+      history: historyFromCube(sim.cube, sim.variant, sim.street),
+      forceTabled: $("sim-tabled").checked,
+      precision: precision(),
+    };
   }
   async function recompute() {
-    const k = key();
     const token = ++sim.token;
-    const cached = sim.cache.get(k);
-    if (cached) {
-      sim.stats = cached;
-      render();
-      return;
-    }
-    sim.stats = null;
+    sim.view = null;
     render();
     try {
-      const stats = await pool.stats(sim.hands, visibleBoard(), { precision: precision() });
+      const view = await computeView(pool, spec());
       if (token !== sim.token) return;
-      if (sim.cache.size > 60) sim.cache.delete(sim.cache.keys().next().value);
-      sim.cache.set(k, stats);
-      sim.stats = stats;
+      sim.view = view;
       render();
     } catch (error) {
       console.error(error);
@@ -103,7 +109,6 @@ export function initSimulator({ pool }) {
     if (!sel) return;
     const where = locate(card);
     const from = locate(sel.card);
-    // Place `card` where the selected card was, and the selected card where `card` was (if held).
     setAt(from, card);
     if (where) setAt(where, sel.card);
     sim.selected = null;
@@ -123,15 +128,13 @@ export function initSimulator({ pool }) {
   }
   function render() {
     const board = visibleBoard();
-    // streets
+    const view = sim.view;
     const steps = $("sim-streets");
     steps.replaceChildren();
-    for (let s = 0; s < 4; s++)
-      steps.append(button(streetName(s), `${s === sim.street ? "active" : s < sim.street ? "done" : ""}`, () => setStreet(s)));
+    for (let s = 0; s < 4; s++) steps.append(button(streetName(s), `${s === sim.street ? "active" : s < sim.street ? "done" : ""}`, () => setStreet(s)));
     $("sim-back").disabled = sim.street === 0;
     $("sim-next").disabled = sim.street === 3;
     $("sim-next").textContent = sim.street < 3 ? `Deal ${streetName(sim.street + 1).toLowerCase()} ▶` : "River dealt";
-    // board
     const bc = $("sim-board-cards");
     bc.replaceChildren();
     for (let i = 0; i < 5; i++) {
@@ -144,32 +147,38 @@ export function initSimulator({ pool }) {
     }
     const meta = $("sim-meta");
     meta.replaceChildren();
-    if (sim.stats) {
-      const s = sim.stats;
-      meta.append(spanb(`${s.exact ? "Exact" : "Sampled"}: `, `${fmtInt(s.count)} runouts`), spanb("Compute: ", `${s.ms.toFixed(0)} ms`));
-      if (!s.exact) meta.append(spanb("Possible: ", `${fmtInt(s.total)}`));
+    if (view) {
+      if (view.mode === "perfect") {
+        const s = view.stats;
+        meta.append(el("span", "tag info-tag", "Tabled · perfect information"));
+        meta.append(spanb(`${s.exact ? "Exact" : "Sampled"}: `, `${fmtInt(s.count)} runouts`), spanb("Compute: ", `${s.ms.toFixed(0)} ms`));
+      } else {
+        meta.append(el("span", "tag info-tag", "Hidden hands · numbers vs range"));
+        const p0 = view.stats.players.find(Boolean);
+        if (p0) meta.append(spanb(`${p0.exact ? "Exact" : "Sampled"}: `, `${fmtInt(p0.count)} opponent hands × runouts`));
+        if (view.decision) meta.append(spanb("Solver: ", `${view.decision.solve.ms} ms`));
+      }
     } else meta.append(el("span", "muted", "Computing…"));
-    // cube panel (2 players)
     const panel = $("sim-cube");
     panel.hidden = sim.n !== 2;
     if (sim.n === 2) {
-      const situation = cubeSituation({ stats: sim.stats, street: sim.street, btn: sim.btn, variant: sim.variant, cube: sim.cube });
-      renderCubePanel(panel, { faceEl: $("sim-cube-face"), titleEl: $("sim-cube-title"), subEl: $("sim-cube-sub"), bodyEl: $("sim-cube-body") }, situation, {
-        names: names(),
-        cube: sim.cube,
-        street: sim.street,
-        btn: sim.btn,
-      });
+      const els = { faceEl: $("sim-cube-face"), titleEl: $("sim-cube-title"), subEl: $("sim-cube-sub"), bodyEl: $("sim-cube-body") };
+      if (!view || view.mode === "hidden") renderHiddenCubePanel(panel, els, view, { names: names(), cube: sim.cube, street: sim.street, btn: sim.btn, hands: sim.hands });
+      else {
+        const situation = cubeSituation({ stats: view.stats, street: sim.street, btn: sim.btn, variant: sim.variant, cube: sim.cube });
+        renderCubePanel(panel, els, situation, { names: names(), cube: sim.cube, street: sim.street, btn: sim.btn });
+        if (view.action.remaining) $("sim-cube-sub").textContent += " Hands are tabled by request: this is the face-up analysis, not the hidden-information equilibrium.";
+      }
     }
     renderSeats($("sim-seats"), {
       hands: sim.hands,
       board,
-      stats: sim.stats,
+      stats: view?.stats ?? null,
       names: names(),
       btn: sim.n === 2 ? sim.btn : undefined,
       onCardClick,
       selected: sim.selected,
-      pending: !sim.stats,
+      pending: !view,
     });
     renderDeck();
   }
@@ -223,6 +232,3 @@ export function initSimulator({ pool }) {
     },
   };
 }
-void FULL_DECK;
-void VARIANTS;
-void signed;

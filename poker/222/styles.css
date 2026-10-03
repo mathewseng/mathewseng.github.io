@@ -147,6 +147,8 @@ main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 90px; padding-left:
 .seat-total b { font-size: 20px; padding: 1px 7px; border-radius: 5px; font-variant-numeric: tabular-nums; }
 .tag { font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #2a3036; color: #c0c8ce; }
 .tag.btn-tag { background: var(--amber); color: #2b1a05; }
+.tag.range-tag { background: #1d2a3a; color: #7fb5ff; }
+.tag.info-tag { background: #2a2234; color: #d4b2ff; }
 .tag.good { background: var(--green-dark); color: var(--green); }
 .tag.bad { background: #4a2424; color: var(--red); }
 .hand-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -273,6 +275,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 90px; padding-left:
 .offline .dot { background: var(--faint); }
 
 /* ---------- reports ---------- */
+.section-title { font-size: 16px; margin: 6px 0 8px; }
 .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-bottom: 14px; }
 .report-card { background: var(--panel); border: 1px solid var(--soft-line); border-radius: 10px; padding: 12px; min-width: 0; }
 .report-card h2 { margin-bottom: 4px; }
