@@ -138,7 +138,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 90px; padding-left:
 /* ---------- seats ---------- */
 .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; margin-bottom: 16px; }
 .seats.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-.seat { background: var(--panel); border: 1px solid var(--soft-line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.seat { container-type: inline-size; background: var(--panel); border: 1px solid var(--soft-line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .seat.me { border-color: #2f6d5a; box-shadow: inset 0 0 0 1px #2f6d5a; }
 .seat.pending .stat-value { opacity: 0.55; }
 .seat-head { display: flex; align-items: center; gap: 8px; }
@@ -162,12 +162,26 @@ main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 90px; padding-left:
 .hand-group.whole .hand-metrics { grid-template-columns: repeat(3, 1fr); }
 .hand-group.whole .hand-metrics > .metric { grid-column: span 1; }
 .hand-group.whole .hand-metrics { display: grid; grid-template-columns: repeat(9, 1fr); }
+.preflop-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.preflop-table th { text-align: left; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--faint); font-weight: 600; padding: 2px 4px; }
+.preflop-table td { padding: 2px 4px; border-top: 1px solid var(--soft-line); color: var(--muted); }
+.preflop-table th.num, .preflop-table td.num { text-align: right; }
 .metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .metric .stat-label { font-size: 9.5px; letter-spacing: 0.4px; }
 .stat-value { font-weight: 650; font-variant-numeric: tabular-nums; padding: 2px 5px; border-radius: 4px; display: inline-block; font-size: 13px; }
 .metric.big .stat-value { font-size: 18px; }
 .stat-note { font-size: 10px; color: var(--faint); }
 .seat-foot { display: flex; flex-wrap: wrap; gap: 6px 16px; border-top: 1px solid var(--soft-line); padding-top: 7px; }
+
+@container (max-width: 420px) {
+  .hand-metrics { grid-template-columns: 1fr; }
+  .hand-groups { gap: 4px; }
+  .hand-group { padding: 6px 6px; }
+}
+@container (max-width: 300px) {
+  .hand-groups { grid-template-columns: 1fr; }
+  .hand-metrics { grid-template-columns: repeat(3, 1fr); }
+}
 
 /* ---------- deck ---------- */
 .deck-panel { background: var(--panel); border: 1px solid var(--soft-line); border-radius: 10px; padding: 10px 12px; }
@@ -218,6 +232,8 @@ main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 90px; padding-left:
 .analysis { background: var(--panel); border: 1px solid var(--soft-line); border-radius: 10px; padding: 12px; }
 .analysis h2 { margin-bottom: 6px; }
 .analysis .cube-table { font-size: 12px; }
+.decision-block + .decision-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--soft-line); }
+.decision-block h3 { color: var(--muted); font-weight: 600; }
 .session-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
 .log { list-style: none; margin: 6px 0 0; padding: 0; max-height: 320px; overflow: auto; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
 .log li { color: var(--muted); padding: 2px 0; border-bottom: 1px dashed var(--soft-line); }

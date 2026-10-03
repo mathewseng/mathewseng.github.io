@@ -140,7 +140,10 @@ export function initSpot({ pool, sim }) {
   }
   return {
     shown() {
-      if (!st.result && !$("spot-hand-0").value) fillRandom();
+      if (!st.result && !$("spot-hand-0").value) {
+        fillRandom();
+        solve();
+      }
     },
   };
 }

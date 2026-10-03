@@ -134,11 +134,23 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
       const row = el("div", "cards");
       sortedHand.forEach((c) => row.append(cardNode(c)));
       g.append(row);
-      const m = el("div", "hand-metrics");
+      const t = el("table", "preflop-table");
+      const head = el("tr");
+      head.append(el("th", "", ""), el("th", "num", "EV"), el("th", "num", "Win"), el("th", "num", "Tie"));
+      t.append(head);
       [0, 1, 2].forEach((h) => {
-        m.append(handMetric(h, p, n, maxHand[h]));
+        const tr = el("tr");
+        tr.append(el("td", "", `Hand ${h + 1} · ${POINTS[h]} pt${POINTS[h] > 1 ? "s" : ""}`));
+        const ev = el("td", "num");
+        ev.append(paint(el("span", "stat-value", p ? signed(p.evHand[h]) : "…"), p ? evColor(p.evHand[h], maxHand[h] * 0.6) : { color: "var(--muted)", background: "transparent" }));
+        const win = el("td", "num");
+        win.append(paint(el("span", "stat-value", p ? pct(p.win[h]) : "…"), p ? pctColor(p.win[h], 0, n === 2 ? 1 : (1 / n) * 2.5) : { color: "var(--muted)", background: "transparent" }));
+        const tie = el("td", "num");
+        tie.append(paint(el("span", "stat-value", p ? pct(p.tie[h]) : "…"), p ? pctColor(p.tie[h], 0, 0.5) : { color: "var(--muted)", background: "transparent" }));
+        tr.append(ev, win, tie);
+        t.append(tr);
       });
-      g.append(m);
+      g.append(t);
       groups.append(g);
     } else {
       const split = describeSplit(hand, board);

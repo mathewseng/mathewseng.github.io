@@ -56,10 +56,13 @@ test("five-card categories and ordering", () => {
 
 test("Omaha value uses exactly two hole cards and three board cards", () => {
   const board = new Board(P("Ah Kh Qh Jh 2c"));
-  // One heart in the hand: no flush, but a Broadway straight with T.
-  assert.equal(categoryOf(omahaValue(board, ...P("Th 3c"))), 4);
-  // Two hearts complete the flush.
-  assert.equal(categoryOf(omahaValue(board, ...P("Th 3h"))), 8);
+  // A lone ten cannot make the straight: only three board cards may play.
+  assert.equal(categoryOf(omahaValue(board, ...P("Th 3c"))), 0);
+  // Ten and nine with K Q J make a straight; in hearts, a straight flush.
+  assert.equal(categoryOf(omahaValue(board, ...P("Th 9c"))), 4);
+  assert.equal(categoryOf(omahaValue(board, ...P("Th 9h"))), 8);
+  // Two hearts without the straight: a flush.
+  assert.equal(categoryOf(omahaValue(board, ...P("Th 3h"))), 5);
   // Four hearts on board do not make a flush with one heart, and no ten means no straight.
   assert.equal(categoryOf(omahaValue(board, ...P("9h 3c"))), 0);
   // Two hearts without a ten: flush, not a straight flush.

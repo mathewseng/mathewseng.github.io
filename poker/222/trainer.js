@@ -81,6 +81,7 @@ export function initTrainer({ pool }) {
     tr.pending = null;
     tr.snapshots = [];
     tr.shown = null;
+    tr.decisionsThisHand = [];
     trLog(`New hand (${variant().name}). ${NAMES[tr.btn]} ${you(tr.btn) ? "are" : "is"} on the button.`, true);
     computeStreet();
   }
@@ -151,6 +152,7 @@ export function initTrainer({ pool }) {
       tr.lost += grade.error;
     }
     tr.shown = { a, kind, grade, chooser: seat, level: tr.cube.level, street: tr.street, preview: false };
+    tr.decisionsThisHand.unshift(tr.shown);
   }
   function decide(seat, choice) {
     if (tr.phase !== "decision" || tr.actor !== seat) return;
@@ -336,28 +338,30 @@ export function initTrainer({ pool }) {
   function renderAnalysis() {
     const body = $("tr-analysis-body");
     body.replaceChildren();
-    const sh = tr.shown;
     const note = $("tr-analysis-note");
-    if (!sh) {
+    const list = tr.shown?.preview ? [tr.shown, ...(tr.decisionsThisHand ?? [])] : tr.decisionsThisHand ?? [];
+    if (!list.length) {
       $("tr-analysis-title").textContent = "Cube analysis";
       note.hidden = false;
       return;
     }
     note.hidden = true;
-    const who = NAMES[sh.chooser];
-    const kindLabel = sh.kind === "double" ? (sh.level > 1 ? "redouble decision" : "double decision") : sh.kind === "response" ? "reply to the double" : "reply to the beaver";
-    $("tr-analysis-title").textContent = `${sh.preview ? "Preview: " : ""}${streetName(sh.street)} ${kindLabel} (${who})`;
-    renderDecisionTable(body, sh.a, sh.kind, sh.grade, { level: sh.level, preview: sh.preview, label: `Equities for ${who.toLowerCase()} at cube ${sh.level}` });
-    if (!sh.preview && sh.chooser === YOU) {
-      const verdict = el("p", `small ${sh.grade.error > 1e-6 ? "error" : ""}`);
-      verdict.textContent = sh.grade.error > 1e-6 ? `Mistake: ${sh.grade.error.toFixed(2)} points given up.` : "Correct.";
-      if (sh.grade.error <= 1e-6) verdict.style.color = "var(--green)";
-      body.append(verdict);
-    }
-    if (sh.kind === "double") {
-      const p = el("p", "small muted");
-      p.textContent = `Cubeless EV ${signed(sh.a.cubeless)} pts, ${pct(sh.a.winProb)} to win the points.`;
-      body.append(p);
+    $("tr-analysis-title").textContent = "Cube decisions this hand";
+    for (const sh of list) {
+      const who = NAMES[sh.chooser];
+      const kindLabel = sh.kind === "double" ? (sh.level > 1 ? "redouble decision" : "double decision") : sh.kind === "response" ? "reply to the double" : "reply to the beaver";
+      const block = el("div", "decision-block");
+      block.append(el("h3", "", `${sh.preview ? "Preview: " : ""}${streetName(sh.street)} ${kindLabel} (${who})`));
+      const table = el("div");
+      renderDecisionTable(table, sh.a, sh.kind, sh.grade, { level: sh.level, preview: sh.preview, label: `Equities for ${who.toLowerCase()} at cube ${sh.level}` });
+      block.append(table);
+      if (!sh.preview && sh.chooser === YOU) {
+        const verdict = el("p", `small ${sh.grade.error > 1e-6 ? "error" : ""}`);
+        verdict.textContent = sh.grade.error > 1e-6 ? `Mistake: ${sh.grade.error.toFixed(2)} points given up.` : "Correct.";
+        if (sh.grade.error <= 1e-6) verdict.style.color = "var(--green)";
+        block.append(verdict);
+      }
+      body.append(block);
     }
   }
   function renderSession() {

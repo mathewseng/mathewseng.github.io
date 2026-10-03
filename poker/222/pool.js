@@ -55,7 +55,7 @@ export class Pool {
     if (!k) {
       merged = runoutStats(hands, board, { exact, samples: p.samples, rng: makeRng(seed) });
     } else {
-      const parts = Math.min(k, exact ? Math.max(1, Math.min(k, 52 - 6 * n - board.length)) : k);
+      const parts = board.length >= 5 ? 1 : Math.min(k, exact ? Math.max(1, Math.min(k, 52 - 6 * n - board.length)) : k);
       const base = (seed ?? (Math.random() * 2 ** 31) >>> 0) >>> 0;
       const jobs = [];
       for (let i = 0; i < parts; i++)

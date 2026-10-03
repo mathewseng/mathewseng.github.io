@@ -42,6 +42,11 @@ export function renderCubePanel(panel, { faceEl, titleEl, subEl, bodyEl }, situa
   const s = situation;
   const streetWord = ["Preflop", "Flop", "Turn", "River"][street];
   bodyEl.replaceChildren();
+  if (!s.analysis && street === 0 && s.variant.flopActor) {
+    titleEl.textContent = "Preflop: no cube action yet";
+    subEl.textContent = `${s.variant.name}: ${names[btn]} decides on the flop. Cube values appear from the flop on.`;
+    return;
+  }
   if (!s.analysis) {
     titleEl.textContent = `${streetWord}: no cube action`;
     const ra = street >= 3 ? null : riverActor(s.variant, btn, cube);
