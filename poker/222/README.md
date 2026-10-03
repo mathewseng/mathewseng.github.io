@@ -14,37 +14,37 @@ When several candidate pairs make the same best hand, the higher-ranked cards ar
 
 ## Doubling cube (two players)
 
-Backgammon terms, hands face up. The cube starts centered at 1. **Double** offers to play on for twice the stake. The opponent may **drop** (the doubler wins 5 points per unit of the cube before the double), **take** (the cube doubles and the taker owns it), or **beaver** (take and immediately redouble while keeping the cube; the doubler may then take at four times or drop for twice the usual cost). Showdown pays the net points times the cube.
+Backgammon terms, hidden hands. The cube starts centered at 1. **Double** offers to play on for twice the stake. The player doubled may **drop** (losing 6 points per unit of the cube before the double), **take** (the cube doubles and the player doubled owns it), or **beaver**: take and immediately redouble while keeping the cube. The doubler may then drop (12 per unit), take at four times, or **raccoon** (redouble again), and so on (rebeaver, reraccoon, …) until the cube reaches 64. Dropping the k-th raise of a chain always costs 6 times the cube level before that raise. Showdown pays the net points times the cube.
 
-Variants:
+Seven variants: every non-empty combination of **preflop**, **flop** and **river** as cube streets (the turn never has action). The button gets the first cube opportunity. While the cube is centered the opportunity alternates between the players on later cube streets; once the cube is taken, its owner may redouble on any later cube street. So in the flop-and-river variant the button may double on the flop and the non-button may double on the river if the cube is still centered, otherwise the owner may redouble.
 
-- **Flop cube**: the button may double on the flop; no river action.
-- **River cube**: the button may double on the river.
-- **Flop and river**: the button may double on the flop; on the river the non-button may double if the cube is still centered, otherwise the cube owner may redouble.
+## Hidden information and the solver
 
-## Hidden information
+While a cube action remains, each seat's numbers are against the opponent's **range**: every hand the opponent could hold given the visible cards, weighted by the equilibrium strategy once a cube action has been taken (after a flop take, the button's range is its doubling range and the opponent's range is its taking range). Once no cube action remains the hands are tabled and `engine.mjs` enumerates every runout (or samples when the count is large), so the numbers become perfect-information.
 
-While a cube action remains, each seat's numbers are against the opponent's **range**: every hand the opponent could hold given the visible cards, weighted by the equilibrium strategy once a cube action has been taken (after a flop take, for example, the button's range is its doubling range and the opponent's range is its taking range). The solver in `solver.mjs` samples hands for both players and turn-and-river runouts, then runs counterfactual regret minimization (CFR+) over the whole cube tree: the flop double, the drop/take/beaver reply, the beaver reply, and, in the flop-and-river variant, the river decision in each cube state. Strategies can be mixed; the reported equities are for the actual hand against the opponent's equilibrium range, in points at the current cube. The actual hands are index 0 of their sampled sides, so a known hand's strategy is always available. River decisions on the actual runout are solved as a separate subgame with the ranges carried over from the flop solve.
+`solver.mjs` solves the hidden-information game. It samples hands for both players (the actual hands are index 0 of their side), samples the unknown board cards (flops, then turn-and-river runouts) and runs counterfactual regret minimization (CFR+, alternating updates, delayed quadratic averaging) over every cube decision that remains: the raise chain on the current street and, for every later cube street, another chain in every reachable cube state (no double, taken at 2×, 4×, … with the matching owner), conditioned on everything before. Cube states beyond the modeled multipliers reuse the deepest modeled state's play scaled to their level (their equilibrium reach is tiny). The solve runs until a first-order exploitability bound (how much either player could gain by changing any one decision, weighted by how often it is reached) drops below the tolerance or the iteration cap, then removes probabilities under 1%. The reported mixes are therefore consistent with the reported equities: options in a mix have equal equity within the tolerance, and options with lower equity get 0%. Each result carries its tolerance and exploitability bound. A later street's solve takes the earlier street's hand sets and reach weights (`reach[stateKey]`) as its ranges, so the flop solve in a preflop variant is conditioned on the preflop action, and the river solve on both.
 
-Once no cube action remains the hands are tabled: `engine.mjs` then enumerates every runout (or samples when the count is large) and the numbers are perfect-information. Ticking "Table hands" in the simulator or spot solver shows the face-up analysis of a pending decision (`analyzeDecision`): there a flop decision enumerates all 666 runouts with the river cube resolved by backward induction, and a river decision follows the last-roll rule.
+Large solves (preflop entries, and flop entries with a river stage) are coordinated from the main thread: the entry street's chain runs there while the sampled flops or runout groups are spread across the worker pool (`SubgameHost` in `worker.js`), with one round trip per half-iteration.
+
+Ticking "Table hands" in the simulator or spot solver shows the face-up minimax of a pending decision (`analyzeDecision` / `chainValues`): a flop decision enumerates all 666 runouts with a lone remaining river cube resolved by backward induction; when more than that remains, the face-up view treats later cube streets as cubeless.
 
 ## Pages
 
-- **Simulator**: 2–7 players; step forward and back through the streets; click any card and then a deck card to edit a spot. Two-player tables show each seat's numbers against the opponent's range while a cube action remains and the equilibrium for the pending decision (mix and equity of every option for both actual hands); tick "Table hands" for the face-up view.
-- **Spot solver**: type hands, board, button and cube state and solve. In a two-player spot the second hand may be blank: the first seat is solved against the full range.
-- **Cube trainer**: play the cube game against the equilibrium bot. Its cards stay hidden until no action remains; every decision is graded against the equilibrium in points; review earlier streets with the street buttons.
+- **Simulator**: 2–7 players; step forward and back through the streets; click any card and then a deck card to edit a spot. Two-player tables show each seat's numbers against the opponent's range while a cube action remains and the equilibrium for the pending decision (mix and equity of every option at every chain node for both actual hands); choose the variant, button, cube state and, when ambiguous, the street the cube was taken on. Tick "Table hands" for the face-up view.
+- **Spot solver**: type hands, board, button, cube state and variant and solve. In a two-player spot the second hand may be blank: the first seat is solved against the full range.
+- **Cube trainer**: play any of the seven variants against the equilibrium bot. Its cards stay hidden until no action remains; every decision (double, drop, take, beaver, raccoon, …) is graded against the equilibrium in points; review earlier streets with the street buttons.
 - **Play online**: PeerJS rooms through `shared/peer-room.js`; the host runs the deal and hides other players' hands until they are tabled; every client computes its own range numbers and sees its own decisions graded.
-- **Reports**: how often each cube action is taken per variant, from `data/cube-report.json`: the hidden-information equilibrium over random boards, and face-up play for comparison.
+- **Reports**: equilibrium cube play per variant from `data/cube-report.json`, plus face-up play for comparison.
 
 ## Numbers
 
-EVs are expected net points over the remaining runouts. Against a range they are sampled (exact once at most one card is to come with a weighted range). Once tabled, the worker pool enumerates every completion when the count is below the precision limit (Fast 40,000; Standard 400,000; Exact always) and samples otherwise. The precision setting also picks the solver size (hands sampled per side, runouts, CFR iterations). Win and tie are the chances a hand is the outright best or tied for best at showdown. Colors scale with the number: green is good for the seat shown, red is bad.
+EVs are expected net points over the remaining runouts. Against a range they are sampled (exact once at most one card is to come with a weighted range). Once tabled, the worker pool enumerates every completion when the count is below the precision limit (Fast 40,000; Standard 400,000; Exact always) and samples otherwise. The precision setting also picks the solver size (hands sampled per side, flops, runouts, modeled cube multipliers, iteration cap and tolerance). Win and tie are the chances a hand is the outright best or tied for best at showdown. Colors scale with the number: green is good for the seat shown, red is bad.
 
 ## Regenerate the reports
 
 ```sh
-node poker/222/simulation/cube-report.mjs 200000 12 20261003 480
+node poker/222/simulation/cube-report.mjs 50000 12 20261003 240
 node --test poker/222/tests/engine.test.mjs poker/222/tests/solver.test.mjs
 ```
 
-Arguments are face-up deals, threads, seed and equilibrium boards. Each face-up deal is played under optimal cube strategy in all three variants with the button on seat 1; each equilibrium board is solved with hidden hands at standard precision.
+Arguments are face-up deals, threads, seed and boards. The flop and river variants are solved on that many random boards at standard precision across the threads; each preflop variant is one game solved in-process over sampled flops and runouts (the three-street variant takes a few minutes). Face-up play is reported for the variants without a preflop cube.

@@ -4,7 +4,7 @@
 import { parseCards, cardName, dealTable } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt } from "./ui.js";
 import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
-import { computeView, historyFromCube } from "./table-view.js";
+import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
 export function initSpot({ pool, sim }) {
   const st = { n: 2, token: 0, result: null };
@@ -17,7 +17,32 @@ export function initSpot({ pool, sim }) {
         buildInputs();
       }),
     );
-  fillVariantSelect($("spot-variant"), "both");
+  fillVariantSelect($("spot-variant"), "fr");
+  const refreshTaken = () => {
+    const cube = parseCubeState($("spot-cube-state").value);
+    const board = (() => {
+      try {
+        return parseCards($("spot-board").value);
+      } catch {
+        return [];
+      }
+    })();
+    const street = board.length === 0 ? 0 : board.length - 2;
+    const opts = cube.owner != null ? takenOnOptions($("spot-variant").value, street) : [];
+    const sel = $("spot-taken");
+    sel.parentElement.hidden = opts.length < 2;
+    if (opts.length >= 2) {
+      const cur = sel.value;
+      sel.replaceChildren();
+      for (const o of opts) {
+        const op = el("option", "", `Taken on the ${o}`);
+        op.value = o;
+        sel.append(op);
+      }
+      sel.value = opts.includes(cur) ? cur : opts[opts.length - 1];
+    }
+  };
+  for (const id of ["spot-variant", "spot-cube-state", "spot-board"]) $(id).addEventListener("change", refreshTaken);
   function buildInputs(values = []) {
     const wrap = $("spot-hands");
     wrap.replaceChildren();
@@ -85,7 +110,8 @@ export function initSpot({ pool, sim }) {
     }
     const cube = parseCubeState($("spot-cube-state").value);
     const street = board.length === 0 ? 0 : board.length - 2;
-    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
+    refreshTaken();
+    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, takenOn: $("spot-taken").value || null, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
   }
   async function solve() {
     const err = $("spot-error");
@@ -110,7 +136,10 @@ export function initSpot({ pool, sim }) {
         btn: spot.btn,
         cube: spot.cube,
         cubeEnabled: spot.hands.length === 2,
-        history: historyFromCube(spot.cube, spot.variant, spot.street),
+        history: historyFromCube(spot.cube, spot.variant, spot.street, spot.btn, spot.takenOn),
+        onProgress: (f) => {
+          if (!st.result?.view) $("spot-meta").replaceChildren(el("span", "muted", `Solving the equilibrium… ${Math.round(f * 100)}%`));
+        },
         forceTabled: spot.tabled,
         precision: spot.precision,
       });

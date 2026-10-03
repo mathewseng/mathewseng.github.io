@@ -8,6 +8,7 @@ import { initOnline } from "./online.js";
 import { initReports } from "./reports.js";
 
 const pool = new Pool();
+window.__pool = pool; // console access for timing experiments
 const views = ["sim", "spot", "trainer", "online", "reports"];
 const listeners = new Map();
 function showTab(name) {

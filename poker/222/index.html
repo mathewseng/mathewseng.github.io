@@ -95,7 +95,10 @@
                 <option value="4:1">4, seat 2 owns</option>
                 <option value="8:0">8, seat 1 owns</option>
                 <option value="8:1">8, seat 2 owns</option>
+                <option value="16:0">16, seat 1 owns</option>
+                <option value="16:1">16, seat 2 owns</option>
               </select></label>
+              <label hidden><span class="label">History</span><select id="sim-taken"></select></label>
             </div>
           </div>
           <div id="sim-cube-body"></div>
@@ -133,7 +136,10 @@
                 <option value="4:1">4, seat 2 owns</option>
                 <option value="8:0">8, seat 1 owns</option>
                 <option value="8:1">8, seat 2 owns</option>
+                <option value="16:0">16, seat 1 owns</option>
+                <option value="16:1">16, seat 2 owns</option>
               </select></label>
+              <label class="field" hidden><span class="label">History</span><select id="spot-taken"></select></label>
             </div>
             <label class="field"><span class="label">Precision</span><select id="spot-precision">
               <option value="fast">Fast</option>
@@ -342,11 +348,11 @@
         </ul>
         <h3>Doubling cube (two players)</h3>
         <ul>
-          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The opponent may <b>drop</b> (the doubler wins 5 points per unit of the cube before the double), <b>take</b> (the cube doubles and the taker owns it; only the owner may redouble), or <b>beaver</b> (take and immediately redouble while keeping the cube; the doubler may then take at four times or drop for twice the usual cost).</li>
-          <li><b>Flop cube:</b> the button may double on the flop. <b>River cube:</b> the button may double on the river. <b>Flop and river:</b> the button may double on the flop; on the river the non-button may double if the cube is still centered, otherwise the cube owner may redouble.</li>
+          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The player doubled may <b>drop</b> (losing 6 points per unit of the cube before the double), <b>take</b> (the cube doubles and the player doubled owns it), or <b>beaver</b>: take and immediately redouble while keeping the cube. The doubler may then drop (12 per unit), take at four times, or <b>raccoon</b> (redouble again), and so on: rebeaver, reraccoon… until the cube reaches 64. Dropping the k-th raise always costs 6 times the cube level before that raise.</li>
+          <li>Seven variants: any combination of <b>preflop</b>, <b>flop</b> and <b>river</b> as cube streets (never the turn). The button gets the first cube opportunity. While the cube is centered the opportunity alternates between the players on later cube streets; once the cube is taken, its owner may redouble on any later cube street.</li>
           <li>Showdown pays the net points times the cube.</li>
-          <li><b>Hidden information.</b> While a cube action remains, each seat's numbers are against the opponent's range: every hand the opponent could hold given the cards you see, weighted by the equilibrium strategy once a cube action has been taken. The solver samples hands for both players and turn-and-river runouts and runs counterfactual regret minimization over the whole cube tree (flop decision, replies, beaver, and the river decision for the flop-and-river variant), so strategies can be mixed. Equities are for your actual hand against the opponent's equilibrium range, in points at the current cube.</li>
-          <li><b>Tabled.</b> Once no cube action remains the hands are turned up and the numbers are exact (or finely sampled) over every runout. Tick "Table hands" in the simulator or spot solver to see the face-up analysis of a pending decision, where "too good to double" means the opponent would drop yet playing on is worth more than the drop.</li>
+          <li><b>Hidden information.</b> While a cube action remains, each seat's numbers are against the opponent's range: every hand the opponent could hold given the cards you see, weighted by the equilibrium strategy once a cube action has been taken (after a flop take, for example, the button's range is its doubling range and the opponent's is its taking range). The solver samples hands for both players and the unknown board cards and runs counterfactual regret minimization over every cube decision that remains, including the chains of re-raises and the decisions on later cube streets in every cube state. It runs until the exploitability bound is below the tolerance, then removes probabilities under 1%, so every mix it shows is consistent with the equities it shows: options in a mix have equal equity within the tolerance, and options with lower equity get 0%.</li>
+          <li><b>Tabled.</b> Once no cube action remains the hands are turned up and the numbers are exact (or finely sampled) over every runout. Tick "Table hands" in the simulator or spot solver to see the face-up minimax of a pending decision; when more than a river remains, that face-up view treats later cube streets as cubeless.</li>
         </ul>
       </div>
     </dialog>

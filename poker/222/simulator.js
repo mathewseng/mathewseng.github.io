@@ -5,7 +5,7 @@
 import { dealTable, shuffledDeck, remainingDeck } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt, STREET_CARDS, streetName } from "./ui.js";
 import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
-import { computeView, historyFromCube } from "./table-view.js";
+import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
 export function initSimulator({ pool }) {
   const sim = {
@@ -14,7 +14,8 @@ export function initSimulator({ pool }) {
     board: [],
     street: 0,
     btn: 0,
-    variant: "both",
+    variant: "fr",
+    takenOn: null,
     cube: { level: 1, owner: null },
     selected: null,
     view: null,
@@ -44,6 +45,10 @@ export function initSimulator({ pool }) {
   });
   $("sim-cube-state").addEventListener("change", () => {
     sim.cube = parseCubeState($("sim-cube-state").value);
+    recompute();
+  });
+  $("sim-taken").addEventListener("change", () => {
+    sim.takenOn = $("sim-taken").value || null;
     recompute();
   });
   $("sim-tabled").addEventListener("change", recompute);
@@ -80,9 +85,13 @@ export function initSimulator({ pool }) {
       btn: sim.btn,
       cube: sim.cube,
       cubeEnabled: sim.n === 2,
-      history: historyFromCube(sim.cube, sim.variant, sim.street),
+      history: historyFromCube(sim.cube, sim.variant, sim.street, sim.btn, sim.takenOn),
       forceTabled: $("sim-tabled").checked,
       precision: precision(),
+      onProgress: (f) => {
+        const m = $("sim-meta");
+        if (!sim.view) m.replaceChildren(el("span", "muted", `Solving the equilibrium… ${Math.round(f * 100)}%`));
+      },
     };
   }
   async function recompute() {
@@ -162,6 +171,20 @@ export function initSimulator({ pool }) {
     const panel = $("sim-cube");
     panel.hidden = sim.n !== 2;
     if (sim.n === 2) {
+      const taken = $("sim-taken");
+      const opts = sim.cube.owner != null ? takenOnOptions(sim.variant, sim.street) : [];
+      taken.parentElement.hidden = opts.length < 2;
+      if (opts.length >= 2) {
+        const cur = taken.value;
+        taken.replaceChildren();
+        for (const o of opts) {
+          const op = el("option", "", `Taken on the ${o}`);
+          op.value = o;
+          taken.append(op);
+        }
+        taken.value = opts.includes(cur) ? cur : opts[opts.length - 1];
+        sim.takenOn = taken.value;
+      }
       const els = { faceEl: $("sim-cube-face"), titleEl: $("sim-cube-title"), subEl: $("sim-cube-sub"), bodyEl: $("sim-cube-body") };
       if (!view || view.mode === "hidden") renderHiddenCubePanel(panel, els, view, { names: names(), cube: sim.cube, street: sim.street, btn: sim.btn, hands: sim.hands });
       else {

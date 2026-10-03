@@ -211,57 +211,15 @@ export function cubeFace(level, ownerLabel, small = false) {
   face.append(el("span", "cube-value", String(level)), el("span", "cube-owner", ownerLabel));
   return face;
 }
-export const ACTION_LABELS = {
-  noDouble: "No double",
-  double: "Double",
-  redouble: "Redouble",
-  drop: "Drop",
-  take: "Take",
-  beaver: "Beaver",
-};
-// Renders the option table for one decision. kind: double | response | beaverReply.
-// view: { options, best, chosen, error } from gradeChoice; a: the analysis.
-export function renderDecisionTable(container, a, kind, grade, { chooser, level, preview = false, label } = {}) {
+// grade: { options: [{id, label, ev, prob}], best, chosen?, error? }.
+export function renderOptionTable(container, grade, { preview = false, level = 1, note, chooser, faceUp = false } = {}) {
   container.replaceChildren();
   const table = el("table", "cube-table");
   const head = el("tr");
-  head.append(el("th", "", "Option"), el("th", "num", "Equity (pts)"), el("th", "num", "Loss"), el("th", "", ""));
+  head.append(el("th", "", "Option"), el("th", "num", faceUp ? "Play" : "Mix"), el("th", "num", "Equity (pts)"), el("th", "num", "Loss"), el("th", "", ""));
   table.append(head);
-  const bestEq = grade.options.find((o) => o.id === grade.best).eq;
-  for (const o of grade.options) {
-    const tr = el("tr", `${o.id === grade.best ? "best" : ""}${!preview && o.id === grade.chosen ? " chosen" : ""}`);
-    const name = el("td", "", labelFor(kind, o, a));
-    const eq = el("td", "num");
-    paint(eq, evColor(o.eq, 10 * level));
-    eq.textContent = signed(o.eq);
-    const loss = el("td", "num muted", o.id === grade.best ? "—" : signed(o.eq - bestEq));
-    const flag = el("td", "flag");
-    if (o.id === grade.best) flag.append(el("span", "tag good", "Best"));
-    if (!preview && o.id === grade.chosen) flag.append(el("span", `tag ${grade.error > 1e-6 ? "bad" : "good"}`, grade.error > 1e-6 ? `Chosen · −${grade.error.toFixed(2)}` : "Chosen ✓"));
-    tr.append(name, eq, loss, flag);
-    table.append(tr);
-  }
-  container.append(table);
-  const notes = el("p", "muted cube-notes");
-  const parts = [];
-  if (kind === "double") {
-    parts.push(`Cubeless EV ${signed(a.cubeless)} pts · win ${pct(a.winProb)}`);
-    parts.push(`If doubled, the correct reply is ${a.response}${a.response === "beaver" ? ` (then ${a.beaverReply})` : ""}`);
-    if (a.tooGood) parts.push("Too good to double: play on for the bigger score");
-  } else if (kind === "response") parts.push(`Drop costs ${a.drop.toFixed(0)}; a take plays on at ${2 * level}; a beaver plays on at ${4 * level} with the cube kept`);
-  else parts.push(`Dropping the beaver costs ${(-a.beaverDrop).toFixed(0)}; taking plays on at ${4 * level}`);
-  if (label) parts.unshift(label);
-  notes.textContent = parts.join(" · ");
-  container.append(notes);
-}
-// Option table for a hidden-information decision. grade: { options: [{id, label, eq, prob}], best, chosen?, error? }.
-export function renderOptionTable(container, grade, { preview = false, level = 1, note, chooser } = {}) {
-  container.replaceChildren();
-  const table = el("table", "cube-table");
-  const head = el("tr");
-  head.append(el("th", "", "Option"), el("th", "num", "Mix"), el("th", "num", "Equity (pts)"), el("th", "num", "Loss"), el("th", "", ""));
-  table.append(head);
-  const bestEq = grade.options.find((o) => o.id === grade.best).eq;
+  const evOf = (o) => (o.ev ?? o.eq);
+  const bestEq = evOf(grade.options.find((o) => o.id === grade.best));
   for (const o of grade.options) {
     const tr = el("tr", `${o.id === grade.best ? "best" : ""}${!preview && o.id === grade.chosen ? " chosen" : ""}`);
     const mix = el("td", "num");
@@ -269,9 +227,9 @@ export function renderOptionTable(container, grade, { preview = false, level = 1
     paint(mixV, pctColor(o.prob, 0, 1));
     mix.append(mixV);
     const eq = el("td", "num");
-    paint(eq, evColor(o.eq, 10 * level));
-    eq.textContent = signed(o.eq);
-    const loss = el("td", "num muted", o.id === grade.best ? "—" : signed(o.eq - bestEq));
+    paint(eq, evColor(evOf(o), 10 * level));
+    eq.textContent = signed(evOf(o));
+    const loss = el("td", "num muted", o.id === grade.best ? "—" : signed(evOf(o) - bestEq));
     const flag = el("td", "flag");
     if (o.id === grade.best) flag.append(el("span", "tag good", "Best"));
     if (!preview && o.id === grade.chosen) flag.append(el("span", `tag ${grade.error > 0.005 ? "bad" : "good"}`, grade.error > 0.005 ? `Chosen · −${grade.error.toFixed(2)}` : "Chosen ✓"));
@@ -280,18 +238,9 @@ export function renderOptionTable(container, grade, { preview = false, level = 1
   }
   container.append(table);
   const notes = el("p", "muted cube-notes");
-  const whose = !chooser ? "this" : chooser === "you" || chooser === "your" ? "your" : `${chooser}'s`;
-  notes.textContent = [note, `Mix is how often the equilibrium takes each option with ${whose} hand; equities are against the opponent's equilibrium range at cube ${level}.`].filter(Boolean).join(" · ");
+  const whose = !chooser ? "this" : chooser === "you" || chooser === "your" || chooser === "You" ? "your" : `${chooser}'s`;
+  notes.textContent = [note, faceUp ? `Face-up minimax: equities for ${whose} hand against the opponent's actual hand, in points at cube ${level}.` : `Mix is how often the equilibrium takes each option with ${whose} hand; options in the mix have equal equity within the solve tolerance. Equities are against the opponent's equilibrium range at cube ${level}.`].filter(Boolean).join(" · ");
   container.append(notes);
-}
-function labelFor(kind, o, a) {
-  if (kind === "double") {
-    if (o.id === "noDouble") return a.level > 1 ? "No redouble" : "No double";
-    const verb = a.level > 1 ? "Redouble" : "Double";
-    return `${verb} → ${a.response === "drop" ? "they drop" : a.response === "take" ? "they take" : "they beaver"}`;
-  }
-  if (kind === "response") return o.id === "drop" ? "Drop" : o.id === "take" ? "Take" : `Beaver → they ${a.beaverReply}`;
-  return o.label;
 }
 export function categoryLabel(c) {
   return CATEGORIES[c];

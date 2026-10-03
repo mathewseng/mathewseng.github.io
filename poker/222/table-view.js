@@ -1,32 +1,66 @@
 // Information model for a two-player table: which cube action is pending,
 // whether hands are tabled, each seat's numbers (perfect information once
 // tabled, against the opponent's range while hidden) and the solver output
-// for the pending decision.
-import { VARIANTS, flopActor, riverActor, DROP_UNIT } from "./engine.mjs";
+// for the pending decision. Earlier cube streets condition the ranges: the
+// solve for each earlier street supplies the reach of every hand to the cube
+// state that was actually reached.
+import { variantOf, actorOn, STREETS, MAX_CUBE } from "./engine.mjs";
 import { PRECISION } from "./pool.js";
+import { levelAfter, optionLabel } from "./cube-rules.mjs";
 
-export const STATE_OF_FLOP = { N: "c1", T: "o2", BT: "o4" };
-// history: { flop: null | "N" | "T" | "BT", river: null | "done", ended: bool }
+export const STREET_CARDS = { preflop: 0, flop: 3, turn: 4, river: 5 };
+export const STREET_INDEX = { preflop: 0, flop: 1, turn: 2, river: 3 };
+export const streetAt = (i) => STREETS[i];
+// Cube state key in solver terms (owner as a side: 0 = button side, 1 = other).
+export const sideOf = (seat, btn) => (seat == null ? null : seat === btn ? 0 : 1);
+export const seatOf = (side, btn) => (side == null ? null : side === 0 ? btn : 1 - btn);
+export const stateKey = (level, ownerSide) => `${level}:${ownerSide == null ? "c" : ownerSide}`;
+export const cubeKey = (cube, btn) => stateKey(cube.level, sideOf(cube.owner, btn));
+
+// history: { preflop?: key, flop?: key, river?: key, ended?: bool } — the cube
+// state key reached after each cube street's action.
 export function actionState({ variant, street, btn, cube, cubeEnabled, n, history = {} }) {
-  const v = typeof variant === "string" ? VARIANTS[variant] : variant;
-  if (!cubeEnabled || n !== 2 || history.ended) return { flopPending: false, riverPending: false, remaining: false, tabled: true, variant: v };
-  const flopPending = street === 1 && flopActor(v, btn, cube) != null && history.flop == null;
-  const riverPending = street === 3 && riverActor(v, btn, cube) != null && history.river == null;
-  const flopAhead = street <= 1 && v.flopActor && history.flop == null;
-  const riverAhead = street <= 3 && v.riverActor && history.river == null;
-  const remaining = Boolean(flopAhead || riverAhead);
-  return { flopPending, riverPending, remaining, tabled: !remaining, variant: v };
+  const v = variantOf(variant);
+  const streetName = typeof street === "number" ? STREETS[street] : street;
+  if (!cubeEnabled || n !== 2 || history.ended) return { pending: false, remaining: false, tabled: true, variant: v, actor: null };
+  const idx = STREET_INDEX[streetName];
+  const actor = v.streets.includes(streetName) && history[streetName] == null ? actorOn(v, streetName, btn, cube) : null;
+  const pending = actor != null;
+  const remaining = v.streets.some((s) => STREET_INDEX[s] >= idx && history[s] == null && cube.level < MAX_CUBE && (s !== streetName || pending));
+  return { pending, remaining, tabled: !remaining, variant: v, actor };
 }
-// Derive the flop history from a cube state (for the simulator, which has no action log).
-export function historyFromCube(cube, variant, street) {
-  const v = typeof variant === "string" ? VARIANTS[variant] : variant;
-  if (!v.flopActor || street < 2) return { flop: null, river: null };
-  if (cube.owner == null) return { flop: "N", river: null };
-  return { flop: cube.level >= 4 ? "BT" : "T", river: null };
+// Derive a history from a cube state for pages without an action log. `takenOn`
+// names the cube street on which an owned cube was taken (default: the latest
+// cube street before `street`).
+export function historyFromCube(cube, variant, street, btn, takenOn = null) {
+  const v = variantOf(variant);
+  const streetName = typeof street === "number" ? STREETS[street] : street;
+  const idx = STREET_INDEX[streetName];
+  const earlier = v.streets.filter((s) => STREET_INDEX[s] < idx);
+  const history = {};
+  if (!earlier.length) return history;
+  if (cube.owner == null) {
+    for (const s of earlier) history[s] = stateKey(1, null);
+    return history;
+  }
+  const taken = earlier.includes(takenOn) ? takenOn : earlier[earlier.length - 1];
+  const key = cubeKey(cube, btn);
+  let seen = false;
+  for (const s of earlier) {
+    if (s === taken) seen = true;
+    history[s] = seen ? key : stateKey(1, null);
+  }
+  return history;
 }
+export function takenOnOptions(variant, street) {
+  const v = variantOf(variant);
+  const streetName = typeof street === "number" ? STREETS[street] : street;
+  return v.streets.filter((s) => STREET_INDEX[s] < STREET_INDEX[streetName]);
+}
+
 const cache = new Map();
 function remember(key, value) {
-  if (cache.size > 80) cache.delete(cache.keys().next().value);
+  if (cache.size > 60) cache.delete(cache.keys().next().value);
   cache.set(key, value);
   return value;
 }
@@ -38,8 +72,18 @@ function cached(key, make) {
   });
   return remember(key, p);
 }
-// spec: { hands (null for unknown), board, street, variant, btn, cube, cubeEnabled,
-//         history, forceTabled, precision }
+export function hashSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+function weightsFrom(solveResult, key) {
+  const r = solveResult.reach[key];
+  if (!r) return null;
+  return { btnHands: solveResult.hands.btn, oppHands: solveResult.hands.opp, btn: r.btn, opp: r.opp };
+}
+// spec: { hands (null for unknown), board, street (index), variant, btn, cube {level, owner seat},
+//         cubeEnabled, history, forceTabled, precision, onProgress }
 export async function computeView(pool, spec) {
   const n = spec.hands.length;
   const a = actionState({ ...spec, n });
@@ -54,91 +98,78 @@ export async function computeView(pool, spec) {
     return { mode: "perfect", tabled: true, stats: { ...stats, mode: "perfect" }, action: a, decision: null };
   }
   const v = a.variant;
-  const btn = spec.btn,
-    opp = 1 - btn;
+  const btn = spec.btn;
   const btnHand = spec.hands[btn],
-    oppHand = spec.hands[opp];
-  const flop = spec.board.slice(0, 3);
-  // Flop solve: needed for the flop decision and, in the flop-and-river variant, to condition later streets.
-  let flopSolve = null;
-  const needFlopSolve = (a.flopPending || (v.riverActor === "opp" && spec.street >= 2 && spec.history?.flop)) && spec.street >= 1;
-  if (needFlopSolve) {
-    const key = JSON.stringify(["solve-flop", btnHand, oppHand, flop, v.id, solverPrecision]);
-    flopSolve = await cached(key, () => pool.solve({ board: flop, variant: v.id, stage: "flop", btnHand, oppHand, precision: solverPrecision, seed: hashSeed(key) }));
+    oppHand = spec.hands[1 - btn];
+  const streetName = STREETS[spec.street];
+  const history = spec.history ?? {};
+  // Upstream solves: every earlier cube street with a resolved action.
+  let upstream = null; // { solve, key }
+  let entry = { level: 1, owner: null };
+  const upstreamKeys = [];
+  for (const s of v.streets) {
+    if (STREET_INDEX[s] >= STREET_INDEX[streetName]) break;
+    const key = history[s];
+    if (key == null) break;
+    const boardAt = spec.board.slice(0, STREET_CARDS[s]);
+    const weights = upstream ? weightsFrom(upstream.solve, upstream.key) : null;
+    const ck = JSON.stringify(["solve", v.id, s, boardAt, btnHand, oppHand, entry, upstreamKeys, solverPrecision]);
+    const sol = await cached(ck, () =>
+      pool.solve({ board: boardAt, variant: v.id, entry, btnHand, oppHand, weights, precision: solverPrecision, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
+    );
+    upstream = { solve: sol, key, street: s };
+    upstreamKeys.push(key);
+    const [lvl, own] = key.split(":");
+    entry = { level: Number(lvl), owner: own === "c" ? null : Number(own) };
   }
-  const stateId = spec.history?.flop ? STATE_OF_FLOP[spec.history.flop] : null;
-  const conditioned = Boolean(flopSolve && stateId && spec.street >= 2);
+  const weights = upstream ? weightsFrom(upstream.solve, upstream.key) : null;
+  const conditioned = Boolean(weights);
   const opponentsFor = (seat) => {
-    if (!conditioned) return null;
-    const r = flopSolve.reach[stateId];
-    return seat === btn ? { hands: flopSolve.hands.opp, weights: r.opp } : { hands: flopSolve.hands.btn, weights: r.btn };
+    if (!weights) return null;
+    return seat === btn ? { hands: weights.oppHands, weights: weights.opp } : { hands: weights.btnHands, weights: weights.btn };
   };
   const players = await Promise.all(
     spec.hands.map((hand, seat) => {
       if (!hand) return null;
       const opponents = opponentsFor(seat);
-      const key = JSON.stringify(["range", hand, spec.board, precision, opponents ? [stateId, v.id, btnHand, oppHand] : null]);
+      const key = JSON.stringify(["range", hand, spec.board, precision, opponents ? [v.id, btnHand, oppHand, upstreamKeys] : null]);
       return cached(key, () => pool.range(hand, spec.board, { precision, opponents, seed: hashSeed(key) }));
     }),
   );
   let decision = null;
-  if (a.flopPending && flopSolve) {
-    decision = { kind: "flop", actor: btn, responder: opp, level: 1, data: flopSolve.flop, solve: flopSolve };
-  } else if (a.riverPending) {
-    const actorSeat = riverActor(v, btn, spec.cube);
-    const actorSide = actorSeat === btn ? 0 : 1;
-    const weights = conditioned ? { btnHands: flopSolve.hands.btn, oppHands: flopSolve.hands.opp, btn: flopSolve.reach[stateId].btn, opp: flopSolve.reach[stateId].opp } : null;
-    const key = JSON.stringify(["solve-river", btnHand, oppHand, spec.board, v.id, spec.cube, stateId, solverPrecision]);
-    const riverSolve = await cached(key, () =>
-      pool.solve({ board: spec.board, variant: v.id, stage: "river", level: spec.cube.level, actorSide, btnHand, oppHand, weights, precision: solverPrecision, seed: hashSeed(key) }),
+  if (a.pending) {
+    const entryNow = { level: spec.cube.level, owner: sideOf(spec.cube.owner, btn) };
+    const ck = JSON.stringify(["solve", v.id, streetName, spec.board, btnHand, oppHand, entryNow, upstreamKeys, solverPrecision]);
+    const sol = await cached(ck, () =>
+      pool.solve({ board: spec.board, variant: v.id, entry: entryNow, btnHand, oppHand, weights, precision: solverPrecision, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
     );
-    decision = { kind: "river", actor: actorSeat, responder: 1 - actorSeat, level: spec.cube.level, data: riverSolve.river.now, solve: riverSolve };
+    decision = { street: streetName, actor: a.actor, responder: 1 - a.actor, level: spec.cube.level, solve: sol, stage: sol.stage };
   }
-  return { mode: "hidden", tabled: false, stats: { mode: "range", conditioned, stateId, players }, action: a, decision, flopSolve };
+  return { mode: "hidden", tabled: false, stats: { mode: "range", conditioned, players }, action: a, decision, upstream };
 }
-function hashSeed(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
-  return h >>> 0;
+// Options at chain node k for the hand that acts there (index 0 of its side).
+export function nodeOptions(stage, k) {
+  const node = stage?.nodes?.[k];
+  if (!node?.options) return null;
+  return { options: node.options.map((o) => ({ ...o })), best: node.options.reduce((m, o) => (o.ev > m.ev + 1e-9 ? o : m), node.options[0]).id, node };
 }
-// Option list for a hidden-information decision from the chooser's view.
-export function hiddenOptions(data, kind, level) {
-  let options;
-  if (kind === "double") {
-    const verb = level > 1 ? "Redouble" : "Double";
-    options = [
-      { id: "noDouble", label: `No ${verb.toLowerCase()}`, eq: data.actor.noDouble, prob: 1 - data.actor.pDouble },
-      { id: "double", label: verb, eq: data.actor.double, prob: data.actor.pDouble },
-    ];
-  } else if (kind === "response")
-    options = [
-      { id: "drop", label: "Drop", eq: data.responder.drop, prob: data.responder.pDrop },
-      { id: "take", label: "Take", eq: data.responder.take, prob: data.responder.pTake },
-      { id: "beaver", label: "Beaver", eq: data.responder.beaver, prob: data.responder.pBeaver },
-    ];
-  else
-    options = [
-      { id: "take", label: "Take the beaver", eq: data.beaverReply.take, prob: data.beaverReply.pTake },
-      { id: "drop", label: "Drop the beaver", eq: data.beaverReply.drop, prob: 1 - data.beaverReply.pTake },
-    ];
-  const best = options.reduce((m, o) => (o.eq > m.eq + 1e-9 ? o : m), options[0]);
-  return { options, best: best.id };
-}
-export function gradeHidden(data, kind, level, chosen) {
-  const g = hiddenOptions(data, kind, level);
-  const bestEq = g.options.find((o) => o.id === g.best).eq;
+export function gradeHidden(stage, k, chosen) {
+  const g = nodeOptions(stage, k);
+  if (!g) return null;
+  const bestEq = g.options.find((o) => o.id === g.best).ev;
   const pick = g.options.find((o) => o.id === chosen) ?? g.options[0];
-  return { ...g, chosen: pick.id, error: Math.max(0, bestEq - pick.eq) };
+  return { ...g, chosen: pick.id, error: Math.max(0, bestEq - pick.ev) };
 }
 // Sample an action from the equilibrium mix (used by the trainer bot).
-export function sampleAction(data, kind, rng = Math.random) {
-  const g = hiddenOptions(data, kind, 1);
+export function sampleAction(stage, k, rng = Math.random) {
+  const g = nodeOptions(stage, k);
+  if (!g) return null;
   const u = rng();
   let acc = 0;
   for (const o of g.options) {
     acc += Math.max(0, o.prob);
     if (u < acc) return o.id;
   }
-  return g.options[g.options.length - 1].id;
+  return g.options.reduce((m, o) => (o.prob > m.prob ? o : m), g.options[0]).id;
 }
-export { DROP_UNIT };
+export { levelAfter, optionLabel };

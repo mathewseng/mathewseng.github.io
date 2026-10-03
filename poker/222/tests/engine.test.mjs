@@ -18,19 +18,21 @@ import {
   makeRng,
   dealTable,
   shuffledDeck,
-  riverOptions,
+  riverBest,
   analyzeDecision,
   positionValue,
   deltaHist,
   flipHist,
   gradeChoice,
-  flopActor,
-  riverActor,
-  riverAfterFlop,
-  VARIANTS,
+  actorOn,
+  laterCubeStreets,
+  variantOf,
+  VARIANT_ORDER,
   DROP_UNIT,
+  MAX_CUBE,
   MAX_NET,
 } from "../engine.mjs";
+import { chainDepth } from "../cube-rules.mjs";
 
 const P = parseCards;
 
@@ -138,44 +140,43 @@ test("sampled statistics approximate exact ones", () => {
   for (let i = 0; i < 3; i++) assert.ok(Math.abs(exact.players[i].ev - sampled.players[i].ev) < 0.25, `seat ${i}: ${exact.players[i].ev} vs ${sampled.players[i].ev}`);
 });
 
-test("river cube decisions follow the last-roll logic", () => {
-  // Scoop locked: doubling only earns the 5-point drop, so play on.
+test("face-up river chain follows the last-roll logic with a 6-point drop", () => {
+  // Scoop locked: doubling only earns the 6-point drop, so play on.
   const scoop = analyzeDecision({ hist: deltaHist(10), level: 1 });
   assert.equal(scoop.best, "noDouble");
   assert.ok(scoop.tooGood);
-  // Ahead by 4: double, opponent drops (5 > 4).
-  const four = analyzeDecision({ hist: deltaHist(4), level: 1 });
-  assert.equal(four.best, "double");
-  assert.equal(four.response, "drop");
-  assert.equal(four.value, 5);
-  // Ahead by 2: double, opponent takes (lose 4 < lose 5).
+  // Ahead by 5: double, opponent drops (6 > 5).
+  const five = analyzeDecision({ hist: deltaHist(5), level: 1 });
+  assert.equal(five.best, "double");
+  assert.equal(five.response, "drop");
+  assert.equal(five.value, 6);
+  // Ahead by 2: double, opponent takes (lose 4 < lose 6).
   const two = analyzeDecision({ hist: deltaHist(2), level: 1 });
   assert.equal(two.best, "double");
   assert.equal(two.response, "take");
   assert.equal(two.value, 4);
-  // Behind: no double; a double would be beavered.
+  // Behind: no double; a double would be beavered and the chain escalates.
   const behind = analyzeDecision({ hist: deltaHist(-2), level: 1 });
   assert.equal(behind.best, "noDouble");
-  assert.equal(behind.response, "beaver");
-  assert.equal(behind.beaverReply, "take");
-  // At cube 2 the drop is worth 10.
-  assert.equal(riverOptions(4, 2).drop, 10);
-  assert.equal(riverOptions(-3, 2).beaverDrop, -20);
+  assert.equal(behind.response, "reraise");
+  assert.equal(behind.value, -2);
+  // Node options are in the chooser's view and the chain is capped at MAX_CUBE.
+  assert.equal(behind.nodes[1].options.find((o) => o.id === "drop").eq, -DROP_UNIT);
+  assert.equal(behind.nodes.length, chainDepth(1) + 1);
+  assert.equal(behind.nodes[chainDepth(1)].options.length, 2, "no re-raise at the cap");
+  assert.equal(riverBest(4, 2), 12);
 });
 
 test("flop decision values the river cube by backward induction", () => {
-  // 50/50 between +10 and -10: without river action a double is a take and worth 0 either way.
   const hist = new Array(2 * MAX_NET + 1).fill(0);
   hist[0] = 0.5;
   hist[2 * MAX_NET] = 0.5;
   const none = analyzeDecision({ hist, level: 1, riverAfter: "none" });
   assert.ok(Math.abs(none.cubeless) < 1e-9);
   assert.ok(Math.abs(none.noDouble) < 1e-9);
-  assert.ok(Math.abs(none.take) < 1e-9);
-  // With the opponent holding river access, a scoop for them is still only worth a 5 drop... they are too good, so values stay symmetric.
   const opp = analyzeDecision({ hist, level: 1, riverAfter: "opponent" });
   assert.ok(Math.abs(opp.noDouble) < 1e-9);
-  // Skewed: 80% +4, 20% -4 -> cubeless 2.4. Double/take = 4.8 > drop 5? no, 4.8 < 5 so they take: value 4.8 > 2.4.
+  // 80% +4, 20% -4 -> cubeless 2.4. Double/take = 4.8 < drop 6, so they take: value 4.8 > 2.4.
   const h2 = new Array(2 * MAX_NET + 1).fill(0);
   h2[4 + MAX_NET] = 0.8;
   h2[-4 + MAX_NET] = 0.2;
@@ -184,37 +185,40 @@ test("flop decision values the river cube by backward induction", () => {
   assert.equal(a.best, "double");
   assert.equal(a.response, "take");
   assert.ok(Math.abs(a.value - 4.8) < 1e-9);
-  // With the actor holding river access after the flop, the +4 runouts become a 5-point drop on the river.
+  // With the actor holding river access, the +4 runouts become a 4-point take on the river (double, take at 2).
   const b = analyzeDecision({ hist: h2, level: 1, riverAfter: "actor" });
-  assert.ok(Math.abs(b.noDouble - (0.8 * 5 + 0.2 * -4)) < 1e-9);
+  assert.ok(Math.abs(b.noDouble - (0.8 * riverBest(4, 1) + 0.2 * riverBest(-4, 1))) < 1e-9);
   assert.ok(Math.abs(positionValue({ hist: h2, level: 1, riverAfter: "actor" }) - b.noDouble) < 1e-9);
-  // Flipping the histogram negates the position value with swapped river access.
   const pv = positionValue({ hist: h2, level: 1, riverAfter: "opponent" });
   const pv2 = positionValue({ hist: flipHist(h2), level: 1, riverAfter: "actor" });
   assert.ok(Math.abs(pv + pv2) < 1e-9);
 });
 
-test("variants assign cube access", () => {
+test("seven variants and the street actor rule", () => {
+  assert.deepEqual(VARIANT_ORDER, ["p", "f", "r", "pf", "pr", "fr", "pfr"]);
   const centered = { level: 1, owner: null };
-  assert.equal(flopActor(VARIANTS.flop, 1), 1);
-  assert.equal(flopActor(VARIANTS.river, 1), null);
-  assert.equal(riverActor(VARIANTS.flop, 1), null);
-  assert.equal(riverActor(VARIANTS.river, 1, centered), 1);
-  assert.equal(riverActor(VARIANTS.both, 1, centered), 0);
-  assert.equal(riverActor(VARIANTS.both, 1, { level: 2, owner: 0 }), 0);
-  assert.equal(riverAfterFlop(VARIANTS.both), "opponent");
-  assert.equal(riverAfterFlop(VARIANTS.flop), "none");
-  assert.equal(DROP_UNIT, 5);
+  assert.equal(actorOn("f", "flop", 1, centered), 1, "button doubles on the only cube street");
+  assert.equal(actorOn("f", "river", 1, centered), null);
+  assert.equal(actorOn("fr", "river", 1, centered), 0, "second cube street alternates to the non-button");
+  assert.equal(actorOn("fr", "river", 1, { level: 2, owner: 0 }), 0, "owner redoubles");
+  assert.equal(actorOn("pfr", "flop", 0, centered), 1);
+  assert.equal(actorOn("pfr", "river", 0, centered), 0);
+  assert.equal(actorOn("pfr", "river", 0, { level: 2, owner: 1 }), 1);
+  assert.equal(actorOn("r", "river", 1, { level: 64, owner: 0 }), null, "cube at the cap");
+  assert.equal(variantOf("both").id, "fr");
+  assert.deepEqual(laterCubeStreets("pfr", "flop"), ["river"]);
+  assert.equal(DROP_UNIT, 6);
+  assert.equal(MAX_CUBE, 64);
 });
 
-test("grading reports the loss of a wrong choice", () => {
-  const a = analyzeDecision({ hist: deltaHist(4), level: 1 });
-  const g = gradeChoice(a, "double", "noDouble");
+test("grading reports the loss of a wrong choice at a chain node", () => {
+  const a = analyzeDecision({ hist: deltaHist(5), level: 1 });
+  const g = gradeChoice(a, 0, "noDouble");
   assert.equal(g.best, "double");
   assert.ok(Math.abs(g.error - 1) < 1e-9);
-  const r = gradeChoice(a, "response", "take");
+  const r = gradeChoice(a, 1, "take");
   assert.equal(r.best, "drop");
-  assert.ok(Math.abs(r.error - 3) < 1e-9);
+  assert.ok(Math.abs(r.error - 4) < 1e-9);
 });
 
 test("deck helpers deal disjoint cards", () => {

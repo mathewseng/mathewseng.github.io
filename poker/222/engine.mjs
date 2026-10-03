@@ -14,6 +14,8 @@
 // for a 4-point bonus (10 in all). Ties on a hand split its points. With more
 // than two players every pair of players settles separately.
 
+import { DROP_UNIT, MAX_CUBE, chainDepth, levelAfter, dropCost, optionLabel } from "./cube-rules.mjs";
+export { DROP_UNIT, MAX_CUBE };
 export const RANKS = "23456789TJQKA";
 export const SUITS = "cdhs";
 export const SYMBOLS = ["♣", "♦", "♥", "♠"];
@@ -22,7 +24,6 @@ export const FULL_DECK = Array.from({ length: 52 }, (_, c) => c);
 export const POINTS = [3, 2, 1];
 export const SCOOP_BONUS = 4;
 export const MAX_NET = 10;
-export const DROP_UNIT = 5;
 export const CATEGORIES = [
   "High card",
   "Pair",
@@ -686,56 +687,119 @@ export function completions(n, boardLength) {
 }
 
 /* ---------- doubling cube ---------- */
-// Cube play for two players, hands face up. Dropping a double costs DROP_UNIT
-// points per unit of the cube before the double; taking doubles the stake and
-// hands the cube to the taker; a beaver takes and immediately redoubles while
-// keeping the cube, after which the original doubler may take or drop.
+// Cube play for two players. See cube-rules.mjs for the raise chain. The
+// functions here value decisions with both hands face up (used once hands are
+// tabled, and for the face-up comparison); the hidden-information equilibrium
+// lives in solver.mjs.
+const STREET_NAMES = { preflop: "preflop", flop: "flop", river: "river" };
+function makeVariant(id, streets) {
+  const list = streets.map((x) => STREET_NAMES[x]);
+  const name = `${list.map((x, i) => (i === 0 ? x[0].toUpperCase() + x.slice(1) : x)).join(list.length === 3 ? ", " : " and ")} cube`;
+  const blurb =
+    streets.length === 1
+      ? `The button may double on the ${list[0]}.`
+      : `Cube streets: ${list.join(", ")}. The button gets the first opportunity; while the cube is centered the opportunity alternates between the players on later cube streets; once the cube is taken, its owner may redouble on any later cube street.`;
+  return { id, name, short: streets.map((x) => x[0].toUpperCase()).join("+"), streets, blurb, flopActor: streets.includes("flop") ? "btn" : null, riverActor: streets.includes("river") ? "btn" : null };
+}
 export const VARIANTS = {
-  flop: { id: "flop", name: "Flop cube", short: "Flop", flopActor: "btn", riverActor: null,
-    blurb: "The button may double on the flop. No river action." },
-  river: { id: "river", name: "River cube", short: "River", flopActor: null, riverActor: "btn",
-    blurb: "The button may double on the river only." },
-  both: { id: "both", name: "Flop and river cube", short: "Flop + river", flopActor: "btn", riverActor: "opp",
-    blurb: "The button may double on the flop. On the river the non-button may double if the cube is still centered, or the cube owner may redouble." },
+  p: makeVariant("p", ["preflop"]),
+  f: makeVariant("f", ["flop"]),
+  r: makeVariant("r", ["river"]),
+  pf: makeVariant("pf", ["preflop", "flop"]),
+  pr: makeVariant("pr", ["preflop", "river"]),
+  fr: makeVariant("fr", ["flop", "river"]),
+  pfr: makeVariant("pfr", ["preflop", "flop", "river"]),
 };
+export const VARIANT_ORDER = ["p", "f", "r", "pf", "pr", "fr", "pfr"];
+const VARIANT_ALIASES = { flop: "f", river: "r", both: "fr" };
+export const variantOf = (v) => (typeof v === "string" ? (VARIANTS[v] ?? VARIANTS[VARIANT_ALIASES[v]]) : v);
+export const STREETS = ["preflop", "flop", "turn", "river"];
 export const DEFAULT_CUBE = () => ({ level: 1, owner: null });
-export function flopActor(variant, btn, cube = DEFAULT_CUBE()) {
-  return variant.flopActor === "btn" && cube.owner == null ? btn : null;
-}
-export function riverActor(variant, btn, cube = DEFAULT_CUBE()) {
-  if (!variant.riverActor) return null;
+// Who may double on `street` (seat index), or null when there is no cube action there.
+// The button has the first cube opportunity; while the cube is centered the
+// opportunity alternates between the players on later cube streets; once the
+// cube is taken, its owner may redouble on any later cube street.
+export function actorOn(variant, street, btn, cube = DEFAULT_CUBE()) {
+  const v = variantOf(variant);
+  const m = v.streets.indexOf(street);
+  if (m < 0) return null;
+  if (cube.level >= MAX_CUBE) return null;
   if (cube.owner != null) return cube.owner;
-  return variant.riverActor === "btn" ? btn : 1 - btn;
+  return m % 2 === 0 ? btn : 1 - btn;
 }
-// Who, from the flop actor's perspective, will act on the river once the flop
-// action is resolved: "none", "actor" or "opponent".
+export const flopActor = (variant, btn, cube) => actorOn(variant, "flop", btn, cube);
+export const riverActor = (variant, btn, cube) => actorOn(variant, "river", btn, cube);
+// Cube streets of the variant after `street`.
+export function laterCubeStreets(variant, street) {
+  const v = variantOf(variant);
+  const i = STREETS.indexOf(street);
+  return v.streets.filter((s) => STREETS.indexOf(s) > i);
+}
+// Face-up view of what follows the current decision: only a river that is the
+// sole remaining cube street is valued exactly (last-roll rule); earlier
+// streets would need per-board distributions and are treated as cubeless.
+export function riverAfter(variant, street, btn, cube, actorSeat) {
+  const later = laterCubeStreets(variant, street);
+  if (later.length !== 1 || later[0] !== "river") return "none";
+  // After a take the responder owns the cube; after no double the cube is unchanged.
+  // The face-up model needs one answer, so use the centered-cube actor (the no-double branch).
+  const next = actorOn(variant, "river", btn, cube);
+  if (next == null) return "none";
+  return next === actorSeat ? "actor" : "opponent";
+}
 export function riverAfterFlop(variant) {
-  if (!variant.riverActor) return "none";
-  return variant.riverActor === "btn" ? "actor" : "opponent";
+  const v = variantOf(variant);
+  if (!v.streets.includes("river")) return "none";
+  const flopIdx = v.streets.indexOf("flop");
+  return v.streets.indexOf("river") - flopIdx === 1 && flopIdx === 0 ? "opponent" : v.streets.includes("flop") ? "opponent" : "actor";
 }
-export function riverOptions(x, level) {
-  const noDouble = x * level;
-  const drop = DROP_UNIT * level;
-  const take = 2 * level * x;
-  const beaverTake = 4 * level * x;
-  const beaverDrop = -2 * DROP_UNIT * level;
-  const beaver = Math.max(beaverTake, beaverDrop);
-  const doubleValue = Math.min(drop, take, beaver);
-  return { noDouble, drop, take, beaver, beaverTake, beaverDrop, doubleValue };
+const EPS = 1e-9;
+// Face-up value of a raise chain from `base`. cont(L) is the actor-view value
+// of playing on at level L. Returns per-node options in the chooser's view.
+export function chainValues(cont, base, maxLevel = MAX_CUBE) {
+  const D = chainDepth(base, maxLevel);
+  const val = new Array(D + 2).fill(0);
+  const nodes = new Array(D + 1);
+  for (let k = D; k >= 1; k--) {
+    const actorActs = k % 2 === 0;
+    const prev = levelAfter(base, k - 1),
+      L = levelAfter(base, k);
+    const drop = actorActs ? -DROP_UNIT * prev : DROP_UNIT * prev; // actor view
+    const take = cont(L);
+    const opts = [
+      { id: "drop", eq: drop },
+      { id: "take", eq: take },
+    ];
+    if (k < D) opts.push({ id: "reraise", eq: val[k + 1] });
+    const pick = opts.reduce((m, o) => ((actorActs ? o.eq > m.eq + EPS : o.eq < m.eq - EPS) ? o : m), opts[0]);
+    val[k] = pick.eq;
+    const sign = actorActs ? 1 : -1;
+    nodes[k] = {
+      k,
+      player: actorActs ? "actor" : "responder",
+      offerLevel: L,
+      prevLevel: prev,
+      options: opts.map((o) => ({ id: o.id, label: optionLabel(o.id, k, base), eq: sign * o.eq, prob: o.id === pick.id ? 1 : 0 })),
+      best: pick.id,
+    };
+  }
+  const noDouble = cont(base);
+  const double = D >= 1 ? val[1] : -Infinity;
+  const best = D >= 1 && double > noDouble + EPS ? "double" : "noDouble";
+  const options = [{ id: "noDouble", label: optionLabel("noDouble", 0, base, base), eq: noDouble, prob: best === "noDouble" ? 1 : 0 }];
+  if (D >= 1) options.push({ id: "double", label: optionLabel("double", 0, base, base), eq: double, prob: best === "double" ? 1 : 0 });
+  nodes[0] = { k: 0, player: "actor", offerLevel: levelAfter(base, 1), prevLevel: base, options, best };
+  return { nodes, value: Math.max(noDouble, double), noDouble, double, best, depth: D };
 }
-export const riverBest = (x, level) => {
-  const o = riverOptions(x, level);
-  return Math.max(o.noDouble, o.doubleValue);
-};
+export const riverBest = (x, level) => chainValues((L) => L * x, level).value;
 export function continuationValue(x, level, riverAfter) {
   if (riverAfter === "none") return x * level;
   if (riverAfter === "actor") return riverBest(x, level);
   return -riverBest(-x, level);
 }
-const EPS = 1e-9;
-// Analyzes the decision of the player to act, whose net result (at cube 1)
-// over the remaining runouts has probability hist[x + MAX_NET]. All equities
-// are in points from the actor's point of view at the current cube level.
+// Face-up analysis of the decision of the player to act, whose net result (at
+// cube 1) over the remaining runouts has probability hist[x + MAX_NET].
+// Equities are in points at the current cube from the chooser's view.
 export function analyzeDecision({ hist, level = 1, riverAfter = "none", canDouble = true }) {
   const expect = (f) => {
     let s = 0;
@@ -743,38 +807,27 @@ export function analyzeDecision({ hist, level = 1, riverAfter = "none", canDoubl
     return s;
   };
   const cubeless = expect((x) => x);
-  const noDouble = expect((x) => continuationValue(x, level, riverAfter));
-  const drop = DROP_UNIT * level;
-  const take = expect((x) => continuationValue(x, 2 * level, riverAfter));
-  const beaverTake = expect((x) => continuationValue(x, 4 * level, riverAfter));
-  const beaverDrop = -2 * DROP_UNIT * level;
-  const beaver = Math.max(beaverTake, beaverDrop);
-  const doubleValue = Math.min(drop, take, beaver);
-  const response = doubleValue === drop ? "drop" : doubleValue === take ? "take" : "beaver";
-  const beaverReply = beaverTake >= beaverDrop ? "take" : "drop";
-  const best = canDouble && doubleValue > noDouble + EPS ? "double" : "noDouble";
-  const tooGood = canDouble && best === "noDouble" && response === "drop" && noDouble > drop + EPS;
-  const value = best === "double" ? doubleValue : noDouble;
   const winProb = expect((x) => (x > 0 ? 1 : x === 0 ? 0.5 : 0));
+  const cont = (L) => expect((x) => continuationValue(x, L, riverAfter));
+  const cv = chainValues(cont, level, canDouble ? MAX_CUBE : level);
+  const n1 = cv.nodes[1];
+  const tooGood = cv.best === "noDouble" && n1?.best === "drop" && cv.noDouble > DROP_UNIT * level + EPS;
   return {
     level,
     riverAfter,
     canDouble,
     cubeless,
     winProb,
-    noDouble,
-    drop,
-    take,
-    beaver,
-    beaverTake,
-    beaverDrop,
-    doubleValue,
-    response,
-    beaverReply,
-    best,
+    noDouble: cv.noDouble,
+    double: cv.double,
+    doubleValue: cv.double,
+    value: cv.value,
+    best: cv.best,
     tooGood,
-    value,
-    gain: doubleValue - noDouble,
+    gain: cv.double - cv.noDouble,
+    response: n1?.best ?? null,
+    beaverReply: cv.nodes[2]?.best ?? null,
+    nodes: cv.nodes,
   };
 }
 // Value of the position for the actor's side when no decision is pending now.
@@ -791,28 +844,12 @@ export function deltaHist(x) {
 export function flipHist(hist) {
   return hist.slice().reverse();
 }
-// Grades a chosen option against the analysis. kind: "double" (actor: noDouble /
-// double), "response" (responder: drop / take / beaver), "beaverReply" (original
-// doubler: take / drop). Equities are from the chooser's point of view.
-export function gradeChoice(a, kind, chosen) {
-  let options;
-  if (kind === "double")
-    options = [
-      { id: "noDouble", label: "No double", eq: a.noDouble },
-      { id: "double", label: `Double (${a.response})`, eq: a.doubleValue },
-    ];
-  else if (kind === "response")
-    options = [
-      { id: "drop", label: "Drop", eq: -a.drop },
-      { id: "take", label: "Take", eq: -a.take },
-      { id: "beaver", label: "Beaver", eq: -a.beaver },
-    ];
-  else
-    options = [
-      { id: "take", label: "Take the beaver", eq: a.beaverTake },
-      { id: "drop", label: "Drop the beaver", eq: a.beaverDrop },
-    ];
+// Grades a chosen option at chain node k against the face-up analysis.
+export function gradeChoice(a, k, chosen) {
+  const node = typeof k === "number" ? a.nodes[k] : a.nodes[k === "double" ? 0 : k === "response" ? 1 : 2];
+  const options = node.options.map((o) => ({ ...o }));
   const best = options.reduce((m, o) => (o.eq > m.eq + EPS ? o : m), options[0]);
-  const pick = options.find((o) => o.id === chosen) ?? best;
+  const alias = chosen === "beaver" || chosen === "raccoon" ? "reraise" : chosen;
+  const pick = options.find((o) => o.id === alias) ?? best;
   return { options, best: best.id, chosen: pick.id, error: Math.max(0, best.eq - pick.eq) };
 }

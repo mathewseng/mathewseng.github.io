@@ -1,10 +1,11 @@
 // Online multiplayer: peer-to-peer rooms on the shared PeerRoom module. The
 // host owns the game state; every client computes its own equities locally
 // because all hands are face up.
-import { VARIANTS, DROP_UNIT, dealTable, settle, flopActor, riverActor, cardName } from "./engine.mjs";
+import { VARIANTS, variantOf, actorOn, dealTable, settle, cardName, STREETS } from "./engine.mjs";
+import { offerRaise, reraise, canReraise, optionLabel, reraiseName } from "./cube-rules.mjs";
 import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, STREET_CARDS, streetName } from "./ui.js";
 import { fillVariantSelect } from "./cube-view.js";
-import { computeView, actionState, gradeHidden } from "./table-view.js";
+import { computeView, actionState, gradeHidden, cubeKey } from "./table-view.js";
 
 const NAME_KEY = "222.player-name";
 const hostKey = (code) => `222.host.${code}`;
@@ -14,7 +15,7 @@ export function initOnline({ pool }) {
   const st = { model: null, view: null, viewKey: null, token: 0, timer: null, roster: [] };
   const lobby = $("online-lobby"),
     roomView = $("online-room");
-  fillVariantSelect($("on-variant"), "both");
+  fillVariantSelect($("on-variant"), "fr");
   $("on-name").value = localStorage.getItem(NAME_KEY) || "";
   if (!PeerRoom) {
     $("on-error").textContent = "The peer connection library did not load.";
@@ -218,21 +219,33 @@ export function initOnline({ pool }) {
       street: 0,
       cube: { level: 1, owner: null },
       cubeEnabled: m.settings.cube && active.length === 2,
-      variant: m.settings.variant,
+      variant: variantOf(m.settings.variant)?.id ?? "fr",
       phase: "street",
       actor: null,
-      responder: null,
+      pending: null,
       result: null,
       lastDecision: null,
-      history: { flop: null, river: null, ended: false },
+      history: {},
       tabled: false,
     };
     log(`Hand ${number}: ${active[btn].name} has the button.`, true);
+    openAction();
+  }
+  // If the current street has a cube decision, open it.
+  function openAction() {
+    const h = hand();
+    if (!h.cubeEnabled) return;
+    const street = STREETS[h.street];
+    if (h.history[street] != null) return;
+    const actor = actorOn(h.variant, street, h.btn, h.cube);
+    if (actor != null) {
+      h.phase = "decision";
+      h.actor = actor;
+    }
   }
   function hand() {
     return st.model.hand;
   }
-  const v = () => VARIANTS[hand().variant];
   function advance() {
     const h = hand();
     if (h.phase !== "street") throw new Error("A cube decision is pending.");
@@ -243,14 +256,7 @@ export function initOnline({ pool }) {
     h.street++;
     const cards = h.board.slice(STREET_CARDS[h.street - 1], STREET_CARDS[h.street]);
     log(`${streetName(h.street)}: ${cards.map(cardName).join(" ")}.`);
-    if (h.cubeEnabled) {
-      const actor = h.street === 1 ? flopActor(v(), h.btn, h.cube) : h.street === 3 ? riverActor(v(), h.btn, h.cube) : null;
-      if (actor != null) {
-        h.phase = "decision";
-        h.actor = actor;
-        h.responder = 1 - actor;
-      }
-    }
+    openAction();
   }
   function seatOf(clientId) {
     return hand().playerIds.indexOf(clientId);
@@ -267,51 +273,40 @@ export function initOnline({ pool }) {
     const verb = level > 1 ? "redouble" : "double";
     if (h.phase === "decision") {
       if (seat !== h.actor) throw new Error("It is not your decision.");
+      h.lastDecision = { street: h.street, k: 0, chooser: seat, choice, level, base: level };
       if (choice === "double") {
-        h.phase = "response";
-        log(`${pname(seat)} ${verb}s to ${level * 2}.`, true);
+        h.pending = { ...offerRaise(level, seat, 1 - seat), firstResponder: 1 - seat };
+        h.phase = "chain";
+        log(`${pname(seat)} ${verb}s to ${h.pending.level}.`, true);
       } else if (choice === "noDouble") {
         log(`${pname(seat)} does not ${verb}.`);
-        h.phase = "street";
-        settleHistory(h, "N");
+        settleStreet(h);
       } else throw new Error("Choose double or no double.");
-      h.lastDecision = { street: h.street, kind: "double", chooser: seat, actor: h.actor, choice, level };
-    } else if (h.phase === "response") {
-      if (seat !== h.responder) throw new Error("It is not your decision.");
-      h.lastDecision = { street: h.street, kind: "response", chooser: seat, actor: h.actor, choice, level };
+    } else if (h.phase === "chain") {
+      const pd = h.pending;
+      if (seat !== pd.responder) throw new Error("It is not your decision.");
+      h.lastDecision = { street: h.street, k: pd.k, chooser: seat, choice, level, base: pd.base };
       if (choice === "drop") {
-        log(`${pname(seat)} drops.`);
-        finish(h.actor, DROP_UNIT * level, `${pname(seat)} dropped`);
+        log(`${pname(seat)} drops at ${pd.level}.`);
+        finish(pd.raiser, pd.drop, `${pname(seat)} dropped`);
       } else if (choice === "take") {
-        h.cube = { level: level * 2, owner: seat };
-        log(`${pname(seat)} takes. Cube at ${h.cube.level}.`);
-        h.phase = "street";
-        settleHistory(h, "T");
-      } else if (choice === "beaver") {
-        h.phase = "beaverReply";
-        log(`${pname(seat)} beavers to ${level * 4}!`, true);
-      } else throw new Error("Choose drop, take or beaver.");
-    } else if (h.phase === "beaverReply") {
-      if (seat !== h.actor) throw new Error("It is not your decision.");
-      h.lastDecision = { street: h.street, kind: "beaverReply", chooser: seat, actor: h.actor, choice, level };
-      if (choice === "drop") {
-        log(`${pname(seat)} drops the beaver.`);
-        finish(h.responder, 2 * DROP_UNIT * level, `${pname(seat)} dropped the beaver`);
-      } else if (choice === "take") {
-        h.cube = { level: level * 4, owner: h.responder };
-        log(`${pname(seat)} takes the beaver. Cube at ${h.cube.level}.`);
-        h.phase = "street";
-        settleHistory(h, "BT");
-      } else throw new Error("Choose take or drop.");
+        h.cube = { level: pd.level, owner: pd.firstResponder };
+        h.pending = null;
+        log(`${pname(seat)} takes. Cube at ${h.cube.level}, ${pname(h.cube.owner)} owns it.`);
+        settleStreet(h);
+      } else if (choice === "reraise") {
+        if (!canReraise(pd)) throw new Error("The cube cannot go higher.");
+        const name = reraiseName(pd.k);
+        h.pending = { ...reraise(pd), firstResponder: pd.firstResponder };
+        log(`${pname(seat)} ${name.toLowerCase()}s to ${h.pending.level}!`, true);
+      } else throw new Error("Choose drop, take or re-raise.");
     } else throw new Error("No cube decision is pending.");
-    if (h.phase === "street") {
-      h.actor = null;
-      h.responder = null;
-    }
   }
-  function settleHistory(h, outcome) {
-    if (h.street === 1) h.history.flop = outcome;
-    else h.history.river = "done";
+  function settleStreet(h) {
+    h.history[STREETS[h.street]] = cubeKey(h.cube, h.btn);
+    h.phase = "street";
+    h.actor = null;
+    h.pending = null;
   }
   function applyScores(nets) {
     const h = hand();
@@ -418,20 +413,17 @@ export function initOnline({ pool }) {
       if (me === h.actor) {
         prompt.textContent = `${streetName(h.street)}: your cube decision at ${level}.`;
         prompt.classList.add("alert");
-        actions.append(button(`No ${verb.toLowerCase()}`, "", act("noDouble")), button(`${verb} to ${level * 2}`, "primary", act("double")));
+        actions.append(button(optionLabel("noDouble", 0, level, level), "", act("noDouble")), button(optionLabel("double", 0, level, level), "primary", act("double")));
       } else prompt.textContent = `${streetName(h.street)}: ${names[h.actor]} is deciding whether to ${verb.toLowerCase()}.`;
-    } else if (h.phase === "response") {
-      if (me === h.responder) {
-        prompt.textContent = `${names[h.actor]} ${verb.toLowerCase()}s to ${level * 2}. Drop (lose ${DROP_UNIT * level}), take, or beaver?`;
+    } else if (h.phase === "chain") {
+      const pd = h.pending;
+      const raiseWord = pd.k === 1 ? verb.toLowerCase() : reraiseName(pd.k - 1).toLowerCase();
+      if (me === pd.responder) {
+        prompt.textContent = `${names[pd.raiser]} ${raiseWord}s to ${pd.level}. Drop (lose ${pd.drop}), take${canReraise(pd) ? `, or ${reraiseName(pd.k).toLowerCase()}` : ""}?`;
         prompt.classList.add("alert");
-        actions.append(button(`Drop (−${DROP_UNIT * level})`, "", act("drop")), button(`Take at ${level * 2}`, "primary", act("take")), button(`Beaver to ${level * 4}`, "", act("beaver")));
-      } else prompt.textContent = `${names[h.actor]} ${verb.toLowerCase()}s to ${level * 2}. ${names[h.responder]} to reply.`;
-    } else if (h.phase === "beaverReply") {
-      if (me === h.actor) {
-        prompt.textContent = `${names[h.responder]} beavers to ${level * 4}. Take, or drop and lose ${2 * DROP_UNIT * level}?`;
-        prompt.classList.add("alert");
-        actions.append(button(`Drop (−${2 * DROP_UNIT * level})`, "", act("drop")), button(`Take at ${level * 4}`, "primary", act("take")));
-      } else prompt.textContent = `${names[h.responder]} beavers to ${level * 4}. ${names[h.actor]} to reply.`;
+        actions.append(button(optionLabel("drop", pd.k, pd.base), "", act("drop")), button(optionLabel("take", pd.k, pd.base), "primary", act("take")));
+        if (canReraise(pd)) actions.append(button(optionLabel("reraise", pd.k, pd.base), "", act("reraise")));
+      } else prompt.textContent = `${names[pd.raiser]} ${raiseWord}s to ${pd.level}. ${names[pd.responder]} to reply.`;
     } else if (h.phase === "over") {
       const mine = me >= 0 ? ` You: ${signed(h.result.nets[me], 0)}.` : "";
       prompt.textContent = `Hand over (${h.result.reason}).${mine}${isHost ? "" : " Waiting for the next deal."}`;
@@ -503,10 +495,14 @@ export function initOnline({ pool }) {
       wrap.hidden = true;
       return;
     }
+    const grade = gradeHidden(view.decision.stage, d.k, d.choice);
+    if (!grade) {
+      wrap.hidden = true;
+      return;
+    }
     wrap.hidden = false;
     body.replaceChildren();
-    const grade = gradeHidden(view.decision.data, d.kind, d.level, d.choice);
-    renderOptionTable(body, grade, { level: d.level, preview: false, chooser: "your", note: `${streetName(d.street)}: you chose ${d.choice === "noDouble" ? "no double" : d.choice}` });
+    renderOptionTable(body, grade, { level: d.level, preview: false, chooser: "your", note: `${streetName(d.street)}: you chose ${d.choice === "noDouble" ? "no double" : d.choice === "reraise" ? reraiseName(d.k).toLowerCase() : d.choice}` });
   }
   function renderRoster() {
     const list = $("on-roster");

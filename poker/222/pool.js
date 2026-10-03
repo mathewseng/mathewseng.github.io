@@ -1,12 +1,14 @@
-// Worker pool for runout statistics. Exact enumerations are split across
-// workers by the first drawn card; sampled runs split the sample budget.
-import { completions, finishStats, mergeStats, runoutStats, rangeStats, mergeRange, finishRangeStats, makeRng } from "./engine.mjs";
-import { solve as solveSync } from "./solver.mjs";
+// Worker pool for runout statistics, range statistics and cube solves. Exact
+// enumerations and sampled range stats are split across workers; large solves
+// (preflop entries, and flop entries with a river stage) run the entry chain on
+// the main thread and spread the sampled subgames across the workers.
+import { completions, finishStats, mergeStats, runoutStats, rangeStats, mergeRange, finishRangeStats, makeRng, variantOf } from "./engine.mjs";
+import { solve as solveLocal } from "./solver.mjs";
 
 export const PRECISION = {
   fast: { label: "Fast", exactMax: 40000, samples: 12000, rangeSamples: 8000, solver: "fast" },
   standard: { label: "Standard", exactMax: 400000, samples: 60000, rangeSamples: 24000, solver: "standard" },
-  exact: { label: "Exact", exactMax: Infinity, samples: 0, rangeSamples: 60000, solver: "deep" },
+  exact: { label: "Exact / deep", exactMax: Infinity, samples: 0, rangeSamples: 60000, solver: "deep" },
 };
 
 export class Pool {
@@ -14,13 +16,18 @@ export class Pool {
     this.workers = [];
     this.pending = new Map();
     this.nextId = 1;
+    this.hostSeq = 1;
     try {
       for (let i = 0; i < size; i++) {
         const w = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
         w.onmessage = (e) => {
-          const { id, result, error } = e.data;
+          const { id, result, error, progress } = e.data;
           const p = this.pending.get(id);
           if (!p) return;
+          if (progress != null) {
+            p.onProgress?.(progress);
+            return;
+          }
           this.pending.delete(id);
           if (error) p.reject(new Error(error));
           else p.resolve(result);
@@ -37,10 +44,10 @@ export class Pool {
   get size() {
     return this.workers.length || 1;
   }
-  run(worker, payload) {
+  run(worker, payload, onProgress) {
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      this.pending.set(id, { resolve, reject, onProgress });
       worker.postMessage({ id, ...payload });
     });
   }
@@ -60,18 +67,7 @@ export class Pool {
       const base = (seed ?? (Math.random() * 2 ** 31) >>> 0) >>> 0;
       const jobs = [];
       for (let i = 0; i < parts; i++)
-        jobs.push(
-          this.run(this.workers[i], {
-            type: "stats",
-            hands,
-            board,
-            exact,
-            samples: Math.ceil(p.samples / parts),
-            seed: (base + i * 7919) >>> 0,
-            partIndex: i,
-            partCount: parts,
-          }),
-        );
+        jobs.push(this.run(this.workers[i], { type: "stats", hands, board, exact, samples: Math.ceil(p.samples / parts), seed: (base + i * 7919) >>> 0, partIndex: i, partCount: parts }));
       merged = mergeStats(await Promise.all(jobs));
     }
     const out = finishStats(merged, n);
@@ -89,24 +85,51 @@ export class Pool {
     const base = (seed ?? (Math.random() * 2 ** 31) >>> 0) >>> 0;
     let merged;
     if (!k || exactCase) {
-      merged = k
-        ? await this.run(this.workers[0], { type: "range", hero, board, opponents, samples: p.rangeSamples, seed: base })
-        : rangeStats(hero, board, { opponents, samples: p.rangeSamples, rng: makeRng(base) });
+      merged = k ? await this.run(this.workers[0], { type: "range", hero, board, opponents, samples: p.rangeSamples, seed: base }) : rangeStats(hero, board, { opponents, samples: p.rangeSamples, rng: makeRng(base) });
     } else {
       const jobs = [];
-      for (let i = 0; i < k; i++)
-        jobs.push(this.run(this.workers[i], { type: "range", hero, board, opponents, samples: Math.ceil(p.rangeSamples / k), seed: (base + i * 7919) >>> 0 }));
+      for (let i = 0; i < k; i++) jobs.push(this.run(this.workers[i], { type: "range", hero, board, opponents, samples: Math.ceil(p.rangeSamples / k), seed: (base + i * 7919) >>> 0 }));
       merged = mergeRange(await Promise.all(jobs));
     }
     const out = finishRangeStats(merged);
     out.ms = performance.now() - t0;
     return out;
   }
-  // Hidden-information cube solve (one worker).
-  solve(spec) {
+  // Executor backed by one worker (see solver.mjs localExecutor for the interface).
+  executor(worker) {
+    const hostId = `h${this.hostSeq++}`;
+    const timing = (this.timing = this.timing ?? {});
+    const timed = (name, fn) => async (...args) => {
+      const t0 = performance.now();
+      const r = await fn(...args);
+      timing[name] = (timing[name] ?? 0) + (performance.now() - t0);
+      timing[name + "N"] = (timing[name + "N"] ?? 0) + 1;
+      return r;
+    };
+    const op = (name) => this.run(worker, { type: "solve-op", hostId, op: name });
+    return {
+      init: timed("init", (modelSpec, subgameSpecs) => this.run(worker, { type: "solve-init", hostId, modelSpec, subgameSpecs })),
+      pass: timed("pass", (mode, t, entryReach, modeSpec) => this.run(worker, { type: "solve-pass", hostId, mode, t, entryReach, modeSpec })),
+      clip: timed("clip", () => op("clip")),
+      resetEval: timed("resetEval", () => op("resetEval")),
+      regret: timed("regret", () => op("regret")),
+      clean: timed("clean", (deficit) => this.run(worker, { type: "solve-op", hostId, op: "clean", arg: deficit })),
+      aggregates: timed("aggregates", () => op("aggregates")),
+      free: timed("free", () => op("free")),
+    };
+  }
+  // Hidden-information cube solve. Heavy solves are coordinated from here across the workers.
+  async solve(spec, { onProgress } = {}) {
     const k = this.workers.length;
-    if (!k) return Promise.resolve(solveSync(spec));
-    const w = this.workers[this.solveCursor = ((this.solveCursor ?? 0) + 1) % k];
-    return this.run(w, { type: "solve", spec });
+    const v = variantOf(spec.variant);
+    const board = spec.board ?? [];
+    const heavy = !spec.inWorker && (board.length === 0 || (board.length === 3 && v.streets.includes("river")));
+    if (!k) return solveLocal({ ...spec, onProgress: onProgress ? (t, total) => onProgress(t / total) : undefined });
+    if (heavy && k >= 2) {
+      const executors = this.workers.map((w) => this.executor(w));
+      return solveLocal({ ...spec, onProgress: onProgress ? (t, total) => onProgress(t / total) : undefined }, executors);
+    }
+    const w = this.workers[(this.solveCursor = ((this.solveCursor ?? 0) + 1) % k)];
+    return this.run(w, { type: "solve", spec }, onProgress);
   }
 }
