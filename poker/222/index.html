@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111417" />
+    <title>222 · Simulator, spot solver &amp; cube trainer</title>
+    <meta
+      name="description"
+      content="222: six-card Omaha flips split into three forced two-card hands. Simulate tables of two to seven, solve any spot, train doubling-cube decisions against an exact solver, and play online."
+    />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="/poker/" class="brand" aria-label="Back to poker"
+        ><span class="brand-mark">2<span>•</span></span><strong>222</strong><span class="brand-separator"></span
+        ><span class="brand-section">FLIPS &amp; CUBE</span></a
+      >
+      <div class="top-actions">
+        <button id="rules-button" class="quiet" aria-label="Rules &amp; method">
+          <span class="desktop-only">Rules &amp; method</span><span class="mobile-only">Rules</span></button
+        ><a href="/" class="site-link">MS ↗</a>
+      </div>
+    </header>
+    <main>
+      <div class="page-heading">
+        <div class="breadcrumb">POKER / 222</div>
+        <h1><span class="desktop-only">Six cards. Three hands. One cube.</span><span class="mobile-only">222</span></h1>
+        <p>
+          Every player gets six cards and shares a five-card board. The board decides how the six split into three
+          two-card Omaha hands worth 3, 2 and 1 points, with a 4-point bonus for a scoop.
+        </p>
+      </div>
+      <nav class="tabs" aria-label="Views">
+        <button class="active" data-tab="sim" aria-current="page">Simulator</button>
+        <button data-tab="spot">Spot solver</button>
+        <button data-tab="trainer">Cube trainer</button>
+        <button data-tab="online">Play online</button>
+        <button data-tab="reports">Reports</button>
+      </nav>
+
+      <!-- ========== SIMULATOR ========== -->
+      <section id="view-sim" class="view">
+        <div class="toolbar">
+          <div class="control">
+            <span class="label">Players</span>
+            <div class="segmented" id="player-count" role="group" aria-label="Players"></div>
+          </div>
+          <div class="control">
+            <span class="label">Precision</span>
+            <select id="precision">
+              <option value="fast">Fast</option>
+              <option value="standard" selected>Standard</option>
+              <option value="exact">Exact</option>
+            </select>
+          </div>
+          <div class="spacer"></div>
+          <div class="buttons">
+            <button id="sim-board" class="quiet">New board</button>
+            <button id="sim-deal" class="primary">New deal</button>
+          </div>
+        </div>
+        <div class="street-bar">
+          <div class="street-steps" id="sim-streets"></div>
+          <div class="buttons">
+            <button id="sim-back" class="quiet">◀ Back</button>
+            <button id="sim-next">Deal flop ▶</button>
+          </div>
+        </div>
+        <div class="board-strip">
+          <div class="board-cards" id="sim-board-cards"></div>
+          <div class="board-meta" id="sim-meta"></div>
+        </div>
+        <div id="sim-cube" class="cube-panel" hidden>
+          <div class="cube-head">
+            <div id="sim-cube-face"></div>
+            <div class="cube-text">
+              <h2 id="sim-cube-title">Cube</h2>
+              <p class="muted" id="sim-cube-sub"></p>
+            </div>
+            <div class="cube-controls">
+              <label><span class="label">Variant</span><select id="sim-variant"></select></label>
+              <label><span class="label">Button</span><select id="sim-btn"><option value="0">Seat 1</option><option value="1">Seat 2</option></select></label>
+              <label><span class="label">Cube</span><select id="sim-cube-state">
+                <option value="1:">Centered at 1</option>
+                <option value="2:0">2, seat 1 owns</option>
+                <option value="2:1">2, seat 2 owns</option>
+                <option value="4:0">4, seat 1 owns</option>
+                <option value="4:1">4, seat 2 owns</option>
+                <option value="8:0">8, seat 1 owns</option>
+                <option value="8:1">8, seat 2 owns</option>
+              </select></label>
+            </div>
+          </div>
+          <div id="sim-cube-body"></div>
+        </div>
+        <div class="seats" id="sim-seats"></div>
+        <section class="deck-panel">
+          <div class="deck-head">
+            <h2>Deck</h2>
+            <p class="muted" id="sim-deck-help">Click a card in a hand or on the board, then click a deck card to swap it in.</p>
+          </div>
+          <div class="deck-grid" id="sim-deck"></div>
+        </section>
+      </section>
+
+      <!-- ========== SPOT SOLVER ========== -->
+      <section id="view-spot" class="view" hidden>
+        <div class="spot-grid">
+          <form class="spot-form" id="spot-form">
+            <h2>Enter a spot</h2>
+            <p class="muted">Cards as rank then suit (<code>As Kh Td 9c</code>). Leave the board empty for preflop, or give 3, 4 or 5 cards.</p>
+            <div class="control">
+              <span class="label">Players</span>
+              <div class="segmented" id="spot-count" role="group" aria-label="Players"></div>
+            </div>
+            <div id="spot-hands"></div>
+            <label class="field"><span class="label">Board</span><input id="spot-board" placeholder="e.g. Ah 7d 2c" autocomplete="off" spellcheck="false" /></label>
+            <div class="spot-cube" id="spot-cube-controls">
+              <label class="field"><span class="label">Variant</span><select id="spot-variant"></select></label>
+              <label class="field"><span class="label">Button</span><select id="spot-btn"><option value="0">Seat 1</option><option value="1">Seat 2</option></select></label>
+              <label class="field"><span class="label">Cube</span><select id="spot-cube-state">
+                <option value="1:">Centered at 1</option>
+                <option value="2:0">2, seat 1 owns</option>
+                <option value="2:1">2, seat 2 owns</option>
+                <option value="4:0">4, seat 1 owns</option>
+                <option value="4:1">4, seat 2 owns</option>
+                <option value="8:0">8, seat 1 owns</option>
+                <option value="8:1">8, seat 2 owns</option>
+              </select></label>
+            </div>
+            <label class="field"><span class="label">Precision</span><select id="spot-precision">
+              <option value="fast">Fast</option>
+              <option value="standard" selected>Standard</option>
+              <option value="exact">Exact</option>
+            </select></label>
+            <div class="buttons">
+              <button type="button" id="spot-random" class="quiet">Random spot</button>
+              <button type="button" id="spot-from-sim" class="quiet">Copy from simulator</button>
+              <button type="submit" class="primary">Solve</button>
+            </div>
+            <p class="error" id="spot-error" hidden></p>
+          </form>
+          <div class="spot-result">
+            <div class="board-strip">
+              <div class="board-cards" id="spot-board-cards"></div>
+              <div class="board-meta" id="spot-meta"></div>
+            </div>
+            <div id="spot-cube" class="cube-panel" hidden>
+              <div class="cube-head">
+                <div id="spot-cube-face"></div>
+                <div class="cube-text">
+                  <h2 id="spot-cube-title">Cube</h2>
+                  <p class="muted" id="spot-cube-sub"></p>
+                </div>
+              </div>
+              <div id="spot-cube-body"></div>
+            </div>
+            <div class="seats" id="spot-seats"></div>
+            <p class="muted" id="spot-empty">Solve a spot to see the forced split, equities for each hand, and the optimal cube action.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== TRAINER ========== -->
+      <section id="view-trainer" class="view" hidden>
+        <div class="toolbar">
+          <div class="control">
+            <span class="label">Variant</span>
+            <select id="tr-variant"></select>
+          </div>
+          <div class="control">
+            <span class="label">You are</span>
+            <select id="tr-seat">
+              <option value="alternate" selected>Alternating</option>
+              <option value="btn">Always button</option>
+              <option value="opp">Never button</option>
+            </select>
+          </div>
+          <label class="control check">
+            <input type="checkbox" id="tr-peek" />
+            <span>Show analysis before deciding</span>
+          </label>
+          <div class="control">
+            <span class="label">Precision</span>
+            <select id="tr-precision">
+              <option value="fast">Fast</option>
+              <option value="standard" selected>Standard</option>
+              <option value="exact">Exact</option>
+            </select>
+          </div>
+          <div class="spacer"></div>
+          <div class="buttons">
+            <button id="tr-reset" class="quiet">Reset score</button>
+            <button id="tr-new" class="primary">New hand</button>
+          </div>
+        </div>
+        <div class="trainer-grid">
+          <div class="trainer-table">
+            <div class="score-row">
+              <div class="score"><span class="stat-label">You</span><b id="score-you">0</b></div>
+              <div id="tr-cube-face"></div>
+              <div class="score"><span class="stat-label">Bot</span><b id="score-bot">0</b></div>
+            </div>
+            <div class="street-bar">
+              <div class="street-steps" id="tr-streets"></div>
+              <span class="muted small" id="tr-view-note"></span>
+            </div>
+            <div class="board-strip">
+              <div class="board-cards" id="tr-board-cards"></div>
+              <div class="board-meta" id="tr-meta"></div>
+            </div>
+            <div class="prompt" id="tr-prompt">Press New hand to deal.</div>
+            <div class="action-row" id="tr-actions"></div>
+            <div class="seats two" id="tr-seats"></div>
+          </div>
+          <aside class="trainer-side">
+            <section class="analysis">
+              <h2 id="tr-analysis-title">Cube analysis</h2>
+              <p class="muted" id="tr-analysis-note">After each double, take, drop or beaver the solver's equities appear here with the correct play marked.</p>
+              <div id="tr-analysis-body"></div>
+            </section>
+            <section class="analysis">
+              <h2>Session</h2>
+              <div class="session-stats" id="tr-session"></div>
+            </section>
+            <section class="analysis">
+              <h2>Log</h2>
+              <ol class="log" id="tr-log"></ol>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ========== ONLINE ========== -->
+      <section id="view-online" class="view" hidden>
+        <div id="online-lobby" class="lobby">
+          <div class="lobby-card">
+            <h2>Play online</h2>
+            <p class="muted">Peer-to-peer rooms for two to seven players. Everyone sees every hand; two-player rooms can play with the doubling cube.</p>
+            <label class="field"><span class="label">Your name</span><input id="on-name" maxlength="24" placeholder="Name" autocomplete="nickname" /></label>
+            <div class="lobby-actions">
+              <button id="on-create" class="primary">Create room</button>
+              <div class="join-row">
+                <input id="on-code" class="code-input" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters" />
+                <button id="on-join">Join</button>
+              </div>
+            </div>
+            <button id="on-resume" class="quiet" hidden>Resume last table</button>
+            <p class="error" id="on-error" hidden></p>
+          </div>
+        </div>
+        <div id="online-room" hidden>
+          <div class="toolbar">
+            <div class="control"><span class="label">Room</span><b class="room-code" id="on-room-code">——</b></div>
+            <div class="control"><span class="label">Status</span><span id="on-status" class="muted">—</span></div>
+            <button id="on-copy" class="quiet">Copy invite</button>
+            <div class="spacer"></div>
+            <div class="buttons">
+              <button id="on-leave" class="quiet">Leave</button>
+            </div>
+          </div>
+          <div class="online-grid">
+            <div class="online-main">
+              <div id="on-settings" class="settings" hidden>
+                <label class="control check"><input type="checkbox" id="on-cube" checked /><span>Doubling cube (2 players)</span></label>
+                <label class="control"><span class="label">Variant</span><select id="on-variant"></select></label>
+                <label class="control check"><input type="checkbox" id="on-auto" checked /><span>Auto-deal streets</span></label>
+                <button id="on-start" class="primary">Start game</button>
+              </div>
+              <div id="on-table" hidden>
+                <div class="street-bar">
+                  <div class="street-steps" id="on-streets"></div>
+                  <div class="buttons"><button id="on-next" hidden>Next</button></div>
+                </div>
+                <div class="board-strip">
+                  <div class="board-cards" id="on-board-cards"></div>
+                  <div class="board-meta" id="on-meta"></div>
+                </div>
+                <div id="on-cube-panel" class="cube-panel compact" hidden>
+                  <div class="cube-head">
+                    <div id="on-cube-face"></div>
+                    <div class="cube-text"><h2 id="on-cube-title">Cube</h2><p class="muted" id="on-cube-sub"></p></div>
+                  </div>
+                </div>
+                <div class="prompt" id="on-prompt"></div>
+                <div class="action-row" id="on-actions"></div>
+                <div class="seats" id="on-seats"></div>
+              </div>
+            </div>
+            <aside class="online-side">
+              <section class="analysis">
+                <h2>Players</h2>
+                <ul class="roster" id="on-roster"></ul>
+              </section>
+              <section class="analysis" id="on-analysis-wrap" hidden>
+                <h2>Last cube decision</h2>
+                <div id="on-analysis"></div>
+              </section>
+              <section class="analysis">
+                <h2>Log</h2>
+                <ol class="log" id="on-log"></ol>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== REPORTS ========== -->
+      <section id="view-reports" class="view" hidden>
+        <div id="reports-body"><p class="muted">Loading cube reports…</p></div>
+      </section>
+    </main>
+
+    <dialog id="rules-dialog" aria-labelledby="rules-title">
+      <div class="dialog-head">
+        <h2 id="rules-title">Rules &amp; method</h2>
+        <button class="quiet" data-close="rules-dialog" aria-label="Close">✕</button>
+      </div>
+      <div class="dialog-body">
+        <h3>The game</h3>
+        <ul>
+          <li>Two to seven players each get six cards. A five-card board is dealt flop, turn, river. All cards are face up: 222 is a flipping game.</li>
+          <li>Once a flop is out, each six-card hand is split automatically into three two-card Omaha hands. Each uses exactly two hole cards and exactly three board cards.</li>
+          <li><b>Hand 1</b> is the two hole cards used by the best Omaha hand you can make from all six. <b>Hand 2</b> is the best pair from the remaining four. <b>Hand 3</b> is the last two cards.</li>
+          <li>When several pairs make the same best hand, the higher-ranked cards are used, then the higher suit: spades, hearts, diamonds, clubs.</li>
+          <li>Hand 1 is worth 3 points, hand 2 is worth 2 and hand 3 is worth 1. A tie on a hand splits its points. Winning all three outright is a <b>scoop</b> for a 4-point bonus, 10 points in all.</li>
+          <li>Each pair of players settles separately, so with more than two players a seat's result is its net against every opponent.</li>
+        </ul>
+        <h3>Numbers</h3>
+        <ul>
+          <li><b>EV</b> is the expected net points over every remaining runout, exact when the number of runouts is within the precision limit and sampled otherwise. Per-hand EVs and scoop EV add up to the total.</li>
+          <li><b>Win</b> and <b>tie</b> are the chances that a hand is the outright best or tied for best at showdown. <b>Scoop</b> is the chance of winning all three outright against everyone.</li>
+          <li>Greens are good for the seat shown, reds are bad; stronger color means a bigger number.</li>
+        </ul>
+        <h3>Doubling cube (two players)</h3>
+        <ul>
+          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The opponent may <b>drop</b> (the doubler wins 5 points per unit of the cube before the double), <b>take</b> (the cube doubles and the taker owns it; only the owner may redouble), or <b>beaver</b> (take and immediately redouble while keeping the cube; the doubler may then take at four times or drop for twice the usual cost).</li>
+          <li><b>Flop cube:</b> the button may double on the flop. <b>River cube:</b> the button may double on the river. <b>Flop and river:</b> the button may double on the flop; on the river the non-button may double if the cube is still centered, otherwise the cube owner may redouble.</li>
+          <li>Showdown pays the net points times the cube. The game is played face up, so the solver values every decision exactly: flop decisions enumerate every turn and river, with the river cube resolved by backward induction. The equities shown are in points at the current cube.</li>
+          <li>"Too good to double" means the opponent would drop a double, yet playing on for the full score is worth more than the 5-point drop.</li>
+        </ul>
+      </div>
+    </dialog>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../../shared/peer-room.js?v=20260908a"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

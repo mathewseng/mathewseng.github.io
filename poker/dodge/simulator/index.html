@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#111417" />
+    <title>Dodge · Table simulator &amp; cube trainer</title>
+    <meta
+      name="description"
+      content="Simulate Dodge hands for two to four players with live equity and bust odds, and train doubling-cube decisions against a solver-backed bot."
+    />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css?v=20261003" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="/poker/" class="brand" aria-label="Back to poker"
+        ><span class="brand-mark">d<span>•</span></span
+        ><strong>DODGE</strong><span class="brand-separator"></span
+        ><span class="brand-section">SIMULATOR</span></a
+      >
+      <div class="top-actions">
+        <a href="../" class="quiet-link">Hand reports</a
+        ><button id="rules-button" class="quiet" aria-label="Rules &amp; method">
+          <span class="desktop-only">Rules &amp; method</span
+          ><span class="mobile-only">Rules</span></button
+        ><a href="/" class="site-link">MS ↗</a>
+      </div>
+    </header>
+    <main>
+      <div class="page-heading">
+        <div>
+          <div class="breadcrumb">POKER / DODGE / SIMULATOR</div>
+          <h1>
+            <span class="desktop-only">Deal a table. Dodge the bust.</span
+            ><span class="mobile-only">Dodge simulator</span>
+          </h1>
+          <p>
+            Two to four players, one card each. Lowest card draws first, then
+            clockwise. Make a straight or better and you are out. Last one
+            drawing wins.
+          </p>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Views">
+        <button class="active" data-tab="sim" aria-current="page">
+          Table simulator
+        </button>
+        <button data-tab="trainer">Cube trainer</button>
+        <button data-tab="online">Play online</button>
+        <button data-tab="reports">Reports</button>
+      </nav>
+
+      <!-- ========== SIMULATOR ========== -->
+      <section id="view-sim" class="view">
+        <div class="toolbar">
+          <div class="control">
+            <span class="label">Players</span>
+            <div class="segmented" id="player-count" role="group" aria-label="Players">
+              <button data-n="2">2</button><button data-n="3">3</button
+              ><button data-n="4" class="active">4</button>
+            </div>
+          </div>
+          <label class="control check">
+            <input type="checkbox" id="ace-high" checked />
+            <span>Ace high for first draw</span>
+          </label>
+          <label class="control check" id="cube-mode-control">
+            <input type="checkbox" id="cube-mode" />
+            <span>Doubling cube (2 players)</span>
+          </label>
+          <div class="control">
+            <span class="label">Precision</span>
+            <select id="precision">
+              <option value="fast">Fast</option>
+              <option value="standard" selected>Standard</option>
+              <option value="deep">Deep (2-ply cube)</option>
+            </select>
+          </div>
+          <div class="spacer"></div>
+          <div class="buttons">
+            <button id="back-button" class="quiet" disabled title="Step back (←)">◀ Back</button>
+            <button id="forward-button" class="quiet" disabled title="Step forward (→)">Forward ▶</button>
+            <button id="draw-button">Draw card</button>
+            <button id="playout-button">Play out</button>
+            <button id="deal-button" class="primary">New deal</button>
+          </div>
+        </div>
+
+        <div class="spot-bar">
+          <button id="spot-toggle" class="quiet">Solve a spot ▾</button>
+          <span class="muted">Type each seat's cards like a solver input, choose who is on turn and the cube state, then load it.</span>
+        </div>
+        <div id="spot-panel" class="spot-panel" hidden>
+          <div class="spot-seats" id="spot-seats"></div>
+          <div class="spot-controls">
+            <label class="field"><span class="label">On turn</span><select id="spot-turn"></select></label>
+            <label class="field"><span class="label">Cube</span><select id="spot-cube-owner"></select></label>
+            <label class="field"><span class="label">Cube value</span>
+              <select id="spot-cube-value">
+                <option>1</option><option>2</option><option>4</option><option>8</option><option>16</option><option>32</option>
+              </select>
+            </label>
+            <div class="buttons">
+              <button id="spot-copy" class="quiet">Copy link</button>
+              <button id="spot-load" class="primary">Load spot</button>
+            </div>
+          </div>
+          <p id="spot-error" class="error-text" hidden></p>
+        </div>
+
+        <div class="summary" id="summary">
+          <div class="stat">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" id="sum-status">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Deck</span>
+            <span class="stat-value" id="sum-deck">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Deck runs out</span>
+            <span class="stat-value" id="sum-deckout">—</span>
+            <span class="stat-note">survivors split</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Games simulated</span>
+            <span class="stat-value" id="sum-games">—</span>
+          </div>
+          <div class="stat" id="sum-compute-wrap">
+            <span class="stat-label">Compute</span>
+            <span class="stat-value" id="sum-compute">—</span>
+          </div>
+        </div>
+
+        <div id="cube-panel" class="cube-panel" hidden>
+          <div class="cube-head">
+            <div class="cube-face" id="cube-face">
+              <span class="cube-value" id="cube-value">1</span>
+              <span class="cube-owner" id="cube-owner">centered</span>
+            </div>
+            <div class="cube-text">
+              <h2 id="cube-title">Cube decision</h2>
+              <p id="cube-subtitle" class="muted">
+                Equities are for the player on turn, in points at the current
+                cube and as an equivalent win chance.
+              </p>
+            </div>
+            <div class="cube-actions" id="cube-actions"></div>
+          </div>
+          <div class="cube-table-wrap">
+            <table class="cube-table" id="cube-table"></table>
+          </div>
+        </div>
+
+        <div class="seats" id="seats"></div>
+
+        <section class="deck-panel">
+          <div class="deck-head">
+            <h2>Deck</h2>
+            <p class="muted" id="deck-help"></p>
+          </div>
+          <div class="deck-grid" id="deck-grid"></div>
+        </section>
+      </section>
+
+      <!-- ========== TRAINER ========== -->
+      <section id="view-trainer" class="view" hidden>
+        <div class="toolbar">
+          <label class="control check">
+            <input type="checkbox" id="tr-ace-high" checked />
+            <span>Ace high for first draw</span>
+          </label>
+          <label class="control check">
+            <input type="checkbox" id="tr-peek" />
+            <span>Show analysis before deciding</span>
+          </label>
+          <div class="control">
+            <span class="label">Precision</span>
+            <select id="tr-precision">
+              <option value="fast">Fast</option>
+              <option value="standard" selected>Standard</option>
+              <option value="deep">Deep (2-ply)</option>
+            </select>
+          </div>
+          <div class="spacer"></div>
+          <div class="buttons">
+            <button id="tr-back" class="quiet" disabled title="Step back (←)">◀ Back</button>
+            <button id="tr-forward" class="quiet" disabled title="Step forward (→)">Forward ▶</button>
+            <button id="tr-live" class="quiet" hidden>Resume live</button>
+            <button id="tr-reset" class="quiet">Reset score</button>
+            <button id="tr-new" class="primary">New game</button>
+          </div>
+        </div>
+
+        <div class="trainer-grid">
+          <div class="trainer-table">
+            <div class="score-row">
+              <div class="score"><span class="stat-label">You</span><b id="score-you">0</b></div>
+              <div class="cube-face small" id="tr-cube-face">
+                <span class="cube-value" id="tr-cube-value">1</span>
+                <span class="cube-owner" id="tr-cube-owner">centered</span>
+              </div>
+              <div class="score"><span class="stat-label">Bot</span><b id="score-bot">0</b></div>
+            </div>
+            <div class="trainer-seats" id="tr-seats"></div>
+            <div class="prompt" id="tr-prompt">Press New game to deal.</div>
+            <div class="action-row" id="tr-actions"></div>
+          </div>
+          <aside class="trainer-side">
+            <section class="analysis" id="tr-analysis">
+              <h2 id="tr-analysis-title">Cube analysis</h2>
+              <p class="muted" id="tr-analysis-note">
+                After each double, take, or pass you will see the solver's
+                equities here, with the correct play marked. Step back through
+                the game to see how the numbers moved.
+              </p>
+              <div id="tr-analysis-body"></div>
+            </section>
+            <section class="analysis">
+              <h2>Session</h2>
+              <div class="session-stats" id="tr-session"></div>
+            </section>
+            <section class="analysis">
+              <h2>Log</h2>
+              <ol class="log" id="tr-log"></ol>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ========== ONLINE ========== -->
+      <section id="view-online" class="view" hidden>
+        <div id="online-lobby" class="report-grid">
+          <div class="report-card">
+            <h2>Play online</h2>
+            <p>
+              Peer-to-peer rooms for two to four players. The host's browser
+              runs the table; everyone sees every card, live equity, and bust
+              odds. Share the room code or the invite link.
+            </p>
+            <label class="field">
+              <span class="label">Your name</span>
+              <input id="on-name" maxlength="20" placeholder="Name" autocomplete="nickname" />
+            </label>
+            <div class="online-forms">
+              <div class="online-form">
+                <h3>Create a room</h3>
+                <div class="control">
+                  <span class="label">Seats</span>
+                  <div class="segmented" id="on-seat-count" role="group" aria-label="Seats">
+                    <button data-n="2">2</button><button data-n="3">3</button
+                    ><button data-n="4" class="active">4</button>
+                  </div>
+                </div>
+                <label class="control check"><input type="checkbox" id="on-cube" /><span>Doubling cube (2 seats)</span></label>
+                <label class="control check"><input type="checkbox" id="on-ace-high" checked /><span>Ace high for first draw</span></label>
+                <button id="on-create" class="primary">Create room</button>
+              </div>
+              <div class="online-form">
+                <h3>Join a room</h3>
+                <label class="field">
+                  <span class="label">Room code</span>
+                  <input id="on-code" maxlength="8" placeholder="ABCD" autocapitalize="characters" />
+                </label>
+                <button id="on-join">Join room</button>
+                <button id="on-resume" class="quiet" hidden>Resume previous table</button>
+              </div>
+            </div>
+            <p id="on-error" class="error-text" hidden></p>
+          </div>
+        </div>
+        <div id="online-room" hidden>
+          <div class="toolbar">
+            <div class="control">
+              <span class="label">Room</span>
+              <b id="on-room-code" class="room-code">—</b>
+              <span id="on-connection" class="conn">Offline</span>
+            </div>
+            <div class="control"><span class="label">Players</span><span id="on-roster"></span></div>
+            <div class="spacer"></div>
+            <div class="buttons">
+              <button id="on-copy" class="quiet">Copy invite</button>
+              <button id="on-leave" class="quiet">Leave</button>
+              <button id="on-start" class="primary" hidden>Start game</button>
+            </div>
+          </div>
+          <div class="summary">
+            <div class="stat"><span class="stat-label">Status</span><span class="stat-value" id="on-status">—</span></div>
+            <div class="stat"><span class="stat-label">Deck</span><span class="stat-value" id="on-deck">—</span></div>
+            <div class="stat"><span class="stat-label">Deck runs out</span><span class="stat-value" id="on-deckout">—</span><span class="stat-note">survivors split</span></div>
+            <div class="stat"><span class="stat-label">Games</span><span class="stat-value" id="on-games">0</span></div>
+          </div>
+          <div id="on-cube-panel" class="cube-panel" hidden>
+            <div class="cube-head">
+              <div class="cube-face">
+                <span class="cube-value" id="on-cube-value">1</span>
+                <span class="cube-owner" id="on-cube-owner">centered</span>
+              </div>
+              <div class="cube-text">
+                <h2 id="on-cube-title">Cube</h2>
+                <p id="on-cube-subtitle" class="muted"></p>
+              </div>
+            </div>
+            <div class="cube-table-wrap"><table class="cube-table" id="on-cube-table"></table></div>
+          </div>
+          <div class="prompt" id="on-prompt"></div>
+          <div class="action-row" id="on-actions"></div>
+          <div class="seats" id="on-seats"></div>
+          <section class="analysis">
+            <h2>Log</h2>
+            <ol class="log" id="on-log"></ol>
+          </section>
+        </div>
+      </section>
+
+      <!-- ========== REPORTS ========== -->
+      <section id="view-reports" class="view" hidden>
+        <div id="reports-loading" class="loading">Loading precomputed reports…</div>
+        <div id="reports" hidden></div>
+      </section>
+    </main>
+
+    <dialog id="rules-dialog" aria-labelledby="rules-title">
+      <div class="dialog-head">
+        <h2 id="rules-title">Rules &amp; method</h2>
+        <button class="quiet" data-close="rules-dialog" aria-label="Close">✕</button>
+      </div>
+      <div class="dialog-body">
+        <h3>The game</h3>
+        <ul>
+          <li>Two to four players are each dealt one card from a 52-card deck.</li>
+          <li>
+            The player holding the lowest card draws first. Ties are broken by
+            suit: clubs are lowest, then diamonds, hearts, spades. By default
+            the ace counts as the highest card for this rule; untick the option
+            to count it low.
+          </li>
+          <li>Players draw one card at a time in clockwise seat order and keep every card.</li>
+          <li>
+            A player busts when their cards contain a straight or better
+            (straight, flush, full house, four of a kind, straight flush, royal
+            flush). Aces play high or low in straights, no wraparound. A busted
+            player draws no more cards.
+          </li>
+          <li>The last player still drawing wins. If the deck runs out first, the survivors split the pot equally.</li>
+        </ul>
+        <h3>Statistics</h3>
+        <ul>
+          <li>
+            <b>Equity</b> is the chance to win the pot, from a Monte Carlo
+            simulation of the whole table from the current position (splits
+            count fractionally).
+          </li>
+          <li>
+            <b>Bust next / in 2 / in 3</b> are exact: every one-, two- and
+            three-card completion from the remaining deck is enumerated.
+          </li>
+          <li>
+            <b>Draws to bust</b> counts a player's own further draws including
+            the bust card, as if they alone kept drawing from the current deck.
+            The first three draws are exact and the tail is simulated.
+          </li>
+          <li>
+            Seventeen cards always contain five of a suit, so a hand of
+            <i>n</i> cards busts within 17 − <i>n</i> draws. With four players
+            the deck can run out: three players at 17, 17 and 9 cards leave a
+            fourth player with only 9 cards and no deck.
+          </li>
+        </ul>
+        <h3>Doubling cube</h3>
+        <ul>
+          <li>
+            Money-game cube, as in backgammon. It starts centered at 1. Before
+            drawing, the player on turn may <b>double</b>. The opponent then
+            <b>takes</b> (the cube doubles and they own it; only the owner may
+            redouble) or <b>passes</b> (the doubler wins the current stake).
+          </li>
+          <li>
+            The solver expands every possible next card exactly. Each resulting
+            position is valued by a dynamic program over the cube states on a
+            race model that uses each player's hazard sequence (probability of
+            busting on each future draw given survival), with the first draws
+            exact and the tail simulated. Deep precision adds a second exact
+            ply.
+          </li>
+          <li>
+            Shown equities are in points at the current cube value and as the
+            equivalent win chance ((E + 1) / 2 at a cube of 1). The correct
+            double decision compares No double against the smaller of
+            Double/Take and Double/Pass; the correct response takes when
+            Double/Take beats −1 cube.
+          </li>
+          <li>
+            In this game the take point is the dead-cube 25%: two-ply analysis
+            moves take equities by less than 0.005, because games usually end
+            by a bust before the cube owner can redouble. Doubles come early
+            (65% win chance on average) since one card can end the game.
+          </li>
+        </ul>
+      </div>
+    </dialog>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../../../shared/peer-room.js?v=20260908a"></script>
+    <script type="module" src="./app.js?v=20261003"></script>
+  </body>
+</html>

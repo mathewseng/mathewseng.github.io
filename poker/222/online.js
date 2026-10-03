@@ -1,0 +1,519 @@
+// Online multiplayer: peer-to-peer rooms on the shared PeerRoom module. The
+// host owns the game state; every client computes its own equities locally
+// because all hands are face up.
+import {
+  VARIANTS,
+  DROP_UNIT,
+  dealTable,
+  settle,
+  flopActor,
+  riverActor,
+  riverAfterFlop,
+  analyzeDecision,
+  flipHist,
+  gradeChoice,
+  cardName,
+} from "./engine.mjs";
+import { $, el, button, cardEl, renderSeats, renderDecisionTable, cubeFace, signed, STREET_CARDS, streetName } from "./ui.js";
+import { fillVariantSelect } from "./cube-view.js";
+
+const NAME_KEY = "222.player-name";
+const hostKey = (code) => `222.host.${code}`;
+
+export function initOnline({ pool }) {
+  const PeerRoom = window.PeerRoom;
+  const st = { model: null, stats: null, statsKey: null, token: 0, timer: null, roster: [], analysis: null, analysisKey: null };
+  const lobby = $("online-lobby"),
+    roomView = $("online-room");
+  fillVariantSelect($("on-variant"), "both");
+  $("on-name").value = localStorage.getItem(NAME_KEY) || "";
+  if (!PeerRoom) {
+    $("on-error").textContent = "The peer connection library did not load.";
+    $("on-error").hidden = false;
+    return { shown() {}, prefillCode() {} };
+  }
+  const room = new PeerRoom({ namespace: "two22", maxPlayers: 7, storageKey: "222.room.session.v1" });
+
+  /* ---------- lobby ---------- */
+  const showError = (msg) => {
+    $("on-error").textContent = msg;
+    $("on-error").hidden = !msg;
+  };
+  const name = () => {
+    const v = $("on-name").value.trim() || "Player";
+    localStorage.setItem(NAME_KEY, v);
+    return v;
+  };
+  $("on-create").addEventListener("click", async () => {
+    showError("");
+    try {
+      await room.create(name());
+      st.model = { kind: "lobby", settings: readSettings(), players: [], log: [] };
+      syncPlayers();
+      enterRoom();
+      publish();
+    } catch (error) {
+      showError(error.message);
+    }
+  });
+  $("on-join").addEventListener("click", async () => {
+    showError("");
+    try {
+      await room.join($("on-code").value, name());
+      enterRoom();
+    } catch (error) {
+      showError(error.message);
+    }
+  });
+  $("on-resume").addEventListener("click", async () => {
+    showError("");
+    try {
+      await room.resume();
+      if (room.isHost) {
+        st.model = loadHostState(room.roomCode) || { kind: "lobby", settings: readSettings(), players: [], log: [] };
+        syncPlayers();
+        publish();
+      }
+      enterRoom();
+    } catch (error) {
+      showError(error.message);
+    }
+  });
+  $("on-leave").addEventListener("click", () => {
+    clearTimeout(st.timer);
+    room.leave();
+    st.model = null;
+    roomView.hidden = true;
+    lobby.hidden = false;
+    $("on-resume").hidden = !room.savedSession();
+  });
+  $("on-copy").addEventListener("click", async () => {
+    const url = `${location.origin}${location.pathname}#${room.roomCode}`;
+    try {
+      await navigator.clipboard.writeText(`Join my 222 table: ${url}\nRoom code: ${room.roomCode}`);
+      $("on-copy").textContent = "Copied!";
+      setTimeout(() => ($("on-copy").textContent = "Copy invite"), 1500);
+    } catch {
+      prompt("Copy this invite link", url);
+    }
+  });
+  function enterRoom() {
+    lobby.hidden = true;
+    roomView.hidden = false;
+    $("on-room-code").textContent = room.roomCode;
+    history.replaceState(null, "", `#${room.roomCode}`);
+    render();
+  }
+
+  /* ---------- host settings ---------- */
+  function readSettings() {
+    return { cube: $("on-cube").checked, variant: $("on-variant").value, auto: $("on-auto").checked };
+  }
+  for (const id of ["on-cube", "on-variant", "on-auto"])
+    $(id).addEventListener("change", () => {
+      if (!room.isHost || !st.model) return;
+      st.model.settings = readSettings();
+      publish();
+    });
+  $("on-start").addEventListener("click", () => room.sendAction({ type: "start" }));
+  $("on-next").addEventListener("click", () => room.sendAction({ type: "next" }));
+
+  /* ---------- room events ---------- */
+  room.onStatus = (status, message) => {
+    $("on-status").textContent = message;
+    $("on-status").style.color = status === "connected" ? "var(--green)" : "var(--amber)";
+  };
+  room.onError = (error) => showError(error.message);
+  room.onRoster = (roster) => {
+    st.roster = roster;
+    if (room.isHost && st.model) {
+      syncPlayers();
+      publish();
+    }
+    renderRoster();
+  };
+  room.onState = (state) => {
+    if (!room.isHost) st.model = state;
+    render();
+  };
+  room.onAction = handleAction;
+  room.onBecomeHost = (recovered) => {
+    st.model = recovered || loadHostState(room.roomCode) || { kind: "lobby", settings: readSettings(), players: [], log: [] };
+    syncPlayers();
+    publish();
+  };
+  function syncPlayers() {
+    const m = st.model;
+    const byId = new Map(m.players.map((p) => [p.id, p]));
+    const players = [];
+    for (const r of st.roster) {
+      const existing = byId.get(r.id);
+      players.push(existing ? { ...existing, name: r.name, connected: r.connected } : { id: r.id, name: r.name, score: 0, connected: r.connected });
+    }
+    // Keep players who left mid-hand so the hand can finish.
+    if (m.hand && m.hand.phase !== "over")
+      for (const p of m.players) if (!players.some((q) => q.id === p.id) && m.hand.playerIds.includes(p.id)) players.push({ ...p, connected: false, left: true });
+    m.players = players;
+  }
+  function publish() {
+    if (!room.isHost || !st.model) return;
+    try {
+      localStorage.setItem(hostKey(room.roomCode), JSON.stringify(st.model));
+    } catch {}
+    room.publishState(st.model, (state) => clientView(state));
+    scheduleAuto();
+  }
+  function loadHostState(code) {
+    try {
+      return JSON.parse(localStorage.getItem(hostKey(code)) || "null");
+    } catch {
+      return null;
+    }
+  }
+  function clientView(state) {
+    if (!state.hand) return state;
+    const h = state.hand;
+    return { ...state, hand: { ...h, board: h.board.slice(0, STREET_CARDS[h.street]) } };
+  }
+  function log(text, strong = false) {
+    st.model.log.unshift({ text, strong });
+    if (st.model.log.length > 60) st.model.log.pop();
+  }
+
+  /* ---------- host game logic ---------- */
+  function handleAction(clientId, action) {
+    const m = st.model;
+    if (!m) return;
+    try {
+      if (action.type === "start" || (action.type === "next" && (!m.hand || m.hand.phase === "over"))) {
+        if (clientId !== room.clientId) throw new Error("Only the host can deal.");
+        startHand();
+      } else if (action.type === "next") {
+        if (clientId !== room.clientId) throw new Error("Only the host can deal.");
+        advance();
+      } else if (action.type === "cube") {
+        cubeAction(clientId, action.choice);
+      }
+      publish();
+    } catch (error) {
+      if (clientId === room.clientId) showError(error.message);
+      else room.broadcastEvent({ kind: "error", target: clientId, message: error.message });
+    }
+  }
+  room.onEvent = (_c, event) => {
+    if (event?.kind === "error" && (!event.target || event.target === room.clientId)) showError(event.message);
+  };
+  function startHand() {
+    const m = st.model;
+    const active = m.players.filter((p) => p.connected && !p.left);
+    if (active.length < 2) throw new Error("Need at least two connected players.");
+    m.players = active;
+    const number = (m.hand?.number ?? 0) + 1;
+    const t = dealTable(active.length);
+    const btn = (number - 1) % active.length;
+    m.kind = "game";
+    m.hand = {
+      number,
+      playerIds: active.map((p) => p.id),
+      btn,
+      hands: t.hands,
+      board: t.board,
+      street: 0,
+      cube: { level: 1, owner: null },
+      cubeEnabled: m.settings.cube && active.length === 2,
+      variant: m.settings.variant,
+      phase: "street",
+      actor: null,
+      responder: null,
+      result: null,
+      lastDecision: null,
+    };
+    log(`Hand ${number}: ${active[btn].name} has the button.`, true);
+  }
+  function hand() {
+    return st.model.hand;
+  }
+  const v = () => VARIANTS[hand().variant];
+  function advance() {
+    const h = hand();
+    if (h.phase !== "street") throw new Error("A cube decision is pending.");
+    if (h.street === 3) {
+      showdown();
+      return;
+    }
+    h.street++;
+    const cards = h.board.slice(STREET_CARDS[h.street - 1], STREET_CARDS[h.street]);
+    log(`${streetName(h.street)}: ${cards.map(cardName).join(" ")}.`);
+    if (h.cubeEnabled) {
+      const actor = h.street === 1 ? flopActor(v(), h.btn, h.cube) : h.street === 3 ? riverActor(v(), h.btn, h.cube) : null;
+      if (actor != null) {
+        h.phase = "decision";
+        h.actor = actor;
+        h.responder = 1 - actor;
+      }
+    }
+  }
+  function seatOf(clientId) {
+    return hand().playerIds.indexOf(clientId);
+  }
+  function pname(seat) {
+    const id = hand().playerIds[seat];
+    return st.model.players.find((p) => p.id === id)?.name ?? `Seat ${seat + 1}`;
+  }
+  function cubeAction(clientId, choice) {
+    const h = hand();
+    if (!h || !h.cubeEnabled) throw new Error("No cube in this hand.");
+    const seat = seatOf(clientId);
+    const level = h.cube.level;
+    const verb = level > 1 ? "redouble" : "double";
+    if (h.phase === "decision") {
+      if (seat !== h.actor) throw new Error("It is not your decision.");
+      if (choice === "double") {
+        h.phase = "response";
+        log(`${pname(seat)} ${verb}s to ${level * 2}.`, true);
+      } else if (choice === "noDouble") {
+        log(`${pname(seat)} does not ${verb}.`);
+        h.phase = "street";
+      } else throw new Error("Choose double or no double.");
+      h.lastDecision = { street: h.street, kind: "double", chooser: seat, actor: h.actor, choice, level };
+    } else if (h.phase === "response") {
+      if (seat !== h.responder) throw new Error("It is not your decision.");
+      h.lastDecision = { street: h.street, kind: "response", chooser: seat, actor: h.actor, choice, level };
+      if (choice === "drop") {
+        log(`${pname(seat)} drops.`);
+        finish(h.actor, DROP_UNIT * level, `${pname(seat)} dropped`);
+      } else if (choice === "take") {
+        h.cube = { level: level * 2, owner: seat };
+        log(`${pname(seat)} takes. Cube at ${h.cube.level}.`);
+        h.phase = "street";
+      } else if (choice === "beaver") {
+        h.phase = "beaverReply";
+        log(`${pname(seat)} beavers to ${level * 4}!`, true);
+      } else throw new Error("Choose drop, take or beaver.");
+    } else if (h.phase === "beaverReply") {
+      if (seat !== h.actor) throw new Error("It is not your decision.");
+      h.lastDecision = { street: h.street, kind: "beaverReply", chooser: seat, actor: h.actor, choice, level };
+      if (choice === "drop") {
+        log(`${pname(seat)} drops the beaver.`);
+        finish(h.responder, 2 * DROP_UNIT * level, `${pname(seat)} dropped the beaver`);
+      } else if (choice === "take") {
+        h.cube = { level: level * 4, owner: h.responder };
+        log(`${pname(seat)} takes the beaver. Cube at ${h.cube.level}.`);
+        h.phase = "street";
+      } else throw new Error("Choose take or drop.");
+    } else throw new Error("No cube decision is pending.");
+    if (h.phase === "street") {
+      h.actor = null;
+      h.responder = null;
+    }
+  }
+  function applyScores(nets) {
+    const h = hand();
+    h.playerIds.forEach((id, i) => {
+      const p = st.model.players.find((q) => q.id === id);
+      if (p) p.score += nets[i];
+    });
+  }
+  function finish(winnerSeat, points, reason) {
+    const h = hand();
+    const nets = [0, 0];
+    nets[winnerSeat] = points;
+    nets[1 - winnerSeat] = -points;
+    applyScores(nets);
+    h.phase = "over";
+    h.result = { nets, reason };
+    log(`${pname(winnerSeat)} wins ${points} points: ${reason}.`, true);
+  }
+  function showdown() {
+    const h = hand();
+    const r = settle(h.hands, h.board);
+    const nets = r.net.map((x) => x * h.cube.level);
+    applyScores(nets);
+    h.phase = "over";
+    h.result = { nets, reason: "showdown", perHand: r.perHand, scoop: r.scoop, pairs: r.pairs };
+    log(`Showdown: ${h.playerIds.map((_, i) => `${pname(i)} ${signed(nets[i], 0)}`).join(", ")}.`, true);
+  }
+  function scheduleAuto() {
+    clearTimeout(st.timer);
+    if (!room.isHost || !st.model?.hand || !st.model.settings.auto) return;
+    const h = st.model.hand;
+    if (h.phase === "street") st.timer = setTimeout(() => safeAct(() => advance()), h.street === 0 ? 2500 : 3500);
+    else if (h.phase === "over") st.timer = setTimeout(() => safeAct(() => startHand()), 6000);
+  }
+  function safeAct(fn) {
+    try {
+      fn();
+      publish();
+    } catch (error) {
+      showError(error.message);
+    }
+  }
+
+  /* ---------- rendering ---------- */
+  function playersInHand() {
+    const h = hand();
+    return h.playerIds.map((id, i) => st.model.players.find((p) => p.id === id) ?? { id, name: `Seat ${i + 1}`, score: 0 });
+  }
+  function render() {
+    const m = st.model;
+    renderRoster();
+    if (!m) return;
+    const isHost = room.isHost;
+    $("on-settings").hidden = !(isHost && (!m.hand || m.hand.phase === "over"));
+    if (isHost) {
+      $("on-cube").checked = m.settings.cube;
+      $("on-variant").value = m.settings.variant;
+      $("on-auto").checked = m.settings.auto;
+      $("on-start").textContent = m.hand ? "Deal next hand" : "Start game";
+    }
+    $("on-table").hidden = !m.hand;
+    const logEl = $("on-log");
+    logEl.replaceChildren();
+    for (const e of m.log ?? []) logEl.append(el("li", e.strong ? "strong" : "", e.text));
+    if (!m.hand) return;
+    const h = m.hand;
+    const names = playersInHand().map((p) => p.name);
+    const me = h.playerIds.indexOf(room.clientId);
+    const board = h.board.slice(0, STREET_CARDS[h.street]);
+    const steps = $("on-streets");
+    steps.replaceChildren();
+    for (let s = 0; s < 4; s++) steps.append(button(streetName(s), s === h.street ? "active" : s < h.street ? "done" : "", null, true));
+    const nextBtn = $("on-next");
+    nextBtn.hidden = !isHost;
+    nextBtn.disabled = !(h.phase === "street" || h.phase === "over");
+    nextBtn.textContent = h.phase === "over" ? "Next hand" : h.street === 3 ? "Showdown" : `Deal ${streetName(h.street + 1).toLowerCase()}`;
+    const bc = $("on-board-cards");
+    bc.replaceChildren();
+    for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i]) : el("span", "slot"));
+    const meta = $("on-meta");
+    meta.replaceChildren();
+    meta.append(el("span", "", `Hand ${h.number} · ${names.length} players${h.cubeEnabled ? ` · ${VARIANTS[h.variant].name}` : ""}`));
+    if (st.stats) meta.append(el("span", "", `${st.stats.exact ? "Exact" : "Sampled"}: ${st.stats.count.toLocaleString("en-US")} runouts`));
+    const cp = $("on-cube-panel");
+    cp.hidden = !h.cubeEnabled;
+    if (h.cubeEnabled) {
+      $("on-cube-face").replaceChildren(cubeFace(h.cube.level, h.cube.owner == null ? "centered" : names[h.cube.owner]));
+      $("on-cube-title").textContent = `Cube at ${h.cube.level}`;
+      $("on-cube-sub").textContent = VARIANTS[h.variant].blurb;
+    }
+    // prompt and actions
+    const prompt = $("on-prompt");
+    const actions = $("on-actions");
+    actions.replaceChildren();
+    prompt.classList.remove("alert");
+    const level = h.cube.level;
+    const verb = level > 1 ? "Redouble" : "Double";
+    const act = (choice) => () => room.sendAction({ type: "cube", choice });
+    if (h.phase === "street") prompt.textContent = h.street === 3 ? "River dealt. Waiting for showdown." : `${streetName(h.street)} dealt.${isHost ? "" : " Waiting for the host to deal."}`;
+    else if (h.phase === "decision") {
+      if (me === h.actor) {
+        prompt.textContent = `${streetName(h.street)}: your cube decision at ${level}.`;
+        prompt.classList.add("alert");
+        actions.append(button(`No ${verb.toLowerCase()}`, "", act("noDouble")), button(`${verb} to ${level * 2}`, "primary", act("double")));
+      } else prompt.textContent = `${streetName(h.street)}: ${names[h.actor]} is deciding whether to ${verb.toLowerCase()}.`;
+    } else if (h.phase === "response") {
+      if (me === h.responder) {
+        prompt.textContent = `${names[h.actor]} ${verb.toLowerCase()}s to ${level * 2}. Drop (lose ${DROP_UNIT * level}), take, or beaver?`;
+        prompt.classList.add("alert");
+        actions.append(button(`Drop (−${DROP_UNIT * level})`, "", act("drop")), button(`Take at ${level * 2}`, "primary", act("take")), button(`Beaver to ${level * 4}`, "", act("beaver")));
+      } else prompt.textContent = `${names[h.actor]} ${verb.toLowerCase()}s to ${level * 2}. ${names[h.responder]} to reply.`;
+    } else if (h.phase === "beaverReply") {
+      if (me === h.actor) {
+        prompt.textContent = `${names[h.responder]} beavers to ${level * 4}. Take, or drop and lose ${2 * DROP_UNIT * level}?`;
+        prompt.classList.add("alert");
+        actions.append(button(`Drop (−${2 * DROP_UNIT * level})`, "", act("drop")), button(`Take at ${level * 4}`, "primary", act("take")));
+      } else prompt.textContent = `${names[h.responder]} beavers to ${level * 4}. ${names[h.actor]} to reply.`;
+    } else if (h.phase === "over") {
+      const mine = me >= 0 ? ` You: ${signed(h.result.nets[me], 0)}.` : "";
+      prompt.textContent = `Hand over (${h.result.reason}).${mine}${isHost ? "" : " Waiting for the next deal."}`;
+    }
+    if (h.phase === "over" && h.result.perHand) actions.append(resultTable(h, names));
+    renderSeats($("on-seats"), { hands: h.hands, board, stats: st.stats, names, btn: h.btn, highlight: me >= 0 ? me : undefined, pending: !st.stats });
+    computeStats();
+    renderAnalysis();
+  }
+  function resultTable(h, names) {
+    const t = el("table", "points-table");
+    const head = el("tr");
+    head.append(el("th", "", "Player"), el("th", "num", "H1"), el("th", "num", "H2"), el("th", "num", "H3"), el("th", "num", "Scoop"), el("th", "num", `Net × ${h.cube.level}`));
+    t.append(head);
+    names.forEach((n, i) => {
+      const tr = el("tr");
+      tr.append(el("td", "", n));
+      h.result.perHand[i].forEach((x) => tr.append(el("td", "num", signed(x, 0))));
+      tr.append(el("td", "num", signed(h.result.scoop[i], 0)), el("td", "num", signed(h.result.nets[i], 0)));
+      t.append(tr);
+    });
+    return t;
+  }
+  async function computeStats() {
+    const h = st.model?.hand;
+    if (!h) return;
+    const board = h.board.slice(0, STREET_CARDS[h.street]);
+    const key = JSON.stringify([h.number, h.hands, board]);
+    if (st.statsKey === key) return;
+    st.statsKey = key;
+    st.stats = null;
+    const token = ++st.token;
+    try {
+      const stats = await pool.stats(h.hands, board, { precision: "standard" });
+      if (token !== st.token) return;
+      st.stats = stats;
+      st.cache = st.cache || new Map();
+      st.cache.set(key, stats);
+      render();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  function renderAnalysis() {
+    const h = st.model?.hand;
+    const wrap = $("on-analysis-wrap");
+    const body = $("on-analysis");
+    const d = h?.lastDecision;
+    if (!h || !d || !h.cubeEnabled) {
+      wrap.hidden = true;
+      return;
+    }
+    const board = h.board.slice(0, STREET_CARDS[d.street]);
+    const key = JSON.stringify([h.number, h.hands, board]);
+    const stats = key === st.statsKey ? st.stats : st.cache?.get(key);
+    if (!stats) {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    const names = playersInHand().map((p) => p.name);
+    const hist = d.actor === 0 ? stats.hist : flipHist(stats.hist);
+    const a = analyzeDecision({ hist, level: d.level, riverAfter: d.street === 1 ? riverAfterFlop(VARIANTS[h.variant]) : "none" });
+    const grade = gradeChoice(a, d.kind, d.choice);
+    body.replaceChildren();
+    const label = `${streetName(d.street)}: ${names[d.chooser]} chose ${d.choice === "noDouble" ? "no double" : d.choice}`;
+    renderDecisionTable(body, a, d.kind, grade, { level: d.level, preview: false, label });
+  }
+  function renderRoster() {
+    const list = $("on-roster");
+    list.replaceChildren();
+    const scores = new Map((st.model?.players ?? []).map((p) => [p.id, p.score]));
+    const roster = st.roster.length ? st.roster : st.model?.players ?? [];
+    for (const r of roster) {
+      const li = el("li", r.connected === false ? "offline" : "");
+      li.append(el("span", "dot"));
+      const n = el("span", "name", r.name + (r.id === room.clientId ? " (you)" : "") + (r.host ? " · host" : ""));
+      li.append(n);
+      const sc = scores.get(r.id) ?? 0;
+      const s = el("span", "score", signed(sc, 0));
+      s.style.color = sc > 0 ? "var(--green)" : sc < 0 ? "var(--red)" : "var(--muted)";
+      li.append(s);
+      list.append(li);
+    }
+  }
+  return {
+    shown() {
+      $("on-resume").hidden = !room.savedSession() || room.connected;
+    },
+    prefillCode(code) {
+      $("on-code").value = code;
+    },
+  };
+}

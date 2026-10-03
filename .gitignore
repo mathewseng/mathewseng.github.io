@@ -4,3 +4,5 @@ dist/
 coverage/
 ofc/fantasyland-ev/precomputed-parts/
 *.tsbuildinfo
+
+.claude/
