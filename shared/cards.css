@@ -1,5 +1,9 @@
 /* Shared playing-card component. Every card on the site uses this face.
  *
+ * The face follows GTO Wizard's four-colour deck: solid suit-coloured card,
+ * suit mark top-left in 40% black, big white rank centred below it, and at
+ * small sizes the rank alone, centred. Cards use the poker 5:7 ratio.
+ *
  * Markup (from shared/cards.js):
  *   <span class="playing-card suit-h" aria-label="King of hearts">
  *     <span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span>
@@ -11,19 +15,20 @@
  * corner radius and the badges keep identical proportions at every size.
  */
 :root {
-  --card-spade: #565e66;
-  --card-heart: #c72e3c;
-  --card-diamond: #3269d3;
-  --card-club: #14894f;
-  --card-joker: #7242dc;
-  --card-back: #172a3d;
-  --card-back-line: #223c55;
-  --card-back-ink: #6d8ba8;
+  --card-spade: #504f4f;
+  --card-heart: #9f2517;
+  --card-diamond: #2634bd;
+  --card-club: #4faa41;
+  --card-joker: #6a3fc9;
+  --card-suit-ink: rgba(0, 0, 0, 0.4);
+  --card-back: #1f2128;
+  --card-back-line: #353846;
+  --card-back-ink: #6f7488;
   --card-text: #ffffff;
   --card-focus: #ffffff;
   --card-selected: #ffffff;
   --card-staged: #35d6a0;
-  --card-ring: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --card-ring: 0 0 0 0 transparent;
   --card-shadow: 0 0 0 0 transparent;
   --card-dim-opacity: 0.3;
   --card-width: 56px;
@@ -34,7 +39,6 @@
  *   .hand { container-type: size; }
  *   .hand .playing-card { --card-width: min(100%, calc(100cqh * 5 / 7)); }
  */
-
 .playing-card,
 .empty-slot {
   position: relative;
@@ -46,7 +50,7 @@
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 10% / 7.1429%;
+  border-radius: 8% / 5.7143%;
   vertical-align: top;
 }
 
@@ -63,7 +67,7 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
   text-align: center;
@@ -95,27 +99,44 @@ button.playing-card:disabled,
 
 .playing-card > .card-suit {
   position: absolute;
-  top: 4%;
-  left: 7%;
-  font-size: 26cqw;
+  top: 1.5%;
+  left: 6%;
+  font-size: 50cqw;
+  font-weight: 400;
   line-height: 1;
-  color: rgba(0, 0, 0, 0.48);
+  color: var(--card-suit-ink);
 }
 
 .playing-card > .card-rank {
   position: absolute;
-  inset: 19% 0 0;
+  inset: 33% 0 5%;
   display: grid;
   place-items: center;
-  font-size: 64cqw;
-  font-weight: 500;
+  font-size: 92cqw;
+  font-weight: 600;
   line-height: 1;
 }
 
 .playing-card.joker > .card-rank {
-  font-size: 40cqw;
+  font-size: 52cqw;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+/* Small cards: rank only, centred (as in GTO Wizard's compact cards). */
+@container (max-width: 43px) {
+  .playing-card > .card-suit {
+    display: none;
+  }
+
+  .playing-card > .card-rank {
+    inset: 0;
+    font-size: 100cqw;
+  }
+
+  .playing-card.joker > .card-rank {
+    font-size: 58cqw;
+  }
 }
 
 .playing-card > .card-badge {
