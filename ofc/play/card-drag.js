@@ -36,11 +36,11 @@
         ghost.removeAttribute("data-card-id");
         ghost.setAttribute("aria-hidden", "true");
         ghost.classList.add("card-drag-ghost");
+        // The shared card face scales with the card's own width, so the ghost only
+        // needs the source card's size; the lift/drop animations then scale the face too.
+        ghost.style.setProperty("--card-width", rect.width + "px");
         ghost.style.width = rect.width + "px";
         ghost.style.height = rect.height + "px";
-        for (const selector of [".card-rank", ".card-suit"]) {
-          ghost.querySelector(selector).style.fontSize = getComputedStyle(drag.source.querySelector(selector)).fontSize;
-        }
         document.body.append(ghost);
         drag.ghost = ghost;
         drag.source.classList.add("drag-source-hidden");

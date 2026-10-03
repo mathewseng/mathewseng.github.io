@@ -7,38 +7,35 @@
     <meta name="description" content="Fantasyland royalty EV, repeat probability, and joker distribution calculator for OFC variants." />
     <title>OFC Fantasyland EV</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260925a" />
+    <link rel="stylesheet" href="./styles.css?v=20261003" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="header-inner">
-        <a class="brand" href="/" aria-label="Home"><span>MS</span><strong>OFC Fantasyland EV</strong></a>
-        <nav aria-label="OFC tools">
-          <a href="/ofc/">OFC tools</a>
-          <a href="/ofc/fantasyland-trainer/">Trainer</a>
-        </nav>
-      </div>
-    </header>
-
-    <main class="page-shell">
-      <section class="intro-band">
-        <div>
-          <p class="eyebrow">Precomputed analysis</p>
-          <h1>Fantasyland royalty EV</h1>
-          <p class="lede">Compare exact trainer-solver results for royalty EV, foul chance, and repeat Fantasyland by cards in hand, jokers drawn, and jokers in the deck.</p>
-        </div>
-        <button id="rules-open" class="rules-button" type="button" aria-haspopup="dialog"><span aria-hidden="true">i</span>Scoring rules</button>
-      </section>
-
-      <section class="calculator-panel" aria-labelledby="variant-heading">
-        <div class="variant-block">
-          <div class="section-label-row">
-            <div>
-              <p class="eyebrow">Variant</p>
-              <h2 id="variant-heading">Choose the OFC variant</h2>
-            </div>
-            <p id="variant-summary" class="variant-summary">Natural Pineapple OFC with standard 3-5-5 high-poker rankings.</p>
+    <div class="app-shell">
+      <header class="site-header">
+        <div class="header-inner">
+          <a class="brand" href="/" aria-label="Home"><span>MS</span></a>
+          <div class="title-block">
+            <p class="eyebrow">Precomputed analysis</p>
+            <h1>Fantasyland royalty EV</h1>
           </div>
+          <p class="lede">Compare exact trainer-solver results for royalty EV, foul chance, and repeat Fantasyland by cards in hand, jokers drawn, and jokers in the deck.</p>
+          <nav class="site-nav" aria-label="OFC tools">
+            <a href="/ofc/">OFC tools</a>
+            <a href="/ofc/fantasyland-trainer/">Trainer</a>
+          </nav>
+          <div id="section-tabs" class="section-tabs" role="tablist" aria-label="Report sections">
+            <button type="button" role="tab" id="section-tab-ev" data-section="ev" aria-selected="true" aria-controls="section-ev">Royalty EV</button>
+            <button type="button" role="tab" id="section-tab-repeat" data-section="repeat" aria-selected="false" aria-controls="section-repeat">Repeat</button>
+            <button type="button" role="tab" id="section-tab-foul" data-section="foul" aria-selected="false" aria-controls="section-foul">Foul</button>
+            <button type="button" role="tab" id="section-tab-matrix" data-section="matrix" aria-selected="false" aria-controls="section-matrix">Matrix</button>
+            <button type="button" role="tab" id="section-tab-rules" data-section="rules" aria-selected="false" aria-controls="section-rules" aria-label="Scoring rules"><span class="label-full">Scoring rules</span><span class="label-short">Rules</span></button>
+          </div>
+        </div>
+      </header>
+
+      <section class="control-bar" aria-labelledby="variant-heading">
+        <div class="control-inner">
+          <h2 id="variant-heading" class="sr-only">Choose the OFC variant</h2>
           <div class="variant-pills" role="radiogroup" aria-label="Fantasyland variant">
             <label><input type="radio" name="variant" value="high" checked /><span>High</span></label>
             <label><input type="radio" name="variant" value="low" /><span>Low</span></label>
@@ -57,130 +54,144 @@
               <b>JJJ+ only</b>
             </label>
           </div>
+          <p id="variant-summary" class="variant-summary">Natural Pineapple OFC with standard 3-5-5 high-poker rankings.</p>
         </div>
-
       </section>
 
-      <section class="chart-grid">
-        <article class="chart-panel">
-          <div class="panel-head"><div><p class="eyebrow">Royalties</p><h2>Royalty EV by hand</h2></div><span>Higher is better</span></div>
-          <div id="ev-chart" class="bar-chart empty-chart">Precomputed configurations will appear here.</div>
-        </article>
-        <article class="chart-panel">
-          <div class="panel-head"><div><p class="eyebrow">Continuation</p><h2>Repeat probability</h2></div><span>Repeat line available</span></div>
-          <div id="repeat-chart" class="bar-chart empty-chart">Repeat rates will appear here.</div>
-        </article>
-        <article class="chart-panel">
-          <div class="panel-head"><div><p class="eyebrow">Risk</p><h2>Foul probability</h2></div><span>No legal board</span></div>
-          <div id="foul-chart" class="bar-chart empty-chart">Foul rates will appear here.</div>
-        </article>
-        <article class="chart-panel distribution-panel">
-          <div class="panel-head distribution-head">
-            <div><p class="eyebrow">Outcomes</p><h2>Royalty distribution</h2></div>
-            <span>Every integer royalty score · mode marked</span>
+      <main class="page-shell">
+        <section class="section-panel" id="section-ev" role="tabpanel" aria-labelledby="section-tab-ev" data-section-panel="ev">
+          <article class="chart-panel">
+            <div class="panel-head"><div><p class="eyebrow">Royalties</p><h2>Royalty EV by hand</h2></div><span>Higher is better</span></div>
+            <div id="ev-chart" class="bar-chart empty-chart">Precomputed configurations will appear here.</div>
+          </article>
+          <article class="chart-panel distribution-panel">
+            <div class="panel-head distribution-head">
+              <div><p class="eyebrow">Outcomes</p><h2>Royalty distribution</h2></div>
+              <span>Every integer royalty score · mode marked</span>
+            </div>
+            <div id="distribution-chart" class="distribution-chart empty-chart">Royalty outcomes will appear here.</div>
+          </article>
+        </section>
+
+        <section class="section-panel" id="section-repeat" role="tabpanel" aria-labelledby="section-tab-repeat" data-section-panel="repeat" hidden>
+          <article class="chart-panel">
+            <div class="panel-head"><div><p class="eyebrow">Continuation</p><h2>Repeat probability</h2></div><span>Repeat line available</span></div>
+            <div id="repeat-chart" class="bar-chart empty-chart">Repeat rates will appear here.</div>
+          </article>
+          <article id="repeat-source-panel" class="chart-panel repeat-source-panel" hidden>
+            <div class="panel-head repeat-source-head">
+              <div><p class="eyebrow">Repeat paths</p><h2>Repeat source by hand</h2></div>
+              <span id="repeat-source-note">Bar width = repeat chance; multi-row = Super Fantasyland</span>
+            </div>
+            <div class="repeat-source-body">
+              <div class="repeat-source-legend" aria-label="Repeat source legend">
+                <span><i class="source-top"></i>Top</span>
+                <span><i class="source-middle"></i>Middle</span>
+                <span><i class="source-bottom"></i>Bottom</span>
+                <span><i class="source-top-middle"></i>Top + Middle <b data-repeat-extra="2">+1 card</b></span>
+                <span><i class="source-top-bottom"></i>Top + Bottom <b data-repeat-extra="2">+1 card</b></span>
+                <span><i class="source-middle-bottom"></i>Middle + Bottom <b data-repeat-extra="2">+1 card</b></span>
+                <span><i class="source-all"></i>All three <b data-repeat-extra="3">+2 cards</b></span>
+              </div>
+              <div id="repeat-source-chart" class="repeat-source-chart"></div>
+              <div id="repeat-source-detail" class="repeat-source-detail" aria-live="polite"></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="section-panel" id="section-foul" role="tabpanel" aria-labelledby="section-tab-foul" data-section-panel="foul" hidden>
+          <article class="chart-panel">
+            <div class="panel-head"><div><p class="eyebrow">Risk</p><h2>Foul probability</h2></div><span>No legal board</span></div>
+            <div id="foul-chart" class="bar-chart empty-chart">Foul rates will appear here.</div>
+          </article>
+          <article class="joker-panel">
+            <div class="panel-head"><div><p class="eyebrow">Deck composition</p><h2>Jokers drawn into the hand</h2></div><span>Hypergeometric probability</span></div>
+            <div class="table-scroll compact-table">
+              <table>
+                <thead><tr><th>Deal / deck</th><th>0J hand</th><th>1J hand</th><th>2J hand</th></tr></thead>
+                <tbody id="joker-probability-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="section-panel" id="section-matrix" role="tabpanel" aria-labelledby="section-tab-matrix" data-section-panel="matrix" hidden>
+          <section class="matrix-panel" aria-labelledby="matrix-title">
+            <div class="panel-head matrix-head">
+              <div><p class="eyebrow">Exact joker counts</p><h2 id="matrix-title">Fantasyland matrix</h2></div>
+              <span id="matrix-meta">No samples yet</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Hand</th>
+                    <th scope="col"><button class="definition-link" data-definition="immediate">Royalty EV</button></th>
+                    <th scope="col"><button class="definition-link" data-definition="repeat">Repeat FL</button></th>
+                    <th scope="col"><button class="definition-link" data-definition="line">Repeat-line EV</button></th>
+                    <th scope="col"><button class="definition-link" data-definition="recursive">Recursive EV</button></th>
+                    <th scope="col"><button class="definition-link" data-definition="foul">Foul</button></th>
+                    <th scope="col">Samples</th>
+                  </tr>
+                </thead>
+                <tbody id="matrix-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="matrix-side">
+            <article class="definitions-panel" id="definitions-panel">
+              <div class="panel-head"><div><p class="eyebrow">How to read it</p><h2 id="definition-title">EV definitions</h2></div></div>
+              <p id="definition-copy">Royalty EV is the expected maximum immediate royalty score. Deals with no legal board contribute zero.</p>
+              <dl>
+                <div><dt>Royalty EV</dt><dd>Expected immediate royalties; fouled deals score zero.</dd></div>
+                <div><dt>Repeat FL</dt><dd>Chance that at least one qualifying repeat line exists.</dd></div>
+                <div><dt>Foul</dt><dd>Chance that the deal cannot make a legal board.</dd></div>
+                <div><dt>Repeat-line</dt><dd>Average royalties on the best repeat line, only when one exists.</dd></div>
+                <div><dt>Recursive</dt><dd>Expected total royalties across future repeats. Joker games weight later hands by 0J, 1J, and 2J draw probabilities from a 54-card deck.</dd></div>
+                <div><dt>Deck mix</dt><dd>Weighted average over the possible joker counts drawn from a one- or two-joker deck.</dd></div>
+              </dl>
+            </article>
+
+            <section class="matrix-panel deck-matrix-panel" aria-labelledby="deck-matrix-title">
+              <div class="panel-head matrix-head">
+                <div><p class="eyebrow">Before the deal</p><h2 id="deck-matrix-title">EV by jokers in the deck</h2></div>
+                <span id="deck-matrix-meta">Complete exact-hand results to calculate</span>
+              </div>
+              <p class="matrix-note">Each row weights the exact 0J, 1J, and 2J hand results by their draw probability from a 53-card or 54-card deck.</p>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Deal / deck</th>
+                      <th scope="col"><button class="definition-link" data-definition="deck">Royalty EV</button></th>
+                      <th scope="col"><button class="definition-link" data-definition="repeat">Repeat FL</button></th>
+                      <th scope="col"><button class="definition-link" data-definition="foul">Foul</button></th>
+                    </tr>
+                  </thead>
+                  <tbody id="deck-matrix-body"></tbody>
+                </table>
+              </div>
+            </section>
           </div>
-          <div id="distribution-chart" class="distribution-chart empty-chart">Royalty outcomes will appear here.</div>
-        </article>
-        <article id="repeat-source-panel" class="chart-panel repeat-source-panel" hidden>
-          <div class="panel-head repeat-source-head">
-            <div><p class="eyebrow">Repeat paths</p><h2>Repeat source by hand</h2></div>
-            <span id="repeat-source-note">Bar width = repeat chance; multi-row = Super Fantasyland</span>
-          </div>
-          <div class="repeat-source-legend" aria-label="Repeat source legend">
-            <span><i class="source-top"></i>Top</span>
-            <span><i class="source-middle"></i>Middle</span>
-            <span><i class="source-bottom"></i>Bottom</span>
-            <span><i class="source-top-middle"></i>Top + Middle <b data-repeat-extra="2">+1 card</b></span>
-            <span><i class="source-top-bottom"></i>Top + Bottom <b data-repeat-extra="2">+1 card</b></span>
-            <span><i class="source-middle-bottom"></i>Middle + Bottom <b data-repeat-extra="2">+1 card</b></span>
-            <span><i class="source-all"></i>All three <b data-repeat-extra="3">+2 cards</b></span>
-          </div>
-          <div id="repeat-source-chart" class="repeat-source-chart"></div>
-          <div id="repeat-source-detail" class="repeat-source-detail" aria-live="polite"></div>
-        </article>
-      </section>
+        </section>
 
-      <section class="matrix-panel" aria-labelledby="matrix-title">
-        <div class="panel-head matrix-head">
-          <div><p class="eyebrow">Exact joker counts</p><h2 id="matrix-title">Fantasyland matrix</h2></div>
-          <span id="matrix-meta">No samples yet</span>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Hand</th>
-                <th scope="col"><button class="definition-link" data-definition="immediate">Royalty EV</button></th>
-                <th scope="col"><button class="definition-link" data-definition="repeat">Repeat FL</button></th>
-                <th scope="col"><button class="definition-link" data-definition="line">Repeat-line EV</button></th>
-                <th scope="col"><button class="definition-link" data-definition="recursive">Recursive EV</button></th>
-                <th scope="col"><button class="definition-link" data-definition="foul">Foul</button></th>
-                <th scope="col">Samples</th>
-              </tr>
-            </thead>
-            <tbody id="matrix-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="matrix-panel deck-matrix-panel" aria-labelledby="deck-matrix-title">
-        <div class="panel-head matrix-head">
-          <div><p class="eyebrow">Before the deal</p><h2 id="deck-matrix-title">EV by jokers in the deck</h2></div>
-          <span id="deck-matrix-meta">Complete exact-hand results to calculate</span>
-        </div>
-        <p class="matrix-note">Each row weights the exact 0J, 1J, and 2J hand results by their draw probability from a 53-card or 54-card deck.</p>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Deal / deck</th>
-                <th scope="col"><button class="definition-link" data-definition="deck">Royalty EV</button></th>
-                <th scope="col"><button class="definition-link" data-definition="repeat">Repeat FL</button></th>
-                <th scope="col"><button class="definition-link" data-definition="foul">Foul</button></th>
-              </tr>
-            </thead>
-            <tbody id="deck-matrix-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="insight-grid">
-        <article class="joker-panel">
-          <div class="panel-head"><div><p class="eyebrow">Deck composition</p><h2>Jokers drawn into the hand</h2></div><span>Hypergeometric probability</span></div>
-          <div class="table-scroll compact-table">
-            <table>
-              <thead><tr><th>Deal / deck</th><th>0J hand</th><th>1J hand</th><th>2J hand</th></tr></thead>
-              <tbody id="joker-probability-body"></tbody>
-            </table>
-          </div>
-        </article>
-        <article class="definitions-panel" id="definitions-panel">
-          <div class="panel-head"><div><p class="eyebrow">How to read it</p><h2 id="definition-title">EV definitions</h2></div></div>
-          <p id="definition-copy">Royalty EV is the expected maximum immediate royalty score. Deals with no legal board contribute zero.</p>
-          <dl>
-            <div><dt>Royalty EV</dt><dd>Expected immediate royalties; fouled deals score zero.</dd></div>
-            <div><dt>Repeat FL</dt><dd>Chance that at least one qualifying repeat line exists.</dd></div>
-            <div><dt>Foul</dt><dd>Chance that the deal cannot make a legal board.</dd></div>
-            <div><dt>Repeat-line</dt><dd>Average royalties on the best repeat line, only when one exists.</dd></div>
-            <div><dt>Recursive</dt><dd>Expected total royalties across future repeats. Joker games weight later hands by 0J, 1J, and 2J draw probabilities from a 54-card deck.</dd></div>
-            <div><dt>Deck mix</dt><dd>Weighted average over the possible joker counts drawn from a one- or two-joker deck.</dd></div>
-          </dl>
-        </article>
-      </section>
-    </main>
-
-    <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title">
-      <div class="rules-dialog-head">
-        <div><p class="eyebrow">Fantasyland variants</p><h2 id="rules-title">Scoring and qualification</h2></div>
-        <button id="rules-close" type="button">Close</button>
-      </div>
-      <div id="rules-tabs" class="rules-tabs" role="tablist" aria-label="Variant rules"></div>
-      <div id="rules-content" class="rules-content"></div>
-    </dialog>
+        <section class="section-panel" id="section-rules" role="tabpanel" aria-labelledby="section-tab-rules" data-section-panel="rules" hidden>
+          <article class="rules-panel" aria-labelledby="rules-title">
+            <div class="panel-head rules-head">
+              <div><p class="eyebrow">Fantasyland variants</p><h2 id="rules-title">Scoring and qualification</h2></div>
+              <span>Rules follow the selected variant</span>
+            </div>
+            <div id="rules-tabs" class="rules-tabs" role="tablist" aria-label="Variant rules"></div>
+            <div id="rules-content" class="rules-content"></div>
+          </article>
+        </section>
+      </main>
+    </div>
 
     <script src="../fantasyland-core.js?v=20260925b"></script>
     <script src="../fantasyland-trainer/app.js?v=20260907a"></script>
     <script src="./precomputed.js?v=20260925b"></script>
-    <script src="./app.js?v=20260925b"></script>
+    <script src="./app.js?v=20261003"></script>
   </body>
 </html>

@@ -383,12 +383,28 @@ function wireControls() {
     });
 
     document.querySelectorAll(".mobile-tab").forEach((tab) => {
-        tab.addEventListener("click", () => {
-            document.querySelectorAll(".mobile-tab").forEach((item) => item.classList.remove("active"));
-            tab.classList.add("active");
-            $(tab.dataset.jump).scrollIntoView({ behavior: "smooth", block: "start" });
-        });
+        tab.addEventListener("click", () => setMobileView(tab.dataset.view));
     });
+}
+
+// Compact layouts (phones, tablets) show one workspace panel at a time; the
+// desktop app shell shows them all and ignores data-view.
+const COMPACT_LAYOUT = typeof matchMedia === "function" ? matchMedia("(max-width: 999px)") : null;
+
+function isCompactLayout() {
+    return Boolean(COMPACT_LAYOUT && COMPACT_LAYOUT.matches);
+}
+
+function setMobileView(view) {
+    const workspace = $("workspace");
+    if (!workspace || !view) return;
+    workspace.dataset.view = view;
+    document.querySelectorAll(".mobile-tab").forEach((item) => {
+        const active = item.dataset.view === view;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", String(active));
+    });
+    if (isCompactLayout()) workspace.scrollTop = 0;
 }
 
 function onDeckCountChanged(sourceId, eventType = "input") {
@@ -1918,6 +1934,8 @@ function selectChartHand(row, cell) {
     renderHandTray();
     renderHandSolver();
     markSelectedCell();
+    // On a phone the decision and cell inspector live on the Hand tab.
+    if (isCompactLayout()) setMobileView("hand");
 }
 
 function cellButton(row, cell) {
@@ -1999,10 +2017,15 @@ function renderHandTray() {
         tray.innerHTML = "<span class='muted-slot'>No cards</span>";
         return;
     }
+    // Blackjack cards have no suit, so the shared component renders them as
+    // plain rank-only cards (shared/cards.js, class "playing-card plain").
+    const cards = typeof PlayingCards !== "undefined" ? PlayingCards : null;
     tray.innerHTML = state.hand
-        .map((card, index) => `<button class="hand-card" type="button" data-index="${index}" title="Remove card">${cardLabel(card)}</button>`)
+        .map((card, index) => cards
+            ? cards.html(cardLabel(card), { tag: "button", attrs: { "data-index": index }, title: "Remove card" })
+            : `<button class="playing-card plain" type="button" data-index="${index}" title="Remove card"><span class="card-suit" aria-hidden="true"></span><span class="card-rank">${cardLabel(card)}</span></button>`)
         .join("");
-    tray.querySelectorAll(".hand-card").forEach((button) => {
+    tray.querySelectorAll("button[data-index]").forEach((button) => {
         button.addEventListener("click", () => {
             state.hand.splice(Number(button.dataset.index), 1);
             renderHandTray();

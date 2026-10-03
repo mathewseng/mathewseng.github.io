@@ -61,6 +61,33 @@ fetch(DATA_URL)
     elements.runMeta.textContent = "Data failed to load.";
   });
 
+// Compact layouts show one workspace section at a time; the desktop grid
+// shows them all and ignores data-view.
+document.querySelectorAll(".view-tab").forEach((tab) => {
+  tab.addEventListener("click", () => setView(tab.dataset.view));
+});
+
+function setView(view) {
+  const workspace = document.querySelector("#workspace");
+  if (!workspace || !view) return;
+  workspace.dataset.view = view;
+  document.querySelectorAll(".view-tab").forEach((tab) => {
+    const active = tab.dataset.view === view;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-pressed", String(active));
+  });
+  workspace.scrollTop = 0;
+}
+
+// On phones the rank / cards controls collapse behind a summary button.
+const controlToggle = document.querySelector("#controlToggle");
+controlToggle?.addEventListener("click", () => {
+  const panel = controlToggle.closest(".control-panel");
+  const open = !panel.classList.contains("open");
+  panel.classList.toggle("open", open);
+  controlToggle.setAttribute("aria-expanded", String(open));
+});
+
 document.addEventListener("click", (event) => {
   const rankTarget = event.target.closest("[data-rank-index]");
   if (rankTarget && appData) {
@@ -133,6 +160,13 @@ function renderControlState() {
   document.querySelectorAll("[data-cards]").forEach((node) => {
     node.classList.toggle("active", Number(node.dataset.cards) === selectedCards);
   });
+
+  const summary = document.querySelector("#controlSummary");
+  const swatch = document.querySelector("#controlSwatch");
+  if (summary && appData) {
+    summary.textContent = `${appData.handRanks[selectedRankIndex].label} · ${selectedCards} cards`;
+  }
+  if (swatch) swatch.style.setProperty("--rank-color", RANK_COLORS[selectedRankIndex]);
 }
 
 function renderTrendChart(data) {

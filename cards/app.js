@@ -26,17 +26,14 @@
   }
 
   const prefs = Object.assign({
-    size: "m", felt: "green", back: "classic", four: false, motion: true, evals: true,
+    size: "m", felt: "green", motion: true, evals: true,
     tab: "play", side: !isCompact(), viewMode: "hands",
   }, load(STORE.prefs, {}));
   function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); if (view) renderDock(); }
   function applyPrefs() {
     document.body.dataset.size = prefs.size;
     document.body.dataset.felt = prefs.felt;
-    document.body.dataset.back = prefs.back;
-    document.body.dataset.four = prefs.four ? "1" : "0";
     document.body.dataset.motion = prefs.motion ? "1" : "0";
-    document.body.dataset.jumbo = prefs.jumbo ? "1" : "0";
     document.body.dataset.contrast = prefs.contrast ? "1" : "0";
     document.body.classList.toggle("side-collapsed", !prefs.side);
   }
@@ -365,63 +362,47 @@
   const pct = (x) => (x * 100 >= 99.95 || x === 0 ? (x * 100).toFixed(0) : (x * 100).toFixed(1)) + "%";
 
   // ============================================================ RENDERING
-  const PIP_LAYOUT = {
-    2: [[50, 20], [50, 80]],
-    3: [[50, 20], [50, 50], [50, 80]],
-    4: [[35, 20], [65, 20], [35, 80], [65, 80]],
-    5: [[35, 20], [65, 20], [50, 50], [35, 80], [65, 80]],
-    6: [[35, 20], [65, 20], [35, 50], [65, 50], [35, 80], [65, 80]],
-    7: [[35, 20], [65, 20], [50, 35], [35, 50], [65, 50], [35, 80], [65, 80]],
-    8: [[35, 20], [65, 20], [50, 35], [35, 50], [65, 50], [50, 65], [35, 80], [65, 80]],
-    9: [[35, 18], [65, 18], [35, 39], [65, 39], [50, 50], [35, 61], [65, 61], [35, 82], [65, 82]],
-    10: [[35, 18], [65, 18], [50, 28.5], [35, 39], [65, 39], [35, 61], [65, 61], [50, 71.5], [35, 82], [65, 82]],
-  };
+  const Cards = window.PlayingCards;
 
-  function cardFace(card) {
-    if (card.custom) {
-      const glyph = card.icon || (String(card.label || "").length <= 3 ? card.label : "");
-      const suit = card.suit && card.suit !== "x" ? `<div class="c-suit">${esc(card.suit)}</div>` : "";
-      const art = card.image && /^https:\/\/[^\s"'()<>\\]+$/i.test(card.image) ? `<div class="c-art" style="background-image:url('${esc(card.image)}')"></div>` : "";
-      return `<div class="c-title">${esc(card.label || card.rank)}</div>${art || (glyph ? `<div class="c-glyph">${esc(glyph)}</div>` : "")}<div class="c-text">${esc(card.text || "")}</div>${suit}${card.value ? `<div class="c-val">${esc(card.value)}</div>` : ""}`;
-    }
-    if (card.rank === "JK") {
-      return `<span class="corner tl"><b>★</b></span><span class="pip">JOKER</span><span class="corner br"><b>★</b></span>`;
-    }
-    const sym = SUIT_SYMBOL[card.suit] || "";
-    const rank = RANK_SHOW(card.rank);
-    const ten = rank.length > 1 ? " ten" : "";
-    const corners = `<span class="corner tl${ten}"><b>${rank}</b><i>${sym}</i></span><span class="corner br${ten}"><b>${rank}</b><i>${sym}</i></span>`;
-    if (["J", "Q", "K"].includes(card.rank)) return corners + `<span class="face-art"><i class="fs">${sym}</i><b>${card.rank}</b><i class="fs down">${sym}</i></span><span class="jumbo-suit">${sym}</span>`;
-    if (card.rank === "A") return corners + `<span class="pip ace">${sym}</span>`;
-    const layout = PIP_LAYOUT[Number(rank)];
-    if (!layout) return corners + `<span class="pip">${sym}</span>`;
-    const pips = layout.map(([x, y]) => `<span class="p${y > 55 ? " down" : ""}" style="left:${x}%;top:${y}%">${sym}</span>`).join("");
-    return corners + pips + `<span class="jumbo-suit">${sym}</span>`;
+  /** Custom (non-standard) cards keep their own face: title band, glyph or art, text, suit and value. */
+  function customFace(card) {
+    const glyph = card.icon || (String(card.label || "").length <= 3 ? card.label : "");
+    const suit = card.suit && card.suit !== "x" ? `<div class="c-suit">${esc(card.suit)}</div>` : "";
+    const art = card.image && /^https:\/\/[^\s"'()<>\\]+$/i.test(card.image) ? `<div class="c-art" style="background-image:url('${esc(card.image)}')"></div>` : "";
+    return `<div class="c-title">${esc(card.label || card.rank)}</div>${art || (glyph ? `<div class="c-glyph">${esc(glyph)}</div>` : "")}<div class="c-text">${esc(card.text || "")}</div>${suit}${card.value ? `<div class="c-val">${esc(card.value)}</div>` : ""}`;
   }
 
+  /**
+   * One card on the table. Standard cards, jokers and face-down cards are the shared
+   * site component (shared/cards.js); custom cards draw their own face in the same box.
+   */
   function cardHTML(card, zone, index, extra = "") {
     const visible = card.visible && (card.rank != null || card.custom);
     const cls = ["card"];
-    if (!visible) cls.push("back");
-    if (!visible && card.custom) cls.push("custom-back");
-    if (visible) {
-      if (card.custom) cls.push("custom");
-      else if (card.rank === "JK") cls.push("joker", card.jokerColor === "red" ? "red" : "");
-      else {
-        cls.push("suit-" + card.suit);
-        if (card.suit === "h" || card.suit === "d") cls.push("red");
-      }
-      if (card.faceUp && zone.visibility === "owner") cls.push("exposed");
-      if (!card.faceUp && zone.visibility !== "hidden") cls.push("private");
-      if (!card.faceUp && zone.visibility === "hidden") cls.push("private");
-    }
-    if (selection.has(card.id)) cls.push("selected");
+    if (visible && card.faceUp && zone.visibility === "owner") cls.push("exposed");
+    if (visible && !card.faceUp) cls.push("private");
     if (kbdFocus === card.id) cls.push("kbd-focus");
     if (card.rot) cls.push("rot" + card.rot);
-    const styles = [visible && card.custom ? `--cc:${esc(card.color || "#9f7dff")}` : "", card.mark ? `--mark:${esc(card.mark)}` : "", extra].filter(Boolean).join(";");
-    const attrs = (card.mark ? " data-mark" : "") + (styles ? ` style="${styles}"` : "");
+    const selected = selection.has(card.id);
     const title = visible ? (card.custom ? card.label : E.cardName(card)) + (card.faceUp ? "" : " (hidden from others)") : "Face-down card";
-    return `<div class="${cls.filter(Boolean).join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${zone.id}" title="${esc(title)}"${attrs}>${visible ? cardFace(card) : ""}</div>`;
+    const spec = !visible ? "BACK" : card.rank === "JK" ? "JK" : { rank: card.rank, suit: card.suit };
+    const standard = !visible || !card.custom;
+    if (standard && Cards.normalize(spec)) {
+      const style = [card.mark ? `--mark:${card.mark}` : "", extra].filter(Boolean).join(";");
+      return Cards.html(spec, {
+        tag: "div",
+        className: cls.join(" "),
+        selected,
+        title,
+        attrs: { "data-card-id": card.id, "data-index": index, "data-zone": zone.id, "data-mark": Boolean(card.mark) },
+        style: style || undefined,
+      });
+    }
+    cls.push("custom");
+    if (selected) cls.push("selected");
+    const face = card.custom ? card : { label: String(card.rank) + (SUIT_SYMBOL[card.suit] || ""), color: "#565e66" };
+    const style = [`--cc:${face.color || "#9f7dff"}`, card.mark ? `--mark:${card.mark}` : "", extra].filter(Boolean).join(";");
+    return `<div class="${cls.join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${esc(zone.id)}" title="${esc(title)}" aria-label="${esc(title)}"${card.mark ? " data-mark" : ""} style="${esc(style)}">${customFace(face)}</div>`;
   }
 
   function ruleIcon(zone) {
@@ -474,12 +455,12 @@
     const deckLike = zone.kind === "deck";
     let body = "";
     if (!cards.length) {
-      body = `<div class="empty">${zone.kind === "deck" ? "Empty" : "Drop cards"}</div>`;
+      body = `<div class="empty empty-slot">${zone.kind === "deck" ? "Empty" : "Drop cards"}</div>`;
     } else if (isStack) {
       const top = cards.length - 1;
       body = (cards.length > 1 ? `<div class="stack-depth"></div>` : "") + cardHTML(cards[top], zone, zone.cards.length - 1) + `<span class="stack-count">${cards.length}</span>`;
     } else if (layout === "free") {
-      body = cards.map((card, i) => cardHTML(card, zone, i, `left:calc(${(card.x ?? 0.1).toFixed(3)} * (100% - var(--cw)));top:calc(${(card.y ?? 0.1).toFixed(3)} * (100% - var(--ch)));z-index:${i + 1}`)).join("");
+      body = cards.map((card, i) => cardHTML(card, zone, i, `left:calc(${(card.x ?? 0.1).toFixed(3)} * (100% - var(--card-width)));top:calc(${(card.y ?? 0.1).toFixed(3)} * (100% - var(--card-width) * 1.4));z-index:${i + 1}`)).join("");
     } else if (layout === "fan") {
       const n = cards.length;
       const spread = Math.min(6, 44 / Math.max(1, n));
@@ -815,7 +796,6 @@
     view = computeView();
     const before = captureLayout();
     const backsBefore = new Map($$(".card[data-card-id]").map((el) => [el.dataset.cardId, el.classList.contains("back")]));
-    applyDesignBack(view);
     renderTop();
     renderTable();
     if (prefs.motion && backsBefore.size) {
@@ -1439,8 +1419,6 @@
         </div>
         <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span style="color:${suit === "h" || suit === "d" ? "#ff7b8e" : "inherit"};font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
         <div class="field"><span>Ranks <button class="btn sm ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn sm${ranks.includes(rank) ? " primary" : ""}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
-        <div class="field"><span>Card back <span class="dim">blank = your display setting</span></span>
-          <div class="row tight"><input type="color" value="${esc(draft.back?.color || "#2b57c2")}" data-deck-back="color" title="Back color"${draft.back?.color ? "" : ' style="opacity:.5"'}><input type="text" value="${esc(draft.back?.text || "")}" maxlength="14" placeholder="Name on the back" data-deck-back="text" class="grow" style="flex:1;width:auto">${draft.back?.color || draft.back?.text ? `<button class="btn sm ghost" data-act="back-clear">Clear</button>` : ""}</div></div>
         <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
@@ -1544,11 +1522,8 @@
       const display = `
         <div class="field"><span>Card size</span><div class="seg">${[["s", "S"], ["m", "M"], ["l", "L"], ["xl", "XL"]].map(([id, label]) => `<button data-pref="size" data-val="${id}" class="${prefs.size === id ? "on" : ""}">${label}</button>`).join("")}</div></div>
         <div class="field"><span>Felt</span><div class="seg">${["green", "blue", "wine", "slate", "sand"].map((id) => `<button data-pref="felt" data-val="${id}" class="${prefs.felt === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
-        <div class="field"><span>Card back</span><div class="seg">${["classic", "crimson", "forest", "violet", "noir", "gold"].map((id) => `<button data-pref="back" data-val="${id}" class="${prefs.back === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
-        <label class="check"><input type="checkbox" data-pref-bool="four"${prefs.four ? " checked" : ""}> Four-color deck (blue ♦, green ♣)</label>
         <label class="check"><input type="checkbox" data-pref-bool="evals"${prefs.evals ? " checked" : ""}> Show scoring badges under groups</label>
         <label class="check"><input type="checkbox" data-pref-bool="motion"${prefs.motion ? " checked" : ""}> Animations</label>
-        <label class="check"><input type="checkbox" data-pref-bool="jumbo"${prefs.jumbo ? " checked" : ""}> Jumbo indexes (easier to read on phones)</label>
         <label class="check"><input type="checkbox" data-pref-bool="sound"${prefs.sound ? " checked" : ""}> Sound effects</label>
         <label class="check"><input type="checkbox" data-pref-bool="contrast"${prefs.contrast ? " checked" : ""}> High contrast</label>
         <div class="field"><span>Seats</span><div class="seg">${[["grid", "Grid"], ["around", "Around the table"]].map(([id, label]) => `<button data-pref="layout" data-val="${id}" class="${(prefs.layout || "grid") === id ? "on" : ""}">${label}</button>`).join("")}</div></div>`;
@@ -1685,7 +1660,7 @@
       <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
       <p>${esc(preset.tagline || preset.description)}</p>
-      <div class="mini">${minis.map((m) => m === "b" ? `<span class="b"></span>` : `<span class="${/[♥♦]/.test(m) ? "r" : ""}">${esc(m)}</span>`).join("")}</div>
+      <div class="mini">${minis.map((m) => (m === "b" ? Cards.html("BACK") : m === "★" ? Cards.html("JK") : Cards.normalize(m) ? Cards.html(m) : `<span class="mini-custom">${esc(m)}</span>`)).join("")}</div>
       ${preset.custom ? `<span class="btn sm ghost danger del" data-del-preset="${esc(preset.id)}">Delete</span>` : ""}
     </button>`;
   }
@@ -2552,7 +2527,6 @@
       case "deck-ranks-reset": deckDraft.ranks = null; renderPane(); break;
       case "custom-add": customOpen = true; deckDraft.custom.push({ label: "New card", text: "", color: "#9f7dff", value: 0, count: 1, suit: "", rank: "", icon: "" }); renderPane(); break;
       case "custom-import": openCustomImport(); break;
-      case "back-clear": deckDraft.back = { color: "", text: "" }; renderPane(); break;
       case "custom-export": download(fileSafe(v.title) + "-cards.csv", customCardsCsv(deckDraft.custom), "text/csv"); break;
       case "custom-del": deckDraft.custom.splice(Number(el.dataset.i), 1); renderPane(); break;
       case "rebuild-deck":
@@ -2878,7 +2852,6 @@
       if (d.botStyle !== undefined) { prefs.botStyle = el.value; savePrefs(); return; }
       if (d.botSeat) return dispatch({ type: "updatePlayer", player: d.botSeat, patch: { botStyle: el.value } });
       if (d.playerColor) return dispatch({ type: "updatePlayer", player: d.playerColor, patch: { color: el.value } });
-      if (d.deckBack) { deckDraft.back = { ...(deckDraft.back || {}), [d.deckBack]: el.value }; renderPane(); return; }
       if (d.deck) { deckDraft[d.deck] = d.deck === "preset" ? el.value : Number(el.value); if (d.deck === "preset") deckDraft.ranks = null; renderPane(); return; }
       if (d.deckSuit) { const s = d.deckSuit; deckDraft.suits = el.checked ? Array.from(new Set(deckDraft.suits.concat(s))) : deckDraft.suits.filter((x) => x !== s); if (!deckDraft.suits.length) deckDraft.suits = [s]; renderPane(); return; }
       if (d.custom !== undefined) { const item = deckDraft.custom[Number(d.custom)]; item[d.k] = ["value", "count"].includes(d.k) ? Number(el.value) : el.value; renderPane(); return; }
@@ -3898,7 +3871,7 @@
     }
     if (zone) facts.push(`In ${esc(E.zoneLabel(v, zone))}`);
     if (card.playedBy) facts.push(`Played by ${esc(E.playerById(v, card.playedBy)?.name || "?")}`);
-    openDialog(head("Card") + `<div class="dlg-body inspect-body"><div class="inspect-card" style="--cw:min(220px, 56vw)">${cardHTML({ ...card }, zone || { visibility: "public" }, index)}</div><div class="list">${facts.map((fact) => `<div class="small">${fact}</div>`).join("")}</div></div>
+    openDialog(head("Card") + `<div class="dlg-body inspect-body"><div class="inspect-card" style="--card-width:min(220px, 56vw)">${cardHTML({ ...card }, zone || { visibility: "public" }, index)}</div><div class="list">${facts.map((fact) => `<div class="small">${fact}</div>`).join("")}</div></div>
       <div class="dlg-foot"><button class="btn primary" value="cancel">Close</button></div>`);
   }
 
@@ -3951,7 +3924,6 @@
     add("Panels", "Take the tour", startTour);
     add("Display", prefs.sound ? "Turn sound effects off" : "Turn sound effects on", () => { prefs.sound = !prefs.sound; savePrefs(); playSound("turn"); renderPane(); });
     add("Display", prefs.layout === "around" ? "Seats: grid" : "Seats: around the table", () => { prefs.layout = prefs.layout === "around" ? "grid" : "around"; savePrefs(); render(); });
-    add("Display", prefs.jumbo ? "Normal card indexes" : "Jumbo card indexes", () => { prefs.jumbo = !prefs.jumbo; savePrefs(); render(); });
     if (net.mode === "local") {
       for (const [mode, label] of [["hands", "All hands"], ["xray", "X-ray (referee)"], ["pass", "Pass & play"]]) add("View", `View: ${label}`, () => setViewMode(mode));
       for (const player of v.players) add("View", `View as ${player.name}`, () => setViewMode("seat:" + player.id));
@@ -4522,14 +4494,14 @@
     const win = window.open("", "_blank");
     if (!win) return toast("Allow pop-ups to open the print sheet.", "error");
     const css = new URL("./styles.css", location.href).href;
-    win.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(v.title)}: print & play</title><link rel="stylesheet" href="${esc(css)}">
+    const sharedCss = new URL("../shared/cards.css", location.href).href;
+    win.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(v.title)}: print & play</title><link rel="stylesheet" href="${esc(sharedCss)}"><link rel="stylesheet" href="${esc(css)}">
       <style>
         html, body { height: auto; overflow: visible; background: #fff; color: #111; }
-        body { padding: 10mm; font-family: system-ui, sans-serif; --cw: 63mm; --ch: 88mm; }
+        body { padding: 10mm; font-family: system-ui, sans-serif; --card-width: 63mm; }
         h1 { font-size: 20pt; margin: 0 0 2mm; } .meta { color: #555; margin: 0 0 6mm; }
         .sheet { display: grid; grid-template-columns: repeat(auto-fill, 63mm); gap: 3mm; }
-        .card { box-shadow: none; outline: 0; border: 0.3mm solid #999; break-inside: avoid; cursor: default; }
-        .card.red { color: #c81e35; }
+        .card { break-inside: avoid; cursor: default; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .print-rules { break-before: page; max-width: 170mm; font-size: 11pt; line-height: 1.5; }
         .print-rules h3 { text-transform: uppercase; letter-spacing: 0.05em; font-size: 10pt; margin-top: 6mm; }
         @page { margin: 8mm; }
@@ -4899,26 +4871,6 @@
     layer.innerHTML = Array.from({ length: 90 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(1.6 + Math.random() * 1.2).toFixed(2)}s;--drift:${(Math.random() * 160 - 80).toFixed(0)}px;--spin:${(Math.random() * 720 - 360).toFixed(0)}deg"></i>`).join("");
     document.body.appendChild(layer);
     setTimeout(() => layer.remove(), 3200);
-  }
-
-  // ======================================================== DESIGN BACK
-  function applyDesignBack(v) {
-    const back = v?.deckSpec?.back || {};
-    const style = document.body.style;
-    if (back.color) {
-      style.setProperty("--back-a", `color-mix(in srgb, ${back.color} 72%, #000)`);
-      style.setProperty("--back-b", back.color);
-    } else {
-      style.removeProperty("--back-a");
-      style.removeProperty("--back-b");
-    }
-    if (back.text) {
-      style.setProperty("--back-label", JSON.stringify(back.text));
-      document.body.dataset.backLabel = "1";
-    } else {
-      style.removeProperty("--back-label");
-      delete document.body.dataset.backLabel;
-    }
   }
 
   // ============================================================ RECORDER

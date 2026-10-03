@@ -14,10 +14,6 @@
   --purple: #a784ff;
   --amber: #f3ad55;
   --red: #ff6875;
-  --spade: #52575c;
-  --heart: #b40d08;
-  --diamond: #3449ce;
-  --club: #05a82b;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -27,13 +23,11 @@
 
 html,
 body {
-  min-height: 100%;
+  height: 100%;
   background: var(--bg);
 }
 
 body {
-  min-height: 100vh;
-  min-height: 100dvh;
   margin: 0;
   overflow-x: hidden;
   color: var(--text);
@@ -65,16 +59,21 @@ p {
   margin: 0;
 }
 
+/* App shell: header on top, the active view fills the rest. Desktop sizes
+   lock the shell to the viewport so long lists scroll inside their panel;
+   phones flow and scroll the page instead (see the 820px query). */
 .shell {
   width: min(1380px, 100%);
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   margin: 0 auto;
-  padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
 }
 
 .topbar {
-  min-height: 64px;
+  min-height: 50px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -85,21 +84,21 @@ p {
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   color: inherit;
   text-decoration: none;
 }
 
 .mark {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: 1px solid #298e70;
   border-radius: 7px;
   background: #0b211b;
   color: var(--green);
-  font-size: 0.84rem;
+  font-size: 0.76rem;
   font-weight: 900;
 }
 
@@ -109,13 +108,13 @@ p {
 }
 
 .brand strong {
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .brand small {
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 750;
 }
 
@@ -166,8 +165,8 @@ p {
 }
 
 .icon-button {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -187,28 +186,42 @@ p {
 }
 
 main {
-  padding-top: 26px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+
+main > section {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .page-heading {
-  margin-bottom: 20px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .page-heading h1,
 .game-header h1 {
-  font-size: 2.8rem;
-  line-height: 1.05;
+  font-size: 1.5rem;
+  line-height: 1.1;
 }
 
 .page-heading.compact h1 {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
 }
 
 .eyebrow,
 .step {
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   color: var(--green);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -222,18 +235,55 @@ main {
   background: var(--panel);
 }
 
+/* Setup: three columns on desktop, tabs on phones. */
+.setup-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.page-heading .setup-tabs {
+  display: none;
+}
+
 .setup-grid {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 272px minmax(0, 1fr) 256px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
+}
+
+.setup-grid > .panel {
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .connect-panel,
 .mix-panel,
 .advanced,
 .waiting {
-  padding: 18px;
+  padding: 14px;
+}
+
+.mix-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mix-panel > * {
+  flex: 0 0 auto;
+}
+
+.mix-panel .game-catalog {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  align-content: start;
 }
 
 .panel-title,
@@ -248,17 +298,17 @@ main {
 }
 
 .panel-title {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .panel-title h2 {
-  font-size: 1.08rem;
+  font-size: 1.02rem;
 }
 
 .field-label,
 .core-settings label > span:first-child {
   display: block;
-  margin: 0 0 7px;
+  margin: 0 0 6px;
   color: var(--muted);
   font-size: 0.7rem;
   font-weight: 850;
@@ -282,8 +332,8 @@ select:focus {
 #player-name,
 #room-code {
   width: 100%;
-  min-height: 46px;
-  margin-bottom: 14px;
+  min-height: 42px;
+  margin-bottom: 10px;
   padding: 0 12px;
 }
 
@@ -296,7 +346,7 @@ select:focus {
 }
 
 .button {
-  min-height: 44px;
+  min-height: 42px;
   padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -359,10 +409,15 @@ select:focus {
 }
 
 .error {
-  min-height: 18px;
-  margin-top: 8px;
+  min-height: 16px;
+  margin-top: 6px;
   color: var(--red);
   font-size: 0.72rem;
+}
+
+.error:empty {
+  min-height: 0;
+  margin-top: 0;
 }
 
 .segmented {
@@ -377,7 +432,7 @@ select:focus {
 }
 
 .segmented button {
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 12px;
   border: 0;
   border-radius: 5px;
@@ -386,6 +441,7 @@ select:focus {
   cursor: pointer;
   font-size: 0.74rem;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 .segmented button.active {
@@ -395,32 +451,41 @@ select:focus {
 }
 
 .mode-switch {
-  width: 145px;
+  width: 140px;
 }
 
+/* Compact label / control rows. */
 .core-settings {
   display: grid;
-  gap: 10px;
-  margin-top: 17px;
-  padding-top: 16px;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line-soft);
 }
 
 .core-settings label {
   min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 124px;
+  align-items: center;
+  gap: 8px;
+}
+
+.core-settings label > span:first-child {
+  margin: 0;
 }
 
 .core-settings input,
 .core-settings select {
   width: 100%;
-  min-height: 38px;
-  padding: 0 9px;
+  min-height: 36px;
+  padding: 0 8px;
 }
 
 .paired-input {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 5px;
 }
 
 .mix-meta {
@@ -445,7 +510,7 @@ select:focus {
 .quick-mixes {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -478,12 +543,13 @@ select:focus {
 }
 
 .rotation {
-  min-height: 64px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px;
+  padding: 7px;
   overflow-x: auto;
+  scrollbar-width: none;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #080d13;
@@ -514,6 +580,7 @@ select:focus {
 
 .rotation-item button {
   align-self: stretch;
+  min-height: 36px;
   padding: 0;
   border: 0;
   border-left: 1px solid #33465b;
@@ -523,7 +590,7 @@ select:focus {
 }
 
 .rotation-actions {
-  margin: 9px 0 15px;
+  margin: 8px 0 10px;
 }
 
 .rotation-actions label {
@@ -544,19 +611,20 @@ select:focus {
   display: flex;
   gap: 5px;
   overflow-x: auto;
+  scrollbar-width: none;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line-soft);
 }
 
 .game-catalog {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 6px;
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
 .game-option {
-  min-height: 64px;
+  min-height: 56px;
   display: grid;
   align-content: center;
   gap: 3px;
@@ -589,29 +657,26 @@ select:focus {
   white-space: nowrap;
 }
 
-.advanced {
-  margin-top: 12px;
-}
-
 .advanced .panel-title > span {
+  display: none;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
+  white-space: nowrap;
 }
 
 .advanced-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .number-setting,
 .toggle-setting {
-  min-height: 64px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border: 1px solid var(--line-soft);
   border-radius: 6px;
   background: #091018;
@@ -631,7 +696,7 @@ select:focus {
 
 .number-setting small,
 .toggle-setting small {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--muted);
   font-size: 0.62rem;
   line-height: 1.25;
@@ -639,7 +704,7 @@ select:focus {
 
 .number-setting input,
 .number-setting select {
-  width: 68px;
+  width: 64px;
   min-height: 36px;
   padding: 0 8px;
 }
@@ -685,6 +750,7 @@ select:focus {
   background: var(--green);
 }
 
+/* Lobby */
 .room-view {
   width: min(820px, 100%);
   margin: 0 auto;
@@ -696,7 +762,7 @@ select:focus {
   align-items: center;
   gap: 14px;
   margin-bottom: 10px;
-  padding: 13px 15px;
+  padding: 11px 15px;
 }
 
 .room-top > span {
@@ -716,15 +782,15 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
-  margin: 16px 0;
+  margin: 14px 0;
 }
 
 .roster-seat {
-  min-height: 52px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   border: 1px solid var(--line-soft);
   border-radius: 6px;
   background: #091018;
@@ -764,9 +830,9 @@ select:focus {
 
 .lobby-mix {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
-  margin: 14px 0;
-  overflow-x: auto;
+  margin: 12px 0;
 }
 
 .mix-chip,
@@ -784,32 +850,30 @@ select:focus {
   font-weight: 850;
 }
 
+/* Game view: header, meta, table (flexible), hero hand, decision/results. */
 .game-view {
-  padding-bottom: 22px;
-}
-
-.game-header {
-  margin-bottom: 10px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+  gap: 8px;
 }
 
 .game-header h1 {
-  font-size: 2.15rem;
+  font-size: 1.5rem;
 }
 
 .table-meta {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  margin-bottom: 8px;
 }
 
 .table-meta > div {
-  min-height: 48px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 11px;
+  padding: 6px 11px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--panel);
@@ -830,9 +894,9 @@ select:focus {
 }
 
 .table-surface {
-  min-height: 330px;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid #244b3e;
   border-radius: 8px;
@@ -842,16 +906,16 @@ select:focus {
 .seats {
   --seat-columns: 5;
   display: grid;
-  grid-template-columns: repeat(var(--seat-columns), minmax(130px, 1fr));
+  grid-template-columns: repeat(var(--seat-columns), minmax(120px, 1fr));
   gap: 5px;
-  padding: 8px;
+  padding: 7px;
   border-bottom: 1px solid #1d4035;
   background: #091018;
 }
 
 .seat {
   min-width: 0;
-  padding: 8px;
+  padding: 7px 8px;
   border: 1px solid var(--line-soft);
   border-radius: 6px;
   background: #0c141d;
@@ -889,45 +953,36 @@ select:focus {
 }
 
 .seat-meta {
-  min-height: 17px;
-  margin-top: 3px;
+  min-height: 16px;
+  margin-top: 2px;
   color: var(--muted);
   font-size: 0.58rem;
 }
 
+/* Opponent cards: up to seven (stud) fit the seat width. */
 .seat-cards {
+  --card-width: min(31px, calc((100% - 12px) / 7));
   min-height: 40px;
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: center;
   gap: 2px;
   margin-top: 5px;
 }
 
-.seat-cards .poker-card {
-  width: min(31px, calc((100% - 12px) / 7));
-}
-
-.seat-cards .card-rank {
-  font-size: 0.9rem;
-}
-
-.seat-cards .card-suit {
-  font-size: 0.56rem;
-}
-
 .center-table {
-  min-height: 220px;
+  min-height: 0;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 12px;
-  padding: 18px;
+  gap: 10px;
+  padding: 12px 16px;
+  overflow: auto;
 }
 
 .board-stack {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .board-line {
@@ -944,16 +999,12 @@ select:focus {
   text-align: right;
 }
 
+/* Community cards scale with the viewport height so stacked boards fit. */
 .board-cards {
-  min-height: 82px;
+  --card-width: min(55px, 7vh);
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.board-cards .poker-card,
-.board-cards .card-slot {
-  width: 55px;
 }
 
 .table-message {
@@ -963,13 +1014,12 @@ select:focus {
 }
 
 .hero-hand {
-  margin-top: 8px;
   overflow: hidden;
   border-color: #2a5f4e;
 }
 
 .hero-hand-head {
-  min-height: 42px;
+  min-height: 36px;
   padding: 0 12px;
   border-bottom: 1px solid #21483c;
   color: var(--muted);
@@ -983,27 +1033,39 @@ select:focus {
   color: var(--text);
 }
 
+/* Hero cards: as large as the row allows, never wider than the panel. The
+   shared component draws the selection ring in --card-selected. */
 .hero-cards {
   --hero-count: 5;
-  min-height: 128px;
+  --card-selected: var(--amber);
+  --card-width: min(76px, 9vh, calc((100% - (var(--hero-count) - 1) * 6px) / var(--hero-count)));
+  min-height: calc(var(--card-width) * 1.4 + 16px);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px 10px;
 }
 
-.hero-cards .poker-card {
-  width: min(76px, calc((100vw - 72px) / var(--hero-count)));
+.hero-cards .playing-card {
+  transition: translate 120ms ease;
+}
+
+.hero-cards button.playing-card:hover {
+  translate: 0 -4px;
+}
+
+.hero-cards .playing-card.selected {
+  translate: 0 -7px;
 }
 
 .hand-evaluation {
-  min-height: 29px;
+  min-height: 28px;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 5px 10px 9px;
+  padding: 4px 10px 8px;
 }
 
 .evaluation-chip {
@@ -1020,93 +1082,12 @@ select:focus {
   color: var(--text);
 }
 
-.poker-card,
-.card-slot {
-  aspect-ratio: 5 / 7;
-  flex: 0 0 auto;
-  border-radius: 6px;
-}
-
-.poker-card {
-  position: relative;
-  overflow: hidden;
-  padding: 0;
-  border: 0;
-  background: var(--spade);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-button.poker-card {
-  cursor: pointer;
-}
-
-button.poker-card:hover,
-button.poker-card:focus-visible,
-.poker-card.selected {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-.poker-card.selected {
-  transform: translateY(-7px);
-  box-shadow: inset 0 0 0 3px var(--amber);
-}
-
-.poker-card.suit-s { background: var(--spade); }
-.poker-card.suit-h { background: var(--heart); }
-.poker-card.suit-d { background: var(--diamond); }
-.poker-card.suit-c { background: var(--club); }
-
-.poker-card.back {
-  background: #182b3d;
-  box-shadow: inset 0 0 0 3px #24405a, inset 0 0 0 5px #0e1b27;
-}
-
-.poker-card.back::after {
-  content: "MS";
-  position: absolute;
-  inset: 19%;
-  display: grid;
-  place-items: center;
-  border: 1px solid #36536e;
-  color: #6c8aa7;
-  font-size: 0.43rem;
-  font-weight: 900;
-}
-
-.card-suit {
-  position: absolute;
-  top: 4%;
-  left: 7%;
-  color: rgba(0, 0, 0, 0.48);
-  font-size: 1.08rem;
-  line-height: 1;
-}
-
-.card-rank {
-  position: absolute;
-  inset: 18% 0 0;
-  display: grid;
-  place-items: center;
-  font-size: 2.9rem;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.card-slot {
-  border: 1px dashed #285044;
-  background: rgba(0, 0, 0, 0.12);
-}
-
 .decision-panel {
-  min-height: 92px;
   display: grid;
-  grid-template-columns: minmax(170px, 0.42fr) minmax(460px, 1.4fr);
+  grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  margin-top: 8px;
-  padding: 11px 12px;
+  padding: 10px 12px;
 }
 
 .decision-copy h2 {
@@ -1115,14 +1096,14 @@ button.poker-card:focus-visible,
 
 .bet-controls {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+  grid-template-columns: minmax(280px, 1fr) minmax(240px, 1fr);
   gap: 8px;
 }
 
 .amount-control {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(52px, 0.65fr)) minmax(84px, 1fr);
+  grid-template-columns: repeat(4, minmax(48px, 0.65fr)) minmax(84px, 1fr);
   border: 1px solid var(--line);
   border-radius: 7px;
   overflow: hidden;
@@ -1131,7 +1112,7 @@ button.poker-card:focus-visible,
 .amount-control button,
 .amount-control input {
   min-width: 0;
-  min-height: 44px;
+  min-height: 42px;
   padding: 0 7px;
   border: 0;
   border-right: 1px solid var(--line);
@@ -1179,16 +1160,18 @@ button.poker-card:focus-visible,
   grid-template-columns: minmax(160px, 0.4fr) minmax(320px, 1fr) auto;
   align-items: center;
   gap: 16px;
-  margin-top: 8px;
-  padding: 13px;
+  padding: 11px 13px;
 }
 
 .results-list {
   display: grid;
+  max-height: 150px;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .result-row {
-  min-height: 30px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1222,8 +1205,8 @@ button.poker-card:focus-visible,
 }
 
 .modal > header {
-  min-height: 72px;
-  padding: 12px 16px;
+  min-height: 64px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1379,31 +1362,98 @@ button.poker-card:focus-visible,
   opacity: 1;
 }
 
-@media (max-width: 1080px) {
-  .game-catalog {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+/* Desktop and tablet-landscape: lock the shell to the viewport. */
+@media (min-width: 821px) {
+  .shell {
+    height: 100%;
+    min-height: 0;
+  }
+
+  main {
+    overflow: auto;
+  }
+}
+
+@media (min-width: 1200px) {
+  .setup-grid {
+    grid-template-columns: 300px minmax(0, 1fr) 300px;
+  }
+
+  .advanced .panel-title > span {
+    display: block;
   }
 
   .advanced-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .decision-panel {
     grid-template-columns: 1fr;
   }
 }
 
+/* Narrow desktop / tablet: options drop to a second row under the table panel. */
+@media (max-width: 1020px) and (min-width: 821px) {
+  .setup-grid {
+    grid-template-columns: 272px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .mix-panel {
+    grid-row: 1 / -1;
+    grid-column: 2;
+  }
+
+  .advanced {
+    grid-column: 1;
+  }
+}
+
+/* Phones and portrait tablets: stack, and the setup panels become tabs. */
 @media (max-width: 820px) {
+  .page-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .page-heading .setup-tabs {
+    display: grid;
+    width: 100%;
+  }
+
+  .setup-tabs button {
+    min-height: 36px;
+    padding: 0 6px;
+  }
+
   .setup-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
   }
 
-  .connect-panel .core-settings {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .setup-grid > .panel {
+    max-height: none;
+    overflow: visible;
   }
 
-  .connect-panel .core-settings label:first-child {
-    grid-column: span 1;
+  .setup-grid[data-setup-tab="table"] > [data-setup-section]:not([data-setup-section="table"]),
+  .setup-grid[data-setup-tab="rotation"] > [data-setup-section]:not([data-setup-section="rotation"]),
+  .setup-grid[data-setup-tab="options"] > [data-setup-section]:not([data-setup-section="options"]) {
+    display: none;
+  }
+
+  .mix-panel {
+    overflow: visible;
+  }
+
+  .mix-panel .game-catalog {
+    overflow: visible;
+  }
+
+  .game-view {
+    grid-template-rows: none;
+    padding-bottom: 16px;
+  }
+
+  .table-surface {
+    min-height: 250px;
   }
 
   .seats {
@@ -1414,6 +1464,15 @@ button.poker-card:focus-visible,
   .seat {
     min-width: 150px;
     flex: 1 0 150px;
+  }
+
+  .center-table {
+    min-height: 150px;
+  }
+
+  .decision-panel {
+    grid-template-columns: 1fr;
+    gap: 9px;
   }
 
   .bet-controls {
@@ -1430,29 +1489,13 @@ button.poker-card:focus-visible,
 }
 
 @media (max-width: 620px) {
-  .page-heading h1 {
-    font-size: 1.75rem;
-  }
-
-  .game-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .card-rank {
-    font-size: 2rem;
-  }
-
-  .card-suit {
-    font-size: 0.88rem;
-  }
-
   .shell {
     padding-left: max(8px, env(safe-area-inset-left));
     padding-right: max(8px, env(safe-area-inset-right));
   }
 
   .topbar {
-    min-height: 58px;
+    min-height: 48px;
   }
 
   .brand small,
@@ -1461,36 +1504,31 @@ button.poker-card:focus-visible,
     display: none;
   }
 
-  .mark {
-    width: 36px;
-    height: 36px;
+  .page-heading h1 {
+    font-size: 1.35rem;
   }
 
-  main {
-    padding-top: 18px;
+  .game-header h1 {
+    font-size: 1.25rem;
   }
 
   .connect-panel,
   .mix-panel,
   .advanced,
   .waiting {
-    padding: 13px;
+    padding: 12px;
   }
 
   .panel-title {
     flex-wrap: wrap;
   }
 
-  .connect-panel .core-settings {
-    grid-template-columns: 1fr;
+  .core-settings label {
+    grid-template-columns: minmax(0, 1fr) 132px;
   }
 
   .game-catalog {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .advanced-grid {
-    grid-template-columns: 1fr;
   }
 
   .room-top {
@@ -1506,7 +1544,7 @@ button.poker-card:focus-visible,
   }
 
   .game-header {
-    align-items: end;
+    align-items: flex-end;
   }
 
   .game-header .eyebrow {
@@ -1518,11 +1556,11 @@ button.poker-card:focus-visible,
   }
 
   .table-meta > div {
-    min-height: 42px;
+    min-height: 36px;
   }
 
   .table-surface {
-    min-height: 265px;
+    min-height: 220px;
   }
 
   .seats {
@@ -1535,8 +1573,8 @@ button.poker-card:focus-visible,
   }
 
   .center-table {
-    min-height: 172px;
-    padding: 12px 6px;
+    min-height: 130px;
+    padding: 10px 6px;
   }
 
   .board-line {
@@ -1545,38 +1583,30 @@ button.poker-card:focus-visible,
   }
 
   .board-cards {
-    min-height: 65px;
+    --card-width: min(45px, calc((100% - 16px) / 5));
     gap: 4px;
   }
 
-  .board-cards .poker-card,
-  .board-cards .card-slot {
-    width: min(45px, calc((100vw - 76px) / 5));
+  .hero-hand-head {
+    min-height: 32px;
   }
 
   .hero-cards {
-    min-height: 100px;
+    --card-width: min(60px, calc((100% - (var(--hero-count) - 1) * 4px) / var(--hero-count)));
+    min-height: calc(var(--card-width) * 1.4 + 12px);
     gap: 4px;
-    padding: 8px 5px;
+    padding: 6px 5px;
   }
 
-  .hero-cards .poker-card {
-    width: min(61px, calc((100vw - 42px) / var(--hero-count)));
-  }
-
-  .hero-cards .card-rank {
-    font-size: 2rem;
-  }
-
-  .hero-cards .card-suit {
-    font-size: 0.88rem;
+  .hand-evaluation {
+    min-height: 26px;
+    padding: 3px 8px 6px;
   }
 
   .decision-panel {
     position: sticky;
     z-index: 8;
     bottom: max(6px, env(safe-area-inset-bottom));
-    gap: 9px;
     padding: 9px;
     background: #0b1219;
   }
@@ -1592,13 +1622,14 @@ button.poker-card:focus-visible,
     margin: 0;
   }
 
+  /* Presets and the amount share one 42px row. */
   .amount-control {
-    grid-template-columns: repeat(4, minmax(45px, 1fr));
+    grid-template-columns: repeat(4, minmax(42px, 1fr)) minmax(72px, 1.3fr);
   }
 
-  .amount-control input {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--line);
+  .amount-control button {
+    padding: 0 4px;
+    font-size: 0.64rem;
   }
 
   .action-buttons .button {
@@ -1611,6 +1642,7 @@ button.poker-card:focus-visible,
 
   .results-panel {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .results-panel > div:first-child {
@@ -1623,7 +1655,7 @@ button.poker-card:focus-visible,
   }
 
   .modal > header {
-    min-height: 64px;
+    min-height: 60px;
     padding: 9px 11px;
   }
 
@@ -1651,8 +1683,8 @@ button.poker-card:focus-visible,
     width: 132px;
   }
 
-  .hero-cards .poker-card {
-    width: min(54px, calc((100vw - 38px) / var(--hero-count)));
+  .hero-cards {
+    --card-width: min(54px, calc((100% - (var(--hero-count) - 1) * 4px) / var(--hero-count)));
   }
 }
 

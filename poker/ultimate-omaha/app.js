@@ -324,16 +324,16 @@ class GameController {
         );
     }
 
-    logBoardCards(boardNum, cards, phase) {
-        const cardTexts = cards.map(card => {
-            if (card.faceDown) return '🂠';
-            const formatted = Poker.formatCard(card);
-            const colorClass = formatted.isRed ? 'red' : 'black';
-            return `<span class="card-text ${colorClass}">${formatted.rank}${formatted.suit}</span>`;
-        }).join(' ');
+    /**
+     * Small shared playing cards for a log line
+     */
+    logCardsHtml(cards) {
+        return `<span class="log-cards">${PlayingCards.rowHtml(cards.map(card => this.cardFace(card)))}</span>`;
+    }
 
+    logBoardCards(boardNum, cards, phase) {
         const phaseName = phase === 'flop' ? 'Flop' : 'Turn/River';
-        this.addLogEntry('board', `Board ${boardNum} ${phaseName}: ${cardTexts}`);
+        this.addLogEntry('board', `Board ${boardNum} ${phaseName}: ${this.logCardsHtml(cards)}`);
     }
 
     logShowdown(results) {
@@ -345,14 +345,8 @@ class GameController {
             const isMe = result.playerId === this.myPlayerId;
             
             // Log their cards
-            const cardTexts = result.holeCards.map(card => {
-                const formatted = Poker.formatCard(card);
-                const colorClass = formatted.isRed ? 'red' : 'black';
-                return `<span class="card-text ${colorClass}">${formatted.rank}${formatted.suit}</span>`;
-            }).join(' ');
-            
-            this.addLogEntry('showdown', 
-                `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ${cardTexts}`
+            this.addLogEntry('showdown',
+                `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ${this.logCardsHtml(result.holeCards)}`
             );
             
             // Log their result
@@ -905,64 +899,48 @@ class GameController {
         const board = document.getElementById(boardId);
         const slots = board.querySelectorAll('.card-slot');
 
-        cards.forEach((card, i) => {
-            const slot = slots[i];
-            slot.innerHTML = '';
-
-            if (card.faceDown) {
-                slot.classList.remove('dealt');
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card face-down';
-                slot.appendChild(cardEl);
-                slot.classList.add('dealt');
-            } else {
-                const formatted = Poker.formatCard(card);
-                const cardEl = this.createCardElement(formatted);
-                slot.appendChild(cardEl);
-                slot.classList.add('dealt');
-            }
-        });
+        cards.forEach((card, i) => this.fillSlot(slots[i], card));
     }
 
     updateHoleCards(cards) {
         const container = document.getElementById('hole-cards');
         const slots = container.querySelectorAll('.card-slot');
 
-        cards.forEach((card, i) => {
-            const slot = slots[i];
-            slot.innerHTML = '';
-
-            if (card.faceDown) {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card face-down';
-                slot.appendChild(cardEl);
-            } else {
-                const formatted = Poker.formatCard(card);
-                const cardEl = this.createCardElement(formatted);
-                slot.appendChild(cardEl);
-            }
-            slot.classList.add('dealt');
-        });
+        cards.forEach((card, i) => this.fillSlot(slots[i], card));
     }
 
-    createCardElement(formattedCard) {
-        const card = document.createElement('div');
-        card.className = `card ${formattedCard.isRed ? 'red' : 'black'}`;
-        card.innerHTML = `
-            <span class="rank">${formattedCard.rank}</span>
-            <span class="suit">${formattedCard.suit}</span>
-        `;
-        return card;
+    // ============ CARD RENDERING (shared component) ============
+
+    /**
+     * What the shared card component should draw for a game card
+     */
+    cardFace(card) {
+        if (!card || card.faceDown) return 'BACK';
+        return { rank: card.rank, suit: card.suit };
     }
 
-    createMiniCardElement(formattedCard) {
-        const card = document.createElement('div');
-        card.className = `mini-card ${formattedCard.isRed ? 'red' : 'black'}`;
-        card.innerHTML = `
-            <span class="rank">${formattedCard.rank}</span>
-            <span class="suit">${formattedCard.suit}</span>
-        `;
-        return card;
+    cardKey(card) {
+        if (!card) return '';
+        return card.faceDown ? 'BACK' : Poker.getCardId(card);
+    }
+
+    /**
+     * Put a card in a slot. The slot is only rebuilt (and the deal animation
+     * replayed) when the card it shows actually changes.
+     */
+    fillSlot(slot, card) {
+        if (!slot) return;
+        const key = this.cardKey(card);
+        if (slot.dataset.card === key) return;
+
+        slot.dataset.card = key;
+        slot.innerHTML = '';
+        slot.classList.remove('dealt');
+        if (!key) return;
+
+        slot.appendChild(PlayingCards.element(this.cardFace(card)));
+        void slot.offsetWidth; // restart the deal animation
+        slot.classList.add('dealt');
     }
 
     updatePlayersArea(players, phase, results = null, queuedPlayerIds = []) {
@@ -987,17 +965,8 @@ class GameController {
                 const playerResult = results.find(r => r.playerId === player.id);
                 if (playerResult) {
                     // Show hole cards
-                    let cardsHtml = '<div class="player-cards">';
-                    if (playerResult.holeCards) {
-                        playerResult.holeCards.forEach(card => {
-                            const formatted = Poker.formatCard(card);
-                            cardsHtml += `<div class="mini-card ${formatted.isRed ? 'red' : 'black'}">
-                                <span class="rank">${formatted.rank}</span>
-                                <span class="suit">${formatted.suit}</span>
-                            </div>`;
-                        });
-                    }
-                    cardsHtml += '</div>';
+                    const holeCards = playerResult.holeCards || [];
+                    const cardsHtml = `<div class="player-cards">${PlayingCards.rowHtml(holeCards.map(card => this.cardFace(card)))}</div>`;
 
                     // Show hands on each board (just name and multiplier)
                     const hand1Class = playerResult.hand1.qualifies ? 'qualified' : 'fouled';

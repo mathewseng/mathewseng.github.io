@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#08090d" />
     <meta
       name="description"
@@ -10,123 +10,118 @@
     />
     <title>Poker Hand Probability Calculations</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20261003" />
   </head>
   <body>
-    <div class="page-shell">
+    <div class="app-shell">
       <header class="topbar">
         <a class="brand" href="/" aria-label="Home">
           <span class="brand-mark">MS</span>
-          <span>Poker calculations</span>
+          <span class="brand-name">Poker calculations</span>
         </a>
+        <div class="title-block">
+          <p class="eyebrow">Solver-backed odds table</p>
+          <h1 id="page-title">Poker hand probabilities by cards dealt</h1>
+        </div>
+        <div class="summary-grid" aria-label="Solver summary">
+          <div class="summary-card">
+            <span>Exact through</span>
+            <strong id="exactThrough">--</strong>
+          </div>
+          <div class="summary-card">
+            <span>Algorithm</span>
+            <strong id="algorithmLabel">--</strong>
+          </div>
+          <div class="summary-card">
+            <span>Total solve</span>
+            <strong id="totalSolve">--</strong>
+          </div>
+          <div class="summary-card">
+            <span>Peak states</span>
+            <strong id="peakStates">--</strong>
+          </div>
+        </div>
         <a class="source-link" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/poker/calculations/solver/src/main.rs">Rust solver</a>
       </header>
 
-      <main>
-        <section class="intro" aria-labelledby="page-title">
-          <div>
-            <p class="eyebrow">Solver-backed odds table</p>
-            <h1 id="page-title">Poker hand probabilities by cards dealt</h1>
-            <p class="intro-copy" id="classificationNote">
-              Loading solver output...
-            </p>
-          </div>
-          <div class="summary-grid" aria-label="Solver summary">
-            <div class="summary-card">
-              <span>Exact through</span>
-              <strong id="exactThrough">--</strong>
-            </div>
-            <div class="summary-card">
-              <span>Algorithm</span>
-              <strong id="algorithmLabel">--</strong>
-            </div>
-            <div class="summary-card">
-              <span>Total solve</span>
-              <strong id="totalSolve">--</strong>
-            </div>
-            <div class="summary-card">
-              <span>Peak states</span>
-              <strong id="peakStates">--</strong>
-            </div>
-          </div>
-        </section>
+      <nav class="view-tabs" aria-label="Sections">
+        <button class="view-tab active" type="button" data-view="explore" aria-pressed="true">Explore</button>
+        <button class="view-tab" type="button" data-view="map" aria-pressed="false">Map</button>
+        <button class="view-tab" type="button" data-view="table" aria-pressed="false">Table</button>
+        <button class="view-tab" type="button" data-view="glance" aria-pressed="false">Glance</button>
+        <button class="view-tab" type="button" data-view="solver" aria-pressed="false">Solver</button>
+      </nav>
 
-        <section class="explorer-section" aria-labelledby="explorer-title">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Interactive view</p>
-              <h2 id="explorer-title">Explorer</h2>
-            </div>
-            <p id="runMeta">Waiting for data.</p>
-          </div>
-
-          <div class="control-panel" aria-label="Chart controls">
-            <div>
-              <span class="control-label">Rank</span>
-              <div class="rank-controls" id="rankControls"></div>
-            </div>
-            <div>
-              <span class="control-label">Cards</span>
-              <div class="card-controls" id="cardControls"></div>
-            </div>
-          </div>
-
-          <div class="chart-grid">
-            <article class="chart-panel" aria-labelledby="trend-title">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Trend</p>
-                  <h2 id="trend-title">Rank probability</h2>
-                </div>
-                <p id="trendMeta">--</p>
+      <main class="workspace" id="workspace" data-view="explore">
+        <aside class="sidebar">
+          <section class="panel control-panel" aria-label="Chart controls">
+            <button class="control-toggle" id="controlToggle" type="button" aria-expanded="false" aria-controls="controlBody">
+              <span class="control-summary">
+                <span class="rank-swatch" id="controlSwatch" aria-hidden="true"></span>
+                <span id="controlSummary">Rank and cards</span>
+              </span>
+              <span class="control-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="control-body" id="controlBody">
+              <div class="control-group">
+                <span class="control-label">Rank</span>
+                <div class="rank-controls" id="rankControls"></div>
               </div>
-              <div class="chart-frame" id="trendChart"></div>
-            </article>
-
-            <article class="chart-panel" aria-labelledby="detail-title">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Selected deal</p>
-                  <h2 id="detail-title">Distribution</h2>
-                </div>
-                <p id="detailMeta">--</p>
+              <div class="control-group">
+                <span class="control-label">Cards dealt</span>
+                <div class="card-controls" id="cardControls"></div>
               </div>
-              <div class="distribution-list" id="distributionList"></div>
-            </article>
-          </div>
-        </section>
-
-        <section class="stack-section" aria-labelledby="stack-title">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">All card counts</p>
-              <h2 id="stack-title">Distribution map</h2>
+              <p class="run-meta" id="runMeta">Waiting for data.</p>
             </div>
-            <p id="stackMeta">Exact probabilities for every row.</p>
-          </div>
-          <div class="stacked-map" id="stackedMap"></div>
-        </section>
+          </section>
 
-        <section class="mobile-cards-section" aria-labelledby="mobile-cards-title">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Mobile scan</p>
-              <h2 id="mobile-cards-title">At a glance</h2>
+          <section class="panel metrics-panel" aria-labelledby="metrics-title">
+            <div class="panel-heading">
+              <p class="eyebrow">Run metrics</p>
+              <h2 id="metrics-title">Exact solver</h2>
             </div>
-          </div>
-          <div class="mobile-card-grid" id="mobileCards"></div>
-        </section>
-
-        <section class="table-section" aria-labelledby="table-title">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Best hand distribution</p>
-              <h2 id="table-title">Probability table</h2>
+            <div class="panel-body metrics-body">
+              <p class="intro-copy" id="classificationNote">Loading solver output...</p>
+              <div class="metrics-grid" id="metricsGrid"></div>
+              <div class="layer-chart" id="layerChart"></div>
             </div>
-            <p>Exact counts from the generated JSON.</p>
-          </div>
+          </section>
+        </aside>
 
-          <div class="table-wrap">
+        <article class="panel trend-panel" aria-labelledby="trend-title">
+          <div class="panel-heading">
+            <p class="eyebrow">Trend</p>
+            <h2 id="trend-title">Rank probability</h2>
+            <p class="panel-meta" id="trendMeta">--</p>
+          </div>
+          <div class="panel-body chart-frame" id="trendChart"></div>
+        </article>
+
+        <article class="panel detail-panel" aria-labelledby="detail-title">
+          <div class="panel-heading">
+            <p class="eyebrow">Selected deal</p>
+            <h2 id="detail-title">Distribution</h2>
+            <p class="panel-meta" id="detailMeta">--</p>
+          </div>
+          <div class="panel-body distribution-list" id="distributionList"></div>
+        </article>
+
+        <article class="panel map-panel" aria-labelledby="stack-title">
+          <div class="panel-heading">
+            <p class="eyebrow">All card counts</p>
+            <h2 id="stack-title">Distribution map</h2>
+            <p class="panel-meta" id="stackMeta">Exact probabilities for every row.</p>
+          </div>
+          <div class="panel-body stacked-map" id="stackedMap"></div>
+        </article>
+
+        <article class="panel table-panel" aria-labelledby="table-title">
+          <div class="panel-heading">
+            <p class="eyebrow">Best hand distribution</p>
+            <h2 id="table-title">Probability table</h2>
+            <p class="panel-meta">Exact counts from the generated JSON. Tap a cell to select its rank and deal.</p>
+          </div>
+          <div class="panel-body table-wrap">
             <table id="probabilityTable" aria-label="Poker hand probability table">
               <thead></thead>
               <tbody>
@@ -136,22 +131,19 @@
               </tbody>
             </table>
           </div>
-        </section>
+        </article>
 
-        <section class="metrics-section" aria-labelledby="metrics-title">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Run metrics</p>
-              <h2 id="metrics-title">Exact solver</h2>
-            </div>
-            <p>Canonical suit states collapse equivalent suit labels while preserving exact counts.</p>
+        <article class="panel glance-panel" aria-labelledby="mobile-cards-title">
+          <div class="panel-heading">
+            <p class="eyebrow">Mobile scan</p>
+            <h2 id="mobile-cards-title">At a glance</h2>
+            <p class="panel-meta">Top four ranks for every deal size.</p>
           </div>
-          <div class="metrics-grid" id="metricsGrid"></div>
-          <div class="layer-chart" id="layerChart"></div>
-        </section>
+          <div class="panel-body mobile-card-grid" id="mobileCards"></div>
+        </article>
       </main>
     </div>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20261003"></script>
   </body>
 </html>

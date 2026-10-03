@@ -4,8 +4,9 @@
   const Core = window.OFCFantasylandCore;
   const Game = window.OFCPineappleGame;
   const PeerRoom = window.PeerRoom;
+  const PlayingCards = window.PlayingCards;
   const RANK_LABEL = { 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T", 9: "9", 8: "8", 7: "7", 6: "6", 5: "5", 4: "4", 3: "3", 2: "2" };
-  if (!Core || !Game || !PeerRoom) return;
+  if (!Core || !Game || !PeerRoom || !PlayingCards) return;
 
   const $ = (id) => document.getElementById(id);
   const els = {
@@ -434,7 +435,7 @@
     const assignments = evaluation?.assignments || {};
     return '<div class="mini-row-group"><div class="mini-row">' + Array.from({ length: limit }, (_, index) => cards[index]
       ? cardHtml(cards[index], { assignments, disabled: true, set: player.placedAt?.[cards[index]], latest: player.placedAt?.[cards[index]] === player.lastSet })
-      : '<span class="empty-slot"></span>').join("") + '</div><div class="mini-score">' + rowScoreHtml(evaluation?.rowEvals?.[row], row) + '</div></div>';
+      : PlayingCards.emptySlotHtml()).join("") + '</div><div class="mini-score">' + rowScoreHtml(evaluation?.rowEvals?.[row], row) + '</div></div>';
   }
 
   function syncDraft(state, me) {
@@ -462,7 +463,7 @@
       return '<div class="board-row' + (selected ? " target" : "") + '" data-row="' + row + '" aria-label="' + titleCase(row) + (selected ? ", selected" : "") + '"><div class="row-label"><strong>' + titleCase(row) + '</strong>' + (selected ? '<kbd class="row-keys">↑ ↓</kbd>' : '') + '</div><div class="board-cards">' +
         Array.from({ length: Game.ROW_LIMITS[row] }, (_, index) => {
           const cardId = cards[index];
-          if (!cardId) return '<span class="empty-slot"></span>';
+          if (!cardId) return PlayingCards.emptySlotHtml();
           return cardHtml(cardId, {
             assignments: evaluation?.assignments || {},
             staged: Object.prototype.hasOwnProperty.call(turnAssignments, cardId),
@@ -498,10 +499,12 @@
     const columns = Math.max(1, displayCards.length);
     els.drawCards.style.setProperty("--draw-columns", columns);
     els.drawCards.style.setProperty("--mobile-columns", columns <= 5 ? columns : Math.ceil(columns / 2));
-    els.drawCards.innerHTML = displayCards.map((cardId, index) => '<div class="hand-slot" data-hand-id="' + cardId + '">' + (turnAssignments[cardId] ? '<span class="empty-slot" aria-label="Card ' + (index + 1) + ', placed"></span>' : cardHtml(cardId, {
-      origin: "hand",
-      shortcut: index + 1,
-    })) + (index < 9 ? '<kbd class="hand-key" title="Press ' + (index + 1) + ' to place or recall">' + (index + 1) + '</kbd>' : '') + '</div>').join("");
+    els.drawCards.innerHTML = displayCards.map((cardId, index) => {
+      const placed = Boolean(turnAssignments[cardId]);
+      return '<div class="hand-slot" data-hand-id="' + cardId + '"' + (placed ? ' role="img" aria-label="Card ' + (index + 1) + ', placed"' : '') + '>' +
+        (placed ? PlayingCards.emptySlotHtml() : cardHtml(cardId, { origin: "hand", shortcut: index + 1 })) +
+        (index < 9 ? '<kbd class="hand-key" title="Press ' + (index + 1) + ' to place or recall">' + (index + 1) + '</kbd>' : '') + '</div>';
+    }).join("");
     els.clearTurnButton.disabled = Object.keys(turnAssignments).length === 0;
     els.confirmTurnButton.disabled = !draftReady(action, me);
   }
@@ -835,19 +838,31 @@
     return '<span class="rank-description' + (foul ? ' foul-text' : '') + '">' + escapeHtml(name) + (foul ? " · Foul" : "") + '</span><strong class="royalty-value' + (points ? ' scoring' : '') + '">' + points + ' pts</strong>';
   }
 
+  // Every card face comes from shared/cards.js. A joker standing in for a card
+  // shows the card it represents on the joker's purple background with a JK corner
+  // marker; the badge marks which draw placed the card ("latest" for the most recent).
   function cardHtml(cardId, options = {}) {
-    if (cardId === "BACK") return '<span class="playing-card back" aria-label="Face-down card"></span>';
+    if (cardId === "BACK") return PlayingCards.html("BACK");
     const transformedId = options.assignments?.[cardId] || cardId;
     const originalJoker = /^JK[12]$/i.test(cardId);
     const card = Core.makeCard(transformedId);
-    const suitSymbol = { s: "♠", h: "♥", d: "♦", c: "♣" }[card.suit] || "★";
-    const rank = card.joker ? "JK" : RANK_LABEL[card.rank];
-    const classes = ["playing-card", originalJoker || card.joker ? "joker" : "suit-" + card.suit];
-    if (options.staged) classes.push("staged");
-    if (options.selected) classes.push("selected");
-    const attrs = options.disabled ? ' tabindex="-1"' : ' data-card-id="' + escapeHtml(cardId) + '" data-origin="' + escapeHtml(options.origin || "hand") + '" draggable="false"';
-    const badge = options.set ? '<span class="set-badge' + (options.latest ? ' latest' : '') + '" title="Placed in set ' + options.set + '">' + options.set + '</span>' : '';
-    return '<button class="' + classes.join(" ") + '" type="button"' + attrs + ' aria-label="' + escapeHtml(cardLabel(cardId) + (options.set ? ', set ' + options.set : '')) + '"><span class="card-suit">' + suitSymbol + '</span><span class="card-rank">' + rank + '</span>' + badge + (originalJoker ? '<span class="card-jk">JK</span>' : "") + "</button>";
+    const standIn = originalJoker && !card.joker;
+    const origin = options.origin || "hand";
+    return PlayingCards.html(card.joker ? "JK" : { rank: card.rank, suit: card.suit }, {
+      tag: "button",
+      className: standIn ? "joker" : "",
+      staged: Boolean(options.staged),
+      selected: Boolean(options.selected),
+      interactive: !options.disabled && origin !== "fixed",
+      corner: standIn ? "JK" : "",
+      badge: options.set ? String(options.set) : "",
+      badgeClass: options.set && options.latest ? "latest" : "",
+      label: cardLabel(cardId) + (options.set ? ", set " + options.set : ""),
+      title: options.set ? "Placed in set " + options.set : "",
+      attrs: options.disabled
+        ? { tabindex: "-1" }
+        : { "data-card-id": cardId, "data-origin": origin, draggable: "false" },
+    });
   }
 
   function cardLabel(cardId) {

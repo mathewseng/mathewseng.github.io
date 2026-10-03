@@ -8,6 +8,7 @@
     SUITS,
     createDeck,
   } = window.PokerRushCore;
+  const PlayingCards = window.PlayingCards;
 
   const els = {
     lobby: document.querySelector("#lobby"),
@@ -356,30 +357,25 @@
     els.modeBadge.textContent = `${snapshot.options.handSize} cards · ${discardModeLabels[snapshot.options.discardMode]} · ${endModeLabels[snapshot.options.endMode]}`;
   }
 
-  function createCardSlot(index) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "playing-card";
-    button.addEventListener("click", () => discardAt(index));
+  // Rush ids are "AH"/"TD" (suits S/H/D/C) and "X1"/"X2" for jokers; the
+  // shared component takes the same rank + suit and "JK" for a joker.
+  function cardCode(card) {
+    return card.isJoker ? "JK" : `${card.rank}${card.suit}`;
+  }
 
-    const rank = document.createElement("span");
-    rank.className = "rank";
-
-    const suit = document.createElement("span");
-    suit.className = "suit";
-    suit.setAttribute("aria-hidden", "true");
-
-    const hotkey = document.createElement("span");
-    hotkey.className = "hotkey";
-    hotkey.textContent = String(index + 1);
-
-    button.append(rank, suit, hotkey);
-    return button;
+  // Hand slots are stable wrappers around the shared card: they keep the
+  // deal/discard animations and the hotkey position while the card inside is
+  // rebuilt whenever it changes.
+  function createHandSlot(index) {
+    const slot = document.createElement("div");
+    slot.className = "hand-slot";
+    slot.dataset.index = String(index);
+    return slot;
   }
 
   function ensureHandSlots(size) {
     while (els.hand.children.length < size) {
-      els.hand.append(createCardSlot(els.hand.children.length));
+      els.hand.append(createHandSlot(els.hand.children.length));
     }
     while (els.hand.children.length > size) {
       els.hand.lastElementChild.remove();
@@ -387,26 +383,36 @@
     els.hand.style.setProperty("--hand-size", size);
   }
 
-  function clearCardAnimation(button) {
-    button.classList.remove("is-new", "is-discarding");
+  function slotCard(slot) {
+    return slot ? slot.querySelector("button.playing-card") : null;
   }
 
-  function updateCardSlot(button, card, index) {
-    button.hidden = !card;
-    if (!card) return;
-    button.dataset.suit = card.suit;
-    button.dataset.joker = String(card.isJoker);
-    button.dataset.cardId = card.id;
-    button.setAttribute("aria-label", `Discard ${cardLabel(card)} in slot ${index + 1}`);
-    button.querySelector(".rank").textContent = card.isJoker ? "JK" : card.rank;
-    button.querySelector(".hotkey").textContent = String(index + 1);
+  function clearCardAnimation(slot) {
+    slot.classList.remove("is-new", "is-discarding");
   }
 
-  function animateCardSlot(button, className) {
-    clearCardAnimation(button);
-    button.offsetHeight;
-    button.classList.add(className);
-    window.setTimeout(() => clearCardAnimation(button), 300);
+  function updateCardSlot(slot, card, index) {
+    slot.classList.toggle("is-empty", !card);
+    if (!card) {
+      slot.replaceChildren(PlayingCards.emptySlot());
+      return;
+    }
+    const button = PlayingCards.element(cardCode(card), {
+      tag: "button",
+      interactive: true,
+      badge: String(index + 1),
+      label: `Discard ${cardLabel(card)} in slot ${index + 1}`,
+      attrs: { "data-card-id": card.id, "data-index": String(index) },
+    });
+    slot.replaceChildren(button);
+  }
+
+  function animateCardSlot(slot, className) {
+    window.clearTimeout(slot.animationTimer);
+    clearCardAnimation(slot);
+    slot.offsetHeight;
+    slot.classList.add(className);
+    slot.animationTimer = window.setTimeout(() => clearCardAnimation(slot), 300);
   }
 
   function renderHand({ changedIndex = null, animateAll = false } = {}) {
@@ -414,13 +420,13 @@
     ensureHandSlots(size);
     for (let index = 0; index < size; index += 1) {
       const card = game.hand[index] || null;
-      const button = els.hand.children[index];
+      const slot = els.hand.children[index];
       const oldId = previousHandIds[index] || "";
       const nextId = card ? card.id : "";
-      const changed = oldId !== nextId;
-      if (changed) updateCardSlot(button, card, index);
-      if (changed && (animateAll || changedIndex === index)) {
-        animateCardSlot(button, "is-new");
+      const changed = oldId !== nextId || !slot.firstElementChild;
+      if (changed) updateCardSlot(slot, card, index);
+      if (changed && card && (animateAll || changedIndex === index)) {
+        animateCardSlot(slot, "is-new");
       }
     }
     previousHandIds = Array.from({ length: size }, (_, index) => (game.hand[index] ? game.hand[index].id : ""));
@@ -430,12 +436,7 @@
     const wrapper = document.createElement("div");
     wrapper.className = "mini-cards";
     for (const card of record.cards) {
-      const mini = document.createElement("span");
-      mini.className = "mini-card";
-      mini.dataset.suit = card.suit;
-      mini.textContent = card.isJoker ? "JK" : card.rank;
-      mini.title = cardLabel(card);
-      wrapper.append(mini);
+      wrapper.append(PlayingCards.element(cardCode(card), { title: cardLabel(card) }));
     }
     return wrapper;
   }
@@ -896,11 +897,11 @@
 
   function discardAt(index) {
     if (!game || game.status !== "playing" || isResolving) return;
-    const button = els.hand.children[index];
-    if (!button || button.hidden) return;
+    const slot = els.hand.children[index];
+    if (!slotCard(slot)) return;
     isResolving = true;
     playDiscardSound();
-    animateCardSlot(button, "is-discarding");
+    animateCardSlot(slot, "is-discarding");
     if (playMode === "host") {
       window.setTimeout(() => {
         enqueueHostAction(localPlayerId, { action: "discard", index, seq: ++networkSeq });
@@ -918,7 +919,7 @@
       const result = game.discardCard(index);
       const scoreEvents = result.events ? result.events.filter((event) => event.type === "score") : [];
       renderMetrics();
-      renderHand();
+      renderHand({ changedIndex: index });
       if (scoreEvents.length) renderScores();
       renderMatrix();
       renderStatus();
@@ -996,6 +997,11 @@
     }
   });
 
+  els.hand.addEventListener("click", (event) => {
+    const button = event.target.closest("button.playing-card");
+    if (!button || !els.hand.contains(button)) return;
+    discardAt(Number(button.dataset.index));
+  });
   els.dailyButton.addEventListener("click", () => startGame("daily"));
   els.randomButton.addEventListener("click", () => startGame("random"));
   els.multiplayerButton.addEventListener("click", openMultiplayerDialog);

@@ -790,6 +790,88 @@
     window.addEventListener("resize", () => {
       drawTuning();
     });
+
+    bindViewNav();
+  }
+
+  const VIEW_IDS = ["play", "scope", "tunings", "builder"];
+  const VIEW_KEY = "microtonalLab.view";
+
+  function bindViewNav() {
+    const shell = document.getElementById("labShell");
+    const nav = document.getElementById("labNav");
+    if (!shell || !nav) {
+      return;
+    }
+    const buttons = Array.from(nav.querySelectorAll("[data-view]"));
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.view, true));
+    });
+    nav.addEventListener("keydown", (event) => {
+      const index = buttons.indexOf(document.activeElement);
+      if (index < 0) {
+        return;
+      }
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      if (!step) {
+        return;
+      }
+      event.preventDefault();
+      const next = buttons[(index + step + buttons.length) % buttons.length];
+      next.focus();
+      setView(next.dataset.view, true);
+    });
+    window.addEventListener("hashchange", () => {
+      const view = viewFromHash();
+      if (view && view !== shell.dataset.view) {
+        setView(view, false);
+      }
+    });
+    setView(viewFromHash() ?? storedView() ?? VIEW_IDS[0], false);
+  }
+
+  function viewFromHash() {
+    const value = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    return VIEW_IDS.includes(value) ? value : null;
+  }
+
+  function storedView() {
+    try {
+      const saved = localStorage.getItem(VIEW_KEY);
+      return VIEW_IDS.includes(saved) ? saved : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function setView(view, persist) {
+    const shell = document.getElementById("labShell");
+    const nav = document.getElementById("labNav");
+    if (!shell || !nav) {
+      return;
+    }
+    if (!VIEW_IDS.includes(view)) {
+      view = VIEW_IDS[0];
+    }
+    shell.dataset.view = view;
+    nav.querySelectorAll("[data-view]").forEach((button) => {
+      const active = button.dataset.view === view;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+    if (persist) {
+      if (window.history?.replaceState) {
+        window.history.replaceState(null, "", `#${view}`);
+      } else {
+        window.location.hash = view;
+      }
+      try {
+        localStorage.setItem(VIEW_KEY, view);
+      } catch (error) {
+        // Ignore storage failures; the hash still carries the view.
+      }
+    }
+    drawTuning();
   }
 
   function isTypingTarget(target) {
@@ -1395,8 +1477,8 @@
     const context = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    const width = Math.max(320, rect.width);
-    const height = Math.max(320, rect.height);
+    const width = Math.max(160, rect.width);
+    const height = Math.max(160, rect.height);
 
     if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
       canvas.width = Math.round(width * dpr);

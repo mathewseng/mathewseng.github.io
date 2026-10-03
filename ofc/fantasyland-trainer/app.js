@@ -44,7 +44,6 @@
     14: "aces",
   };
   const SUITS = ["s", "h", "d", "c"];
-  const SUIT_SYMBOL = { s: "♠", h: "♥", d: "♦", c: "♣" };
   const CATEGORY = {
     HIGH: 0,
     PAIR: 1,
@@ -423,12 +422,13 @@
   }
 
   function createCardButton(id, isSelected) {
-    const card = cardFromId(id);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `card-button ${cardClass(card)}${isSelected ? " selected" : ""}`;
-    button.dataset.cardId = id;
-    button.innerHTML = cardFaceHtml(card);
+    const button = cardElement(cardFromId(id), {
+      tag: "button",
+      className: "card-button",
+      selected: isSelected,
+      interactive: true,
+      attrs: { "data-card-id": id },
+    });
     button.addEventListener("click", () => toggleCard(id));
     return button;
   }
@@ -460,10 +460,7 @@
     const readOnly = options.readOnly || !els.solveHand;
     const displayIds = state.selected.slice().sort((left, right) => compareTrainerCards(left, right, "rank"));
     displayIds.forEach((id) => {
-      const card = cardFromId(id);
-      const item = document.createElement("div");
-      item.className = `mini-card ${cardClass(card)}`;
-      item.innerHTML = cardFaceHtml(card);
+      const item = cardElement(cardFromId(id), { className: "mini-card" });
       if (!readOnly) {
         const remove = document.createElement("button");
         remove.type = "button";
@@ -728,11 +725,14 @@
     return wrapper;
   }
 
+  // A joker standing in for a card shows that card's face on the joker's purple
+  // background with a JK corner marker.
   function renderMiniCard(card, assigned) {
-    const item = document.createElement("div");
-    item.className = `mini-card ${cardClass(card)}`;
-    item.innerHTML = cardFaceHtml(card.joker && assigned ? assigned : card, card.joker && assigned ? "JK" : "");
-    return item;
+    const standIn = Boolean(card.joker && assigned);
+    return cardElement(standIn ? assigned : card, {
+      className: standIn ? "mini-card joker" : "mini-card",
+      corner: standIn ? "JK" : "",
+    });
   }
 
   function sortSolutionCards(cards, assignments = null) {
@@ -1066,22 +1066,21 @@
     const ordered = getTrainerOrderedIds(puzzle);
     ordered.forEach((id) => {
       if (placed.has(id)) {
-        const slot = document.createElement("div");
-        slot.className = "trainer-bank-slot empty";
+        const slot = emptySlotElement({ className: "trainer-bank-slot empty" });
         slot.dataset.cardId = id;
+        slot.removeAttribute("aria-hidden");
         slot.setAttribute("aria-label", `${id} is set`);
         frag.appendChild(slot);
         return;
       }
 
-      const card = cardFromId(id);
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `card-button trainer-card ${cardClass(card)}`;
-      button.disabled = state.trainer.confirmed;
-      button.draggable = false;
-      button.dataset.cardId = id;
-      button.innerHTML = cardFaceHtml(card);
+      const button = cardElement(cardFromId(id), {
+        tag: "button",
+        className: "card-button trainer-card",
+        disabled: state.trainer.confirmed,
+        interactive: !state.trainer.confirmed,
+        attrs: { "data-card-id": id, draggable: "false" },
+      });
       button.addEventListener("click", (event) => {
         if (consumeTrainerDragClick(event, id)) return;
         addTrainerCard(id);
@@ -1244,8 +1243,8 @@
     slots.className = `trainer-slots ${extraClass}`.trim();
     for (let index = 0; index < size; index += 1) {
       const id = state.trainer.rows[rowKey][index];
-      const slot = document.createElement("div");
-      slot.className = `trainer-slot ${id ? "filled" : ""}`;
+      const slot = id ? document.createElement("div") : emptySlotElement({ className: "trainer-slot" });
+      if (id) slot.className = "trainer-slot filled";
       slot.dataset.row = rowKey;
       slot.dataset.index = String(index);
       slot.addEventListener("dragover", allowTrainerDrop);
@@ -1254,14 +1253,14 @@
       if (id) {
         const card = cardFromId(id);
         const assignedCard = getTrainerAssignedCard(card, displayEvaluation);
-        const displayCard = assignedCard || card;
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `mini-card trainer-placed-card ${cardClass(card)}`;
-        button.disabled = state.trainer.confirmed;
-        button.draggable = false;
-        button.dataset.cardId = id;
-        button.innerHTML = cardFaceHtml(displayCard, assignedCard ? "JK" : "");
+        const button = cardElement(assignedCard || card, {
+          tag: "button",
+          className: `mini-card trainer-placed-card${assignedCard ? " joker" : ""}`,
+          corner: assignedCard ? "JK" : "",
+          disabled: state.trainer.confirmed,
+          interactive: !state.trainer.confirmed,
+          attrs: { "data-card-id": id, draggable: "false" },
+        });
         button.addEventListener("click", (event) => {
           if (consumeTrainerDragClick(event, id)) return;
           removeTrainerCard(rowKey, id);
@@ -1680,12 +1679,12 @@
 
   function createTrainerDragGhost(id, sourceEl, point) {
     const rect = sourceEl.getBoundingClientRect();
-    const card = cardFromId(id);
-    const ghost = document.createElement("div");
-    ghost.className = `card-button trainer-card trainer-drag-ghost ${cardClass(card)}`;
-    ghost.dataset.cardId = id;
-    ghost.setAttribute("aria-hidden", "true");
-    ghost.innerHTML = cardFaceHtml(card);
+    const ghost = cardElement(cardFromId(id), {
+      className: "card-button trainer-card trainer-drag-ghost",
+      attrs: { "data-card-id": id, "aria-hidden": "true" },
+    });
+    // The shared face scales with the card's own width, so the ghost just carries the source size.
+    ghost.style.setProperty("--card-width", `${rect.width}px`);
     ghost.style.width = `${rect.width}px`;
     ghost.style.height = `${rect.height}px`;
     ghost.style.left = `${point.x}px`;
@@ -4167,26 +4166,21 @@
     };
   }
 
-  function cardLabel(card) {
-    if (card.joker) return "JK";
-    return `${RANK_LABEL[card.rank]}${SUIT_SYMBOL[card.suit]}`;
+  // Every card face comes from the shared component (shared/cards.js). It is
+  // resolved lazily so this file still loads as a solver library on pages that
+  // never render cards (ofc/fantasyland-ev).
+  function cardElement(card, options) {
+    return sharedCards().element(card, options);
   }
 
-  function cardFaceHtml(card, badge = "") {
-    const rank = card.joker ? "JK" : RANK_LABEL[card.rank];
-    const suit = card.joker ? "★" : SUIT_SYMBOL[card.suit];
-    const badgeHtml = badge ? `<span class="card-badge">${badge}</span>` : "";
-    return `<span class="card-corner" aria-hidden="true">${suit}</span><span class="card-rank">${rank}</span>${badgeHtml}`;
+  function emptySlotElement(options) {
+    return sharedCards().emptySlot(options);
   }
 
-  function cardSubLabel(card) {
-    if (card.joker) return card.id;
-    return card.id;
-  }
-
-  function cardClass(card) {
-    if (card.joker) return "joker";
-    return `suit-${card.suit}`;
+  function sharedCards() {
+    const Cards = typeof window !== "undefined" ? window.PlayingCards : null;
+    if (!Cards) throw new Error("shared/cards.js must load before the trainer renders cards.");
+    return Cards;
   }
 
   function rankLong(rank) {

@@ -7,7 +7,8 @@
     <meta name="description" content="Peer-to-peer mixed-game poker tables, table-game prototypes, and poker probability research." />
     <title>Poker</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%23ff8b83'%3E♥%3C/text%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="../shared/hub.css" />
+    <link rel="stylesheet" href="../shared/cards.css?v=20261003" />
+    <link rel="stylesheet" href="../shared/hub.css?v=20261003" />
     <script src="../shared/hub.js" defer></script>
   </head>
   <body>
@@ -39,11 +40,11 @@
           </div>
           <div class="fan" aria-hidden="true">
             <div class="fan-inner">
-          <div class="pcard red" style="--k: -2; --y: 18px; --n: 0"><span class="idx">10<i>♥</i></span><span class="pip">♥</span><span class="idx flip">10<i>♥</i></span></div>
-          <div class="pcard red" style="--k: -1; --y: 5px; --n: 1"><span class="idx">J<i>♥</i></span><span class="pip">♥</span><span class="idx flip">J<i>♥</i></span></div>
-          <div class="pcard red" style="--k: 0; --y: 0px; --n: 2"><span class="idx">Q<i>♥</i></span><span class="pip">♥</span><span class="idx flip">Q<i>♥</i></span></div>
-          <div class="pcard red" style="--k: 1; --y: 5px; --n: 3"><span class="idx">K<i>♥</i></span><span class="pip">♥</span><span class="idx flip">K<i>♥</i></span></div>
-          <div class="pcard red" style="--k: 2; --y: 18px; --n: 4"><span class="idx">A<i>♥</i></span><span class="pip">♥</span><span class="idx flip">A<i>♥</i></span></div>
+          <span class="playing-card suit-h" aria-label="Ten of hearts" style="--k: -2; --y: 18px; --n: 0"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">T</span></span>
+          <span class="playing-card suit-h" aria-label="Jack of hearts" style="--k: -1; --y: 5px; --n: 1"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">J</span></span>
+          <span class="playing-card suit-h" aria-label="Queen of hearts" style="--k: 0; --y: 0px; --n: 2"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span>
+          <span class="playing-card suit-h" aria-label="King of hearts" style="--k: 1; --y: 5px; --n: 3"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span>
+          <span class="playing-card suit-h" aria-label="Ace of hearts" style="--k: 2; --y: 18px; --n: 4"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span>
           <div class="chip"></div>
             </div>
           </div>
@@ -71,7 +72,7 @@
               <div class="preview" aria-hidden="true">
                 <div class="table">
                   <div class="felt">
-                    <div class="board"><span class="mc" style="--c: 0">A<i>♠</i></span><span class="mc red" style="--c: 1">K<i>♥</i></span><span class="mc" style="--c: 2">7<i>♣</i></span><span class="mc red" style="--c: 3">7<i>♦</i></span><span class="mc" style="--c: 4">2<i>♠</i></span></div>
+                    <div class="board"><span class="playing-card suit-s" aria-label="Ace of spades" style="--c: 0"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">A</span></span><span class="playing-card suit-h" aria-label="King of hearts" style="--c: 1"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-c" aria-label="Seven of clubs" style="--c: 2"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">7</span></span><span class="playing-card suit-d" aria-label="Seven of diamonds" style="--c: 3"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">7</span></span><span class="playing-card suit-s" aria-label="Two of spades" style="--c: 4"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">2</span></span></div>
                     <span class="pot">POT 1,240</span>
                   </div>
                   <span class="seat" style="--s: 0; --x: 28%; --y: 2%">1</span>

@@ -1,0 +1,233 @@
+/* Shared playing-card component. Every card on the site uses this face.
+ *
+ * Markup (from shared/cards.js):
+ *   <span class="playing-card suit-h" aria-label="King of hearts">
+ *     <span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span>
+ *   </span>
+ *
+ * Size with --card-width on the card or any ancestor (or give the card
+ * width: 100% inside a grid cell). Everything inside scales with the card's
+ * own width through container-query units, so the rank, the suit mark, the
+ * corner radius and the badges keep identical proportions at every size.
+ */
+:root {
+  --card-spade: #565e66;
+  --card-heart: #c72e3c;
+  --card-diamond: #3269d3;
+  --card-club: #14894f;
+  --card-joker: #7242dc;
+  --card-back: #172a3d;
+  --card-back-line: #223c55;
+  --card-back-ink: #6d8ba8;
+  --card-text: #ffffff;
+  --card-focus: #ffffff;
+  --card-selected: #ffffff;
+  --card-staged: #35d6a0;
+  --card-ring: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --card-shadow: 0 0 0 0 transparent;
+  --card-dim-opacity: 0.3;
+  --card-width: 56px;
+}
+
+/* To fit cards to a container's height instead of a fixed width, make the
+ * container a size container and derive the width from its height:
+ *   .hand { container-type: size; }
+ *   .hand .playing-card { --card-width: min(100%, calc(100cqh * 5 / 7)); }
+ */
+
+.playing-card,
+.empty-slot {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+  width: var(--card-width);
+  aspect-ratio: 5 / 7;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10% / 7.1429%;
+  vertical-align: top;
+}
+
+.playing-card {
+  container-type: inline-size;
+  overflow: hidden;
+  background: var(--card-spade);
+  color: var(--card-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  box-shadow: var(--card-ring), var(--card-shadow);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.playing-card {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: 100%;
+  line-height: 1;
+}
+
+button.playing-card:disabled,
+.playing-card[aria-disabled="true"] {
+  cursor: default;
+}
+
+.playing-card.suit-s { background: var(--card-spade); }
+.playing-card.suit-h { background: var(--card-heart); }
+.playing-card.suit-d { background: var(--card-diamond); }
+.playing-card.suit-c { background: var(--card-club); }
+.playing-card.joker { background: var(--card-joker); }
+.playing-card.plain { background: var(--card-spade); }
+
+.playing-card > .card-suit {
+  position: absolute;
+  top: 4%;
+  left: 7%;
+  font-size: 26cqw;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.48);
+}
+
+.playing-card > .card-rank {
+  position: absolute;
+  inset: 19% 0 0;
+  display: grid;
+  place-items: center;
+  font-size: 64cqw;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.playing-card.joker > .card-rank {
+  font-size: 40cqw;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.playing-card > .card-badge {
+  position: absolute;
+  right: 5%;
+  bottom: 4%;
+  padding: 2cqw 5cqw;
+  border-radius: 6cqw;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 15cqw;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+.playing-card > .card-corner {
+  position: absolute;
+  top: 4%;
+  right: 5%;
+  padding: 2cqw 4cqw;
+  border-radius: 5cqw;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 13cqw;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+.playing-card > .card-badge.latest {
+  background: var(--card-staged);
+  color: #06281c;
+}
+
+.playing-card.back {
+  background: var(--card-back);
+  box-shadow: var(--card-ring), var(--card-shadow);
+}
+
+/* The frame and monogram live in the pseudo-element so they scale with the card. */
+.playing-card.back::after {
+  content: "MS";
+  position: absolute;
+  inset: 9cqw;
+  display: grid;
+  place-items: center;
+  border: 2.5cqw solid var(--card-back-line);
+  border-radius: 6cqw;
+  color: var(--card-back-ink);
+  font-size: 16cqw;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.empty-slot {
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* States */
+.playing-card.interactive:hover,
+.playing-card.interactive:focus-visible,
+button.playing-card:focus-visible {
+  outline: 2px solid var(--card-focus);
+  outline-offset: 2px;
+}
+
+.playing-card.selected {
+  outline: 2px solid var(--card-selected);
+  outline-offset: 2px;
+}
+
+.playing-card.staged {
+  box-shadow: inset 0 0 0 2px var(--card-staged), var(--card-shadow);
+}
+
+.playing-card.dim {
+  opacity: var(--card-dim-opacity);
+}
+
+.playing-card.danger {
+  outline: 2px solid #ff6673;
+  outline-offset: 1px;
+}
+
+.playing-card.new {
+  animation: card-pop 0.25s ease-out;
+}
+
+@keyframes card-pop {
+  from {
+    transform: translateY(6px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* A row of cards. Gap scales with the card width. */
+.card-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--card-width) * 0.09);
+}
+
+.card-row.nowrap {
+  flex-wrap: nowrap;
+}
+
+/* Common sizes. Pages may set --card-width directly instead. */
+.cards-xs { --card-width: 26px; }
+.cards-sm { --card-width: 36px; }
+.cards-md { --card-width: 48px; }
+.cards-lg { --card-width: 64px; }
+.cards-xl { --card-width: 88px; }

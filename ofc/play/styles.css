@@ -14,11 +14,6 @@
   --blue: #59a6ff;
   --red: #ff6673;
   --amber: #f4ab52;
-  --spade: #565e66;
-  --heart: #c72e3c;
-  --diamond: #3269d3;
-  --club: #14894f;
-  --joker: #7242dc;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -27,13 +22,12 @@
 }
 
 html {
-  min-height: 100%;
+  height: 100%;
   background: var(--bg);
 }
 
 body {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100%;
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -63,14 +57,13 @@ button {
 
 .app-shell {
   width: min(1320px, 100%);
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100%;
   margin: 0 auto;
-  padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
 }
 
 .app-header {
-  min-height: 66px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -81,21 +74,21 @@ button {
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   color: inherit;
   text-decoration: none;
 }
 
 .brand-mark {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: 1px solid #24896c;
   border-radius: 7px;
   color: var(--green);
   background: #0c201c;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 900;
 }
 
@@ -105,13 +98,13 @@ button {
 }
 
 .brand strong {
-  font-size: 1.03rem;
+  font-size: 0.98rem;
 }
 
 .brand small {
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
@@ -150,8 +143,8 @@ button {
 }
 
 .icon-button {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -182,7 +175,7 @@ button {
 }
 
 main {
-  padding: 28px 0 0;
+  padding: 16px 0 0;
 }
 
 h1,
@@ -193,32 +186,32 @@ p {
 }
 
 h1 {
-  font-size: 2.8rem;
-  line-height: 1.04;
+  font-size: 2rem;
+  line-height: 1.05;
 }
 
 h2 {
-  font-size: 1.12rem;
+  font-size: 1.06rem;
 }
 
 .eyebrow,
 .step {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   color: var(--green);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .section-heading {
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .setup-layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.72fr) minmax(580px, 1.8fr);
-  gap: 14px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -244,7 +237,7 @@ h2 {
 .setup-primary,
 .settings-panel,
 .room-waiting {
-  padding: 20px;
+  padding: 16px;
 }
 
 .panel-heading,
@@ -259,7 +252,7 @@ h2 {
 }
 
 .panel-heading {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .setting-count,
@@ -272,7 +265,7 @@ h2 {
 .field-label,
 .setting-block legend {
   display: block;
-  margin: 0 0 7px;
+  margin: 0 0 6px;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 850;
@@ -283,8 +276,8 @@ input:not([type]),
 #player-name,
 #room-code {
   width: 100%;
-  min-height: 48px;
-  margin: 0 0 15px;
+  min-height: 44px;
+  margin: 0 0 12px;
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -306,7 +299,7 @@ input:focus {
 }
 
 .button {
-  min-height: 46px;
+  min-height: 44px;
   padding: 0 17px;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -346,13 +339,13 @@ input:focus {
 }
 
 .button.compact {
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 12px;
 }
 
 .button.full {
   width: 100%;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
 .button:disabled {
@@ -363,11 +356,15 @@ input:focus {
 }
 
 .form-error {
-  min-height: 20px;
-  margin-top: 9px;
+  min-height: 0;
+  margin-top: 8px;
   color: var(--red);
   font-size: 0.77rem;
   line-height: 1.35;
+}
+
+.form-error:empty {
+  display: none;
 }
 
 .segmented {
@@ -384,7 +381,7 @@ input:focus {
 .segmented label,
 .segmented button {
   min-width: 0;
-  min-height: 38px;
+  min-height: 36px;
   display: grid;
   place-items: center;
   margin: 0;
@@ -433,8 +430,8 @@ input:focus {
 }
 
 .variant-note {
-  min-height: 38px;
-  margin-top: 9px;
+  min-height: 0;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.45;
@@ -444,20 +441,25 @@ input:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 17px;
+  margin-top: 14px;
 }
 
 .toggle-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px 22px;
-  margin-top: 20px;
+  margin-top: 14px;
   border-top: 1px solid var(--line-soft);
+}
+
+/* The list only takes space while at least one of its rows applies to the chosen variant. */
+.toggle-list:not(:has(> :not([hidden]))) {
+  display: none;
 }
 
 .toggle-row,
 .number-row {
-  min-height: 62px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -497,14 +499,14 @@ input:focus {
 .toggle-row:has(input:focus-visible) i { outline: 2px solid var(--blue); outline-offset: 3px; }
 .dealer-options { margin-top: 12px; }
 .choice-toggles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 20px; }
-.dealer-selection { padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
-.dealer-selection h2 { margin: 4px 0 16px; }
+.choice-toggles .toggle-row { min-height: 44px; }
+.dealer-selection { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.dealer-selection h2 { margin: 4px 0 14px; }
 .dealer-selection .variant-picker { max-width: 800px; }
 .table-view[data-phase="choose-variant"] .opponents,
 .table-view[data-phase="choose-variant"] .ofc-board,
 .table-view[data-phase="choose-variant"] .turn-actions { display: none; }
-.table-view[data-phase="choose-variant"] .draw-cards { --draw-card-width: 84px; padding-block: 12px; }
-.draw-area:has(.discard-target[hidden]) { grid-template-columns: minmax(0, 1fr); }
+.table-view[data-phase="choose-variant"] .draw-cards { --card-width: 84px; padding-block: 12px; }
 
 .toggle-row i {
   width: 38px;
@@ -558,7 +560,7 @@ input:focus {
   align-items: center;
   gap: 18px;
   margin-bottom: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
 }
 
 .room-code-block > span {
@@ -575,17 +577,17 @@ input:focus {
 }
 
 .compact-heading h1 {
-  font-size: 1.65rem;
+  font-size: 1.5rem;
 }
 
 .roster {
   display: grid;
   gap: 7px;
-  margin: 18px 0;
+  margin: 14px 0;
 }
 
 .roster-player {
-  min-height: 54px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -626,7 +628,7 @@ input:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  margin: 18px 0;
+  margin: 14px 0;
 }
 
 .config-chip,
@@ -641,20 +643,42 @@ input:focus {
 }
 
 .table-view {
-  padding-bottom: 24px;
+  padding-bottom: 8px;
 }
 
+/* Desktop: the shell fills the viewport, the header stays put and main scrolls on its own if ever needed. */
 @media (min-width: 901px) {
-  .table-view:not([hidden]) { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; align-items: start; }
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app-shell {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    padding-bottom: 0;
+  }
+
+  main {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 14px 0 12px;
+  }
+
+  .table-view:not([hidden]) { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 10px; align-items: start; }
   .table-view .table-status, .table-view .score-strip, .table-view .dealer-selection, .table-view .showdown { grid-column: 1 / -1; margin: 0; }
   .table-view .opponents { grid-column: 1; display: flex; flex-direction: column; margin: 0; }
   .table-view .player-area { grid-column: 2; }
   .table-view[data-phase="choose-variant"] .player-area { grid-column: 1 / -1; }
-  .table-view .board-row { grid-template-columns: 68px minmax(0, 1fr); }
-  .table-view .row-score { grid-column: 2; min-height: 20px; padding-bottom: 5px; }
-  .table-view .board-cards { padding-top: 6px; }
-  .table-view .ofc-board { --card-width: 66px; }
-  .table-view .draw-cards { --draw-card-width: min(66px, calc((100vw - 420px) / var(--draw-columns, 5) - 6px)); }
+  /* Row scores sit beside the cards so each row is only one card tall. */
+  .table-view .board-row { grid-template-columns: 68px minmax(0, 1fr) 150px; }
+  .table-view .row-score { grid-column: 3; justify-content: flex-end; padding-right: 6px; text-align: right; }
+  /* Board cards shrink on short screens so a whole hand fits above the fold at 1024x768. */
+  .table-view .player-area { --table-card-width: clamp(44px, calc((100vh - 430px) / 5.6), 66px); }
+  .table-view .ofc-board { --card-width: var(--table-card-width); }
+  .table-view .draw-cards { --card-width: min(var(--table-card-width), calc((100vw - 420px) / var(--draw-columns, 5) - 6px)); }
 }
 
 .table-view kbd { display: inline-block; padding: 2px 5px; border: 1px solid currentColor; border-radius: 4px; font: 11px ui-monospace, monospace; opacity: 0.65; }
@@ -672,22 +696,19 @@ input:focus {
 .foul-text { color: #ff858e !important; }
 .table-view .row-score span, .table-view .row-score strong { margin: 0; font-size: 0.75rem; }
 .table-view .draw-area { grid-template-columns: minmax(0, 1fr); }
-.table-view .draw-cards { min-height: 115px; padding-block: 4px 22px; }
-.hand-slot { position: relative; width: var(--draw-card-width); flex: 0 0 auto; aspect-ratio: 5 / 7; }
+.table-view .draw-cards { min-height: 0; padding-block: 4px 22px; }
+.hand-slot { position: relative; width: var(--card-width); flex: 0 0 auto; aspect-ratio: 5 / 7; }
 .hand-slot > .playing-card, .hand-slot > .empty-slot { display: block; width: 100%; height: 100%; }
-.hand-slot .empty-slot { border-color: #3c4d57; background: #111b22; }
 .table-view .hand-key { position: absolute; top: calc(100% + 5px); left: 50%; transform: translateX(-50%); color: #bacbd7; font-size: 10px; padding: 0 4px; }
 .draw-cards.drag-over { background: #163c32; outline: 2px dashed #57dab0; outline-offset: -2px; }
+
+/* Draggable cards (hover/focus outline comes from the shared .interactive state). */
 .playing-card[data-origin="hand"], .playing-card[data-origin="board"] { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
 .playing-card[data-origin="fixed"] { cursor: default; }
-.card-rank { inset: 12% 0 0; }
-.set-badge { position: absolute; top: 3px; right: 3px; min-width: 14px; padding: 1px 3px; border-radius: 3px; color: #fff; background: #1b273d; font: 700 10px/1.25 ui-monospace, monospace; text-align: center; }
-.set-badge.latest { color: #123026; background: #92f9c9; }
-.playing-card .card-jk { top: auto; bottom: 3px; right: 3px; }
-.mini-row .set-badge { top: 0; right: 0; min-width: 6px; padding: 0 1px; font-size: 6px; }
 .mini-score { min-height: 16px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 10px; line-height: 1.3; padding-block: 2px; }
+.mini-score:empty { display: none; }
 .drag-source-hidden { visibility: hidden !important; }
-.card-drag-ghost { position: fixed !important; z-index: 100; pointer-events: none; margin: 0; transform: translate(-50%, -50%); outline: 1px solid #fff; box-shadow: 0 10px 28px #0006; }
+.card-drag-ghost { position: fixed !important; z-index: 100; pointer-events: none; margin: 0; transform: translate(-50%, -50%); outline: 1px solid #fff; filter: drop-shadow(0 10px 14px #0006); }
 .card-drag-ghost .hand-key { display: none; }
 
 .modal.ledger-modal { overflow: auto; overscroll-behavior: contain; }
@@ -708,8 +729,6 @@ input:focus {
 .history-board header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .history-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 120px; gap: 10px; align-items: center; padding: 8px 0; }
 .history-cards { --card-width: 38px; display: flex; flex-wrap: wrap; gap: 4px; }
-.history-cards .card-rank { font-size: 26px; }
-.history-cards .card-suit { font-size: 12px; }
 .history-score { display: flex; flex-wrap: wrap; gap: 5px; }
 .history-discard, .discard-history-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: var(--muted); }
 .discard-history + .discard-history { margin-top: 24px; }
@@ -717,17 +736,15 @@ input:focus {
 .discard-history p { color: var(--muted); }
 
 @media (max-width: 640px) {
-  .table-view .draw-cards { min-height: 80px; padding-bottom: 4px; }
+  .table-view .draw-cards { min-height: 0; padding-bottom: 4px; }
   .table-view .hand-slot { width: 100%; }
   .table-view .row-score span, .table-view .row-score strong { font-size: 11px; }
   .table-view .board-row { padding-block: 4px; }
   .table-view .row-label { padding-left: 4px; }
   .mini-score { font-size: 9px; }
-  .table-status-actions { flex-wrap: wrap; }
   .history-row { grid-template-columns: 44px minmax(0, 1fr); gap: 6px; }
   .history-row .history-score { grid-column: 2; }
   .history-cards { --card-width: min(36px, calc((100vw - 105px) / 5)); }
-  .history-cards .card-rank { font-size: 23px; }
   .ledger-totals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ledger-total { padding: 8px 4px; overflow-wrap: anywhere; }
   .ledger-deltas { gap: 6px; }
@@ -737,11 +754,11 @@ input:focus {
 }
 
 .table-status {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .table-status h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .score-strip {
@@ -752,12 +769,12 @@ input:focus {
 }
 
 .score-player {
-  min-height: 48px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 11px;
+  padding: 6px 11px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--surface);
@@ -814,23 +831,11 @@ input:focus {
 }
 
 .mini-row {
+  --card-width: 23px;
   min-height: 31px;
   display: flex;
   justify-content: center;
   gap: 3px;
-}
-
-.mini-row .playing-card,
-.mini-row .empty-slot {
-  width: 23px;
-}
-
-.mini-row .card-rank {
-  font-size: 0.84rem;
-}
-
-.mini-row .card-suit {
-  font-size: 0.55rem;
 }
 
 .player-area {
@@ -840,7 +845,7 @@ input:focus {
 }
 
 .player-area-heading {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 14px;
   border-bottom: 1px solid #1d4539;
   color: var(--muted);
@@ -917,96 +922,11 @@ input:focus {
   font-size: 0.63rem;
 }
 
-.playing-card,
-.empty-slot {
-  width: var(--card-width);
-  aspect-ratio: 5 / 7;
-  flex: 0 0 auto;
-  border-radius: 6px;
-}
-
-.playing-card {
-  position: relative;
-  overflow: hidden;
-  padding: 0;
-  border: 0;
-  background: var(--spade);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-.playing-card:hover,
-.playing-card:focus-visible,
-.playing-card.selected {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-.playing-card.staged {
-  box-shadow: inset 0 0 0 2px var(--green);
-}
-
-.playing-card.suit-s { background: var(--spade); }
-.playing-card.suit-h { background: var(--heart); }
-.playing-card.suit-d { background: var(--diamond); }
-.playing-card.suit-c { background: var(--club); }
-.playing-card.joker { background: var(--joker); }
-.playing-card.back {
-  background-color: #172a3d;
-  box-shadow: inset 0 0 0 3px #223c55, inset 0 0 0 5px #0e1b27;
-  cursor: default;
-}
-
-.playing-card.back::after {
-  content: "MS";
-  position: absolute;
-  inset: 18%;
-  display: grid;
-  place-items: center;
-  border: 1px solid #36536e;
-  color: #6d8ba8;
-  font-size: 0.48rem;
-  font-weight: 900;
-}
-
-.card-suit {
-  position: absolute;
-  top: 4%;
-  left: 7%;
-  color: rgba(0, 0, 0, 0.48);
-  font-size: 1.15rem;
-  line-height: 1;
-}
-
-.card-rank {
-  position: absolute;
-  inset: 19% 0 0;
-  display: grid;
-  place-items: center;
-  font-size: 3rem;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.card-jk {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 0.48rem;
-  font-weight: 900;
-}
-
-.empty-slot {
-  border: 1px dashed #2b493f;
-  background: rgba(0, 0, 0, 0.13);
-}
-
 .draw-area {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 118px;
-  gap: 9px 12px;
-  padding: 12px;
+  gap: 8px 12px;
+  padding: 10px 12px 12px;
   border-top: 1px solid #1d4539;
   background: #080f16;
 }
@@ -1023,17 +943,12 @@ input:focus {
 }
 
 .draw-cards {
-  --draw-card-width: min(64px, calc((100vw - 190px) / var(--draw-columns, 5)));
+  --card-width: min(64px, calc((100vw - 190px) / var(--draw-columns, 5)));
   min-height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-}
-
-.draw-cards .playing-card,
-.draw-cards .empty-slot {
-  width: var(--draw-card-width);
 }
 
 .discard-target {
@@ -1111,8 +1026,8 @@ input:focus {
 }
 
 .modal-header {
-  min-height: 78px;
-  padding: 14px 18px;
+  min-height: 70px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1125,7 +1040,7 @@ input:focus {
 }
 
 .modal-tabs button {
-  min-height: 42px;
+  min-height: 40px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -1314,20 +1229,22 @@ input:focus {
 
 @media (max-width: 640px) {
   h1 {
-    font-size: 1.7rem;
+    font-size: 1.35rem;
   }
 
   .table-status h1 {
-    font-size: 1.5rem;
+    font-size: 1.15rem;
   }
 
   .app-shell {
+    padding-top: max(6px, env(safe-area-inset-top));
     padding-left: max(8px, env(safe-area-inset-left));
     padding-right: max(8px, env(safe-area-inset-right));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 
   .app-header {
-    min-height: 58px;
+    min-height: 50px;
   }
 
   .brand small,
@@ -1336,26 +1253,46 @@ input:focus {
   }
 
   .brand-mark {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 
   main {
-    padding-top: 18px;
+    padding-top: 10px;
   }
 
   .section-heading {
-    margin-bottom: 16px;
+    margin-bottom: 10px;
+  }
+
+  .section-heading .eyebrow {
+    display: none;
+  }
+
+  .setup-layout {
+    gap: 10px;
   }
 
   .setup-primary,
   .settings-panel,
   .room-waiting {
-    padding: 14px;
+    padding: 12px;
   }
 
   .panel-heading {
     flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .panel-heading .step {
+    display: none;
+  }
+
+  input[type="text"],
+  input:not([type]),
+  #player-name,
+  #room-code {
+    margin-bottom: 10px;
   }
 
   .variant-picker {
@@ -1367,18 +1304,21 @@ input:focus {
   .variant-picker label {
     min-width: 0;
     padding-inline: 2px;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     line-height: 1.05;
     scroll-snap-align: none;
   }
 
   .toggle-list {
     grid-template-columns: 1fr;
+    margin-top: 10px;
   }
 
   .choice-toggles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
-  .variant-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .variant-picker label, .variant-picker button { min-height: 46px; line-height: 1.25; }
+  .variant-picker { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .variant-picker label, .variant-picker button { min-height: 40px; line-height: 1.2; }
+  .settings-grid { gap: 8px; margin-top: 10px; }
+  .toggle-row, .number-row { min-height: 48px; }
 
   .room-code-block {
     grid-template-columns: auto 1fr;
@@ -1390,18 +1330,37 @@ input:focus {
   }
 
   .table-status {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .table-status .eyebrow {
     max-width: 220px;
+    margin-bottom: 3px;
+  }
+
+  .table-status-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .table-status-actions .button.compact {
+    padding: 0 9px;
   }
 
   .score-strip {
     overflow-x: auto;
     grid-template-columns: repeat(var(--seat-count, 2), minmax(140px, 1fr));
+    margin-bottom: 8px;
+  }
+
+  .score-player {
+    min-height: 36px;
+    padding: 4px 10px;
   }
 
   .opponents {
@@ -1416,13 +1375,9 @@ input:focus {
   }
 
   .opponent-head {
-    display: block;
+    flex-wrap: wrap;
+    gap: 2px 8px;
     margin: 0 0 5px;
-  }
-
-  .opponent-head span {
-    display: block;
-    margin-top: 4px;
   }
 
   .mini-board {
@@ -1431,13 +1386,14 @@ input:focus {
   }
 
   .mini-row {
+    --card-width: 17px;
     align-items: center;
     min-height: 24px;
   }
 
-  .mini-row .playing-card,
-  .mini-row .empty-slot {
-    width: 17px;
+  .player-area-heading {
+    min-height: 36px;
+    padding: 0 10px;
   }
 
   .ofc-board {
@@ -1469,22 +1425,15 @@ input:focus {
     font-size: 0.59rem;
   }
 
-  .card-suit {
-    font-size: 0.9rem;
-  }
-
-  .card-rank {
-    font-size: 2rem;
-  }
-
   .draw-area {
     grid-template-columns: 1fr 84px;
+    gap: 6px 10px;
     padding: 8px;
   }
 
   .draw-cards {
-    --draw-card-width: min(52px, calc((100vw - 120px) / var(--mobile-columns, 5)));
-    min-height: 76px;
+    --card-width: min(52px, calc((100vw - 120px) / var(--mobile-columns, 5)));
+    min-height: 0;
     display: grid;
     grid-template-columns: repeat(var(--mobile-columns, 5), minmax(0, 52px));
     align-content: center;
@@ -1493,13 +1442,9 @@ input:focus {
   }
 
   .table-view[data-phase="choose-variant"] .draw-cards {
-    --draw-card-width: min(72px, calc((100vw - 54px) / 5));
-    grid-template-columns: repeat(5, var(--draw-card-width));
+    --card-width: min(72px, calc((100vw - 54px) / 5));
+    grid-template-columns: repeat(5, var(--card-width));
   }
-  .draw-cards .playing-card { width: 100%; min-width: 0; container-type: inline-size; }
-  .draw-cards .card-rank { font-size: min(2rem, 70cqw); }
-  .draw-cards .joker .card-rank { font-size: min(2rem, 48cqw); }
-  .draw-cards .card-suit { font-size: min(0.9rem, 35cqw); }
   .draw-heading { flex-wrap: wrap; gap: 5px; }
   .row-label, .opponent-head, .player-area-heading > div { min-width: 0; overflow-wrap: anywhere; }
   .row-score { margin-top: 0; line-height: 1.4; }
@@ -1512,12 +1457,27 @@ input:focus {
     grid-template-columns: 0.75fr 1.25fr;
   }
 
+  /* Heading and the deal button share a row so the results stay above the fold. */
   .showdown {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "head button"
+      "results results";
+    gap: 8px 12px;
+    padding: 12px;
   }
 
   .showdown > div:first-child {
+    grid-area: head;
     grid-column: auto;
+  }
+
+  .showdown > #showdown-results {
+    grid-area: results;
+  }
+
+  .showdown > #next-hand-button {
+    grid-area: button;
   }
 
   .modal {
@@ -1526,7 +1486,7 @@ input:focus {
   }
 
   .modal-header {
-    min-height: 66px;
+    min-height: 62px;
     padding: 10px 12px;
   }
 
@@ -1566,11 +1526,21 @@ input:focus {
 
 @media (max-width: 520px) {
   .settings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .settings-grid .segmented {
     width: 100%;
+  }
+
+  .settings-grid .segmented label {
+    padding: 0 4px;
+    font-size: 0.72rem;
+  }
+
+  /* "2 on the BTN" needs the whole row to stay on one line. */
+  .settings-grid > .setting-block:first-child {
+    grid-column: 1 / -1;
   }
 }
 

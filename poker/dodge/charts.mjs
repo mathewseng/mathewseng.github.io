@@ -29,7 +29,16 @@ export const legend = () =>
   ).join("");
 export function histogram(
   stat,
-  { small = false, stacked = false, compact = false, width, height } = {},
+  {
+    small = false,
+    stacked = false,
+    compact = false,
+    width,
+    height,
+    every = small ? 2 : 1,
+    values = !small && !compact,
+    axis = !small,
+  } = {},
 ) {
   if (!stat) return emptyChart();
   const w = width ?? (small ? 280 : 650),
@@ -64,13 +73,13 @@ export function histogram(
     } else {
       marks += `<rect x="${x}" y="${y}" width="${bw}" height="${(p / ymax) * ph}" rx="2" fill="${i + 1 === stat.mode ? "#70e0bb" : "#3a9b7d"}"><title>${title}</title></rect>`;
     }
-    if (!small && !compact && p >= 0.012)
+    if (values && p >= 0.012)
       marks += `<text class="value-label" x="${x + bw / 2}" y="${y - 6}" text-anchor="middle">${pct(p, 1)}</text>`;
-    if (!small || i % 2 === 0)
+    if (i % every === 0)
       marks += `<text x="${x + bw / 2}" y="${h - bottom + 15}" text-anchor="middle">${i + 1}</text>`;
   });
-  if (!small)
-    marks += `<text class="axis-label" x="${w / 2}" y="${h - 3}" text-anchor="middle">${compact ? "Draws, including the bust card" : "Additional cards drawn, including bust card"}</text>`;
+  if (axis)
+    marks += `<text class="axis-label" x="${w / 2}" y="${h - 3}" text-anchor="middle">${compact || small ? "Draws, including the bust card" : "Additional cards drawn, including bust card"}</text>`;
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Bust distribution across 13 draws. Mean ${num(stat.mean)} draws.">${marks}</svg>`;
 }
 export function lineChart(

@@ -18,10 +18,11 @@ Outcomes are mutually exclusive and use the highest category at the first bust. 
 - Population reports: survival and hazard curves, weighted texture comparisons, per-class scatter plot, overlapping rank-pair heatmap, and joint draw/outcome distributions.
 - Game design lab: fixed-target survival payouts and an interactive draw simulator with exact next-card bust outs. These are mathematical scenarios, not a betting or payment interface.
 - Phones: compact metric columns and 25 rows by default, collapsible filters, a hand report sheet that returns to your table position, and charts sized for readable labels. The rank matrix and card deck scroll horizontally. Column and row-count choices survive viewport changes.
+- Layout: an app shell that fits the viewport without page scrolling. The topbar, heading row with tabs, filters and summary strip stay put; the explorer table scrolls inside its panel, the hand inspector, pinned comparison and overview charts share a scrolling side column on desktop, and the Reports and Game lab views scroll inside their own region. On phones the hand inspector is a sheet, the overview charts and pinned comparison move to the top of Reports, and the export button sits in the table toolbar. Chart viewBoxes follow their container width and the viewport height so labels keep their size.
 
 Actual deal frequency weights each class by its number of represented combinations. Equal-class weighting is also available. Search accepts ranks (`AA`, `AKQJ`) or four exact cards (`As Kh Qd Jc`); exact hands are canonicalized across suit relabelings. Percent filters use percentage points (enter `20` for 20%); exported probabilities use 0–1 units.
 
-Cards use the site's GTO Wizard-inspired four-color treatment. Each class maximizes spade count, then heart count, then diamonds and clubs. Ties assign larger rank masks first. Cards are always sorted A–2 and then spades, hearts, diamonds, clubs; this does **not** imply that an ace must be a spade when another suit occurs more often.
+Cards are rendered by the shared component in `shared/cards.js` and `shared/cards.css` (the site's four-color deck); this page only sets `--card-width` per context. Each class maximizes spade count, then heart count, then diamonds and clubs. Ties assign larger rank masks first. Cards are always sorted A–2 and then spades, hearts, diamonds, clubs; this does **not** imply that an ace must be a spade when another suit occurs more often.
 
 ## Regenerate
 

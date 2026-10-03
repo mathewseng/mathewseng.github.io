@@ -8,7 +8,8 @@
     <meta name="description"
         content="Rules-aware blackjack strategy charts, realtime EVs, Hi-Lo index deviations, and final-total probabilities.">
     <title>Blackjack Strategy Lab</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261003" />
+    <link rel="stylesheet" href="styles.css?v=20261003">
 </head>
 
 <body>
@@ -39,13 +40,14 @@
         </header>
 
         <nav class="mobile-tabs" aria-label="Sections">
-            <button class="mobile-tab active" type="button" data-jump="chart-panel">Chart</button>
-            <button class="mobile-tab" type="button" data-jump="rules-panel">Rules</button>
-            <button class="mobile-tab" type="button" data-jump="solver-panel">Hand</button>
-            <button class="mobile-tab" type="button" data-jump="count-panel">Count</button>
+            <button class="mobile-tab active" type="button" data-view="chart" aria-pressed="true">Chart</button>
+            <button class="mobile-tab" type="button" data-view="rules" aria-pressed="false">Rules</button>
+            <button class="mobile-tab" type="button" data-view="hand" aria-pressed="false">Hand</button>
+            <button class="mobile-tab" type="button" data-view="count" aria-pressed="false">Count</button>
+            <button class="mobile-tab" type="button" data-view="display" aria-pressed="false">Display</button>
         </nav>
 
-        <main class="workspace">
+        <main class="workspace" id="workspace" data-view="chart">
             <aside class="rules-panel surface" id="rules-panel">
                 <div class="panel-heading">
                     <div>
@@ -149,10 +151,6 @@
                         <span>Resplit aces</span>
                         <input id="rsa-toggle" type="checkbox">
                     </label>
-                    <label class="switch-line">
-                        <span>Apply count</span>
-                        <input id="apply-count-toggle" type="checkbox" checked>
-                    </label>
                 </div>
 
                 <div class="advanced-grid">
@@ -239,7 +237,7 @@
                     </select>
                 </label>
 
-                <div class="hand-tray" id="hand-tray" aria-label="Current player hand"></div>
+                <div class="hand-tray card-row" id="hand-tray" aria-label="Current player hand"></div>
 
                 <div class="card-pad" id="card-pad" aria-label="Add player card">
                     <button type="button" data-card="2">2</button>
@@ -295,6 +293,11 @@
                     </div>
                 </div>
 
+                <label class="switch-line count-apply" title="Apply the true count to the chart and hand solver">
+                    <span>Apply count</span>
+                    <input id="apply-count-toggle" type="checkbox" checked>
+                </label>
+
                 <label class="range-field">
                     <span>Decks remaining</span>
                     <div class="range-input-row">
@@ -348,7 +351,7 @@
 
             <section class="chart-settings-panel surface" id="chart-settings-panel">
                 <div class="chart-toolbar">
-                    <div>
+                    <div class="toolbar-heading">
                         <p class="eyebrow">Chart controls</p>
                         <h2>Display settings</h2>
                     </div>
@@ -413,59 +416,52 @@
                         </label>
                     </div>
                 </div>
-                <div class="index-audit" id="index-audit" aria-label="Index validation">
-                    <div>
-                        <span>Source</span>
-                        <strong id="audit-group">--</strong>
-                    </div>
-                    <div>
-                        <span>Matched</span>
-                        <strong id="audit-matched">--</strong>
-                    </div>
-                    <div>
-                        <span>Avg diff</span>
-                        <strong id="audit-average">--</strong>
-                    </div>
-                    <div>
-                        <span>Worst</span>
-                        <strong id="audit-worst">--</strong>
-                    </div>
-                </div>
-            </section>
 
-            <section class="report-panel surface" id="report-panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Engine report</p>
-                        <h2>Metrics</h2>
+                <div class="engine-strip">
+                    <div class="index-audit" id="index-audit" aria-label="Index validation">
+                        <div>
+                            <span>Source</span>
+                            <strong id="audit-group">--</strong>
+                        </div>
+                        <div>
+                            <span>Matched</span>
+                            <strong id="audit-matched">--</strong>
+                        </div>
+                        <div>
+                            <span>Avg diff</span>
+                            <strong id="audit-average">--</strong>
+                        </div>
+                        <div>
+                            <span>Worst</span>
+                            <strong id="audit-worst">--</strong>
+                        </div>
                     </div>
-                    <a class="icon-button" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" title="Open solver report"
-                        aria-label="Open solver report">↗</a>
-                </div>
 
-                <dl class="report-grid">
-                    <div>
-                        <dt>Player EV</dt>
-                        <dd id="report-player-edge">--</dd>
-                    </div>
-                    <div>
-                        <dt>Std dev / hand</dt>
-                        <dd id="report-stdev">--</dd>
-                    </div>
-                    <div>
-                        <dt>Rule combos</dt>
-                        <dd id="report-combos">--</dd>
-                    </div>
-                    <div>
-                        <dt>Cells solved</dt>
-                        <dd id="report-cells">--</dd>
-                    </div>
-                </dl>
+                    <dl class="report-grid" id="report-panel" aria-label="Engine report">
+                        <div>
+                            <dt>Player EV</dt>
+                            <dd id="report-player-edge">--</dd>
+                        </div>
+                        <div>
+                            <dt>Std dev / hand</dt>
+                            <dd id="report-stdev">--</dd>
+                        </div>
+                        <div>
+                            <dt>Rule combos</dt>
+                            <dd id="report-combos">--</dd>
+                        </div>
+                        <div>
+                            <dt>Cells solved</dt>
+                            <dd id="report-cells">--</dd>
+                        </div>
+                    </dl>
 
-                <div class="report-links">
-                    <a href="data/solver-report.json">Benchmark JSON</a>
-                    <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs">Rust source</a>
-                    <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md">Metrics notes</a>
+                    <div class="report-links">
+                        <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" title="Open solver report">Solver report ↗</a>
+                        <a href="data/solver-report.json">Benchmark JSON</a>
+                        <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs">Rust source</a>
+                        <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md">Metrics notes</a>
+                    </div>
                 </div>
             </section>
         </main>
@@ -484,7 +480,8 @@
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
 
-    <script src="app.js" defer></script>
+    <script src="../../shared/cards.js?v=20261003"></script>
+    <script src="app.js?v=20261003" defer></script>
 </body>
 
 </html>

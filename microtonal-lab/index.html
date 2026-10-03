@@ -2,14 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#08090d" />
     <title>Microtonal Lab</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20261003" />
   </head>
   <body>
-    <main class="lab-shell">
+    <main class="lab-shell" id="labShell" data-view="play">
       <header class="topbar">
         <div class="brand-lockup">
           <div class="brand-mark" aria-hidden="true">
@@ -23,6 +23,13 @@
           </div>
         </div>
 
+        <nav class="lab-nav" id="labNav" role="tablist" aria-label="Lab views">
+          <button class="nav-button" type="button" role="tab" data-view="play" aria-selected="true">Play</button>
+          <button class="nav-button" type="button" role="tab" data-view="scope" aria-selected="false">Scope</button>
+          <button class="nav-button" type="button" role="tab" data-view="tunings" aria-selected="false">Tunings</button>
+          <button class="nav-button" type="button" role="tab" data-view="builder" aria-selected="false">Builder</button>
+        </nav>
+
         <div class="transport" aria-label="Audio controls">
           <button id="audioButton" class="primary-button" type="button">Start audio</button>
           <button id="panicButton" class="icon-button" type="button" aria-label="Stop all notes" title="Stop all notes">
@@ -32,7 +39,7 @@
       </header>
 
       <section class="workbench">
-        <aside class="panel preset-panel" aria-label="Tuning presets">
+        <aside class="panel preset-panel" data-pane="tunings" aria-label="Tuning presets">
           <div class="panel-head">
             <div>
               <p class="panel-kicker">tuning bank</p>
@@ -58,7 +65,7 @@
         </aside>
 
         <section class="instrument" aria-label="Microtonal keyboard">
-          <section class="panel command-panel">
+          <section class="panel command-panel" data-pane="play">
             <div class="control-grid">
               <label class="field">
                 <span>Root frequency</span>
@@ -98,7 +105,7 @@
             </div>
           </section>
 
-          <section class="visual-layout">
+          <section class="visual-layout" data-pane="scope">
             <div class="panel scope-panel">
               <canvas id="tuningCanvas" width="1200" height="700" aria-label="Tuning visualization"></canvas>
               <div class="scope-overlay">
@@ -166,23 +173,23 @@
             </div>
           </section>
 
-          <section class="panel keyboard-panel">
+          <section class="panel keyboard-panel" data-pane="play">
             <div class="panel-head keyboard-head">
               <div>
                 <p class="panel-kicker">qwerty pitch grid</p>
                 <h2>Keyboard</h2>
               </div>
               <div class="range-controls">
-                <button id="rangeDown" class="small-button" type="button">-</button>
+                <button id="rangeDown" class="small-button" type="button" aria-label="Shift keyboard range down">-</button>
                 <output id="rangeReadout" class="pill">-10</output>
-                <button id="rangeUp" class="small-button" type="button">+</button>
+                <button id="rangeUp" class="small-button" type="button" aria-label="Shift keyboard range up">+</button>
               </div>
             </div>
             <div id="keyboard" class="keyboard" aria-label="Playable keyboard"></div>
           </section>
         </section>
 
-        <aside class="panel builder-panel" aria-label="Custom tuning builder">
+        <aside class="panel builder-panel" data-pane="builder" aria-label="Custom tuning builder">
           <div class="panel-head">
             <div>
               <p class="panel-kicker">build a scale</p>
@@ -226,7 +233,7 @@
               </label>
               <label class="field textarea-field">
                 <span>Values</span>
-                <textarea id="customListValues" rows="7">1/1 16/15 9/8 6/5 5/4 4/3 3/2 8/5 5/3 15/8</textarea>
+                <textarea id="customListValues" rows="5">1/1 16/15 9/8 6/5 5/4 4/3 3/2 8/5 5/3 15/8</textarea>
               </label>
             </div>
 
@@ -265,6 +272,6 @@
       </section>
     </main>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20261003"></script>
   </body>
 </html>

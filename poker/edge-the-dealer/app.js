@@ -1056,34 +1056,26 @@ class EdgeTheDealerController {
         const displayCards = this.sortCardsForDisplay(cards || []);
 
         slots.forEach((slot, i) => {
-            slot.innerHTML = '';
-            slot.classList.remove('dealt', 'selected-discard', 'locked', 'confirmed-discard');
+            slot.classList.remove('selected-discard', 'locked', 'confirmed-discard');
 
             const card = displayCards[i];
+            // Staggered deal animation (only replays when the card in the slot changes)
+            this.fillSlot(slot, card, { dealDelay: i * 0.06 });
             if (!card) return;
 
-            // Staggered deal animation
-            slot.style.setProperty('--deal-delay', `${i * 0.06}s`);
-
-            if (card.faceDown) {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card face-down';
-                slot.appendChild(cardEl);
-            } else {
-                slot.appendChild(this.createCardElement(Poker.formatCard(card)));
-                if (this.selectedDiscards.has(i)) {
-                    slot.classList.add('selected-discard');
-                    if (!canSelect) {
-                        slot.classList.add('confirmed-discard');
-                    }
+            const cardEl = slot.firstElementChild;
+            const selected = !card.faceDown && this.selectedDiscards.has(i);
+            if (cardEl) cardEl.classList.toggle('dim', selected);
+            if (selected) {
+                slot.classList.add('selected-discard');
+                if (!canSelect) {
+                    slot.classList.add('confirmed-discard');
                 }
             }
 
             if (!canSelect) {
                 slot.classList.add('locked');
             }
-
-            slot.classList.add('dealt');
         });
 
         const help = document.getElementById('discard-help');
@@ -1126,15 +1118,7 @@ class EdgeTheDealerController {
                 const result = results.find(r => r.playerId === player.id);
                 if (result) {
                     const sortedCards = this.sortCardsForDisplay(result.holeCards || []);
-                    let cardsHtml = '<div class="player-cards">';
-                    sortedCards.forEach(card => {
-                        const formatted = Poker.formatCard(card);
-                        cardsHtml += `<div class="mini-card ${formatted.isRed ? 'red' : 'black'}">
-                            <span class="rank">${formatted.rank}</span>
-                            <span class="suit">${formatted.suit}</span>
-                        </div>`;
-                    });
-                    cardsHtml += '</div>';
+                    const cardsHtml = `<div class="player-cards">${PlayingCards.rowHtml(sortedCards.map(card => this.cardFace(card)))}</div>`;
 
                     const compareClass = result.beatsDealer ? 'beats' : 'misses';
                     const compareText = result.beatsDealer ? '✓ Beats dealer' : '✗ Below dealer';
@@ -1283,16 +1267,45 @@ class EdgeTheDealerController {
         `;
     }
 
-    // ============ CARD RENDERING ============
+    // ============ CARD RENDERING (shared component) ============
 
-    createCardElement(formattedCard) {
-        const card = document.createElement('div');
-        card.className = `card ${formattedCard.isRed ? 'red' : 'black'}`;
-        card.innerHTML = `
-            <span class="rank">${formattedCard.rank}</span>
-            <span class="suit">${formattedCard.suit}</span>
-        `;
-        return card;
+    /**
+     * What the shared card component should draw for a game card
+     */
+    cardFace(card) {
+        if (!card || card.faceDown) return 'BACK';
+        return { rank: card.rank, suit: card.suit };
+    }
+
+    cardKey(card) {
+        if (!card) return '';
+        return card.faceDown ? 'BACK' : Poker.getCardId(card);
+    }
+
+    /**
+     * Put a card in a slot. The slot is only rebuilt (and the deal animation
+     * replayed) when the card it shows actually changes, so re-renders for
+     * selection changes do not flicker.
+     */
+    fillSlot(slot, card, options = {}) {
+        if (!slot) return;
+        const key = this.cardKey(card);
+        if (slot.dataset.card === key) return;
+
+        slot.dataset.card = key;
+        slot.innerHTML = '';
+        slot.classList.remove('dealt');
+        if (key && key !== 'BACK') {
+            slot.dataset.suit = card.suit;
+        } else {
+            delete slot.dataset.suit;
+        }
+        if (!key) return;
+
+        slot.style.setProperty('--deal-delay', `${options.dealDelay || 0}s`);
+        slot.appendChild(PlayingCards.element(this.cardFace(card)));
+        void slot.offsetWidth; // restart the deal animation
+        slot.classList.add('dealt');
     }
 
     renderDealerRow(containerId, cards, markUnused) {
@@ -1301,31 +1314,9 @@ class EdgeTheDealerController {
 
         const slots = container.querySelectorAll('.card-slot');
         slots.forEach((slot, index) => {
-            slot.innerHTML = '';
-            slot.classList.remove('dealt', 'unused-slot');
-
             const card = cards[index];
-            if (!card) return;
-
-            // Staggered deal delay
-            slot.style.setProperty('--deal-delay', `${index * 0.07}s`);
-
-            if (card.faceDown) {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card face-down';
-                slot.appendChild(cardEl);
-            } else {
-                const cardEl = this.createCardElement(Poker.formatCard(card));
-                if (markUnused) {
-                    cardEl.classList.add('unused-card');
-                }
-                slot.appendChild(cardEl);
-            }
-
-            if (markUnused) {
-                slot.classList.add('unused-slot');
-            }
-            slot.classList.add('dealt');
+            this.fillSlot(slot, card, { dealDelay: index * 0.07 });
+            slot.classList.toggle('unused-slot', !!card && markUnused);
         });
     }
 

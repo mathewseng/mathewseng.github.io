@@ -19,8 +19,6 @@
   --danger: #ff5c66;
   --shadow: 0 18px 70px rgba(0, 0, 0, 0.42);
   --radius: 8px;
-  --card-w: 124px;
-  --card-h: 172px;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -545,96 +543,64 @@ select {
   font-weight: 900;
 }
 
+/* Scored-hand thumbnails: five shared cards sized to the strip card. */
 .mini-cards {
+  --card-width: min(44px, calc((100% - 16px) / 5));
+  min-width: 0;
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
-.mini-card {
-  width: 40px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  background:
-    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.16), transparent 24px),
-    linear-gradient(145deg, var(--card-face), var(--card-face-2));
-  color: #fff;
-  font-weight: 950;
-  font-size: 1rem;
-  position: relative;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
-}
-
-.mini-card::after,
-.playing-card .suit::before,
+/* Matrix cells are not playing cards; they keep their own suit tints. */
 .matrix-cell .suit-dot::before {
   content: "";
 }
 
-[data-suit="S"] .suit::before,
-[data-suit="S"].mini-card::after,
-[data-suit="S"] .suit-dot::before {
+.matrix-cell[data-suit="S"] .suit-dot::before {
   content: "\2660";
 }
 
-[data-suit="H"] .suit::before,
-[data-suit="H"].mini-card::after,
-[data-suit="H"] .suit-dot::before {
+.matrix-cell[data-suit="H"] .suit-dot::before {
   content: "\2665";
 }
 
-[data-suit="D"] .suit::before,
-[data-suit="D"].mini-card::after,
-[data-suit="D"] .suit-dot::before {
+.matrix-cell[data-suit="D"] .suit-dot::before {
   content: "\2666";
 }
 
-[data-suit="C"] .suit::before,
-[data-suit="C"].mini-card::after,
-[data-suit="C"] .suit-dot::before {
+.matrix-cell[data-suit="C"] .suit-dot::before {
   content: "\2663";
 }
 
-.mini-card::after {
-  position: absolute;
-  left: 4px;
-  top: 2px;
-  color: var(--suit-mark);
-  font-size: 0.78rem;
-  text-shadow: none;
-}
-
-[data-suit="S"] {
+.matrix-cell[data-suit="S"] {
   --card-face: #5b5c5e;
   --card-face-2: #47484a;
   --card-border: #68696b;
   --suit-mark: #2f3032;
 }
 
-[data-suit="H"] {
+.matrix-cell[data-suit="H"] {
   --card-face: #b60d07;
   --card-face-2: #950905;
   --card-border: #cc221a;
   --suit-mark: #540503;
 }
 
-[data-suit="D"] {
+.matrix-cell[data-suit="D"] {
   --card-face: #3647d7;
   --card-face-2: #2937b7;
   --card-border: #4d5df0;
   --suit-mark: #15217e;
 }
 
-[data-suit="C"] {
+.matrix-cell[data-suit="C"] {
   --card-face: #08b535;
   --card-face-2: #02952a;
   --card-border: #18cb47;
   --suit-mark: #00621b;
 }
 
-[data-suit="X"] {
+.matrix-cell[data-suit="X"] {
   --card-face: #d6a72f;
   --card-face-2: #8f4fe8;
   --card-border: #f2c75c;
@@ -673,101 +639,58 @@ select {
   white-space: nowrap;
 }
 
+/* The hand: one grid cell per slot. The hand is a size container so each
+   slot can size its card to the slot width or the hand height, whichever is
+   smaller, and the row never spills over the status line. */
 .hand {
-  min-height: var(--card-h);
+  --hand-size: 7;
+  --hand-card-max: 124px;
+  --card-selected: var(--cyan);
+  min-height: 0;
+  align-self: stretch;
   display: grid;
-  grid-template-columns: repeat(7, minmax(92px, var(--card-w)));
+  grid-template-columns: repeat(var(--hand-size), minmax(0, var(--hand-card-max)));
   justify-content: center;
-  gap: 14px;
+  align-content: center;
+  align-items: center;
+  gap: clamp(6px, 1vw, 14px);
+  container-type: size;
 }
 
-.playing-card {
-  width: var(--card-w);
-  height: var(--card-h);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  background:
-    radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.16), transparent 42px),
-    linear-gradient(145deg, var(--card-face), var(--card-face-2));
-  box-shadow:
-    0 16px 34px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -14px 24px rgba(0, 0, 0, 0.14);
-  color: #fff;
-  padding: 12px;
-  display: block;
+/* A stable wrapper per slot: it carries the deal/discard animations and the
+   table drop shadow; the shared card inside is rebuilt when it changes. */
+.hand-slot {
+  --card-width: min(100%, calc(100cqh * 5 / 7));
   position: relative;
-  overflow: hidden;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.22);
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.32));
+}
+
+.hand-slot > .playing-card {
   transition:
-    transform 150ms ease,
-    box-shadow 150ms ease,
-    filter 150ms ease;
-  animation: cardDeal 260ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+    translate 150ms ease,
+    scale 150ms ease;
 }
 
-.playing-card:hover,
-.playing-card:focus-visible {
-  transform: translateY(-8px);
-  box-shadow:
-    0 22px 46px rgba(0, 0, 0, 0.34),
-    0 0 0 2px rgba(69, 214, 255, 0.46),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -14px 24px rgba(0, 0, 0, 0.14);
-  outline: none;
+/* The hover/focus ring comes from the shared `interactive` state. */
+.hand-slot > .playing-card:hover,
+.hand-slot > .playing-card:focus-visible {
+  translate: 0 -8px;
 }
 
-.playing-card:active {
-  transform: translateY(-2px) scale(0.98);
+.hand-slot > .playing-card:active {
+  translate: 0 -2px;
+  scale: 0.98;
 }
 
-.playing-card .rank {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 5.25rem;
-  font-weight: 950;
-  line-height: 0.9;
-  letter-spacing: 0;
+.hand-slot.is-new {
+  animation: cardDeal 220ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
-.playing-card .suit {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  color: var(--suit-mark);
-  font-size: 2.35rem;
-  line-height: 1;
-  text-shadow: none;
-}
-
-.playing-card .hotkey {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.16);
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.78rem;
-  font-weight: 950;
-  text-shadow: none;
-}
-
-.playing-card[data-joker="true"] {
-  color: #fff;
-}
-
-.playing-card[data-joker="true"] .rank {
-  font-size: 4.35rem;
-}
-
-.playing-card[data-joker="true"] .suit::before {
-  content: "W";
+.hand-slot.is-discarding {
+  animation: cardDiscard 140ms ease-in both;
 }
 
 .status-line {
@@ -1229,34 +1152,6 @@ body {
   align-self: start;
 }
 
-.hand {
-  --hand-size: 7;
-  min-height: 0;
-  align-self: stretch;
-  display: grid;
-  grid-template-columns: repeat(var(--hand-size), minmax(0, var(--card-w)));
-  justify-content: center;
-  align-content: center;
-  align-items: center;
-  gap: clamp(6px, 1vw, 14px);
-  overflow: visible;
-}
-
-.playing-card {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 0.72;
-  animation: none;
-}
-
-.playing-card.is-new {
-  animation: cardDeal 220ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
-}
-
-.playing-card.is-discarding {
-  animation: cardDiscard 140ms ease-in both;
-}
-
 .lower-grid {
   display: contents;
 }
@@ -1373,21 +1268,6 @@ body {
   font-weight: 850;
 }
 
-.mini-cards {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-}
-
-.mini-card {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 0.72;
-  min-width: 0;
-  font-size: clamp(0.7rem, 1.25vw, 0.9rem);
-}
-
 .score-list {
   overflow: hidden;
 }
@@ -1404,11 +1284,6 @@ body {
 }
 
 @media (max-width: 920px) {
-  :root {
-    --card-w: clamp(64px, 18vw, 90px);
-    --card-h: auto;
-  }
-
   .shell {
     width: calc(100% - 16px);
     padding: 8px 0;
@@ -1485,32 +1360,16 @@ body {
     font-size: 0.68rem;
   }
 
+  /* Two rows of up to four cards; each card fits half the hand height. */
   .hand {
-    grid-template-columns: repeat(4, minmax(0, var(--card-w)));
+    --hand-card-max: 96px;
+    grid-template-columns: repeat(4, minmax(0, var(--hand-card-max)));
     grid-auto-rows: auto;
     gap: 7px;
   }
 
-  .playing-card .rank {
-    font-size: clamp(2.2rem, 13vw, 3.85rem);
-  }
-
-  .playing-card[data-joker="true"] .rank {
-    font-size: clamp(1.8rem, 10vw, 3.15rem);
-  }
-
-  .playing-card .suit {
-    top: 5px;
-    left: 6px;
-    font-size: clamp(1.15rem, 5vw, 1.75rem);
-  }
-
-  .playing-card .hotkey {
-    width: 22px;
-    height: 22px;
-    right: 5px;
-    bottom: 5px;
-    font-size: 0.68rem;
+  .hand-slot {
+    --card-width: min(100%, calc((100cqh - 7px) / 2 * 5 / 7));
   }
 
   .score-strip {
@@ -1553,14 +1412,6 @@ body {
 
   .score-meta span {
     font-size: 0.72rem;
-  }
-
-  .mini-card {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 0.72;
-    font-size: 0.72rem;
-    border-radius: 4px;
   }
 
   .matrix-panel {

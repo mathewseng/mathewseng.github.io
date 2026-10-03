@@ -22,11 +22,17 @@
     ],
   };
 
+  const SECTION_KEY = "ofcFantasylandReport.section";
+  const SECTION_IDS = ["overview", "matrix", "charts"];
+
   let activeMetric = "mean";
   let activeConfig = DATASET.data[0];
+  let activeSection = SECTION_IDS[0];
 
   document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#method-samples").textContent = `${DATASET.samplesPerConfig} samples per config`;
+    bindSectionTabs();
+    activateSection(restoreSection(), false);
     bindTabs();
     renderSummary();
     renderMatrix();
@@ -37,6 +43,68 @@
     renderRowContributionChart();
     renderInsights();
   });
+
+  function bindSectionTabs() {
+    const tablist = document.querySelector("#section-tabs");
+    if (!tablist) return;
+    const buttons = Array.from(tablist.querySelectorAll("[data-section]"));
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => activateSection(button.dataset.section, true));
+    });
+    tablist.addEventListener("keydown", (event) => {
+      const index = buttons.indexOf(document.activeElement);
+      if (index < 0) return;
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      const target = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : step ? (index + step + buttons.length) % buttons.length : -1;
+      if (target < 0) return;
+      event.preventDefault();
+      buttons[target].focus();
+      activateSection(buttons[target].dataset.section, true);
+    });
+    window.addEventListener("hashchange", () => {
+      const section = sectionFromHash();
+      if (section && section !== activeSection) activateSection(section, false);
+    });
+  }
+
+  function sectionFromHash() {
+    const value = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    return SECTION_IDS.includes(value) ? value : null;
+  }
+
+  function restoreSection() {
+    const fromHash = sectionFromHash();
+    if (fromHash) return fromHash;
+    try {
+      const saved = localStorage.getItem(SECTION_KEY);
+      if (SECTION_IDS.includes(saved)) return saved;
+    } catch (error) {
+      // localStorage unavailable; fall back to the default section.
+    }
+    return SECTION_IDS[0];
+  }
+
+  function activateSection(section, persist) {
+    if (!SECTION_IDS.includes(section)) section = SECTION_IDS[0];
+    activeSection = section;
+    document.querySelectorAll("#section-tabs [data-section]").forEach((button) => {
+      const active = button.dataset.section === section;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    document.querySelectorAll("[data-section-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.sectionPanel !== section;
+    });
+    if (!persist) return;
+    if (window.history?.replaceState) window.history.replaceState(null, "", `#${section}`);
+    else window.location.hash = section;
+    try {
+      localStorage.setItem(SECTION_KEY, section);
+    } catch (error) {
+      // Ignore storage failures; the hash still carries the section.
+    }
+  }
 
   function bindTabs() {
     document.querySelectorAll(".metric-tabs button").forEach((button) => {

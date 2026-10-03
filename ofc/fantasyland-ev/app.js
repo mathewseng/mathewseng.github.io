@@ -6,6 +6,8 @@
   const STORAGE_KEY = "ofcFantasylandEv.v16";
   const CACHE_SCHEMA_VERSION = 3;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
+  const SECTION_KEY = "ofcFantasylandEv.section";
+  const SECTION_IDS = ["ev", "repeat", "foul", "matrix", "rules"];
   const DECK_JOKER_COUNTS = [1, 2];
   const ROYALTY_DISTRIBUTION_SIZE = 128;
   const REPEAT_SOURCE_ORDER = [1, 2, 4, 3, 5, 6, 7];
@@ -67,6 +69,7 @@
     cancelRun: null,
     precomputedSamples: 0,
     repeatDetailScenario: "13-0",
+    section: "ev",
   };
 
   const els = {};
@@ -81,6 +84,7 @@
     cacheElements();
     bindEvents();
     state.precomputedSamples = applyPrecomputedResults(window.OFCFantasylandPrecomputed);
+    activateSection(restoreSection(), false);
     renderVariant();
   }
 
@@ -120,6 +124,7 @@
       rulesClose: document.querySelector("#rules-close"),
       rulesTabs: document.querySelector("#rules-tabs"),
       rulesContent: document.querySelector("#rules-content"),
+      sectionTabs: document.querySelector("#section-tabs"),
     });
   }
 
@@ -162,15 +167,81 @@
     document.querySelectorAll(".definition-link").forEach((button) => {
       button.addEventListener("click", () => showDefinition(button.dataset.definition));
     });
-    els.rulesOpen.addEventListener("click", () => openRules(state.variant));
-    els.rulesClose.addEventListener("click", closeRules);
-    els.rulesDialog.addEventListener("click", (event) => {
+    els.rulesOpen?.addEventListener("click", () => openRules(state.variant));
+    els.rulesClose?.addEventListener("click", closeRules);
+    els.rulesDialog?.addEventListener("click", (event) => {
       if (event.target === els.rulesDialog) closeRules();
     });
+    bindSectionTabs();
     window.addEventListener("resize", () => {
       fitRepeatSourceLabels();
       centerDistributionModes();
     });
+  }
+
+  function bindSectionTabs() {
+    if (!els.sectionTabs) return;
+    const buttons = Array.from(els.sectionTabs.querySelectorAll("[data-section]"));
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => activateSection(button.dataset.section, true));
+    });
+    els.sectionTabs.addEventListener("keydown", (event) => {
+      const index = buttons.indexOf(document.activeElement);
+      if (index < 0) return;
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      const target = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : step ? (index + step + buttons.length) % buttons.length : -1;
+      if (target < 0) return;
+      event.preventDefault();
+      buttons[target].focus();
+      activateSection(buttons[target].dataset.section, true);
+    });
+    window.addEventListener("hashchange", () => {
+      const section = sectionFromHash();
+      if (section && section !== state.section) activateSection(section, false);
+    });
+  }
+
+  function sectionFromHash() {
+    const value = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    return SECTION_IDS.includes(value) ? value : null;
+  }
+
+  function restoreSection() {
+    const fromHash = sectionFromHash();
+    if (fromHash) return fromHash;
+    try {
+      const saved = localStorage.getItem(SECTION_KEY);
+      if (SECTION_IDS.includes(saved)) return saved;
+    } catch (error) {
+      // localStorage unavailable; fall back to the default section.
+    }
+    return SECTION_IDS[0];
+  }
+
+  function activateSection(section, persist) {
+    if (!SECTION_IDS.includes(section)) section = SECTION_IDS[0];
+    state.section = section;
+    els.sectionTabs?.querySelectorAll("[data-section]").forEach((button) => {
+      const active = button.dataset.section === section;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    document.querySelectorAll("[data-section-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.sectionPanel !== section;
+    });
+    if (section === "rules" && els.rulesContent) renderRules(state.variant);
+    if (persist) {
+      if (window.history?.replaceState) window.history.replaceState(null, "", `#${section}`);
+      else window.location.hash = section;
+      try {
+        localStorage.setItem(SECTION_KEY, section);
+      } catch (error) {
+        // Ignore storage failures; the hash still carries the section.
+      }
+    }
+    fitRepeatSourceLabels();
+    centerDistributionModes();
   }
 
   function renderVariant() {
@@ -200,6 +271,7 @@
         : `${scenarios.length} configurations - completed samples save locally`;
       els.runProgress.style.width = complete === scenarios.length ? "100%" : "0%";
     }
+    if (state.section === "rules" && els.rulesContent) renderRules(state.variant);
   }
 
   function renderRepeatSourceLegend() {
@@ -1098,11 +1170,16 @@
 
   function openRules(variant) {
     renderRules(variant);
+    if (!els.rulesDialog) {
+      activateSection("rules", true);
+      return;
+    }
     if (typeof els.rulesDialog.showModal === "function") els.rulesDialog.showModal();
     else els.rulesDialog.setAttribute("open", "");
   }
 
   function closeRules() {
+    if (!els.rulesDialog) return;
     if (typeof els.rulesDialog.close === "function" && els.rulesDialog.open) els.rulesDialog.close();
     else els.rulesDialog.removeAttribute("open");
   }

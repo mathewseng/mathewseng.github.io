@@ -3,9 +3,6 @@ import {
   CUBE,
   parseCards,
   CATEGORIES,
-  RANKS,
-  SUITS,
-  SYMBOLS,
   cardName,
   firstDrawer,
   remainingDeck,
@@ -83,13 +80,9 @@ function button(label, className, onClick, disabled = false) {
   b.addEventListener("click", onClick);
   return b;
 }
+const PlayingCards = window.PlayingCards;
 function cardEl(c, extra = "") {
-  const r = RANKS[c >> 2],
-    s = c & 3;
-  const node = el("span", `playing-card ${SUITS[s]}${extra ? ` ${extra}` : ""}`);
-  node.innerHTML = `<span class="suit">${SYMBOLS[s]}</span><span class="rank">${r === "T" ? "10" : r}</span>`;
-  node.title = cardName(c);
-  return node;
+  return PlayingCards.element(cardName(c), { className: extra, title: cardName(c) });
 }
 function metric(label, value, { big = false, pending: isPending = false, note, t } = {}) {
   const m = el("div", `metric${big ? " big" : ""}`);

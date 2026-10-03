@@ -17,14 +17,10 @@
   --amber: #f2b84b;
   --rose: #ff6384;
   --red: #f05d72;
-  --spade-card: #505050;
-  --heart-card: #a90800;
-  --diamond-card: #303fc6;
-  --club-card: #05a82b;
-  --joker-card: #6f42d8;
   --trainer-action-width: clamp(132px, 9vw, 156px);
-  --trainer-card-width: clamp(42px, calc((100vw - 285px) / 17), 82px);
-  --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+  /* Card faces come from shared/cards.css; pages only size them through --card-width. */
+  --card-width: clamp(42px, calc((100vw - 285px) / 17), 82px);
+  --trainer-card-height: calc(var(--card-width) * 1.4);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -481,7 +477,7 @@ h3 {
 .trainer-tray {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: var(--trainer-card-width);
+  grid-auto-columns: var(--card-width);
   grid-template-columns: none;
   gap: 5px;
   overflow-x: auto;
@@ -498,15 +494,7 @@ h3 {
 
 .trainer-bank-slot {
   width: 100%;
-  aspect-ratio: 5 / 7;
   min-height: auto;
-  border-radius: 7px;
-}
-
-.trainer-bank-slot.empty {
-  outline: 1px dashed rgba(147, 163, 184, 0.22);
-  outline-offset: -1px;
-  background: rgba(255, 255, 255, 0.018);
 }
 
 .trainer-rows {
@@ -660,15 +648,7 @@ h3 {
   min-height: auto;
   display: grid;
   place-items: stretch;
-  border: 0;
-  outline: 1px dashed rgba(147, 163, 184, 0.28);
-  outline-offset: -1px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.018);
-}
-
-.trainer-slot.filled {
-  outline-color: transparent;
+  border-radius: 10% / 7.1429%;
 }
 
 .trainer-slot.drag-over,
@@ -682,7 +662,8 @@ h3 {
 }
 
 .trainer-slot.drag-over {
-  outline-color: rgba(66, 230, 164, 0.62);
+  outline: 2px solid rgba(66, 230, 164, 0.62);
+  outline-offset: -1px;
 }
 
 .trainer-tray.drag-over {
@@ -695,15 +676,17 @@ h3 {
 .trainer-placed-card {
   width: 100%;
   min-height: auto;
-  border: 0;
   touch-action: none;
 }
 
-.trainer-bank-slot:not(.empty) .trainer-card,
+.trainer-card:disabled {
+  opacity: 0.42;
+}
+
 .trainer-slot.filled .trainer-placed-card {
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.28);
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.28));
   transition:
-    box-shadow 180ms ease,
+    filter 180ms ease,
     transform 180ms ease;
 }
 
@@ -715,7 +698,7 @@ h3 {
   position: fixed;
   z-index: 2147483647;
   box-sizing: border-box;
-  display: flex !important;
+  display: block !important;
   opacity: 1 !important;
   overflow: hidden;
   visibility: visible !important;
@@ -936,114 +919,21 @@ select {
 
 .card-button,
 .mini-card {
-  container-type: inline-size;
-  aspect-ratio: 5 / 7;
   min-height: auto;
-  border: 0;
-  border-radius: 7px;
-  background: var(--spade-card);
-  color: #ffffff;
-  box-shadow: none;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.card-button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0;
-  text-align: center;
 }
 
 .card-button.trainer-drag-ghost {
   position: fixed;
 }
 
-.card-corner {
-  position: absolute;
-  top: 0.08em;
-  left: 0.08em;
-  color: rgba(0, 0, 0, 0.46);
-  font-size: clamp(1rem, 40cqw, 1.8rem);
-  line-height: 1;
+/* Cards that sit in grid cells fill their cell; the face scales with the card width. */
+.selected-cards .playing-card,
+.row-cards .playing-card,
+.deck-grid .playing-card {
+  width: 100%;
 }
 
-.card-rank {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 14%;
-  color: #ffffff;
-  font-size: clamp(1.75rem, 76cqw, 3.6rem);
-  font-weight: 500;
-  line-height: 0.9;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.card-badge {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 0.62rem;
-  font-weight: 900;
-}
-
-.card-button.suit-s,
-.mini-card.suit-s {
-  background: var(--spade-card);
-}
-
-.card-button.suit-h,
-.mini-card.suit-h {
-  background: var(--heart-card);
-}
-
-.card-button.suit-d,
-.mini-card.suit-d {
-  background: var(--diamond-card);
-}
-
-.card-button.suit-c,
-.mini-card.suit-c {
-  background: var(--club-card);
-}
-
-.card-button.joker,
-.mini-card.joker {
-  background: var(--joker-card);
-  color: #ffffff;
-}
-
-.card-button.selected {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.card-button:disabled {
-  opacity: 0.42;
-}
-
-.card-button[draggable="true"],
-.mini-card[draggable="true"] {
-  cursor: grab;
-}
-
-.mini-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0;
-  text-align: center;
-}
-
-.mini-card button {
+.mini-card > button {
   position: absolute;
   top: -7px;
   right: -7px;
@@ -1254,10 +1144,6 @@ kbd {
   padding: 12px;
 }
 
-.deck-grid .card-button {
-  min-height: 48px;
-  box-shadow: none;
-}
 
 .deck-grid .joker-zone {
   grid-column: 1 / -1;
@@ -1630,10 +1516,11 @@ kbd {
     overflow: hidden;
   }
 
+  /* With the solution open the page scrolls, so the game keeps its natural height instead of being squeezed. */
   .app-shell:has(.solver-drawer[open]) {
     height: auto;
     min-height: 100dvh;
-    grid-template-rows: 52px minmax(0, calc(100dvh - 126px)) auto;
+    grid-template-rows: 52px auto auto;
     overflow: visible;
   }
 
@@ -1772,14 +1659,12 @@ kbd {
   }
 
   .trainer-slot {
-    width: var(--trainer-card-width);
+    width: var(--card-width);
     height: var(--trainer-card-height);
-    flex: 0 0 var(--trainer-card-width);
+    flex: 0 0 var(--card-width);
     max-height: none;
     aspect-ratio: 5 / 7;
     min-width: 0;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.035);
   }
 
   .trainer-row-summary {
@@ -1885,7 +1770,7 @@ kbd {
   }
 
   .trainer-tray {
-    grid-auto-columns: var(--trainer-card-width);
+    grid-auto-columns: var(--card-width);
     gap: 5px;
     align-content: center;
     overflow-x: hidden;
@@ -1917,7 +1802,7 @@ kbd {
 @media (max-width: 980px) {
   :root {
     --trainer-action-width: clamp(96px, 14vw, 132px);
-    --trainer-card-width: clamp(30px, calc((100vw - 240px) / 17), 52px);
+    --card-width: clamp(30px, calc((100vw - 240px) / 17), 52px);
   }
 
   body {
@@ -1946,7 +1831,7 @@ kbd {
   .app-shell:has(.solver-drawer[open]) {
     height: auto;
     min-height: 100dvh;
-    grid-template-rows: 44px minmax(0, calc(100dvh - 94px)) auto;
+    grid-template-rows: 44px auto auto;
     overflow: visible;
   }
 
@@ -2244,7 +2129,7 @@ kbd {
 
   .trainer-tray {
     grid-auto-flow: column;
-    grid-auto-columns: var(--trainer-card-width);
+    grid-auto-columns: var(--card-width);
     gap: 5px;
     min-height: var(--trainer-card-height);
     overflow-x: auto;
@@ -2342,14 +2227,12 @@ kbd {
   }
 
   .trainer-slot {
-    width: var(--trainer-card-width);
+    width: var(--card-width);
     height: var(--trainer-card-height);
-    flex: 0 0 var(--trainer-card-width);
+    flex: 0 0 var(--card-width);
     max-height: none;
     aspect-ratio: 5 / 7;
     min-height: 0;
-    border-color: rgba(147, 163, 184, 0.2);
-    background: rgba(255, 255, 255, 0.025);
   }
 
   .trainer-actions {
@@ -2388,22 +2271,22 @@ kbd {
   .trainer-panel.hand-cols-7 {
     --trainer-hand-columns: 7;
     --trainer-hand-card-width: clamp(32px, calc((100vw - 85px - var(--safe-left) - var(--safe-right)) / 7), 64px);
-    --trainer-card-width: var(--trainer-hand-card-width);
-    --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+    --card-width: var(--trainer-hand-card-width);
+    --trainer-card-height: calc(var(--card-width) * 1.4);
   }
 
   .trainer-panel.hand-cols-8 {
     --trainer-hand-columns: 8;
     --trainer-hand-card-width: clamp(28px, calc((100vw - 93px - var(--safe-left) - var(--safe-right)) / 8), 64px);
-    --trainer-card-width: var(--trainer-hand-card-width);
-    --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+    --card-width: var(--trainer-hand-card-width);
+    --trainer-card-height: calc(var(--card-width) * 1.4);
   }
 
   .trainer-panel.hand-cols-9 {
     --trainer-hand-columns: 9;
     --trainer-hand-card-width: clamp(24px, calc((100vw - 101px - var(--safe-left) - var(--safe-right)) / 9), 64px);
-    --trainer-card-width: var(--trainer-hand-card-width);
-    --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+    --card-width: var(--trainer-hand-card-width);
+    --trainer-card-height: calc(var(--card-width) * 1.4);
   }
 
   .trainer-controls {
@@ -2431,7 +2314,7 @@ kbd {
     grid-auto-flow: row;
     grid-auto-columns: unset;
     grid-auto-rows: var(--trainer-card-height);
-    grid-template-columns: repeat(var(--trainer-hand-columns, 9), var(--trainer-card-width));
+    grid-template-columns: repeat(var(--trainer-hand-columns, 9), var(--card-width));
     grid-template-rows: repeat(2, var(--trainer-card-height));
     justify-content: center;
     align-content: center;
@@ -3207,11 +3090,11 @@ body.ev-page {
   }
 
   .trainer-panel.is-badugijack:not(.is-double-blackjack) {
-    --trainer-card-width: min(
+    --card-width: min(
       var(--trainer-hand-card-width, 56px),
       clamp(34px, calc((100vw - 84px - var(--safe-left) - var(--safe-right)) / 7), 56px)
     );
-    --trainer-card-height: calc(var(--trainer-card-width) * 1.4);
+    --trainer-card-height: calc(var(--card-width) * 1.4);
   }
 
   .trainer-variant-control {

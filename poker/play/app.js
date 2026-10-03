@@ -5,7 +5,8 @@
   const Eval = window.MixedPokerEvaluator;
   const Engine = window.MixedPokerEngine;
   const PeerRoom = window.PeerRoom;
-  if (!Catalog || !Eval || !Engine || !PeerRoom) return;
+  const Cards = window.PlayingCards;
+  if (!Catalog || !Eval || !Engine || !PeerRoom || !Cards) return;
 
   const $ = (id) => document.getElementById(id);
   const els = {
@@ -43,6 +44,9 @@
     mixCap: $("mix-cap"),
     catalogTabs: $("catalog-tabs"),
     gameCatalog: $("game-catalog"),
+    setupTabs: $("setup-tabs"),
+    setupGrid: $("setup-grid"),
+    rotationTab: $("rotation-tab"),
     roomCodeDisplay: $("room-code-display"),
     copyInvite: $("copy-invite"),
     waitingTitle: $("waiting-title"),
@@ -155,6 +159,7 @@
     els.clearMix.addEventListener("click", () => { selectedGames = []; saveSelectedGames(); renderMixBuilder(); });
     els.rotation.addEventListener("click", handleRotationClick);
     els.gameCatalog.addEventListener("click", handleCatalogClick);
+    els.setupTabs.addEventListener("click", handleSetupTab);
     els.heroCards.addEventListener("click", handleCardSelection);
     els.foldButton.addEventListener("click", () => sendBetAction("fold"));
     els.passButton.addEventListener("click", () => sendBetAction(els.passButton.dataset.action));
@@ -423,6 +428,7 @@
     }).join("");
     const cap = selectedGames.length ? Math.min(...selectedGames.map((id) => Catalog.getGame(id).maxPlayers)) : 8;
     els.mixCount.textContent = selectedGames.length + " game" + (selectedGames.length === 1 ? "" : "s");
+    els.rotationTab.textContent = "Rotation · " + selectedGames.length;
     els.mixCap.textContent = cap + " seats max";
     Array.from(els.seats.options).forEach((option) => { option.disabled = Number(option.value) > cap; });
     if (Number(els.seats.value) > cap) els.seats.value = String(cap);
@@ -444,6 +450,14 @@
     [selectedGames[from], selectedGames[to]] = [selectedGames[to], selectedGames[from]];
     saveSelectedGames();
     renderMixBuilder();
+  }
+
+  // Phone layout only: the three setup panels become tabs.
+  function handleSetupTab(event) {
+    const button = event.target.closest("[data-setup-tab]");
+    if (!button) return;
+    els.setupGrid.dataset.setupTab = button.dataset.setupTab;
+    els.setupTabs.querySelectorAll("[data-setup-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
   }
 
   function handleCatalogClick(event) {
@@ -525,7 +539,7 @@
     els.boards.innerHTML = boards.map((board, index) => {
       const slots = index >= state.boards.length ? 5 : expected || board.length;
       const label = boards.length > 1 ? (index >= state.boards.length ? "Zombie " + (index - state.boards.length + 1) : "Board " + (index + 1)) : "Board";
-      return '<div class="board-line"><span>' + label + '</span><div class="board-cards">' + Array.from({ length: slots }, (_, cardIndex) => board[cardIndex] ? cardHtml(board[cardIndex]) : '<span class="card-slot"></span>').join("") + "</div></div>";
+      return '<div class="board-line"><span>' + label + '</span><div class="board-cards">' + Array.from({ length: slots }, (_, cardIndex) => board[cardIndex] ? cardHtml(board[cardIndex]) : Cards.emptySlotHtml()).join("") + "</div></div>";
     }).join("");
     els.tableMessage.textContent = state.isBombPot ? "Bomb pot" : "";
   }
@@ -551,6 +565,8 @@
     const mine = state.activePlayerId === me.id;
     const active = state.players.find((player) => player.id === state.activePlayerId);
     const seconds = remainingSeconds(state);
+    // At showdown the results panel takes this slot; the decision panel has nothing to offer.
+    els.decisionPanel.hidden = state.phase === "showdown";
     els.decisionKicker.textContent = state.stage === "draw" ? "Draw" : state.stage === "discard" ? "Discard" : "Action";
     els.decisionTitle.textContent = mine
       ? (state.stage === "draw" ? "Choose your discards" : state.stage === "discard" ? "Discard two down cards" : "Your action") + (seconds !== null ? " · " + seconds + "s" : "")
@@ -724,14 +740,16 @@
     return badges;
   }
 
+  // Every card face comes from the shared component (shared/cards.js). Ids are
+  // "As"/"Td" from the engine or "BACK" for a hidden card.
   function cardHtml(id, options = {}) {
-    if (id === "BACK") return '<span class="poker-card back" aria-label="Face-down card"></span>';
-    const card = Eval.makeCard(id);
-    const suit = { s: "♠", h: "♥", d: "♦", c: "♣" }[card.suit];
-    const classes = "poker-card suit-" + card.suit + (options.selected ? " selected" : "");
-    const attrs = options.selectable ? ' data-card-id="' + id + '" data-selectable="true"' : "";
-    const tag = options.selectable ? "button" : "span";
-    return "<" + tag + ' class="' + classes + '"' + attrs + (tag === "button" ? ' type="button"' : "") + '><span class="card-suit">' + suit + '</span><span class="card-rank">' + Eval.RANK_LABEL[card.rank] + "</span></" + tag + ">";
+    if (!options.selectable) return Cards.html(id, { selected: options.selected });
+    return Cards.html(id, {
+      tag: "button",
+      interactive: true,
+      selected: options.selected,
+      attrs: { "data-card-id": id, "data-selectable": "true" },
+    });
   }
 
   function currentViewState() {

@@ -6,7 +6,8 @@
     <meta name="theme-color" content="#070a0e" />
     <title>Mixed Poker</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260907a" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261003b" />
+    <link rel="stylesheet" href="./styles.css?v=20261003b" />
   </head>
   <body>
     <div class="shell">
@@ -25,14 +26,18 @@
       </header>
 
       <main>
-        <section id="setup-view">
+        <section class="setup-view" id="setup-view">
           <header class="page-heading">
-            <p class="eyebrow">Cash table</p>
-            <h1>Build a mixed game</h1>
+            <div><p class="eyebrow">Cash table</p><h1>Build a mixed game</h1></div>
+            <div class="segmented setup-tabs" id="setup-tabs" aria-label="Setup sections">
+              <button class="active" type="button" data-setup-tab="table">Table</button>
+              <button type="button" data-setup-tab="rotation" id="rotation-tab">Rotation</button>
+              <button type="button" data-setup-tab="options">Options</button>
+            </div>
           </header>
 
-          <div class="setup-grid">
-            <aside class="connect-panel panel">
+          <div class="setup-grid" id="setup-grid" data-setup-tab="table">
+            <aside class="connect-panel panel" data-setup-section="table">
               <div class="panel-title">
                 <div><p class="step">01</p><h2>Table</h2></div>
                 <div class="segmented mode-switch">
@@ -59,7 +64,7 @@
               </div>
             </aside>
 
-            <section class="mix-panel panel">
+            <section class="mix-panel panel" data-setup-section="rotation">
               <div class="panel-title">
                 <div><p class="step">02</p><h2>Rotation</h2></div>
                 <div class="mix-meta"><strong id="mix-count">8 games</strong><span id="mix-cap">8 seats max</span></div>
@@ -81,21 +86,21 @@
               <div class="catalog-tabs" id="catalog-tabs"></div>
               <div class="game-catalog" id="game-catalog"></div>
             </section>
-          </div>
 
-          <section class="advanced panel">
-            <div class="panel-title">
-              <div><p class="step">03</p><h2>Table options</h2></div>
-              <span>Applied across the mix</span>
-            </div>
-            <div class="advanced-grid">
-              <label class="number-setting"><span><strong>Limit raise cap</strong><small>Total bets per street</small></span><select id="raise-cap"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
-              <label class="toggle-setting"><span><strong>Live straddle</strong><small>2× big blind, when available</small></span><input id="straddle" type="checkbox" /><i></i></label>
-              <label class="number-setting"><span><strong>Bomb pot</strong><small>Every N hands; 0 is off</small></span><input id="bomb-every" type="number" min="0" max="99" value="0" /></label>
-              <label class="number-setting"><span><strong>Bomb ante</strong><small>Posted by every player</small></span><input id="bomb-ante" type="number" min="1" value="10" /></label>
-              <label class="number-setting"><span><strong>Action clock</strong><small>Seconds; 0 is off</small></span><input id="action-clock" type="number" min="0" max="300" value="0" /></label>
-            </div>
-          </section>
+            <section class="advanced panel" data-setup-section="options">
+              <div class="panel-title">
+                <div><p class="step">03</p><h2>Table options</h2></div>
+                <span>Applied across the mix</span>
+              </div>
+              <div class="advanced-grid">
+                <label class="number-setting"><span><strong>Limit raise cap</strong><small>Total bets per street</small></span><select id="raise-cap"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+                <label class="toggle-setting"><span><strong>Live straddle</strong><small>2× big blind, when available</small></span><input id="straddle" type="checkbox" /><i></i></label>
+                <label class="number-setting"><span><strong>Bomb pot</strong><small>Every N hands; 0 is off</small></span><input id="bomb-every" type="number" min="0" max="99" value="0" /></label>
+                <label class="number-setting"><span><strong>Bomb ante</strong><small>Posted by every player</small></span><input id="bomb-ante" type="number" min="1" value="10" /></label>
+                <label class="number-setting"><span><strong>Action clock</strong><small>Seconds; 0 is off</small></span><input id="action-clock" type="number" min="0" max="300" value="0" /></label>
+              </div>
+            </section>
+          </div>
         </section>
 
         <section class="room-view" id="room-view" hidden>
@@ -104,7 +109,7 @@
             <button class="button secondary" id="copy-invite" type="button">Copy invite</button>
           </div>
           <section class="waiting panel">
-            <div class="page-heading compact"><p class="eyebrow">Lobby</p><h1 id="waiting-title">Waiting for players</h1></div>
+            <div class="page-heading compact"><div><p class="eyebrow">Lobby</p><h1 id="waiting-title">Waiting for players</h1></div></div>
             <div class="roster" id="roster"></div>
             <div class="lobby-mix" id="lobby-mix"></div>
             <button class="button primary full" id="start-game" type="button">Deal first hand</button>
@@ -194,9 +199,10 @@
 
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="../../shared/peer-room.js?v=20260908a"></script>
+    <script src="../../shared/cards.js?v=20261003b"></script>
     <script src="./game-catalog.js?v=20260907a"></script>
     <script src="./evaluator.js?v=20260907a"></script>
     <script src="./engine.js?v=20260907a"></script>
-    <script src="./app.js?v=20260907a"></script>
+    <script src="./app.js?v=20261003b"></script>
   </body>
 </html>

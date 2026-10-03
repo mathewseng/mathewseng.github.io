@@ -13,7 +13,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/`, `fantasyland-report/` |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `dodge/`, `calculations/` |
 | `blackjack/` | Blackjack hub: `strategy/` |
-| `shared/` | Code shared across project families (`peer-room.js`, and `hub.css` + `hub.js` for the landing and hub pages) |
+| `shared/` | Code shared across project families: `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, and `hub.css` + `hub.js` for the landing and hub pages |
 | `jazz-piano-ml/` | Python source project; not published |
 | `redirects.json` | Old URL → new URL; the deploy writes a redirect page for each entry |
 | `scripts/` | Repo tooling (test runner, redirect builder); not published |
@@ -31,6 +31,10 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 - `tests/`, `scripts/`, `solver/`, `simulation/`, Markdown, and `package.json` files are not published.
   Link to source on GitHub instead of relative paths.
 - When a page moves, add its old path to `redirects.json`.
+- Every playing card on the site is rendered by `shared/cards.js` (`PlayingCards.html` / `.element`) with
+  `shared/cards.css`; pages only set `--card-width` and wrapper states, never the card face. Ten is `T`.
+- Pages are app shells: on desktop they fit the viewport and long panels scroll internally; on phones they
+  stack with minimal scrolling.
 
 ## Checks
 

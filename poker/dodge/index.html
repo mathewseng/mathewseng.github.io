@@ -13,7 +13,8 @@
       content="Explore all 16,432 four-card starting hands in Dodge. Simulated bust distributions, exact outs, survival curves, and game design tools."
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=mobile-20260919" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261003" />
+    <link rel="stylesheet" href="./styles.css?v=20261003" />
   </head>
   <body>
     <header class="topbar">
@@ -38,32 +39,16 @@
     </header>
     <main>
       <div class="page-heading">
-        <div>
-          <div class="breadcrumb">POKER / DODGE / REPORTS</div>
+        <div class="heading-text">
+          <span class="breadcrumb desktop-only">POKER / DODGE / REPORTS</span>
           <h1>
             <span class="desktop-only">Every hand. Every way to bust.</span
             ><span class="mobile-only">Dodge reports</span>
           </h1>
-          <p>
+          <p class="desktop-only">
             Start with four cards. Keep drawing. Dodge a straight or better.
           </p>
         </div>
-        <button
-          class="primary"
-          id="export-button"
-          aria-label="Export filtered CSV"
-          disabled
-        >
-          <span class="desktop-only">Export filtered CSV</span
-          ><span class="mobile-only">Export</span>
-          <span aria-hidden="true">↓</span>
-        </button>
-      </div>
-      <div id="loading" class="loading" role="status">
-        <span class="loading-dot"></span>Loading the complete hand universe…
-      </div>
-      <div id="load-error" class="error" role="alert" hidden></div>
-      <div id="app" hidden>
         <nav class="tabs" aria-label="Report views">
           <button
             class="active"
@@ -82,6 +67,22 @@
             ><span class="mobile-only">Game lab</span>
           </button>
         </nav>
+        <button
+          class="primary"
+          id="export-button"
+          aria-label="Export filtered CSV"
+          disabled
+        >
+          <span class="desktop-only">Export filtered CSV</span
+          ><span class="mobile-only">Export</span>
+          <span aria-hidden="true">↓</span>
+        </button>
+      </div>
+      <div id="loading" class="loading" role="status">
+        <span class="loading-dot"></span>Loading the complete hand universe…
+      </div>
+      <div id="load-error" class="error" role="alert" hidden></div>
+      <div id="app" hidden>
         <section class="filter-panel" aria-label="Filter hand population">
           <div class="filters">
             <label class="search-field"
@@ -153,6 +154,14 @@
               >
             </div>
             <p id="population-label" aria-live="polite"></p>
+            <p class="scope-note desktop-only">
+              Draws are
+              <strong>additional cards, including the bust card</strong>.
+              <span class="wide-only"
+                >Charts and aggregates follow your filters.</span
+              >
+              <span id="scope-weight"></span>
+            </p>
           </div>
           <div id="numeric-rules" class="numeric-rules"></div>
           <button class="mobile-only filter-apply" id="filter-apply">
@@ -164,19 +173,12 @@
           class="summary"
           aria-label="Filtered population summary"
         ></section>
-        <p class="scope-note">
-          Draws are <strong>additional cards, including the bust card</strong>.
-          <span class="desktop-only"
-            >Charts and aggregates follow your filters.</span
-          >
-          <span id="scope-weight" class="desktop-only"></span>
-        </p>
 
         <section id="explorer-view" class="view">
           <div class="explorer-workspace">
             <article class="panel table-panel">
               <div class="table-toolbar">
-                <div>
+                <div class="table-title">
                   <h2>Starting hands</h2>
                   <p id="table-context">
                     <span class="desktop-only"
@@ -239,44 +241,47 @@
                 </div>
               </div>
             </article>
-            <aside
-              id="hand-detail"
-              class="panel detail-panel"
-              aria-label="Selected hand details"
-            ></aside>
+            <div class="explorer-side">
+              <aside
+                id="hand-detail"
+                class="panel detail-panel"
+                aria-label="Selected hand details"
+              ></aside>
+              <section
+                id="comparison-panel"
+                class="panel comparison-panel"
+                hidden
+              ></section>
+              <div class="explorer-charts">
+                <article class="panel">
+                  <div class="panel-heading">
+                    <div>
+                      <h2>When does the hand bust?</h2>
+                      <p>
+                        Probability of busting on each draw · filtered
+                        population
+                      </p>
+                    </div>
+                    <span class="tag">DISTRIBUTION</span>
+                  </div>
+                  <div id="overview-hist" class="chart"></div>
+                </article>
+                <article class="panel">
+                  <div class="panel-heading">
+                    <div>
+                      <h2>What causes the bust?</h2>
+                      <p>Highest five-card ranking when play stops</p>
+                    </div>
+                  </div>
+                  <div id="overview-outcomes" class="outcome-list"></div>
+                </article>
+              </div>
+            </div>
           </div>
           <button id="reopen-hand" class="mobile-only reopen-hand">
             <span>Selected hand</span><span id="reopen-hand-cards"></span
             ><span aria-hidden="true">↗</span>
           </button>
-          <section
-            id="comparison-panel"
-            class="panel comparison-panel"
-            hidden
-          ></section>
-          <div class="explorer-charts">
-            <article class="panel">
-              <div class="panel-heading">
-                <div>
-                  <h2>When does the hand bust?</h2>
-                  <p>
-                    Probability of busting on each draw · filtered population
-                  </p>
-                </div>
-                <span class="tag">DISTRIBUTION</span>
-              </div>
-              <div id="overview-hist" class="chart"></div>
-            </article>
-            <article class="panel">
-              <div class="panel-heading">
-                <div>
-                  <h2>What causes the bust?</h2>
-                  <p>Highest five-card ranking when play stops</p>
-                </div>
-              </div>
-              <div id="overview-outcomes" class="outcome-list"></div>
-            </article>
-          </div>
         </section>
 
         <section id="reports-view" class="view" hidden>
@@ -300,27 +305,6 @@
                 </div>
               </div>
               <div id="hazard-chart" class="chart tall"></div>
-            </article>
-            <article class="panel full">
-              <div class="panel-heading">
-                <div>
-                  <h2>Starting texture changes the game</h2>
-                  <p>
-                    Mean draws to bust and the mix of finishing hands · click a
-                    group to filter
-                  </p>
-                </div>
-                <label
-                  ><span class="sr-only">Group hands by</span
-                  ><select id="group-by">
-                    <option value="suitedness">Suit pattern</option>
-                    <option value="pairing">Pairing</option>
-                    <option value="highCard">Highest rank</option>
-                    <option value="connectivity">Straight connectivity</option>
-                  </select></label
-                >
-              </div>
-              <div id="texture-chart" class="texture-chart"></div>
             </article>
             <article class="panel">
               <div class="panel-heading">
@@ -355,6 +339,27 @@
               <div class="heatmap-key">
                 <span>Shorter life</span><i></i><span>Longer life</span>
               </div>
+            </article>
+            <article class="panel wide">
+              <div class="panel-heading">
+                <div>
+                  <h2>Starting texture changes the game</h2>
+                  <p>
+                    Mean draws to bust and the mix of finishing hands · click a
+                    group to filter
+                  </p>
+                </div>
+                <label
+                  ><span class="sr-only">Group hands by</span
+                  ><select id="group-by">
+                    <option value="suitedness">Suit pattern</option>
+                    <option value="pairing">Pairing</option>
+                    <option value="highCard">Highest rank</option>
+                    <option value="connectivity">Straight connectivity</option>
+                  </select></label
+                >
+              </div>
+              <div id="texture-chart" class="texture-chart"></div>
             </article>
             <article class="panel full">
               <div class="panel-heading">
@@ -423,13 +428,15 @@
                 </div>
                 <button id="reset-runout" class="quiet">Reset runout</button>
               </div>
-              <div id="live-hand" class="live-hand"></div>
-              <div id="live-stats" class="live-stats" aria-live="polite"></div>
-              <div class="draw-actions">
-                <button id="draw-random" class="primary">
-                  Draw a random card</button
-                ><button id="undo-draw" class="quiet">Undo</button>
+              <div class="live-row">
+                <div id="live-hand" class="live-hand"></div>
+                <div class="draw-actions">
+                  <button id="draw-random" class="primary">
+                    Draw a random card</button
+                  ><button id="undo-draw" class="quiet">Undo</button>
+                </div>
               </div>
+              <div id="live-stats" class="live-stats" aria-live="polite"></div>
               <p class="in-panel-note">
                 Or choose a remaining card below. Outlined cards bust; muted
                 cards are already held. Newly drawn cards are underlined above.
@@ -499,6 +506,7 @@
       <div id="column-choices" class="column-choices"></div>
     </dialog>
     <div id="toast" class="toast" role="status" hidden></div>
-    <script type="module" src="./app.js?v=mobile-20260919"></script>
+    <script src="../../shared/cards.js?v=20261003"></script>
+    <script type="module" src="./app.js?v=20261003"></script>
   </body>
 </html>

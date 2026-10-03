@@ -1,4 +1,4 @@
-@import url("../ultimate-omaha/styles.css");
+@import url("../ultimate-omaha/styles.css?v=20261003");
 
 /* ============================================================
    EDGE THE DEALER - Modern UI/UX Overhaul
@@ -6,9 +6,11 @@
    ============================================================ */
 
 :root {
-    /* Card sizing: responsive clamp for iPhone screens */
-    --card-width: clamp(56px, 16vw, 78px);
-    --card-height: clamp(80px, 23vw, 112px);
+    /* Card sizes per context (shared/cards.css cards size from --card-width alone).
+       The dealer shows all 7 cards in one row, the hand shows 5. */
+    --dealer-card-width: clamp(44px, 5vw, 60px);
+    --hole-card-width: clamp(52px, 16vw, 80px);
+    --mini-card-width: 22px;
 
     /* Panels */
     --panel-bg: rgba(9, 19, 26, 0.82);
@@ -29,9 +31,11 @@
     --soft-text: #9cb5c6;
     --softer-text: #6d8494;
 
-    /* Card glow */
-    --glow-red: rgba(196, 30, 58, 0.35);
-    --glow-black: rgba(87, 214, 255, 0.2);
+    /* Card glow per suit (matches the shared four-colour faces) */
+    --glow-spade: rgba(150, 165, 180, 0.3);
+    --glow-heart: rgba(199, 46, 60, 0.45);
+    --glow-diamond: rgba(50, 105, 211, 0.45);
+    --glow-club: rgba(20, 137, 79, 0.45);
 
     /* Animation timing */
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -236,6 +240,14 @@ body {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
+.game-layout {
+    gap: 0.65rem;
+}
+
+/* Phone order: dealer, hand, actions, players, log */
+.dealer-area { order: 1; }
+.players-section { order: 4; }
+
 /* Compact single-player mode */
 #game-screen.compact-solo .game-header .game-room-info {
     display: none;
@@ -302,6 +314,7 @@ body {
 .btn-quit-game {
     font-size: 0.68rem;
     padding: 0.4rem 0.65rem;
+    min-height: 36px;
     border: 1px solid rgba(255, 146, 146, 0.3);
     color: #ffd9d9;
     background: linear-gradient(140deg, rgba(83, 24, 34, 0.8), rgba(52, 17, 23, 0.74));
@@ -402,13 +415,18 @@ body {
     font-size: 0.88rem;
 }
 
+/* Best five and unused cards side by side (wraps on very narrow screens) */
 .dealer-hand-groups {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
     gap: 0.5rem;
 }
 
 .dealer-group {
+    flex: 0 1 auto;
+    min-width: 0;
     border-radius: 14px;
     border: 1px solid rgba(140, 214, 255, 0.12);
     background: rgba(6, 14, 22, 0.5);
@@ -435,6 +453,7 @@ body {
 }
 
 .dealer-cards {
+    --card-width: var(--dealer-card-width);
     display: flex;
     justify-content: center;
     gap: 0.4rem;
@@ -460,11 +479,14 @@ body {
 
 /* ============ CARD SLOTS ============ */
 
+/* The slot is a dashed placeholder sized like a card; it holds one shared
+   .playing-card at full width once dealt. Slot states (selected-discard,
+   confirmed-discard, locked, tap-ripple, unused-slot) live on the slot. */
 .card-slot {
     width: var(--card-width);
-    height: var(--card-height);
-    border-radius: 10px;
-    border: 1px solid rgba(160, 208, 230, 0.2);
+    aspect-ratio: 5 / 7;
+    border-radius: 10% / 7.1429%;
+    border: 1px dashed rgba(160, 208, 230, 0.3);
     background: rgba(5, 12, 18, 0.5);
     overflow: visible;
     position: relative;
@@ -477,7 +499,9 @@ body {
 }
 
 .card-slot.dealt {
+    border-color: transparent;
     background: transparent;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     animation: cardDealIn 0.4s var(--ease-out-expo) backwards;
 }
 
@@ -497,37 +521,25 @@ body {
     }
 }
 
-/* Card element */
-.card {
-    border-radius: 9px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    transition: filter var(--duration-normal), transform var(--duration-normal), opacity var(--duration-normal);
+/* Suit-coloured glow around the dealer's best five (on the slot wrapper) */
+.dealer-used-cards .card-slot.dealt[data-suit="s"] {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-spade);
 }
 
-.card .rank {
-    font-size: clamp(1.2rem, 3.8vw, 1.6rem);
+.dealer-used-cards .card-slot.dealt[data-suit="h"] {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-heart);
 }
 
-.card .suit {
-    font-size: clamp(1.3rem, 4vw, 1.7rem);
+.dealer-used-cards .card-slot.dealt[data-suit="d"] {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-diamond);
 }
 
-/* Suit-based glow for dealer used cards */
-.dealer-used-cards .card.red {
-    box-shadow: 0 0 0 1px rgba(196, 30, 58, 0.25), 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-red);
+.dealer-used-cards .card-slot.dealt[data-suit="c"] {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-club);
 }
 
-.dealer-used-cards .card.black {
-    box-shadow: 0 0 0 1px rgba(87, 214, 255, 0.2), 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-black);
-}
-
-/* Unused dealer cards */
+/* Unused dealer cards: greyed out (the whole slot, card included) */
 .dealer-unused-cards .card-slot.unused-slot {
-    border-color: rgba(120, 130, 140, 0.35);
-    background: rgba(0, 0, 0, 0.18);
-}
-
-.dealer-unused-cards .card.unused-card {
     filter: grayscale(1) brightness(0.65);
     opacity: 0.6;
 }
@@ -550,15 +562,11 @@ body {
 }
 
 .hole-cards.five-cards {
+    --card-width: var(--hole-card-width);
     display: flex;
     gap: clamp(0.25rem, 1.2vw, 0.5rem);
     justify-content: center;
     margin-bottom: 0.55rem;
-}
-
-.card-slot.hole {
-    width: clamp(58px, 17vw, 82px);
-    height: clamp(83px, 24.5vw, 118px);
 }
 
 /* Interactive cards */
@@ -585,18 +593,12 @@ body {
     cursor: not-allowed;
 }
 
-/* Selected for discard */
+/* Selected for discard (the card itself uses the shared .dim state) */
 #hole-cards .card-slot.selected-discard {
     transform: translateY(4px) scale(0.96);
     border-color: rgba(255, 107, 138, 0.6);
     background: rgba(255, 107, 138, 0.08);
     box-shadow: 0 0 0 2px rgba(255, 107, 138, 0.12), 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-#hole-cards .card-slot.selected-discard .card {
-    filter: grayscale(0.7) brightness(0.6);
-    opacity: 0.55;
-    transform: scale(0.96);
 }
 
 #hole-cards .card-slot.selected-discard::after {
@@ -796,6 +798,10 @@ body {
 .player-box .name {
     color: #dbf0ff;
     font-size: 0.82rem;
+}
+
+.player-box .player-cards {
+    flex-wrap: wrap;
 }
 
 .player-box .status {
@@ -1037,6 +1043,10 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+.my-hand-results:empty {
+    display: none;
+}
+
 .my-hand-row {
     font-size: 0.83rem;
     padding: 0.2rem 0;
@@ -1128,6 +1138,119 @@ body {
     -webkit-backdrop-filter: blur(12px);
 }
 
+/* ============ DESKTOP APP SHELL ============
+   The base two-column grid comes from ../ultimate-omaha/styles.css; these
+   rules adapt it to this page's full-width panels and sticky bars. */
+@media (min-width: 900px) {
+    #game-screen.active {
+        max-width: none;
+        gap: 0.5rem;
+        padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+    }
+
+    .game-layout {
+        max-width: 1180px;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 0.8rem;
+    }
+
+    .game-column {
+        align-items: stretch;
+        gap: 0.65rem;
+        padding: 0.15rem;
+    }
+
+    .game-header {
+        position: static;
+    }
+
+    .action-area {
+        position: static;
+    }
+
+    .players-section {
+        flex: 1 1 auto;
+    }
+
+    .collapsible .collapsible-content {
+        max-height: none;
+    }
+
+    .collapsible.collapsed .collapsible-content {
+        max-height: 0;
+    }
+
+    .log-chat-container {
+        max-width: none;
+    }
+
+    .tab-content {
+        height: auto;
+    }
+
+    .chat-messages {
+        height: auto;
+    }
+}
+
+/* Short desktop windows (1024x768): tighter panels */
+@media (min-width: 900px) and (max-height: 800px) {
+    :root {
+        --dealer-card-width: clamp(44px, 4.8vw, 54px);
+        --hole-card-width: 56px;
+    }
+
+    .dealer-area {
+        padding: 0.45rem 0.75rem 0.55rem;
+    }
+
+    .player-hand-area {
+        padding: 0.6rem 0.85rem 0.55rem;
+    }
+
+    .hole-cards.five-cards {
+        margin-bottom: 0.45rem;
+    }
+
+    .hand-indicators {
+        margin-bottom: 0.35rem;
+    }
+
+    .discard-help {
+        margin-bottom: 0.4rem;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .action-area {
+        padding: 0.55rem 0.85rem;
+    }
+
+    .action-header {
+        margin-bottom: 0.35rem;
+    }
+
+    .draw-round-banner {
+        margin-bottom: 0.35rem;
+    }
+
+    .btn-action {
+        min-height: 40px;
+    }
+
+    .my-hand-results {
+        margin-top: 0.4rem;
+        padding-top: 0.4rem;
+    }
+
+    .my-hand-row {
+        padding: 0.1rem 0;
+    }
+
+    .log-chat-container {
+        min-height: 110px;
+    }
+}
+
 /* ============ RESPONSIVE: IPHONE-FIRST ============ */
 
 @media (max-width: 900px) {
@@ -1181,6 +1304,12 @@ body {
         padding: 0.65rem;
     }
 
+    :root {
+        /* all 7 dealer cards fit one row on a 375px phone */
+        --dealer-card-width: clamp(34px, 10.5vw, 48px);
+        --mini-card-width: 23px;
+    }
+
     .dealer-cards {
         gap: 0.25rem;
     }
@@ -1230,12 +1359,6 @@ body {
     .player-box .status,
     .player-box .discard-count {
         font-size: 0.68rem;
-    }
-
-    .player-box .mini-card {
-        width: 23px;
-        height: 33px;
-        font-size: 0.6rem;
     }
 
     .action-area {
@@ -1310,9 +1433,8 @@ body {
 
 /* Extra-small phones (iPhone SE, etc.) */
 @media (max-width: 375px) {
-    .card-slot.hole {
-        width: clamp(52px, 16vw, 64px);
-        height: clamp(74px, 23vw, 92px);
+    :root {
+        --hole-card-width: clamp(48px, 15.5vw, 60px);
     }
 
     .btn-action {
@@ -1335,12 +1457,8 @@ body {
         padding: 0.5rem 0.6rem;
     }
 
-    .card-slot.hole {
-        width: 50px;
-        height: 72px;
-    }
-
     .hole-cards.five-cards {
+        --card-width: 50px;
         margin-bottom: 0.3rem;
     }
 

@@ -13,7 +13,8 @@
       content="Simulate Dodge hands for two to four players with live equity and bust odds, and train doubling-cube decisions against a solver-backed bot."
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20261003" />
+    <link rel="stylesheet" href="../../../shared/cards.css?v=20261003" />
+    <link rel="stylesheet" href="./styles.css?v=20261003b" />
   </head>
   <body>
     <header class="topbar">
@@ -22,37 +23,24 @@
         ><strong>DODGE</strong><span class="brand-separator"></span
         ><span class="brand-section">SIMULATOR</span></a
       >
+      <nav class="tabs" aria-label="Views">
+        <button class="active" data-tab="sim" aria-current="page">
+          <span class="desktop-only">Table simulator</span><span class="mobile-only">Table</span>
+        </button>
+        <button data-tab="trainer"><span class="desktop-only">Cube trainer</span><span class="mobile-only">Trainer</span></button>
+        <button data-tab="online"><span class="desktop-only">Play online</span><span class="mobile-only">Online</span></button>
+        <button data-tab="reports">Reports</button>
+      </nav>
       <div class="top-actions">
-        <a href="../" class="quiet-link">Hand reports</a
+        <a href="../" class="quiet-link desktop-only">Hand reports</a
         ><button id="rules-button" class="quiet" aria-label="Rules &amp; method">
           <span class="desktop-only">Rules &amp; method</span
           ><span class="mobile-only">Rules</span></button
-        ><a href="/" class="site-link">MS ↗</a>
+        ><a href="/" class="site-link desktop-only">MS ↗</a>
       </div>
     </header>
     <main>
-      <div class="page-heading">
-        <div>
-          <div class="breadcrumb">POKER / DODGE / SIMULATOR</div>
-          <h1>
-            <span class="desktop-only">Deal a table. Dodge the bust.</span
-            ><span class="mobile-only">Dodge simulator</span>
-          </h1>
-          <p>
-            Two to four players, one card each. Lowest card draws first, then
-            clockwise. Make a straight or better and you are out. Last one
-            drawing wins.
-          </p>
-        </div>
-      </div>
-      <nav class="tabs" aria-label="Views">
-        <button class="active" data-tab="sim" aria-current="page">
-          Table simulator
-        </button>
-        <button data-tab="trainer">Cube trainer</button>
-        <button data-tab="online">Play online</button>
-        <button data-tab="reports">Reports</button>
-      </nav>
+      <h1 class="sr-only">Dodge table simulator, cube trainer, online rooms and reports</h1>
 
       <!-- ========== SIMULATOR ========== -->
       <section id="view-sim" class="view">
@@ -112,6 +100,8 @@
           <p id="spot-error" class="error-text" hidden></p>
         </div>
 
+        <div class="split" id="sim-split">
+        <div class="split-main">
         <div class="summary" id="summary">
           <div class="stat">
             <span class="stat-label">Status</span>
@@ -136,6 +126,9 @@
           </div>
         </div>
 
+        <div class="seats" id="seats"></div>
+        </div>
+        <aside class="split-side">
         <div id="cube-panel" class="cube-panel" hidden>
           <div class="cube-head">
             <div class="cube-face" id="cube-face">
@@ -156,8 +149,6 @@
           </div>
         </div>
 
-        <div class="seats" id="seats"></div>
-
         <section class="deck-panel">
           <div class="deck-head">
             <h2>Deck</h2>
@@ -165,6 +156,8 @@
           </div>
           <div class="deck-grid" id="deck-grid"></div>
         </section>
+        </aside>
+        </div>
       </section>
 
       <!-- ========== TRAINER ========== -->
@@ -294,6 +287,13 @@
             <div class="stat"><span class="stat-label">Deck runs out</span><span class="stat-value" id="on-deckout">—</span><span class="stat-note">survivors split</span></div>
             <div class="stat"><span class="stat-label">Games</span><span class="stat-value" id="on-games">0</span></div>
           </div>
+          <div class="split">
+          <div class="split-main">
+          <div class="prompt" id="on-prompt"></div>
+          <div class="action-row" id="on-actions"></div>
+          <div class="seats" id="on-seats"></div>
+          </div>
+          <aside class="split-side">
           <div id="on-cube-panel" class="cube-panel" hidden>
             <div class="cube-head">
               <div class="cube-face">
@@ -307,13 +307,12 @@
             </div>
             <div class="cube-table-wrap"><table class="cube-table" id="on-cube-table"></table></div>
           </div>
-          <div class="prompt" id="on-prompt"></div>
-          <div class="action-row" id="on-actions"></div>
-          <div class="seats" id="on-seats"></div>
           <section class="analysis">
             <h2>Log</h2>
             <ol class="log" id="on-log"></ol>
           </section>
+          </aside>
+          </div>
         </div>
       </section>
 
@@ -404,8 +403,9 @@
       </div>
     </dialog>
 
+    <script src="../../../shared/cards.js?v=20261003"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="../../../shared/peer-room.js?v=20260908a"></script>
-    <script type="module" src="./app.js?v=20261003"></script>
+    <script type="module" src="./app.js?v=20261003b"></script>
   </body>
 </html>

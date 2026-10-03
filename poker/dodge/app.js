@@ -1,7 +1,5 @@
 import {
   RANKS,
-  SUITS,
-  SYMBOLS,
   CATEGORIES,
   COLORS,
   PAIRINGS,
@@ -26,13 +24,16 @@ import {
   lineChart,
   outcomes,
   legend,
-} from "./charts.mjs?v=mobile-20260919";
+} from "./charts.mjs?v=20261003";
 
+const PlayingCards = window.PlayingCards;
 const $ = (id) => document.getElementById(id);
 const count = (n) => n.toLocaleString("en-US");
 const compact = (n) =>
   n >= 1e9 ? `${num(n / 1e9, 2)}B` : `${num(n / 1e6, 1)}M`;
 const phoneLayout = window.matchMedia("(max-width: 700px)");
+// Above this width the explorer keeps the hand inspector and overview charts in a scrolling side column.
+const sidebarLayout = window.matchMedia("(min-width: 851px)");
 const state = {
   rows: [],
   filtered: [],
@@ -205,14 +206,38 @@ const presets = {
 };
 state.columns = [...presets.core];
 
-function chartOptions() {
-  return phoneLayout.matches
-    ? {
-        compact: true,
-        width: Math.max(260, Math.min(620, window.innerWidth - 48)),
-        height: 230,
-      }
-    : {};
+// Chart viewBox sizes follow the chart container's width (so labels keep their
+// font size) and the viewport height (so report panels fit the app shell).
+function chartOptions(id, { tall = false } = {}) {
+  const el = id ? $(id) : null,
+    inner = el && el.clientWidth ? el.clientWidth - 24 : 0;
+  if (phoneLayout.matches)
+    return {
+      compact: true,
+      width: Math.max(260, Math.min(620, inner || window.innerWidth - 48)),
+      height: 230,
+    };
+  const share = tall ? 0.3 : 0.25,
+    max = tall ? 255 : 215;
+  return {
+    width: Math.max(320, inner || 650),
+    height: Math.round(
+      Math.min(max, Math.max(150, window.innerHeight * share)),
+    ),
+  };
+}
+// The explorer side column is narrow: a small histogram with every draw labelled.
+function overviewOptions() {
+  if (phoneLayout.matches) return chartOptions("overview-hist");
+  if (!sidebarLayout.matches) return chartOptions("overview-hist");
+  const inner = $("overview-hist").clientWidth - 24;
+  return {
+    small: true,
+    width: Math.max(220, inner || 270),
+    height: 160,
+    every: 1,
+    axis: true,
+  };
 }
 function setFiltersOpen(open) {
   document
@@ -231,14 +256,31 @@ function renderFilterCount() {
   $("filter-apply").textContent =
     `Show ${count(state.filtered.length)} matching hands`;
 }
+// Phones show the hand inspector in a bottom sheet, the pinned comparison and
+// overview charts at the top of the Reports tab, and the export button in the
+// table toolbar; wider layouts keep them in the explorer side column.
 function syncResponsiveLayout() {
   const phone = phoneLayout.matches;
-  const detail = $("hand-detail");
-  const container = phone
-    ? $("hand-dialog-content")
-    : document.querySelector(".explorer-workspace");
+  const detail = $("hand-detail"),
+    side = document.querySelector(".explorer-side"),
+    exportButton = $("export-button");
   if (!phone && $("hand-dialog").open) $("hand-dialog").close();
-  if (detail.parentElement !== container) container.append(detail);
+  const detailHome = phone ? $("hand-dialog-content") : side;
+  if (detail.parentElement !== detailHome) detailHome.prepend(detail);
+  const chartsHome = phone ? document.querySelector(".report-grid") : side;
+  const movable = [
+    $("comparison-panel"),
+    document.querySelector(".explorer-charts"),
+  ];
+  if (movable.some((el) => el.parentElement !== chartsHome)) {
+    if (phone) chartsHome.prepend(...movable);
+    else chartsHome.append(...movable);
+  }
+  const exportHome = phone
+    ? document.querySelector(".table-options")
+    : document.querySelector(".page-heading");
+  if (exportButton.parentElement !== exportHome)
+    exportHome.append(exportButton);
   if (!state.columnsChosen) {
     $("column-preset").value = phone ? "quick" : "core";
     state.columns = [...presets[$("column-preset").value]];
@@ -256,8 +298,10 @@ function showHandReport() {
   dialog.querySelector("[data-close]").focus({ preventScroll: true });
 }
 
+// Card faces come from the shared component (shared/cards.js); the page only
+// sets --card-width per context on the .cards wrapper.
 function card(c) {
-  return `<span class="playing-card ${SUITS[c % 4]}" aria-label="${cardName(c)}"><span class="suit" aria-hidden="true">${SYMBOLS[c % 4]}</span><span class="rank" aria-hidden="true">${RANKS[Math.floor(c / 4)]}</span></span>`;
+  return PlayingCards.html(cardName(c));
 }
 function cards(values, large = false) {
   return `<span class="cards${large ? " large" : ""}" aria-label="${handName(values)}">${values.map(card).join("")}</span>`;
@@ -329,6 +373,7 @@ function renderSummary() {
   const items = [
     [
       "Mean draws to bust",
+      "Mean draws",
       s ? num(s.mean, 3) : "—",
       "cards",
       s
@@ -337,6 +382,7 @@ function renderSummary() {
     ],
     [
       "Bust on the next draw",
+      "Bust next",
       s ? pct(s.firstBust, 2) : "—",
       "",
       s
@@ -345,12 +391,14 @@ function renderSummary() {
     ],
     [
       "Survive five draws",
+      "Survive 5",
       s ? pct(s.survive5, 2) : "—",
       "",
       s ? "Finish 5 draws safely · estimated P(T > 5)" : "Monte Carlo estimate",
     ],
     [
       "Middle 80% of runouts",
+      "Middle 80%",
       s ? `${s.p10}–${s.p90}` : "—",
       "draws",
       s
@@ -360,25 +408,29 @@ function renderSummary() {
   ];
   $("summary").innerHTML = items
     .map(
-      ([label, value, unit, caption]) =>
-        `<div class="summary-item" title="${esc(caption)}"><p class="metric-label">${label}</p><p class="metric-value">${value}<small>${unit}</small></p><p class="metric-caption">${caption}</p></div>`,
+      ([label, shortLabel, value, unit, caption]) =>
+        `<div class="summary-item" title="${esc(caption)}"><p class="metric-label"><span class="desktop-only">${label}</span><span class="mobile-only">${shortLabel}</span></p><p class="metric-value">${value}<small>${unit}</small></p><p class="metric-caption">${caption}</p></div>`,
     )
     .join("");
 }
+// Population overview (bust distribution and finishing ranks) for the filtered population.
+function renderOverview() {
+  $("overview-hist").innerHTML = histogram(state.stats, overviewOptions());
+  $("overview-outcomes").innerHTML = outcomes(state.stats);
+}
 function renderActive() {
   if (state.tab === "explorer") {
-    $("overview-hist").innerHTML = histogram(state.stats, chartOptions());
-    $("overview-outcomes").innerHTML = outcomes(state.stats);
+    renderOverview();
     renderTable();
     renderDetail();
     renderComparison();
-  } else if (state.tab === "reports") renderReports();
-  else renderLab();
+  } else if (state.tab === "reports") {
+    renderOverview();
+    renderComparison();
+    renderReports();
+  } else renderLab();
 }
 function changeTab(tab) {
-  const returnToTop =
-    phoneLayout.matches &&
-    document.querySelector(".tabs").getBoundingClientRect().top <= 1;
   state.tab = tab;
   for (const name of ["explorer", "reports", "lab"])
     $(`${name}-view`).hidden = name !== tab;
@@ -389,7 +441,6 @@ function changeTab(tab) {
     else b.removeAttribute("aria-current");
   });
   renderActive();
-  if (returnToTop) $(`${tab}-view`).scrollIntoView({ block: "start" });
 }
 function renderTable() {
   const cols = state.columns.map((key) =>
@@ -431,8 +482,8 @@ function renderTable() {
   if (!state.sorted.length)
     html = `<tr><td colspan="${cols.length + 1}" class="empty-cell">No matching hands. Try fewer filters or a rank pattern such as AKQJ.</td></tr>`;
   $("hand-table").querySelector("tbody").innerHTML = html;
-  $("page-status").textContent = state.sorted.length
-    ? `${count(start + 1)}–${count(Math.min(start + state.pageSize, state.sorted.length))} of ${count(state.sorted.length)} hands`
+  $("page-status").innerHTML = state.sorted.length
+    ? `${count(start + 1)}–${count(Math.min(start + state.pageSize, state.sorted.length))} of ${count(state.sorted.length)}<span class="desktop-only"> hands</span>`
     : "0 hands";
   $("page-total").textContent = `of ${count(pages)}`;
   $("page-number").value = state.page;
@@ -454,6 +505,10 @@ function selectHand(id, scroll = false) {
     if (scroll && phoneLayout.matches) showHandReport();
     else if (scroll)
       $("hand-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    else if (sidebarLayout.matches)
+      document
+        .querySelector(".explorer-side")
+        .scrollTo({ top: 0, behavior: "smooth" });
   }
   if (state.tab === "lab") renderLive();
 }
@@ -516,7 +571,7 @@ function renderReports() {
             dashed: true,
           },
         ],
-        chartOptions(),
+        chartOptions("survival-chart", { tall: true }),
       )
     : emptyChart();
   $("hazard-chart").innerHTML = s
@@ -529,7 +584,7 @@ function renderReports() {
           },
         ],
         {
-          ...chartOptions(),
+          ...chartOptions("hazard-chart", { tall: true }),
           start: 1,
           xLabel: phoneLayout.matches
             ? "Draw number, if reached"
@@ -540,7 +595,7 @@ function renderReports() {
   $("survival-chart").innerHTML +=
     '<div class="legend"><span><i class="swatch" style="background:#55d7b1"></i>Filtered population</span><span><i class="swatch" style="background:#6c7b88"></i>All hands (dashed)</span><span>Monte Carlo estimates</span></div>';
   $("joint-chart").innerHTML = histogram(s, {
-    ...chartOptions(),
+    ...chartOptions("joint-chart", { tall: true }),
     stacked: true,
   });
   $("joint-legend").innerHTML = legend();
@@ -738,7 +793,7 @@ function renderPayout() {
         label: "Chance of surviving target",
       },
     ],
-    { height: 210, ...chartOptions(), xLabel: "Target safe draws" },
+    { ...chartOptions("payout-chart"), xLabel: "Target safe draws" },
   );
   $("payout-table").innerHTML =
     `<table><thead><tr><th>Safe draws</th><th>Win chance</th><th>Fair return</th><th>At ${pct(edge, 1)} edge</th></tr></thead><tbody>${Array.from(
@@ -958,7 +1013,11 @@ function wireEvents() {
     if (e.target.closest("[data-use-lab]")) {
       changeTab("lab");
       $("hand-dialog").close();
-      $("lab-view").scrollIntoView({ block: "start", behavior: "smooth" });
+      // The lab view scrolls internally; on phones the draw lab sits below the payout panel.
+      $("lab-view").scrollTop = Math.max(
+        0,
+        document.querySelector(".live-panel").offsetTop - 8,
+      );
       return;
     }
     if (e.target.closest("[data-copy-hand]")) {
@@ -1098,10 +1157,17 @@ function wireEvents() {
     }
   });
   let resizeTimer;
-  let viewportWidth = window.innerWidth;
+  let viewportWidth = window.innerWidth,
+    viewportHeight = window.innerHeight;
   window.addEventListener("resize", () => {
-    if (viewportWidth === window.innerWidth) return;
+    // Chart heights follow the viewport, so height changes re-render too.
+    if (
+      viewportWidth === window.innerWidth &&
+      viewportHeight === window.innerHeight
+    )
+      return;
     viewportWidth = window.innerWidth;
+    viewportHeight = window.innerHeight;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       syncResponsiveLayout();
