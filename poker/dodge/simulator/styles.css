@@ -594,8 +594,6 @@ h1 {
   font-size: 12px;
 }
 .deck-grid {
-  display: grid;
-  grid-template-columns: repeat(13, minmax(0, 1fr));
   gap: 4px;
 }
 .deck-card {
@@ -707,61 +705,130 @@ h1 {
   gap: 8px;
   flex-wrap: wrap;
 }
-.cube-table-wrap {
-  overflow-x: auto;
+.cube-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
-.cube-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
+.opt-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--green-dark);
+  border: 1px solid #2f6b56;
 }
-.cube-table th,
-.cube-table td {
-  text-align: left;
-  padding: 7px 10px;
-  border-top: 1px solid var(--soft-line);
-  white-space: nowrap;
+.opt-verdict-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green);
+  font-weight: 700;
 }
-.cube-table th {
+.opt-verdict > b {
+  font-size: 14px;
+  color: var(--green);
+}
+.opt-verdict > .pts {
+  flex-basis: 100%;
+}
+.opt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.opt-section-title {
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--faint);
-  border-top: 0;
+  font-weight: 700;
+  padding-top: 4px;
 }
-.cube-table td.num {
-  text-align: right;
-}
-.cube-table th.num {
-  text-align: right;
-}
-.cube-table tr.best td {
-  color: var(--green);
-  font-weight: 650;
-}
-.cube-table tr.chosen td:first-child::after {
-  content: " · played";
-  color: var(--muted);
-  font-weight: 500;
-}
-.cube-table tr.section td {
-  color: var(--muted);
+.opt-summary {
   font-size: 11px;
-  padding-top: 12px;
-  border-top: 0;
-}
-.cube-table .delta {
-  color: var(--red);
-}
-.bot-decision {
-  border: 1px solid var(--soft-line);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-.bot-decision summary {
-  cursor: pointer;
   color: var(--muted);
+}
+.opt {
+  padding: 6px 8px 7px 10px;
+  border-left: 3px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel-raised);
+  min-width: 0;
+}
+.opt.best {
+  border-left-color: var(--green);
+  background: #1b2a25;
+}
+.opt.chosen:not(.best) {
+  border-left-color: var(--amber);
+}
+.opt-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.opt-label {
+  font-weight: 650;
+  font-size: 13px;
+}
+.opt.best .opt-label {
+  color: var(--green);
+}
+.opt-tag {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--text);
+}
+.opt-tag.best {
+  background: var(--green);
+  color: #0c241b;
+}
+.opt-value {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 13px;
+}
+.opt-bar {
+  position: relative;
+  height: 6px;
+  margin: 5px 0 4px;
+  border-radius: 3px;
+  background: var(--soft-line);
+  overflow: hidden;
+}
+.opt-bar::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--faint);
+}
+.opt-bar > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.opt-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.opt-meta.loss {
+  color: var(--red);
 }
 .verdict {
   font-size: 13px;
@@ -1075,10 +1142,9 @@ h1 {
 }
 .mini-table th,
 .mini-table td {
-  padding: 5px 8px;
+  padding: 5px 6px;
   border-top: 1px solid var(--soft-line);
   text-align: right;
-  white-space: nowrap;
 }
 .mini-table th:first-child,
 .mini-table td:first-child {
@@ -1118,7 +1184,7 @@ h1 {
   background: transparent;
 }
 .heatmap-wrap {
-  overflow-x: auto;
+  min-width: 0;
 }
 
 /* Dialog */
@@ -1271,7 +1337,17 @@ dialog::backdrop {
     flex: 1;
   }
   .heatmap {
-    min-width: 520px;
-    font-size: 9px;
+    gap: 1px;
+    font-size: 7px;
+  }
+  .heatmap > span {
+    border-radius: 2px;
+  }
+  .mini-table {
+    font-size: 11px;
+  }
+  .mini-table th,
+  .mini-table td {
+    padding: 4px 3px;
   }
 }

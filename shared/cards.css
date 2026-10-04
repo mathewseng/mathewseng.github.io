@@ -246,6 +246,23 @@ button.playing-card:focus-visible {
   flex-wrap: nowrap;
 }
 
+/* The whole deck as a matrix: suits down (♠ ♥ ♦ ♣), ranks across (A–2).
+ * Fill it in PlayingCards.deckMatrix() order; cards take the column width. */
+.deck-matrix {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.deck-matrix > * {
+  min-width: 0;
+}
+
+.deck-matrix .playing-card,
+.deck-matrix .empty-slot {
+  width: 100%;
+}
+
 /* Common sizes. Pages may set --card-width directly instead. */
 .cards-xs { --card-width: 26px; }
 .cards-sm { --card-width: 36px; }

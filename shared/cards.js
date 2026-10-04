@@ -142,6 +142,24 @@
     return cards.map((card) => html(card, options)).join("");
   }
 
+  // The deck laid out as a matrix: one row per suit (spades, hearts,
+  // diamonds, clubs) and one column per rank (A K Q J T 9 8 7 6 5 4 3 2),
+  // in row-major order. Every deck matrix on the site uses this order inside
+  // a `.deck-matrix` grid (13 columns).
+  const MATRIX_SUITS = ["s", "h", "d", "c"];
+  function deckMatrix() {
+    const out = [];
+    for (const suit of MATRIX_SUITS) for (const rank of RANKS_HIGH_TO_LOW) out.push(rank + suit);
+    return out;
+  }
+
+  // Row (0–3) and column (0–12) of a card in the deck matrix.
+  function matrixPosition(card) {
+    const info = normalize(card);
+    if (!info || !info.suit) return null;
+    return { row: MATRIX_SUITS.indexOf(info.suit), column: RANKS_HIGH_TO_LOW.indexOf(info.rank) };
+  }
+
   // A dashed empty slot the size of a card.
   function emptySlotHtml(options = {}) {
     const classes = ["empty-slot", options.className].filter(Boolean).join(" ");
@@ -169,6 +187,9 @@
     html,
     element,
     rowHtml,
+    MATRIX_SUITS,
+    deckMatrix,
+    matrixPosition,
     emptySlotHtml,
     emptySlot,
     escapeHtml,

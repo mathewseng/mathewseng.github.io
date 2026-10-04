@@ -116,46 +116,68 @@ function nextAlive(turn, alive) {
   while (!alive[cur]) cur = (cur + 1) % n;
   return cur;
 }
-function cubeRow(label, eq, { stake = 1, best = false, chosen = false, value = 1 } = {}) {
-  const row = el("tr", `${best ? "best" : ""}${chosen ? " chosen" : ""}`);
-  row.append(el("td", "", label));
-  const units = el("td", "num scaled", signed(eq));
-  units.style.setProperty("--scale", scaleColor(eqUnitsT(eq, stake)));
-  row.append(units);
-  const points = el("td", "num scaled", `${signed(eq * value, 2)} pts`);
+// One cube option: label, equity bar, points and the loss against the best option.
+function cubeOption(label, eq, { stake = 1, best = false, chosen = false, value = 1, bestEq = null, note = "" } = {}) {
+  const row = el("div", `opt${best ? " best" : ""}${chosen ? " chosen" : ""}`);
+  const head = el("div", "opt-head");
+  head.append(el("span", "opt-label", label));
+  if (best) head.append(el("span", "opt-tag best", "Best"));
+  if (chosen) head.append(el("span", "opt-tag", "Played"));
+  const points = el("span", "opt-value scaled", `${signed(eq * value, 2)} pts`);
   points.style.setProperty("--scale", scaleColor(eqUnitsT(eq, stake)));
-  row.append(points);
-  const win = el("td", "num scaled", pct(eqUnitsT(eq, stake)));
-  win.style.setProperty("--scale", scaleColor(eqUnitsT(eq, stake)));
-  row.append(win);
+  head.append(points);
+  row.append(head);
+  // Bar: -1 … +1 cube units mapped across the width, growing from the middle.
+  const bar = el("div", "opt-bar");
+  const fill = el("i");
+  const t = clamp01((eq / stake + 1) / 2);
+  fill.style.left = `${Math.min(50, t * 100)}%`;
+  fill.style.width = `${Math.abs(t * 100 - 50)}%`;
+  fill.style.background = scaleColor(eqUnitsT(eq, stake));
+  bar.append(fill);
+  row.append(bar);
+  const parts = [`${signed(eq)} cube units`, `${pct(eqUnitsT(eq, stake))} win-equivalent`];
+  if (bestEq != null && !best) {
+    const loss = (bestEq - eq) * value;
+    if (loss > 0.0005) parts.push(`−${loss.toFixed(2)} pts vs best`);
+  }
+  if (note) parts.push(note);
+  const meta = el("div", "opt-meta", parts.join(" · "));
+  if (bestEq != null && !best && (bestEq - eq) * value > 0.0005) meta.classList.add("loss");
+  row.append(meta);
   return row;
 }
-function cubeHeader() {
-  const row = el("tr");
-  ["Action", "Equity (cube units)", "Points", "Equivalent win %"].forEach((h, i) => row.append(el("th", i ? "num" : "", h)));
-  return row;
+function optionSection(title, summary) {
+  const sec = el("div", "opt-section");
+  sec.append(el("div", "opt-section-title", title));
+  if (summary) sec.append(el("div", "opt-summary", summary));
+  return sec;
 }
-function sectionRow(text) {
-  const row = el("tr", "section");
-  const cell = el("td", "", text);
-  cell.colSpan = 4;
-  row.append(cell);
-  return row;
-}
-// Full solver table for a position, from the on-turn player's view.
-function cubeAnalysisRows(table, a, { mover, responder, value, best, chosen, preview, canDouble }) {
-  table.append(cubeHeader());
-  table.append(sectionRow(`${mover} on turn · cubeless win chance ${pct(a.winProb)} · busts next draw ${pct(a.bustNext)} · ${a.ply}-ply`));
+// Full solver view for a position, from the on-turn player's side.
+function cubeAnalysisRows(box, a, { mover, responder, value, best, chosen, preview, canDouble }) {
+  box.classList.add("cube-options");
   const doubleBest = preview ? a.bestAction === "double" : best === "double";
   const noBest = preview ? a.bestAction === "noDouble" : best === "noDouble";
+  const respTake = a.responder.best === "take";
+  const bestLabel = !canDouble ? "Draw" : doubleBest ? (respTake ? "Double, opponent takes" : "Double, opponent passes") : "No double";
+  const verdict = el("div", "opt-verdict");
+  verdict.append(el("span", "opt-verdict-label", "Best play"));
+  verdict.append(el("b", "", bestLabel));
+  verdict.append(el("span", "pts", `${mover}: ${pct(a.winProb)} to win · ${pct(a.bustNext)} bust next draw · ${a.ply}-ply`));
+  box.append(verdict);
+  const moverSec = optionSection(`${mover} on turn`);
+  const bestEq = canDouble ? Math.max(a.noDouble, a.doubleValue) : a.noDouble;
   if (canDouble) {
-    table.append(cubeRow("No double", a.noDouble, { best: noBest, chosen: chosen === "noDouble", value }));
-    table.append(cubeRow("Double / take", a.doubleTake, { stake: 2, best: doubleBest && a.responder.best === "take", chosen: chosen === "double" && a.responder.best === "take", value }));
-    table.append(cubeRow("Double / pass", a.doublePass, { best: doubleBest && a.responder.best === "pass", chosen: chosen === "double" && a.responder.best === "pass", value }));
-  } else table.append(cubeRow("Draw (cannot double)", a.noDouble, { best: true, value }));
-  table.append(sectionRow(`${responder} if doubled to ${value * 2}`));
-  table.append(cubeRow("Take", a.responder.take, { stake: 2, best: a.responder.best === "take", chosen: chosen === "take", value }));
-  table.append(cubeRow("Pass", a.responder.pass, { best: a.responder.best === "pass", chosen: chosen === "pass", value }));
+    moverSec.append(cubeOption("No double", a.noDouble, { best: noBest, chosen: chosen === "noDouble", value, bestEq }));
+    moverSec.append(cubeOption("Double · take", a.doubleTake, { stake: 2, best: doubleBest && respTake, chosen: chosen === "double" && respTake, value, bestEq: respTake ? bestEq : null, note: respTake ? "" : "not reached: opponent passes" }));
+    moverSec.append(cubeOption("Double · pass", a.doublePass, { best: doubleBest && !respTake, chosen: chosen === "double" && !respTake, value, bestEq: respTake ? null : bestEq, note: respTake ? "not reached: opponent takes" : "" }));
+  } else moverSec.append(cubeOption("Draw (cannot double)", a.noDouble, { best: true, value }));
+  box.append(moverSec);
+  const respSec = optionSection(`${responder} if doubled to ${value * 2}`, `Correct answer: ${respTake ? "take" : "pass"}`);
+  const respBest = Math.max(a.responder.take, a.responder.pass);
+  respSec.append(cubeOption("Take", a.responder.take, { stake: 2, best: respTake, chosen: chosen === "take", value, bestEq: respBest }));
+  respSec.append(cubeOption("Pass", a.responder.pass, { best: !respTake, chosen: chosen === "pass", value, bestEq: respBest }));
+  box.append(respSec);
 }
 
 /* ====================================================================
@@ -507,8 +529,8 @@ function renderSim() {
   const dangerFor = !status.over && sim.editing == null && alive[sim.turn] ? sim.hands[sim.turn] : null;
   const children = new Map();
   if (cubeOn && sim.cubeAnalysis?.children && sim.editing == null && !status.over) for (const ch of sim.cubeAnalysis.children) children.set(ch.card, ch);
-  for (let r = 0; r < 13; r++)
-    for (let s = 0; s < 4; s++) {
+  for (let s = 0; s < 4; s++)
+    for (let r = 0; r < 13; r++) {
       const c = r * 4 + s;
       const owner = sim.hands.findIndex((h) => h.includes(c));
       const b = el("button", "deck-card");
@@ -556,6 +578,7 @@ function renderCubePanel(status, alive) {
   actions.replaceChildren();
   const table = $("cube-table");
   table.replaceChildren();
+  table.classList.add("cube-options");
   if (status.over || !alive[0] || !alive[1]) {
     $("cube-title").textContent = "Game over";
     $("cube-subtitle").textContent = status.text;
@@ -578,9 +601,7 @@ function renderCubePanel(status, alive) {
   }
   const a = sim.cubeAnalysis;
   if (!a) {
-    const row = el("tr");
-    row.append(el("td", "muted", "Solving…"));
-    table.append(row);
+    table.append(el("div", "muted", "Solving…"));
     return;
   }
   cubeAnalysisRows(table, a, { mover: seatLabel(seat), responder: seatLabel(other), value: sim.cube.value, preview: true, canDouble: a.canDouble });
@@ -1106,11 +1127,9 @@ function renderTrainerAnalysis(shown, snap, botShown = null) {
     const label = botShown.kind === "double" ? (botShown.chosen === "double" ? `doubled to ${botShown.value * 2}` : "did not double") : botShown.chosen === "take" ? "took" : "passed";
     summary.textContent = `Bot's last decision: ${label} (${botShown.error > 0.0005 ? `error ${(botShown.error * botShown.value).toFixed(3)} pts` : "correct"}, win chance ${pct(a.winProb)})`;
     details.append(summary);
-    const table = el("table", "cube-table");
+    const table = el("div", "cube-options");
     cubeAnalysisRows(table, a, { mover: trName(botShown.seat), responder: trName(1 - botShown.seat), value: botShown.value, best: botShown.best, chosen: botShown.chosen, canDouble: a.canDouble });
-    const wrap = el("div", "cube-table-wrap");
-    wrap.append(table);
-    details.append(wrap);
+    details.append(table);
     body.append(details);
   }
   if (!shown && snap) {
@@ -1130,12 +1149,10 @@ function renderTrainerAnalysis(shown, snap, botShown = null) {
     trAnalysisFor(snap.hands, seat, snap.cube).then((a) => {
       if (tr.review == null || JSON.stringify([tr.timeline[tr.review]?.hands, tr.timeline[tr.review]?.turn, tr.timeline[tr.review]?.cube]) !== key) return;
       body.replaceChildren();
-      const table = el("table", "cube-table");
+      const table = el("div", "cube-options");
       cubeAnalysisRows(table, a, { mover: trName(seat), responder: trName(1 - seat), value: snap.cube.value, preview: true, canDouble: a.canDouble });
       body.append(el("p", "muted", `${trName(seat)} to act with the cube at ${snap.cube.value}. Equities from ${seat === YOU ? "your" : "the bot's"} side.`));
-      const wrap = el("div", "cube-table-wrap");
-      wrap.append(table);
-      body.append(wrap);
+      body.append(table);
     });
     return;
   }
@@ -1164,12 +1181,10 @@ function renderTrainerAnalysis(shown, snap, botShown = null) {
     hands.append(group);
   });
   body.append(hands);
-  const table = el("table", "cube-table");
+  const table = el("div", "cube-options");
   cubeAnalysisRows(table, a, { mover, responder, value, best, chosen, preview, canDouble: a.canDouble });
   body.append(el("p", "muted", `Equities from ${mover === "You" ? "your" : "the bot's"} side in the first block and from ${responder === "You" ? "your" : "the bot's"} side in the response block.`));
-  const wrap = el("div", "cube-table-wrap");
-  wrap.append(table);
-  body.append(wrap);
+  body.append(table);
   if (!preview && chosen != null) {
     const label = kind === "double" ? (best === "double" ? (a.responder.best === "take" ? "Double / take" : "Double / pass") : "No double") : best === "take" ? "Take" : "Pass";
     const who = actor === YOU ? "You" : "Bot";
@@ -1525,11 +1540,7 @@ function renderOnline() {
       $("on-cube-title").textContent = g.cube.offered ? `${names[g.turn]} doubles to ${g.cube.value * 2}` : `${names[g.turn]} to act`;
       $("on-cube-subtitle").textContent = "Solver view of the position, visible to everyone at the table.";
       if (online.analysis) cubeAnalysisRows(table, online.analysis, { mover: names[g.turn], responder: names[1 - g.turn], value: g.cube.value, preview: true, canDouble: online.analysis.canDouble });
-      else {
-        const row = el("tr");
-        row.append(el("td", "muted", "Solving…"));
-        table.append(row);
-      }
+      else table.append(el("div", "muted", "Solving…"));
     }
   }
 }
@@ -1877,7 +1888,7 @@ function renderTableReport(root, r) {
   const heat = card("2 players · first drawer's equity by both starting ranks", "Rows: the first drawer's card (the lower one). Columns: the opponent's card. Cells are the first drawer's win chance.", { wide: true });
   const wrap = el("div", "heatmap-wrap");
   const map = el("div", "heatmap");
-  map.style.gridTemplateColumns = `repeat(14, minmax(28px, 1fr))`;
+  map.style.gridTemplateColumns = `repeat(14, minmax(0, 1fr))`;
   map.append(el("span", "head", ""));
   ranks.forEach((rank) => map.append(el("span", "head", rank === "T" ? "10" : rank)));
   for (let a = 0; a < 13; a++) {

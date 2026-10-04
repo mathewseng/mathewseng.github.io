@@ -3798,12 +3798,16 @@
       const v = view;
       const zone = v.zones[zoneId];
       if (!zone) return head("Browse") + `<div class="dlg-body"><p class="hint">That group is gone.</p></div><div class="dlg-foot"><button class="btn" value="cancel">Close</button></div>`;
-      const cards = zone.cards.map((id, index) => ({ card: v.cards[id], index })).filter((entry) => entry.card).reverse();
+      let cards = zone.cards.map((id, index) => ({ card: v.cards[id], index })).filter((entry) => entry.card).reverse();
+      // A set of ordinary playing cards is always browsed as the deck matrix: suits down, ranks across.
+      const MATRIX_SUIT = { s: 0, h: 1, d: 2, c: 3 };
+      const matrix = cards.length > 1 && cards.every(({ card }) => !card.custom && card.rank !== "JK" && card.rank in E.RANK_ORDER && card.suit in MATRIX_SUIT);
+      if (matrix) cards = cards.slice().sort((a, b) => MATRIX_SUIT[a.card.suit] - MATRIX_SUIT[b.card.suit] || E.RANK_ORDER[b.card.rank] - E.RANK_ORDER[a.card.rank]);
       const hand = myHandZone();
       return head(`${zone.name} · ${zone.cards.length} card${zone.cards.length === 1 ? "" : "s"}`) + `<div class="dlg-body">
-          <p class="hint">${zone.layout === "stack" ? "Top of the pile first. " : "Last card first. "}Tap cards to pick them, then move them anywhere.${cards.some((entry) => !entry.card.visible) ? " Face-down cards stay hidden unless you're in X-ray view." : ""}</p>
+          <p class="hint">${matrix ? "Laid out by suit and rank. " : zone.layout === "stack" ? "Top of the pile first. " : "Last card first. "}Tap cards to pick them, then move them anywhere.${cards.some((entry) => !entry.card.visible) ? " Face-down cards stay hidden unless you're in X-ray view." : ""}</p>
           ${cards.filter((entry) => entry.card.visible).length > 8 ? `<input type="search" class="browse-search" placeholder="Find cards: rank, suit or name" value="${esc(browseQuery)}">` : ""}
-          <div class="browse-grid">${cards.map(({ card, index }) => `<button type="button" class="browse-card${picked.has(card.id) ? " on" : ""}" data-pick="${esc(card.id)}" data-find="${esc(card.visible ? (card.custom ? `${card.label} ${card.suit} ${card.rank}` : `${E.cardName(card)} ${RANK_SHOW(card.rank)} ${E.SUIT_INFO[card.suit]?.name || ""}`).toLowerCase() : "hidden")}">${cardHTML(card, zone, index)}</button>`).join("") || `<p class="muted">Empty.</p>`}</div>
+          <div class="browse-grid${matrix ? " deck-matrix" : ""}">${cards.map(({ card, index }) => `<button type="button" class="browse-card${picked.has(card.id) ? " on" : ""}" data-pick="${esc(card.id)}" data-find="${esc(card.visible ? (card.custom ? `${card.label} ${card.suit} ${card.rank}` : `${E.cardName(card)} ${RANK_SHOW(card.rank)} ${E.SUIT_INFO[card.suit]?.name || ""}`).toLowerCase() : "hidden")}">${cardHTML(card, zone, index)}</button>`).join("") || `<p class="muted">Empty.</p>`}</div>
         </div>
         <div class="dlg-foot">
           <span class="grow small muted nowrap">${picked.size} picked</span>

@@ -48,4 +48,11 @@ test("escapes attribute values and joins rows", () => {
   assert.equal(Cards.emptySlotHtml(), '<span class="empty-slot" aria-hidden="true"></span>');
   assert.ok(Cards.emptySlotHtml({ className: "big", style: "--card-width: 40px" }).includes('class="empty-slot big"'));
   assert.equal(Cards.RANKS_HIGH_TO_LOW.join(""), "AKQJT98765432");
+  const matrix = Cards.deckMatrix();
+  assert.equal(matrix.length, 52);
+  assert.equal(matrix.slice(0, 13).join(" "), "As Ks Qs Js Ts 9s 8s 7s 6s 5s 4s 3s 2s");
+  assert.equal(matrix[13], "Ah");
+  assert.equal(matrix[51], "2c");
+  assert.deepEqual(Cards.matrixPosition("Td"), { row: 2, column: 4 });
+  assert.equal(Cards.matrixPosition("JK"), null);
 });

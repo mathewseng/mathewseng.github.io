@@ -582,16 +582,11 @@
     cell.className = "matrix-cell";
     cell.dataset.suit = card.suit;
 
-    const rank = document.createElement("span");
-    rank.className = "matrix-rank";
-    rank.textContent = card.isJoker ? `J${card.jokerIndex}` : card.rank;
-    cell.append(rank);
-
-    if (!card.isJoker) {
-      const suitDot = document.createElement("span");
-      suitDot.className = "suit-dot";
-      cell.append(suitDot);
-    }
+    // The cell is a wrapper around a shared playing card; states live on the wrapper.
+    const face = card.isJoker
+      ? PlayingCards.element("JK", { corner: `J${card.jokerIndex}` })
+      : PlayingCards.element(`${card.rank}${card.suit.toLowerCase()}`);
+    cell.append(face);
 
     const count = document.createElement("span");
     count.className = "count";
