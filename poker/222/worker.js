@@ -11,11 +11,11 @@ self.onmessage = async (event) => {
     let result;
     let transfer = [];
     if (type === "stats") {
-      const { hands, board, exact, samples, seed, partIndex, partCount } = event.data;
-      result = runoutStats(hands, board, { exact, samples, rng: makeRng(seed), partIndex, partCount });
+      const { hands, board, exact, samples, seed, partIndex, partCount, scoring } = event.data;
+      result = runoutStats(hands, board, { exact, samples, rng: makeRng(seed), partIndex, partCount, scoring });
     } else if (type === "range") {
-      const { hero, board, opponents, samples, seed } = event.data;
-      result = rangeStats(hero, board, { opponents, samples, rng: makeRng(seed) });
+      const { hero, board, opponents, samples, seed, scoring } = event.data;
+      result = rangeStats(hero, board, { opponents, samples, rng: makeRng(seed), scoring });
     } else if (type === "solve") {
       result = await solve({ ...event.data.spec, onProgress: (t, total) => self.postMessage({ id, progress: t / total }) });
     } else if (type === "solve-init") {

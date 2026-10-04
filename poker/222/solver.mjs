@@ -19,7 +19,7 @@
 // reported mix is consistent with the reported equities. Equities are in
 // points at the cube level of the decision, from the chooser's view, against
 // the opponent's equilibrium range.
-import { Board, splitHand, pairNet, FULL_DECK, variantOf, actorOn, holderAfter, STREETS, makeRng, binomial } from "./engine.mjs";
+import { Board, splitHand, pairNet, FULL_DECK, variantOf, scoringOf, actorOn, holderAfter, STREETS, makeRng, binomial } from "./engine.mjs";
 import { DROP_UNIT, MAX_CUBE, chainDepth, levelAfter, optionLabel } from "./cube-rules.mjs";
 
 export const SOLVER_PRECISION = {
@@ -488,7 +488,7 @@ class Subgame {
         sum = 0;
       for (let r = 0; r < this.K; r++) {
         if (SB.valid[i * this.K + r] && SO.valid[j * this.K + r]) {
-          const x = pairNet(SB.values, SO.values, (i * this.K + r) * 3, (j * this.K + r) * 3);
+          const x = pairNet(SB.values, SO.values, (i * this.K + r) * 3, (j * this.K + r) * 3, model.scoring);
           this.X[l * this.K + r] = x;
           sum += x;
           c++;
@@ -700,8 +700,8 @@ const stateKey = (st) => `${st.base}:${st.owner == null ? "c" : st.owner}`;
 // drives it one pass at a time with the entry reach of every hand.
 export class SubgameHost {
   constructor(modelSpec, subgameSpecs) {
-    const { hands, weights, variant, nMult, entryOutcomes, entryEvents, board = [], dropUnit = DROP_UNIT } = modelSpec;
-    this.model = buildModel(hands, weights, variantOf(variant), nMult, board, dropUnit);
+    const { hands, weights, variant, nMult, entryOutcomes, entryEvents, board = [], dropUnit = DROP_UNIT, scoring = "classic" } = modelSpec;
+    this.model = buildModel(hands, weights, variantOf(variant), nMult, board, dropUnit, scoringOf(scoring));
     this.entryOutcomes = entryOutcomes;
     this.entryEvents = entryEvents;
     this.subgames = subgameSpecs.map((g) => new Subgame(this.model, { flop: g.flop, leaves: g.leaves, entryEvents, entryStates: entryOutcomes.map((e) => ({ ...e })), hasFlop: g.hasFlop, hasRiver: g.hasRiver }));
@@ -788,7 +788,7 @@ export class SubgameHost {
     return { agg, subgames: this.subgames.length };
   }
 }
-function buildModel(hands, weights, variant, nMult, board = [], dropUnit = DROP_UNIT) {
+function buildModel(hands, weights, variant, nMult, board = [], dropUnit = DROP_UNIT, scoring = scoringOf("classic")) {
   const masks = hands.map((hs) => hs.map(maskPair));
   const n = [hands[0].length, hands[1].length];
   const wB = weights?.btn ?? null,
@@ -814,7 +814,7 @@ function buildModel(hands, weights, variant, nMult, board = [], dropUnit = DROP_
   let wsum = 0;
   for (let q = 0; q < P; q++) wsum += pw[q];
   for (let q = 0; q < P; q++) pw[q] /= wsum || 1;
-  return { hands, masks, n, pairs: { I: Int32Array.from(I), J: Int32Array.from(J), P, pw }, variant, nMult, dropUnit };
+  return { hands, masks, n, pairs: { I: Int32Array.from(I), J: Int32Array.from(J), P, pw }, variant, nMult, dropUnit, scoring };
 }
 // In-process executor: the same interface the worker pool exposes.
 export function localExecutor() {
@@ -866,14 +866,15 @@ export async function solve(spec, executors = null) {
   const hasFlop = streetsLeft.includes("flop") && entryStreet === "preflop";
   const hasRiver = streetsLeft.includes("river") && entryStreet !== "river";
   const nMult = spec.multipliers ?? p.multipliers;
-  const dropUnit = spec.dropUnit ?? DROP_UNIT;
+  const scoring = scoringOf(spec.scoring);
+  const dropUnit = spec.dropUnit ?? scoring.defaultDrop;
   const deck = FULL_DECK.filter((c) => !board.includes(c));
   const handCount = spec.hands ?? p.hands[entryStreet];
   const btnHands = spec.weights?.btnHands ?? sampleHands(deck, handCount, rng, spec.btnHand);
   const oppHands = spec.weights?.oppHands ?? sampleHands(deck, handCount, rng, spec.oppHand);
   const hands = [btnHands, oppHands];
   const weights = spec.weights ? { btn: spec.weights.btn, opp: spec.weights.opp } : null;
-  const model = buildModel(hands, weights, variant, nMult, board, dropUnit);
+  const model = buildModel(hands, weights, variant, nMult, board, dropUnit, scoring);
   const { n, pairs } = model;
   const { I, J, P, pw } = pairs;
   const entryOutcomes = (entryState.actorSide != null ? outcomesOf(entryState, nMult) : [entryState]).map((o) => ({ base: o.base, owner: o.owner }));
@@ -904,11 +905,11 @@ export async function solve(spec, executors = null) {
   } else {
     const [SB, SO] = [0, 1].map((side) => splitTable(hands[side], model.masks[side], board, [[]]));
     terminalX = new Float64Array(P);
-    for (let q = 0; q < P; q++) terminalX[q] = pairNet(SB.values, SO.values, I[q] * 3, J[q] * 3);
+    for (let q = 0; q < P; q++) terminalX[q] = pairNet(SB.values, SO.values, I[q] * 3, J[q] * 3, scoring);
   }
   // Executors: the subgames are distributed round-robin.
   const execs = subgameSpecs.length ? (executors && executors.length ? executors.slice(0, Math.min(executors.length, subgameSpecs.length)) : [localExecutor()]) : [];
-  const modelSpec = { hands, weights, variant: variant.id, nMult, entryOutcomes, entryEvents, board, dropUnit };
+  const modelSpec = { hands, weights, variant: variant.id, nMult, entryOutcomes, entryEvents, board, dropUnit, scoring: scoring.id };
   const execSubgames = execs.map(() => []);
   subgameSpecs.forEach((g, i) => execSubgames[i % execs.length].push(g));
   await Promise.all(execs.map((ex, i) => ex.init(modelSpec, execSubgames[i])));
@@ -1046,6 +1047,7 @@ export async function solve(spec, executors = null) {
     sampled: { pairs: P, flops: hasFlop ? subgameCount : 0, runouts: K2, multipliers: nMult },
     cube: { level: entryState.base, owner: entryState.owner },
     dropUnit,
+    scoring: scoring.id,
   };
   if (entryStage) {
     const st = entryState;

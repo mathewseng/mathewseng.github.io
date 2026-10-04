@@ -6,8 +6,8 @@
 // MAX_CUBE. Dropping the k-th raise costs DROP_UNIT times the cube level
 // before that raise. When a raise is taken the cube goes to the player who
 // was first doubled in the chain (as in backgammon, a beaver keeps the cube).
-export const DROP_UNIT = 6; // default drop cost per unit of the cube
-export const DROP_UNITS = [5, 6, 7, 8, 9, 10]; // drop costs the pages and reports support
+export const DROP_UNIT = 6; // default drop cost per unit of the cube (classic scoring)
+export const DROP_UNITS = Array.from({ length: 12 }, (_, i) => i + 5); // classic scoring: 5 to 16
 export const MAX_CUBE = 64;
 const RERAISE_NAMES = ["Beaver", "Raccoon", "Rebeaver", "Reraccoon", "Rebeaver", "Reraccoon", "Rebeaver"];
 

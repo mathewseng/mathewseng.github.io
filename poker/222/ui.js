@@ -3,8 +3,8 @@ import {
   RANKS,
   SUITS,
   SYMBOLS,
-  POINTS,
-  SCOOP_BONUS,
+  SCORINGS,
+  scoringOf,
   MAX_NET,
   CATEGORIES,
   cardName,
@@ -107,6 +107,9 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
   const flopOut = board.length >= 3;
   const maxHand = POINTS.map((p) => p * (n - 1));
   const rangeMode = stats?.mode === "range";
+  const scoring = scoringOf(stats?.scoring ?? SCORINGS.classic);
+  const POINTS = scoring.points,
+    SCOOP_BONUS = scoring.scoop;
   hands.forEach((hand, i) => {
     const seat = el("section", `seat${highlight === i ? " me" : ""}${pending ? " pending" : ""}`);
     const head = el("div", "seat-head");
@@ -127,7 +130,7 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
     const p = stats?.players?.[i];
     const total = el("div", "seat-total");
     const evNode = el("b", "", p ? signed(p.ev) : "…");
-    if (p) paint(evNode, evColor(p.ev, 10 * (n - 1) * 0.5));
+    if (p) paint(evNode, evColor(p.ev, scoring.maxNet * (n - 1) * 0.5));
     total.append(el("span", "stat-label", "EV"), evNode, el("span", "stat-note", "pts"));
     head.append(total);
     seat.append(head);
@@ -187,7 +190,7 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
       metric("Scoop", p ? pct(p.scoop) : "…", { heat: p ? pctColor(p.scoop, 0, 0.5) : null }),
     );
     if (n === 2 && p?.hist) {
-      const scooped = p.hist[0];
+      const scooped = p.hist[MAX_NET - scoring.maxNet];
       foot.append(metric("Get scooped", pct(scooped), { heat: pctColor(1 - scooped, 0.5, 1) }));
     }
     seat.append(foot);

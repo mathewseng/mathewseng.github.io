@@ -56,6 +56,10 @@
               <option value="exact">Exact / deep</option>
             </select>
           </div>
+          <div class="control">
+            <span class="label">Scoring</span>
+            <select id="sim-scoring"></select>
+          </div>
           <label class="control check" title="Show perfect-information numbers even while a cube action remains">
             <input type="checkbox" id="sim-tabled" />
             <span>Table hands</span>
@@ -126,6 +130,7 @@
             </div>
             <div id="spot-hands"></div>
             <label class="field"><span class="label">Board</span><input id="spot-board" placeholder="e.g. Ah 7d 2c" autocomplete="off" spellcheck="false" /></label>
+            <label class="field"><span class="label">Scoring</span><select id="spot-scoring"></select></label>
             <div class="spot-cube" id="spot-cube-controls">
               <label class="field"><span class="label">Variant</span><select id="spot-variant"></select></label>
               <label class="field"><span class="label">Button</span><select id="spot-btn"><option value="0">Seat 1</option><option value="1">Seat 2</option></select></label>
@@ -183,6 +188,10 @@
           <div class="control">
             <span class="label">Variant</span>
             <select id="tr-variant"></select>
+          </div>
+          <div class="control">
+            <span class="label">Scoring</span>
+            <select id="tr-scoring"></select>
           </div>
           <div class="control">
             <span class="label">Drop cost</span>
@@ -284,6 +293,7 @@
               <div id="on-settings" class="settings" hidden>
                 <label class="control check"><input type="checkbox" id="on-cube" checked /><span>Doubling cube (2 players)</span></label>
                 <label class="control"><span class="label">Variant</span><select id="on-variant"></select></label>
+                <label class="control"><span class="label">Scoring</span><select id="on-scoring"></select></label>
                 <label class="control"><span class="label">Drop cost</span><select id="on-drop"></select></label>
                 <label class="control check"><input type="checkbox" id="on-auto" checked /><span>Auto-deal streets</span></label>
                 <button id="on-start" class="primary">Start game</button>
@@ -344,7 +354,7 @@
           <li>Once a flop is out, each six-card hand is split automatically into three two-card Omaha hands. Each uses exactly two hole cards and exactly three board cards.</li>
           <li><b>Hand 1</b> is the two hole cards used by the best Omaha hand you can make from all six. <b>Hand 2</b> is the best pair from the remaining four. <b>Hand 3</b> is the last two cards.</li>
           <li>When several pairs make the same best hand, the higher-ranked cards are used, then the higher suit: spades, hearts, diamonds, clubs.</li>
-          <li>Hand 1 is worth 3 points, hand 2 is worth 2 and hand 3 is worth 1. A tie on a hand splits its points. Winning all three outright is a <b>scoop</b> for a 4-point bonus, 10 points in all.</li>
+          <li>Hand 1 is worth 3 points, hand 2 is worth 2 and hand 3 is worth 1. A tie on a hand splits its points. Winning all three outright is a <b>scoop</b> for a 4-point bonus, 10 points in all. The alternate <b>flat</b> scoring pays 1 point per hand and 3 for a scoop (6 in all); every page has a scoring selector.</li>
           <li>Each pair of players settles separately, so with more than two players a seat's result is its net against every opponent.</li>
         </ul>
         <h3>Numbers</h3>
@@ -355,7 +365,7 @@
         </ul>
         <h3>Doubling cube (two players)</h3>
         <ul>
-          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The player doubled may <b>drop</b> (losing the drop cost, 6 points by default, per unit of the cube before the double), <b>take</b> (the cube doubles), or <b>beaver</b>: take and immediately redouble. The doubler may then drop (twice the drop cost), take at four times, or <b>raccoon</b> (redouble again), and so on: rebeaver, reraccoon… until the cube reaches 64. Dropping the k-th raise always costs the drop cost times the cube level before that raise. The drop cost is selectable from 5 to 10 points on every page.</li>
+          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The player doubled may <b>drop</b> (losing the drop cost, 6 points by default, per unit of the cube before the double), <b>take</b> (the cube doubles), or <b>beaver</b>: take and immediately redouble. The doubler may then drop (twice the drop cost), take at four times, or <b>raccoon</b> (redouble again), and so on: rebeaver, reraccoon… until the cube reaches 64. Dropping the k-th raise always costs the drop cost times the cube level before that raise. The drop cost is selectable on every page: 5 to 16 points with 3-2-1 scoring, 1 to 10 with flat scoring.</li>
           <li>Seven variants: any combination of <b>preflop</b>, <b>flop</b> and <b>river</b> as cube streets (never the turn). The button has the first cube option. Whoever takes a raise holds the cube and has the option on the next cube street; whoever passes up the option hands it to the opponent for the next cube street.</li>
           <li>Showdown pays the net points times the cube.</li>
           <li><b>Hidden information.</b> While a cube action remains, each seat's numbers are against the opponent's range: every hand the opponent could hold given the cards you see, weighted by the equilibrium strategy once a cube action has been taken (after a flop take, for example, the button's range is its doubling range and the opponent's is its taking range). The solver samples hands for both players and the unknown board cards and runs counterfactual regret minimization over every cube decision that remains, including the chains of re-raises and the decisions on later cube streets in every cube state. It runs until the exploitability bound is below the tolerance, then removes probabilities under 1%, so every mix it shows is consistent with the equities it shows: options in a mix have equal equity within the tolerance, and options with lower equity get 0%.</li>

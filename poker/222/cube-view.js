@@ -1,6 +1,6 @@
 // Cube panels: the hidden-information equilibrium for a pending decision,
 // and the face-up (tabled) analysis.
-import { VARIANTS, VARIANT_ORDER, variantOf, actorOn, laterCubeStreets, riverAfter, analyzeDecision, positionValue, flipHist, STREETS } from "./engine.mjs";
+import { VARIANTS, VARIANT_ORDER, SCORINGS, SCORING_ORDER, scoringOf, variantOf, actorOn, laterCubeStreets, riverAfter, analyzeDecision, positionValue, flipHist, STREETS } from "./engine.mjs";
 import { reraiseName, levelAfter } from "./cube-rules.mjs";
 import { el, signed, pct, cubeFace, renderOptionTable, metric, evColor, pctColor } from "./ui.js";
 import { nodeOptions, seatOf } from "./table-view.js";
@@ -9,14 +9,24 @@ export function ownerLabel(cube, names) {
   if (cube.owner == null) return "centered";
   return cube.level > 1 ? names[cube.owner] : `${names[cube.owner]} · option`;
 }
-export function fillDropSelect(select, value = 6) {
+export function fillDropSelect(select, value = null, scoring = "classic") {
+  const sc = scoringOf(scoring);
   select.replaceChildren();
-  for (const d of [5, 6, 7, 8, 9, 10]) {
+  for (const d of sc.dropUnits) {
     const o = el("option", "", `${d} points`);
     o.value = String(d);
     select.append(o);
   }
-  select.value = String(value);
+  select.value = String(sc.dropUnits.includes(Number(value)) ? value : sc.defaultDrop);
+}
+export function fillScoringSelect(select, value = "classic") {
+  select.replaceChildren();
+  for (const id of SCORING_ORDER) {
+    const o = el("option", "", SCORINGS[id].name);
+    o.value = id;
+    select.append(o);
+  }
+  select.value = value;
 }
 export function fillVariantSelect(select, value = "fr") {
   select.replaceChildren();

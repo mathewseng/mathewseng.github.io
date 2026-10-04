@@ -4,7 +4,7 @@
 // for the pending decision. Earlier cube streets condition the ranges: the
 // solve for each earlier street supplies the reach of every hand to the cube
 // state that was actually reached.
-import { variantOf, actorOn, STREETS, MAX_CUBE, DROP_UNIT } from "./engine.mjs";
+import { variantOf, actorOn, scoringOf, STREETS, MAX_CUBE } from "./engine.mjs";
 import { PRECISION } from "./pool.js";
 import { levelAfter, optionLabel } from "./cube-rules.mjs";
 
@@ -109,12 +109,13 @@ export async function computeView(pool, spec) {
   const tabled = a.tabled || (spec.forceTabled && allKnown);
   const precision = spec.precision ?? "standard";
   const solverPrecision = PRECISION[precision]?.solver ?? "standard";
-  const dropUnit = spec.dropUnit ?? DROP_UNIT;
+  const scoring = scoringOf(spec.scoring);
+  const dropUnit = spec.dropUnit ?? scoring.defaultDrop;
   if (tabled) {
-    if (!allKnown) return { mode: "hidden", tabled: false, stats: { mode: "range", players: spec.hands.map(() => null) }, action: a, decision: null };
-    const key = JSON.stringify(["stats", spec.hands, spec.board, precision]);
-    const stats = await cached(key, () => pool.stats(spec.hands, spec.board, { precision }));
-    return { mode: "perfect", tabled: true, stats: { ...stats, mode: "perfect" }, action: a, decision: null };
+    if (!allKnown) return { mode: "hidden", tabled: false, stats: { mode: "range", players: spec.hands.map(() => null), scoring }, action: a, decision: null };
+    const key = JSON.stringify(["stats", spec.hands, spec.board, precision, scoring.id]);
+    const stats = await cached(key, () => pool.stats(spec.hands, spec.board, { precision, scoring: scoring.id }));
+    return { mode: "perfect", tabled: true, stats: { ...stats, mode: "perfect", scoring }, action: a, decision: null };
   }
   const v = a.variant;
   const btn = spec.btn;
@@ -132,9 +133,9 @@ export async function computeView(pool, spec) {
     if (key == null) break;
     const boardAt = spec.board.slice(0, STREET_CARDS[s]);
     const weights = upstream ? weightsFrom(upstream.solve, upstream.key) : null;
-    const ck = JSON.stringify(["solve", v.id, s, boardAt, btnHand, oppHand, entry, upstreamKeys, solverPrecision, dropUnit]);
+    const ck = JSON.stringify(["solve", v.id, s, boardAt, btnHand, oppHand, entry, upstreamKeys, solverPrecision, dropUnit, scoring.id]);
     const sol = await cached(ck, () =>
-      pool.solve({ board: boardAt, variant: v.id, entry, btnHand, oppHand, weights, precision: solverPrecision, dropUnit, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
+      pool.solve({ board: boardAt, variant: v.id, entry, btnHand, oppHand, weights, precision: solverPrecision, dropUnit, scoring: scoring.id, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
     );
     upstream = { solve: sol, key, street: s };
     upstreamKeys.push(key);
@@ -151,20 +152,20 @@ export async function computeView(pool, spec) {
     spec.hands.map((hand, seat) => {
       if (!hand) return null;
       const opponents = opponentsFor(seat);
-      const key = JSON.stringify(["range", hand, spec.board, precision, opponents ? [v.id, btnHand, oppHand, upstreamKeys, dropUnit] : null]);
-      return cached(key, () => pool.range(hand, spec.board, { precision, opponents, seed: hashSeed(key) }));
+      const key = JSON.stringify(["range", hand, spec.board, precision, scoring.id, opponents ? [v.id, btnHand, oppHand, upstreamKeys, dropUnit] : null]);
+      return cached(key, () => pool.range(hand, spec.board, { precision, opponents, scoring: scoring.id, seed: hashSeed(key) }));
     }),
   );
   let decision = null;
   if (a.pending) {
     const entryNow = { level: spec.cube.level, owner: sideOf(a.holder, btn) };
-    const ck = JSON.stringify(["solve", v.id, streetName, spec.board, btnHand, oppHand, entryNow, upstreamKeys, solverPrecision, dropUnit]);
+    const ck = JSON.stringify(["solve", v.id, streetName, spec.board, btnHand, oppHand, entryNow, upstreamKeys, solverPrecision, dropUnit, scoring.id]);
     const sol = await cached(ck, () =>
-      pool.solve({ board: spec.board, variant: v.id, entry: entryNow, btnHand, oppHand, weights, precision: solverPrecision, dropUnit, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
+      pool.solve({ board: spec.board, variant: v.id, entry: entryNow, btnHand, oppHand, weights, precision: solverPrecision, dropUnit, scoring: scoring.id, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
     );
     decision = { street: streetName, actor: a.actor, responder: 1 - a.actor, level: spec.cube.level, solve: sol, stage: sol.stage, dropUnit };
   }
-  return { mode: "hidden", tabled: false, stats: { mode: "range", conditioned, players }, action: a, decision, upstream };
+  return { mode: "hidden", tabled: false, stats: { mode: "range", conditioned, players, scoring }, action: a, decision, upstream };
 }
 // Options at chain node k for the hand that acts there (index 0 of its side).
 export function nodeOptions(stage, k) {

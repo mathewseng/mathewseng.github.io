@@ -4,7 +4,7 @@
 // hands are tabled (or when "Table hands" is ticked).
 import { dealTable, shuffledDeck, remainingDeck } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt, STREET_CARDS, streetName } from "./ui.js";
-import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, parseCubeState } from "./cube-view.js";
+import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, fillScoringSelect, parseCubeState } from "./cube-view.js";
 import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
 export function initSimulator({ pool }) {
@@ -15,6 +15,7 @@ export function initSimulator({ pool }) {
     street: 0,
     btn: 0,
     variant: "fr",
+    scoring: "classic",
     dropUnit: 6,
     takenOn: null,
     cube: { level: 1, owner: null },
@@ -36,7 +37,14 @@ export function initSimulator({ pool }) {
     countEl.append(b);
   }
   fillVariantSelect($("sim-variant"), sim.variant);
-  fillDropSelect($("sim-drop"), sim.dropUnit);
+  fillScoringSelect($("sim-scoring"), sim.scoring);
+  fillDropSelect($("sim-drop"), sim.dropUnit, sim.scoring);
+  $("sim-scoring").addEventListener("change", () => {
+    sim.scoring = $("sim-scoring").value;
+    fillDropSelect($("sim-drop"), null, sim.scoring);
+    sim.dropUnit = Number($("sim-drop").value);
+    recompute();
+  });
   $("sim-drop").addEventListener("change", () => {
     sim.dropUnit = Number($("sim-drop").value);
     recompute();
@@ -94,6 +102,7 @@ export function initSimulator({ pool }) {
       history: historyFromCube(sim.cube, sim.variant, sim.street, sim.btn, sim.takenOn),
       forceTabled: $("sim-tabled").checked,
       dropUnit: sim.dropUnit,
+      scoring: sim.scoring,
       precision: precision(),
       onProgress: (f) => {
         const m = $("sim-meta");

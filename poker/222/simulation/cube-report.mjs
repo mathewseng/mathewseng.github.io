@@ -7,7 +7,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import os from "node:os";
-import { VARIANTS, VARIANT_ORDER, DROP_UNIT, DROP_UNITS, MAX_NET, makeRng, dealTable, settle, runoutStats, finishStats, analyzeDecision, riverAfter, actorOn, holderAfter, chainValues, STREETS } from "../engine.mjs";
+import { VARIANTS, VARIANT_ORDER, SCORINGS, SCORING_ORDER, scoringOf, DROP_UNIT, MAX_NET, makeRng, dealTable, settle, runoutStats, finishStats, analyzeDecision, riverAfter, actorOn, holderAfter, chainValues, STREETS } from "../engine.mjs";
 import { MAX_CUBE } from "../cube-rules.mjs";
 import { solve } from "../solver.mjs";
 
@@ -194,21 +194,21 @@ function mergeAcc(a, b) {
     }
 }
 // Board-entry variants (f, r, fr): one solve per random board at the entry street.
-async function runBoards(boards, seed, precision, dropUnit) {
+async function runBoards(boards, seed, precision, dropUnit, scoring = "classic") {
   const rng = makeRng(seed);
   const acc = { f: emptyAcc(), r: emptyAcc(), fr: emptyAcc() };
   for (let b = 0; b < boards; b++) {
     const { board } = dealTable(2, rng);
-    accumulateSolve(acc.f, await solve({ variant: "f", board: board.slice(0, 3), precision, dropUnit, seed: (seed + b * 31) >>> 0 }));
-    accumulateSolve(acc.fr, await solve({ variant: "fr", board: board.slice(0, 3), precision, dropUnit, seed: (seed + b * 37) >>> 0 }));
-    accumulateSolve(acc.r, await solve({ variant: "r", board, precision, dropUnit, seed: (seed + b * 41) >>> 0 }));
+    accumulateSolve(acc.f, await solve({ variant: "f", board: board.slice(0, 3), precision, dropUnit, scoring, seed: (seed + b * 31) >>> 0 }));
+    accumulateSolve(acc.fr, await solve({ variant: "fr", board: board.slice(0, 3), precision, dropUnit, scoring, seed: (seed + b * 37) >>> 0 }));
+    accumulateSolve(acc.r, await solve({ variant: "r", board, precision, dropUnit, scoring, seed: (seed + b * 41) >>> 0 }));
   }
   return acc;
 }
 // One preflop-entry variant, solved as a single game over sampled flops and runouts.
-async function runPreflop(id, seed, precision, dropUnit, big) {
+async function runPreflop(id, seed, precision, dropUnit, big, scoring = "classic") {
   const sizes = big ? { flops: id === "pfr" ? 14 : 24, runouts: id === "pfr" ? 20 : 36, boards: 64, iterations: id === "pfr" ? 320 : 500 } : { flops: id === "pfr" ? 8 : 12, runouts: id === "pfr" ? 14 : 24, boards: 48, iterations: id === "pfr" ? 220 : 300 };
-  const r = await solve({ variant: id, board: [], precision, dropUnit, seed, ...sizes });
+  const r = await solve({ variant: id, board: [], precision, dropUnit, scoring, seed, ...sizes });
   const a = emptyAcc();
   accumulateSolve(a, r);
   return { entryStreet: "preflop", ...finishAcc(a), iterations: r.iterations, tolerance: r.tolerance, sampled: r.sampled };
@@ -229,8 +229,8 @@ function sweepSummary(v) {
 if (!isMainThread) {
   const wd = workerData;
   if (wd.kind === "faceup") parentPort.postMessage(runFaceUp(wd.deals, wd.seed, wd.dropUnit));
-  else if (wd.kind === "boards") runBoards(wd.boards, wd.seed, wd.precision, wd.dropUnit).then((acc) => parentPort.postMessage(acc));
-  else runPreflop(wd.variant, wd.seed, wd.precision, wd.dropUnit, wd.big).then((res) => parentPort.postMessage(res));
+  else if (wd.kind === "boards") runBoards(wd.boards, wd.seed, wd.precision, wd.dropUnit, wd.scoring).then((acc) => parentPort.postMessage(acc));
+  else runPreflop(wd.variant, wd.seed, wd.precision, wd.dropUnit, wd.big, wd.scoring).then((res) => parentPort.postMessage(res));
 } else {
   const deals = Number(process.argv[2] || 50000);
   const threads = Number(process.argv[3] || Math.max(1, os.cpus().length - 1));
@@ -279,16 +279,22 @@ if (!isMainThread) {
   }
   const pJobs = {};
   for (const id of ["p", "pf", "pr", "pfr"]) pJobs[id] = spawn({ kind: "preflop", variant: id, seed: (seed + 99) >>> 0, precision: "standard", dropUnit: defaultDrop, big: true });
+  // Sweep: every scoring system, every drop cost it offers.
   const sweepJobs = {};
-  for (const d of DROP_UNITS) {
-    sweepJobs[d] = { boards: [], preflop: {} };
-    const perS = Math.ceil(sweepBoards / Math.max(1, Math.floor(threads / 2)));
-    for (let i = 0; i * perS < sweepBoards; i++) {
-      const n = Math.min(perS, sweepBoards - i * perS);
-      sweepJobs[d].boards.push(spawn({ kind: "boards", boards: n, seed: (seed + 1000 * d + i * 7919) >>> 0, precision: "fast", dropUnit: d }));
+  SCORING_ORDER.forEach((sid, si) => {
+    const sc = SCORINGS[sid];
+    sweepJobs[sid] = {};
+    for (const d of sc.dropUnits) {
+      const base = (seed + 100000 * si + 1000 * d) >>> 0;
+      sweepJobs[sid][d] = { boards: [], preflop: {} };
+      const perS = Math.ceil(sweepBoards / Math.max(1, Math.floor(threads / 2)));
+      for (let i = 0; i * perS < sweepBoards; i++) {
+        const n = Math.min(perS, sweepBoards - i * perS);
+        sweepJobs[sid][d].boards.push(spawn({ kind: "boards", boards: n, seed: (base + i * 7919) >>> 0, precision: "fast", dropUnit: d, scoring: sid }));
+      }
+      for (const id of ["p", "pf", "pr", "pfr"]) sweepJobs[sid][d].preflop[id] = spawn({ kind: "preflop", variant: id, seed: (base + 99) >>> 0, precision: "fast", dropUnit: d, big: false, scoring: sid });
     }
-    for (const id of ["p", "pf", "pr", "pfr"]) sweepJobs[d].preflop[id] = spawn({ kind: "preflop", variant: id, seed: (seed + 1000 * d + 99) >>> 0, precision: "fast", dropUnit: d, big: false });
-  }
+  });
   const fuParts = await Promise.all(fuJobs);
   const bParts = await Promise.all(bJobs);
   const fu = fuParts[0];
@@ -299,15 +305,20 @@ if (!isMainThread) {
   for (const id of ["f", "r", "fr"]) equilibrium.variants[id] = { entryStreet: id === "r" ? "river" : "flop", ...finishAcc(acc[id]) };
   for (const id of ["p", "pf", "pr", "pfr"]) equilibrium.variants[id] = await pJobs[id];
   console.log(`detailed section done in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
-  const sweep = { dropUnits: DROP_UNITS, precision: "fast", boards: sweepBoards, variants: {} };
-  for (const id of VARIANT_ORDER) sweep.variants[id] = {};
-  for (const d of DROP_UNITS) {
-    const parts = await Promise.all(sweepJobs[d].boards);
-    const sacc = parts[0];
-    for (let i = 1; i < parts.length; i++) for (const id of ["f", "r", "fr"]) mergeAcc(sacc[id], parts[i][id]);
-    for (const id of ["f", "r", "fr"]) sweep.variants[id][d] = sweepSummary(finishAcc(sacc[id]));
-    for (const id of ["p", "pf", "pr", "pfr"]) sweep.variants[id][d] = sweepSummary(await sweepJobs[d].preflop[id]);
-    console.log(`sweep drop ${d} done in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+  const sweep = { precision: "fast", boards: sweepBoards, systems: [] };
+  for (const sid of SCORING_ORDER) {
+    const sc = SCORINGS[sid];
+    const system = { id: sid, name: sc.name, points: sc.points, scoop: sc.scoop, dropUnits: sc.dropUnits, defaultDrop: sc.defaultDrop, variants: {} };
+    for (const id of VARIANT_ORDER) system.variants[id] = {};
+    for (const d of sc.dropUnits) {
+      const parts = await Promise.all(sweepJobs[sid][d].boards);
+      const sacc = parts[0];
+      for (let i = 1; i < parts.length; i++) for (const id of ["f", "r", "fr"]) mergeAcc(sacc[id], parts[i][id]);
+      for (const id of ["f", "r", "fr"]) system.variants[id][d] = sweepSummary(finishAcc(sacc[id]));
+      for (const id of ["p", "pf", "pr", "pfr"]) system.variants[id][d] = sweepSummary(await sweepJobs[sid][d].preflop[id]);
+      console.log(`sweep ${sid} drop ${d} done in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+    }
+    sweep.systems.push(system);
   }
   const D = fu.deals;
   const faceUp = { deals: D, dropUnit: defaultDrop, variants: {} };
@@ -319,7 +330,8 @@ if (!isMainThread) {
   const path = join(here, "..", "data", "cube-report.json");
   writeFileSync(path, JSON.stringify(out));
   console.log(`Wrote ${path} in ${out.meta.seconds.toFixed(0)} s`);
-  for (const d of DROP_UNITS) console.log(`drop ${d}: ` + VARIANT_ORDER.map((id) => `${id} dbl ${(sweep.variants[id][d].doubles * 100).toFixed(0)}% drop ${((sweep.variants[id][d].reply?.drop ?? 0) * 100).toFixed(0)}% ends ${(sweep.variants[id][d].endsByDrop * 100).toFixed(0)}%`).join(" | "));
+  for (const system of sweep.systems) for (const d of system.dropUnits) console.log(`${system.id} drop ${d}: ` + VARIANT_ORDER.map((id) => `${id} dbl ${(system.variants[id][d].doubles * 100).toFixed(0)}% drop ${((system.variants[id][d].reply?.drop ?? 0) * 100).toFixed(0)}% ends ${(system.variants[id][d].endsByDrop * 100).toFixed(0)}%`).join(" | "));
   void chainValues;
   void STREETS;
+  void scoringOf;
 }

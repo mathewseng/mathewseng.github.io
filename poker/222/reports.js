@@ -83,20 +83,24 @@ function render(body, data) {
 }
 // Drop-cost sweep: how the cube game changes as dropping gets more expensive.
 function renderSweep(body, sweep) {
-  body.append(el("h2", "section-title", "Drop cost sweep"));
+  const systems = sweep.systems ?? [{ id: "classic", name: "3-2-1, scoop +4", dropUnits: sweep.dropUnits, variants: sweep.variants }];
+  for (const system of systems) renderSweepSystem(body, sweep, system);
+}
+function renderSweepSystem(body, sweep, system) {
+  body.append(el("h2", "section-title", `Drop cost sweep · ${system.name}`));
   const intro = el("p", "muted");
-  intro.textContent = `Each variant solved again at every drop cost from ${sweep.dropUnits[0]} to ${sweep.dropUnits[sweep.dropUnits.length - 1]} points per unit of the cube (${sweep.precision} precision; flop and river variants averaged over ${sweep.boards} random boards, preflop variants one game each). "Doubles" is the share of the acting range that doubles on the first cube street, the reply shares are given a double, and "ends by drop" is how often the whole hand ends with somebody dropping.`;
+  intro.textContent = `Hands worth ${system.points ? system.points.join("-") : "3-2-1"} with a ${system.scoop ?? 4}-point scoop bonus. Each variant solved at every drop cost from ${system.dropUnits[0]} to ${system.dropUnits[system.dropUnits.length - 1]} points per unit of the cube (${sweep.precision} precision; flop and river variants averaged over ${sweep.boards} random boards, preflop variants one game each). "Doubles" is the share of the acting range that doubles on the first cube street, the reply shares are given a double, and "ends by drop" is how often the whole hand ends with somebody dropping.`;
   body.append(intro);
   const grid = el("div", "report-grid");
   for (const id of VARIANT_ORDER) {
-    const rows = sweep.variants[id];
+    const rows = system.variants[id];
     if (!rows) continue;
     const card = el("div", "report-card");
     card.append(el("h2", "", VARIANTS[id].name));
     const t = el("table", "report-table");
     t.append(row(["Drop cost", "Button value", "Doubles", "Drop / take / beaver", "Ends by drop", ""], true));
-    const maxEnd = Math.max(...sweep.dropUnits.map((d) => rows[d]?.endsByDrop ?? 0), 1e-9);
-    for (const d of sweep.dropUnits) {
+    const maxEnd = Math.max(...system.dropUnits.map((d) => rows[d]?.endsByDrop ?? 0), 1e-9);
+    for (const d of system.dropUnits) {
       const r = rows[d];
       if (!r) continue;
       const tr = el("tr");

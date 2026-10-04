@@ -32,6 +32,7 @@ import {
   DROP_UNIT,
   MAX_CUBE,
   MAX_NET,
+  SCORINGS,
 } from "../engine.mjs";
 import { chainDepth } from "../cube-rules.mjs";
 
@@ -92,6 +93,23 @@ test("suit ordering breaks ties: spades first", () => {
   assert.deepEqual(split[0].cards.map(cardName), ["As", "Ah"]);
   assert.deepEqual(split[1].cards.map(cardName), ["Ad", "Ac"]);
   assert.deepEqual(split[2].cards.map(cardName), ["5d", "4d"]);
+});
+
+test("flat scoring: one point per hand and a three-point scoop", () => {
+  const flat = SCORINGS.flat;
+  assert.equal(pairNet([3, 2, 1], [1, 1, 0], 0, 0, flat), 6);
+  assert.equal(pairNet([3, 2, 1], [4, 1, 0], 0, 0, flat), 1);
+  assert.equal(pairNet([1, 1, 0], [3, 2, 1], 0, 0, flat), -6);
+  assert.deepEqual(flat.dropUnits, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(SCORINGS.classic.dropUnits, [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+  const hands = [parseCards("As Ad Kh Kd 2c 3c"), parseCards("7s 7d 6h 6d 8c 9c")];
+  const board = parseCards("Ah Kc 7h Jc 2d");
+  const r = settle(hands, board, flat);
+  assert.ok(Math.abs(r.net[0]) <= 6 && r.net[0] + r.net[1] === 0);
+  const s = finishStats(runoutStats(hands, board.slice(0, 4), { exact: true, scoring: flat }), 2);
+  assert.ok(Math.abs(s.players[0].ev) <= 6);
+  const hist = s.hist;
+  assert.ok(hist.slice(0, MAX_NET - 6).every((x) => x === 0) && hist.slice(MAX_NET + 7).every((x) => x === 0), "flat nets stay within ±6");
 });
 
 test("pairwise scoring and scoop bonus", () => {

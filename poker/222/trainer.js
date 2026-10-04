@@ -2,10 +2,10 @@
 // The bot's cards stay hidden while any cube action remains; your numbers are
 // against its range. Once no action is left the hands are tabled and the
 // remaining streets show perfect-information equities.
-import { VARIANTS, variantOf, DROP_UNIT, MAX_CUBE, dealTable, settle, cardName, STREETS } from "./engine.mjs";
+import { VARIANTS, variantOf, scoringOf, DROP_UNIT, MAX_CUBE, dealTable, settle, cardName, STREETS } from "./engine.mjs";
 import { offerRaise, reraise, canReraise, optionLabel, reraiseName, levelAfter } from "./cube-rules.mjs";
 import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, pct, STREET_CARDS, streetName, metric, evColor } from "./ui.js";
-import { ownerLabel, fillVariantSelect, fillDropSelect } from "./cube-view.js";
+import { ownerLabel, fillVariantSelect, fillDropSelect, fillScoringSelect } from "./cube-view.js";
 import { computeView, gradeHidden, sampleAction, cubeKey } from "./table-view.js";
 
 const YOU = 0,
@@ -15,6 +15,7 @@ const NAMES = ["You", "Bot"];
 export function initTrainer({ pool }) {
   const tr = {
     variant: "fr",
+    scoring: "classic",
     dropUnit: 6,
     btn: 1,
     hands: [],
@@ -40,7 +41,12 @@ export function initTrainer({ pool }) {
     timer: null,
   };
   fillVariantSelect($("tr-variant"), tr.variant);
-  fillDropSelect($("tr-drop"), tr.dropUnit);
+  fillScoringSelect($("tr-scoring"), tr.scoring);
+  fillDropSelect($("tr-drop"), tr.dropUnit, tr.scoring);
+  $("tr-scoring").addEventListener("change", () => {
+    fillDropSelect($("tr-drop"), null, $("tr-scoring").value);
+    if (tr.phase !== "idle" && tr.phase !== "over") trLog(`Scoring changed to ${scoringOf($("tr-scoring").value).name}; it applies from the next hand.`);
+  });
   $("tr-drop").addEventListener("change", () => {
     if (tr.phase !== "idle" && tr.phase !== "over") trLog(`Drop cost changed to ${$("tr-drop").value}; it applies from the next hand.`);
   });
@@ -68,6 +74,7 @@ export function initTrainer({ pool }) {
     tr.token++;
     const mode = $("tr-seat").value;
     tr.btn = mode === "btn" ? YOU : mode === "opp" ? BOT : tr.played % 2 === 0 ? YOU : BOT;
+    tr.scoring = $("tr-scoring").value;
     tr.dropUnit = Number($("tr-drop").value);
     const t = dealTable(2);
     tr.hands = t.hands;
@@ -83,7 +90,7 @@ export function initTrainer({ pool }) {
     tr.preview = null;
     tr.decisionsThisHand = [];
     tr.result = null;
-    trLog(`New hand (${variant().name}, drop ${tr.dropUnit}). ${NAMES[tr.btn]} ${you(tr.btn) ? "are" : "is"} on the button.`, true);
+    trLog(`New hand (${variant().name}, ${scoringOf(tr.scoring).short} scoring, drop ${tr.dropUnit}). ${NAMES[tr.btn]} ${you(tr.btn) ? "are" : "is"} on the button.`, true);
     computeStreet();
   }
   function spec(street = tr.street) {
@@ -97,6 +104,7 @@ export function initTrainer({ pool }) {
       cubeEnabled: true,
       history: tr.history,
       dropUnit: tr.dropUnit,
+      scoring: tr.scoring,
       precision: precision(),
       onProgress: (f) => {
         tr.progress = f;
@@ -243,7 +251,7 @@ export function initTrainer({ pool }) {
       .catch(console.error);
   }
   function showdown() {
-    const r = settle(tr.hands, tr.board);
+    const r = settle(tr.hands, tr.board, scoringOf(tr.scoring));
     const net = r.net[YOU] * tr.cube.level;
     tr.score += net;
     tr.played++;

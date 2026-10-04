@@ -23,7 +23,14 @@ export const SUIT_NAMES = ["clubs", "diamonds", "hearts", "spades"];
 export const FULL_DECK = Array.from({ length: 52 }, (_, c) => c);
 export const POINTS = [3, 2, 1];
 export const SCOOP_BONUS = 4;
-export const MAX_NET = 10;
+export const MAX_NET = 10; // histogram half-width; every scoring system's net fits in ±MAX_NET
+// Scoring systems: points per hand, scoop bonus, largest possible net, and the drop costs offered.
+export const SCORINGS = {
+  classic: { id: "classic", name: "3-2-1, scoop +4 (10 total)", short: "3-2-1", points: [3, 2, 1], scoop: 4, maxNet: 10, dropUnits: Array.from({ length: 12 }, (_, i) => i + 5), defaultDrop: 6 },
+  flat: { id: "flat", name: "1-1-1, scoop +3 (6 total)", short: "1-1-1", points: [1, 1, 1], scoop: 3, maxNet: 6, dropUnits: Array.from({ length: 10 }, (_, i) => i + 1), defaultDrop: 3 },
+};
+export const SCORING_ORDER = ["classic", "flat"];
+export const scoringOf = (sc) => (typeof sc === "string" ? SCORINGS[sc] ?? SCORINGS.classic : sc ?? SCORINGS.classic);
 export const CATEGORIES = [
   "High card",
   "Pair",
@@ -309,7 +316,8 @@ export function describeSplit(hand, boardCards) {
 
 /* ---------- scoring ---------- */
 // Net points for A against B given both players' three hand values.
-export function pairNet(va, vb, oa = 0, ob = 0) {
+export function pairNet(va, vb, oa = 0, ob = 0, scoring = SCORINGS.classic) {
+  const pts = scoring.points;
   let net = 0,
     wa = 0,
     wb = 0;
@@ -317,19 +325,21 @@ export function pairNet(va, vb, oa = 0, ob = 0) {
     const x = va[oa + h],
       y = vb[ob + h];
     if (x > y) {
-      net += POINTS[h];
+      net += pts[h];
       wa++;
     } else if (x < y) {
-      net -= POINTS[h];
+      net -= pts[h];
       wb++;
     }
   }
-  if (wa === 3) net += SCOOP_BONUS;
-  else if (wb === 3) net -= SCOOP_BONUS;
+  if (wa === 3) net += scoring.scoop;
+  else if (wb === 3) net -= scoring.scoop;
   return net;
 }
 // Full settlement of a dealt table on a complete board: pairwise nets per hand.
-export function settle(hands, boardCards) {
+export function settle(hands, boardCards, scoring = SCORINGS.classic) {
+  const POINTS = scoring.points,
+    SCOOP_BONUS = scoring.scoop;
   const n = hands.length;
   const board = new Board(boardCards);
   const splits = hands.map((h) => describeSplit(h, boardCards));
@@ -377,8 +387,11 @@ const CARD_BUF = new Int32Array(6);
 export function runoutStats(
   hands,
   boardCards,
-  { deck, exact = true, samples = 10000, rng = Math.random, partIndex = 0, partCount = 1 } = {},
+  { deck, exact = true, samples = 10000, rng = Math.random, partIndex = 0, partCount = 1, scoring = SCORINGS.classic } = {},
 ) {
+  scoring = scoringOf(scoring);
+  const POINTS = scoring.points,
+    SCOOP_BONUS = scoring.scoop;
   const n = hands.length;
   const sorted = hands.map((h) => h.slice().sort((a, b) => b - a));
   const need = 5 - boardCards.length;
@@ -526,7 +539,10 @@ export function finishStats(stats, n) {
 // Statistics for one hand against a range of opponent hands. opponents is
 // null (uniform over the unseen cards) or { hands, weights }. With a weighted
 // range and at most one card to come the result is exact; otherwise sampled.
-export function rangeStats(hero, boardCards, { opponents = null, samples = 20000, rng = Math.random } = {}) {
+export function rangeStats(hero, boardCards, { opponents = null, samples = 20000, rng = Math.random, scoring = SCORINGS.classic } = {}) {
+  scoring = scoringOf(scoring);
+  const POINTS = scoring.points,
+    SCOOP_BONUS = scoring.scoop;
   const need = 5 - boardCards.length;
   const h = hero.slice().sort((a, b) => b - a);
   const used = new Set([...h, ...boardCards]);

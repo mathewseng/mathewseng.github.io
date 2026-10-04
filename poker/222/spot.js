@@ -3,7 +3,7 @@
 // then solved against the opponent's full range.
 import { parseCards, cardName, dealTable } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt } from "./ui.js";
-import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, parseCubeState } from "./cube-view.js";
+import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, fillScoringSelect, parseCubeState } from "./cube-view.js";
 import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
 export function initSpot({ pool, sim }) {
@@ -18,7 +18,9 @@ export function initSpot({ pool, sim }) {
       }),
     );
   fillVariantSelect($("spot-variant"), "fr");
-  fillDropSelect($("spot-drop"), 6);
+  fillScoringSelect($("spot-scoring"), "classic");
+  fillDropSelect($("spot-drop"), 6, "classic");
+  $("spot-scoring").addEventListener("change", () => fillDropSelect($("spot-drop"), null, $("spot-scoring").value));
   const refreshTaken = () => {
     const cube = parseCubeState($("spot-cube-state").value);
     const board = (() => {
@@ -112,7 +114,7 @@ export function initSpot({ pool, sim }) {
     const cube = parseCubeState($("spot-cube-state").value);
     const street = board.length === 0 ? 0 : board.length - 2;
     refreshTaken();
-    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, takenOn: $("spot-taken").value || null, dropUnit: Number($("spot-drop").value) || 6, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
+    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, takenOn: $("spot-taken").value || null, dropUnit: Number($("spot-drop").value) || 6, scoring: $("spot-scoring").value, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
   }
   async function solve() {
     const err = $("spot-error");
@@ -143,6 +145,7 @@ export function initSpot({ pool, sim }) {
         },
         forceTabled: spot.tabled,
         dropUnit: spot.dropUnit,
+        scoring: spot.scoring,
         precision: spot.precision,
       });
       if (token !== st.token) return;

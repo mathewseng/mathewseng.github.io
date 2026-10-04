@@ -1,10 +1,10 @@
 // Online multiplayer: peer-to-peer rooms on the shared PeerRoom module. The
 // host owns the game state; every client computes its own equities locally
 // because all hands are face up.
-import { VARIANTS, variantOf, actorOn, dealTable, settle, cardName, STREETS } from "./engine.mjs";
+import { VARIANTS, variantOf, scoringOf, actorOn, dealTable, settle, cardName, STREETS } from "./engine.mjs";
 import { offerRaise, reraise, canReraise, optionLabel, reraiseName } from "./cube-rules.mjs";
 import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, STREET_CARDS, streetName } from "./ui.js";
-import { fillVariantSelect, fillDropSelect } from "./cube-view.js";
+import { fillVariantSelect, fillDropSelect, fillScoringSelect } from "./cube-view.js";
 import { computeView, actionState, gradeHidden, cubeKey } from "./table-view.js";
 
 const NAME_KEY = "222.player-name";
@@ -16,7 +16,9 @@ export function initOnline({ pool }) {
   const lobby = $("online-lobby"),
     roomView = $("online-room");
   fillVariantSelect($("on-variant"), "fr");
-  fillDropSelect($("on-drop"), 6);
+  fillScoringSelect($("on-scoring"), "classic");
+  fillDropSelect($("on-drop"), 6, "classic");
+  $("on-scoring").addEventListener("change", () => fillDropSelect($("on-drop"), null, $("on-scoring").value));
   $("on-name").value = localStorage.getItem(NAME_KEY) || "";
   if (!PeerRoom) {
     $("on-error").textContent = "The peer connection library did not load.";
@@ -98,9 +100,9 @@ export function initOnline({ pool }) {
 
   /* ---------- host settings ---------- */
   function readSettings() {
-    return { cube: $("on-cube").checked, variant: $("on-variant").value, auto: $("on-auto").checked, dropUnit: Number($("on-drop").value) || 6 };
+    return { cube: $("on-cube").checked, variant: $("on-variant").value, auto: $("on-auto").checked, scoring: $("on-scoring").value, dropUnit: Number($("on-drop").value) || scoringOf($("on-scoring").value).defaultDrop };
   }
-  for (const id of ["on-cube", "on-variant", "on-auto", "on-drop"])
+  for (const id of ["on-cube", "on-variant", "on-auto", "on-drop", "on-scoring"])
     $(id).addEventListener("change", () => {
       if (!room.isHost || !st.model) return;
       st.model.settings = readSettings();
@@ -221,6 +223,7 @@ export function initOnline({ pool }) {
       cube: { level: 1, owner: null },
       cubeEnabled: m.settings.cube && active.length === 2,
       variant: variantOf(m.settings.variant)?.id ?? "fr",
+      scoring: m.settings.scoring ?? "classic",
       dropUnit: m.settings.dropUnit ?? 6,
       phase: "street",
       actor: null,
@@ -331,7 +334,7 @@ export function initOnline({ pool }) {
   }
   function showdown() {
     const h = hand();
-    const r = settle(h.hands, h.board);
+    const r = settle(h.hands, h.board, scoringOf(h.scoring));
     const nets = r.net.map((x) => x * h.cube.level);
     applyScores(nets);
     h.phase = "over";
@@ -370,7 +373,8 @@ export function initOnline({ pool }) {
       $("on-cube").checked = m.settings.cube;
       $("on-variant").value = m.settings.variant;
       $("on-auto").checked = m.settings.auto;
-      $("on-drop").value = String(m.settings.dropUnit ?? 6);
+      $("on-scoring").value = m.settings.scoring ?? "classic";
+      fillDropSelect($("on-drop"), m.settings.dropUnit ?? 6, m.settings.scoring ?? "classic");
       $("on-start").textContent = m.hand ? "Deal next hand" : "Start game";
     }
     $("on-table").hidden = !m.hand;
@@ -394,7 +398,7 @@ export function initOnline({ pool }) {
     for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i]) : el("span", "slot"));
     const meta = $("on-meta");
     meta.replaceChildren();
-    meta.append(el("span", "", `Hand ${h.number} · ${names.length} players${h.cubeEnabled ? ` · ${VARIANTS[h.variant].name}` : ""}`));
+    meta.append(el("span", "", `Hand ${h.number} · ${names.length} players · ${scoringOf(h.scoring).short} scoring${h.cubeEnabled ? ` · ${VARIANTS[h.variant].name}` : ""}`));
     meta.append(el("span", "tag info-tag", h.tabled ? "Tabled · perfect information" : "Hidden · numbers vs range"));
     if (st.view?.mode === "perfect") meta.append(el("span", "", `${st.view.stats.exact ? "Exact" : "Sampled"}: ${st.view.stats.count.toLocaleString("en-US")} runouts`));
     const cp = $("on-cube-panel");
@@ -462,6 +466,7 @@ export function initOnline({ pool }) {
       cubeEnabled: h.cubeEnabled,
       history: h.history,
       dropUnit: h.dropUnit ?? 6,
+      scoring: h.scoring ?? "classic",
       precision: "standard",
     };
   }

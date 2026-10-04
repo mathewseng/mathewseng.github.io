@@ -120,6 +120,11 @@ test("preflop solves cover the three preflop variants with later streets", async
   const r10 = await solve({ variant: "r", board: dealTable(2, makeRng(3)).board, precision: "fast", seed: 15, dropUnit: 10, hands: 40 });
   assert.equal(r10.dropUnit, 10);
   assert.ok(Math.abs(r10.stage.nodes[1].options.find((o) => o.id === "drop").ev + 10) < 1e-9);
+  // Flat scoring: nets within ±6, drop 3 by default.
+  const rf = await solve({ variant: "r", board: dealTable(2, makeRng(4)).board, precision: "fast", seed: 16, scoring: "flat", hands: 40 });
+  assert.equal(rf.scoring, "flat");
+  assert.equal(rf.dropUnit, 3);
+  for (const o of rf.stage.nodes[0].options) assert.ok(Math.abs(o.ev) <= 12.001);
   const r3 = await solve({ variant: "pfr", board: [], precision: "fast", seed: 14, iterations: 20, flops: 3, runouts: 6, hands: 20 });
   assert.ok(r3.aggregates.river && r3.aggregates.flop);
   assert.ok(Object.keys(r3.aggregates.river).some((k) => k.endsWith(":0")), "river states owned by the button after a flop take");
