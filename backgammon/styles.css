@@ -1263,3 +1263,243 @@ details .stack {
     padding-bottom: 200px;
   }
 }
+
+/* Checker affordances communicate legal moves, never strategic rankings. */
+.board-slot {
+  position: relative;
+}
+.bg-board.has-moves {
+  touch-action: pinch-zoom;
+}
+.point[aria-disabled="true"] {
+  cursor: default;
+}
+.point .source-ring {
+  fill: none;
+  stroke: #b6eee0;
+  stroke-width: 3.5;
+  stroke-dasharray: 5 4;
+  opacity: 0.95;
+}
+.point.movable {
+  cursor: grab;
+}
+.point.selected .source-ring {
+  stroke-dasharray: none;
+  stroke-width: 4;
+  opacity: 1;
+}
+.point.destination {
+  cursor: pointer;
+}
+.point.destination .point-hit {
+  fill: #b6eee017;
+  stroke-width: 3;
+}
+.point.destination.drop-hover .point-hit {
+  fill: #b6eee047;
+  stroke-width: 5;
+}
+.point.selected .point-hit {
+  fill: #b6eee028;
+}
+.is-dragging,
+.is-dragging .point {
+  cursor: grabbing;
+}
+.drag-checker {
+  filter: drop-shadow(0 6px 4px #0007);
+  pointer-events: none;
+}
+.moving-checker {
+  pointer-events: none;
+}
+.dice[hidden] {
+  display: none;
+}
+button.die {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 7px;
+  flex-shrink: 0;
+}
+button.die:hover {
+  background: #fff8e9;
+  border-color: #b6eee0;
+}
+button.die.preferred {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.die-reveal {
+  animation: die-arrive 230ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.turn-ready {
+  animation: turn-ready 250ms ease-out;
+}
+.draft-line {
+  line-height: 1.45;
+}
+.opening-roll {
+  position: absolute;
+  z-index: 3;
+  width: min(420px, calc(100% - 48px));
+  padding: 22px 24px 18px;
+  border: 1px solid #546862;
+  border-radius: 14px;
+  background: #132024fa;
+  text-align: center;
+  box-shadow: 0 8px 28px #0004;
+  animation: roll-panel-in 180ms ease-out;
+}
+.opening-roll h2 {
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 0;
+}
+.opening-roll p {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 14px 0 0;
+}
+.opening-players {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 16px;
+}
+.opening-name {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.opening-name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.opening-die {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+.opening-die .die {
+  width: 56px;
+  height: 56px;
+  padding: 10px;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-10px) rotate(-12deg);
+  transition:
+    opacity 150ms,
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.opening-die .die i {
+  width: 7px;
+  height: 7px;
+}
+.opening-die .unrolled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transform: none;
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed #748b89;
+}
+.opening-player.revealed .die {
+  opacity: 1;
+  transform: none;
+}
+.teal-die {
+  background: #72b8ad;
+  border-color: #52978c;
+}
+.opening-winner .die {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+@keyframes die-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes roll-panel-in {
+  from {
+    transform: translateY(6px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes turn-ready {
+  from {
+    box-shadow: 0 0 0 3px #b6eee040;
+  }
+  to {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .opening-roll {
+    width: min(350px, calc(100% - 32px));
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+  .opening-roll h2 {
+    font-size: 18px;
+  }
+  .opening-roll p {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .opening-players {
+    margin-top: 10px;
+    gap: 12px;
+  }
+  .opening-name {
+    gap: 5px;
+    font-size: 13px;
+  }
+  .opening-die {
+    height: 47px;
+    margin-top: 6px;
+  }
+  .opening-die .die {
+    width: 44px;
+    height: 44px;
+    padding: 7px;
+  }
+  .opening-die .die i {
+    width: 5px;
+    height: 5px;
+  }
+  .draft-line {
+    font-size: 13px;
+  }
+}
+.point .landing-ring {
+  fill: #b6eee023;
+  stroke: #b6eee0;
+  stroke-width: 3;
+  stroke-dasharray: 4 3;
+}
+.point.drop-hover .landing-ring {
+  fill: #b6eee055;
+  stroke-dasharray: none;
+  stroke-width: 5;
+}
+.checker.drag-origin {
+  opacity: 0.25;
+}

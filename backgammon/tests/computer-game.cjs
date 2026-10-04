@@ -24,6 +24,8 @@ const assert = require("node:assert/strict");
         return (await get("work", "play")).game.state;
       });
     for (let n = 0; n < 700; n++) {
+      if (await p.locator("#begin-turn").count())
+        await p.locator("#begin-turn").click();
       const s = await state();
       if (s.phase === "over") break;
       const actor = ["double", "resign"].includes(s.phase)

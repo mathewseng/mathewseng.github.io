@@ -4,7 +4,7 @@ This is observed test coverage, not a claim of commercial feature parity or real
 
 ## Automated checks
 
-- Full repository `node scripts/run-tests.mjs`: **110 tests passed, zero failures**. Includes existing poker/OFC/cards/blackjack/PeerRoom regressions and new rules, malformed-input, property/replay, XGID, MAT, backup, protocol, worker queue and deployment-artifact tests.
+- Full repository `node scripts/run-tests.mjs`: **113 tests passed, zero failures**. Includes existing poker/OFC/cards/blackjack/PeerRoom regressions and new rules, malformed-input, property/replay, XGID, MAT, backup, protocol, worker queue and deployment-artifact tests.
 - Seeded rules runs play 12 complete games, assert checker conservation after every transition, and replay committed dice/actions to the identical final state. Fixture tests replay every generated exercise's provenance and validate every recorded candidate as a complete legal turn.
 - `tests/browser.cjs` on the assembled `_site`: Chrome **154.0.8037.93**, Firefox **146.0.1**, WebKit **26.0**. All three completed gameplay, cube handling, save/reload, Library, Trainer, Solver, actual WASM, probability/perspective/match-context, cancellation/restart and offline checks. No custom isolation headers; `crossOriginIsolated` was false.
 - Original C `hint` and our binding agree on five openings within **0.00011**. Fixtures record full version/settings and are checked to **0.0001**. A 75-result doubles position verifies evaluation of a submitted move outside the original top-40 hints. Tests compare mirror/player perspectives and changed match scores, not only mocked outputs.
@@ -36,6 +36,14 @@ Environment: **Apple M4 Pro, arm64 macOS, Chrome 154**, local HTTP, no CPU throt
 - Fresh-worker startup, 10 samples: median **19.8 ms** total (12.3 ms asset transfer, 0.3 ms compilation, 7.1 ms initialization; component medians need not sum exactly).
 - Cold engine computation, five samples per position/setting: Quick medians **0.1–1.4 ms**; Standard **0.9–33.2 ms**; Deep **1.2–366.1 ms** for opening/contact/race/bearoff/cube representatives. Small samples report min/max, not p95.
 - Warm GNUbg internal-cache samples are separately recorded. Quick/Standard use 30 samples, so median and p95 are supplied. They must not be presented as cold computation costs.
-- Thirty touch-selection/frame samples: approximately **16.6 ms median / 16.9 ms p95** in the final interaction run. See `interaction-benchmark.json`; this measures dispatch to the next animation frame, not a universal latency guarantee.
+- Thirty touch-selection/frame samples: approximately **16.7 ms median / 17.6 ms p95** in the final interaction run. See `interaction-benchmark.json`; this measures dispatch to the next animation frame, not a universal latency guarantee.
 
 Reproduce with the commands in the family README. Screenshots and browser-run JSON are local ignored artifacts in `backgammon/test-results/`; the durable benchmark data and this record are committed.
+
+## Checker interaction refinement
+
+The shared board now supports mouse, touch and pen pointer dragging as well as tapping. `tests/checker-ux.cjs` runs inside the assembled-site browser suite (including deployment CI). Chromium, Firefox and WebKit passed the focused opening and checker scenarios: separate die reveals, ties, retained opening results, refresh without rerolling, legal-source rings, die-labeled destinations, blocked taps, invalid drops, pointer/Escape cancellation, both orientations, no duplicate click after drag, bar entry, hits and undo, ambiguous bearoff choices, doubles, forced passes, tall stacks, spatial keyboard navigation and reduced motion. A real GNUbg computer opening waits for acknowledgement; taking the next action during opponent playback restores the exact committed board.
+
+Chromium additionally sends a touch pointer stream through the browser's input dispatcher, tests touch dragging without document scrolling, and captures opening/active-play screenshots across all nine viewport classes. The common layouts keep the board and primary action together; 320×568 allows the existing small amount of vertical reflow. Full-size screenshots and viewport contact sheets were inspected, including a lifted touch checker and its highlighted drop region. These are automated interaction checks and visual inspection, **not a study with recruited beginners or physical-device testing**.
+
+The updated application also completed a real computer match (84 committed events, 21 human decisions), replayed and saved it, and repeated the live two-context PeerJS test through cube take, rejoin and host recovery. No game rules, engine settings, or wire protocol changed.

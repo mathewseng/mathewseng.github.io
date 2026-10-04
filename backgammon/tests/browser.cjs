@@ -58,6 +58,7 @@ const server = http.createServer((req, res) => {
           ? { executablePath: process.env.CHROME_PATH }
           : {}),
       });
+      console.log(`Testing ${browserName} ${browser.version()}`);
       report.browsers.push({ name: browserName, version: browser.version() });
       try {
         const context = await browser.newContext({
@@ -81,6 +82,7 @@ const server = http.createServer((req, res) => {
           await page.locator("#roll").click();
           await page.waitForTimeout(25);
         } while (await page.locator("#roll").count());
+        await page.locator("#begin-turn").click();
         const steps = async () => {
           while (await page.locator("#confirm").isDisabled())
             await page
@@ -385,6 +387,10 @@ const server = http.createServer((req, res) => {
           await failureContext.close();
         }
         await context.close();
+        report.checkerUX ||= [];
+        report.checkerUX.push(
+          await require("./checker-ux.cjs")(browser, base, out, browserName),
+        );
         // Offline shell and coherent engine cache, scoped exclusively to this family.
         const offline = await browser.newContext(),
           op = await offline.newPage();
@@ -435,7 +441,24 @@ const server = http.createServer((req, res) => {
           ),
         );
       } finally {
-        await browser.close();
+        // Bound teardown even if an installed browser exits before its close acknowledgement.
+        let timer;
+        try {
+          await Promise.race([
+            browser.close(),
+            new Promise((resolve, reject) => {
+              timer = setTimeout(
+                () =>
+                  browser.isConnected()
+                    ? reject(new Error("Browser teardown timed out"))
+                    : resolve(),
+                5000,
+              );
+            }),
+          ]);
+        } finally {
+          clearTimeout(timer);
+        }
       }
     }
     assert.deepEqual(errors, []);

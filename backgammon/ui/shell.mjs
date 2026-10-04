@@ -260,7 +260,10 @@ export function players(s, names = ["Ivory", "Teal"]) {
     ["player", orientation],
   ]) {
     const row = $(id);
-    row.classList.toggle("active", s.turn === p && s.phase !== "over");
+    row.classList.toggle(
+      "active",
+      s.turn === p && !["over", "opening"].includes(s.phase),
+    );
     row.replaceChildren(
       el(
         "span",
@@ -279,9 +282,31 @@ export function players(s, names = ["Ivory", "Teal"]) {
     );
   }
 }
-export function diceView(dice, used = []) {
+export function diceView(dice, used = [], options = {}) {
   const parent = $("dice");
   parent.replaceChildren();
+  const rest = [...used];
+  for (const die of dice.length && dice[0] === dice[1]
+    ? Array(4).fill(dice[0])
+    : dice) {
+    const consumed = rest.includes(die);
+    if (consumed) rest.splice(rest.indexOf(die), 1);
+    const d = dieFace(die, {
+      consumed,
+      choose:
+        !consumed && options.choose && dice[0] !== dice[1]
+          ? () => options.choose(die)
+          : null,
+      preferred: options.preferred === die,
+    });
+    if (options.roll) d.classList.add("die-reveal");
+    parent.append(d);
+  }
+}
+export function dieFace(
+  die,
+  { consumed = false, choose = null, preferred = false, player = null } = {},
+) {
   const positions = {
     1: [4],
     2: [0, 8],
@@ -290,25 +315,23 @@ export function diceView(dice, used = []) {
     5: [0, 2, 4, 6, 8],
     6: [0, 2, 3, 5, 6, 8],
   };
-  const rest = [...used];
-  for (const die of dice.length && dice[0] === dice[1]
-    ? Array(4).fill(dice[0])
-    : dice) {
-    const consumed = rest.includes(die);
-    if (consumed) rest.splice(rest.indexOf(die), 1);
-    const d = el("span", {
-      class: `die${consumed ? " used" : ""}`,
-      role: "img",
-      "aria-label": `${die}${consumed ? ", used" : ""}`,
-    });
-    for (let i = 0; i < 9; i++)
-      d.append(
-        el("i", {
-          style: positions[die].includes(i) ? "" : "visibility:hidden",
-        }),
-      );
-    parent.append(d);
-  }
+  const d = el(choose ? "button" : "span", {
+    class: `die${consumed ? " used" : ""}${preferred && choose ? " preferred" : ""}${player === 1 ? " teal-die" : ""}`,
+    ...(choose
+      ? { type: "button", onClick: choose, "aria-pressed": preferred }
+      : { role: "img" }),
+    "aria-label": `${choose ? "Prefer die " : ""}${die}${consumed ? ", used" : ""}`,
+    ...(choose
+      ? { title: "Prefer this die when either can reach the same point" }
+      : {}),
+  });
+  for (let i = 0; i < 9; i++)
+    d.append(
+      el("i", {
+        style: positions[die].includes(i) ? "" : "visibility:hidden",
+      }),
+    );
+  return d;
 }
 export class DraftBoard {
   constructor(board, onChange = () => {}) {
@@ -319,15 +342,27 @@ export class DraftBoard {
     this.paths = [];
     this.preferred = null;
     board.onPoint = (p) => this.point(p);
+    board.onDragStart = (p) => this.beginDrag(p);
+    board.onDrop = (_, p) => this.drop(p);
+    board.onCancel = () => {
+      this.selected = null;
+      this.hint = "Selection cleared. Choose a ringed checker.";
+      this.render();
+    };
     addEventListener("bg-settings", () => this.render());
   }
   set(s, paths, enabled = true) {
+    this.board.endDrag();
     this.state = s;
     this.paths = paths;
     this.draft = [];
     this.selected = null;
+    this.hint = "";
+    this.preferred = null;
     this.enabled = enabled;
     this.preview = null;
+    if (enabled && s.bar[s.turn] && this.candidates().length)
+      this.selected = "bar";
     this.render();
   }
   current() {
@@ -343,16 +378,16 @@ export class DraftBoard {
   }
   point(raw) {
     if (!this.enabled || this.preview) return;
-    let p = raw;
-    if (String(raw).startsWith("bar")) p = "bar";
-    if (String(raw).startsWith("off")) p = "off";
-    if (
-      typeof raw === "string" &&
-      /[01]$/.test(raw) &&
-      Number(raw.at(-1)) !== this.state.turn
-    )
-      return;
+    const p = this.normalize(raw);
     const options = this.candidates();
+    this.hint = "";
+    if (this.complete()) {
+      this.hint = this.draft.length
+        ? "All playable dice are used. Confirm turn, or undo a move."
+        : "There is no legal move. Confirm to pass your turn.";
+      this.render();
+      return;
+    }
     const dest = options.filter(
       (st) => st.from === this.selected && st.to === p,
     );
@@ -360,6 +395,8 @@ export class DraftBoard {
       const chosen = dest.find((st) => st.die === this.preferred);
       if (chosen) this.move(chosen);
       else {
+        const key = this.state,
+          draftLength = this.draft.length;
         let d;
         d = dialog(
           "Choose a die",
@@ -373,7 +410,8 @@ export class DraftBoard {
               `Use ${st.die}`,
               () => {
                 d.close();
-                this.move(st);
+                if (this.state === key && this.draft.length === draftLength)
+                  this.move(st);
               },
               "primary",
             ),
@@ -386,56 +424,135 @@ export class DraftBoard {
       this.move(dest[0]);
       return;
     }
-    this.selected = options.some((st) => st.from === p) ? p : null;
+    if (options.some((st) => st.from === p))
+      this.selected = this.selected === p ? null : p;
+    else
+      this.hint = this.current().bar[this.state.turn]
+        ? "Enter your checker from the bar first."
+        : typeof p === "number" &&
+            this.current().points[p] * (this.state.turn ? -1 : 1) <= -2
+          ? "That point is blocked. Choose a highlighted point."
+          : typeof p === "number" &&
+              this.current().points[p] * (this.state.turn ? -1 : 1) > 0
+            ? "That checker cannot use the remaining dice. Choose a ringed checker."
+            : "Choose a ringed checker or a highlighted destination.";
+    this.render();
+  }
+  normalize(raw) {
+    if (raw === null) return null;
+    if (typeof raw === "string" && /^(bar|off)[01]$/.test(raw))
+      return Number(raw.at(-1)) === this.state.turn ? raw.slice(0, -1) : null;
+    return raw;
+  }
+  beginDrag(raw) {
+    if (!this.enabled || this.preview) return false;
+    const source = this.normalize(raw);
+    if (!this.candidates().some((st) => st.from === source)) return false;
+    this.selected = source;
+    this.hint = "Release on a highlighted point. Release elsewhere to cancel.";
+    this.render();
+    return true;
+  }
+  drop(raw) {
+    const dest = this.normalize(raw);
+    if (
+      !this.candidates().some(
+        (st) => st.from === this.selected && st.to === dest,
+      )
+    ) {
+      this.hint = "Move cancelled. Drop on a highlighted point, or tap it.";
+      this.render();
+      return;
+    }
+    this.point(raw);
+  }
+  preferDie(die) {
+    this.preferred = this.preferred === die ? null : die;
+    this.hint = this.preferred
+      ? `Die ${die} preferred when either die can reach a destination.`
+      : "Die preference cleared.";
     this.render();
   }
   move(step) {
+    if (
+      !this.enabled ||
+      this.preview ||
+      !this.candidates().some(
+        (st) =>
+          st.from === step.from && st.to === step.to && st.die === step.die,
+      )
+    )
+      return;
+    const before = this.current();
     this.draft.push(step);
-    this.selected = null;
+    this.hint = "";
+    const sources = [...new Set(this.candidates().map((st) => st.from))];
+    this.selected = sources.length === 1 ? sources[0] : null;
     this.render();
+    this.board.animateMove(before, this.current(), step);
     this.onChange();
   }
   undo() {
+    const before = this.current(),
+      step = this.draft.at(-1);
     this.preview = null;
     this.draft.pop();
     this.selected = null;
+    this.hint = "Move undone. Try another checker or destination.";
     this.render();
+    if (step) this.board.animateMove(before, this.current(), step, true);
     this.onChange();
   }
   reset() {
     this.preview = null;
     this.draft = [];
     this.selected = null;
+    this.hint = "Draft cleared. Your original position is restored.";
     this.render();
     this.onChange();
   }
   render() {
     if (!this.state) return;
     const s = this.preview || this.current();
+    const options = this.enabled && !this.preview ? this.candidates() : [];
+    const moves = options.filter((st) => st.from === this.selected);
     this.board.render(s, {
       ...settings(),
       selected: this.selected,
-      destinations:
-        this.enabled && !this.preview
-          ? this.candidates()
-              .filter((st) => st.from === this.selected)
-              .map((st) => st.to)
-          : [],
+      destinations: moves.map((st) => st.to),
+      sources: [...new Set(options.map((st) => st.from))],
+      moves,
       interactive: this.enabled && !this.preview,
       preview: !!this.preview,
     });
     players(s, this.names);
+    const diceKey = this.state.sequence + ":" + this.state.dice.join();
     diceView(
       this.state.dice,
       this.draft.map((st) => st.die),
+      {
+        preferred: this.preferred,
+        choose:
+          this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
+        roll: this.lastDiceKey !== diceKey,
+      },
     );
+    this.lastDiceKey = diceKey;
+    $("draft-line").setAttribute("role", "status");
     $("draft-line").textContent = this.preview
       ? "Preview only · original position is unchanged"
-      : this.draft.length
-        ? notation(this.draft, this.state.turn)
-        : this.state.phase === "move"
-          ? "Select a checker, then a destination."
-          : "";
+      : this.hint ||
+        (this.enabled && this.state.phase === "move"
+          ? this.complete()
+            ? this.draft.length
+              ? "Ready to confirm. Undo lets you try another move."
+              : "All entries are blocked. Confirm to pass your turn."
+            : this.selected !== null
+              ? `Tap a highlighted point${this.selected === "bar" ? " to enter from the bar" : ""}. Its number is the die used.`
+              : "Tap a ringed checker, then a destination. You can also drag."
+          : this.draft.length
+            ? notation(this.draft, this.state.turn)
+            : "");
   }
   picker() {
     const options = this.candidates();

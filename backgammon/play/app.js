@@ -7,6 +7,7 @@ import {
   canDouble,
   notation,
   positionKey,
+  boardKey as checkerKey,
   clone,
   playerName,
 } from "../core/rules.mjs";
@@ -29,6 +30,7 @@ import {
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { Online } from "./network.mjs";
+import { OpeningRoll } from "../ui/opening-roll.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
 let config = {
     mode: "computer",
@@ -46,12 +48,19 @@ let config = {
   feedback = null,
   netStatus = "Not connected",
   saved = null,
+  committing = false,
+  lastMotion = "",
+  renderedGameId = null,
   epoch = 0;
 const analysis = new AnalysisPanel();
 const draft = new DraftBoard(ui.board, () => {
   actions();
   detailDraft();
   persist();
+});
+const opening = new OpeningRoll(ui.board.container, () => {
+  boardKey = "";
+  render();
 });
 const online = new Online({
   onChange: () => {
@@ -152,22 +161,47 @@ function myTurn(s) {
 }
 function render() {
   const m = model(),
-    s = state(),
-    key =
-      (m?.id || "setup") +
-      positionKey(s) +
-      (online.ready ? "ready" : "") +
-      (online.pending ? "pending" : "");
+    s = state();
+  opening.sync(m, names());
+  $("dice").hidden = opening.active;
+  const key =
+    (m?.id || "setup") +
+    positionKey(s) +
+    (online.ready ? "ready" : "") +
+    (online.pending ? "pending" : "") +
+    (opening.active ? "opening" : "");
   if (key !== boardKey) {
+    const before = ui.board.state,
+      event = m?.events?.at(-1);
     boardKey = key;
     draft.names = m?.names ||
       m?.players?.map((p) => p.name) || ["Ivory", "Teal"];
     draft.set(
       s,
       legalPaths(s),
-      !!m?.started && myTurn(s) && !botBusy && s.phase === "move",
+      !!m?.started &&
+        myTurn(s) &&
+        !botBusy &&
+        !opening.active &&
+        s.phase === "move",
     );
+    const motionKey = `${m?.id}:${s.sequence}`;
+    if (
+      before &&
+      renderedGameId === m?.id &&
+      before.phase === "move" &&
+      lastMotion !== motionKey &&
+      event?.action.type === "move" &&
+      before.sequence + 1 === s.sequence &&
+      before.turn === event.actor &&
+      checkerKey(before) !== checkerKey(s)
+    )
+      ui.board.playTurn(before, event.action.steps);
+    lastMotion = motionKey;
+    renderedGameId = m?.id;
   }
+  if (opening.active)
+    for (const id of ["player", "opponent"]) $(id).classList.remove("active");
   $("subtitle").textContent = m?.started
     ? `${s.matchLength ? s.matchLength + "-point match" : "Unlimited points"} · ${s.crawford ? "Crawford game" : s.crawfordPlayed ? "Post-Crawford" : `Game ${s.gameNumber}`} · cube ${s.cube.value}`
     : "Computer, same-device, or a private room";
@@ -430,7 +464,46 @@ function actions() {
       a.append(button("Connection details", () => $("panel-toggle").click()));
     return;
   }
-  const mine = myTurn(s) && !botBusy;
+  const mine = myTurn(s) && !botBusy && !committing;
+  if (opening.active) {
+    $("message").textContent = opening.busy
+      ? "One die each…"
+      : opening.dice
+        ? opening.tie
+          ? "Same roll. Neither player starts yet."
+          : "The winner plays both opening dice."
+        : "The higher opening die goes first.";
+    a.append(
+      button(
+        opening.busy
+          ? "Rolling…"
+          : !opening.dice
+            ? "Roll opening dice"
+            : opening.tie
+              ? "Roll again"
+              : "Begin turn",
+        () =>
+          opening.dice && !opening.tie
+            ? opening.dismiss()
+            : commit({ type: "opening" }),
+        "primary",
+        {
+          id: opening.dice && !opening.tie ? "begin-turn" : "roll",
+          disabled:
+            opening.busy ||
+            committing ||
+            ((!opening.dice || opening.tie) && !mine),
+        },
+      ),
+    );
+    if (opening.busy)
+      a.append(
+        button("Show dice", () => opening.finish(), "ghost", {
+          id: "show-opening",
+        }),
+      );
+    return;
+  }
   if (botPaused && config.mode === "computer" && !myTurn(s)) {
     $("message").textContent = "Computer paused.";
     a.append(
@@ -501,7 +574,7 @@ function actions() {
           ? "Confirm pass"
           : "Confirm turn",
         submit,
-        "primary",
+        `primary${draft.complete() && mine ? " turn-ready" : ""}`,
         { disabled: !mine || !draft.complete(), id: "confirm" },
       ),
     );
@@ -609,13 +682,18 @@ function panel() {
           ? `GNUbg · ${config.strength} · ${config.tutor ? "tutor enabled" : "unassisted play"}`
           : "Take turns on this device. Only unconfirmed checker moves can be undone.",
       ),
-      analysis.status,
+      ...(config.mode === "computer" ? [analysis.status] : []),
     );
-  if (m.started && s.phase === "move" && myTurn(s)) {
+  if (m.started && s.phase === "move" && myTurn(s) && !opening.active) {
     p.append(el("div", { id: "draft-controls" }));
     detailDraft();
   }
-  if (m.started && myTurn(s) && ["roll", "move"].includes(s.phase))
+  if (
+    m.started &&
+    !opening.active &&
+    myTurn(s) &&
+    ["roll", "move"].includes(s.phase)
+  )
     p.append(
       button("Offer resignation", () => {
         let d;
@@ -650,6 +728,7 @@ function panel() {
     );
   if (
     m.started &&
+    !opening.active &&
     config.mode !== "online" &&
     ["roll", "move", "double"].includes(s.phase)
   )
@@ -684,11 +763,44 @@ function panel() {
     );
   if (m.started)
     p.append(
+      button(
+        "How to play",
+        () =>
+          dialog(
+            "Moving your checkers",
+            el(
+              "div",
+              { class: "stack" },
+              el(
+                "p",
+                {},
+                "Tap a ringed checker, then a highlighted point. Or drag the checker there. The number on a destination tells you which die it uses.",
+              ),
+              el(
+                "p",
+                {},
+                "Use both dice whenever possible; doubles give four moves. You may move the same checker more than once. A point with two or more opposing checkers is blocked; landing on a single opposing checker sends it to the bar.",
+              ),
+              el(
+                "p",
+                {},
+                "Checkers on the bar must enter first. Once all your checkers are home, move them into the OFF tray to bear off.",
+              ),
+              el(
+                "p",
+                {},
+                "Moves remain a draft until Confirm turn. Undo reverses one move. Details also has a legal-move selector and Reset turn.",
+              ),
+            ),
+          ),
+        "ghost",
+      ),
       el("h2", {}, "History"),
       el(
         "ol",
         { class: "history", id: "history" },
         ...m.events
+          .slice(0, m.events.length - (opening.busy ? 1 : 0))
           .slice(-30)
           .reverse()
           .map((event) => el("li", {}, eventText(event))),
@@ -716,10 +828,10 @@ function detailDraft() {
           button(
             "Use other die first",
             () => {
-              draft.preferred =
+              draft.preferDie(
                 state().dice.find((d) => d !== draft.preferred) ||
-                state().dice[0];
-              toast(`Prefer die ${draft.preferred} for ambiguous bearoffs.`);
+                  state().dice[0],
+              );
             },
             "ghost",
           ),
@@ -743,35 +855,43 @@ async function persist() {
   }
 }
 async function commit(action) {
+  if (committing) return;
   if (config.mode === "online") {
     online.send(action);
     return;
   }
-  const s = game.state,
-    actor = ["double", "resign"].includes(s.phase) ? 1 - s.turn : s.turn;
-  const committed = ["opening", "roll"].includes(action.type)
-    ? { ...action, dice: cryptoDice() }
-    : action;
-  game.state = transition(s, committed, actor);
-  draft.draft = [];
-  game.events.push({ actor, action: committed });
-  boardKey = "";
-  if (committed.type === "opening" && committed.dice[0] === committed.dice[1])
-    toast(`Both rolled ${committed.dice[0]}. Roll again.`);
-  if (game.state.phase === "over")
-    await put(
-      "items",
-      itemRecord("match", {
-        id: game.id,
-        title: `${names().join(" vs ")} · ${game.state.scores.join("–")}`,
-        initial: game.initial,
-        events: game.events,
-        names: names(),
-        tags: ["played"],
-      }),
-    );
-  await persist();
-  render();
+  committing = true;
+  draft.enabled = false;
+  draft.render();
+  actions();
+  try {
+    const s = game.state,
+      actor = ["double", "resign"].includes(s.phase) ? 1 - s.turn : s.turn;
+    const committed = ["opening", "roll"].includes(action.type)
+      ? { ...action, dice: cryptoDice() }
+      : action;
+    game.state = transition(s, committed, actor);
+    draft.draft = [];
+    game.events.push({ actor, action: committed });
+    boardKey = "";
+    if (game.state.phase === "over")
+      await put(
+        "items",
+        itemRecord("match", {
+          id: game.id,
+          title: `${names().join(" vs ")} · ${game.state.scores.join("–")}`,
+          initial: game.initial,
+          events: game.events,
+          names: names(),
+          tags: ["played"],
+        }),
+      );
+    await persist();
+  } finally {
+    committing = false;
+    boardKey = "";
+    render();
+  }
 }
 async function submit() {
   const source = clone(state()),
@@ -833,6 +953,7 @@ async function computerTurn() {
   const s = state();
   if (
     botBusy ||
+    opening.active ||
     botPaused ||
     s.phase === "over" ||
     s.phase === "opening" ||

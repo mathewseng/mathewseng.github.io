@@ -30,6 +30,7 @@ const assert = require("node:assert/strict");
       await p.locator("#roll").tap();
       await p.waitForTimeout(30);
     } while (await p.locator("#roll").count());
+    await p.locator("#begin-turn").tap();
     const step = await p.evaluate(async () => {
       const { get } = await import("/backgammon/core/storage.mjs"),
         { legalTurns } = await import("/backgammon/core/rules.mjs");

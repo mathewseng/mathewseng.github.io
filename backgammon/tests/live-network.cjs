@@ -54,6 +54,10 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
       await host.locator("#roll").click();
       await host.waitForTimeout(150);
     } while ((await snapshot(host)).state.phase === "opening");
+    await Promise.all([
+      host.locator("#begin-turn").click(),
+      guest.locator("#begin-turn").click(),
+    ]);
     let s = await snapshot(host);
     const actor = s.state.turn === 0 ? host : guest;
     while (await actor.locator("#confirm").isDisabled()) {
