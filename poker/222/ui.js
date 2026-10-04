@@ -105,11 +105,11 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
   container.replaceChildren();
   const n = hands.length;
   const flopOut = board.length >= 3;
-  const maxHand = POINTS.map((p) => p * (n - 1));
   const rangeMode = stats?.mode === "range";
   const scoring = scoringOf(stats?.scoring ?? SCORINGS.classic);
   const POINTS = scoring.points,
     SCOOP_BONUS = scoring.scoop;
+  const maxHand = POINTS.map((p) => p * (n - 1));
   hands.forEach((hand, i) => {
     const seat = el("section", `seat${highlight === i ? " me" : ""}${pending ? " pending" : ""}`);
     const head = el("div", "seat-head");
