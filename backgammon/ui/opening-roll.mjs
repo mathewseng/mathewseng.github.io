@@ -106,10 +106,12 @@ export class OpeningRoll {
     );
     this.title.textContent = this.tie
       ? `A tie · both rolled ${this.dice[0]}`
-      : `${this.names[winner]} starts`;
+      : this.names[winner] === "You"
+        ? "You start"
+        : `${this.names[winner]} starts`;
     this.caption.textContent = this.tie
       ? "Roll one die each again. Opening ties never become doubles."
-      : `The higher die wins. Play the ${this.dice[0]} and ${this.dice[1]}.`;
+      : `The winner uses both dice: ${this.dice[0]} and ${this.dice[1]}.`;
     if (notify) this.onChange();
   }
   dismiss() {

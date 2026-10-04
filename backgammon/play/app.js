@@ -560,7 +560,7 @@ function actions() {
         ? draft.draft.length
           ? "Turn ready to confirm."
           : "No legal move · confirm the pass."
-        : s.bar[s.turn]
+        : draft.current().bar[s.turn]
           ? "Enter from the bar first."
           : "Use all playable dice, then confirm."
       : `${names()[s.turn]} is moving`;
@@ -580,7 +580,7 @@ function actions() {
     );
   } else if (s.phase === "double") {
     $("message").textContent =
-      `${names()[s.turn]} offers ${s.cube.value * 2}. ${names()[1 - s.turn]} decides.`;
+      `Double to ${s.cube.value * 2} from ${names()[s.turn]}. ${names()[1 - s.turn]} to decide.`;
     a.append(
       button("Pass", () => commit({ type: "pass" }), "", { disabled: !mine }),
       button(
@@ -592,7 +592,7 @@ function actions() {
     );
   } else if (s.phase === "resign") {
     $("message").textContent =
-      `${names()[s.turn]} offers to resign ${s.pending.level * s.cube.value} points.`;
+      `Resignation offer from ${names()[s.turn]}: ${s.pending.level * s.cube.value} points.`;
     a.append(
       button("Reject", () => commit({ type: "reject" }), "", {
         disabled: !mine,
@@ -603,7 +603,7 @@ function actions() {
     );
   } else if (s.phase === "over") {
     $("message").textContent =
-      `${names()[s.result.winner]} wins ${s.result.points} points${s.result.matchOver ? " · match complete" : ""}.`;
+      `${names()[s.result.winner]} ${names()[s.result.winner] === "You" ? "win" : "wins"} ${s.result.points} points${s.result.matchOver ? " · match complete" : ""}.`;
     a.append(
       button(
         s.result.matchOver ? "Rematch" : "Next game",
