@@ -10,7 +10,7 @@ rsync -a --delete \
   --exclude 'package.json' --exclude 'package-lock.json' \
   --exclude '.gitignore' --exclude '.DS_Store' --exclude '*.md' \
   --exclude 'scripts' --exclude 'simulation' \
-  --include '/backgammon/solver/' --exclude 'solver' --exclude 'tests' \
+  --include '/backgammon/solver/' --exclude 'solver' --exclude 'tests' --exclude 'test-results' \
   ./ "$site_target/"
 if [ -d gym/dist ]; then
   mkdir -p "$site_target/gym"

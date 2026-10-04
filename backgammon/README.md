@@ -63,7 +63,7 @@ After host migration the game pauses. Both original seats must agree on the last
 
 `sw.js` is registered only by Backgammon tools and scoped to `/backgammon/`. It uses only `backgammon-assets-*` caches. Shell/data files are installed together; the complete matching engine triplet is cached when engine use first requests it. The hub never starts or preloads the engine. The small shared dependencies are cached only for controlled Backgammon pages. Other families are neither controlled nor purged.
 
-Run `node backgammon/scripts/offline-manifest.mjs` after changing shipped files. Content-derived cache versions prevent mixing old and new engine data. Updates wait for open controlled tabs to close: no `skipWaiting`, forced reload, or unexpected match interruption. Offline availability requires successful initial setup and engine caching. Multiplayer needs a network. Mobile browsers may suspend workers; completed work is saved, but background analysis after suspension/closure is not promised.
+Run `node backgammon/scripts/offline-manifest.mjs` after changing shipped files. Content-derived cache versions and SHA-256 verification of the entire engine triplet prevent mixing old and new engine data. Updates wait for open controlled tabs to close: no `skipWaiting`, forced reload, or unexpected match interruption. Offline availability requires successful initial setup and engine caching. Multiplayer needs a network. Mobile browsers may suspend workers; completed work is saved, but background analysis after suspension/closure is not promised.
 
 ## Exact limits
 

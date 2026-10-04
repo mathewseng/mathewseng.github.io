@@ -79,25 +79,6 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
     );
   } else {
     const list = el("div", { class: "list" });
-    const fill = (count) => {
-      list.replaceChildren(
-        ...result.candidates
-          .slice(0, count)
-          .map(
-            (c, i) =>
-              button(
-                "",
-                () => onPreview(c),
-                "list-row",
-              ).appendChildReturn?.() || candidate(c, i),
-          ),
-      );
-    };
-    function candidate(c, i) {
-      return button("", () => onPreview(c), "list-row", {
-        title: "Preview this move",
-      }).withContent;
-    }
     const rows = (count) =>
       result.candidates.slice(0, count).map((c, i) => {
         const b = button("", () => onPreview(c), "list-row");

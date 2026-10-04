@@ -4,7 +4,7 @@ This is observed test coverage, not a claim of commercial feature parity or real
 
 ## Automated checks
 
-- Full repository `node scripts/run-tests.mjs`: **107 tests passed, zero failures**. Includes existing poker/OFC/cards/blackjack/PeerRoom regressions and new rules, malformed-input, property/replay, XGID, MAT, backup, protocol, worker queue and deployment-artifact tests.
+- Full repository `node scripts/run-tests.mjs`: **110 tests passed, zero failures**. Includes existing poker/OFC/cards/blackjack/PeerRoom regressions and new rules, malformed-input, property/replay, XGID, MAT, backup, protocol, worker queue and deployment-artifact tests.
 - Seeded rules runs play 12 complete games, assert checker conservation after every transition, and replay committed dice/actions to the identical final state. Fixture tests replay every generated exercise's provenance and validate every recorded candidate as a complete legal turn.
 - `tests/browser.cjs` on the assembled `_site`: Chrome **154.0.8037.93**, Firefox **146.0.1**, WebKit **26.0**. All three completed gameplay, cube handling, save/reload, Library, Trainer, Solver, actual WASM, probability/perspective/match-context, cancellation/restart and offline checks. No custom isolation headers; `crossOriginIsolated` was false.
 - Original C `hint` and our binding agree on five openings within **0.00011**. Fixtures record full version/settings and are checked to **0.0001**. A 75-result doubles position verifies evaluation of a submitted move outside the original top-40 hints. Tests compare mirror/player perspectives and changed match scores, not only mocked outputs.
@@ -28,6 +28,8 @@ A zoom/short-landscape inspection caught action-area overflow below 700 pixels; 
 Chromium and Firefox completed navigation and fresh engine analysis after Playwright's network-offline switch. WebKit's switch caused an internal browser error **before service-worker interception**, including ordinary cached fetches. To distinguish that harness behavior from the app, the WebKit test stopped the HTTP server instead: cached navigation and analysis passed. The cache was verified to contain the complete matching engine triplet. No real-device suspension/background continuation is claimed.
 
 ## Measurements
+
+Offline unit tests additionally verify the complete engine triplet against manifest SHA-256 digests, reject incompatible updates without caching partial assets, retry after failure, and preserve other families' caches. Artifact tests verify every offline manifest entry exists in the assembled site and exclude local test screenshots/reports.
 
 Environment: **Apple M4 Pro, arm64 macOS, Chrome 154**, local HTTP, no CPU throttle. HTTP cache disabled for startup tests; the browser may reuse compiled WASM. `benchmarks.json` contains every sample, with network transfer separated from compilation and initialization. This is not a WAN/download-speed or real-phone measurement.
 
