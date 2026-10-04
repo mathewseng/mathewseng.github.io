@@ -25,6 +25,7 @@ import {
   flipHist,
   gradeChoice,
   actorOn,
+  holderAfter,
   laterCubeStreets,
   variantOf,
   VARIANT_ORDER,
@@ -194,21 +195,36 @@ test("flop decision values the river cube by backward induction", () => {
   assert.ok(Math.abs(pv + pv2) < 1e-9);
 });
 
-test("seven variants and the street actor rule", () => {
+test("seven variants and the cube-holder rule", () => {
   assert.deepEqual(VARIANT_ORDER, ["p", "f", "r", "pf", "pr", "fr", "pfr"]);
   const centered = { level: 1, owner: null };
-  assert.equal(actorOn("f", "flop", 1, centered), 1, "button doubles on the only cube street");
+  assert.equal(actorOn("f", "flop", 1, centered), 1, "button has the first option");
   assert.equal(actorOn("f", "river", 1, centered), null);
-  assert.equal(actorOn("fr", "river", 1, centered), 0, "second cube street alternates to the non-button");
-  assert.equal(actorOn("fr", "river", 1, { level: 2, owner: 0 }), 0, "owner redoubles");
-  assert.equal(actorOn("pfr", "flop", 0, centered), 1);
-  assert.equal(actorOn("pfr", "river", 0, centered), 0);
-  assert.equal(actorOn("pfr", "river", 0, { level: 2, owner: 1 }), 1);
+  assert.equal(actorOn("fr", "river", 1, { level: 1, owner: 0 }), 0, "after a pass the opponent holds the option");
+  assert.equal(actorOn("fr", "river", 1, { level: 2, owner: 0 }), 0, "the taker holds the cube");
+  assert.equal(actorOn("fr", "river", 1, { level: 2, owner: 1 }), 1, "the taker of a beaver chain holds the cube");
   assert.equal(actorOn("r", "river", 1, { level: 64, owner: 0 }), null, "cube at the cap");
+  assert.equal(holderAfter(0, 0), 1, "pass hands the option over");
+  assert.equal(holderAfter(0, 1), 1, "the opponent takes the double");
+  assert.equal(holderAfter(0, 2), 0, "the doubler takes the beaver");
+  assert.equal(holderAfter(0, 3), 1, "the opponent takes the raccoon");
   assert.equal(variantOf("both").id, "fr");
   assert.deepEqual(laterCubeStreets("pfr", "flop"), ["river"]);
   assert.equal(DROP_UNIT, 6);
   assert.equal(MAX_CUBE, 64);
+});
+
+test("the drop cost is a parameter of the face-up analysis", () => {
+  const eight = analyzeDecision({ hist: deltaHist(7), level: 1, dropUnit: 8 });
+  assert.equal(eight.best, "double");
+  assert.equal(eight.response, "drop");
+  assert.equal(eight.value, 8);
+  const ten = analyzeDecision({ hist: deltaHist(4), level: 1, dropUnit: 10 });
+  assert.equal(ten.response, "take", "with a 10-point drop the opponent takes a 4-point deficit");
+  assert.equal(ten.value, 8);
+  const sevenAtTen = analyzeDecision({ hist: deltaHist(7), level: 1, dropUnit: 10 });
+  assert.equal(sevenAtTen.response, "drop", "a 7-point deficit is still dropped: taking costs 14");
+  assert.equal(riverBest(5, 1, 5), 5);
 });
 
 test("grading reports the loss of a wrong choice at a chain node", () => {

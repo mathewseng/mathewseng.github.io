@@ -19,7 +19,7 @@
 // reported mix is consistent with the reported equities. Equities are in
 // points at the cube level of the decision, from the chooser's view, against
 // the opponent's equilibrium range.
-import { Board, splitHand, pairNet, FULL_DECK, variantOf, actorOn, STREETS, makeRng, binomial } from "./engine.mjs";
+import { Board, splitHand, pairNet, FULL_DECK, variantOf, actorOn, holderAfter, STREETS, makeRng, binomial } from "./engine.mjs";
 import { DROP_UNIT, MAX_CUBE, chainDepth, levelAfter, optionLabel } from "./cube-rules.mjs";
 
 export const SOLVER_PRECISION = {
@@ -122,10 +122,11 @@ function splitTable(hands, masks, base, leaves) {
 // Strategies for one street: for every cube state entering the street, every
 // chance node (runout) and every hand, the mix at every chain node.
 class ChainStage {
-  constructor(states, K, n) {
+  constructor(states, K, n, dropUnit = DROP_UNIT) {
     this.states = states; // [{ base, owner, actorSide (null = no action), depth }]
     this.K = K;
     this.n = n;
+    this.dropUnit = dropUnit;
     this.nMax = Math.max(n[0], n[1]);
     this.offset = new Int32Array(states.length);
     let size = 0;
@@ -331,7 +332,7 @@ class ChainStage {
       } else {
         const prev = base * (1 << (k - 1)),
           L = base * (1 << k);
-        u0 = aSide ? -DROP_UNIT * prev : DROP_UNIT * prev;
+        u0 = aSide ? -this.dropUnit * prev : this.dropUnit * prev;
         u1 = ctab ? ctab[k] : x * L;
         u2 = k < kmax ? val[k + 1] : 0;
         v = p0 * u0 + p1 * u1 + p2 * u2;
@@ -509,7 +510,7 @@ class Subgame {
     this.U = new Float64Array(entryEvents.length * Pl); // BTN-view value per entry event and local pair
     if (hasFlop) {
       const fs = entryStates.map((e) => stateFor(variant, "flop", e));
-      this.flopStage = new ChainStage(fs, 1, n);
+      this.flopStage = new ChainStage(fs, 1, n, model.dropUnit);
       this.flopStates = fs;
       // Flop events per entry event: (event index, flop raise count mf) -> modeled river state, actual level.
       this.flopEvents = entryEvents.map((ev) => {
@@ -518,7 +519,7 @@ class Subgame {
         const actorSide = actorOn(variant, "flop", 0, { level: ev.level, owner: ev.owner });
         const depth = actorSide == null ? 0 : chainDepth(ev.level);
         const events = [];
-        for (let mf = 0; mf <= depth; mf++) events.push({ mf, level: levelAfter(ev.level, mf), owner: mf === 0 ? ev.owner : 1 - actorSide, actorSide });
+        for (let mf = 0; mf <= depth; mf++) events.push({ mf, level: levelAfter(ev.level, mf), owner: actorSide == null ? ev.owner : holderAfter(actorSide, mf), actorSide });
         return { stateIdx, state: fst, depth, actorSide, events };
       });
       if (hasRiver) {
@@ -532,7 +533,7 @@ class Subgame {
           }
           this.riverIndex.push(row);
         });
-        this.riverStage = new ChainStage(rs, this.K, n);
+        this.riverStage = new ChainStage(rs, this.K, n, model.dropUnit);
         this.riverStates = rs;
         // River events: one per (entry event, flop event), sharing the modeled river state.
         this.riverEvents = [];
@@ -549,7 +550,7 @@ class Subgame {
       }
     } else if (hasRiver) {
       const rs = entryStates.map((e) => stateFor(variant, "river", e));
-      this.riverStage = new ChainStage(rs, this.K, n);
+      this.riverStage = new ChainStage(rs, this.K, n, model.dropUnit);
       this.riverStates = rs;
       this.riverEvents = entryEvents.map((ev, ei) => {
         const sIdx = Math.min(ev.m, nMult - 1);
@@ -672,18 +673,19 @@ class Subgame {
 // Outcome events of a chain at `state`: m = 0 unchanged, m >= 1 raise m taken.
 function eventsOf(state) {
   if (state.actorSide == null) return [{ m: 0, level: state.base, owner: state.owner }];
-  const out = [{ m: 0, level: state.base, owner: state.owner }];
-  for (let m = 1; m <= state.depth; m++) out.push({ m, level: levelAfter(state.base, m), owner: 1 - state.actorSide });
+  const out = [{ m: 0, level: state.base, owner: holderAfter(state.actorSide, 0) }];
+  for (let m = 1; m <= state.depth; m++) out.push({ m, level: levelAfter(state.base, m), owner: holderAfter(state.actorSide, m) });
   return out;
 }
 function outcomesOf(state, nMult) {
-  // Outcome states of a chain at `state`: unchanged, then taken at 2x, 4x, ... (modeled multipliers).
+  // Modeled outcome states of a chain at `state`: no raise (the option passes to
+  // the opponent), then taken at 2x, 4x, ... (the taker holds the cube).
   if (state.actorSide == null) return [state];
-  const out = [state];
+  const out = [{ base: state.base, owner: holderAfter(state.actorSide, 0) }];
   for (let m = 1; m < nMult; m++) {
     const level = levelAfter(state.base, m);
     if (level > MAX_CUBE) break;
-    out.push({ base: level, owner: 1 - state.actorSide });
+    out.push({ base: level, owner: holderAfter(state.actorSide, m) });
   }
   return out;
 }
@@ -698,8 +700,8 @@ const stateKey = (st) => `${st.base}:${st.owner == null ? "c" : st.owner}`;
 // drives it one pass at a time with the entry reach of every hand.
 export class SubgameHost {
   constructor(modelSpec, subgameSpecs) {
-    const { hands, weights, variant, nMult, entryOutcomes, entryEvents, board = [] } = modelSpec;
-    this.model = buildModel(hands, weights, variantOf(variant), nMult, board);
+    const { hands, weights, variant, nMult, entryOutcomes, entryEvents, board = [], dropUnit = DROP_UNIT } = modelSpec;
+    this.model = buildModel(hands, weights, variantOf(variant), nMult, board, dropUnit);
     this.entryOutcomes = entryOutcomes;
     this.entryEvents = entryEvents;
     this.subgames = subgameSpecs.map((g) => new Subgame(this.model, { flop: g.flop, leaves: g.leaves, entryEvents, entryStates: entryOutcomes.map((e) => ({ ...e })), hasFlop: g.hasFlop, hasRiver: g.hasRiver }));
@@ -786,7 +788,7 @@ export class SubgameHost {
     return { agg, subgames: this.subgames.length };
   }
 }
-function buildModel(hands, weights, variant, nMult, board = []) {
+function buildModel(hands, weights, variant, nMult, board = [], dropUnit = DROP_UNIT) {
   const masks = hands.map((hs) => hs.map(maskPair));
   const n = [hands[0].length, hands[1].length];
   const wB = weights?.btn ?? null,
@@ -812,7 +814,7 @@ function buildModel(hands, weights, variant, nMult, board = []) {
   let wsum = 0;
   for (let q = 0; q < P; q++) wsum += pw[q];
   for (let q = 0; q < P; q++) pw[q] /= wsum || 1;
-  return { hands, masks, n, pairs: { I: Int32Array.from(I), J: Int32Array.from(J), P, pw }, variant, nMult };
+  return { hands, masks, n, pairs: { I: Int32Array.from(I), J: Int32Array.from(J), P, pw }, variant, nMult, dropUnit };
 }
 // In-process executor: the same interface the worker pool exposes.
 export function localExecutor() {
@@ -864,13 +866,14 @@ export async function solve(spec, executors = null) {
   const hasFlop = streetsLeft.includes("flop") && entryStreet === "preflop";
   const hasRiver = streetsLeft.includes("river") && entryStreet !== "river";
   const nMult = spec.multipliers ?? p.multipliers;
+  const dropUnit = spec.dropUnit ?? DROP_UNIT;
   const deck = FULL_DECK.filter((c) => !board.includes(c));
   const handCount = spec.hands ?? p.hands[entryStreet];
   const btnHands = spec.weights?.btnHands ?? sampleHands(deck, handCount, rng, spec.btnHand);
   const oppHands = spec.weights?.oppHands ?? sampleHands(deck, handCount, rng, spec.oppHand);
   const hands = [btnHands, oppHands];
   const weights = spec.weights ? { btn: spec.weights.btn, opp: spec.weights.opp } : null;
-  const model = buildModel(hands, weights, variant, nMult, board);
+  const model = buildModel(hands, weights, variant, nMult, board, dropUnit);
   const { n, pairs } = model;
   const { I, J, P, pw } = pairs;
   const entryOutcomes = (entryState.actorSide != null ? outcomesOf(entryState, nMult) : [entryState]).map((o) => ({ base: o.base, owner: o.owner }));
@@ -905,14 +908,14 @@ export async function solve(spec, executors = null) {
   }
   // Executors: the subgames are distributed round-robin.
   const execs = subgameSpecs.length ? (executors && executors.length ? executors.slice(0, Math.min(executors.length, subgameSpecs.length)) : [localExecutor()]) : [];
-  const modelSpec = { hands, weights, variant: variant.id, nMult, entryOutcomes, entryEvents, board };
+  const modelSpec = { hands, weights, variant: variant.id, nMult, entryOutcomes, entryEvents, board, dropUnit };
   const execSubgames = execs.map(() => []);
   subgameSpecs.forEach((g, i) => execSubgames[i % execs.length].push(g));
   await Promise.all(execs.map((ex, i) => ex.init(modelSpec, execSubgames[i])));
   const subgameCount = subgameSpecs.length;
   const Vglobal = (q) => (nEv ? U[q] / entryEvents[0].level : 0); // event 0 keeps the level of entry; only for debugging
   // The entry stage (if the entry street has an action).
-  const entryStage = entryState.actorSide != null ? new ChainStage([entryState], 1, n) : null;
+  const entryStage = entryState.actorSide != null ? new ChainStage([entryState], 1, n, dropUnit) : null;
   const fixedReach = [0, 1].map((side) => (side === 0 ? (weights?.btn ? Float64Array.from(weights.btn) : new Float64Array(n[0]).fill(1)) : weights?.opp ? Float64Array.from(weights.opp) : new Float64Array(n[1]).fill(1)));
   // Hands that clash with the known board can never be held here.
   {
@@ -1042,6 +1045,7 @@ export async function solve(spec, executors = null) {
     hands: { btn: btnHands, opp: oppHands },
     sampled: { pairs: P, flops: hasFlop ? subgameCount : 0, runouts: K2, multipliers: nMult },
     cube: { level: entryState.base, owner: entryState.owner },
+    dropUnit,
   };
   if (entryStage) {
     const st = entryState;
@@ -1069,7 +1073,7 @@ export async function solve(spec, executors = null) {
         mixed = 0;
       for (let x = 0; x < nA; x++) {
         const ev = c > 0 ? entryStage.evSum[b + x] / c : 0;
-        options.push({ id: ids[x], label: optionLabel(ids[x], k, st.base, st.base), prob: p3[x], ev });
+        options.push({ id: ids[x], label: optionLabel(ids[x], k, st.base, st.base, dropUnit), prob: p3[x], ev });
         if (ev > best) best = ev;
         mixed += p3[x] * ev;
       }
@@ -1083,7 +1087,7 @@ export async function solve(spec, executors = null) {
     out.reach = {};
     const tmp = new Float64Array(8);
     for (let k = 0; k <= st.depth; k++) {
-      const lv = k === 0 ? { base: st.base, owner: st.owner } : { base: levelAfter(st.base, k), owner: 1 - st.actorSide };
+      const lv = { base: levelAfter(st.base, k), owner: holderAfter(st.actorSide, k) };
       const r = { btn: new Array(n[0]).fill(0), opp: new Array(n[1]).fill(0), level: lv.base, owner: lv.owner };
       for (const side of [0, 1])
         for (let h = 0; h < n[side]; h++) {

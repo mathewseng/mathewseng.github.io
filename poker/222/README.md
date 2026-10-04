@@ -14,9 +14,9 @@ When several candidate pairs make the same best hand, the higher-ranked cards ar
 
 ## Doubling cube (two players)
 
-Backgammon terms, hidden hands. The cube starts centered at 1. **Double** offers to play on for twice the stake. The player doubled may **drop** (losing 6 points per unit of the cube before the double), **take** (the cube doubles and the player doubled owns it), or **beaver**: take and immediately redouble while keeping the cube. The doubler may then drop (12 per unit), take at four times, or **raccoon** (redouble again), and so on (rebeaver, reraccoon, …) until the cube reaches 64. Dropping the k-th raise of a chain always costs 6 times the cube level before that raise. Showdown pays the net points times the cube.
+Backgammon terms, hidden hands. The cube starts centered at 1. **Double** offers to play on for twice the stake. The player doubled may **drop** (losing the drop cost, 6 points by default, per unit of the cube before the double), **take** (the cube doubles), or **beaver**: take and immediately redouble. The doubler may then drop (twice the drop cost), take at four times, or **raccoon** (redouble again), and so on (rebeaver, reraccoon, …) until the cube reaches 64. Dropping the k-th raise of a chain always costs the drop cost times the cube level before that raise. The drop cost is selectable from 5 to 10 points on every page (`DROP_UNITS` in `cube-rules.mjs`), and the reports compare them. Showdown pays the net points times the cube.
 
-Seven variants: every non-empty combination of **preflop**, **flop** and **river** as cube streets (the turn never has action). The button gets the first cube opportunity. While the cube is centered the opportunity alternates between the players on later cube streets; once the cube is taken, its owner may redouble on any later cube street. So in the flop-and-river variant the button may double on the flop and the non-button may double on the river if the cube is still centered, otherwise the owner may redouble.
+Seven variants: every non-empty combination of **preflop**, **flop** and **river** as cube streets (the turn never has action). The button has the first cube option. Whoever takes a raise holds the cube and has the option on the next cube street (after a beaver chain, the final taker); whoever passes up the option hands it to the opponent for the next cube street.
 
 ## Hidden information and the solver
 
@@ -43,8 +43,8 @@ EVs are expected net points over the remaining runouts. Against a range they are
 ## Regenerate the reports
 
 ```sh
-node poker/222/simulation/cube-report.mjs 50000 12 20261003 240
+node poker/222/simulation/cube-report.mjs 50000 12 20261003 120 80 6
 node --test poker/222/tests/engine.test.mjs poker/222/tests/solver.test.mjs
 ```
 
-Arguments are face-up deals, threads, seed and boards. The flop and river variants are solved on that many random boards at standard precision across the threads; each preflop variant is one game solved in-process over sampled flops and runouts (the three-street variant takes a few minutes). Face-up play is reported for the variants without a preflop cube.
+Arguments are face-up deals, threads, seed, boards for the detailed section, boards per drop cost for the sweep, and the default drop cost. The detailed section solves the flop and river variants on random boards at standard precision and each preflop variant as one game; the sweep repeats every variant at fast precision for drop costs 5 to 10. Face-up play is reported for the variants without a preflop cube.

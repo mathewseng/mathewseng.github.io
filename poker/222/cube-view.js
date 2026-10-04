@@ -6,7 +6,17 @@ import { el, signed, pct, cubeFace, renderOptionTable, metric, evColor, pctColor
 import { nodeOptions, seatOf } from "./table-view.js";
 
 export function ownerLabel(cube, names) {
-  return cube.owner == null ? "centered" : names[cube.owner];
+  if (cube.owner == null) return "centered";
+  return cube.level > 1 ? names[cube.owner] : `${names[cube.owner]} · option`;
+}
+export function fillDropSelect(select, value = 6) {
+  select.replaceChildren();
+  for (const d of [5, 6, 7, 8, 9, 10]) {
+    const o = el("option", "", `${d} points`);
+    o.value = String(d);
+    select.append(o);
+  }
+  select.value = String(value);
 }
 export function fillVariantSelect(select, value = "fr") {
   select.replaceChildren();
@@ -48,7 +58,7 @@ export function renderHiddenCubePanel(panel, { faceEl, titleEl, subEl, bodyEl },
   const mix = n0.options?.[1]?.prob ?? 0;
   titleEl.textContent = known(d.actor) ? `${streetWord}: ${actorName} to act — equilibrium ${verb}s ${pct(mix, 0)} with this hand` : `${streetWord}: ${actorName} to act (hand unknown)`;
   const sol = d.solve;
-  subEl.textContent = `Hidden hands. Equities are for each seat's actual hand against the opponent's equilibrium range, in points at cube ${cube.level}. Across the whole range ${actorName} ${verb}s ${pct(n0.freq.double, 0)} of hands; the reply is drop ${pct(stage.nodes[1]?.freq.drop ?? 0, 0)}, take ${pct(stage.nodes[1]?.freq.take ?? 0, 0)}, ${reraiseName(1).toLowerCase()} ${pct(stage.nodes[1]?.freq.reraise ?? 0, 0)}. Solve: ${sol.sampled.pairs.toLocaleString("en-US")} hand pairs${sol.sampled.flops ? `, ${sol.sampled.flops} flops` : ""}, ${sol.iterations} iterations, exploitability bound ${sol.exploitability.toFixed(3)} pts.`;
+  subEl.textContent = `Hidden hands, drop cost ${sol.dropUnit} per unit of the cube. Equities are for each seat's actual hand against the opponent's equilibrium range, in points at cube ${cube.level}. Across the whole range ${actorName} ${verb}s ${pct(n0.freq.double, 0)} of hands; the reply is drop ${pct(stage.nodes[1]?.freq.drop ?? 0, 0)}, take ${pct(stage.nodes[1]?.freq.take ?? 0, 0)}, ${reraiseName(1).toLowerCase()} ${pct(stage.nodes[1]?.freq.reraise ?? 0, 0)}. Solve: ${sol.sampled.pairs.toLocaleString("en-US")} hand pairs${sol.sampled.flops ? `, ${sol.sampled.flops} flops` : ""}, ${sol.iterations} iterations, exploitability bound ${sol.exploitability.toFixed(3)} pts.`;
   const row = el("div", "cube-stats");
   const valueBtn = stage.value;
   row.append(metric(`${names[btn]} value`, signed(valueBtn), { heat: evColor(valueBtn, 5 * cube.level) }));
@@ -72,7 +82,7 @@ export function renderHiddenCubePanel(panel, { faceEl, titleEl, subEl, bodyEl },
   bodyEl.append(wrap);
 }
 // Face-up situation: value of the game from here (or the pending decision) with both hands open.
-export function cubeSituation({ stats, street, btn, variant, cube }) {
+export function cubeSituation({ stats, street, btn, variant, cube, dropUnit }) {
   const v = variantOf(variant);
   if (!stats?.hist) return { actor: null, kind: "none", analysis: null, value0: null, variant: v };
   const hist = stats.hist;
@@ -80,13 +90,13 @@ export function cubeSituation({ stats, street, btn, variant, cube }) {
   const actor = actorOn(v, streetName, btn, cube);
   const after = actor != null ? riverAfter(v, streetName, btn, cube, actor) : "none";
   let analysis = null;
-  if (actor != null) analysis = analyzeDecision({ hist: actor === 0 ? hist : flipHist(hist), level: cube.level, riverAfter: after });
+  if (actor != null) analysis = analyzeDecision({ hist: actor === 0 ? hist : flipHist(hist), level: cube.level, riverAfter: after, dropUnit });
   let value0;
   if (analysis) value0 = actor === 0 ? analysis.value : -analysis.value;
   else {
     const later = laterCubeStreets(v, streetName);
     const ra = later.length === 1 && later[0] === "river" ? actorOn(v, "river", btn, cube) : null;
-    value0 = positionValue({ hist, level: cube.level, riverAfter: ra == null ? "none" : ra === 0 ? "actor" : "opponent" });
+    value0 = positionValue({ hist, level: cube.level, riverAfter: ra == null ? "none" : ra === 0 ? "actor" : "opponent", dropUnit });
   }
   return { actor, kind: analysis ? "decision" : "position", analysis, value0, variant: v, later: laterCubeStreets(v, streetName) };
 }

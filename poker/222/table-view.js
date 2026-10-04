@@ -4,7 +4,7 @@
 // for the pending decision. Earlier cube streets condition the ranges: the
 // solve for each earlier street supplies the reach of every hand to the cube
 // state that was actually reached.
-import { variantOf, actorOn, STREETS, MAX_CUBE } from "./engine.mjs";
+import { variantOf, actorOn, STREETS, MAX_CUBE, DROP_UNIT } from "./engine.mjs";
 import { PRECISION } from "./pool.js";
 import { levelAfter, optionLabel } from "./cube-rules.mjs";
 
@@ -19,19 +19,38 @@ export const cubeKey = (cube, btn) => stateKey(cube.level, sideOf(cube.owner, bt
 
 // history: { preflop?: key, flop?: key, river?: key, ended?: bool } — the cube
 // state key reached after each cube street's action.
+// The seat holding the cube option now: the last recorded cube state, else the
+// cube's own holder, else the button.
+export function holderNow({ variant, street, btn, cube, history = {} }) {
+  const v = variantOf(variant);
+  const streetName = typeof street === "number" ? STREETS[street] : street;
+  let holder = cube.owner ?? null;
+  for (const s of v.streets) {
+    if (STREET_INDEX[s] >= STREET_INDEX[streetName]) break;
+    const key = history[s];
+    if (key == null) continue;
+    const own = key.split(":")[1];
+    holder = own === "c" ? null : seatOf(Number(own), btn);
+  }
+  return holder ?? btn;
+}
 export function actionState({ variant, street, btn, cube, cubeEnabled, n, history = {} }) {
   const v = variantOf(variant);
   const streetName = typeof street === "number" ? STREETS[street] : street;
   if (!cubeEnabled || n !== 2 || history.ended) return { pending: false, remaining: false, tabled: true, variant: v, actor: null };
   const idx = STREET_INDEX[streetName];
-  const actor = v.streets.includes(streetName) && history[streetName] == null ? actorOn(v, streetName, btn, cube) : null;
+  const holder = holderNow({ variant: v, street: streetName, btn, cube, history });
+  const actor = v.streets.includes(streetName) && history[streetName] == null ? actorOn(v, streetName, btn, { level: cube.level, owner: holder }) : null;
   const pending = actor != null;
   const remaining = v.streets.some((s) => STREET_INDEX[s] >= idx && history[s] == null && cube.level < MAX_CUBE && (s !== streetName || pending));
-  return { pending, remaining, tabled: !remaining, variant: v, actor };
+  return { pending, remaining, tabled: !remaining, variant: v, actor, holder };
 }
 // Derive a history from a cube state for pages without an action log. `takenOn`
 // names the cube street on which an owned cube was taken (default: the latest
 // cube street before `street`).
+// Every earlier cube street was passed up (the option alternates) except the
+// one the cube was taken on, after which the taker holds it; later passes hand
+// the option back and forth.
 export function historyFromCube(cube, variant, street, btn, takenOn = null) {
   const v = variantOf(variant);
   const streetName = typeof street === "number" ? STREETS[street] : street;
@@ -39,16 +58,15 @@ export function historyFromCube(cube, variant, street, btn, takenOn = null) {
   const earlier = v.streets.filter((s) => STREET_INDEX[s] < idx);
   const history = {};
   if (!earlier.length) return history;
-  if (cube.owner == null) {
-    for (const s of earlier) history[s] = stateKey(1, null);
-    return history;
-  }
-  const taken = earlier.includes(takenOn) ? takenOn : earlier[earlier.length - 1];
-  const key = cubeKey(cube, btn);
-  let seen = false;
+  const taken = cube.owner != null ? (earlier.includes(takenOn) ? takenOn : earlier[earlier.length - 1]) : null;
+  let holder = btn;
+  let level = 1;
   for (const s of earlier) {
-    if (s === taken) seen = true;
-    history[s] = seen ? key : stateKey(1, null);
+    if (s === taken) {
+      holder = cube.owner;
+      level = cube.level;
+    } else holder = 1 - holder;
+    history[s] = stateKey(level, sideOf(holder, btn));
   }
   return history;
 }
@@ -91,6 +109,7 @@ export async function computeView(pool, spec) {
   const tabled = a.tabled || (spec.forceTabled && allKnown);
   const precision = spec.precision ?? "standard";
   const solverPrecision = PRECISION[precision]?.solver ?? "standard";
+  const dropUnit = spec.dropUnit ?? DROP_UNIT;
   if (tabled) {
     if (!allKnown) return { mode: "hidden", tabled: false, stats: { mode: "range", players: spec.hands.map(() => null) }, action: a, decision: null };
     const key = JSON.stringify(["stats", spec.hands, spec.board, precision]);
@@ -113,9 +132,9 @@ export async function computeView(pool, spec) {
     if (key == null) break;
     const boardAt = spec.board.slice(0, STREET_CARDS[s]);
     const weights = upstream ? weightsFrom(upstream.solve, upstream.key) : null;
-    const ck = JSON.stringify(["solve", v.id, s, boardAt, btnHand, oppHand, entry, upstreamKeys, solverPrecision]);
+    const ck = JSON.stringify(["solve", v.id, s, boardAt, btnHand, oppHand, entry, upstreamKeys, solverPrecision, dropUnit]);
     const sol = await cached(ck, () =>
-      pool.solve({ board: boardAt, variant: v.id, entry, btnHand, oppHand, weights, precision: solverPrecision, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
+      pool.solve({ board: boardAt, variant: v.id, entry, btnHand, oppHand, weights, precision: solverPrecision, dropUnit, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
     );
     upstream = { solve: sol, key, street: s };
     upstreamKeys.push(key);
@@ -132,18 +151,18 @@ export async function computeView(pool, spec) {
     spec.hands.map((hand, seat) => {
       if (!hand) return null;
       const opponents = opponentsFor(seat);
-      const key = JSON.stringify(["range", hand, spec.board, precision, opponents ? [v.id, btnHand, oppHand, upstreamKeys] : null]);
+      const key = JSON.stringify(["range", hand, spec.board, precision, opponents ? [v.id, btnHand, oppHand, upstreamKeys, dropUnit] : null]);
       return cached(key, () => pool.range(hand, spec.board, { precision, opponents, seed: hashSeed(key) }));
     }),
   );
   let decision = null;
   if (a.pending) {
-    const entryNow = { level: spec.cube.level, owner: sideOf(spec.cube.owner, btn) };
-    const ck = JSON.stringify(["solve", v.id, streetName, spec.board, btnHand, oppHand, entryNow, upstreamKeys, solverPrecision]);
+    const entryNow = { level: spec.cube.level, owner: sideOf(a.holder, btn) };
+    const ck = JSON.stringify(["solve", v.id, streetName, spec.board, btnHand, oppHand, entryNow, upstreamKeys, solverPrecision, dropUnit]);
     const sol = await cached(ck, () =>
-      pool.solve({ board: spec.board, variant: v.id, entry: entryNow, btnHand, oppHand, weights, precision: solverPrecision, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
+      pool.solve({ board: spec.board, variant: v.id, entry: entryNow, btnHand, oppHand, weights, precision: solverPrecision, dropUnit, seed: hashSeed(ck) }, { onProgress: spec.onProgress }),
     );
-    decision = { street: streetName, actor: a.actor, responder: 1 - a.actor, level: spec.cube.level, solve: sol, stage: sol.stage };
+    decision = { street: streetName, actor: a.actor, responder: 1 - a.actor, level: spec.cube.level, solve: sol, stage: sol.stage, dropUnit };
   }
   return { mode: "hidden", tabled: false, stats: { mode: "range", conditioned, players }, action: a, decision, upstream };
 }

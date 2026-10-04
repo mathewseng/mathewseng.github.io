@@ -5,7 +5,7 @@
 import { VARIANTS, variantOf, DROP_UNIT, MAX_CUBE, dealTable, settle, cardName, STREETS } from "./engine.mjs";
 import { offerRaise, reraise, canReraise, optionLabel, reraiseName, levelAfter } from "./cube-rules.mjs";
 import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, pct, STREET_CARDS, streetName, metric, evColor } from "./ui.js";
-import { ownerLabel, fillVariantSelect } from "./cube-view.js";
+import { ownerLabel, fillVariantSelect, fillDropSelect } from "./cube-view.js";
 import { computeView, gradeHidden, sampleAction, cubeKey } from "./table-view.js";
 
 const YOU = 0,
@@ -15,6 +15,7 @@ const NAMES = ["You", "Bot"];
 export function initTrainer({ pool }) {
   const tr = {
     variant: "fr",
+    dropUnit: 6,
     btn: 1,
     hands: [],
     board: [],
@@ -39,6 +40,10 @@ export function initTrainer({ pool }) {
     timer: null,
   };
   fillVariantSelect($("tr-variant"), tr.variant);
+  fillDropSelect($("tr-drop"), tr.dropUnit);
+  $("tr-drop").addEventListener("change", () => {
+    if (tr.phase !== "idle" && tr.phase !== "over") trLog(`Drop cost changed to ${$("tr-drop").value}; it applies from the next hand.`);
+  });
   $("tr-variant").addEventListener("change", () => {
     tr.variant = $("tr-variant").value;
     if (tr.phase !== "idle") trLog(`Variant changed to ${VARIANTS[tr.variant].name}; it applies from the next hand.`);
@@ -63,6 +68,7 @@ export function initTrainer({ pool }) {
     tr.token++;
     const mode = $("tr-seat").value;
     tr.btn = mode === "btn" ? YOU : mode === "opp" ? BOT : tr.played % 2 === 0 ? YOU : BOT;
+    tr.dropUnit = Number($("tr-drop").value);
     const t = dealTable(2);
     tr.hands = t.hands;
     tr.board = t.board;
@@ -77,7 +83,7 @@ export function initTrainer({ pool }) {
     tr.preview = null;
     tr.decisionsThisHand = [];
     tr.result = null;
-    trLog(`New hand (${variant().name}). ${NAMES[tr.btn]} ${you(tr.btn) ? "are" : "is"} on the button.`, true);
+    trLog(`New hand (${variant().name}, drop ${tr.dropUnit}). ${NAMES[tr.btn]} ${you(tr.btn) ? "are" : "is"} on the button.`, true);
     computeStreet();
   }
   function spec(street = tr.street) {
@@ -90,6 +96,7 @@ export function initTrainer({ pool }) {
       cube: tr.cube,
       cubeEnabled: true,
       history: tr.history,
+      dropUnit: tr.dropUnit,
       precision: precision(),
       onProgress: (f) => {
         tr.progress = f;
@@ -161,11 +168,13 @@ export function initTrainer({ pool }) {
       record(seat, 0, choice);
       const verb = tr.cube.level > 1 ? "redouble" : "double";
       if (choice === "double") {
-        tr.pending = { ...offerRaise(tr.cube.level, seat, 1 - seat), firstResponder: 1 - seat };
+        tr.pending = offerRaise(tr.cube.level, seat, 1 - seat, tr.dropUnit);
         tr.phase = "chain";
         trLog(`${NAMES[seat]} ${verbFor(seat, verb)} to ${tr.pending.level}.`, true);
       } else {
-        trLog(`${NAMES[seat]} ${you(seat) ? "do" : "does"} not ${verb}.`);
+        // Passing up the option hands it to the opponent for the next cube street.
+        tr.cube = { level: tr.cube.level, owner: 1 - seat };
+        trLog(`${NAMES[seat]} ${you(seat) ? "do" : "does"} not ${verb}; ${NAMES[1 - seat]} ${you(1 - seat) ? "get" : "gets"} the option next.`);
         resolve();
       }
     } else if (tr.phase === "chain") {
@@ -178,14 +187,14 @@ export function initTrainer({ pool }) {
         return;
       }
       if (choice === "take") {
-        tr.cube = { level: pd.level, owner: pd.firstResponder };
-        trLog(`${NAMES[seat]} ${verbFor(seat, "take")}. Cube at ${tr.cube.level}, ${NAMES[tr.cube.owner].toLowerCase()} own${you(tr.cube.owner) ? "" : "s"} it.`);
+        tr.cube = { level: pd.level, owner: seat };
+        trLog(`${NAMES[seat]} ${verbFor(seat, "take")}. Cube at ${tr.cube.level}, ${NAMES[seat].toLowerCase()} hold${you(seat) ? "" : "s"} it.`);
         tr.pending = null;
         resolve();
       } else {
         if (!canReraise(pd)) return;
         const name = reraiseName(pd.k);
-        tr.pending = { ...reraise(pd), firstResponder: pd.firstResponder };
+        tr.pending = reraise(pd);
         trLog(`${NAMES[seat]} ${verbFor(seat, name.toLowerCase())} to ${tr.pending.level}!`, true);
       }
     } else return;
@@ -310,7 +319,7 @@ export function initTrainer({ pool }) {
       if (tr.actor === YOU) {
         prompt.textContent = `${streetName(tr.street)}: your cube decision at ${level}.`;
         prompt.classList.add("alert");
-        actions.append(button(optionLabel("noDouble", 0, level, level), "", () => act(YOU, "noDouble")), button(optionLabel("double", 0, level, level), "primary", () => act(YOU, "double")));
+        actions.append(button(optionLabel("noDouble", 0, level, level, tr.dropUnit), "", () => act(YOU, "noDouble")), button(optionLabel("double", 0, level, level, tr.dropUnit), "primary", () => act(YOU, "double")));
       } else prompt.textContent = `${streetName(tr.street)}: bot is deciding whether to ${verb.toLowerCase()}…`;
     } else if (tr.phase === "chain") {
       const pd = tr.pending;
@@ -318,8 +327,8 @@ export function initTrainer({ pool }) {
       if (pd.responder === YOU) {
         prompt.textContent = `Bot ${verbFor(BOT, raiseWord)} to ${pd.level}. Drop (lose ${pd.drop}), take at ${pd.level}${canReraise(pd) ? `, or ${reraiseName(pd.k).toLowerCase()} to ${levelAfter(pd.base, pd.k + 1)}` : ""}?`;
         prompt.classList.add("alert");
-        actions.append(button(optionLabel("drop", pd.k, pd.base), "", () => act(YOU, "drop")), button(optionLabel("take", pd.k, pd.base), "primary", () => act(YOU, "take")));
-        if (canReraise(pd)) actions.append(button(optionLabel("reraise", pd.k, pd.base), "", () => act(YOU, "reraise")));
+        actions.append(button(optionLabel("drop", pd.k, pd.base, pd.base, pd.dropUnit), "", () => act(YOU, "drop")), button(optionLabel("take", pd.k, pd.base, pd.base, pd.dropUnit), "primary", () => act(YOU, "take")));
+        if (canReraise(pd)) actions.append(button(optionLabel("reraise", pd.k, pd.base, pd.base, pd.dropUnit), "", () => act(YOU, "reraise")));
       } else prompt.textContent = `You ${raiseWord} to ${pd.level}. Bot is deciding…`;
     } else if (tr.phase === "over") {
       prompt.textContent = `Hand over: ${signed(tr.result.net, 0)} for you (${tr.result.reason}).`;

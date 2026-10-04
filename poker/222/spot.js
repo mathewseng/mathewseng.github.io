@@ -3,7 +3,7 @@
 // then solved against the opponent's full range.
 import { parseCards, cardName, dealTable } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt } from "./ui.js";
-import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
+import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, parseCubeState } from "./cube-view.js";
 import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
 export function initSpot({ pool, sim }) {
@@ -18,6 +18,7 @@ export function initSpot({ pool, sim }) {
       }),
     );
   fillVariantSelect($("spot-variant"), "fr");
+  fillDropSelect($("spot-drop"), 6);
   const refreshTaken = () => {
     const cube = parseCubeState($("spot-cube-state").value);
     const board = (() => {
@@ -111,7 +112,7 @@ export function initSpot({ pool, sim }) {
     const cube = parseCubeState($("spot-cube-state").value);
     const street = board.length === 0 ? 0 : board.length - 2;
     refreshTaken();
-    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, takenOn: $("spot-taken").value || null, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
+    return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, takenOn: $("spot-taken").value || null, dropUnit: Number($("spot-drop").value) || 6, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
   }
   async function solve() {
     const err = $("spot-error");
@@ -141,6 +142,7 @@ export function initSpot({ pool, sim }) {
           if (!st.result?.view) $("spot-meta").replaceChildren(el("span", "muted", `Solving the equilibrium… ${Math.round(f * 100)}%`));
         },
         forceTabled: spot.tabled,
+        dropUnit: spot.dropUnit,
         precision: spot.precision,
       });
       if (token !== st.token) return;
@@ -174,7 +176,7 @@ export function initSpot({ pool, sim }) {
       const els = { faceEl: $("spot-cube-face"), titleEl: $("spot-cube-title"), subEl: $("spot-cube-sub"), bodyEl: $("spot-cube-body") };
       if (!view || view.mode === "hidden") renderHiddenCubePanel(panel, els, view, { names, cube: spot.cube, street: spot.street, btn: spot.btn, hands: spot.hands });
       else {
-        const situation = cubeSituation({ stats: view.stats, street: spot.street, btn: spot.btn, variant: spot.variant, cube: spot.cube });
+        const situation = cubeSituation({ stats: view.stats, street: spot.street, btn: spot.btn, variant: spot.variant, cube: { level: spot.cube.level, owner: view.action.holder ?? spot.cube.owner }, dropUnit: spot.dropUnit });
         renderCubePanel(panel, els, situation, { names, cube: spot.cube, street: spot.street, btn: spot.btn });
       }
     }

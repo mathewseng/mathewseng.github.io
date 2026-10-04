@@ -4,7 +4,7 @@
 // hands are tabled (or when "Table hands" is ticked).
 import { dealTable, shuffledDeck, remainingDeck } from "./engine.mjs";
 import { $, el, button, cardEl, renderSeats, fmtInt, STREET_CARDS, streetName } from "./ui.js";
-import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, parseCubeState } from "./cube-view.js";
+import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, parseCubeState } from "./cube-view.js";
 import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
 export function initSimulator({ pool }) {
@@ -15,6 +15,7 @@ export function initSimulator({ pool }) {
     street: 0,
     btn: 0,
     variant: "fr",
+    dropUnit: 6,
     takenOn: null,
     cube: { level: 1, owner: null },
     selected: null,
@@ -35,6 +36,11 @@ export function initSimulator({ pool }) {
     countEl.append(b);
   }
   fillVariantSelect($("sim-variant"), sim.variant);
+  fillDropSelect($("sim-drop"), sim.dropUnit);
+  $("sim-drop").addEventListener("change", () => {
+    sim.dropUnit = Number($("sim-drop").value);
+    recompute();
+  });
   $("sim-variant").addEventListener("change", () => {
     sim.variant = $("sim-variant").value;
     recompute();
@@ -87,6 +93,7 @@ export function initSimulator({ pool }) {
       cubeEnabled: sim.n === 2,
       history: historyFromCube(sim.cube, sim.variant, sim.street, sim.btn, sim.takenOn),
       forceTabled: $("sim-tabled").checked,
+      dropUnit: sim.dropUnit,
       precision: precision(),
       onProgress: (f) => {
         const m = $("sim-meta");
@@ -188,7 +195,7 @@ export function initSimulator({ pool }) {
       const els = { faceEl: $("sim-cube-face"), titleEl: $("sim-cube-title"), subEl: $("sim-cube-sub"), bodyEl: $("sim-cube-body") };
       if (!view || view.mode === "hidden") renderHiddenCubePanel(panel, els, view, { names: names(), cube: sim.cube, street: sim.street, btn: sim.btn, hands: sim.hands });
       else {
-        const situation = cubeSituation({ stats: view.stats, street: sim.street, btn: sim.btn, variant: sim.variant, cube: sim.cube });
+        const situation = cubeSituation({ stats: view.stats, street: sim.street, btn: sim.btn, variant: sim.variant, cube: { level: sim.cube.level, owner: view.action.holder ?? sim.cube.owner }, dropUnit: sim.dropUnit });
         renderCubePanel(panel, els, situation, { names: names(), cube: sim.cube, street: sim.street, btn: sim.btn });
         if (view.action.remaining) $("sim-cube-sub").textContent += " Hands are tabled by request: this is the face-up analysis, not the hidden-information equilibrium.";
       }

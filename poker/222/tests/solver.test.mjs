@@ -90,13 +90,15 @@ test("flop solve conditions later streets and reports aggregates", async () => {
   const { hands, board } = dealTable(2, rng);
   const r = await solve({ variant: "fr", board: board.slice(0, 3), btnHand: hands[0], oppHand: hands[1], precision: "fast", seed: 8, iterations: 60 });
   assert.equal(r.entry, "flop");
-  assert.ok(r.aggregates.river["1:c"] && r.aggregates.river["2:1"], "river states after no double and after a take");
+  assert.ok(r.aggregates.river["1:1"] && r.aggregates.river["2:1"], "river states after no double and after a take");
   const reach = Object.values(r.aggregates.river).reduce((s, st) => s + st.entry, 0);
   assert.ok(reach <= 1 + 1e-6 && reach > 0.6, `reach ${reach}`);
+  // After a pass the opponent holds the option: the no-double state is keyed to the non-button.
+  assert.ok(r.reach["1:1"], "no double hands the option to the non-button");
   // A river solve on the actual runout, conditioned on the flop take.
   const w = r.reach["2:1"];
   const rs = await solve({ variant: "fr", board, entry: { level: 2, owner: 1 }, btnHand: hands[0], oppHand: hands[1], weights: { btnHands: r.hands.btn, oppHands: r.hands.opp, btn: w.btn, opp: w.opp }, precision: "fast", seed: 9 });
-  assert.equal(rs.stage.actorSide, 1, "the non-button owns the cube and may redouble");
+  assert.equal(rs.stage.actorSide, 1, "the non-button took the cube and may redouble");
   assert.equal(rs.stage.base, 2);
   assert.ok(rs.exploitability < 0.1);
   assertConsistent(rs.stage);
@@ -110,10 +112,14 @@ test("preflop solves cover the three preflop variants with later streets", async
   const { hands } = dealTable(2, rng);
   const r = await solve({ variant: "pf", board: [], btnHand: hands[0], oppHand: hands[1], precision: "fast", seed: 12, iterations: 40, flops: 4, runouts: 8, hands: 30 });
   assert.equal(r.entry, "preflop");
-  assert.ok(r.aggregates.flop["1:c"], "flop play after no preflop double");
-  assert.ok(r.reach["1:c"] && r.reach["2:1"]);
+  assert.ok(r.aggregates.flop["1:1"], "flop play after no preflop double (option with the non-button)");
+  assert.ok(r.reach["1:1"] && r.reach["2:1"]);
   const r2 = await solve({ variant: "pr", board: [], precision: "fast", seed: 13, iterations: 30, boards: 12, hands: 24 });
-  assert.ok(r2.aggregates.river["1:c"]);
+  assert.ok(r2.aggregates.river["1:1"]);
+  // The drop cost is honored: at 10 points dropping a double costs 10.
+  const r10 = await solve({ variant: "r", board: dealTable(2, makeRng(3)).board, precision: "fast", seed: 15, dropUnit: 10, hands: 40 });
+  assert.equal(r10.dropUnit, 10);
+  assert.ok(Math.abs(r10.stage.nodes[1].options.find((o) => o.id === "drop").ev + 10) < 1e-9);
   const r3 = await solve({ variant: "pfr", board: [], precision: "fast", seed: 14, iterations: 20, flops: 3, runouts: 6, hands: 20 });
   assert.ok(r3.aggregates.river && r3.aggregates.flop);
   assert.ok(Object.keys(r3.aggregates.river).some((k) => k.endsWith(":0")), "river states owned by the button after a flop take");

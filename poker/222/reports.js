@@ -38,8 +38,9 @@ function nodeRows(nodes, actorSide, base, minReach = 0.001) {
 }
 function render(body, data) {
   body.replaceChildren();
+  if (data.sweep) renderSweep(body, data.sweep);
   const eq = data.equilibrium;
-  body.append(el("h2", "section-title", "Hidden-information equilibrium"));
+  body.append(el("h2", "section-title", `Hidden-information equilibrium, drop cost ${data.meta.dropUnit}`));
   const intro = el("p", "muted");
   intro.textContent = `Every variant solved with the sampled-hand CFR+ solver with both hands hidden (drop costs ${data.meta.dropUnit} per unit of the cube, cube capped at ${data.meta.maxCube}). Flop and river variants are averaged over ${eq.variants.f.boards} random boards; preflop variants are one game each, solved over sampled flops and runouts. Frequencies are over the acting player's whole range; later streets are weighted by how often each cube state is reached. Generated ${new Date(data.meta.generatedAt).toLocaleDateString()}.`;
   body.append(intro);
@@ -80,10 +81,46 @@ function render(body, data) {
   body.append(grid);
   if (data.faceUp) renderFaceUp(body, data.faceUp, data.meta);
 }
+// Drop-cost sweep: how the cube game changes as dropping gets more expensive.
+function renderSweep(body, sweep) {
+  body.append(el("h2", "section-title", "Drop cost sweep"));
+  const intro = el("p", "muted");
+  intro.textContent = `Each variant solved again at every drop cost from ${sweep.dropUnits[0]} to ${sweep.dropUnits[sweep.dropUnits.length - 1]} points per unit of the cube (${sweep.precision} precision; flop and river variants averaged over ${sweep.boards} random boards, preflop variants one game each). "Doubles" is the share of the acting range that doubles on the first cube street, the reply shares are given a double, and "ends by drop" is how often the whole hand ends with somebody dropping.`;
+  body.append(intro);
+  const grid = el("div", "report-grid");
+  for (const id of VARIANT_ORDER) {
+    const rows = sweep.variants[id];
+    if (!rows) continue;
+    const card = el("div", "report-card");
+    card.append(el("h2", "", VARIANTS[id].name));
+    const t = el("table", "report-table");
+    t.append(row(["Drop cost", "Button value", "Doubles", "Drop / take / beaver", "Ends by drop", ""], true));
+    const maxEnd = Math.max(...sweep.dropUnits.map((d) => rows[d]?.endsByDrop ?? 0), 1e-9);
+    for (const d of sweep.dropUnits) {
+      const r = rows[d];
+      if (!r) continue;
+      const tr = el("tr");
+      tr.append(el("td", "", `${d}`), el("td", "num", signed(r.value)), el("td", "num", pct(r.doubles, 0)), el("td", "num", r.reply ? `${pct(r.reply.drop, 0)} / ${pct(r.reply.take, 0)} / ${pct(r.reply.reraise, 0)}` : "—"), el("td", "num", pct(r.endsByDrop, 1)));
+      const bar = el("td");
+      const b = el("div", "bar warn");
+      const fill = el("i");
+      fill.style.width = `${(r.endsByDrop / maxEnd) * 100}%`;
+      b.append(fill);
+      bar.append(b);
+      tr.append(bar);
+      t.append(tr);
+    }
+    const wrap = el("div", "table-wrap");
+    wrap.append(t);
+    card.append(wrap);
+    grid.append(card);
+  }
+  body.append(grid);
+}
 function renderFaceUp(body, fu, meta) {
   body.append(el("h2", "section-title", "Face-up play (hands tabled)"));
   const intro = el("p", "muted");
-  intro.textContent = `For comparison: ${fmtInt(fu.deals)} random deals played with both hands open under minimax cube play (same ${meta.dropUnit}-point drop and raise chain) for the variants without a preflop cube. Every flop decision enumerates all 666 turn-and-river runouts; river decisions are exact.`;
+  intro.textContent = `For comparison: ${fmtInt(fu.deals)} random deals played with both hands open under minimax cube play (same ${fu.dropUnit ?? meta.dropUnit}-point drop and raise chain) for the variants without a preflop cube. Every flop decision enumerates all 666 turn-and-river runouts; river decisions are exact.`;
   body.append(intro);
   const grid = el("div", "report-grid");
   for (const id of ["f", "r", "fr"]) {

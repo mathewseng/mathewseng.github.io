@@ -99,6 +99,7 @@
                 <option value="16:1">16, seat 2 owns</option>
               </select></label>
               <label hidden><span class="label">History</span><select id="sim-taken"></select></label>
+              <label><span class="label">Drop cost</span><select id="sim-drop"></select></label>
             </div>
           </div>
           <div id="sim-cube-body"></div>
@@ -140,6 +141,7 @@
                 <option value="16:1">16, seat 2 owns</option>
               </select></label>
               <label class="field" hidden><span class="label">History</span><select id="spot-taken"></select></label>
+              <label class="field"><span class="label">Drop cost</span><select id="spot-drop"></select></label>
             </div>
             <label class="field"><span class="label">Precision</span><select id="spot-precision">
               <option value="fast">Fast</option>
@@ -181,6 +183,10 @@
           <div class="control">
             <span class="label">Variant</span>
             <select id="tr-variant"></select>
+          </div>
+          <div class="control">
+            <span class="label">Drop cost</span>
+            <select id="tr-drop"></select>
           </div>
           <div class="control">
             <span class="label">You are</span>
@@ -278,6 +284,7 @@
               <div id="on-settings" class="settings" hidden>
                 <label class="control check"><input type="checkbox" id="on-cube" checked /><span>Doubling cube (2 players)</span></label>
                 <label class="control"><span class="label">Variant</span><select id="on-variant"></select></label>
+                <label class="control"><span class="label">Drop cost</span><select id="on-drop"></select></label>
                 <label class="control check"><input type="checkbox" id="on-auto" checked /><span>Auto-deal streets</span></label>
                 <button id="on-start" class="primary">Start game</button>
               </div>
@@ -348,8 +355,8 @@
         </ul>
         <h3>Doubling cube (two players)</h3>
         <ul>
-          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The player doubled may <b>drop</b> (losing 6 points per unit of the cube before the double), <b>take</b> (the cube doubles and the player doubled owns it), or <b>beaver</b>: take and immediately redouble while keeping the cube. The doubler may then drop (12 per unit), take at four times, or <b>raccoon</b> (redouble again), and so on: rebeaver, reraccoon… until the cube reaches 64. Dropping the k-th raise always costs 6 times the cube level before that raise.</li>
-          <li>Seven variants: any combination of <b>preflop</b>, <b>flop</b> and <b>river</b> as cube streets (never the turn). The button gets the first cube opportunity. While the cube is centered the opportunity alternates between the players on later cube streets; once the cube is taken, its owner may redouble on any later cube street.</li>
+          <li>Backgammon terms. The cube starts centered at 1. <b>Double</b> offers to play for twice the stake. The player doubled may <b>drop</b> (losing the drop cost, 6 points by default, per unit of the cube before the double), <b>take</b> (the cube doubles), or <b>beaver</b>: take and immediately redouble. The doubler may then drop (twice the drop cost), take at four times, or <b>raccoon</b> (redouble again), and so on: rebeaver, reraccoon… until the cube reaches 64. Dropping the k-th raise always costs the drop cost times the cube level before that raise. The drop cost is selectable from 5 to 10 points on every page.</li>
+          <li>Seven variants: any combination of <b>preflop</b>, <b>flop</b> and <b>river</b> as cube streets (never the turn). The button has the first cube option. Whoever takes a raise holds the cube and has the option on the next cube street; whoever passes up the option hands it to the opponent for the next cube street.</li>
           <li>Showdown pays the net points times the cube.</li>
           <li><b>Hidden information.</b> While a cube action remains, each seat's numbers are against the opponent's range: every hand the opponent could hold given the cards you see, weighted by the equilibrium strategy once a cube action has been taken (after a flop take, for example, the button's range is its doubling range and the opponent's is its taking range). The solver samples hands for both players and the unknown board cards and runs counterfactual regret minimization over every cube decision that remains, including the chains of re-raises and the decisions on later cube streets in every cube state. It runs until the exploitability bound is below the tolerance, then removes probabilities under 1%, so every mix it shows is consistent with the equities it shows: options in a mix have equal equity within the tolerance, and options with lower equity get 0%.</li>
           <li><b>Tabled.</b> Once no cube action remains the hands are turned up and the numbers are exact (or finely sampled) over every runout. Tick "Table hands" in the simulator or spot solver to see the face-up minimax of a pending decision; when more than a river remains, that face-up view treats later cube streets as cubeless.</li>

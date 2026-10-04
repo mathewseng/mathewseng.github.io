@@ -14,8 +14,8 @@
 // for a 4-point bonus (10 in all). Ties on a hand split its points. With more
 // than two players every pair of players settles separately.
 
-import { DROP_UNIT, MAX_CUBE, chainDepth, levelAfter, dropCost, optionLabel } from "./cube-rules.mjs";
-export { DROP_UNIT, MAX_CUBE };
+import { DROP_UNIT, DROP_UNITS, MAX_CUBE, chainDepth, levelAfter, dropCost, optionLabel } from "./cube-rules.mjs";
+export { DROP_UNIT, DROP_UNITS, MAX_CUBE };
 export const RANKS = "23456789TJQKA";
 export const SUITS = "cdhs";
 export const SYMBOLS = ["♣", "♦", "♥", "♠"];
@@ -698,7 +698,7 @@ function makeVariant(id, streets) {
   const blurb =
     streets.length === 1
       ? `The button may double on the ${list[0]}.`
-      : `Cube streets: ${list.join(", ")}. The button gets the first opportunity; while the cube is centered the opportunity alternates between the players on later cube streets; once the cube is taken, its owner may redouble on any later cube street.`;
+      : `Cube streets: ${list.join(", ")}. The button has the first option. Whoever takes a raise holds the cube and has the option on the next cube street; whoever passes up the option hands it to the opponent for the next cube street.`;
   return { id, name, short: streets.map((x) => x[0].toUpperCase()).join("+"), streets, blurb, flopActor: streets.includes("flop") ? "btn" : null, riverActor: streets.includes("river") ? "btn" : null };
 }
 export const VARIANTS = {
@@ -715,17 +715,22 @@ const VARIANT_ALIASES = { flop: "f", river: "r", both: "fr" };
 export const variantOf = (v) => (typeof v === "string" ? (VARIANTS[v] ?? VARIANTS[VARIANT_ALIASES[v]]) : v);
 export const STREETS = ["preflop", "flop", "turn", "river"];
 export const DEFAULT_CUBE = () => ({ level: 1, owner: null });
-// Who may double on `street` (seat index), or null when there is no cube action there.
-// The button has the first cube opportunity; while the cube is centered the
-// opportunity alternates between the players on later cube streets; once the
-// cube is taken, its owner may redouble on any later cube street.
+// Who may double on `street` (seat index), or null when there is no cube action
+// there. cube.owner is the seat holding the cube option: null until the first
+// cube action (the button starts with the option); after a take the taker
+// holds it, after a pass the opponent of the passer holds it.
 export function actorOn(variant, street, btn, cube = DEFAULT_CUBE()) {
   const v = variantOf(variant);
-  const m = v.streets.indexOf(street);
-  if (m < 0) return null;
+  if (!v.streets.includes(street)) return null;
   if (cube.level >= MAX_CUBE) return null;
-  if (cube.owner != null) return cube.owner;
-  return m % 2 === 0 ? btn : 1 - btn;
+  return cube.owner ?? btn;
+}
+// Holder of the option after a chain outcome: m = 0 (no raise) hands it to the
+// opponent of the actor; raise m taken leaves it with the taker (the responder
+// of raise m: the opponent for odd m, the actor for even m).
+export function holderAfter(actor, m) {
+  if (m === 0) return 1 - actor;
+  return m % 2 === 1 ? 1 - actor : actor;
 }
 export const flopActor = (variant, btn, cube) => actorOn(variant, "flop", btn, cube);
 export const riverActor = (variant, btn, cube) => actorOn(variant, "river", btn, cube);
@@ -756,7 +761,7 @@ export function riverAfterFlop(variant) {
 const EPS = 1e-9;
 // Face-up value of a raise chain from `base`. cont(L) is the actor-view value
 // of playing on at level L. Returns per-node options in the chooser's view.
-export function chainValues(cont, base, maxLevel = MAX_CUBE) {
+export function chainValues(cont, base, maxLevel = MAX_CUBE, dropUnit = DROP_UNIT) {
   const D = chainDepth(base, maxLevel);
   const val = new Array(D + 2).fill(0);
   const nodes = new Array(D + 1);
@@ -764,7 +769,7 @@ export function chainValues(cont, base, maxLevel = MAX_CUBE) {
     const actorActs = k % 2 === 0;
     const prev = levelAfter(base, k - 1),
       L = levelAfter(base, k);
-    const drop = actorActs ? -DROP_UNIT * prev : DROP_UNIT * prev; // actor view
+    const drop = actorActs ? -dropUnit * prev : dropUnit * prev; // actor view
     const take = cont(L);
     const opts = [
       { id: "drop", eq: drop },
@@ -779,7 +784,7 @@ export function chainValues(cont, base, maxLevel = MAX_CUBE) {
       player: actorActs ? "actor" : "responder",
       offerLevel: L,
       prevLevel: prev,
-      options: opts.map((o) => ({ id: o.id, label: optionLabel(o.id, k, base), eq: sign * o.eq, prob: o.id === pick.id ? 1 : 0 })),
+      options: opts.map((o) => ({ id: o.id, label: optionLabel(o.id, k, base, base, dropUnit), eq: sign * o.eq, prob: o.id === pick.id ? 1 : 0 })),
       best: pick.id,
     };
   }
@@ -791,16 +796,16 @@ export function chainValues(cont, base, maxLevel = MAX_CUBE) {
   nodes[0] = { k: 0, player: "actor", offerLevel: levelAfter(base, 1), prevLevel: base, options, best };
   return { nodes, value: Math.max(noDouble, double), noDouble, double, best, depth: D };
 }
-export const riverBest = (x, level) => chainValues((L) => L * x, level).value;
-export function continuationValue(x, level, riverAfter) {
+export const riverBest = (x, level, dropUnit = DROP_UNIT) => chainValues((L) => L * x, level, MAX_CUBE, dropUnit).value;
+export function continuationValue(x, level, riverAfter, dropUnit = DROP_UNIT) {
   if (riverAfter === "none") return x * level;
-  if (riverAfter === "actor") return riverBest(x, level);
-  return -riverBest(-x, level);
+  if (riverAfter === "actor") return riverBest(x, level, dropUnit);
+  return -riverBest(-x, level, dropUnit);
 }
 // Face-up analysis of the decision of the player to act, whose net result (at
 // cube 1) over the remaining runouts has probability hist[x + MAX_NET].
 // Equities are in points at the current cube from the chooser's view.
-export function analyzeDecision({ hist, level = 1, riverAfter = "none", canDouble = true }) {
+export function analyzeDecision({ hist, level = 1, riverAfter = "none", canDouble = true, dropUnit = DROP_UNIT }) {
   const expect = (f) => {
     let s = 0;
     for (let i = 0; i < hist.length; i++) if (hist[i]) s += hist[i] * f(i - MAX_NET);
@@ -808,14 +813,15 @@ export function analyzeDecision({ hist, level = 1, riverAfter = "none", canDoubl
   };
   const cubeless = expect((x) => x);
   const winProb = expect((x) => (x > 0 ? 1 : x === 0 ? 0.5 : 0));
-  const cont = (L) => expect((x) => continuationValue(x, L, riverAfter));
-  const cv = chainValues(cont, level, canDouble ? MAX_CUBE : level);
+  const cont = (L) => expect((x) => continuationValue(x, L, riverAfter, dropUnit));
+  const cv = chainValues(cont, level, canDouble ? MAX_CUBE : level, dropUnit);
   const n1 = cv.nodes[1];
-  const tooGood = cv.best === "noDouble" && n1?.best === "drop" && cv.noDouble > DROP_UNIT * level + EPS;
+  const tooGood = cv.best === "noDouble" && n1?.best === "drop" && cv.noDouble > dropUnit * level + EPS;
   return {
     level,
     riverAfter,
     canDouble,
+    dropUnit,
     cubeless,
     winProb,
     noDouble: cv.noDouble,
@@ -831,9 +837,9 @@ export function analyzeDecision({ hist, level = 1, riverAfter = "none", canDoubl
   };
 }
 // Value of the position for the actor's side when no decision is pending now.
-export function positionValue({ hist, level = 1, riverAfter = "none" }) {
+export function positionValue({ hist, level = 1, riverAfter = "none", dropUnit = DROP_UNIT }) {
   let s = 0;
-  for (let i = 0; i < hist.length; i++) if (hist[i]) s += hist[i] * continuationValue(i - MAX_NET, level, riverAfter);
+  for (let i = 0; i < hist.length; i++) if (hist[i]) s += hist[i] * continuationValue(i - MAX_NET, level, riverAfter, dropUnit);
   return s;
 }
 export function deltaHist(x) {
