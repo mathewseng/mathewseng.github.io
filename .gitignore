@@ -6,3 +6,6 @@ ofc/fantasyland-ev/precomputed-parts/
 *.tsbuildinfo
 
 .claude/
+
+_site/
+backgammon/test-results/

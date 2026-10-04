@@ -1,0 +1,36 @@
+# Engine distribution
+
+Source: <https://github.com/ascottix/gnubg-core/tree/955555c69adebb1d7de23abc1018074158621168>. GPL-3.0-or-later. Upstream authors include Gary Wong, GNUbg contributors, and Alessandro Scotti; their file notices are retained. New `bridge.c` is GPL-3.0-or-later.
+
+## Rebuild
+
+Install and activate Emscripten **4.0.15** (emsdk resolves it to `b412b6307e541b93dd93f01b61181e15c17302ec`). Then from the repository root:
+
+```sh
+sh backgammon/scripts/build-engine.sh
+node backgammon/scripts/offline-manifest.mjs
+sh scripts/assemble-site.sh _site
+node backgammon/tests/browser.cjs
+```
+
+`build-engine.sh` downloads the exact revision, copies `engine/source/bridge.c`, runs `patch-engine.py`, compiles, and creates the corresponding-source archive. The distributed archive also builds directly with `make -f Makefile.emcc`; it includes the patched Makefile, all C source, original web glue, weights, MET and bearoff assets. The single-thread build uses `-O2`, 64 MiB initial WASM memory with growth, and a 1 MiB stack. The source archive is available from the application's About view. Rebuilds can differ in embedded paths/tool output; compare behavior and asset provenance as well as hashes.
+
+## Binding changes
+
+- Export `bg_score(originalXgid, afterXgid, plies)` and `bg_cube(xgid, plies)` as allocated JSON. The JS adapter always frees returned buffers. Keep original `hint` exported for independent binding regression comparisons.
+- Change the default cube context from three beavers to **zero**. No beaver controls are exposed. Standard match and unlimited-point rules align between UI and evaluator.
+- Use `PositionKey` on the after-position, then **ScoreMove** with the original cube/match context. GNUbg performs opponent evaluation, probability inversion, and conversion back to the original player's equity. The adapter does not manually negate an incompatible post-roll evaluation.
+- Return eight-decimal cubeful/cubeless values, the five GNUbg probabilities, and `eq2mwc` conversion for matches. Win-gammon/loss-gammon include backgammons.
+- For cube offers `turn` stays the doubler. The response player is `1 - turn`; response losses invert the decision comparison, not the board.
+
+The upstream public hint list caps at 40. Our application enumerates complete legal turns, deduplicates resulting boards, and evaluates all of them at one depth. A browser regression checks a 75-result doubles position and grades an actual move strictly below the worst returned upstream hint. It also compares five opening evaluations against the original C hint API, within 0.00011 (the original API rounds to four decimals). Other regression checks cover public cube fixtures, mirror/player perspective, and different match scores.
+
+## Worker and capabilities
+
+The engine runs in one dedicated module Worker; the WASM itself is single-threaded. Asset transfer, compilation, initialization and computation are timed separately. Fetch failures, initialization failure, worker crash and timeouts reject pending promises. Cancel terminates the worker, frees its WASM address space, and invalidates its generation. A later request creates a fresh worker. Posting a cancel message alone would not interrupt synchronous WASM and is deliberately not used.
+
+Capabilities are explicit in `engine/metadata.mjs`: checker analysis, legal arbitrary-move grading, cube and match contexts, 0–2 ply; no rollouts. The C source does include `RolloutGeneral`, but its runtime uses a global `rcRollout`, stubbed RNG configuration and event hooks. Exposing it without validating reproducibility, variance reduction and standard-error semantics would be misleading. No sample counts, rollout button, uncertainty or exact-solution claim is fabricated.
+
+## Verification and timing
+
+`tests/browser.cjs` loads the deployed JS/WASM/data from the assembled site without cross-origin-isolation headers. `scripts/benchmark.cjs` separates fresh-worker cold computation from repeated evaluations with warm GNUbg internal caches. Warm and cold timings must not be conflated. `docs/benchmarks.json` contains every sample; cold n=5 and startup n=10 report ranges, not a p95. Warm n=30 has p95. This is local HTTP on an Apple M4 Pro, not mobile hardware or an Internet transfer benchmark.

@@ -6,6 +6,11 @@
     "precompute:config": "node ofc/fantasyland-ev/scripts/precompute-config.cjs",
     "precompute:variant": "node ofc/fantasyland-ev/scripts/precompute-variant-parallel.cjs",
     "precompute:merge": "node ofc/fantasyland-ev/scripts/merge-precomputed-shards.cjs",
-    "precompute:build": "node ofc/fantasyland-ev/scripts/build-precomputed.cjs"
+    "precompute:build": "node ofc/fantasyland-ev/scripts/build-precomputed.cjs",
+    "test:backgammon:browser": "node backgammon/tests/browser.cjs",
+    "test:backgammon:live": "node backgammon/tests/live-network.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
   }
 }

@@ -1,0 +1,45 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, existsSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+test("assembled site publishes the exact Backgammon solver exception and all engine assets", () => {
+  const site = mkdtempSync(join(tmpdir(), "bg-site-"));
+  try {
+    execFileSync("sh", ["scripts/assemble-site.sh", site]);
+    for (const route of ["", "play/", "trainer/", "solver/", "library/"])
+      assert.ok(
+        existsSync(join(site, "backgammon", route, "index.html")),
+        route,
+      );
+    for (const file of [
+      "engine/vendor/gnubg-core-module.js",
+      "engine/vendor/gnubg-core-module.wasm",
+      "engine/vendor/gnubg-core-module.data",
+      "engine/worker.mjs",
+      "engine/source/gnubg-core-955555c-bg1.tar.gz",
+      "licenses/GPL-3.0.txt",
+      "core/rules.mjs",
+      "ui/board.mjs",
+      "styles.css",
+      "data/exercises.json",
+    ])
+      assert.ok(existsSync(join(site, "backgammon", file)), file);
+    for (const path of [
+      "blackjack/strategy/solver",
+      "backgammon/tests",
+      "backgammon/scripts",
+      "scripts",
+      "jazz-piano-ml",
+    ])
+      assert.equal(existsSync(join(site, path)), false, path);
+    assert.ok(existsSync(join(site, "shared/peer-room.js")));
+    assert.match(
+      readFileSync(join(site, "index.html"), "utf8"),
+      /href="\/backgammon\/"/,
+    );
+  } finally {
+    rmSync(site, { recursive: true, force: true });
+  }
+});

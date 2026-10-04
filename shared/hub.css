@@ -1565,3 +1565,20 @@ p {
     font-size: 0.74rem;
   }
 }
+
+[data-family="backgammon"] {
+  --accent: #9bd6c9;
+  --accent-2: #9bd6c9;
+}
+.switcher a[data-to="backgammon"] {
+  --dot: #9bd6c9;
+}
+@media (max-width: 480px) {
+  .switcher:has(a[data-to="backgammon"]) {
+    flex-wrap: wrap;
+    border-radius: 14px;
+  }
+  .switcher:has(a[data-to="backgammon"]) a {
+    flex-basis: calc(50% - 4px);
+  }
+}

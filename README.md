@@ -13,6 +13,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/`, `fantasyland-report/` |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `dodge/`, `calculations/` |
 | `blackjack/` | Blackjack hub: `strategy/` |
+| `backgammon/` | Backgammon hub: `play/`, `trainer/`, `solver/`, `library/`; pinned GNUbg WASM |
 | `shared/` | Code shared across project families: `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, and `hub.css` + `hub.js` for the landing and hub pages |
 | `jazz-piano-ml/` | Python source project; not published |
 | `redirects.json` | Old URL → new URL; the deploy writes a redirect page for each entry |
@@ -21,14 +22,15 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 ## Conventions
 
 - Folder and file names are kebab-case, and a page's folder path is its URL.
-- A group of related pages is a family with a hub `index.html` at its root (`ofc/`, `poker/`, `blackjack/`).
+- A group of related pages is a family with a hub `index.html` at its root (`ofc/`, `poker/`, `blackjack/`, `backgammon/`).
   The landing page and hubs share `shared/hub.css` and `shared/hub.js`; set the accent with `data-family` on `<html>`.
 - Each page has `index.html`, `app.js` as its entry script, `styles.css`, and role-named modules
   (`engine.js`, `game.js`). Tests go in `tests/*.test.cjs` or `tests/*.test.mjs`, and notes go in
   `README.md` or `docs/`.
 - Pages in the same family may load each other's files (`../fantasyland-core.js`, `../ultimate-omaha/poker.js`).
   Code used by more than one family belongs in `shared/`.
-- `tests/`, `scripts/`, `solver/`, `simulation/`, Markdown, and `package.json` files are not published.
+- `tests/`, `scripts/`, development `solver/`, `simulation/`, Markdown, and package manifests are not published.
+  The exact `/backgammon/solver/` application route is the sole solver-directory exception.
   Link to source on GitHub instead of relative paths.
 - When a page moves, add its old path to `redirects.json`.
 - Every playing card on the site is rendered by `shared/cards.js` (`PlayingCards.html` / `.element`) with
@@ -44,3 +46,7 @@ node scripts/run-tests.mjs
 
 That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`. The gym app has its own checks in `gym/package.json`.
 Pushing to `main` runs both and deploys through `.github/workflows/deploy.yml`.
+
+## Backgammon validation
+
+See [backgammon/README.md](backgammon/README.md) for controls, architecture, engine licensing/builds, multiplayer, backups, offline behavior, and precise format/capability limits. `scripts/assemble-site.sh _site` is the shared deployment assembly. After assembly, `node backgammon/tests/browser.cjs` checks the actual published files with Playwright and real WASM; the deployment workflow runs this in Chromium. Root npm dependencies are test tooling only.
