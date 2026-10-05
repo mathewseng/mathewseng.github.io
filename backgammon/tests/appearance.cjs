@@ -49,11 +49,14 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
       .match(/../g)
       .map((n) => parseInt(n, 16))
       .join(", ")})`;
+  // Closing Settings redraws the SVG. Select and read in one page task so
+  // the dialog's asynchronous close event cannot detach a captured handle.
   const frame = () =>
-    page
-      .locator("#board .bg-board > rect")
-      .first()
-      .evaluate((n) => getComputedStyle(n).fill);
+    page.evaluate(
+      () =>
+        getComputedStyle(document.querySelector("#board .bg-board > rect"))
+          .fill,
+    );
   try {
     await page.addInitScript(() => {
       const random = crypto.getRandomValues.bind(crypto),
