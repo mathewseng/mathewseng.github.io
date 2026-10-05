@@ -36,6 +36,7 @@ function harness() {
     ),
     addEventListener: (name, listener) => (handlers[name] = listener),
     clients: { matchAll: async () => clients },
+    registration: { active: {}, waiting: {} },
     skipWaiting: async () => activated++,
   };
   runInNewContext(readFileSync(new URL("../sw.js", import.meta.url), "utf8"), {
@@ -44,6 +45,7 @@ function harness() {
     URL,
     Response,
     Request,
+    Headers,
     Uint8Array,
     crypto: webcrypto,
     location: { origin: "https://site.example" },
@@ -59,7 +61,9 @@ function harness() {
     fetch: async (path) => {
       fetches++;
       if (!online) throw new Error("Offline");
-      return new Response(path);
+      return new Response(
+        typeof path === "string" ? path : new URL(path.url).pathname,
+      );
     },
   });
   return {
@@ -84,6 +88,23 @@ function harness() {
       await pending;
       return result;
     },
+    async update(
+      source = {
+        id: "hub",
+        url: "https://site.example/backgammon/",
+      },
+      deadline = Date.now() + 5000,
+    ) {
+      let result, pending;
+      handlers.message({
+        data: { type: "BACKGAMMON_UPDATE", deadline },
+        source,
+        ports: [{ postMessage: (value) => (result = value) }],
+        waitUntil: (promise) => (pending = promise),
+      });
+      await pending;
+      return result;
+    },
     request(path = paths[0]) {
       let result;
       handlers.fetch({
@@ -97,13 +118,31 @@ function harness() {
 
 test("offline engine caching verifies and stores one complete matching triplet", async () => {
   const h = harness();
-  assert.equal((await h.request()).status, 200);
+  const response = await h.request();
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.equal(h.saved.size, 3);
   assert.equal(h.fetches(), 3);
   h.offline();
   for (const path of h.paths)
     assert.equal(await (await h.request(path)).text(), path);
   assert.equal(h.fetches(), 3);
+});
+
+test("app responses prevent a second HTTP cache bypassing the active offline release", async () => {
+  const h = harness();
+  h.saved.set(
+    "/backgammon/styles.css",
+    new Response("current-style", {
+      headers: { "Cache-Control": "public, max-age=86400" },
+    }),
+  );
+  const cached = await h.request("/backgammon/styles.css");
+  assert.equal(cached.headers.get("Cache-Control"), "no-store");
+  assert.equal(await cached.text(), "current-style");
+  const network = await h.request("/backgammon/uncached.mjs");
+  assert.equal(network.headers.get("Cache-Control"), "no-store");
+  assert.equal(await network.text(), "/backgammon/uncached.mjs");
 });
 
 test("install bypasses the HTTP cache for every shell file without forcing activation", async () => {
@@ -152,6 +191,69 @@ test("a failed manual download keeps the working cache and does not activate the
   assert.equal((await h.refresh()).status, "error");
   assert.equal(h.activated(), 0);
   assert.deepEqual(h.deleted, []);
+});
+
+test("automatic activation uses the installed shell without downloading again or deleting data", async () => {
+  const h = harness();
+  h.clients.push({
+    id: "hub",
+    url: "https://site.example/backgammon/",
+    visibilityState: "visible",
+  });
+  h.offline(); // The full new shell was already installed.
+  assert.equal((await h.update()).status, "ready");
+  assert.equal(h.activated(), 1);
+  assert.deepEqual(h.deleted, []);
+  assert.equal(h.shellRequests.length, 0);
+});
+
+test("automatic activation refuses other windows, navigated/hidden clients and expired requests", async () => {
+  const h = harness();
+  const hub = {
+    id: "hub",
+    url: "https://site.example/backgammon/",
+    visibilityState: "visible",
+  };
+  h.clients.push(hub, {
+    id: "game",
+    url: "https://site.example/backgammon/play/",
+  });
+  assert.equal((await h.update()).status, "busy");
+  h.clients.pop();
+  assert.equal((await h.update(undefined, Date.now() - 1)).status, "deferred");
+  assert.equal((await h.update(undefined, Infinity)).status, "deferred");
+  assert.equal(
+    (await h.update(undefined, Date.now() + 60000)).status,
+    "deferred",
+  );
+  hub.visibilityState = "hidden";
+  assert.equal((await h.update()).status, "deferred");
+  hub.visibilityState = "visible";
+  hub.url += "play/";
+  assert.equal((await h.update()).status, "deferred");
+  assert.equal(
+    (await h.update({ id: "hub", url: "https://other.example/backgammon/" }))
+      .status,
+    "error",
+  );
+  assert.equal(
+    (await h.update({ id: "hub", url: "https://site.example/poker/" })).status,
+    "error",
+  );
+  assert.equal(h.activated(), 0);
+  assert.deepEqual(h.deleted, []);
+});
+
+test("first-time installations do not force activation through the update protocol", async () => {
+  const h = harness();
+  h.clients.push({
+    id: "hub",
+    url: "https://site.example/backgammon/",
+    visibilityState: "visible",
+  });
+  h.self.registration.active = null;
+  assert.equal((await h.update()).status, "deferred");
+  assert.equal(h.activated(), 0);
 });
 
 test("an incompatible engine update is rejected without caching partial assets and can retry", async () => {

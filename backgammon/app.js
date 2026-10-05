@@ -3,6 +3,15 @@ import { Board } from "./ui/board.mjs";
 import { initialState } from "./core/rules.mjs";
 import { get, all, settings } from "./core/storage.mjs";
 import { applyBoardTheme } from "./core/appearance.mjs";
+import { startUpdates } from "./ui/updates.mjs";
+startUpdates({
+  hub: true,
+  onStatus: ({ state, message }) => {
+    const status = document.getElementById("app-update-status");
+    status.dataset.state = state;
+    status.textContent = message;
+  },
+});
 applyBoardTheme(settings().boardTheme);
 addEventListener("storage", (e) => {
   if (e.key === "backgammon.v1.settings" || e.key === null)

@@ -1,5 +1,13 @@
 # Validation record — updated 2026-10-05
 
+## Automatic updates and hub recovery link
+
+The repository suite passed **140 tests**. The full assembled-site browser suite passed in **Chromium 145.0.7632.6, Firefox 146.0.1 and WebKit 26.0**, including real GNUbg, gameplay, manual recovery and offline analysis. `tests/updates.cjs` adds 13 real service-worker scenarios to that suite: hub registration, first install, successive upgrades with long-lived HTTP caches, unchanged releases without reload loops, reconnect/foreground activation, an occupied game with a draft, another open window, unchanged saved dice/Library/settings, failed shell installation and retry, a failed update check at startup, and direct tool visits. Lifecycle events are dispatched by the test; service workers, CacheStorage, IndexedDB and network responses are real. This is desktop WebKit, not a physical iPhone test.
+
+The tests exposed two separate browser caches beyond CacheStorage: Firefox reused a decoded stylesheet, and WebKit reused an old imported board module after moving between tools. Release-specific entry URLs and `no-store` headers on controlled responses fixed both. The tests now assert matching HTML, stylesheet, entry-script and imported board-module revisions. Offline use continues through the explicit Backgammon cache. Unit tests cover activation deadlines, caller identity, visibility/navigation checks, first-install protection and response cache headers. Artifact tests independently recompute the generated revision and verify all five entry points use it. Re-running the generator leaves the worker, manifest and HTML byte-identical.
+
+Inspected hub screenshots at **320×568, 375×667, 844×390 and 1366×768**, plus waiting-for-another-window and failed-download states. The refresh link is keyboard accessible and the status text wraps. A narrow Backgammon-only adjustment prevents the family switcher labels from colliding at 320px and keeps its phone controls at least 44px in both dimensions; the focused update suite checks this after assembly. Existing installations that predate the updater may need one visit to the standalone refresh page to bootstrap it. No stored games, drafts, settings or Library data are reset.
+
 This is observed test coverage, not a claim of commercial feature parity or real-device certification.
 
 ## Automated checks

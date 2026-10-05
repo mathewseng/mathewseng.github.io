@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
-importScripts("./offline-manifest.js");
+// Release URL is generated with the manifest; keep the registration URL stable.
+importScripts("./offline-manifest.js?v=b49a678975fa64b3");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
 function cacheShell() {
@@ -29,13 +30,19 @@ function removeOldCaches() {
 self.addEventListener("install", (event) => {
   event.waitUntil(cacheShell());
 });
-// Normal updates wait. Only an explicit refresh from the recovery page may
-// activate early, after verifying no other Backgammon windows are open.
+// A downloaded release waits until a quiet page locks input and asks to apply
+// it, or the standalone recovery page explicitly refreshes it. Never claim
+// running clients: the requesting page reloads after activation completes.
 self.addEventListener("activate", (event) => {
   event.waitUntil(removeOldCaches());
 });
 self.addEventListener("message", (event) => {
-  if (event.data?.type !== "BACKGAMMON_REFRESH" || !event.ports?.[0]) return;
+  const automatic = event.data?.type === "BACKGAMMON_UPDATE";
+  if (
+    (!automatic && event.data?.type !== "BACKGAMMON_REFRESH") ||
+    !event.ports?.[0]
+  )
+    return;
   const reply = (value) => event.ports[0].postMessage(value);
   event.waitUntil(
     (async () => {
@@ -44,7 +51,11 @@ self.addEventListener("message", (event) => {
       if (
         !source?.id ||
         url.origin !== location.origin ||
-        !/^\/backgammon\/refresh\/(?:index\.html)?$/.test(url.pathname)
+        !(
+          automatic
+            ? /^\/backgammon\/(?:(?:play|trainer|solver|library)\/)?(?:index\.html)?$/
+            : /^\/backgammon\/refresh\/(?:index\.html)?$/
+        ).test(url.pathname)
       ) {
         reply({
           status: "error",
@@ -65,15 +76,39 @@ self.addEventListener("message", (event) => {
       if (others.length) {
         reply({
           status: "busy",
-          message:
-            "Close the other Backgammon tabs or Home Screen windows, then try again. Keep this refresh page open.",
+          message: automatic
+            ? "Update ready. Finish and close your other Backgammon tabs or Home Screen windows, then return here."
+            : "Close the other Backgammon tabs or Home Screen windows, then try again. Keep this refresh page open.",
         });
         return;
       }
-      // addAll is atomic: a failed download leaves the working shell intact.
-      // This never opens or deletes IndexedDB, localStorage or other-family caches.
-      await cacheShell();
-      await removeOldCaches();
+      if (automatic) {
+        const client = clients.find((c) => c.id === source.id);
+        const deadline = event.data.deadline;
+        // The short-lived request is sent with modal input protection. Refuse
+        // late delivery, a navigated/hidden caller, and first-time installs.
+        if (
+          !self.registration.active ||
+          !self.registration.waiting ||
+          !client ||
+          client.url !== source.url ||
+          client.visibilityState !== "visible" ||
+          !Number.isFinite(deadline) ||
+          deadline <= Date.now() ||
+          deadline > Date.now() + 10000
+        ) {
+          reply({
+            status: "deferred",
+            message: "Update ready. Return to the hub to apply it safely.",
+          });
+          return;
+        }
+      } else {
+        // addAll is atomic: a failed download leaves the working shell intact.
+        // No IndexedDB, localStorage or other-family caches are touched.
+        await cacheShell();
+        await removeOldCaches();
+      }
       await self.skipWaiting();
       reply({ status: "ready", version: self.BG_CACHE_VERSION });
     })().catch(() =>
@@ -128,6 +163,18 @@ async function warmEngine() {
       });
   return warming;
 }
+function fromRelease(response) {
+  // CacheStorage owns offline reuse. A second, browser-managed response cache
+  // can otherwise bypass this worker and mix old module imports with a new
+  // entry script (notably WebKit when moving between tools after an update).
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", "no-store");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 self.addEventListener("fetch", (event) => {
   const u = new URL(event.request.url);
   if (event.request.method !== "GET" || u.origin !== location.origin) return;
@@ -145,6 +192,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       warmEngine()
         .then((cache) => cache.match(key))
+        .then(fromRelease)
         .catch((error) => new Response(error.message, { status: 503 })),
     );
     return;
@@ -152,8 +200,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const saved = await cache.match(key);
-      if (saved) return saved;
-      return fetch(event.request);
+      return fromRelease(saved || (await fetch(event.request)));
     }),
   );
 });

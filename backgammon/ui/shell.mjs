@@ -21,6 +21,7 @@ import {
   setSoundPreferences,
 } from "./sound.mjs";
 import { reducedMotion } from "./motion.mjs";
+import { startUpdates } from "./updates.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -197,13 +198,17 @@ export function shell(page, title, subtitle = "") {
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
-  if ("serviceWorker" in navigator)
-    navigator.serviceWorker
-      .register("/backgammon/sw.js", {
-        scope: "/backgammon/",
-        updateViaCache: "none",
-      })
-      .catch(() => {});
+  startUpdates({
+    onStatus: ({ state }) => {
+      const brand = document.querySelector(".brand");
+      const waiting = state === "waiting";
+      brand.toggleAttribute("data-update-ready", waiting);
+      brand.title = waiting
+        ? "Update ready. Finish your session, then return to the hub."
+        : "Backgammon hub";
+      brand.setAttribute("aria-label", brand.title);
+    },
+  });
   activeBoard = new Board($("board"));
   return { board: activeBoard, panel: $("panel") };
 }

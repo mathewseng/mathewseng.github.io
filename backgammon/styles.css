@@ -152,6 +152,42 @@ h3 {
 .small {
   font-size: 13px;
 }
+.hub-update {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.hub-update a {
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.app-update-dialog {
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 22px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.app-update-dialog p {
+  margin: 0;
+}
+.app-update-dialog::backdrop {
+  background: #11191d99;
+}
+.brand[data-update-ready]::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
 .eyebrow {
   font-size: 12px;
   text-transform: uppercase;
@@ -1236,11 +1272,16 @@ html[data-motion="reduce"] *:before {
     gap: 0;
   }
   .hub-backgammon .switcher a {
-    padding: 9px 10px;
+    padding: 9px 6px;
     font-size: 12px;
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
     text-align: center;
+  }
+  .hub-backgammon .switcher a::before {
+    display: none;
   }
   .hub-backgammon .hub-layout {
     margin-top: 20px;

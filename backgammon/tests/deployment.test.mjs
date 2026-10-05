@@ -32,6 +32,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "licenses/GPL-3.0.txt",
       "core/rules.mjs",
       "ui/board.mjs",
+      "ui/updates.mjs",
       "styles.css",
       "data/exercises.json",
     ])
@@ -50,6 +51,51 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
     runInNewContext(
       readFileSync(join(site, "backgammon/offline-manifest.js"), "utf8"),
       manifest,
+    );
+    assert.ok(
+      readFileSync(join(site, "backgammon/sw.js"), "utf8").includes(
+        `importScripts("./offline-manifest.js?v=${manifest.self.BG_CACHE_VERSION}");`,
+      ),
+      "Each release changes the worker bytes and versions its imported manifest",
+    );
+    const releaseHash = createHash("sha256")
+      .update("backgammon-offline-v2\0")
+      .update(
+        readFileSync(join(site, "backgammon/sw.js"), "utf8").replace(
+          /importScripts\("\.\/offline-manifest\.js\?v=[a-z0-9]+"\);/,
+          'importScripts("./offline-manifest.js?v=generated");',
+        ),
+      );
+    for (const file of [...manifest.self.BG_SHELL, ...manifest.self.BG_ENGINE]
+      .filter((file) => file.startsWith("/backgammon/"))
+      .sort()) {
+      const source = readFileSync(join(site, file));
+      releaseHash
+        .update(file.slice("/backgammon/".length))
+        .update(
+          file.endsWith(".html")
+            ? source.toString().replace(/\?bgv=[a-z0-9]+(?=")/g, "")
+            : source,
+        );
+      if (file.endsWith(".html"))
+        assert.ok(
+          source
+            .toString()
+            .includes(`styles.css?bgv=${manifest.self.BG_CACHE_VERSION}`),
+          `${file} invalidates the browser's stylesheet cache`,
+        );
+    }
+    for (const file of ["hub.css", "hub.js", "peer-room.js"])
+      releaseHash.update(file).update(readFileSync(join(site, "shared", file)));
+    assert.equal(
+      releaseHash.digest("hex").slice(0, 16),
+      manifest.self.BG_CACHE_VERSION,
+      "Generated worker/manifest revision matches every shipped shell and engine file",
+    );
+    assert.match(
+      readFileSync(join(site, "backgammon/index.html"), "utf8"),
+      /href="\/backgammon\/refresh\/">Refresh app<\/a>/,
+      "Hub includes the network-only recovery link",
     );
     for (const file of [
       ...manifest.self.BG_SHELL,
