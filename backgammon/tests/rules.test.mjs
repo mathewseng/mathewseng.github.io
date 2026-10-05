@@ -188,7 +188,7 @@ test("XGID known upstream fixtures roundtrip board/context; unsafe flags rejecte
   ])
     assert.equal(toXGID(fromXGID(x)), x);
   assert.throws(() =>
-    fromXGID("XGID=-b----E-C---eE---c-e----B-:0:0:1:00:0:0:1:0:10"),
+    fromXGID("XGID=-b----E-C---eE---c-e----B-:0:0:1:00:0:0:4:0:10"),
   );
   assert.throws(() =>
     fromXGID("XGID=A------------------------A:0:0:1:00:0:0:0:0:10"),
@@ -239,7 +239,7 @@ test("malformed structures and unknown optional rules produce useful validation 
         ...s,
         rules: { cube: true, jacoby: false, beavers: true },
       }),
-    /Supported rules/,
+    /Invalid rules/,
   );
 });
 

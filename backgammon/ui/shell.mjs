@@ -8,8 +8,11 @@ import {
   nextSteps,
   applyStep,
   clone,
+  boardKey,
+  decisionPlayer,
 } from "../core/rules.mjs";
 import { Board } from "./board.mjs";
+import { checkerRoutes, reverseRoutes } from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
@@ -94,7 +97,11 @@ export function saveDialog(state, kind = "position", extra = {}) {
       maxlength: 12000,
       placeholder: "What would you like to remember?",
     }),
-    tags = el("input", { placeholder: "Comma-separated tags", maxlength: 400 });
+    tags = el("input", {
+      placeholder: "Comma-separated tags",
+      maxlength: 400,
+      value: (extra.tags || []).join(", "),
+    });
   let d;
   d = dialog(
     "Save to Library",
@@ -141,13 +148,13 @@ export async function copy(text) {
 }
 export function shell(page, title, subtitle = "") {
   document.documentElement.dataset.motion = settings().motion;
-  applyBoardTheme(settings().boardTheme);
   addEventListener("storage", (e) => {
     if (e.key === "backgammon.v1.settings" || e.key === null)
       applyBoardTheme(settings().boardTheme);
   });
-  document.body.innerHTML = `<div class="app"><header class="topbar"><a class="brand" href="/backgammon/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Backgammon</a><nav class="nav" aria-label="Backgammon tools">${["play", "trainer", "solver", "library"].map((p) => `<a href="/backgammon/${p}/" ${p === page ? 'aria-current="page"' : ""}>${p[0].toUpperCase() + p.slice(1)}</a>`).join("")}</nav><div class="header-tools"><a class="site-link" href="/">All projects</a><button id="preferences" class="ghost" type="button">Settings</button></div></header><div class="tool-head"><div><h1 id="page-title"></h1><p class="subtitle" id="subtitle"></p></div><div class="toolbar-actions" id="toolbar"><button id="panel-toggle" class="panel-toggle" type="button">Details</button></div></div><main class="workspace" id="workspace"><section class="stage" aria-label="Game workspace"><div id="opponent" class="player-strip"></div><div id="board" class="board-slot"></div><div id="player" class="player-strip"></div><div class="action-area"><div id="message" class="action-message" role="status" aria-live="polite"></div><div class="action-main"><div id="dice" class="dice"></div><div id="actions" class="action-buttons"></div></div><div id="draft-line" class="draft-line"></div></div></section><aside class="inspector" id="inspector" aria-label="Details"><div class="panel-body" id="panel"></div></aside></main></div><div class="toast" id="toast" role="status" hidden></div>`;
+  document.body.innerHTML = `<div class="app"><header class="topbar"><a class="brand" href="/backgammon/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Backgammon</a><nav class="nav" aria-label="Backgammon tools">${["play", "trainer", "solver", "library"].map((p) => `<a href="/backgammon/${p}/" ${p === page ? 'aria-current="page"' : ""}>${p[0].toUpperCase() + p.slice(1)}</a>`).join("")}</nav><div class="header-tools"><a class="site-link" href="/">All projects</a><button id="preferences" class="ghost" type="button">Settings</button></div></header><div class="tool-head"><div><h1 id="page-title"></h1><p class="subtitle" id="subtitle"></p></div><div class="toolbar-actions" id="toolbar"><button id="panel-toggle" class="panel-toggle" type="button">Details</button></div></div><main class="workspace" id="workspace"><section class="stage" aria-label="Game workspace"><div id="opponent" class="player-strip"></div><div id="board" class="board-slot"></div><div id="player" class="player-strip"></div><div class="action-area"><div id="message" class="action-message" role="status" aria-live="polite"></div><div class="action-main"><div id="actions" class="action-buttons"></div></div><div id="draft-line" class="draft-line"></div></div></section><aside class="inspector" id="inspector" aria-label="Details"><div class="panel-body" id="panel"></div></aside></main></div><div class="toast" id="toast" role="status" hidden></div>`;
   $("page-title").textContent = title;
+  applyBoardTheme(settings().boardTheme);
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
@@ -248,12 +255,12 @@ export function about() {
       el(
         "p",
         {},
-        "GNUbg Core 955555c · web binding bg1. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution.",
+        "GNUbg Core 955555c · web binding bg2. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution.",
       ),
       el(
         "p",
         {},
-        "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful, deterministic, pruning enabled, no noise. Every legal resulting position is evaluated at the selected depth.",
+        "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful when the cube is enabled, deterministic, pruning enabled, no noise. Every legal resulting position is evaluated at the selected depth.",
       ),
       el(
         "p",
@@ -277,7 +284,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg1.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg2.tar.gz" },
         "Download corresponding engine source",
       ),
       el(
@@ -301,7 +308,7 @@ export function players(s, names = ["Ivory", "Teal"]) {
     const row = $(id);
     row.classList.toggle(
       "active",
-      s.turn === p && !["over", "opening"].includes(s.phase),
+      decisionPlayer(s) === p && !["over", "opening"].includes(s.phase),
     );
     row.replaceChildren(
       el(
@@ -319,28 +326,6 @@ export function players(s, names = ["Ivory", "Teal"]) {
         `${s.scores[p]}${s.matchLength ? " / " + s.matchLength : ""} · ${pipCount(s, p)} pips`,
       ),
     );
-  }
-}
-export function diceView(dice, used = [], options = {}) {
-  const parent = $("dice");
-  parent.replaceChildren();
-  const rest = [...used];
-  for (const die of dice.length && dice[0] === dice[1]
-    ? Array(4).fill(dice[0])
-    : dice) {
-    const consumed = rest.includes(die);
-    if (consumed) rest.splice(rest.indexOf(die), 1);
-    const d = dieFace(die, {
-      consumed,
-      player: options.player,
-      choose:
-        !consumed && options.choose && dice[0] !== dice[1]
-          ? () => options.choose(die)
-          : null,
-      preferred: options.preferred === die,
-    });
-    if (options.roll) d.classList.add("die-reveal");
-    parent.append(d);
   }
 }
 export function dieFace(
@@ -416,42 +401,88 @@ export class DraftBoard {
       (p) => p.steps.length === this.draft.length,
     );
   }
+  reverseMoves() {
+    return reverseRoutes(this.state, this.paths, this.draft);
+  }
+  sources() {
+    return [
+      ...new Set(
+        [...this.candidates(), ...this.reverseMoves()].map((st) => st.from),
+      ),
+    ];
+  }
+  routes() {
+    if (this.selected === null) return [];
+    return [
+      ...checkerRoutes(this.paths, this.draft, this.selected),
+      ...this.reverseMoves().filter((st) => st.from === this.selected),
+    ];
+  }
   point(raw) {
     if (!this.enabled || this.preview) return;
+    this.board.cancelAnimations();
     const p = this.normalize(raw);
-    const options = this.candidates();
     this.hint = "";
-    if (this.complete()) {
-      this.hint = this.draft.length
-        ? "All playable dice are used. Confirm turn, or undo a move."
-        : "There is no legal move. Confirm to pass your turn.";
-      this.render();
-      return;
+    const routes = this.routes().filter((st) => st.to === p);
+    // Equivalent paths with the same resulting position and consumed dice need
+    // no extra confirmation. Distinct hits or different die use remain choices.
+    const distinct = new Map();
+    for (const route of routes.sort(
+      (a, b) =>
+        Number(b.steps[0].die === this.preferred) -
+        Number(a.steps[0].die === this.preferred),
+    )) {
+      const next = route.undo
+        ? route.remaining
+        : [...this.draft, ...route.steps];
+      const result = next.reduce((s, step) => applyStep(s, step), this.state);
+      const key =
+        boardKey(result) +
+        ":" +
+        next
+          .map((st) => st.die)
+          .sort()
+          .join();
+      if (!distinct.has(key)) distinct.set(key, route);
     }
-    const dest = options.filter(
-      (st) => st.from === this.selected && st.to === p,
-    );
-    if (dest.length > 1) {
-      const chosen = dest.find((st) => st.die === this.preferred);
-      if (chosen) this.move(chosen);
+    const choices = [...distinct.values()];
+    if (choices.length) {
+      const preferred = choices.filter(
+        (st) =>
+          !st.undo &&
+          st.steps.length === 1 &&
+          st.steps[0].die === this.preferred,
+      );
+      if (choices.length === 1 || preferred.length === 1)
+        this.moveRoute(preferred[0] || choices[0]);
       else {
-        const key = this.state,
-          draftLength = this.draft.length;
+        const state = this.state,
+          signature = JSON.stringify(this.draft);
+        const single = choices.every((st) => !st.undo && st.steps.length === 1);
         let d;
         d = dialog(
-          "Choose a die",
+          single ? "Choose a die" : "Choose a route",
           el(
             "p",
             {},
-            "Both dice reach this destination. Choose which die to use.",
+            single
+              ? "Both dice reach this destination. Choose which die to use."
+              : "These legal paths use different dice or hit different checkers.",
           ),
-          dest.map((st) =>
+          choices.map((route) =>
             button(
-              `Use ${st.die}`,
+              route.undo
+                ? `Move back · restore ${route.steps.map((st) => st.die).join(" + ")}`
+                : single
+                  ? `Use ${route.steps[0].die}`
+                  : `${route.steps.map((st) => st.die).join(" → ")} · ${notation(route.steps, this.state.turn)}`,
               () => {
                 d.close();
-                if (this.state === key && this.draft.length === draftLength)
-                  this.move(st);
+                if (
+                  this.state === state &&
+                  JSON.stringify(this.draft) === signature
+                )
+                  this.moveRoute(route);
               },
               "primary",
             ),
@@ -460,22 +491,17 @@ export class DraftBoard {
       }
       return;
     }
-    if (dest.length) {
-      this.move(dest[0]);
-      return;
-    }
-    if (options.some((st) => st.from === p))
+    if (this.sources().includes(p))
       this.selected = this.selected === p ? null : p;
     else
-      this.hint = this.current().bar[this.state.turn]
-        ? "Enter your checker from the bar first."
-        : typeof p === "number" &&
-            this.current().points[p] * (this.state.turn ? -1 : 1) <= -2
-          ? "That point is blocked. Choose a highlighted point."
+      this.hint = this.complete()
+        ? "Select a moved checker to move it back, use Undo or Reset, or confirm your turn."
+        : this.current().bar[this.state.turn]
+          ? "Enter your checker from the bar first."
           : typeof p === "number" &&
-              this.current().points[p] * (this.state.turn ? -1 : 1) > 0
-            ? "That checker cannot use the remaining dice. Choose a ringed checker."
-            : "Choose a ringed checker or a highlighted destination.";
+              this.current().points[p] * (this.state.turn ? -1 : 1) <= -2
+            ? "That point is blocked. Choose a highlighted point."
+            : "Select a highlighted checker, then tap a destination. You can also drag.";
     this.render();
   }
   normalize(raw) {
@@ -487,7 +513,7 @@ export class DraftBoard {
   beginDrag(raw) {
     if (!this.enabled || this.preview) return false;
     const source = this.normalize(raw);
-    if (!this.candidates().some((st) => st.from === source)) return false;
+    if (!this.sources().includes(source)) return false;
     this.selected = source;
     this.hint = "Release on a highlighted point. Release elsewhere to cancel.";
     this.render();
@@ -495,11 +521,7 @@ export class DraftBoard {
   }
   drop(raw) {
     const dest = this.normalize(raw);
-    if (
-      !this.candidates().some(
-        (st) => st.from === this.selected && st.to === dest,
-      )
-    ) {
+    if (!this.routes().some((st) => st.to === dest)) {
       this.hint = "Move cancelled. Drop on a highlighted point, or tap it.";
       this.render();
       return;
@@ -514,22 +536,40 @@ export class DraftBoard {
     this.render();
   }
   move(step) {
-    if (
-      !this.enabled ||
-      this.preview ||
-      !this.candidates().some(
-        (st) =>
-          st.from === step.from && st.to === step.to && st.die === step.die,
-      )
-    )
-      return;
+    this.moveRoute({
+      steps: [step],
+      from: step.from,
+      to: step.to,
+      undo: false,
+    });
+  }
+  moveRoute(route) {
+    if (!this.enabled || this.preview) return;
+    const next = route.undo ? route.remaining : [...this.draft, ...route.steps];
+    if (!matchingPaths(this.paths, next).length) return;
     const before = this.current();
-    this.draft.push(step);
-    this.hint = "";
-    const sources = [...new Set(this.candidates().map((st) => st.from))];
-    this.selected = sources.length === 1 ? sources[0] : null;
+    this.draft = [...next];
+    this.hint = route.undo
+      ? "Checker moved back. Its dice are available again."
+      : "";
+    const nextSources = [...new Set(this.candidates().map((st) => st.from))];
+    this.selected = nextSources.length === 1 ? nextSources[0] : null;
     this.render();
-    this.board.animateMove(before, this.current(), step);
+    if (!route.undo && route.steps.length > 1)
+      this.board.animateMove(
+        before,
+        this.current(),
+        { from: route.from, to: route.to },
+        false,
+        route.steps,
+      );
+    else if (!route.undo || route.steps.length === 1)
+      this.board.animateMove(
+        before,
+        this.current(),
+        route.undo ? { from: route.to, to: route.from } : route.steps[0],
+        !!route.undo,
+      );
     this.onChange();
   }
   undo() {
@@ -555,30 +595,22 @@ export class DraftBoard {
     if (!this.state) return;
     const s = this.preview || this.current();
     const options = this.enabled && !this.preview ? this.candidates() : [];
-    const moves = options.filter((st) => st.from === this.selected);
+    const moves = this.enabled && !this.preview ? this.routes() : [];
     this.board.render(s, {
       ...settings(),
       selected: this.selected,
       destinations: moves.map((st) => st.to),
-      sources: [...new Set(options.map((st) => st.from))],
+      sources: this.enabled && !this.preview ? this.sources() : [],
       moves,
       interactive: this.enabled && !this.preview,
       preview: !!this.preview,
+      usedDice: this.draft.map((st) => st.die),
+      chooseDie:
+        this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
+      preferredDie: this.preferred,
+      hideDice: !!this.hideDice,
     });
     players(s, this.names);
-    const diceKey = this.state.sequence + ":" + this.state.dice.join();
-    diceView(
-      this.state.dice,
-      this.draft.map((st) => st.die),
-      {
-        player: this.state.turn,
-        preferred: this.preferred,
-        choose:
-          this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
-        roll: this.lastDiceKey !== diceKey,
-      },
-    );
-    this.lastDiceKey = diceKey;
     $("draft-line").setAttribute("role", "status");
     $("draft-line").textContent = this.preview
       ? "Preview only · original position is unchanged"
@@ -586,11 +618,11 @@ export class DraftBoard {
         (this.enabled && this.state.phase === "move"
           ? this.complete()
             ? this.draft.length
-              ? "Ready to confirm. Undo lets you try another move."
+              ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
               : "All entries are blocked. Confirm to pass your turn."
             : this.selected !== null
-              ? `Tap a highlighted point${this.selected === "bar" ? " to enter from the bar" : ""}. Its number is the die used.`
-              : "Tap a ringed checker, then a destination. You can also drag."
+              ? "Filled badges show forward distances, including combined dice. Arrow badges and dashed point borders let you move back."
+              : "Tap a highlighted checker to see single and combined moves, or drag it."
           : this.draft.length
             ? notation(this.draft, this.state.turn)
             : "");

@@ -23,6 +23,17 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
     }
     await open(host);
     await open(guest);
+    const optionalRules = process.env.BG_MONEY_RULES === "1";
+    if (optionalRules) {
+      await host.getByLabel("Match length", { exact: true }).selectOption("0");
+      await host.locator(".game-rules summary").click();
+      await host
+        .getByLabel("Automatic opening doubles", { exact: true })
+        .selectOption("1");
+      await host
+        .getByLabel("Immediate redoubles", { exact: true })
+        .selectOption("2");
+    }
     await host.locator("#player-name").fill("Host with a long name");
     await host.locator("#create-room").click();
     await host.waitForFunction(
@@ -69,9 +80,26 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
     const doubler = s.state.turn === 0 ? host : guest,
       receiver = s.state.turn === 0 ? guest : host;
     await doubler.getByRole("button", { name: "Double", exact: true }).click();
-    await receiver.getByRole("button", { name: "Take 2", exact: true }).click();
+    const stake = s.state.cube.value;
+    if (optionalRules) {
+      await receiver
+        .getByRole("button", { name: `Beaver to ${stake * 4}`, exact: true })
+        .click();
+      await doubler
+        .getByRole("button", { name: `Raccoon to ${stake * 8}`, exact: true })
+        .click();
+    }
+    await receiver
+      .getByRole("button", {
+        name: `Take ${stake * (optionalRules ? 8 : 2)}`,
+        exact: true,
+      })
+      .click();
     await host.waitForTimeout(200);
-    assert.equal((await snapshot(host)).state.cube.value, 2);
+    assert.equal(
+      (await snapshot(host)).state.cube.value,
+      stake * (optionalRules ? 8 : 2),
+    );
     await guest.reload();
     await guest.getByRole("button", { name: "Online", exact: true }).click();
     await guest
@@ -148,6 +176,7 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
           createJoin: true,
           synchronizedTurn: true,
           cubeTake: true,
+          optionalRules,
           refreshRejoin: true,
           roomFull: true,
           duplicateTab: true,

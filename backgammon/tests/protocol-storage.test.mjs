@@ -13,6 +13,7 @@ import {
   legalTurns,
   transition,
   replay,
+  decisionPlayer,
 } from "../core/rules.mjs";
 import { validateItem, parseBackup } from "../core/storage.mjs";
 import { parseMAT } from "../core/mat.mjs";
@@ -155,4 +156,66 @@ test("strict MAT reads public two-column syntax; unsupported and illegal moves r
   assert.equal(m.events.length, 6);
   assert.throws(() => parseMAT(text.replace("8/5 6/5", "24/1")));
   assert.throws(() => parseMAT("binary\0data"));
+});
+
+test("optional rules, tied-opening dice and immediate cube offers survive protocol recovery", () => {
+  let s = session(
+    players,
+    {
+      matchLength: 0,
+      rules: { jacoby: true, automaticDoubles: 1, immediateRedoubles: 2 },
+    },
+    "optional-room",
+  );
+  let id = 0;
+  const send = (type, extra = {}, dice = options.dice) => {
+    const actor = players[decisionPlayer(s.state)].id;
+    s = accept(
+      s,
+      actor,
+      envelope(s, actor, { type, ...extra }, "optional-" + ++id),
+      { ...options, dice },
+    );
+  };
+  send("start");
+  send("opening", {}, () => [4, 4]);
+  assert.equal(s.state.cube.value, 2);
+  send("opening");
+  send("move", { steps: legalTurns(s.state)[0].steps });
+  send("double");
+  send("beaver");
+  assert.equal(s.state.pending.depth, 1);
+  const original = s.state,
+    cp = checkpoint(s);
+  s = recover(s, "guest");
+  s = accept(
+    s,
+    "host",
+    envelope(
+      s,
+      "host",
+      { type: "recover", checkpoint: cp },
+      "confirm-optional",
+    ),
+    options,
+  );
+  assert.deepEqual(s.state, original);
+  assert.ok(verifyHistory(s));
+  send("raccoon");
+  send("take");
+  assert.equal(s.state.cube.value, 16);
+  assert.equal(s.state.cube.owner, 0);
+  send("roll", {}, () => [2, 2]);
+  const before = s;
+  assert.ok(verifyHistory(s));
+  assert.deepEqual(s.state.dice, [2, 2]);
+  const stale = envelope(
+    s,
+    "guest",
+    { type: "move", steps: legalTurns(s.state)[0].steps },
+    "stale",
+  );
+  send("move", { steps: legalTurns(s.state)[0].steps });
+  assert.throws(() => accept(s, "guest", stale, options));
+  assert.deepEqual(before.state.dice, [2, 2]);
 });

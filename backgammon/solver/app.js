@@ -10,8 +10,11 @@ import {
   applyStep,
   replay,
   notation,
+  rulesOf,
+  ruleSummary,
+  offerName,
 } from "../core/rules.mjs";
-import { fromXGID, toXGID, shareURL } from "../core/xgid.mjs";
+import { fromXGID, toXGID, shareURL, sharedPosition } from "../core/xgid.mjs";
 import { get, put, itemRecord, settings } from "../core/storage.mjs";
 import {
   $,
@@ -29,6 +32,7 @@ import {
   copy,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { ruleControls } from "../ui/rules.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
@@ -47,7 +51,7 @@ draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
 const hash = new URLSearchParams(location.hash.slice(1)),
   params = new URLSearchParams(location.search);
 try {
-  if (hash.has("xgid")) source = fromXGID(hash.get("xgid"));
+  if (hash.has("state") || hash.has("xgid")) source = sharedPosition(hash);
   else if (params.has("item")) {
     const item = await get("items", params.get("item"));
     if (!item) throw new Error("This item is not in this browser’s Library.");
@@ -97,7 +101,7 @@ function render() {
     ? `${review.title} · event ${index}/${review.events.length}`
     : preview
       ? "Alternative preview · source position preserved"
-      : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
+      : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
   $("message").textContent = problems.length
     ? problems.join(" ")
     : editing
@@ -168,6 +172,13 @@ function panel(problems) {
       button("Match review", () => importMatch(), "", {
         "aria-pressed": !!review,
       }),
+    ),
+  );
+  p.append(
+    el(
+      "p",
+      { class: "muted small", id: "position-rules" },
+      ruleSummary(source),
     ),
   );
   if (review) {
@@ -385,6 +396,7 @@ function pointDialog() {
   );
 }
 function contextDialog() {
+  let contextRules = rulesOf(source);
   const input = (v, min, max) =>
     el("input", { type: "number", value: v, min, max });
   const turn = select(
@@ -399,8 +411,12 @@ function contextDialog() {
         ["move", "Rolled dice"],
         ["roll", "Before roll"],
         ["double", "Respond to double"],
+        ["beaver", "Respond to beaver"],
+        ["raccoon", "Respond to raccoon"],
       ],
-      source.phase,
+      source.phase === "double" && source.pending?.depth
+        ? ["double", "beaver", "raccoon"][source.pending.depth]
+        : source.phase,
     );
   const d1 = input(source.dice[0] || 3, 1, 6),
     d2 = input(source.dice[1] || 1, 1, 6),
@@ -418,8 +434,16 @@ function contextDialog() {
     bar = source.bar.map((v) => input(v, 0, 15)),
     off = source.off.map((v) => input(v, 0, 15));
   const crawford = el("input", { type: "checkbox", checked: source.crawford }),
-    played = el("input", { type: "checkbox", checked: source.crawfordPlayed }),
-    useCube = el("input", { type: "checkbox", checked: source.rules.cube });
+    played = el("input", { type: "checkbox", checked: source.crawfordPlayed });
+  const rulesPanel = el("div");
+  const setRules = () =>
+    rulesPanel.replaceChildren(
+      ruleControls(Number(len.value), contextRules, (rules) => {
+        contextRules = rules;
+      }),
+    );
+  len.addEventListener("input", setRules);
+  setRules();
   let d;
   d = dialog(
     "Decision context",
@@ -441,7 +465,7 @@ function contextDialog() {
       el(
         "div",
         { class: "pair" },
-        field("Cube value", cube),
+        field("Cube value (accepted stake)", cube),
         field("Cube owner", owner),
       ),
       field("Match length (0 = unlimited)", len),
@@ -462,7 +486,7 @@ function contextDialog() {
       ),
       el("label", { class: "check" }, crawford, "Crawford game"),
       el("label", { class: "check" }, played, "Crawford already played"),
-      el("label", { class: "check" }, useCube, "Use doubling cube"),
+      rulesPanel,
     ),
     [
       button(
@@ -471,7 +495,9 @@ function contextDialog() {
           source = {
             ...source,
             turn: Number(turn.value),
-            phase: phase.value,
+            phase: ["beaver", "raccoon"].includes(phase.value)
+              ? "double"
+              : phase.value,
             dice: phase.value === "move" ? [+d1.value, +d2.value] : [],
             cube: {
               value: +cube.value,
@@ -483,11 +509,19 @@ function contextDialog() {
             off: off.map((n) => +n.value),
             crawford: crawford.checked,
             crawfordPlayed: played.checked,
-            rules: { cube: useCube.checked, jacoby: false },
-            pending:
-              phase.value === "double"
-                ? { type: "double", by: Number(turn.value) }
-                : null,
+            rules: contextRules,
+            pending: ["double", "beaver", "raccoon"].includes(phase.value)
+              ? {
+                  type: "double",
+                  by:
+                    phase.value === "beaver"
+                      ? 1 - Number(turn.value)
+                      : Number(turn.value),
+                  ...(phase.value !== "double"
+                    ? { depth: phase.value === "beaver" ? 1 : 2 }
+                    : {}),
+                }
+              : null,
           };
           d.close();
           changed();
@@ -548,7 +582,9 @@ async function analyze() {
     if (
       answer.type === "cube" &&
       event &&
-      ["roll", "double", "take", "pass"].includes(event.action.type)
+      ["roll", "double", "take", "pass", "beaver", "raccoon"].includes(
+        event.action.type,
+      )
     )
       Object.assign(answer, gradeCube(source, answer, event.action.type));
     result = answer;
@@ -631,7 +667,15 @@ async function progressive() {
       if (!["move", "roll", "double"].includes(states[i].phase)) continue;
       const event = review.events[i];
       if (
-        !["move", "double", "roll", "take", "pass"].includes(event.action.type)
+        ![
+          "move",
+          "double",
+          "roll",
+          "take",
+          "pass",
+          "beaver",
+          "raccoon",
+        ].includes(event.action.type)
       )
         continue;
       const answer = await analysis.engine.analyze(states[i], {

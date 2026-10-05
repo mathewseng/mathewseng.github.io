@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { el, button, dieFace } from "./shell.mjs";
+import { el, button, dieFace, field, select } from "./shell.mjs";
 import { Board } from "./board.mjs";
 import { initialState, legalPaths, nextSteps } from "../core/rules.mjs";
 import { settings, saveSettings } from "../core/storage.mjs";
@@ -12,6 +12,9 @@ import {
   boardPalette,
   applyBoardTheme,
   paletteWarnings,
+  PATTERN_ELEMENTS,
+  PATTERN_KINDS,
+  elementPattern,
 } from "../core/appearance.mjs";
 
 // Only this isolated sample has a selection. Editing colors never touches a game,
@@ -105,7 +108,7 @@ export function appearanceControls() {
     grid.append(choice);
   }
   const undo = button(
-    "Undo color change",
+    "Undo style change",
     () => {
       const previous = history.pop();
       if (previous) change(previous, false);
@@ -115,25 +118,157 @@ export function appearanceControls() {
   );
   const reset = button(
     "Reset colors",
-    () => change({ version: 1, preset: theme.preset, colors: {} }),
+    () => change({ ...theme, colors: {} }),
     "ghost",
     {
       id: "reset-theme",
       title: "Restore the selected preset's original colors",
     },
   );
-  const controls = el(
-    "div",
-    { class: "theme-controls" },
-    el("h3", {}, "Presets"),
-    grid,
-    el("div", { class: "row spread theme-reset" }, reset, undo),
+  const palettePanel = el(
+    "section",
+    { "aria-label": "Theme presets" },
     el(
       "p",
       { class: "muted small" },
-      "Fine-tune any element with a hex value or color picker. Ivory and Teal remain the same player sides.",
+      "24 clean palettes. Choose a starting point, then make it yours.",
+    ),
+    grid,
+  );
+  const colorPanel = el(
+    "section",
+    { hidden: true, "aria-label": "Element colors" },
+    el("div", { class: "row spread theme-reset" }, reset),
+    el(
+      "p",
+      { class: "muted small" },
+      "Fine-tune individual colors. Player sides stay Ivory and Teal.",
     ),
     warnings,
+  );
+  let patternKey = "surface";
+  const element = select(
+    Object.entries(PATTERN_ELEMENTS),
+    patternKey,
+    (key) => {
+      patternKey = key;
+      refreshPattern();
+    },
+  );
+  element.id = "pattern-element";
+  const kind = select(
+    PATTERN_KINDS.map((k) => [k, k[0].toUpperCase() + k.slice(1)]),
+    "solid",
+    () => writePattern(),
+  );
+  const ink = el("input", {
+    class: "hex-input",
+    type: "text",
+    maxlength: 7,
+    spellcheck: false,
+    autocomplete: "off",
+  });
+  const size = el("input", { type: "range", min: 8, max: 40, step: 2 });
+  const opacity = el("input", { type: "range", min: 5, max: 35, step: 1 });
+  const angle = select(
+    [0, 45, 90, 135].map((n) => [n, `${n}°`]),
+    "45",
+    () => writePattern(),
+  );
+  const patternNote = el("p", { class: "muted small", role: "status" });
+  const patternReset = button(
+    "Reset this pattern",
+    () => {
+      const patterns = { ...theme.patterns };
+      delete patterns[patternKey];
+      change({ ...theme, patterns });
+    },
+    "ghost",
+  );
+  const patternPanel = el(
+    "section",
+    { hidden: true, class: "pattern-panel", "aria-label": "Element patterns" },
+    el(
+      "p",
+      { class: "muted small" },
+      "Subtle patterns sit under labels, counts and pips. Each element can be customized independently.",
+    ),
+    field("Board element", element),
+    field("Pattern", kind),
+    field("Pattern ink hex", ink),
+    field("Pattern spacing", size),
+    field("Pattern strength", opacity),
+    field("Pattern angle", angle),
+    patternNote,
+    patternReset,
+  );
+  function refreshPattern() {
+    const p = elementPattern(theme, patternKey);
+    kind.value = p.kind;
+    if (document.activeElement !== ink) ink.value = p.ink;
+    size.value = p.size;
+    opacity.value = Math.round(p.opacity * 100);
+    angle.value = p.angle;
+    ink.setAttribute("aria-invalid", "false");
+    patternNote.textContent = `${p.size} board units · ${Math.round(p.opacity * 100)}% strength`;
+    patternReset.disabled = !theme.patterns?.[patternKey];
+  }
+  function writePattern() {
+    const color = normalizeHex(ink.value);
+    ink.setAttribute("aria-invalid", String(!color));
+    if (!color) {
+      patternNote.textContent = "Use #RGB or #RRGGBB for the pattern ink.";
+      return;
+    }
+    change({
+      ...theme,
+      patterns: {
+        ...theme.patterns,
+        [patternKey]: {
+          kind: kind.value,
+          ink: color,
+          size: Number(size.value),
+          opacity: Number(opacity.value) / 100,
+          angle: Number(angle.value),
+        },
+      },
+    });
+  }
+  ink.addEventListener("blur", () => {
+    if (normalizeHex(ink.value)) ink.value = normalizeHex(ink.value);
+  });
+  for (const input of [ink, size, opacity])
+    input.addEventListener("input", writePattern);
+  const tabs = el("div", {
+    class: "segmented appearance-tabs",
+    "aria-label": "Board styling",
+  });
+  for (const [name, panel] of [
+    ["Themes", palettePanel],
+    ["Colors", colorPanel],
+    ["Patterns", patternPanel],
+  ]) {
+    const tab = button(
+      name,
+      () => {
+        for (const p of [palettePanel, colorPanel, patternPanel])
+          p.hidden = p !== panel;
+        for (const t of tabs.children)
+          t.setAttribute("aria-pressed", String(t === tab));
+      },
+      "",
+      { "aria-pressed": panel === palettePanel },
+    );
+    tabs.append(tab);
+  }
+  const controls = el(
+    "div",
+    { class: "theme-controls" },
+    tabs,
+    palettePanel,
+    colorPanel,
+    patternPanel,
+    undo,
   );
   for (const group of COLOR_GROUPS) {
     const details = el(
@@ -213,14 +348,16 @@ export function appearanceControls() {
       fields.set(key, { hex, picker, error, restore });
     }
     details.append(body);
-    controls.append(details);
+    colorPanel.append(details);
   }
   function refresh(updateInputs = true) {
     const preset = BOARD_PRESETS.find((p) => p.id === theme.preset),
       palette = boardPalette(theme);
-    const custom = Object.keys(theme.colors).length;
+    const custom =
+      Object.keys(theme.colors).length +
+      Object.keys(theme.patterns || {}).length;
     title.textContent = (custom ? "Custom · " : "") + preset.name;
-    reset.disabled = !custom;
+    reset.disabled = !Object.keys(theme.colors).length;
     undo.disabled = !history.length;
     for (const [id, node] of presets)
       node.setAttribute("aria-pressed", String(id === theme.preset));
@@ -236,6 +373,7 @@ export function appearanceControls() {
     const problems = paletteWarnings(palette);
     warnings.hidden = !problems.length;
     warningList.replaceChildren(...problems.map((p) => el("li", {}, p)));
+    refreshPattern();
   }
   function change(value, remember = true, updateInputs = true) {
     const next = normalizeBoardTheme(value);

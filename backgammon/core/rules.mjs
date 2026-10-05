@@ -6,6 +6,47 @@ export const sign = (player) => (player === 0 ? 1 : -1);
 export const distance = (point, player) =>
   player === 0 ? point + 1 : 24 - point;
 export const playerName = (p) => (p === 0 ? "Ivory" : "Teal");
+export const STANDARD_RULES = Object.freeze({
+  cube: true,
+  jacoby: false,
+  automaticDoubles: 0,
+  immediateRedoubles: 0,
+});
+export const rulesOf = (s) => ({ ...STANDARD_RULES, ...s.rules });
+export const decisionPlayer = (s) =>
+  s.phase === "double"
+    ? 1 - s.pending.by
+    : s.phase === "resign"
+      ? 1 - s.turn
+      : s.turn;
+export const offerDepth = (s) =>
+  s.pending?.depth === undefined ? 0 : s.pending.depth;
+export const offerName = (s) => ["Double", "Beaver", "Raccoon"][offerDepth(s)];
+export function canImmediateRedouble(s) {
+  return (
+    s.phase === "double" &&
+    !s.matchLength &&
+    offerDepth(s) < rulesOf(s).immediateRedoubles &&
+    s.cube.value * 4 <= 1024
+  );
+}
+export function ruleSummary(s) {
+  const r = rulesOf(s);
+  return [
+    r.cube ? "Cube" : "No cube",
+    s.matchLength ? "Crawford" : r.jacoby ? "Jacoby" : "Gammons always count",
+    !s.matchLength && r.automaticDoubles
+      ? `Opening doubles ×${r.automaticDoubles}`
+      : null,
+    r.immediateRedoubles === 1
+      ? "Beavers"
+      : r.immediateRedoubles === 2
+        ? "Beavers + raccoons"
+        : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 export function initialState(options = {}) {
   const points = Array(24).fill(0);
   for (const [p, n] of [
@@ -31,7 +72,7 @@ export function initialState(options = {}) {
     cube: { value: 1, owner: null },
     scores: [0, 0],
     matchLength: length,
-    rules: { jacoby: false, cube: true },
+    rules: { ...STANDARD_RULES },
     crawford: length === 1,
     crawfordPlayed: false,
     gameNumber: 1,
@@ -40,6 +81,7 @@ export function initialState(options = {}) {
     pending: null,
     ...options,
   };
+  s.rules = { ...STANDARD_RULES, ...options.rules };
   assertState(s);
   return s;
 }
@@ -96,17 +138,35 @@ export function errors(s) {
     e.push("Cube must be a power of two, from 1 to 1024, with a valid owner.");
   else if (s.cube.value === 1 && s.cube.owner !== null)
     e.push("The initial cube must be centered.");
-  else if (s.cube.value > 1 && s.cube.owner === null)
-    e.push("A turned cube must have an owner.");
+  else if (s.cube.value > 1 && s.cube.owner === null && s.matchLength)
+    e.push(
+      "A turned match cube must have an owner; automatic doubles are money-session rules.",
+    );
   if (!whole(s.matchLength, 0, 25))
     e.push("Match length must be 0 (unlimited) to 25.");
   if (
     !s.rules ||
     typeof s.rules.cube !== "boolean" ||
-    s.rules.jacoby !== false ||
-    Object.keys(s.rules).some((k) => !["cube", "jacoby"].includes(k))
+    typeof s.rules.jacoby !== "boolean" ||
+    !whole(s.rules.automaticDoubles ?? 0, 0, 3) ||
+    !whole(s.rules.immediateRedoubles ?? 0, 0, 2) ||
+    Object.keys(s.rules).some((k) => !Object.hasOwn(STANDARD_RULES, k))
   )
-    e.push("Supported rules: standard backgammon, no Jacoby or beavers.");
+    e.push(
+      "Invalid rules: opening doubles must be 0–3 and immediate redoubles 0–2.",
+    );
+  else if (
+    (s.matchLength || !s.rules.cube) &&
+    (s.rules.jacoby || s.rules.automaticDoubles || s.rules.immediateRedoubles)
+  )
+    e.push(
+      "Jacoby, automatic doubles, beavers and raccoons require an unlimited session with the cube enabled.",
+    );
+  if (
+    s.rules?.cube === false &&
+    (s.cube?.value !== 1 || s.cube?.owner !== null)
+  )
+    e.push("A game without the cube must use a centered cube of 1.");
   if (typeof s.crawford !== "boolean" || typeof s.crawfordPlayed !== "boolean")
     e.push("Crawford state is required.");
   if (
@@ -130,7 +190,19 @@ export function errors(s) {
     e.push("Invalid game sequence.");
   if (
     s.phase === "double" &&
-    (!s.pending || s.pending.type !== "double" || s.pending.by !== s.turn)
+    (!s.pending ||
+      s.pending.type !== "double" ||
+      !whole(offerDepth(s), 0, 2) ||
+      s.pending.by !== (offerDepth(s) === 1 ? 1 - s.turn : s.turn) ||
+      offerDepth(s) > rulesOf(s).immediateRedoubles ||
+      (offerDepth(s) === 0 && ![null, s.turn].includes(s.cube?.owner)) ||
+      (offerDepth(s) > 0 &&
+        (s.matchLength ||
+          s.cube?.owner !== 1 - s.turn ||
+          s.cube?.value < 2 ** offerDepth(s))) ||
+      !s.rules?.cube ||
+      s.crawford ||
+      s.cube?.value >= 1024)
   )
     e.push("A cube response needs its original offer.");
   if (
@@ -300,6 +372,7 @@ export function winLevel(s, winner) {
     : 2;
 }
 function finish(s, winner, level, reason) {
+  if (!s.matchLength && s.rules.jacoby && s.cube.owner === null) level = 1;
   const points = level * s.cube.value;
   s.scores[winner] = s.matchLength
     ? Math.min(s.matchLength, s.scores[winner] + points)
@@ -319,8 +392,7 @@ function finish(s, winner, level, reason) {
 export function transition(source, action, actor = source.turn) {
   assertState(source);
   const s = clone(source);
-  const responding = ["double", "resign"].includes(s.phase);
-  if (action.type !== "next" && actor !== (responding ? 1 - s.turn : s.turn))
+  if (action.type !== "next" && actor !== decisionPlayer(s))
     throw new Error("It is not your turn.");
   switch (action.type) {
     case "opening": {
@@ -328,6 +400,13 @@ export function transition(source, action, actor = source.turn) {
         throw new Error("The opening roll is already committed.");
       checkDice(action.dice);
       const [a, b] = action.dice;
+      if (
+        a === b &&
+        !s.matchLength &&
+        s.rules.cube &&
+        s.cube.value < 2 ** rulesOf(s).automaticDoubles
+      )
+        s.cube.value *= 2;
       if (a !== b) {
         s.turn = a > b ? 0 : 1;
         s.dice = [a, b];
@@ -362,22 +441,41 @@ export function transition(source, action, actor = source.turn) {
       break;
     case "take":
       if (s.phase !== "double") throw new Error("No cube offer to accept.");
-      s.cube = { value: s.cube.value * 2, owner: actor };
+      s.cube = {
+        value: s.cube.value * 2,
+        owner: offerDepth(s) ? s.cube.owner : actor,
+      };
       s.phase = "roll";
       s.pending = null;
       break;
     case "pass":
       if (s.phase !== "double") throw new Error("No cube offer to pass.");
-      finish(s, s.turn, 1, "cube pass");
+      finish(s, s.pending.by, 1, "cube pass");
+      break;
+    case "beaver":
+    case "raccoon":
+      if (
+        !canImmediateRedouble(s) ||
+        action.type !== (offerDepth(s) ? "raccoon" : "beaver")
+      )
+        throw new Error(
+          "That immediate redouble is not available under this game's rules.",
+        );
+      s.cube = {
+        value: s.cube.value * 2,
+        owner: offerDepth(s) ? s.cube.owner : actor,
+      };
+      s.pending = { type: "double", by: actor, depth: offerDepth(s) + 1 };
       break;
     case "resign":
       if (
         !["roll", "move"].includes(s.phase) ||
         ![1, 2, 3].includes(action.level) ||
-        (s.off[s.turn] > 0 && action.level > 1)
+        (s.off[s.turn] > 0 && action.level > 1) ||
+        (s.rules.jacoby && s.cube.owner === null && action.level > 1)
       )
         throw new Error(
-          "Resignation is unavailable; after bearing off, only a single game can be conceded.",
+          "Only a single may be conceded after bearing off or before the cube is turned under Jacoby.",
         );
       s.pending = {
         type: "resign",

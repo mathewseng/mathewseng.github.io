@@ -2,10 +2,10 @@
 import { el, button, select, field, showError } from "./shell.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
-import { positionKey } from "../core/rules.mjs";
+import { positionKey, playerName } from "../core/rules.mjs";
 export const percentage = (n) => `${(100 * n).toFixed(1)}%`;
 export const equity = (n) => (n >= 0 ? "+" : "") + n.toFixed(3);
-export function probabilityView(c) {
+export function probabilityView(c, player) {
   const [win, gammon, bg, loseGammon, loseBg] = c.probabilities;
   return el(
     "div",
@@ -40,7 +40,7 @@ export function probabilityView(c) {
     el(
       "p",
       { class: "muted small" },
-      "Gammon includes backgammon. Chances are for the player on roll.",
+      `Gammon includes backgammon. Chances are for ${player === undefined ? "the player on roll" : playerName(player) + ", the player on roll"}.`,
     ),
   );
 }
@@ -52,20 +52,44 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
         "h2",
         {},
         result.available
-          ? { double: "Double", take: "Take", pass: "Pass", roll: "No double" }[
-              result.action
-            ]
+          ? {
+              double: "Double",
+              take: "Take",
+              pass: "Pass",
+              roll: "No double",
+              beaver: "Beaver",
+              raccoon: "Raccoon",
+            }[result.action]
           : "Cube unavailable",
       ),
-      probabilityView(result),
+      probabilityView(result, result.perspective),
       el(
         "div",
         { class: "list" },
-        ...result.outcomes.map((n, i) =>
+        ...(
+          (!result.available
+            ? [{ action: "Position equity", equity: result.equity }]
+            : result.decisionOptions) ||
+          result.outcomes.map((equity, i) => ({
+            equity,
+            action: ["No double", "Double / take", "Double / pass"][i],
+          }))
+        ).map(({ equity: n, action }, i) =>
           el(
             "div",
             { class: "list-row row spread" },
-            el("span", {}, ["No double", "Double / take", "Double / pass"][i]),
+            el(
+              "span",
+              {},
+              {
+                roll: "No double",
+                double: "Double · best reply",
+                take: "Take",
+                pass: "Pass",
+                beaver: "Beaver · best reply",
+                raccoon: "Raccoon · best reply",
+              }[action] || action,
+            ),
             el(
               "strong",
               { class: "value" },
@@ -116,14 +140,14 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
     if (result.candidates.length) {
       const best = result.candidates[0];
       node.append(
-        probabilityView(best),
+        probabilityView(best, result.perspective),
         el(
           "div",
           { class: "metrics" },
           el(
             "div",
             {},
-            "Cubeful equity",
+            result.settings.cubeful ? "Cubeful equity" : "Equity · cube off",
             el("strong", {}, equity(best.equity)),
           ),
           el(
@@ -140,7 +164,7 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
     el(
       "p",
       { class: "muted small" },
-      `${result.settings.name} · ${result.settings.plies} ply · ${(result.elapsedMs / 1000).toFixed(2)} s${result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Cubeless equity and engine metadata are included in saved results.`,
+      `${result.settings.name} · ${result.settings.plies} ply · ${(result.elapsedMs / 1000).toFixed(2)} s${result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. Cubeless equity and engine metadata are included in saved results.`,
     ),
   );
   return node;

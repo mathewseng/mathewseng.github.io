@@ -1,6 +1,8 @@
 # Supported interchange
 
-**XGID**: board characters, cube exponent, owner, player on roll, dice (`00`, two digits, or `D`), both scores, Crawford, match length, cube use. Tests roundtrip public upstream fixtures and reversed-player/match contexts. Positions use standard backgammon; Jacoby/beavers/unknown flags and unsupported maximum-cube fields are rejected. No GNU Position/Match ID claim is made.
+**XGID**: board characters, cube exponent, owner, player on roll, dice (`00`, two digits, or `D`), both scores, Crawford, match length, cube use. Tests roundtrip public upstream fixtures and reversed-player/match contexts. For money sessions, flags 0–3 represent Jacoby (bit 1) and beavers (bit 2); the combined value is verified against [Extreme Gammon’s public opening-reply fixture](https://www.extremegammon.com/OB/Replies_to_51%24.html). Match flags remain Crawford 0/1. Unknown flags and unsupported maximum-cube fields are rejected. Our encoder does not implement pending beaver/raccoon notation, opening-double limits, or a separate raccoon setting. Exporting such context gives a specific error and points to full position links or JSON. No GNU Position/Match ID claim is made.
+
+**Full position links**: `#state=` contains bounded, validated canonical JSON, including rules and pending offers; older `#xgid=` links still load. Invalid shared state is reported, never silently repaired.
 
 **Application JSON**: Library backups use `{format:"backgammon-library",version:1,items,progress}`. Per-item match JSON has `kind:"match"`, canonical `initial`, ordered `{actor,action}` events, names, and metadata. Imported match actions are replayed through the rules engine. Recovery snapshots additionally carry room IDs/revisions/epochs and are not Library backup files. JSON is data only; nothing is evaluated as code.
 

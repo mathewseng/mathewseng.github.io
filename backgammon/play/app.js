@@ -10,6 +10,12 @@ import {
   boardKey as checkerKey,
   clone,
   playerName,
+  decisionPlayer,
+  ruleSummary,
+  STANDARD_RULES,
+  canImmediateRedouble,
+  offerDepth,
+  offerName,
 } from "../core/rules.mjs";
 import { get, put, itemRecord, settings } from "../core/storage.mjs";
 import { shareURL } from "../core/xgid.mjs";
@@ -30,9 +36,11 @@ import {
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { Online } from "./network.mjs";
+import { ruleControls } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
 let config = {
+    rules: { ...STANDARD_RULES },
     mode: "computer",
     matchLength: 5,
     strength: "quick",
@@ -144,26 +152,21 @@ function model() {
   return config.mode === "online" ? online.model : game;
 }
 function state() {
-  return model()?.state || initialState({ matchLength: config.matchLength });
+  return (
+    model()?.state ||
+    initialState({ matchLength: config.matchLength, rules: config.rules })
+  );
 }
 function myTurn(s) {
   if (config.mode === "online")
-    return (
-      online.ready &&
-      !online.pending &&
-      online.seat ===
-        (["double", "resign"].includes(s.phase) ? 1 - s.turn : s.turn)
-    );
-  return (
-    config.mode === "local" ||
-    (["double", "resign"].includes(s.phase) ? 1 - s.turn : s.turn) === 0
-  );
+    return online.ready && !online.pending && online.seat === decisionPlayer(s);
+  return config.mode === "local" || decisionPlayer(s) === 0;
 }
 function render() {
   const m = model(),
     s = state();
   opening.sync(m, names());
-  $("dice").hidden = opening.active;
+  draft.hideDice = opening.active;
   const key =
     (m?.id || "setup") +
     positionKey(s) +
@@ -203,7 +206,7 @@ function render() {
   if (opening.active)
     for (const id of ["player", "opponent"]) $(id).classList.remove("active");
   $("subtitle").textContent = m?.started
-    ? `${s.matchLength ? s.matchLength + "-point match" : "Unlimited points"} · ${s.crawford ? "Crawford game" : s.crawfordPlayed ? "Post-Crawford" : `Game ${s.gameNumber}`} · cube ${s.cube.value}`
+    ? `${s.matchLength ? s.matchLength + "-point match" : "Unlimited points"} · ${s.crawford ? "Crawford game" : s.crawfordPlayed ? "Post-Crawford" : `Game ${s.gameNumber}`} · cube ${s.cube.value}${!s.matchLength && s.rules.jacoby ? " · Jacoby" : ""}`
     : "Computer, same-device, or a private room";
   $("panel-toggle").textContent = m?.started ? "Details" : "Setup";
   actions();
@@ -249,6 +252,7 @@ function setupFields() {
         String(config.matchLength),
         (v) => {
           config.matchLength = Number(v);
+          config.rules = { ...STANDARD_RULES, jacoby: Number(v) === 0 };
           boardKey = "";
           render();
         },
@@ -359,9 +363,14 @@ function setupFields() {
       el(
         "p",
         { class: "muted small" },
-        "Standard rules. No Jacoby or beavers. Draft moves can be undone until you confirm.",
+        "Draft moves can be revised until you confirm. Rules remain fixed for the match or session.",
       ),
     );
+  fields.append(
+    ruleControls(config.matchLength, config.rules, (rules) => {
+      config.rules = rules;
+    }),
+  );
   if (saved && !game && config.mode !== "online")
     fields.append(
       button(
@@ -394,7 +403,11 @@ async function connect(join) {
   toast(netStatus);
   try {
     if (join) await online.join($("room-code").value, config.name);
-    else await online.create(config.name, { matchLength: config.matchLength });
+    else
+      await online.create(config.name, {
+        matchLength: config.matchLength,
+        rules: config.rules,
+      });
     history.replaceState(null, "", `#room=${online.room.roomCode}`);
     render();
   } catch (e) {
@@ -404,8 +417,14 @@ async function connect(join) {
 function start() {
   game = {
     id: crypto.randomUUID(),
-    state: initialState({ matchLength: config.matchLength }),
-    initial: initialState({ matchLength: config.matchLength }),
+    state: initialState({
+      matchLength: config.matchLength,
+      rules: config.rules,
+    }),
+    initial: initialState({
+      matchLength: config.matchLength,
+      rules: config.rules,
+    }),
     events: [],
     config: { ...config },
     names:
@@ -572,6 +591,10 @@ function actions() {
         disabled: !mine || !draft.draft.length,
         id: "undo",
       }),
+      button("Reset", () => draft.reset(), "", {
+        disabled: !mine || !draft.draft.length,
+        id: "reset-draft",
+      }),
       button(
         draft.complete() && !draft.draft.length
           ? "Confirm pass"
@@ -583,7 +606,7 @@ function actions() {
     );
   } else if (s.phase === "double") {
     $("message").textContent =
-      `Double to ${s.cube.value * 2} from ${names()[s.turn]}. ${names()[1 - s.turn]} to decide.`;
+      `${offerName(s)} to ${s.cube.value * 2} from ${names()[s.pending.by]}. ${names()[decisionPlayer(s)]} to decide.`;
     a.append(
       button("Pass", () => commit({ type: "pass" }), "", { disabled: !mine }),
       button(
@@ -593,6 +616,15 @@ function actions() {
         { disabled: !mine },
       ),
     );
+    if (canImmediateRedouble(s))
+      a.append(
+        button(
+          `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}`,
+          () => commit({ type: offerDepth(s) ? "raccoon" : "beaver" }),
+          "",
+          { disabled: !mine, id: "immediate-redouble" },
+        ),
+      );
   } else if (s.phase === "resign") {
     $("message").textContent =
       `Resignation offer from ${names()[s.turn]}: ${s.pending.level * s.cube.value} points.`;
@@ -687,6 +719,9 @@ function panel() {
       ),
       ...(config.mode === "computer" ? [analysis.status] : []),
     );
+  p.append(
+    el("p", { class: "muted small", id: "active-rules" }, ruleSummary(s)),
+  );
   if (m.started && s.phase === "move" && myTurn(s) && !opening.active) {
     p.append(el("div", { id: "draft-controls" }));
     detailDraft();
@@ -708,7 +743,11 @@ function panel() {
             "The other player must accept. Choose the number of points at the current cube.",
           ),
           [1, 2, 3]
-            .filter((level) => !s.off[s.turn] || level === 1)
+            .filter(
+              (level) =>
+                level === 1 ||
+                (!s.off[s.turn] && !(s.rules.jacoby && s.cube.owner === null)),
+            )
             .map((level) =>
               button(`${level * s.cube.value} points`, () => {
                 d.close();
@@ -792,7 +831,7 @@ function panel() {
               el(
                 "p",
                 {},
-                "Moves remain a draft until Confirm turn. Undo reverses one move. Details also has a legal-move selector and Reset turn.",
+                "Moves remain a draft until Confirm turn. Undo reverses one step; Reset restores the whole turn. You can also select a moved checker and tap an arrow target, or drag it back. Details has a legal-move selector.",
               ),
             ),
           ),
@@ -825,9 +864,6 @@ function detailDraft() {
         el(
           "div",
           { class: "row" },
-          button("Reset turn", () => draft.reset(), "ghost", {
-            disabled: !draft.draft.length,
-          }),
           button(
             "Use other die first",
             () => {
@@ -869,7 +905,7 @@ async function commit(action) {
   actions();
   try {
     const s = game.state,
-      actor = ["double", "resign"].includes(s.phase) ? 1 - s.turn : s.turn;
+      actor = decisionPlayer(s);
     const committed = ["opening", "roll"].includes(action.type)
       ? { ...action, dice: cryptoDice() }
       : action;
@@ -988,7 +1024,11 @@ async function computerTurn() {
       if (s.phase === "move")
         action = { type: "move", steps: result.candidates[0].steps };
       else if (s.phase === "double")
-        action = { type: result.action === "pass" ? "pass" : "take" };
+        action = {
+          type: ["take", "pass", "beaver", "raccoon"].includes(result.action)
+            ? result.action
+            : "take",
+        };
       else
         action = {
           type: result.action === "double" && canDouble(s) ? "double" : "roll",

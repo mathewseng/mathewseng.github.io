@@ -36,6 +36,7 @@ export class OpeningRoll {
     this.key = key;
     this.active = true;
     this.names = names;
+    this.cubeValue = state.cube.value;
     this.dice = last?.action.type === "opening" ? last.action.dice : null;
     this.tie = this.dice && this.dice[0] === this.dice[1];
     this.busy = !!this.dice && !reducedMotion();
@@ -110,7 +111,7 @@ export class OpeningRoll {
         ? "You start"
         : `${this.names[winner]} starts`;
     this.caption.textContent = this.tie
-      ? "Roll one die each again. Opening ties never become doubles."
+      ? `Roll one die each again.${this.cubeValue > 1 ? " Stakes are now " + this.cubeValue + " · cube stays centered." : " The stake is unchanged."}`
       : `The winner uses both dice: ${this.dice[0]} and ${this.dice[1]}.`;
     if (notify) this.onChange();
   }

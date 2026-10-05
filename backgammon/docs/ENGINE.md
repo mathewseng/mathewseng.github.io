@@ -17,11 +17,13 @@ node backgammon/tests/browser.cjs
 
 ## Binding changes
 
-- Export `bg_score(originalXgid, afterXgid, plies)` and `bg_cube(xgid, plies)` as allocated JSON. The JS adapter always frees returned buffers. Keep original `hint` exported for independent binding regression comparisons.
-- Change the default cube context from three beavers to **zero**. No beaver controls are exposed. Standard match and unlimited-point rules align between UI and evaluator.
+- Export `bg_score(originalXgid, afterXgid, plies, beavers)`, `bg_cube(xgid, plies, beavers)` and `bg_value(xgid, plies, beavers)` as allocated JSON. The JS adapter always frees returned buffers. Keep original `hint` exported for independent binding regression comparisons.
+- Web binding **bg2** passes the actual beaver flag to GNUbg; Jacoby comes from XGID’s rule bit. The original `hint` binding keeps beavers off for comparison with standard fixtures. All deployed optional rules are also represented in the full application cache key.
 - Use `PositionKey` on the after-position, then **ScoreMove** with the original cube/match context. GNUbg performs opponent evaluation, probability inversion, and conversion back to the original player's equity. The adapter does not manually negate an incompatible post-roll evaluation.
 - Return eight-decimal cubeful/cubeless values, the five GNUbg probabilities, and `eq2mwc` conversion for matches. Win-gammon/loss-gammon include backgammons.
-- For cube offers `turn` stays the doubler. The response player is `1 - turn`; response losses invert the decision comparison, not the board.
+- `turn` stays the original roller throughout the cube chain. `pending.by` identifies the offerer, so `decisionPlayer` alternates correctly for beavers and raccoons. Response losses compare from that actor’s perspective without reversing the board.
+- With immediate redoubles enabled, enumerate every permitted take/pass/beaver/raccoon branch through the same pure game transitions used by Play. `bg_value` calls **GeneralEvaluationE** on the actual accepted-cube position. Multiply by the accepted cube divided by the original decision cube; compare max for the original roller and min for the opponent. Pass values come from the real scoring transition. The current response chain is explicit; future cube ownership/equity uses GNUbg’s beaver-aware approximation. This is not a rollout or exact solution.
+- No-cube positions use cubeless evaluation and report `settings.cubeful: false`.
 
 The upstream public hint list caps at 40. Our application enumerates complete legal turns, deduplicates resulting boards, and evaluates all of them at one depth. A browser regression checks a 75-result doubles position and grades an actual move strictly below the worst returned upstream hint. It also compares five opening evaluations against the original C hint API, within 0.00011 (the original API rounds to four decimals). Other regression checks cover public cube fixtures, mirror/player perspective, and different match scores.
 
@@ -29,8 +31,10 @@ The upstream public hint list caps at 40. Our application enumerates complete le
 
 The engine runs in one dedicated module Worker; the WASM itself is single-threaded. Asset transfer, compilation, initialization and computation are timed separately. Fetch failures, initialization failure, worker crash and timeouts reject pending promises. Cancel terminates the worker, frees its WASM address space, and invalidates its generation. A later request creates a fresh worker. Posting a cancel message alone would not interrupt synchronous WASM and is deliberately not used.
 
-Capabilities are explicit in `engine/metadata.mjs`: checker analysis, legal arbitrary-move grading, cube and match contexts, 0–2 ply; no rollouts. The C source does include `RolloutGeneral`, but its runtime uses a global `rcRollout`, stubbed RNG configuration and event hooks. Exposing it without validating reproducibility, variance reduction and standard-error semantics would be misleading. No sample counts, rollout button, uncertainty or exact-solution claim is fabricated.
+Capabilities are explicit in `engine/metadata.mjs`: checker analysis, legal arbitrary-move grading, cube and match contexts, Jacoby, automatic opening stakes, beavers and raccoons, 0–2 ply; no rollouts. The C source does include `RolloutGeneral`, but its runtime uses a global `rcRollout`, stubbed RNG configuration and event hooks. Exposing it without validating reproducibility, variance reduction and standard-error semantics would be misleading. No sample counts, rollout button, uncertainty or exact-solution claim is fabricated.
 
 ## Verification and timing
 
 `tests/browser.cjs` loads the deployed JS/WASM/data from the assembled site without cross-origin-isolation headers. `scripts/benchmark.cjs` separates fresh-worker cold computation from repeated evaluations with warm GNUbg internal caches. Warm and cold timings must not be conflated. `docs/benchmarks.json` contains every sample; cold n=5 and startup n=10 report ranges, not a p95. Warm n=30 has p95. This is local HTTP on an Apple M4 Pro, not mobile hardware or an Internet transfer benchmark.
+
+`tests/options-ui.cjs` checks a legally constructible race (15 Ivory on its 6 point, 15 Teal on its 4 point), deliberately doubled by the trailing roller. Quick/bg2 take equity is −1.80594110 current-cube points (tolerance 0.00002); the optimal first response is Beaver, and the original doubler should pass the beaver. Tests repeat the entire permitted chain with mirrored players, verify accepted-stake pass units and error grading, check Jacoby changes checker evaluation, and exercise money/match no-cube evaluation.

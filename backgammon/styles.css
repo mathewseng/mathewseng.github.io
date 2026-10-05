@@ -97,6 +97,17 @@ textarea {
   width: 100%;
   min-height: 44px;
 }
+/* Native WebKit menu styling ignores minimum height; keep a native select
+   with a consistent, reachable control surface and a simple chevron. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23b6c6c8' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+}
 textarea {
   resize: vertical;
   min-height: 90px;
@@ -737,7 +748,7 @@ h3 {
   margin: 30px 0;
 }
 .hub-layout .board-slot {
-  aspect-ratio: 876/600;
+  aspect-ratio: 876/660;
 }
 .hub-intro h1 {
   font-size: 48px;
@@ -1118,12 +1129,13 @@ html[data-motion="reduce"] *:before {
     display: block;
   }
   .stage {
-    height: 100%;
+    height: auto;
+    min-height: 100%;
     grid-template-rows: 32px auto 32px auto;
     align-content: center;
   }
   .board-slot {
-    aspect-ratio: 876/600;
+    aspect-ratio: 876/660;
     max-height: calc(100dvh - 310px);
   }
   .inspector {
@@ -1567,7 +1579,7 @@ button.teal-die:hover {
   align-items: baseline;
 }
 .theme-sample {
-  aspect-ratio: 876 / 600;
+  aspect-ratio: 876 / 660;
   width: 100%;
 }
 .theme-sample .bg-board {
@@ -1617,7 +1629,7 @@ button.teal-die:hover {
   color: var(--text);
 }
 .theme-swatch {
-  aspect-ratio: 876 / 600;
+  aspect-ratio: 876 / 660;
   margin-bottom: 6px;
   pointer-events: none;
 }
@@ -1776,5 +1788,115 @@ button.teal-die:hover {
 @media (max-height: 550px) and (max-width: 640px) {
   .theme-preview {
     position: static;
+  }
+}
+
+/* Clear on-board dice and draft destinations. The center lane has its own hit regions. */
+.board-die {
+  cursor: default;
+}
+.board-die[role="button"] {
+  cursor: pointer;
+}
+.board-die.consumed {
+  opacity: 0.42;
+}
+.board-die.preferred > rect:first-child,
+.board-die:focus-visible > rect:first-child {
+  stroke: var(--board-focus);
+  stroke-width: 4;
+  vector-effect: non-scaling-stroke;
+}
+.board-die:focus-visible {
+  outline: none;
+}
+.point .source-ring {
+  stroke-width: 2.2;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 4 3;
+}
+.point.selected .source-ring {
+  stroke-width: 3;
+}
+.point.selected .checker > circle:first-child {
+  stroke: var(--board-selection);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+.point.destination .point-hit {
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+  fill: color-mix(in srgb, var(--board-destination) 18%, transparent);
+}
+.point.return-destination .point-hit {
+  stroke-dasharray: 6 4;
+  fill: color-mix(in srgb, var(--board-focus) 12%, transparent);
+  stroke: var(--board-focus);
+}
+.point.destination.drop-hover .point-hit {
+  stroke-width: 3;
+}
+.point.selected .point-hit {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.point .landing-ring {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.action-main {
+  justify-content: flex-end;
+}
+.appearance-tabs {
+  margin-bottom: 16px;
+}
+.theme-controls > #undo-theme {
+  margin-top: 16px;
+}
+.pattern-panel {
+  display: grid;
+  gap: 16px;
+}
+.pattern-panel input[type="range"] {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--accent);
+}
+.pattern-panel .hex-input {
+  width: 100%;
+}
+.theme-presets {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.game-rules {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.game-rules > summary {
+  min-height: 44px;
+  padding-block: 10px;
+  cursor: pointer;
+}
+.game-rules > .stack {
+  padding: 8px 0 16px;
+}
+.game-rules .small {
+  margin: 0;
+}
+.die {
+  background-image: var(--pattern-css-die0, none);
+}
+.die.teal-die {
+  background-image: var(--pattern-css-die1, none);
+}
+@media (max-width: 360px) {
+  .theme-presets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .action-buttons {
+    gap: 5px;
+  }
+  .action-buttons button {
+    padding-inline: 11px;
   }
 }

@@ -7,6 +7,17 @@ export function gradeCube(state, result, decision) {
   if (![no, take, pass].every(Number.isFinite))
     throw new Error("Invalid cube equities.");
   let error;
+  if (result.decisionOptions) {
+    const actual = result.decisionOptions.find((c) => c.action === decision);
+    if (!actual)
+      throw new Error("This decision is not a legal analyzed cube choice.");
+    const values = result.decisionOptions.map((c) => c.equity);
+    error =
+      result.decisionPlayer === state.turn
+        ? Math.max(...values) - actual.equity
+        : actual.equity - Math.min(...values);
+    return { ...result, error: Math.max(0, error), actualDecision: decision };
+  }
   if (state.phase === "double" && ["take", "pass"].includes(decision))
     error = (decision === "take" ? take : pass) - Math.min(take, pass);
   else if (state.phase === "roll" && ["roll", "double"].includes(decision))

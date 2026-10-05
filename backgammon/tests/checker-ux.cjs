@@ -139,6 +139,13 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
             phase: "move",
             dice: kind === "doubles" ? [1, 1] : [3, 1],
           });
+          if (kind === "chain" || kind === "double-chain") {
+            s.points = Array(24).fill(0);
+            s.points[23] = 1;
+            s.points[18] = -15;
+            s.off = [14, 0];
+            s.dice = kind === "chain" ? [3, 1] : [2, 2];
+          }
           if (kind === "bar" || kind === "blocked") {
             s.points = Array(24).fill(0);
             s.points[5] = 14;
@@ -229,7 +236,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     assert.match(await page.locator("#draft-line").innerText(), /blocked/);
     await page.locator(`[data-point="${st.to}"]`).click();
     assert.equal((await info()).draft.length, 1);
-    assert.equal(await page.locator(".die.used").count(), 1);
+    assert.equal(await page.locator(".board-die.consumed").count(), 1);
     await page.evaluate(() => checkerTest.draft.undo()); // interrupt an in-flight animation
     assert.equal((await info()).draft.length, 0);
     await page.waitForTimeout(250);
@@ -319,10 +326,57 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       const m = (await info()).candidates[0];
       await page.evaluate((m) => checkerTest.draft.move(m), m);
     }
-    assert.equal(await page.locator(".die.used").count(), 4);
+    assert.equal(await page.locator(".board-die.consumed").count(), 4);
     assert.equal((await info()).complete, true);
     await page.waitForTimeout(250);
     assert.equal(await page.locator(".moving-checker").count(), 0);
+    // One selected checker exposes every legal combined destination. Tap and
+    // drag reversals restore real draft dice; even completed turns stay editable.
+    await load("chain");
+    await page.locator('[data-point="23"]').click();
+    for (const to of [22, 20, 19])
+      assert.ok(await page.locator(`[data-point="${to}"].destination`).count());
+    await shot("combined-destinations");
+    await page.locator('[data-point="19"]').click();
+    assert.equal((await info()).draft.length, 2);
+    assert.equal((await info()).complete, true);
+    await page.locator('[data-point="19"]').click(); // immediately interrupts path animation
+    assert.ok(
+      await page.locator('[data-point="23"].return-destination').count(),
+    );
+    await page.locator('[data-point="23"]').click();
+    assert.equal((await info()).draft.length, 0);
+    assert.equal(await page.locator(".board-die.consumed").count(), 0);
+    await load("double-chain");
+    await page.locator('[data-point="23"]').click();
+    for (const to of [21, 19, 17, 15])
+      assert.ok(await page.locator(`[data-point="${to}"].destination`).count());
+    await shot("all-four-doubles");
+    await drag(23, 15);
+    assert.equal((await info()).draft.length, 4);
+    await drag(15, 19);
+    assert.equal((await info()).draft.length, 2);
+    assert.equal(await page.locator(".board-die.consumed").count(), 2);
+    await drag(19, 23);
+    assert.equal((await info()).draft.length, 0);
+    await load("bar");
+    await drag("bar", 23);
+    await drag(23, "bar");
+    assert.deepEqual((await info()).state.bar, [1, 0]);
+    assert.equal((await info()).state.points[23], -1);
+    await load("bearoff");
+    await page.evaluate(() => checkerTest.draft.preferDie(1));
+    await drag(0, "off");
+    await drag("off", 0);
+    assert.equal((await info()).draft.length, 0);
+    report.cases.push(
+      "both dice combined destinations",
+      "all four doubles destinations",
+      "tap back after complete turn",
+      "drag back part of a combined move",
+      "bar and bearoff drag reversals",
+      "larger on-board dice",
+    );
     await load("tall");
     assert.match(
       await page.locator('[data-point="12"]').getAttribute("aria-label"),
@@ -347,9 +401,11 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await page.keyboard.press("Enter");
     assert.ok(await page.locator(".destination").count());
     const dest = page.locator(".destination").first();
+    const destination = Number(await dest.getAttribute("data-point"));
     await dest.focus();
     await page.keyboard.press("Space");
-    assert.equal((await info()).draft.length, 1);
+    assert.equal((await info()).draft.at(-1).to, destination);
+    assert.ok((await info()).draft.length >= 1);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.evaluate(() => checkerTest.draft.undo());
     assert.equal(await page.locator(".moving-checker").count(), 0);
@@ -542,6 +598,14 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
           await bot.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth + 1,
           ),
+        );
+        assert.ok(
+          await bot.evaluate(
+            () =>
+              document.querySelector("#board").getBoundingClientRect().bottom <=
+              document.querySelector("#player").getBoundingClientRect().top + 1,
+          ),
+          "board must not overlap player strip",
         );
         if (width > 320)
           assert.ok(

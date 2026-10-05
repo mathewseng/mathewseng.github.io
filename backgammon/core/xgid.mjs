@@ -1,16 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // XGID uppercase = Ivory (GNU player 1). Position string runs bar(Teal), points 1..24, bar(Ivory).
-import { initialState, assertState } from "./rules.mjs";
-export function toXGID(s) {
+import { initialState, assertState, rulesOf, offerDepth } from "./rules.mjs";
+export function toXGID(s, { engine = false } = {}) {
   assertState(s);
   if (["opening", "resign", "over"].includes(s.phase))
     throw new Error(
       "XGID export requires a checker, pre-roll, or cube decision.",
     );
+  if (offerDepth(s))
+    throw new Error(
+      "This XGID encoder supports ordinary cube offers. Use a position link or Library JSON for pending beavers and raccoons.",
+    );
+  if (
+    !engine &&
+    (rulesOf(s).automaticDoubles || rulesOf(s).immediateRedoubles > 1)
+  )
+    throw new Error(
+      "Use a full position link or Library JSON to preserve the opening-double limit and raccoon setting.",
+    );
   const letter = (n) =>
     n === 0 ? "-" : String.fromCharCode((n > 0 ? 64 : 96) + Math.abs(n));
   const board = [-s.bar[1], ...s.points, s.bar[0]].map(letter).join("");
-  return `XGID=${board}:${Math.log2(s.cube.value)}:${s.cube.owner === null ? 0 : s.cube.owner === 0 ? 1 : -1}:${s.turn === 0 ? 1 : -1}:${s.phase === "double" ? "D" : s.dice.length ? s.dice.join("") : "00"}:${s.scores[0]}:${s.scores[1]}:${s.crawford ? 1 : 0}:${s.matchLength}:${s.rules.cube ? 10 : 0}`;
+  const flags = s.matchLength
+    ? Number(s.crawford)
+    : Number(s.rules.jacoby) + (rulesOf(s).immediateRedoubles ? 2 : 0);
+  return `XGID=${board}:${Math.log2(s.cube.value)}:${s.cube.owner === null ? 0 : s.cube.owner === 0 ? 1 : -1}:${s.turn === 0 ? 1 : -1}:${s.phase === "double" ? "D" : s.dice.length ? s.dice.join("") : "00"}:${s.scores[0]}:${s.scores[1]}:${flags}:${s.matchLength}:${s.rules.cube ? 10 : 0}`;
 }
 export function fromXGID(text) {
   if (typeof text !== "string" || text.length > 160)
@@ -41,12 +55,10 @@ export function fromXGID(text) {
   )
     throw new Error("Unsupported cube, turn, or maximum-cube field.");
   if (
-    (+length === 0 && +rule !== 0) ||
+    (+length === 0 && ![0, 1, 2, 3].includes(+rule)) ||
     (+length > 0 && ![0, 1].includes(+rule))
   )
-    throw new Error(
-      "Jacoby, beavers, and unknown rule flags are not supported.",
-    );
+    throw new Error("Unknown XGID rule flags.");
   if (/[A-O]/.test(board[0]) || /[a-o]/.test(board[25]))
     throw new Error("Bar colors are invalid.");
   const decode = (c) =>
@@ -80,10 +92,14 @@ export function fromXGID(text) {
     },
     scores: [+a, +b],
     matchLength: +length,
-    crawford: +rule === 1,
+    crawford: +length > 0 && +rule === 1,
     crawfordPlayed:
       +rule === 0 && +length > 0 && [+a, +b].includes(+length - 1),
-    rules: { cube: +limit === 10, jacoby: false },
+    rules: {
+      cube: +limit === 10,
+      jacoby: +length === 0 && !!(+rule & 1),
+      immediateRedoubles: +length === 0 && +rule & 2 ? 1 : 0,
+    },
     pending:
       phase === "double" ? { type: "double", by: +turn === 1 ? 0 : 1 } : null,
   });
@@ -93,6 +109,17 @@ export function shareURL(s, route = "solver") {
     `/backgammon/${route}/`,
     globalThis.location?.origin || "https://mathewseng.github.io",
   );
-  u.hash = new URLSearchParams({ xgid: toXGID(s) }).toString();
+  assertState(s);
+  // This encoder implements the verified standard XGID subset.
+  // Full application links also preserve optional rule limits and immediate offers.
+  u.hash = new URLSearchParams({ state: JSON.stringify(s) }).toString();
   return u.href;
+}
+export function sharedPosition(params) {
+  if (params.has("state")) {
+    const text = params.get("state");
+    if (text.length > 6000) throw new Error("Shared position is too large.");
+    return assertState(JSON.parse(text));
+  }
+  return fromXGID(params.get("xgid"));
 }

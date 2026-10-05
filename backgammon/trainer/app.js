@@ -6,6 +6,12 @@ import {
   boardKey,
   commitTurn,
   canDouble,
+  canImmediateRedouble,
+  offerDepth,
+  offerName,
+  decisionPlayer,
+  playerName,
+  ruleSummary,
 } from "../core/rules.mjs";
 import { all, put, get, itemRecord, recordPractice } from "../core/storage.mjs";
 import {
@@ -179,11 +185,15 @@ function actions() {
     s.phase === "move"
       ? "Find your move, then submit."
       : s.phase === "double"
-        ? "The cube is offered. Take or pass?"
+        ? `${offerName(s)} to ${s.cube.value * 2}. ${playerName(decisionPlayer(s))} to decide.`
         : "Would you double or roll?";
   if (s.phase === "move")
     a.append(
       button("Undo", () => draft.undo(), "", { disabled: !draft.draft.length }),
+      button("Reset", () => draft.reset(), "", {
+        disabled: !draft.draft.length,
+        id: "reset-draft",
+      }),
       button("Submit move", () => submit(clone(draft.draft)), "primary", {
         disabled: !draft.complete(),
         id: "submit-decision",
@@ -193,6 +203,13 @@ function actions() {
     a.append(
       button("Pass", () => submit("pass"), "", { id: "cube-pass" }),
       button("Take", () => submit("take"), "primary", { id: "cube-take" }),
+      ...(canImmediateRedouble(s)
+        ? [
+            button(offerDepth(s) ? "Raccoon" : "Beaver", () =>
+              submit(offerDepth(s) ? "raccoon" : "beaver"),
+            ),
+          ]
+        : []),
     );
   else
     a.append(
@@ -249,6 +266,13 @@ function panel() {
     );
     return;
   }
+  p.append(
+    el(
+      "p",
+      { class: "muted small", id: "practice-rules" },
+      ruleSummary(exercise.state),
+    ),
+  );
   if (!revealed) {
     p.append(
       el(

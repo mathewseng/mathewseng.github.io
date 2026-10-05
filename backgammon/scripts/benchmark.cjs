@@ -61,7 +61,13 @@ const os = require("node:os");
         }
       }
       engine.destroy();
-      return { startup, samples, userAgent: navigator.userAgent };
+      return {
+        startup,
+        samples,
+        engine: (await import("/backgammon/engine/metadata.mjs"))
+          .ENGINE_VERSION,
+        userAgent: navigator.userAgent,
+      };
     });
     const stats = (a) => {
       const s = a.slice().sort((a, b) => a - b);
@@ -75,6 +81,7 @@ const os = require("node:os");
     };
     const report = {
       recordedAt: new Date().toISOString(),
+      engine: data.engine,
       environment: {
         platform: os.platform(),
         arch: os.arch(),

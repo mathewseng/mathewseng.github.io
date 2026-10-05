@@ -36,7 +36,7 @@ test("checker animation geometry remains bounded for tall stacks, the bar and be
   const s = initialState();
   s.points[12] = 15;
   assert.deepEqual(checkerPosition(s, 12, 0, 0), { x: 54, y: 253 });
-  assert.deepEqual(checkerPosition(s, 12, 0, 1), { x: 54, y: 347 });
-  assert.deepEqual(checkerPosition(s, "bar", 0, 0), { x: 408, y: 446 });
+  assert.deepEqual(checkerPosition(s, 12, 0, 1), { x: 54, y: 407 });
+  assert.deepEqual(checkerPosition(s, "bar", 0, 0), { x: 408, y: 506 });
   assert.equal(checkerPosition(s, "off", 0, 0).x, 843);
 });

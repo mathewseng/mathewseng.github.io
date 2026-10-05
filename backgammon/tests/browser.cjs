@@ -90,6 +90,10 @@ const server = http.createServer((req, res) => {
               .selectOption({ index: 1 });
         };
         await steps();
+        await page.locator("#reset-draft").click();
+        assert.equal(await page.locator(".board-die.consumed").count(), 0);
+        assert.ok(await page.locator("#confirm").isDisabled());
+        await steps();
         await page.locator("#undo").click();
         assert.ok(await page.locator("#confirm").isDisabled());
         await steps();
@@ -322,6 +326,12 @@ const server = http.createServer((req, res) => {
               const layout = await page.evaluate(() => ({
                 width: document.documentElement.scrollWidth,
                 height: document.documentElement.scrollHeight,
+                boardBottom: document
+                  .querySelector("#board")
+                  ?.getBoundingClientRect().bottom,
+                playerTop: document
+                  .querySelector("#player")
+                  ?.getBoundingClientRect().top,
                 action: document
                   .querySelector("#actions")
                   ?.getBoundingClientRect().bottom,
@@ -330,6 +340,11 @@ const server = http.createServer((req, res) => {
                 layout.width <= w + 1,
                 `horizontal overflow ${route} ${w}: ${layout.width}`,
               );
+              if (layout.playerTop !== undefined)
+                assert.ok(
+                  layout.boardBottom <= layout.playerTop + 1,
+                  `board overlaps player strip ${route} ${w}x${h}`,
+                );
               if (route && w > 320) {
                 assert.ok(
                   layout.height <= h + 1,
@@ -393,6 +408,10 @@ const server = http.createServer((req, res) => {
         report.appearanceUX ||= [];
         report.appearanceUX.push(
           await require("./appearance.cjs")(browser, base, out, browserName),
+        );
+        report.optionsUX ||= [];
+        report.optionsUX.push(
+          await require("./options-ui.cjs")(browser, base, out, browserName),
         );
         report.refreshUX ||= [];
         report.refreshUX.push(

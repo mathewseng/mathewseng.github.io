@@ -15,9 +15,22 @@ const assert = require("node:assert/strict");
       (process.env.BG_BASE_URL || "http://127.0.0.1:8765") +
         "/backgammon/play/",
     );
-    await p.getByLabel("Match length", { exact: true }).selectOption("1");
+    const optionalRules = process.env.BG_MONEY_RULES === "1";
+    await p
+      .getByLabel("Match length", { exact: true })
+      .selectOption(optionalRules ? "0" : "1");
+    if (optionalRules) {
+      await p.locator(".game-rules summary").click();
+      await p
+        .getByLabel("Automatic opening doubles", { exact: true })
+        .selectOption("1");
+      await p
+        .getByLabel("Immediate redoubles", { exact: true })
+        .selectOption("2");
+    }
     await p.locator("#start-match").click();
-    let decisions = 0;
+    let decisions = 0,
+      offered = false;
     const state = () =>
       p.evaluate(async () => {
         const { get } = await import("/backgammon/core/storage.mjs");
@@ -28,9 +41,12 @@ const assert = require("node:assert/strict");
         await p.locator("#begin-turn").click();
       const s = await state();
       if (s.phase === "over") break;
-      const actor = ["double", "resign"].includes(s.phase)
-        ? 1 - s.turn
-        : s.turn;
+      const actor =
+        s.phase === "double"
+          ? 1 - s.pending.by
+          : s.phase === "resign"
+            ? 1 - s.turn
+            : s.turn;
       if (actor === 1) {
         await p.waitForFunction(
           async (seq) => {
@@ -42,7 +58,17 @@ const assert = require("node:assert/strict");
         );
         continue;
       }
-      if (["opening", "roll"].includes(s.phase))
+      if (
+        optionalRules &&
+        !offered &&
+        s.phase === "roll" &&
+        (await p
+          .getByRole("button", { name: "Double", exact: true })
+          .isEnabled())
+      ) {
+        offered = true;
+        await p.getByRole("button", { name: "Double", exact: true }).click();
+      } else if (["opening", "roll"].includes(s.phase))
         await p.locator("#roll").click();
       else if (s.phase === "move") {
         while (await p.locator("#confirm").isDisabled())
@@ -63,7 +89,7 @@ const assert = require("node:assert/strict");
     }
     const final = await state();
     assert.equal(final.phase, "over");
-    assert.equal(final.result.matchOver, true);
+    assert.equal(final.result.matchOver, !optionalRules);
     assert.deepEqual(errors, []);
     const replayed = await p.evaluate(async () => {
       const { get, all } = await import("/backgammon/core/storage.mjs"),
@@ -80,7 +106,8 @@ const assert = require("node:assert/strict");
     console.log(
       JSON.stringify(
         {
-          completeComputerMatch: true,
+          completeComputerGame: true,
+          optionalRules,
           humanDecisions: decisions,
           sequence: final.sequence,
           result: final.result,
@@ -91,7 +118,7 @@ const assert = require("node:assert/strict");
       ),
     );
     await p.screenshot({
-      path: "backgammon/test-results/computer-complete.png",
+      path: `backgammon/test-results/computer-complete${optionalRules ? "-optional" : ""}.png`,
     });
   } finally {
     await b.close();

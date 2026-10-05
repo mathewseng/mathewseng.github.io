@@ -150,7 +150,7 @@ export function accept(
       if (s.rematch.length === 2) {
         const next = session(
           s.players,
-          { matchLength: s.state.matchLength },
+          { matchLength: s.state.matchLength, rules: clone(s.state.rules) },
           newId(),
         );
         next.started = true;

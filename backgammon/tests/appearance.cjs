@@ -37,6 +37,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     await page.getByRole("dialog").waitFor({ state: "hidden" });
   };
   const group = async (name) => {
+    await page.getByRole("button", { name: "Colors", exact: true }).click();
     const summary = page
       .locator(".color-group summary")
       .filter({ hasText: name });
@@ -95,6 +96,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
       async () =>
         (await import("/backgammon/core/appearance.mjs")).BOARD_PRESETS,
     );
+    assert.equal(themes.length, 24);
     for (const theme of themes) {
       await page.locator(`[data-preset="${theme.id}"]`).click();
       assert.equal((await stored()).preset, theme.id);
@@ -110,10 +112,18 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
         face: rgb(theme.colors.die1),
         pips: rgb(theme.colors.pips1),
       });
-      if (browserName === "chromium") await shot(theme.id);
+      if (browserName === "chromium") {
+        await shot(theme.id);
+        await close();
+        await shot(`play-${theme.id}-desktop`);
+        await page.setViewportSize({ width: 390, height: 844 });
+        await shot(`play-${theme.id}-phone`);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        await open();
+      }
     }
     report.cases.push(
-      "six presets with real SVG, die and pip colors",
+      "24 presets with real SVG, die and pip colors",
       "all preset readability checks",
     );
     await group("Board surfaces");
@@ -168,7 +178,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
         { initialState } = await import("/backgammon/core/rules.mjs");
       const container = document.createElement("div");
       container.style.cssText =
-        "position:fixed;left:-2000px;width:876px;height:600px";
+        "position:fixed;left:-2000px;width:876px;height:660px";
       document.body.append(container);
       const b = new Board(container),
         s = initialState({ phase: "move", dice: [3, 1] });
@@ -200,6 +210,66 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
       return missing;
     });
     assert.deepEqual(coverage, []);
+    await page.getByRole("button", { name: "Patterns", exact: true }).click();
+    const roles = await page
+      .locator("#pattern-element option")
+      .evaluateAll((nodes) => nodes.map((n) => n.value));
+    assert.equal(roles.length, 11);
+    assert.ok(
+      await page
+        .getByLabel("Pattern", { exact: true })
+        .evaluate((n) => n.getBoundingClientRect().height >= 44),
+      "Safari/native select touch height",
+    );
+    for (const role of roles) {
+      await page
+        .getByLabel("Board element", { exact: true })
+        .selectOption(role);
+      await page.getByLabel("Pattern", { exact: true }).selectOption("dots");
+      assert.equal((await stored()).patterns[role].kind, "dots");
+      assert.ok(await page.locator(`#bg-pattern-${role} circle`).count());
+    }
+    for (const kind of ["lines", "crosshatch", "waves"]) {
+      await page.getByLabel("Pattern", { exact: true }).selectOption(kind);
+      assert.equal((await stored()).patterns.cube.kind, kind);
+    }
+    await page.getByLabel("Pattern", { exact: true }).selectOption("solid");
+    assert.equal((await stored()).patterns.cube, undefined);
+    await page.getByLabel("Pattern", { exact: true }).selectOption("dots");
+    await page
+      .getByRole("button", { name: "Reset this pattern", exact: true })
+      .click();
+    assert.equal((await stored()).patterns.cube, undefined);
+    await page
+      .getByLabel("Board element", { exact: true })
+      .selectOption("surface");
+    await page
+      .getByLabel("Pattern", { exact: true })
+      .selectOption("crosshatch");
+    await page.getByLabel("Pattern ink hex", { exact: true }).fill("#234");
+    await page.getByLabel("Pattern ink hex", { exact: true }).press("Tab");
+    assert.equal((await stored()).patterns.surface.ink, "#223344");
+    await page.getByLabel("Pattern spacing", { exact: true }).evaluate((n) => {
+      n.value = "24";
+      n.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    assert.equal((await stored()).patterns.surface.size, 24);
+    await page.getByLabel("Pattern strength", { exact: true }).evaluate((n) => {
+      n.value = "12";
+      n.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    assert.equal((await stored()).patterns.surface.opacity, 0.12);
+    await page.getByLabel("Pattern angle", { exact: true }).selectOption("90");
+    await page.getByLabel("Pattern ink hex", { exact: true }).fill("invalid");
+    assert.equal(
+      await page
+        .getByLabel("Pattern ink hex", { exact: true })
+        .getAttribute("aria-invalid"),
+      "true",
+    );
+    assert.equal((await stored()).patterns.surface.ink, "#223344");
+    await shot("element-patterns");
+    const patterned = (await stored()).patterns;
     await close();
     assert.deepEqual(
       await work(),
@@ -208,6 +278,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     );
     await page.reload();
     await page.locator("#resume-match").click();
+    assert.deepEqual((await stored()).patterns, patterned);
     assert.equal(await frame(), "rgb(39, 60, 74)");
     assert.deepEqual(await work(), before);
     await open();
@@ -241,6 +312,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     );
     await second.close();
     report.cases.push(
+      "11 individually patterned elements, all five patterns, bounded ink/spacing/strength/angle, reset and persistence",
       "all color roles wired to rendered elements",
       "draft and dice unchanged",
       "reload and family-wide persistence",

@@ -9,4 +9,4 @@ cp "$root/engine/source/bridge.c" "$build/src/bridge.c"
 python3 "$root/scripts/patch-engine.py" "$build"
 (cd "$build" && make -f Makefile.emcc -j4)
 cp "$build"/dist/gnubg-core-module.* "$root/engine/vendor/"
-(cd "$build" && tar -czf "$root/engine/source/gnubg-core-955555c-bg1.tar.gz" src data web LICENSE Makefile Makefile.emcc)
+(cd "$build" && tar -czf "$root/engine/source/gnubg-core-955555c-bg2.tar.gz" src data web LICENSE Makefile Makefile.emcc)

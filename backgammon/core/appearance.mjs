@@ -108,6 +108,55 @@ function preset(id, name, description, colors = {}) {
     colors: Object.freeze({ ...slate, ...colors }),
   });
 }
+// Additional palettes use the same tested hierarchy, with distinct surfaces and sides.
+function cleanPreset(id, name, light, frame, surface, pointA, pointB, accent) {
+  const text = light ? "#25322E" : "#EEEFE7",
+    ink = light ? "#FFFFFF" : "#13221D";
+  const highlight = light ? "#163E79" : "#F5D47E";
+  return preset(
+    id,
+    name,
+    light
+      ? "Light surface · strong checker contrast"
+      : "Dark surface · clear, quiet contrast",
+    {
+      frame,
+      surface,
+      bar: frame,
+      tray: frame,
+      border: light ? "#77867B" : "#738781",
+      pointA,
+      pointB,
+      numbers: text,
+      barLabel: text,
+      trayLabel: text,
+      caption: text,
+      checker0: "#FFF9E9",
+      rim0: "#867861",
+      detail0: "#B9AA8F",
+      count0: "#202A25",
+      checker1: accent,
+      rim1: light ? "#1B302C" : "#30443D",
+      detail1: light ? "#819C95" : "#4B685E",
+      count1: ink,
+      die0: "#FFF9E9",
+      pips0: "#202A25",
+      dieBorder0: "#867861",
+      die1: accent,
+      pips1: ink,
+      dieBorder1: "#30443D",
+      cube: "#FFF9E9",
+      cubeText: "#202A25",
+      cubeBorder: "#867861",
+      source: highlight,
+      selection: highlight,
+      destination: highlight,
+      destinationText: light ? "#FFFFFF" : "#172126",
+      hover: highlight,
+      focus: light ? "#651870" : "#B5E6FF",
+    },
+  );
+}
 export const BOARD_PRESETS = Object.freeze([
   preset("slate", "Slate", "Ivory & sea glass"),
   preset("midnight", "Midnight", "Ink & warm coral", {
@@ -290,12 +339,223 @@ export const BOARD_PRESETS = Object.freeze([
     hover: "#FFD78C",
     focus: "#A8E5FA",
   }),
+  cleanPreset(
+    "ocean",
+    "Ocean",
+    false,
+    "#203A48",
+    "#132C38",
+    "#C0AA87",
+    "#52778A",
+    "#8EB9D1",
+  ),
+  cleanPreset(
+    "navy",
+    "Navy",
+    false,
+    "#202C43",
+    "#101C30",
+    "#BCAA91",
+    "#4B668B",
+    "#E3A67A",
+  ),
+  cleanPreset(
+    "spruce",
+    "Spruce",
+    false,
+    "#263B34",
+    "#142921",
+    "#BEAD84",
+    "#526F59",
+    "#8DBFA2",
+  ),
+  cleanPreset(
+    "olive",
+    "Olive",
+    false,
+    "#363B29",
+    "#252A1B",
+    "#C0AC79",
+    "#67734F",
+    "#C2B66F",
+  ),
+  cleanPreset(
+    "walnut",
+    "Walnut",
+    false,
+    "#40322B",
+    "#2A201B",
+    "#B69874",
+    "#695347",
+    "#87BBAA",
+  ),
+  cleanPreset(
+    "copper",
+    "Copper",
+    false,
+    "#3D302C",
+    "#281F1D",
+    "#BEA082",
+    "#795848",
+    "#DB9A73",
+  ),
+  cleanPreset(
+    "claret",
+    "Claret",
+    false,
+    "#402C35",
+    "#2B1C25",
+    "#C1A294",
+    "#795767",
+    "#C58EAA",
+  ),
+  cleanPreset(
+    "indigo",
+    "Indigo",
+    false,
+    "#302E4A",
+    "#201E33",
+    "#BBA791",
+    "#67628A",
+    "#A8A2DB",
+  ),
+  cleanPreset(
+    "steel",
+    "Steel",
+    false,
+    "#2D3840",
+    "#1B252D",
+    "#B5B1A0",
+    "#5C7382",
+    "#8CC5C8",
+  ),
+  cleanPreset(
+    "carbon",
+    "Carbon",
+    false,
+    "#282828",
+    "#101010",
+    "#B3B3AB",
+    "#565A5B",
+    "#E1B755",
+  ),
+  cleanPreset(
+    "paper",
+    "Paper",
+    true,
+    "#D7DED9",
+    "#F4F5EC",
+    "#B9A884",
+    "#667C72",
+    "#2D594B",
+  ),
+  cleanPreset(
+    "sand",
+    "Sand",
+    true,
+    "#DDCDB1",
+    "#F4EAD6",
+    "#B69C74",
+    "#756E57",
+    "#514D32",
+  ),
+  cleanPreset(
+    "glacier",
+    "Glacier",
+    true,
+    "#C6D9E0",
+    "#EDF5F7",
+    "#B4BAC0",
+    "#63869B",
+    "#245578",
+  ),
+  cleanPreset(
+    "mist",
+    "Mist",
+    true,
+    "#CBDAD6",
+    "#EDF3EF",
+    "#ADBDB0",
+    "#66877C",
+    "#315E53",
+  ),
+  cleanPreset(
+    "sage",
+    "Sage",
+    true,
+    "#CFD9BF",
+    "#EFF2E3",
+    "#B5BD9F",
+    "#788565",
+    "#3A583D",
+  ),
+  cleanPreset(
+    "rose",
+    "Rose",
+    true,
+    "#DFCBCD",
+    "#F8EFEB",
+    "#C0ABAD",
+    "#95737E",
+    "#703D55",
+  ),
+  cleanPreset(
+    "chalk",
+    "Chalk",
+    true,
+    "#D4D4CF",
+    "#FAFAF2",
+    "#BDBCB1",
+    "#737873",
+    "#333F3B",
+  ),
+  cleanPreset(
+    "amber",
+    "Amber",
+    true,
+    "#DFC99D",
+    "#F7EDDA",
+    "#C3A773",
+    "#93784D",
+    "#654A23",
+  ),
 ]);
 export const DEFAULT_BOARD_THEME = Object.freeze({
   version: 1,
   preset: "slate",
   colors: Object.freeze({}),
 });
+export const PATTERN_ELEMENTS = Object.freeze({
+  frame: "Frame",
+  surface: "Playing surface",
+  bar: "Center bar",
+  tray: "Bearoff trays",
+  pointA: "Points · first color",
+  pointB: "Points · second color",
+  checker0: "Ivory checkers",
+  checker1: "Teal checkers",
+  die0: "Ivory dice",
+  die1: "Teal dice",
+  cube: "Doubling cube",
+});
+export const PATTERN_KINDS = Object.freeze([
+  "solid",
+  "lines",
+  "dots",
+  "crosshatch",
+  "waves",
+]);
+export function elementPattern(theme, key) {
+  const palette = boardPalette(theme);
+  return {
+    kind: "solid",
+    ink: contrastRatio(palette[key], "#FFFFFF") > 3 ? "#FFFFFF" : "#000000",
+    size: 18,
+    opacity: 0.16,
+    angle: 45,
+    ...theme?.patterns?.[key],
+  };
+}
 export function normalizeHex(value) {
   if (typeof value !== "string") return null;
   const hex = value.trim().replace(/^#/, "");
@@ -314,7 +574,44 @@ export function normalizeBoardTheme(value) {
       const color = normalizeHex(value.colors[key]);
       if (color && color !== base.colors[key]) colors[key] = color;
     }
-  return { version: 1, preset: base.id, colors };
+  const patterns = {};
+  if (
+    value?.version === 1 &&
+    value.patterns &&
+    typeof value.patterns === "object"
+  )
+    for (const key of Object.keys(PATTERN_ELEMENTS)) {
+      const p = value.patterns[key];
+      if (
+        !p ||
+        !PATTERN_KINDS.includes(p.kind) ||
+        p.kind === "solid" ||
+        !normalizeHex(p.ink)
+      )
+        continue;
+      if (
+        ![p.size, p.opacity, p.angle].every(Number.isFinite) ||
+        p.size < 8 ||
+        p.size > 40 ||
+        p.opacity < 0.05 ||
+        p.opacity > 0.35 ||
+        ![0, 45, 90, 135].includes(p.angle)
+      )
+        continue;
+      patterns[key] = {
+        kind: p.kind,
+        ink: normalizeHex(p.ink),
+        size: p.size,
+        opacity: p.opacity,
+        angle: p.angle,
+      };
+    }
+  return {
+    version: 1,
+    preset: base.id,
+    colors,
+    ...(Object.keys(patterns).length ? { patterns } : {}),
+  };
 }
 export function boardPalette(value) {
   const theme = normalizeBoardTheme(value);
@@ -327,9 +624,98 @@ export const colorProperty = (key) =>
   "--board-" + key.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
 export const boardColor = (key) => `var(${colorProperty(key)}, ${slate[key]})`;
 export function applyBoardTheme(value, node = document.documentElement) {
-  const palette = boardPalette(value);
+  const theme = normalizeBoardTheme(value),
+    palette = boardPalette(theme);
   for (const [key, color] of Object.entries(palette))
     node.style.setProperty(colorProperty(key), color);
+  const namespace = "http://www.w3.org/2000/svg";
+  const make = (name, attrs) => {
+    const n = document.createElementNS(namespace, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    return n;
+  };
+  let root;
+  if (node === document.documentElement) {
+    root = document.getElementById("board-pattern-definitions");
+    if (!root) {
+      root = make("svg", {
+        id: "board-pattern-definitions",
+        width: 0,
+        height: 0,
+        "aria-hidden": true,
+        focusable: false,
+        style: "position:absolute;pointer-events:none",
+      });
+      document.body.append(root);
+    }
+    root.replaceChildren();
+  }
+  for (const key of Object.keys(PATTERN_ELEMENTS)) {
+    const p = elementPattern(theme, key),
+      id = `bg-pattern-${key}`;
+    node.style.setProperty(
+      `--pattern-${key}`,
+      p.kind === "solid" ? "transparent" : `url(#${id})`,
+    );
+    if (p.kind === "solid") {
+      node.style.setProperty(`--pattern-css-${key}`, "none");
+      continue;
+    }
+    const pattern = make("pattern", {
+      id,
+      width: p.size,
+      height: p.size,
+      patternUnits: "userSpaceOnUse",
+      patternTransform: `rotate(${p.angle})`,
+    });
+    const group = make("g", {
+      stroke: p.ink,
+      fill: "none",
+      "stroke-width": 1.5,
+      opacity: p.opacity,
+    });
+    if (p.kind === "dots")
+      group.append(
+        make("circle", {
+          cx: p.size / 2,
+          cy: p.size / 2,
+          r: 1.8,
+          fill: p.ink,
+          stroke: "none",
+        }),
+      );
+    else
+      group.append(
+        make("path", {
+          d:
+            p.kind === "waves"
+              ? `M0 ${p.size / 2} Q${p.size / 4} 0 ${p.size / 2} ${p.size / 2} T${p.size} ${p.size / 2}`
+              : p.kind === "crosshatch"
+                ? `M0 0H${p.size}M0 0V${p.size}`
+                : `M0 0H${p.size}`,
+        }),
+      );
+    pattern.append(group);
+    // Reuse the very same tile for HTML opening dice and SVG board elements.
+    const tile = make("svg", {
+      xmlns: namespace,
+      width: p.size / 2,
+      height: p.size / 2,
+      viewBox: `0 0 ${p.size} ${p.size}`,
+    });
+    tile.append(
+      pattern.cloneNode(true),
+      make("rect", { width: p.size, height: p.size, fill: `url(#${id})` }),
+    );
+    const image = encodeURIComponent(
+      new XMLSerializer().serializeToString(tile),
+    );
+    node.style.setProperty(
+      `--pattern-css-${key}`,
+      `url("data:image/svg+xml,${image}")`,
+    );
+    if (root) root.append(pattern);
+  }
 }
 export function contrastRatio(a, b) {
   const luminance = (hex) => {
