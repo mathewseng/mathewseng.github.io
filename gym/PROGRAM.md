@@ -27,6 +27,7 @@ Healthy-session reference:
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions.
 - September 21 recorded 105 lb × 6, 5 across only two sets; laughter interrupted the attempted sixth rep of set two.
 - September 28 completed 105 lb × 6, 6, 6, achieving the repetition milestone; the final rep of set three was a hard grind at 0 RIR.
+- October 4: 105 lb × 6, 6, 5 plus an incomplete sixth attempt on the final set, reported as 5.5; 17 full reps counted.
 - Stay at 105 lb and aim for controlled sets around 5–6 reps with 1–2 reps in reserve.
 - Make 6, 6, 6 repeatable without a grind, then build toward 8, 8, 8 before changing load.
 - RIR on the first two sets, readiness, and form details were not supplied.
@@ -40,6 +41,7 @@ Progress at 105 lb after:
 - September 7 result at 75 lb: 7, 7, 6
 - September 14 result after heavier flat bench: 75 lb × 4 followed by a failed fifth rep
 - September 28 result at 75 lb: 6, 6, 6 after flat bench.
+- October 4 result at 75 lb: 5, 5, 5 after flat bench.
 - Stay at 75 lb and add controlled reps before increasing load.
 - Best full result at 65 lb: 8, 8, 9
 - August 12 result at 55 lb: 9, 8, 8

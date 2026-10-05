@@ -18,6 +18,7 @@ Current confirmed status:
 - September 14 established 105 lb × 6, 6, 5 for 17 completed repetitions, one rep short of the next milestone.
 - September 21 recorded 105 lb × 6, 5 across two sets; laughter interrupted the attempted sixth rep of set two. This was not reported as a strength failure.
 - September 28 completed 105 lb × 6, 6, 6 across three sets, achieving the repetition milestone. The final rep of set three was a hard grind at 0 RIR.
+- October 4 completed 105 lb × 6, 6, 5 plus an incomplete sixth attempt on the last set. The 6/6/6 milestone remains achieved historically; no new milestone is inferred from a partial rep.
 - No failed flat-bench repetition was reported. Readiness and form details were not supplied.
 
 Definition of success:

@@ -1408,6 +1408,21 @@ Totals: **12 recorded sets, 120 entered reps, and 6,550 lb entered-load volume**
 
 ---
 
+# 24. Push with Bench, Dumbbell Accessories, and Core — October 4, 2026
+
+**Start:** 7:30 PM local time · **Duration:** 70 minutes
+
+- Cable ab crunch: 70 lb × 10, 10, 10, 10
+- Smith flat bench: 105 lb × 6, 6, 5 plus an incomplete sixth attempt on the last set (reported as 5.5, almost all the way up)
+- Smith incline bench: 75 lb × 5, 5, 5
+- Dumbbell triceps extension: 10 lb × 10 for six sets; exact variation and loading per hand unreported
+- Dumbbell shoulder raises, side/diagonal/front: 10 lb × 10 for eight sets; allocation across variants and loading per hand unreported
+- Leg raises: 20, 20, 20
+
+Totals: **27 completed sets, 272 completed reps, and 7,110 lb entered-load volume**. The incomplete bench attempt is stored separately and excluded. No doubling of dumbbell loads, invented shoulder set allocation, or inferred numeric readiness/pain ratings.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

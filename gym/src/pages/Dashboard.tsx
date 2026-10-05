@@ -101,6 +101,11 @@ const inclineProgress = [
     value: 6,
     context: "75 lb × 6/6/6 after flat bench; three completed sets.",
   },
+  {
+    label: "Oct 4",
+    value: 5,
+    context: "75 lb × 5/5/5 after flat bench; three completed sets.",
+  },
 ];
 
 const benchEstimateProgress = [
@@ -151,6 +156,13 @@ const benchEstimateProgress = [
     secondary: 105,
     context:
       "The final six-repetition set at 105 lb was a hard grind at 0 RIR. The estimate is about 126 lb, but this is not a confirmed maximum.",
+  },
+  {
+    label: "Oct 4",
+    value: 126,
+    secondary: 105,
+    context:
+      "Estimated from a completed six-rep set. The final set had five completed reps plus an incomplete sixth attempt, which is excluded.",
   },
 ];
 
@@ -334,17 +346,17 @@ export default function Dashboard() {
               <Badge tone="accent">
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
-              <Badge tone="accent">Legs → Push next</Badge>
+              <Badge tone="accent">Push → Pull next</Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
               <p className="eyebrow-accent">Suggested next session</p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Push, build the rep buffer.
+                Pull, keep reps controlled.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
-                After the September 30 leg session, return to Push when recovered. Keep
-                bench at 105 lb and build controlled repetitions with some reserve; the
-                last September 28 set reached 0 RIR.
+                After the October 4 push session, return to Pull when recovered. Use the
+                September 29 pull session as your reference and leave some reserve on
+                pull-ups and rows.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -396,9 +408,9 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
               <p className="text-xs font-extrabold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                You completed 6 / 6 / 6 at 105 lb on September 28, but the final rep was a
-                hard grind at 0 RIR. Keep 105 lb and make 6 / 6 / 6 repeatable with
-                controlled form and some reserve before adding reps.
+                October 4 logged 6 / 6 / 5 at 105 lb plus an incomplete sixth attempt.
+                September 28 remains your 6 / 6 / 6 best. Keep 105 lb and build repeatable
+                controlled sets with some reserve before adding load.
               </p>
             </div>
           </Surface>
@@ -406,23 +418,23 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">September 30 context</p>
-                <h2 className="mt-1 text-lg font-black">Legs and glutes in 50 minutes</h2>
+                <p className="eyebrow">October 4 context</p>
+                <h2 className="mt-1 text-lg font-black">Push and core in 70 minutes</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 9:30 PM, you completed squats at 25 / 115 / 135 / 135 lb, Smith hip
-              thrusts at 25 / 25 / 45 / 75 lb, and cable kickbacks at 10 / 20 / 20 / 25
-              lb, all for 10 reps. Kickback reps per leg, effort, and back-pain response
-              were not supplied.
+              At 7:30 PM, you logged bench at 105 lb for 6 / 6 / 5 plus an incomplete
+              attempt, incline at 75 lb for 5 / 5 / 5, dumbbell accessories, four sets of
+              ab crunches, and leg raises for 20 / 20 / 20. Shoulder-raise variant
+              allocation and readiness scores were not supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">135 lb squat × 10, 10</Badge>
-              <Badge tone="quality">75 lb hip thrust × 10</Badge>
-              <Badge tone="neutral">9:30 PM · 50 min</Badge>
+              <Badge tone="accent">17 completed bench reps</Badge>
+              <Badge tone="quality">60 leg raises</Badge>
+              <Badge tone="neutral">7:30 PM · 70 min</Badge>
             </div>
           </Surface>
         </div>

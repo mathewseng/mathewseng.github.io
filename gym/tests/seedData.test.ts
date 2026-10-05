@@ -648,7 +648,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[5]?.id).toBe("push-2026-09-14");
+    expect(workoutsNewestFirst[6]?.id).toBe("push-2026-09-14");
   });
 
   it("loads the September 21 and 22 sessions with the interrupted bench rep excluded", () => {
@@ -688,7 +688,7 @@ describe("seed data integration", () => {
       calculableSetCount: 17,
       excludedSetCount: 3,
     });
-    expect(workoutsNewestFirst.slice(3, 5).map((workout) => workout.id)).toEqual([
+    expect(workoutsNewestFirst.slice(4, 6).map((workout) => workout.id)).toEqual([
       "pull-2026-09-22",
       "push-2026-09-21",
     ]);
@@ -731,7 +731,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[2]?.id).toBe("push-2026-09-28");
+    expect(workoutsNewestFirst[3]?.id).toBe("push-2026-09-28");
   });
 
   it("loads the September 29 pull workout without inventing leg-raise sets", () => {
@@ -766,7 +766,27 @@ describe("seed data integration", () => {
       calculableSetCount: 24,
       excludedSetCount: 4,
     });
-    expect(workoutsNewestFirst[0]?.id).toBe("legs-2026-09-30");
+    expect(workoutsNewestFirst[1]?.id).toBe("legs-2026-09-30");
+  });
+
+  it("excludes the October 4 incomplete bench rep without allocating mixed raises", () => {
+    const workout = workouts.find((item) => item.id === "push-2026-10-04")!;
+    const bench = getRepProgression(workouts, "smith-flat-bench", 105, {
+      machineId: "primary-smith-machine",
+    }).find((point) => point.workoutId === workout.id);
+    expect(bench).toMatchObject({ completedReps: 17, completedVolumeLb: 1_785 });
+    expect(calculateWorkoutTotals(workout)).toMatchObject({
+      completedReps: 272,
+      completedVolumeLb: 7_110,
+      calculableSetCount: 24,
+      excludedSetCount: 4,
+    });
+    expect(
+      workout.exercises.find(
+        (entry) => entry.exerciseId === "dumbbell-shoulder-raise-mixed",
+      )?.sets,
+    ).toHaveLength(8);
+    expect(workoutsNewestFirst[0]?.id).toBe(workout.id);
   });
 
   it("reproduces the documented July Smith-bench comparison from seed data", () => {

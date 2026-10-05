@@ -1,0 +1,236 @@
+{
+  "id": "push-2026-10-04",
+  "date": "2026-10-04",
+  "startTime": "19:30",
+  "durationMinutes": 70,
+  "type": "push",
+  "title": "Push with Bench, Dumbbell Accessories, and Core",
+  "chronologyIndex": 24,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "No numeric 0–6 readiness or pain ratings were supplied."
+  },
+  "exercises": [
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-10-04-ab-crunch-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-ab-crunch-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-ab-crunch-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-ab-crunch-4",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-10-04-bench-1",
+          "weightLb": 105,
+          "reps": 6,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-bench-2",
+          "weightLb": 105,
+          "reps": 6,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-bench-3",
+          "weightLb": 105,
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-bench-incomplete-6th",
+          "weightLb": 105,
+          "attemptedReps": 1,
+          "completed": false,
+          "failedAttempt": true,
+          "notes": "Reported as 5.5 reps on set three: sixth attempt almost reached the top but was incomplete. Excluded from completed reps and volume."
+        }
+      ],
+      "notes": "17 completed reps plus one incomplete sixth attempt on the final set. Smith-machine convention follows earlier bench logs. No numeric RIR supplied."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "machineId": "primary-smith-machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-10-04-incline-1",
+          "weightLb": 75,
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-incline-2",
+          "weightLb": 75,
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-incline-3",
+          "weightLb": 75,
+          "reps": 5,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "exerciseId": "dumbbell-triceps-extension",
+      "name": "Dumbbell Triceps Extension",
+      "equipment": "Dumbbells",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-10-04-triceps-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-triceps-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-triceps-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-triceps-4",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-triceps-5",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-triceps-6",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Six reported sets. Overhead versus lying variation, unilateral versus bilateral execution, and loading per hand were not specified. Entered load is not doubled."
+    },
+    {
+      "exerciseId": "dumbbell-shoulder-raise-mixed",
+      "name": "Dumbbell Shoulder Raise — Side, Diagonal, and Front",
+      "equipment": "Dumbbells",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-10-04-shoulder-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-4",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-5",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-6",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-7",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-shoulder-raise-8",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Eight sets across side, diagonal, and front variants; set allocation was not supplied. Preserved as a mixed entry without assigning sets to individual variants. Per-hand load and unilateral versus bilateral execution were not confirmed; entered load is not doubled."
+    },
+    {
+      "exerciseId": "leg-raise",
+      "name": "Leg Raise",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-10-04-leg-raise-1",
+          "reps": 20,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-leg-raise-2",
+          "reps": 20,
+          "completed": true
+        },
+        {
+          "id": "2026-10-04-leg-raise-3",
+          "reps": 20,
+          "completed": true
+        }
+      ],
+      "notes": "Three sets of 20. Equipment variation not specified."
+    }
+  ],
+  "notes": "Started at 7:30 PM local time and lasted 70 minutes. 27 completed sets, 272 completed reps, and 7,110 lb entered-load volume, plus one incomplete bench attempt excluded from totals. Shoulder variant allocation and dumbbell loading conventions remain unknown. No readiness, pain, or numeric RIR ratings supplied."
+}

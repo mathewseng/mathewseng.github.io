@@ -2,6 +2,13 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-10-04 — October 4 Push Workout
+
+- Logged the 7:30 PM, 70-minute push workout with bench, incline, dumbbell accessories, and core.
+- Preserved the final bench set as five completed reps plus an incomplete sixth attempt, excluded from totals.
+- Preserved all eight mixed shoulder-raise sets without inventing a variant allocation; added appropriate dumbbell exercise entries.
+- Updated latest-session context, charts, and next-session guidance to Pull.
+
 ## 2026-10-01 — September 30 Leg Workout
 
 - Logged the 9:30 PM, 50-minute session with squats, Smith hip thrusts, and cable kickbacks.

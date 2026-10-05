@@ -265,6 +265,17 @@ export const exercises: ExerciseDefinition[] = [
     notes: "Cable stack values are machine-specific.",
   }),
   defineExercise({
+    id: "dumbbell-triceps-extension",
+    canonicalName: "Dumbbell Triceps Extension",
+    aliases: ["Dumbbell tricep ext"],
+    category: "arms",
+    muscleGroups: ["triceps"],
+    equipment: ["dumbbells"],
+    weightMayBePerSide: true,
+    defaultRepRange: [10, 15],
+    notes: "Record overhead or lying variation and loading per hand.",
+  }),
+  defineExercise({
     id: "overhead-triceps-extension",
     canonicalName: "Overhead Triceps Extension",
     aliases: ["Cable overhead extension"],
@@ -336,6 +347,18 @@ export const exercises: ExerciseDefinition[] = [
     failureRelativelySafe: true,
     defaultRepRange: [12, 20],
     notes: "Typically unilateral; record weight per side.",
+  }),
+  defineExercise({
+    id: "dumbbell-shoulder-raise-mixed",
+    canonicalName: "Dumbbell Shoulder Raise (Mixed Variants)",
+    aliases: [],
+    category: "shoulders",
+    muscleGroups: ["side delts", "front delts"],
+    equipment: ["dumbbells"],
+    weightMayBePerSide: true,
+    defaultRepRange: [10, 20],
+    notes:
+      "Preserves mixed side, diagonal, and front raises when set allocation is unknown.",
   }),
   defineExercise({
     id: "dumbbell-lateral-raise",

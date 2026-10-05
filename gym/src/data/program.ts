@@ -21,7 +21,7 @@ export const programTemplates: ProgramTemplate[] = [
         weightLb: 105,
         rirRange: [1, 2],
         notes:
-          "September 28 completed 105 lb × 6/6/6, but the final rep was a hard grind at 0 RIR. Keep 105 lb and target controlled sets around 5–6 reps with 1–2 RIR. Once 6/6/6 is repeatable without a grind, add reps toward 8/8/8 before the next 10 lb jump.",
+          "October 4: 105 lb × 6/6/5 plus an incomplete sixth attempt on the last set. September 28 remains the 6/6/6 best, with its final rep at 0 RIR. Keep 105 lb and target controlled sets around 5–6 reps with 1–2 RIR before adding reps or load.",
       },
       {
         exerciseId: "smith-incline-bench",
@@ -31,7 +31,7 @@ export const programTemplates: ProgramTemplate[] = [
         weightLb: 75,
         rirRange: [2, 3],
         notes:
-          "September 28 completed 75 lb × 6/6/6 after flat bench. Stay at 75 lb and build controlled reps before increasing load; adjust down if technique deteriorates.",
+          "October 4 completed 75 lb × 5/5/5 after flat bench, following 6/6/6 on September 28. Build controlled reps at 75 lb; adjust down if needed to maintain the rep range and reserve.",
       },
       {
         exerciseId: "shoulder-press",
