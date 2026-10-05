@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { playerName, distance, applyStep } from "../core/rules.mjs";
 import { reducedMotion } from "./motion.mjs";
+import { boardColor } from "../core/appearance.mjs";
 const NS = "http://www.w3.org/2000/svg";
 function svg(tag, attrs = {}, text) {
   const n = document.createElementNS(NS, tag);
@@ -57,8 +58,8 @@ function checker(x, y, p, count = 1, compact = false) {
       cx: x,
       cy: y,
       r: 24,
-      fill: p === 0 ? "#f0eadb" : "#72b8ad",
-      stroke: p === 0 ? "#b5ac97" : "#234d49",
+      fill: boardColor(`checker${p}`),
+      stroke: boardColor(`rim${p}`),
       "stroke-width": 2,
     }),
   );
@@ -68,7 +69,7 @@ function checker(x, y, p, count = 1, compact = false) {
       cy: y,
       r: 18,
       fill: "none",
-      stroke: p === 0 ? "#cec4ae" : "#52978c",
+      stroke: boardColor(`detail${p}`),
       "stroke-width": 1.5,
     }),
   );
@@ -80,7 +81,7 @@ function checker(x, y, p, count = 1, compact = false) {
           x,
           y: y + 7,
           "text-anchor": "middle",
-          fill: "#18272a",
+          fill: boardColor(`count${p}`),
           "font-size": compact ? 30 : 22,
           "font-weight": 700,
         },
@@ -394,8 +395,8 @@ export class Board {
         width: 874,
         height: 598,
         rx: 15,
-        fill: "#202b30",
-        stroke: "#435158",
+        fill: boardColor("frame"),
+        stroke: boardColor("border"),
         "stroke-width": 2,
       }),
       svg("rect", {
@@ -404,10 +405,14 @@ export class Board {
         width: 780,
         height: 544,
         rx: 5,
-        fill: "#172126",
+        fill: boardColor("surface"),
       }),
-      svg("path", { d: "M408 28V572", stroke: "#38474c", "stroke-width": 40 }),
-      svg("path", { d: "M813 28V572", stroke: "#435158" }),
+      svg("path", {
+        d: "M408 28V572",
+        stroke: boardColor("bar"),
+        "stroke-width": 40,
+      }),
+      svg("path", { d: "M813 28V572", stroke: boardColor("border") }),
     ];
     for (let p = 0; p < 24; p++) {
       const { x, y, top } = pointGeometry(p, orientation),
@@ -446,7 +451,7 @@ export class Board {
           d: top
             ? `M${x + 3} 38 L${x + 57} 38 L${x + 30} 262 Z`
             : `M${x + 3} 562 L${x + 57} 562 L${x + 30} 338 Z`,
-          fill: p % 2 ? "#536b70" : "#aa967c",
+          fill: boardColor(p % 2 ? "pointB" : "pointA"),
           "pointer-events": "none",
         }),
       );
@@ -458,7 +463,7 @@ export class Board {
               x: x + 30,
               y: top ? 21 : 590,
               "text-anchor": "middle",
-              fill: "#c8d4d5",
+              fill: boardColor("numbers"),
               "font-size": compact ? 28 : 16,
               "font-weight": 500,
               "pointer-events": "none",
@@ -482,8 +487,8 @@ export class Board {
             cx: x + 30,
             cy: top ? 282 : 318,
             r: 19,
-            fill: "#b6eee0",
-            stroke: "#172126",
+            fill: boardColor("destination"),
+            stroke: boardColor("surface"),
             "stroke-width": 2,
             "pointer-events": "none",
           }),
@@ -515,7 +520,7 @@ export class Board {
               x: x + 30,
               y: top ? 289 : 325,
               "text-anchor": "middle",
-              fill: "#172126",
+              fill: boardColor("destinationText"),
               "font-size": compact ? 29 : 23,
               "font-weight": 700,
               "pointer-events": "none",
@@ -570,7 +575,7 @@ export class Board {
               x: 408,
               y: top ? 68 : 548,
               "text-anchor": "middle",
-              fill: "#a2b7b9",
+              fill: boardColor("barLabel"),
               "font-size": compact ? 19 : 13,
             },
             "BAR",
@@ -602,7 +607,7 @@ export class Board {
           width: 46,
           height: 239,
           rx: 5,
-          fill: "#28373b",
+          fill: boardColor("tray"),
           class: "point-hit",
         }),
       );
@@ -613,7 +618,7 @@ export class Board {
             x: 843,
             y: top ? 60 : 560,
             "text-anchor": "middle",
-            fill: "#d6dfdb",
+            fill: boardColor("trayLabel"),
             "font-size": compact ? 22 : 14,
           },
           "OFF",
@@ -627,7 +632,7 @@ export class Board {
             width: 32,
             height: 7,
             rx: 3,
-            fill: p === 0 ? "#f0eadb" : "#72b8ad",
+            fill: boardColor(`checker${p}`),
             "pointer-events": "none",
           }),
         );
@@ -639,7 +644,7 @@ export class Board {
               x: 843,
               y: top ? 260 : 350,
               "text-anchor": "middle",
-              fill: "#f0eadb",
+              fill: boardColor("trayLabel"),
               "font-size": 18,
             },
             s.off[p],
@@ -653,7 +658,7 @@ export class Board {
               x: 843,
               y: top ? 300 : 309,
               "text-anchor": "middle",
-              fill: "#b6eee0",
+              fill: boardColor("destination"),
               "font-size": 30,
               "font-weight": 700,
               "pointer-events": "none",
@@ -672,7 +677,9 @@ export class Board {
         width: 36,
         height: 36,
         rx: 6,
-        fill: "#f0eadb",
+        fill: boardColor("cube"),
+        stroke: boardColor("cubeBorder"),
+        "stroke-width": 1,
       }),
       svg(
         "text",
@@ -681,7 +688,7 @@ export class Board {
           y: cy + 7,
           "text-anchor": "middle",
           "font-size": 19,
-          fill: "#172126",
+          fill: boardColor("cubeText"),
           "font-weight": 700,
         },
         s.cube.value === 1 ? "64" : s.cube.value,
@@ -694,7 +701,7 @@ export class Board {
           x: 196,
           y: 307,
           "text-anchor": "middle",
-          fill: "#b9c6c4",
+          fill: boardColor("caption"),
           "font-size": 14,
           "letter-spacing": 2,
         },

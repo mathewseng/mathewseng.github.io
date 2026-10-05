@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { assertState, replay, clone } from "./rules.mjs";
+import { DEFAULT_BOARD_THEME, normalizeBoardTheme } from "./appearance.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
@@ -8,22 +9,24 @@ export const settingsDefaults = {
   motion: "system",
   appearance: "dark",
   preset: "quick",
+  boardTheme: DEFAULT_BOARD_THEME,
 };
 export function settings() {
   try {
+    const saved = JSON.parse(localStorage.getItem(PREFIX + "settings") || "{}");
     return {
       ...settingsDefaults,
-      ...JSON.parse(localStorage.getItem(PREFIX + "settings") || "{}"),
+      ...saved,
+      boardTheme: normalizeBoardTheme(saved?.boardTheme),
     };
   } catch {
     return { ...settingsDefaults };
   }
 }
 export function saveSettings(value) {
-  localStorage.setItem(
-    PREFIX + "settings",
-    JSON.stringify({ ...settings(), ...value }),
-  );
+  const next = { ...settings(), ...value };
+  next.boardTheme = normalizeBoardTheme(next.boardTheme);
+  localStorage.setItem(PREFIX + "settings", JSON.stringify(next));
 }
 let dbPromise;
 export function database() {

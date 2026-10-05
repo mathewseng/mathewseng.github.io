@@ -2,6 +2,12 @@
 import { Board } from "./ui/board.mjs";
 import { initialState } from "./core/rules.mjs";
 import { get, all, settings } from "./core/storage.mjs";
+import { applyBoardTheme } from "./core/appearance.mjs";
+applyBoardTheme(settings().boardTheme);
+addEventListener("storage", (e) => {
+  if (e.key === "backgammon.v1.settings" || e.key === null)
+    applyBoardTheme(settings().boardTheme);
+});
 const board = new Board(document.getElementById("hub-board"));
 board.render(initialState(), { ...settings(), interactive: false });
 try {

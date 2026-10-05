@@ -160,12 +160,10 @@ const server = http.createServer((req, res) => {
           .waitFor({ timeout: 45000 });
         await shot("solver-results");
         const real = await page.evaluate(async () => {
-          const { EngineClient } = await import(
-            "/backgammon/engine/client.mjs"
-          );
-          const { initialState, legalTurns, positionKey } = await import(
-            "/backgammon/core/rules.mjs"
-          );
+          const { EngineClient } =
+            await import("/backgammon/engine/client.mjs");
+          const { initialState, legalTurns, positionKey } =
+            await import("/backgammon/core/rules.mjs");
           const { fromXGID } = await import("/backgammon/core/xgid.mjs");
           const engine = new EngineClient();
           const fixtures = (
@@ -191,9 +189,8 @@ const server = http.createServer((req, res) => {
               throw new Error("Engine regression " + item.id);
             checked.push({ id: item.id, equity: a, ms: result.elapsedMs });
           }
-          const { default: createModule } = await import(
-            "/backgammon/engine/vendor/gnubg-core-module.js"
-          );
+          const { default: createModule } =
+            await import("/backgammon/engine/vendor/gnubg-core-module.js");
           const module = await createModule({
             locateFile: (name) =>
               new URL("/backgammon/engine/vendor/" + name, location.href).href,
@@ -359,8 +356,10 @@ const server = http.createServer((req, res) => {
             .getByRole("button", { name: "Settings", exact: true })
             .focus();
           await page.keyboard.press("Enter");
+          await page.getByRole("dialog").waitFor();
           assert.ok(await page.getByRole("dialog").isVisible());
           await page.keyboard.press("Escape");
+          await page.getByRole("dialog").waitFor({ state: "detached" });
           assert.equal(await page.getByRole("dialog").count(), 0);
           await page.evaluate(
             () => (document.documentElement.style.fontSize = "24px"),
@@ -390,6 +389,10 @@ const server = http.createServer((req, res) => {
         report.checkerUX ||= [];
         report.checkerUX.push(
           await require("./checker-ux.cjs")(browser, base, out, browserName),
+        );
+        report.appearanceUX ||= [];
+        report.appearanceUX.push(
+          await require("./appearance.cjs")(browser, base, out, browserName),
         );
         // Offline shell and coherent engine cache, scoped exclusively to this family.
         const offline = await browser.newContext(),

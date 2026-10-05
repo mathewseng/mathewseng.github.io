@@ -4,7 +4,7 @@ This is observed test coverage, not a claim of commercial feature parity or real
 
 ## Automated checks
 
-- Full repository `node scripts/run-tests.mjs`: **113 tests passed, zero failures**. Includes existing poker/OFC/cards/blackjack/PeerRoom regressions and new rules, malformed-input, property/replay, XGID, MAT, backup, protocol, worker queue and deployment-artifact tests.
+- Full repository `node scripts/run-tests.mjs`: **117 tests passed, zero failures**. Includes existing poker/OFC/cards/blackjack/PeerRoom regressions and new rules, malformed-input, property/replay, XGID, MAT, backup, protocol, worker queue, appearance and deployment-artifact tests.
 - Seeded rules runs play 12 complete games, assert checker conservation after every transition, and replay committed dice/actions to the identical final state. Fixture tests replay every generated exercise's provenance and validate every recorded candidate as a complete legal turn.
 - `tests/browser.cjs` on the assembled `_site`: Chrome **154.0.8037.93**, Firefox **146.0.1**, WebKit **26.0**. All three completed gameplay, cube handling, save/reload, Library, Trainer, Solver, actual WASM, probability/perspective/match-context, cancellation/restart and offline checks. No custom isolation headers; `crossOriginIsolated` was false.
 - Original C `hint` and our binding agree on five openings within **0.00011**. Fixtures record full version/settings and are checked to **0.0001**. A 75-result doubles position verifies evaluation of a submitted move outside the original top-40 hints. Tests compare mirror/player perspectives and changed match scores, not only mocked outputs.
@@ -36,7 +36,7 @@ Environment: **Apple M4 Pro, arm64 macOS, Chrome 154**, local HTTP, no CPU throt
 - Fresh-worker startup, 10 samples: median **19.8 ms** total (12.3 ms asset transfer, 0.3 ms compilation, 7.1 ms initialization; component medians need not sum exactly).
 - Cold engine computation, five samples per position/setting: Quick medians **0.1–1.4 ms**; Standard **0.9–33.2 ms**; Deep **1.2–366.1 ms** for opening/contact/race/bearoff/cube representatives. Small samples report min/max, not p95.
 - Warm GNUbg internal-cache samples are separately recorded. Quick/Standard use 30 samples, so median and p95 are supplied. They must not be presented as cold computation costs.
-- Thirty touch-selection/frame samples: approximately **16.7 ms median / 17.6 ms p95** in the final interaction run. See `interaction-benchmark.json`; this measures dispatch to the next animation frame, not a universal latency guarantee.
+- Thirty touch-selection/frame samples: approximately **16.7 ms median / 18.2 ms p95** in the appearance refinement interaction run. See `interaction-benchmark.json`; this measures dispatch to the next animation frame, not a universal latency guarantee.
 
 Reproduce with the commands in the family README. Screenshots and browser-run JSON are local ignored artifacts in `backgammon/test-results/`; the durable benchmark data and this record are committed.
 
@@ -47,3 +47,11 @@ The shared board now supports mouse, touch and pen pointer dragging as well as t
 Chromium additionally sends a touch pointer stream through the browser's input dispatcher, tests touch dragging without document scrolling, and captures opening/active-play screenshots across all nine viewport classes. The common layouts keep the board and primary action together; 320×568 allows the existing small amount of vertical reflow. Full-size screenshots and viewport contact sheets were inspected, including a lifted touch checker and its highlighted drop region. These are automated interaction checks and visual inspection, **not a study with recruited beginners or physical-device testing**.
 
 The updated application also completed a real computer match (84 committed events, 21 human decisions), replayed and saved it, and repeated the live two-context PeerJS test through cube take, rejoin and host recovery. No game rules, engine settings, or wire protocol changed.
+
+## Board themes and color editing
+
+Added six coordinated presets and 34 hex/color-picker roles. `tests/appearance.test.mjs` covers hex normalization, malformed/CSS input rejection, legacy settings, invalid stored data, preset coverage and basic contrast checks. Each preset meets 4.5:1 for the tested label, pip, count, cube-number and destination-number pairs; the custom editor reports low contrast without changing a user's chosen colors. These checks are not a full WCAG audit.
+
+`tests/appearance.cjs` runs inside the assembled-site suite in Chromium, Firefox and WebKit. It verifies rendered SVG and dice colors, invalid edits retaining the last valid color, reset/undo, picker input events, readability feedback, every color role's connection to a rendered property, persistence across refresh and all family pages, cross-tab updates, independent display preferences, and preservation of the exact current draft, committed dice and history. The full real-engine/gameplay/offline browser suite also passed all three browsers after this integration. Engine and network protocols are unchanged.
+
+Captured and inspected the theme picker and color editing across all nine viewport classes above, plus the short 390×420 keyboard-like viewport. Hex fields remain reachable with 16px text and 44px controls; the landscape preview remains visible as the controls scroll. Inspected every preset in full Play on desktop and mobile, using full-size key screenshots and contact sheets. Touch, keyboard, reduced motion and effective-zoom checks passed again. Native color-picker events were exercised in automation; no physical phone or native mobile keyboard testing is claimed.

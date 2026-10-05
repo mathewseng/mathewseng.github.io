@@ -22,3 +22,11 @@ See `VALIDATION.md` for observed coverage and the family README for precise capa
 - [x] Interruptible checker/hit/undo/opponent motion with reduced-motion support
 - [x] Separate opening die reveals, visible ties/winner and explicit Begin turn
 - [x] Beginner guidance and focused cross-browser interaction coverage
+
+## Board appearance
+
+- [x] Six coordinated presets with readable text, dice and checker counts
+- [x] Thirty-four independent hex/color-picker controls and a shared live board preview
+- [x] Invalid-input handling, readability feedback, individual resets and undo
+- [x] Saved colors across all family tools, previews and browser tabs
+- [x] Editing themes preserves drafts, committed dice, history and analysis context

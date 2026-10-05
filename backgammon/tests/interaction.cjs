@@ -64,6 +64,9 @@ const assert = require("node:assert/strict");
       .getByRole("button", { name: "Close", exact: true })
       .tap();
     await p.getByRole("button", { name: "Settings", exact: true }).tap();
+    await p
+      .getByRole("button", { name: "Display & controls", exact: true })
+      .tap();
     await p.getByLabel("Motion", { exact: true }).selectOption("reduce");
     await p
       .getByRole("dialog")

@@ -10,6 +10,7 @@ import {
   clone,
 } from "../core/rules.mjs";
 import { Board } from "./board.mjs";
+import { applyBoardTheme } from "../core/appearance.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -140,11 +141,16 @@ export async function copy(text) {
 }
 export function shell(page, title, subtitle = "") {
   document.documentElement.dataset.motion = settings().motion;
+  applyBoardTheme(settings().boardTheme);
+  addEventListener("storage", (e) => {
+    if (e.key === "backgammon.v1.settings" || e.key === null)
+      applyBoardTheme(settings().boardTheme);
+  });
   document.body.innerHTML = `<div class="app"><header class="topbar"><a class="brand" href="/backgammon/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Backgammon</a><nav class="nav" aria-label="Backgammon tools">${["play", "trainer", "solver", "library"].map((p) => `<a href="/backgammon/${p}/" ${p === page ? 'aria-current="page"' : ""}>${p[0].toUpperCase() + p.slice(1)}</a>`).join("")}</nav><div class="header-tools"><a class="site-link" href="/">All projects</a><button id="preferences" class="ghost" type="button">Settings</button></div></header><div class="tool-head"><div><h1 id="page-title"></h1><p class="subtitle" id="subtitle"></p></div><div class="toolbar-actions" id="toolbar"><button id="panel-toggle" class="panel-toggle" type="button">Details</button></div></div><main class="workspace" id="workspace"><section class="stage" aria-label="Game workspace"><div id="opponent" class="player-strip"></div><div id="board" class="board-slot"></div><div id="player" class="player-strip"></div><div class="action-area"><div id="message" class="action-message" role="status" aria-live="polite"></div><div class="action-main"><div id="dice" class="dice"></div><div id="actions" class="action-buttons"></div></div><div id="draft-line" class="draft-line"></div></div></section><aside class="inspector" id="inspector" aria-label="Details"><div class="panel-body" id="panel"></div></aside></main></div><div class="toast" id="toast" role="status" hidden></div>`;
   $("page-title").textContent = title;
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
-  $("preferences").onclick = () => preferences();
+  $("preferences").onclick = () => preferences().catch(showError);
   if ("serviceWorker" in navigator)
     navigator.serviceWorker
       .register("/backgammon/sw.js", { scope: "/backgammon/" })
@@ -158,7 +164,9 @@ export function openPanel() {
   d.classList.add("drawer");
   d.addEventListener("close", () => home.append(body));
 }
-export function preferences() {
+export async function preferences() {
+  const { appearanceControls } = await import("./appearance.mjs");
+  if (document.querySelector(".settings-dialog")) return;
   const s = settings();
   const orient = select(
     [
@@ -184,20 +192,43 @@ export function preferences() {
       document.documentElement.dataset.motion = v;
     },
   );
-  const body = el(
+  const display = el(
     "div",
     { class: "stack" },
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
     field("Motion", motion),
-    el(
-      "p",
-      { class: "muted small" },
-      "Dark appearance · settings apply across all four tools.",
-    ),
+    el("p", { class: "muted small" }, "Settings apply across all four tools."),
     button("About, engine & licenses", about),
   );
-  const d = dialog("Settings", body);
+  const colors = appearanceControls();
+  display.hidden = true;
+  const tabs = el("div", {
+    class: "segmented settings-tabs",
+    "aria-label": "Settings sections",
+  });
+  for (const [label, section] of [
+    ["Board colors", colors],
+    ["Display & controls", display],
+  ]) {
+    const tab = button(
+      label,
+      () => {
+        colors.hidden = section !== colors;
+        display.hidden = section !== display;
+        for (const t of tabs.children)
+          t.setAttribute("aria-pressed", String(t === tab));
+      },
+      "",
+      { "aria-pressed": section === colors },
+    );
+    tabs.append(tab);
+  }
+  const d = dialog(
+    "Settings",
+    el("div", { class: "settings-content" }, tabs, colors, display),
+  );
+  d.classList.add("settings-dialog");
   d.addEventListener("close", () => dispatchEvent(new Event("bg-settings")));
 }
 export function about() {
@@ -293,6 +324,7 @@ export function diceView(dice, used = [], options = {}) {
     if (consumed) rest.splice(rest.indexOf(die), 1);
     const d = dieFace(die, {
       consumed,
+      player: options.player,
       choose:
         !consumed && options.choose && dice[0] !== dice[1]
           ? () => options.choose(die)
@@ -531,6 +563,7 @@ export class DraftBoard {
       this.state.dice,
       this.draft.map((st) => st.die),
       {
+        player: this.state.turn,
         preferred: this.preferred,
         choose:
           this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
