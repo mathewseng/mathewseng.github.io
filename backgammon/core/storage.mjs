@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { assertState, replay, clone } from "./rules.mjs";
 import { DEFAULT_BOARD_THEME, normalizeBoardTheme } from "./appearance.mjs";
+import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
@@ -10,6 +11,7 @@ export const settingsDefaults = {
   appearance: "dark",
   preset: "quick",
   boardTheme: DEFAULT_BOARD_THEME,
+  sound: DEFAULT_SOUND,
 };
 export function settings() {
   try {
@@ -18,6 +20,7 @@ export function settings() {
       ...settingsDefaults,
       ...saved,
       boardTheme: normalizeBoardTheme(saved?.boardTheme),
+      sound: normalizeSound(saved?.sound),
     };
   } catch {
     return { ...settingsDefaults };
@@ -26,6 +29,7 @@ export function settings() {
 export function saveSettings(value) {
   const next = { ...settings(), ...value };
   next.boardTheme = normalizeBoardTheme(next.boardTheme);
+  next.sound = normalizeSound(next.sound);
   localStorage.setItem(PREFIX + "settings", JSON.stringify(next));
 }
 let dbPromise;

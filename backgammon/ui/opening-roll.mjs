@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el, dieFace } from "./shell.mjs";
 import { reducedMotion } from "./motion.mjs";
+import { sound } from "./sound.mjs";
 
 // Presentation only. Values always come from the committed opening event;
 // revealing, skipping animation, refreshing, or dismissing never rolls again.
@@ -13,8 +14,17 @@ export class OpeningRoll {
     addEventListener("bg-settings", () => {
       if (this.busy && reducedMotion()) this.finish();
     });
+    const settle = () => {
+      if (this.busy && (reducedMotion() || document.hidden)) this.finish();
+    };
+    addEventListener("bg-motion", settle);
+    matchMedia("(prefers-reduced-motion: reduce)").addEventListener(
+      "change",
+      settle,
+    );
+    document.addEventListener("visibilitychange", settle);
   }
-  sync(model, names) {
+  sync(model, names, audible = false) {
     if (!model?.started) return this.hide();
     const last = model.events.at(-1),
       state = model.state;
@@ -35,6 +45,7 @@ export class OpeningRoll {
     this.hide();
     this.key = key;
     this.active = true;
+    this.audible = audible;
     this.names = names;
     this.cubeValue = state.cube.value;
     this.dice = last?.action.type === "opening" ? last.action.dice : null;
@@ -91,6 +102,8 @@ export class OpeningRoll {
     }
   }
   reveal(p) {
+    if (!this.players[p].classList.contains("revealed") && this.audible)
+      sound.play("die");
     this.players[p].classList.add("revealed");
     this.players[p].querySelector(".die").removeAttribute("aria-hidden");
     this.title.textContent = `${this.names[p]} rolled ${this.dice[p]}`;

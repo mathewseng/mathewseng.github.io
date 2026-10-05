@@ -405,6 +405,10 @@ const server = http.createServer((req, res) => {
         report.checkerUX.push(
           await require("./checker-ux.cjs")(browser, base, out, browserName),
         );
+        report.feedbackUX ||= [];
+        report.feedbackUX.push(
+          await require("./feedback.cjs")(browser, base, out, browserName),
+        );
         report.appearanceUX ||= [];
         report.appearanceUX.push(
           await require("./appearance.cjs")(browser, base, out, browserName),

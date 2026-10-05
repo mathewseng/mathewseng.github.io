@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { playerName, distance, applyStep } from "../core/rules.mjs";
-import { reducedMotion } from "./motion.mjs";
+import { reducedMotion, checkerFlight } from "./motion.mjs";
+import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 const NS = "http://www.w3.org/2000/svg";
 function svg(tag, attrs = {}, text) {
@@ -111,6 +112,37 @@ export class Board {
       "aria-label": "Backgammon board",
     });
     container.replaceChildren(this.svg);
+    this.animations = [];
+    this.feedbackTimers = [];
+    this.lifecycle = new AbortController();
+    const listen = { signal: this.lifecycle.signal };
+    const settle = () => {
+      if (this.playbackTimer && this.playbackFinal) {
+        const { state, options } = this.playbackFinal;
+        this.render(state, options);
+      } else this.cancelAnimations();
+    };
+    addEventListener(
+      "bg-motion",
+      () => {
+        if (reducedMotion()) settle();
+      },
+      listen,
+    );
+    matchMedia("(prefers-reduced-motion: reduce)").addEventListener(
+      "change",
+      () => {
+        if (reducedMotion()) settle();
+      },
+      listen,
+    );
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.hidden) settle();
+      },
+      listen,
+    );
     this.svg.addEventListener("click", (e) => {
       if (
         performance.now() < (this.suppressClickUntil || 0) ||
@@ -315,9 +347,10 @@ export class Board {
         stroke: boardColor(`dieBorder${s.turn}`),
         "stroke-width": 2,
       });
-      die.append(face, patternOverlay(face, `die${s.turn}`));
+      const body = svg("g", { class: "board-die-face" });
+      body.append(face, patternOverlay(face, `die${s.turn}`));
       for (const pip of pips[value])
-        die.append(
+        body.append(
           svg("circle", {
             cx: ((pip % 3) - 1) * 21,
             cy: (Math.floor(pip / 3) - 1) * 21,
@@ -327,7 +360,7 @@ export class Board {
           }),
         );
       if (consumed)
-        die.append(
+        body.append(
           svg("path", {
             d: "M21 28l6 6 13-17",
             stroke: boardColor("selection"),
@@ -337,6 +370,7 @@ export class Board {
             "pointer-events": "none",
           }),
         );
+      die.append(body);
       group.append(die);
     });
     return group;
@@ -364,24 +398,47 @@ export class Board {
       .forEach((n) => n.classList.remove("drop-hover"));
   }
   cancelAnimations() {
+    this.feedbackTimers.forEach(clearTimeout);
+    this.feedbackTimers = [];
     this.animations?.forEach((a) => a.cancel());
     this.animations = [];
-    this.svg.querySelectorAll(".moving-checker").forEach((n) => n.remove());
+    this.svg
+      .querySelectorAll(".moving-checker,.landing-contact")
+      .forEach((n) => n.remove());
     this.svg.querySelectorAll("[data-arriving]").forEach((n) => {
       n.style.opacity = "";
       n.removeAttribute("data-arriving");
     });
   }
+  destroy() {
+    this.lifecycle.abort();
+    this.endDrag();
+    clearTimeout(this.playbackTimer);
+    this.cancelAnimations();
+  }
   playTurn(before, steps) {
-    if (reducedMotion() || !steps.length) return;
+    if (!steps.length) return;
+    if (reducedMotion() || document.hidden) {
+      const after = steps.reduce((s, step) => applyStep(s, step), before);
+      sound.play(
+        after.bar[1 - before.turn] > before.bar[1 - before.turn]
+          ? "hit"
+          : steps.some((st) => st.to === "off")
+            ? "off"
+            : "move",
+      );
+      return;
+    }
     clearTimeout(this.playbackTimer);
     const final = this.state,
       options = this.renderOptions;
+    this.playbackFinal = { state: final, options };
     let current = before,
       index = 0;
     const advance = () => {
       if (index === steps.length) {
         this.playbackTimer = null;
+        this.playbackFinal = null;
         this.render(final, { ...options, playback: true });
         return;
       }
@@ -396,49 +453,27 @@ export class Board {
         moves: [],
         playback: true,
       });
-      this.animateMove(current, after, step);
+      const duration = this.animateMove(current, after, step);
       current = after;
-      this.playbackTimer = setTimeout(advance, 230);
+      this.playbackTimer = setTimeout(advance, duration + 25);
     };
     advance();
   }
   animateMove(before, after, step, reverse = false, route = [step]) {
-    if (reducedMotion()) return;
+    const cue = reverse
+      ? "undo"
+      : after.bar[1 - before.turn] > before.bar[1 - before.turn]
+        ? "hit"
+        : step.to === "off"
+          ? "off"
+          : "move";
+    if (reducedMotion() || document.hidden) {
+      sound.play(cue);
+      return 0;
+    }
     const p = before.turn,
       from = reverse ? step.to : step.from,
       to = reverse ? step.from : step.to;
-    const fly = (origin, destination, player, target, via = []) => {
-      const piece = checker(destination.x, destination.y, player);
-      piece.classList.add("moving-checker");
-      const raw = typeof target === "number" ? target : `${target}${player}`;
-      const landed = this.svg.querySelector(
-        `[data-point="${raw}"] .checker:last-of-type`,
-      );
-      if (landed) {
-        landed.style.opacity = "0";
-        landed.setAttribute("data-arriving", "");
-      }
-      this.svg.append(piece);
-      const animation = piece.animate(
-        [origin, ...via, destination].map((point) => ({
-          transform: `translate(${point.x - destination.x}px,${point.y - destination.y}px)`,
-        })),
-        {
-          duration: Math.min(420, 210 * route.length),
-          easing: "cubic-bezier(.2,.8,.2,1)",
-        },
-      );
-      this.animations.push(animation);
-      animation.finished
-        .then(() => {
-          piece.remove();
-          if (landed) {
-            landed.style.opacity = "";
-            landed.removeAttribute("data-arriving");
-          }
-        })
-        .catch(() => {});
-    };
     let interim = before;
     const via =
       !reverse && route.length > 1
@@ -447,37 +482,233 @@ export class Board {
             return checkerPosition(interim, st.to, p, this.options.orientation);
           })
         : [];
-    fly(
+    const flight = this.flyChecker(
       (!reverse && this.dropOrigin) ||
         checkerPosition(before, from, p, this.options.orientation),
       checkerPosition(after, to, p, this.options.orientation),
       p,
       to,
-      via,
+      { via },
     );
+    if (reverse)
+      this.feedbackTimers.push(
+        setTimeout(() => sound.play("undo"), flight.landings.at(-1)),
+      );
+    else {
+      let current = before;
+      route.forEach((st, i) => {
+        const next = applyStep(current, st);
+        const name =
+          next.bar[1 - p] > current.bar[1 - p]
+            ? "hit"
+            : st.to === "off"
+              ? "off"
+              : "move";
+        this.feedbackTimers.push(
+          setTimeout(() => sound.play(name), flight.landings[i]),
+        );
+        current = next;
+      });
+    }
     if (!reverse && route.length > 1) {
       let current = before;
-      for (const st of route) {
+      for (const [index, st] of route.entries()) {
         const next = applyStep(current, st);
         if (next.bar[1 - p] > current.bar[1 - p])
-          fly(
+          this.flyChecker(
             checkerPosition(current, st.to, 1 - p, this.options.orientation),
             checkerPosition(next, "bar", 1 - p, this.options.orientation),
             1 - p,
             "bar",
+            { delay: Math.max(0, flight.landings[index] - 35) },
           );
         current = next;
       }
     } else if (before.bar[1 - p] !== after.bar[1 - p]) {
       const source = reverse ? "bar" : step.to,
         dest = reverse ? step.to : "bar";
-      fly(
+      this.flyChecker(
         checkerPosition(before, source, 1 - p, this.options.orientation),
         checkerPosition(after, dest, 1 - p, this.options.orientation),
         1 - p,
         dest,
+        { delay: reverse ? 0 : Math.max(0, flight.landings[0] - 35) },
       );
     }
+    return flight.duration + (after.bar[1 - p] > before.bar[1 - p] ? 210 : 0);
+  }
+  flyChecker(
+    origin,
+    destination,
+    player,
+    target,
+    { via = [], delay = 0 } = {},
+  ) {
+    const piece = checker(0, 0, player);
+    piece.classList.add("moving-checker");
+    const raw = typeof target === "number" ? target : `${target}${player}`;
+    const candidates = [
+      ...this.svg.querySelectorAll(`[data-point="${raw}"] .checker`),
+    ];
+    const landed =
+      candidates.find(
+        (node) =>
+          Number(node.firstChild.getAttribute("cx")) === destination.x &&
+          Number(node.firstChild.getAttribute("cy")) === destination.y,
+      ) || candidates.at(-1);
+    if (landed) {
+      landed.style.opacity = "0";
+      landed.dataset.arriving = Number(landed.dataset.arriving || 0) + 1;
+    }
+    this.svg.append(piece);
+    const flight = checkerFlight([origin, ...via, destination]);
+    if (target === "off") {
+      flight.frames[0].opacity = 1;
+      flight.frames.at(-1).opacity = 0;
+    }
+    const animation = piece.animate(flight.frames, {
+      duration: flight.duration,
+      delay,
+      fill: "both",
+      easing: "linear",
+    });
+    this.animations.push(animation);
+    animation.finished
+      .then(() => {
+        piece.remove();
+        animation.cancel();
+        if (landed && Number(landed.dataset.arriving) <= 1) {
+          landed.style.opacity = "";
+          landed.removeAttribute("data-arriving");
+        } else if (landed)
+          landed.dataset.arriving = Number(landed.dataset.arriving) - 1;
+        this.contact(destination);
+      })
+      .catch(() => {});
+    return flight;
+  }
+  contact(position) {
+    if (reducedMotion() || document.hidden) return;
+    const ring = svg("circle", {
+      cx: position.x,
+      cy: position.y,
+      r: 27,
+      class: "landing-contact",
+      "pointer-events": "none",
+      "aria-hidden": "true",
+    });
+    this.svg.append(ring);
+    const animation = ring.animate([{ opacity: 0.65 }, { opacity: 0 }], {
+      duration: 170,
+      easing: "ease-out",
+    });
+    this.animations.push(animation);
+    animation.finished.then(() => ring.remove()).catch(() => {});
+  }
+  animateRestore(before, after, cue = "reset") {
+    sound.play(cue);
+    if (reducedMotion() || document.hidden) return;
+    for (const player of [0, 1]) {
+      const origins = [],
+        destinations = [];
+      const count = (s, point) =>
+        typeof point === "number"
+          ? Math.max(0, s.points[point] * (player ? -1 : 1))
+          : s[point][player];
+      const pose = (s, point, n) => {
+        const display = { ...s, points: [...s.points] };
+        if (typeof point === "number")
+          display.points[point] = n * (player ? -1 : 1);
+        return {
+          ...checkerPosition(display, point, player, this.options.orientation),
+          point,
+        };
+      };
+      for (const point of [...Array(24).keys(), "bar", "off"]) {
+        const a = count(before, point),
+          b = count(after, point);
+        for (let i = b; i < a; i++) origins.push(pose(before, point, i + 1));
+        for (let i = a; i < b; i++)
+          destinations.push(pose(after, point, i + 1));
+      }
+      // Pair nearby changes for a concise reset. This does not choose game moves.
+      for (const dest of destinations) {
+        origins.sort(
+          (a, b) =>
+            Math.hypot(a.x - dest.x, a.y - dest.y) -
+            Math.hypot(b.x - dest.x, b.y - dest.y),
+        );
+        const origin = origins.shift();
+        if (origin) this.flyChecker(origin, dest, player, dest.point);
+      }
+    }
+  }
+  returnDragged(point) {
+    if (!this.dropOrigin || reducedMotion() || document.hidden) return;
+    this.flyChecker(
+      this.dropOrigin,
+      checkerPosition(
+        this.state,
+        point,
+        this.state.turn,
+        this.options.orientation,
+      ),
+      this.state.turn,
+      point,
+    );
+  }
+  animateDice() {
+    sound.play("roll");
+    if (reducedMotion() || document.hidden) return;
+    this.svg.querySelectorAll(".board-die").forEach((die, i) => {
+      // The outer SVG transform fixes the die's location. Animate the face inside
+      // it, preserving focus/hit targets and displaying only the committed value.
+      const face = die.querySelector(".board-die-face");
+      const sign = i % 2 ? 1 : -1;
+      const animation = face.animate(
+        [
+          {
+            transform: `translate(${sign * 24}px,-9px) rotate(${sign * 32}deg) scale(.86)`,
+            opacity: 0.5,
+          },
+          {
+            transform: `translate(${-sign * 3}px,2px) rotate(${-sign * 7}deg) scale(1.04)`,
+            opacity: 1,
+            offset: 0.68,
+          },
+          { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1 },
+        ],
+        {
+          duration: 340,
+          delay: i * 30,
+          easing: "cubic-bezier(.2,.75,.3,1)",
+          fill: "backwards",
+        },
+      );
+      this.animations.push(animation);
+    });
+  }
+  animateCube(before) {
+    sound.play("cube");
+    if (reducedMotion() || document.hidden) return;
+    const cube = this.svg.querySelector(".board-cube");
+    if (!cube) return;
+    const cy = (s) =>
+      s.cube.owner === null
+        ? 330
+        : s.cube.owner === this.options.orientation
+          ? 432
+          : 228;
+    const offset = cy(before) - cy(this.state);
+    const animation = cube.animate(
+      [
+        { transform: `translateY(${offset}px) scale(.9)`, opacity: 0.65 },
+        { transform: "translateY(0) scale(1.12)", opacity: 1, offset: 0.68 },
+        { transform: "translateY(0) scale(1)", opacity: 1 },
+      ],
+      { duration: 280, easing: "cubic-bezier(.2,.7,.25,1)" },
+    );
+    this.animations.push(animation);
   }
   render(
     s,
@@ -501,10 +732,12 @@ export class Board {
     if (!playback) {
       clearTimeout(this.playbackTimer);
       this.playbackTimer = null;
+      this.playbackFinal = null;
     }
     this.cancelAnimations();
     if (this.options?.orientation !== orientation || !interactive)
       this.endDrag();
+    const previousSelected = this.renderOptions?.selected;
     this.state = s;
     this.options = { orientation, interactive };
     this.renderOptions = {
@@ -833,7 +1066,11 @@ export class Board {
     if (s.rules.cube) {
       const cy =
         s.cube.owner === null ? 330 : s.cube.owner === orientation ? 432 : 228;
-      children.push(
+      const cube = svg("g", {
+        class: "board-cube",
+        "aria-label": `Doubling cube ${s.cube.value}`,
+      });
+      cube.append(
         svg("rect", {
           x: 390,
           y: cy - 18,
@@ -857,11 +1094,11 @@ export class Board {
           s.cube.value === 1 ? "64" : s.cube.value,
         ),
       );
-      children.splice(
-        children.length - 1,
-        0,
-        patternOverlay(children[children.length - 2], "cube"),
+      cube.insertBefore(
+        patternOverlay(cube.firstChild, "cube"),
+        cube.lastChild,
       );
+      children.push(cube);
     }
     children.push(
       svg(
@@ -895,6 +1132,22 @@ export class Board {
       }),
     );
     this.svg.replaceChildren(...children);
+    if (
+      selected !== null &&
+      previousSelected !== selected &&
+      !reducedMotion() &&
+      !document.hidden
+    ) {
+      for (const node of this.svg.querySelectorAll(
+        ".selected .source-ring,.destination .landing-ring",
+      )) {
+        const animation = node.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 130,
+          easing: "ease-out",
+        });
+        this.animations.push(animation);
+      }
+    }
     this.svg.classList.toggle("is-preview", preview);
     if (interactive)
       (

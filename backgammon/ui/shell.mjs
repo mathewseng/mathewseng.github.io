@@ -14,6 +14,13 @@ import {
 import { Board } from "./board.mjs";
 import { checkerRoutes, reverseRoutes } from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
+import {
+  sound,
+  installSound,
+  soundPreferences,
+  setSoundPreferences,
+} from "./sound.mjs";
+import { reducedMotion } from "./motion.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -146,14 +153,46 @@ export async function copy(text) {
     dialog("Copy link", el("textarea", { readonly: true, value: text }));
   }
 }
+function changeSound(value) {
+  const saved = setSoundPreferences(value);
+  dispatchEvent(new Event("bg-sound"));
+  sound.unlock();
+  if (!saved)
+    toast("Sound setting applies to this tab. Browser storage is unavailable.");
+}
+let activeBoard;
 export function shell(page, title, subtitle = "") {
+  activeBoard?.destroy();
   document.documentElement.dataset.motion = settings().motion;
+  installSound();
   addEventListener("storage", (e) => {
-    if (e.key === "backgammon.v1.settings" || e.key === null)
+    if (e.key === "backgammon.v1.settings" || e.key === null) {
       applyBoardTheme(settings().boardTheme);
+      document.documentElement.dataset.motion = settings().motion;
+      dispatchEvent(new Event("bg-motion"));
+    }
   });
   document.body.innerHTML = `<div class="app"><header class="topbar"><a class="brand" href="/backgammon/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Backgammon</a><nav class="nav" aria-label="Backgammon tools">${["play", "trainer", "solver", "library"].map((p) => `<a href="/backgammon/${p}/" ${p === page ? 'aria-current="page"' : ""}>${p[0].toUpperCase() + p.slice(1)}</a>`).join("")}</nav><div class="header-tools"><a class="site-link" href="/">All projects</a><button id="preferences" class="ghost" type="button">Settings</button></div></header><div class="tool-head"><div><h1 id="page-title"></h1><p class="subtitle" id="subtitle"></p></div><div class="toolbar-actions" id="toolbar"><button id="panel-toggle" class="panel-toggle" type="button">Details</button></div></div><main class="workspace" id="workspace"><section class="stage" aria-label="Game workspace"><div id="opponent" class="player-strip"></div><div id="board" class="board-slot"></div><div id="player" class="player-strip"></div><div class="action-area"><div id="message" class="action-message" role="status" aria-live="polite"></div><div class="action-main"><div id="actions" class="action-buttons"></div></div><div id="draft-line" class="draft-line"></div></div></section><aside class="inspector" id="inspector" aria-label="Details"><div class="panel-body" id="panel"></div></aside></main></div><div class="toast" id="toast" role="status" hidden></div>`;
   $("page-title").textContent = title;
+  const mute = button(
+    "",
+    () => {
+      changeSound({ enabled: !soundPreferences().enabled });
+    },
+    "ghost sound-toggle",
+    { id: "sound-toggle", "aria-label": "Sound effects" },
+  );
+  mute.innerHTML =
+    '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4 5 9H2v6h3l6 5z"/><g class="sound-waves"><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></g><path class="sound-slash" d="m16 9 6 6m0-6-6 6"/></svg>';
+  const updateMute = () => {
+    mute.setAttribute("aria-pressed", String(soundPreferences().enabled));
+    mute.title = soundPreferences().enabled
+      ? "Mute sound effects"
+      : "Enable sound effects";
+  };
+  updateMute();
+  addEventListener("bg-sound", updateMute);
+  $("preferences").before(mute);
   applyBoardTheme(settings().boardTheme);
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
@@ -165,7 +204,8 @@ export function shell(page, title, subtitle = "") {
         updateViaCache: "none",
       })
       .catch(() => {});
-  return { board: new Board($("board")), panel: $("panel") };
+  activeBoard = new Board($("board"));
+  return { board: activeBoard, panel: $("panel") };
 }
 export function openPanel() {
   const body = $("panel"),
@@ -200,14 +240,55 @@ export async function preferences() {
     (v) => {
       saveSettings({ motion: v });
       document.documentElement.dataset.motion = v;
+      dispatchEvent(new Event("bg-motion"));
     },
   );
+  const sounds = el("input", {
+    type: "checkbox",
+    checked: s.sound.enabled,
+    onChange: (e) => changeSound({ enabled: e.target.checked }),
+  });
+  const volumeText = el("output", {}, `${s.sound.volume}%`);
+  const volume = el("input", {
+    type: "range",
+    min: 0,
+    max: 100,
+    step: 5,
+    value: s.sound.volume,
+    onInput: (e) => changeSound({ volume: Number(e.target.value) }),
+  });
+  const previewSound = button("Preview sounds", async () => {
+    await sound.unlock();
+    sound.play("roll");
+  });
+  const updateSounds = () => {
+    const value = soundPreferences();
+    sounds.checked = value.enabled;
+    volume.value = value.volume;
+    volumeText.textContent = `${value.volume}%`;
+    volume.setAttribute("aria-valuetext", `${value.volume} percent`);
+    previewSound.disabled = !value.enabled || value.volume === 0;
+  };
+  updateSounds();
+  addEventListener("bg-sound", updateSounds);
   const display = el(
     "div",
     { class: "stack" },
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
     field("Motion", motion),
+    el(
+      "div",
+      { class: "sound-settings stack" },
+      el("label", { class: "check" }, sounds, "Sound effects"),
+      field("Sound volume", volume),
+      el("div", { class: "row spread" }, volumeText, previewSound),
+      el(
+        "p",
+        { class: "muted small" },
+        "Quiet checker, dice and cube sounds. Background tabs stay silent.",
+      ),
+    ),
     el("p", { class: "muted small" }, "Settings apply across all four tools."),
     el(
       "a",
@@ -245,6 +326,10 @@ export async function preferences() {
   );
   d.classList.add("settings-dialog");
   d.addEventListener("close", () => dispatchEvent(new Event("bg-settings")));
+  d.addEventListener("close", () =>
+    removeEventListener("bg-sound", updateSounds),
+  );
+  d.addEventListener("close", () => colors.dispose());
 }
 export function about() {
   dialog(
@@ -306,10 +391,19 @@ export function players(s, names = ["Ivory", "Teal"]) {
     ["player", orientation],
   ]) {
     const row = $(id);
-    row.classList.toggle(
-      "active",
-      decisionPlayer(s) === p && !["over", "opening"].includes(s.phase),
-    );
+    const active =
+      decisionPlayer(s) === p && !["over", "opening"].includes(s.phase);
+    if (
+      active &&
+      !row.classList.contains("active") &&
+      !reducedMotion() &&
+      !document.hidden
+    )
+      row.animate(
+        [{ backgroundColor: "#9bd6c928" }, { backgroundColor: "transparent" }],
+        { duration: 420, easing: "ease-out" },
+      );
+    row.classList.toggle("active", active);
     row.replaceChildren(
       el(
         "span",
@@ -491,9 +585,10 @@ export class DraftBoard {
       }
       return;
     }
-    if (this.sources().includes(p))
+    if (this.sources().includes(p)) {
       this.selected = this.selected === p ? null : p;
-    else
+      if (this.selected !== null) sound.play("select");
+    } else
       this.hint = this.complete()
         ? "Select a moved checker to move it back, use Undo or Reset, or confirm your turn."
         : this.current().bar[this.state.turn]
@@ -515,6 +610,7 @@ export class DraftBoard {
     const source = this.normalize(raw);
     if (!this.sources().includes(source)) return false;
     this.selected = source;
+    sound.play("select");
     this.hint = "Release on a highlighted point. Release elsewhere to cancel.";
     this.render();
     return true;
@@ -524,11 +620,13 @@ export class DraftBoard {
     if (!this.routes().some((st) => st.to === dest)) {
       this.hint = "Move cancelled. Drop on a highlighted point, or tap it.";
       this.render();
+      this.board.returnDragged(this.selected);
       return;
     }
     this.point(raw);
   }
   preferDie(die) {
+    sound.play("select");
     this.preferred = this.preferred === die ? null : die;
     this.hint = this.preferred
       ? `Die ${die} preferred when either die can reach a destination.`
@@ -570,6 +668,8 @@ export class DraftBoard {
         route.undo ? { from: route.to, to: route.from } : route.steps[0],
         !!route.undo,
       );
+    if (route.undo && route.steps.length > 1)
+      this.board.animateRestore(before, this.current(), "undo");
     this.onChange();
   }
   undo() {
@@ -584,11 +684,14 @@ export class DraftBoard {
     this.onChange();
   }
   reset() {
+    const before = this.current(),
+      changed = this.draft.length;
     this.preview = null;
     this.draft = [];
     this.selected = null;
     this.hint = "Draft cleared. Your original position is restored.";
     this.render();
+    if (changed) this.board.animateRestore(before, this.current());
     this.onChange();
   }
   render() {

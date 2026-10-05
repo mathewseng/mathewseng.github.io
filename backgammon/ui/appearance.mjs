@@ -394,5 +394,7 @@ export function appearanceControls() {
     refresh(updateInputs);
   }
   refresh();
-  return el("div", { class: "theme-layout" }, preview, controls);
+  const node = el("div", { class: "theme-layout" }, preview, controls);
+  node.dispose = () => sampleBoard.destroy();
+  return node;
 }

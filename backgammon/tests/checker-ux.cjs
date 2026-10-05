@@ -254,7 +254,11 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     assert.equal(await page.locator(".board-die.consumed").count(), 1);
     await page.evaluate(() => checkerTest.draft.undo()); // interrupt an in-flight animation
     assert.equal((await info()).draft.length, 0);
-    await page.waitForTimeout(250);
+    await page.waitForFunction(
+      () => !document.querySelector(".moving-checker"),
+      null,
+      { timeout: 1500 },
+    );
     assert.equal(
       await page.locator(".moving-checker,[data-arriving]").count(),
       0,
@@ -343,7 +347,11 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     }
     assert.equal(await page.locator(".board-die.consumed").count(), 4);
     assert.equal((await info()).complete, true);
-    await page.waitForTimeout(250);
+    await page.waitForFunction(
+      () => !document.querySelector(".moving-checker"),
+      null,
+      { timeout: 1500 },
+    );
     assert.equal(await page.locator(".moving-checker").count(), 0);
     // One selected checker exposes every legal combined destination. Tap and
     // drag reversals restore real draft dice; even completed turns stay editable.

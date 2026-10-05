@@ -38,6 +38,7 @@ import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
+import { sound } from "../ui/sound.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
 let config = {
     rules: { ...STANDARD_RULES },
@@ -165,7 +166,14 @@ function myTurn(s) {
 function render() {
   const m = model(),
     s = state();
-  opening.sync(m, names());
+  const previous = ui.board.state;
+  const motionKey = `${m?.id}:${s.sequence}`;
+  const freshEvent =
+    previous &&
+    renderedGameId === m?.id &&
+    lastMotion !== motionKey &&
+    previous.sequence + 1 === s.sequence;
+  opening.sync(m, names(), freshEvent);
   draft.hideDice = opening.active;
   const key =
     (m?.id || "setup") +
@@ -188,7 +196,6 @@ function render() {
         !opening.active &&
         s.phase === "move",
     );
-    const motionKey = `${m?.id}:${s.sequence}`;
     if (
       before &&
       renderedGameId === m?.id &&
@@ -200,6 +207,16 @@ function render() {
       checkerKey(before) !== checkerKey(s)
     )
       ui.board.playTurn(before, event.action.steps);
+    if (freshEvent) {
+      if (event?.action.type === "roll") ui.board.animateDice();
+      else if (
+        ["double", "take", "beaver", "raccoon"].includes(event?.action.type)
+      )
+        ui.board.animateCube(previous);
+      else if (event?.action.type === "move" && s.phase !== "over")
+        sound.play("confirm");
+      if (s.phase === "over") sound.play("finish");
+    }
     lastMotion = motionKey;
     renderedGameId = m?.id;
   }

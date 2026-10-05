@@ -14,6 +14,7 @@ import {
   ruleSummary,
 } from "../core/rules.mjs";
 import { all, put, get, itemRecord, recordPractice } from "../core/storage.mjs";
+import { sound } from "../ui/sound.mjs";
 import {
   $,
   shell,
@@ -362,6 +363,7 @@ async function submit(decision) {
     result = answerResult;
     answer = decision;
     revealed = true;
+    sound.play("confirm");
     await recordPractice(exercise.id, { error: result.error, hint: hinted });
     if (!hinted && result.error > 0.04)
       await put(
