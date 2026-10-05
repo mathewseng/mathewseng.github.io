@@ -524,9 +524,11 @@ export class Board {
     };
     this.svg.classList.toggle("has-moves", interactive && sources.length > 0);
     const compact = this.container.clientWidth < 600;
-    const focus = this.svg.contains(document.activeElement)
-      ? document.activeElement.dataset.point
+    const focused = this.svg.contains(document.activeElement)
+      ? document.activeElement
       : null;
+    const focus = focused?.dataset.point,
+      focusedDie = focused?.dataset.die;
     const children = [
       svg("rect", {
         x: 1,
@@ -903,6 +905,10 @@ export class Board {
     if (focus)
       this.svg
         .querySelector(`[data-point="${focus}"]`)
+        ?.focus({ preventScroll: true });
+    else if (focusedDie)
+      this.svg
+        .querySelector(`[data-die="${focusedDie}"][role="button"]`)
         ?.focus({ preventScroll: true });
   }
 }

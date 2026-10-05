@@ -226,6 +226,21 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     };
     await load();
     assert.equal(await page.locator(".movable").count(), 4);
+    const firstDie = page.locator("#dice [role=button]").first();
+    const dieNumber = await firstDie.getAttribute("data-die");
+    await firstDie.focus();
+    await page.keyboard.press("Enter");
+    assert.equal(
+      await page.evaluate(() => document.activeElement.dataset.die),
+      dieNumber,
+    );
+    assert.equal(await firstDie.getAttribute("aria-pressed"), "true");
+    await page.keyboard.press("Space");
+    assert.equal(
+      await page.evaluate(() => document.activeElement.dataset.die),
+      dieNumber,
+    );
+    assert.equal(await firstDie.getAttribute("aria-pressed"), "false");
     const st = (await info()).candidates[0];
     await page.locator(`[data-point="${st.from}"]`).click();
     assert.ok(await page.locator(".destination .landing-ring").count());
