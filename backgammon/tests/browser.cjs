@@ -394,6 +394,10 @@ const server = http.createServer((req, res) => {
         report.appearanceUX.push(
           await require("./appearance.cjs")(browser, base, out, browserName),
         );
+        report.refreshUX ||= [];
+        report.refreshUX.push(
+          await require("./refresh.cjs")(browser, out, browserName),
+        );
         // Offline shell and coherent engine cache, scoped exclusively to this family.
         const offline = await browser.newContext(),
           op = await offline.newPage();

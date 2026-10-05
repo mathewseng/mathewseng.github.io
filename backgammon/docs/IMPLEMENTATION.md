@@ -30,3 +30,10 @@ See `VALIDATION.md` for observed coverage and the family README for precise capa
 - [x] Invalid-input handling, readability feedback, individual resets and undo
 - [x] Saved colors across all family tools, previews and browser tabs
 - [x] Editing themes preserves drafts, committed dice, history and analysis context
+
+## Cache recovery
+
+- [x] Revalidate worker imports and bypass stale HTTP assets during shell installation
+- [x] Standalone refresh route preserving saved data, with explicit activation and open-window guard
+- [x] Real old-cache upgrade in Chromium, Firefox and WebKit against the assembled site
+- [x] Resume a first-turn draft after closing its original tab without repeating the opening prompt

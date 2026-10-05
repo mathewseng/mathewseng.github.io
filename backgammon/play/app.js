@@ -375,6 +375,9 @@ function setupFields() {
             saved.draft?.length &&
             saved.positionKey === positionKey(game.state)
           ) {
+            // A saved move means the opening was already acknowledged, even
+            // in a new tab whose sessionStorage no longer has that marker.
+            if (opening.active) opening.dismiss();
             draft.draft = saved.draft;
             draft.render();
             actions();

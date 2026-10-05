@@ -153,7 +153,10 @@ export function shell(page, title, subtitle = "") {
   $("preferences").onclick = () => preferences().catch(showError);
   if ("serviceWorker" in navigator)
     navigator.serviceWorker
-      .register("/backgammon/sw.js", { scope: "/backgammon/" })
+      .register("/backgammon/sw.js", {
+        scope: "/backgammon/",
+        updateViaCache: "none",
+      })
       .catch(() => {});
   return { board: new Board($("board")), panel: $("panel") };
 }
@@ -199,6 +202,11 @@ export async function preferences() {
     el("label", { class: "check" }, numbers, "Show point numbers"),
     field("Motion", motion),
     el("p", { class: "muted small" }, "Settings apply across all four tools."),
+    el(
+      "a",
+      { href: "/backgammon/refresh/" },
+      "Refresh app files · keep saved data",
+    ),
     button("About, engine & licenses", about),
   );
   const colors = appearanceControls();

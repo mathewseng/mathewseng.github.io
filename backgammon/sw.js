@@ -2,23 +2,87 @@
 importScripts("./offline-manifest.js");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(self.BG_SHELL)),
-  );
-});
-// No skipWaiting or clients.claim: an update never takes over an open match.
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((k) => k.startsWith(PREFIX) && k !== CACHE)
-            .map((k) => caches.delete(k)),
+function cacheShell() {
+  // Refresh the HTTP cache too: a new manifest must not install old JS/CSS.
+  return caches
+    .open(CACHE)
+    .then((cache) =>
+      cache.addAll(
+        self.BG_SHELL.map(
+          (path) =>
+            new Request(new URL(path, location.origin), { cache: "reload" }),
         ),
       ),
+    );
+}
+function removeOldCaches() {
+  return caches
+    .keys()
+    .then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => k.startsWith(PREFIX) && k !== CACHE)
+          .map((k) => caches.delete(k)),
+      ),
+    );
+}
+self.addEventListener("install", (event) => {
+  event.waitUntil(cacheShell());
+});
+// Normal updates wait. Only an explicit refresh from the recovery page may
+// activate early, after verifying no other Backgammon windows are open.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(removeOldCaches());
+});
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "BACKGAMMON_REFRESH" || !event.ports?.[0]) return;
+  const reply = (value) => event.ports[0].postMessage(value);
+  event.waitUntil(
+    (async () => {
+      const source = event.source;
+      const url = source?.url && new URL(source.url);
+      if (
+        !source?.id ||
+        url.origin !== location.origin ||
+        !/^\/backgammon\/refresh\/(?:index\.html)?$/.test(url.pathname)
+      ) {
+        reply({
+          status: "error",
+          message: "Open the Backgammon refresh page to update.",
+        });
+        return;
+      }
+      const clients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const others = clients.filter(
+        (c) =>
+          c.id !== source.id &&
+          new URL(c.url).origin === location.origin &&
+          new URL(c.url).pathname.startsWith("/backgammon/"),
+      );
+      if (others.length) {
+        reply({
+          status: "busy",
+          message:
+            "Close the other Backgammon tabs or Home Screen windows, then try again. Keep this refresh page open.",
+        });
+        return;
+      }
+      // addAll is atomic: a failed download leaves the working shell intact.
+      // This never opens or deletes IndexedDB, localStorage or other-family caches.
+      await cacheShell();
+      await removeOldCaches();
+      await self.skipWaiting();
+      reply({ status: "ready", version: self.BG_CACHE_VERSION });
+    })().catch(() =>
+      reply({
+        status: "error",
+        message:
+          "The update could not be downloaded. Check your connection and try again. Your saved data is unchanged.",
+      }),
+    ),
   );
 });
 let warming;
@@ -67,6 +131,8 @@ async function warmEngine() {
 self.addEventListener("fetch", (event) => {
   const u = new URL(event.request.url);
   if (event.request.method !== "GET" || u.origin !== location.origin) return;
+  // A standalone escape hatch must always be reachable through the network.
+  if (u.pathname.startsWith("/backgammon/refresh/")) return;
   if (
     !u.pathname.startsWith("/backgammon/") &&
     !["/shared/hub.css", "/shared/hub.js", "/shared/peer-room.js"].includes(

@@ -12,6 +12,7 @@ function walk(dir) {
           "docs",
           "source",
           "node_modules",
+          "refresh",
         ].includes(e.name)
         ? []
         : walk(join(dir, e.name))

@@ -10,7 +10,14 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
   const site = mkdtempSync(join(tmpdir(), "bg-site-"));
   try {
     execFileSync("sh", ["scripts/assemble-site.sh", site]);
-    for (const route of ["", "play/", "trainer/", "solver/", "library/"])
+    for (const route of [
+      "",
+      "play/",
+      "trainer/",
+      "solver/",
+      "library/",
+      "refresh/",
+    ])
       assert.ok(
         existsSync(join(site, "backgammon", route, "index.html")),
         route,
@@ -52,6 +59,10 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
         `Offline asset is published: ${file}`,
       );
       assert.doesNotMatch(file, /\/(?:test-results|tests|scripts|docs)\//);
+      assert.ok(
+        !file.startsWith("/backgammon/refresh/"),
+        "Recovery stays outside the offline cache",
+      );
     }
     for (const file of manifest.self.BG_ENGINE) {
       assert.equal(
