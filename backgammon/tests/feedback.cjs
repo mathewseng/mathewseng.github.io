@@ -34,6 +34,21 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
     }, time);
   try {
     await page.addInitScript(() => {
+      // Capture the real WAAPI animation at creation, before a busy CI runner
+      // can miss its 340 ms lifetime. Historical dice already exist before Roll.
+      const animate = Element.prototype.animate;
+      Element.prototype.animate = function (...args) {
+        const animation = animate.apply(this, args);
+        if (
+          window.holdRollFrame &&
+          this.matches(".board-die-face") &&
+          this.closest("#board")
+        ) {
+          animation.pause();
+          animation.currentTime = 110;
+        }
+        return animation;
+      };
       const random = crypto.getRandomValues.bind(crypto),
         dice = [2, 0, 3, 1];
       crypto.getRandomValues = (a) =>
@@ -81,8 +96,24 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
     await page.locator("#confirm").click();
     await page.getByRole("button", { name: "Double", exact: true }).click();
     await page.getByRole("button", { name: "Take 2", exact: true }).click();
+    await page.evaluate(() => {
+      window.holdRollFrame = true;
+    });
     await page.locator("#roll").click();
-    await page.locator(".board-die-face").first().waitFor();
+    await page.waitForFunction(() =>
+      [
+        ...document.querySelectorAll(
+          ".board-dice:not(.last-roll) .board-die-face",
+        ),
+      ].some((face) =>
+        face
+          .getAnimations()
+          .some((animation) => animation.playState === "paused"),
+      ),
+    );
+    await page.evaluate(() => {
+      window.holdRollFrame = false;
+    });
     await pauseBoard(110);
     assert.ok(
       await page

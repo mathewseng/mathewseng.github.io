@@ -31,6 +31,7 @@ import {
 } from "./sound.mjs";
 import { reducedMotion } from "./motion.mjs";
 import { startUpdates } from "./updates.mjs";
+import { releaseStatus } from "./release-status.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -341,9 +342,10 @@ export async function preferences() {
     );
     tabs.append(tab);
   }
+  const release = releaseStatus();
   const d = dialog(
     "Settings",
-    el("div", { class: "settings-content" }, tabs, colors, display),
+    el("div", { class: "settings-content" }, release, tabs, colors, display),
   );
   d.classList.add("settings-dialog");
   d.addEventListener("close", () =>
@@ -353,6 +355,7 @@ export async function preferences() {
     removeEventListener("bg-sound", updateSounds),
   );
   d.addEventListener("close", () => colors.dispose());
+  d.addEventListener("close", () => release.dispose());
 }
 export function about() {
   dialog(

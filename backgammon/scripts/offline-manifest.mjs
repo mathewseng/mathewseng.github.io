@@ -3,21 +3,23 @@ import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
 const base = new URL("..", import.meta.url).pathname;
 function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory()
-      ? [
-          "tests",
-          "test-results",
-          "scripts",
-          "docs",
-          "source",
-          "node_modules",
-          "refresh",
-        ].includes(e.name)
-        ? []
-        : walk(join(dir, e.name))
-      : [join(dir, e.name)],
-  );
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.name !== ".DS_Store")
+    .flatMap((e) =>
+      e.isDirectory()
+        ? [
+            "tests",
+            "test-results",
+            "scripts",
+            "docs",
+            "source",
+            "node_modules",
+            "refresh",
+          ].includes(e.name)
+          ? []
+          : walk(join(dir, e.name))
+        : [join(dir, e.name)],
+    );
 }
 const files = walk(base).filter(
   (p) =>
