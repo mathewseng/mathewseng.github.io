@@ -121,3 +121,12 @@ The actual PeerJS `tests/live-network.cjs` passed twice, with ordinary defaults 
 A small Node microbenchmark on the local M4 Pro/macOS environment measured undo-availability checking across one seeded 43-turn game (88 events): median **8.12 ms**, p95 **12.55 ms**, maximum **13.36 ms**. This measures a pure history scan, not complete interaction latency or phone performance. Existing engine assets/depths are unchanged.
 
 The final full `BG_BROWSERS=chromium,firefox,webkit node backgammon/tests/browser.cjs` run passed against the assembled site, including the existing real-WASM, checker interaction, theme, sound, Solver handoff, assistance, offline, and 13 automatic-update cases in each browser. The final deployment-artifact check was repeated after release-manifest generation.
+
+
+## Bar-entry revisions and clearer move targets
+
+The repository suite passed **160 tests**. `tests/entry-switch.test.mjs` covers both players and dice orders, hit restoration/replacement, blocked entries, the higher-die rule, doubles, consumed dice, and 120 seeded board variations. Every offered entry revision must remain a prefix of a complete legal turn. Original committed dice remain unchanged.
+
+`tests/checker-ux.cjs` exercises automatic selection after entry, alternate-die badges, forward destinations alongside revisions, blocked-tap feedback, tap/drag revisions, keyboard and accessible-selector revisions, Undo/Reset, both orientations, and actual emulated touch pointer streams without accidental scrolling. Screenshots use the production shared board with deterministic valid positions. The Slate and Linen screenshot matrix covers 320×568, 375×667, 390×844, 430×932, 844×390, 768×1024, 1024×768, 1366×768 and 1440×900; viewport and touch coverage is emulation, not a physical iPhone test. Highlights use existing editable theme colors, contrast backings, foreground point washes, and separate forward, ↔ entry-change and ↶ return labels. No engine recommendations are exposed by these cues.
+
+The final assembled-site full browser suite passed in **Chromium 145.0.7632.6, Firefox 146.0.1 and WebKit 26.0**, including the new entry interactions, real WASM and offline tools, and all 13 automatic-update scenarios per browser. The final rules/board/deployment subset passed **7 tests** after the last visual adjustment. Inspected entry-highlight screenshots across all nine viewport classes above, using Slate and Linen, and verified the explicit return-to-bar badge. No physical-device or live-signaling run was performed for this UI-only change.

@@ -1533,9 +1533,9 @@ details .stack {
 .point .source-ring {
   fill: none;
   stroke: var(--board-source, #b6eee0);
-  stroke-width: 3.5;
-  stroke-dasharray: 5 4;
-  opacity: 0.95;
+  stroke-width: 4.5;
+  stroke-dasharray: 6 4;
+  opacity: 1;
 }
 .point.movable {
   cursor: grab;
@@ -1543,7 +1543,7 @@ details .stack {
 .point.selected .source-ring {
   stroke: var(--board-selection, #b6eee0);
   stroke-dasharray: none;
-  stroke-width: 4;
+  stroke-width: 6;
   opacity: 1;
 }
 .point.destination {
@@ -1794,8 +1794,8 @@ button.teal-die:hover {
     transparent
   );
   stroke: var(--board-destination, #b6eee0);
-  stroke-width: 3;
-  stroke-dasharray: 4 3;
+  stroke-width: 4.5;
+  stroke-dasharray: none;
 }
 .point.drop-hover .landing-ring {
   fill: color-mix(
@@ -2101,12 +2101,12 @@ button.teal-die:hover {
   outline: none;
 }
 .point .source-ring {
-  stroke-width: 2.2;
+  stroke-width: 2.8;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 4 3;
 }
 .point.selected .source-ring {
-  stroke-width: 3;
+  stroke-width: 4;
 }
 .point.selected .checker > circle:first-child {
   stroke: var(--board-selection);
@@ -2131,7 +2131,7 @@ button.teal-die:hover {
   vector-effect: non-scaling-stroke;
 }
 .point .landing-ring {
-  stroke-width: 2;
+  stroke-width: 2.8;
   vector-effect: non-scaling-stroke;
 }
 .action-main {
@@ -2189,4 +2189,29 @@ button.teal-die:hover {
   .action-buttons button {
     padding-inline: 11px;
   }
+}
+
+/* Foreground washes survive point patterns; two-tone rings survive light themes. */
+.point .ring-halo {
+  fill: none;
+  stroke: var(--board-surface);
+  stroke-width: 5.5;
+  vector-effect: non-scaling-stroke;
+}
+.point .point-wash {
+  fill: color-mix(in srgb, var(--board-destination) 22%, transparent);
+  stroke: var(--board-destination);
+  stroke-width: 2;
+}
+.point.selected .point-wash {
+  fill: color-mix(in srgb, var(--board-selection) 18%, transparent);
+  stroke: var(--board-selection);
+  stroke-width: 3;
+}
+.point.return-destination .landing-ring,
+.point.return-destination .point-wash {
+  stroke-dasharray: 6 4;
+}
+.point.entry-switch-destination .destination-die {
+  font-size: 25px;
 }

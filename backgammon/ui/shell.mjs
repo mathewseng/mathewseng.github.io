@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { settings, saveSettings, put, itemRecord } from "../core/storage.mjs";
+import {
+  settings,
+  saveSettings,
+  put,
+  itemRecord,
+} from "../core/storage.mjs";
 import {
   playerName,
   pipCount,
@@ -12,7 +17,11 @@ import {
   decisionPlayer,
 } from "../core/rules.mjs";
 import { Board } from "./board.mjs";
-import { checkerRoutes, reverseRoutes } from "../core/draft.mjs";
+import {
+  checkerRoutes,
+  reverseRoutes,
+  entrySwitchRoutes,
+} from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
 import {
   sound,
@@ -32,7 +41,8 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === "text") n.textContent = v;
     else if (k === "checked") n.checked = v;
     else if (k === "value") n.value = v;
-    else if (v !== false && v !== null) n.setAttribute(k, v === true ? "" : v);
+    else if (v !== false && v !== null)
+      n.setAttribute(k, v === true ? "" : v);
   }
   n.append(...children.filter((x) => x !== null && x !== undefined));
   return n;
@@ -159,7 +169,9 @@ function changeSound(value) {
   dispatchEvent(new Event("bg-sound"));
   sound.unlock();
   if (!saved)
-    toast("Sound setting applies to this tab. Browser storage is unavailable.");
+    toast(
+      "Sound setting applies to this tab. Browser storage is unavailable.",
+    );
 }
 let activeBoard;
 export function shell(page, title, subtitle = "") {
@@ -294,7 +306,11 @@ export async function preferences() {
         "Quiet checker, dice and cube sounds. Background tabs stay silent.",
       ),
     ),
-    el("p", { class: "muted small" }, "Settings apply across all four tools."),
+    el(
+      "p",
+      { class: "muted small" },
+      "Settings apply across all four tools.",
+    ),
     el(
       "a",
       { href: "/backgammon/refresh/" },
@@ -330,7 +346,9 @@ export async function preferences() {
     el("div", { class: "settings-content" }, tabs, colors, display),
   );
   d.classList.add("settings-dialog");
-  d.addEventListener("close", () => dispatchEvent(new Event("bg-settings")));
+  d.addEventListener("close", () =>
+    dispatchEvent(new Event("bg-settings")),
+  );
   d.addEventListener("close", () =>
     removeEventListener("bg-sound", updateSounds),
   );
@@ -405,7 +423,10 @@ export function players(s, names = ["Ivory", "Teal"]) {
       !document.hidden
     )
       row.animate(
-        [{ backgroundColor: "#9bd6c928" }, { backgroundColor: "transparent" }],
+        [
+          { backgroundColor: "#9bd6c928" },
+          { backgroundColor: "transparent" },
+        ],
         { duration: 420, easing: "ease-out" },
       );
     row.classList.toggle("active", active);
@@ -429,7 +450,12 @@ export function players(s, names = ["Ivory", "Teal"]) {
 }
 export function dieFace(
   die,
-  { consumed = false, choose = null, preferred = false, player = null } = {},
+  {
+    consumed = false,
+    choose = null,
+    preferred = false,
+    player = null,
+  } = {},
 ) {
   const positions = {
     1: [4],
@@ -503,6 +529,9 @@ export class DraftBoard {
   reverseMoves() {
     return reverseRoutes(this.state, this.paths, this.draft);
   }
+  entrySwitches() {
+    return entrySwitchRoutes(this.state, this.paths, this.draft);
+  }
   sources() {
     return [
       ...new Set(
@@ -515,6 +544,7 @@ export class DraftBoard {
     return [
       ...checkerRoutes(this.paths, this.draft, this.selected),
       ...this.reverseMoves().filter((st) => st.from === this.selected),
+      ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
   point(raw) {
@@ -531,10 +561,14 @@ export class DraftBoard {
         Number(b.steps[0].die === this.preferred) -
         Number(a.steps[0].die === this.preferred),
     )) {
-      const next = route.undo
-        ? route.remaining
-        : [...this.draft, ...route.steps];
-      const result = next.reduce((s, step) => applyStep(s, step), this.state);
+      const next =
+        route.undo || route.switchDie
+          ? route.remaining
+          : [...this.draft, ...route.steps];
+      const result = next.reduce(
+        (s, step) => applyStep(s, step),
+        this.state,
+      );
       const key =
         boardKey(result) +
         ":" +
@@ -549,6 +583,7 @@ export class DraftBoard {
       const preferred = choices.filter(
         (st) =>
           !st.undo &&
+          !st.switchDie &&
           st.steps.length === 1 &&
           st.steps[0].die === this.preferred,
       );
@@ -557,7 +592,9 @@ export class DraftBoard {
       else {
         const state = this.state,
           signature = JSON.stringify(this.draft);
-        const single = choices.every((st) => !st.undo && st.steps.length === 1);
+        const single = choices.every(
+          (st) => !st.undo && !st.switchDie && st.steps.length === 1,
+        );
         let d;
         d = dialog(
           single ? "Choose a die" : "Choose a route",
@@ -570,11 +607,13 @@ export class DraftBoard {
           ),
           choices.map((route) =>
             button(
-              route.undo
-                ? `Move back · restore ${route.steps.map((st) => st.die).join(" + ")}`
-                : single
-                  ? `Use ${route.steps[0].die}`
-                  : `${route.steps.map((st) => st.die).join(" → ")} · ${notation(route.steps, this.state.turn)}`,
+              route.switchDie
+                ? `Change entry · use ${route.die} instead of ${route.replacedDie}`
+                : route.undo
+                  ? `Move back · restore ${route.steps.map((st) => st.die).join(" + ")}`
+                  : single
+                    ? `Use ${route.steps[0].die}`
+                    : `${route.steps.map((st) => st.die).join(" → ")} · ${notation(route.steps, this.state.turn)}`,
               () => {
                 d.close();
                 if (
@@ -607,7 +646,9 @@ export class DraftBoard {
   normalize(raw) {
     if (raw === null) return null;
     if (typeof raw === "string" && /^(bar|off)[01]$/.test(raw))
-      return Number(raw.at(-1)) === this.state.turn ? raw.slice(0, -1) : null;
+      return Number(raw.at(-1)) === this.state.turn
+        ? raw.slice(0, -1)
+        : null;
     return raw;
   }
   beginDrag(raw) {
@@ -616,7 +657,8 @@ export class DraftBoard {
     if (!this.sources().includes(source)) return false;
     this.selected = source;
     sound.play("select");
-    this.hint = "Release on a highlighted point. Release elsewhere to cancel.";
+    this.hint =
+      "Release on a highlighted point. Release elsewhere to cancel.";
     this.render();
     return true;
   }
@@ -648,17 +690,36 @@ export class DraftBoard {
   }
   moveRoute(route) {
     if (!this.enabled || this.preview) return;
-    const next = route.undo ? route.remaining : [...this.draft, ...route.steps];
+    const next =
+      route.undo || route.switchDie
+        ? route.remaining
+        : [...this.draft, ...route.steps];
     if (!matchingPaths(this.paths, next).length) return;
     const before = this.current();
     this.draft = [...next];
-    this.hint = route.undo
-      ? "Checker moved back. Its dice are available again."
-      : "";
-    const nextSources = [...new Set(this.candidates().map((st) => st.from))];
-    this.selected = nextSources.length === 1 ? nextSources[0] : null;
+    this.hint = route.switchDie
+      ? `Entry uses ${route.die} now. Die ${route.replacedDie} is available again.`
+      : route.undo
+        ? "Checker moved back. Its dice are available again."
+        : "";
+    const nextSources = [
+      ...new Set(this.candidates().map((st) => st.from)),
+    ];
+    const entered =
+      route.switchDie ||
+      (!route.undo &&
+        route.steps.length === 1 &&
+        route.steps[0].from === "bar");
+    this.selected =
+      entered && !this.current().bar[this.state.turn]
+        ? route.to
+        : nextSources.length === 1
+          ? nextSources[0]
+          : null;
     this.render();
-    if (!route.undo && route.steps.length > 1)
+    if (route.switchDie)
+      this.board.animateRestore(before, this.current(), "move");
+    else if (!route.undo && route.steps.length > 1)
       this.board.animateMove(
         before,
         this.current(),
@@ -702,7 +763,6 @@ export class DraftBoard {
   render() {
     if (!this.state) return;
     const s = this.preview || this.current();
-    const options = this.enabled && !this.preview ? this.candidates() : [];
     const moves = this.enabled && !this.preview ? this.routes() : [];
     this.board.render(s, {
       ...settings(),
@@ -721,25 +781,29 @@ export class DraftBoard {
     });
     players(s, this.names);
     $("draft-line").setAttribute("role", "status");
+    const switchEntry = moves.find((route) => route.switchDie);
     $("draft-line").textContent = this.preview
       ? "Preview only · original position is unchanged"
       : this.hint ||
-        (this.enabled && this.state.phase === "move"
-          ? this.complete()
-            ? this.draft.length
-              ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
-              : "All entries are blocked. Confirm to pass your turn."
-            : this.selected !== null
-              ? "Tap or drag to a highlighted point. Arrow targets move back."
-              : "Tap a highlighted checker to see single and combined moves, or drag it."
-          : this.draft.length
-            ? notation(this.draft, this.state.turn)
-            : this.lastMove
-              ? `Last move · ${notation(this.lastMove.steps, this.lastMove.player)} · outlined checkers`
-              : "");
+        (switchEntry
+          ? `Tap ↔${switchEntry.die} to change the entry die. ↶ returns to the bar.`
+          : this.enabled && this.state.phase === "move"
+            ? this.complete()
+              ? this.draft.length
+                ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
+                : "All entries are blocked. Confirm to pass your turn."
+              : this.selected !== null
+                ? "Tap or drag to a highlighted point. Arrow targets move back."
+                : "Tap a highlighted checker to see single and combined moves, or drag it."
+            : this.draft.length
+              ? notation(this.draft, this.state.turn)
+              : this.lastMove
+                ? `Last move · ${notation(this.lastMove.steps, this.lastMove.player)} · outlined checkers`
+                : "");
   }
   picker() {
-    const options = this.candidates();
+    const options = this.candidates(),
+      switches = this.entrySwitches();
     return select(
       [
         ["", "Choose a legal step…"],
@@ -747,10 +811,16 @@ export class DraftBoard {
           String(i),
           `${notation([st], this.state.turn)} · die ${st.die}`,
         ]),
+        ...switches.map((route, i) => [
+          `switch-${i}`,
+          `Change ${notation([{ from: "bar", to: route.from }], this.state.turn)} entry · use die ${route.die} instead of ${route.replacedDie}`,
+        ]),
       ],
       "",
       (v) => {
-        if (v !== "") this.move(options[Number(v)]);
+        if (v.startsWith("switch-"))
+          this.moveRoute(switches[Number(v.slice(7))]);
+        else if (v !== "") this.move(options[Number(v)]);
       },
     );
   }

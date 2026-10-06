@@ -31,21 +31,35 @@ export function pointAt(x, y, orientation = 0) {
   }
   for (const p of [0, 1]) {
     const top = p !== orientation;
-    if (x >= 385 && x < 431 && y >= (top ? 32 : 387) && y < (top ? 277 : 632))
+    if (
+      x >= 385 &&
+      x < 431 &&
+      y >= (top ? 32 : 387) &&
+      y < (top ? 277 : 632)
+    )
       return `bar${p}`;
-    if (x >= 820 && x < 866 && y >= (top ? 35 : 386) && y < (top ? 274 : 625))
+    if (
+      x >= 820 &&
+      x < 866 &&
+      y >= (top ? 35 : 386) &&
+      y < (top ? 274 : 625)
+    )
       return `off${p}`;
   }
   return null;
 }
 export function checkerPosition(s, point, player, orientation = 0) {
-  if (point === "bar") return { x: 408, y: player !== orientation ? 100 : 506 };
-  if (point === "off") return { x: 843, y: player !== orientation ? 84 : 582 };
+  if (point === "bar")
+    return { x: 408, y: player !== orientation ? 100 : 506 };
+  if (point === "off")
+    return { x: 843, y: player !== orientation ? 84 : 582 };
   const g = pointGeometry(point, orientation),
     n = Math.max(1, Math.abs(s.points[point]));
   return {
     x: g.x + 30,
-    y: g.top ? 65 + (Math.min(n, 5) - 1) * 47 : 595 - (Math.min(n, 5) - 1) * 47,
+    y: g.top
+      ? 65 + (Math.min(n, 5) - 1) * 47
+      : 595 - (Math.min(n, 5) - 1) * 47,
   };
 }
 function patternOverlay(node, role) {
@@ -177,7 +191,8 @@ export class Board {
     });
     this.svg.addEventListener("pointerdown", (e) => {
       this.suppressClickUntil = 0;
-      if (e.button !== 0 || !e.isPrimary || !this.options?.interactive) return;
+      if (e.button !== 0 || !e.isPrimary || !this.options?.interactive)
+        return;
       const p = e.target.closest("[data-point]");
       if (!p?.classList.contains("movable")) return;
       this.pointer = {
@@ -223,7 +238,11 @@ export class Board {
       this.svg
         .querySelectorAll(".drop-hover")
         .forEach((node) => node.classList.remove("drop-hover"));
-      const target = pointAt(position.x, position.y, this.options.orientation);
+      const target = pointAt(
+        position.x,
+        position.y,
+        this.options.orientation,
+      );
       this.svg
         .querySelector(`[data-point="${target}"]`)
         ?.classList.add("drop-hover");
@@ -328,7 +347,8 @@ export class Board {
       group.setAttribute("display", "none");
       return group;
     }
-    const values = s.dice[0] === s.dice[1] ? Array(4).fill(s.dice[0]) : s.dice;
+    const values =
+      s.dice[0] === s.dice[1] ? Array(4).fill(s.dice[0]) : s.dice;
     const used = [...usedDice],
       center = s.turn === orientation ? 610 : 204;
     const pips = {
@@ -498,7 +518,12 @@ export class Board {
       !reverse && route.length > 1
         ? route.slice(0, -1).map((st) => {
             interim = applyStep(interim, st);
-            return checkerPosition(interim, st.to, p, this.options.orientation);
+            return checkerPosition(
+              interim,
+              st.to,
+              p,
+              this.options.orientation,
+            );
           })
         : [];
     const flight = this.flyChecker(
@@ -535,7 +560,12 @@ export class Board {
         const next = applyStep(current, st);
         if (next.bar[1 - p] > current.bar[1 - p])
           this.flyChecker(
-            checkerPosition(current, st.to, 1 - p, this.options.orientation),
+            checkerPosition(
+              current,
+              st.to,
+              1 - p,
+              this.options.orientation,
+            ),
             checkerPosition(next, "bar", 1 - p, this.options.orientation),
             1 - p,
             "bar",
@@ -554,7 +584,9 @@ export class Board {
         { delay: reverse ? 0 : Math.max(0, flight.landings[0] - 35) },
       );
     }
-    return flight.duration + (after.bar[1 - p] > before.bar[1 - p] ? 210 : 0);
+    return (
+      flight.duration + (after.bar[1 - p] > before.bar[1 - p] ? 210 : 0)
+    );
   }
   flyChecker(
     origin,
@@ -639,14 +671,20 @@ export class Board {
         if (typeof point === "number")
           display.points[point] = n * (player ? -1 : 1);
         return {
-          ...checkerPosition(display, point, player, this.options.orientation),
+          ...checkerPosition(
+            display,
+            point,
+            player,
+            this.options.orientation,
+          ),
           point,
         };
       };
       for (const point of [...Array(24).keys(), "bar", "off"]) {
         const a = count(before, point),
           b = count(after, point);
-        for (let i = b; i < a; i++) origins.push(pose(before, point, i + 1));
+        for (let i = b; i < a; i++)
+          origins.push(pose(before, point, i + 1));
         for (let i = a; i < b; i++)
           destinations.push(pose(after, point, i + 1));
       }
@@ -722,7 +760,11 @@ export class Board {
     const animation = cube.animate(
       [
         { transform: `translateY(${offset}px) scale(.9)`, opacity: 0.65 },
-        { transform: "translateY(0) scale(1.12)", opacity: 1, offset: 0.68 },
+        {
+          transform: "translateY(0) scale(1.12)",
+          opacity: 1,
+          offset: 0.68,
+        },
         { transform: "translateY(0) scale(1)", opacity: 1 },
       ],
       { duration: 280, easing: "cubic-bezier(.2,.7,.25,1)" },
@@ -776,7 +818,10 @@ export class Board {
       hideDice,
       lastMove,
     };
-    this.svg.classList.toggle("has-moves", interactive && sources.length > 0);
+    this.svg.classList.toggle(
+      "has-moves",
+      interactive && sources.length > 0,
+    );
     const compact = this.container.clientWidth < 600;
     const focused = this.svg.contains(document.activeElement)
       ? document.activeElement
@@ -836,9 +881,11 @@ export class Board {
             moves
               .filter((m) => m.to === p)
               .map((m) =>
-                m.undo
-                  ? "move back"
-                  : m.steps?.map((st) => st.die).join(" then ") || m.die,
+                m.switchDie
+                  ? `change bar entry to die ${m.die} instead of ${m.replacedDie}`
+                  : m.undo
+                    ? "move back"
+                    : m.steps?.map((st) => st.die).join(" then ") || m.die,
               )
               .join(" or ")
           : ""
@@ -850,7 +897,7 @@ export class Board {
         "aria-label": label,
         "aria-disabled": !interactive,
         "aria-pressed": selected === p,
-        class: `point${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}`,
+        class: `point${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
       });
       if (moved) g.setAttribute("data-last-moved", moved);
       g.append(
@@ -873,6 +920,18 @@ export class Board {
         }),
       );
       g.append(patternOverlay(g.lastChild, p % 2 ? "pointB" : "pointA"));
+      if (destinations.includes(p) || selected === p)
+        g.append(
+          svg("rect", {
+            x: x + 3,
+            y: top ? 32 : 370,
+            width: 54,
+            height: 258,
+            rx: 8,
+            class: "point-wash",
+            "pointer-events": "none",
+          }),
+        );
       if (numbers)
         g.append(
           svg(
@@ -902,10 +961,12 @@ export class Board {
         );
       if (destinations.includes(p))
         g.append(
-          svg("circle", {
-            cx: x + 30,
-            cy: top ? 274 : 386,
-            r: 19,
+          svg("rect", {
+            x: x + 4,
+            y: top ? 255 : 367,
+            width: 52,
+            height: 38,
+            rx: 19,
             fill: boardColor("destination"),
             stroke: boardColor("surface"),
             "stroke-width": 2,
@@ -945,9 +1006,11 @@ export class Board {
               "pointer-events": "none",
               class: "destination-die",
             },
-            moves.find((m) => m.to === p)?.undo
-              ? "↶"
-              : moves.find((m) => m.to === p)?.die || "✓",
+            moves.find((m) => m.to === p)?.switchDie
+              ? `↔${moves.find((m) => m.to === p).die}`
+              : moves.find((m) => m.to === p)?.undo
+                ? "↶"
+                : moves.find((m) => m.to === p)?.die || "✓",
           ),
         );
       if (sources.includes(p) && n) {
@@ -962,6 +1025,11 @@ export class Board {
           }),
         );
       }
+      for (const ring of g.querySelectorAll(".source-ring,.landing-ring")) {
+        const halo = ring.cloneNode(false);
+        halo.setAttribute("class", "ring-halo");
+        ring.before(halo);
+      }
       children.push(g);
     }
     for (const p of [0, 1]) {
@@ -971,7 +1039,7 @@ export class Board {
         "data-point": `bar${p}`,
         tabindex: -1,
         role: "button",
-        "aria-label": `${playerName(p)} bar, ${s.bar[p]} checkers`,
+        "aria-label": `${playerName(p)} bar, ${s.bar[p]} checkers${destinations.includes("bar") && s.turn === p ? ", return checker and restore its entry die" : ""}`,
         "aria-disabled": !interactive,
         "aria-pressed": selected === "bar" && s.turn === p,
         class: `point${sources.includes("bar") && s.turn === p ? " movable" : ""}${selected === "bar" && s.turn === p ? " selected" : ""}${destinations.includes("bar") && s.turn === p ? " destination return-destination" : ""}`,
@@ -1012,6 +1080,38 @@ export class Board {
             "pointer-events": "none",
           }),
         );
+      if (destinations.includes("bar") && s.turn === p) {
+        g.append(
+          svg("rect", {
+            x: 390,
+            y: top ? 255 : 390,
+            width: 36,
+            height: 38,
+            rx: 12,
+            fill: boardColor("destination"),
+            "pointer-events": "none",
+          }),
+          svg(
+            "text",
+            {
+              x: 408,
+              y: top ? 282 : 417,
+              "text-anchor": "middle",
+              fill: boardColor("destinationText"),
+              "font-size": 29,
+              "font-weight": 700,
+              "pointer-events": "none",
+              class: "destination-die",
+            },
+            "↶",
+          ),
+        );
+      }
+      for (const ring of g.querySelectorAll(".source-ring")) {
+        const halo = ring.cloneNode(false);
+        halo.setAttribute("class", "ring-halo");
+        ring.before(halo);
+      }
       children.push(g);
       const off = svg("g", {
         "data-point": `off${p}`,
@@ -1021,7 +1121,8 @@ export class Board {
         "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${destinations.includes("off") && s.turn === p ? ", legal destination" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
         class: `point${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
       });
-      const movedOff = lastMove?.player === p ? lastMove.points.off || 0 : 0;
+      const movedOff =
+        lastMove?.player === p ? lastMove.points.off || 0 : 0;
       if (movedOff) off.setAttribute("data-last-moved", movedOff);
       off.append(
         svg("rect", {
@@ -1097,7 +1198,11 @@ export class Board {
     }
     if (s.rules.cube) {
       const cy =
-        s.cube.owner === null ? 330 : s.cube.owner === orientation ? 432 : 228;
+        s.cube.owner === null
+          ? 330
+          : s.cube.owner === orientation
+            ? 432
+            : 228;
       const cube = svg("g", {
         class: "board-cube",
         "aria-label": `Doubling cube ${s.cube.value}`,

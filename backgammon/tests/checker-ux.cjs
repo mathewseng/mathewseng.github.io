@@ -317,6 +317,105 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     assert.deepEqual((await info()).state.bar, [1, 0]);
     assert.equal((await info()).state.points[23], -1);
     await shot("bar-entry");
+    for (const orientation of [0, 1]) {
+      await load("bar", orientation);
+      await page.locator('[data-point="23"]').click();
+      assert.equal((await info()).selected, 23);
+      assert.equal(
+        await page
+          .locator('[data-point="bar0"] .destination-die')
+          .textContent(),
+        "↶",
+      );
+      const alternate = page.locator(
+        '[data-point="22"].entry-switch-destination',
+      );
+      assert.equal(
+        await alternate.locator(".destination-die").textContent(),
+        "↔2",
+      );
+      assert.match(
+        await alternate.getAttribute("aria-label"),
+        /change bar entry to die 2 instead of 1/,
+      );
+      assert.ok(await page.locator('[data-point="21"].destination').count());
+      assert.match(
+        await page.locator("#draft-line").innerText(),
+        /change the entry die/,
+      );
+      await shot(`bar-alternate-${orientation}`);
+      await page.locator('[data-point="18"]').click();
+      assert.match(await page.locator("#draft-line").innerText(), /blocked/);
+      assert.equal((await info()).draft.length, 1);
+      await alternate.click();
+      assert.deepEqual((await info()).draft, [{ from: "bar", to: 22, die: 2 }]);
+      assert.equal((await info()).state.points[23], -1);
+      assert.equal((await info()).state.bar[1], 0);
+      assert.equal(await page.locator(".board-die.consumed").count(), 1);
+      await drag(22, 23);
+      assert.equal((await info()).draft[0].die, 1);
+      assert.equal((await info()).state.bar[1], 1);
+      await page.locator('[data-point="22"]').focus();
+      await page.keyboard.press("Enter");
+      assert.equal((await info()).draft[0].die, 2);
+      await page.evaluate(() => {
+        document.querySelector("#entry-picker")?.remove();
+        const picker = checkerTest.draft.picker();
+        picker.id = "entry-picker";
+        document.querySelector(".action-area").append(picker);
+      });
+      await page.locator("#entry-picker").selectOption("switch-0");
+      assert.equal((await info()).draft[0].die, 1);
+      await page.evaluate(() => checkerTest.draft.reset());
+      assert.deepEqual((await info()).state.bar, [1, 0]);
+    }
+    await page.locator("#entry-picker").evaluate((n) => n.remove());
+    if (browserName === "chromium") {
+      for (const preset of ["slate", "linen"]) {
+        for (const [width, height] of [
+          [320, 568],
+          [375, 667],
+          [390, 844],
+          [430, 932],
+          [844, 390],
+          [768, 1024],
+          [1024, 768],
+          [1366, 768],
+          [1440, 900],
+        ]) {
+          await page.setViewportSize({ width, height });
+          await page.evaluate(async (preset) => {
+            const theme = { version: 1, preset, colors: {}, patterns: {} };
+            checkerTest.store.saveSettings({ boardTheme: theme });
+            (await import("/backgammon/core/appearance.mjs")).applyBoardTheme(
+              theme,
+            );
+          }, preset);
+          await load("bar");
+          await page.locator('[data-point="23"]').click();
+          await shot(`bar-switch-${preset}-${width}x${height}`);
+          assert.ok(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+          );
+        }
+      }
+      await page.evaluate(async () => {
+        const theme = { version: 1, preset: "slate", colors: {}, patterns: {} };
+        checkerTest.store.saveSettings({ boardTheme: theme });
+        (await import("/backgammon/core/appearance.mjs")).applyBoardTheme(
+          theme,
+        );
+      });
+      await page.setViewportSize({ width: 1366, height: 768 });
+    }
+    report.cases.push(
+      "alternate bar die auto-highlight",
+      "tap and drag entry revision restores hits and dice",
+      "keyboard and selector entry revision",
+      "bar revision in both orientations",
+    );
     await load("bearoff");
     await page.locator('[data-point="0"]').click();
     await page.locator('[data-point="off0"]').click();
@@ -524,6 +623,72 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       assert.equal(await touch.evaluate(() => scrollY), 0);
       assert.equal(await touch.locator(".drag-checker").count(), 0);
       await touch.locator("#undo").tap();
+
+      await touch.evaluate(async () => {
+        const { shell, DraftBoard } = await import("/backgammon/ui/shell.mjs");
+        const r = await import("/backgammon/core/rules.mjs");
+        const ui = shell("play", "Touch entry");
+        const d = new DraftBoard(ui.board),
+          points = Array(24).fill(0);
+        points[5] = 14;
+        points[23] = -1;
+        points[18] = -14;
+        const s = r.initialState({
+          matchLength: 0,
+          phase: "move",
+          dice: [1, 2],
+          points,
+          bar: [1, 0],
+        });
+        d.set(s, r.legalPaths(s));
+        window.touchDraft = d;
+      });
+      await touch.locator('[data-point="23"]').tap();
+      await touch.locator('[data-point="22"].entry-switch-destination').tap();
+      assert.equal(await touch.evaluate(() => touchDraft.draft[0].die), 2);
+      const revision = await touch.evaluate(async () => {
+        const g = await import("/backgammon/ui/board.mjs"),
+          d = touchDraft;
+        const matrix = d.board.svg.getScreenCTM();
+        const cv = (p) => {
+          const v = new DOMPoint(p.x, p.y).matrixTransform(matrix);
+          return { x: v.x, y: v.y };
+        };
+        const b = g.pointGeometry(23, 0);
+        return {
+          a: cv(g.checkerPosition(d.current(), 22, 0, 0)),
+          b: cv({ x: b.x + 30, y: b.top ? 110 : 480 }),
+        };
+      });
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ ...revision.a, id: 1 }],
+      });
+      for (let i = 1; i <= 8; i++)
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [
+            {
+              x: revision.a.x + ((revision.b.x - revision.a.x) * i) / 8,
+              y: revision.a.y + ((revision.b.y - revision.a.y) * i) / 8,
+              id: 1,
+            },
+          ],
+        });
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+      assert.equal(await touch.evaluate(() => touchDraft.draft[0].die), 1);
+      assert.equal(await touch.evaluate(() => touchDraft.current().bar[1]), 1);
+      assert.equal(await touch.evaluate(() => scrollY), 0);
+      await touch.screenshot({
+        path: path.join(out, "chromium-ux-touch-entry-switch.png"),
+        animations: "disabled",
+      });
+      report.cases.push(
+        "touch tap and drag alternate bar entry without scrolling",
+      );
       await touchContext.close();
       report.cases.push("real touch pointer stream and no accidental scroll");
     }

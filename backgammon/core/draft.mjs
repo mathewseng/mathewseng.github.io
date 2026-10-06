@@ -19,14 +19,17 @@ export function checkerRoutes(paths, draft, from) {
       });
     }
   }
-  return [...routes.values()].sort((a, b) => a.steps.length - b.steps.length);
+  return [...routes.values()].sort(
+    (a, b) => a.steps.length - b.steps.length,
+  );
 }
 // At most 15 subsets for a four-step draft. A reversal is offered only when
 // the remaining draft is still a legal prefix and exactly one own checker
 // returns to one previous point. Unrelated moves stay; dependent ones cannot
 // be retained illegally. Replaying restores any hits and consumed dice too.
 export function reverseRoutes(state, paths, draft) {
-  const at = (steps) => steps.reduce((s, step) => applyStep(s, step), state);
+  const at = (steps) =>
+    steps.reduce((s, step) => applyStep(s, step), state);
   const current = at(draft),
     p = state.turn;
   const counts = (s) => [
@@ -63,4 +66,39 @@ export function reverseRoutes(state, paths, draft) {
     });
   }
   return [...results.values()];
+}
+
+// Change a drafted bar entry without making the user undo and enter again.
+// Preserve unrelated steps, and derive replacements only from complete legal
+// paths: bar priority, maximum dice use and the higher-die rule still apply.
+export function entrySwitchRoutes(state, paths, draft) {
+  const routes = new Map();
+  for (const back of reverseRoutes(state, paths, draft)) {
+    if (
+      back.to !== "bar" ||
+      back.steps.length !== 1 ||
+      back.steps[0].from !== "bar"
+    )
+      continue;
+    const old = back.steps[0];
+    for (const entry of checkerRoutes(paths, back.remaining, "bar")) {
+      if (
+        entry.steps.length !== 1 ||
+        entry.die === old.die ||
+        entry.to === back.from
+      )
+        continue;
+      const remaining = [...back.remaining, ...entry.steps];
+      routes.set(JSON.stringify(remaining), {
+        from: back.from,
+        to: entry.to,
+        die: entry.die,
+        steps: entry.steps,
+        remaining,
+        switchDie: true,
+        replacedDie: old.die,
+      });
+    }
+  }
+  return [...routes.values()];
 }
