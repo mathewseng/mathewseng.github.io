@@ -16,6 +16,14 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
     let host = await hc.newPage();
     const guest = await gc.newPage();
     const log = [];
+    await hc.addInitScript(() => {
+      const original = crypto.getRandomValues.bind(crypto),
+        dice = [5, 0, 3, 1, 2, 0];
+      crypto.getRandomValues = (a) =>
+        a instanceof Uint8Array && a.length === 1 && dice.length
+          ? ((a[0] = dice.shift()), a)
+          : original(a);
+    });
     async function open(p) {
       p.on("pageerror", (e) => log.push(e.message));
       await p.goto(base + "/backgammon/play/");
@@ -25,7 +33,9 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
     await open(guest);
     const optionalRules = process.env.BG_MONEY_RULES === "1";
     if (optionalRules) {
-      await host.getByLabel("Match length", { exact: true }).selectOption("0");
+      await host
+        .getByLabel("Match length", { exact: true })
+        .selectOption("0");
       await host.locator(".game-rules summary").click();
       await host
         .getByLabel("Automatic opening doubles", { exact: true })
@@ -70,23 +80,82 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
       guest.locator("#begin-turn").click(),
     ]);
     let s = await snapshot(host);
+    const openingState = structuredClone(s.state);
     const actor = s.state.turn === 0 ? host : guest;
     while (await actor.locator("#confirm").isDisabled()) {
-      await actor.locator("#draft-controls select").selectOption({ index: 1 });
+      await actor
+        .locator("#draft-controls select")
+        .selectOption({ index: 1 });
     }
     await actor.locator("#confirm").click();
     await host.waitForTimeout(200);
     s = await snapshot(host);
+    const other = actor === host ? guest : host;
+    const until = async (predicate) => {
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        const a = await snapshot(host),
+          b = await snapshot(guest);
+        if (predicate(a, b)) return a;
+        await host.waitForTimeout(30);
+      }
+      throw new Error("Online undo did not synchronize");
+    };
+    await actor.locator("#undo-turn").click();
+    await other.locator("#decline-undo").click();
+    await until(
+      (a, b) =>
+        !a.undoRequest && !b.undoRequest && a.undoReply?.accepted === false,
+    );
+    assert.deepEqual((await snapshot(host)).state, s.state);
+    await other.locator("#roll").click();
+    const rolled = await until(
+      (a, b) => a.state.phase === "move" && b.state.phase === "move",
+    );
+    const retainedDice = rolled.state.dice;
+    await actor.locator("#undo-turn").click();
+    await other.locator("#accept-undo").waitFor();
+    await other.setViewportSize({ width: 375, height: 667 });
+    await other.screenshot({
+      path: "backgammon/test-results/live-undo-request.png",
+      fullPage: true,
+    });
+    await other.locator("#accept-undo").click();
+    s = await until(
+      (a, b) => a.undoLog?.length === 1 && b.undoLog?.length === 1,
+    );
+    assert.deepEqual(s.state, openingState);
+    assert.deepEqual((await snapshot(guest)).state, openingState);
+    assert.deepEqual(s.replayDice, [
+      { actor: 1 - openingState.turn, dice: retainedDice },
+    ]);
+    await other.setViewportSize({ width: 1366, height: 768 });
+    while (await actor.locator("#confirm").isDisabled())
+      await actor
+        .locator("#draft-controls select")
+        .selectOption({ index: 1 });
+    await actor.locator("#confirm").click();
+    s = await until(
+      (a, b) => a.state.phase === "roll" && b.state.phase === "roll",
+    );
     const doubler = s.state.turn === 0 ? host : guest,
       receiver = s.state.turn === 0 ? guest : host;
-    await doubler.getByRole("button", { name: "Double", exact: true }).click();
+    await doubler
+      .getByRole("button", { name: "Double", exact: true })
+      .click();
     const stake = s.state.cube.value;
     if (optionalRules) {
       await receiver
-        .getByRole("button", { name: `Beaver to ${stake * 4}`, exact: true })
+        .getByRole("button", {
+          name: `Beaver to ${stake * 4}`,
+          exact: true,
+        })
         .click();
       await doubler
-        .getByRole("button", { name: `Raccoon to ${stake * 8}`, exact: true })
+        .getByRole("button", {
+          name: `Raccoon to ${stake * 8}`,
+          exact: true,
+        })
         .click();
     }
     await receiver
@@ -101,7 +170,9 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
       stake * (optionalRules ? 8 : 2),
     );
     await guest.reload();
-    await guest.getByRole("button", { name: "Online", exact: true }).click();
+    await guest
+      .getByRole("button", { name: "Online", exact: true })
+      .click();
     await guest
       .getByRole("button", { name: "Reconnect saved room", exact: true })
       .click();
@@ -142,6 +213,11 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
     await roller.locator("#roll").click();
     await host.waitForTimeout(300);
     const before = (await snapshot(host)).state;
+    assert.deepEqual(
+      before.dice,
+      retainedDice,
+      "the undone roll is actually reused",
+    );
     await host.close();
     await guest.waitForFunction(
       () =>
@@ -175,6 +251,9 @@ const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
           room: code,
           createJoin: true,
           synchronizedTurn: true,
+          undoDeclined: true,
+          undoAccepted: true,
+          revealedDiceReused: true,
           cubeTake: true,
           optionalRules,
           refreshRejoin: true,

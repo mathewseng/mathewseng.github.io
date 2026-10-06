@@ -1,7 +1,12 @@
 // Hints and turn feedback against real GNUbg, served from the assembled site.
 const assert = require("node:assert/strict");
 const path = require("node:path");
-module.exports = async function assistanceUX(browser, base, out, browserName) {
+module.exports = async function assistanceUX(
+  browser,
+  base,
+  out,
+  browserName,
+) {
   const context = await browser.newContext({
     viewport: { width: 1366, height: 768 },
     reducedMotion: "reduce",
@@ -39,7 +44,11 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
   const bestReady = () =>
     page.locator("[data-best-move]").waitFor({ timeout: 60000 });
   const finishDraft = async () => {
-    for (let i = 0; i < 4 && (await page.locator("#confirm").isDisabled()); i++)
+    for (
+      let i = 0;
+      i < 4 && (await page.locator("#confirm").isDisabled());
+      i++
+    )
       await page
         .getByLabel("Accessible move selection", { exact: true })
         .selectOption({ index: 1 });
@@ -78,16 +87,25 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
     await shot("hint-phone");
     assert.ok((await page.locator("#use-hint").boundingBox()).y < 667);
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.getByRole("button", { name: "Position", exact: true }).click();
-    await page.getByRole("button", { name: "Best move", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Position", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Best move", exact: true })
+      .click();
     await page.keyboard.press("Escape");
     assert.deepEqual((await saved()).draft, partial.draft);
     assert.ok(await page.locator("#hint").isEnabled());
     assert.ok(
-      await page.locator("#hint").evaluate((e) => document.activeElement === e),
+      await page
+        .locator("#hint")
+        .evaluate((e) => document.activeElement === e),
       "Escape returns keyboard focus to Hint",
     );
-    assert.equal(await page.locator("#board .board-die.consumed").count(), 1);
+    assert.equal(
+      await page.locator("#board .board-die.consumed").count(),
+      1,
+    );
     cases.push(
       "real engine hint; whole original roll; previews preserve live draft; Escape releases modal",
     );
@@ -129,7 +147,9 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
     timings.feedbackMs = Date.now() - begin;
     const graded = await waitSaved(
       (s) =>
-        s?.feedback && s.game.state.turn === 0 && s.game.state.phase === "roll",
+        s?.feedback &&
+        s.game.state.turn === 0 &&
+        s.game.state.phase === "roll",
     );
     assert.deepEqual(graded.feedback.source, submitted.game.state);
     assert.equal(
@@ -152,7 +172,10 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
     assert.ok(
       Math.abs(r.error - (r.candidates[0].equity - r.actual.equity)) < 1e-8,
     );
-    assert.match(await page.locator("#move-feedback").innerText(), /EV lost/);
+    assert.match(
+      await page.locator("#move-feedback").innerText(),
+      /EV lost/,
+    );
     assert.match(
       await page.locator("#move-feedback").innerText(),
       /Best 13\/7 8\/7/,
@@ -189,7 +212,10 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
           width: document.documentElement.scrollWidth,
         };
       });
-      assert.ok(geometry.width <= width + 1, `horizontal overflow ${width}`);
+      assert.ok(
+        geometry.width <= width + 1,
+        `horizontal overflow ${width}`,
+      );
       if (width > 320) {
         assert.ok(
           geometry.actions.bottom <= height + 1,
@@ -246,12 +272,16 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
       await style.evaluate((e) => e.remove());
     }
     await page.locator("#review-feedback").click();
-    await page.getByRole("button", { name: "Your move", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Your move", exact: true })
+      .click();
     await shot("review-phone");
     await close();
     await page.locator("#panel-toggle").click();
     assert.ok(
-      await page.getByLabel("Show move feedback", { exact: true }).isChecked(),
+      await page
+        .getByLabel("Show move feedback", { exact: true })
+        .isChecked(),
     );
     await page.getByLabel("Show move feedback", { exact: true }).uncheck();
     await close();
@@ -292,7 +322,10 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
       await context.route("**/engine/vendor/*.data", (route) => {
         if (assetMode === "hold") held.push(route);
         else if (assetMode === "fail")
-          route.fulfill({ status: 503, body: "Offline for integration test" });
+          route.fulfill({
+            status: 503,
+            body: "Offline for integration test",
+          });
         else route.continue();
       });
       const waitHeld = async () => {
@@ -353,11 +386,17 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
       assetMode = "fail";
       await page.locator("#confirm").click();
       await page
-        .getByRole("dialog", { name: "Move feedback unavailable", exact: true })
+        .getByRole("dialog", {
+          name: "Move feedback unavailable",
+          exact: true,
+        })
         .waitFor();
       await shot("feedback-error");
       await page
-        .getByRole("button", { name: "Confirm without feedback", exact: true })
+        .getByRole("button", {
+          name: "Confirm without feedback",
+          exact: true,
+        })
         .click();
       await waitSaved(
         (s) => s?.game.events.length === pending.game.events.length + 1,
@@ -378,7 +417,7 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
     const edge = await edgeContext.newPage();
     edge.on("pageerror", (e) => errors.push(e.message));
     try {
-      for (const scenario of ["match-teal", "forced-pass", "warning"]) {
+      for (const scenario of ["match-teal", "warning"]) {
         await edge.goto(base + "/backgammon/");
         const id = await edge.evaluate(async (scenario) => {
           const r = await import("/backgammon/core/rules.mjs");
@@ -386,20 +425,10 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
           let source = r.initialState({
             matchLength: scenario === "match-teal" ? 5 : 0,
           });
-          if (scenario !== "forced-pass")
-            source = r.transition(source, {
-              type: "opening",
-              dice: scenario === "match-teal" ? [1, 6] : [6, 1],
-            });
-          else {
-            source.points.fill(0);
-            source.points[5] = 14;
-            source.bar = [1, 0];
-            for (let i = 18; i < 24; i++) source.points[i] = -2;
-            source.points[17] = -3;
-            source.phase = "move";
-            source.dice = [2, 1];
-          }
+          source = r.transition(source, {
+            type: "opening",
+            dice: scenario === "match-teal" ? [1, 6] : [6, 1],
+          });
           r.assertState(source);
           const id = crypto.randomUUID();
           await store.put("work", {
@@ -489,11 +518,12 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
         );
         if (scenario === "match-teal")
           assert.ok(Number.isFinite(result.actual.mwc));
-        else if (scenario === "forced-pass")
-          assert.equal(result.actual.steps.length, 0);
         await edge.locator("#review-feedback").click();
         const file = `${browserName}-assistance-${scenario}.png`;
-        await edge.screenshot({ path: path.join(out, file), fullPage: true });
+        await edge.screenshot({
+          path: path.join(out, file),
+          fullPage: true,
+        });
         screenshots.push(file);
         await edge
           .getByRole("dialog")
@@ -501,7 +531,7 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
           .click();
       }
       cases.push(
-        "real match equity with human on Teal; equivalent best decision is zero loss; forced-pass hint and feedback; warning revise/confirm never commits prematurely",
+        "real match equity with human on Teal; equivalent best decision is zero loss; automatic passes tested separately; warning revise/confirm never commits prematurely",
       );
     } finally {
       await edgeContext.close();

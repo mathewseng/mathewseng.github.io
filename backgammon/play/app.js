@@ -22,7 +22,16 @@ import {
   itemRecord,
   settings,
   saveSettings,
+  saveMatchHistory,
+  download,
 } from "../core/storage.mjs";
+import {
+  forcedTurn,
+  playAction,
+  tableDice,
+  takebackTarget,
+  undoTurn,
+} from "../core/table.mjs";
 import {
   defaultPlayRules,
   localConfig,
@@ -80,6 +89,7 @@ let config = {
   lastMotion = "",
   renderedGameId = null,
   assistanceJob = null,
+  lastUndoNotice = null,
   epoch = 0;
 const analysis = new AnalysisPanel();
 const feedbackStrip = el("div", {
@@ -102,7 +112,18 @@ const opening = new OpeningRoll(ui.board.container, () => {
 });
 const online = new Online({
   onChange: () => {
-    if (config.mode === "online") render();
+    if (config.mode === "online") {
+      const reply = online.model?.undoReply;
+      if (reply?.id && reply.id !== lastUndoNotice) {
+        lastUndoNotice = reply.id;
+        toast(
+          reply.accepted
+            ? "Undo accepted. The original dice are kept."
+            : "Undo declined.",
+        );
+      }
+      render();
+    }
   },
   onStatus: (_, message) => {
     netStatus = message;
@@ -224,7 +245,8 @@ try {
           : original?.game?.id === id
             ? original
             : null;
-      if (recovery && recovery.game.config.mode !== "online") restore(recovery);
+      if (recovery && recovery.game.config.mode !== "online")
+        restore(recovery);
       resumeIntent(null);
     }
   }
@@ -298,8 +320,11 @@ function state() {
   );
 }
 function myTurn(s) {
+  if (model()?.undoRequest) return false;
   if (config.mode === "online")
-    return online.ready && !online.pending && online.seat === decisionPlayer(s);
+    return (
+      online.ready && !online.pending && online.seat === decisionPlayer(s)
+    );
   return humanControls(config, s);
 }
 function render() {
@@ -325,22 +350,22 @@ function render() {
     (opening.active ? "opening" : "") +
     config.mode +
     config.humanSide;
+  const enabled =
+    !!m?.started &&
+    myTurn(s) &&
+    !botBusy &&
+    !committing &&
+    !assistanceJob &&
+    !opening.active &&
+    s.phase === "move" &&
+    !forcedTurn(s);
   if (key !== boardKey) {
     const before = ui.board.state,
       event = m?.events?.at(-1);
     boardKey = key;
     draft.names = m?.names ||
       m?.players?.map((p) => p.name) || ["Ivory", "Teal"];
-    draft.set(
-      s,
-      legalPaths(s),
-      !!m?.started &&
-        myTurn(s) &&
-        !botBusy &&
-        !assistanceJob &&
-        !opening.active &&
-        s.phase === "move",
-    );
+    draft.set(s, legalPaths(s), enabled);
     if (
       before &&
       renderedGameId === m?.id &&
@@ -352,6 +377,20 @@ function render() {
       checkerKey(before) !== checkerKey(s)
     )
       ui.board.playTurn(before, event.action.steps);
+    else if (
+      before &&
+      renderedGameId === m?.id &&
+      event?.automatic &&
+      m.events.at(-2)?.action.type === "roll" &&
+      before.phase === "roll" &&
+      before.sequence + 2 === s.sequence
+    ) {
+      const roll = m.events.at(-2);
+      ui.board.playTurn(
+        transition(before, roll.action, roll.actor),
+        event.action.steps,
+      );
+    }
     if (freshEvent) {
       if (event?.action.type === "roll") ui.board.animateDice();
       else if (
@@ -364,16 +403,63 @@ function render() {
     }
     lastMotion = motionKey;
     renderedGameId = m?.id;
+  } else if (draft.enabled !== enabled) {
+    draft.enabled = enabled;
+    draft.render();
   }
   if (opening.active)
-    for (const id of ["player", "opponent"]) $(id).classList.remove("active");
+    for (const id of ["player", "opponent"])
+      $(id).classList.remove("active");
   $("subtitle").textContent = m?.started
     ? `${s.matchLength ? s.matchLength + "-point match" : "Unlimited points"} · ${s.crawford ? "Crawford game" : s.crawfordPlayed ? "Post-Crawford" : `Game ${s.gameNumber}`} · cube ${s.cube.value}${!s.matchLength && s.rules.jacoby ? " · Jacoby" : ""}`
     : "Computer, same-device, or a private room";
   $("panel-toggle").textContent = m?.started ? "Details" : "Setup";
   actions();
   panel();
-  if (m?.started && config.mode === "computer") computerTurn();
+  if (!autoPlay() && m?.started && config.mode === "computer")
+    computerTurn();
+}
+function autoPlay() {
+  const m = model(),
+    s = state(),
+    forced = m?.started && forcedTurn(s);
+  if (
+    !forced ||
+    committing ||
+    assistanceJob ||
+    m.undoRequest ||
+    opening.busy
+  )
+    return false;
+  if (opening.active) {
+    opening.dismiss();
+    return true;
+  }
+  const key = positionKey(s),
+    id = m.id;
+  if (config.mode === "online") {
+    if (online.room?.isHost && online.ready && !online.pending)
+      queueMicrotask(() => {
+        if (
+          model()?.id === id &&
+          positionKey(state()) === key &&
+          online.ready &&
+          !online.pending &&
+          !model().undoRequest
+        )
+          online.send({ type: "auto" });
+      });
+  } else
+    queueMicrotask(() => {
+      if (
+        game?.id === id &&
+        positionKey(state()) === key &&
+        !committing &&
+        !game.undoRequest
+      )
+        commit({ type: "move", steps: forced.steps }).catch(showError);
+    });
+  return true;
 }
 function setupFields() {
   const modes = el(
@@ -505,7 +591,7 @@ function setupFields() {
       el(
         "p",
         { class: "muted small" },
-        "Two players. No engine assistance or committed takebacks. Keep this page open; some networks block peer connections.",
+        "Two players. No engine assistance. Undo requests need the opponent's approval. Keep this page open; some networks block peer connections.",
       ),
     );
   } else
@@ -583,6 +669,109 @@ function start() {
   render();
 }
 function actions() {
+  renderActions();
+  const m = model(),
+    target = undoTarget();
+  if (
+    target === null ||
+    committing ||
+    assistanceJob ||
+    opening.active ||
+    draft.draft.length ||
+    forcedTurn(state()) ||
+    m?.undoRequest ||
+    (config.mode === "online" && (!online.ready || online.pending))
+  )
+    return;
+  for (const id of ["undo", "reset-draft"]) if ($(id)) $(id).hidden = true;
+  $("actions").append(
+    button("Undo last turn", requestTakeback, "", {
+      id: "undo-turn",
+      title:
+        "Restore the last chosen checker turn. Committed dice are kept.",
+    }),
+  );
+}
+function undoTarget() {
+  const m = model(),
+    actor =
+      config.mode === "online"
+        ? online.seat
+        : config.mode === "computer"
+          ? config.humanSide
+          : null;
+  const target = takebackTarget(m, actor);
+  return m?.undoReply?.accepted === false &&
+    m.undoReply.by === actor &&
+    m.undoReply.target === target &&
+    m.undoReply.eventCount === m.events.length
+    ? null
+    : target;
+}
+async function requestTakeback() {
+  const target = undoTarget(),
+    m = model();
+  if (target === null || committing || assistanceJob || draft.draft.length)
+    return;
+  if (config.mode === "online") {
+    online.send({ type: "undo-request" });
+    return;
+  }
+  committing = true;
+  try {
+    stopComputer();
+    if (config.mode === "local") {
+      game.undoRequest = {
+        target,
+        by: m.events[target].actor,
+        id: crypto.randomUUID(),
+      };
+    } else {
+      game = undoTurn(game, target, config.humanSide);
+      feedback = null;
+      boardKey = "";
+      sound.play("undo");
+    }
+    await persist();
+  } finally {
+    committing = false;
+    render();
+  }
+}
+async function respondTakeback(type, request) {
+  if (config.mode === "online") {
+    online.send({ type, requestId: request.id });
+    return;
+  }
+  if (game?.undoRequest?.id !== request.id) return;
+  if (committing) return;
+  committing = true;
+  try {
+    if (type === "undo-accept") {
+      game = undoTurn(game, request.target, request.by, 1 - request.by);
+      feedback = null;
+      draft.draft = [];
+      boardKey = "";
+      sound.play("undo");
+    } else game.undoRequest = null;
+    game.undoReply = {
+      by: request.by,
+      accepted: type === "undo-accept",
+      target: request.target,
+      eventCount: game.events.length,
+    };
+    await persist();
+    toast(
+      type === "undo-accept"
+        ? "Undo accepted. The original dice are kept."
+        : "Undo declined.",
+    );
+  } finally {
+    committing = false;
+    render();
+  }
+}
+function renderActions() {
   const s = state(),
     m = model(),
     a = $("actions");
@@ -596,7 +785,8 @@ function actions() {
     a.append(
       button(
         config.mode === "online" ? "Room setup" : "Start match",
-        () => (config.mode === "online" ? $("panel-toggle").click() : start()),
+        () =>
+          config.mode === "online" ? $("panel-toggle").click() : start(),
         "primary",
         { id: "start-match" },
       ),
@@ -612,10 +802,15 @@ function actions() {
           `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
         ),
       ),
-      button("Start match", () => online.send({ type: "start" }), "primary", {
-        disabled: !online.ready || !online.room.isHost,
-        id: "start-room",
-      }),
+      button(
+        "Start match",
+        () => online.send({ type: "start" }),
+        "primary",
+        {
+          disabled: !online.ready || !online.room.isHost,
+          id: "start-room",
+        },
+      ),
     );
     return;
   }
@@ -625,12 +820,57 @@ function actions() {
       : "Connection paused · waiting for the other player";
     if (m.recovery)
       a.append(
-        button("Confirm recovery", () => online.confirmRecovery(), "primary", {
-          disabled: m.recovery.confirmed.includes(online.room.clientId),
-        }),
+        button(
+          "Confirm recovery",
+          () => online.confirmRecovery(),
+          "primary",
+          {
+            disabled: m.recovery.confirmed.includes(online.room.clientId),
+          },
+        ),
       );
     else
-      a.append(button("Connection details", () => $("panel-toggle").click()));
+      a.append(
+        button("Connection details", () => $("panel-toggle").click()),
+      );
+    return;
+  }
+  if (m.undoRequest) {
+    const request = m.undoRequest,
+      waiting = config.mode === "online" && online.seat === request.by;
+    $("message").textContent = waiting
+      ? "Undo requested · waiting for your opponent"
+      : `${names()[request.by]} requests an undo. Allow their last turn to be replayed?`;
+    if (waiting)
+      a.append(
+        button(
+          "Cancel request",
+          () => respondTakeback("undo-cancel", request),
+          "",
+          { disabled: online.pending },
+        ),
+      );
+    else
+      a.append(
+        button(
+          "Decline",
+          () => respondTakeback("undo-decline", request),
+          "",
+          {
+            id: "decline-undo",
+            disabled: config.mode === "online" && online.pending,
+          },
+        ),
+        button(
+          "Accept undo",
+          () => respondTakeback("undo-accept", request),
+          "primary",
+          {
+            id: "accept-undo",
+            disabled: config.mode === "online" && online.pending,
+          },
+        ),
+      );
     return;
   }
   const mine = myTurn(s) && !botBusy && !committing && !assistanceJob;
@@ -690,6 +930,10 @@ function actions() {
       );
     return;
   }
+  if (forcedTurn(s)) {
+    $("message").textContent = "Forced turn · playing automatically";
+    return;
+  }
   if (botPaused && config.mode === "computer" && !myTurn(s)) {
     $("message").textContent = "Computer paused.";
     a.append(
@@ -730,7 +974,9 @@ function actions() {
       ),
     );
   } else if (s.phase === "roll") {
-    $("message").textContent = `${names()[s.turn]} to roll`;
+    const previous = m.events.at(-1);
+    $("message").textContent =
+      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll`;
     a.append(
       button("Double", () => commit({ type: "double" }), "", {
         disabled: !mine || !canDouble(s),
@@ -745,13 +991,15 @@ function actions() {
       ? draft.complete()
         ? draft.draft.length
           ? "Turn ready to confirm."
-          : "No legal move · confirm the pass."
+          : "No legal move · passing automatically."
         : draft.current().bar[s.turn]
           ? "Enter from the bar first."
           : "Use all playable dice, then confirm."
       : `${names()[s.turn]} is moving`;
     if (config.mode === "computer" && myTurn(s))
-      a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
+      a.append(
+        button("Hint", showHint, "", { id: "hint", disabled: !mine }),
+      );
     a.append(
       button("Undo", () => draft.undo(), "", {
         disabled: !mine || !draft.draft.length,
@@ -762,9 +1010,7 @@ function actions() {
         id: "reset-draft",
       }),
       button(
-        draft.complete() && !draft.draft.length
-          ? "Confirm pass"
-          : "Confirm turn",
+        "Confirm turn",
         submit,
         `primary${draft.complete() && mine ? " turn-ready" : ""}`,
         { disabled: !mine || !draft.complete(), id: "confirm" },
@@ -774,7 +1020,9 @@ function actions() {
     $("message").textContent =
       `${offerName(s)} to ${s.cube.value * 2} from ${names()[s.pending.by]}. ${names()[decisionPlayer(s)]} to decide.`;
     a.append(
-      button("Pass", () => commit({ type: "pass" }), "", { disabled: !mine }),
+      button("Pass", () => commit({ type: "pass" }), "", {
+        disabled: !mine,
+      }),
       button(
         `Take ${s.cube.value * 2}`,
         () => commit({ type: "take" }),
@@ -822,7 +1070,8 @@ function actions() {
 }
 function names() {
   return (
-    model()?.names || model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
+    model()?.names ||
+    model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
   );
 }
 function playerControls(close = () => {}, prefix = "") {
@@ -830,7 +1079,9 @@ function playerControls(close = () => {}, prefix = "") {
   const choose = async (side) => {
     if (
       committing ||
-      (draft.draft.length && side !== null && side !== decisionPlayer(state()))
+      (draft.draft.length &&
+        side !== null &&
+        side !== decisionPlayer(state()))
     )
       return;
     const steps = clone(draft.draft);
@@ -855,7 +1106,9 @@ function playerControls(close = () => {}, prefix = "") {
       id: prefix + id,
       disabled:
         committing ||
-        (draft.draft.length > 0 && side !== null && side !== decisionPlayer(s)),
+        (draft.draft.length > 0 &&
+          side !== null &&
+          side !== decisionPlayer(s)),
     });
   return el(
     "div",
@@ -948,7 +1201,7 @@ function panel() {
         { class: "muted small" },
         config.mode === "computer"
           ? `GNUbg · ${config.strength}`
-          : "Take turns on this device. Only unconfirmed checker moves can be undone.",
+          : "Take turns on this device. Committed undo requests need the other player's approval.",
       ),
       ...(config.mode === "computer" ? [analysis.status] : []),
     );
@@ -981,7 +1234,8 @@ function panel() {
             .filter(
               (level) =>
                 level === 1 ||
-                (!s.off[s.turn] && !(s.rules.jacoby && s.cube.owner === null)),
+                (!s.off[s.turn] &&
+                  !(s.rules.jacoby && s.cube.owner === null)),
             )
             .map((level) =>
               button(`${level * s.cube.value} points`, () => {
@@ -1002,21 +1256,20 @@ function panel() {
       button("Save position", () => saveDialog(s)),
       button("Open in Solver", openSolver),
     );
-  if (config.mode === "online" && m.events.length)
+  if (m.started)
     p.append(
-      button("Save match history", async () => {
-        await put(
-          "items",
-          itemRecord("match", {
-            id: m.id,
-            title: `${names().join(" vs ")} · online`,
-            initial: m.initial,
-            events: m.events,
-            names: names(),
-            tags: ["online"],
-          }),
+      el(
+        "p",
+        { class: "muted small" },
+        "Game history saves automatically in this browser, including unfinished games.",
+      ),
+      el("a", { href: "/backgammon/library/#games" }, "All game history"),
+      button("Export this match", async () => {
+        await saveMatchHistory(m, names(), config.mode);
+        download(
+          JSON.stringify(await get("items", m.id), null, 2),
+          "backgammon-match.json",
         );
-        toast("Saved match history to Library.");
       }),
     );
   if (m.started)
@@ -1047,7 +1300,7 @@ function panel() {
               el(
                 "p",
                 {},
-                "Moves remain a draft until Confirm turn. Undo reverses one step; Reset restores the whole turn. You can also select a moved checker and tap an arrow target, or drag it back. Details has a legal-move selector.",
+                "Moves with choices remain a draft until Confirm turn. Undo reverses one step; Reset restores the whole draft. Undo last turn restores a committed choice; human opponents must agree. Forced turns and blocked passes play automatically and cannot be undone. Details has a legal-move selector.",
               ),
             ),
           ),
@@ -1067,7 +1320,7 @@ function panel() {
 }
 function eventText(e) {
   const a = e.action;
-  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : a.type + (a.dice ? " " + a.dice.join("–") : "")}`;
+  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : a.type + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
 }
 function detailDraft() {
   const p = $("draft-controls");
@@ -1096,6 +1349,7 @@ function detailDraft() {
 }
 async function persist() {
   if (game) {
+    const current = game;
     saved = {
       id: "play",
       game,
@@ -1105,6 +1359,7 @@ async function persist() {
     };
     try {
       await put("work", saved);
+      await saveMatchHistory(current, current.names, current.config.mode);
     } catch (e) {
       showError(e);
     }
@@ -1125,25 +1380,18 @@ async function commit(action) {
     const s = game.state,
       actor = decisionPlayer(s);
     const committed = ["opening", "roll"].includes(action.type)
-      ? { ...action, dice: cryptoDice() }
+      ? {
+          ...action,
+          dice:
+            action.type === "roll"
+              ? tableDice(game, actor, cryptoDice)
+              : cryptoDice(),
+        }
       : action;
-    game.state = transition(s, committed, actor);
+    game = playAction(game, committed, actor);
     if (action.type === "next") feedback = null;
     draft.draft = [];
-    game.events.push({ actor, action: committed });
     boardKey = "";
-    if (game.state.phase === "over")
-      await put(
-        "items",
-        itemRecord("match", {
-          id: game.id,
-          title: `${names().join(" vs ")} · ${game.state.scores.join("–")}`,
-          initial: game.initial,
-          events: game.events,
-          names: names(),
-          tags: ["played"],
-        }),
-      );
     await persist();
   } finally {
     committing = false;
@@ -1440,7 +1688,9 @@ async function computerTurn() {
     let action;
     if (s.phase === "resign") {
       const evalState = { ...s, phase: "roll", dice: [], pending: null };
-      const result = await analysis.run(evalState, { preset: config.strength });
+      const result = await analysis.run(evalState, {
+        preset: config.strength,
+      });
       action = {
         type: (
           s.matchLength
@@ -1457,13 +1707,16 @@ async function computerTurn() {
         action = { type: "move", steps: result.candidates[0].steps };
       else if (s.phase === "double")
         action = {
-          type: ["take", "pass", "beaver", "raccoon"].includes(result.action)
+          type: ["take", "pass", "beaver", "raccoon"].includes(
+            result.action,
+          )
             ? result.action
             : "take",
         };
       else
         action = {
-          type: result.action === "double" && canDouble(s) ? "double" : "roll",
+          type:
+            result.action === "double" && canDouble(s) ? "double" : "roll",
         };
     }
     if (token !== epoch || key !== positionKey(state())) return;

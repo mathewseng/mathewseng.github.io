@@ -2,6 +2,7 @@
 import { assertState, replay, clone } from "./rules.mjs";
 import { DEFAULT_BOARD_THEME, normalizeBoardTheme } from "./appearance.mjs";
 import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
+import { validateTakebacks } from "./table.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
@@ -16,7 +17,9 @@ export const settingsDefaults = {
 };
 export function settings() {
   try {
-    const saved = JSON.parse(localStorage.getItem(PREFIX + "settings") || "{}");
+    const saved = JSON.parse(
+      localStorage.getItem(PREFIX + "settings") || "{}",
+    );
     return {
       ...settingsDefaults,
       ...saved,
@@ -63,7 +66,8 @@ async function transact(store, mode, fn) {
       reject(tx.error || new Error("Storage transaction aborted."));
   });
 }
-export const get = (store, id) => transact(store, "readonly", (s) => s.get(id));
+export const get = (store, id) =>
+  transact(store, "readonly", (s) => s.get(id));
 export const all = (store = "items") =>
   transact(store, "readonly", (s) => s.getAll());
 export const remove = (store, id) =>
@@ -100,6 +104,14 @@ export function validateItem(item) {
     throw new Error("Invalid tags.");
   if (item.kind === "match") {
     replay(item.initial, item.events);
+    validateTakebacks(item, true);
+    if (
+      item.status !== undefined &&
+      !["in-progress", "game-complete", "match-complete"].includes(
+        item.status,
+      )
+    )
+      throw new Error("Invalid saved game status.");
   } else if (item.kind !== "collection") assertState(item.state);
   if (item.analysis) {
     const a = item.analysis;
@@ -165,18 +177,83 @@ export function itemRecord(kind, fields) {
     ...fields,
   };
 }
-export async function backup() {
+export async function backup(gamesOnly = false) {
   return JSON.stringify(
     {
       format: "backgammon-library",
       version: 1,
       exportedAt: new Date().toISOString(),
-      items: await all(),
-      progress: await all("progress"),
+      items: (await all()).filter(
+        (item) => !gamesOnly || item.kind === "match",
+      ),
+      progress: gamesOnly ? [] : await all("progress"),
     },
     null,
     2,
   );
+}
+// Archive every committed snapshot, including unfinished and online sessions.
+// Transactions preserve user annotations and serialize updates/accepted rewinds.
+// These snapshots come only from the validated local/protocol transition layer;
+// imported records still undergo full replay in validateItem above.
+const archives = new Map();
+export function saveMatchHistory(model, names, mode = "local") {
+  if (!model?.started) return Promise.resolve();
+  const id = model.id;
+  const key = JSON.stringify([
+    model.state.sequence,
+    model.events.length,
+    model.undoLog?.length || 0,
+    names,
+  ]);
+  const previous = archives.get(id);
+  if (previous?.key === key) return previous.promise;
+  const snapshot = clone(model);
+  const promise = (previous?.promise || Promise.resolve())
+    .catch(() => {})
+    .then(async () => {
+      assertState(snapshot.state);
+      validateTakebacks(snapshot);
+      const db = await database();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction("items", "readwrite"),
+          store = tx.objectStore("items"),
+          request = store.get(id);
+        request.onsuccess = () => {
+          const item = {
+            ...(request.result ||
+              itemRecord("match", {
+                id,
+                title: names.join(" vs ").slice(0, 160),
+                tags: ["played", mode],
+              })),
+            initial: snapshot.initial,
+            events: snapshot.events,
+            undoLog: snapshot.undoLog || [],
+            names: [...names],
+            status: snapshot.state.result?.matchOver
+              ? "match-complete"
+              : snapshot.state.phase === "over"
+                ? "game-complete"
+                : "in-progress",
+            gameCount: snapshot.state.gameNumber,
+            updatedAt: Date.now(),
+          };
+          store.put(item);
+        };
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () =>
+          reject(tx.error || new Error("Game history could not be saved."));
+      });
+    });
+  archives.set(id, { key, promise });
+  // Bound bookkeeping only; stored games are never evicted automatically.
+  if (archives.size > 32) archives.delete(archives.keys().next().value);
+  promise.catch(() => {
+    if (archives.get(id)?.promise === promise) archives.delete(id);
+  });
+  return promise;
 }
 export function parseBackup(text) {
   if (

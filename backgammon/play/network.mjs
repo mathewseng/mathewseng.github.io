@@ -9,6 +9,7 @@ import {
   verifyHistory,
 } from "../core/protocol.mjs";
 import { cryptoDice } from "../core/rules.mjs";
+import { saveMatchHistory } from "../core/storage.mjs";
 const KEY = "backgammon.v1.room.";
 function script(src) {
   return new Promise((resolve, reject) => {
@@ -62,7 +63,8 @@ export class Online {
         if (
           this.model?.id === s.id &&
           (s.epoch < this.model.epoch ||
-            (s.epoch === this.model.epoch && s.revision < this.model.revision))
+            (s.epoch === this.model.epoch &&
+              s.revision < this.model.revision))
         )
           return;
         if (this.model?.recovery && !s.recovery)
@@ -93,7 +95,9 @@ export class Online {
       try {
         this.model = accept(this.model, id, command, {
           hostId: r.clientId,
-          connected: this.roster.filter((p) => p.connected).map((p) => p.id),
+          connected: this.roster
+            .filter((p) => p.connected)
+            .map((p) => p.id),
           dice: cryptoDice,
           newId: () => crypto.randomUUID(),
         });
@@ -165,6 +169,12 @@ export class Online {
     }
   }
   persist() {
+    if (this.model?.started)
+      saveMatchHistory(
+        this.model,
+        this.model.players.map((p) => p.name),
+        "online",
+      ).catch(this.onError);
     try {
       localStorage.setItem(
         KEY + this.room.roomCode,
@@ -209,7 +219,8 @@ export class Online {
   }
   get seat() {
     return (
-      this.model?.players.findIndex((p) => p.id === this.room?.clientId) ?? -1
+      this.model?.players.findIndex((p) => p.id === this.room?.clientId) ??
+      -1
     );
   }
   get ready() {

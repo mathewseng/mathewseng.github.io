@@ -31,7 +31,8 @@ shell("library", "Library", "Saved in this browser. Yours to keep.");
 let items = [],
   selected = null,
   query = "",
-  collection = "";
+  collection = "",
+  kind = location.hash === "#games" ? "match" : "";
 $("workspace").className = "library-layout";
 $("workspace").querySelector(".stage").remove();
 const list = el("section", {
@@ -42,12 +43,26 @@ const list = el("section", {
 $("workspace").prepend(list);
 $("toolbar").prepend(
   button("Import", importDialog, "ghost"),
-  button(
-    "Export backup",
-    async () => download(await backup(), "backgammon-backup.json"),
-    "ghost",
-  ),
+  button("Export", exportDialog, "ghost", { id: "export-library" }),
 );
+function exportDialog() {
+  dialog(
+    "Export from this browser",
+    el("p", {}, "Keep a backup you can import on another device."),
+    [
+      button(
+        "Game history",
+        async () =>
+          download(await backup(true), "backgammon-game-history.json"),
+        "primary",
+        { id: "export-games" },
+      ),
+      button("Entire Library", async () =>
+        download(await backup(), "backgammon-backup.json"),
+      ),
+    ],
+  );
+}
 await refresh();
 async function refresh() {
   try {
@@ -72,11 +87,31 @@ function render() {
   const collections = [
     ...new Set(items.map((i) => i.collection).filter(Boolean)),
   ];
+  const typeFilter = select(
+    [
+      ["", "All items"],
+      ["match", "Game history"],
+      ["position", "Positions"],
+      ["mistake", "Mistakes"],
+    ],
+    kind,
+    (value) => {
+      kind = value;
+      history.replaceState(
+        null,
+        "",
+        value === "match" ? "#games" : location.pathname,
+      );
+      renderList();
+    },
+  );
+  typeFilter.setAttribute("aria-label", "Item type");
   list.replaceChildren(
     el(
       "div",
-      { class: "row" },
+      { class: "library-filters" },
       search,
+      typeFilter,
       select(
         [["", "All collections"], ...collections.map((c) => [c, c])],
         collection,
@@ -95,6 +130,7 @@ function renderList() {
   const shown = items.filter(
     (i) =>
       (!collection || i.collection === collection) &&
+      (!kind || i.kind === kind) &&
       [i.title, i.notes, ...i.tags]
         .join(" ")
         .toLowerCase()
@@ -110,14 +146,16 @@ function renderList() {
         el(
           "h2",
           {},
-          items.length ? "No matching items" : "A place for your next insight.",
+          items.length
+            ? "No matching items"
+            : "A place for your next insight.",
         ),
         el(
           "p",
           { class: "muted" },
           items.length
             ? "Try another search or collection."
-            : "Save a position from Solver, review a mistake in Trainer, or finish a local game. They will appear here.",
+            : "Played games save here automatically, including unfinished games. You can also save positions and training mistakes.",
         ),
         el("a", { href: "/backgammon/solver/" }, "Open Solver →"),
       ),
@@ -153,7 +191,7 @@ function renderList() {
         el(
           "p",
           {},
-          `${item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.tags.length ? " · " + item.tags.join(", ") : ""}`,
+          `${item.kind === "match" ? "Game history" : item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${item.tags.length ? " · " + item.tags.join(", ") : ""}`,
         ),
       ),
     );
@@ -195,6 +233,14 @@ function inspector() {
       maxlength: 100,
       placeholder: "Collection name",
     });
+  if (item.kind === "match" && item.undoLog?.length)
+    p.append(
+      el(
+        "p",
+        { class: "muted small" },
+        `${item.undoLog.length} accepted takeback${item.undoLog.length === 1 ? "" : "s"}. Export includes the original undone turns; match review follows the current line.`,
+      ),
+    );
   if (item.kind !== "collection") {
     const slot = el("div", { style: "aspect-ratio:876/600" });
     p.append(slot);
@@ -236,7 +282,10 @@ function inspector() {
         (location.href = `/backgammon/solver/?item=${encodeURIComponent(item.id)}`),
     ),
     button("Export item", () =>
-      download(JSON.stringify(item, null, 2), `backgammon-${item.kind}.json`),
+      download(
+        JSON.stringify(item, null, 2),
+        `backgammon-${item.kind}.json`,
+      ),
     ),
   );
   if (item.kind !== "match")
@@ -267,7 +316,10 @@ function inspector() {
   );
 }
 function importDialog() {
-  const file = el("input", { type: "file", accept: ".json,application/json" }),
+  const file = el("input", {
+      type: "file",
+      accept: ".json,application/json",
+    }),
     mode = select(
       [
         ["merge", "Merge into this Library"],

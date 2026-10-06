@@ -432,6 +432,9 @@ const server = http.createServer((req, res) => {
         (report.assistanceUX ||= []).push(
           await require("./assistance.cjs")(browser, base, out, browserName),
         );
+        (report.turnPolicy ||= []).push(
+          await require("./turn-policy.cjs")(browser, base, out, browserName),
+        );
         report.refreshUX.push(
           await require("./refresh.cjs")(browser, out, browserName),
         );
