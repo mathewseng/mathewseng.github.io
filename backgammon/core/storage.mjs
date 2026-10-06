@@ -10,6 +10,7 @@ export const settingsDefaults = {
   motion: "system",
   appearance: "dark",
   preset: "quick",
+  moveFeedback: false,
   boardTheme: DEFAULT_BOARD_THEME,
   sound: DEFAULT_SOUND,
 };

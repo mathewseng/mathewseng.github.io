@@ -50,6 +50,33 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   openedPosition = false;
 const analysis = new AnalysisPanel(),
   draft = new DraftBoard(ui.board, () => {});
+// Analysis can finish between pointerdown and pointerup. Keep these controls
+// connected so a completed-result repaint cannot swallow a click or focus.
+const editControl = button(
+  "Edit position",
+  () => {
+    if (!editing) {
+      analysisEpoch++;
+      analysis.cancel();
+      busy = false;
+    }
+    editing = !editing;
+    preview = null;
+    render();
+  },
+  "",
+  { id: "edit-position" },
+);
+const analyzeControl = button(
+  "Analyze",
+  () => (busy ? cancel() : analyze()),
+  "primary",
+  { id: "analyze" },
+);
+const sourceControl = button("Source", () => {
+  preview = null;
+  render();
+});
 const normalPoint = draft.board.onPoint;
 draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
 const hash = new URLSearchParams(location.hash.slice(1)),
@@ -168,41 +195,20 @@ function render() {
               ? `GNUbg: ${result.action} · ${result.settings.name}`
               : "Analyze from the player-on-roll perspective.";
   $("message").classList.toggle("error", !!problems.length);
-  $("actions").replaceChildren(
-    button(
-      editing ? "Done editing" : "Edit position",
-      () => {
-        if (!editing) {
-          analysisEpoch++;
-          analysis.cancel();
-          busy = false;
-        }
-        editing = !editing;
-        preview = null;
-        render();
-      },
-      "",
-      { id: "edit-position", disabled: !!review },
-    ),
-    button(
-      busy ? "Cancel" : "Analyze",
-      () => (busy ? cancel() : analyze()),
-      "primary",
-      {
-        disabled:
-          !!problems.length ||
-          !["move", "roll", "double"].includes(source.phase),
-        id: "analyze",
-      },
-    ),
-  );
-  if (preview)
-    $("actions").prepend(
-      button("Source", () => {
-        preview = null;
-        render();
-      }),
-    );
+  const editLabel = editing ? "Done editing" : "Edit position";
+  if (editControl.textContent !== editLabel)
+    editControl.textContent = editLabel;
+  editControl.disabled = !!review;
+  const analyzeLabel = busy ? "Cancel" : "Analyze";
+  if (analyzeControl.textContent !== analyzeLabel)
+    analyzeControl.textContent = analyzeLabel;
+  analyzeControl.disabled =
+    !!problems.length || !["move", "roll", "double"].includes(source.phase);
+  if (!editControl.isConnected)
+    $("actions").append(editControl, analyzeControl);
+  if (preview) {
+    if (!sourceControl.isConnected) $("actions").prepend(sourceControl);
+  } else sourceControl.remove();
   $("panel-toggle").textContent = result ? "Results" : "Details";
   panel(problems);
 }

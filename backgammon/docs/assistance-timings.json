@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-05",
+  "environment": "Apple M4 Pro, arm64, macOS 26.5.1; headless Playwright; local HTTP; no CPU throttling",
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg2",
+  "settings": "Quick, 0 ply, deterministic; opening 6-1 in an unlimited Jacoby session, centered cube 1",
+  "definitions": {
+    "coldHintMs": "First Hint click to rendered result in a fresh browser context and worker. Browser-level compiled WASM caches may already be warm.",
+    "warmHintMs": "Second Hint click to rendered result, same full position and settings; cached analysis.",
+    "feedbackMs": "Confirm click to rendered completed move feedback, with initialized engine."
+  },
+  "samplesPerBrowser": 1,
+  "limitations": "Illustrative end-to-end samples, not medians or p95. Local network and desktop CPU; not physical-phone or Internet download measurements. Other regression tests were running.",
+  "results": [
+    {
+      "browser": "chromium",
+      "version": "145.0.7632.6",
+      "coldHintMs": 121,
+      "warmHintMs": 32,
+      "feedbackMs": 20
+    },
+    {
+      "browser": "firefox",
+      "version": "146.0.1",
+      "coldHintMs": 186,
+      "warmHintMs": 60,
+      "feedbackMs": 56
+    },
+    {
+      "browser": "webkit",
+      "version": "26.0",
+      "coldHintMs": 174,
+      "warmHintMs": 47,
+      "feedbackMs": 50
+    }
+  ]
+}

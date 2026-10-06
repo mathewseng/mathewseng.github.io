@@ -730,7 +730,7 @@ export class DraftBoard {
               ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
               : "All entries are blocked. Confirm to pass your turn."
             : this.selected !== null
-              ? "Filled badges show forward distances, including combined dice. Arrow badges and dashed point borders let you move back."
+              ? "Tap or drag to a highlighted point. Arrow targets move back."
               : "Tap a highlighted checker to see single and combined moves, or drag it."
           : this.draft.length
             ? notation(this.draft, this.state.turn)

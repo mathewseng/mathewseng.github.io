@@ -269,8 +269,39 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     cases.push("cancel initializing bot without a late move; restart succeeds");
 
     // Entering the editor cancels automatic analysis; invalid drafts never run.
-    await page.getByRole("link", { name: "Solver", exact: true }).click();
-    await page.locator("#edit-position").click();
+    // Hold initialization so this tests cancellation, rather than racing the
+    // completed-result repaint between WebKit's pointerdown and pointerup.
+    let releaseEditor, editorStarted;
+    const editorGate = new Promise((r) => {
+        releaseEditor = r;
+      }),
+      editorLoading = new Promise((r) => {
+        editorStarted = r;
+      });
+    await page.route("**/engine/worker.mjs", async (route) => {
+      editorStarted();
+      await editorGate;
+      await route.continue().catch(() => {});
+    });
+    try {
+      await page.getByRole("link", { name: "Solver", exact: true }).click();
+      await page.waitForURL("**/backgammon/solver/**");
+      await Promise.race([
+        editorLoading,
+        page.waitForTimeout(15000).then(() => {
+          throw new Error("Automatic Solver initialization was not observed.");
+        }),
+      ]);
+      await page
+        .getByRole("button", { name: "Edit position", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Done editing", exact: true })
+        .waitFor();
+    } finally {
+      releaseEditor();
+      await page.unroute("**/engine/worker.mjs");
+    }
     assert.equal(await page.locator("#analyze").innerText(), "Analyze");
     await page
       .getByRole("button", { name: "Clear board", exact: true })
@@ -290,6 +321,62 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       0,
     );
     cases.push("editor cancels automatic work and rejects invalid positions");
+    // Complete a real analysis during a held click. The same Edit control must
+    // survive the result repaint, including WebKit's pointer target tracking.
+    const race = await context.newPage();
+    race.on("pageerror", (e) => errors.push(e.message));
+    let finishLoad, observeLoad;
+    const finishGate = new Promise((r) => {
+        finishLoad = r;
+      }),
+      observed = new Promise((r) => {
+        observeLoad = r;
+      });
+    await race.route("**/engine/worker.mjs", async (route) => {
+      observeLoad();
+      await finishGate;
+      await route.continue().catch(() => {});
+    });
+    try {
+      const url = await page.evaluate(async () => {
+        const { initialState } = await import("/backgammon/core/rules.mjs");
+        return (await import("/backgammon/core/xgid.mjs")).shareURL(
+          initialState({ phase: "move", dice: [6, 1] }),
+        );
+      });
+      await race.goto(url);
+      await Promise.race([
+        observed,
+        race.waitForTimeout(15000).then(() => {
+          throw new Error("Solver worker not observed for click test.");
+        }),
+      ]);
+      const target = await race.locator("#edit-position").boundingBox();
+      await race.mouse.move(
+        target.x + target.width / 2,
+        target.y + target.height / 2,
+      );
+      await race.mouse.down();
+      finishLoad();
+      await race.waitForFunction(
+        () => document.querySelector("#analyze")?.textContent === "Analyze",
+      );
+      await race.mouse.up();
+      await race
+        .getByRole("button", { name: "Done editing", exact: true })
+        .waitFor();
+      assert.ok(
+        await race
+          .getByRole("button", { name: "Clear board", exact: true })
+          .isVisible(),
+      );
+      cases.push(
+        "Solver Edit click survives analysis completion between pointerdown and pointerup",
+      );
+    } finally {
+      finishLoad();
+      await race.close();
+    }
     assert.deepEqual(errors, []);
     return { cases, screenshots };
   } finally {

@@ -47,7 +47,10 @@ import {
   showError,
   copy,
 } from "../ui/shell.mjs";
-import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { AnalysisPanel } from "../ui/analysis.mjs";
+import { decisionReview } from "../ui/decision-review.mjs";
+import { decisionFeedback } from "../core/decision-feedback.mjs";
+import { PRESETS } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
@@ -59,7 +62,7 @@ let config = {
     humanSide: 0,
     matchLength: 0,
     strength: "quick",
-    tutor: false,
+    tutor: settings().moveFeedback === true,
     warning: false,
     name: "You",
     opponent: "Friend",
@@ -69,14 +72,25 @@ let config = {
   botBusy = false,
   botPaused = false,
   feedback = null,
+  renderedFeedback = null,
   netStatus = "Not connected",
   saved = null,
   committing = false,
   leaving = false,
   lastMotion = "",
   renderedGameId = null,
+  assistanceJob = null,
   epoch = 0;
 const analysis = new AnalysisPanel();
+const feedbackStrip = el("div", {
+  class: "play-feedback",
+  id: "move-feedback",
+  role: "status",
+  "aria-live": "polite",
+  "aria-atomic": "true",
+  hidden: true,
+});
+document.querySelector(".action-area").append(feedbackStrip);
 const draft = new DraftBoard(ui.board, () => {
   actions();
   detailDraft();
@@ -104,7 +118,12 @@ const playersButton = button(
     let d;
     d = dialog(
       "Who plays each side?",
-      playerControls(() => d.close(), "dialog-"),
+      el(
+        "div",
+        { class: "stack" },
+        playerControls(() => d.close(), "dialog-"),
+        ...(config.mode === "computer" ? [feedbackToggle()] : []),
+      ),
     );
   },
   "ghost",
@@ -151,6 +170,7 @@ addEventListener("pageshow", (e) => {
         game,
         positionKey: positionKey(game.state),
         draft: draft.draft,
+        feedback,
       });
       persist();
     } else {
@@ -227,6 +247,7 @@ function restore(recovery) {
   recovery = clone(recovery);
   game = clone(recovery.game);
   config = game.config = localConfig(game.config);
+  feedback = recovery.feedback || null;
   boardKey = "";
   render();
   if (
@@ -242,6 +263,7 @@ function restore(recovery) {
 }
 function stopComputer() {
   epoch++;
+  releaseAssistance();
   analysis.cancel();
   analysis.status.textContent = "GNUbg loads when needed.";
   botBusy = false;
@@ -315,6 +337,7 @@ function render() {
       !!m?.started &&
         myTurn(s) &&
         !botBusy &&
+        !assistanceJob &&
         !opening.active &&
         s.phase === "move",
     );
@@ -412,19 +435,7 @@ function setupFields() {
           (v) => (config.strength = v),
         ),
       ),
-      el(
-        "label",
-        { class: "check" },
-        el("input", {
-          type: "checkbox",
-          checked: config.tutor,
-          onChange: (e) => {
-            config.tutor = e.target.checked;
-            render();
-          },
-        }),
-        "Tutor feedback",
-      ),
+      feedbackToggle(),
     );
   if (config.mode === "computer" && config.tutor)
     fields.append(
@@ -578,6 +589,7 @@ function actions() {
   const controls = $("table-player-controls");
   if (controls && m?.started && config.mode !== "online")
     controls.replaceChildren(playerControls());
+  renderFeedback();
   a.replaceChildren();
   if (!m) {
     $("message").textContent = "Ready for a game?";
@@ -621,7 +633,24 @@ function actions() {
       a.append(button("Connection details", () => $("panel-toggle").click()));
     return;
   }
-  const mine = myTurn(s) && !botBusy && !committing;
+  const mine = myTurn(s) && !botBusy && !committing && !assistanceJob;
+  if (assistanceJob?.kind === "submit") {
+    $("message").textContent =
+      `Checking your turn · ${PRESETS[config.strength].name}…`;
+    a.append(
+      button(
+        "Cancel evaluation",
+        () => {
+          releaseAssistance();
+          unlockDraft();
+          $("confirm")?.focus();
+        },
+        "",
+        { id: "cancel-feedback" },
+      ),
+    );
+    return;
+  }
   if (opening.active) {
     $("message").textContent = opening.busy
       ? "One die each…"
@@ -721,6 +750,8 @@ function actions() {
           ? "Enter from the bar first."
           : "Use all playable dice, then confirm."
       : `${names()[s.turn]} is moving`;
+    if (config.mode === "computer" && myTurn(s))
+      a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     a.append(
       button("Undo", () => draft.undo(), "", {
         disabled: !mine || !draft.draft.length,
@@ -911,11 +942,12 @@ function panel() {
         {},
         config.mode === "computer" ? "Computer table" : "Same-device table",
       ),
+      ...(config.mode === "computer" ? [feedbackToggle()] : []),
       el(
         "p",
         { class: "muted small" },
         config.mode === "computer"
-          ? `GNUbg · ${config.strength} · ${config.tutor ? "tutor enabled" : "unassisted play"}`
+          ? `GNUbg · ${config.strength}`
           : "Take turns on this device. Only unconfirmed checker moves can be undone.",
       ),
       ...(config.mode === "computer" ? [analysis.status] : []),
@@ -958,17 +990,6 @@ function panel() {
               }),
             ),
         );
-      }),
-    );
-  if (feedback && config.mode !== "online")
-    p.append(
-      el(
-        "div",
-        { class: "notice" },
-        `Last move: ${feedback.result.error < 0.005 ? "equivalent at this setting" : `${equity(feedback.result.error)} equity below the best evaluated move`}.`,
-      ),
-      button("Review decision", () => {
-        dialog("Tutor review", resultView(feedback.result));
       }),
     );
   if (
@@ -1080,6 +1101,7 @@ async function persist() {
       game,
       positionKey: positionKey(game.state),
       draft: clone(draft.draft),
+      feedback,
     };
     try {
       await put("work", saved);
@@ -1094,6 +1116,7 @@ async function commit(action) {
     online.send(action);
     return;
   }
+  releaseAssistance();
   committing = true;
   draft.enabled = false;
   draft.render();
@@ -1105,6 +1128,7 @@ async function commit(action) {
       ? { ...action, dice: cryptoDice() }
       : action;
     game.state = transition(s, committed, actor);
+    if (action.type === "next") feedback = null;
     draft.draft = [];
     game.events.push({ actor, action: committed });
     boardKey = "";
@@ -1127,65 +1151,272 @@ async function commit(action) {
     render();
   }
 }
-async function submit() {
-  const source = clone(state()),
-    steps = clone(draft.draft),
-    token = epoch;
-  if (config.tutor && config.mode === "computer") {
-    $("confirm").disabled = true;
+function feedbackToggle() {
+  return el(
+    "label",
+    {
+      class: "check feedback-toggle",
+      title:
+        "After each of your confirmed checker turns, show the best move and estimated equity lost.",
+    },
+    el("input", {
+      type: "checkbox",
+      "data-move-feedback": true,
+      checked: config.tutor,
+      onChange: (e) => {
+        config.tutor = e.target.checked;
+        if (game) game.config.tutor = config.tutor;
+        try {
+          saveSettings({ moveFeedback: config.tutor });
+        } catch (error) {
+          showError(error);
+        }
+        if (!config.tutor && assistanceJob?.kind === "submit") {
+          releaseAssistance();
+          unlockDraft();
+        }
+        renderFeedback();
+        panel();
+        if (!e.target.isConnected)
+          $("panel").querySelector("[data-move-feedback]")?.focus();
+        persist();
+      },
+    }),
+    "Show move feedback",
+  );
+}
+function renderFeedback() {
+  feedbackStrip.hidden = !(
+    game?.started &&
+    config.mode === "computer" &&
+    config.tutor &&
+    feedback
+  );
+  document
+    .querySelector(".workspace")
+    .classList.toggle("has-move-feedback", !feedbackStrip.hidden);
+  if (feedbackStrip.hidden) return;
+  if (renderedFeedback === feedback) return;
+  renderedFeedback = feedback;
+  const f = decisionFeedback(feedback.result);
+  const review = button(
+    "",
+    () => {
+      decisionReview(feedback.source, { title: "Your last turn" }).result(
+        feedback.result,
+      );
+    },
+    "feedback-review",
+    {
+      id: "review-feedback",
+      "aria-label": `Review your last turn. ${f.label} ${f.value} ${f.units}. Best move ${f.best.notation}.`,
+    },
+  );
+  review.append(
+    el(
+      "span",
+      { class: "feedback-heading" },
+      el("span", {}, "Your last turn"),
+      el("strong", { class: "value" }, `${f.label} ${f.value}`),
+    ),
+    el("span", { class: "feedback-best" }, `Best ${f.best.notation}`),
+    el(
+      "span",
+      { class: "muted small" },
+      `${feedback.result.settings.name} · ${f.units} · Review`,
+    ),
+  );
+  feedbackStrip.replaceChildren(review);
+}
+function activeAssistance(job) {
+  return (
+    assistanceJob === job &&
+    config.mode === "computer" &&
+    game?.id === job.gameId &&
+    positionKey(state()) === job.key
+  );
+}
+function releaseAssistance() {
+  const job = assistanceJob;
+  if (!job) return;
+  assistanceJob = null;
+  if (!job.done) analysis.cancel();
+  if (job.dialog?.open) job.dialog.close();
+}
+function unlockDraft() {
+  draft.enabled =
+    state().phase === "move" &&
+    myTurn(state()) &&
+    !botBusy &&
+    !committing &&
+    !opening.active &&
+    !assistanceJob;
+  draft.render();
+  actions();
+  detailDraft();
+}
+function assistance(kind) {
+  const job = {
+    kind,
+    gameId: game.id,
+    key: positionKey(state()),
+    source: clone(state()),
+    done: false,
+  };
+  assistanceJob = job;
+  draft.enabled = false;
+  draft.render();
+  actions();
+  return job;
+}
+function showHint() {
+  if (
+    assistanceJob ||
+    committing ||
+    botBusy ||
+    config.mode !== "computer" ||
+    !myTurn(state()) ||
+    state().phase !== "move"
+  )
+    return;
+  const job = assistance("hint");
+  const review = decisionReview(job.source, {
+    onClose: () => {
+      if (assistanceJob !== job) return;
+      releaseAssistance();
+      unlockDraft();
+      panel();
+      $("hint")?.focus();
+    },
+    onUse: (steps) => {
+      if (!activeAssistance(job)) return;
+      releaseAssistance();
+      draft.draft = clone(steps);
+      draft.selected = null;
+      draft.hint = "Hint added to your draft. Review it, then confirm.";
+      unlockDraft();
+      panel();
+      persist();
+      $("confirm").focus();
+    },
+  });
+  job.dialog = review.dialog;
+  const run = async () => {
+    if (!activeAssistance(job)) return;
+    job.done = false;
+    review.loading(analysis.status, PRESETS[config.strength].name);
     try {
-      const result = await analysis.run(source, {
-        submitted: steps,
-        preset: "quick",
+      const result = await analysis.run(job.source, {
+        preset: config.strength,
+        priority: 20,
       });
-      if (token !== epoch) return;
-      feedback = { source, result };
-      if (result.error > 0.02)
+      if (!activeAssistance(job)) return;
+      job.done = true;
+      review.result(result);
+    } catch (error) {
+      if (!activeAssistance(job)) return;
+      job.done = true;
+      if (error.name !== "AbortError") review.error(error, run);
+    }
+  };
+  run();
+}
+async function submit() {
+  if (
+    committing ||
+    assistanceJob ||
+    botBusy ||
+    !myTurn(state()) ||
+    state().phase !== "move" ||
+    !draft.complete()
+  )
+    return;
+  const steps = clone(draft.draft);
+  if (!config.tutor || config.mode !== "computer") {
+    await commit({ type: "move", steps });
+    return;
+  }
+  const job = assistance("submit");
+  const finish = async (result = null) => {
+    if (!activeAssistance(job)) return;
+    releaseAssistance();
+    feedback = result ? { source: job.source, result } : null;
+    await commit({ type: "move", steps });
+    // Only committed decisions enter mistake review. Storage failure must not
+    // prevent a legal turn, and the full original decision context is retained.
+    if (result?.error > 0.02) {
+      try {
         await put(
           "items",
           itemRecord("mistake", {
             title: "Checker decision to review",
-            state: source,
+            state: job.source,
             submitted: steps,
             analysis: result,
             tags: ["checker", "mistake"],
           }),
         );
-      if (config.warning && result.error > 0.04) {
-        if (token !== epoch) return;
-        let d;
-        d = dialog(
-          "Review before confirming?",
-          el(
-            "p",
-            {},
-            `GNUbg evaluates this turn ${equity(result.error)} below its best move at Quick. This is an estimate.`,
-          ),
-          [
-            button("Revise", () => {
-              d.close();
-              actions();
-            }),
-            button(
-              "Confirm anyway",
-              () => {
-                d.close();
-                if (token === epoch) commit({ type: "move", steps });
-              },
-              "primary",
-            ),
-          ],
-        );
-        return;
+      } catch (error) {
+        showError(error);
       }
-    } catch (e) {
-      if (token !== epoch) return;
-      if (e.name !== "AbortError") showError(e);
-      actions();
+    }
+  };
+  const onClose = () => {
+    if (assistanceJob !== job) return;
+    releaseAssistance();
+    unlockDraft();
+    $("confirm")?.focus();
+  };
+  try {
+    const result = await analysis.run(job.source, {
+      submitted: steps,
+      preset: config.strength,
+      priority: 20,
+    });
+    if (!activeAssistance(job)) return;
+    job.done = true;
+    if (config.warning && result.error > 0.04) {
+      const f = decisionFeedback(result);
+      job.dialog = dialog(
+        "Review before confirming?",
+        el(
+          "p",
+          {},
+          `${f.label} ${f.value} ${f.units} at ${result.settings.name}. This is an estimate. Revise your draft or confirm this turn.`,
+        ),
+        [
+          button("Revise", () => job.dialog.close()),
+          button("Confirm anyway", () => finish(result), "primary"),
+        ],
+      );
+      job.dialog.addEventListener("close", onClose, { once: true });
+    } else await finish(result);
+  } catch (error) {
+    if (!activeAssistance(job)) return;
+    job.done = true;
+    if (error.name === "AbortError") {
+      onClose();
       return;
     }
+    job.dialog = dialog(
+      "Move feedback unavailable",
+      el(
+        "div",
+        { class: "stack" },
+        el("p", { role: "alert" }, error.message),
+        el(
+          "p",
+          {},
+          "Your draft is saved. You can play this turn without feedback or keep editing and try again.",
+        ),
+      ),
+      [
+        button("Keep editing", () => job.dialog.close()),
+        button("Confirm without feedback", () => finish(), "primary"),
+      ],
+    );
+    job.dialog.addEventListener("close", onClose, { once: true });
   }
-  if (token === epoch) await commit({ type: "move", steps });
 }
 async function computerTurn() {
   const s = state();

@@ -429,6 +429,9 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.assistanceUX ||= []).push(
+          await require("./assistance.cjs")(browser, base, out, browserName),
+        );
         report.refreshUX.push(
           await require("./refresh.cjs")(browser, out, browserName),
         );
