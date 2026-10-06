@@ -62,6 +62,71 @@ export function checkerPosition(s, point, player, orientation = 0) {
       : 595 - (Math.min(n, 5) - 1) * 47,
   };
 }
+// Original top-stack slots, compressed exactly like the live checker stacks.
+// A checker using several dice leaves one origin, not ghosts at intermediate stops.
+export function lastMoveGhosts(lastMove, orientation = 0) {
+  const ghosts = [];
+  for (const [key, { count, before }] of Object.entries(
+    lastMove?.origins || {},
+  )) {
+    const point = key === "bar" ? key : Number(key),
+      slots = new Map();
+    for (let i = before - count; i < before; i++) {
+      const slot = point === "bar" ? 0 : Math.min(i, 4);
+      slots.set(slot, (slots.get(slot) || 0) + 1);
+    }
+    for (const [slot, n] of slots) {
+      const g = point === "bar" ? null : pointGeometry(point, orientation);
+      ghosts.push({
+        point,
+        count: n,
+        x: g ? g.x + 30 : 408,
+        y: g
+          ? g.top
+            ? 65 + slot * 47
+            : 595 - slot * 47
+          : lastMove.player !== orientation
+            ? 100
+            : 506,
+      });
+    }
+  }
+  return ghosts;
+}
+function originGhost({ x, y, count }, player) {
+  const g = svg("g", {
+    class: "last-move-ghost",
+    "data-ghost-count": count,
+    "aria-hidden": "true",
+    "pointer-events": "none",
+  });
+  g.append(
+    svg("circle", {
+      cx: x,
+      cy: y,
+      r: 24,
+      fill: boardColor(`checker${player}`),
+      opacity: 0.16,
+    }),
+  );
+  for (const [color, width, opacity] of [
+    ["surface", 6, 0.85],
+    ["caption", 2.5, 0.85],
+  ])
+    g.append(
+      svg("circle", {
+        cx: x,
+        cy: y,
+        r: 28,
+        fill: "none",
+        stroke: boardColor(color),
+        "stroke-width": width,
+        "stroke-dasharray": "3 5",
+        opacity,
+      }),
+    );
+  return g;
+}
 function patternOverlay(node, role) {
   const overlay = node.cloneNode(false);
   overlay.removeAttribute("class");
@@ -336,11 +401,14 @@ export class Board {
       hideDice,
       interactive,
       preview,
+      historical = false,
     },
   ) {
     const group = svg("g", {
-      class: "board-dice",
-      "aria-label": "Rolled dice",
+      class: `board-dice${historical ? " last-roll" : ""}`,
+      "aria-label": historical
+        ? `${playerName(s.turn)} last roll: ${s.dice.join(" and ")}`
+        : "Rolled dice",
       ...(this.container.id === "board" ? { id: "dice" } : {}),
     });
     if (hideDice || !s.dice.length) {
@@ -348,7 +416,9 @@ export class Board {
       return group;
     }
     const values =
-      s.dice[0] === s.dice[1] ? Array(4).fill(s.dice[0]) : s.dice;
+      !historical && s.dice[0] === s.dice[1]
+        ? Array(4).fill(s.dice[0])
+        : s.dice;
     const used = [...usedDice],
       center = s.turn === orientation ? 610 : 204;
     const pips = {
@@ -370,7 +440,7 @@ export class Board {
         "data-die": value,
         class: `board-die${consumed ? " consumed" : ""}${preferredDie === value && clickable ? " preferred" : ""}`,
         role: clickable ? "button" : "img",
-        "aria-label": `${clickable ? "Prefer die " : "Die "}${value}${consumed ? ", used" : ", available"}`,
+        "aria-label": `${clickable ? "Prefer die " : "Die "}${value}${historical ? ", previous roll" : consumed ? ", used" : ", available"}`,
         ...(clickable
           ? { tabindex: 0, "aria-pressed": preferredDie === value }
           : {}),
@@ -867,6 +937,7 @@ export class Board {
         "data-pattern": "bar",
       }),
     );
+    const ghosts = lastMoveGhosts(lastMove, orientation);
     for (let p = 0; p < 24; p++) {
       const { x, y, top } = pointGeometry(p, orientation),
         v = s.points[p],
@@ -889,7 +960,7 @@ export class Board {
               )
               .join(" or ")
           : ""
-      }${moved ? `, ${moved} moved last turn` : ""}`;
+      }${moved ? `, ${moved} moved last turn` : ""}${lastMove?.origins?.[p] ? `, previous location of ${lastMove.origins[p].count} ${playerName(lastMove.player)} checkers, shown as ghosts` : ""}`;
       const g = svg("g", {
         "data-point": p,
         role: "button",
@@ -948,6 +1019,8 @@ export class Board {
             distance(p, orientation),
           ),
         );
+      for (const ghost of ghosts.filter((ghost) => ghost.point === p))
+        g.append(originGhost(ghost, lastMove.player));
       for (let i = 0; i < Math.min(n, 5); i++)
         g.append(
           checker(
@@ -1055,6 +1128,14 @@ export class Board {
           class: "point-hit",
         }),
       );
+      if (lastMove?.player === p && lastMove.origins?.bar) {
+        g.setAttribute(
+          "aria-label",
+          `${g.getAttribute("aria-label")}, previous location of ${lastMove.origins.bar.count} checkers, shown as ghosts`,
+        );
+        for (const ghost of ghosts.filter((ghost) => ghost.point === "bar"))
+          g.append(originGhost(ghost, p));
+      }
       if (s.bar[p]) g.append(checker(408, y, p, s.bar[p], compact));
       else
         g.append(
@@ -1237,36 +1318,52 @@ export class Board {
       );
       children.push(cube);
     }
+    const historicalDice =
+      !s.dice.length && lastMove?.dice?.length === 2 && !preview;
     children.push(
       svg(
         "text",
         {
-          x: s.dice.length && s.turn !== orientation ? 610 : 196,
+          x: historicalDice
+            ? lastMove.player !== orientation
+              ? 610
+              : 196
+            : s.dice.length && s.turn !== orientation
+              ? 610
+              : 196,
           y: 337,
           "text-anchor": "middle",
           fill: boardColor("caption"),
           "font-size": 14,
           "letter-spacing": 2,
         },
-        preview
-          ? "MOVE PREVIEW"
-          : editor
-            ? "POSITION EDITOR"
-            : interactive
-              ? ""
-              : "BACKGAMMON",
+        historicalDice
+          ? "LAST ROLL"
+          : preview
+            ? "MOVE PREVIEW"
+            : editor
+              ? "POSITION EDITOR"
+              : interactive
+                ? ""
+                : "BACKGAMMON",
       ),
     );
     children.push(
-      this.dice(s, {
-        orientation,
-        usedDice,
-        chooseDie,
-        preferredDie,
-        hideDice,
-        interactive,
-        preview,
-      }),
+      this.dice(
+        historicalDice
+          ? { ...s, dice: lastMove.dice, turn: lastMove.player }
+          : s,
+        {
+          orientation,
+          usedDice,
+          chooseDie,
+          preferredDie,
+          hideDice,
+          interactive: historicalDice ? false : interactive,
+          historical: historicalDice,
+          preview,
+        },
+      ),
     );
     this.svg.replaceChildren(...children);
     if (

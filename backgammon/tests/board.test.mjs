@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { pointAt, pointGeometry, checkerPosition } from "../ui/board.mjs";
+import {
+  pointAt,
+  pointGeometry,
+  checkerPosition,
+  lastMoveGhosts,
+} from "../ui/board.mjs";
 import { initialState } from "../core/rules.mjs";
 test("board hit regions identify every point in either orientation without changing canonical indexes", () => {
   for (const orientation of [0, 1])
@@ -39,4 +44,34 @@ test("checker animation geometry remains bounded for tall stacks, the bar and be
   assert.deepEqual(checkerPosition(s, 12, 0, 1), { x: 54, y: 407 });
   assert.deepEqual(checkerPosition(s, "bar", 0, 0), { x: 408, y: 506 });
   assert.equal(checkerPosition(s, "off", 0, 0).x, 843);
+});
+
+test("last-move ghosts use original slots in either orientation and compress tall stacks", () => {
+  for (const orientation of [0, 1]) {
+    const ghosts = lastMoveGhosts(
+      {
+        player: 0,
+        origins: {
+          5: { count: 2, before: 3 },
+          12: { count: 4, before: 15 },
+          bar: { count: 2, before: 2 },
+        },
+      },
+      orientation,
+    );
+    assert.equal(ghosts.length, 4);
+    assert.deepEqual(
+      ghosts.map((g) => g.count),
+      [1, 1, 4, 2],
+    );
+    const top = pointGeometry(5, orientation).top;
+    assert.deepEqual(
+      ghosts.slice(0, 2).map((g) => g.y),
+      top ? [112, 159] : [548, 501],
+    );
+    assert.equal(ghosts[3].y, orientation ? 100 : 506);
+    for (const g of ghosts)
+      assert.ok(g.x > 0 && g.x < 876 && g.y > 28 && g.y < 632);
+  }
+  assert.deepEqual(lastMoveGhosts(null), []);
 });

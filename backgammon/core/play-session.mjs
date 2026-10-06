@@ -92,21 +92,53 @@ export function matchesPlayContext(context, gameId, state) {
 export function lastMove(game) {
   if (!game || !["roll", "double", "resign"].includes(game.state.phase))
     return null;
-  for (const event of [...game.events].reverse()) {
+  for (let index = game.events.length - 1; index >= 0; index--) {
+    const event = game.events[index];
     if (["opening", "roll", "next"].includes(event.action.type)) break;
     if (event.action.type !== "move") continue;
-    if (event.actor === game.state.turn || !event.action.steps.length)
-      return null;
-    const counts = new Map();
+    if (event.actor === game.state.turn) return null;
+    const counts = new Map(),
+      origins = new Map(),
+      changes = new Map();
     for (const step of event.action.steps) {
       if (counts.get(step.from))
         counts.set(step.from, counts.get(step.from) - 1);
+      else origins.set(step.from, (origins.get(step.from) || 0) + 1);
       counts.set(step.to, (counts.get(step.to) || 0) + 1);
+      changes.set(step.from, (changes.get(step.from) || 0) - 1);
+      changes.set(step.to, (changes.get(step.to) || 0) + 1);
+    }
+    let dice = game.initial?.dice || [];
+    for (let i = index - 1; i >= 0; i--) {
+      const action = game.events[i].action;
+      if (["opening", "roll"].includes(action.type)) {
+        dice = action.dice;
+        break;
+      }
+      if (action.type === "next") {
+        dice = [];
+        break;
+      }
     }
     return {
       player: event.actor,
+      dice: clone(dice),
       steps: clone(event.action.steps),
       points: Object.fromEntries([...counts].filter(([, n]) => n > 0)),
+      // Recover this player's original stack sizes from committed deltas. Hits
+      // only change the other player's checkers; no replay or new dice needed.
+      origins: Object.fromEntries(
+        [...origins].map(([point, count]) => {
+          const after =
+            point === "bar"
+              ? game.state.bar[event.actor]
+              : Math.max(
+                  0,
+                  game.state.points[point] * (event.actor ? -1 : 1),
+                );
+          return [point, { count, before: after - changes.get(point) }];
+        }),
+      ),
     };
   }
   return null;

@@ -163,10 +163,41 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     await page.locator("#confirm").click();
     await waitState(0, "roll");
     await page.locator(".last-moved-checker").first().waitFor();
+    await page.locator(".last-move-ghost").first().waitFor();
+    assert.equal(await page.locator(".last-roll .board-die").count(), 2);
+    assert.equal(await page.locator(".last-roll [role=button]").count(), 0);
+    const previousDice = await page.evaluate(async () => {
+      const { get } = await import("/backgammon/core/storage.mjs");
+      const { lastMove } = await import("/backgammon/core/play-session.mjs");
+      return lastMove((await get("work", "play")).game).dice;
+    });
+    assert.deepEqual(
+      await page
+        .locator(".last-roll .board-die")
+        .evaluateAll((nodes) => nodes.map((n) => Number(n.dataset.die))),
+      previousDice,
+    );
     assert.match(await page.locator("#draft-line").innerText(), /Last move/);
     const last = await saved();
     assert.equal(last.game.events.at(-1).actor, 1, JSON.stringify(last.game));
     assert.equal(last.game.events.at(-1).action.type, "move");
+    await page.reload();
+    await page.waitForFunction(() =>
+      document.querySelector("#roll,#resume-match"),
+    );
+    if (await page.locator("#resume-match").count())
+      await page.locator("#resume-match").click();
+    await page.locator(".last-move-ghost").first().waitFor();
+    assert.deepEqual((await saved()).game.events, last.game.events);
+    assert.deepEqual(
+      await page
+        .locator(".last-roll .board-die")
+        .evaluateAll((nodes) => nodes.map((n) => Number(n.dataset.die))),
+      previousDice,
+    );
+    cases.push(
+      "last-move ghosts and original dice survive reload without rerolling",
+    );
     for (const [width, height] of [
       [1366, 768],
       [375, 667],
@@ -198,6 +229,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     await page.locator("#roll").click();
     await page.locator("#confirm").waitFor();
     assert.equal(await page.locator("[data-last-moved]").count(), 0);
+    assert.equal(await page.locator(".last-move-ghost,.last-roll").count(), 0);
     assert.doesNotMatch(
       await page.locator("#draft-line").innerText(),
       /Last move/,

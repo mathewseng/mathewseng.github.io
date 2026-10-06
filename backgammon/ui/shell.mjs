@@ -798,7 +798,7 @@ export class DraftBoard {
             : this.draft.length
               ? notation(this.draft, this.state.turn)
               : this.lastMove
-                ? `Last move · ${notation(this.lastMove.steps, this.lastMove.player)} · outlined checkers`
+                ? `Last move${this.lastMove.dice?.length ? ` · rolled ${this.lastMove.dice.join("–")}` : ""} · ${notation(this.lastMove.steps, this.lastMove.player)}${this.lastMove.steps.length ? " · ghosts show previous locations" : ""}`
                 : "");
   }
   picker() {

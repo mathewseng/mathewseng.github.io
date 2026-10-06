@@ -147,6 +147,13 @@ test("last-turn markers track final checker destinations and clear on a committe
   );
   commit(game, { type: "move", steps: chain.steps });
   assert.deepEqual(lastMove(game).points, { [chain.steps[1].to]: 1 });
+  assert.deepEqual(lastMove(game).origins, {
+    [chain.steps[0].from]: {
+      count: 1,
+      before: game.initial.points[chain.steps[0].from],
+    },
+  });
+  assert.deepEqual(lastMove(game).dice, [3, 1]);
   const history = clone(game);
   game.state = transition(game.state, { type: "double" }, game.state.turn);
   game.events.push({ actor: game.state.turn, action: { type: "double" } });
@@ -157,12 +164,14 @@ test("last-turn markers track final checker destinations and clear on a committe
   commit(game, { type: "roll", dice: [2, 6] });
   assert.equal(lastMove(game), null);
 });
-test("last-turn markers count separate checkers, bearing off, and never reuse a pass", () => {
+test("last-turn markers count separate checkers and bearing off; passes retain dice without ghosts", () => {
   const s = initialState({ phase: "move", dice: [1, 1] });
   const game = table(s);
   const steps = Array.from({ length: 4 }, () => ({ from: 5, to: 4, die: 1 }));
   commit(game, { type: "move", steps });
   assert.deepEqual(lastMove(game).points, { 4: 4 });
+  assert.deepEqual(lastMove(game).origins, { 5: { count: 4, before: 5 } });
+  assert.deepEqual(lastMove(game).dice, [1, 1]);
   const points = Array(24).fill(0);
   points[0] = 3;
   points[23] = -15;
@@ -171,6 +180,7 @@ test("last-turn markers count separate checkers, bearing off, and never reuse a 
   );
   commit(bearoff, { type: "move", steps: legalPaths(bearoff.state)[0].steps });
   assert.deepEqual(lastMove(bearoff).points, { off: 2 });
+  assert.deepEqual(lastMove(bearoff).origins, { 0: { count: 2, before: 3 } });
   const blocked = Array(24).fill(0);
   blocked[5] = 14;
   blocked[23] = -2;
@@ -180,5 +190,43 @@ test("last-turn markers count separate checkers, bearing off, and never reuse a 
     initialState({ points: blocked, bar: [1, 0], phase: "move", dice: [1, 2] }),
   );
   commit(pass, { type: "move", steps: legalPaths(pass.state)[0].steps });
-  assert.equal(lastMove(pass), null);
+  assert.deepEqual(lastMove(pass).origins, {});
+  assert.deepEqual(lastMove(pass).points, {});
+  assert.deepEqual(lastMove(pass).dice, [1, 2]);
+});
+
+test("last move keeps original committed opening/regular dice and bar origins through hits for either player", () => {
+  const opening = table(initialState());
+  commit(opening, { type: "opening", dice: [4, 4] });
+  commit(opening, { type: "opening", dice: [6, 1] });
+  commit(opening, { type: "move", steps: legalPaths(opening.state)[0].steps });
+  assert.deepEqual(lastMove(opening).dice, [6, 1]);
+  commit(opening, { type: "roll", dice: [2, 5] });
+  commit(opening, { type: "move", steps: legalPaths(opening.state)[0].steps });
+  assert.deepEqual(lastMove(opening).dice, [2, 5]);
+  assert.deepEqual(lastMove(clone(opening)), lastMove(opening));
+  for (const turn of [0, 1]) {
+    let points = Array(24).fill(0);
+    points[5] = 14;
+    points[23] = -1;
+    points[18] = -14;
+    if (turn) points = points.reverse().map((n) => -n);
+    const game = table(
+      initialState({
+        phase: "move",
+        dice: [1, 2],
+        points,
+        turn,
+        bar: turn ? [0, 1] : [1, 0],
+      }),
+    );
+    const path = legalPaths(game.state).find(
+      (p) => p.steps[0].die === 1 && p.steps[1].from === p.steps[0].to,
+    );
+    commit(game, { type: "move", steps: path.steps });
+    assert.deepEqual(lastMove(game).origins, { bar: { count: 1, before: 1 } });
+    assert.deepEqual(lastMove(game).dice, [1, 2]);
+    assert.equal(game.state.bar[1 - turn], 1);
+    assert.equal(lastMove(game).player, turn);
+  }
 });

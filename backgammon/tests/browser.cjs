@@ -404,6 +404,9 @@ const server = http.createServer((req, res) => {
           await failureContext.close();
         }
         await context.close();
+        (report.lastMoveUX ||= []).push(
+          await require("./last-move.cjs")(browser, base, out, browserName),
+        );
         report.checkerUX ||= [];
         report.checkerUX.push(
           await require("./checker-ux.cjs")(browser, base, out, browserName),
