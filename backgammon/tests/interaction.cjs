@@ -1,8 +1,9 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 const { chromium } = require("playwright");
 const fs = require("node:fs");
 const assert = require("node:assert/strict");
 (async () => {
-  const b = await chromium.launch({
+  const b = await launchQuietBrowser(chromium, {
     headless: true,
     ...(process.env.CHROME_PATH
       ? { executablePath: process.env.CHROME_PATH }

@@ -1,10 +1,11 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 // Optional live PeerJS smoke test. Requires real internet/signaling; never mocked.
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
 (async () => {
-  const browser = await chromium.launch({
+  const browser = await launchQuietBrowser(chromium, {
     headless: true,
     ...(process.env.CHROME_PATH
       ? { executablePath: process.env.CHROME_PATH }

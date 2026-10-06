@@ -1,3 +1,4 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 const assert = require("node:assert/strict");
 module.exports = async function research(browser, base, output) {
   const context = await browser.newContext({
@@ -229,9 +230,7 @@ if (require.main === module) {
   (async () => {
     fs.mkdirSync("backgammon/test-results/research", { recursive: true });
     const name = process.env.BG_BROWSERS || "chromium";
-    const b = await browsers[name].launch(
-      name === "chromium" ? { args: ["--mute-audio"] } : {},
-    );
+    const b = await launchQuietBrowser(browsers[name]);
     try {
       await module.exports(
         b,

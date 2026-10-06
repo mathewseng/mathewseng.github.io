@@ -1,8 +1,9 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 // Run after generate-positions.mjs with a local repository HTTP server on port 8765.
 const { chromium } = require("playwright");
 const fs = require("node:fs");
 (async () => {
-  const browser = await chromium.launch({
+  const browser = await launchQuietBrowser(chromium, {
     headless: true,
     ...(process.env.CHROME_PATH
       ? { executablePath: process.env.CHROME_PATH }

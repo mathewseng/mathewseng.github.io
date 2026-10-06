@@ -1,9 +1,10 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 // Local HTTP benchmark. Not a real-phone or WAN measurement.
 const { chromium } = require("playwright");
 const fs = require("node:fs");
 const os = require("node:os");
 (async () => {
-  const browser = await chromium.launch({
+  const browser = await launchQuietBrowser(chromium, {
     headless: true,
     ...(process.env.CHROME_PATH
       ? { executablePath: process.env.CHROME_PATH }

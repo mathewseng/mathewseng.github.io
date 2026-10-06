@@ -1,8 +1,9 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 // Add automatic Quick -> Deep pipeline timings to an existing speed report.
 const { chromium } = require("playwright"),
   fs = require("node:fs");
 (async () => {
-  const browser = await chromium.launch({ args: ["--mute-audio"] });
+  const browser = await launchQuietBrowser(chromium);
   try {
     const p = await browser.newPage({ serviceWorkers: "block" });
     await p.goto(

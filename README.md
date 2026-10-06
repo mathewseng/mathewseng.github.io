@@ -57,3 +57,8 @@ not block publication. Check both workflows when diagnosing a release.
 ## Backgammon validation
 
 See [backgammon/README.md](backgammon/README.md) for controls, architecture, engine licensing/builds, multiplayer, backups, offline behavior, and precise format/capability limits. `scripts/assemble-site.sh _site` is the shared deployment assembly. After assembly, `node backgammon/tests/browser.cjs` checks the actual published files with Playwright and real WASM; the independent validation workflow runs this in Chromium. Root npm dependencies are test tooling only. Backgammon includes 24 readable board palettes, per-element color/pattern controls, on-board dice, combined tap/drag moves, draft reversal/reset, configurable money-session rules (Jacoby, automatic opening doubles, beavers and raccoons), local side/bot controls, last-move outlines, automatic Solver analysis with resumable Play context, opponent-approved committed undo, automatic forced turns/passes, and automatically saved/exportable game history.
+
+Browser automation uses `scripts/quiet-browser.cjs` to mute automated Chromium,
+Firefox and WebKit output without changing saved game sound preferences. Use
+`launchQuietBrowser(browserType, options)` for new browser scripts. Real-time
+Web Audio runs through a silent output; offline audio rendering remains testable.

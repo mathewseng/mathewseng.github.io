@@ -1,3 +1,4 @@
+const { launchQuietBrowser } = require("../../../scripts/quiet-browser.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { chromium } = require("playwright");
@@ -7,7 +8,7 @@ const output = process.env.OFC_EV_SCREENSHOTS || "/tmp/ofc-extended-ev-screensho
 fs.mkdirSync(output, { recursive: true });
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" });
+  const browser = await launchQuietBrowser(chromium, { headless: true, executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" });
   try {
     for (const [width, height] of [[1440, 900], [390, 844], [430, 932]]) {
       const page = await browser.newPage({ viewport: { width, height } });

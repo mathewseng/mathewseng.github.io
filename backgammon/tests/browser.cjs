@@ -1,3 +1,4 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 /* Browser integration uses the assembled _site and real bundled WASM. Run after assemble-site.sh. */
 const { chromium, firefox, webkit } = require("playwright");
 const assert = require("node:assert/strict");
@@ -52,11 +53,8 @@ const server = http.createServer((req, res) => {
     for (const browserName of (process.env.BG_BROWSERS || "chromium").split(
       ",",
     )) {
-      const browser = await { chromium, firefox, webkit }[
-        browserName
-      ].launch({
+      const browser = await launchQuietBrowser({ chromium, firefox, webkit }[browserName], {
         headless: true,
-        ...(browserName === "chromium" ? { args: ["--mute-audio"] } : {}),
         ...(browserName === "chromium" && process.env.CHROME_PATH
           ? { executablePath: process.env.CHROME_PATH }
           : {}),

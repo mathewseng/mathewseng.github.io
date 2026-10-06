@@ -1,3 +1,4 @@
+const { launchQuietBrowser } = require("../../../scripts/quiet-browser.cjs");
 const assert = require("node:assert/strict");
 const { chromium } = require("playwright");
 
@@ -47,7 +48,7 @@ async function placeTurn(page, state) {
 }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" });
+  const browser = await launchQuietBrowser(chromium, { headless: true, executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" });
   try {
     // Shared storage deliberately reproduces the previous same-browser join failure.
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });

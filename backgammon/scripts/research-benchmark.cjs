@@ -1,8 +1,9 @@
+const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 const { chromium } = require("playwright");
 const fs = require("node:fs"),
   os = require("node:os");
 (async () => {
-  const browser = await chromium.launch({ args: ["--mute-audio"] });
+  const browser = await launchQuietBrowser(chromium);
   try {
     const page = await browser.newPage({ serviceWorkers: "block" });
     await page.goto(
