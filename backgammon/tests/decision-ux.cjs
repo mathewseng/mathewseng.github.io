@@ -85,6 +85,8 @@ module.exports = async function decisionUX(
       [1440, 900],
     ]) {
       await page.setViewportSize({ width, height });
+      // Wait for the app's media-query listener to apply its desktop table layout.
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const before = await page.locator("#board").boundingBox();
       // Actual content may grow arbitrarily. Only the secondary region should scroll.
       await page.evaluate(() => {

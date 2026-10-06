@@ -38,9 +38,17 @@ module.exports = async function research(browser, base, output) {
       });
       if (!cancelled || cp.completed !== 32)
         throw new Error("Real batch cancellation failed");
-      for(const c of whole.candidates) {
-        const r=resumed.candidates.find(v=>v.key===c.key);
-        if(!r || r.samples!==c.samples || Math.abs(r.equity-c.equity)>1e-6 || Math.abs(r.standardError-c.standardError)>1e-6) throw new Error("Resumed samples differ beyond floating-point cache tolerance");
+      for (const c of whole.candidates) {
+        const r = resumed.candidates.find((v) => v.key === c.key);
+        if (
+          !r ||
+          r.samples !== c.samples ||
+          Math.abs(r.equity - c.equity) > 1e-6 ||
+          Math.abs(r.standardError - c.standardError) > 1e-6
+        )
+          throw new Error(
+            "Resumed samples differ beyond floating-point cache tolerance",
+          );
       }
       let invalid = false;
       try {
@@ -117,7 +125,8 @@ module.exports = async function research(browser, base, output) {
     await page.waitForFunction(
       () =>
         document.querySelector("#analyze")?.textContent === "Analyze" &&
-        document.querySelector("#message")?.textContent.includes("· Deep") && !!document.querySelector("#analysis-comparison"),
+        document.querySelector("#message")?.textContent.includes("· Deep") &&
+        !!document.querySelector("#analysis-comparison"),
     );
     assert.ok(await page.locator("#analysis-comparison").count());
     await page.screenshot({
@@ -140,7 +149,8 @@ module.exports = async function research(browser, base, output) {
     await page.waitForFunction(
       () =>
         document.querySelector("#analyze")?.textContent === "Analyze" &&
-        document.querySelector("#message")?.textContent.includes("· Deep") && !!document.querySelector("#analysis-comparison"),
+        document.querySelector("#message")?.textContent.includes("· Deep") &&
+        !!document.querySelector("#analysis-comparison"),
     );
     await page.locator("#rollout-controls summary").click();
     assert.match(
@@ -158,6 +168,7 @@ module.exports = async function research(browser, base, output) {
       {},
       { timeout: 60000 },
     );
+    assert.equal(await page.locator("#inspector").evaluate(n => n.scrollTop), 0);
     await page.screenshot({
       path: output + "/solver-rollout-desktop.png",
       fullPage: true,
@@ -214,10 +225,13 @@ module.exports = async function research(browser, base, output) {
 };
 if (require.main === module) {
   const fs = require("node:fs"),
-    { chromium } = require("playwright");
+    browsers = require("playwright");
   (async () => {
     fs.mkdirSync("backgammon/test-results/research", { recursive: true });
-    const b = await chromium.launch({ args: ["--mute-audio"] });
+    const name = process.env.BG_BROWSERS || "chromium";
+    const b = await browsers[name].launch(
+      name === "chromium" ? { args: ["--mute-audio"] } : {},
+    );
     try {
       await module.exports(
         b,

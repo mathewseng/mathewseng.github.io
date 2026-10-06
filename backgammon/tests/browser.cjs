@@ -56,6 +56,7 @@ const server = http.createServer((req, res) => {
         browserName
       ].launch({
         headless: true,
+        ...(browserName === "chromium" ? { args: ["--mute-audio"] } : {}),
         ...(browserName === "chromium" && process.env.CHROME_PATH
           ? { executablePath: process.env.CHROME_PATH }
           : {}),
@@ -420,6 +421,9 @@ const server = http.createServer((req, res) => {
           await failureContext.close();
         }
         await context.close();
+        const researchOutput = path.join(out, `research-${browserName}`);
+        fs.mkdirSync(researchOutput, { recursive: true });
+        await require("./research.cjs")(browser, base, researchOutput);
         (report.lastMoveUX ||= []).push(
           await require("./last-move.cjs")(browser, base, out, browserName),
         );

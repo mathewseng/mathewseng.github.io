@@ -51,28 +51,20 @@ export function resultView(
 ) {
   const node = el("div", { class: "stack" });
   const insight = comparisonSummary(result, previous);
-  if (insight)
+  if (insight && (insight.changed !== null || insight.close))
     node.append(
       el(
         "p",
-        { class: "notice", id: "analysis-comparison" },
-        `${insight.changed === true ? "The preferred move changed since " + insight.previousName + ". " : insight.changed === false ? "The preferred move is unchanged since " + insight.previousName + ". " : ""}${insight.close ? (result.method === "rollout" ? "The leading moves are not separated by the conservative sampling margin." : "The leading moves are close: less than 0.020 equity apart. Treat the ranking as an estimate.") : "Compare the evaluated differences, not just the rank."}`,
-      ),
-    );
-  if (result.screening)
-    node.append(
-      el(
-        "p",
-        { class: "muted small" },
-        `${result.screening.finalists} finalists from ${result.screening.total} alternatives screened at ${result.screening.plies} ply. A screened-out move can still be better; only finalists are compared below.`,
+        { class: "notice small", id: "analysis-comparison" },
+        `${insight.changed === true ? "Best move changed since " + insight.previousName + ". " : insight.changed === false ? "Best move unchanged since " + insight.previousName + ". " : ""}${insight.close ? (result.method === "rollout" ? "Leaders overlap within sampling uncertainty." : "Close decision · under 0.020 equity apart.") : ""}`.trim(),
       ),
     );
   if (result.method === "rollout")
     node.append(
       el(
         "p",
-        { class: "notice" },
-        `${result.settings.trials} trials per alternative · ${result.settings.policy}. ${result.uncertainty}`,
+        { class: "muted small" },
+        `${result.settings.trials} trials per alternative · intervals measure sampling error only.`,
       ),
     );
   if (result.type === "cube") {
@@ -155,7 +147,7 @@ export function resultView(
         if (result.method === "rollout")
           b.append(
             el(
-              "span",
+              "div",
               { class: "small" },
               `95% sampling interval: ${equity(c.equity - 1.96 * c.standardError)} to ${equity(c.equity + 1.96 * c.standardError)} equity`,
             ),
@@ -164,7 +156,7 @@ export function resultView(
           const f = moveFeatures(source, c.steps);
           b.append(
             el(
-              "span",
+              "div",
               { class: "muted small move-observations" },
               `${f.blots} exposed blot${f.blots === 1 ? "" : "s"} · ${f.madePoints} made points · ${f.hit} hit · ${f.borneOff} off · ${f.pips} pips`,
             ),
@@ -214,6 +206,30 @@ export function resultView(
         ),
       );
     }
+  }
+  if (result.screening || result.method === "rollout") {
+    const details = el(
+      "details",
+      {},
+      el("summary", {}, "Analysis method & limits"),
+    );
+    if (result.screening)
+      details.append(
+        el(
+          "p",
+          { class: "muted small" },
+          `${result.screening.finalists} finalists from ${result.screening.total} alternatives screened at ${result.screening.plies} ply. A screened-out move can still be better; only finalists are compared above.`,
+        ),
+      );
+    if (result.method === "rollout")
+      details.append(
+        el(
+          "p",
+          { class: "muted small" },
+          `${result.settings.policy}. ${result.uncertainty}`,
+        ),
+      );
+    node.append(details);
   }
   if (result.method === "rollout" && result.type === "cube")
     node.append(

@@ -60,7 +60,7 @@ try {
           "Setting",
           "Median compute",
           "Observed range",
-          "First result incl. startup",
+          "Complete incl. startup",
           "Cache hit",
         ],
         rows.map((r) => [
@@ -228,6 +228,8 @@ const run = button("Run measurement", async () => {
     run.textContent = "Run measurement";
     return;
   }
+  const measuredPreset = devicePreset,
+    measuredTopic = deviceTopic;
   const own = new EngineClient({
     onStatus: (_, text) => ($("device-status").textContent = text),
   });
@@ -235,16 +237,16 @@ const run = button("Run measurement", async () => {
   run.textContent = "Cancel";
   try {
     const fixture = (await json("../data/exercises.json")).items.find(
-      (f) => f.topic === deviceTopic,
+      (f) => f.topic === measuredTopic,
     );
-    const options = devicePreset.startsWith("rollout")
+    const options = measuredPreset.startsWith("rollout")
       ? {
-          rollout: { trials: Number(devicePreset.slice(7)), seed: 20261006 },
+          rollout: { trials: Number(measuredPreset.slice(7)), seed: 20261006 },
           onProgress: (cp) =>
             ($("device-status").textContent =
               `${cp.completed} completed trials per alternative`),
         }
-      : { preset: devicePreset };
+      : { preset: measuredPreset };
     const started = performance.now(),
       answer = await own.analyze(fixture.state, options);
     if (client !== own) return;
@@ -253,7 +255,7 @@ const run = button("Run measurement", async () => {
         ["Setting / position", "Compute", "Including startup"],
         [
           [
-            `${label(devicePreset)} / ${deviceTopic}`,
+            `${label(measuredPreset)} / ${measuredTopic}`,
             time(answer.elapsedMs),
             time(performance.now() - started),
           ],

@@ -812,7 +812,7 @@ async function rollOut() {
     result = answer;
     checkpoint = answer.checkpoint;
     const action = review?.events[index]?.action;
-    if (action && result.type === "cube")
+    if (action && result.type === "cube" && ["roll", "double", "take", "pass", "beaver", "raccoon"].includes(action.type))
       Object.assign(result, gradeCube(source, result, action.type));
     if (review) reviewResults.set(index, result);
   } catch (e) {
@@ -821,6 +821,7 @@ async function rollOut() {
     if (token === analysisEpoch) {
       busy = false;
       render();
+      if (result?.method === "rollout") $("panel").parentElement.scrollTop = 0;
     }
   }
 }

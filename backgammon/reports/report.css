@@ -133,5 +133,15 @@
     padding: 12px 8px;
   }
 }
-.engine-report .report-main p, .engine-report dd { overflow-wrap: anywhere; }
-.engine-report .report-main section { min-width: 0; }
+.engine-report .report-main p,
+.engine-report dd {
+  overflow-wrap: anywhere;
+}
+.engine-report .report-main section {
+  min-width: 0;
+}
+
+.engine-report h3 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
