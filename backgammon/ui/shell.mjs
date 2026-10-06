@@ -717,6 +717,7 @@ export class DraftBoard {
         this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
       preferredDie: this.preferred,
       hideDice: !!this.hideDice,
+      lastMove: this.preview ? null : this.lastMove,
     });
     players(s, this.names);
     $("draft-line").setAttribute("role", "status");
@@ -733,7 +734,9 @@ export class DraftBoard {
               : "Tap a highlighted checker to see single and combined moves, or drag it."
           : this.draft.length
             ? notation(this.draft, this.state.turn)
-            : "");
+            : this.lastMove
+              ? `Last move · ${notation(this.lastMove.steps, this.lastMove.player)} · outlined checkers`
+              : "");
   }
   picker() {
     const options = this.candidates();

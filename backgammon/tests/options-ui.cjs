@@ -43,8 +43,9 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       .click();
     assert.equal(
       await page.getByLabel("Match length", { exact: true }).inputValue(),
-      "5",
+      "0",
     );
+    await page.getByLabel("Match length", { exact: true }).selectOption("5");
     await page.locator(".game-rules summary").click();
     assert.ok(
       await page.getByLabel("Jacoby rule", { exact: true }).isDisabled(),
@@ -58,7 +59,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       await page
         .getByLabel("Automatic opening doubles", { exact: true })
         .inputValue(),
-      "0",
+      "1",
     );
     assert.equal(
       await page

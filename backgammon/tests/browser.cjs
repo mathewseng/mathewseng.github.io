@@ -76,6 +76,9 @@ const server = http.createServer((req, res) => {
         await page
           .getByRole("button", { name: "Same device", exact: true })
           .click();
+        await page
+          .getByLabel("Match length", { exact: true })
+          .selectOption("5");
         await shot("setup");
         await page.locator("#start-match").click();
         do {
@@ -418,6 +421,14 @@ const server = http.createServer((req, res) => {
           await require("./options-ui.cjs")(browser, base, out, browserName),
         );
         report.refreshUX ||= [];
+        (report.tableControls ||= []).push(
+          await require("./table-controls.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
+        );
         report.refreshUX.push(
           await require("./refresh.cjs")(browser, out, browserName),
         );

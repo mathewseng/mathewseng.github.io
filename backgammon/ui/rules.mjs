@@ -9,7 +9,7 @@ export function ruleControls(matchLength, initial, change = () => {}) {
   const jacoby = el("input", { type: "checkbox", checked: rules.jacoby });
   const automatic = select(
     [
-      [0, "Off · usual setting"],
+      [0, "Off"],
       [1, "At most one opening double"],
       [2, "At most two opening doubles"],
       [3, "At most three opening doubles"],

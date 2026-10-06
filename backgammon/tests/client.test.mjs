@@ -78,6 +78,35 @@ test("worker failure rejects work and permits retry", async () => {
   assert.ok((await next).valid);
   client.destroy();
 });
+test("cancel during initialization then immediately queue a new position", async () => {
+  const workers = [];
+  const client = new EngineClient({
+    workerFactory: () => {
+      const w = new WorkerMock();
+      workers.push(w);
+      return w;
+    },
+  });
+  try {
+    const first = client.analyze(initialState({ phase: "roll" }));
+    const rejected = assert.rejects(first, { name: "AbortError" });
+    client.cancel();
+    const next = client.analyze(initialState({ phase: "move", dice: [3, 1] }));
+    await rejected;
+    await wait();
+    assert.equal(workers.length, 2);
+    assert.equal(workers[0].terminated, true);
+    assert.equal(workers[1].messages.at(-1).type, "analyze");
+    workers[1].reply({
+      id: workers[1].messages.at(-1).id,
+      type: "result",
+      result: { valid: true },
+    });
+    assert.equal((await next).valid, true);
+  } finally {
+    client.destroy();
+  }
+});
 test("priority current request terminates background work", async () => {
   const workers = [],
     client = new EngineClient({

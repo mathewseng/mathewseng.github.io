@@ -35,6 +35,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await page
       .getByRole("button", { name: "Same device", exact: true })
       .click();
+    await page.getByLabel("Match length", { exact: true }).selectOption("5");
     await page.locator("#start-match").click();
     await page.clock.runFor(200);
     await shot("opening-ready");

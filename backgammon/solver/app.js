@@ -34,6 +34,7 @@ import {
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
+import { matchesPlayContext } from "../core/play-session.mjs";
 const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
@@ -43,7 +44,10 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   review = null,
   index = 0,
   reviewResults = new Map(),
-  busy = false;
+  busy = false,
+  analysisEpoch = 0,
+  sourceContext = null,
+  openedPosition = false;
 const analysis = new AnalysisPanel(),
   draft = new DraftBoard(ui.board, () => {});
 const normalPoint = draft.board.onPoint;
@@ -51,22 +55,38 @@ draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
 const hash = new URLSearchParams(location.hash.slice(1)),
   params = new URLSearchParams(location.search);
 try {
-  if (hash.has("state") || hash.has("xgid")) source = sharedPosition(hash);
-  else if (params.has("item")) {
+  if (hash.has("state") || hash.has("xgid")) {
+    source = sharedPosition(hash);
+    openedPosition = true;
+    const context = await get("work", "solver-context");
+    if (matchesPlayContext(context, params.get("fromPlay"), source))
+      sourceContext = context;
+  } else if (params.has("item")) {
     const item = await get("items", params.get("item"));
     if (!item) throw new Error("This item is not in this browser’s Library.");
+    openedPosition = true;
     if (item.kind === "match") {
       review = item;
       index = 0;
       source = replay(item.initial, item.events)[0];
-    } else source = clone(item.state);
+    } else {
+      source = clone(item.state);
+      openedPosition = true;
+    }
   } else {
     const saved = await get("work", "solver");
-    if (saved?.state) source = saved.state;
+    if (saved?.state) {
+      source = saved.state;
+      sourceContext = saved.context || null;
+      openedPosition = true;
+    }
   }
 } catch (e) {
   showError(e);
 }
+if (sourceContext)
+  document.querySelector('.nav a[href="/backgammon/play/"]').href =
+    `/backgammon/play/#resume=${encodeURIComponent(sourceContext.game.id)}`;
 $("toolbar").prepend(
   button("Share", () => copy(shareURL(source)), "ghost"),
   button(
@@ -76,7 +96,39 @@ $("toolbar").prepend(
   ),
 );
 render();
+if (openedPosition) {
+  saveDraft();
+  autoAnalyze();
+}
+addEventListener("pagehide", () => {
+  analysisEpoch++;
+  analysis.cancel();
+  busy = false;
+});
+addEventListener("pageshow", (e) => {
+  if (e.persisted) {
+    render();
+    if (!result) autoAnalyze();
+  }
+});
+function autoAnalyze() {
+  const token = analysisEpoch,
+    key = positionKey(source);
+  requestAnimationFrame(() => {
+    if (
+      token === analysisEpoch &&
+      key === positionKey(source) &&
+      !editing &&
+      !busy &&
+      !result &&
+      !errors(source).length &&
+      ["move", "roll", "double"].includes(source.phase)
+    )
+      analyze();
+  });
+}
 function changed() {
+  analysisEpoch++;
   analysis.cancel();
   busy = false;
   result = null;
@@ -86,7 +138,7 @@ function changed() {
 }
 async function saveDraft() {
   try {
-    await put("work", { id: "solver", state: source });
+    await put("work", { id: "solver", state: source, context: sourceContext });
   } catch (e) {
     showError(e);
   }
@@ -108,16 +160,23 @@ function render() {
       ? "Tap to place from off or return a checker to off."
       : preview
         ? "Preview only. Return to the source to edit."
-        : result?.type === "checker"
-          ? `Best evaluated: ${result.candidates[0].notation} · ${result.settings.name}`
-          : result?.type === "cube"
-            ? `GNUbg: ${result.action} · ${result.settings.name}`
-            : "Analyze from the player-on-roll perspective.";
+        : busy
+          ? "Analyzing this position with GNUbg…"
+          : result?.type === "checker"
+            ? `Best evaluated: ${result.candidates[0].notation} · ${result.settings.name}`
+            : result?.type === "cube"
+              ? `GNUbg: ${result.action} · ${result.settings.name}`
+              : "Analyze from the player-on-roll perspective.";
   $("message").classList.toggle("error", !!problems.length);
   $("actions").replaceChildren(
     button(
       editing ? "Done editing" : "Edit position",
       () => {
+        if (!editing) {
+          analysisEpoch++;
+          analysis.cancel();
+          busy = false;
+        }
         editing = !editing;
         preview = null;
         render();
@@ -158,6 +217,7 @@ function panel(problems) {
         () => {
           if (review) {
             review = null;
+            sourceContext = null;
             source = initialState({
               phase: "move",
               dice: [3, 1],
@@ -316,7 +376,11 @@ function panel(problems) {
   if (!problems.length && ["move", "roll", "double"].includes(source.phase))
     p.append(
       button("Play from this position", async () => {
-        await put("work", { id: "study", state: clone(source) });
+        await put("work", {
+          id: "study",
+          state: clone(source),
+          context: sourceContext,
+        });
         location.href = "/backgammon/play/#study=1";
       }),
     );
@@ -562,6 +626,7 @@ function xgidDialog() {
           source = fromXGID(text.value);
           d.close();
           changed();
+          autoAnalyze();
         },
         "primary",
       ),
@@ -569,6 +634,8 @@ function xgidDialog() {
   );
 }
 async function analyze() {
+  if (busy) return;
+  const token = ++analysisEpoch;
   busy = true;
   preview = null;
   render();
@@ -578,7 +645,7 @@ async function analyze() {
     const answer = await analysis.run(source, {
       submitted: event?.action.type === "move" ? event.action.steps : null,
     });
-    if (key !== positionKey(source)) return;
+    if (token !== analysisEpoch || key !== positionKey(source)) return;
     if (
       answer.type === "cube" &&
       event &&
@@ -590,18 +657,22 @@ async function analyze() {
     result = answer;
     if (review) reviewResults.set(index, answer);
   } catch (e) {
-    if (e.name !== "AbortError") showError(e);
+    if (token === analysisEpoch && e.name !== "AbortError") showError(e);
   } finally {
-    busy = false;
-    render();
+    if (token === analysisEpoch) {
+      busy = false;
+      render();
+    }
   }
 }
 function cancel() {
+  analysisEpoch++;
   analysis.cancel();
   busy = false;
   render();
 }
 function seek(i) {
+  analysisEpoch++;
   analysis.cancel();
   index = i;
   source = clone(replay(review.initial, review.events)[i]);
@@ -609,6 +680,7 @@ function seek(i) {
   preview = null;
   busy = false;
   render();
+  if (!result) autoAnalyze();
 }
 function importMatch() {
   const input = el("input", {
@@ -648,6 +720,8 @@ function importMatch() {
             review = parsed;
           }
           index = 0;
+          sourceContext = null;
+          reviewResults.clear();
           source = clone(review.initial);
           d.close();
           changed();
@@ -659,6 +733,8 @@ function importMatch() {
 }
 async function progressive() {
   if (!review) return;
+  analysis.cancel();
+  const token = ++analysisEpoch;
   busy = true;
   render();
   const states = replay(review.initial, review.events);
@@ -683,6 +759,7 @@ async function progressive() {
         submitted: event.action.type === "move" ? event.action.steps : null,
         priority: 0,
       });
+      if (token !== analysisEpoch) return;
       if (answer.type === "cube")
         Object.assign(answer, gradeCube(states[i], answer, event.action.type));
       reviewResults.set(i, answer);
@@ -690,10 +767,12 @@ async function progressive() {
       if (!busy) break;
     }
   } catch (e) {
-    if (e.name !== "AbortError") showError(e);
+    if (token === analysisEpoch && e.name !== "AbortError") showError(e);
   }
-  busy = false;
-  render();
+  if (token === analysisEpoch) {
+    busy = false;
+    render();
+  }
 }
 function showReviewErrors() {
   const rows = [...reviewResults.entries()]

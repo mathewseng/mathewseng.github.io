@@ -57,7 +57,7 @@ function patternOverlay(node, role) {
   overlay.setAttribute("data-pattern", role);
   return overlay;
 }
-function checker(x, y, p, count = 1, compact = false) {
+function checker(x, y, p, count = 1, compact = false, moved = false) {
   const g = svg("g", {
     class: "checker",
     "aria-hidden": "true",
@@ -99,6 +99,24 @@ function checker(x, y, p, count = 1, compact = false) {
         count,
       ),
     );
+  if (moved) {
+    g.classList.add("last-moved-checker");
+    for (const [color, width] of [
+      ["surface", 7],
+      ["selection", 3],
+    ])
+      g.append(
+        svg("circle", {
+          cx: x,
+          cy: y,
+          r: 26,
+          fill: "none",
+          stroke: boardColor(color),
+          "stroke-width": width,
+          "stroke-dasharray": "7 4",
+        }),
+      );
+  }
   return g;
 }
 export class Board {
@@ -451,6 +469,7 @@ export class Board {
         sources: [],
         destinations: [],
         moves: [],
+        lastMove: null,
         playback: true,
       });
       const duration = this.animateMove(current, after, step);
@@ -727,6 +746,7 @@ export class Board {
       chooseDie = null,
       preferredDie = null,
       hideDice = false,
+      lastMove = null,
     } = {},
   ) {
     if (!playback) {
@@ -754,6 +774,7 @@ export class Board {
       chooseDie,
       preferredDie,
       hideDice,
+      lastMove,
     };
     this.svg.classList.toggle("has-moves", interactive && sources.length > 0);
     const compact = this.container.clientWidth < 600;
@@ -804,7 +825,11 @@ export class Board {
     for (let p = 0; p < 24; p++) {
       const { x, y, top } = pointGeometry(p, orientation),
         v = s.points[p],
-        n = Math.abs(v);
+        n = Math.abs(v),
+        moved =
+          n && (v > 0 ? 0 : 1) === lastMove?.player
+            ? Math.min(n, lastMove.points[p] || 0)
+            : 0;
       const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${
         destinations.includes(p)
           ? ", legal destination, dice " +
@@ -817,7 +842,7 @@ export class Board {
               )
               .join(" or ")
           : ""
-      }`;
+      }${moved ? `, ${moved} moved last turn` : ""}`;
       const g = svg("g", {
         "data-point": p,
         role: "button",
@@ -827,6 +852,7 @@ export class Board {
         "aria-pressed": selected === p,
         class: `point${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}`,
       });
+      if (moved) g.setAttribute("data-last-moved", moved);
       g.append(
         svg("rect", {
           x,
@@ -871,6 +897,7 @@ export class Board {
             v > 0 ? 0 : 1,
             i === 4 && n > 5 ? n : 1,
             compact,
+            moved > 0 && (i === 4 || i >= n - moved),
           ),
         );
       if (destinations.includes(p))
@@ -991,9 +1018,11 @@ export class Board {
         tabindex: -1,
         role: "button",
         "aria-disabled": !interactive,
-        "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${destinations.includes("off") && s.turn === p ? ", legal destination" : ""}`,
+        "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${destinations.includes("off") && s.turn === p ? ", legal destination" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
         class: `point${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
       });
+      const movedOff = lastMove?.player === p ? lastMove.points.off || 0 : 0;
+      if (movedOff) off.setAttribute("data-last-moved", movedOff);
       off.append(
         svg("rect", {
           x: 820,
@@ -1028,6 +1057,9 @@ export class Board {
             height: 7,
             rx: 3,
             fill: boardColor(`checker${p}`),
+            stroke: boardColor("selection"),
+            "stroke-width": i >= s.off[p] - movedOff ? 3 : 0,
+            class: i >= s.off[p] - movedOff ? "last-moved-checker" : "",
             "pointer-events": "none",
           }),
         );

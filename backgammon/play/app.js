@@ -12,12 +12,25 @@ import {
   playerName,
   decisionPlayer,
   ruleSummary,
-  STANDARD_RULES,
   canImmediateRedouble,
   offerDepth,
   offerName,
 } from "../core/rules.mjs";
-import { get, put, itemRecord, settings } from "../core/storage.mjs";
+import {
+  get,
+  put,
+  itemRecord,
+  settings,
+  saveSettings,
+} from "../core/storage.mjs";
+import {
+  defaultPlayRules,
+  localConfig,
+  humanControls,
+  changeControl,
+  studyGame,
+  lastMove,
+} from "../core/play-session.mjs";
 import { shareURL } from "../core/xgid.mjs";
 import {
   $,
@@ -41,9 +54,10 @@ import { OpeningRoll } from "../ui/opening-roll.mjs";
 import { sound } from "../ui/sound.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
 let config = {
-    rules: { ...STANDARD_RULES },
+    rules: defaultPlayRules(0),
     mode: "computer",
-    matchLength: 5,
+    humanSide: 0,
+    matchLength: 0,
     strength: "quick",
     tutor: false,
     warning: false,
@@ -58,6 +72,7 @@ let config = {
   netStatus = "Not connected",
   saved = null,
   committing = false,
+  leaving = false,
   lastMotion = "",
   renderedGameId = null,
   epoch = 0;
@@ -83,7 +98,20 @@ const online = new Online({
 const params = new URLSearchParams(location.hash.slice(1));
 const roomCode = params.get("room");
 if (roomCode) config.mode = "online";
+const playersButton = button(
+  "Players",
+  () => {
+    let d;
+    d = dialog(
+      "Who plays each side?",
+      playerControls(() => d.close(), "dialog-"),
+    );
+  },
+  "ghost",
+  { id: "players-control", hidden: true },
+);
 $("toolbar").prepend(
+  playersButton,
   button(
     "New match",
     () =>
@@ -91,12 +119,13 @@ $("toolbar").prepend(
         "Start another match?",
         "Your current local match stays recoverable in this browser.",
         () => {
-          analysis.cancel();
-          epoch++;
+          stopComputer();
           online.model && online.leave();
           game = null;
           boardKey = "";
           feedback = null;
+          history.replaceState(null, "", location.pathname);
+          resumeIntent(null);
           render();
         },
       ),
@@ -104,17 +133,43 @@ $("toolbar").prepend(
   ),
 );
 addEventListener("beforeunload", (e) => {
-  if (online.room?.connected || draft.draft.length) {
+  if (!leaving && (online.room?.connected || draft.draft.length)) {
     e.preventDefault();
     e.returnValue = "";
   }
 });
 addEventListener("pagehide", () => {
-  analysis.cancel();
+  stopComputer();
   persist();
+});
+addEventListener("pageshow", (e) => {
+  if (e.persisted) {
+    leaving = false;
+    resumeIntent(null);
+    if (game && config.mode !== "online") {
+      restore({
+        game,
+        positionKey: positionKey(game.state),
+        draft: draft.draft,
+      });
+      persist();
+    } else {
+      boardKey = "";
+      render();
+    }
+  }
 });
 document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
   a.addEventListener("click", (e) => {
+    if (
+      a.pathname === "/backgammon/solver/" &&
+      game?.started &&
+      config.mode !== "online"
+    ) {
+      e.preventDefault();
+      openSolver().catch(showError);
+      return;
+    }
     if (online.room?.connected || draft.draft.length) {
       e.preventDefault();
       confirmDialog(
@@ -124,6 +179,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
           : "Your draft will be saved for local recovery.",
         () => {
           persist();
+          leaving = true;
           location.href = a.href;
         },
       );
@@ -134,21 +190,82 @@ try {
   saved = await get("work", "play");
   const study = await get("work", "study");
   if (study && params.get("study") === "1") {
-    game = {
-      id: crypto.randomUUID(),
-      state: study.state,
-      initial: clone(study.state),
-      events: [],
-      config: { ...config, mode: "local" },
-      names: ["Ivory", "Teal"],
-      started: true,
-    };
+    game = studyGame(study.state, study.context, crypto.randomUUID());
     config = game.config;
+    history.replaceState(null, "", `#resume=${game.id}`);
+    resumeIntent(null);
+  } else if (!roomCode) {
+    const id = params.get("resume") || resumeIntent();
+    if (id) {
+      const original = await get("work", "solver-context");
+      const recovery =
+        saved?.game?.id === id
+          ? saved
+          : original?.game?.id === id
+            ? original
+            : null;
+      if (recovery && recovery.game.config.mode !== "online") restore(recovery);
+      resumeIntent(null);
+    }
   }
 } catch (e) {
   showError(e);
 }
 render();
+if (game) await persist();
+function resumeIntent(value) {
+  try {
+    const key = "backgammon.v1.resume-play";
+    if (value === null) sessionStorage.removeItem(key);
+    else if (value !== undefined) sessionStorage.setItem(key, value);
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function restore(recovery) {
+  recovery = clone(recovery);
+  game = clone(recovery.game);
+  config = game.config = localConfig(game.config);
+  boardKey = "";
+  render();
+  if (
+    recovery.draft?.length &&
+    recovery.positionKey === positionKey(game.state)
+  ) {
+    if (opening.active) opening.dismiss();
+    draft.draft = clone(recovery.draft);
+    draft.render();
+    actions();
+    detailDraft();
+  }
+}
+function stopComputer() {
+  epoch++;
+  analysis.cancel();
+  analysis.status.textContent = "GNUbg loads when needed.";
+  botBusy = false;
+  botPaused = false;
+}
+async function openSolver() {
+  const go = async () => {
+    stopComputer();
+    await persist();
+    await put("work", { ...clone(saved), id: "solver-context" });
+    resumeIntent(game.id);
+    const url = new URL(shareURL(game.state));
+    url.searchParams.set("fromPlay", game.id);
+    leaving = true;
+    location.href = url.href;
+  };
+  if (draft.draft.length)
+    confirmDialog(
+      "Open the committed position?",
+      "Your unfinished draft will be saved for your return to Play.",
+      go,
+    );
+  else await go();
+}
 function model() {
   return config.mode === "online" ? online.model : game;
 }
@@ -161,11 +278,14 @@ function state() {
 function myTurn(s) {
   if (config.mode === "online")
     return online.ready && !online.pending && online.seat === decisionPlayer(s);
-  return config.mode === "local" || decisionPlayer(s) === 0;
+  return humanControls(config, s);
 }
 function render() {
   const m = model(),
     s = state();
+  playersButton.hidden = !m?.started || config.mode === "online";
+  playersButton.disabled = committing;
+  draft.lastMove = lastMove(m);
   const previous = ui.board.state;
   const motionKey = `${m?.id}:${s.sequence}`;
   const freshEvent =
@@ -180,7 +300,9 @@ function render() {
     positionKey(s) +
     (online.ready ? "ready" : "") +
     (online.pending ? "pending" : "") +
-    (opening.active ? "opening" : "");
+    (opening.active ? "opening" : "") +
+    config.mode +
+    config.humanSide;
   if (key !== boardKey) {
     const before = ui.board.state,
       event = m?.events?.at(-1);
@@ -269,7 +391,7 @@ function setupFields() {
         String(config.matchLength),
         (v) => {
           config.matchLength = Number(v);
-          config.rules = { ...STANDARD_RULES, jacoby: Number(v) === 0 };
+          config.rules = defaultPlayRules(config.matchLength);
           boardKey = "";
           render();
         },
@@ -393,21 +515,8 @@ function setupFields() {
       button(
         "Resume saved match",
         () => {
-          game = saved.game;
-          config = game.config;
-          boardKey = "";
-          render();
-          if (
-            saved.draft?.length &&
-            saved.positionKey === positionKey(game.state)
-          ) {
-            // A saved move means the opening was already acknowledged, even
-            // in a new tab whose sessionStorage no longer has that marker.
-            if (opening.active) opening.dismiss();
-            draft.draft = saved.draft;
-            draft.render();
-            actions();
-          }
+          stopComputer();
+          restore(saved);
         },
         "",
         { id: "resume-match" },
@@ -432,6 +541,9 @@ async function connect(join) {
   }
 }
 function start() {
+  stopComputer();
+  history.replaceState(null, "", location.pathname);
+  resumeIntent(null);
   game = {
     id: crypto.randomUUID(),
     state: initialState({
@@ -446,8 +558,11 @@ function start() {
     config: { ...config },
     names:
       config.mode === "computer"
-        ? ["You", "GNUbg"]
+        ? [0, 1].map((p) =>
+            p === config.humanSide ? config.name || "You" : "GNUbg",
+          )
         : [config.name || "Ivory", config.opponent || "Teal"],
+    humanNames: [config.name || "Ivory", config.opponent || "Teal"],
     started: true,
   };
   feedback = null;
@@ -460,6 +575,9 @@ function actions() {
   const s = state(),
     m = model(),
     a = $("actions");
+  const controls = $("table-player-controls");
+  if (controls && m?.started && config.mode !== "online")
+    controls.replaceChildren(playerControls());
   a.replaceChildren();
   if (!m) {
     $("message").textContent = "Ready for a game?";
@@ -676,6 +794,72 @@ function names() {
     model()?.names || model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
   );
 }
+function playerControls(close = () => {}, prefix = "") {
+  const s = state();
+  const choose = async (side) => {
+    if (
+      committing ||
+      (draft.draft.length && side !== null && side !== decisionPlayer(state()))
+    )
+      return;
+    const steps = clone(draft.draft);
+    stopComputer();
+    game = changeControl(game, side);
+    config = game.config;
+    feedback = null;
+    close();
+    if (side !== null) saveSettings({ orientation: side });
+    boardKey = "";
+    render();
+    if (steps.length) {
+      draft.draft = steps;
+      draft.render();
+      actions();
+      detailDraft();
+    }
+    await persist();
+  };
+  const choice = (label, side, id) =>
+    button(label, () => choose(side), "", {
+      id: prefix + id,
+      disabled:
+        committing ||
+        (draft.draft.length > 0 && side !== null && side !== decisionPlayer(s)),
+    });
+  return el(
+    "div",
+    { class: "stack player-controls" },
+    el(
+      "p",
+      { class: "muted small" },
+      config.mode === "computer"
+        ? `You play ${playerName(config.humanSide)}. GNUbg plays ${playerName(1 - config.humanSide)}.`
+        : "Both sides are controlled on this device.",
+    ),
+    el(
+      "div",
+      { class: "row wrap" },
+      ...(config.mode === "computer"
+        ? [
+            choice("Switch sides", 1 - config.humanSide, "switch-sides"),
+            choice("Play both sides", null, "play-both"),
+          ]
+        : [
+            choice("Bot plays Ivory", 1, "bot-ivory"),
+            choice("Bot plays Teal", 0, "bot-teal"),
+          ]),
+    ),
+    ...(draft.draft.length
+      ? [
+          el(
+            "p",
+            { class: "muted small" },
+            "Confirm or reset this draft before handing its side to GNUbg.",
+          ),
+        ]
+      : []),
+  );
+}
 function panel() {
   const m = model(),
     s = state(),
@@ -739,6 +923,8 @@ function panel() {
   p.append(
     el("p", { class: "muted small", id: "active-rules" }, ruleSummary(s)),
   );
+  if (config.mode !== "online" && m.started)
+    p.append(el("div", { id: "table-player-controls" }, playerControls()));
   if (m.started && s.phase === "move" && myTurn(s) && !opening.active) {
     p.append(el("div", { id: "draft-controls" }));
     detailDraft();
@@ -793,15 +979,7 @@ function panel() {
   )
     p.append(
       button("Save position", () => saveDialog(s)),
-      button("Open in Solver", () => {
-        if (draft.draft.length)
-          confirmDialog(
-            "Open the committed position?",
-            "Your unfinished draft is saved here.",
-            () => (location.href = shareURL(s)),
-          );
-        else location.href = shareURL(s);
-      }),
+      button("Open in Solver", openSolver),
     );
   if (config.mode === "online" && m.events.length)
     p.append(
@@ -951,7 +1129,8 @@ async function commit(action) {
 }
 async function submit() {
   const source = clone(state()),
-    steps = clone(draft.draft);
+    steps = clone(draft.draft),
+    token = epoch;
   if (config.tutor && config.mode === "computer") {
     $("confirm").disabled = true;
     try {
@@ -959,6 +1138,7 @@ async function submit() {
         submitted: steps,
         preset: "quick",
       });
+      if (token !== epoch) return;
       feedback = { source, result };
       if (result.error > 0.02)
         await put(
@@ -972,6 +1152,7 @@ async function submit() {
           }),
         );
       if (config.warning && result.error > 0.04) {
+        if (token !== epoch) return;
         let d;
         d = dialog(
           "Review before confirming?",
@@ -989,7 +1170,7 @@ async function submit() {
               "Confirm anyway",
               () => {
                 d.close();
-                commit({ type: "move", steps });
+                if (token === epoch) commit({ type: "move", steps });
               },
               "primary",
             ),
@@ -998,16 +1179,19 @@ async function submit() {
         return;
       }
     } catch (e) {
+      if (token !== epoch) return;
       if (e.name !== "AbortError") showError(e);
       actions();
       return;
     }
   }
-  await commit({ type: "move", steps });
+  if (token === epoch) await commit({ type: "move", steps });
 }
 async function computerTurn() {
   const s = state();
   if (
+    config.mode !== "computer" ||
+    !game?.started ||
     botBusy ||
     opening.active ||
     botPaused ||
@@ -1055,6 +1239,7 @@ async function computerTurn() {
     botBusy = false;
     await commit(action);
   } catch (e) {
+    if (token !== epoch) return;
     botBusy = false;
     if (e.name !== "AbortError") {
       showError(e);
@@ -1070,10 +1255,12 @@ async function computerTurn() {
           "primary",
         ),
         button("Continue same-device", () => {
-          config.mode = "local";
-          game.config.mode = "local";
+          stopComputer();
+          game = changeControl(game, null);
+          config = game.config;
           boardKey = "";
           render();
+          persist();
         }),
       );
     }

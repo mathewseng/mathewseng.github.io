@@ -130,8 +130,12 @@ export class EngineClient {
   async pump() {
     if (this.active || !this.queue.length || this.pumping) return;
     this.pumping = true;
+    let generation;
     try {
-      await this.start();
+      const ready = this.start();
+      generation = this.generation;
+      await ready;
+      if (generation !== this.generation) return;
       if (!this.queue.length) return;
       const job = this.queue.shift();
       this.active = job;
@@ -154,9 +158,12 @@ export class EngineClient {
         300000,
       );
     } catch (e) {
-      for (const job of this.queue.splice(0)) job.reject(e);
+      // A cancelled initializer must not reject work queued for its replacement.
+      if (generation === this.generation)
+        for (const job of this.queue.splice(0)) job.reject(e);
     } finally {
       this.pumping = false;
+      if (!this.active && this.queue.length) this.pump();
     }
   }
   cancelActive(message = "Analysis cancelled.") {
