@@ -1,0 +1,70 @@
+name: Validate site
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Version Backgammon offline assets
+        run: node backgammon/scripts/offline-manifest.mjs
+
+      - name: Test site pages
+        run: node scripts/run-tests.mjs
+
+      - name: Assemble site for browser tests
+        run: sh scripts/assemble-site.sh _site
+
+      - name: Install browser test tools
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Test assembled Backgammon application
+        run: node backgammon/tests/browser.cjs
+
+  gym:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gym
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gym/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test

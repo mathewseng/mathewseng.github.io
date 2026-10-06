@@ -45,8 +45,15 @@ node scripts/run-tests.mjs
 ```
 
 That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`. The gym app has its own checks in `gym/package.json`.
-Pushing to `main` runs both and deploys through `.github/workflows/deploy.yml`.
+Push directly to `main` to publish. `.github/workflows/deploy.yml` compiles Gym, versions
+Backgammon's offline assets, assembles static files and redirects, and deploys to GitHub Pages.
+There is no manual build or release step. Pages still needs a short time to publish after a push;
+a compilation or publishing failure is reported in that workflow.
+
+`.github/workflows/validate.yml` runs site tests, assembled-site browser tests, and Gym checks
+independently on pushes and pull requests. Validation failures stay visible in Actions but do
+not block publication. Check both workflows when diagnosing a release.
 
 ## Backgammon validation
 
-See [backgammon/README.md](backgammon/README.md) for controls, architecture, engine licensing/builds, multiplayer, backups, offline behavior, and precise format/capability limits. `scripts/assemble-site.sh _site` is the shared deployment assembly. After assembly, `node backgammon/tests/browser.cjs` checks the actual published files with Playwright and real WASM; the deployment workflow runs this in Chromium. Root npm dependencies are test tooling only. Backgammon includes 24 readable board palettes, per-element color/pattern controls, on-board dice, combined tap/drag moves, draft reversal/reset, configurable money-session rules (Jacoby, automatic opening doubles, beavers and raccoons), local side/bot controls, last-move outlines, automatic Solver analysis with resumable Play context, opponent-approved committed undo, automatic forced turns/passes, and automatically saved/exportable game history.
+See [backgammon/README.md](backgammon/README.md) for controls, architecture, engine licensing/builds, multiplayer, backups, offline behavior, and precise format/capability limits. `scripts/assemble-site.sh _site` is the shared deployment assembly. After assembly, `node backgammon/tests/browser.cjs` checks the actual published files with Playwright and real WASM; the independent validation workflow runs this in Chromium. Root npm dependencies are test tooling only. Backgammon includes 24 readable board palettes, per-element color/pattern controls, on-board dice, combined tap/drag moves, draft reversal/reset, configurable money-session rules (Jacoby, automatic opening doubles, beavers and raccoons), local side/bot controls, last-move outlines, automatic Solver analysis with resumable Play context, opponent-approved committed undo, automatic forced turns/passes, and automatically saved/exportable game history.

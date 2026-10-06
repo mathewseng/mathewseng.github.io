@@ -1,4 +1,4 @@
-name: Build, test, and deploy GitHub Pages
+name: Publish GitHub Pages
 
 on:
   push:
@@ -29,43 +29,20 @@ jobs:
           cache: npm
           cache-dependency-path: gym/package-lock.json
 
-      - name: Test site pages
-        run: node scripts/run-tests.mjs
-
       - name: Install dependencies
         working-directory: gym
         run: npm ci
 
-      - name: Check formatting
-        working-directory: gym
-        run: npm run format:check
-
-      - name: Lint
-        working-directory: gym
-        run: npm run lint
-
-      - name: Type-check
-        working-directory: gym
-        run: npm run typecheck
-
-      - name: Test
-        working-directory: gym
-        run: npm test
-
       - name: Build gym app
         working-directory: gym
-        run: npm run build
+        # Validation runs independently; only compilation is needed to publish.
+        run: npx --no-install vite build
+
+      - name: Version Backgammon offline assets
+        run: node backgammon/scripts/offline-manifest.mjs
 
       - name: Assemble complete user site
         run: sh scripts/assemble-site.sh _site
-
-      - name: Install browser test tools
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-
-      - name: Test assembled Backgammon application
-        run: node backgammon/tests/browser.cjs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
