@@ -59,20 +59,11 @@ module.exports = async function decisionUX(
     await page.goto(base + "/backgammon/play/#resume=" + id);
     await page.locator('[data-point="12"]').click();
     await shot("selected-point");
-    const rings = await page.locator('[data-point="5"]').evaluate((g) => {
-      const badge =
-        g.querySelector(".target-label") || g.querySelector("text");
-      const source = g.querySelector(".source-ring");
-      return {
-        svg: g.outerHTML,
-        badge: badge?.getBBox().y,
-        source: source?.getBBox().y,
-      };
-    });
-    assert.ok(
-      rings.source > 405,
-      "tall stack ring clears the center label lane",
+    assert.equal(
+      await page.locator('[data-point="5"] .source-ring').count(), 0,
+      "selecting another checker hides unrelated source rings",
     );
+    assert.equal(await page.locator('[data-point="12"] .source-ring').count(), 1);
     for (const [width, height] of [
       [320, 568],
       [375, 667],
@@ -235,7 +226,11 @@ module.exports = async function decisionUX(
     await page.getByRole("table").waitFor();
     assert.match(
       await page.getByRole("table").innerText(),
-      /Before[\s\S]*Your choice[\s\S]*Best choice/,
+      /Before[\s\S]*Best choice/,
+    );
+    assert.equal(
+      (await page.getByRole("table").innerText()).includes("Your choice"),
+      Math.abs(grade.decision.best.equity - grade.decision.actual.equity) > 1e-7,
     );
     await shot("cube-comparison");
     await page

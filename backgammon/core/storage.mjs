@@ -16,6 +16,7 @@ export const settingsDefaults = {
   appearance: "dark",
   preset: "quick",
   moveFeedback: false,
+  equityBar: false,
   boardTheme: DEFAULT_BOARD_THEME,
   sound: DEFAULT_SOUND,
 };
@@ -30,6 +31,7 @@ export function settings() {
       boardTheme: normalizeBoardTheme(saved?.boardTheme),
       shortcuts: normalizeShortcuts(saved?.shortcuts),
       keyboardEnabled: saved?.keyboardEnabled !== false,
+      equityBar: saved?.equityBar === true,
       sound: normalizeSound(saved?.sound),
     };
   } catch {

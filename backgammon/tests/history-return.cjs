@@ -85,6 +85,84 @@ module.exports = async function historyReturn(browser, base, out, name) {
           .locator(`#move-feedback [data-history-side="${side}"]`)
           .count(),
       );
+    const comparisons = await page.locator('#move-feedback .feedback-review').evaluateAll(rows => rows.map(row => ({
+      count: row.querySelectorAll('.decision-values-compact').length,
+      labels: [...row.querySelectorAll('.decision-value .muted')].map(n=>n.textContent),
+    })));
+    assert.ok(comparisons.length >= 2);
+    for(const row of comparisons) {
+      assert.equal(row.count,1);
+      assert.deepEqual(row.labels,['Before','Your choice','Best choice']);
+    }
+    const checkColors = async () => {
+      const colors = await page.evaluate(() =>
+        [
+          ...document.querySelectorAll(
+            "#move-feedback [data-history-player]",
+          ),
+        ].map((row) => {
+          const player = row.dataset.historyPlayer;
+          const expected = getComputedStyle(
+            document.querySelector(
+              player === "1"
+                ? ".checker-dot.teal"
+                : ".checker-dot:not(.teal)",
+            ),
+          ).backgroundColor;
+          return {
+            expected,
+            border: getComputedStyle(row).borderLeftColor,
+            dot: getComputedStyle(
+              row.querySelector(".history-player"),
+              "::before",
+            ).backgroundColor,
+          };
+        }),
+      );
+      assert.ok(colors.length);
+      for (const c of colors) {
+        assert.equal(c.border, c.expected);
+        assert.equal(c.dot, c.expected);
+      }
+    };
+    const evColors = () =>
+      page
+        .locator("#move-feedback .value")
+        .evaluateAll((nodes) =>
+          nodes.map((n) => getComputedStyle(n).color),
+        );
+    const originalEV = await evColors();
+    for (const theme of [
+      { version: 1, preset: "slate", colors: {} },
+      { version: 1, preset: "plum", colors: {} },
+      {
+        version: 1,
+        preset: "slate",
+        colors: { checker0: "#FFD17A", checker1: "#BB99EE" },
+      },
+    ]) {
+      await page.evaluate(async (theme) => {
+        const st = await import("/backgammon/core/storage.mjs");
+        st.saveSettings({ boardTheme: theme });
+        (await import("/backgammon/core/appearance.mjs")).applyBoardTheme(
+          theme,
+        );
+        dispatchEvent(new Event("bg-settings"));
+      }, theme);
+      await checkColors();
+      assert.deepEqual(await evColors(), originalEV);
+    }
+    await page.locator("#move-feedback").scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(out, `${name}-history-player-colors.png`),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator("#move-feedback").scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(out, `${name}-history-player-colors-phone.png`),
+    });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page
       .locator('#move-feedback .feedback-review[data-history-side="self"]')
       .click();
@@ -136,6 +214,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
     let game = await saved();
     assert.deepEqual(game.state, fixture.sources[1]);
     assert.equal(game.config.humanSide, 1); // Restored opponent decision is immediately playable.
+    await checkColors();
     assert.equal(game.undoLog.at(-1).reason, "history-return");
     assert.deepEqual(game.undoLog.at(-1).events, fixture.events.slice(3));
     assert.equal(await page.locator("#undo-turn").isVisible(), true);

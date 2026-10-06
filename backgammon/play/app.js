@@ -843,6 +843,21 @@ function start() {
   render();
 }
 function actions() {
+  const table = model();
+  const hasDraft = draft.draft.length > 0;
+  ui.equityBar.set({
+    state: state(),
+    auto: true,
+    submitted: hasDraft && draft.complete() ? draft.draft : null,
+    blocked:
+      config.mode !== "computer"
+        ? "Live equity is available against the computer; online and same-device games stay unassisted."
+        : !table?.started || opening.active
+          ? "Start a game and finish the opening roll to see equity."
+          : hasDraft && !draft.complete()
+            ? "Complete the draft to evaluate your choice."
+            : "",
+  });
   renderActions();
   try {
     const m = model(),
@@ -1786,7 +1801,7 @@ function renderFeedback() {
   feedbackStrip.replaceChildren(
     el("h2", { class: "sr-only" }, "Decision history"),
   );
-  for (const [i, row] of rows.entries()) {
+  for (const row of rows) {
     const viewer =
       config.mode === "online" ? online.seat : config.humanSide;
     const side = row.player === viewer ? "self" : "opponent";
@@ -1798,11 +1813,21 @@ function renderFeedback() {
       feedbackStrip.append(
         el(
           "div",
-          { class: "feedback-pending", "data-history-side": side },
+          {
+            class: "feedback-pending",
+            "data-history-side": side,
+            "data-history-player": row.player,
+          },
           el("span", { class: "history-player" }, playerLabel),
           el("span", {}, row.label),
           ...(canReturnToDecision(row, m.id)
-            ? [button("Return to this position", () => restoreDecision(row, m.id), "ghost")]
+            ? [
+                button(
+                  "Return to this position",
+                  () => restoreDecision(row, m.id),
+                  "ghost",
+                ),
+              ]
             : []),
           el(
             "span",
@@ -1837,6 +1862,7 @@ function renderFeedback() {
           : {}),
         "data-loss-tone": f.tone,
         "data-history-side": side,
+        "data-history-player": row.player,
         "data-decision-type": row.result.type,
         title: `${f.quality}. ${f.units}. Open equity and EV comparison.`,
       },
@@ -1854,7 +1880,7 @@ function renderFeedback() {
         `${row.label} · Best ${f.best.notation}`,
       ),
     );
-    if (i === 0) review.append(decisionValues(f, true));
+    review.append(decisionValues(f, true));
     review.append(
       el(
         "span",

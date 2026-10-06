@@ -2,24 +2,45 @@
 import { el } from "./shell.mjs";
 import { equity, percentage } from "./analysis.mjs";
 export function decisionValues(f, compact = false) {
+  const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const rows = [
-    ["Before", f.before],
-    ["Your choice", f.actual],
-    ["Best choice", f.best],
+    ["Before", f.before, "before"],
+    ...(!bestPlayed ? [["Your choice", f.actual, "actual"]] : []),
+    ["Best choice", f.best, "best"],
   ];
-  if (compact)
-    return el(
+  if (compact) {
+    const grid = el(
       "span",
-      { class: "decision-values-compact" },
-      ...rows.map(([label, c]) =>
+      { class: "decision-value-grid" },
+      ...rows.map(([label, c, kind]) =>
         el(
           "span",
-          {},
+          { class: "decision-value", "data-value-kind": kind },
           el("span", { class: "muted" }, label),
           el("strong", {}, equity(c.equity)),
         ),
       ),
     );
+    grid.style.setProperty("--value-columns", rows.length);
+    return el(
+      "span",
+      {
+        class: "decision-values-compact",
+        role: "group",
+        "aria-label": "Decision equity comparison",
+        "data-loss-tone": f.tone,
+        "data-best-played": bestPlayed ? "true" : "false",
+        title:
+          "Before assumes the best continuation with the known dice or cube decision. Values use the decision maker’s perspective and original cube.",
+      },
+      el(
+        "span",
+        { class: "decision-value-caption muted" },
+        `Equity · ${f.money ? "current-cube points" : "normalized match equity"}`,
+      ),
+      grid,
+    );
+  }
   return el(
     "div",
     { class: "decision-values" },

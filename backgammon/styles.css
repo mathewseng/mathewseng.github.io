@@ -2217,16 +2217,49 @@ button.teal-die:hover {
 }
 .decision-values-compact {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  padding-block: 10px 4px;
+  margin-top: 5px;
+  border-top: 1px solid var(--line);
 }
-.decision-values-compact > span {
+.decision-value-grid {
   display: grid;
-  gap: 1px;
+  grid-template-columns: repeat(var(--value-columns, 3), minmax(0, 1fr));
+}
+.decision-value {
+  display: grid;
+  gap: 4px;
+  padding-inline: 12px;
   font-variant-numeric: tabular-nums;
 }
+.decision-value:first-child {
+  padding-left: 0;
+}
+.decision-value + .decision-value {
+  border-left: 1px solid var(--line);
+}
+.decision-value strong {
+  font-size: 18px;
+  font-weight: 600;
+}
 .decision-values-compact .muted {
-  font-size: 12px;
+  font-size: 13px;
+}
+.decision-value[data-value-kind="actual"] strong,
+.decision-values-compact[data-best-played="true"]
+  [data-value-kind="best"]
+  strong {
+  color: var(--loss-color);
+}
+.trainer-equity-details {
+  margin-top: 8px;
+}
+.trainer-equity-details summary {
+  cursor: pointer;
+  padding-block: 8px;
+}
+.trainer-equity-details .decision-values {
+  margin-top: 8px;
 }
 .decision-values {
   display: grid;
@@ -2284,10 +2317,9 @@ button.teal-die:hover {
   align-content: start;
 }
 .play-page .action-main {
-  position: sticky;
-  top: 0;
+  /* Controls scroll with mobile history so they cannot cover a review card. */
+  position: relative;
   background: var(--bg);
-  z-index: 2;
   padding-block: 4px;
 }
 .play-page .play-feedback {
@@ -2842,7 +2874,11 @@ button.teal-die:hover {
   }
 }
 @media (max-width: 1024px), (max-height: 500px) {
+  .play-page .action-area {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .play-page .action-main {
+    min-width: 0;
     flex-direction: column-reverse;
     align-items: stretch;
     grid-column: 1 / -1;
@@ -2858,17 +2894,94 @@ button.teal-die:hover {
 }
 
 /* Player identity is separate from the EV-loss scale on the value itself. */
-.play-feedback [data-history-side] {
-  --history-color: #96d9ca;
+.play-feedback [data-history-player] {
+  --history-color: var(--board-checker0, #f0eadb);
   border-left: 3px solid var(--history-color);
   padding: 10px 12px;
   background: color-mix(in srgb, var(--history-color) 7%, transparent);
   border-radius: 4px;
 }
-.play-feedback [data-history-side="opponent"] {
-  --history-color: #cfbaf3;
+.play-feedback [data-history-player="1"] {
+  --history-color: var(--board-checker1, #72b8ad);
 }
 .play-feedback .history-player {
-  color: var(--history-color);
+  color: var(--text);
   font-weight: 600;
+}
+
+.play-feedback .history-player::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-inline-end: 7px;
+  border-radius: 50%;
+  background: var(--history-color);
+  box-shadow: 0 0 0 1px var(--muted);
+}
+/* Optional side rail uses the same player colors without changing board ratio. */
+.board-slot.has-equity-bar {
+  position: relative;
+}
+.board-slot.has-equity-bar > .bg-board {
+  width: calc(100% - 40px);
+  margin-left: 40px;
+}
+.equity-bar {
+  position: absolute;
+  width: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.equity-bar[hidden] {
+  display: none;
+}
+.equity-number {
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.equity-meter {
+  position: relative;
+  flex: 1;
+  width: 16px;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--equity-top);
+}
+.equity-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: var(--equity-bottom);
+}
+.equity-meter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  border-top: 1px solid var(--line);
+}
+.equity-bar:not([data-state="ready"]) .equity-meter {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--surface) 0 5px,
+    var(--line) 5px 7px
+  );
+}
+.equity-bar:not([data-state="ready"]) .equity-fill {
+  display: none;
+}
+.equity-retry {
+  font-size: 11px;
+  padding: 4px;
+  min-height: 32px;
+}
+#equity-toggle[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--surface);
 }

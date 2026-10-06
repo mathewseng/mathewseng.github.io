@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { EquityBar } from "./equity-bar.mjs";
 import {
   settings,
   saveSettings,
@@ -177,8 +178,10 @@ function changeSound(value) {
       "Sound setting applies to this tab. Browser storage is unavailable.",
     );
 }
-let activeBoard;
+let activeBoard, activeEquity;
 export function shell(page, title, subtitle = "") {
+  activeEquity?.destroy();
+  activeEquity = null;
   activeBoard?.destroy();
   document.documentElement.dataset.motion = settings().motion;
   installSound();
@@ -226,7 +229,14 @@ export function shell(page, title, subtitle = "") {
     },
   });
   activeBoard = new Board($("board"));
-  return { board: activeBoard, panel: $("panel") };
+  if (["play", "trainer", "solver"].includes(page)) {
+    const equityToggle = button("Equity bar", () => {}, "ghost", {
+      id: "equity-toggle", "aria-pressed": "false",
+    });
+    $("toolbar").prepend(equityToggle);
+    activeEquity = new EquityBar(activeBoard, equityToggle);
+  }
+  return { board: activeBoard, panel: $("panel"), equityBar: activeEquity };
 }
 export function openPanel() {
   const body = $("panel"),

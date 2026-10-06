@@ -212,3 +212,23 @@ Combined routes with the same source, destination and consumed dice now prefer a
 Pure tests cover both players, either die order, intermediate/final blots, already-barred opponents and preserved die/revision choices. `route-choice.cjs` passed against the assembled site in Chromium, Firefox and WebKit, including keyboard activation, pointer dragging, explicit quiet play and both directions. Existing checker interaction and last-move suites also passed in all three browsers. Inspected the genuine-choice dialog at desktop Chromium and phone WebKit sizes. These are emulated browser checks, not physical-device tests.
 
 The full repository suite passed **197/197** in **163.1 seconds**, including the deployment-artifact checks.
+
+## Analysis colors follow player checkers (2026-10-06)
+
+The analysis history now uses canonical player identity to select the same checker-color variables as the board/player strips. Row rails, tint and player dots update immediately for presets/custom hex colors; switching human/bot sides cannot swap a historical move’s checker identity. Names keep readable foreground text even with dark custom checker colors, while EV values retain their independent loss scale.
+
+The assembled-site history/review suite passed in Chromium, Firefox and WebKit, including exact color matching for both players, Slate/Plum/custom themes, pending and evaluated decisions, unchanged EV colors and returning to the other side. Inspected desktop and phone screenshots with custom checker colors. This is browser emulation, not physical-device testing.
+
+## Per-decision comparisons and optional equity rail (2026-10-06)
+
+Every evaluated Play history row and revealed Trainer answer now shows a compact equity comparison. Equivalent/best choices omit the duplicate Your choice column in both compact and expanded views. The original definition of Before remains explicit: best continuation for the known dice/cube context, not an independent pre-decision estimate. Mobile action controls scroll with their history rather than covering taller review cards; board dimensions remain fixed.
+
+The opt-in equity rail uses real GNUbg Quick analysis against the computer and existing revealed/analyzed results in Trainer/Solver. Tests cover default-off/no engine download, all nine viewport classes, orientation, partial/complete drafts, cube offers/responses, cube ownership, Crawford, cancellation during initialization, worker disposal, missing WASM/retry, reload persistence and trainer spoiler protection. The fill is documented as a nonlinear equity scale, not a win probability. Engine version is unchanged: **gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg3**.
+
+An outdated full-suite assertion expected a source ring on an unrelated checker after selection. It now checks the selected checker’s ring and absence of the unrelated ring, matching the established selection behavior. Cube comparison assertions also honor the requested duplicate-column suppression.
+
+The full assembled-site Chromium browser suite passed, including real WASM, offline operation and automatic updates. Targeted history/return, assistance and equity-bar suites passed in Chromium, Firefox and WebKit. Solver checks verify completed source equity and clearing while previewing/editing; Library has no unused equity control. The final mobile layout check also verifies that Confirm stays horizontally on-screen, fixing an implicit grid track that could previously expand behind the scroll container. Final deployment-artifact checks passed.
+
+Inspected desktop player-colored history and equity rail, WebKit portrait equity rail and review dialog, Chromium landscape equity rail, and the two-column best-choice Trainer result. These are emulated browsers, not physical-device tests. No new engine-strength or real-phone performance claim is made.
+
+`node scripts/run-tests.mjs` passed **200/200** in **243.3 seconds**. Final targeted equity/feedback/board/deployment tests passed **14/14**, with the deployment-artifact test repeated successfully after the final mobile grid adjustment.

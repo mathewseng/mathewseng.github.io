@@ -136,6 +136,15 @@ async function next() {
   render();
 }
 function render() {
+  ui.equityBar.set({
+    state: exercise?.state,
+    result: revealed ? result : null,
+    blocked: !revealed
+      ? "Equity stays hidden until you submit or reveal the answer."
+      : preview
+        ? "Return to the original position to see decision equity."
+        : "",
+  });
   if (!exercise) {
     $("message").textContent = "No saved exercises in this collection yet.";
     $("actions").replaceChildren(
@@ -324,8 +333,14 @@ function panel() {
         { class: "decision-loss", "data-loss-tone": f.tone },
         `${f.label} ${f.value} · ${f.quality}`,
       ),
-      decisionValues(f),
-      lossLegend(),
+      decisionValues(f, true),
+      el(
+        "details",
+        { class: "trainer-equity-details" },
+        el("summary", {}, "Equity & EV details"),
+        decisionValues(f),
+        lossLegend(),
+      ),
     );
     p.append(
       resultView(result, {

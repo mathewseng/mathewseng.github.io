@@ -492,6 +492,9 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.equityBar ||= []).push(
+          await require("./equity-bar.cjs")(browser, base, out, browserName),
+        );
         (report.historyReturn ||= []).push(
           await require("./history-return.cjs")(
             browser,

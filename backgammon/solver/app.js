@@ -195,6 +195,16 @@ async function saveDraft() {
 }
 function render() {
   const problems = errors(source);
+  ui.equityBar.set({
+    state: source,
+    result,
+    blocked:
+      editing || problems.length
+        ? "Finish editing a valid position to see equity."
+        : preview
+          ? "Return to Source to see its equity."
+          : "",
+  });
   draft.set(source, problems.length ? [] : legalPaths(source), false);
   draft.preview = preview;
   draft.render();
