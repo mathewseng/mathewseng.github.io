@@ -2,11 +2,15 @@
 import { assertState, replay, clone } from "./rules.mjs";
 import { DEFAULT_BOARD_THEME, normalizeBoardTheme } from "./appearance.mjs";
 import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
+import { mergeEvaluations } from "./decision-history.mjs";
 import { validateTakebacks } from "./table.mjs";
+import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
   orientation: 0,
+  keyboardEnabled: true,
+  shortcuts: DEFAULT_SHORTCUTS,
   numbers: true,
   motion: "system",
   appearance: "dark",
@@ -24,6 +28,8 @@ export function settings() {
       ...settingsDefaults,
       ...saved,
       boardTheme: normalizeBoardTheme(saved?.boardTheme),
+      shortcuts: normalizeShortcuts(saved?.shortcuts),
+      keyboardEnabled: saved?.keyboardEnabled !== false,
       sound: normalizeSound(saved?.sound),
     };
   } catch {
@@ -33,6 +39,7 @@ export function settings() {
 export function saveSettings(value) {
   const next = { ...settings(), ...value };
   next.boardTheme = normalizeBoardTheme(next.boardTheme);
+  next.shortcuts = normalizeShortcuts(next.shortcuts);
   next.sound = normalizeSound(next.sound);
   localStorage.setItem(PREFIX + "settings", JSON.stringify(next));
 }
@@ -103,7 +110,25 @@ export function validateItem(item) {
   )
     throw new Error("Invalid tags.");
   if (item.kind === "match") {
-    replay(item.initial, item.events);
+    const states = replay(item.initial, item.events);
+    for (const [index, event] of item.events.entries()) {
+      if (!event.evaluation) continue;
+      if (!event.evaluation.result)
+        throw new Error("Missing decision evaluation.");
+      validateItem({
+        version: 1,
+        id: "evaluation",
+        kind: "position",
+        title: "",
+        notes: "",
+        collection: "",
+        tags: [],
+        createdAt: 0,
+        updatedAt: 0,
+        state: states[index],
+        analysis: event.evaluation.result,
+      });
+    }
     validateTakebacks(item, true);
     if (
       item.status !== undefined &&
@@ -146,6 +171,13 @@ export function validateItem(item) {
         )
       )
         throw new Error("Invalid checker analysis.");
+      if (
+        a.actual &&
+        (!evaluation(a.actual) ||
+          !Array.isArray(a.actual.steps) ||
+          a.actual.steps.length > 4)
+      )
+        throw new Error("Invalid played move analysis.");
     } else if (
       a.type !== "cube" ||
       !evaluation(a) ||
@@ -205,6 +237,7 @@ export function saveMatchHistory(model, names, mode = "local") {
     model.events.length,
     model.undoLog?.length || 0,
     names,
+    model.events.map((e) => e.evaluation?.result || null),
   ]);
   const previous = archives.get(id);
   if (previous?.key === key) return previous.promise;
@@ -220,6 +253,7 @@ export function saveMatchHistory(model, names, mode = "local") {
           store = tx.objectStore("items"),
           request = store.get(id);
         request.onsuccess = () => {
+          mergeEvaluations(snapshot, request.result);
           const item = {
             ...(request.result ||
               itemRecord("match", {

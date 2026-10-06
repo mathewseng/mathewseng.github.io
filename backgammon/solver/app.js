@@ -14,7 +14,12 @@ import {
   ruleSummary,
   offerName,
 } from "../core/rules.mjs";
-import { fromXGID, toXGID, shareURL, sharedPosition } from "../core/xgid.mjs";
+import {
+  fromXGID,
+  toXGID,
+  shareURL,
+  sharedPosition,
+} from "../core/xgid.mjs";
 import { get, put, itemRecord, settings } from "../core/storage.mjs";
 import {
   $,
@@ -35,7 +40,11 @@ import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 import { matchesPlayContext } from "../core/play-session.mjs";
-const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
+const ui = shell(
+  "solver",
+  "Solver",
+  "Edit a position. Explore the decision.",
+);
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
   brush = "ivory",
@@ -90,7 +99,8 @@ try {
       sourceContext = context;
   } else if (params.has("item")) {
     const item = await get("items", params.get("item"));
-    if (!item) throw new Error("This item is not in this browser’s Library.");
+    if (!item)
+      throw new Error("This item is not in this browser’s Library.");
     openedPosition = true;
     if (item.kind === "match") {
       review = item;
@@ -165,7 +175,11 @@ function changed() {
 }
 async function saveDraft() {
   try {
-    await put("work", { id: "solver", state: source, context: sourceContext });
+    await put("work", {
+      id: "solver",
+      state: source,
+      context: sourceContext,
+    });
   } catch (e) {
     showError(e);
   }
@@ -503,8 +517,14 @@ function contextDialog() {
     score = source.scores.map((v) => input(v, 0, 100000)),
     bar = source.bar.map((v) => input(v, 0, 15)),
     off = source.off.map((v) => input(v, 0, 15));
-  const crawford = el("input", { type: "checkbox", checked: source.crawford }),
-    played = el("input", { type: "checkbox", checked: source.crawfordPlayed });
+  const crawford = el("input", {
+      type: "checkbox",
+      checked: source.crawford,
+    }),
+    played = el("input", {
+      type: "checkbox",
+      checked: source.crawfordPlayed,
+    });
   const rulesPanel = el("div");
   const setRules = () =>
     rulesPanel.replaceChildren(
@@ -654,6 +674,7 @@ async function analyze() {
     if (token !== analysisEpoch || key !== positionKey(source)) return;
     if (
       answer.type === "cube" &&
+      answer.available !== false &&
       event &&
       ["roll", "double", "take", "pass", "beaver", "raccoon"].includes(
         event.action.type,
@@ -766,8 +787,11 @@ async function progressive() {
         priority: 0,
       });
       if (token !== analysisEpoch) return;
-      if (answer.type === "cube")
-        Object.assign(answer, gradeCube(states[i], answer, event.action.type));
+      if (answer.type === "cube" && answer.available !== false)
+        Object.assign(
+          answer,
+          gradeCube(states[i], answer, event.action.type),
+        );
       reviewResults.set(i, answer);
       analysis.status.textContent = `Completed ${reviewResults.size} decisions · event ${i + 1}/${review.events.length}`;
       if (!busy) break;

@@ -2,15 +2,28 @@
 import { el, button, dialog } from "./shell.mjs";
 import { Board } from "./board.mjs";
 import { settings } from "../core/storage.mjs";
-import { applyStep, notation, playerName } from "../core/rules.mjs";
+import {
+  applyStep,
+  notation,
+  playerName,
+  transition,
+  decisionPlayer,
+} from "../core/rules.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
+import { decisionValues, lossLegend } from "./decision-values.mjs";
 import { equity, percentage } from "./analysis.mjs";
 
 // A separate instance of the shared renderer: previews cannot touch the live
 // DraftBoard. The caller owns analysis cancellation and stale-result checks.
 export function decisionReview(
   source,
-  { title = "Move hint", onClose = () => {}, onUse } = {},
+  {
+    title = "Move hint",
+    onClose = () => {},
+    onUse,
+    onReplay,
+    replayDescription = "Rewinds this turn and any bot reply, then plays the best move. Already rolled dice are preserved.",
+  } = {},
 ) {
   const slot = el("div", { class: "decision-board" });
   const body = el("div", { class: "decision-content" });
@@ -39,7 +52,9 @@ export function decisionReview(
     caption.textContent = `${label} · ${steps.length ? notation(steps, source.turn) : label === "Position" ? "original roll" : "Pass"}`;
     controls
       .querySelectorAll("button")
-      .forEach((b) => b.setAttribute("aria-pressed", b.textContent === label));
+      .forEach((b) =>
+        b.setAttribute("aria-pressed", b.textContent === label),
+      );
   };
   show([], "Position");
   d.addEventListener(
@@ -78,6 +93,85 @@ export function decisionReview(
       );
     },
     result(result) {
+      if (result.type === "cube") {
+        const f = decisionFeedback(result, source);
+        const showCube = (choice, label) => {
+          const state =
+            !choice || choice.action === "roll"
+              ? source
+              : transition(
+                  source,
+                  { type: choice.action },
+                  decisionPlayer(source),
+                );
+          board.render(state, {
+            ...settings(),
+            interactive: false,
+            preview: true,
+          });
+          caption.textContent = `${label}${choice ? ` · ${choice.notation}` : " · original cube position"}`;
+          controls
+            .querySelectorAll("button")
+            .forEach((b) =>
+              b.setAttribute("aria-pressed", b.textContent === label),
+            );
+        };
+        controls.replaceChildren(
+          ...[
+            ["Position", null],
+            ["Best decision", f.best],
+            ["Your decision", f.actual],
+          ].map(([label, c]) =>
+            button(label, () => showCube(c, label), "", {
+              "aria-pressed": false,
+            }),
+          ),
+        );
+        body.replaceChildren(
+          el("h3", {}, "Best evaluated decision"),
+          el(
+            "p",
+            { class: "decision-best", "data-best-move": "" },
+            f.best.notation,
+          ),
+          el(
+            "p",
+            { class: "muted small" },
+            `${result.settings.name} · ${result.settings.plies} ply · ${playerName(f.perspective)}’s decision perspective`,
+          ),
+          el(
+            "p",
+            { class: "decision-loss", "data-loss-tone": f.tone },
+            `${f.label} ${f.value} · ${f.label === "EV lost" ? f.units : "normalized match equity"}`,
+          ),
+          decisionValues(f),
+          lossLegend(),
+          el(
+            "p",
+            { class: "muted small" },
+            "Cube offers use the opponent’s best evaluated reply. Values stay in the original cube units, even after a take or immediate redouble.",
+          ),
+          el(
+            "div",
+            { class: "list" },
+            ...result.decision.choices.map((c) =>
+              el(
+                "div",
+                { class: "list-row row spread" },
+                el("span", {}, c.notation),
+                el("strong", {}, equity(c.equity)),
+              ),
+            ),
+          ),
+          el(
+            "p",
+            { class: "muted small" },
+            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s. Evaluation estimates, not rollouts.`,
+          ),
+        );
+        showCube(null, "Position");
+        return;
+      }
       const best = result.candidates[0];
       const choices = [
         ["Position", null],
@@ -105,9 +199,15 @@ export function decisionReview(
         ),
       );
       if (result.actual) {
-        const f = decisionFeedback(result);
+        const f = decisionFeedback(result, source);
         body.append(
-          el("p", { class: "decision-loss" }, `${f.label} ${f.value}`),
+          el(
+            "p",
+            { class: "decision-loss", "data-loss-tone": f.tone },
+            `${f.label} ${f.value} · ${f.label === "EV lost" ? f.units : "normalized match equity"}`,
+          ),
+          decisionValues(f),
+          lossLegend(),
           el(
             "p",
             { class: "muted small" },
@@ -124,16 +224,34 @@ export function decisionReview(
             : `Best match-winning chance ${percentage(best.mwc)}. Equity differences use normalized match equity.`,
         ),
       );
+      const footer = d.querySelector("footer");
+      footer.replaceChildren();
+      if (onReplay) {
+        const replay = button(
+          "Undo & play best",
+          async () => {
+            if (replay.disabled) return;
+            replay.disabled = true;
+            try {
+              await onReplay(best.steps, result);
+              d.close();
+            } finally {
+              replay.disabled = false;
+            }
+          },
+          "primary",
+          { id: "undo-play-best", title: replayDescription },
+        );
+        footer.append(replay);
+        body.append(el("p", { class: "muted small" }, replayDescription));
+      }
       if (onUse)
-        body.append(
-          button("Use best move", () => onUse(best.steps), "primary", {
+        footer.prepend(
+          button("Use best move", () => onUse(best.steps), "", {
             id: "use-hint",
+            title:
+              "Replaces your draft. Review it, then confirm on the table.",
           }),
-          el(
-            "p",
-            { class: "muted small" },
-            "Replaces your draft. Review it, then confirm on the table.",
-          ),
         );
       body.append(
         el(
@@ -143,7 +261,7 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.candidates.length} legal resulting positions evaluated; small differences are estimates.`,
+            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} legal resulting positions evaluated; small differences are estimates.`,
           ),
         ),
       );

@@ -137,16 +137,25 @@ test("cube grading reverses response perspective and honors the opponent’s opt
   const { gradeCube } = await import("../engine/cube-grade.mjs");
   const r = { type: "cube", outcomes: [0.8, 1.2, 1] };
   assert.ok(
-    Math.abs(gradeCube({ phase: "roll" }, r, "roll").error - 0.2) < 1e-8,
+    Math.abs(gradeCube({ phase: "roll", turn: 0 }, r, "roll").error - 0.2) <
+      1e-8,
   );
-  assert.equal(gradeCube({ phase: "roll" }, r, "double").error, 0);
+  assert.equal(gradeCube({ phase: "roll", turn: 0 }, r, "double").error, 0);
   assert.ok(
-    Math.abs(gradeCube({ phase: "double" }, r, "take").error - 0.2) < 1e-8,
+    Math.abs(
+      gradeCube({ phase: "double", turn: 0, pending: { by: 0 } }, r, "take")
+        .error - 0.2,
+    ) < 1e-8,
   );
-  assert.equal(gradeCube({ phase: "double" }, r, "pass").error, 0);
+  assert.equal(
+    gradeCube({ phase: "double", turn: 0, pending: { by: 0 } }, r, "pass")
+      .error,
+    0,
+  );
   const tooGood = { type: "cube", outcomes: [1.4, 1.8, 1] };
   assert.ok(
-    Math.abs(gradeCube({ phase: "roll" }, tooGood, "double").error - 0.4) <
-      1e-8,
+    Math.abs(
+      gradeCube({ phase: "roll", turn: 0 }, tooGood, "double").error - 0.4,
+    ) < 1e-8,
   );
 });

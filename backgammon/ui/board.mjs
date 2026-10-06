@@ -58,8 +58,8 @@ export function checkerPosition(s, point, player, orientation = 0) {
   return {
     x: g.x + 30,
     y: g.top
-      ? 65 + (Math.min(n, 5) - 1) * 47
-      : 595 - (Math.min(n, 5) - 1) * 47,
+      ? 65 + (Math.min(n, 5) - 1) * 40
+      : 595 - (Math.min(n, 5) - 1) * 40,
   };
 }
 // Original top-stack slots, compressed exactly like the live checker stacks.
@@ -83,8 +83,8 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
         x: g ? g.x + 30 : 408,
         y: g
           ? g.top
-            ? 65 + slot * 47
-            : 595 - slot * 47
+            ? 65 + slot * 40
+            : 595 - slot * 40
           : lastMove.player !== orientation
             ? 100
             : 506,
@@ -252,7 +252,18 @@ export class Board {
         return;
       }
       const p = e.target.closest("[data-point]");
-      if (p) this.onPoint(this.decode(p.dataset.point));
+      if (p) {
+        const raw = this.decode(p.dataset.point);
+        const pos = this.coordinates(e.clientX, e.clientY);
+        const quick =
+          typeof raw === "number"
+            ? pointGeometry(raw, this.options.orientation).top
+              ? pos.y >= 250
+              : pos.y <= 410
+            : raw === `off${this.state.turn}` &&
+              this.renderOptions.reachable?.includes("off");
+        this.onPoint(raw, { quick });
+      }
     });
     this.svg.addEventListener("pointerdown", (e) => {
       this.suppressClickUntil = 0;
@@ -359,7 +370,9 @@ export class Board {
       if (!point) return;
       if (["Enter", " "].includes(e.key)) {
         e.preventDefault();
-        this.onPoint(this.decode(point.dataset.point));
+        this.onPoint(this.decode(point.dataset.point), {
+          quick: e.shiftKey,
+        });
       } else if (
         ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)
       ) {
@@ -848,6 +861,7 @@ export class Board {
       numbers = true,
       selected = null,
       destinations = [],
+      reachable = [],
       sources = [],
       moves = [],
       interactive = true,
@@ -877,6 +891,7 @@ export class Board {
       numbers,
       selected,
       destinations,
+      reachable,
       sources,
       moves,
       interactive,
@@ -946,7 +961,7 @@ export class Board {
           n && (v > 0 ? 0 : 1) === lastMove?.player
             ? Math.min(n, lastMove.points[p] || 0)
             : 0;
-      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${
+      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? ", reachable: tap the inner tip or press Shift+Enter to move nearest checker" : ""}${
         destinations.includes(p)
           ? ", legal destination, dice " +
             moves
@@ -968,7 +983,7 @@ export class Board {
         "aria-label": label,
         "aria-disabled": !interactive,
         "aria-pressed": selected === p,
-        class: `point${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
+        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
       });
       if (moved) g.setAttribute("data-last-moved", moved);
       g.append(
@@ -986,6 +1001,7 @@ export class Board {
           d: top
             ? `M${x + 3} 38 L${x + 57} 38 L${x + 30} 262 Z`
             : `M${x + 3} 622 L${x + 57} 622 L${x + 30} 398 Z`,
+          class: "point-shape",
           fill: boardColor(p % 2 ? "pointB" : "pointA"),
           "pointer-events": "none",
         }),
@@ -1025,7 +1041,7 @@ export class Board {
         g.append(
           checker(
             x + 30,
-            top ? 65 + i * 47 : 595 - i * 47,
+            top ? 65 + i * 40 : 595 - i * 40,
             v > 0 ? 0 : 1,
             i === 4 && n > 5 ? n : 1,
             compact,
@@ -1200,7 +1216,7 @@ export class Board {
         role: "button",
         "aria-disabled": !interactive,
         "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${destinations.includes("off") && s.turn === p ? ", legal destination" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
-        class: `point${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
+        class: `point${reachable.includes("off") && s.turn === p ? " reachable" : ""}${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
       });
       const movedOff =
         lastMove?.player === p ? lastMove.points.off || 0 : 0;

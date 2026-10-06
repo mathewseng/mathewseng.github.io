@@ -13,6 +13,12 @@ import {
 } from "../core/storage.mjs";
 import { shareURL } from "../core/xgid.mjs";
 import { replay } from "../core/rules.mjs";
+import {
+  decisionHistory,
+  decisionTotals,
+  sameDecisionPrefix,
+} from "../core/decision-history.mjs";
+import { sessionReview } from "../ui/session-review.mjs";
 import { Board } from "../ui/board.mjs";
 import {
   $,
@@ -90,7 +96,7 @@ function render() {
   const typeFilter = select(
     [
       ["", "All items"],
-      ["match", "Game history"],
+      ["match", "Session Library"],
       ["position", "Positions"],
       ["mistake", "Mistakes"],
     ],
@@ -191,10 +197,33 @@ function renderList() {
         el(
           "p",
           {},
-          `${item.kind === "match" ? "Game history" : item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${item.tags.length ? " · " + item.tags.join(", ") : ""}`,
+          `${item.kind === "match" ? "Session" : item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${item.tags.length ? " · " + item.tags.join(", ") : ""}`,
         ),
       ),
     );
+    if (item.kind === "match") {
+      const decisions = decisionHistory(item);
+      const summary = el("div", { class: "library-session-summary" });
+      for (const n of [...new Set(decisions.map((r) => r.game))]) {
+        const rows = decisions.filter((r) => r.game === n);
+        summary.append(
+          el(
+            "p",
+            {},
+            `Game ${n} · ` +
+              [0, 1]
+                .map((p) => {
+                  const t = decisionTotals(rows, p);
+                  return `${item.names?.[p] || (p ? "Teal" : "Ivory")}: ${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV points lost" : "equity lost"} (${t.evaluated} evaluated, ${t.pending} unreviewed)`;
+                })
+                .join(" · "),
+          ),
+        );
+      }
+      if (!decisions.length)
+        summary.append(el("p", {}, "No decisions played yet"));
+      row.lastElementChild.append(summary);
+    }
     parent.append(row);
   }
 }
@@ -233,6 +262,28 @@ function inspector() {
       maxlength: 100,
       placeholder: "Collection name",
     });
+  if (item.kind === "match")
+    p.append(
+      button(
+        "Review decisions",
+        () =>
+          sessionReview(item, {
+            onSave: async (snapshot, index) => {
+              const current = await get("items", item.id);
+              if (!current || !sameDecisionPrefix(current, snapshot, index))
+                throw new Error(
+                  "This session changed. Reopen its review to continue.",
+                );
+              current.events[index].evaluation =
+                snapshot.events[index].evaluation;
+              await put("items", { ...current, updatedAt: Date.now() });
+              await refresh();
+            },
+          }),
+        "primary",
+        { id: "review-decisions" },
+      ),
+    );
   if (item.kind === "match" && item.undoLog?.length)
     p.append(
       el(

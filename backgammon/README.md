@@ -108,3 +108,27 @@ Offline availability requires successful initial setup and engine caching. The r
 - Match review shows checker and cube losses in normalized equity and filters evaluated errors. Cross-engine performance ratings are not implemented.
 - No expert review/classification of advanced tactics such as blitz/backgame/holding/priming is claimed. Only directly supported topic labels are exposed.
 - Browser emulation is not real-device testing. See `docs/VALIDATION.md` and `docs/benchmarks.json` for observed coverage and timings.
+
+## Decision history and session review
+
+With **Show move feedback** enabled against GNUbg, confirmed checker moves and cube actions (including rolling instead of doubling) are evaluated in their original context. The scrollable history retains decisions from both players. Opening rolls, resignations and forced actions are not assigned invented losses. Missing evaluations say **Not analyzed**. **Game review** at the end of a game, or **Review decisions** in Library → **Session Library**, can evaluate unreviewed checker/cube choices with Quick; cancellation retains completed work. Live online Play does not run this analysis.
+
+Each comparison shows Before, Your choice and Best choice from the decision maker's perspective. Before is the value of the best evaluated continuation with the known decision context, so it equals Best choice; it is not an independently sampled pre-move estimate. Money equity/loss uses the original cube as a unit; the EV column converts to session points. Match-winning probability remains distinct from normalized match equity. Blue marks the best evaluated decision; green/yellow/orange/red are presentation bands at 0.020/0.050/0.100 equity, not uncertainty estimates or a performance rating.
+
+Session Library groups decisions by game and reports each player's evaluated loss and unreviewed count separately. Money totals weight each decision by its original cube; match totals are normalized equity sums. Mixed evaluation strengths are labeled on each decision. Replay-context checks prevent attaching saved grades to a different branch after a takeback. Library backups include these grades; existing unscored games can be reviewed later.
+
+Play reserves a fixed control/history area for each viewport. Feedback, status messages and long histories scroll there without changing board dimensions. Five visible checkers use a consistent compressed pitch, leaving a clear lane for destination labels. Selected checkers have one solid ring; other movable sources are dashed, destination landing rings and die labels remain visible, and keyboard focus has its own outline.
+
+Point tips are quick-play shortcuts: tap the inner tip (toward the dice lane), or focus a point and press **Shift+Enter**, to move the nearest checker that has a legal route there. All currently reachable single-checker destinations glow softly, including combined dice and doubles. Normal checker taps select a source; dragging and explicit reverse/entry-switch targets retain their behavior. Ambiguous die use still opens the route chooser. All shortcuts come from complete legal turns, so they cannot bypass bar entry, maximum-dice use or bearing-off rules.
+
+The hint dialog also offers **Undo & play best** to replace the draft and commit its best evaluated turn. In a recent human checker review against the bot, the same action rewinds that committed turn and any bot reply before playing the best move. The original line stays in the takeback log, and committed reply dice are reused. The action is unavailable for historical positions, human/online opponents, or turns blocked by the existing forced-turn/cube-boundary takeback policy.
+
+## Keyboard play
+
+Settings → **Keyboard** edits every binding, supports up to three comma-separated aliases or an empty field to disable one action, detects conflicting keys in the same game phase, and can disable game shortcuts entirely. Bindings persist locally. Browser Ctrl/Command/Alt commands, text inputs, key repeats and open dialogs never trigger game shortcuts. Use normal Tab/Shift+Tab, arrows, Enter and Escape inside dialogs (including ambiguous-route choices and opponent takeback approval).
+
+- Top row, left to right: `1 2 3 4 5 6 7 8 9 0 - =`. Bottom row: `Q W E R T Y U I O P [ ]`. These track the displayed orientation. Select a checker, then its destination; Shift + point uses nearest-checker quick play.
+- `B`: bar; `A`: bear off; `Z`: draft undo, or request a committed takeback when no draft exists; `X`: reset draft; `S`: prefer the other remaining die; `Escape`: clear selection.
+- `Space`: roll; `Enter`: confirm a complete turn, acknowledge the opening roll, start a match or continue to the next game.
+- `C` or `D`: offer a double before rolling. While answering an offer, `D` drops, `T` takes and `V` beavers/raccoons when permitted.
+- `H`: hint against the bot; `F`: flip orientation; `?`: keyboard settings/help. Native Tab navigation reaches all other controls. Shortcuts obey the same turn ownership, disabled controls and confirmation policies as pointer input.

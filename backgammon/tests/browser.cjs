@@ -52,14 +52,19 @@ const server = http.createServer((req, res) => {
     for (const browserName of (process.env.BG_BROWSERS || "chromium").split(
       ",",
     )) {
-      const browser = await { chromium, firefox, webkit }[browserName].launch({
+      const browser = await { chromium, firefox, webkit }[
+        browserName
+      ].launch({
         headless: true,
         ...(browserName === "chromium" && process.env.CHROME_PATH
           ? { executablePath: process.env.CHROME_PATH }
           : {}),
       });
       console.log(`Testing ${browserName} ${browser.version()}`);
-      report.browsers.push({ name: browserName, version: browser.version() });
+      report.browsers.push({
+        name: browserName,
+        version: browser.version(),
+      });
       try {
         const context = await browser.newContext({
           viewport: { width: 1366, height: 768 },
@@ -102,9 +107,13 @@ const server = http.createServer((req, res) => {
         await steps();
         await shot("active-draft");
         await page.locator("#confirm").click();
-        await page.getByRole("button", { name: "Double", exact: true }).click();
+        await page
+          .getByRole("button", { name: "Double", exact: true })
+          .click();
         await shot("cube-decision");
-        await page.getByRole("button", { name: "Take 2", exact: true }).click();
+        await page
+          .getByRole("button", { name: "Take 2", exact: true })
+          .click();
         const saved = await page.evaluate(async () => {
           const { get } = await import("/backgammon/core/storage.mjs");
           return (await get("work", "play")).game.state;
@@ -191,7 +200,9 @@ const server = http.createServer((req, res) => {
                   ? result.candidates[0].equity
                   : result.equity,
               b =
-                ref.type === "checker" ? ref.candidates[0].equity : ref.equity;
+                ref.type === "checker"
+                  ? ref.candidates[0].equity
+                  : ref.equity;
             if (Math.abs(a - b) > 0.0001)
               throw new Error("Engine regression " + item.id);
             checked.push({ id: item.id, equity: a, ms: result.elapsedMs });
@@ -200,7 +211,8 @@ const server = http.createServer((req, res) => {
             await import("/backgammon/engine/vendor/gnubg-core-module.js");
           const module = await createModule({
             locateFile: (name) =>
-              new URL("/backgammon/engine/vendor/" + name, location.href).href,
+              new URL("/backgammon/engine/vendor/" + name, location.href)
+                .href,
             print: () => {},
             printErr: () => {},
           });
@@ -268,14 +280,16 @@ const server = http.createServer((req, res) => {
           const a = await engine.analyze(pos),
             b = await engine.analyze(reverse);
           if (
-            Math.abs(a.candidates[0].equity - b.candidates[0].equity) > 0.00001
+            Math.abs(a.candidates[0].equity - b.candidates[0].equity) >
+            0.00001
           )
             throw new Error("Perspective reversal mismatch.");
           const match = { ...pos, matchLength: 7, scores: [2, 5] };
           const m = await engine.analyze(match);
           if (
             m.candidates.some((c) => c.mwc < 0 || c.mwc > 1) ||
-            Math.abs(m.candidates[0].equity - a.candidates[0].equity) < 0.001
+            Math.abs(m.candidates[0].equity - a.candidates[0].equity) <
+              0.001
           )
             throw new Error("Match context missing.");
           const deep = engine.analyze(pos, { preset: "deep" });
@@ -388,7 +402,9 @@ const server = http.createServer((req, res) => {
               serviceWorkers: "block",
             }),
             failure = await failureContext.newPage();
-          await failure.route("**/gnubg-core-module.data", (r) => r.abort());
+          await failure.route("**/gnubg-core-module.data", (r) =>
+            r.abort(),
+          );
           await failure.goto(base + "/backgammon/solver/");
           await failure.locator("#analyze").click();
           await failure.waitForFunction(
@@ -409,7 +425,12 @@ const server = http.createServer((req, res) => {
         );
         report.checkerUX ||= [];
         report.checkerUX.push(
-          await require("./checker-ux.cjs")(browser, base, out, browserName),
+          await require("./checker-ux.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
         );
         report.feedbackUX ||= [];
         report.feedbackUX.push(
@@ -417,11 +438,21 @@ const server = http.createServer((req, res) => {
         );
         report.appearanceUX ||= [];
         report.appearanceUX.push(
-          await require("./appearance.cjs")(browser, base, out, browserName),
+          await require("./appearance.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
         );
         report.optionsUX ||= [];
         report.optionsUX.push(
-          await require("./options-ui.cjs")(browser, base, out, browserName),
+          await require("./options-ui.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
         );
         report.refreshUX ||= [];
         (report.tableControls ||= []).push(
@@ -432,11 +463,32 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.keyboardUX ||= []).push(
+          await require("./keyboard.cjs")(browser, base, out, browserName),
+        );
+        (report.decisionUX ||= []).push(
+          await require("./decision-ux.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
+        );
         (report.assistanceUX ||= []).push(
-          await require("./assistance.cjs")(browser, base, out, browserName),
+          await require("./assistance.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
         );
         (report.turnPolicy ||= []).push(
-          await require("./turn-policy.cjs")(browser, base, out, browserName),
+          await require("./turn-policy.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
         );
         report.refreshUX.push(
           await require("./refresh.cjs")(browser, out, browserName),

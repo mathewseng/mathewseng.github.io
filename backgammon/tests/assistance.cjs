@@ -271,7 +271,7 @@ module.exports = async function assistanceUX(
       );
       await style.evaluate((e) => e.remove());
     }
-    await page.locator("#review-feedback").click();
+    await page.locator('[data-decision-type="checker"]').first().click();
     await page
       .getByRole("button", { name: "Your move", exact: true })
       .click();
@@ -293,12 +293,13 @@ module.exports = async function assistanceUX(
       "phone feedback toggle; review compares source, best and played positions; responsive primary actions",
     );
 
+    const feedbackBeforeNavigation = (await saved()).feedback;
     await page.getByRole("link", { name: "Solver", exact: true }).click();
     await page.waitForURL("**/solver/**");
     await page.getByRole("link", { name: "Play", exact: true }).click();
     await page.locator("#review-feedback").waitFor();
     assert.equal((await saved()).game.id, partial.game.id);
-    assert.deepEqual((await saved()).feedback, graded.feedback);
+    assert.deepEqual((await saved()).feedback, feedbackBeforeNavigation);
     assert.equal((await saved()).game.config.tutor, true);
     cases.push("feedback and live toggle survive Solver round trip");
 

@@ -4,7 +4,7 @@ import { join, relative } from "node:path";
 const base = new URL("..", import.meta.url).pathname;
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.name !== ".DS_Store")
+    .filter((e) => !e.name.startsWith("."))
     .flatMap((e) =>
       e.isDirectory()
         ? [

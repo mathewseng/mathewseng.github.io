@@ -66,7 +66,10 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
           'importScripts("./offline-manifest.js?v=generated");',
         ),
       );
-    for (const file of [...manifest.self.BG_SHELL, ...manifest.self.BG_ENGINE]
+    for (const file of [
+      ...manifest.self.BG_SHELL,
+      ...manifest.self.BG_ENGINE,
+    ]
       .filter((file) => file.startsWith("/backgammon/"))
       .sort()) {
       const source = readFileSync(join(site, file));
@@ -86,7 +89,9 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
         );
     }
     for (const file of ["hub.css", "hub.js", "peer-room.js"])
-      releaseHash.update(file).update(readFileSync(join(site, "shared", file)));
+      releaseHash
+        .update(file)
+        .update(readFileSync(join(site, "shared", file)));
     assert.equal(
       releaseHash.digest("hex").slice(0, 16),
       manifest.self.BG_CACHE_VERSION,
@@ -106,6 +111,11 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
         `Offline asset is published: ${file}`,
       );
       assert.doesNotMatch(file, /\/(?:test-results|tests|scripts|docs)\//);
+      assert.doesNotMatch(
+        file,
+        /\/\./,
+        "Hidden local metadata never enters offline caches",
+      );
       assert.ok(
         !file.startsWith("/backgammon/refresh/"),
         "Recovery stays outside the offline cache",

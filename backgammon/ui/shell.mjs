@@ -19,6 +19,8 @@ import {
 import { Board } from "./board.mjs";
 import {
   checkerRoutes,
+  availableRoutes,
+  nearestRoutes,
   reverseRoutes,
   entrySwitchRoutes,
 } from "../core/draft.mjs";
@@ -319,6 +321,9 @@ export async function preferences() {
     ),
     button("About, engine & licenses", about),
   );
+  const { shortcutControls } = await import("./shortcuts.mjs");
+  const keys = shortcutControls();
+  keys.hidden = true;
   const colors = appearanceControls();
   display.hidden = true;
   const tabs = el("div", {
@@ -328,12 +333,14 @@ export async function preferences() {
   for (const [label, section] of [
     ["Board colors", colors],
     ["Display & controls", display],
+    ["Keyboard", keys],
   ]) {
     const tab = button(
       label,
       () => {
         colors.hidden = section !== colors;
         display.hidden = section !== display;
+        keys.hidden = section !== keys;
         for (const t of tabs.children)
           t.setAttribute("aria-pressed", String(t === tab));
       },
@@ -345,7 +352,15 @@ export async function preferences() {
   const release = releaseStatus();
   const d = dialog(
     "Settings",
-    el("div", { class: "settings-content" }, release, tabs, colors, display),
+    el(
+      "div",
+      { class: "settings-content" },
+      release,
+      tabs,
+      colors,
+      display,
+      keys,
+    ),
   );
   d.classList.add("settings-dialog");
   d.addEventListener("close", () =>
@@ -494,7 +509,7 @@ export class DraftBoard {
     this.selected = null;
     this.paths = [];
     this.preferred = null;
-    board.onPoint = (p) => this.point(p);
+    board.onPoint = (p, options) => this.point(p, options);
     board.onDragStart = (p) => this.beginDrag(p);
     board.onDrop = (_, p) => this.drop(p);
     board.onCancel = () => {
@@ -550,12 +565,16 @@ export class DraftBoard {
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
-  point(raw) {
+  point(raw, { quick = false } = {}) {
     if (!this.enabled || this.preview) return;
     this.board.cancelAnimations();
     const p = this.normalize(raw);
     this.hint = "";
-    const routes = this.routes().filter((st) => st.to === p);
+    const selectedRoutes = this.routes().filter((st) => st.to === p);
+    const routes =
+      quick && !selectedRoutes.some((r) => r.undo || r.switchDie)
+        ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
+        : selectedRoutes;
     // Equivalent paths with the same resulting position and consumed dice need
     // no extra confirmation. Distinct hits or different die use remain choices.
     const distinct = new Map();
@@ -771,6 +790,10 @@ export class DraftBoard {
       ...settings(),
       selected: this.selected,
       destinations: moves.map((st) => st.to),
+      reachable:
+        this.enabled && !this.preview
+          ? availableRoutes(this.paths, this.draft).map((r) => r.to)
+          : [],
       sources: this.enabled && !this.preview ? this.sources() : [],
       moves,
       interactive: this.enabled && !this.preview,
@@ -797,7 +820,7 @@ export class DraftBoard {
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? "Tap or drag to a highlighted point. Arrow targets move back."
-                : "Tap a highlighted checker to see single and combined moves, or drag it."
+                : "Tap a glowing point tip to move the nearest checker, or select and drag a checker."
             : this.draft.length
               ? notation(this.draft, this.state.turn)
               : this.lastMove

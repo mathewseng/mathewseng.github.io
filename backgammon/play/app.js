@@ -58,13 +58,24 @@ import {
 } from "../ui/shell.mjs";
 import { AnalysisPanel } from "../ui/analysis.mjs";
 import { decisionReview } from "../ui/decision-review.mjs";
+import { gradeCube } from "../engine/cube-grade.mjs";
+import {
+  decisionHistory,
+  compactEvaluation,
+  sameDecisionPrefix,
+} from "../core/decision-history.mjs";
+import { sessionReview } from "../ui/session-review.mjs";
+import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
 import { sound } from "../ui/sound.mjs";
+import { installPlayShortcuts } from "../ui/shortcuts.mjs";
+import { preferences } from "../ui/shell.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
+document.querySelector(".app").classList.add("play-page");
 let config = {
     rules: defaultPlayRules(0),
     mode: "computer",
@@ -95,12 +106,15 @@ const analysis = new AnalysisPanel();
 const feedbackStrip = el("div", {
   class: "play-feedback",
   id: "move-feedback",
-  role: "status",
-  "aria-live": "polite",
-  "aria-atomic": "true",
+  role: "region",
+  "aria-label": "Decision history",
   hidden: true,
 });
 document.querySelector(".action-area").append(feedbackStrip);
+document.querySelector(".action-area").setAttribute("tabindex", "0");
+document
+  .querySelector(".action-area")
+  .setAttribute("aria-label", "Turn controls and decision history");
 const draft = new DraftBoard(ui.board, () => {
   actions();
   detailDraft();
@@ -130,6 +144,76 @@ const online = new Online({
   },
   onError: showError,
 });
+
+installPlayShortcuts({
+  phase: () =>
+    !ui.board.container.isConnected
+      ? null
+      : !model()?.started
+        ? "setup"
+        : opening.active
+          ? "opening"
+          : state().phase,
+  point: (p, quick) => {
+    if (!draft.enabled || draft.preview) return false;
+    draft.point(p, {
+      quick:
+        quick || (draft.selected === null && !draft.sources().includes(p)),
+    });
+    return true;
+  },
+  run: (action) => {
+    const selectors = {
+      roll: "#roll",
+      confirm: "#confirm,#begin-turn,#start-match,#next-game",
+      undo: "#undo,#undo-turn",
+      reset: "#reset-draft",
+      double: "#double-cube",
+      drop: "#drop-cube",
+      take: "#take-cube",
+      redouble: "#immediate-redouble",
+      hint: "#hint",
+    };
+    if (selectors[action]) {
+      const control = [
+        ...document.querySelectorAll(selectors[action]),
+      ].find((n) => !n.disabled && !n.hidden);
+      if (!control) return false;
+      control.click();
+      return true;
+    }
+    if (action === "help") {
+      preferences()
+        .then(() =>
+          [...document.querySelectorAll(".settings-tabs button")]
+            .find((b) => b.textContent === "Keyboard")
+            ?.click(),
+        )
+        .catch(showError);
+      return true;
+    }
+    if (action === "flip") {
+      saveSettings({ orientation: 1 - settings().orientation });
+      dispatchEvent(new Event("bg-settings"));
+      return true;
+    }
+    if (!draft.enabled || draft.preview) return false;
+    if (action === "bar") draft.point(`bar${state().turn}`);
+    else if (action === "off")
+      draft.point(`off${state().turn}`, { quick: draft.selected === null });
+    else if (action === "cancel") {
+      draft.selected = null;
+      draft.hint = "Selection cleared.";
+      draft.render();
+    } else if (action === "swap") {
+      const dice = draft.candidates().map((s) => s.die);
+      if (!dice.length) return false;
+      draft.preferDie(dice.find((d) => d !== draft.preferred) || dice[0]);
+    } else return false;
+    return true;
+  },
+});
+
 const params = new URLSearchParams(location.hash.slice(1));
 const roomCode = params.get("room");
 if (roomCode) config.mode = "online";
@@ -876,14 +960,14 @@ function renderActions() {
   const mine = myTurn(s) && !botBusy && !committing && !assistanceJob;
   if (assistanceJob?.kind === "submit") {
     $("message").textContent =
-      `Checking your turn · ${PRESETS[config.strength].name}…`;
+      `Checking your decision · ${PRESETS[config.strength].name}…`;
     a.append(
       button(
         "Cancel evaluation",
         () => {
           releaseAssistance();
           unlockDraft();
-          $("confirm")?.focus();
+          ($("confirm") || $("roll"))?.focus();
         },
         "",
         { id: "cancel-feedback" },
@@ -978,10 +1062,11 @@ function renderActions() {
     $("message").textContent =
       `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll`;
     a.append(
-      button("Double", () => commit({ type: "double" }), "", {
+      button("Double", () => submitCube({ type: "double" }), "", {
+        id: "double-cube",
         disabled: !mine || !canDouble(s),
       }),
-      button("Roll dice", () => commit({ type: "roll" }), "primary", {
+      button("Roll dice", () => submitCube({ type: "roll" }), "primary", {
         disabled: !mine,
         id: "roll",
       }),
@@ -1020,21 +1105,22 @@ function renderActions() {
     $("message").textContent =
       `${offerName(s)} to ${s.cube.value * 2} from ${names()[s.pending.by]}. ${names()[decisionPlayer(s)]} to decide.`;
     a.append(
-      button("Pass", () => commit({ type: "pass" }), "", {
+      button("Pass", () => submitCube({ type: "pass" }), "", {
+        id: "drop-cube",
         disabled: !mine,
       }),
       button(
         `Take ${s.cube.value * 2}`,
-        () => commit({ type: "take" }),
+        () => submitCube({ type: "take" }),
         "primary",
-        { disabled: !mine },
+        { disabled: !mine, id: "take-cube" },
       ),
     );
     if (canImmediateRedouble(s))
       a.append(
         button(
           `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}`,
-          () => commit({ type: offerDepth(s) ? "raccoon" : "beaver" }),
+          () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
           "",
           { disabled: !mine, id: "immediate-redouble" },
         ),
@@ -1064,6 +1150,12 @@ function renderActions() {
             : commit({ type: "next" }),
         "primary",
         { id: "next-game" },
+      ),
+      button("Game review", showSessionReview, "", { id: "game-review" }),
+      el(
+        "a",
+        { href: "/backgammon/library/#games", class: "button ghost" },
+        "Session Library",
       ),
     );
   }
@@ -1365,7 +1457,7 @@ async function persist() {
     }
   }
 }
-async function commit(action) {
+async function commit(action, evaluation = null) {
   if (committing) return;
   if (config.mode === "online") {
     online.send(action);
@@ -1388,7 +1480,14 @@ async function commit(action) {
               : cryptoDice(),
         }
       : action;
+    const eventIndex = game.events.length;
     game = playAction(game, committed, actor);
+    if (evaluation) {
+      game.events[eventIndex].evaluation = compactEvaluation(
+        evaluation.source,
+        evaluation.result,
+      );
+    }
     if (action.type === "next") feedback = null;
     draft.draft = [];
     boardKey = "";
@@ -1405,7 +1504,7 @@ function feedbackToggle() {
     {
       class: "check feedback-toggle",
       title:
-        "After each of your confirmed checker turns, show the best move and estimated equity lost.",
+        "Evaluate your checker and cube decisions, including choosing not to double. Compare before, your choice and best choice.",
     },
     el("input", {
       type: "checkbox",
@@ -1433,49 +1532,147 @@ function feedbackToggle() {
     "Show move feedback",
   );
 }
-function renderFeedback() {
-  feedbackStrip.hidden = !(
-    game?.started &&
-    config.mode === "computer" &&
-    config.tutor &&
-    feedback
-  );
-  document
-    .querySelector(".workspace")
-    .classList.toggle("has-move-feedback", !feedbackStrip.hidden);
-  if (feedbackStrip.hidden) return;
-  if (renderedFeedback === feedback) return;
-  renderedFeedback = feedback;
-  const f = decisionFeedback(feedback.result);
-  const review = button(
-    "",
-    () => {
-      decisionReview(feedback.source, { title: "Your last turn" }).result(
-        feedback.result,
-      );
-    },
-    "feedback-review",
+function showSessionReview() {
+  const m = model();
+  if (!m) return;
+  sessionReview(
+    { ...m, names: names() },
     {
-      id: "review-feedback",
-      "aria-label": `Review your last turn. ${f.label} ${f.value} ${f.units}. Best move ${f.best.notation}.`,
+      gameNumber: state().phase === "over" ? state().gameNumber : null,
+      allowAnalysis: config.mode !== "online",
+      onSave: async (snapshot, index) => {
+        if (
+          game?.id !== snapshot.id ||
+          !sameDecisionPrefix(game, snapshot, index)
+        )
+          return;
+        game.events[index].evaluation = snapshot.events[index].evaluation;
+        await persist();
+        renderedFeedback = null;
+        renderFeedback();
+      },
     },
   );
-  review.append(
-    el(
-      "span",
-      { class: "feedback-heading" },
-      el("span", {}, "Your last turn"),
-      el("strong", { class: "value" }, `${f.label} ${f.value}`),
-    ),
-    el("span", { class: "feedback-best" }, `Best ${f.best.notation}`),
-    el(
-      "span",
-      { class: "muted small" },
-      `${feedback.result.settings.name} · ${f.units} · Review`,
-    ),
-  );
-  feedbackStrip.replaceChildren(review);
 }
+function renderFeedback() {
+  const m = model();
+  feedbackStrip.hidden = !(
+    m?.started &&
+    ((config.mode === "computer" && config.tutor) ||
+      state().phase === "over")
+  );
+  if (feedbackStrip.hidden) return;
+  if (renderedFeedback === m.events) return;
+  renderedFeedback = m.events;
+  const rows = decisionHistory(m).reverse();
+  feedbackStrip.replaceChildren(
+    el("h2", { class: "sr-only" }, "Decision history"),
+  );
+  for (const [i, row] of rows.entries()) {
+    if (!row.feedback) {
+      feedbackStrip.append(
+        el(
+          "div",
+          { class: "feedback-pending" },
+          `${names()[row.player]} · ${row.label}`,
+          el(
+            "span",
+            { class: "muted small" },
+            row.forced ? "Forced · no choice" : "Not analyzed",
+          ),
+        ),
+      );
+      continue;
+    }
+    const f = row.feedback;
+    const review = button(
+      "",
+      () =>
+        decisionReview(row.source, {
+          title:
+            row.result.type === "cube"
+              ? "Cube decision"
+              : "Checker decision",
+          onReplay: canReplayBest(row, m.id)
+            ? (steps) => replayBest(row, m.id, steps)
+            : undefined,
+        }).result(row.result),
+      "feedback-review",
+      {
+        ...(row.player === config.humanSide &&
+        !feedbackStrip.querySelector("#review-feedback")
+          ? { id: "review-feedback" }
+          : {}),
+        "data-loss-tone": f.tone,
+        "data-decision-type": row.result.type,
+        title: `${f.quality}. ${f.units}. Open equity and EV comparison.`,
+      },
+    );
+    review.append(
+      el(
+        "span",
+        { class: "feedback-heading" },
+        el(
+          "span",
+          {},
+          `${names()[row.player]} · ${row.result.type === "cube" ? "Cube" : "Move"}`,
+        ),
+        el("strong", { class: "value" }, `${f.label} ${f.value}`),
+      ),
+      el(
+        "span",
+        { class: "feedback-best" },
+        `${row.label} · Best ${f.best.notation}`,
+      ),
+    );
+    if (i === 0) review.append(decisionValues(f, true));
+    review.append(
+      el(
+        "span",
+        { class: "muted small" },
+        `${row.result.settings.name} · ${f.units} · Review`,
+      ),
+    );
+    feedbackStrip.append(review);
+  }
+  feedbackStrip.append(
+    button("Review session", showSessionReview, "ghost", {
+      id: "review-session",
+    }),
+  );
+}
+
+function canReplayBest(row, id) {
+  return (
+    config.mode === "computer" &&
+    game?.id === id &&
+    row.result.type === "checker" &&
+    row.player === config.humanSide &&
+    !committing &&
+    !assistanceJob &&
+    !draft.draft.length &&
+    undoTarget() === row.index
+  );
+}
+async function replayBest(row, id, steps) {
+  if (!canReplayBest(row, id))
+    throw new Error("This turn can no longer be taken back.");
+  // Validate the original context before changing the live game.
+  transition(row.source, { type: "move", steps }, row.player);
+  stopComputer();
+  const restored = undoTurn(game, row.index, config.humanSide);
+  if (positionKey(restored.state) !== positionKey(row.source))
+    throw new Error("This review belongs to a different position.");
+  game = restored;
+  feedback = {
+    source: row.source,
+    result: { ...row.result, actual: row.result.candidates[0], error: 0 },
+  };
+  draft.draft = [];
+  boardKey = "";
+  await commit({ type: "move", steps }, feedback);
+}
+
 function activeAssistance(job) {
   return (
     assistanceJob === job &&
@@ -1536,6 +1733,19 @@ function showHint() {
       panel();
       $("hint")?.focus();
     },
+    replayDescription:
+      "Clears your draft and immediately plays the best move using this roll.",
+    onReplay: async (steps, result) => {
+      if (!activeAssistance(job))
+        throw new Error("This hint is no longer current.");
+      releaseAssistance();
+      draft.draft = [];
+      feedback = {
+        source: job.source,
+        result: { ...result, actual: result.candidates[0], error: 0 },
+      };
+      await commit({ type: "move", steps }, feedback);
+    },
     onUse: (steps) => {
       if (!activeAssistance(job)) return;
       releaseAssistance();
@@ -1579,9 +1789,23 @@ async function submit() {
     !draft.complete()
   )
     return;
-  const steps = clone(draft.draft);
+  return evaluateDecision({ type: "move", steps: clone(draft.draft) });
+}
+async function submitCube(action) {
+  if (committing || assistanceJob || botBusy || !myTurn(state())) return;
+  if (
+    config.mode !== "computer" ||
+    !config.tutor ||
+    (action.type === "roll" && !canDouble(state()))
+  )
+    return commit(action);
+  return evaluateDecision(action);
+}
+async function evaluateDecision(action) {
+  const checker = action.type === "move",
+    steps = checker ? action.steps : null;
   if (!config.tutor || config.mode !== "computer") {
-    await commit({ type: "move", steps });
+    await commit(action);
     return;
   }
   const job = assistance("submit");
@@ -1589,7 +1813,7 @@ async function submit() {
     if (!activeAssistance(job)) return;
     releaseAssistance();
     feedback = result ? { source: job.source, result } : null;
-    await commit({ type: "move", steps });
+    await commit(action, feedback);
     // Only committed decisions enter mistake review. Storage failure must not
     // prevent a legal turn, and the full original decision context is retained.
     if (result?.error > 0.02) {
@@ -1597,11 +1821,13 @@ async function submit() {
         await put(
           "items",
           itemRecord("mistake", {
-            title: "Checker decision to review",
+            title: checker
+              ? "Checker decision to review"
+              : "Cube decision to review",
             state: job.source,
-            submitted: steps,
+            submitted: checker ? steps : action.type,
             analysis: result,
-            tags: ["checker", "mistake"],
+            tags: [checker ? "checker" : "cube", "mistake"],
           }),
         );
       } catch (error) {
@@ -1613,24 +1839,25 @@ async function submit() {
     if (assistanceJob !== job) return;
     releaseAssistance();
     unlockDraft();
-    $("confirm")?.focus();
+    ($("confirm") || $("roll"))?.focus();
   };
   try {
-    const result = await analysis.run(job.source, {
+    let result = await analysis.run(job.source, {
       submitted: steps,
       preset: config.strength,
       priority: 20,
     });
     if (!activeAssistance(job)) return;
+    if (!checker) result = gradeCube(job.source, result, action.type);
     job.done = true;
     if (config.warning && result.error > 0.04) {
-      const f = decisionFeedback(result);
+      const f = decisionFeedback(result, job.source);
       job.dialog = dialog(
         "Review before confirming?",
         el(
           "p",
           {},
-          `${f.label} ${f.value} ${f.units} at ${result.settings.name}. This is an estimate. Revise your draft or confirm this turn.`,
+          `${f.label} ${f.value} ${f.units} at ${result.settings.name}. This is an estimate. Revise your decision or confirm it.`,
         ),
         [
           button("Revise", () => job.dialog.close()),
@@ -1655,7 +1882,7 @@ async function submit() {
         el(
           "p",
           {},
-          "Your draft is saved. You can play this turn without feedback or keep editing and try again.",
+          "Your decision has not been played. You can continue without feedback or cancel and try again.",
         ),
       ),
       [
@@ -1685,7 +1912,8 @@ async function computerTurn() {
   draft.enabled = false;
   actions();
   try {
-    let action;
+    let action,
+      evaluation = null;
     if (s.phase === "resign") {
       const evalState = { ...s, phase: "roll", dice: [], pending: null };
       const result = await analysis.run(evalState, {
@@ -1718,10 +1946,20 @@ async function computerTurn() {
           type:
             result.action === "double" && canDouble(s) ? "double" : "roll",
         };
+      if (result.type === "checker")
+        evaluation = {
+          source: clone(s),
+          result: { ...result, actual: result.candidates[0], error: 0 },
+        };
+      else if (result.available)
+        evaluation = {
+          source: clone(s),
+          result: gradeCube(s, result, action.type),
+        };
     }
     if (token !== epoch || key !== positionKey(state())) return;
     botBusy = false;
-    await commit(action);
+    await commit(action, evaluation);
   } catch (e) {
     if (token !== epoch) return;
     botBusy = false;

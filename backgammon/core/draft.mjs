@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Shortcuts are prefixes of complete legal turns, never distance-only guesses.
-import { matchingPaths, applyStep, sign, boardKey } from "./rules.mjs";
+import {
+  matchingPaths,
+  applyStep,
+  sign,
+  boardKey,
+  distance,
+} from "./rules.mjs";
 export function checkerRoutes(paths, draft, from) {
   const routes = new Map();
   for (const path of matchingPaths(paths, draft)) {
@@ -101,4 +107,23 @@ export function entrySwitchRoutes(state, paths, draft) {
     }
   }
   return [...routes.values()];
+}
+
+// All immediately executable single-checker chains using the remaining dice.
+export function availableRoutes(paths, draft) {
+  const sources = [
+    ...new Set(
+      matchingPaths(paths, draft)
+        .map((p) => p.steps[draft.length]?.from)
+        .filter((p) => p !== undefined),
+    ),
+  ];
+  return sources.flatMap((from) => checkerRoutes(paths, draft, from));
+}
+export function nearestRoutes(paths, draft, to, player) {
+  const routes = availableRoutes(paths, draft).filter((r) => r.to === to);
+  const at = (p) =>
+    p === "bar" ? 25 : p === "off" ? 0 : distance(p, player);
+  const nearest = Math.min(...routes.map((r) => at(r.from) - at(r.to)));
+  return routes.filter((r) => at(r.from) - at(r.to) === nearest);
 }

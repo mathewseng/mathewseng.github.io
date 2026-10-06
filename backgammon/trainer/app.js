@@ -13,7 +13,13 @@ import {
   playerName,
   ruleSummary,
 } from "../core/rules.mjs";
-import { all, put, get, itemRecord, recordPractice } from "../core/storage.mjs";
+import {
+  all,
+  put,
+  get,
+  itemRecord,
+  recordPractice,
+} from "../core/storage.mjs";
 import { sound } from "../ui/sound.mjs";
 import {
   $,
@@ -30,6 +36,8 @@ import {
   confirmDialog,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { decisionFeedback } from "../core/decision-feedback.mjs";
+import { decisionValues, lossLegend } from "../ui/decision-values.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 const ui = shell("trainer", "Trainer", "One position. One decision.");
 const analysis = new AnalysisPanel();
@@ -53,14 +61,17 @@ const draft = new DraftBoard(ui.board, () => {
 try {
   const response = await fetch("../data/exercises.json");
   if (!response.ok)
-    throw new Error("Practice positions could not load. Retry when connected.");
+    throw new Error(
+      "Practice positions could not load. Retry when connected.",
+    );
   catalog = (await response.json()).items;
   const groups = ["opening", "contact", "cube", "race", "bearoff"].map(
     (topic) => catalog.filter((i) => i.topic === topic),
   );
   catalog = [];
   while (groups.some((g) => g.length))
-    for (const group of groups) if (group.length) catalog.push(group.shift());
+    for (const group of groups)
+      if (group.length) catalog.push(group.shift());
   const saved = location.hash ? null : await get("work", "trainer");
   if (saved) {
     filter = saved.filter;
@@ -74,6 +85,8 @@ try {
     hinted = !!saved.hinted;
     result = saved.result;
     answer = saved.answer;
+    if (result?.type === "cube" && answer)
+      result = gradeCube(exercise.state, result, answer);
     draft.set(exercise.state, legalPaths(exercise.state), !revealed);
     draft.draft = saved.draft || [];
     render();
@@ -100,7 +113,8 @@ async function begin() {
             i.topic === filter,
         )
   ).sort(
-    (a, b) => (progress.get(a.id)?.due || 0) - (progress.get(b.id)?.due || 0),
+    (a, b) =>
+      (progress.get(a.id)?.due || 0) - (progress.get(b.id)?.due || 0),
   );
   if (!pool.length) {
     exercise = null;
@@ -190,7 +204,9 @@ function actions() {
         : "Would you double or roll?";
   if (s.phase === "move")
     a.append(
-      button("Undo", () => draft.undo(), "", { disabled: !draft.draft.length }),
+      button("Undo", () => draft.undo(), "", {
+        disabled: !draft.draft.length,
+      }),
       button("Reset", () => draft.reset(), "", {
         disabled: !draft.draft.length,
         id: "reset-draft",
@@ -301,6 +317,16 @@ function panel() {
   }
   p.append(analysis.status);
   if (result && revealed) {
+    const f = decisionFeedback(result, exercise.state);
+    p.append(
+      el(
+        "p",
+        { class: "decision-loss", "data-loss-tone": f.tone },
+        `${f.label} ${f.value} · ${f.quality}`,
+      ),
+      decisionValues(f),
+      lossLegend(),
+    );
     p.append(
       resultView(result, {
         onPreview: (c) => {
@@ -327,7 +353,11 @@ function panel() {
     );
     if (result.type === "checker")
       p.append(
-        el("p", { class: "notice" }, observation(result.candidates[0].steps)),
+        el(
+          "p",
+          { class: "notice" },
+          observation(result.candidates[0].steps),
+        ),
       );
   }
 }
@@ -364,7 +394,10 @@ async function submit(decision) {
     answer = decision;
     revealed = true;
     sound.play("confirm");
-    await recordPractice(exercise.id, { error: result.error, hint: hinted });
+    await recordPractice(exercise.id, {
+      error: result.error,
+      hint: hinted,
+    });
     if (!hinted && result.error > 0.04)
       await put(
         "items",
@@ -414,7 +447,8 @@ function finishOrNext() {
 }
 function finish() {
   analysis.cancel();
-  $("message").textContent = `Session complete · ${count} decisions studied.`;
+  $("message").textContent =
+    `Session complete · ${count} decisions studied.`;
   $("actions").replaceChildren(button("Practice again", begin, "primary"));
   $("panel").replaceChildren(
     el("h2", {}, "Session complete"),
