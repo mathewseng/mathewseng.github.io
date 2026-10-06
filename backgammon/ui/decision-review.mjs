@@ -22,6 +22,7 @@ export function decisionReview(
     onClose = () => {},
     onUse,
     onReplay,
+    onReturn,
     replayDescription = "Rewinds this turn and any bot reply, then plays the best move. Already rolled dice are preserved.",
   } = {},
 ) {
@@ -39,6 +40,31 @@ export function decisionReview(
     ),
   );
   d.classList.add("decision-dialog");
+  const appendReturn = () => {
+    if (!onReturn) return;
+    const back = button(
+      "Return to this position",
+      async () => {
+        if (back.disabled) return;
+        back.disabled = true;
+        try {
+          await onReturn();
+          d.close();
+        } finally {
+          back.disabled = false;
+        }
+      },
+      "",
+      {
+        id: "return-position",
+        title:
+          "Restore the original decision and dice. The previous line stays in history.",
+      },
+    );
+    d.querySelector("footer").append(back);
+  };
+  appendReturn();
+
   const views = el("div", {
     class: "row decision-tabs",
     "aria-label": "Review view",
@@ -325,6 +351,7 @@ export function decisionReview(
       );
       const footer = d.querySelector("footer");
       footer.replaceChildren();
+      appendReturn();
       if (onReplay) {
         const replay = button(
           "Undo & play best",

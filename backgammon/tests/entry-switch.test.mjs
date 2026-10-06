@@ -104,3 +104,42 @@ test("seeded entry variations only expose replacements that remain full-turn pre
   }
   assert.ok(count > 50);
 });
+
+test("a blocked continuation still permits switching the initial die on a point", async () => {
+  const { dieSwitchRoutes, checkerRoutes } =
+    await import("../core/draft.mjs");
+  for (const turn of [0, 1]) {
+    const points = Array(24).fill(0);
+    points[12] = 1;
+    points[6] = 14;
+    points[5] = -2;
+    points[23] = -13;
+    const s = initialState({
+      phase: "move",
+      dice: [4, 3],
+      turn,
+      points: turn ? points.reverse().map((n) => -n) : points,
+    });
+    const paths = legalPaths(s),
+      from = turn ? 11 : 12,
+      to = turn ? 15 : 8;
+    const first = { from, to, die: 4 };
+    assert.ok(matchingPaths(paths, [first]).length);
+    assert.equal(checkerRoutes(paths, [first], to).length, 0);
+    const switched = dieSwitchRoutes(s, paths, [first]).find(
+      (r) => r.from === to,
+    );
+    assert.equal(switched.origin, from);
+    assert.equal(switched.to, turn ? 14 : 9);
+    assert.equal(switched.die, 3);
+    assert.ok(matchingPaths(paths, switched.remaining).length);
+    assertState(at(s, switched.remaining));
+    const blocked = structuredClone(s);
+    blocked.points[turn ? 14 : 9] = turn ? 2 : -2;
+    blocked.points[turn ? 0 : 23] = turn ? 11 : -11;
+    assert.equal(
+      dieSwitchRoutes(blocked, legalPaths(blocked), [first]).length,
+      0,
+    );
+  }
+});

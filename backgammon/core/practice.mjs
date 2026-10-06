@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Explicit local practice edits. Ordinary takebacks keep their committed dice.
-import { clone, replay, transition } from "./rules.mjs";
+import {
+  clone,
+  replay,
+  transition,
+  positionKey,
+  decisionPlayer,
+} from "./rules.mjs";
 import { settleForced } from "./table.mjs";
 const historyCache = new WeakMap();
 export function practiceTarget(table, player) {
@@ -65,4 +71,37 @@ export function replacePracticeRoll(source, player, dice) {
   table.undoRequest = null;
   table.undoReply = null;
   return settleForced(table);
+}
+
+// Explicit local history navigation. Preserve the abandoned line for backups,
+// while restoring the original decision context, including committed dice.
+export function returnToDecision(source, index, expected) {
+  if (!source?.started || source.config?.mode === "online")
+    throw new Error("History navigation is available only in local play.");
+  if (
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index >= source.events.length
+  )
+    throw new Error("Invalid history position.");
+  const state = replay(source.initial, source.events.slice(0, index)).at(
+    -1,
+  );
+  if (positionKey(state) !== positionKey(expected))
+    throw new Error("This review belongs to a different position.");
+  const table = clone(source);
+  table.undoLog ||= [];
+  table.undoLog.push({
+    by: decisionPlayer(state),
+    acceptedBy: null,
+    initial: clone(state),
+    events: table.events.slice(index),
+    reason: "history-return",
+  });
+  table.events = table.events.slice(0, index);
+  table.state = state;
+  table.replayDice = [];
+  table.undoRequest = null;
+  table.undoReply = null;
+  return table;
 }

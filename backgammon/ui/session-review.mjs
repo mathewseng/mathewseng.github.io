@@ -12,7 +12,12 @@ import { EngineClient } from "../engine/client.mjs";
 import { decisionReview } from "./decision-review.mjs";
 export function sessionReview(
   model,
-  { onSave = async () => {}, allowAnalysis = true, gameNumber = null } = {},
+  {
+    onSave = async () => {},
+    allowAnalysis = true,
+    gameNumber = null,
+    onReturn,
+  } = {},
 ) {
   const snapshot = clone(model),
     names = model.names || ["Ivory", "Teal"];
@@ -70,7 +75,10 @@ export function sessionReview(
       field(
         "Game",
         select(
-          [["all", "All games"], ...games.map((n) => [String(n), `Game ${n}`])],
+          [
+            ["all", "All games"],
+            ...games.map((n) => [String(n), `Game ${n}`]),
+          ],
           gameNumber === null ? "all" : String(gameNumber),
           (v) => {
             gameNumber = v === "all" ? null : Number(v);
@@ -148,6 +156,17 @@ export function sessionReview(
                 "span",
                 { class: "muted small" },
                 r.forced ? "Forced · no choice" : "Not analyzed",
+              ),
+            );
+          if (onReturn)
+            row.append(
+              button(
+                "Return to this position",
+                async () => {
+                  await onReturn(r);
+                  d.close();
+                },
+                "ghost",
               ),
             );
           return row;

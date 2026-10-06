@@ -22,7 +22,7 @@ import {
   availableRoutes,
   nearestRoutes,
   reverseRoutes,
-  entrySwitchRoutes,
+  dieSwitchRoutes,
 } from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
 import {
@@ -558,13 +558,12 @@ export class DraftBoard {
     );
   }
   entrySwitches() {
-    return entrySwitchRoutes(this.state, this.paths, this.draft).filter(
-      (r) =>
-        r.remaining
-          .slice(0, this.minDraft)
-          .every(
-            (s, i) => JSON.stringify(s) === JSON.stringify(this.draft[i]),
-          ),
+    return dieSwitchRoutes(this.state, this.paths, this.draft).filter((r) =>
+      r.remaining
+        .slice(0, this.minDraft)
+        .every(
+          (s, i) => JSON.stringify(s) === JSON.stringify(this.draft[i]),
+        ),
     );
   }
   sources() {
@@ -619,12 +618,7 @@ export class DraftBoard {
   }
   resolvePoint(
     raw,
-    {
-      quick = false,
-      checkerTap = false,
-      repeated = false,
-      arrived = false,
-    } = {},
+    { repeated = false, arrived = false, activation = true } = {},
   ) {
     this.board.cancelAnimations();
     const p = this.normalize(raw);
@@ -635,48 +629,42 @@ export class DraftBoard {
     // Keep rapid taps directed at the landing point, even when a checker now
     // covers it. Extra taps after the dice are used must not undo the new stack.
     if (repeated && arrived && !incoming.length) return;
-    // A paused tap on the arrival selects it instead of bringing another checker
-    // in or auto-playing its sole forward step. Undo-only points keep that shortcut.
-    if (
-      !repeated &&
-      arrived &&
-      checkerRoutes(this.paths, this.draft, p).length
-    ) {
-      this.selected = p;
-      sound.play("select");
-      this.render();
-      return;
-    }
-    const selectedRoutes = this.routes().filter((st) => st.to === p);
-    let routes = incoming.length ? incoming : selectedRoutes;
-    // With no forward action, a moved checker's entire point is an undo target.
-    // Explicit selected destinations still win; ambiguous reversals stay choices.
-    const undoOnlyPoint =
+    const current = this.current();
+    const ownPoint =
       typeof p === "number" &&
-      !routes.length &&
-      quick &&
-      this.reverseMoves().some((r) => r.from === p) &&
-      !checkerRoutes(this.paths, this.draft, p).length &&
-      !this.entrySwitches().some((r) => r.from === p);
-    if (!routes.length && quick && !undoOnlyPoint) {
-      routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
-      if (!routes.length) {
-        const backs = this.reverseMoves().filter((r) => r.to === p);
-        const nearest = Math.min(...backs.map((r) => r.die));
-        routes = backs.filter((r) => r.die === nearest);
-      }
-    }
+      current.points[p] * (this.state.turn ? -1 : 1) > 0;
+    const selectedRoutes = this.routes().filter((st) => st.to === p);
+    // Dragging and rapid destination repeats are explicit moves. Otherwise an
+    // occupied own point selects its checker, irrespective of the tapped pixel.
+    // Bar priority still lets a selected bar checker enter an occupied point.
     const sourceTap =
-      undoOnlyPoint ||
-      (!routes.length && checkerTap && this.sources().includes(p));
-    if (sourceTap)
-      routes = [
-        ...checkerRoutes(this.paths, this.draft, p).filter(
-          (r) => r.steps.length === 1,
-        ),
-        ...this.reverseMoves().filter((r) => r.from === p),
+      !incoming.length &&
+      !selectedRoutes.some((r) => r.undo || r.switchDie) &&
+      ((ownPoint && activation && !current.bar[this.state.turn]) ||
+        (p === "bar" &&
+          current.bar[this.state.turn] &&
+          !selectedRoutes.length));
+    let routes;
+    if (sourceTap) {
+      const backs = this.reverseMoves().filter((r) => r.from === p);
+      const alternatives = [
+        ...checkerRoutes(this.paths, this.draft, p),
         ...this.entrySwitches().filter((r) => r.from === p),
       ];
+      // Only a truly undo-only checker moves on selection. A different initial
+      // die also counts as an alternative, even if continuing forward is blocked.
+      routes = alternatives.length ? [] : backs;
+    } else {
+      routes = incoming.length ? incoming : selectedRoutes;
+      if (!routes.length) {
+        routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
+        if (!routes.length) {
+          const backs = this.reverseMoves().filter((r) => r.to === p);
+          const nearest = Math.min(...backs.map((r) => r.die));
+          routes = backs.filter((r) => r.die === nearest);
+        }
+      }
+    }
     // Equivalent paths with the same resulting position and consumed dice need
     // no extra confirmation. Distinct hits or different die use remain choices.
     const distinct = new Map();
@@ -732,7 +720,7 @@ export class DraftBoard {
           choices.map((route) =>
             button(
               route.switchDie
-                ? `Change entry · use ${route.die} instead of ${route.replacedDie}`
+                ? `Change ${route.origin === "bar" ? "entry" : "first die"} · use ${route.die} instead of ${route.replacedDie}`
                 : route.undo
                   ? `Move back · restore ${route.steps.map((st) => st.die).join(" + ")}`
                   : single
@@ -753,8 +741,8 @@ export class DraftBoard {
       }
       return;
     }
-    if (this.sources().includes(p)) {
-      this.selected = this.selected === p ? null : p;
+    if (ownPoint || this.sources().includes(p)) {
+      this.selected = p;
       if (this.selected !== null) sound.play("select");
     } else
       this.hint = this.complete()
@@ -825,7 +813,7 @@ export class DraftBoard {
     const before = this.current();
     this.draft = [...next];
     this.hint = route.switchDie
-      ? `Entry uses ${route.die} now. Die ${route.replacedDie} is available again.`
+      ? `${route.origin === "bar" ? "Entry" : "Move"} uses ${route.die} now. Die ${route.replacedDie} is available again.`
       : route.undo
         ? "Checker moved back. Its dice are available again."
         : "";
@@ -933,7 +921,9 @@ export class DraftBoard {
       ? "Preview only · original position is unchanged"
       : this.hint ||
         (switchEntry
-          ? `Tap ↔${switchEntry.die} to change the entry die. ↶ returns to the bar.`
+          ? switchEntry.origin === "bar"
+            ? `Tap ↔${switchEntry.die} to change the entry die. ↶ returns to the bar.`
+            : `Tap ↔${switchEntry.die} to change the first die. ↶ returns to the starting point.`
           : this.enabled && this.state.phase === "move"
             ? this.complete()
               ? this.draft.length
@@ -960,7 +950,7 @@ export class DraftBoard {
         ]),
         ...switches.map((route, i) => [
           `switch-${i}`,
-          `Change ${notation([{ from: "bar", to: route.from }], this.state.turn)} entry · use die ${route.die} instead of ${route.replacedDie}`,
+          `Change ${notation([{ from: route.origin, to: route.from }], this.state.turn)} ${route.origin === "bar" ? "entry" : "first die"} · use die ${route.die} instead of ${route.replacedDie}`,
         ]),
       ],
       "",

@@ -74,20 +74,15 @@ export function reverseRoutes(state, paths, draft) {
   return [...results.values()];
 }
 
-// Change a drafted bar entry without making the user undo and enter again.
+// Change the first die of a drafted checker move (including bar entry).
 // Preserve unrelated steps, and derive replacements only from complete legal
 // paths: bar priority, maximum dice use and the higher-die rule still apply.
-export function entrySwitchRoutes(state, paths, draft) {
+export function dieSwitchRoutes(state, paths, draft) {
   const routes = new Map();
   for (const back of reverseRoutes(state, paths, draft)) {
-    if (
-      back.to !== "bar" ||
-      back.steps.length !== 1 ||
-      back.steps[0].from !== "bar"
-    )
-      continue;
+    if (back.steps.length !== 1 || back.steps[0].from !== back.to) continue;
     const old = back.steps[0];
-    for (const entry of checkerRoutes(paths, back.remaining, "bar")) {
+    for (const entry of checkerRoutes(paths, back.remaining, back.to)) {
       if (
         entry.steps.length !== 1 ||
         entry.die === old.die ||
@@ -97,6 +92,7 @@ export function entrySwitchRoutes(state, paths, draft) {
       const remaining = [...back.remaining, ...entry.steps];
       routes.set(JSON.stringify(remaining), {
         from: back.from,
+        origin: back.to,
         to: entry.to,
         die: entry.die,
         steps: entry.steps,
@@ -107,6 +103,13 @@ export function entrySwitchRoutes(state, paths, draft) {
     }
   }
   return [...routes.values()];
+}
+
+// Retained for callers that specifically need bar-entry alternatives.
+export function entrySwitchRoutes(state, paths, draft) {
+  return dieSwitchRoutes(state, paths, draft).filter(
+    (route) => route.origin === "bar",
+  );
 }
 
 // All immediately executable single-checker chains using the remaining dice.

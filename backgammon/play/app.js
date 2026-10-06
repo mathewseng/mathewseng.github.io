@@ -73,7 +73,11 @@ import { Online } from "./network.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
 import { sound } from "../ui/sound.mjs";
-import { practiceTarget, replacePracticeRoll } from "../core/practice.mjs";
+import {
+  practiceTarget,
+  replacePracticeRoll,
+  returnToDecision,
+} from "../core/practice.mjs";
 import { installPlayShortcuts } from "../ui/shortcuts.mjs";
 import { preferences } from "../ui/shell.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
@@ -843,7 +847,7 @@ function actions() {
   try {
     const m = model(),
       target = undoTarget();
-    if (
+    const unavailable =
       target === null ||
       committing ||
       assistanceJob ||
@@ -851,14 +855,14 @@ function actions() {
       draft.draft.length ||
       forcedTurn(state()) ||
       m?.undoRequest ||
-      (config.mode === "online" && (!online.ready || online.pending))
-    )
-      return;
-    for (const id of ["undo", "reset-draft"])
-      if ($(id)) $(id).hidden = true;
+      (config.mode === "online" && (!online.ready || online.pending));
+    if (!unavailable)
+      for (const id of ["undo", "reset-draft"])
+        if ($(id)) $(id).hidden = true;
     $("actions").prepend(
       button("Undo last turn", requestTakeback, "", {
         id: "undo-turn",
+        disabled: !!unavailable,
         title:
           "Restore the last chosen checker turn. Committed dice are kept.",
       }),
@@ -1751,6 +1755,9 @@ function showSessionReview() {
     {
       gameNumber: state().phase === "over" ? state().gameNumber : null,
       allowAnalysis: config.mode !== "online",
+      onReturn: config.mode !== "online"
+        ? (row) => restoreDecision(row, m.id)
+        : undefined,
       onSave: async (snapshot, index) => {
         if (
           game?.id !== snapshot.id ||
@@ -1769,7 +1776,8 @@ function renderFeedback() {
   const m = model();
   feedbackStrip.hidden = !(
     m?.started &&
-    ((config.mode === "computer" && config.tutor) || state().phase === "over")
+    ((config.mode === "computer" && config.tutor) ||
+      state().phase === "over")
   );
   if (feedbackStrip.hidden) return;
   if (renderedFeedback === m.events) return;
@@ -1779,12 +1787,23 @@ function renderFeedback() {
     el("h2", { class: "sr-only" }, "Decision history"),
   );
   for (const [i, row] of rows.entries()) {
+    const viewer =
+      config.mode === "online" ? online.seat : config.humanSide;
+    const side = row.player === viewer ? "self" : "opponent";
+    const playerLabel =
+      config.mode === "local"
+        ? names()[row.player]
+        : `${names()[row.player]} · ${side === "self" ? "your" : "opponent"} ${row.action.type === "move" ? "move" : "cube decision"}`;
     if (!row.feedback) {
       feedbackStrip.append(
         el(
           "div",
-          { class: "feedback-pending" },
-          `${names()[row.player]} · ${row.label}`,
+          { class: "feedback-pending", "data-history-side": side },
+          el("span", { class: "history-player" }, playerLabel),
+          el("span", {}, row.label),
+          ...(canReturnToDecision(row, m.id)
+            ? [button("Return to this position", () => restoreDecision(row, m.id), "ghost")]
+            : []),
           el(
             "span",
             { class: "muted small" },
@@ -1800,7 +1819,12 @@ function renderFeedback() {
       () =>
         decisionReview(row.source, {
           title:
-            row.result.type === "cube" ? "Cube decision" : "Checker decision",
+            row.result.type === "cube"
+              ? "Cube decision"
+              : "Checker decision",
+          onReturn: canReturnToDecision(row, m.id)
+            ? () => restoreDecision(row, m.id)
+            : undefined,
           onReplay: canReplayBest(row, m.id)
             ? (steps) => replayBest(row, m.id, steps)
             : undefined,
@@ -1812,6 +1836,7 @@ function renderFeedback() {
           ? { id: "review-feedback" }
           : {}),
         "data-loss-tone": f.tone,
+        "data-history-side": side,
         "data-decision-type": row.result.type,
         title: `${f.quality}. ${f.units}. Open equity and EV comparison.`,
       },
@@ -1820,11 +1845,7 @@ function renderFeedback() {
       el(
         "span",
         { class: "feedback-heading" },
-        el(
-          "span",
-          {},
-          `${names()[row.player]} · ${row.result.type === "cube" ? "Cube" : "Move"}`,
-        ),
+        el("span", { class: "history-player" }, playerLabel),
         el("strong", { class: "value" }, `${f.label} ${f.value}`),
       ),
       el(
@@ -1848,6 +1869,32 @@ function renderFeedback() {
       id: "review-session",
     }),
   );
+}
+
+function canReturnToDecision(row, id) {
+  return (
+    config.mode !== "online" && game?.id === id && !committing &&
+    !assistanceJob && row.index < game.events.length
+  );
+}
+async function restoreDecision(row, id) {
+  if (!canReturnToDecision(row, id))
+    throw new Error("This position is no longer available.");
+  const restored = returnToDecision(game, row.index, row.source);
+  stopComputer();
+  game = config.mode === "computer"
+    ? changeControl(restored, row.player)
+    : restored;
+  config = { ...game.config };
+  feedback = null;
+  draft.draft = [];
+  draft.autoCommit = false;
+  boardKey = "";
+  if (opening.active) opening.dismiss();
+  await persist();
+  render();
+  window.scrollTo({ top: 0, behavior: "instant" });
+  toast("Position restored with its original dice. The previous line is saved in history.");
 }
 
 function canReplayBest(row, id) {

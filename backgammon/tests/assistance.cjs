@@ -182,6 +182,33 @@ module.exports = async function assistanceUX(
       await page.locator("#move-feedback").innerText(),
       /Best 13\/7 8\/7/,
     );
+    // Player identity uses its own accent; EV-loss text keeps the loss scale.
+    const historyColors = await page.evaluate(() => {
+      const color = (side) => {
+        const row = document.querySelector(
+          `#move-feedback [data-history-side="${side}"]`,
+        );
+        return {
+          border: getComputedStyle(row).borderLeftColor,
+          label: row.querySelector(".history-player").textContent,
+        };
+      };
+      const review = document.querySelector("#review-feedback");
+      return {
+        self: color("self"),
+        opponent: color("opponent"),
+        ev: getComputedStyle(review.querySelector(".value")).color,
+        identity: getComputedStyle(review.querySelector(".history-player"))
+          .color,
+      };
+    });
+    assert.notEqual(
+      historyColors.self.border,
+      historyColors.opponent.border,
+    );
+    assert.match(historyColors.self.label, /your/);
+    assert.match(historyColors.opponent.label, /opponent/);
+    assert.notEqual(historyColors.ev, historyColors.identity);
     assert.deepEqual(r.actual.steps, submitted.draft);
     cases.push(
       "confirmed human turn graded; exact original context; duplicate click guarded; summary retained during bot reply",
@@ -234,7 +261,36 @@ module.exports = async function assistanceUX(
         );
       }
     }
+    // Choose a roll with real decisions, so a random forced pass cannot remove Confirm.
+    await page.evaluate(async () => {
+      const r = await import("/backgammon/core/rules.mjs");
+      const st = await import("/backgammon/core/storage.mjs");
+      const { forcedTurn } = await import("/backgammon/core/table.mjs");
+      const state = (await st.get("work", "play")).game.state;
+      let dice;
+      for (let a = 1; a <= 6 && !dice; a++)
+        for (let b = 1; b <= 6; b++) {
+          if (
+            !forcedTurn(
+              r.transition(
+                state,
+                { type: "roll", dice: [a, b] },
+                state.turn,
+              ),
+            )
+          ) {
+            dice = [a - 1, b - 1];
+            break;
+          }
+        }
+      const original = crypto.getRandomValues.bind(crypto);
+      crypto.getRandomValues = (array) =>
+        array instanceof Uint8Array && array.length === 1 && dice.length
+          ? ((array[0] = dice.shift()), array)
+          : original(array);
+    });
     await page.locator("#roll").click();
+    await page.locator("#confirm").waitFor();
     for (const [width, height] of [
       [375, 667],
       [844, 390],
@@ -302,6 +358,15 @@ module.exports = async function assistanceUX(
 
     const feedbackBeforeNavigation = (await saved()).feedback;
     await page.getByRole("link", { name: "Solver", exact: true }).click();
+    if (
+      await page
+        .getByRole("dialog", { name: "Open the committed position?" })
+        .count()
+    )
+      await page
+        .getByRole("dialog", { name: "Open the committed position?" })
+        .getByRole("button", { name: "Continue", exact: true })
+        .click();
     await page.waitForURL("**/solver/**");
     await page.getByRole("link", { name: "Play", exact: true }).click();
     await page.locator("#review-feedback").waitFor();

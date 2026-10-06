@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { initialState, clone, replay, legalTurns } from "../core/rules.mjs";
 import { playAction, validateTakebacks } from "../core/table.mjs";
-import { practiceTarget, replacePracticeRoll } from "../core/practice.mjs";
+import {
+  practiceTarget,
+  replacePracticeRoll,
+  returnToDecision,
+} from "../core/practice.mjs";
 import { lastMove } from "../core/play-session.mjs";
 import {
   session,
@@ -143,5 +147,43 @@ test("online protocol rejects practice commands and recovery snapshots containin
         ],
       }),
     /Practice dice/,
+  );
+});
+
+test("history return preserves the original dice, scores and abandoned line without mutating the table", () => {
+  let original = move(start());
+  original = move(playAction(original, { type: "roll", dice: [4, 3] }));
+  const before = clone(original),
+    states = replay(original.initial, original.events);
+  for (const index of [1, 2, 3]) {
+    const restored = returnToDecision(original, index, states[index]);
+    assert.deepEqual(restored.state, states[index]);
+    assert.deepEqual(restored.events, original.events.slice(0, index));
+    assert.deepEqual(
+      restored.undoLog.at(-1).events,
+      original.events.slice(index),
+    );
+    assert.equal(restored.undoLog.at(-1).reason, "history-return");
+    assert.deepEqual(
+      replay(restored.initial, restored.events).at(-1),
+      restored.state,
+    );
+    validateTakebacks(restored, true);
+  }
+  assert.deepEqual(original, before);
+  assert.throws(
+    () => returnToDecision(original, 1, states[2]),
+    /different position/,
+  );
+  for (const index of [-1, 0.5, original.events.length])
+    assert.throws(() => returnToDecision(original, index, states[1]));
+  assert.throws(
+    () =>
+      returnToDecision(
+        { ...original, config: { mode: "online" } },
+        1,
+        states[1],
+      ),
+    /local play/,
   );
 });

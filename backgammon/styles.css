@@ -2856,3 +2856,19 @@ button.teal-die:hover {
     padding-bottom: 3px;
   }
 }
+
+/* Player identity is separate from the EV-loss scale on the value itself. */
+.play-feedback [data-history-side] {
+  --history-color: #96d9ca;
+  border-left: 3px solid var(--history-color);
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--history-color) 7%, transparent);
+  border-radius: 4px;
+}
+.play-feedback [data-history-side="opponent"] {
+  --history-color: #cfbaf3;
+}
+.play-feedback .history-player {
+  color: var(--history-color);
+  font-weight: 600;
+}

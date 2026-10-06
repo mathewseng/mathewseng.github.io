@@ -78,7 +78,8 @@ module.exports = async function turnPolicy(
     await page.locator("#accept-undo").click();
     await wait((s) => s?.game.undoLog?.length === 1 && !s.game.undoRequest);
     assert.deepEqual((await saved()).game.state, original.state);
-    assert.equal(await page.locator("#undo-turn").count(), 0);
+    assert.equal(await page.locator("#undo-turn").isVisible(), true);
+    assert.equal(await page.locator("#undo-turn").isDisabled(), true);
     await page.setViewportSize({ width: 1366, height: 768 });
     await finish();
     await page.locator("#roll").click();
@@ -242,7 +243,8 @@ module.exports = async function turnPolicy(
         type === "bearoff" ? "over" : "roll",
       );
       assert.equal(await page.locator("#confirm").count(), 0);
-      assert.equal(await page.locator("#undo-turn").count(), 0);
+      assert.equal(await page.locator("#undo-turn").isVisible(), true);
+      assert.equal(await page.locator("#undo-turn").isDisabled(), true);
       assert.equal(await page.locator("#hint").count(), 0);
       await shot(type);
     }

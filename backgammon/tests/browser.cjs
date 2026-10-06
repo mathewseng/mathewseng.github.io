@@ -484,6 +484,14 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.historyReturn ||= []).push(
+          await require("./history-return.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
+        );
         (report.practiceUX ||= []).push(
           await require("./practice.cjs")(browser, base, out, browserName),
         );

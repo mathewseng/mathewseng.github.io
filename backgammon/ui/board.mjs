@@ -996,7 +996,7 @@ export class Board {
               .filter((m) => m.to === p)
               .map((m) =>
                 m.switchDie
-                  ? `change bar entry to die ${m.die} instead of ${m.replacedDie}`
+                  ? `change ${m.origin === "bar" ? "bar entry" : "first die"} to die ${m.die} instead of ${m.replacedDie}`
                   : m.undo
                     ? "move back"
                     : m.steps?.map((st) => st.die).join(" then ") || m.die,
@@ -1140,7 +1140,7 @@ export class Board {
           ),
         );
       if (
-        sources.includes(p) &&
+        (sources.includes(p) || selected === p) &&
         n &&
         (selected === null || selected === p)
       ) {

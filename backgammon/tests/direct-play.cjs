@@ -54,8 +54,10 @@ module.exports = async function directPlay(browser, base, out, name) {
       (await draft()).map((s) => [s.from, s.to, s.die]),
       [[12, 8, 4]],
     );
-    // Remaining die gives this checker exactly one action.
+    // Even a sole forward step requires selecting then choosing its destination.
     await click(12, true);
+    assert.equal((await draft()).length, 1);
+    await click(9, false);
     assert.deepEqual(
       (await draft()).map((s) => [s.from, s.to, s.die]),
       [
@@ -68,13 +70,18 @@ module.exports = async function directPlay(browser, base, out, name) {
     );
     await shot("undo-target");
     // Both the checker and its point background perform an unambiguous undo.
+    await page.waitForTimeout(400);
     await click(9, false);
     assert.equal((await draft()).length, 1);
     await click(12, true);
+    assert.equal((await draft()).length, 1);
+    await click(9, false);
     assert.equal((await draft()).length, 2);
+    await page.waitForTimeout(400);
     await click(9, true);
     assert.equal((await draft()).length, 1);
-    await click(12, false); // No forward route there: return the drafted checker.
+    await click(8, true); // Select the moved checker, then its explicit undo target.
+    await click(12, false);
     assert.equal((await draft()).length, 0);
     // Multiple choices select without making an arbitrary move.
     await click(12, true);
@@ -82,6 +89,43 @@ module.exports = async function directPlay(browser, base, out, name) {
     assert.equal(
       await page.locator(".selected").getAttribute("data-point"),
       "12",
+    );
+    // Own occupied destinations select even when another checker can land there.
+    await click(5, false);
+    assert.equal((await draft()).length, 0);
+    assert.equal(
+      await page.locator(".selected").getAttribute("data-point"),
+      "5",
+    );
+    // No remaining continuation does not imply undo-only: the initial die can change.
+    await page.evaluate(() => {
+      const s = direct.r.initialState({ phase: "move", dice: [4, 3] });
+      s.points.fill(0);
+      s.points[12] = 1;
+      s.points[6] = 14;
+      s.points[5] = -2;
+      s.points[23] = -13;
+      direct.d.set(s, direct.r.legalPaths(s));
+    });
+    await click(12, false);
+    assert.equal((await draft()).length, 0);
+    await click(8, false);
+    await page.waitForTimeout(400);
+    await click(8, true);
+    assert.equal((await draft()).length, 1);
+    assert.equal(
+      await page.locator(".selected").getAttribute("data-point"),
+      "8",
+    );
+    assert.match(
+      await page.locator('[data-point="9"]').getAttribute("aria-label"),
+      /change first die/,
+    );
+    await shot("alternate-initial-die");
+    await click(9, false);
+    assert.deepEqual(
+      (await draft()).map((s) => [s.from, s.to, s.die]),
+      [[12, 9, 3]],
     );
     // A blocked moved checker undoes even if another checker could land here.
     await page.evaluate(() => {
@@ -91,7 +135,8 @@ module.exports = async function directPlay(browser, base, out, name) {
       s.points[6] = 13;
       s.points[11] = 1;
       s.points[5] = -2;
-      s.points[23] = -13;
+      s.points[9] = -2; // The other die cannot be used from the original point either.
+      s.points[23] = -11;
       direct.d.set(s, direct.r.legalPaths(s));
     });
     await click(12, true);
@@ -318,7 +363,8 @@ module.exports = async function directPlay(browser, base, out, name) {
       } else {
         await page.locator("#confirm").waitFor();
         await page.keyboard.press("u"); // point 6
-        await page.keyboard.press("i"); // point 5, using 1
+        await page.keyboard.press("i"); // occupied point 5 selects
+        await page.keyboard.press("i"); // repeat brings nearest checker using 1
         await page.locator("#roll").waitFor(); // Remaining 2 is forced, no Confirm click.
         const game = await page.evaluate(
           async () =>
@@ -368,7 +414,7 @@ module.exports = async function directPlay(browser, base, out, name) {
     return {
       browser: name,
       cases: [
-        "point-wide nearest move; one-click forced checker move and undo; explicit selection",
+        "occupied-point selection; empty-point nearest move; undo-only and alternate first die",
         "five touching checker slots and overflow counts; uniform pips; right-side cube",
         "real-engine review with three non-scrolling views at nine sizes",
       ],
