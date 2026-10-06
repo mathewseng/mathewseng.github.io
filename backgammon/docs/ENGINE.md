@@ -17,6 +17,9 @@ node backgammon/tests/browser.cjs
 
 ## Binding changes
 
+Current binding **bg3** extends the depth bound to four and exports `bg_rollout(original, after, trials, seed)`. Checker batches use `ScoreMoveRollout`; cube batches use `GeneralCubeDecisionR`. The same source archive includes the full modified engine and patched build. The reproducible `patch-engine.py` removes diagnostic rollout spam, implements the RNG setter for valid seeded calls and uses a no-op event hook; the JS worker yields between completed batches. The RNG and simulation policy are initialized explicitly on every batch. No pthreads or deployment headers are required.
+
+
 - Export `bg_score(originalXgid, afterXgid, plies, beavers)`, `bg_cube(xgid, plies, beavers)` and `bg_value(xgid, plies, beavers)` as allocated JSON. The JS adapter always frees returned buffers. Keep original `hint` exported for independent binding regression comparisons.
 - Web binding **bg2** passes the actual beaver flag to GNUbg; Jacoby comes from XGID’s rule bit. The original `hint` binding keeps beavers off for comparison with standard fixtures. All deployed optional rules are also represented in the full application cache key.
 - Use `PositionKey` on the after-position, then **ScoreMove** with the original cube/match context. GNUbg performs opponent evaluation, probability inversion, and conversion back to the original player's equity. The adapter does not manually negate an incompatible post-roll evaluation.
@@ -31,7 +34,7 @@ The upstream public hint list caps at 40. Our application enumerates complete le
 
 The engine runs in one dedicated module Worker; the WASM itself is single-threaded. Asset transfer, compilation, initialization and computation are timed separately. Fetch failures, initialization failure, worker crash and timeouts reject pending promises. Cancel terminates the worker, frees its WASM address space, and invalidates its generation. A later request creates a fresh worker. Posting a cancel message alone would not interrupt synchronous WASM and is deliberately not used.
 
-Capabilities are explicit in `engine/metadata.mjs`: checker analysis, legal arbitrary-move grading, cube and match contexts, Jacoby, automatic opening stakes, beavers and raccoons, 0–2 ply; no rollouts. The C source does include `RolloutGeneral`, but its runtime uses a global `rcRollout`, stubbed RNG configuration and event hooks. Exposing it without validating reproducibility, variance reduction and standard-error semantics would be misleading. No sample counts, rollout button, uncertainty or exact-solution claim is fabricated.
+Capabilities are explicit in `engine/metadata.mjs`: checker analysis, legal arbitrary-move grading, cube and match contexts, Jacoby, automatic opening stakes, beavers and raccoons, and 0–4 ply. Binding **bg3** adds real GNUbg rollouts for ordinary cube/match rules, independent 32-trial batches, resumable sample moments, and sampling intervals. See `RESEARCH.md` for policy, seeding, uncertainty, candidate screening and limits. Beavers/raccoons remain tree-only. The worker serializes the core’s global rollout context and yields between batches; cancellation terminates it.
 
 ## Verification and timing
 

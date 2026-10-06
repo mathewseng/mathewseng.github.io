@@ -7,6 +7,7 @@ import {
   gradeDecision,
 } from "../core/decision-history.mjs";
 import { clone } from "../core/rules.mjs";
+import { PRESETS } from "../engine/metadata.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { decisionReview } from "./decision-review.mjs";
 export function sessionReview(
@@ -18,6 +19,9 @@ export function sessionReview(
   const engine = new EngineClient(),
     body = el("div", { class: "session-review" }),
     status = el("p", { role: "status", class: "muted" });
+  let preset = PRESETS[model.config?.reviewStrength]
+    ? model.config.reviewStrength
+    : "deep";
   let rows = decisionHistory(snapshot),
     busy = false,
     closed = false,
@@ -66,14 +70,24 @@ export function sessionReview(
       field(
         "Game",
         select(
-          [
-            ["all", "All games"],
-            ...games.map((n) => [String(n), `Game ${n}`]),
-          ],
+          [["all", "All games"], ...games.map((n) => [String(n), `Game ${n}`])],
           gameNumber === null ? "all" : String(gameNumber),
           (v) => {
             gameNumber = v === "all" ? null : Number(v);
             render();
+          },
+        ),
+      ),
+      field(
+        "Review strength",
+        select(
+          Object.entries(PRESETS).map(([k, p]) => [
+            k,
+            `${p.name} · ${p.plies} ply`,
+          ]),
+          preset,
+          (v) => {
+            if (!busy) preset = v;
           },
         ),
       ),
@@ -156,9 +170,9 @@ export function sessionReview(
         if (closed || token !== generation)
           throw new DOMException("Cancelled", "AbortError");
         const row = jobs[i];
-        status.textContent = `Analyzing ${i + 1} of ${jobs.length} decisions · Quick`;
+        status.textContent = `Analyzing ${i + 1} of ${jobs.length} decisions · ${PRESETS[preset].name}`;
         let result = await engine.analyze(row.source, {
-          preset: "quick",
+          preset,
           submitted: row.action.type === "move" ? row.action.steps : null,
           priority: 0,
         });

@@ -23,6 +23,15 @@ export function localConfig(value = {}) {
     strength: ["quick", "standard", "deep"].includes(value.strength)
       ? value.strength
       : "quick",
+    reviewStrength: [
+      "quick",
+      "standard",
+      "deep",
+      "expert",
+      "research",
+    ].includes(value.reviewStrength)
+      ? value.reviewStrength
+      : "deep",
     name: typeof value.name === "string" ? value.name.slice(0, 24) : "You",
     opponent:
       typeof value.opponent === "string"
@@ -137,10 +146,7 @@ export function lastMove(game) {
           const after =
             point === "bar"
               ? game.state.bar[event.actor]
-              : Math.max(
-                  0,
-                  game.state.points[point] * (event.actor ? -1 : 1),
-                );
+              : Math.max(0, game.state.points[point] * (event.actor ? -1 : 1));
           return [point, { count, before: after - changes.get(point) }];
         }),
       ),

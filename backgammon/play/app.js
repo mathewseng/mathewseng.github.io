@@ -84,6 +84,7 @@ let config = {
     humanSide: 0,
     matchLength: 0,
     strength: "quick",
+    reviewStrength: "deep",
     tutor: settings().moveFeedback === true,
     warning: false,
     name: "You",
@@ -194,8 +195,7 @@ installPlayShortcuts({
   point: (p, quick) => {
     if (!draft.enabled || draft.preview) return false;
     draft.point(p, {
-      quick:
-        quick || (draft.selected === null && !draft.sources().includes(p)),
+      quick: quick || (draft.selected === null && !draft.sources().includes(p)),
     });
     return true;
   },
@@ -212,9 +212,9 @@ installPlayShortcuts({
       hint: "#hint",
     };
     if (selectors[action]) {
-      const control = [
-        ...document.querySelectorAll(selectors[action]),
-      ].find((n) => !n.disabled && !n.hidden);
+      const control = [...document.querySelectorAll(selectors[action])].find(
+        (n) => !n.disabled && !n.hidden,
+      );
       if (!control) return false;
       control.click();
       return true;
@@ -268,7 +268,9 @@ const playersButton = button(
         "div",
         { class: "stack" },
         playerControls(() => d.close(), "dialog-"),
-        ...(config.mode === "computer" ? [feedbackToggle()] : []),
+        ...(config.mode === "computer"
+          ? [feedbackToggle(), reviewStrengthControl()]
+          : []),
       ),
     );
   },
@@ -370,8 +372,7 @@ try {
           : original?.game?.id === id
             ? original
             : null;
-      if (recovery && recovery.game.config.mode !== "online")
-        restore(recovery);
+      if (recovery && recovery.game.config.mode !== "online") restore(recovery);
       resumeIntent(null);
     }
   }
@@ -450,9 +451,7 @@ function state() {
 function myTurn(s) {
   if (model()?.undoRequest) return false;
   if (config.mode === "online")
-    return (
-      online.ready && !online.pending && online.seat === decisionPlayer(s)
-    );
+    return online.ready && !online.pending && online.seat === decisionPlayer(s);
   return humanControls(config, s);
 }
 function render() {
@@ -538,8 +537,7 @@ function render() {
     draft.render();
   }
   if (opening.active)
-    for (const id of ["player", "opponent"])
-      $(id).classList.remove("active");
+    for (const id of ["player", "opponent"]) $(id).classList.remove("active");
   $("subtitle").textContent = m?.started
     ? `${s.matchLength ? s.matchLength + "-point match" : "Unlimited points"} · ${s.crawford ? "Crawford game" : s.crawfordPlayed ? "Post-Crawford" : `Game ${s.gameNumber}`} · cube ${s.cube.value}${!s.matchLength && s.rules.jacoby ? " · Jacoby" : ""}`
     : "Computer, same-device, or a private room";
@@ -600,13 +598,7 @@ function autoPlay() {
   const m = model(),
     s = state(),
     forced = m?.started && forcedTurn(s);
-  if (
-    !forced ||
-    committing ||
-    assistanceJob ||
-    m.undoRequest ||
-    opening.busy
-  )
+  if (!forced || committing || assistanceJob || m.undoRequest || opening.busy)
     return false;
   if (opening.active) {
     opening.dismiss();
@@ -699,6 +691,7 @@ function setupFields() {
         ),
       ),
       feedbackToggle(),
+      reviewStrengthControl(),
     );
   if (config.mode === "computer" && config.tutor)
     fields.append(
@@ -1091,8 +1084,7 @@ function renderActions() {
     a.append(
       button(
         config.mode === "online" ? "Room setup" : "Start match",
-        () =>
-          config.mode === "online" ? $("panel-toggle").click() : start(),
+        () => (config.mode === "online" ? $("panel-toggle").click() : start()),
         "primary",
         { id: "start-match" },
       ),
@@ -1108,15 +1100,10 @@ function renderActions() {
           `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
         ),
       ),
-      button(
-        "Start match",
-        () => online.send({ type: "start" }),
-        "primary",
-        {
-          disabled: !online.ready || !online.room.isHost,
-          id: "start-room",
-        },
-      ),
+      button("Start match", () => online.send({ type: "start" }), "primary", {
+        disabled: !online.ready || !online.room.isHost,
+        id: "start-room",
+      }),
     );
     return;
   }
@@ -1126,19 +1113,12 @@ function renderActions() {
       : "Connection paused · waiting for the other player";
     if (m.recovery)
       a.append(
-        button(
-          "Confirm recovery",
-          () => online.confirmRecovery(),
-          "primary",
-          {
-            disabled: m.recovery.confirmed.includes(online.room.clientId),
-          },
-        ),
+        button("Confirm recovery", () => online.confirmRecovery(), "primary", {
+          disabled: m.recovery.confirmed.includes(online.room.clientId),
+        }),
       );
     else
-      a.append(
-        button("Connection details", () => $("panel-toggle").click()),
-      );
+      a.append(button("Connection details", () => $("panel-toggle").click()));
     return;
   }
   if (m.undoRequest) {
@@ -1158,15 +1138,10 @@ function renderActions() {
       );
     else
       a.append(
-        button(
-          "Decline",
-          () => respondTakeback("undo-decline", request),
-          "",
-          {
-            id: "decline-undo",
-            disabled: config.mode === "online" && online.pending,
-          },
-        ),
+        button("Decline", () => respondTakeback("undo-decline", request), "", {
+          id: "decline-undo",
+          disabled: config.mode === "online" && online.pending,
+        }),
         button(
           "Accept undo",
           () => respondTakeback("undo-accept", request),
@@ -1182,7 +1157,7 @@ function renderActions() {
   const mine = myTurn(s) && !botBusy && !committing && !assistanceJob;
   if (assistanceJob?.kind === "submit") {
     $("message").textContent =
-      `Checking your decision · ${PRESETS[config.strength].name}…`;
+      `Checking your decision · ${PRESETS[config.reviewStrength || "deep"].name}…`;
     a.append(
       button(
         "Cancel evaluation",
@@ -1304,9 +1279,7 @@ function renderActions() {
           : "Use all playable dice, then confirm."
       : `${names()[s.turn]} is moving`;
     if (config.mode === "computer" && myTurn(s))
-      a.append(
-        button("Hint", showHint, "", { id: "hint", disabled: !mine }),
-      );
+      a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     a.append(
       button("Undo", () => draft.undo(), "", {
         disabled: !mine || draft.draft.length <= draft.minDraft,
@@ -1384,8 +1357,7 @@ function renderActions() {
 }
 function names() {
   return (
-    model()?.names ||
-    model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
+    model()?.names || model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
   );
 }
 function playerControls(close = () => {}, prefix = "") {
@@ -1393,9 +1365,7 @@ function playerControls(close = () => {}, prefix = "") {
   const choose = async (side) => {
     if (
       committing ||
-      (draft.draft.length &&
-        side !== null &&
-        side !== decisionPlayer(state()))
+      (draft.draft.length && side !== null && side !== decisionPlayer(state()))
     )
       return;
     const steps = clone(draft.draft);
@@ -1420,9 +1390,7 @@ function playerControls(close = () => {}, prefix = "") {
       id: prefix + id,
       disabled:
         committing ||
-        (draft.draft.length > 0 &&
-          side !== null &&
-          side !== decisionPlayer(s)),
+        (draft.draft.length > 0 && side !== null && side !== decisionPlayer(s)),
     });
   return el(
     "div",
@@ -1509,7 +1477,9 @@ function panel() {
         {},
         config.mode === "computer" ? "Computer table" : "Same-device table",
       ),
-      ...(config.mode === "computer" ? [feedbackToggle()] : []),
+      ...(config.mode === "computer"
+        ? [feedbackToggle(), reviewStrengthControl()]
+        : []),
       el(
         "p",
         { class: "muted small" },
@@ -1548,8 +1518,7 @@ function panel() {
             .filter(
               (level) =>
                 level === 1 ||
-                (!s.off[s.turn] &&
-                  !(s.rules.jacoby && s.cube.owner === null)),
+                (!s.off[s.turn] && !(s.rules.jacoby && s.cube.owner === null)),
             )
             .map((level) =>
               button(`${level * s.cube.value} points`, () => {
@@ -1721,6 +1690,25 @@ async function commit(action, evaluation = null) {
     render();
   }
 }
+function reviewStrengthControl() {
+  return field(
+    "Hint & review strength",
+    select(
+      Object.entries(PRESETS).map(([key, p]) => [
+        key,
+        `${p.name} · ${p.plies} ply`,
+      ]),
+      config.reviewStrength || "deep",
+      (value) => {
+        config.reviewStrength = value;
+        if (game) {
+          game.config.reviewStrength = value;
+          persist();
+        }
+      },
+    ),
+  );
+}
 function feedbackToggle() {
   return el(
     "label",
@@ -1781,8 +1769,7 @@ function renderFeedback() {
   const m = model();
   feedbackStrip.hidden = !(
     m?.started &&
-    ((config.mode === "computer" && config.tutor) ||
-      state().phase === "over")
+    ((config.mode === "computer" && config.tutor) || state().phase === "over")
   );
   if (feedbackStrip.hidden) return;
   if (renderedFeedback === m.events) return;
@@ -1813,9 +1800,7 @@ function renderFeedback() {
       () =>
         decisionReview(row.source, {
           title:
-            row.result.type === "cube"
-              ? "Cube decision"
-              : "Checker decision",
+            row.result.type === "cube" ? "Cube decision" : "Checker decision",
           onReplay: canReplayBest(row, m.id)
             ? (steps) => replayBest(row, m.id, steps)
             : undefined,
@@ -1985,10 +1970,13 @@ function showHint() {
   const run = async () => {
     if (!activeAssistance(job)) return;
     job.done = false;
-    review.loading(analysis.status, PRESETS[config.strength].name);
+    review.loading(
+      analysis.status,
+      PRESETS[config.reviewStrength || "deep"].name,
+    );
     try {
       const result = await analysis.run(job.source, {
-        preset: config.strength,
+        preset: config.reviewStrength || "deep",
         priority: 20,
       });
       if (!activeAssistance(job)) return;
@@ -2067,7 +2055,7 @@ async function evaluateDecision(action) {
   try {
     let result = await analysis.run(job.source, {
       submitted: steps,
-      preset: config.strength,
+      preset: config.reviewStrength || "deep",
       priority: 20,
     });
     if (!activeAssistance(job)) return;
@@ -2159,16 +2147,13 @@ async function computerTurn() {
         action = { type: "move", steps: result.candidates[0].steps };
       else if (s.phase === "double")
         action = {
-          type: ["take", "pass", "beaver", "raccoon"].includes(
-            result.action,
-          )
+          type: ["take", "pass", "beaver", "raccoon"].includes(result.action)
             ? result.action
             : "take",
         };
       else
         action = {
-          type:
-            result.action === "double" && canDouble(s) ? "double" : "roll",
+          type: result.action === "double" && canDouble(s) ? "double" : "roll",
         };
       if (result.type === "checker")
         evaluation = {

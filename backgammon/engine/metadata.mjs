@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 export const ENGINE_VERSION =
-  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg2";
+  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg3";
 export const PRESETS = Object.freeze({
   quick: {
     name: "Quick",
@@ -26,6 +26,26 @@ export const PRESETS = Object.freeze({
     deterministic: true,
     noise: 0,
   },
+  expert: {
+    name: "Expert",
+    plies: 3,
+    cubeful: true,
+    pruning: true,
+    deterministic: true,
+    noise: 0,
+    finalists: 8,
+    threshold: 0.08,
+  },
+  research: {
+    name: "Research",
+    plies: 4,
+    cubeful: true,
+    pruning: true,
+    deterministic: true,
+    noise: 0,
+    finalists: 4,
+    threshold: 0.04,
+  },
 });
 export const CAPABILITIES = {
   checker: true,
@@ -36,7 +56,7 @@ export const CAPABILITIES = {
   beavers: true,
   raccoons: true,
   automaticDoubles: true,
-  rollouts: false,
+  rollouts: true,
   threads: 1,
-  maximumPlies: 2,
+  maximumPlies: 4,
 };

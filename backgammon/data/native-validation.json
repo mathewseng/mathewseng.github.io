@@ -1,0 +1,345 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-06T06:32:55.202Z",
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg3",
+  "reference": "GNU Backgammon 1.08.003 20261006",
+  "referenceSource": "https://deb.debian.org/debian/pool/main/g/gnubg/gnubg_1.08.003.orig.tar.gz",
+  "description": "Separate desktop GNUbg 1.08.003 executable compared with the browser binding using matching neural weights, bearoff databases and match-equity data. Money, asymmetric match scores and mirrored players at 0 and 2 ply, plus seeded 32-trial cube rollouts. This checks port/context agreement, not independent-engine strength. Desktop built single-threaded as x86_64 under Rosetta; native timings are not used as a speed comparison.",
+  "tolerance": 0.0001,
+  "maxDifference": 0.000001559999999956041,
+  "cases": [
+    {
+      "topic": "opening",
+      "context": "money",
+      "preset": "quick",
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:0:0:10",
+      "desktopMove": "24/23 13/11",
+      "webMove": "13/11 24/23",
+      "desktopEquity": -0.007755,
+      "webEquity": -0.00775572,
+      "difference": 7.200000000000609e-7
+    },
+    {
+      "topic": "opening",
+      "context": "money",
+      "preset": "deep",
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:0:0:10",
+      "desktopMove": "24/23 13/11",
+      "webMove": "13/11 24/23",
+      "desktopEquity": 0.00198,
+      "webEquity": 0.00198011,
+      "difference": 1.1000000000021409e-7
+    },
+    {
+      "topic": "opening",
+      "context": "match",
+      "preset": "quick",
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:2:4:0:7:10",
+      "desktopMove": "24/23 13/11",
+      "webMove": "13/11 24/23",
+      "desktopEquity": 0.089637,
+      "webEquity": 0.08963626,
+      "difference": 7.399999999990747e-7
+    },
+    {
+      "topic": "opening",
+      "context": "match",
+      "preset": "deep",
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:2:4:0:7:10",
+      "desktopMove": "13/11 6/5",
+      "webMove": "13/11 6/5",
+      "desktopEquity": 0.08552,
+      "webEquity": 0.08552084,
+      "difference": 8.400000000019503e-7
+    },
+    {
+      "topic": "opening",
+      "context": "mirror",
+      "preset": "quick",
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:-1:21:0:0:0:0:10",
+      "desktopMove": "24/23 13/11",
+      "webMove": "13/11 24/23",
+      "desktopEquity": -0.007755,
+      "webEquity": -0.00775572,
+      "difference": 7.200000000000609e-7
+    },
+    {
+      "topic": "opening",
+      "context": "mirror",
+      "preset": "deep",
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:-1:21:0:0:0:0:10",
+      "desktopMove": "24/23 13/11",
+      "webMove": "13/11 24/23",
+      "desktopEquity": 0.00198,
+      "webEquity": 0.00198015,
+      "difference": 1.4999999999997654e-7
+    },
+    {
+      "topic": "contact",
+      "context": "money",
+      "preset": "quick",
+      "xgid": "XGID=-a-aa-E-CA-AcAA--b-e-Ab-B-:0:0:-1:21:0:0:0:0:10",
+      "desktopMove": "13/12* 6/4*",
+      "webMove": "6/4 13/12",
+      "desktopEquity": 0.920453,
+      "webEquity": 0.92045295,
+      "difference": 4.9999999918171056e-8
+    },
+    {
+      "topic": "contact",
+      "context": "money",
+      "preset": "deep",
+      "xgid": "XGID=-a-aa-E-CA-AcAA--b-e-Ab-B-:0:0:-1:21:0:0:0:0:10",
+      "desktopMove": "13/12* 6/4*",
+      "webMove": "6/4 13/12",
+      "desktopEquity": 0.913192,
+      "webEquity": 0.91319209,
+      "difference": 9.000000000813912e-8
+    },
+    {
+      "topic": "contact",
+      "context": "match",
+      "preset": "quick",
+      "xgid": "XGID=-a-aa-E-CA-AcAA--b-e-Ab-B-:0:0:-1:21:2:4:0:7:10",
+      "desktopMove": "13/12* 6/4*",
+      "webMove": "6/4 13/12",
+      "desktopEquity": 0.693704,
+      "webEquity": 0.69370335,
+      "difference": 6.499999999354245e-7
+    },
+    {
+      "topic": "contact",
+      "context": "match",
+      "preset": "deep",
+      "xgid": "XGID=-a-aa-E-CA-AcAA--b-e-Ab-B-:0:0:-1:21:2:4:0:7:10",
+      "desktopMove": "13/12* 6/4*",
+      "webMove": "6/4 13/12",
+      "desktopEquity": 0.777435,
+      "webEquity": 0.77743453,
+      "difference": 4.700000000301685e-7
+    },
+    {
+      "topic": "contact",
+      "context": "mirror",
+      "preset": "quick",
+      "xgid": "XGID=-b-Ba-E-B--aaCa-ac-e-AA-A-:0:0:1:21:0:0:0:0:10",
+      "desktopMove": "13/12* 6/4*",
+      "webMove": "6/4 13/12",
+      "desktopEquity": 0.920453,
+      "webEquity": 0.92045295,
+      "difference": 4.9999999918171056e-8
+    },
+    {
+      "topic": "contact",
+      "context": "mirror",
+      "preset": "deep",
+      "xgid": "XGID=-b-Ba-E-B--aaCa-ac-e-AA-A-:0:0:1:21:0:0:0:0:10",
+      "desktopMove": "13/12* 6/4*",
+      "webMove": "6/4 13/12",
+      "desktopEquity": 0.913192,
+      "webEquity": 0.91319203,
+      "difference": 3.0000000039720476e-8
+    },
+    {
+      "topic": "race",
+      "context": "money",
+      "preset": "quick",
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:0:0:0:0:10",
+      "desktopMove": "20/18 16/12",
+      "webMove": "20/18 16/12",
+      "desktopEquity": -1.747501,
+      "webEquity": -1.7475009,
+      "difference": 1.0000000005838672e-7
+    },
+    {
+      "topic": "race",
+      "context": "money",
+      "preset": "deep",
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:0:0:0:0:10",
+      "desktopMove": "20/18 16/12",
+      "webMove": "20/18 16/12",
+      "desktopEquity": -1.741594,
+      "webEquity": -1.74159372,
+      "difference": 2.8000000007466497e-7
+    },
+    {
+      "topic": "race",
+      "context": "match",
+      "preset": "quick",
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:2:4:0:7:10",
+      "desktopMove": "20/18 16/12",
+      "webMove": "20/18 16/12",
+      "desktopEquity": -1.853085,
+      "webEquity": -1.85308456,
+      "difference": 4.3999999999044803e-7
+    },
+    {
+      "topic": "race",
+      "context": "match",
+      "preset": "deep",
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:2:4:0:7:10",
+      "desktopMove": "20/18 16/12",
+      "webMove": "20/18 16/12",
+      "desktopEquity": -1.846353,
+      "webEquity": -1.84635341,
+      "difference": 4.1000000017277216e-7
+    },
+    {
+      "topic": "race",
+      "context": "mirror",
+      "preset": "quick",
+      "xgid": "XGID=-JCAaa---b--------aa--a-h-:0:0:-1:24:0:0:0:0:10",
+      "desktopMove": "20/18 16/12",
+      "webMove": "20/18 16/12",
+      "desktopEquity": -1.747501,
+      "webEquity": -1.7475009,
+      "difference": 1.0000000005838672e-7
+    },
+    {
+      "topic": "race",
+      "context": "mirror",
+      "preset": "deep",
+      "xgid": "XGID=-JCAaa---b--------aa--a-h-:0:0:-1:24:0:0:0:0:10",
+      "desktopMove": "20/18 16/12",
+      "webMove": "20/18 16/12",
+      "desktopEquity": -1.741594,
+      "webEquity": -1.74159372,
+      "difference": 2.8000000007466497e-7
+    },
+    {
+      "topic": "bearoff",
+      "context": "money",
+      "preset": "quick",
+      "xgid": "XGID=-G-------------------abfe-:0:0:-1:22:0:0:0:0:10",
+      "desktopMove": "2/off(4)",
+      "webMove": "4/2 3/1 3/1 2/off",
+      "desktopEquity": -1,
+      "webEquity": -1,
+      "difference": 0
+    },
+    {
+      "topic": "bearoff",
+      "context": "money",
+      "preset": "deep",
+      "xgid": "XGID=-G-------------------abfe-:0:0:-1:22:0:0:0:0:10",
+      "desktopMove": "2/off(4)",
+      "webMove": "4/2 3/1 3/1 2/off",
+      "desktopEquity": -1,
+      "webEquity": -1,
+      "difference": 0
+    },
+    {
+      "topic": "bearoff",
+      "context": "match",
+      "preset": "quick",
+      "xgid": "XGID=-G-------------------abfe-:0:0:-1:22:2:4:0:7:10",
+      "desktopMove": "2/off(4)",
+      "webMove": "4/2 3/1 3/1 2/off",
+      "desktopEquity": -1,
+      "webEquity": -0.99999964,
+      "difference": 3.600000000325565e-7
+    },
+    {
+      "topic": "bearoff",
+      "context": "match",
+      "preset": "deep",
+      "xgid": "XGID=-G-------------------abfe-:0:0:-1:22:2:4:0:7:10",
+      "desktopMove": "2/off(4)",
+      "webMove": "2/off 2/off 2/off 2/off",
+      "desktopEquity": -1,
+      "webEquity": -0.99999964,
+      "difference": 3.600000000325565e-7
+    },
+    {
+      "topic": "bearoff",
+      "context": "mirror",
+      "preset": "quick",
+      "xgid": "XGID=-EFBA-------------------g-:0:0:1:22:0:0:0:0:10",
+      "desktopMove": "2/off(4)",
+      "webMove": "2/off 2/off 2/off 2/off",
+      "desktopEquity": -1,
+      "webEquity": -1,
+      "difference": 0
+    },
+    {
+      "topic": "bearoff",
+      "context": "mirror",
+      "preset": "deep",
+      "xgid": "XGID=-EFBA-------------------g-:0:0:1:22:0:0:0:0:10",
+      "desktopMove": "2/off(4)",
+      "webMove": "2/off 2/off 2/off 2/off",
+      "desktopEquity": -1,
+      "webEquity": -1,
+      "difference": 0
+    },
+    {
+      "topic": "cube",
+      "context": "money",
+      "preset": "rollout32",
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:0:0:0:0:10",
+      "seed": 452,
+      "desktopOutcomes": [
+        0.920713,
+        1.062443,
+        1
+      ],
+      "webOutcomes": [
+        0.92071456,
+        1.06244445,
+        1
+      ],
+      "webStandardErrors": [
+        0.02880584,
+        0.06219443,
+        0
+      ],
+      "difference": 0.000001559999999956041
+    },
+    {
+      "topic": "cube",
+      "context": "match",
+      "preset": "rollout32",
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:2:4:0:7:10",
+      "seed": 452,
+      "desktopOutcomes": [
+        0.936808,
+        1.296139,
+        1
+      ],
+      "webOutcomes": [
+        0.93680918,
+        1.29613841,
+        1
+      ],
+      "webStandardErrors": [
+        0.04414725,
+        0.0802846,
+        0
+      ],
+      "difference": 0.000001180000000045034
+    },
+    {
+      "topic": "cube",
+      "context": "mirror",
+      "preset": "rollout32",
+      "xgid": "XGID=-b----E-D---eD----bbbb--AA:0:0:-1:00:0:0:0:0:10",
+      "seed": 452,
+      "desktopOutcomes": [
+        0.920713,
+        1.062443,
+        1
+      ],
+      "webOutcomes": [
+        0.9207145,
+        1.06244445,
+        1
+      ],
+      "webStandardErrors": [
+        0.0288058,
+        0.06219446,
+        0
+      ],
+      "difference": 0.0000014999999999876223
+    }
+  ]
+}

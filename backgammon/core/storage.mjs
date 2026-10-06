@@ -153,7 +153,7 @@ export function validateItem(item) {
       typeof a.engine !== "string" ||
       a.engine.length > 150 ||
       !a.settings ||
-      ![0, 1, 2].includes(a.settings.plies) ||
+      ![0, 1, 2, 3, 4].includes(a.settings.plies) ||
       typeof a.settings.name !== "string"
     )
       throw new Error("Invalid analysis metadata.");

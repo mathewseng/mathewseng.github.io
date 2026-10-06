@@ -14,12 +14,7 @@ import {
   ruleSummary,
   offerName,
 } from "../core/rules.mjs";
-import {
-  fromXGID,
-  toXGID,
-  shareURL,
-  sharedPosition,
-} from "../core/xgid.mjs";
+import { fromXGID, toXGID, shareURL, sharedPosition } from "../core/xgid.mjs";
 import { get, put, itemRecord, settings } from "../core/storage.mjs";
 import {
   $,
@@ -38,17 +33,19 @@ import {
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { ruleControls } from "../ui/rules.mjs";
+import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
+import { rolloutUnsupported } from "../engine/rollout.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 import { matchesPlayContext } from "../core/play-session.mjs";
-const ui = shell(
-  "solver",
-  "Solver",
-  "Edit a position. Explore the decision.",
-);
+const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
   brush = "ivory",
   result = null,
+  previousResult = null,
+  autoDeep = true,
+  checkpoint = null,
+  rolloutTrials = 256,
   preview = null,
   review = null,
   index = 0,
@@ -86,6 +83,7 @@ const sourceControl = button("Source", () => {
   preview = null;
   render();
 });
+analysis.preset = "deep";
 const normalPoint = draft.board.onPoint;
 draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
 const hash = new URLSearchParams(location.hash.slice(1)),
@@ -99,8 +97,7 @@ try {
       sourceContext = context;
   } else if (params.has("item")) {
     const item = await get("items", params.get("item"));
-    if (!item)
-      throw new Error("This item is not in this browser’s Library.");
+    if (!item) throw new Error("This item is not in this browser’s Library.");
     openedPosition = true;
     if (item.kind === "match") {
       review = item;
@@ -124,6 +121,16 @@ try {
 if (sourceContext)
   document.querySelector('.nav a[href="/backgammon/play/"]').href =
     `/backgammon/play/#resume=${encodeURIComponent(sourceContext.game.id)}`;
+try {
+  const savedRollout = await get("work", "solver-rollout");
+  if (
+    savedRollout?.checkpoint?.engine === ENGINE_VERSION &&
+    savedRollout.checkpoint.positionKey === positionKey(source)
+  )
+    checkpoint = savedRollout.checkpoint;
+} catch (e) {
+  showError(e);
+}
 $("toolbar").prepend(
   button("Share", () => copy(shareURL(source)), "ghost"),
   button(
@@ -169,6 +176,8 @@ function changed() {
   analysis.cancel();
   busy = false;
   result = null;
+  previousResult = null;
+  checkpoint = null;
   preview = null;
   saveDraft();
   render();
@@ -351,11 +360,27 @@ function panel(problems) {
       "details",
       {},
       el("summary", {}, "Analysis settings"),
-      analysis.controls(),
+      field(
+        "Analysis strength",
+        select(
+          [
+            ["auto", "Auto · Quick then Deep"],
+            ...Object.entries(PRESETS).map(([key, value]) => [
+              key,
+              `${value.name} · ${value.plies} ply`,
+            ]),
+          ],
+          autoDeep ? "auto" : analysis.preset,
+          (value) => {
+            autoDeep = value === "auto";
+            analysis.preset = autoDeep ? "deep" : value;
+          },
+        ),
+      ),
       el(
         "p",
         { class: "muted small" },
-        "Deterministic cubeful evaluation; pruning enabled; no noise. Every legal result is evaluated at the same depth. Deeper work is a separate completed evaluation.",
+        "Auto shows a completed Quick result, then refines to Deep. Expert and Research screen at 2 ply, then compare finalists at 3 or 4 ply. All use pruning and zero noise.",
       ),
     ),
     analysis.status,
@@ -363,6 +388,8 @@ function panel(problems) {
   if (result)
     p.append(
       resultView(result, {
+        source,
+        previous: previousResult,
         onPreview: (c) => {
           preview = c.steps.reduce((s, st) => applyStep(s, st), source);
           render();
@@ -373,6 +400,63 @@ function panel(problems) {
           analysis: result,
           tags: ["exercise"],
         }),
+      ),
+    );
+  if (!editing)
+    p.append(
+      el(
+        "details",
+        { id: "rollout-controls" },
+        el("summary", {}, "Roll out this decision"),
+        el(
+          "p",
+          { class: "muted small" },
+          "Simulate complete games with GNUbg. More trials reduce sampling noise, not policy bias. Completed batches survive cancellation and reload.",
+        ),
+        field(
+          "Rollout trials per alternative",
+          select(
+            [64, 256, 1024, 4096].map((n) => [String(n), String(n)]),
+            String(rolloutTrials),
+            (v) => (rolloutTrials = Number(v)),
+          ),
+        ),
+        ...(rolloutUnsupported(source)
+          ? [el("p", { class: "notice" }, rolloutUnsupported(source))]
+          : [
+              button(
+                checkpoint
+                  ? `Resume / extend · ${checkpoint.completed} saved trials`
+                  : "Start rollout",
+                rollOut,
+                "",
+                { id: "start-rollout", disabled: busy },
+              ),
+            ]),
+        checkpoint
+          ? button(
+              "Discard saved rollout",
+              () =>
+                confirmDialog(
+                  "Discard rollout?",
+                  "Completed simulation samples for this position will be removed.",
+                  async () => {
+                    checkpoint = null;
+                    await put("work", {
+                      id: "solver-rollout",
+                      checkpoint: null,
+                    });
+                    render();
+                  },
+                ),
+              "ghost",
+            )
+          : null,
+      ),
+      el(
+        "a",
+        { href: "/backgammon/reports/" },
+        "Engine accuracy & speed report",
       ),
     );
   if (result?.actual || result?.actualDecision)
@@ -668,21 +752,69 @@ async function analyze() {
   const key = positionKey(source);
   try {
     const event = review?.events[index];
+    for (const preset of autoDeep ? ["quick", "deep"] : [analysis.preset]) {
+      const answer = await analysis.run(source, {
+        preset,
+        submitted: event?.action.type === "move" ? event.action.steps : null,
+      });
+      if (token !== analysisEpoch || key !== positionKey(source)) return;
+      if (
+        answer.type === "cube" &&
+        answer.available !== false &&
+        event &&
+        ["roll", "double", "take", "pass", "beaver", "raccoon"].includes(
+          event.action.type,
+        )
+      )
+        Object.assign(answer, gradeCube(source, answer, event.action.type));
+      previousResult =
+        result?.positionKey === answer.positionKey ? result : null;
+      result = answer;
+      if (review) reviewResults.set(index, answer);
+      render();
+    }
+  } catch (e) {
+    if (token === analysisEpoch && e.name !== "AbortError") showError(e);
+  } finally {
+    if (token === analysisEpoch) {
+      busy = false;
+      render();
+    }
+  }
+}
+async function rollOut() {
+  if (busy) return;
+  const reason = rolloutUnsupported(source);
+  if (reason) throw new Error(reason);
+  const token = ++analysisEpoch,
+    key = positionKey(source);
+  busy = true;
+  preview = null;
+  render();
+  const seed =
+    checkpoint?.seed ?? crypto.getRandomValues(new Uint32Array(1))[0];
+  try {
     const answer = await analysis.run(source, {
-      submitted: event?.action.type === "move" ? event.action.steps : null,
+      rollout: { trials: rolloutTrials, seed, resume: checkpoint },
+      submitted:
+        review?.events[index]?.action.type === "move"
+          ? review.events[index].action.steps
+          : null,
+      onProgress: (cp) => {
+        if (token !== analysisEpoch || key !== positionKey(source)) return;
+        checkpoint = cp;
+        analysis.status.textContent = `${cp.completed} / ${Math.max(rolloutTrials, cp.completed)} trials per alternative completed · ${(cp.elapsedMs / 1000).toFixed(1)} s`;
+        put("work", { id: "solver-rollout", checkpoint: cp }).catch(showError);
+      },
     });
     if (token !== analysisEpoch || key !== positionKey(source)) return;
-    if (
-      answer.type === "cube" &&
-      answer.available !== false &&
-      event &&
-      ["roll", "double", "take", "pass", "beaver", "raccoon"].includes(
-        event.action.type,
-      )
-    )
-      Object.assign(answer, gradeCube(source, answer, event.action.type));
+    previousResult = result;
     result = answer;
-    if (review) reviewResults.set(index, answer);
+    checkpoint = answer.checkpoint;
+    const action = review?.events[index]?.action;
+    if (action && result.type === "cube")
+      Object.assign(result, gradeCube(source, result, action.type));
+    if (review) reviewResults.set(index, result);
   } catch (e) {
     if (token === analysisEpoch && e.name !== "AbortError") showError(e);
   } finally {
@@ -703,6 +835,8 @@ function seek(i) {
   analysis.cancel();
   index = i;
   source = clone(replay(review.initial, review.events)[i]);
+  checkpoint = null;
+  previousResult = null;
   result = reviewResults.get(i) || null;
   preview = null;
   busy = false;
@@ -788,10 +922,7 @@ async function progressive() {
       });
       if (token !== analysisEpoch) return;
       if (answer.type === "cube" && answer.available !== false)
-        Object.assign(
-          answer,
-          gradeCube(states[i], answer, event.action.type),
-        );
+        Object.assign(answer, gradeCube(states[i], answer, event.action.type));
       reviewResults.set(i, answer);
       analysis.status.textContent = `Completed ${reviewResults.size} decisions · event ${i + 1}/${review.events.length}`;
       if (!busy) break;

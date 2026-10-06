@@ -16,6 +16,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "trainer/",
       "solver/",
       "library/",
+      "reports/",
       "refresh/",
     ])
       assert.ok(
@@ -29,6 +30,10 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "engine/worker.mjs",
       "engine/source/gnubg-core-955555c-bg1.tar.gz",
       "engine/source/gnubg-core-955555c-bg2.tar.gz",
+      "engine/source/gnubg-core-955555c-bg3.tar.gz",
+      "data/speed-report.json",
+      "data/accuracy-report.json",
+      "data/native-validation.json",
       "licenses/GPL-3.0.txt",
       "core/rules.mjs",
       "ui/board.mjs",
@@ -66,10 +71,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
           'importScripts("./offline-manifest.js?v=generated");',
         ),
       );
-    for (const file of [
-      ...manifest.self.BG_SHELL,
-      ...manifest.self.BG_ENGINE,
-    ]
+    for (const file of [...manifest.self.BG_SHELL, ...manifest.self.BG_ENGINE]
       .filter((file) => file.startsWith("/backgammon/"))
       .sort()) {
       const source = readFileSync(join(site, file));
@@ -89,9 +91,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
         );
     }
     for (const file of ["hub.css", "hub.js", "peer-room.js"])
-      releaseHash
-        .update(file)
-        .update(readFileSync(join(site, "shared", file)));
+      releaseHash.update(file).update(readFileSync(join(site, "shared", file)));
     assert.equal(
       releaseHash.digest("hex").slice(0, 16),
       manifest.self.BG_CACHE_VERSION,

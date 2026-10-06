@@ -1,10 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import {
-  settings,
-  saveSettings,
-  put,
-  itemRecord,
-} from "../core/storage.mjs";
+import { settings, saveSettings, put, itemRecord } from "../core/storage.mjs";
 import {
   playerName,
   pipCount,
@@ -44,8 +39,7 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === "text") n.textContent = v;
     else if (k === "checked") n.checked = v;
     else if (k === "value") n.value = v;
-    else if (v !== false && v !== null)
-      n.setAttribute(k, v === true ? "" : v);
+    else if (v !== false && v !== null) n.setAttribute(k, v === true ? "" : v);
   }
   n.append(...children.filter((x) => x !== null && x !== undefined));
   return n;
@@ -172,9 +166,7 @@ function changeSound(value) {
   dispatchEvent(new Event("bg-sound"));
   sound.unlock();
   if (!saved)
-    toast(
-      "Sound setting applies to this tab. Browser storage is unavailable.",
-    );
+    toast("Sound setting applies to this tab. Browser storage is unavailable.");
 }
 let activeBoard;
 export function shell(page, title, subtitle = "") {
@@ -309,11 +301,7 @@ export async function preferences() {
         "Quiet checker, dice and cube sounds. Background tabs stay silent.",
       ),
     ),
-    el(
-      "p",
-      { class: "muted small" },
-      "Settings apply across all four tools.",
-    ),
+    el("p", { class: "muted small" }, "Settings apply across all four tools."),
     el(
       "a",
       { href: "/backgammon/refresh/" },
@@ -363,9 +351,7 @@ export async function preferences() {
     ),
   );
   d.classList.add("settings-dialog");
-  d.addEventListener("close", () =>
-    dispatchEvent(new Event("bg-settings")),
-  );
+  d.addEventListener("close", () => dispatchEvent(new Event("bg-settings")));
   d.addEventListener("close", () =>
     removeEventListener("bg-sound", updateSounds),
   );
@@ -381,7 +367,7 @@ export function about() {
       el(
         "p",
         {},
-        "GNUbg Core 955555c · web binding bg2. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution.",
+        "GNUbg Core 955555c · web binding bg3. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution.",
       ),
       el(
         "p",
@@ -396,7 +382,7 @@ export function about() {
       el(
         "p",
         {},
-        "Rollouts, GNU IDs, and proprietary binary match files are not supported. This core retains rollout source, but its RNG configuration and event hooks are stubs; a validated rollout binding is not distributed.",
+        "Solver supports 0–4 ply evaluation and resumable GNUbg rollouts with sampling error. Rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",
@@ -410,7 +396,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg2.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg3.tar.gz" },
         "Download corresponding engine source",
       ),
       el(
@@ -441,10 +427,7 @@ export function players(s, names = ["Ivory", "Teal"]) {
       !document.hidden
     )
       row.animate(
-        [
-          { backgroundColor: "#9bd6c928" },
-          { backgroundColor: "transparent" },
-        ],
+        [{ backgroundColor: "#9bd6c928" }, { backgroundColor: "transparent" }],
         { duration: 420, easing: "ease-out" },
       );
     row.classList.toggle("active", active);
@@ -468,12 +451,7 @@ export function players(s, names = ["Ivory", "Teal"]) {
 }
 export function dieFace(
   die,
-  {
-    consumed = false,
-    choose = null,
-    preferred = false,
-    player = null,
-  } = {},
+  { consumed = false, choose = null, preferred = false, player = null } = {},
 ) {
   const positions = {
     1: [4],
@@ -616,10 +594,7 @@ export class DraftBoard {
         route.undo || route.switchDie
           ? route.remaining
           : [...this.draft, ...route.steps];
-      const result = next.reduce(
-        (s, step) => applyStep(s, step),
-        this.state,
-      );
+      const result = next.reduce((s, step) => applyStep(s, step), this.state);
       const key =
         boardKey(result) +
         ":" +
@@ -697,9 +672,7 @@ export class DraftBoard {
   normalize(raw) {
     if (raw === null) return null;
     if (typeof raw === "string" && /^(bar|off)[01]$/.test(raw))
-      return Number(raw.at(-1)) === this.state.turn
-        ? raw.slice(0, -1)
-        : null;
+      return Number(raw.at(-1)) === this.state.turn ? raw.slice(0, -1) : null;
     return raw;
   }
   beginDrag(raw) {
@@ -708,8 +681,7 @@ export class DraftBoard {
     if (!this.sources().includes(source)) return false;
     this.selected = source;
     sound.play("select");
-    this.hint =
-      "Release on a highlighted point. Release elsewhere to cancel.";
+    this.hint = "Release on a highlighted point. Release elsewhere to cancel.";
     this.render();
     return true;
   }
@@ -753,9 +725,7 @@ export class DraftBoard {
       : route.undo
         ? "Checker moved back. Its dice are available again."
         : "";
-    const nextSources = [
-      ...new Set(this.candidates().map((st) => st.from)),
-    ];
+    const nextSources = [...new Set(this.candidates().map((st) => st.from))];
     const entered =
       route.switchDie ||
       (!route.undo &&

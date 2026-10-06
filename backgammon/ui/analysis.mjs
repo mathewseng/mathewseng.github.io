@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el, button, select, field, showError } from "./shell.mjs";
+import { comparisonSummary, moveFeatures } from "../core/analysis-insight.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 import { positionKey, playerName } from "../core/rules.mjs";
@@ -44,8 +45,36 @@ export function probabilityView(c, player) {
     ),
   );
 }
-export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
+export function resultView(
+  result,
+  { onPreview = () => {}, limit = 5, source = null, previous = null } = {},
+) {
   const node = el("div", { class: "stack" });
+  const insight = comparisonSummary(result, previous);
+  if (insight)
+    node.append(
+      el(
+        "p",
+        { class: "notice", id: "analysis-comparison" },
+        `${insight.changed === true ? "The preferred move changed since " + insight.previousName + ". " : insight.changed === false ? "The preferred move is unchanged since " + insight.previousName + ". " : ""}${insight.close ? (result.method === "rollout" ? "The leading moves are not separated by the conservative sampling margin." : "The leading moves are close: less than 0.020 equity apart. Treat the ranking as an estimate.") : "Compare the evaluated differences, not just the rank."}`,
+      ),
+    );
+  if (result.screening)
+    node.append(
+      el(
+        "p",
+        { class: "muted small" },
+        `${result.screening.finalists} finalists from ${result.screening.total} alternatives screened at ${result.screening.plies} ply. A screened-out move can still be better; only finalists are compared below.`,
+      ),
+    );
+  if (result.method === "rollout")
+    node.append(
+      el(
+        "p",
+        { class: "notice" },
+        `${result.settings.trials} trials per alternative · ${result.settings.policy}. ${result.uncertainty}`,
+      ),
+    );
   if (result.type === "cube") {
     node.append(
       el(
@@ -123,6 +152,24 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
             `Δ ${equity(c.equity - result.candidates[0].equity)} · win ${percentage(c.probabilities[0])}`,
           ),
         );
+        if (result.method === "rollout")
+          b.append(
+            el(
+              "span",
+              { class: "small" },
+              `95% sampling interval: ${equity(c.equity - 1.96 * c.standardError)} to ${equity(c.equity + 1.96 * c.standardError)} equity`,
+            ),
+          );
+        if (source) {
+          const f = moveFeatures(source, c.steps);
+          b.append(
+            el(
+              "span",
+              { class: "muted small move-observations" },
+              `${f.blots} exposed blot${f.blots === 1 ? "" : "s"} · ${f.madePoints} made points · ${f.hit} hit · ${f.borneOff} off · ${f.pips} pips`,
+            ),
+          );
+        }
         return b;
       });
     list.append(...rows(limit));
@@ -135,6 +182,14 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
             list.replaceChildren(...rows(result.candidates.length));
           },
           "ghost",
+        ),
+      );
+    if (source)
+      node.append(
+        el(
+          "p",
+          { class: "muted small" },
+          "Board features describe the resulting position; they do not prove why the engine prefers a move.",
         ),
       );
     if (result.candidates.length) {
@@ -160,6 +215,14 @@ export function resultView(result, { onPreview = () => {}, limit = 5 } = {}) {
       );
     }
   }
+  if (result.method === "rollout" && result.type === "cube")
+    node.append(
+      el(
+        "p",
+        { class: "small" },
+        `Approximate 95% equity margins: no double ±${(1.96 * result.outcomeSE[0]).toFixed(3)}, double/take ±${(1.96 * result.outcomeSE[1]).toFixed(3)}. Passing is a fixed payoff.`,
+      ),
+    );
   node.append(
     el(
       "p",
@@ -179,6 +242,14 @@ export class AnalysisPanel {
     this.preset = "quick";
     this.engine = new EngineClient({
       onStatus: (type, text) => {
+        clearInterval(this.elapsedTimer);
+        if (type === "busy") {
+          const started = performance.now();
+          this.elapsedTimer = setInterval(() => {
+            if (!this.status.textContent.includes("trials per alternative"))
+              this.status.textContent = `${text} · ${Math.floor((performance.now() - started) / 1000)} s elapsed`;
+          }, 1000);
+        }
         this.status.classList.toggle(
           "busy",
           ["busy", "loading"].includes(type),

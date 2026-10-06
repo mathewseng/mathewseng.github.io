@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import createModule from "./vendor/gnubg-core-module.js";
 import { createEvaluator } from "./evaluate.mjs";
+import { runRollout } from "./rollout.mjs";
 let evaluator;
 async function init() {
   const start = performance.now();
@@ -54,12 +55,20 @@ self.onmessage = async ({ data }) => {
       return;
     }
     if (!evaluator) throw new Error("Engine is not initialized.");
-    const result = evaluator.analyze(
-      request.state,
-      request.preset,
-      request.kind,
-      request.submitted,
-    );
+    const result = request.rollout
+      ? await runRollout(
+          evaluator,
+          request.state,
+          request.rollout,
+          request.submitted,
+          (checkpoint) => postMessage({ id, type: "progress", checkpoint }),
+        )
+      : evaluator.analyze(
+          request.state,
+          request.preset,
+          request.kind,
+          request.submitted,
+        );
     postMessage({ id, type: "result", result: { ...result, requestId: id } });
   } catch (e) {
     postMessage({ id, type: "error", message: e.message });

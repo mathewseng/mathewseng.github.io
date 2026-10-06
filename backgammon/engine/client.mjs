@@ -49,6 +49,14 @@ export class EngineClient {
           this.fail(new Error(data.message));
         else if (this.active && data.id === this.active.id) {
           const job = this.active;
+          if (data.type === "progress") {
+            try {
+              job.onProgress(data.checkpoint);
+            } catch (e) {
+              this.fail(e);
+            }
+            return;
+          }
           this.active = null;
           clearTimeout(this.jobTimeout);
           if (data.type === "error") job.reject(new Error(data.message));
@@ -85,6 +93,8 @@ export class EngineClient {
       kind = state.phase === "move" ? "checker" : "cube",
       submitted = null,
       priority = 10,
+      rollout = null,
+      onProgress = () => {},
     } = {},
   ) {
     const key = JSON.stringify([
@@ -93,6 +103,7 @@ export class EngineClient {
       preset,
       kind,
       submitted,
+      rollout,
     ]);
     if (this.cache.has(key)) {
       const result = this.cache.get(key);
@@ -110,6 +121,8 @@ export class EngineClient {
       kind,
       submitted,
       priority,
+      rollout,
+      onProgress,
     };
     job.promise = new Promise((resolve, reject) =>
       Object.assign(job, { resolve, reject }),
@@ -147,15 +160,18 @@ export class EngineClient {
         preset: job.preset,
         kind: job.kind,
         submitted: job.submitted,
+        rollout: job.rollout,
       });
       this.jobTimeout = setTimeout(
         () =>
           this.fail(
             new Error(
-              "Analysis exceeded five minutes. Try a shallower setting.",
+              "Analysis reached its time limit. Completed rollout batches can be resumed; try a shallower tree setting.",
             ),
           ),
-        300000,
+        job.rollout || ["expert", "research"].includes(job.preset)
+          ? 1800000
+          : 300000,
       );
     } catch (e) {
       // A cancelled initializer must not reject work queued for its replacement.

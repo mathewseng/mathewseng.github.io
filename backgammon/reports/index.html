@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11191d" />
+    <title>Backgammon · Engine report</title>
+    <link rel="icon" href="../icon.svg" />
+    <link rel="stylesheet" href="../styles.css?bgv=37c872e089d68fcf" />
+    <link rel="stylesheet" href="./report.css?bgv=37c872e089d68fcf" />
+    <script type="module" src="./app.js?bgv=37c872e089d68fcf"></script>
+  </head>
+  <body class="engine-report">
+    <header class="topbar">
+      <a class="brand" href="/backgammon/">Backgammon</a>
+      <nav class="nav" aria-label="Backgammon tools">
+        <a href="/backgammon/play/">Play</a
+        ><a href="/backgammon/trainer/">Trainer</a
+        ><a href="/backgammon/solver/">Solver</a
+        ><a href="/backgammon/library/">Library</a>
+      </nav>
+      <a href="/" class="site-link">All projects</a>
+    </header>
+    <main class="report-main">
+      <p class="report-kicker">GNUbg / measured, not estimated</p>
+      <h1>Engine report</h1>
+      <p class="report-lead">
+        How much analysis buys you—and how long it takes.
+      </p>
+      <p id="release" class="muted">Loading recorded measurements…</p>
+      <nav class="report-tabs" aria-label="Report sections">
+        <a href="#speed">Speed</a><a href="#accuracy">Accuracy</a
+        ><a href="#method">Method & limits</a>
+      </nav>
+      <section id="speed">
+        <h2>Speed by position</h2>
+        <p>
+          Fresh calculations and cache hits are reported separately. Short
+          bearoff positions are not representative of contact play.
+        </p>
+        <div id="speed-content" aria-live="polite"></div>
+      </section>
+      <section id="device">
+        <h2>Measure this device</h2>
+        <p>
+          Runs only when requested. Keep this page open. Research and rollouts
+          may take minutes on a phone. One sample is a spot check, not a
+          benchmark distribution.
+        </p>
+        <div id="device-controls" class="row"></div>
+        <p id="device-status" role="status"></p>
+        <div id="device-result"></div>
+      </section>
+      <section id="accuracy">
+        <h2>External accuracy check</h2>
+        <div id="accuracy-content"></div>
+      </section>
+      <section id="method">
+        <h2>What the settings mean</h2>
+        <div id="method-content"></div>
+        <p>
+          <a
+            href="https://www.gnu.org/software/gnubg/manual/html_node/index.html"
+            >GNUbg manual</a
+          >
+          ·
+          <a
+            href="https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ENGINE.md"
+            >Engine source, build and test instructions</a
+          >
+        </p>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

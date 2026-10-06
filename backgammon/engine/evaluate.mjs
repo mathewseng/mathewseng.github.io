@@ -27,6 +27,12 @@ export function createEvaluator(module) {
     ]),
     cube = module.cwrap("bg_cube", "number", ["string", "number", "number"]),
     value = module.cwrap("bg_value", "number", ["string", "number", "number"]);
+  const roll = module.cwrap("bg_rollout", "number", [
+    "string",
+    "string",
+    "number",
+    "number",
+  ]);
   function call(fn, args) {
     const ptr = fn(...args);
     if (!ptr) throw new Error("GNUbg returned no result.");
@@ -45,6 +51,23 @@ export function createEvaluator(module) {
   }
   return {
     capabilities: CAPABILITIES,
+    rolloutBatch(s, turn, trials, seed) {
+      const result = call(roll, [
+        toXGID(s),
+        turn ? toXGID({ ...turn.state, dice: [], phase: "roll" }) : "",
+        trials,
+        seed | 0,
+      ]);
+      if (
+        result.samples !== trials ||
+        !Number.isFinite(result.standardError) ||
+        result.standardError < 0 ||
+        (result.outcomeSE &&
+          result.outcomeSE.some((n) => !Number.isFinite(n) || n < 0))
+      )
+        throw new Error("GNUbg returned invalid rollout statistics.");
+      return result;
+    },
     analyze(
       s,
       preset = "quick",
@@ -144,14 +167,14 @@ export function createEvaluator(module) {
       if (s.phase !== "move")
         throw new Error("Checker analysis requires rolled dice.");
       const turns = legalTurns(s);
-      const candidates = turns
+      let candidates = turns
         .map((turn) => {
           // Preserve the original player on roll, cube and match context in the after-XGID.
           const after = { ...turn.state, dice: [], phase: "roll" };
           const value = call(score, [
             xgid,
             toXGID(after),
-            settings.plies,
+            Math.min(2, settings.plies),
             beavers,
           ]);
           return {
@@ -162,6 +185,42 @@ export function createEvaluator(module) {
           };
         })
         .sort((a, b) => b.equity - a.equity);
+      let screening = null;
+      if (settings.plies > 2) {
+        const original = candidates;
+        const submittedKey = submitted
+          ? boardKey(commitTurn(s, submitted))
+          : null;
+        const finalists = original.filter(
+          (c, i) =>
+            i < 2 ||
+            (i < settings.finalists &&
+              original[0].equity - c.equity <= settings.threshold) ||
+            c.key === submittedKey,
+        );
+        candidates = finalists
+          .map((c) => {
+            const turn = turns.find((t) => t.key === c.key);
+            return {
+              ...c,
+              ...call(score, [
+                xgid,
+                toXGID({ ...turn.state, dice: [], phase: "roll" }),
+                settings.plies,
+                beavers,
+              ]),
+            };
+          })
+          .sort((a, b) => b.equity - a.equity);
+        screening = {
+          plies: 2,
+          total: turns.length,
+          finalists: candidates.length,
+          threshold: settings.threshold,
+          excluded: original.filter((c) => !finalists.includes(c)),
+          previousBest: original[0].key,
+        };
+      }
       let actual = null;
       if (submitted) {
         const key = boardKey(commitTurn(s, submitted));
@@ -174,6 +233,7 @@ export function createEvaluator(module) {
       return {
         ...base,
         candidates,
+        screening,
         actual,
         error: actual
           ? Math.max(0, candidates[0].equity - actual.equity)
