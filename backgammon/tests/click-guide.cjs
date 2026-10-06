@@ -12,11 +12,14 @@ module.exports = async function clickGuide(browser, base, out, name) {
   try {
     await page.goto(base + "/backgammon/");
     await page
-      .getByRole("link", { name: "Checker click guide", exact: true })
+      .getByRole("link", { name: "Clicks & highlights", exact: true })
       .click();
     await page.waitForURL("**/backgammon/controls/");
     await page.reload();
-    assert.equal(await page.locator(".click-flow > li").count(), 5);
+    assert.equal(await page.locator("#clicks .click-flow > li").count(), 5);
+    assert.equal(await page.locator("#highlights .click-flow > li").count(), 5);
+    await page.getByRole("link", { name: "Checker & point highlights ↓", exact: true }).click();
+    assert.ok(page.url().endsWith("#highlights"));
     for (const [width, height] of [
       [320, 568],
       [375, 667],
@@ -52,6 +55,10 @@ module.exports = async function clickGuide(browser, base, out, name) {
           fullPage: true,
         });
     }
+    for (const width of [320,390,844,1366]) {
+      await page.setViewportSize({width,height:width===844?390:844});
+      await page.locator("#highlights").screenshot({path:path.join(out,`${name}-highlight-guide-${width}.png`)});
+    }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addStyleTag({
       content: ":root { font-size: 24px !important; }",
@@ -77,7 +84,7 @@ module.exports = async function clickGuide(browser, base, out, name) {
     return {
       browser: name,
       cases: [
-        "hub link and direct reload; five readable branches at nine sizes; enlarged text; keyboard link; no engine download",
+        "hub link and direct reload; click and highlight branches at nine sizes; enlarged text; keyboard link; no engine download",
       ],
     };
   } finally {

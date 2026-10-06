@@ -114,14 +114,14 @@ module.exports = async function turnPolicy(
       await shot(`undo-${width}x${height}`);
       const dimensions = await page.evaluate(() => ({
         width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight,
+        height: document.querySelector(".app").getBoundingClientRect().height,
         bottom: document.querySelector("#undo-turn").getBoundingClientRect()
           .bottom,
       }));
       assert.ok(dimensions.width <= width + 1, JSON.stringify(dimensions));
       if (width > 320)
         assert.ok(
-          (width >= 1025 || dimensions.height <= height + 1) &&
+          dimensions.height <= height + 1 &&
             dimensions.bottom <= height + 1,
           `${width}x${height} ${JSON.stringify(dimensions)}`,
         );

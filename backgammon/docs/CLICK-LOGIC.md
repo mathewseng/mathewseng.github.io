@@ -39,3 +39,17 @@ Route resolution deduplicates equivalent outcomes and consumed dice. For combine
 ## Keyboard input
 
 Point keys and focused-point Enter/Space use selection-aware input: pressing the selected point deselects; a legal selected route is played first; otherwise an owned point selects and an empty destination uses the nearest checker. Rapid repeated point keys within 350 ms retain destination intent to build a point, and surplus repeats do not reverse the new stack. Shift requests point-space destination input explicitly. The existing unambiguous undo-only shortcut remains available to ordinary point keys on an unselected moved checker. Undo and Reset remain directly available. Explicit disc selection/deselection clears repeat intent. Held keys do not count as repeated presses.
+
+
+## Highlight decisions
+
+The [website highlight flowchart](https://mathewseng.github.io/backgammon/controls/#highlights) follows `DraftBoard.render()` and `Board.render()`:
+
+- An enabled live draft supplies legal routes; previews and disabled boards suppress destinations.
+- With no selection, `sources()` supplies forward and reversible draft sources, and `availableRoutes()` supplies all reachable destinations using the remaining dice. Source discs have dashed rings.
+- With a selection, only that checker’s ring and routes are emphasized. Its ring is solid. Routes include forward, draft-return and alternate-first-die revisions.
+- Reachable points have a wash/outline. Selected destinations add die/sum or alternate-die labels and a landing ring when stack space permits; OFF is highlighted when reachable.
+- Undo targets use the undo palette and dashed outline. An explicit selected undo route has priority; without selection, forward reachability has priority when both exist. Forced prefixes cannot be undone.
+- Last-turn checkers/ghosts and keyboard focus are independent historical/focus indicators, not legal destinations or recommendations.
+
+Vertical swipes on open board space scroll the page; starting on an actual movable checker reserves the gesture for dragging. Pinch zoom stays available.

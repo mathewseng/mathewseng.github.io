@@ -7,14 +7,14 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#11191d" />
-    <title>Backgammon · Checker click guide</title>
+    <title>Backgammon · Clicks &amp; highlights</title>
     <meta
       name="description"
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=c12456dadf764013" />
-    <link rel="stylesheet" href="./controls.css?bgv=c12456dadf764013" />
+    <link rel="stylesheet" href="../styles.css?bgv=76a747b17c8e0f3e" />
+    <link rel="stylesheet" href="./controls.css?bgv=76a747b17c8e0f3e" />
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -29,98 +29,222 @@
     </header>
     <main class="controls-main">
       <a class="guide-back" href="/backgammon/">← Backgammon hub</a>
-      <h1>What happens when I click?</h1>
-      <p class="guide-lead">
-        Tap a disc to select it. Tap the open point area to play there.
-      </p>
-      <p class="muted">
-        Follow the questions from top to bottom. Only your own checkers with
-        a legal move can be selected. During a preview or the opponent’s
-        turn, the board does not accept moves.
-      </p>
-      <ol class="click-flow" aria-label="Checker click flowchart">
-        <li>
-          <div class="flow-question">
-            <span class="flow-number" aria-hidden="true">1</span>
-            <h2>Did you click your checker disc?</h2>
-          </div>
-          <div class="flow-answer">
-            <span class="flow-yes">Yes →</span>
-            <div>
-              <p>Already selected? <strong>Deselect it.</strong></p>
+      <h1>Clicks &amp; highlights</h1>
+      <nav class="guide-sections" aria-label="Guide sections">
+        <a href="#clicks">Clicks &amp; taps ↓</a>
+        <a href="#highlights">Checker &amp; point highlights ↓</a>
+      </nav>
+      <section id="clicks" aria-labelledby="click-heading">
+        <h2 id="click-heading" class="guide-heading">
+          What happens when I click?
+        </h2>
+        <p class="guide-lead">
+          Tap a disc to select it. Tap the open point area to play there.
+        </p>
+        <p class="muted">
+          Follow the questions from top to bottom. Only your own checkers
+          with a legal move can be selected. During a preview or the
+          opponent’s turn, the board does not accept moves.
+        </p>
+        <ol class="click-flow" aria-label="Checker click flowchart">
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">1</span>
+              <h2>Did you click your checker disc?</h2>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <div>
+                <p>Already selected? <strong>Deselect it.</strong></p>
+                <p>
+                  Otherwise, if it has a legal move,
+                  <strong>select it</strong> and show its destinations.
+                </p>
+                <p class="muted">
+                  A blocked checker leaves your current selection unchanged.
+                  A disc click never moves or undoes it.
+                </p>
+              </div>
+            </div>
+            <div class="flow-next">No · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">2</span>
+              <h2>Can the selected checker reach this point?</h2>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
               <p>
-                Otherwise, if it has a legal move,
-                <strong>select it</strong> and show its destinations.
-              </p>
-              <p class="muted">
-                A blocked checker leaves your current selection unchanged. A
-                disc click never moves or undoes it.
+                <strong>Play the selected checker.</strong><br />This also
+                works onto a friendly stack. A highlighted return or
+                alternate-die target revises the draft.
               </p>
             </div>
-          </div>
-          <div class="flow-next">No · continue ↓</div>
-        </li>
-        <li>
-          <div class="flow-question">
-            <span class="flow-number" aria-hidden="true">2</span>
-            <h2>Can the selected checker reach this point?</h2>
-          </div>
-          <div class="flow-answer">
-            <span class="flow-yes">Yes →</span>
-            <p>
-              <strong>Play the selected checker.</strong><br />This also
-              works onto a friendly stack. A highlighted return or
-              alternate-die target revises the draft.
-            </p>
-          </div>
-          <div class="flow-next">No · continue ↓</div>
-        </li>
-        <li>
-          <div class="flow-question">
-            <span class="flow-number" aria-hidden="true">3</span>
-            <h2>Can another checker land here?</h2>
-          </div>
-          <div class="flow-answer">
-            <span class="flow-yes">Yes →</span>
-            <p>
-              <strong>Play the nearest legal checker.</strong><br />Repeated
-              clicks in the open point area can build a point or use
-              doubles.
-            </p>
-          </div>
-          <div class="flow-next">No · continue ↓</div>
-        </li>
-        <li>
-          <div class="flow-question">
-            <span class="flow-number" aria-hidden="true">4</span>
-            <h2>Is a movable checker on this point?</h2>
-          </div>
-          <div class="flow-answer">
-            <span class="flow-yes">Yes →</span>
-            <p>
-              <strong>Select that checker.</strong><br />If it is already
-              selected, deselect it. A legal draft return also counts as a
-              move.
-            </p>
-          </div>
-          <div class="flow-next">No · continue ↓</div>
-        </li>
-        <li>
-          <div class="flow-question">
-            <span class="flow-number" aria-hidden="true">5</span>
-            <h2>Is this a legal draft-return target?</h2>
-          </div>
-          <div class="flow-answer">
-            <span class="flow-yes">Yes →</span>
-            <p>
-              <strong>Return the nearest eligible checker.</strong
-              ><br />Restore the dice it used. Otherwise, keep the board and
-              current selection unchanged.
-            </p>
-          </div>
-          <div class="flow-end">No legal action → no move</div>
-        </li>
-      </ol>
+            <div class="flow-next">No · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">3</span>
+              <h2>Can another checker land here?</h2>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Play the nearest legal checker.</strong
+                ><br />Repeated clicks in the open point area can build a
+                point or use doubles.
+              </p>
+            </div>
+            <div class="flow-next">No · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">4</span>
+              <h2>Is a movable checker on this point?</h2>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Select that checker.</strong><br />If it is already
+                selected, deselect it. A legal draft return also counts as a
+                move.
+              </p>
+            </div>
+            <div class="flow-next">No · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">5</span>
+              <h2>Is this a legal draft-return target?</h2>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Return the nearest eligible checker.</strong
+                ><br />Restore the dice it used. Otherwise, keep the board
+                and current selection unchanged.
+              </p>
+            </div>
+            <div class="flow-end">No legal action → no move</div>
+          </li>
+        </ol>
+      </section>
+      <section id="highlights" aria-labelledby="highlight-heading">
+        <h2 id="highlight-heading" class="guide-heading">
+          Why is this highlighted?
+        </h2>
+        <p class="guide-lead">
+          Highlights show legal actions, never the engine’s preferred move.
+        </p>
+        <p class="muted">
+          They use complete legal turns with the unused dice, including
+          combined moves and doubles. Bar entry, blocked points, maximum
+          dice use and bearing off all apply. Colors follow your board
+          theme; rings, arrows and labels also identify the action.
+        </p>
+        <ol
+          class="click-flow highlight-flow"
+          aria-label="Checker and location highlight flowchart"
+        >
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">1</span>
+              <h3>Can you move on this board right now?</h3>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">No →</span>
+              <p>
+                <strong>No legal-destination highlights.</strong
+                ><br />Opponent turns, previews and non-moving phases do not
+                offer moves. Last-turn markers and keyboard focus have
+                separate meanings.
+              </p>
+            </div>
+            <div class="flow-next">Yes · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">2</span>
+              <h3>Is a checker selected?</h3>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Only that checker’s routes are highlighted.</strong
+                ><br />Its disc has a solid selection ring. Other source
+                rings disappear. Check its legal forward moves,
+                alternate-die landings and draft returns below.
+              </p>
+            </div>
+            <div class="flow-next">No · use all eligible checkers ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">3</span>
+              <h3>No selection: can this checker move or return?</h3>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Show a dashed source ring.</strong><br />A checker
+                with a legal remaining-dice move or reversible draft move is
+                a source. Blocked checkers have no source ring. Only the bar
+                is a forward source while entry is required.
+              </p>
+            </div>
+            <div class="flow-next">For each destination · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">4</span>
+              <h3>Can an eligible checker reach this location?</h3>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Show a colored point wash and outline.</strong
+                ><br />With a selection, show the dice used and a landing
+                ring where space permits. A sum means one checker uses
+                multiple dice; <strong>↔</strong> changes its first die.
+                Legal bearoff destinations light the OFF tray.
+              </p>
+            </div>
+            <div class="flow-next">Also check for a return ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">5</span>
+              <h3>Does this location restore a draft move?</h3>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Use the undo color and dashed outline.</strong
+                ><br />Amber in the default theme; <strong>↶</strong> when
+                selected. A selected return takes visual priority over a
+                forward route. Without selection, the forward highlight wins
+                if both are possible. Forced steps cannot be returned.
+              </p>
+            </div>
+            <div class="flow-end">
+              No forward or return route → no destination highlight
+            </div>
+          </li>
+        </ol>
+        <div class="highlight-legend" aria-label="Other board markers">
+          <p>
+            <strong>Last move:</strong> outlined checkers mark where the
+            opponent ended; hollow ghosts show where they started. These are
+            history, not available moves.
+          </p>
+          <p>
+            <strong>Keyboard focus:</strong> a rectangular outline shows
+            which point receives keyboard input. Focus does not mean the
+            point is legal or selected.
+          </p>
+        </div>
+      </section>
       <section class="guide-notes" aria-label="Other input rules">
         <div>
           <h2>When there is a real choice</h2>

@@ -89,12 +89,14 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         [1440, 900],
       ]) {
         await page.setViewportSize({ width, height });
+        const fontStress = width === 320 ? await page.addStyleTag({ content: ".app { font-family: Verdana, sans-serif; }" }) : null;
         await page.waitForTimeout(100);
         await shot(`opening-${width}x${height}`);
         assert.ok(
           await page.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth + 1,
           ),
+          `opening layout overflow ${width}x${height}: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll("body *")].filter(n=>n.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(n=>({tag:n.tagName,id:n.id,class:n.getAttribute("class"),right:n.getBoundingClientRect().right}))))}`,
         );
         if (width > 320)
           assert.ok(
@@ -102,6 +104,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
               .locator("#begin-turn")
               .evaluate((n) => n.getBoundingClientRect().bottom <= innerHeight),
           );
+        if (fontStress) await fontStress.evaluate(n=>n.remove());
       }
       await page.setViewportSize({ width: 1366, height: 768 });
     }
@@ -560,6 +563,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
           await page.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth + 1,
           ),
+          `opening layout overflow ${width}x${height}: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll("body *")].filter(n=>n.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(n=>({tag:n.tagName,id:n.id,class:n.getAttribute("class"),right:n.getBoundingClientRect().right}))))}`,
         );
       }
       const touchContext = await browser.newContext({
@@ -788,6 +792,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
           await bot.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth + 1,
           ),
+          `opening layout overflow ${width}x${height}: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll("body *")].filter(n=>n.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(n=>({tag:n.tagName,id:n.id,class:n.getAttribute("class"),right:n.getBoundingClientRect().right}))))}`,
         );
         assert.ok(
           await bot.evaluate(

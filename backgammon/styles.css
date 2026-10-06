@@ -1504,6 +1504,12 @@ details .stack {
   position: relative;
 }
 .bg-board.has-moves {
+  touch-action: pan-y pinch-zoom;
+}
+/* Reserve touch dragging for actual movable discs, not the entire board. */
+.bg-board.has-moves .point.movable .checker,
+.bg-board.has-moves .point.movable .checker *,
+.bg-board.has-moves .point.movable[data-point^="off"] {
   touch-action: pinch-zoom;
 }
 .point[aria-disabled="true"] {
@@ -2318,7 +2324,7 @@ button.teal-die:hover {
   align-content: start;
 }
 .play-page .action-main {
-  /* Controls scroll with mobile history so they cannot cover a review card. */
+  /* Turn controls stay in the playing area; history follows below it. */
   position: relative;
   background: var(--bg);
   padding-block: 4px;
@@ -2562,6 +2568,51 @@ button.teal-die:hover {
 .play-review {
   display: none;
 }
+/* Review lives below the fixed-size playing area at every viewport width. */
+.play-review:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1360px;
+  margin: auto;
+  padding: 24px max(16px, env(safe-area-inset-right))
+    max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+}
+.review-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.review-header h2 { margin: 0; font-size: 18px; scroll-margin-top: 20px; }
+.review-header button { flex: none; font-size: 14px; padding-inline: 10px; }
+.play-review .inspector {
+  display: block;
+  visibility: visible;
+  min-width: 0;
+  max-height: none;
+  padding: 20px 0 0;
+  border-left: 0;
+  border-top: 1px solid var(--line);
+  overflow: visible;
+}
+.play-review .panel-body { overflow: visible; }
+.play-review .play-feedback {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  align-content: start;
+  border-top: 0;
+}
+.play-review .play-feedback[hidden] { display: none; }
+.play-review:has(.play-feedback[hidden]) { grid-template-columns: minmax(0, 1fr); }
+.play-page.live-table .panel-toggle { display: block; }
+.play-page.live-table .action-area { overscroll-behavior-y: auto; }
+@media (min-height: 501px) {
+  .play-page.live-table .workspace { grid-template-columns: minmax(0, 1fr); }
+}
 @media (min-width: 1025px) and (min-height: 501px) {
   .play-page.desktop-table {
     height: 100dvh;
@@ -2618,33 +2669,28 @@ button.teal-die:hover {
     align-self: end;
   }
   .play-review:not([hidden]) {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 40px;
-    max-width: 1360px;
-    margin: auto;
-    padding: 32px 24px;
-    border-top: 1px solid var(--line);
+    gap: 24px 40px;
   }
   .play-review .inspector {
-    display: block;
-    max-height: none;
-    overflow: visible;
+    border-left: 1px solid var(--line);
+    padding: 6px 0 0 24px;
   }
-  .play-review .panel-body {
-    overflow: visible;
+
+}
+
+/* Tiny phones can reflow chrome instead of clipping controls with wider fonts. */
+@media (max-width: 360px) {
+  .play-page.live-table .tool-head { flex-wrap: wrap; gap: 4px; padding-block: 6px; }
+  .play-page.live-table .tool-head > div:first-child { flex-basis: 100%; }
+  .play-page.live-table .toolbar-actions {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    justify-content: space-between;
   }
-  .play-review .play-feedback {
-    display: grid;
-    gap: 12px;
-    align-content: start;
-  }
-  .play-review .play-feedback[hidden] {
-    display: none;
-  }
-  .play-review:has(.play-feedback[hidden]) {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  .play-page.live-table .toolbar-actions button { padding-inline: 6px; }
 }
 
 /* Bounded review views replace nested modal scrolling. */

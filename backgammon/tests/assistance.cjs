@@ -256,8 +256,8 @@ module.exports = async function assistanceUX(
           `board fits ${width}x${height}`,
         );
         assert.ok(
-          width >= 1025 || geometry.scroll <= height + 1,
-          `document fits ${width}x${height}: ${geometry.scroll}`,
+          geometry.feedback.top >= height - 1 && geometry.scroll > height,
+          `review follows the playing viewport ${width}x${height}: ${JSON.stringify(geometry)}`,
         );
       }
     }
@@ -307,7 +307,7 @@ module.exports = async function assistanceUX(
       }));
       assert.ok(
         geometry.width <= width + 1 &&
-          (width >= 1025 || geometry.height <= height + 1),
+          geometry.height > height,
         `moving layout fits ${width}x${height}: ${JSON.stringify(geometry)}`,
       );
       assert.ok(
@@ -324,7 +324,7 @@ module.exports = async function assistanceUX(
       });
       const fit = await page.evaluate(() => ({
         width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight,
+        height: document.querySelector(".app").getBoundingClientRect().height,
       }));
       assert.ok(
         fit.width <= 376 && fit.height <= 668,

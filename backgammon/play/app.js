@@ -123,19 +123,28 @@ const desktopTable = matchMedia(
 );
 const reviewArea = el("section", {
   class: "play-review",
+  id: "play-review",
   "aria-label": "Analysis and game details",
   hidden: true,
 });
+const reviewHeading = el("h2", { id: "review-heading", tabindex: "-1" }, "Analysis & history");
+reviewArea.append(el("header", { class: "review-header" },
+  reviewHeading,
+  button("Back to board ↑", () => {
+    window.scrollTo({ top: 0 });
+    $("panel-toggle").focus({ preventScroll: true });
+  }, "ghost"),
+));
 document.querySelector(".app").after(reviewArea);
 function placeReview() {
   if (!ui.board.container.isConnected) return;
-  const desktop = desktopTable.matches && !!model()?.started;
-  document.querySelector(".app").classList.toggle("desktop-table", desktop);
-  reviewArea.hidden = !desktop;
-  const feedbackHome = desktop
-    ? reviewArea
-    : document.querySelector(".action-area");
-  const inspectorHome = desktop ? reviewArea : $("workspace");
+  const started = !!model()?.started;
+  const app = document.querySelector(".app");
+  app.classList.toggle("desktop-table", desktopTable.matches && started);
+  app.classList.toggle("live-table", started);
+  reviewArea.hidden = !started;
+  const feedbackHome = started ? reviewArea : document.querySelector(".action-area");
+  const inspectorHome = started ? reviewArea : $("workspace");
   if (feedbackStrip.parentElement !== feedbackHome)
     feedbackHome.append(feedbackStrip);
   if ($("inspector").parentElement !== inspectorHome)
@@ -1604,7 +1613,7 @@ function panel() {
                 {},
                 "Moves with choices remain a draft until Confirm turn. Undo reverses one step; Reset restores the whole draft. Undo last turn restores a committed choice; human opponents must agree. Forced turns and blocked passes play automatically and cannot be undone. Details has a legal-move selector.",
               ),
-              el("a", { href: "/backgammon/controls/", target: "_blank", rel: "noopener" }, "Open checker click flowchart ↗"),
+              el("a", { href: "/backgammon/controls/", target: "_blank", rel: "noopener" }, "Clicks & highlights flowcharts ↗"),
             ),
           ),
         "ghost",

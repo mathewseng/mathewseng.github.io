@@ -4,6 +4,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     serviceWorkers: "block",
+    hasTouch: true,
     reducedMotion: "reduce",
   });
   const page = await context.newPage(),
@@ -20,6 +21,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
     );
   try {
     await page.goto(base + "/backgammon/play/");
+    await page.locator("#start-match").waitFor();
     assert.equal(await page.locator("#undo-turn").isVisible(), true);
     assert.equal(await page.locator("#undo-turn").isDisabled(), true);
     await page.goto(base + "/backgammon/");
@@ -85,6 +87,36 @@ module.exports = async function historyReturn(browser, base, out, name) {
           .locator(`#move-feedback [data-history-side="${side}"]`)
           .count(),
       );
+    for (const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768],[1440,900]]) {
+      await page.setViewportSize({width,height});
+      await page.evaluate(()=>window.scrollTo(0,0));
+      await page.waitForTimeout(60);
+      const layout = await page.evaluate(()=> {
+        const board = document.querySelector(".bg-board").getBoundingClientRect();
+        const app = document.querySelector(".app").getBoundingClientRect();
+        const review = document.querySelector(".play-review").getBoundingClientRect();
+        const action = document.querySelector("#roll").getBoundingClientRect();
+        return {boardHeight:board.height, boardBottom:board.bottom, appBottom:app.bottom, reviewTop:review.top, actionBottom:action.bottom, overflow:document.documentElement.scrollWidth>innerWidth+1, home:document.querySelector("#move-feedback").parentElement.className};
+      });
+      assert.equal(layout.home,"play-review","history always belongs below the table");
+      assert.equal(layout.overflow,false,`${name} ${width}: horizontal overflow`);
+      assert.ok(layout.reviewTop>=layout.appBottom-1,`${name} ${width}: history overlaps playing area`);
+      if(width>320) assert.ok(layout.boardBottom<=height+1 && layout.actionBottom<=height+1,`${name} ${width}: board/action offscreen ${JSON.stringify(layout)}`);
+      if([375,390,844,1024,1366].includes(width)) await page.screenshot({path:path.join(out,`${name}-play-scroll-board-${width}.png`)});
+      // Wheel/page scrolling reaches review, with no drawer or nested action scroll.
+      await page.mouse.move(width/2,Math.min(height-5,layout.actionBottom));
+      await page.mouse.wheel(0,height);
+      await page.waitForTimeout(120);
+      await page.locator("#move-feedback .feedback-review").first().scrollIntoViewIfNeeded();
+      assert.ok(await page.evaluate(()=>window.scrollY>0),"analysis reachable by document scrolling");
+      assert.equal(await page.getByRole("dialog").count(),0);
+      const after=await page.locator(".bg-board").boundingBox();
+      assert.ok(Math.abs(after.height-layout.boardHeight)<1,"scrolling never changes board size");
+      assert.equal(await page.locator(".play-review .inspector").isVisible(),true,"details visible below history");
+      if([375,390,844,1024,1366].includes(width)) await page.screenshot({path:path.join(out,`${name}-play-scroll-analysis-${width}.png`)});
+      await page.getByRole("button",{name:"Back to board ↑",exact:true}).click();
+      assert.equal(await page.evaluate(()=>window.scrollY),0);
+    }
     const comparisons = await page.locator('#move-feedback .feedback-review').evaluateAll(rows => rows.map(row => ({
       side: row.dataset.historySide,
       count: row.querySelectorAll('.decision-values-compact').length,
@@ -237,6 +269,46 @@ module.exports = async function historyReturn(browser, base, out, name) {
     assert.deepEqual(game.state, fixture.sources[0]);
     assert.equal(game.config.humanSide, 0);
     assert.equal(game.undoLog.length, 2);
+    if (name === "chromium") {
+      await page.setViewportSize({width:390,height:844});
+      await page.evaluate(()=>window.scrollTo(0,0));
+      const cdp = await context.newCDPSession(page);
+      const touch = async (type, x, y) => cdp.send("Input.dispatchTouchEvent", {type,touchPoints:type==="touchEnd"?[]:[{x,y,id:1}]});
+      const swipe = async (from,to) => {
+        await touch("touchStart",from.x,from.y);
+        for(let i=1;i<=12;i++) {
+          await touch("touchMove",from.x+(to.x-from.x)*i/12,from.y+(to.y-from.y)*i/12);
+          await page.waitForTimeout(20);
+        }
+        await touch("touchEnd",to.x,to.y);
+        await page.waitForTimeout(200);
+      };
+      const at = (x,y) => page.evaluate(({x,y})=>{
+        const p=new DOMPoint(x,y).matrixTransform(document.querySelector(".bg-board").getScreenCTM());
+        return {x:p.x,y:p.y};
+      },{x,y});
+      const open = await at(70,330);
+      const draftBefore=await page.locator("#draft-line").innerText();
+      await swipe(open,{x:open.x,y:Math.max(30,open.y-220)});
+      assert.ok(await page.evaluate(()=>window.scrollY>60),"native touch swipe on open board scrolls history");
+      assert.equal(await page.locator("#draft-line").innerText(),draftBefore,"scroll gesture does not move a checker");
+      await page.evaluate(()=>window.scrollTo(0,0));
+      const source=await page.locator('[data-point="12"] .checker > circle').first().evaluate(c=>{
+        const p=new DOMPoint(+c.getAttribute("cx"),+c.getAttribute("cy")).matrixTransform(c.getScreenCTM());
+        return {x:p.x,y:p.y};
+      });
+      const target=await page.locator('[data-point="6"] .point-hit').evaluate(c=>{
+        const p=new DOMPoint(+c.getAttribute("x")+30,570).matrixTransform(c.getScreenCTM());
+        return {x:p.x,y:p.y};
+      });
+      await swipe(source,target);
+      assert.equal(await page.evaluate(()=>window.scrollY),0,"dragging a checker does not scroll the page");
+      await page.waitForFunction(async()=>{
+        const w=await(await import("/backgammon/core/storage.mjs")).get("work","play");
+        return w.draft.some(s=>s.from===12&&s.to===6);
+      });
+      await cdp.detach();
+    }
     assert.deepEqual(errors, []);
     return {
       browser: name,
