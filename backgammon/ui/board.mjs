@@ -40,7 +40,7 @@ export function pointAt(x, y, orientation = 0) {
       x >= 385 &&
       x < 431 &&
       y >= (top ? 32 : 387) &&
-      y < (top ? 277 : 632)
+      y < (top ? 294 : 632)
     )
       return `bar${p}`;
     if (
@@ -1164,22 +1164,24 @@ export class Board {
     }
     for (const p of [0, 1]) {
       const top = p !== orientation,
-        y = top ? 100 : 506;
+        y = top ? 100 : 506,
+        returnToBar = s.turn === p &&
+          (destinations.includes("bar") || reverseTargets.includes("bar"));
       const g = svg("g", {
         "data-point": `bar${p}`,
         tabindex: -1,
         role: "button",
-        "aria-label": `${playerName(p)} bar, ${s.bar[p]} checkers${destinations.includes("bar") && s.turn === p ? ", return checker and restore its entry die" : ""}`,
+        "aria-label": `${playerName(p)} bar, ${s.bar[p]} checkers${returnToBar ? ", return checker and restore its entry die" : ""}`,
         "aria-disabled": !interactive,
         "aria-pressed": selected === "bar" && s.turn === p,
-        class: `point${sources.includes("bar") && s.turn === p ? " movable" : ""}${selected === "bar" && s.turn === p ? " selected" : ""}${destinations.includes("bar") && s.turn === p ? " destination return-destination" : ""}`,
+        class: `point${sources.includes("bar") && s.turn === p ? " movable" : ""}${selected === "bar" && s.turn === p ? " selected" : ""}${returnToBar ? " destination return-destination" : ""}`,
       });
       g.append(
         svg("rect", {
           x: 385,
           y: top ? 32 : 387,
           width: 46,
-          height: 245,
+          height: top ? 262 : 245,
           rx: 4,
           fill: "transparent",
           class: "point-hit",
@@ -1222,7 +1224,7 @@ export class Board {
             "pointer-events": "none",
           }),
         );
-      if (destinations.includes("bar") && s.turn === p) {
+      if (returnToBar) {
         g.append(
           svg("rect", {
             x: 390,
@@ -1429,6 +1431,7 @@ export class Board {
       }
     }
     this.svg.classList.toggle("is-preview", preview);
+    this.svg.classList.toggle("is-editor", editor && interactive);
     if (interactive)
       (
         this.svg.querySelector(`[data-point="${focus}"]`) ||

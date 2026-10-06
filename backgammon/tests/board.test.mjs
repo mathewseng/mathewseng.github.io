@@ -25,6 +25,9 @@ test("bar, off, outside drops and the center gap have distinct hit regions", () 
         pointAt(408, player !== orientation ? 100 : 446, orientation),
         `bar${player}`,
       );
+      // The entire return badge, including its arrow below the top hit region.
+      for (const y of player !== orientation ? [255, 282, 293] : [390, 417, 427])
+        assert.equal(pointAt(408, y, orientation), `bar${player}`);
       assert.equal(
         pointAt(843, player !== orientation ? 100 : 446, orientation),
         `off${player}`,

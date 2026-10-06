@@ -270,3 +270,17 @@ New responsive-parity tests passed in Chromium, Firefox and WebKit: identical pa
 Real-engine cube-option checks passed again in all three browsers at all nine acceptance viewports. The 320px case adds Verdana to expose wider-font wrapping; tighter header/table spacing and single-row review tabs keep every legal option above the footer. Inspected phone and desktop Help & practice, phone Play controls, landscape Solver drawer and WebKit 320px cube comparison screenshots. This is browser emulation, not physical-device testing.
 
 `node scripts/run-tests.mjs` passed **200/200 in 90.6 seconds**. The full assembled-site Chromium integration suite passed, including the new parity suite, real WASM, online protocol, offline and update checks. Final deployment-artifact validation passed. No engine policy, rules or transport behavior changed.
+
+## Highlight/action agreement (2026-10-06)
+
+Reproduced an occupied amber return target ignoring taps when no checker was selected. Point-space input now resolves advertised draft returns before resident selection; an immovable resident disc also passes through to its advertised destination. Movable discs retain selection/deselection, and ordinary source keys retain source selection. Surplus repeated destination inputs select rather than silently doing nothing or undoing the new stack. Preview/disabled boards suppress stale selection markers; unavailable points no longer acquire a misleading hover glow. Solver editing retains its hover feedback.
+
+The top bar's return badge extended past its hit region. Both native pointer hits and drag geometry now include the whole badge. Bar returns are advertised with or without a selection. Updated the public click flowchart and its source documentation to reflect return precedence and the immovable-resident exception.
+
+The new assembled-site highlight-actions suite exercises 260 mouse clicks and 260 touch taps per browser, across both players/orientations, selected and unselected forward/combined/doubles destinations, alternate-die revisions, occupied undo targets, bar and bearoff. Each destination must change the draft or present a real route choice. It also checks unavailable-point hover and suppression of preview/disabled markers. Inspected desktop Chromium and portrait WebKit return-highlight screenshots; touch tests are browser emulation, not physical-device testing.
+
+The repository suite passed 200/200 in 195.5 seconds. Final board geometry and assembled deployment checks passed 5/5. The broader integration run caught a keyboard-source regression from overly broad return precedence; that was repaired and the keyboard-only suite passed in Chromium, Firefox and WebKit. No engine, scoring, transport or persistence schema changed.
+
+Final highlight-action and keyboard-only checks passed in Chromium, Firefox and WebKit (1,560 highlight clicks/taps total). An initial broad-suite rerun hit a screenshot timeout under concurrent test load; it was rerun alone rather than weakening its assertions.
+
+The isolated full assembled-site Chromium integration suite passed, including the new highlight contract, repeated input, dragging, keyboard play, guide layouts, real WASM, multiplayer protocol, offline and service-worker updates. Inspected the updated 390px public flowchart as well.

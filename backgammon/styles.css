@@ -468,6 +468,9 @@ h3 {
   user-select: none;
 }
 .point {
+  cursor: default;
+}
+.point:not([aria-disabled="true"]):is(.movable, .reachable, .destination, .return-destination, .selected) {
   cursor: pointer;
 }
 .point .point-hit {
@@ -475,8 +478,12 @@ h3 {
     fill 0.12s,
     stroke 0.12s;
 }
-.point:hover .point-hit {
+.point:not([aria-disabled="true"]):is(.movable, .reachable, .destination, .return-destination, .selected):hover .point-hit,
+.bg-board.is-editor .point:hover .point-hit {
   fill: color-mix(in srgb, var(--board-hover, #a8d7cc) 7%, transparent);
+}
+.bg-board.is-editor .point {
+  cursor: crosshair;
 }
 .point.selected .point-hit {
   fill: color-mix(

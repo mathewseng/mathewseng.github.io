@@ -668,38 +668,44 @@ export class DraftBoard {
       this.render();
       return deselected ? "deselected" : "selected";
     };
-    // A physical disc is always selection input, even over a legal destination.
+    const selectedRoutes = this.routes().filter((st) => st.to === p);
+    const returning = this.reverseMoves().filter((r) => r.to === p);
+    const incoming = repeated || destinationTap || checkerTap
+      ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
+      : [];
+    const highlightedTarget = selectedRoutes.length ||
+      (this.selected === null && (incoming.length || returning.length));
+    // A movable physical disc is selection input, even over a destination.
+    // An immovable resident must not swallow its point's advertised action.
     // Keyboard activation toggles an existing selection; Shift requests a destination.
     if (
       activation &&
-      (checkerTap ||
+      ((checkerTap && (selectable || this.selected === p || !highlightedTarget)) ||
         (!destinationTap && this.selected !== null && p === this.selected))
     )
       return toggleSelection();
-    const selectedRoutes = this.routes().filter((st) => st.to === p);
-    const incoming = repeated || destinationTap
-      ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
-      : [];
     const current = this.current();
     const ownPoint =
       typeof p === "number" &&
       current.points[p] * (this.state.turn ? -1 : 1) > 0;
-    // Point-space shortcuts select the resident checker when nobody can land.
+    // Point-space shortcuts select the resident only after all advertised
+    // arrivals (including amber draft returns) have been considered.
     if (
-      destinationTap && !selectedRoutes.length && !incoming.length &&
+      destinationTap && !selectedRoutes.length && !incoming.length && !returning.length &&
       (ownPoint || (p === "bar" && current.bar[this.state.turn]))
     )
       return toggleSelection();
     // Keep rapid taps directed at the landing point, even when a checker now
     // covers it. Extra taps after the dice are used must not undo the new stack.
-    if (repeated && arrived && !incoming.length && !selectedRoutes.length)
-      return;
+    if (repeated && arrived && !incoming.length && !selectedRoutes.length && !returning.length)
+      return toggleSelection();
     // A selected checker's legal destination wins even over an occupied point.
     // Without that route, point-space taps and rapid key repeats request the
     // nearest incoming checker. Ordinary keys select an owned source.
     const sourceTap =
       !incoming.length &&
       !selectedRoutes.length &&
+      (!returning.length || (!destinationTap && selectable)) &&
       ((ownPoint && activation && !current.bar[this.state.turn]) ||
         (p === "bar" &&
           current.bar[this.state.turn] &&
@@ -719,9 +725,8 @@ export class DraftBoard {
       if (!routes.length) {
         routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
         if (!routes.length) {
-          const backs = this.reverseMoves().filter((r) => r.to === p);
-          const nearest = Math.min(...backs.map((r) => r.die));
-          routes = backs.filter((r) => r.die === nearest);
+          const nearest = Math.min(...returning.map((r) => r.die));
+          routes = returning.filter((r) => r.die === nearest);
         }
       }
     }
@@ -948,7 +953,7 @@ export class DraftBoard {
     const moves = this.enabled && !this.preview ? this.routes() : [];
     this.board.render(s, {
       ...settings(),
-      selected: this.selected,
+      selected: this.enabled && !this.preview ? this.selected : null,
       destinations: moves.map((st) => st.to),
       reverseTargets:
         this.enabled && !this.preview

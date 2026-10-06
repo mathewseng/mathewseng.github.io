@@ -13,8 +13,8 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=5bbf36d29b28ca07" />
-    <link rel="stylesheet" href="./controls.css?bgv=5bbf36d29b28ca07" />
+    <link rel="stylesheet" href="../styles.css?bgv=1180672065516354" />
+    <link rel="stylesheet" href="./controls.css?bgv=1180672065516354" />
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -61,12 +61,12 @@
                   <strong>select it</strong> and show its destinations.
                 </p>
                 <p class="muted">
-                  A blocked checker leaves your current selection unchanged.
-                  A disc click never moves or undoes it.
+                  If that resident checker cannot move, a highlighted destination
+                  underneath still works. Otherwise, keep your selection.
                 </p>
               </div>
             </div>
-            <div class="flow-next">No · continue ↓</div>
+            <div class="flow-next">No selectable disc · continue ↓</div>
           </li>
           <li>
             <div class="flow-question">
@@ -101,14 +101,13 @@
           <li>
             <div class="flow-question">
               <span class="flow-number" aria-hidden="true">4</span>
-              <h2>Is a movable checker on this point?</h2>
+              <h2>Is this a legal draft-return target?</h2>
             </div>
             <div class="flow-answer">
               <span class="flow-yes">Yes →</span>
               <p>
-                <strong>Select that checker.</strong><br />If it is already
-                selected, deselect it. A legal draft return also counts as a
-                move.
+                <strong>Return the nearest eligible checker.</strong><br />
+                Restore its dice, even if the amber point already holds checkers.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -116,14 +115,13 @@
           <li>
             <div class="flow-question">
               <span class="flow-number" aria-hidden="true">5</span>
-              <h2>Is this a legal draft-return target?</h2>
+              <h2>Is a movable checker on this point?</h2>
             </div>
             <div class="flow-answer">
               <span class="flow-yes">Yes →</span>
               <p>
-                <strong>Return the nearest eligible checker.</strong
-                ><br />Restore the dice it used. Otherwise, keep the board
-                and current selection unchanged.
+                <strong>Select that checker.</strong><br />If already selected,
+                deselect it. Otherwise, keep the board and selection unchanged.
               </p>
             </div>
             <div class="flow-end">No legal action → no move</div>
