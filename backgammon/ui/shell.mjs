@@ -23,6 +23,7 @@ import {
   nearestRoutes,
   reverseRoutes,
   dieSwitchRoutes,
+  preferHittingRoutes,
 } from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
 import {
@@ -666,7 +667,8 @@ export class DraftBoard {
       }
     }
     // Equivalent paths with the same resulting position and consumed dice need
-    // no extra confirmation. Distinct hits or different die use remain choices.
+    // no extra confirmation. Combined shortcuts prefer hits; distinct hitting
+    // outcomes and different die use remain choices.
     const distinct = new Map();
     for (const route of routes.sort(
       (a, b) =>
@@ -690,7 +692,7 @@ export class DraftBoard {
           .join();
       if (!distinct.has(key)) distinct.set(key, route);
     }
-    const choices = [...distinct.values()];
+    const choices = preferHittingRoutes(current, [...distinct.values()]);
     if (choices.length && (!sourceTap || choices.length === 1)) {
       const preferred = choices.filter(
         (st) =>

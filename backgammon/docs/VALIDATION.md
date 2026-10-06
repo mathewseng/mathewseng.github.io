@@ -204,3 +204,11 @@ Play history distinguishes the human and opponent with teal/purple accents and e
 `node scripts/run-tests.mjs` passed **195/195** in **180.8 seconds**. The assembled-site direct-play, repeated-input, checker/ghost, keyboard, real-engine assistance, practice, turn-policy, animation/audio and new history-return browser suites passed in Chromium, Firefox and WebKit. Additional deployment/board checks passed **5/5**. History-return tests cover stale/invalid context rejection, no mutation of the source table, both sides, original dice, archived continuation, reload and the session timeline. Both review action buttons fit all nine prescribed viewport sizes without dialog overflow. A flaky assistance layout fixture now deliberately rolls a position with choices, rather than occasionally hitting a forced pass; navigation explicitly acknowledges a saved forced-prefix draft.
 
 Inspected Chromium desktop history, alternate first-die highlights and both review actions, plus WebKit phone history/review screenshots. Browser emulation is not physical-device testing. The unchanged real engine is **gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg3**. No new engine-performance or live PeerJS benchmark is claimed.
+
+## Hit-first combined shortcuts (2026-10-06)
+
+Combined routes with the same source, destination and consumed dice now prefer a hitting path over a quiet one. Equivalent quiet/final-hit outcomes need no chooser; different hitting outcomes remain explicit choices. Single-die bearoff choices and draft revisions retain their existing controls. Manually moving through the quiet intermediate point still avoids the hit.
+
+Pure tests cover both players, either die order, intermediate/final blots, already-barred opponents and preserved die/revision choices. `route-choice.cjs` passed against the assembled site in Chromium, Firefox and WebKit, including keyboard activation, pointer dragging, explicit quiet play and both directions. Existing checker interaction and last-move suites also passed in all three browsers. Inspected the genuine-choice dialog at desktop Chromium and phone WebKit sizes. These are emulated browser checks, not physical-device tests.
+
+The full repository suite passed **197/197** in **163.1 seconds**, including the deployment-artifact checks.

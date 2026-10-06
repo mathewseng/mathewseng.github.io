@@ -130,3 +130,36 @@ export function nearestRoutes(paths, draft, to, player) {
   const nearest = Math.min(...routes.map((r) => at(r.from) - at(r.to)));
   return routes.filter((r) => at(r.from) - at(r.to) === nearest);
 }
+
+// Resolve a combined-checker shortcut, not the player's whole turn. For the
+// same source, destination and consumed dice, prefer a hitting path to a quiet
+// path. Distinct hitting outcomes remain a choice. Single-die/bearoff choices
+// and draft revisions retain their explicit die/undo selection.
+export function preferHittingRoutes(state, routes) {
+  if (routes.length < 2) return routes;
+  const first = routes[0];
+  const diceKey = (r) =>
+    r.steps
+      .map((s) => s.die)
+      .sort()
+      .join();
+  if (
+    routes.some(
+      (r) =>
+        r.undo ||
+        r.switchDie ||
+        r.steps.length < 2 ||
+        r.from !== first.from ||
+        r.to !== first.to ||
+        diceKey(r) !== diceKey(first),
+    )
+  )
+    return routes;
+  const opponent = 1 - state.turn;
+  const hits = routes.filter(
+    (r) =>
+      r.steps.reduce((s, step) => applyStep(s, step), state).bar[opponent] >
+      state.bar[opponent],
+  );
+  return hits.length ? hits : [first];
+}

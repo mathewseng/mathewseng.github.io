@@ -468,6 +468,14 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.routeChoice ||= []).push(
+          await require("./route-choice.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
+        );
         (report.repeatPlay ||= []).push(
           await require("./repeat-play.cjs")(
             browser,
