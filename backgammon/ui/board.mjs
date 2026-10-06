@@ -378,6 +378,10 @@ export class Board {
         return;
       }
       if (!this.options?.interactive) return;
+      if (e.repeat && ["Enter", " "].includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
       const die = e.target.closest("[data-die]");
       if (
         die &&
@@ -1135,7 +1139,11 @@ export class Board {
                 : moves.find((m) => m.to === p)?.die || "✓",
           ),
         );
-      if (sources.includes(p) && n) {
+      if (
+        sources.includes(p) &&
+        n &&
+        (selected === null || selected === p)
+      ) {
         const pos = checkerPosition(s, p, s.turn, orientation);
         g.append(
           svg("circle", {
@@ -1200,7 +1208,11 @@ export class Board {
             "BAR",
           ),
         );
-      if (sources.includes("bar") && s.turn === p)
+      if (
+        sources.includes("bar") &&
+        s.turn === p &&
+        (selected === null || selected === "bar")
+      )
         g.append(
           svg("circle", {
             cx: 408,

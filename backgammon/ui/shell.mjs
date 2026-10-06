@@ -501,6 +501,8 @@ export function dieFace(
     );
   return d;
 }
+// Shared mouse, touch and point-key repeat window; holding a key is ignored upstream.
+export const POINT_REPEAT_MS = 350;
 export class DraftBoard {
   constructor(board, onChange = () => {}) {
     this.board = board;
@@ -515,6 +517,7 @@ export class DraftBoard {
     board.onDragStart = (p) => this.beginDrag(p);
     board.onDrop = (_, p) => this.drop(p);
     board.onCancel = () => {
+      this.lastPointInput = null;
       this.selected = null;
       this.hint = "Selection cleared. Choose a ringed checker.";
       this.render();
@@ -522,6 +525,7 @@ export class DraftBoard {
     addEventListener("bg-settings", () => this.render());
   }
   set(s, paths, enabled = true) {
+    this.lastPointInput = null;
     this.board.endDrag();
     this.state = s;
     this.paths = paths;
@@ -578,13 +582,73 @@ export class DraftBoard {
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
-  point(raw, { quick = false, checkerTap = false } = {}) {
+  point(raw, options = {}) {
     if (!this.enabled || this.preview) return;
+    const point = this.normalize(raw),
+      state = this.state,
+      before = this.draft;
+    const now = performance.now(),
+      previous = this.lastPointInput;
+    const activation =
+      options.activation !== false && typeof point === "number";
+    const same =
+      activation &&
+      previous?.point === point &&
+      previous.state === state &&
+      previous.signature === JSON.stringify(before);
+    try {
+      this.resolvePoint(raw, {
+        ...options,
+        repeated: same && now - previous.time <= POINT_REPEAT_MS,
+        arrived: same && previous.arrived,
+      });
+    } finally {
+      if (activation && this.state === state) {
+        this.lastPointInput = {
+          point,
+          state,
+          time: now,
+          signature: JSON.stringify(this.draft),
+          arrived:
+            (same && previous.arrived && this.draft === before) ||
+            (this.draft.length > before.length &&
+              this.draft.at(-1)?.to === point),
+        };
+      } else this.lastPointInput = null;
+    }
+  }
+  resolvePoint(
+    raw,
+    {
+      quick = false,
+      checkerTap = false,
+      repeated = false,
+      arrived = false,
+    } = {},
+  ) {
     this.board.cancelAnimations();
     const p = this.normalize(raw);
     this.hint = "";
+    const incoming = repeated
+      ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
+      : [];
+    // Keep rapid taps directed at the landing point, even when a checker now
+    // covers it. Extra taps after the dice are used must not undo the new stack.
+    if (repeated && arrived && !incoming.length) return;
+    // A paused tap on the arrival selects it instead of bringing another checker
+    // in or auto-playing its sole forward step. Undo-only points keep that shortcut.
+    if (
+      !repeated &&
+      arrived &&
+      checkerRoutes(this.paths, this.draft, p).length
+    ) {
+      this.selected = p;
+      sound.play("select");
+      this.render();
+      return;
+    }
     const selectedRoutes = this.routes().filter((st) => st.to === p);
-    let routes = selectedRoutes;
+    let routes = incoming.length ? incoming : selectedRoutes;
     // With no forward action, a moved checker's entire point is an undo target.
     // Explicit selected destinations still win; ambiguous reversals stay choices.
     const undoOnlyPoint =
@@ -713,6 +777,7 @@ export class DraftBoard {
   }
   beginDrag(raw) {
     if (!this.enabled || this.preview) return false;
+    this.lastPointInput = null;
     const source = this.normalize(raw);
     if (!this.sources().includes(source)) return false;
     this.selected = source;
@@ -730,9 +795,10 @@ export class DraftBoard {
       this.board.returnDragged(this.selected);
       return;
     }
-    this.point(raw);
+    this.point(raw, { activation: false });
   }
   preferDie(die) {
+    this.lastPointInput = null;
     sound.play("select");
     this.preferred = this.preferred === die ? null : die;
     this.hint = this.preferred
@@ -750,6 +816,7 @@ export class DraftBoard {
   }
   moveRoute(route) {
     if (!this.enabled || this.preview) return;
+    this.lastPointInput = null;
     const next =
       route.undo || route.switchDie
         ? route.remaining
@@ -800,6 +867,7 @@ export class DraftBoard {
   }
   undo() {
     if (this.draft.length <= this.minDraft) return;
+    this.lastPointInput = null;
     const before = this.current(),
       step = this.draft.at(-1);
     this.preview = null;
@@ -811,6 +879,7 @@ export class DraftBoard {
     this.onChange();
   }
   reset() {
+    this.lastPointInput = null;
     const before = this.current(),
       changed = this.draft.length > this.minDraft;
     this.preview = null;
@@ -834,11 +903,17 @@ export class DraftBoard {
       destinations: moves.map((st) => st.to),
       reverseTargets:
         this.enabled && !this.preview
-          ? this.reverseMoves().map((r) => r.to)
+          ? (this.selected === null
+              ? this.reverseMoves()
+              : moves.filter((r) => r.undo)
+            ).map((r) => r.to)
           : [],
       reachable:
         this.enabled && !this.preview
-          ? availableRoutes(this.paths, this.draft).map((r) => r.to)
+          ? (this.selected === null
+              ? availableRoutes(this.paths, this.draft)
+              : moves.filter((r) => !r.undo)
+            ).map((r) => r.to)
           : [],
       sources: this.enabled && !this.preview ? this.sources() : [],
       moves,

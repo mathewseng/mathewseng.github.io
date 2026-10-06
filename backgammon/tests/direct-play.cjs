@@ -97,6 +97,7 @@ module.exports = async function directPlay(browser, base, out, name) {
     await click(12, true);
     await click(8, false);
     assert.equal((await draft()).length, 1);
+    await page.waitForTimeout(400); // Paused single tap keeps undo-only behavior.
     await click(8, false);
     assert.equal((await draft()).length, 0);
     // A checker that can still move is selected, never silently undone.
@@ -105,6 +106,7 @@ module.exports = async function directPlay(browser, base, out, name) {
       direct.d.set(s, direct.r.legalPaths(s));
     });
     await click(8, false);
+    await page.waitForTimeout(400);
     await click(8, false);
     assert.equal((await draft()).length, 1);
     assert.equal(

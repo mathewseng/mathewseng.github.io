@@ -53,12 +53,15 @@ const server = http.createServer((req, res) => {
     for (const browserName of (process.env.BG_BROWSERS || "chromium").split(
       ",",
     )) {
-      const browser = await launchQuietBrowser({ chromium, firefox, webkit }[browserName], {
-        headless: true,
-        ...(browserName === "chromium" && process.env.CHROME_PATH
-          ? { executablePath: process.env.CHROME_PATH }
-          : {}),
-      });
+      const browser = await launchQuietBrowser(
+        { chromium, firefox, webkit }[browserName],
+        {
+          headless: true,
+          ...(browserName === "chromium" && process.env.CHROME_PATH
+            ? { executablePath: process.env.CHROME_PATH }
+            : {}),
+        },
+      );
       console.log(`Testing ${browserName} ${browser.version()}`);
       report.browsers.push({
         name: browserName,
@@ -459,6 +462,14 @@ const server = http.createServer((req, res) => {
         report.refreshUX ||= [];
         (report.tableControls ||= []).push(
           await require("./table-controls.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
+        );
+        (report.repeatPlay ||= []).push(
+          await require("./repeat-play.cjs")(
             browser,
             base,
             out,
