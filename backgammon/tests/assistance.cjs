@@ -221,7 +221,7 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
       }));
       assert.ok(
         geometry.width <= width + 1 && geometry.height <= height + 1,
-        `moving layout fits ${width}x${height}`,
+        `moving layout fits ${width}x${height}: ${JSON.stringify(geometry)}`,
       );
       assert.ok(
         geometry.confirm <= height + 1,
@@ -229,6 +229,22 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
       );
     }
     await page.setViewportSize({ width: 375, height: 667 });
+    // Different platform font metrics must not require another fixed board
+    // height allowance. The moving row includes all four checker actions.
+    for (const family of ["Arial", "Verdana"]) {
+      const style = await page.addStyleTag({
+        content: `.app { font-family: ${family}, sans-serif; }`,
+      });
+      const fit = await page.evaluate(() => ({
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+      }));
+      assert.ok(
+        fit.width <= 376 && fit.height <= 668,
+        `${family} phone layout: ${JSON.stringify(fit)}`,
+      );
+      await style.evaluate((e) => e.remove());
+    }
     await page.locator("#review-feedback").click();
     await page.getByRole("button", { name: "Your move", exact: true }).click();
     await shot("review-phone");
