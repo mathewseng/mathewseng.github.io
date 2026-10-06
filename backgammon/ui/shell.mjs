@@ -239,9 +239,12 @@ export function shell(page, title, subtitle = "") {
   return { board: activeBoard, panel: $("panel"), equityBar: activeEquity };
 }
 export function openPanel() {
+  const existing = document.getElementById("details-dialog");
+  if (existing?.open) { existing.querySelector(".close").focus(); return; }
   const body = $("panel"),
     home = $("inspector");
   const d = dialog("Details", body);
+  d.id = "details-dialog";
   d.classList.add("drawer");
   d.addEventListener("close", () => home.append(body));
 }
@@ -330,6 +333,8 @@ export async function preferences() {
       { href: "/backgammon/refresh/" },
       "Refresh app files · keep saved data",
     ),
+    el("a", { href: "/" }, "All projects"),
+    el("a", { href: "/backgammon/controls/", target: "_blank", rel: "noopener" }, "Clicks & highlights guide"),
     button("About, engine & licenses", about),
   );
   const { shortcutControls } = await import("./shortcuts.mjs");

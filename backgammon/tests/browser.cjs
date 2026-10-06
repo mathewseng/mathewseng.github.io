@@ -492,6 +492,9 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.responsiveParity ||= []).push(
+          await require("./responsive-parity.cjs")(browser, base, out, browserName),
+        );
         (report.clickGuide ||= []).push(
           await require("./click-guide.cjs")(browser, base, out, browserName),
         );

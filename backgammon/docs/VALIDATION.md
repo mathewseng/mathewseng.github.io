@@ -260,3 +260,13 @@ A 320px opening-screen test with Verdana reproduced toolbar overflow; the smalle
 Inspected Chromium phone portrait, landscape, tablet and desktop board/history screenshots, WebKit portrait history, and the 390px highlight flowchart. These are browser emulations, not physical iPhone tests. The root suite passed **200/200 in 198.2 seconds**. Engine version and evaluation policy are unchanged.
 
 Final verification: the complete assembled-site Chromium suite passed, including real WASM, multiplayer-protocol, offline and service-worker update coverage. Final history/scroll checks passed again in Chromium, Firefox and WebKit after the 320px toolbar change; the wider-font opening and touch/drag suite passed in Chromium. The final deployment-artifact test passed. Inspected the final 320px opening toolbar and desktop highlight flowchart as well.
+
+## Desktop/mobile feature parity (2026-10-06)
+
+Details/Results now opens the same panel at every viewport, including short landscape windows. The drawer header and Close remain visible while reaching long forms. Library uses inspector visibility to decide whether to open its item drawer. All controls presents Play’s actual live Help & practice buttons, preserving enabled states, identity and online restrictions, then restores them on close. Settings exposes the project return and controls guide on every layout.
+
+New responsive-parity tests passed in Chromium, Firefox and WebKit: identical panel control inventories and disabled states across Play, Trainer, Solver and Library at 320×568, 390×844, 844×390, 768×1024 and 1366×768; every displayed panel control is scrolled into view and hit-tested without an overlay obscuring it; Close stays visible. Tests also save a mobile Library edit and read it in the desktop layout, compare desktop/mobile practice menus, and invoke the actual Set bot’s roll dialog through the menu.
+
+Real-engine cube-option checks passed again in all three browsers at all nine acceptance viewports. The 320px case adds Verdana to expose wider-font wrapping; tighter header/table spacing and single-row review tabs keep every legal option above the footer. Inspected phone and desktop Help & practice, phone Play controls, landscape Solver drawer and WebKit 320px cube comparison screenshots. This is browser emulation, not physical-device testing.
+
+`node scripts/run-tests.mjs` passed **200/200 in 90.6 seconds**. The full assembled-site Chromium integration suite passed, including the new parity suite, real WASM, online protocol, offline and update checks. Final deployment-artifact validation passed. No engine policy, rules or transport behavior changed.

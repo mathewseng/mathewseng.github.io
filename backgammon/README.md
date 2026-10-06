@@ -167,3 +167,12 @@ The [website click and highlight guide](/backgammon/controls/) is linked from th
 Cube review keeps **Before** and every named legal option together in the Comparison table. Double/No double and Take/Pass/Beaver/Raccoon show their own equity and original-cube EV (or match-winning chance), with best/played annotations. Alternatives are visible without opening Details, including when the played option was best.
 
 The [highlight flowchart](/backgammon/controls/#highlights) explains source rings, selected-checker scope, forward/combined destinations, alternate-die landings, undo priority, last-move ghosts and keyboard focus. Highlights derive from legal complete turns; they are not engine recommendations.
+
+
+## Desktop and mobile feature access
+
+Play, Trainer, Solver and Library use the same controls and state at every width. **Details** (or **Results**) is available on every layout, including phone landscape; its Close control stays visible while the panel content scrolls. Selecting a Library item opens the drawer whenever its inspector is hidden. Settings → Display & controls includes All projects and the click/highlight guide on all screens.
+
+In Play, **All controls** opens the full Help & practice group on desktop and mobile, including the currently available hint, undo/reset, reroll and chosen-dice controls. It temporarily moves the same live buttons into the dialog and restores them on close; it does not copy their state or bypass game/online restrictions. Taking an action closes this menu before opening a subsequent dialog. The compact help strip and keyboard shortcuts remain available.
+
+`tests/responsive-parity.cjs` compares control inventories, disabled states and hit-test reachability for every tool at desktop, tablet, phone portrait and phone landscape sizes. It also verifies mobile Library editing and the real bot-roll dialog through All controls. Layout and default review view can differ; gameplay and engine capabilities do not depend on viewport size.

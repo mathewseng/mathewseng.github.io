@@ -108,6 +108,7 @@ module.exports = async function cubeOptions(browser, base, out, name) {
         [1440, 900],
       ]) {
         await page.setViewportSize({ width, height });
+        const widerFont = width === 320 ? await page.addStyleTag({content:".decision-dialog { font-family: Verdana, sans-serif; }"}) : null;
         await page.waitForTimeout(30);
         const fit = await page.getByRole("dialog").evaluate((d) => {
           const r = d.getBoundingClientRect(),
@@ -128,13 +129,14 @@ module.exports = async function cubeOptions(browser, base, out, name) {
             fit.bottom <= fit.footer + 1,
           JSON.stringify({ scenario, width, height, fit }),
         );
-        if ([375, 844, 1366].includes(width))
+        if ([320, 375, 844, 1366].includes(width))
           await page.screenshot({
             path: path.join(
               out,
               `${name}-cube-options-${scenario}-${width}.png`,
             ),
           });
+        if (widerFont) await widerFont.evaluate(n=>n.remove());
       }
       await page.keyboard.press("Escape");
     }

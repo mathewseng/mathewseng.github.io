@@ -231,7 +231,7 @@ function choose(item) {
   selected = item;
   renderList();
   inspector();
-  if (matchMedia("(max-width:820px)").matches) openPanel();
+  if (getComputedStyle($("inspector")).display === "none") openPanel();
 }
 function inspector() {
   const p = $("panel");

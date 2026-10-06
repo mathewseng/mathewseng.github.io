@@ -163,7 +163,21 @@ const helpActions = el("div", {
   role: "group",
   tabindex: "0",
 });
-document.querySelector(".action-main").prepend(helpActions);
+const allControls = button("All controls", () => {
+  if (document.querySelector(".practice-controls-dialog")) return;
+  const d = dialog("Help & practice", helpActions);
+  d.classList.add("practice-controls-dialog");
+  const closeOnAction = (event) => {
+    if (event.target.closest("button:not(:disabled)")) d.close();
+  };
+  helpActions.addEventListener("click", closeOnAction, true);
+  d.addEventListener("close", () => {
+    helpActions.removeEventListener("click", closeOnAction, true);
+    helpCluster.prepend(helpActions);
+  }, { once: true });
+}, "ghost", { id: "all-controls", hidden: true, "aria-haspopup": "dialog" });
+const helpCluster = el("div", { class: "help-cluster" }, helpActions, allControls);
+document.querySelector(".action-main").prepend(helpCluster);
 const draft = new DraftBoard(ui.board, () => {
   draft.autoCommit = false;
   actions();
@@ -896,6 +910,7 @@ function actions() {
   }
 }
 function arrangeActions() {
+  allControls.hidden = !model()?.started;
   helpActions.replaceChildren();
   for (const id of ["undo-turn", "hint", "undo", "reset-draft"]) {
     const b = $(id);

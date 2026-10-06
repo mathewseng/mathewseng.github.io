@@ -3037,3 +3037,37 @@ button.teal-die:hover {
 @media (max-height: 500px) and (min-width: 701px) {
   .cube-option-status { display: inline; margin: 0 0 0 8px; }
 }
+
+/* The same detail and practice controls remain reachable on every layout. */
+.app .panel-toggle { display: block; }
+.help-cluster { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.help-cluster .action-help { flex: 1; min-width: 0; }
+#all-controls { flex: none; padding-inline: 10px; font-size: 13px; }
+.practice-controls-dialog { width: min(480px, calc(100vw - 24px)); }
+.practice-controls-dialog .action-help {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  overflow: visible;
+  width: 100%;
+}
+.practice-controls-dialog .action-help button { white-space: normal; min-height: 48px; }
+@media (max-width: 1024px), (max-height: 500px) {
+  .help-cluster { width: 100%; }
+}
+.drawer[open] { display: flex; flex-direction: column; overflow: hidden; }
+.drawer .dialog-header { flex: none; }
+.drawer .dialog-header h2,
+.decision-dialog .dialog-header h2 { margin: 0; }
+.drawer .dialog-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.drawer footer:empty { display: none; }
+@media (max-width: 360px) and (max-height: 600px) {
+  .decision-dialog .decision-content { gap: 4px; }
+  .decision-dialog .decision-values th,
+  .decision-dialog .decision-values td { padding-block: 4px; }
+  .decision-dialog .decision-values caption { margin-bottom: 4px; }
+}
+@media (max-width: 360px) and (max-height: 600px) {
+  .decision-dialog .decision-values thead th { white-space: nowrap; }
+  .decision-dialog .decision-tabs button { padding-inline: 6px; }
+}
