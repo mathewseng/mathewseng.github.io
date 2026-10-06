@@ -332,11 +332,13 @@ module.exports = async function assistanceUX(
       );
       await style.evaluate((e) => e.remove());
     }
-    await page.locator('[data-decision-type="checker"]').first().click();
+    const reviewed = page.locator('[data-decision-type="checker"]').first();
+    const opponent = await reviewed.getAttribute("data-history-side") === "opponent";
+    await reviewed.click();
     if (await page.locator(".decision-tabs").count())
       await page.locator('.decision-tabs [data-view="board"]').click();
     await page
-      .getByRole("button", { name: "Your move", exact: true })
+      .getByRole("button", { name: opponent ? "Opponent’s move" : "Your move", exact: true })
       .click();
     await shot("review-phone");
     await close();

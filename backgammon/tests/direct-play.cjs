@@ -69,9 +69,11 @@ module.exports = async function directPlay(browser, base, out, name) {
       await page.locator('[data-point="12"].return-destination').count(),
     );
     await shot("undo-target");
-    // Both the checker and its point background perform an unambiguous undo.
+    // Disc and point-space fallback select; the explicit return target undoes.
     await page.waitForTimeout(400);
     await click(9, false);
+    assert.equal((await draft()).length, 2);
+    await click(12, false);
     assert.equal((await draft()).length, 1);
     await click(12, true);
     assert.equal((await draft()).length, 1);
@@ -79,6 +81,8 @@ module.exports = async function directPlay(browser, base, out, name) {
     assert.equal((await draft()).length, 2);
     await page.waitForTimeout(400);
     await click(9, true);
+    assert.equal((await draft()).length, 2);
+    await click(12, false);
     assert.equal((await draft()).length, 1);
     await click(8, true); // Select the moved checker, then its explicit undo target.
     await click(12, false);
@@ -90,13 +94,10 @@ module.exports = async function directPlay(browser, base, out, name) {
       await page.locator(".selected").getAttribute("data-point"),
       "12",
     );
-    // Own occupied destinations select even when another checker can land there.
+    // A selected checker moves to a legal occupied destination.
     await click(5, false);
-    assert.equal((await draft()).length, 0);
-    assert.equal(
-      await page.locator(".selected").getAttribute("data-point"),
-      "5",
-    );
+    assert.equal((await draft()).length, 2);
+    assert.equal((await draft()).at(-1).to, 5);
     // No remaining continuation does not imply undo-only: the initial die can change.
     await page.evaluate(() => {
       const s = direct.r.initialState({ phase: "move", dice: [4, 3] });
@@ -127,7 +128,7 @@ module.exports = async function directPlay(browser, base, out, name) {
       (await draft()).map((s) => [s.from, s.to, s.die]),
       [[12, 9, 3]],
     );
-    // A blocked moved checker undoes even if another checker could land here.
+    // A disc always selects, even when it can only return or another checker can land.
     await page.evaluate(() => {
       const s = direct.r.initialState({ phase: "move", dice: [4, 3] });
       s.points.fill(0);
@@ -143,7 +144,9 @@ module.exports = async function directPlay(browser, base, out, name) {
     await click(8, false);
     assert.equal((await draft()).length, 1);
     await page.waitForTimeout(400); // Paused single tap keeps undo-only behavior.
-    await click(8, false);
+    await click(8, true);
+    assert.equal((await draft()).length, 1);
+    await click(12, false);
     assert.equal((await draft()).length, 0);
     // A checker that can still move is selected, never silently undone.
     await page.evaluate(() => {
@@ -152,7 +155,7 @@ module.exports = async function directPlay(browser, base, out, name) {
     });
     await click(8, false);
     await page.waitForTimeout(400);
-    await click(8, false);
+    await click(8, true);
     assert.equal((await draft()).length, 1);
     assert.equal(
       await page.locator(".selected").getAttribute("data-point"),
@@ -414,7 +417,7 @@ module.exports = async function directPlay(browser, base, out, name) {
     return {
       browser: name,
       cases: [
-        "occupied-point selection; empty-point nearest move; undo-only and alternate first die",
+        "disc selection; point-space selected/nearest move; explicit return and alternate first die",
         "five touching checker slots and overflow counts; uniform pips; right-side cube",
         "real-engine review with three non-scrolling views at nine sizes",
       ],

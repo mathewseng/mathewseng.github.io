@@ -86,13 +86,14 @@ module.exports = async function historyReturn(browser, base, out, name) {
           .count(),
       );
     const comparisons = await page.locator('#move-feedback .feedback-review').evaluateAll(rows => rows.map(row => ({
+      side: row.dataset.historySide,
       count: row.querySelectorAll('.decision-values-compact').length,
       labels: [...row.querySelectorAll('.decision-value .muted')].map(n=>n.textContent),
     })));
     assert.ok(comparisons.length >= 2);
     for(const row of comparisons) {
       assert.equal(row.count,1);
-      assert.deepEqual(row.labels,['Before','Your choice','Best choice']);
+      assert.deepEqual(row.labels,['Before',row.side === 'opponent' ? 'Opponent’s choice' : 'Your choice','Best choice']);
     }
     const checkColors = async () => {
       const colors = await page.evaluate(() =>
@@ -201,6 +202,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
       )
       .click();
     await page.locator("#return-position").waitFor();
+    assert.ok((await page.getByRole("dialog").innerText()).includes("Opponent’s choice"));
+    assert.equal(await page.getByRole("button", {name:"Opponent’s move",exact:true}).count(),1);
+    assert.equal(await page.getByRole("button", {name:"Your move",exact:true}).count(),0);
     await page.screenshot({
       path: path.join(out, `${name}-history-return-desktop.png`),
     });

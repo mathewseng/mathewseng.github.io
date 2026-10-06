@@ -40,6 +40,8 @@ export function decisionFeedback(result, source = null) {
     best: row(best),
     actual: row(actual),
     before: row(best),
+    choices:
+      result.type === "cube" ? result.decision.choices.map(row) : null,
     loss,
     ...lossTone(loss),
     quality: lossTone(loss).label,

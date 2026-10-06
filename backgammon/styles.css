@@ -2228,6 +2228,7 @@ button.teal-die:hover {
 }
 .decision-value {
   display: grid;
+  grid-template-rows: 1fr auto;
   gap: 4px;
   padding-inline: 12px;
   font-variant-numeric: tabular-nums;
@@ -2984,4 +2985,9 @@ button.teal-die:hover {
 #equity-toggle[aria-pressed="true"] {
   color: var(--accent);
   background: var(--surface);
+}
+
+.cube-option-status { display: block; font-weight: 400; margin-top: 2px; }
+@media (max-height: 500px) and (min-width: 701px) {
+  .cube-option-status { display: inline; margin: 0 0 0 8px; }
 }

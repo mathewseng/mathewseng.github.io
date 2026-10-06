@@ -492,6 +492,12 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.clickGuide ||= []).push(
+          await require("./click-guide.cjs")(browser, base, out, browserName),
+        );
+        (report.cubeOptions ||= []).push(
+          await require("./cube-options.cjs")(browser, base, out, browserName),
+        );
         (report.equityBar ||= []).push(
           await require("./equity-bar.cjs")(browser, base, out, browserName),
         );

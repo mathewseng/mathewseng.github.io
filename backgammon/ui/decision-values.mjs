@@ -1,11 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el } from "./shell.mjs";
 import { equity, percentage } from "./analysis.mjs";
-export function decisionValues(f, compact = false) {
+export function decisionValues(
+  f,
+  compact = false,
+  { opponent = false } = {},
+) {
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const rows = [
     ["Before", f.before, "before"],
-    ...(!bestPlayed ? [["Your choice", f.actual, "actual"]] : []),
+    ...(!bestPlayed
+      ? [
+          [
+            opponent ? "Opponent’s choice" : "Your choice",
+            f.actual,
+            "actual",
+          ],
+        ]
+      : []),
     ["Best choice", f.best, "best"],
   ];
   if (compact) {
@@ -41,20 +53,58 @@ export function decisionValues(f, compact = false) {
       grid,
     );
   }
+  const tableRows = f.choices
+    ? [
+        ["Before", f.before, "before"],
+        ...f.choices.map((c) => {
+          const best = Math.abs(c.equity - f.best.equity) <= 1e-7;
+          const played = c.action === f.actual.action;
+          const status = [
+            best ? "Best choice" : "",
+            played && !best
+              ? opponent
+                ? "Opponent’s choice"
+                : "Your choice"
+              : "",
+          ].filter(Boolean);
+          return [
+            el(
+              "span",
+              {},
+              c.notation,
+              ...(status.length
+                ? [
+                    el(
+                      "span",
+                      { class: "cube-option-status muted small" },
+                      status.join(" · "),
+                    ),
+                  ]
+                : []),
+            ),
+            c,
+            played ? "actual" : "alternative",
+          ];
+        }),
+      ]
+    : rows;
   return el(
     "div",
-    { class: "decision-values" },
+    {
+      class: "decision-values",
+      ...(f.choices ? { "data-cube-options": "" } : {}),
+    },
     el(
       "table",
       {},
-      el("caption", {}, "Decision comparison"),
+      el("caption", {}, f.choices ? "Cube options" : "Decision comparison"),
       el(
         "thead",
         {},
         el(
           "tr",
           {},
-          el("th", { scope: "col" }, "Position"),
+          el("th", { scope: "col" }, f.choices ? "Decision" : "Position"),
           el("th", { scope: "col" }, "Equity"),
           el("th", { scope: "col" }, f.money ? "EV · points" : "Match win"),
         ),
@@ -62,7 +112,7 @@ export function decisionValues(f, compact = false) {
       el(
         "tbody",
         {},
-        ...rows.map(([label, c]) =>
+        ...tableRows.map(([label, c]) =>
           el(
             "tr",
             {},

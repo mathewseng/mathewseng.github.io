@@ -1587,7 +1587,7 @@ function panel() {
               el(
                 "p",
                 {},
-                "Tap a ringed checker, then a highlighted point. Or drag the checker there. The number on a destination tells you which die it uses.",
+                "Tap a checker disc to select it; tap it again to deselect. Tap the open part of a highlighted point to move there, or drag the checker. With no selected route, the open point area plays the nearest checker; if nobody can land, it selects a movable checker on that point. Blocked checkers cannot be selected. Destination numbers show the dice used.",
               ),
               el(
                 "p",
@@ -1604,6 +1604,7 @@ function panel() {
                 {},
                 "Moves with choices remain a draft until Confirm turn. Undo reverses one step; Reset restores the whole draft. Undo last turn restores a committed choice; human opponents must agree. Forced turns and blocked passes play automatically and cannot be undone. Details has a legal-move selector.",
               ),
+              el("a", { href: "/backgammon/controls/", target: "_blank", rel: "noopener" }, "Open checker click flowchart ↗"),
             ),
           ),
         "ghost",
@@ -1843,6 +1844,7 @@ function renderFeedback() {
       "",
       () =>
         decisionReview(row.source, {
+          opponent: side === "opponent",
           title:
             row.result.type === "cube"
               ? "Cube decision"
@@ -1880,7 +1882,7 @@ function renderFeedback() {
         `${row.label} · Best ${f.best.notation}`,
       ),
     );
-    review.append(decisionValues(f, true));
+    review.append(decisionValues(f, true, { opponent: side === "opponent" }));
     review.append(
       el(
         "span",

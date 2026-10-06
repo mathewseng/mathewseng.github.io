@@ -17,6 +17,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "solver/",
       "library/",
       "reports/",
+      "controls/",
       "refresh/",
     ])
       assert.ok(

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#11191d" />
+    <title>Backgammon · Checker click guide</title>
+    <meta
+      name="description"
+      content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
+    />
+    <link rel="icon" href="../icon.svg" />
+    <link rel="stylesheet" href="../styles.css?bgv=c12456dadf764013" />
+    <link rel="stylesheet" href="./controls.css?bgv=c12456dadf764013" />
+  </head>
+  <body class="controls-page">
+    <header class="topbar">
+      <a class="brand" href="/backgammon/">Backgammon</a>
+      <nav class="nav" aria-label="Backgammon tools">
+        <a href="/backgammon/play/">Play</a
+        ><a href="/backgammon/trainer/">Trainer</a
+        ><a href="/backgammon/solver/">Solver</a
+        ><a href="/backgammon/library/">Library</a>
+      </nav>
+      <a class="site-link" href="/">All projects</a>
+    </header>
+    <main class="controls-main">
+      <a class="guide-back" href="/backgammon/">← Backgammon hub</a>
+      <h1>What happens when I click?</h1>
+      <p class="guide-lead">
+        Tap a disc to select it. Tap the open point area to play there.
+      </p>
+      <p class="muted">
+        Follow the questions from top to bottom. Only your own checkers with
+        a legal move can be selected. During a preview or the opponent’s
+        turn, the board does not accept moves.
+      </p>
+      <ol class="click-flow" aria-label="Checker click flowchart">
+        <li>
+          <div class="flow-question">
+            <span class="flow-number" aria-hidden="true">1</span>
+            <h2>Did you click your checker disc?</h2>
+          </div>
+          <div class="flow-answer">
+            <span class="flow-yes">Yes →</span>
+            <div>
+              <p>Already selected? <strong>Deselect it.</strong></p>
+              <p>
+                Otherwise, if it has a legal move,
+                <strong>select it</strong> and show its destinations.
+              </p>
+              <p class="muted">
+                A blocked checker leaves your current selection unchanged. A
+                disc click never moves or undoes it.
+              </p>
+            </div>
+          </div>
+          <div class="flow-next">No · continue ↓</div>
+        </li>
+        <li>
+          <div class="flow-question">
+            <span class="flow-number" aria-hidden="true">2</span>
+            <h2>Can the selected checker reach this point?</h2>
+          </div>
+          <div class="flow-answer">
+            <span class="flow-yes">Yes →</span>
+            <p>
+              <strong>Play the selected checker.</strong><br />This also
+              works onto a friendly stack. A highlighted return or
+              alternate-die target revises the draft.
+            </p>
+          </div>
+          <div class="flow-next">No · continue ↓</div>
+        </li>
+        <li>
+          <div class="flow-question">
+            <span class="flow-number" aria-hidden="true">3</span>
+            <h2>Can another checker land here?</h2>
+          </div>
+          <div class="flow-answer">
+            <span class="flow-yes">Yes →</span>
+            <p>
+              <strong>Play the nearest legal checker.</strong><br />Repeated
+              clicks in the open point area can build a point or use
+              doubles.
+            </p>
+          </div>
+          <div class="flow-next">No · continue ↓</div>
+        </li>
+        <li>
+          <div class="flow-question">
+            <span class="flow-number" aria-hidden="true">4</span>
+            <h2>Is a movable checker on this point?</h2>
+          </div>
+          <div class="flow-answer">
+            <span class="flow-yes">Yes →</span>
+            <p>
+              <strong>Select that checker.</strong><br />If it is already
+              selected, deselect it. A legal draft return also counts as a
+              move.
+            </p>
+          </div>
+          <div class="flow-next">No · continue ↓</div>
+        </li>
+        <li>
+          <div class="flow-question">
+            <span class="flow-number" aria-hidden="true">5</span>
+            <h2>Is this a legal draft-return target?</h2>
+          </div>
+          <div class="flow-answer">
+            <span class="flow-yes">Yes →</span>
+            <p>
+              <strong>Return the nearest eligible checker.</strong
+              ><br />Restore the dice it used. Otherwise, keep the board and
+              current selection unchanged.
+            </p>
+          </div>
+          <div class="flow-end">No legal action → no move</div>
+        </li>
+      </ol>
+      <section class="guide-notes" aria-label="Other input rules">
+        <div>
+          <h2>When there is a real choice</h2>
+          <p>
+            Equivalent routes need no prompt. A combined shortcut prefers a
+            hitting route; different hits or dice use may open a chooser.
+            Move through an intermediate point manually to avoid a hit.
+          </p>
+        </div>
+        <div>
+          <h2>Bar, undo &amp; dragging</h2>
+          <p>
+            Enter from the bar first. Legal routes respect all dice and
+            bearing-off rules. Drag to a highlighted destination; an invalid
+            drop cancels. Select a moved checker and its dashed return
+            target, or use Undo/Reset.
+          </p>
+        </div>
+        <div>
+          <h2>Keyboard</h2>
+          <p>
+            Point keys select or play the selected route. Press the selected
+            point again to deselect. Rapid presses within 350 ms build a
+            point; Shift requests destination input. Ordinary keys retain
+            the unambiguous undo-only shortcut. Change bindings in Settings.
+          </p>
+        </div>
+      </section>
+      <p class="guide-footer">
+        <a class="primary" href="/backgammon/play/">Back to Play →</a
+        ><span class="muted">Your saved game stays in this browser.</span>
+      </p>
+    </main>
+  </body>
+</html>

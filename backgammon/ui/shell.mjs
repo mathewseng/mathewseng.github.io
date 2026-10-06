@@ -606,14 +606,17 @@ export class DraftBoard {
       previous?.point === point &&
       previous.state === state &&
       previous.signature === JSON.stringify(before);
+    let selectionChanged = false;
     try {
-      this.resolvePoint(raw, {
-        ...options,
-        repeated: same && now - previous.time <= POINT_REPEAT_MS,
-        arrived: same && previous.arrived,
-      });
+      selectionChanged = ["selected", "deselected", "unavailable"].includes(
+        this.resolvePoint(raw, {
+          ...options,
+          repeated: same && now - previous.time <= POINT_REPEAT_MS,
+          arrived: same && previous.arrived,
+        }),
+      );
     } finally {
-      if (activation && this.state === state) {
+      if (!selectionChanged && activation && this.state === state) {
         this.lastPointInput = {
           point,
           state,
@@ -629,28 +632,69 @@ export class DraftBoard {
   }
   resolvePoint(
     raw,
-    { repeated = false, arrived = false, activation = true } = {},
+    {
+      repeated = false,
+      arrived = false,
+      activation = true,
+      quick = false,
+      checkerTap = false,
+    } = {},
   ) {
     this.board.cancelAnimations();
     const p = this.normalize(raw);
     this.hint = "";
-    const incoming = repeated
+    const destinationTap = activation && quick && !checkerTap;
+    const selectable = this.sources().includes(p) ||
+      this.entrySwitches().some((route) => route.from === p);
+    const toggleSelection = () => {
+      const deselected = this.selected === p;
+      if (!deselected && !selectable) {
+        this.hint = this.current().bar[this.state.turn]
+          ? "Enter your checker from the bar first."
+          : "That checker has no legal move with the remaining dice.";
+        this.render();
+        return "unavailable";
+      }
+      this.selected = deselected ? null : p;
+      this.hint = deselected
+        ? "Selection cleared. Choose a checker or a highlighted destination."
+        : "";
+      if (!deselected) sound.play("select");
+      this.render();
+      return deselected ? "deselected" : "selected";
+    };
+    // A physical disc is always selection input, even over a legal destination.
+    // Keyboard activation toggles an existing selection; Shift requests a destination.
+    if (
+      activation &&
+      (checkerTap ||
+        (!destinationTap && this.selected !== null && p === this.selected))
+    )
+      return toggleSelection();
+    const selectedRoutes = this.routes().filter((st) => st.to === p);
+    const incoming = repeated || destinationTap
       ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
       : [];
-    // Keep rapid taps directed at the landing point, even when a checker now
-    // covers it. Extra taps after the dice are used must not undo the new stack.
-    if (repeated && arrived && !incoming.length) return;
     const current = this.current();
     const ownPoint =
       typeof p === "number" &&
       current.points[p] * (this.state.turn ? -1 : 1) > 0;
-    const selectedRoutes = this.routes().filter((st) => st.to === p);
-    // Dragging and rapid destination repeats are explicit moves. Otherwise an
-    // occupied own point selects its checker, irrespective of the tapped pixel.
-    // Bar priority still lets a selected bar checker enter an occupied point.
+    // Point-space shortcuts select the resident checker when nobody can land.
+    if (
+      destinationTap && !selectedRoutes.length && !incoming.length &&
+      (ownPoint || (p === "bar" && current.bar[this.state.turn]))
+    )
+      return toggleSelection();
+    // Keep rapid taps directed at the landing point, even when a checker now
+    // covers it. Extra taps after the dice are used must not undo the new stack.
+    if (repeated && arrived && !incoming.length && !selectedRoutes.length)
+      return;
+    // A selected checker's legal destination wins even over an occupied point.
+    // Without that route, point-space taps and rapid key repeats request the
+    // nearest incoming checker. Ordinary keys select an owned source.
     const sourceTap =
       !incoming.length &&
-      !selectedRoutes.some((r) => r.undo || r.switchDie) &&
+      !selectedRoutes.length &&
       ((ownPoint && activation && !current.bar[this.state.turn]) ||
         (p === "bar" &&
           current.bar[this.state.turn] &&
@@ -662,11 +706,11 @@ export class DraftBoard {
         ...checkerRoutes(this.paths, this.draft, p),
         ...this.entrySwitches().filter((r) => r.from === p),
       ];
-      // Only a truly undo-only checker moves on selection. A different initial
+      // Ordinary keys retain the undo-only shortcut. A different initial
       // die also counts as an alternative, even if continuing forward is blocked.
       routes = alternatives.length ? [] : backs;
     } else {
-      routes = incoming.length ? incoming : selectedRoutes;
+      routes = selectedRoutes.length ? selectedRoutes : incoming;
       if (!routes.length) {
         routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
         if (!routes.length) {
@@ -753,7 +797,7 @@ export class DraftBoard {
       }
       return;
     }
-    if (ownPoint || this.sources().includes(p)) {
+    if (selectable) {
       this.selected = p;
       if (this.selected !== null) sound.play("select");
     } else
@@ -943,7 +987,7 @@ export class DraftBoard {
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? "Tap or drag to a highlighted point. Arrow targets move back."
-                : "Tap a glowing point tip to move the nearest checker, or select and drag a checker."
+                : "Tap a checker to select; tap an open part of a point to play there."
             : this.draft.length
               ? notation(this.draft, this.state.turn)
               : this.lastMove

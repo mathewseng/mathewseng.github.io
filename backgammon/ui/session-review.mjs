@@ -145,6 +145,7 @@ export function sessionReview(
                 () =>
                   decisionReview(r.source, {
                     title: "Decision review",
+                    opponent: [0, 1].includes(model.config?.humanSide) && r.player !== model.config.humanSide,
                   }).result(r.result),
                 "history-evaluation",
                 { "data-loss-tone": r.feedback.tone },

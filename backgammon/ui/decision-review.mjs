@@ -19,6 +19,7 @@ export function decisionReview(
   source,
   {
     title = "Move hint",
+    opponent = false,
     onClose = () => {},
     onUse,
     onReplay,
@@ -244,7 +245,7 @@ export function decisionReview(
           ...[
             ["Position", null],
             ["Best decision", f.best],
-            ["Your decision", f.actual],
+            [opponent ? "Opponent’s decision" : "Your decision", f.actual],
           ].map(([label, c]) =>
             button(label, () => showCube(c, label), "", {
               "aria-pressed": false,
@@ -268,24 +269,12 @@ export function decisionReview(
             { class: "decision-loss", "data-loss-tone": f.tone },
             `${f.label} ${f.value} · ${f.label === "EV lost" ? f.units : "normalized match equity"}`,
           ),
-          decisionValues(f),
+          decisionValues(f, false, { opponent }),
           lossLegend(),
           el(
             "p",
             { class: "muted small" },
             "Cube offers use the opponent’s best evaluated reply. Values stay in the original cube units, even after a take or immediate redouble.",
-          ),
-          el(
-            "div",
-            { class: "list" },
-            ...result.decision.choices.map((c) =>
-              el(
-                "div",
-                { class: "list-row row spread" },
-                el("span", {}, c.notation),
-                el("strong", {}, equity(c.equity)),
-              ),
-            ),
           ),
           el(
             "p",
@@ -302,7 +291,7 @@ export function decisionReview(
         ["Position", null],
         ["Best move", best],
       ];
-      if (result.actual) choices.push(["Your move", result.actual]);
+      if (result.actual) choices.push([opponent ? "Opponent’s move" : "Your move", result.actual]);
       controls.replaceChildren(
         ...choices.map(([label, c]) =>
           button(label, () => show(c?.steps || [], label, !!c), "", {
@@ -331,7 +320,7 @@ export function decisionReview(
             { class: "decision-loss", "data-loss-tone": f.tone },
             `${f.label} ${f.value} · ${f.label === "EV lost" ? f.units : "normalized match equity"}`,
           ),
-          decisionValues(f),
+          decisionValues(f, false, { opponent }),
           lossLegend(),
           el(
             "p",

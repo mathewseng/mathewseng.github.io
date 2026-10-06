@@ -232,3 +232,19 @@ The full assembled-site Chromium browser suite passed, including real WASM, offl
 Inspected desktop player-colored history and equity rail, WebKit portrait equity rail and review dialog, Chromium landscape equity rail, and the two-column best-choice Trainer result. These are emulated browsers, not physical-device tests. No new engine-strength or real-phone performance claim is made.
 
 `node scripts/run-tests.mjs` passed **200/200** in **243.3 seconds**. Final targeted equity/feedback/board/deployment tests passed **14/14**, with the deployment-artifact test repeated successfully after the final mobile grid adjustment.
+
+## Disc selection and point-space moves (2026-10-06)
+
+The shared controller now distinguishes pointer hits on a checker disc from the open point area. Disc input always selects/deselects without moving, including an undo-only checker or a disc covering a selected legal destination. Point-space input uses a legal selected route first, otherwise the nearest incoming checker, then falls back to selecting the resident checker when nobody can land. Explicit disc selection clears repeat intent. Keyboard source/destination selection, repeated destination keys, dragging and explicit draft-return targets remain available. The documented click flow is in `CLICK-LOGIC.md`.
+
+Opponent decisions now use Opponent’s choice in compact/full comparisons and Opponent’s move/decision in preview controls, including session review. The longer mobile label wraps without shifting numerical baselines. Player-colored history remains independent of loss colors.
+
+`node scripts/run-tests.mjs` passed **200/200** in **266.9 seconds**. Final board/shortcut/deployment checks passed **9/9**. The assembled-site repeated-input, direct-play, checker/ghost and history-return suites passed in Chromium, Firefox and WebKit. Added checks cover actual mouse/touch disc hits versus point space, both players, single/combined occupied destinations, explicit selection over a nearer source, fallback selection, keyboard/bar deselection, repeat reset and opponent review labels. Inspected desktop and WebKit portrait opponent comparisons and selected-checker screenshots. Browser emulation is not physical-device testing.
+
+Follow-up: selection now requires a legal forward move, alternate-die revision or draft return. Blocked disc, point-space fallback and keyboard clicks preserve the current selection; bar-entry priority also prevents selecting other checkers. Updated actual mouse/touch tests pass for both players in Chromium, Firefox and WebKit, as does the direct-play suite.
+
+The public `/backgammon/controls/` flowchart is linked from the hub and Play’s How to play dialog. Its static HTML branches work without JavaScript or engine loading. Guide tests passed in Chromium, Firefox and WebKit at all nine acceptance viewport sizes, with direct reload, enlarged text and keyboard-link checks. Inspected Chromium 320/844/1366-wide screenshots and WebKit 390-wide screenshot; no horizontal clipping was observed.
+
+Cube Comparison now shows each legal option with equity and original-cube EV, or match-winning probability, alongside Before. Real GNUbg Quick tests cover an offer, playing the best offer, Take/Pass/Beaver, Take/Pass/Raccoon and match context. Exact legal-option sets, numeric tolerances and non-scrolling modal bounds passed at all nine sizes in Chromium, Firefox and WebKit. Inspected desktop offer, WebKit 375-wide beaver and landscape raccoon screenshots. The root suite passed again **200/200 in 251.9 seconds**; final feedback/deployment checks passed **7/7**. No engine version or computation policy changed.
+
+The final assembled-site Chromium browser suite passed with the new guide, legal-selection and cube-option checks included, alongside the existing real-engine, online-protocol, offline and update checks. The guide was also rechecked in all three browsers after final HTML/CSS formatting.
