@@ -27,6 +27,7 @@ import {
 } from "../core/storage.mjs";
 import {
   forcedTurn,
+  forcedContinuation,
   playAction,
   tableDice,
   takebackTarget,
@@ -72,6 +73,7 @@ import { Online } from "./network.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
 import { sound } from "../ui/sound.mjs";
+import { practiceTarget, replacePracticeRoll } from "../core/practice.mjs";
 import { installPlayShortcuts } from "../ui/shortcuts.mjs";
 import { preferences } from "../ui/shell.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
@@ -111,14 +113,49 @@ const feedbackStrip = el("div", {
   hidden: true,
 });
 document.querySelector(".action-area").append(feedbackStrip);
+const desktopTable = matchMedia(
+  "(min-width: 1025px) and (min-height: 501px)",
+);
+const reviewArea = el("section", {
+  class: "play-review",
+  "aria-label": "Analysis and game details",
+  hidden: true,
+});
+document.querySelector(".app").after(reviewArea);
+function placeReview() {
+  if (!ui.board.container.isConnected) return;
+  const desktop = desktopTable.matches && !!model()?.started;
+  document.querySelector(".app").classList.toggle("desktop-table", desktop);
+  reviewArea.hidden = !desktop;
+  const feedbackHome = desktop
+    ? reviewArea
+    : document.querySelector(".action-area");
+  const inspectorHome = desktop ? reviewArea : $("workspace");
+  if (feedbackStrip.parentElement !== feedbackHome)
+    feedbackHome.append(feedbackStrip);
+  if ($("inspector").parentElement !== inspectorHome)
+    inspectorHome.append($("inspector"));
+}
+desktopTable.addEventListener("change", placeReview);
+
 document.querySelector(".action-area").setAttribute("tabindex", "0");
 document
   .querySelector(".action-area")
   .setAttribute("aria-label", "Turn controls and decision history");
+const helpActions = el("div", {
+  class: "action-help",
+  id: "help-actions",
+  "aria-label": "Help and practice controls",
+  role: "group",
+  tabindex: "0",
+});
+document.querySelector(".action-main").prepend(helpActions);
 const draft = new DraftBoard(ui.board, () => {
+  draft.autoCommit = false;
   actions();
   detailDraft();
   persist();
+  autoDraft();
 });
 const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
@@ -164,7 +201,7 @@ installPlayShortcuts({
   },
   run: (action) => {
     const selectors = {
-      roll: "#roll",
+      roll: "#roll,#begin-turn",
       confirm: "#confirm,#begin-turn,#start-match,#next-game",
       undo: "#undo,#undo-turn",
       reset: "#reset-draft",
@@ -198,8 +235,12 @@ installPlayShortcuts({
       return true;
     }
     if (!draft.enabled || draft.preview) return false;
-    if (action === "bar") draft.point(`bar${state().turn}`);
-    else if (action === "off")
+    if (action === "bar") {
+      const current = draft.current();
+      if (current.bar[current.turn])
+        draft.point(`bar${current.turn}`, { checkerTap: true });
+      else draft.point(`off${current.turn}`, { quick: true });
+    } else if (action === "off")
       draft.point(`off${state().turn}`, { quick: draft.selected === null });
     else if (action === "cancel") {
       draft.selected = null;
@@ -365,6 +406,9 @@ function restore(recovery) {
     draft.render();
     actions();
     detailDraft();
+    if (recovery.autoCommit && draft.complete())
+      queueMicrotask(() => submit().catch(showError));
+    else autoDraft();
   }
 }
 function stopComputer() {
@@ -412,6 +456,7 @@ function myTurn(s) {
   return humanControls(config, s);
 }
 function render() {
+  placeReview();
   const m = model(),
     s = state();
   playersButton.hidden = !m?.started || config.mode === "online";
@@ -476,7 +521,8 @@ function render() {
       );
     }
     if (freshEvent) {
-      if (event?.action.type === "roll") ui.board.animateDice();
+      if (["roll", "practice-roll"].includes(event?.action.type))
+        ui.board.animateDice();
       else if (
         ["double", "take", "beaver", "raccoon"].includes(event?.action.type)
       )
@@ -500,8 +546,55 @@ function render() {
   $("panel-toggle").textContent = m?.started ? "Details" : "Setup";
   actions();
   panel();
-  if (!autoPlay() && m?.started && config.mode === "computer")
-    computerTurn();
+  if (!autoPlay()) {
+    autoDraft();
+    if (m?.started && config.mode === "computer") computerTurn();
+  }
+}
+function autoDraft() {
+  if (!ui.board.container.isConnected) return;
+  if (
+    !draft.enabled ||
+    draft.preview ||
+    opening.active ||
+    committing ||
+    assistanceJob ||
+    botBusy ||
+    !myTurn(state())
+  )
+    return;
+  const source = state();
+  const initial = forcedContinuation(source, [], draft.paths);
+  draft.minDraft = initial.complete ? 0 : initial.steps.length;
+  const forced = forcedContinuation(source, draft.draft, draft.paths);
+  if (!forced.steps.length) return;
+  const signature = JSON.stringify(draft.draft),
+    id = model()?.id;
+  queueMicrotask(() => {
+    if (
+      model()?.id !== id ||
+      state() !== source ||
+      JSON.stringify(draft.draft) !== signature ||
+      !draft.enabled ||
+      committing ||
+      assistanceJob ||
+      !myTurn(source)
+    )
+      return;
+    const before = draft.current();
+    draft.draft.push(...forced.steps);
+    draft.autoCommit = forced.complete;
+    draft.selected = null;
+    draft.hint = forced.complete
+      ? "Forced continuation played."
+      : "Forced entry played. Choose your next move.";
+    draft.render();
+    ui.board.playTurn(before, forced.steps);
+    actions();
+    detailDraft();
+    persist();
+    if (forced.complete) submit().catch(showError);
+  });
 }
 function autoPlay() {
   const m = model(),
@@ -754,26 +847,154 @@ function start() {
 }
 function actions() {
   renderActions();
-  const m = model(),
-    target = undoTarget();
-  if (
-    target === null ||
-    committing ||
-    assistanceJob ||
-    opening.active ||
-    draft.draft.length ||
-    forcedTurn(state()) ||
-    m?.undoRequest ||
-    (config.mode === "online" && (!online.ready || online.pending))
-  )
-    return;
-  for (const id of ["undo", "reset-draft"]) if ($(id)) $(id).hidden = true;
-  $("actions").append(
-    button("Undo last turn", requestTakeback, "", {
-      id: "undo-turn",
-      title:
-        "Restore the last chosen checker turn. Committed dice are kept.",
-    }),
+  try {
+    const m = model(),
+      target = undoTarget();
+    if (
+      target === null ||
+      committing ||
+      assistanceJob ||
+      opening.active ||
+      draft.draft.length ||
+      forcedTurn(state()) ||
+      m?.undoRequest ||
+      (config.mode === "online" && (!online.ready || online.pending))
+    )
+      return;
+    for (const id of ["undo", "reset-draft"])
+      if ($(id)) $(id).hidden = true;
+    $("actions").prepend(
+      button("Undo last turn", requestTakeback, "", {
+        id: "undo-turn",
+        title:
+          "Restore the last chosen checker turn. Committed dice are kept.",
+      }),
+    );
+  } finally {
+    arrangeActions();
+  }
+}
+function arrangeActions() {
+  helpActions.replaceChildren();
+  for (const id of ["undo-turn", "hint", "undo", "reset-draft"]) {
+    const b = $(id);
+    if (b) helpActions.append(b);
+  }
+  if (!model()?.started || config.mode === "online") return;
+  const human =
+    config.mode === "computer" ? config.humanSide : state().turn;
+  for (const [id, label, player, choose] of [
+    ["reroll", "Reroll", human, false],
+    ...(config.mode === "computer"
+      ? [["reroll-bot", "Reroll bot", 1 - human, false]]
+      : []),
+    ["set-roll", "Set roll", human, true],
+    ...(config.mode === "computer"
+      ? [["set-bot-roll", "Set bot’s roll", 1 - human, true]]
+      : []),
+  ])
+    helpActions.append(
+      button(
+        label,
+        () =>
+          choose
+            ? choosePracticeDice(player)
+            : practiceRoll(player, cryptoDice()),
+        "ghost",
+        {
+          id,
+          disabled:
+            committing ||
+            !!assistanceJob ||
+            !practiceTarget(model(), player),
+          title:
+            "Local practice: rewind this side’s latest turn and replace its dice. The previous line stays in history.",
+        },
+      ),
+    );
+}
+async function practiceRoll(player, dice) {
+  if (config.mode === "online" || committing || assistanceJob) return;
+  stopComputer();
+  committing = true;
+  try {
+    game = replacePracticeRoll(game, player, dice);
+    feedback = null;
+    boardKey = "";
+    draft.draft = [];
+    draft.autoCommit = false;
+    if (opening.active) opening.dismiss();
+    render();
+    await persist();
+    toast("Practice roll replaced. The previous line is saved in history.");
+  } catch (e) {
+    showError(e);
+  } finally {
+    committing = false;
+    render();
+  }
+}
+function choosePracticeDice(player) {
+  const target = practiceTarget(game, player);
+  if (!target) return;
+  const wasPaused = botPaused;
+  stopComputer();
+  botPaused = true;
+  let applying = false;
+  render();
+  const pair = [0, 1].map((i) =>
+    select(
+      [1, 2, 3, 4, 5, 6].map((n) => [String(n), String(n)]),
+      String(target.state.dice[i] || 1),
+      () => {},
+    ),
+  );
+  let d;
+  d = dialog(
+    config.mode !== "computer"
+      ? "Set roll"
+      : player === config.humanSide
+        ? "Set your roll"
+        : "Set bot’s roll",
+    el(
+      "div",
+      { class: "stack" },
+      el(
+        "p",
+        {},
+        "Local practice: rewind to this side’s latest roll and replace the dice. Later moves are undone and kept in history.",
+      ),
+      el(
+        "div",
+        { class: "row" },
+        field("Die 1", pair[0]),
+        field("Die 2", pair[1]),
+      ),
+    ),
+    [
+      button(
+        "Set roll",
+        () => {
+          applying = true;
+          d.close();
+          practiceRoll(
+            player,
+            pair.map((n) => Number(n.value)),
+          );
+        },
+        "primary",
+      ),
+    ],
+  );
+  d.addEventListener(
+    "close",
+    () => {
+      if (!applying) {
+        botPaused = wasPaused;
+        render();
+      }
+    },
+    { once: true },
   );
 }
 function undoTarget() {
@@ -856,6 +1077,7 @@ async function respondTakeback(type, request) {
   }
 }
 function renderActions() {
+  helpActions.replaceChildren();
   const s = state(),
     m = model(),
     a = $("actions");
@@ -1087,11 +1309,11 @@ function renderActions() {
       );
     a.append(
       button("Undo", () => draft.undo(), "", {
-        disabled: !mine || !draft.draft.length,
+        disabled: !mine || draft.draft.length <= draft.minDraft,
         id: "undo",
       }),
       button("Reset", () => draft.reset(), "", {
-        disabled: !mine || !draft.draft.length,
+        disabled: !mine || draft.draft.length <= draft.minDraft,
         id: "reset-draft",
       }),
       button(
@@ -1412,7 +1634,7 @@ function panel() {
 }
 function eventText(e) {
   const a = e.action;
-  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : a.type + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
+  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : (a.type === "practice-roll" ? "practice roll" : a.type) + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
 }
 function detailDraft() {
   const p = $("draft-controls");
@@ -1447,6 +1669,7 @@ async function persist() {
       game,
       positionKey: positionKey(game.state),
       draft: clone(draft.draft),
+      autoCommit: draft.autoCommit === true,
       feedback,
     };
     try {
@@ -1898,6 +2121,7 @@ async function computerTurn() {
   if (
     config.mode !== "computer" ||
     !game?.started ||
+    committing ||
     botBusy ||
     opening.active ||
     botPaused ||

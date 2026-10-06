@@ -280,3 +280,78 @@ test("host can settle an old forced snapshot, but cannot choose a move for the o
     ),
   );
 });
+
+test("forced continuations distinguish mandatory prefixes, remaining choices and completed user drafts", async () => {
+  const { forcedContinuation } = await import("../core/table.mjs");
+  const s = initialState({ phase: "move", dice: [1, 2], matchLength: 0 });
+  s.points.fill(0);
+  s.points[5] = 14;
+  s.points[22] = -2;
+  s.points[18] = -13;
+  s.bar = [1, 0];
+  const prefix = forcedContinuation(s);
+  assert.deepEqual(prefix, {
+    steps: [{ from: "bar", to: 23, die: 1 }],
+    complete: false,
+  });
+  assert.deepEqual(forcedContinuation(s, prefix.steps), {
+    steps: [],
+    complete: false,
+  });
+  const race = initialState({
+    phase: "move",
+    dice: [1, 2],
+    matchLength: 0,
+  });
+  race.points.fill(0);
+  race.points[5] = 1;
+  race.points[4] = 1;
+  race.points[23] = -15;
+  race.off = [13, 0];
+  assert.deepEqual(forcedContinuation(race), {
+    steps: [],
+    complete: false,
+  });
+  const chosen = [{ from: 5, to: 4, die: 1 }];
+  assert.deepEqual(forcedContinuation(race, chosen), {
+    steps: [{ from: 4, to: 2, die: 2 }],
+    complete: true,
+  });
+  assert.deepEqual(
+    forcedContinuation(race, [...chosen, { from: 4, to: 2, die: 2 }]),
+    { steps: [], complete: false },
+  );
+});
+
+test("automatic suffixes preserve complete-turn legality across seeded games and both players", async () => {
+  const { forcedContinuation } = await import("../core/table.mjs");
+  const { legalPaths, matchingPaths } = await import("../core/rules.mjs");
+  let s = initialState({ phase: "move", dice: [3, 1] });
+  let seed = 173;
+  const next = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed;
+  };
+  for (let i = 0; i < 120; i++) {
+    if (s.phase === "over") break;
+    if (s.phase === "roll")
+      s = transition(s, {
+        type: "roll",
+        dice: [(next() % 6) + 1, (next() % 6) + 1],
+      });
+    const paths = legalPaths(s),
+      picked = paths[next() % paths.length];
+    for (let n = 0; n <= picked.steps.length; n++) {
+      const prefix = picked.steps.slice(0, n),
+        auto = forcedContinuation(s, prefix, paths);
+      assert.ok(matchingPaths(paths, [...prefix, ...auto.steps]).length);
+      if (auto.complete)
+        assert.ok(
+          matchingPaths(paths, [...prefix, ...auto.steps]).some(
+            (p) => p.steps.length === prefix.length + auto.steps.length,
+          ),
+        );
+    }
+    s = transition(s, { type: "move", steps: picked.steps });
+  }
+});

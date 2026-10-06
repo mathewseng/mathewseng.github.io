@@ -506,6 +506,8 @@ export class DraftBoard {
     this.board = board;
     this.onChange = onChange;
     this.draft = [];
+    this.minDraft = 0;
+    this.autoCommit = false;
     this.selected = null;
     this.paths = [];
     this.preferred = null;
@@ -524,6 +526,8 @@ export class DraftBoard {
     this.state = s;
     this.paths = paths;
     this.draft = [];
+    this.minDraft = 0;
+    this.autoCommit = false;
     this.selected = null;
     this.hint = "";
     this.preferred = null;
@@ -545,10 +549,19 @@ export class DraftBoard {
     );
   }
   reverseMoves() {
-    return reverseRoutes(this.state, this.paths, this.draft);
+    return reverseRoutes(this.state, this.paths, this.draft).filter(
+      (r) => r.remaining.length >= this.minDraft,
+    );
   }
   entrySwitches() {
-    return entrySwitchRoutes(this.state, this.paths, this.draft);
+    return entrySwitchRoutes(this.state, this.paths, this.draft).filter(
+      (r) =>
+        r.remaining
+          .slice(0, this.minDraft)
+          .every(
+            (s, i) => JSON.stringify(s) === JSON.stringify(this.draft[i]),
+          ),
+    );
   }
   sources() {
     return [
@@ -565,16 +578,32 @@ export class DraftBoard {
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
-  point(raw, { quick = false } = {}) {
+  point(raw, { quick = false, checkerTap = false } = {}) {
     if (!this.enabled || this.preview) return;
     this.board.cancelAnimations();
     const p = this.normalize(raw);
     this.hint = "";
     const selectedRoutes = this.routes().filter((st) => st.to === p);
-    const routes =
-      quick && !selectedRoutes.some((r) => r.undo || r.switchDie)
-        ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
-        : selectedRoutes;
+    let routes = selectedRoutes;
+    // Explicit selected destinations (especially undo/entry revisions) win.
+    if (!routes.length && quick) {
+      routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
+      if (!routes.length) {
+        const backs = this.reverseMoves().filter((r) => r.to === p);
+        const nearest = Math.min(...backs.map((r) => r.die));
+        routes = backs.filter((r) => r.die === nearest);
+      }
+    }
+    const sourceTap =
+      !routes.length && checkerTap && this.sources().includes(p);
+    if (sourceTap)
+      routes = [
+        ...checkerRoutes(this.paths, this.draft, p).filter(
+          (r) => r.steps.length === 1,
+        ),
+        ...this.reverseMoves().filter((r) => r.from === p),
+        ...this.entrySwitches().filter((r) => r.from === p),
+      ];
     // Equivalent paths with the same resulting position and consumed dice need
     // no extra confirmation. Distinct hits or different die use remain choices.
     const distinct = new Map();
@@ -601,7 +630,7 @@ export class DraftBoard {
       if (!distinct.has(key)) distinct.set(key, route);
     }
     const choices = [...distinct.values()];
-    if (choices.length) {
+    if (choices.length && (!sourceTap || choices.length === 1)) {
       const preferred = choices.filter(
         (st) =>
           !st.undo &&
@@ -761,6 +790,7 @@ export class DraftBoard {
     this.onChange();
   }
   undo() {
+    if (this.draft.length <= this.minDraft) return;
     const before = this.current(),
       step = this.draft.at(-1);
     this.preview = null;
@@ -773,11 +803,14 @@ export class DraftBoard {
   }
   reset() {
     const before = this.current(),
-      changed = this.draft.length;
+      changed = this.draft.length > this.minDraft;
     this.preview = null;
-    this.draft = [];
+    this.draft = this.draft.slice(0, this.minDraft);
+    this.autoCommit = false;
     this.selected = null;
-    this.hint = "Draft cleared. Your original position is restored.";
+    this.hint = this.minDraft
+      ? "Choices cleared. Forced steps are kept."
+      : "Draft cleared. Your original position is restored.";
     this.render();
     if (changed) this.board.animateRestore(before, this.current());
     this.onChange();
@@ -790,6 +823,10 @@ export class DraftBoard {
       ...settings(),
       selected: this.selected,
       destinations: moves.map((st) => st.to),
+      reverseTargets:
+        this.enabled && !this.preview
+          ? this.reverseMoves().map((r) => r.to)
+          : [],
       reachable:
         this.enabled && !this.preview
           ? availableRoutes(this.paths, this.draft).map((r) => r.to)

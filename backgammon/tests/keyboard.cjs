@@ -126,7 +126,9 @@ module.exports = async function keyboardUX(
     await wait(
       (s) => s.game.state.phase === "roll" && s.game.state.cube.value === 2,
     );
-    await page.keyboard.press("Space");
+    await page.keyboard.press("d");
+    assert.equal((await saved()).game.state.phase, "roll");
+    await page.keyboard.press("Enter");
     await wait((s) => s.game.events.some((e) => e.action.type === "roll"));
     // Remapping, conflicting keys, native dialog typing, disabled shortcuts and persistence.
     await page.keyboard.press("?");
@@ -166,7 +168,7 @@ module.exports = async function keyboardUX(
       ),
       "j",
     );
-    // D has the opposite meaning only while answering an offer.
+    // D only drops while answering an offer.
     await page.goto(base + "/backgammon/");
     const pendingId = await page.evaluate(async () => {
       const r = await import("/backgammon/core/rules.mjs"),
@@ -222,11 +224,28 @@ module.exports = async function keyboardUX(
       "12",
     );
     await page.keyboard.press("Escape");
+    await page.waitForFunction(
+      () => !document.querySelector(".point.selected"),
+    );
     await page.keyboard.press("?");
     await page.getByLabel("Enable game shortcuts").uncheck();
     await page.keyboard.press("Escape");
+    await page.locator(".settings-dialog").waitFor({ state: "detached" });
     await page.keyboard.press("j");
-    assert.equal(await page.locator(".point.selected").count(), 0);
+    assert.equal(
+      await page.locator(".point.selected").count(),
+      0,
+      JSON.stringify(
+        await page.evaluate(async () => ({
+          enabled: (await import("/backgammon/core/storage.mjs")).settings()
+            .keyboardEnabled,
+          selected:
+            document.querySelector(".point.selected")?.dataset.point,
+          focus: document.activeElement.tagName,
+          dialogs: document.querySelectorAll("dialog").length,
+        })),
+      ),
+    );
     await page.evaluate(async () =>
       (await import("/backgammon/core/storage.mjs")).saveSettings({
         keyboardEnabled: true,
@@ -239,8 +258,11 @@ module.exports = async function keyboardUX(
           st = await import("/backgammon/core/storage.mjs");
         const points = Array(24).fill(0);
         points[23] = -15;
-        if (kind === "bar") points[5] = 14;
-        else {
+        if (kind === "bar") {
+          points[5] = 14;
+          points[23] = 0;
+          points[11] = -15;
+        } else {
           points[0] = 1;
           points[2] = 1;
           points[5] = 1;
@@ -286,7 +308,7 @@ module.exports = async function keyboardUX(
           "bar0",
         );
       } else {
-        await page.keyboard.press("a");
+        await page.keyboard.press("b");
         assert.equal(
           (await wait((s) => s.draft.length === 1)).draft[0].to,
           "off",

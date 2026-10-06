@@ -6,6 +6,10 @@ import {
   legalTurns,
   replay,
   decisionPlayer,
+  legalPaths,
+  matchingPaths,
+  nextSteps,
+  boardKey,
 } from "./rules.mjs";
 
 const forcedCache = new WeakMap(),
@@ -19,6 +23,38 @@ export function forcedTurn(state) {
   }
   return forcedCache.get(state);
 }
+
+// Follow forced steps without choosing between genuinely different outcomes.
+// A completed user draft is left for Confirm; only an unfinished forced suffix
+// is auto-completed. Dice-order equivalents count as the same final outcome.
+export function forcedContinuation(
+  state,
+  draft = [],
+  paths = legalPaths(state),
+) {
+  let prefix = [...draft];
+  for (;;) {
+    const matches = matchingPaths(paths, prefix);
+    if (
+      !matches.length ||
+      matches.some((p) => p.steps.length === prefix.length)
+    )
+      return {
+        steps: prefix.slice(draft.length),
+        complete: prefix.length > draft.length,
+      };
+    if (new Set(matches.map((p) => boardKey(p.state))).size === 1)
+      return {
+        steps: matches[0].steps.slice(draft.length),
+        complete: true,
+      };
+    const next = nextSteps(paths, prefix);
+    if (next.length !== 1)
+      return { steps: prefix.slice(draft.length), complete: false };
+    prefix.push(next[0]);
+  }
+}
+
 function append(table, action, actor, automatic = false) {
   table.state = transition(table.state, action, actor);
   table.events.push({

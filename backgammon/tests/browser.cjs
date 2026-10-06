@@ -463,6 +463,17 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.directPlay ||= []).push(
+          await require("./direct-play.cjs")(
+            browser,
+            base,
+            out,
+            browserName,
+          ),
+        );
+        (report.practiceUX ||= []).push(
+          await require("./practice.cjs")(browser, base, out, browserName),
+        );
         (report.keyboardUX ||= []).push(
           await require("./keyboard.cjs")(browser, base, out, browserName),
         );

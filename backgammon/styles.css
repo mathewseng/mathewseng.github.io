@@ -2412,13 +2412,13 @@ button.teal-die:hover {
   }
 }
 
-/* Reachability is quiet and global; selection and landing rings remain stronger. */
+/* Reachable points stay visible before selection; amber marks draft returns. */
 .point.reachable .point-shape {
   stroke: var(--board-destination);
   stroke-width: 1;
-  stroke-opacity: 0.65;
+  stroke-opacity: 1;
   filter: drop-shadow(
-    0 0 3px color-mix(in srgb, var(--board-destination) 45%, transparent)
+    0 0 3px color-mix(in srgb, var(--board-destination) 65%, transparent)
   );
   vector-effect: non-scaling-stroke;
 }
@@ -2426,9 +2426,9 @@ button.teal-die:hover {
 .point.reachable[data-point^="off"] .point-hit {
   stroke: var(--board-destination);
   stroke-width: 1;
-  stroke-opacity: 0.65;
+  stroke-opacity: 1;
   filter: drop-shadow(
-    0 0 3px color-mix(in srgb, var(--board-destination) 45%, transparent)
+    0 0 3px color-mix(in srgb, var(--board-destination) 65%, transparent)
   );
 }
 
@@ -2484,5 +2484,375 @@ button.teal-die:hover {
   }
   .shortcut-actions {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The full point wash makes tap shortcuts visible without covering checker faces. */
+.point.reachable .point-shape {
+  stroke-width: 2;
+}
+.point.reachable .point-wash {
+  fill: color-mix(in srgb, var(--board-destination) 28%, transparent);
+}
+.point.destination .point-wash {
+  fill: color-mix(in srgb, var(--board-destination) 38%, transparent);
+}
+.point.return-destination .point-shape {
+  stroke: var(--board-undo);
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+  filter: none;
+}
+.point.return-destination .point-wash {
+  fill: color-mix(in srgb, var(--board-undo) 28%, transparent);
+  stroke: var(--board-undo);
+  stroke-width: 1.5;
+}
+.point.return-destination .landing-ring {
+  stroke: var(--board-undo);
+}
+.point.return-destination .destination-badge {
+  fill: var(--board-undo);
+}
+.point.return-destination .destination-die {
+  fill: var(--board-undo-text, #21180e);
+}
+.point.return-destination[data-point^="bar"] .point-hit {
+  stroke: var(--board-undo);
+  fill: color-mix(in srgb, var(--board-undo) 20%, transparent);
+}
+#undo-turn {
+  margin-right: auto;
+}
+
+/* A desktop game owns the first viewport. Review follows in document flow. */
+.play-review {
+  display: none;
+}
+@media (min-width: 1025px) and (min-height: 501px) {
+  .play-page.desktop-table {
+    height: 100dvh;
+    min-height: 580px;
+    max-width: none;
+    padding: 0 16px 8px;
+  }
+  .desktop-table .topbar {
+    height: 52px;
+  }
+  .desktop-table .tool-head {
+    min-height: 48px;
+  }
+  .desktop-table .tool-head h1 {
+    font-size: 17px;
+  }
+  .desktop-table .tool-head .subtitle {
+    margin-top: 1px;
+  }
+  .desktop-table .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .play-page.desktop-table .stage {
+    grid-template-rows: 24px minmax(180px, 1fr) 24px 72px;
+  }
+  .desktop-table .panel-toggle {
+    display: block;
+  }
+  .play-page.desktop-table .action-area {
+    overflow: visible;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+    align-items: center;
+    padding: 4px 0 0;
+    position: relative;
+  }
+  .desktop-table .action-message {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    padding-top: 7px;
+  }
+  .play-page.desktop-table .draft-line {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    margin-bottom: 5px;
+  }
+  .play-page.desktop-table .action-main {
+    grid-column: 2;
+    grid-row: 1;
+    position: static;
+    align-self: end;
+  }
+  .play-review:not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 40px;
+    max-width: 1360px;
+    margin: auto;
+    padding: 32px 24px;
+    border-top: 1px solid var(--line);
+  }
+  .play-review .inspector {
+    display: block;
+    max-height: none;
+    overflow: visible;
+  }
+  .play-review .panel-body {
+    overflow: visible;
+  }
+  .play-review .play-feedback {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+  .play-review .play-feedback[hidden] {
+    display: none;
+  }
+  .play-review:has(.play-feedback[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Bounded review views replace nested modal scrolling. */
+.decision-dialog[open] {
+  width: min(1440px, calc(100vw - 32px));
+  height: min(820px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: visible;
+  padding: 20px;
+  gap: 12px;
+}
+.decision-dialog .dialog-header {
+  margin: 0;
+}
+.decision-dialog .decision-tabs {
+  flex: none;
+  gap: 6px;
+}
+.decision-dialog .dialog-body {
+  overflow: visible;
+  flex: 1;
+  min-height: 0;
+}
+.decision-dialog .decision-layout {
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+  align-items: stretch;
+}
+.decision-dialog .decision-position {
+  min-height: 0;
+  gap: 8px;
+}
+.decision-dialog .decision-board {
+  flex: 1;
+  aspect-ratio: auto;
+  min-height: 0;
+}
+.decision-dialog .decision-content {
+  align-content: start;
+  gap: 10px;
+}
+.decision-dialog .decision-content h3 {
+  margin: 0;
+}
+.decision-dialog .decision-values caption {
+  margin-bottom: 6px;
+}
+.decision-dialog .decision-content .list-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.decision-dialog footer {
+  margin: 0;
+  flex-wrap: wrap;
+}
+.decision-dialog[data-review-view="board"] .decision-content,
+.decision-dialog[data-review-view="notes"] .decision-content,
+.decision-dialog[data-review-view="notes"] .decision-position {
+  display: none;
+}
+.decision-dialog[data-review-view="board"] .decision-layout,
+.decision-dialog[data-review-view="notes"] .decision-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+.decision-notes {
+  width: min(680px, 100%);
+  margin: auto;
+  align-self: center;
+}
+.review-note {
+  min-height: 140px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .decision-dialog[open] {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: none;
+    padding: 12px;
+    gap: 8px;
+  }
+  .decision-dialog .decision-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .decision-dialog[data-review-view="decision"] .decision-position {
+    display: none;
+  }
+  .decision-dialog .decision-content {
+    gap: 7px;
+  }
+  .decision-dialog .decision-content > h3 {
+    display: none;
+  }
+  .decision-dialog .decision-best {
+    font-size: 18px;
+  }
+  .decision-dialog .decision-loss {
+    font-size: 15px;
+  }
+  .decision-dialog .decision-values td,
+  .decision-dialog .decision-values th {
+    padding: 7px 3px;
+  }
+  .decision-dialog .decision-choices {
+    gap: 4px;
+  }
+  .decision-dialog .decision-choices button {
+    padding-inline: 8px;
+    font-size: 14px;
+  }
+  .decision-dialog footer button {
+    flex: 1;
+    padding-inline: 8px;
+    font-size: 14px;
+  }
+}
+
+/* Cube offers are a distinct, theme-aware secondary action. */
+#double-cube,
+#immediate-redouble {
+  color: color-mix(in srgb, var(--board-undo, #e9ad67) 45%, var(--text));
+  border-color: var(--board-undo, #e9ad67);
+  background: color-mix(in srgb, var(--board-undo, #e9ad67) 15%, var(--bg));
+  font-weight: 650;
+}
+#double-cube:hover:not(:disabled),
+#immediate-redouble:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--board-undo, #e9ad67) 25%, var(--bg));
+}
+.decision-dialog .decision-layout {
+  grid-template-rows: minmax(0, 1fr);
+}
+.decision-dialog .decision-content {
+  min-height: 0;
+}
+@media (max-height: 500px) and (min-width: 701px) {
+  .decision-dialog[open] {
+    padding: 12px;
+    gap: 6px;
+  }
+  .decision-dialog[data-review-view="decision"] .decision-position {
+    display: none;
+  }
+  .decision-dialog .decision-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .decision-dialog .decision-content {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 6px 24px;
+  }
+  .decision-dialog .decision-content > * {
+    grid-column: 1;
+  }
+  .decision-dialog .decision-content > h3 {
+    display: none;
+  }
+  .decision-dialog .decision-content > .decision-values {
+    grid-column: 2;
+    grid-row: 1 / 6;
+  }
+  .decision-dialog .decision-values th,
+  .decision-dialog .decision-values td {
+    padding: 6px 4px;
+  }
+}
+
+@media (max-width: 700px) {
+  .decision-dialog .decision-tabs button {
+    font-size: 14px;
+    padding-inline: 10px;
+  }
+}
+
+/* Practice sits left; committing a decision stays at the right edge. */
+.play-page .action-main {
+  width: 100%;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+.action-help {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.action-help:empty {
+  display: none;
+}
+.action-help button {
+  flex: 0 0 auto;
+  padding-inline: 10px;
+}
+.action-help #undo-turn {
+  margin-right: 0;
+}
+.play-page #actions {
+  justify-content: flex-end;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+@media (min-width: 1025px) and (min-height: 501px) {
+  .play-page.desktop-table .action-area {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 22px 46px;
+    gap: 0 16px;
+  }
+  .desktop-table .action-message {
+    grid-row: 1;
+    padding: 0;
+  }
+  .play-page.desktop-table .draft-line {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: start;
+    margin: 0;
+    text-align: right;
+  }
+  .play-page.desktop-table .action-main {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    padding: 0;
+  }
+}
+@media (max-width: 1024px), (max-height: 500px) {
+  .play-page .action-main {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    grid-column: 1 / -1;
+    gap: 5px;
+  }
+  .play-page #actions {
+    width: 100%;
+  }
+  .action-help {
+    width: 100%;
+    padding-bottom: 3px;
   }
 }

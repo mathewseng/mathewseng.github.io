@@ -21,7 +21,7 @@ export const SHORTCUTS = [
     keys: [key],
     phases: ["move"],
   })),
-  { id: "bar", label: "Select bar", keys: ["b"], phases: ["move"] },
+  { id: "bar", label: "Bar / bear off", keys: ["b"], phases: ["move"] },
   { id: "off", label: "Bear off", keys: ["a"], phases: ["move"] },
   {
     id: "undo",
@@ -33,7 +33,7 @@ export const SHORTCUTS = [
   {
     id: "double",
     label: "Offer double",
-    keys: ["c", "d"],
+    keys: ["c"],
     phases: ["roll"],
   },
   { id: "drop", label: "Drop cube offer", keys: ["d"], phases: ["double"] },
@@ -41,20 +41,20 @@ export const SHORTCUTS = [
   {
     id: "redouble",
     label: "Beaver / raccoon",
-    keys: ["v"],
+    keys: ["c"],
     phases: ["double"],
   },
   {
     id: "roll",
     label: "Roll dice",
-    keys: ["Space"],
+    keys: ["Space", "Enter"],
     phases: ["roll", "opening"],
   },
   {
     id: "confirm",
     label: "Confirm / begin / next game",
     keys: ["Enter"],
-    phases: ["setup", "opening", "move", "over"],
+    phases: ["setup", "move", "over"],
   },
   { id: "hint", label: "Hint", keys: ["h"], phases: ["move"] },
   { id: "swap", label: "Prefer other die", keys: ["s"], phases: ["move"] },
@@ -110,6 +110,23 @@ export function shortcutErrors(bindings) {
   return errors;
 }
 export function normalizeShortcuts(value) {
+  if (
+    value &&
+    SHORTCUTS.every(
+      (d) =>
+        JSON.stringify(value[d.id]) ===
+        JSON.stringify(
+          d.id === "double"
+            ? ["c", "d"]
+            : d.id === "redouble"
+              ? ["v"]
+              : d.id === "roll"
+                ? ["Space"]
+                : d.keys,
+        ),
+    )
+  )
+    value = null;
   const bindings = Object.fromEntries(
     SHORTCUTS.map((d) => [
       d.id,

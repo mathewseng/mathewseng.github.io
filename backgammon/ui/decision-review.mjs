@@ -39,6 +39,102 @@ export function decisionReview(
     ),
   );
   d.classList.add("decision-dialog");
+  const views = el("div", {
+    class: "row decision-tabs",
+    "aria-label": "Review view",
+  });
+  const notes = el("div", { class: "decision-notes", hidden: true });
+  const layout = d.querySelector(".decision-layout");
+  layout.append(notes);
+  let explicitView = false,
+    hintResult = false;
+  const narrow = matchMedia("(max-width: 700px)");
+  const setView = (view) => {
+    d.dataset.reviewView = view;
+    notes.hidden = view !== "notes";
+    views
+      .querySelectorAll("button")
+      .forEach((b) =>
+        b.setAttribute("aria-pressed", b.dataset.view === view),
+      );
+  };
+  for (const [view, label] of [
+    ["board", "Board"],
+    ["decision", "Comparison"],
+    ["notes", "Details"],
+  ])
+    views.append(
+      button(
+        label,
+        () => {
+          explicitView = true;
+          setView(view);
+        },
+        "",
+        {
+          "data-view": view,
+          disabled: view === "notes",
+        },
+      ),
+    );
+  d.querySelector(".dialog-header").after(views);
+  setView("decision");
+  const defaultView = () => {
+    if (!explicitView)
+      setView(narrow.matches && hintResult ? "board" : "decision");
+  };
+  narrow.addEventListener("change", defaultView);
+  d.addEventListener(
+    "close",
+    () => narrow.removeEventListener("change", defaultView),
+    { once: true },
+  );
+  const paginateNotes = () => {
+    views.querySelector('[data-view="notes"]').disabled = false;
+    const pages = [...body.querySelectorAll(".decision-values > p")];
+    pages.push(
+      ...[...body.children].filter(
+        (n) =>
+          n.tagName === "DETAILS" ||
+          n.classList.contains("list") ||
+          (n.tagName === "P" &&
+            n.classList.contains("muted") &&
+            !n.textContent.includes("ply ·")),
+      ),
+    );
+    for (const node of pages) node.remove();
+    const content = el("div", { class: "review-note" });
+    const count = el("span", {
+      class: "muted small",
+      "aria-live": "polite",
+    });
+    let index = 0;
+    const update = () => {
+      const note = pages[index];
+      if (note?.tagName === "DETAILS") note.open = true;
+      content.replaceChildren(
+        ...(note ? [note] : [el("p", {}, "No additional details.")]),
+      );
+      count.textContent = `${index + 1} / ${Math.max(1, pages.length)}`;
+      prev.disabled = index === 0;
+      next.disabled = index >= pages.length - 1;
+    };
+    const prev = button("Previous", () => {
+      index--;
+      update();
+    });
+    const next = button("Next", () => {
+      index++;
+      update();
+    });
+    notes.replaceChildren(
+      el("h3", {}, "How to read this result"),
+      content,
+      el("div", { class: "row spread" }, prev, count, next),
+    );
+    update();
+  };
+
   const board = new Board(slot);
   const show = (steps, label, animate = false) => {
     const after = steps.reduce((s, step) => applyStep(s, step), source);
@@ -93,6 +189,8 @@ export function decisionReview(
       );
     },
     result(result) {
+      hintResult = result.type !== "cube" && !result.actual;
+      defaultView();
       if (result.type === "cube") {
         const f = decisionFeedback(result, source);
         const showCube = (choice, label) => {
@@ -169,6 +267,7 @@ export function decisionReview(
             `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s. Evaluation estimates, not rollouts.`,
           ),
         );
+        paginateNotes();
         showCube(null, "Position");
         return;
       }
@@ -265,6 +364,7 @@ export function decisionReview(
           ),
         ),
       );
+      paginateNotes();
       show(best.steps, "Best move", true);
     },
   };

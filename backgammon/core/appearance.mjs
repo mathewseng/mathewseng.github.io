@@ -7,10 +7,23 @@ export const COLOR_GROUPS = [
   },
   {
     name: "Points & labels",
-    keys: ["pointA", "pointB", "numbers", "barLabel", "trayLabel", "caption"],
+    keys: [
+      "pointA",
+      "pointB",
+      "numbers",
+      "barLabel",
+      "trayLabel",
+      "caption",
+    ],
   },
-  { name: "Ivory checkers", keys: ["checker0", "rim0", "detail0", "count0"] },
-  { name: "Teal checkers", keys: ["checker1", "rim1", "detail1", "count1"] },
+  {
+    name: "Ivory checkers",
+    keys: ["checker0", "rim0", "detail0", "count0"],
+  },
+  {
+    name: "Teal checkers",
+    keys: ["checker1", "rim1", "detail1", "count1"],
+  },
   {
     name: "Dice",
     keys: ["die0", "pips0", "dieBorder0", "die1", "pips1", "dieBorder1"],
@@ -23,6 +36,8 @@ export const COLOR_GROUPS = [
       "selection",
       "destination",
       "destinationText",
+      "undo",
+      "undoText",
       "hover",
       "focus",
     ],
@@ -61,6 +76,8 @@ export const COLOR_LABELS = {
   selection: "Selected checker",
   destination: "Legal destinations",
   destinationText: "Destination die numbers",
+  undo: "Undo destinations",
+  undoText: "Undo destination labels",
   hover: "Hover feedback",
   focus: "Keyboard focus",
 };
@@ -97,6 +114,8 @@ const slate = {
   selection: "#B6EEE0",
   destination: "#B6EEE0",
   destinationText: "#172126",
+  undo: "#E9AD67",
+  undoText: "#21180E",
   hover: "#A8D7CC",
   focus: "#E1FBA7",
 };
@@ -105,11 +124,31 @@ function preset(id, name, description, colors = {}) {
     id,
     name,
     description,
-    colors: Object.freeze({ ...slate, ...colors }),
+    colors: Object.freeze({
+      ...slate,
+      ...colors,
+      undo:
+        contrastRatio("#E9AD67", colors.surface || slate.surface) >= 3
+          ? "#E9AD67"
+          : "#874800",
+      undoText:
+        contrastRatio("#E9AD67", colors.surface || slate.surface) >= 3
+          ? "#21180E"
+          : "#FFFFFF",
+    }),
   });
 }
 // Additional palettes use the same tested hierarchy, with distinct surfaces and sides.
-function cleanPreset(id, name, light, frame, surface, pointA, pointB, accent) {
+function cleanPreset(
+  id,
+  name,
+  light,
+  frame,
+  surface,
+  pointA,
+  pointB,
+  accent,
+) {
   const text = light ? "#25322E" : "#EEEFE7",
     ink = light ? "#FFFFFF" : "#13221D";
   const highlight = light ? "#163E79" : "#F5D47E";
@@ -562,14 +601,21 @@ export function normalizeHex(value) {
   if (!/^(?:[\da-f]{3}|[\da-f]{6})$/i.test(hex)) return null;
   return (
     "#" +
-    (hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex).toUpperCase()
+    (hex.length === 3
+      ? [...hex].map((c) => c + c).join("")
+      : hex
+    ).toUpperCase()
   );
 }
 export function normalizeBoardTheme(value) {
   const base =
     BOARD_PRESETS.find((p) => p.id === value?.preset) || BOARD_PRESETS[0];
   const colors = {};
-  if (value?.version === 1 && value.colors && typeof value.colors === "object")
+  if (
+    value?.version === 1 &&
+    value.colors &&
+    typeof value.colors === "object"
+  )
     for (const key of Object.keys(COLOR_LABELS)) {
       const color = normalizeHex(value.colors[key]);
       if (color && color !== base.colors[key]) colors[key] = color;
@@ -622,7 +668,8 @@ export function boardPalette(value) {
 }
 export const colorProperty = (key) =>
   "--board-" + key.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
-export const boardColor = (key) => `var(${colorProperty(key)}, ${slate[key]})`;
+export const boardColor = (key) =>
+  `var(${colorProperty(key)}, ${slate[key]})`;
 export function applyBoardTheme(value, node = document.documentElement) {
   const theme = normalizeBoardTheme(value),
     palette = boardPalette(theme);
@@ -755,6 +802,8 @@ export function paletteWarnings(palette) {
     warnings.push("The two point colors are difficult to distinguish.");
   for (const key of ["source", "selection", "destination", "focus"])
     if (contrastRatio(palette[key], palette.surface) < 3)
-      warnings.push(`${COLOR_LABELS[key]} has low contrast against the board.`);
+      warnings.push(
+        `${COLOR_LABELS[key]} has low contrast against the board.`,
+      );
   return warnings;
 }

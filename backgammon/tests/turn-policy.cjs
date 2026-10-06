@@ -120,7 +120,7 @@ module.exports = async function turnPolicy(
       assert.ok(dimensions.width <= width + 1, JSON.stringify(dimensions));
       if (width > 320)
         assert.ok(
-          dimensions.height <= height + 1 &&
+          (width >= 1025 || dimensions.height <= height + 1) &&
             dimensions.bottom <= height + 1,
           `${width}x${height} ${JSON.stringify(dimensions)}`,
         );

@@ -21,7 +21,8 @@ export const decisionPlayer = (s) =>
       : s.turn;
 export const offerDepth = (s) =>
   s.pending?.depth === undefined ? 0 : s.pending.depth;
-export const offerName = (s) => ["Double", "Beaver", "Raccoon"][offerDepth(s)];
+export const offerName = (s) =>
+  ["Double", "Beaver", "Raccoon"][offerDepth(s)];
 export function canImmediateRedouble(s) {
   return (
     s.phase === "double" &&
@@ -34,7 +35,11 @@ export function ruleSummary(s) {
   const r = rulesOf(s);
   return [
     r.cube ? "Cube" : "No cube",
-    s.matchLength ? "Crawford" : r.jacoby ? "Jacoby" : "Gammons always count",
+    s.matchLength
+      ? "Crawford"
+      : r.jacoby
+        ? "Jacoby"
+        : "Gammons always count",
     !s.matchLength && r.automaticDoubles
       ? `Opening doubles ×${r.automaticDoubles}`
       : null,
@@ -87,14 +92,17 @@ export function initialState(options = {}) {
 }
 export function errors(s) {
   const e = [];
-  const whole = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+  const whole = (v, min, max) =>
+    Number.isInteger(v) && v >= min && v <= max;
   if (!s || s.version !== 1) return ["Unsupported position version."];
   if (
     !Array.isArray(s.points) ||
     s.points.length !== 24 ||
     s.points.some((n) => !whole(n, -15, 15))
   )
-    e.push("Points must contain 24 integer checker counts between −15 and 15.");
+    e.push(
+      "Points must contain 24 integer checker counts between −15 and 15.",
+    );
   for (const field of ["bar", "off", "scores"])
     if (
       !Array.isArray(s[field]) ||
@@ -116,7 +124,9 @@ export function errors(s) {
     }
   if (![0, 1].includes(s.turn)) e.push("Choose the player on turn.");
   if (
-    !["opening", "roll", "move", "double", "resign", "over"].includes(s.phase)
+    !["opening", "roll", "move", "double", "resign", "over"].includes(
+      s.phase,
+    )
   )
     e.push("Unknown turn phase.");
   if (
@@ -135,7 +145,9 @@ export function errors(s) {
     !whole(s.cube.value, 1, 1024) ||
     !Number.isInteger(Math.log2(s.cube.value))
   )
-    e.push("Cube must be a power of two, from 1 to 1024, with a valid owner.");
+    e.push(
+      "Cube must be a power of two, from 1 to 1024, with a valid owner.",
+    );
   else if (s.cube.value === 1 && s.cube.owner !== null)
     e.push("The initial cube must be centered.");
   else if (s.cube.value > 1 && s.cube.owner === null && s.matchLength)
@@ -157,7 +169,9 @@ export function errors(s) {
     );
   else if (
     (s.matchLength || !s.rules.cube) &&
-    (s.rules.jacoby || s.rules.automaticDoubles || s.rules.immediateRedoubles)
+    (s.rules.jacoby ||
+      s.rules.automaticDoubles ||
+      s.rules.immediateRedoubles)
   )
     e.push(
       "Jacoby, automatic doubles, beavers and raccoons require an unlimited session with the cube enabled.",
@@ -167,7 +181,10 @@ export function errors(s) {
     (s.cube?.value !== 1 || s.cube?.owner !== null)
   )
     e.push("A game without the cube must use a centered cube of 1.");
-  if (typeof s.crawford !== "boolean" || typeof s.crawfordPlayed !== "boolean")
+  if (
+    typeof s.crawford !== "boolean" ||
+    typeof s.crawfordPlayed !== "boolean"
+  )
     e.push("Crawford state is required.");
   if (
     s.crawford &&
@@ -183,7 +200,9 @@ export function errors(s) {
   )
     e.push("An active match cannot have a score at or above its length.");
   if (s.crawford && s.crawfordPlayed)
-    e.push("The current Crawford game cannot also be marked already played.");
+    e.push(
+      "The current Crawford game cannot also be marked already played.",
+    );
   if (s.off?.every((n) => n === 15))
     e.push("Both players cannot have finished.");
   if (!whole(s.sequence, 0, 1000000) || !whole(s.gameNumber, 1, 10000))
@@ -266,7 +285,8 @@ export function stepsForDie(s, die, p = s.turn) {
     if (from === "bar" || !home) return [];
     const d = distance(from, p);
     return die === d ||
-      (die > d && !s.points.some((v, i) => v * sg > 0 && distance(i, p) > d))
+      (die > d &&
+        !s.points.some((v, i) => v * sg > 0 && distance(i, p) > d))
       ? [{ from, to: "off", die }]
       : [];
   });
@@ -420,6 +440,13 @@ export function transition(source, action, actor = source.turn) {
       s.dice = [...action.dice];
       s.phase = "move";
       break;
+    case "practice-roll":
+      if (!["roll", "move"].includes(s.phase))
+        throw new Error("Practice dice need a checker turn.");
+      checkDice(action.dice);
+      s.dice = [...action.dice];
+      s.phase = "move";
+      break;
     case "move": {
       if (s.phase !== "move") throw new Error("Roll before moving.");
       const b = commitTurn(s, action.steps);
@@ -486,11 +513,13 @@ export function transition(source, action, actor = source.turn) {
       s.phase = "resign";
       break;
     case "accept":
-      if (s.phase !== "resign") throw new Error("No resignation to accept.");
+      if (s.phase !== "resign")
+        throw new Error("No resignation to accept.");
       finish(s, actor, s.pending.level, "resignation");
       break;
     case "reject":
-      if (s.phase !== "resign") throw new Error("No resignation to reject.");
+      if (s.phase !== "resign")
+        throw new Error("No resignation to reject.");
       s.phase = s.pending.phase;
       s.pending = null;
       break;
@@ -503,7 +532,9 @@ export function transition(source, action, actor = source.turn) {
         matchLength: s.matchLength,
         rules: clone(s.rules),
         crawford:
-          !!s.matchLength && !played && s.scores.includes(s.matchLength - 1),
+          !!s.matchLength &&
+          !played &&
+          s.scores.includes(s.matchLength - 1),
         crawfordPlayed: played,
         gameNumber: s.gameNumber + 1,
         sequence: s.sequence + 1,

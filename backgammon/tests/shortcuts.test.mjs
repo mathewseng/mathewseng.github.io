@@ -17,7 +17,7 @@ test("default keys cover visible points and context-dependent cube actions witho
       shortcutAction(DEFAULT_SHORTCUTS, key, "move"),
       `bottom${i}`,
     );
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "roll"), "double");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "roll"), null);
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "double"), "drop");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "t", "double"), "take");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "t", "move"), "bottom4");
@@ -57,4 +57,25 @@ test("shifted point keys retain quick-play mapping and preserve help, named keys
     ["Enter", "Enter"],
   ])
     assert.equal(keyForEvent({ key, shiftKey: true }), want);
+});
+
+test("revised defaults migrate untouched bindings and retain user customizations", () => {
+  assert.equal(
+    shortcutAction(DEFAULT_SHORTCUTS, "c", "double"),
+    "redouble",
+  );
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "Enter", "roll"), "roll");
+  assert.equal(
+    shortcutAction(DEFAULT_SHORTCUTS, "Enter", "opening"),
+    "roll",
+  );
+  const old = {
+    ...structuredClone(DEFAULT_SHORTCUTS),
+    double: ["c", "d"],
+    redouble: ["v"],
+    roll: ["Space"],
+  };
+  assert.deepEqual(normalizeShortcuts(old), DEFAULT_SHORTCUTS);
+  old.top0 = ["j"];
+  assert.deepEqual(normalizeShortcuts(old), old);
 });

@@ -76,6 +76,8 @@ export function validateSession(s) {
     (s.started && s.players.length !== 2)
   )
     throw new Error("Invalid seats or recovery metadata.");
+  if (s.events.some((e) => e.action?.type === "practice-roll"))
+    throw new Error("Practice dice are not permitted in online rooms.");
   assertState(s.state);
   validateTakebacks(s);
   if (
@@ -220,6 +222,8 @@ export function accept(
       }
     } else {
       if (!s.started) throw new Error("The room has not started.");
+      if (action.type === "practice-roll")
+        throw new Error("Practice dice are not permitted in online rooms.");
       if (["opening", "roll"].includes(action.type)) {
         if (action.dice) throw new Error("Only the host supplies dice.");
         action.dice =

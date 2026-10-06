@@ -94,7 +94,12 @@ export function lastMove(game) {
     return null;
   for (let index = game.events.length - 1; index >= 0; index--) {
     const event = game.events[index];
-    if (["opening", "roll", "next"].includes(event.action.type)) break;
+    if (
+      ["opening", "roll", "practice-roll", "next"].includes(
+        event.action.type,
+      )
+    )
+      break;
     if (event.action.type !== "move") continue;
     if (event.actor === game.state.turn) return null;
     const counts = new Map(),
@@ -111,7 +116,7 @@ export function lastMove(game) {
     let dice = game.initial?.dice || [];
     for (let i = index - 1; i >= 0; i--) {
       const action = game.events[i].action;
-      if (["opening", "roll"].includes(action.type)) {
+      if (["opening", "roll", "practice-roll"].includes(action.type)) {
         dice = action.dice;
         break;
       }

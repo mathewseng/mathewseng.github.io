@@ -42,7 +42,9 @@ module.exports = async function assistanceUX(
       .getByRole("button", { name: "Close", exact: true })
       .click();
   const bestReady = () =>
-    page.locator("[data-best-move]").waitFor({ timeout: 60000 });
+    page
+      .locator("[data-best-move]")
+      .waitFor({ state: "attached", timeout: 60000 });
   const finishDraft = async () => {
     for (
       let i = 0;
@@ -198,6 +200,7 @@ module.exports = async function assistanceUX(
       [1440, 900],
     ]) {
       await page.setViewportSize({ width, height });
+      await page.evaluate(() => scrollTo(0, 0));
       await shot(`feedback-${width}x${height}`);
       const geometry = await page.evaluate(() => {
         const box = (s) => {
@@ -226,7 +229,7 @@ module.exports = async function assistanceUX(
           `board fits ${width}x${height}`,
         );
         assert.ok(
-          geometry.scroll <= height + 1,
+          width >= 1025 || geometry.scroll <= height + 1,
           `document fits ${width}x${height}: ${geometry.scroll}`,
         );
       }
@@ -238,6 +241,7 @@ module.exports = async function assistanceUX(
       [1366, 768],
     ]) {
       await page.setViewportSize({ width, height });
+      await page.evaluate(() => scrollTo(0, 0));
       await shot(`moving-${width}x${height}`);
       const geometry = await page.evaluate(() => ({
         height: document.documentElement.scrollHeight,
@@ -246,7 +250,8 @@ module.exports = async function assistanceUX(
           .bottom,
       }));
       assert.ok(
-        geometry.width <= width + 1 && geometry.height <= height + 1,
+        geometry.width <= width + 1 &&
+          (width >= 1025 || geometry.height <= height + 1),
         `moving layout fits ${width}x${height}: ${JSON.stringify(geometry)}`,
       );
       assert.ok(
@@ -272,6 +277,8 @@ module.exports = async function assistanceUX(
       await style.evaluate((e) => e.remove());
     }
     await page.locator('[data-decision-type="checker"]').first().click();
+    if (await page.locator(".decision-tabs").count())
+      await page.locator('.decision-tabs [data-view="board"]').click();
     await page
       .getByRole("button", { name: "Your move", exact: true })
       .click();

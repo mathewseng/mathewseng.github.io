@@ -58,8 +58,8 @@ export function checkerPosition(s, point, player, orientation = 0) {
   return {
     x: g.x + 30,
     y: g.top
-      ? 65 + (Math.min(n, 5) - 1) * 40
-      : 595 - (Math.min(n, 5) - 1) * 40,
+      ? 65 + (Math.min(n, 4) - 1) * 54
+      : 595 - (Math.min(n, 4) - 1) * 54,
   };
 }
 // Original top-stack slots, compressed exactly like the live checker stacks.
@@ -72,7 +72,7 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
     const point = key === "bar" ? key : Number(key),
       slots = new Map();
     for (let i = before - count; i < before; i++) {
-      const slot = point === "bar" ? 0 : Math.min(i, 4);
+      const slot = point === "bar" ? 0 : Math.min(i, 3);
       slots.set(slot, (slots.get(slot) || 0) + 1);
     }
     for (const [slot, n] of slots) {
@@ -83,8 +83,8 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
         x: g ? g.x + 30 : 408,
         y: g
           ? g.top
-            ? 65 + slot * 40
-            : 595 - slot * 40
+            ? 65 + slot * 54
+            : 595 - slot * 54
           : lastMove.player !== orientation
             ? 100
             : 506,
@@ -255,14 +255,21 @@ export class Board {
       if (p) {
         const raw = this.decode(p.dataset.point);
         const pos = this.coordinates(e.clientX, e.clientY);
-        const quick =
+        const own =
           typeof raw === "number"
-            ? pointGeometry(raw, this.options.orientation).top
-              ? pos.y >= 250
-              : pos.y <= 410
-            : raw === `off${this.state.turn}` &&
-              this.renderOptions.reachable?.includes("off");
-        this.onPoint(raw, { quick });
+            ? Math.sign(this.state.points[raw]) ===
+              (this.state.turn ? -1 : 1)
+            : raw === `bar${this.state.turn}`;
+        const checkerTap =
+          own &&
+          [...p.querySelectorAll(".checker > circle:first-child")].some(
+            (c) =>
+              Math.hypot(
+                pos.x - Number(c.getAttribute("cx")),
+                pos.y - Number(c.getAttribute("cy")),
+              ) <= 25,
+          );
+        this.onPoint(raw, { quick: !checkerTap, checkerTap });
       }
     });
     this.svg.addEventListener("pointerdown", (e) => {
@@ -271,6 +278,18 @@ export class Board {
         return;
       const p = e.target.closest("[data-point]");
       if (!p?.classList.contains("movable")) return;
+      const pos = this.coordinates(e.clientX, e.clientY);
+      if (
+        !p.dataset.point.startsWith("off") &&
+        ![...p.querySelectorAll(".checker > circle:first-child")].some(
+          (c) =>
+            Math.hypot(
+              pos.x - Number(c.getAttribute("cx")),
+              pos.y - Number(c.getAttribute("cy")),
+            ) <= 25,
+        )
+      )
+        return;
       this.pointer = {
         id: e.pointerId,
         raw: this.decode(p.dataset.point),
@@ -447,7 +466,7 @@ export class Board {
       if (consumed) used.splice(used.indexOf(value), 1);
       const clickable =
         interactive && chooseDie && !consumed && values.length === 2;
-      const x = center + (i - (values.length - 1) / 2) * 82;
+      const x = center + (i - (values.length - 1) / 2) * 72;
       const die = svg("g", {
         transform: `translate(${x} 330)`,
         "data-die": value,
@@ -459,10 +478,10 @@ export class Board {
           : {}),
       });
       const face = svg("rect", {
-        x: -36,
-        y: -36,
-        width: 72,
-        height: 72,
+        x: -31,
+        y: -31,
+        width: 62,
+        height: 62,
         rx: 11,
         fill: boardColor(`die${s.turn}`),
         stroke: boardColor(`dieBorder${s.turn}`),
@@ -473,9 +492,9 @@ export class Board {
       for (const pip of pips[value])
         body.append(
           svg("circle", {
-            cx: ((pip % 3) - 1) * 21,
-            cy: (Math.floor(pip / 3) - 1) * 21,
-            r: value === 1 ? 9 : 7.3,
+            cx: ((pip % 3) - 1) * 18,
+            cy: (Math.floor(pip / 3) - 1) * 18,
+            r: 6.5,
             fill: boardColor(`pips${s.turn}`),
             "pointer-events": "none",
           }),
@@ -837,8 +856,8 @@ export class Board {
       s.cube.owner === null
         ? 330
         : s.cube.owner === this.options.orientation
-          ? 432
-          : 228;
+          ? 354
+          : 306;
     const offset = cy(before) - cy(this.state);
     const animation = cube.animate(
       [
@@ -862,6 +881,7 @@ export class Board {
       selected = null,
       destinations = [],
       reachable = [],
+      reverseTargets = [],
       sources = [],
       moves = [],
       interactive = true,
@@ -892,6 +912,7 @@ export class Board {
       selected,
       destinations,
       reachable,
+      reverseTargets,
       sources,
       moves,
       interactive,
@@ -961,7 +982,7 @@ export class Board {
           n && (v > 0 ? 0 : 1) === lastMove?.player
             ? Math.min(n, lastMove.points[p] || 0)
             : 0;
-      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? ", reachable: tap the inner tip or press Shift+Enter to move nearest checker" : ""}${
+      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
         destinations.includes(p)
           ? ", legal destination, dice " +
             moves
@@ -983,7 +1004,7 @@ export class Board {
         "aria-label": label,
         "aria-disabled": !interactive,
         "aria-pressed": selected === p,
-        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
+        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${(reverseTargets.includes(p) && !reachable.includes(p)) || moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
       });
       if (moved) g.setAttribute("data-last-moved", moved);
       g.append(
@@ -1007,7 +1028,12 @@ export class Board {
         }),
       );
       g.append(patternOverlay(g.lastChild, p % 2 ? "pointB" : "pointA"));
-      if (destinations.includes(p) || selected === p)
+      if (
+        destinations.includes(p) ||
+        reachable.includes(p) ||
+        reverseTargets.includes(p) ||
+        selected === p
+      )
         g.append(
           svg("rect", {
             x: x + 3,
@@ -1037,15 +1063,15 @@ export class Board {
         );
       for (const ghost of ghosts.filter((ghost) => ghost.point === p))
         g.append(originGhost(ghost, lastMove.player));
-      for (let i = 0; i < Math.min(n, 5); i++)
+      for (let i = 0; i < Math.min(n, 4); i++)
         g.append(
           checker(
             x + 30,
-            top ? 65 + i * 40 : 595 - i * 40,
+            top ? 65 + i * 54 : 595 - i * 54,
             v > 0 ? 0 : 1,
-            i === 4 && n > 5 ? n : 1,
+            i === 3 && n > 4 ? n : 1,
             compact,
-            moved > 0 && (i === 4 || i >= n - moved),
+            moved > 0 && (i === 3 || i >= n - moved),
           ),
         );
       if (destinations.includes(p))
@@ -1056,13 +1082,17 @@ export class Board {
             width: 52,
             height: 38,
             rx: 19,
+            class: "destination-badge",
             fill: boardColor("destination"),
             stroke: boardColor("surface"),
             "stroke-width": 2,
             "pointer-events": "none",
           }),
         );
-      if (destinations.includes(p)) {
+      if (
+        destinations.includes(p) &&
+        !(n >= 4 && Math.sign(v) === (s.turn ? -1 : 1))
+      ) {
         const next = { ...s, points: [...s.points] };
         next.points[p] =
           Math.sign(v) === (s.turn ? -1 : 1)
@@ -1184,6 +1214,7 @@ export class Board {
             y: top ? 255 : 390,
             width: 36,
             height: 38,
+            class: "destination-badge",
             rx: 12,
             fill: boardColor("destination"),
             "pointer-events": "none",
@@ -1275,22 +1306,6 @@ export class Board {
             s.off[p],
           ),
         );
-      if (destinations.includes("off") && s.turn === p)
-        off.append(
-          svg(
-            "text",
-            {
-              x: 843,
-              y: top ? 330 : 339,
-              "text-anchor": "middle",
-              fill: boardColor("destination"),
-              "font-size": 30,
-              "font-weight": 700,
-              "pointer-events": "none",
-            },
-            "↓",
-          ),
-        );
       children.push(off);
     }
     if (s.rules.cube) {
@@ -1298,15 +1313,15 @@ export class Board {
         s.cube.owner === null
           ? 330
           : s.cube.owner === orientation
-            ? 432
-            : 228;
+            ? 354
+            : 306;
       const cube = svg("g", {
         class: "board-cube",
         "aria-label": `Doubling cube ${s.cube.value}`,
       });
       cube.append(
         svg("rect", {
-          x: 390,
+          x: 825,
           y: cy - 18,
           width: 36,
           height: 36,
@@ -1318,7 +1333,7 @@ export class Board {
         svg(
           "text",
           {
-            x: 408,
+            x: 843,
             y: cy + 7,
             "text-anchor": "middle",
             "font-size": 19,
