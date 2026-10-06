@@ -4,6 +4,11 @@ import { reducedMotion, checkerFlight } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 const NS = "http://www.w3.org/2000/svg";
+const STACK_LIMIT = 5,
+  CHECKER_RADIUS = 22;
+// Five touching discs fit between the frame and the destination-label lane.
+const stackY = (top, slot) =>
+  top ? 54 + slot * CHECKER_RADIUS * 2 : 606 - slot * CHECKER_RADIUS * 2;
 function svg(tag, attrs = {}, text) {
   const n = document.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
@@ -57,9 +62,7 @@ export function checkerPosition(s, point, player, orientation = 0) {
     n = Math.max(1, Math.abs(s.points[point]));
   return {
     x: g.x + 30,
-    y: g.top
-      ? 65 + (Math.min(n, 4) - 1) * 54
-      : 595 - (Math.min(n, 4) - 1) * 54,
+    y: stackY(g.top, Math.min(n, STACK_LIMIT) - 1),
   };
 }
 // Original top-stack slots, compressed exactly like the live checker stacks.
@@ -72,7 +75,7 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
     const point = key === "bar" ? key : Number(key),
       slots = new Map();
     for (let i = before - count; i < before; i++) {
-      const slot = point === "bar" ? 0 : Math.min(i, 3);
+      const slot = point === "bar" ? 0 : Math.min(i, STACK_LIMIT - 1);
       slots.set(slot, (slots.get(slot) || 0) + 1);
     }
     for (const [slot, n] of slots) {
@@ -82,9 +85,7 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
         count: n,
         x: g ? g.x + 30 : 408,
         y: g
-          ? g.top
-            ? 65 + slot * 54
-            : 595 - slot * 54
+          ? stackY(g.top, slot)
           : lastMove.player !== orientation
             ? 100
             : 506,
@@ -104,7 +105,7 @@ function originGhost({ x, y, count }, player) {
     svg("circle", {
       cx: x,
       cy: y,
-      r: 24,
+      r: CHECKER_RADIUS,
       fill: boardColor(`checker${player}`),
       opacity: 0.16,
     }),
@@ -117,7 +118,7 @@ function originGhost({ x, y, count }, player) {
       svg("circle", {
         cx: x,
         cy: y,
-        r: 28,
+        r: CHECKER_RADIUS + 4,
         fill: "none",
         stroke: boardColor(color),
         "stroke-width": width,
@@ -146,7 +147,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
     svg("circle", {
       cx: x,
       cy: y,
-      r: 24,
+      r: CHECKER_RADIUS,
       fill: boardColor(`checker${p}`),
       stroke: boardColor(`rim${p}`),
       "stroke-width": 2,
@@ -157,7 +158,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
     svg("circle", {
       cx: x,
       cy: y,
-      r: 18,
+      r: CHECKER_RADIUS - 6,
       fill: "none",
       stroke: boardColor(`detail${p}`),
       "stroke-width": 1.5,
@@ -188,7 +189,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
         svg("circle", {
           cx: x,
           cy: y,
-          r: 26,
+          r: CHECKER_RADIUS + 2,
           fill: "none",
           stroke: boardColor(color),
           "stroke-width": width,
@@ -267,7 +268,8 @@ export class Board {
               Math.hypot(
                 pos.x - Number(c.getAttribute("cx")),
                 pos.y - Number(c.getAttribute("cy")),
-              ) <= 25,
+              ) <=
+              CHECKER_RADIUS + 1,
           );
         this.onPoint(raw, { quick: !checkerTap, checkerTap });
       }
@@ -286,7 +288,8 @@ export class Board {
             Math.hypot(
               pos.x - Number(c.getAttribute("cx")),
               pos.y - Number(c.getAttribute("cy")),
-            ) <= 25,
+            ) <=
+            CHECKER_RADIUS + 1,
         )
       )
         return;
@@ -745,7 +748,7 @@ export class Board {
     const ring = svg("circle", {
       cx: position.x,
       cy: position.y,
-      r: 27,
+      r: CHECKER_RADIUS + 3,
       class: "landing-contact",
       "pointer-events": "none",
       "aria-hidden": "true",
@@ -1063,15 +1066,15 @@ export class Board {
         );
       for (const ghost of ghosts.filter((ghost) => ghost.point === p))
         g.append(originGhost(ghost, lastMove.player));
-      for (let i = 0; i < Math.min(n, 4); i++)
+      for (let i = 0; i < Math.min(n, STACK_LIMIT); i++)
         g.append(
           checker(
             x + 30,
-            top ? 65 + i * 54 : 595 - i * 54,
+            stackY(top, i),
             v > 0 ? 0 : 1,
-            i === 3 && n > 4 ? n : 1,
+            i === STACK_LIMIT - 1 && n > STACK_LIMIT ? n : 1,
             compact,
-            moved > 0 && (i === 3 || i >= n - moved),
+            moved > 0 && (i === STACK_LIMIT - 1 || i >= n - moved),
           ),
         );
       if (destinations.includes(p))
@@ -1091,7 +1094,7 @@ export class Board {
         );
       if (
         destinations.includes(p) &&
-        !(n >= 4 && Math.sign(v) === (s.turn ? -1 : 1))
+        !(n >= STACK_LIMIT && Math.sign(v) === (s.turn ? -1 : 1))
       ) {
         const next = { ...s, points: [...s.points] };
         next.points[p] =
@@ -1105,7 +1108,7 @@ export class Board {
           svg("circle", {
             cx: landing.x,
             cy: landing.y,
-            r: 25,
+            r: CHECKER_RADIUS + 1,
             class: "landing-ring",
             "pointer-events": "none",
           }),
@@ -1138,7 +1141,7 @@ export class Board {
           svg("circle", {
             cx: pos.x,
             cy: pos.y,
-            r: 27,
+            r: CHECKER_RADIUS + 3,
             class: "source-ring",
             "pointer-events": "none",
           }),
@@ -1202,7 +1205,7 @@ export class Board {
           svg("circle", {
             cx: 408,
             cy: y,
-            r: 27,
+            r: CHECKER_RADIUS + 3,
             class: "source-ring",
             "pointer-events": "none",
           }),

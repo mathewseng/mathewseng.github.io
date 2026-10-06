@@ -92,17 +92,37 @@ module.exports = async function directPlay(browser, base, out, name) {
     for (const circles of geometry)
       for (let i = 1; i < circles.length; i++)
         assert.ok(
-          Math.abs(circles[i].y - circles[i - 1].y) >
+          Math.abs(circles[i].y - circles[i - 1].y) ===
             circles[i].r + circles[i - 1].r,
         );
     assert.equal(
       await page.locator('[data-point="12"] .checker').count(),
-      4,
+      5,
     );
     assert.equal(
-      await page.locator('[data-point="12"] .checker text').textContent(),
-      "5",
+      await page.locator('[data-point="12"] .checker text').count(),
+      0,
     );
+    for (const count of [6, 15]) {
+      await page.evaluate((count) => {
+        const s = direct.r.initialState();
+        s.points = s.points.map((n) => Math.min(n, 0));
+        s.points[12] = count;
+        s.off[0] = 15 - count;
+        direct.d.set(s, []);
+      }, count);
+      assert.equal(
+        await page.locator('[data-point="12"] .checker').count(),
+        5,
+      );
+      assert.equal(
+        await page
+          .locator('[data-point="12"] .checker:last-child text')
+          .textContent(),
+        String(count),
+      );
+    }
+    await shot("five-checker-stack");
     await page.evaluate(() => {
       const s = direct.r.initialState({ phase: "move", dice: [1, 6] });
       direct.d.set(s, direct.r.legalPaths(s));
@@ -314,7 +334,7 @@ module.exports = async function directPlay(browser, base, out, name) {
       browser: name,
       cases: [
         "point-wide nearest move; one-click forced checker move and undo; explicit selection",
-        "non-overlapping checker slots/counts; uniform pips; right-side cube",
+        "five touching checker slots and overflow counts; uniform pips; right-side cube",
         "real-engine review with three non-scrolling views at nine sizes",
       ],
     };

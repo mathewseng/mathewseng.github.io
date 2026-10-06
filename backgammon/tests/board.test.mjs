@@ -43,8 +43,8 @@ test("bar, off, outside drops and the center gap have distinct hit regions", () 
 test("checker animation geometry remains bounded for tall stacks, the bar and bearoff", () => {
   const s = initialState();
   s.points[12] = 15;
-  assert.deepEqual(checkerPosition(s, 12, 0, 0), { x: 54, y: 227 });
-  assert.deepEqual(checkerPosition(s, 12, 0, 1), { x: 54, y: 433 });
+  assert.deepEqual(checkerPosition(s, 12, 0, 0), { x: 54, y: 230 });
+  assert.deepEqual(checkerPosition(s, 12, 0, 1), { x: 54, y: 430 });
   assert.deepEqual(checkerPosition(s, "bar", 0, 0), { x: 408, y: 506 });
   assert.equal(checkerPosition(s, "off", 0, 0).x, 843);
 });
@@ -70,7 +70,7 @@ test("last-move ghosts use original slots in either orientation and compress tal
     const top = pointGeometry(5, orientation).top;
     assert.deepEqual(
       ghosts.slice(0, 2).map((g) => g.y),
-      top ? [119, 173] : [541, 487],
+      top ? [98, 142] : [562, 518],
     );
     assert.equal(ghosts[3].y, orientation ? 100 : 506);
     for (const g of ghosts)
