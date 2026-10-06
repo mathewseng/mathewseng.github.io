@@ -67,7 +67,11 @@ module.exports = async function directPlay(browser, base, out, name) {
       await page.locator('[data-point="12"].return-destination').count(),
     );
     await shot("undo-target");
-    // Completed checker has only one reversal, so one click undoes it.
+    // Both the checker and its point background perform an unambiguous undo.
+    await click(9, false);
+    assert.equal((await draft()).length, 1);
+    await click(12, true);
+    assert.equal((await draft()).length, 2);
     await click(9, true);
     assert.equal((await draft()).length, 1);
     await click(12, false); // No forward route there: return the drafted checker.
@@ -79,6 +83,35 @@ module.exports = async function directPlay(browser, base, out, name) {
       await page.locator(".selected").getAttribute("data-point"),
       "12",
     );
+    // A blocked moved checker undoes even if another checker could land here.
+    await page.evaluate(() => {
+      const s = direct.r.initialState({ phase: "move", dice: [4, 3] });
+      s.points.fill(0);
+      s.points[12] = 1;
+      s.points[6] = 13;
+      s.points[11] = 1;
+      s.points[5] = -2;
+      s.points[23] = -13;
+      direct.d.set(s, direct.r.legalPaths(s));
+    });
+    await click(12, true);
+    await click(8, false);
+    assert.equal((await draft()).length, 1);
+    await click(8, false);
+    assert.equal((await draft()).length, 0);
+    // A checker that can still move is selected, never silently undone.
+    await page.evaluate(() => {
+      const s = direct.r.initialState({ phase: "move", dice: [4, 3] });
+      direct.d.set(s, direct.r.legalPaths(s));
+    });
+    await click(8, false);
+    await click(8, false);
+    assert.equal((await draft()).length, 1);
+    assert.equal(
+      await page.locator(".selected").getAttribute("data-point"),
+      "8",
+    );
+    await page.evaluate(() => direct.d.reset());
     const geometry = await page.evaluate(() => {
       const points = [...document.querySelectorAll("[data-point]")].filter(
         (n) => /^\d+$/.test(n.dataset.point),

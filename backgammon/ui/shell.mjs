@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { settings, saveSettings, put, itemRecord } from "../core/storage.mjs";
+import {
+  settings,
+  saveSettings,
+  put,
+  itemRecord,
+} from "../core/storage.mjs";
 import {
   playerName,
   pipCount,
@@ -39,7 +44,8 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === "text") n.textContent = v;
     else if (k === "checked") n.checked = v;
     else if (k === "value") n.value = v;
-    else if (v !== false && v !== null) n.setAttribute(k, v === true ? "" : v);
+    else if (v !== false && v !== null)
+      n.setAttribute(k, v === true ? "" : v);
   }
   n.append(...children.filter((x) => x !== null && x !== undefined));
   return n;
@@ -166,7 +172,9 @@ function changeSound(value) {
   dispatchEvent(new Event("bg-sound"));
   sound.unlock();
   if (!saved)
-    toast("Sound setting applies to this tab. Browser storage is unavailable.");
+    toast(
+      "Sound setting applies to this tab. Browser storage is unavailable.",
+    );
 }
 let activeBoard;
 export function shell(page, title, subtitle = "") {
@@ -301,7 +309,11 @@ export async function preferences() {
         "Quiet checker, dice and cube sounds. Background tabs stay silent.",
       ),
     ),
-    el("p", { class: "muted small" }, "Settings apply across all four tools."),
+    el(
+      "p",
+      { class: "muted small" },
+      "Settings apply across all four tools.",
+    ),
     el(
       "a",
       { href: "/backgammon/refresh/" },
@@ -351,7 +363,9 @@ export async function preferences() {
     ),
   );
   d.classList.add("settings-dialog");
-  d.addEventListener("close", () => dispatchEvent(new Event("bg-settings")));
+  d.addEventListener("close", () =>
+    dispatchEvent(new Event("bg-settings")),
+  );
   d.addEventListener("close", () =>
     removeEventListener("bg-sound", updateSounds),
   );
@@ -427,7 +441,10 @@ export function players(s, names = ["Ivory", "Teal"]) {
       !document.hidden
     )
       row.animate(
-        [{ backgroundColor: "#9bd6c928" }, { backgroundColor: "transparent" }],
+        [
+          { backgroundColor: "#9bd6c928" },
+          { backgroundColor: "transparent" },
+        ],
         { duration: 420, easing: "ease-out" },
       );
     row.classList.toggle("active", active);
@@ -451,7 +468,12 @@ export function players(s, names = ["Ivory", "Teal"]) {
 }
 export function dieFace(
   die,
-  { consumed = false, choose = null, preferred = false, player = null } = {},
+  {
+    consumed = false,
+    choose = null,
+    preferred = false,
+    player = null,
+  } = {},
 ) {
   const positions = {
     1: [4],
@@ -563,8 +585,16 @@ export class DraftBoard {
     this.hint = "";
     const selectedRoutes = this.routes().filter((st) => st.to === p);
     let routes = selectedRoutes;
-    // Explicit selected destinations (especially undo/entry revisions) win.
-    if (!routes.length && quick) {
+    // With no forward action, a moved checker's entire point is an undo target.
+    // Explicit selected destinations still win; ambiguous reversals stay choices.
+    const undoOnlyPoint =
+      typeof p === "number" &&
+      !routes.length &&
+      quick &&
+      this.reverseMoves().some((r) => r.from === p) &&
+      !checkerRoutes(this.paths, this.draft, p).length &&
+      !this.entrySwitches().some((r) => r.from === p);
+    if (!routes.length && quick && !undoOnlyPoint) {
       routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
       if (!routes.length) {
         const backs = this.reverseMoves().filter((r) => r.to === p);
@@ -573,7 +603,8 @@ export class DraftBoard {
       }
     }
     const sourceTap =
-      !routes.length && checkerTap && this.sources().includes(p);
+      undoOnlyPoint ||
+      (!routes.length && checkerTap && this.sources().includes(p));
     if (sourceTap)
       routes = [
         ...checkerRoutes(this.paths, this.draft, p).filter(
@@ -594,7 +625,10 @@ export class DraftBoard {
         route.undo || route.switchDie
           ? route.remaining
           : [...this.draft, ...route.steps];
-      const result = next.reduce((s, step) => applyStep(s, step), this.state);
+      const result = next.reduce(
+        (s, step) => applyStep(s, step),
+        this.state,
+      );
       const key =
         boardKey(result) +
         ":" +
@@ -672,7 +706,9 @@ export class DraftBoard {
   normalize(raw) {
     if (raw === null) return null;
     if (typeof raw === "string" && /^(bar|off)[01]$/.test(raw))
-      return Number(raw.at(-1)) === this.state.turn ? raw.slice(0, -1) : null;
+      return Number(raw.at(-1)) === this.state.turn
+        ? raw.slice(0, -1)
+        : null;
     return raw;
   }
   beginDrag(raw) {
@@ -681,7 +717,8 @@ export class DraftBoard {
     if (!this.sources().includes(source)) return false;
     this.selected = source;
     sound.play("select");
-    this.hint = "Release on a highlighted point. Release elsewhere to cancel.";
+    this.hint =
+      "Release on a highlighted point. Release elsewhere to cancel.";
     this.render();
     return true;
   }
@@ -725,7 +762,9 @@ export class DraftBoard {
       : route.undo
         ? "Checker moved back. Its dice are available again."
         : "";
-    const nextSources = [...new Set(this.candidates().map((st) => st.from))];
+    const nextSources = [
+      ...new Set(this.candidates().map((st) => st.from)),
+    ];
     const entered =
       route.switchDie ||
       (!route.undo &&
