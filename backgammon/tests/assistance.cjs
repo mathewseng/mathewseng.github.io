@@ -275,6 +275,9 @@ module.exports = async function assistanceUX(browser, base, out, browserName) {
     // Same-device/online games must never expose hint or turn grading controls.
     await page.locator("#players-control").click();
     await page.locator("#dialog-play-both").click();
+    // The native close event removes the dialog on a later browser task.
+    // Count only after cleanup, rather than its now-inaccessible old toggle.
+    await page.locator("dialog").waitFor({ state: "detached" });
     assert.ok(await page.locator("#move-feedback").isHidden());
     assert.equal(
       await page.getByLabel("Show move feedback", { exact: true }).count(),
