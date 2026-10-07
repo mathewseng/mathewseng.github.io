@@ -67,3 +67,5 @@ The [website highlight flowchart](https://mathewseng.github.io/backgammon/contro
 Vertical swipes on open board space scroll the page; starting on an actual movable checker reserves the gesture for dragging. Pinch zoom stays available.
 
 The diagram describes ordinary pointer input. Keyboard-only undo is the explicit exception above. A drop is always constrained to the dragged checker; invalid or outside drops cancel. Point-number lanes accept destination clicks and drops.
+
+A roll with more than one legal final position always requires Confirm, regardless of shortcut length or input method. A fresh forward choice can preview its forced continuation; Undo, Reset and reverse moves leave removed choices undone. Only the globally compulsory initial prefix is locked. Fully forced original rolls and passes still advance automatically.

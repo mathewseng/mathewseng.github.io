@@ -34,7 +34,7 @@ Checker-disc selection and open-point destination input remain distinct and visi
 - Without selection, forward movement wins over an overlapping draft return. Selecting the moved checker exposes the specific return in undo colors.
 - Physical disc clicks never silently auto-undo. Ordinary source keys retain the explicitly requested unambiguous undo-only shortcut; Shift requests destination semantics. This exception is documented rather than disguised as identical pointer behavior.
 - Ghosts and focus are independent markers. They never imply legality. Cube and used/historical dice displays do not become checker destinations.
-- With no remaining forward choice, automatic forced play/pass can advance the game. Legal markers are suppressed when input is disabled; a stale event cannot bypass the canonical turn/phase rules.
+- Only a roll with a single legal resulting position from its original state advances automatically, including passes. A chosen branch may fill a compulsory suffix as a preview, but waits for Confirm; undo/reset/returns/recovery never refill that suffix. Legal markers are suppressed when input is disabled; a stale event cannot bypass the canonical turn/phase rules.
 
 ## Verification
 

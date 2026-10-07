@@ -782,8 +782,8 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       ]) {
         await bot.setViewportSize({ width, height });
         await bot.waitForTimeout(100);
-        // Keep this viewport sweep on one turn: a single-action checker tap
-        // can now complete the draft automatically and start the computer.
+        // Keep the same position throughout this viewport sweep. Chosen drafts
+        // now wait for Confirm even when their final continuation is forced.
         const file = `chromium-ux-live-${width}x${height}.png`;
         await bot.screenshot({
           path: path.join(out, file),

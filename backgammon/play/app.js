@@ -27,7 +27,7 @@ import {
 } from "../core/storage.mjs";
 import {
   forcedTurn,
-  forcedContinuation,
+  draftAutomation,
   playAction,
   tableDice,
   takebackTarget,
@@ -178,12 +178,11 @@ const allControls = button("All controls", () => {
 }, "ghost", { id: "all-controls", hidden: true, "aria-haspopup": "dialog" });
 const helpCluster = el("div", { class: "help-cluster" }, helpActions, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
-const draft = new DraftBoard(ui.board, () => {
-  draft.autoCommit = false;
+const draft = new DraftBoard(ui.board, (change) => {
   actions();
   detailDraft();
   persist();
-  autoDraft();
+  autoDraft(change?.kind === "move");
 });
 const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
@@ -434,9 +433,9 @@ function restore(recovery) {
     draft.render();
     actions();
     detailDraft();
-    if (recovery.autoCommit && draft.complete())
-      queueMicrotask(() => submit().catch(showError));
-    else autoDraft();
+    // Legacy autoCommit flags must not commit a turn that originally had choices.
+    // Fully forced rolls are handled by autoPlay(), independently of draft data.
+    autoDraft();
   }
 }
 function stopComputer() {
@@ -576,7 +575,7 @@ function render() {
     if (m?.started && config.mode === "computer") computerTurn();
   }
 }
-function autoDraft() {
+function autoDraft(advance = false) {
   if (!ui.board.container.isConnected) return;
   if (
     !draft.enabled ||
@@ -589,9 +588,8 @@ function autoDraft() {
   )
     return;
   const source = state();
-  const initial = forcedContinuation(source, [], draft.paths);
-  draft.minDraft = initial.complete ? 0 : initial.steps.length;
-  const forced = forcedContinuation(source, draft.draft, draft.paths);
+  const forced = draftAutomation(source, draft.draft, draft.paths, advance);
+  draft.minDraft = forced.minDraft;
   if (!forced.steps.length) return;
   const signature = JSON.stringify(draft.draft),
     id = model()?.id;
@@ -601,6 +599,7 @@ function autoDraft() {
       state() !== source ||
       JSON.stringify(draft.draft) !== signature ||
       !draft.enabled ||
+      draft.preview ||
       committing ||
       assistanceJob ||
       !myTurn(source)
@@ -608,17 +607,15 @@ function autoDraft() {
       return;
     const before = draft.current();
     draft.draft.push(...forced.steps);
-    draft.autoCommit = forced.complete;
     draft.selected = null;
     draft.hint = forced.complete
-      ? "Forced continuation played."
-      : "Forced entry played. Choose your next move.";
+      ? "Draft complete. Confirm or revise your move."
+      : "Forced step played. Choose your next move.";
     draft.render();
     ui.board.playTurn(before, forced.steps);
     actions();
     detailDraft();
     persist();
-    if (forced.complete) submit().catch(showError);
   });
 }
 function autoPlay() {
@@ -958,7 +955,6 @@ async function practiceRoll(player, dice) {
     feedback = null;
     boardKey = "";
     draft.draft = [];
-    draft.autoCommit = false;
     if (opening.active) opening.dismiss();
     render();
     await persist();
@@ -1682,7 +1678,6 @@ async function persist() {
       game,
       positionKey: positionKey(game.state),
       draft: clone(draft.draft),
-      autoCommit: draft.autoCommit === true,
       feedback,
     };
     try {
@@ -1949,7 +1944,6 @@ async function restoreDecision(row, id) {
   config = { ...game.config };
   feedback = null;
   draft.draft = [];
-  draft.autoCommit = false;
   boardKey = "";
   if (opening.active) opening.dismiss();
   await persist();

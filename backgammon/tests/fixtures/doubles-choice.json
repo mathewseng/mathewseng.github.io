@@ -1,0 +1,67 @@
+{
+  "provenance": "Position after event 46 of the user-supplied backgammon-match.json (2026-10-07). Personal metadata, annotations and engine evaluations omitted.",
+  "state": {
+    "version": 1,
+    "points": [
+      0,
+      3,
+      0,
+      3,
+      2,
+      2,
+      -2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -4,
+      -3,
+      -2,
+      2,
+      -2,
+      -2
+    ],
+    "bar": [
+      0,
+      0
+    ],
+    "off": [
+      0,
+      0
+    ],
+    "turn": 0,
+    "dice": [
+      6,
+      6
+    ],
+    "phase": "move",
+    "cube": {
+      "value": 2,
+      "owner": null
+    },
+    "scores": [
+      0,
+      0
+    ],
+    "matchLength": 0,
+    "rules": {
+      "cube": true,
+      "jacoby": true,
+      "automaticDoubles": 1,
+      "immediateRedoubles": 0
+    },
+    "crawford": false,
+    "crawfordPlayed": false,
+    "gameNumber": 1,
+    "sequence": 46,
+    "result": null,
+    "pending": null
+  }
+}

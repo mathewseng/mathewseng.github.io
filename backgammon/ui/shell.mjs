@@ -524,7 +524,6 @@ export class DraftBoard {
     this.onChange = onChange;
     this.draft = [];
     this.minDraft = 0;
-    this.autoCommit = false;
     this.selected = null;
     this.paths = [];
     this.preferred = null;
@@ -544,7 +543,6 @@ export class DraftBoard {
     this.paths = paths;
     this.draft = [];
     this.minDraft = 0;
-    this.autoCommit = false;
     this.selected = null;
     this.hint = "";
     this.preferred = null;
@@ -878,7 +876,7 @@ export class DraftBoard {
       );
     if (route.undo && route.steps.length > 1)
       this.board.animateRestore(before, this.current(), "undo");
-    this.onChange();
+    this.onChange({ kind: route.undo ? "undo" : "move" });
   }
   undo() {
     if (this.draft.length <= this.minDraft) return;
@@ -890,21 +888,20 @@ export class DraftBoard {
     this.hint = "Move undone. Try another checker or destination.";
     this.render();
     if (step) this.board.animateMove(before, this.current(), step, true);
-    this.onChange();
+    this.onChange({ kind: "undo" });
   }
   reset() {
     const before = this.current(),
       changed = this.draft.length > this.minDraft;
     this.preview = null;
     this.draft = this.draft.slice(0, this.minDraft);
-    this.autoCommit = false;
     this.selected = null;
     this.hint = this.minDraft
       ? "Choices cleared. Forced steps are kept."
       : "Draft cleared. Your original position is restored.";
     this.render();
     if (changed) this.board.animateRestore(before, this.current());
-    this.onChange();
+    this.onChange({ kind: "reset" });
   }
   render() {
     if (!this.state) return;

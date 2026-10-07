@@ -55,6 +55,17 @@ export function forcedContinuation(
   }
 }
 
+// Preview automation never authorizes a commit. Only forcedTurn() can advance
+// without Confirm. A fresh forward choice may fill its unavoidable suffix;
+// undo/reset/recovery only restore the globally mandatory initial prefix.
+export function draftAutomation(state, draft, paths, advance = false) {
+  const initial = forcedContinuation(state, [], paths);
+  const minDraft = initial.complete ? 0 : initial.steps.length;
+  if (draft.length >= minDraft && !advance)
+    return { steps: [], complete: false, minDraft };
+  return { ...forcedContinuation(state, draft, paths), minDraft };
+}
+
 function append(table, action, actor, automatic = false) {
   table.state = transition(table.state, action, actor);
   table.events.push({

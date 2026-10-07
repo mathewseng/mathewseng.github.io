@@ -366,9 +366,21 @@ module.exports = async function directPlay(browser, base, out, name) {
       } else {
         await page.locator("#confirm").waitFor();
         await page.keyboard.press("u"); // point 6
-        await page.keyboard.press("i"); // occupied point 5 selects
-        await page.keyboard.press("i"); // repeat brings nearest checker using 1
-        await page.locator("#roll").waitFor(); // Remaining 2 is forced, no Confirm click.
+        await page.keyboard.press("i"); // selected 6/5 uses 1; the remaining 2 is forced
+        // Remaining 2 fills the preview, but the original roll had choices.
+        await page.waitForFunction(
+          () => !document.querySelector("#confirm")?.disabled,
+        );
+        const pending = await page.evaluate(
+          async () =>
+            await (
+              await import("/backgammon/core/storage.mjs")
+            ).get("work", "play"),
+        );
+        assert.equal(pending.game.events.length, 0);
+        assert.equal(pending.draft.length, 2);
+        await page.locator("#confirm").click();
+        await page.locator("#roll").waitFor();
         const game = await page.evaluate(
           async () =>
             (

@@ -495,6 +495,9 @@ const server = http.createServer((req, res) => {
         (report.highlightActions ||= []).push(
           await require("./highlight-actions.cjs")(browser, base, out, browserName),
         );
+        (report.draftChoices ||= []).push(
+          await require("./draft-choices.cjs")(browser, base, out, browserName),
+        );
         (report.actionAudit ||= []).push(
           await require("./action-audit.cjs")(browser, base, out, browserName),
         );
