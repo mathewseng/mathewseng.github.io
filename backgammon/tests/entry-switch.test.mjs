@@ -71,8 +71,15 @@ test("blocked entries, higher-die restrictions, doubles and consumed dice never 
   ]) {
     const state = position(0, dice),
       ps = legalPaths(state);
-    for (const p of ps)
-      assert.deepEqual(entrySwitchRoutes(state, ps, p.steps), []);
+    for (const p of ps) {
+      const routes = entrySwitchRoutes(state, ps, p.steps);
+      if (dice[0] === dice[1]) assert.deepEqual(routes, []);
+      for (const route of routes) {
+        assert.ok(matchingPaths(ps, route.remaining).length);
+        assertState(at(state, route.remaining));
+        assert.equal(route.remaining.length, 1, "a completed entry chain can restart with the other die");
+      }
+    }
   }
 });
 test("seeded entry variations only expose replacements that remain full-turn prefixes", () => {
@@ -98,7 +105,7 @@ test("seeded entry variations only expose replacements that remain full-turn pre
           assert.ok(matchingPaths(paths, route.remaining).length);
           assertState(at(s, route.remaining));
           assert.notEqual(route.die, route.replacedDie);
-          assert.equal(route.remaining.length, n);
+          assert.ok(route.remaining.length <= n && route.remaining.length > 0);
         }
       }
   }

@@ -894,6 +894,7 @@ export class Board {
       destinations = [],
       reachable = [],
       reverseTargets = [],
+      revisionTargets = [],
       sources = [],
       moves = [],
       interactive = true,
@@ -925,6 +926,7 @@ export class Board {
       destinations,
       reachable,
       reverseTargets,
+      revisionTargets,
       sources,
       moves,
       interactive,
@@ -994,7 +996,7 @@ export class Board {
           n && (v > 0 ? 0 : 1) === lastMove?.player
             ? Math.min(n, lastMove.points[p] || 0)
             : 0;
-      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
+      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? revisionTargets.includes(p) ? ", alternate-die destination: tap point space to revise the draft" : ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
         destinations.includes(p)
           ? ", legal destination, dice " +
             moves
@@ -1016,7 +1018,7 @@ export class Board {
         "aria-label": label,
         "aria-disabled": !interactive,
         "aria-pressed": selected === p,
-        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${(reverseTargets.includes(p) && !reachable.includes(p)) || moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
+        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${(reverseTargets.includes(p) && !reachable.includes(p)) || moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${revisionTargets.includes(p) || moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
       });
       if (moved) g.setAttribute("data-last-moved", moved);
       g.append(

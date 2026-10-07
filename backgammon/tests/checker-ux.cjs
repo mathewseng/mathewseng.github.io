@@ -484,9 +484,9 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await drag(23, 15);
     assert.equal((await info()).draft.length, 4);
     await drag(15, 19);
-    assert.equal((await info()).draft.length, 2);
-    assert.equal(await page.locator(".board-die.consumed").count(), 2);
-    await drag(19, 23);
+    assert.equal((await info()).draft.length, 4, "intermediate stops are no longer board-return targets");
+    assert.equal(await page.locator(".board-die.consumed").count(), 4);
+    await drag(15, 23);
     assert.equal((await info()).draft.length, 0);
     await load("bar");
     await drag("bar", 23);
@@ -502,7 +502,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       "both dice combined destinations",
       "all four doubles destinations",
       "tap back after complete turn",
-      "drag back part of a combined move",
+      "drag returns a combined move only to its pre-roll origin",
       "bar and bearoff drag reversals",
       "larger on-board dice",
     );

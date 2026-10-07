@@ -2106,9 +2106,13 @@ button.teal-die:hover {
   fill: color-mix(in srgb, var(--board-destination) 18%, transparent);
 }
 .point.return-destination .point-hit {
-  stroke-dasharray: 6 4;
-  fill: color-mix(in srgb, var(--board-focus) 12%, transparent);
+  stroke: none;
+  fill: transparent;
+  stroke-dasharray: none;
+}
+.point.return-destination:focus-visible .point-hit {
   stroke: var(--board-focus);
+  stroke-width: 3;
 }
 .point.destination.drop-hover .point-hit {
   stroke-width: 3;
@@ -2197,7 +2201,7 @@ button.teal-die:hover {
 }
 .point.return-destination .landing-ring,
 .point.return-destination .point-wash {
-  stroke-dasharray: 6 4;
+  stroke-dasharray: none;
 }
 .point.entry-switch-destination .destination-die {
   font-size: 25px;
@@ -2544,15 +2548,13 @@ button.teal-die:hover {
   fill: color-mix(in srgb, var(--board-destination) 38%, transparent);
 }
 .point.return-destination .point-shape {
-  stroke: var(--board-undo);
-  stroke-width: 2;
-  stroke-dasharray: 5 3;
+  stroke: none;
   filter: none;
 }
 .point.return-destination .point-wash {
-  fill: color-mix(in srgb, var(--board-undo) 28%, transparent);
+  fill: color-mix(in srgb, var(--board-undo) 20%, transparent);
   stroke: var(--board-undo);
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 .point.return-destination .landing-ring {
   stroke: var(--board-undo);

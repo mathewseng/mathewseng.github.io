@@ -13,8 +13,8 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=d4b434e4e6bc8c29" />
-    <link rel="stylesheet" href="./controls.css?bgv=d4b434e4e6bc8c29" />
+    <link rel="stylesheet" href="../styles.css?bgv=e621b4cef89fa5f7" />
+    <link rel="stylesheet" href="./controls.css?bgv=e621b4cef89fa5f7" />
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -88,14 +88,14 @@
           <li>
             <div class="flow-question">
               <span class="flow-number" aria-hidden="true">3</span>
-              <h2>Can another checker land here?</h2>
+              <h2>Can a checker move or change dice to land here?</h2>
             </div>
             <div class="flow-answer">
               <span class="flow-yes">Yes →</span>
               <p>
                 <strong>Play the nearest legal checker.</strong
                 ><br />Repeated clicks in the open point area can build a
-                point or use doubles. An ordinary click never plays an unhighlighted route from another checker while a selection is active.
+                point or use doubles. If no forward move lands here, use a legal alternate-die revision—even after both dice were used. An active selection limits this to its own routes.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -109,7 +109,7 @@
               <span class="flow-yes">Yes →</span>
               <p>
                 <strong>Return the nearest eligible checker.</strong><br />
-                Restore its dice, even if the amber point already holds checkers.
+                Return it to its pre-roll origin and restore its dice, even if that point holds checkers. Intermediate stops are not orange targets; use Undo for a single step. A checker whose journey includes a forced prefix cannot return past it.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -188,7 +188,7 @@
               <span class="flow-yes">Yes →</span>
               <p>
                 <strong>Show a dashed source ring.</strong><br />A checker
-                with a legal remaining-dice move or reversible draft move is
+                with a legal remaining-dice move, alternate-die revision or original-position return is
                 a source. Blocked checkers have no source ring. Only the bar
                 is a forward source while entry is required.
               </p>
@@ -206,7 +206,7 @@
                 <strong>Show a colored point wash and outline.</strong
                 ><br />With a selection, show the dice used and a landing
                 ring where space permits. A sum means one checker uses
-                multiple dice; <strong>↔</strong> changes its first die.
+                multiple dice; <strong>↔</strong> changes its first die, even after a combined move. Legal revisions glow before selection too.
                 Legal bearoff destinations light the OFF tray.
               </p>
             </div>
@@ -220,11 +220,11 @@
             <div class="flow-answer">
               <span class="flow-yes">Yes →</span>
               <p>
-                <strong>Use the undo color and dashed outline.</strong
+                <strong>Use the undo color and one clean outline.</strong
                 ><br />Amber in the default theme; <strong>↶</strong> when
                 selected. A selected return takes visual priority over a
                 forward route. Without selection, the forward highlight wins
-                if both are possible. Forced steps cannot be returned.
+                if both are possible. Only the checker’s pre-roll origin is a return target; intermediate and forced stops are excluded.
               </p>
             </div>
             <div class="flow-end">
@@ -352,7 +352,7 @@
             </tr>
             <tr role="row" id="case-return">
               <th role="rowheader" scope="row" data-label="Situation">Legal draft-return destination</th>
-              <td role="cell" data-label="What is highlighted">Undo-colored (amber by default), dashed point; ↶ when selected.</td>
+              <td role="cell" data-label="What is highlighted">One undo-colored outline (amber by default) at the pre-roll origin; ↶ when selected. No intermediate or forced-prefix returns.</td>
               <td role="cell" data-label="Click the checker">A movable resident selects. An immovable resident passes the click to the return action.</td>
               <td role="cell" data-label="Click point / tray space">Return the selected checker; without selection, nearest eligible draft return. Restore its dice and any hit.</td>
             </tr>
@@ -364,9 +364,9 @@
             </tr>
             <tr role="row" id="case-switch">
               <th role="rowheader" scope="row" data-label="Situation">Alternate first die / bar-entry die</th>
-              <td role="cell" data-label="What is highlighted">Selected destination labeled ↔ and the replacement die.</td>
+              <td role="cell" data-label="What is highlighted">Legal revisions glow before selection too. Selected destinations show ↔ and the replacement die.</td>
               <td role="cell" data-label="Click the checker">Movable resident selects; otherwise perform the advertised revision.</td>
-              <td role="cell" data-label="Click point / tray space">Replace that checker’s first die; preserve unrelated draft steps and restore the old die.</td>
+              <td role="cell" data-label="Click point / tray space">Restart that checker with the other die, including after a combined move; preserve unrelated steps and release the replaced dice.</td>
             </tr>
             <tr role="row" id="case-multiple">
               <th role="rowheader" scope="row" data-label="Situation">Combined dice or doubles destination</th>

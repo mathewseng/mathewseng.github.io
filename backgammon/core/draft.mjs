@@ -25,17 +25,14 @@ export function checkerRoutes(paths, draft, from) {
       });
     }
   }
-  return [...routes.values()].sort(
-    (a, b) => a.steps.length - b.steps.length,
-  );
+  return [...routes.values()].sort((a, b) => a.steps.length - b.steps.length);
 }
 // At most 15 subsets for a four-step draft. A reversal is offered only when
 // the remaining draft is still a legal prefix and exactly one own checker
 // returns to one previous point. Unrelated moves stay; dependent ones cannot
 // be retained illegally. Replaying restores any hits and consumed dice too.
 export function reverseRoutes(state, paths, draft) {
-  const at = (steps) =>
-    steps.reduce((s, step) => applyStep(s, step), state);
+  const at = (steps) => steps.reduce((s, step) => applyStep(s, step), state);
   const current = at(draft),
     p = state.turn;
   const counts = (s) => [
@@ -74,13 +71,59 @@ export function reverseRoutes(state, paths, draft) {
   return [...results.values()];
 }
 
+// Board returns go to a checker's pre-roll origin, never an intermediate stop.
+// Checkers are indistinguishable in canonical state. For draft interaction the
+// most recent arrival is the top checker, so continuing that stack continues
+// its journey. Undo still removes an individual step separately.
+export function originalReturnRoutes(state, paths, draft, minDraft = 0) {
+  const stacks = new Map();
+  const add = (point, count) =>
+    stacks.set(
+      point,
+      Array.from({ length: count }, () => ({ origin: point, indices: [] })),
+    );
+  add("bar", state.bar[state.turn]);
+  add("off", state.off[state.turn]);
+  state.points.forEach((n, p) => add(p, Math.max(0, n * sign(state.turn))));
+  for (const [i, step] of draft.entries()) {
+    const checker = stacks.get(step.from)?.pop();
+    if (!checker) return [];
+    checker.indices.push(i);
+    stacks.get(step.to).push(checker);
+  }
+  const reversals = reverseRoutes(state, paths, draft);
+  const results = new Map();
+  for (const [from, checkers] of stacks)
+    for (const checker of checkers) {
+      if (!checker.indices.length || checker.indices.some((i) => i < minDraft))
+        continue;
+      const remaining = draft.filter((_, i) => !checker.indices.includes(i));
+      const key = JSON.stringify(remaining);
+      const route = reversals.find(
+        (r) =>
+          r.from === from &&
+          r.to === checker.origin &&
+          JSON.stringify(r.remaining) === key,
+      );
+      if (route) results.set(key, route);
+    }
+  return [...results.values()];
+}
+
 // Change the first die of a drafted checker move (including bar entry).
 // Preserve unrelated steps, and derive replacements only from complete legal
 // paths: bar priority, maximum dice use and the higher-die rule still apply.
 export function dieSwitchRoutes(state, paths, draft) {
   const routes = new Map();
   for (const back of reverseRoutes(state, paths, draft)) {
-    if (back.steps.length !== 1 || back.steps[0].from !== back.to) continue;
+    // A completed chain can be rewound and restarted with the other die too.
+    // Only replace a continuous journey, leaving independent checkers intact.
+    if (
+      back.steps[0].from !== back.to ||
+      back.steps.at(-1).to !== back.from ||
+      back.steps.some((step, i) => i && step.from !== back.steps[i - 1].to)
+    )
+      continue;
     const old = back.steps[0];
     for (const entry of checkerRoutes(paths, back.remaining, back.to)) {
       if (
@@ -125,8 +168,7 @@ export function availableRoutes(paths, draft) {
 }
 export function nearestRoutes(paths, draft, to, player) {
   const routes = availableRoutes(paths, draft).filter((r) => r.to === to);
-  const at = (p) =>
-    p === "bar" ? 25 : p === "off" ? 0 : distance(p, player);
+  const at = (p) => (p === "bar" ? 25 : p === "off" ? 0 : distance(p, player));
   const nearest = Math.min(...routes.map((r) => at(r.from) - at(r.to)));
   return routes.filter((r) => at(r.from) - at(r.to) === nearest);
 }

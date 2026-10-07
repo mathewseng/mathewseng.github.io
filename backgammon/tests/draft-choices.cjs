@@ -175,7 +175,9 @@ module.exports = async function draftChoices(browser, base, out, name) {
           await settled(3);
           await tap(p(3), "disc");
           await tap(p(9));
-          await settled(2); // Explicit return of 10/4 must stay undone too.
+          await settled(3); // Neither an intermediate stop nor a forced origin is a return target.
+          await page.locator("#undo").click();
+          await settled(2); // The separate Undo button can still remove that individual step.
           await page.locator("#reset-draft").click();
           await settled(1);
           await tap(p(15)); // Point-space uses 22/16, then previews the mandatory 16/10.

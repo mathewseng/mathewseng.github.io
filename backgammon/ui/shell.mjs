@@ -22,7 +22,7 @@ import {
   checkerRoutes,
   availableRoutes,
   nearestRoutes,
-  reverseRoutes,
+  originalReturnRoutes,
   dieSwitchRoutes,
   preferHittingRoutes,
 } from "../core/draft.mjs";
@@ -564,12 +564,13 @@ export class DraftBoard {
     );
   }
   reverseMoves() {
-    return reverseRoutes(this.state, this.paths, this.draft).filter(
-      (r) => r.remaining.length >= this.minDraft,
+    return originalReturnRoutes(
+      this.state, this.paths, this.draft, this.minDraft,
     );
   }
   entrySwitches() {
     return dieSwitchRoutes(this.state, this.paths, this.draft).filter((r) =>
+      r.remaining.length >= this.minDraft &&
       r.remaining
         .slice(0, this.minDraft)
         .every(
@@ -580,9 +581,19 @@ export class DraftBoard {
   sources() {
     return [
       ...new Set(
-        [...this.candidates(), ...this.reverseMoves()].map((st) => st.from),
+        [
+          ...this.candidates(), ...this.reverseMoves(), ...this.entrySwitches(),
+        ].map((st) => st.from),
       ),
     ];
+  }
+  arrivals(point) {
+    const forward = nearestRoutes(
+      this.paths, this.draft, point, this.state.turn,
+    );
+    return forward.length
+      ? forward
+      : this.entrySwitches().filter((r) => r.to === point);
   }
   routes() {
     if (this.selected === null) return [];
@@ -622,7 +633,7 @@ export class DraftBoard {
     const selectedRoutes = this.routes().filter((st) => st.to === p);
     const returning = this.reverseMoves().filter((r) => r.to === p);
     const incoming = destinationTap || checkerTap
-      ? nearestRoutes(this.paths, this.draft, p, this.state.turn)
+      ? this.arrivals(p)
       : [];
     const highlightedTarget = selectedRoutes.length ||
       (this.selected === null && (incoming.length || returning.length));
@@ -689,7 +700,7 @@ export class DraftBoard {
     } else {
       routes = selectedRoutes.length ? selectedRoutes : incoming;
       if (!routes.length) {
-        routes = nearestRoutes(this.paths, this.draft, p, this.state.turn);
+        routes = this.arrivals(p);
         if (!routes.length) {
           const nearest = Math.min(...returning.map((r) => r.die));
           routes = returning.filter((r) => r.die === nearest);
@@ -921,11 +932,21 @@ export class DraftBoard {
       reachable:
         this.enabled && !this.preview
           ? (this.selected === null
-              ? availableRoutes(this.paths, this.draft)
+              ? [
+                  ...availableRoutes(this.paths, this.draft),
+                  ...this.entrySwitches(),
+                ]
               : moves.filter((r) => !r.undo)
             ).map((r) => r.to)
           : [],
       sources: this.enabled && !this.preview ? this.sources() : [],
+      revisionTargets:
+        this.enabled && !this.preview
+          ? (this.selected === null
+              ? this.entrySwitches()
+              : moves.filter((r) => r.switchDie)
+            ).map((r) => r.to)
+          : [],
       moves,
       interactive: this.enabled && !this.preview,
       preview: !!this.preview,

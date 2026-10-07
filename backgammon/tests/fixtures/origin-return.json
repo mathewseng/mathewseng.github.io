@@ -1,0 +1,79 @@
+{
+  "provenance": "Reconstructed from the user screenshot dated 2026-10-07 16:35; pre-roll position for the displayed 16/11/8 draft.",
+  "state": {
+    "version": 1,
+    "points": [
+      0,
+      3,
+      0,
+      4,
+      2,
+      2,
+      0,
+      0,
+      0,
+      -2,
+      0,
+      0,
+      3,
+      0,
+      0,
+      1,
+      0,
+      0,
+      -2,
+      -3,
+      -2,
+      -2,
+      -2,
+      -2
+    ],
+    "bar": [
+      0,
+      0
+    ],
+    "off": [
+      0,
+      0
+    ],
+    "turn": 0,
+    "dice": [
+      3,
+      5
+    ],
+    "phase": "move",
+    "cube": {
+      "value": 2,
+      "owner": null
+    },
+    "scores": [
+      0,
+      0
+    ],
+    "matchLength": 0,
+    "rules": {
+      "cube": true,
+      "jacoby": false,
+      "automaticDoubles": 0,
+      "immediateRedoubles": 0
+    },
+    "crawford": false,
+    "crawfordPlayed": false,
+    "gameNumber": 1,
+    "sequence": 0,
+    "result": null,
+    "pending": null
+  },
+  "draft": [
+    {
+      "from": 15,
+      "to": 10,
+      "die": 5
+    },
+    {
+      "from": 10,
+      "to": 7,
+      "die": 3
+    }
+  ]
+}
