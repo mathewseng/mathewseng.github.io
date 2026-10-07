@@ -76,7 +76,7 @@ Progress at 105 lb after:
 
 - 5 submaximal sets
 - Begin around 3 repetitions per set
-- Latest result: 5, 4, 3 for 12 total across three sets on September 29, the night after Push; strict form was not explicitly confirmed.
+- Latest result: 6, 4, 3, 3 for 16 total across four sets on October 6; strict form unconfirmed. Compare session totals with their set counts.
 - The 13-rep strict baseline remains the confirmed strict benchmark until form is verified for a higher total.
 - Build back to five submaximal sets before pushing early-set effort
 - Add one total repetition per workout
@@ -154,9 +154,9 @@ Current accessory references from September 1:
 - Spider dumbbell curl: 20 lb per dumbbell × 10, 8, 8
 - September 22 incline dumbbell curl: 15 lb per dumbbell × 10, 10, 10, 10
 - September 22 spider dumbbell curl: 20 lb per dumbbell × 10, 10, 10, 20
-- September 29 incline dumbbell curl: 15 lb per dumbbell × 10, 10, 10
-- September 29 spider dumbbell curl: 20 lb per dumbbell × 10, 10, 10
-- September 29 cable curl: 30 lb × 10, 10, 10; unilateral versus bilateral setup was not recorded
+- October 6 incline dumbbell curl: 15 lb per dumbbell × 10, 10, 10
+- October 6 spider dumbbell curl: 20 lb per dumbbell × 10, 10, 10
+- October 6 cable curl: 30, 35, 40 lb × 10 each; unilateral versus bilateral setup was not recorded
 - Choose one or two curl variations rather than requiring all of them every pull day.
 
 ## Leg Day

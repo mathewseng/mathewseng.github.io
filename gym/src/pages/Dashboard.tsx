@@ -200,6 +200,13 @@ const pullUpProgress = [
     context:
       "5/4/3 across three sets the night after push; strict form was not explicitly confirmed.",
   },
+  {
+    label: "Oct 6",
+    value: 6,
+    secondary: 16,
+    context:
+      "6/4/3/3 across four sets. Strict form unconfirmed; session totals span different set counts.",
+  },
 ];
 
 const pushdownProgress = [
@@ -346,17 +353,17 @@ export default function Dashboard() {
               <Badge tone="accent">
                 <HeartPulse size={12} /> Recovery-aware
               </Badge>
-              <Badge tone="accent">Push → Pull next</Badge>
+              <Badge tone="accent">Pull → Legs next</Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
               <p className="eyebrow-accent">Suggested next session</p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Pull, keep reps controlled.
+                Legs, build carefully.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
-                After the October 4 push session, return to Pull when recovered. Use the
-                September 29 pull session as your reference and leave some reserve on
-                pull-ups and rows.
+                After the October 6 pull session, return to Legs when recovered. Your
+                September 30 squat reached 135 lb for 10 / 10. Record effort and back
+                symptoms before increasing the load.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
@@ -418,23 +425,23 @@ export default function Dashboard() {
           <Surface className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">October 4 context</p>
-                <h2 className="mt-1 text-lg font-black">Push and core in 70 minutes</h2>
+                <p className="eyebrow">October 6 context</p>
+                <h2 className="mt-1 text-lg font-black">Pull in 50 minutes</h2>
               </div>
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
                 <Gauge size={18} />
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 7:30 PM, you logged bench at 105 lb for 6 / 6 / 5 plus an incomplete
-              attempt, incline at 75 lb for 5 / 5 / 5, dumbbell accessories, four sets of
-              ab crunches, and leg raises for 20 / 20 / 20. Shoulder-raise variant
-              allocation and readiness scores were not supplied.
+              At 10:30 PM, you logged pull-ups for 6 / 4 / 3 / 3, face pulls at 70 lb, and
+              lat pushdowns, standing rows, and cable curls at 30 / 35 / 40 lb. Incline
+              and spider curls followed, then a separate 15-minute sauna. Strict pull-up
+              form and readiness scores were not supplied.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">17 completed bench reps</Badge>
-              <Badge tone="quality">60 leg raises</Badge>
-              <Badge tone="neutral">7:30 PM · 70 min</Badge>
+              <Badge tone="accent">16 pull-ups · 4 sets</Badge>
+              <Badge tone="quality">15 min sauna</Badge>
+              <Badge tone="neutral">10:30 PM · 50 min</Badge>
             </div>
           </Surface>
         </div>

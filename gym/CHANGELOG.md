@@ -2,6 +2,12 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-10-07 — October 6 Pull Workout
+
+- Logged the 10:30 PM, 50-minute pull session and separate 15-minute sauna.
+- Recorded pull-ups at 6/4/3/3, cable progressions at 30/35/40 lb, and complete incline/spider curl sets.
+- Updated latest-session context, pull-up chart, program notes, and next-session guidance to Legs; strict form and cable setup remain unconfirmed.
+
 ## 2026-10-04 — October 4 Push Workout
 
 - Logged the 7:30 PM, 70-minute push workout with bench, incline, dumbbell accessories, and core.

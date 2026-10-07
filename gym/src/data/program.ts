@@ -139,7 +139,7 @@ export const programTemplates: ProgramTemplate[] = [
         sets: 5,
         reps: 3,
         notes:
-          "September 29 recorded 5/4/3 across three sets for 12 total reps the night after Push; strict form was unconfirmed. Build toward five submaximal sets while maintaining clean form.",
+          "October 6 recorded 6/4/3/3 across four sets for 16 total reps; strict form was unconfirmed. The extra set affects comparisons with three-set sessions. Build toward five submaximal sets while maintaining clean form.",
       },
       {
         exerciseId: "lat-pulldown",
@@ -173,7 +173,7 @@ export const programTemplates: ProgramTemplate[] = [
         repRange: [8, 15],
         alternatives: ["incline-curl", "hammer-curl", "cable-biceps-curl"],
         notes:
-          "Choose one or two curl variations. September 29: incline curl 15 lb × 10/10/10 and spider curl 20 lb × 10/10/10, per dumbbell. The September 22 four-set results remain the higher-volume comparison.",
+          "Choose one or two curl variations. October 6 repeated incline curl 15 lb × 10/10/10 and spider curl 20 lb × 10/10/10, per dumbbell. Cable curl reached 30/35/40 lb × 10 each with setup unconfirmed. The September 22 four-set dumbbell results remain the higher-volume comparison.",
       },
       {
         exerciseId: "farmers-carry",

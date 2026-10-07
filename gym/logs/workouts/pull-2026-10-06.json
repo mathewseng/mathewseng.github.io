@@ -1,0 +1,214 @@
+{
+  "id": "pull-2026-10-06",
+  "date": "2026-10-06",
+  "startTime": "22:30",
+  "durationMinutes": 50,
+  "type": "pull",
+  "title": "Pull with Four Pull-Up Sets and Cable Progressions",
+  "chronologyIndex": 25,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Late-night pull session followed by 15 minutes in a sauna. Sauna type and numeric 0–6 readiness/pain ratings were not supplied.",
+    "sourceLabels": ["late-night-training", "post-workout-sauna"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-10-06-pullup-1",
+          "reps": 6,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-pullup-2",
+          "reps": 4,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-pullup-3",
+          "reps": 3,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-pullup-4",
+          "reps": 3,
+          "completed": true
+        }
+      ],
+      "notes": "16 reps across four sets; highest reported top set (6) and session total (16). Strict form not explicitly confirmed; the previous 14-rep total used three sets."
+    },
+    {
+      "exerciseId": "face-pull",
+      "name": "Face Pull",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-10-06-face-pull-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-face-pull-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-face-pull-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Machine identity, attachment, and form not specified."
+    },
+    {
+      "exerciseId": "straight-arm-cable-pulldown",
+      "name": "Cable Lat Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-10-06-lat-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-lat-pushdown-2",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-lat-pushdown-3",
+          "weightLb": 40,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Uses the earlier straight-arm cable-pulldown mapping. Elbow position and setup unconfirmed."
+    },
+    {
+      "exerciseId": "standing-cable-row",
+      "name": "Standing Cable Row",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-10-06-row-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-row-2",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-row-3",
+          "weightLb": 40,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Per-side loading and unilateral versus bilateral setup not specified."
+    },
+    {
+      "exerciseId": "cable-biceps-curl",
+      "name": "Cable Biceps Curl",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-10-06-cable-curl-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-cable-curl-2",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-10-06-cable-curl-3",
+          "weightLb": 40,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Per-side loading and unilateral versus bilateral setup not specified."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-10-06-incline-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-10-06-incline-curl-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-10-06-incline-curl-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Load per dumbbell follows earlier logs; entered-load volume is not doubled."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-10-06-spider-curl-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-10-06-spider-curl-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-10-06-spider-curl-3",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Load per dumbbell follows earlier logs; entered-load volume is not doubled."
+    }
+  ],
+  "notes": "Started at 10:30 PM local time; workout duration 50 minutes. 22 completed sets, 196 completed reps, and 6,300 lb entered-load volume. Bodyweight pull-ups excluded from external-load volume. A separate 15-minute sauna followed; type unspecified. No numeric readiness, pain, or RIR ratings supplied."
+}

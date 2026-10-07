@@ -97,7 +97,7 @@ export const currentBenchmarks: Benchmark[] = [
     confirmed: true,
     workoutId: "strict-pull-up-baseline",
     notes:
-      "The confirmed strict baseline was 5, 5, 3. September 29 logged 5, 4, 3, but strict form was not explicitly reconfirmed.",
+      "The confirmed strict baseline was 5, 5, 3. October 6 logged a six-rep top set, but strict form was not explicitly reconfirmed.",
   },
   {
     id: "strict-pullup-session-total",
@@ -108,7 +108,7 @@ export const currentBenchmarks: Benchmark[] = [
     confirmed: true,
     workoutId: "strict-pull-up-baseline",
     notes:
-      "The confirmed strict baseline total is 13. September 22 logged 14 reps and September 29 logged 12; strict form was not explicitly reconfirmed for either session.",
+      "The confirmed strict baseline total is 13. October 6 logged 16 reps across four sets, versus 14 across three on September 22; strict form was not explicitly reconfirmed.",
   },
   {
     id: "lat-pulldown-top-set",
