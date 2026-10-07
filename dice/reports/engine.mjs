@@ -1,0 +1,313 @@
+// Fairness is an integer identity. BigInt is used for public/checker arithmetic;
+// the bounded search uses safe integer Numbers (largest sum <= 6^6 * 1,000,000).
+export const DEFAULTS = Object.freeze({
+  n: 4,
+  minP0: -5,
+  maxP0: -1,
+  maxPayout: 100,
+  strict: true,
+  allowZero: false,
+  limit: 40,
+  sort: "recommended",
+});
+export const FEATURED = Object.freeze({
+  3: [-2, 1, 8, 55],
+  4: [-2, 1, 3, 12, 60],
+});
+export const SORTS = [
+  "recommended",
+  "smoothest",
+  "steepest",
+  "lowest-max",
+  "jackpot",
+  "lowest-loss",
+  "largest-jump",
+  "range",
+];
+function diceCount(n) {
+  if (!Number.isInteger(n) || n < 2 || n > 6)
+    throw new RangeError("Choose 2 through 6 dice.");
+}
+export function weights(n) {
+  diceCount(n);
+  let choose = 1;
+  return Array.from({ length: n + 1 }, (_, k) => {
+    if (k) choose = (choose * (n - k + 1)) / k;
+    return choose * 5 ** (n - k);
+  });
+}
+export function integer(value) {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number" && Number.isSafeInteger(value))
+    return BigInt(value);
+  if (typeof value === "string" && /^[+-]?\d{1,100}$/.test(value.trim()))
+    return BigInt(value.trim());
+  throw new TypeError(
+    "Use whole numbers (up to 100 digits), with no decimals.",
+  );
+}
+export function evNumerator(n, payouts) {
+  if (payouts.length !== n + 1)
+    throw new RangeError(`Enter exactly ${n + 1} payouts.`);
+  return weights(n).reduce(
+    (sum, w, k) => sum + BigInt(w) * integer(payouts[k]),
+    0n,
+  );
+}
+export function isFair(n, payouts) {
+  return evNumerator(n, payouts) === 0n;
+}
+export function solveFinal(n, earlier) {
+  if (earlier.length !== n)
+    throw new RangeError(`Enter exactly ${n} earlier payouts.`);
+  return -weights(n)
+    .slice(0, n)
+    .reduce((sum, w, k) => sum + BigInt(w) * integer(earlier[k]), 0n);
+}
+export function normalizeOptions(input = {}) {
+  const o = { ...DEFAULTS, ...input };
+  diceCount(o.n);
+  for (const key of ["minP0", "maxP0", "maxPayout", "limit"]) {
+    if (!Number.isSafeInteger(o[key]))
+      throw new RangeError("All filter values must be whole numbers.");
+  }
+  if (o.minP0 < -10000 || o.maxP0 > 10000 || o.minP0 > o.maxP0)
+    throw new RangeError(
+      "Use a p[0] range between −10,000 and 10,000, with minimum ≤ maximum.",
+    );
+  if (o.maxPayout < 1 || o.maxPayout > 1000000 || o.minP0 > o.maxPayout)
+    throw new RangeError(
+      "Maximum payout must be 1–1,000,000 and at least the minimum p[0].",
+    );
+  if (o.limit < 1 || o.limit > 200)
+    throw new RangeError("Choose between 1 and 200 results.");
+  if (!SORTS.includes(o.sort)) throw new RangeError("Unknown ranking method.");
+  o.strict = Boolean(o.strict);
+  o.allowZero = Boolean(o.allowZero);
+  return o;
+}
+export function filterReasons(payouts, input = {}) {
+  const o = normalizeOptions(input);
+  if (payouts.length !== o.n + 1) return [`Needs ${o.n + 1} payouts.`];
+  let p;
+  try {
+    p = payouts.map(integer);
+  } catch (error) {
+    return [error.message];
+  }
+  const reasons = [];
+  if (p[0] < BigInt(o.minP0) || p[0] > BigInt(o.maxP0))
+    reasons.push("Initial payout is outside the p[0] range.");
+  if (p.some((v) => v < BigInt(o.minP0) || v > BigInt(o.maxPayout)))
+    reasons.push("A payout is outside the minimum p[0]–maximum payout bounds.");
+  if (o.strict && p.some((v, k) => k > 0 && v <= p[k - 1]))
+    reasons.push("Payouts are not strictly increasing.");
+  if (!o.allowZero && p.includes(0n))
+    reasons.push("Zero payouts are disabled.");
+  if (!isFair(o.n, p)) reasons.push("Expected value is not exactly zero.");
+  return reasons;
+}
+export function metrics(n, p) {
+  const w = weights(n),
+    total = 6 ** n;
+  const jumps = p.slice(1).map((v, i) => v - p[i]);
+  const mean = jumps.reduce((s, d) => s + d, 0) / n;
+  const meanAbs = jumps.reduce((s, d) => s + Math.abs(d), 0) / n;
+  const variance = jumps.reduce((s, d) => s + (d - mean) ** 2, 0) / n;
+  const smoothness = 100 / (1 + (meanAbs ? Math.sqrt(variance) / meanAbs : 0));
+  const rise = jumps.reduce((s, d) => s + Math.max(0, d), 0);
+  const steepness = rise
+    ? (100 * jumps.reduce((s, d, i) => s + (Math.max(0, d) * i) / (n - 1), 0)) /
+      rise
+    : 0;
+  const max = Math.max(...p),
+    range = max - Math.min(...p);
+  const simple =
+    p.filter((v) => Math.abs(v) <= 10 || v % 5 === 0).length / p.length;
+  const bend =
+    jumps
+      .slice(1)
+      .reduce(
+        (s, d, i) =>
+          s +
+          Math.abs(
+            Math.log2((Math.abs(d) + 1) / (Math.abs(jumps[i]) + 1)) - 1,
+          ) +
+          (d < jumps[i] ? 1 : 0),
+        0,
+      ) /
+    (n - 1);
+  const recommended =
+    0.25 * smoothness +
+    20 * simple +
+    20 / (1 + Math.max(0, max) / 50) +
+    20 / (1 + bend) +
+    (15 * jumps.filter((d) => d > 0).length) / n;
+  return {
+    max,
+    range,
+    jumps,
+    largestJump: Math.max(...jumps.map(Math.abs)),
+    smoothness,
+    steepness,
+    recommended,
+    winWeight: w.reduce((s, v, k) => s + (p[k] > 0 ? v : 0), 0),
+    total,
+    maxMatchWeight: 1,
+  };
+}
+export function compareSchedules(sort) {
+  return (a, b) => {
+    const m = a.metrics,
+      q = b.metrics;
+    const differences = {
+      recommended: q.recommended - m.recommended,
+      smoothest: q.smoothness - m.smoothness,
+      steepest: q.steepness - m.steepness,
+      "lowest-max": m.max - q.max,
+      jackpot: q.max - m.max,
+      "lowest-loss": Math.max(0, -a.payouts[0]) - Math.max(0, -b.payouts[0]),
+      "largest-jump": m.largestJump - q.largestJump,
+      range: m.range - q.range,
+    };
+    return (
+      differences[sort] ||
+      q.recommended - m.recommended ||
+      a.payouts.reduce((d, v, k) => d || v - b.payouts[k], 0)
+    );
+  };
+}
+function shapeKey(p, m) {
+  // Eight subdivisions of the normalized curve; loss and jackpot bands keep
+  // distinct stakes visible. Only Recommended uses this representative grouping.
+  return [
+    p[0],
+    Math.floor(Math.log2(Math.max(1, m.max))),
+    ...p
+      .slice(1, -1)
+      .map((v) => Math.floor((8 * (v - Math.min(...p))) / (m.range || 1))),
+  ].join(":");
+}
+function gcd(a, b) {
+  while (b) [a, b] = [b, a % b];
+  return a;
+}
+function* spread(lo, hi) {
+  const length = hi - lo + 1;
+  if (length <= 0) return;
+  let step = Math.max(1, Math.floor(length * 0.618));
+  while (gcd(step, length) !== 1) step++;
+  // Coprime traversal visits every integer once; partial runs span the interval.
+  for (
+    let j = 0, offset = 0;
+    j < length;
+    j++, offset = (offset + step) % length
+  )
+    yield lo + offset;
+}
+export function enumerate(
+  input = {},
+  { maxNodes = 600000, maxMs = 2500, onProgress = () => {} } = {},
+) {
+  const o = normalizeOptions(input),
+    w = weights(o.n),
+    started = performance.now();
+  const compare = compareSchedules(o.sort),
+    pool = new Map();
+  const suffix = w.map((_, i) => w.slice(i).reduce((s, v) => s + v, 0));
+  let nodes = 0,
+    found = 0,
+    lastProgress = started,
+    stopped = false;
+  function add(payouts) {
+    found++;
+    const m = metrics(o.n, payouts),
+      row = { payouts, metrics: m };
+    const key =
+      o.sort === "recommended" ? shapeKey(payouts, m) : payouts.join(",");
+    if (!pool.has(key) || compare(row, pool.get(key)) < 0) pool.set(key, row);
+    if (pool.size > 1600) {
+      const best = [...pool.entries()]
+        .sort((a, b) => compare(a[1], b[1]))
+        .slice(0, 800);
+      pool.clear();
+      best.forEach(([k, v]) => pool.set(k, v));
+    }
+  }
+  function* visit(p, sum, i) {
+    let lo = o.strict ? p[i - 1] + 1 : o.minP0;
+    let hi = o.strict ? o.maxPayout - (o.n - i) : o.maxPayout;
+    if (o.strict) {
+      const offset = w.slice(i + 1).reduce((s, v, j) => s + v * (j + 1), 0);
+      const maxTail = w
+        .slice(i + 1)
+        .reduce((s, v, j) => s + v * (o.maxPayout - (o.n - (i + j + 1))), 0);
+      lo = Math.max(lo, Math.ceil((-sum - maxTail) / w[i]));
+      hi = Math.min(hi, Math.floor((-sum - offset) / suffix[i]));
+    } else {
+      lo = Math.max(lo, Math.ceil((-sum - o.maxPayout * suffix[i + 1]) / w[i]));
+      hi = Math.min(hi, Math.floor((-sum - o.minP0 * suffix[i + 1]) / w[i]));
+    }
+    for (const v of spread(lo, hi)) {
+      // A yield per visited candidate gives the outer loop a strict work budget.
+      if (!o.allowZero && v === 0) {
+        yield null;
+        continue;
+      }
+      const next = sum + w[i] * v;
+      if (i === o.n - 1) {
+        const final = next === 0 ? 0 : -next;
+        const valid =
+          final >= o.minP0 &&
+          final <= o.maxPayout &&
+          (!o.strict || final > v) &&
+          (o.allowZero || final !== 0);
+        yield valid ? [...p, v, final] : null;
+      } else {
+        yield null;
+        yield* visit([...p, v], next, i + 1);
+      }
+    }
+  }
+  const active = [];
+  for (const p0 of spread(o.minP0, Math.min(o.maxP0, o.maxPayout))) {
+    if (o.allowZero || p0 !== 0) active.push(visit([p0], w[0] * p0, 1));
+  }
+  // Round-robin starting losses avoids exhausting the budget on only one stake.
+  while (active.length && !stopped) {
+    for (let i = 0; i < active.length && !stopped;) {
+      let done = false;
+      for (let batch = 0; batch < 64; batch++) {
+        if (
+          nodes >= maxNodes ||
+          (nodes % 1024 === 0 && performance.now() - started >= maxMs)
+        ) {
+          stopped = true;
+          break;
+        }
+        const item = active[i].next();
+        if (item.done) {
+          done = true;
+          break;
+        }
+        nodes++;
+        if (item.value) add(item.value);
+      }
+      if (done) active.splice(i, 1);
+      else i++;
+      const now = performance.now();
+      if (now - lastProgress > 200) {
+        onProgress({ nodes, found });
+        lastProgress = now;
+      }
+    }
+  }
+  return {
+    rows: [...pool.values()].sort(compare).slice(0, o.limit),
+    found,
+    nodes,
+    complete: !stopped,
+    elapsedMs: Math.round(performance.now() - started),
+    grouped: o.sort === "recommended",
+  };
+}

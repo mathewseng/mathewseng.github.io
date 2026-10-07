@@ -13,6 +13,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/`, `fantasyland-report/` |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `dodge/`, `calculations/` |
 | `blackjack/` | Blackjack hub: `strategy/` |
+| `dice/` | Dice hub: `reports/` (exact fair payout explorer and custom checker) |
 | `backgammon/` | Backgammon hub: `play/`, `trainer/`, `solver/`, `library/`; pinned GNUbg WASM |
 | `shared/` | Code shared across project families: `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, and `hub.css` + `hub.js` for the landing and hub pages |
 | `jazz-piano-ml/` | Python source project; not published |
@@ -22,7 +23,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 ## Conventions
 
 - Folder and file names are kebab-case, and a page's folder path is its URL.
-- A group of related pages is a family with a hub `index.html` at its root (`ofc/`, `poker/`, `blackjack/`, `backgammon/`).
+- A group of related pages is a family with a hub `index.html` at its root (`ofc/`, `poker/`, `blackjack/`, `backgammon/`, `dice/`).
   The landing page and hubs share `shared/hub.css` and `shared/hub.js`; set the accent with `data-family` on `<html>`.
 - Each page has `index.html`, `app.js` as its entry script, `styles.css`, and role-named modules
   (`engine.js`, `game.js`). Tests go in `tests/*.test.cjs` or `tests/*.test.mjs`, and notes go in

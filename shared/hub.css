@@ -49,6 +49,15 @@
   --accent-2: #ffe7a3;
 }
 
+[data-family="dice"] {
+  --accent: #e9c46b;
+  --accent-2: #e9c46b;
+}
+
+.switcher a[data-to="dice"] {
+  --dot: #e9c46b;
+}
+
 *,
 *::before,
 *::after {

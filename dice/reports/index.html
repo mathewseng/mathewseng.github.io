@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#101216" />
+    <meta
+      name="description"
+      content="Explore exact zero-EV dice payouts. Generate and rank fair integer schedules for two through six dice, inspect the probabilities, and check your own payouts."
+    />
+    <title>Fair Dice Payout Explorer</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='12' fill='%23e9c46b'/%3E%3Cg fill='%23101216'%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3Ccircle cx='44' cy='20' r='5'/%3E%3Ccircle cx='20' cy='44' r='5'/%3E%3Ccircle cx='44' cy='44' r='5'/%3E%3C/g%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#results-title">Skip to payout schedules</a>
+    <div class="app-shell">
+      <header class="header">
+        <div class="topline">
+          <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <a class="monogram" href="/">MS</a><span>/</span
+            ><a href="/dice/">Dice</a><span>/</span
+            ><span aria-current="page">Reports</span>
+          </nav>
+          <button class="quiet-button" id="open-checker">
+            Custom payout checker <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+        <div class="intro">
+          <div>
+            <p class="eyebrow">PROBABILITY LAB</p>
+            <h1>Fair Dice <span>Payout Explorer</span></h1>
+          </div>
+          <p class="explanation">
+            Choose a face. Roll 2–6 fair six-sided dice. Your
+            <strong>net payout</strong> depends on how many match.<br />Explore
+            integer payouts that balance to
+            <strong>exactly zero expected value</strong>.
+          </p>
+        </div>
+        <div class="dice-line">
+          <div class="dice-tabs" role="group" aria-label="Number of dice">
+            <button data-n="2" aria-pressed="false">2 <span>Dice</span></button>
+            <button data-n="3" aria-pressed="false">3 <span>Dice</span></button>
+            <button data-n="4" aria-pressed="true">4 <span>Dice</span></button>
+            <button data-n="5" aria-pressed="false">5 <span>Dice</span></button>
+            <button data-n="6" aria-pressed="false">6 <span>Dice</span></button>
+          </div>
+          <span class="distribution-label" id="distribution-label"
+            >Exact outcome distribution</span
+          >
+        </div>
+        <div
+          id="distribution"
+          class="distribution"
+          aria-labelledby="distribution-label"
+        ></div>
+      </header>
+
+      <main class="workspace">
+        <aside class="filters-panel">
+          <details id="filters-disclosure" open>
+            <summary>Search filters <span aria-hidden="true">⌄</span></summary>
+            <form id="filters">
+              <fieldset>
+                <legend>Initial payout <span class="mono">p[0]</span></legend>
+                <div class="input-pair">
+                  <label
+                    >Minimum<input
+                      name="minP0"
+                      id="min-p0"
+                      type="number"
+                      value="-5"
+                      min="-10000"
+                      max="10000"
+                      required /></label
+                  ><label
+                    >Maximum<input
+                      name="maxP0"
+                      id="max-p0"
+                      type="number"
+                      value="-1"
+                      min="-10000"
+                      max="10000"
+                      required
+                  /></label>
+                </div>
+              </fieldset>
+              <label
+                >Maximum payout <span class="unit">units</span
+                ><input
+                  name="maxPayout"
+                  id="max-payout"
+                  type="number"
+                  min="1"
+                  max="1000000"
+                  value="100"
+                  required
+              /></label>
+              <label
+                >Maximum results<input
+                  name="limit"
+                  id="max-results"
+                  type="number"
+                  min="1"
+                  max="200"
+                  value="40"
+                  required
+              /></label>
+              <div class="toggle-group">
+                <label class="toggle-label"
+                  ><span>Strictly increasing</span
+                  ><input
+                    name="strict"
+                    id="strict"
+                    type="checkbox"
+                    checked /><span
+                    class="toggle"
+                    aria-hidden="true"
+                  ></span></label
+                ><label class="toggle-label"
+                  ><span>Allow zero payouts</span
+                  ><input
+                    name="allowZero"
+                    id="allow-zero"
+                    type="checkbox" /><span
+                    class="toggle"
+                    aria-hidden="true"
+                  ></span
+                ></label>
+              </div>
+              <p class="hint">
+                All payouts stay between the minimum p[0] and maximum payout.
+                Negative = loss; zero = push.
+              </p>
+              <button
+                class="quiet-button reset"
+                type="button"
+                id="reset-filters"
+              >
+                Reset filters
+              </button>
+              <p id="filter-error" class="error" role="alert"></p>
+            </form>
+          </details>
+          <div class="ranking-note">
+            <p class="eyebrow">WHY RECOMMENDED?</p>
+            <p>
+              Simple amounts, balanced growth, and a moderate jackpot. Similar
+              curves are grouped so more shapes surface.
+            </p>
+            <details>
+              <summary>Scoring &amp; search limits</summary>
+              <p>
+                Score out of 100: 25 for smooth jumps, 20 for simple amounts
+                (|p| ≤ 10 or multiples of 5), 20 for a moderate maximum, 20 for
+                jumps growing around twofold, and 15 for increasing payouts.
+              </p>
+              <p>
+                Recommended keeps the best score in each curve family: same
+                initial payout, jackpot power-of-two band, and normalized
+                intermediate payouts in eighths. Other rankings show individual
+                schedules.
+              </p>
+              <p>
+                Search stops at 600,000 candidate nodes or about 2.5 seconds.
+                Partial results are ranked only among the schedules explored,
+                not the entire space. Starting losses and payout intervals are
+                interleaved for coverage.
+              </p>
+            </details>
+          </div>
+        </aside>
+
+        <section class="results-panel" aria-labelledby="results-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">GENERATED SCHEDULES</p>
+              <h2 id="results-title" tabindex="-1">
+                Fair by construction<span
+                  class="live-dot"
+                  aria-hidden="true"
+                ></span>
+              </h2>
+            </div>
+            <label class="sort-label"
+              >Rank by<select id="ranking">
+                <option value="recommended">Recommended</option>
+                <option value="smoothest">Smoothest</option>
+                <option value="steepest">Steepest</option>
+                <option value="lowest-max">Lowest maximum payout</option>
+                <option value="jackpot">Highest jackpot</option>
+                <option value="lowest-loss">Lowest initial loss</option>
+                <option value="largest-jump">Smallest largest jump</option>
+                <option value="range">Smallest payout range</option>
+              </select></label
+            >
+          </div>
+          <div id="featured" class="featured" hidden></div>
+          <div class="search-meta">
+            <p id="search-status" role="status" aria-live="polite">
+              Preparing exact search…
+            </p>
+            <span class="exact-tag">EV = 0</span>
+          </div>
+          <div
+            id="results-scroll"
+            class="table-scroll"
+            tabindex="0"
+            aria-label="Payout schedules, scroll for more columns and rows"
+          >
+            <table id="results-table">
+              <caption class="sr-only">
+                Ranked fair payout schedules. Select a rank button to inspect a
+                schedule. All payouts are net units.
+              </caption>
+              <thead id="results-head"></thead>
+              <tbody id="results-body"></tbody>
+            </table>
+            <div id="empty-state" class="empty-state" hidden></div>
+          </div>
+          <p class="table-foot">
+            Select a row to inspect the exact proof.
+            <span>+ profit &nbsp; − loss</span>
+          </p>
+        </section>
+
+        <aside
+          id="inspector"
+          class="inspector"
+          aria-label="Selected schedule analysis"
+          tabindex="-1"
+        >
+          <div class="inspector-heading">
+            <p class="eyebrow">SCHEDULE INSPECTOR</p>
+            <span class="exact-tag">EXACT ARITHMETIC</span>
+          </div>
+          <div id="analysis">
+            <p class="hint">
+              Select a schedule to see its payout curve and exact expected
+              value.
+            </p>
+          </div>
+          <details class="math-reference" id="math-reference">
+            <summary>How the math works</summary>
+            <p>
+              Every die independently matches the chosen face with probability
+              1/6. For N dice and k matches:
+            </p>
+            <p class="formula">
+              w(N,k) = C(N,k) × 5<sup>N−k</sup><br />P(k) = w(N,k) / 6<sup
+                >N</sup
+              ><br />EV = Σ w(N,k)p[k] / 6<sup>N</sup>
+            </p>
+            <p>
+              A fair schedule has <strong>Σ w(N,k)p[k] = 0</strong>. The final
+              weight is always 1, so we enumerate the earlier payouts and solve
+              p[N] = −Σ<sub>k&lt;N</sub> w(N,k)p[k]. Integer bounds prune
+              impossible branches.
+            </p>
+            <div class="mini-scroll">
+              <table>
+                <caption>
+                  Exact weights, ordered from 0 to N matches
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Dice</th>
+                    <th>Weights</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody id="all-weights"></tbody>
+              </table>
+            </div>
+            <p>
+              Fairness uses exact integer arithmetic, never rounded
+              probabilities. Search bounds keep every Number operation within
+              JavaScript’s safe integer range; the checker and EV proofs use
+              BigInt. Percentages, charts, and style scores are display
+              approximations.
+            </p>
+            <p>
+              <strong>Smoothness</strong> = 100 / (1 + σ(d) / mean(|d|)), where
+              d is the sequence of adjacent jumps. Higher means more even jumps.
+              Constant payouts score 100.
+            </p>
+            <p>
+              <strong>Steepness</strong> = 100 × Σ max(d[k],0)(k−1)/(N−1) / Σ
+              max(d[k],0). Equal positive jumps score 50; a final-only rise
+              scores 100. No rises score 0.
+            </p>
+            <p>
+              <strong>Recommended</strong> = .25 × smoothness + 20 × simple
+              share + 20/(1 + max/50) + 20/(1 + bend) + 15 × increasing-jump
+              share. Bend averages |log₂((|next jump|+1)/(|previous
+              jump|+1))−1|, plus 1 for each shrinking jump. The maximum term
+              uses max(0, maximum payout).
+            </p>
+            <p>
+              Winning means a positive <em>net</em> payout. All-match
+              probability is always 1/6<sup>N</sup>, even if a non-increasing
+              schedule pays its maximum elsewhere.
+            </p>
+          </details>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="checker-dialog" aria-labelledby="checker-title">
+      <section class="checker-section">
+        <header class="dialog-head">
+          <div>
+            <p class="eyebrow">TEST YOUR OWN</p>
+            <h2 id="checker-title">Custom payout checker</h2>
+          </div>
+          <button
+            id="close-checker"
+            class="close-button"
+            aria-label="Close custom payout checker"
+          >
+            ×
+          </button>
+        </header>
+        <p class="hint">
+          Enter net integer payouts, from zero matches through all matches. The
+          result updates as you type.
+        </p>
+        <div class="checker-fields">
+          <label
+            >Dice<select id="checker-n">
+              <option>2</option>
+              <option>3</option>
+              <option selected>4</option>
+              <option>5</option>
+              <option>6</option>
+            </select></label
+          ><label
+            >Payouts, separated by commas<input
+              id="checker-payouts"
+              type="text"
+              value="-2, 1, 3, 12, 60"
+              autocomplete="off"
+              spellcheck="false"
+          /></label>
+        </div>
+        <div id="checker-result" aria-live="polite"></div>
+        <p class="hint">
+          Edge is EV ÷ |p[0]|, using the initial loss as the stake. If p[0] is
+          not negative, a stake-based edge is undefined. Filter checks use the
+          checker’s dice count and the current search bounds.
+        </p>
+      </section>
+    </dialog>
+    <noscript
+      ><p class="no-script">
+        Enable JavaScript to generate and check payout schedules. This tool runs
+        entirely in your browser.
+      </p></noscript
+    >
+  </body>
+</html>
