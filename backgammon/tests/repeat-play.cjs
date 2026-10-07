@@ -86,12 +86,14 @@ module.exports = async function repeatPlay(browser, base, out, name) {
         await tap(p(7),true);
         assert.equal((await read()).selected,p(7));
         await tap(p(23),true);
-        assert.equal((await read()).selected,p(7),"blocked disc preserves selection");
+        assert.equal((await read()).selected,null,"blocked disc clears selection");
+        await tap(p(7),true);
         await tap(p(23));
-        assert.equal((await read()).selected,p(7),"blocked point fallback preserves selection");
+        assert.equal((await read()).selected,null,"blocked point clears selection");
+        await tap(p(7),true);
         await page.locator(`[data-point="${p(23)}"]`).focus();
         await page.keyboard.press("Enter");
-        assert.equal((await read()).selected,p(7),"blocked keyboard source preserves selection");
+        assert.equal((await read()).selected,null,"blocked keyboard source clears selection");
         assert.equal((await read()).draft.length,0);
       }
       await reset([2, 1]);
@@ -134,7 +136,9 @@ module.exports = async function repeatPlay(browser, base, out, name) {
       });
       assert.equal((await read()).selected,"bar");
       await tap(7,true);
-      assert.equal((await read()).selected,"bar","bar entry prevents selecting other checkers");
+      assert.equal((await read()).selected,null,"unavailable checker clears bar selection without playing");
+      await page.locator('[data-point="bar0"]').click();
+      assert.equal((await read()).selected,"bar","bar can be selected again");
       await page.locator('[data-point="bar0"]').click();
       assert.equal((await read()).selected,null,"selected bar also deselects");
       await page.locator('[data-point="bar0"]').click();

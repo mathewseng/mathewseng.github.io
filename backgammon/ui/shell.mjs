@@ -528,6 +528,38 @@ export class DraftBoard {
     this.paths = [];
     this.preferred = null;
     board.onPoint = (p, options) => this.point(p, options);
+    board.onBackground = () => this.clearSelection();
+    const outsideBackground = (target) =>
+      board.container.isConnected && !board.svg.contains(target) &&
+      !target.closest?.(
+        'button,a,input,select,textarea,label,summary,dialog,[role="button"],[contenteditable]',
+      );
+    document.addEventListener("click", (e) => {
+      if (outsideBackground(e.target) &&
+          performance.now() >= (board.suppressClickUntil || 0))
+        this.clearSelection();
+    });
+    // Mobile Safari may omit click events on plain text. Treat only a stationary
+    // background tap as dismissal; a scroll, cancelled pointer or drag is not one.
+    let backgroundTap = null;
+    document.addEventListener("pointerdown", (e) => {
+      backgroundTap = e.isPrimary && e.button === 0 && outsideBackground(e.target)
+        ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (backgroundTap?.id === e.pointerId &&
+          Math.hypot(e.clientX - backgroundTap.x, e.clientY - backgroundTap.y) > 8)
+        backgroundTap = null;
+    });
+    document.addEventListener("pointercancel", () => { backgroundTap = null; });
+    document.addEventListener("pointerup", (e) => {
+      const tap = backgroundTap;
+      backgroundTap = null;
+      if (tap?.id === e.pointerId && outsideBackground(e.target) &&
+          Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8 &&
+          performance.now() >= (board.suppressClickUntil || 0))
+        this.clearSelection();
+    });
     board.onDragStart = (p) => this.beginDrag(p);
     board.onDrop = (_, p) => this.drop(p);
     board.onCancel = () => {
@@ -605,7 +637,16 @@ export class DraftBoard {
   }
   point(raw, options = {}) {
     if (!this.enabled || this.preview) return;
-    return this.resolvePoint(raw, options);
+    const result = this.resolvePoint(raw, options);
+    if (result === "unavailable" && options.activation !== false)
+      this.clearSelection();
+    return result;
+  }
+  clearSelection() {
+    if (!this.enabled || this.preview || this.selected === null) return;
+    this.selected = null;
+    this.hint = "";
+    this.render();
   }
   resolvePoint(
     raw,

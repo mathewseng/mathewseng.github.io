@@ -30,15 +30,15 @@ flowchart TD
   L --> R
   K -- No --> J{Your movable checker is on this point?}
   J -- Yes --> D
-  J -- No --> M[No change or message]
+  J -- No --> M[Clear selection without a move or message]
   R --> N{One distinct route or one preferred single die?}
   N -- Yes --> O[Apply move or draft revision]
   N -- No --> P[Ask which die or route]
 ```
 
-A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly preserves the selection. With no selection, it brings the nearest legal checker. With no selection and no forward arrival, a legal alternate-die landing revises the draft. Otherwise an amber return target brings back the nearest eligible checker before falling back to resident selection or deselection.
+A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly clears the selection. With no selection, it brings the nearest legal checker. With no selection and no forward arrival, a legal alternate-die landing revises the draft. Otherwise an amber return target brings back the nearest eligible checker before falling back to resident selection or deselection.
 
-Bar-entry priority and complete-turn legality constrain every route. Selecting another checker cannot bypass the bar. A selected legal route may be a forward move, draft return or alternate-die entry. A checker without a legal forward move, alternate-die revision or draft return cannot be selected; clicking it preserves the existing selection unless its location advertises a legal destination. Dragging remains explicit source → destination input; an invalid drop cancels.
+Bar-entry priority and complete-turn legality constrain every route. Selecting another checker cannot bypass the bar. A selected legal route may be a forward move, draft return or alternate-die entry. A checker without a legal forward move, alternate-die revision or draft return cannot be selected; clicking it clears the existing selection unless its location advertises a legal destination. Dragging remains explicit source → destination input; an invalid drop cancels.
 
 Route resolution deduplicates equivalent outcomes and consumed dice. For combined shortcuts with the same dice, a hitting route beats a quiet one; distinct hitting outcomes remain explicit choices. Different die use may also need a choice. Manual intermediate moves can still avoid a hit. Board returns restore the checker’s entire journey to its pre-roll origin, never an intermediate stop. In a stack, the latest arrival is the checker continued by the next move. Journeys containing a forced prefix cannot return; the separate Undo button can still remove individual chosen steps. Alternate-die revisions can restart a completed chain with the other die while preserving unrelated steps and complete-turn legality.
 
@@ -50,7 +50,7 @@ Point keys and focused-point Enter/Space use selection-aware input: pressing the
 
 There is no double-click timer or special rapid-input mode. Every click uses the current board and selection, regardless of speed. Repeated open-point taps can build a point while that destination remains legal under the current selection. When a forward move completes the draft, its reversible landing stays selected; the next click there deselects instead of unexpectedly using a different checker’s old return route. A following click follows the newly displayed markers.
 
-A timing-based exception was removed because its small point-building benefit did not justify making identical targets behave differently with click speed, automatic selection, or input device. Explicit Shift+point input provides keyboard destination intent without a timing requirement. Unavailable clicks preserve the draft, selection and status text without a message. Invalid drops snap back without an error message.
+A timing-based exception was removed because its small point-building benefit did not justify making identical targets behave differently with click speed, automatic selection, or input device. Explicit Shift+point input provides keyboard destination intent without a timing requirement. Unavailable clicks clear selection while preserving the draft, without an error or toast. Blank board and page space also deselect; buttons, usable dice, forms and dialogs retain their own actions. Invalid drops snap back without an error message.
 
 
 ## Highlight decisions

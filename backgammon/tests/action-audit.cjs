@@ -80,11 +80,30 @@ module.exports = async function actionAudit(browser, base, out, name) {
         await set("start",turn,orientation,12);
         await tap(p(3));
         assert.deepEqual((await read()).draft,[],"unhighlighted empty destination cannot steal another source");
-        assert.equal((await read()).selected,p(12));
+        assert.equal((await read()).selected,null,"unavailable point clears selection without moving a hidden source");
+        await set("start",turn,orientation,12);
         await tap(p(7));
         assert.equal((await read()).selected,p(7),"unhighlighted friendly stack changes source, never plays hidden incoming route");
         await tap(p(3));
         assert.equal((await read()).draft[0].from,p(7));
+        for(const target of ["frame","page","die","button"]) {
+          await set("start",turn,orientation,12);
+          const before=await read();
+          if(target==="frame") {
+            const pos=await page.evaluate(()=>{const p=new DOMPoint(10,330).matrixTransform(document.querySelector(".bg-board").getScreenCTM());return {x:p.x,y:p.y};});
+            if(touch)await page.touchscreen.tap(pos.x,pos.y);else await page.mouse.click(pos.x,pos.y);
+          } else {
+            const selector=target==="page"?"#draft-line":target==="button"?"#preferences":'.board-die[role="button"]';
+            if(touch)await page.locator(selector).first().tap();else await page.locator(selector).first().click();
+          }
+          assert.deepEqual((await read()).draft,before.draft);
+          assert.equal((await read()).selected,["die","button"].includes(target)?p(12):null,`${name} ${touch ? "touch" : "mouse"} player ${turn} orientation ${orientation}: ${target} selection policy`);
+          if(target==="button") {
+            await page.locator("dialog[open]").waitFor();
+            await page.keyboard.press("Escape");
+            assert.equal((await read()).selected,p(12),"dialog actions preserve selection");
+          }
+        }
         for(const region of ["disc","space","number"]){
           await set("start",turn,orientation,12);
           await tap(p(5),region);
@@ -177,6 +196,24 @@ module.exports = async function actionAudit(browser, base, out, name) {
         }
         assert.deepEqual(outcomes[0],outcomes[1],"fast and slow clicks have identical semantics");
       }
+      // A mobile scroll cancels its pointer; movement away and back is not a tap.
+      for (const gesture of ["cancel", "move"]) {
+        await set("start",0,0,12);
+        await page.evaluate((gesture)=>{
+          const target=document.querySelector("#draft-line");
+          const fire=(type,x=10)=>target.dispatchEvent(new PointerEvent(type,{
+            bubbles:true,pointerId:71,isPrimary:true,pointerType:"touch",
+            button:0,clientX:x,clientY:10,
+          }));
+          fire("pointerdown");
+          if(gesture==="cancel")fire("pointercancel");
+          else fire("pointermove",30);
+          fire("pointerup");
+        },gesture);
+        assert.equal((await read()).selected,12,`${gesture} does not dismiss selection`);
+        assert.deepEqual((await read()).draft,[]);
+      }
+
       // Cross every source selection with every board/bar/off target. These
       // controller checks supplement native geometric clicks above; they are
       // not presented as physical-device testing or proof for all game states.
@@ -209,8 +246,10 @@ module.exports = async function actionAudit(browser, base, out, name) {
               }else if(advertised)check(changed||modal,`advertised destination did not act: ${label}`);
               else {
                 check(!changed&&!modal,`unadvertised route moved: ${label}`);
-                if(!selectable && p!==selected)
-                  check(document.querySelector("#draft-line").textContent===beforeMessage,`inactive click changed message: ${label}`);
+                if(!selectable && p!==selected) {
+                  check(d.selected===null,`inactive click did not clear selection: ${label}`);
+                  if(selected===null)check(document.querySelector("#draft-line").textContent===beforeMessage,`inactive click changed message with no selection: ${label}`);
+                }
               }
               check(JSON.stringify(d.draft.slice(0,minDraft))===JSON.stringify(initial.slice(0,minDraft)),`forced prefix changed: ${label}`);
               check(r.matchingPaths(d.paths,d.draft).length>0,`illegal draft prefix: ${label}`);

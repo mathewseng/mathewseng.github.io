@@ -16,11 +16,11 @@ The ordered flow handles overlaps rather than assigning every combination a sepa
 
 ## Findings and repairs
 
-1. **Hidden-source movement:** a selected checker’s unhighlighted point could play a different checker. Ordinary clicks now respect the selected route set. Clicking another movable resident switches source; clicking an empty unavailable point quietly preserves selection.
+1. **Hidden-source movement:** a selected checker’s unhighlighted point could play a different checker. Ordinary clicks now respect the selected route set. Clicking another movable resident switches source; clicking an empty unavailable point quietly clears selection.
 2. **Timing-dependent actions:** a rapid repeat exception made a location behave differently with click speed, especially after automatic bar-entry selection. Removed the timer entirely. Fast and slow input sequences now agree. When a forward move finishes the draft, its reversible landing remains selected; the next click there deselects rather than reaching a different checker’s old return route.
 3. **Off-tray ambiguity:** reversible OFF had no source marker, and its actual checker strips acted like empty destination space. Added a source/selection outline, geometric strip hit-testing and a checker-sized count target so selection does not depend on tapping a thin strip. A reversible strip selects; open tray space bears off. Old committed off checkers cannot be draft-undone.
 4. **Dead number lane:** documentation called point numbers destination shortcuts, but the SVG text ignored pointers outside the point hit region. Added non-overlapping number hit regions and corresponding drag-drop geometry.
-5. **Noisy rejection:** unavailable targets previously replaced useful status text with explanations. They now preserve draft, selection and status without a message or animation interruption. Invalid drops snap back quietly.
+5. **Noisy rejection:** unavailable targets previously replaced useful status text with explanations. They now clear selection while preserving the draft, without an error or toast. Blank board/page space does the same; actionable controls retain their behavior. Invalid drops snap back quietly.
 
 ## Double-click assessment
 
@@ -38,6 +38,6 @@ Checker-disc selection and open-point destination input remain distinct and visi
 
 ## Verification
 
-`action-audit.cjs` tests actual mouse/touch geometry for both players and orientations, including friendly discs versus open occupied destinations, selected-source deselection, hidden-source prevention, first-die revision, forced-prefix protection, forward/return overlap, bar discs/arrows, off strips/space, opposing blots, and point-number lanes. It also crosses all selections with every board/bar/off target in seven legal fixture families. Assertions distinguish source selection from actual drafting, require each advertised destination to move or open a genuine chooser, reject unadvertised movement, and preserve forced prefixes and status text on unavailable input. Native sequences compare fast clicks with 450 ms pauses and require identical drafts and selections.
+`action-audit.cjs` tests actual mouse/touch geometry for both players and orientations, including friendly discs versus open occupied destinations, selected-source deselection, hidden-source prevention, first-die revision, forced-prefix protection, forward/return overlap, bar discs/arrows, off strips/space, opposing blots, and point-number lanes. It also crosses all selections with every board/bar/off target in seven legal fixture families. Assertions distinguish source selection from actual drafting, require each advertised destination to move or open a genuine chooser, reject unadvertised movement, and preserve forced prefixes and clear selection on unavailable input. Native sequences compare fast clicks with 450 ms pauses and require identical drafts and selections.
 
 This supplements `highlight-actions.cjs`, `repeat-play.cjs`, `keyboard.cjs`, `checker-ux.cjs`, `route-choice.cjs`, the pure rules/draft tests, and the full assembled-site browser suite. It is a finite behavioral audit, not a mathematical proof over every legal game state or physical iPhone testing.

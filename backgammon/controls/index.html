@@ -13,8 +13,8 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=e621b4cef89fa5f7" />
-    <link rel="stylesheet" href="./controls.css?bgv=e621b4cef89fa5f7" />
+    <link rel="stylesheet" href="../styles.css?bgv=eb2db3cdafbcff91" />
+    <link rel="stylesheet" href="./controls.css?bgv=eb2db3cdafbcff91" />
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -82,7 +82,7 @@
                 alternate-die target revises the draft.
               </p>
             </div>
-            <div class="flow-next">No · if selected, switch to a movable resident or keep selection.
+            <div class="flow-next">No · if selected, switch to a movable resident or clear selection.
               With no selection, continue ↓</div>
           </li>
           <li>
@@ -123,10 +123,10 @@
               <span class="flow-yes">Yes →</span>
               <p>
                 <strong>Select that checker.</strong><br />If already selected,
-                deselect it. Otherwise, keep the board and selection unchanged.
+                deselect it.
               </p>
             </div>
-            <div class="flow-end">No legal action → no change or message</div>
+            <div class="flow-end">No legal action → clear selection without a message</div>
           </li>
         </ol>
       </section>
@@ -287,7 +287,7 @@
             <tr role="row" id="case-blocked-own">
               <th role="rowheader" scope="row" data-label="Situation">Your immovable checker; no legal arrival or return</th>
               <td role="cell" data-label="What is highlighted">No legal marker or hover glow.</td>
-              <td role="cell" data-label="Click the checker">Keep the board and selection unchanged, with no message.</td>
+              <td role="cell" data-label="Click the checker">Clear selection without moving a checker or showing a message.</td>
               <td role="cell" data-label="Click point / tray space">Same. Bar priority can make otherwise movable checkers unavailable.</td>
             </tr>
             <tr role="row" id="case-selected">
@@ -329,14 +329,14 @@
             <tr role="row" id="case-blocked-opponent">
               <th role="rowheader" scope="row" data-label="Situation">Two or more opposing checkers</th>
               <td role="cell" data-label="What is highlighted">No legal destination marker.</td>
-              <td role="cell" data-label="Click the checker">No move or message.</td>
+              <td role="cell" data-label="Click the checker">Clear selection; no move or message.</td>
               <td role="cell" data-label="Click point / tray space">Same. An intermediate blocked point also removes routes through it.</td>
             </tr>
             <tr role="row" id="case-outside-selection">
               <th role="rowheader" scope="row" data-label="Situation">Unhighlighted empty point while a checker is selected</th>
               <td role="cell" data-label="What is highlighted">No destination wash.</td>
               <td role="cell" data-label="Click the checker">Not applicable.</td>
-              <td role="cell" data-label="Click point / tray space">Keep selection quietly. A legal route from some other checker does not override the selection.</td>
+              <td role="cell" data-label="Click point / tray space">Clear selection quietly. Do not play a hidden route from another checker on the same click.</td>
             </tr>
             <tr role="row" id="case-reversible">
               <th role="rowheader" scope="row" data-label="Situation">Moved checker that can continue, change its first die, or return</th>
@@ -460,8 +460,9 @@
         </div>
         <div>
           <h2>Unavailable means quiet</h2>
-          <p>If a location has no action, nothing changes: no move, no selection
-            change and no message. Historical ghosts and focus outlines do not
+          <p>If a location has no action, clear the selected checker without
+            moving anything or showing a message. Blank board and page space do the same.
+            Buttons, usable dice and other controls keep their usual actions. Historical ghosts and focus outlines do not
             create actions. Invalid drops simply snap back.</p>
         </div>
       </section>

@@ -249,11 +249,10 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await page.locator(`[data-point="${st.from}"]`).click();
     assert.ok(await page.locator(".destination .landing-ring").count());
     assert.ok(await page.locator(".destination-die").count());
-    const beforeBlocked = await page.locator("#draft-line").innerText();
     await page.locator('[data-point="11"]').click(); // blocked by five opposing checkers
     assert.equal((await info()).draft.length, 0);
-    assert.equal((await info()).selected, st.from);
-    assert.equal(await page.locator("#draft-line").innerText(), beforeBlocked);
+    assert.equal((await info()).selected, null);
+    await page.locator(`[data-point="${st.from}"]`).click();
     await page.locator(`[data-point="${st.to}"]`).click();
     assert.equal((await info()).draft.length, 1);
     assert.equal(await page.locator(".board-die.consumed").count(), 1);
@@ -271,7 +270,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     report.cases.push(
       "movable source cues",
       "destination die labels and landing rings",
-      "blocked tap preserves selection",
+      "blocked tap clears selection without changing the draft",
       "tap move and used die",
       "undo during animation",
     );
@@ -348,9 +347,8 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         /change the entry die/,
       );
       await shot(`bar-alternate-${orientation}`);
-      const beforeBlockedEntry = await page.locator("#draft-line").innerText();
       await page.locator('[data-point="18"]').click();
-      assert.equal(await page.locator("#draft-line").innerText(), beforeBlockedEntry);
+      assert.equal((await info()).selected, null, "blocked entry clears selection");
       assert.equal((await info()).draft.length, 1);
       await alternate.click();
       assert.deepEqual((await info()).draft, [{ from: "bar", to: 22, die: 2 }]);

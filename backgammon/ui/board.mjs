@@ -277,7 +277,7 @@ export class Board {
             pos.y <= +r.getAttribute("y") + +r.getAttribute("height"),
           ));
         this.onPoint(raw, { quick: !checkerTap, checkerTap });
-      }
+      } else this.onBackground?.();
     });
     this.svg.addEventListener("pointerdown", (e) => {
       this.suppressClickUntil = 0;
