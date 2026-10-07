@@ -130,15 +130,14 @@
                   ><input
                     name="allowZero"
                     id="allow-zero"
-                    type="checkbox" /><span
-                    class="toggle"
-                    aria-hidden="true"
-                  ></span
+                    type="checkbox"
+                    checked /><span class="toggle" aria-hidden="true"></span
                 ></label>
               </div>
               <p class="hint">
                 All payouts stay between the minimum p[0] and maximum payout.
-                Negative = loss; zero = push.
+                Negative = loss; zero = push. Scaled copies are excluded;
+                schedules use their smallest integer scale.
               </p>
               <button
                 class="quiet-button reset"

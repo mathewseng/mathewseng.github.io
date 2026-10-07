@@ -10,7 +10,9 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 
 ## Search and precision
 
-The search bounds every payout between `minP0` and `maxPayout`, restricting the initial payout further to `maxP0`. The strict toggle requires each successive payout to increase. Default settings disallow zero payouts but permit negative intermediate payouts. Turning off strict order permits decreasing payouts as well as ties.
+The search bounds every payout between `minP0` and `maxPayout`, restricting the initial payout further to `maxP0`. The strict toggle requires each successive payout to increase. Default settings allow zero payouts and negative intermediate payouts. Turning off strict order permits decreasing payouts as well as ties.
+
+Scaled copies of whole schedules are always excluded before counting and ranking: the greatest common divisor of all absolute payouts must not exceed 1. For example, `[-4, 2, 8, 14, 20]` is excluded because it is twice `[-2, 1, 4, 7, 10]`. This applies even if the smaller schedule falls outside the initial-payout bounds. Zeros do not affect the divisor, and the all-zero schedule remains eligible when the other filters allow it. Individual payouts may still be multiples of other payouts within a schedule. The checker reports scaled copies as outside the filters without changing their exact EV calculation.
 
 Enumerate the first N payouts, solve the last using its unit weight, and bound every intermediate choice by the minimum/maximum attainable remaining weighted sum. All search values are safe integers: N ≤ 6, initial bounds within ±10,000, and maximum payout ≤ 1,000,000. Any partial weighted sum has magnitude at most 46,656,000,000, below 2^53−1. The independent checker accepts integer strings up to 100 digits and uses BigInt throughout its EV, final-payout repair, and decimal formatting.
 

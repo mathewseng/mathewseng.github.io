@@ -38,11 +38,11 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      - name: Test assembled Backgammon application
-        run: node backgammon/tests/browser.cjs
-
       - name: Test assembled Dice reports
         run: node dice/reports/tests/browser.cjs
+
+      - name: Test assembled Backgammon application
+        run: node backgammon/tests/browser.cjs
 
   gym:
     runs-on: ubuntu-latest

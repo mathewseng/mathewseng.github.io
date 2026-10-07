@@ -5,6 +5,7 @@ import {
   evNumerator,
   isFair,
   solveFinal,
+  payoutDivisor,
   normalizeOptions,
   filterReasons,
   metrics,
@@ -67,7 +68,8 @@ test("filters cover zeros, strict order, bounds, and exact fairness", () => {
   assert.deepEqual(filterReasons(FEATURED[4]), []);
   assert.ok(filterReasons(FEATURED[4], { maxPayout: 59 }).length);
   assert.ok(filterReasons(FEATURED[4], { minP0: -1 }).length);
-  assert.ok(filterReasons([-1, 0, 25], { n: 2 }).length);
+  assert.ok(filterReasons([-1, 0, 25], { n: 2, allowZero: false }).length);
+  assert.deepEqual(filterReasons([-1, 0, 25], { n: 2 }), []);
   assert.deepEqual(filterReasons([-1, 0, 25], { n: 2, allowZero: true }), []);
   assert.ok(filterReasons([-1, 3, -5], { n: 2 }).length);
   assert.deepEqual(filterReasons([-1, 3, -5], { n: 2, strict: false }), []);
@@ -78,6 +80,50 @@ test("filters cover zeros, strict order, bounds, and exact fairness", () => {
   assert.throws(() => normalizeOptions({ maxPayout: 1000001 }));
   assert.throws(() => normalizeOptions({ maxPayout: 100.5 }));
   assert.throws(() => normalizeOptions({ limit: 201 }));
+});
+test("whole-schedule scaling uses an exact common divisor, including losses and zeros", () => {
+  assert.equal(payoutDivisor([-2, 1, 4, 7, 10]), 1n);
+  assert.equal(payoutDivisor([-4, 2, 8, 14, 20]), 2n);
+  assert.equal(payoutDivisor([-5, 0, 125]), 5n);
+  assert.equal(payoutDivisor([0, 0, 0]), 0n);
+  const factor = 9007199254740993n;
+  assert.equal(payoutDivisor([-factor, 0n, 25n * factor]), factor);
+  assert.equal(payoutDivisor([-factor, 0n, 25n * factor + 1n]), 1n);
+  assert.deepEqual(filterReasons(FEATURED[4]), []);
+  assert.ok(isFair(4, [-4, 2, 8, 14, 20]));
+  assert.match(filterReasons([-4, 2, 8, 14, 20]).join(), /2× scaled copy/);
+  assert.deepEqual(
+    filterReasons([0, 0, 0], { n: 2, minP0: 0, maxP0: 0, strict: false }),
+    [],
+  );
+});
+test("every ranking excludes scaled copies before its result limit, including when the base is outside bounds", () => {
+  for (const sort of [
+    "recommended",
+    "smoothest",
+    "steepest",
+    "lowest-max",
+    "jackpot",
+    "lowest-loss",
+    "largest-jump",
+    "range",
+  ]) {
+    const result = enumerate({ sort, limit: 200 });
+    assert.ok(result.rows.length > 0);
+    for (const row of result.rows) assert.equal(payoutDivisor(row.payouts), 1n);
+  }
+  const result = enumerate({
+    minP0: -4,
+    maxP0: -4,
+    sort: "smoothest",
+    limit: 200,
+  });
+  assert.ok(result.rows.length > 0);
+  assert.ok(result.rows.every((row) => payoutDivisor(row.payouts) === 1n));
+  assert.ok(!result.rows.some((row) => row.payouts.join() === "-4,2,8,14,20"));
+  assert.ok(
+    enumerate({ n: 2, limit: 200 }).rows.some((row) => row.payouts.includes(0)),
+  );
 });
 function brute(o) {
   const rows = [];

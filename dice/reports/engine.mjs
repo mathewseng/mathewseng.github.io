@@ -6,7 +6,7 @@ export const DEFAULTS = Object.freeze({
   maxP0: -1,
   maxPayout: 100,
   strict: true,
-  allowZero: false,
+  allowZero: true,
   limit: 40,
   sort: "recommended",
 });
@@ -64,6 +64,12 @@ export function solveFinal(n, earlier) {
     .slice(0, n)
     .reduce((sum, w, k) => sum + BigInt(w) * integer(earlier[k]), 0n);
 }
+export function payoutDivisor(payouts) {
+  return payouts.reduce((divisor, value) => {
+    const v = integer(value);
+    return gcd(divisor, v < 0n ? -v : v);
+  }, 0n);
+}
 export function normalizeOptions(input = {}) {
   const o = { ...DEFAULTS, ...input };
   diceCount(o.n);
@@ -104,6 +110,11 @@ export function filterReasons(payouts, input = {}) {
     reasons.push("Payouts are not strictly increasing.");
   if (!o.allowZero && p.includes(0n))
     reasons.push("Zero payouts are disabled.");
+  const divisor = payoutDivisor(p);
+  if (divisor > 1n)
+    reasons.push(
+      `Schedule is a ${divisor}× scaled copy of smaller integer payouts.`,
+    );
   if (!isFair(o.n, p)) reasons.push("Expected value is not exactly zero.");
   return reasons;
 }
@@ -220,6 +231,10 @@ export function enumerate(
     lastProgress = started,
     stopped = false;
   function add(payouts) {
+    // Remove scaled copies before counting or ranking, even if the smaller
+    // integer schedule falls outside the current initial-payout bounds.
+    if (payouts.reduce((divisor, v) => gcd(divisor, Math.abs(v)), 0) > 1)
+      return;
     found++;
     const m = metrics(o.n, payouts),
       row = { payouts, metrics: m };

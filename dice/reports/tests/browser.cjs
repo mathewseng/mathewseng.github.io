@@ -69,6 +69,36 @@ const server = http.createServer((req, res) => {
     }
     await page.goto(base + "/dice/reports");
     await ready();
+    assert.equal(await page.locator("#allow-zero").isChecked(), true);
+    const payouts = await page
+      .locator("#results-body tr")
+      .evaluateAll((rows) =>
+        rows.map((row) =>
+          [...row.cells].slice(1, 6).map((cell) => Number(cell.textContent)),
+        ),
+      );
+    for (const p of payouts) {
+      let divisor = 0;
+      for (const value of p) {
+        let b = Math.abs(value);
+        while (b) [divisor, b] = [b, divisor % b];
+      }
+      assert.equal(divisor, 1);
+    }
+    await page.locator("#allow-zero").uncheck();
+    await page.waitForTimeout(300);
+    await ready();
+    assert.equal(
+      await page
+        .locator("#results-body td.payout")
+        .evaluateAll((cells) =>
+          cells.some((cell) => Number(cell.textContent) === 0),
+        ),
+      false,
+    );
+    await page.locator("#reset-filters").click();
+    await ready();
+    assert.equal(await page.locator("#allow-zero").isChecked(), true);
     assert.ok(page.url().endsWith("/dice/reports/"));
     assert.ok(
       await page.evaluate(
@@ -146,6 +176,15 @@ const server = http.createServer((req, res) => {
     assert.match(
       await page.locator("#checker-result").textContent(),
       /House edge/,
+    );
+    await page.locator("#checker-payouts").fill("-4, 2, 8, 14, 20");
+    assert.match(
+      await page.locator("#checker-result").textContent(),
+      /Exactly fair/,
+    );
+    assert.match(
+      await page.locator("#checker-result").textContent(),
+      /2× scaled copy/,
     );
     await page.locator("#checker-payouts").fill("-2, 1, 3.5, 12, 59");
     assert.match(
