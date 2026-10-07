@@ -18,6 +18,8 @@ module.exports = async function clickGuide(browser, base, out, name) {
     await page.reload();
     assert.equal(await page.locator("#clicks .click-flow > li").count(), 5);
     assert.equal(await page.locator("#highlights .click-flow > li").count(), 5);
+    assert.equal(await page.locator("#cases tbody tr").count(), 31);
+    assert.equal(await page.locator("#cases tbody td").count(), 93);
     await page.getByRole("link", { name: "Checker & point highlights ↓", exact: true }).click();
     assert.ok(page.url().endsWith("#highlights"));
     for (const [width, height] of [
@@ -36,7 +38,7 @@ module.exports = async function clickGuide(browser, base, out, name) {
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
         blocks: [
           ...document.querySelectorAll(
-            ".flow-question,.flow-answer,.guide-notes",
+            ".flow-question,.flow-answer,.guide-notes,.case-table,.case-table th,.case-table td",
           ),
         ].map((n) => ({ w: n.clientWidth, sw: n.scrollWidth })),
       }));
@@ -58,6 +60,7 @@ module.exports = async function clickGuide(browser, base, out, name) {
     for (const width of [320,390,844,1366]) {
       await page.setViewportSize({width,height:width===844?390:844});
       await page.locator("#highlights").screenshot({path:path.join(out,`${name}-highlight-guide-${width}.png`)});
+      await page.locator("#case-off-source").screenshot({path:path.join(out,`${name}-case-guide-${width}.png`)});
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addStyleTag({

@@ -16,6 +16,8 @@ test("board hit regions identify every point in either orientation without chang
           pointAt(g.x + offset, g.top ? 90 : 470, orientation),
           p,
         );
+      assert.equal(pointAt(g.x + 30, g.top ? 14 : 646, orientation), p,
+        "point-number lane accepts destination drops too");
     }
 });
 test("bar, off, outside drops and the center gap have distinct hit regions", () => {

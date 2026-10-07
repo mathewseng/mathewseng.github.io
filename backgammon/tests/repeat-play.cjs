@@ -56,7 +56,7 @@ module.exports = async function repeatPlay(browser, base, out, name) {
         assert.equal((await read()).selected, null, "same point deselects");
         assert.equal((await read()).draft.length, 0);
         await tap(p(12), true);
-        assert.equal((await read()).selected, p(12), "deselect clears repeat intent");
+        assert.equal((await read()).selected, p(12), "a third disc click selects again");
         await tap(p(5), true);
         assert.equal((await read()).selected, p(5), "disc hit selects even over a legal destination");
         assert.equal((await read()).draft.length, 0);
@@ -173,7 +173,7 @@ module.exports = async function repeatPlay(browser, base, out, name) {
       assert.equal(
         (await read()).draft.length,
         1,
-        "paused tap must not auto-play the sole forward move",
+        "disc tap must not auto-play the sole forward move",
       );
       assert.equal((await read()).selected, 4);
       const highlight = await page.evaluate(() => {
@@ -267,8 +267,8 @@ module.exports = async function repeatPlay(browser, base, out, name) {
       });
       await page.goto(base + "/backgammon/play/#resume=" + id);
       await page.locator("#confirm").waitFor();
-      await page.keyboard.press("i");
-      await page.keyboard.press("i");
+      await page.keyboard.press("Shift+I");
+      await page.keyboard.press("Shift+I");
       await page.waitForFunction(
         () => document.querySelectorAll(".board-die.consumed").length === 2,
       );
@@ -303,7 +303,7 @@ module.exports = async function repeatPlay(browser, base, out, name) {
         "repeated point-space input builds a point; four taps use doubles",
       "paused arrival selects without auto-moving; surplus rapid taps do not undo",
       "selected checker owns every move highlight and source ring",
-      "actual Play point keys repeat and respect pause/reset",
+      "actual Play Shift+point keys build points without timing rules",
     ],
   };
 };

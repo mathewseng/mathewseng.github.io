@@ -13,8 +13,8 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=1180672065516354" />
-    <link rel="stylesheet" href="./controls.css?bgv=1180672065516354" />
+    <link rel="stylesheet" href="../styles.css?bgv=a304f6f9c43b94d6" />
+    <link rel="stylesheet" href="./controls.css?bgv=a304f6f9c43b94d6" />
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -33,6 +33,7 @@
       <nav class="guide-sections" aria-label="Guide sections">
         <a href="#clicks">Clicks &amp; taps ↓</a>
         <a href="#highlights">Checker &amp; point highlights ↓</a>
+        <a href="#cases">Every interaction case ↓</a>
       </nav>
       <section id="clicks" aria-labelledby="click-heading">
         <h2 id="click-heading" class="guide-heading">
@@ -81,7 +82,8 @@
                 alternate-die target revises the draft.
               </p>
             </div>
-            <div class="flow-next">No · continue ↓</div>
+            <div class="flow-next">No · if selected, switch to a movable resident or keep selection.
+              With no selection, continue ↓</div>
           </li>
           <li>
             <div class="flow-question">
@@ -93,7 +95,7 @@
               <p>
                 <strong>Play the nearest legal checker.</strong
                 ><br />Repeated clicks in the open point area can build a
-                point or use doubles.
+                point or use doubles. An ordinary click never plays an unhighlighted route from another checker while a selection is active.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -124,7 +126,7 @@
                 deselect it. Otherwise, keep the board and selection unchanged.
               </p>
             </div>
-            <div class="flow-end">No legal action → no move</div>
+            <div class="flow-end">No legal action → no change or message</div>
           </li>
         </ol>
       </section>
@@ -243,6 +245,226 @@
           </p>
         </div>
       </section>
+      <section id="cases" aria-labelledby="cases-heading">
+        <h2 id="cases-heading" class="guide-heading">Every interaction case</h2>
+        <p>A ring describes a <strong>source</strong>; a point wash describes a
+          <strong>destination</strong>. Click a movable disc to select it.
+          Click open point space to play the destination. With a selection,
+          ordinary clicks respect its displayed routes.</p>
+        <p class="muted">These cases cover the behavioral combinations, not an
+          enumeration of every backgammon position. Only routes that obey the
+          complete-turn rules exist. Colors follow your theme; labels, ring
+          styles and arrows keep their meaning. Read overlapping cases in the
+          flowchart’s priority order.</p>
+        <table role="table" class="case-table" aria-label="Highlight and click behavior by situation">
+          <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Situation</th><th role="columnheader" scope="col">What is highlighted</th>
+            <th role="columnheader" scope="col">Click the checker</th><th role="columnheader" scope="col">Click point / tray space</th></tr></thead>
+          <tbody role="rowgroup">
+            <tr role="row" id="case-inactive">
+              <th role="rowheader" scope="row" data-label="Situation">Not your turn, preview, opening/cube decision, completed turn locked by automatic play</th>
+              <td role="cell" data-label="What is highlighted">No live source or destination markers. History/focus may remain.</td>
+              <td role="cell" data-label="Click the checker">No checker move.</td>
+              <td role="cell" data-label="Click point / tray space">No checker move; use the relevant Roll, cube or next-game action.</td>
+            </tr>
+            <tr role="row" id="case-source">
+              <th role="rowheader" scope="row" data-label="Situation">Your movable checker; no selection and no incoming route here</th>
+              <td role="cell" data-label="What is highlighted">Dashed source ring; no destination wash.</td>
+              <td role="cell" data-label="Click the checker">Select it—even if there is only one legal move.</td>
+              <td role="cell" data-label="Click point / tray space">Select the resident checker.</td>
+            </tr>
+            <tr role="row" id="case-both">
+              <th role="rowheader" scope="row" data-label="Situation">Your movable checker; no selection; another checker can land here</th>
+              <td role="cell" data-label="What is highlighted">Source ring plus destination wash.</td>
+              <td role="cell" data-label="Click the checker">Select this checker.</td>
+              <td role="cell" data-label="Click point / tray space">Bring the nearest legal checker here. The wash describes a landing, not a recommendation.</td>
+            </tr>
+            <tr role="row" id="case-immovable">
+              <th role="rowheader" scope="row" data-label="Situation">Your immovable checker on a legal destination</th>
+              <td role="cell" data-label="What is highlighted">Destination wash; no source ring.</td>
+              <td role="cell" data-label="Click the checker">Play the advertised incoming route. It cannot be selected.</td>
+              <td role="cell" data-label="Click point / tray space">Play the advertised incoming route.</td>
+            </tr>
+            <tr role="row" id="case-blocked-own">
+              <th role="rowheader" scope="row" data-label="Situation">Your immovable checker; no legal arrival or return</th>
+              <td role="cell" data-label="What is highlighted">No legal marker or hover glow.</td>
+              <td role="cell" data-label="Click the checker">Keep the board and selection unchanged, with no message.</td>
+              <td role="cell" data-label="Click point / tray space">Same. Bar priority can make otherwise movable checkers unavailable.</td>
+            </tr>
+            <tr role="row" id="case-selected">
+              <th role="rowheader" scope="row" data-label="Situation">Your already-selected checker</th>
+              <td role="cell" data-label="What is highlighted">Solid source ring and selection wash.</td>
+              <td role="cell" data-label="Click the checker">Deselect.</td>
+              <td role="cell" data-label="Click point / tray space">Deselect on an ordinary click, even if another checker could land here.</td>
+            </tr>
+            <tr role="row" id="case-other-source">
+              <th role="rowheader" scope="row" data-label="Situation">Another movable friendly stack, outside the selected checker’s routes</th>
+              <td role="cell" data-label="What is highlighted">No destination wash; its source ring is suppressed until selected. Hover can indicate a selectable source.</td>
+              <td role="cell" data-label="Click the checker">Switch selection to this checker.</td>
+              <td role="cell" data-label="Click point / tray space">Switch selection. Never silently move a different checker onto an unhighlighted point.</td>
+            </tr>
+            <tr role="row" id="case-occupied-selected">
+              <th role="rowheader" scope="row" data-label="Situation">Movable friendly stack on the selected checker’s destination</th>
+              <td role="cell" data-label="What is highlighted">Destination wash with die/sum, return arrow or alternate-die label.</td>
+              <td role="cell" data-label="Click the checker">Switch selection to the resident checker.</td>
+              <td role="cell" data-label="Click point / tray space">Use the selected checker’s advertised route, even if another checker is closer.</td>
+            </tr>
+            <tr role="row" id="case-immovable-selected">
+              <th role="rowheader" scope="row" data-label="Situation">Immovable friendly stack on the selected checker’s destination</th>
+              <td role="cell" data-label="What is highlighted">Destination wash and label; no selectable resident.</td>
+              <td role="cell" data-label="Click the checker">Use the selected checker’s route.</td>
+              <td role="cell" data-label="Click point / tray space">Use the selected checker’s route.</td>
+            </tr>
+            <tr role="row" id="case-empty">
+              <th role="rowheader" scope="row" data-label="Situation">Empty legal destination</th>
+              <td role="cell" data-label="What is highlighted">Wash; after selection, die/sum and landing ring.</td>
+              <td role="cell" data-label="Click the checker">No checker to select.</td>
+              <td role="cell" data-label="Click point / tray space">Selected checker’s route; with no selection, nearest legal incoming checker.</td>
+            </tr>
+            <tr role="row" id="case-blot">
+              <th role="rowheader" scope="row" data-label="Situation">One opposing checker on a legal destination</th>
+              <td role="cell" data-label="What is highlighted">Same destination wash; opponent disc has no source ring.</td>
+              <td role="cell" data-label="Click the checker">Play the route and hit the blot. Never select an opponent checker.</td>
+              <td role="cell" data-label="Click point / tray space">Same route and hit.</td>
+            </tr>
+            <tr role="row" id="case-blocked-opponent">
+              <th role="rowheader" scope="row" data-label="Situation">Two or more opposing checkers</th>
+              <td role="cell" data-label="What is highlighted">No legal destination marker.</td>
+              <td role="cell" data-label="Click the checker">No move or message.</td>
+              <td role="cell" data-label="Click point / tray space">Same. An intermediate blocked point also removes routes through it.</td>
+            </tr>
+            <tr role="row" id="case-outside-selection">
+              <th role="rowheader" scope="row" data-label="Situation">Unhighlighted empty point while a checker is selected</th>
+              <td role="cell" data-label="What is highlighted">No destination wash.</td>
+              <td role="cell" data-label="Click the checker">Not applicable.</td>
+              <td role="cell" data-label="Click point / tray space">Keep selection quietly. A legal route from some other checker does not override the selection.</td>
+            </tr>
+            <tr role="row" id="case-reversible">
+              <th role="rowheader" scope="row" data-label="Situation">Moved checker that can continue, change its first die, or return</th>
+              <td role="cell" data-label="What is highlighted">Source ring when unselected; solid ring when selected.</td>
+              <td role="cell" data-label="Click the checker">Select it; show all its forward and revision routes.</td>
+              <td role="cell" data-label="Click point / tray space">Resolve an advertised arrival first. If nobody can land/return here, select it.</td>
+            </tr>
+            <tr role="row" id="case-undo-only">
+              <th role="rowheader" scope="row" data-label="Situation">Moved checker whose only available action is a draft return</th>
+              <td role="cell" data-label="What is highlighted">Source ring; after selection, amber return target(s).</td>
+              <td role="cell" data-label="Click the checker">Select it; do not automatically undo a disc click.</td>
+              <td role="cell" data-label="Click point / tray space">If there is no incoming route here, select it. An ordinary point key retains the unambiguous undo-only shortcut.</td>
+            </tr>
+            <tr role="row" id="case-return">
+              <th role="rowheader" scope="row" data-label="Situation">Legal draft-return destination</th>
+              <td role="cell" data-label="What is highlighted">Undo-colored (amber by default), dashed point; ↶ when selected.</td>
+              <td role="cell" data-label="Click the checker">A movable resident selects. An immovable resident passes the click to the return action.</td>
+              <td role="cell" data-label="Click point / tray space">Return the selected checker; without selection, nearest eligible draft return. Restore its dice and any hit.</td>
+            </tr>
+            <tr role="row" id="case-mixed">
+              <th role="rowheader" scope="row" data-label="Situation">Same point is both a forward landing and a draft return</th>
+              <td role="cell" data-label="What is highlighted">With no selection, forward wash wins. Select the moved checker to expose its amber return.</td>
+              <td role="cell" data-label="Click the checker">Movable resident selects; otherwise follow the displayed destination.</td>
+              <td role="cell" data-label="Click point / tray space">Follow the displayed route: forward without selection, explicit selected return when amber.</td>
+            </tr>
+            <tr role="row" id="case-switch">
+              <th role="rowheader" scope="row" data-label="Situation">Alternate first die / bar-entry die</th>
+              <td role="cell" data-label="What is highlighted">Selected destination labeled ↔ and the replacement die.</td>
+              <td role="cell" data-label="Click the checker">Movable resident selects; otherwise perform the advertised revision.</td>
+              <td role="cell" data-label="Click point / tray space">Replace that checker’s first die; preserve unrelated draft steps and restore the old die.</td>
+            </tr>
+            <tr role="row" id="case-multiple">
+              <th role="rowheader" scope="row" data-label="Situation">Combined dice or doubles destination</th>
+              <td role="cell" data-label="What is highlighted">Sum label and legal destination wash.</td>
+              <td role="cell" data-label="Click the checker">Apply the same resident-disc rules above.</td>
+              <td role="cell" data-label="Click point / tray space">Use a complete legal chain. Equivalent outcomes collapse; prefer a hitting route over a quiet one. Ask only for genuinely different hits or dice/revision choices.</td>
+            </tr>
+            <tr role="row" id="case-bar-source">
+              <th role="rowheader" scope="row" data-label="Situation">Your checker(s) on the bar</th>
+              <td role="cell" data-label="What is highlighted">Bar source ring; initially selected when entry is possible. Other forward sources are unavailable.</td>
+              <td role="cell" data-label="Click the checker">Select/deselect the bar checker.</td>
+              <td role="cell" data-label="Click point / tray space">Select/deselect unless this is an advertised return target. Entry routes can use several dice but must obey bar priority.</td>
+            </tr>
+            <tr role="row" id="case-bar-return">
+              <th role="rowheader" scope="row" data-label="Situation">Bar is a draft-return destination</th>
+              <td role="cell" data-label="What is highlighted">Undo-colored bar and ↶ badge, including its full arrow area.</td>
+              <td role="cell" data-label="Click the checker">A movable resident bar checker selects; an immovable one passes through to the return.</td>
+              <td role="cell" data-label="Click point / tray space">Return the entry checker and restore its dice. The other player’s bar never becomes your target.</td>
+            </tr>
+            <tr role="row" id="case-off-source">
+              <th role="rowheader" scope="row" data-label="Situation">A checker borne off in this draft can be returned</th>
+              <td role="cell" data-label="What is highlighted">Dashed outline around your off tray; solid when selected.</td>
+              <td role="cell" data-label="Click the checker">Click its checker/count marker or a stored strip to select/deselect OFF, then choose its return or alternate-die target.</td>
+              <td role="cell" data-label="Click point / tray space">If OFF is a legal destination, bear off the selected/nearest checker. Otherwise select/deselect reversible OFF.</td>
+            </tr>
+            <tr role="row" id="case-off-old">
+              <th role="rowheader" scope="row" data-label="Situation">Borne-off checkers from earlier confirmed turns</th>
+              <td role="cell" data-label="What is highlighted">Count/strips only; no draft source outline. A new legal bearoff can still light the tray.</td>
+              <td role="cell" data-label="Click the checker">Cannot select old checkers for draft undo. If the tray advertises a bearoff, perform that action.</td>
+              <td role="cell" data-label="Click point / tray space">Bear off if advertised; otherwise no move. Committed undo uses the separate Undo control.</td>
+            </tr>
+            <tr role="row" id="case-locked">
+              <th role="rowheader" scope="row" data-label="Situation">A step belongs to the automatic forced prefix</th>
+              <td role="cell" data-label="What is highlighted">No route that would reverse or replace the locked prefix.</td>
+              <td role="cell" data-label="Click the checker">Select only if the current checker has a remaining legal action.</td>
+              <td role="cell" data-label="Click point / tray space">No way to undo the forced step. Other checkers on the same point can still be selected or moved legally.</td>
+            </tr>
+            <tr role="row" id="case-repeat">
+              <th role="rowheader" scope="row" data-label="Situation">Repeated clicks, fast or slow</th>
+              <td role="cell" data-label="What is highlighted">Current legal markers update after each step. Click speed never changes the rules.</td>
+              <td role="cell" data-label="Click the checker">A disc click selects/deselects at any speed. A completed forward draft keeps its reversible landing selected.</td>
+              <td role="cell" data-label="Click point / tray space">Use the currently selected route, or the nearest incoming checker with no selection. Repeated taps build a point while that arrival remains available. Once complete, the next tap on the selected landing deselects it.</td>
+            </tr>
+            <tr role="row" id="case-history">
+              <th role="rowheader" scope="row" data-label="Situation">Opponent’s last-move outline or translucent origin ghost</th>
+              <td role="cell" data-label="What is highlighted">Historical marker, independent of legal washes/rings.</td>
+              <td role="cell" data-label="Click the checker">A ghost is not selectable. A real checker underneath follows the normal rules.</td>
+              <td role="cell" data-label="Click point / tray space">Use the current location’s legal action, if any. The historical marker itself never creates a move.</td>
+            </tr>
+            <tr role="row" id="case-focus">
+              <th role="rowheader" scope="row" data-label="Situation">Keyboard focus outline or pointer hover</th>
+              <td role="cell" data-label="What is highlighted">Focus rectangle identifies keyboard target, not legality. Hover is limited to actionable live points.</td>
+              <td role="cell" data-label="Click the checker">Normal disc rules.</td>
+              <td role="cell" data-label="Click point / tray space">Normal point rules. Focus alone is never permission to move.</td>
+            </tr>
+            <tr role="row" id="case-numbers">
+              <th role="rowheader" scope="row" data-label="Situation">Point number, die/sum badge, return arrow, landing ring</th>
+              <td role="cell" data-label="What is highlighted">The number belongs to its point; badges/rings describe its action.</td>
+              <td role="cell" data-label="Click the checker">Not a checker disc.</td>
+              <td role="cell" data-label="Click point / tray space">Same destination action as open point space. Number lanes also accept legal drops; visual overlays never consume the click.</td>
+            </tr>
+            <tr role="row" id="case-dice">
+              <th role="rowheader" scope="row" data-label="Situation">Remaining die / preferred-die outline</th>
+              <td role="cell" data-label="What is highlighted">Available two-die rolls can show a preference outline; consumed dice are marked used.</td>
+              <td role="cell" data-label="Click the checker">Not a checker.</td>
+              <td role="cell" data-label="Click point / tray space">Click an available die to prefer it for an ambiguous single step; click again to clear preference. Used/historical dice cannot move checkers.</td>
+            </tr>
+            <tr role="row" id="case-drag">
+              <th role="rowheader" scope="row" data-label="Situation">Drag an actual movable checker (including reversible OFF)</th>
+              <td role="cell" data-label="What is highlighted">Its source and legal destinations become selected; drop target feedback follows the pointer.</td>
+              <td role="cell" data-label="Click the checker">Begin explicit source-to-destination movement.</td>
+              <td role="cell" data-label="Click point / tray space">A valid drop uses that source only. Invalid/outside drops cancel without playing another checker or following a ghost. Vertical swipes in open board space scroll.</td>
+            </tr>
+            <tr role="row" id="case-editor">
+              <th role="rowheader" scope="row" data-label="Situation">Solver position editor</th>
+              <td role="cell" data-label="What is highlighted">Editor caption and hover feedback, not legal-play highlights.</td>
+              <td role="cell" data-label="Click the checker">Paint/remove according to the selected editing tool.</td>
+              <td role="cell" data-label="Click point / tray space">Same editor action. This mode deliberately edits positions rather than playing legal turns.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="guide-notes" aria-label="Click speed and unavailable locations">
+        <div>
+          <h2>No double-click mode</h2>
+          <p>Fast and slow clicks follow the same rules. Open-point taps can
+            build a point while the arrival remains legal; checker taps select.
+            A hidden timing rule made that distinction unpredictable, especially
+            after automatic selection. Shift+point keys make destination intent
+            explicit without needing fast fingers.</p>
+        </div>
+        <div>
+          <h2>Unavailable means quiet</h2>
+          <p>If a location has no action, nothing changes: no move, no selection
+            change and no message. Historical ghosts and focus outlines do not
+            create actions. Invalid drops simply snap back.</p>
+        </div>
+      </section>
       <section class="guide-notes" aria-label="Other input rules">
         <div>
           <h2>When there is a real choice</h2>
@@ -265,8 +487,8 @@
           <h2>Keyboard</h2>
           <p>
             Point keys select or play the selected route. Press the selected
-            point again to deselect. Rapid presses within 350 ms build a
-            point; Shift requests destination input. Ordinary keys retain
+            point again to deselect. Shift+point explicitly requests destination
+            input, including building a point. There is no timing requirement. Ordinary keys retain
             the unambiguous undo-only shortcut. Change bindings in Settings.
           </p>
         </div>

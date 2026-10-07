@@ -202,3 +202,62 @@
   text-align: center;
   padding-block: 10px;
 }
+
+#cases {
+  scroll-margin-top: 24px;
+  border-top: 1px solid var(--line);
+  margin-top: 32px;
+  padding-top: 32px;
+}
+.case-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 24px 0 32px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.case-table th,
+.case-table td {
+  vertical-align: top;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  padding: 16px 12px;
+  overflow-wrap: anywhere;
+}
+.case-table thead th {
+  color: var(--accent);
+  font-weight: 600;
+}
+.case-table tbody th { font-weight: 550; }
+.case-table tbody tr:target { background: var(--panel); }
+@media (max-width: 700px) {
+  .case-table, .case-table tbody { display: block; }
+  .case-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .case-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .case-table th, .case-table td {
+    display: block;
+    border: 0;
+    padding: 6px 0;
+  }
+  .case-table tbody th { font-size: 16px; }
+  .case-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+}

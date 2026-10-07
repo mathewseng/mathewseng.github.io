@@ -249,10 +249,11 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await page.locator(`[data-point="${st.from}"]`).click();
     assert.ok(await page.locator(".destination .landing-ring").count());
     assert.ok(await page.locator(".destination-die").count());
+    const beforeBlocked = await page.locator("#draft-line").innerText();
     await page.locator('[data-point="11"]').click(); // blocked by five opposing checkers
     assert.equal((await info()).draft.length, 0);
     assert.equal((await info()).selected, st.from);
-    assert.match(await page.locator("#draft-line").innerText(), /blocked/);
+    assert.equal(await page.locator("#draft-line").innerText(), beforeBlocked);
     await page.locator(`[data-point="${st.to}"]`).click();
     assert.equal((await info()).draft.length, 1);
     assert.equal(await page.locator(".board-die.consumed").count(), 1);
@@ -347,8 +348,9 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         /change the entry die/,
       );
       await shot(`bar-alternate-${orientation}`);
+      const beforeBlockedEntry = await page.locator("#draft-line").innerText();
       await page.locator('[data-point="18"]').click();
-      assert.match(await page.locator("#draft-line").innerText(), /blocked/);
+      assert.equal(await page.locator("#draft-line").innerText(), beforeBlockedEntry);
       assert.equal((await info()).draft.length, 1);
       await alternate.click();
       assert.deepEqual((await info()).draft, [{ from: "bar", to: 22, die: 2 }]);
@@ -421,14 +423,15 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     );
     await load("bearoff");
     await page.locator('[data-point="0"]').click();
-    await page.locator('[data-point="off0"]').click();
+    await page.locator('[data-point="off0"] .point-hit').click({position:{x:3,y:120}});
     await page.getByRole("dialog", { name: "Choose a die" }).waitFor();
     await page.keyboard.press("Escape");
     assert.equal((await info()).draft.length, 0);
     await drag(0, "off");
     await page.getByRole("button", { name: "Use 1", exact: true }).click();
     assert.equal((await info()).draft[0].die, 1);
-    await page.locator('[data-point="off0"]').click();
+    // Empty tray space bears off; its reversible checker strips now select OFF.
+    await page.locator('[data-point="off0"] .point-hit').click({position:{x:3,y:120}});
     assert.equal((await info()).state.off[0], 15);
     assert.equal((await info()).complete, true);
     await page.evaluate(() => checkerTest.draft.undo());

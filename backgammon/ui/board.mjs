@@ -29,8 +29,8 @@ export function pointAt(x, y, orientation = 0) {
     if (
       x >= g.x &&
       x < g.x + 60 &&
-      y >= (g.top ? 28 : 366) &&
-      y < (g.top ? 294 : 632)
+      y >= (g.top ? 0 : 366) &&
+      y < (g.top ? 294 : 660)
     )
       return p;
   }
@@ -260,17 +260,22 @@ export class Board {
           typeof raw === "number"
             ? Math.sign(this.state.points[raw]) ===
               (this.state.turn ? -1 : 1)
-            : raw === `bar${this.state.turn}`;
+            : raw === `bar${this.state.turn}` || raw === `off${this.state.turn}`;
         const checkerTap =
           own &&
-          [...p.querySelectorAll(".checker > circle:first-child")].some(
+          ([...p.querySelectorAll(".checker > circle:first-child")].some(
             (c) =>
               Math.hypot(
                 pos.x - Number(c.getAttribute("cx")),
                 pos.y - Number(c.getAttribute("cy")),
               ) <=
               CHECKER_RADIUS + 1,
-          );
+          ) || [...p.querySelectorAll(".off-checker")].some((r) =>
+            pos.x >= +r.getAttribute("x") &&
+            pos.x <= +r.getAttribute("x") + +r.getAttribute("width") &&
+            pos.y >= +r.getAttribute("y") &&
+            pos.y <= +r.getAttribute("y") + +r.getAttribute("height"),
+          ));
         this.onPoint(raw, { quick: !checkerTap, checkerTap });
       }
     });
@@ -1003,7 +1008,7 @@ export class Board {
               )
               .join(" or ")
           : ""
-      }${moved ? `, ${moved} moved last turn` : ""}${lastMove?.origins?.[p] ? `, previous location of ${lastMove.origins[p].count} ${playerName(lastMove.player)} checkers, shown as ghosts` : ""}`;
+      }${reverseTargets.includes(p) && !reachable.includes(p) && !destinations.includes(p) ? ", draft return: tap point space to restore a checker and its dice" : ""}${moved ? `, ${moved} moved last turn` : ""}${lastMove?.origins?.[p] ? `, previous location of ${lastMove.origins[p].count} ${playerName(lastMove.player)} checkers, shown as ghosts` : ""}`;
       const g = svg("g", {
         "data-point": p,
         role: "button",
@@ -1052,7 +1057,12 @@ export class Board {
             "pointer-events": "none",
           }),
         );
-      if (numbers)
+      if (numbers) {
+        // The number lane is destination space too, not a dead strip of frame.
+        g.append(svg("rect", {
+          x, y: top ? 0 : 632, width: 60, height: 28,
+          fill: "transparent", class: "point-number-hit",
+        }));
         g.append(
           svg(
             "text",
@@ -1068,6 +1078,7 @@ export class Board {
             distance(p, orientation),
           ),
         );
+      }
       for (const ghost of ghosts.filter((ghost) => ghost.point === p))
         g.append(originGhost(ghost, lastMove.player));
       for (let i = 0; i < Math.min(n, STACK_LIMIT); i++)
@@ -1263,7 +1274,8 @@ export class Board {
         tabindex: -1,
         role: "button",
         "aria-disabled": !interactive,
-        "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${destinations.includes("off") && s.turn === p ? ", legal destination" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
+        "aria-pressed": selected === "off" && s.turn === p,
+        "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${(destinations.includes("off") || reachable.includes("off")) && s.turn === p ? ", legal bearoff destination" : ""}${sources.includes("off") && s.turn === p ? ", draft return available: select a borne-off checker" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
         class: `point${reachable.includes("off") && s.turn === p ? " reachable" : ""}${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
       });
       const movedOff =
@@ -1298,31 +1310,29 @@ export class Board {
         off.append(
           svg("rect", {
             x: 827,
-            y: top ? 76 + i * 11 : 590 - i * 11,
+            y: top ? 76 + i * 10 : 590 - i * 10,
             width: 32,
             height: 7,
             rx: 3,
             fill: boardColor(`checker${p}`),
             stroke: boardColor("selection"),
             "stroke-width": i >= s.off[p] - movedOff ? 3 : 0,
-            class: i >= s.off[p] - movedOff ? "last-moved-checker" : "",
+            class: `off-checker${i >= s.off[p] - movedOff ? " last-moved-checker" : ""}`,
             "pointer-events": "none",
           }),
         );
       if (s.off[p])
         off.append(
-          svg(
-            "text",
-            {
-              x: 843,
-              y: top ? 260 : 410,
-              "text-anchor": "middle",
-              fill: boardColor("trayLabel"),
-              "font-size": 18,
-            },
-            s.off[p],
-          ),
+          // A full checker-sized count target is easier to select on phones
+          // than the thin storage strips. It stays clear of all 15 strips.
+          checker(843, top ? 250 : 410, p, s.off[p], compact),
         );
+      if (sources.includes("off") && s.turn === p &&
+          (selected === null || selected === "off"))
+        off.append(svg("rect", {
+          x: 821, y: top ? 36 : 387, width: 44, height: 237, rx: 5,
+          class: "source-ring", "pointer-events": "none",
+        }));
       children.push(off);
     }
     if (s.rules.cube) {
