@@ -12,7 +12,7 @@ export function defaultPlayRules(matchLength) {
   return {
     ...STANDARD_RULES,
     jacoby: matchLength === 0,
-    automaticDoubles: matchLength === 0 ? 1 : 0,
+    automaticDoubles: matchLength === 0 ? 10 : 0,
   };
 }
 export function localConfig(value = {}) {

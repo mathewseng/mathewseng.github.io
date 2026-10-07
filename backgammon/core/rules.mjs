@@ -41,7 +41,9 @@ export function ruleSummary(s) {
         ? "Jacoby"
         : "Gammons always count",
     !s.matchLength && r.automaticDoubles
-      ? `Opening doubles ×${r.automaticDoubles}`
+      ? r.automaticDoubles === 10
+        ? "Every opening tie doubles"
+        : `Opening doubles · limit ${r.automaticDoubles}`
       : null,
     r.immediateRedoubles === 1
       ? "Beavers"
@@ -160,12 +162,12 @@ export function errors(s) {
     !s.rules ||
     typeof s.rules.cube !== "boolean" ||
     typeof s.rules.jacoby !== "boolean" ||
-    !whole(s.rules.automaticDoubles ?? 0, 0, 3) ||
+    !whole(s.rules.automaticDoubles ?? 0, 0, 10) ||
     !whole(s.rules.immediateRedoubles ?? 0, 0, 2) ||
     Object.keys(s.rules).some((k) => !Object.hasOwn(STANDARD_RULES, k))
   )
     e.push(
-      "Invalid rules: opening doubles must be 0–3 and immediate redoubles 0–2.",
+      "Invalid rules: opening doubles must be 0–10 and immediate redoubles 0–2.",
     );
   else if (
     (s.matchLength || !s.rules.cube) &&

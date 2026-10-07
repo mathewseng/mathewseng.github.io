@@ -59,7 +59,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       await page
         .getByLabel("Automatic opening doubles", { exact: true })
         .inputValue(),
-      "1",
+      "10",
     );
     assert.equal(
       await page

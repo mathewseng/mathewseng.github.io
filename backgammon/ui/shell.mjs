@@ -265,6 +265,15 @@ export async function preferences() {
     checked: s.numbers,
     onChange: (e) => saveSettings({ numbers: e.target.checked }),
   });
+  const moveHints = el("input", {
+    id: "move-hints",
+    type: "checkbox",
+    checked: s.moveHints,
+    onChange: (e) => {
+      saveSettings({ moveHints: e.target.checked });
+      dispatchEvent(new Event("bg-settings"));
+    },
+  });
   const motion = select(
     [
       ["system", "Follow device"],
@@ -310,6 +319,9 @@ export async function preferences() {
     { class: "stack" },
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
+    el("label", { class: "check" }, moveHints, "Show legal-move hints"),
+    el("p", { class: "muted small" },
+      "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),
     field("Motion", motion),
     el(
       "div",
@@ -958,9 +970,10 @@ export class DraftBoard {
   render() {
     if (!this.state) return;
     const s = this.preview || this.current();
+    const display = settings();
     const moves = this.enabled && !this.preview ? this.routes() : [];
     this.board.render(s, {
-      ...settings(),
+      ...display,
       selected: this.enabled && !this.preview ? this.selected : null,
       destinations: moves.map((st) => st.to),
       reverseTargets:
@@ -1000,7 +1013,7 @@ export class DraftBoard {
     });
     players(s, this.names);
     $("draft-line").setAttribute("role", "status");
-    const switchEntry = moves.find((route) => route.switchDie);
+    const switchEntry = display.moveHints && moves.find((route) => route.switchDie);
     $("draft-line").textContent = this.preview
       ? "Preview only · original position is unchanged"
       : this.hint ||
@@ -1014,7 +1027,9 @@ export class DraftBoard {
                 ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
-                ? "Tap or drag to a highlighted point. Arrow targets move back."
+                ? display.moveHints
+                  ? "Tap or drag to a highlighted point. Arrow targets move back."
+                  : "Tap a destination or drag the selected checker."
                 : "Tap a checker to select; tap an open part of a point to play there."
             : this.draft.length
               ? notation(this.draft, this.state.turn)

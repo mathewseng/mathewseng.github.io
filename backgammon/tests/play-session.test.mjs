@@ -39,14 +39,14 @@ function commit(game, action) {
   game.events.push({ actor, action });
   return game;
 }
-test("new money sessions default to one centered opening double; matches keep Crawford rules", () => {
+test("new money sessions double every opening tie; matches keep Crawford rules", () => {
   let s = initialState({ matchLength: 0, rules: defaultPlayRules(0) });
   assert.equal(s.rules.jacoby, true);
   assert.equal(s.rules.immediateRedoubles, 0);
   s = transition(s, { type: "opening", dice: [3, 3] });
   assert.deepEqual(s.cube, { value: 2, owner: null });
   s = transition(s, { type: "opening", dice: [6, 6] });
-  assert.equal(s.cube.value, 2);
+  assert.equal(s.cube.value, 4);
   s = transition(s, { type: "opening", dice: [2, 5] });
   assert.deepEqual(s.dice, [2, 5]);
   assert.equal(s.turn, 1);

@@ -25,10 +25,10 @@ const money = (options) =>
 const act = (s, type, rest = {}) =>
   transition(s, { type, ...rest }, decisionPlayer(s));
 test("opening doubles only raise tied money openings, with the chosen cap and a centered cube", () => {
-  for (let cap = 0; cap <= 3; cap++) {
+  for (const cap of [0, 1, 2, 3, 10]) {
     let s = money({ phase: "opening", rules: { automaticDoubles: cap } });
     const events = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 12; i++) {
       const action = { type: "opening", dice: [4, 4] };
       events.push({ action, actor: 0 });
       s = transition(s, action);

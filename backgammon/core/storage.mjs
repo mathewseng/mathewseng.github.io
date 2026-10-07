@@ -12,6 +12,7 @@ export const settingsDefaults = {
   keyboardEnabled: true,
   shortcuts: DEFAULT_SHORTCUTS,
   numbers: true,
+  moveHints: true,
   motion: "system",
   appearance: "dark",
   preset: "quick",
@@ -32,6 +33,7 @@ export function settings() {
       shortcuts: normalizeShortcuts(saved?.shortcuts),
       keyboardEnabled: saved?.keyboardEnabled !== false,
       equityBar: saved?.equityBar === true,
+      moveHints: saved?.moveHints !== false,
       sound: normalizeSound(saved?.sound),
     };
   } catch {

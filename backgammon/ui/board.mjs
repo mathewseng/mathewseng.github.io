@@ -890,6 +890,7 @@ export class Board {
     {
       orientation = 0,
       numbers = true,
+      moveHints = true,
       selected = null,
       destinations = [],
       reachable = [],
@@ -922,6 +923,7 @@ export class Board {
     this.renderOptions = {
       orientation,
       numbers,
+      moveHints,
       selected,
       destinations,
       reachable,
@@ -938,6 +940,7 @@ export class Board {
       hideDice,
       lastMove,
     };
+    this.svg.classList.toggle("no-move-hints", !moveHints);
     this.svg.classList.toggle(
       "has-moves",
       interactive && sources.length > 0,

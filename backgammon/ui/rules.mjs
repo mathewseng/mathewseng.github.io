@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el, field, select } from "./shell.mjs";
+import { ruleGuide } from "../core/rule-guide.mjs";
 import { rulesOf, ruleSummary } from "../core/rules.mjs";
 export function ruleControls(matchLength, initial, change = () => {}) {
   let rules = rulesOf({ rules: initial });
@@ -10,9 +11,9 @@ export function ruleControls(matchLength, initial, change = () => {}) {
   const automatic = select(
     [
       [0, "Off"],
-      [1, "At most one opening double"],
-      [2, "At most two opening doubles"],
-      [3, "At most three opening doubles"],
+      [10, "Every opening tie · up to cube 1024"],
+      ...Array.from({ length: 9 }, (_, i) => [i + 1,
+        `At most ${i + 1} opening double${i ? "s" : ""}`]),
     ],
     rules.automaticDoubles,
   );
@@ -74,4 +75,13 @@ export function ruleControls(matchLength, initial, change = () => {}) {
     });
   sync();
   return details;
+}
+
+export function ruleReference(state) {
+  return el("details", { class: "game-rules game-rule-reference", id: "game-rule-reference" },
+    el("summary", {}, "All game rules"),
+    el("dl", {}, ...ruleGuide(state).flatMap(([title, text]) => [
+      el("dt", {}, title), el("dd", {}, text),
+    ])),
+  );
 }

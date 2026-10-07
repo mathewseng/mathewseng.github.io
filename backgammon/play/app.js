@@ -70,7 +70,7 @@ import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
-import { ruleControls } from "../ui/rules.mjs";
+import { ruleControls, ruleReference } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
 import { sound } from "../ui/sound.mjs";
 import {
@@ -1530,6 +1530,7 @@ function panel() {
     );
   p.append(
     el("p", { class: "muted small", id: "active-rules" }, ruleSummary(s)),
+    ruleReference(s),
   );
   if (config.mode !== "online" && m.started)
     p.append(el("div", { id: "table-player-controls" }, playerControls()));

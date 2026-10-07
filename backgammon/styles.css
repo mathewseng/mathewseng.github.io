@@ -1662,10 +1662,13 @@ button.die.preferred {
   margin-top: 10px;
 }
 .opening-die .die {
-  width: 56px;
-  height: 56px;
-  padding: 10px;
-  gap: 4px;
+  --opening-die-size: 56px;
+  width: var(--opening-die-size);
+  height: var(--opening-die-size);
+  padding: calc(var(--opening-die-size) * .1);
+  border-width: 2px;
+  border-radius: calc(var(--opening-die-size) * .18);
+  gap: 0;
   opacity: 0;
   transform: translateY(-10px) rotate(-12deg);
   transition:
@@ -1673,8 +1676,8 @@ button.die.preferred {
     transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .opening-die .die i {
-  width: 7px;
-  height: 7px;
+  width: calc(var(--opening-die-size) * .2);
+  height: calc(var(--opening-die-size) * .2);
 }
 .opening-die .unrolled {
   display: flex;
@@ -1767,13 +1770,7 @@ button.teal-die:hover {
     margin-top: 6px;
   }
   .opening-die .die {
-    width: 44px;
-    height: 44px;
-    padding: 7px;
-  }
-  .opening-die .die i {
-    width: 5px;
-    height: 5px;
+    --opening-die-size: 44px;
   }
   .draft-line {
     font-size: 13px;
@@ -3174,3 +3171,25 @@ button.teal-die:hover {
   }
   .play-feedback .feedback-pending .history-move { text-align: left; }
 }
+
+/* Hide assistance without removing legal hit regions or changing input rules. */
+.bg-board.no-move-hints .point :is(.point-wash, .landing-ring, .ring-halo,
+  .destination-badge, .destination-die),
+.bg-board.no-move-hints .point:not(.selected) .source-ring {
+  display: none;
+}
+.bg-board.no-move-hints .point .point-shape {
+  stroke: none;
+  filter: none;
+}
+.bg-board.no-move-hints .point .point-hit {
+  fill: transparent;
+  stroke: none;
+}
+.bg-board.no-move-hints .point:focus-visible .point-hit {
+  stroke: var(--board-focus);
+  stroke-width: 2;
+}
+.game-rule-reference dl { margin: 12px 0 0; }
+.game-rule-reference dt { font-weight: 600; margin-top: 14px; }
+.game-rule-reference dd { margin: 4px 0 0; line-height: 1.5; color: var(--muted); }
