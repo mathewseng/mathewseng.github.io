@@ -1825,6 +1825,9 @@ function renderFeedback() {
   const rows = decisionHistory(m).reverse();
   feedbackStrip.replaceChildren(
     el("h2", { class: "sr-only" }, "Decision history"),
+    el("p", { class: "history-context muted" },
+      `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each mover’s perspective. Select a row to review.`,
+    ),
   );
   for (const row of rows) {
     const viewer =
@@ -1833,7 +1836,17 @@ function renderFeedback() {
     const playerLabel =
       config.mode === "local"
         ? names()[row.player]
-        : `${names()[row.player]} · ${side === "self" ? "your" : "opponent"} ${row.action.type === "move" ? "move" : "cube decision"}`;
+        : side === "self" ? "You" : "Opponent";
+    const detail = [
+      ...(config.mode !== "local" && names()[row.player] !== playerLabel
+        ? [names()[row.player]] : []),
+      row.action.type === "move" ? "Move" : "Cube",
+      ...(row.result ? [row.result.settings.name] : []),
+    ].join(" · ");
+    const identity = () => el("span", { class: "history-identity" },
+      el("span", { class: "history-player" }, playerLabel),
+      el("span", { class: "history-detail muted" }, detail),
+    );
     if (!row.feedback) {
       feedbackStrip.append(
         el(
@@ -1843,20 +1856,21 @@ function renderFeedback() {
             "data-history-side": side,
             "data-history-player": row.player,
           },
-          el("span", { class: "history-player" }, playerLabel),
-          el("span", {}, row.label),
+          identity(),
+          el("span", { class: "history-move" }, row.label),
           ...(canReturnToDecision(row, m.id)
             ? [
                 button(
-                  "Return to this position",
+                  "Return",
                   () => restoreDecision(row, m.id),
                   "ghost",
+                  { "aria-label": "Return to this position", title: "Return to this position" },
                 ),
               ]
             : []),
           el(
             "span",
-            { class: "muted small" },
+            { class: "history-pending-status muted small" },
             row.forced ? "Forced · no choice" : "Not analyzed",
           ),
         ),
@@ -1893,25 +1907,20 @@ function renderFeedback() {
         title: `${f.quality}. ${f.units}. Open equity and EV comparison.`,
       },
     );
+    const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
     review.append(
-      el(
-        "span",
-        { class: "feedback-heading" },
-        el("span", { class: "history-player" }, playerLabel),
-        el("strong", { class: "value" }, `${f.label} ${f.value}`),
+      identity(),
+      el("span", { class: "history-move" },
+        el("span", { class: "history-played" }, row.label),
+        ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
+          el("span", { class: "history-best-label" }, "Best "),
+          f.best.notation,
+        )] : []),
       ),
-      el(
-        "span",
-        { class: "feedback-best" },
-        `${row.label} · Best ${f.best.notation}`,
-      ),
-    );
-    review.append(decisionValues(f, true, { opponent: side === "opponent" }));
-    review.append(
-      el(
-        "span",
-        { class: "muted small" },
-        `${row.result.settings.name} · ${f.units} · Review`,
+      decisionValues(f, true, { opponent: side === "opponent" }),
+      el("span", { class: "history-loss" },
+        el("span", { class: "muted" }, f.label),
+        el("strong", { class: "value" }, f.value),
       ),
     );
     feedbackStrip.append(review);

@@ -206,8 +206,8 @@ module.exports = async function assistanceUX(
       historyColors.self.border,
       historyColors.opponent.border,
     );
-    assert.match(historyColors.self.label, /your/);
-    assert.match(historyColors.opponent.label, /opponent/);
+    assert.equal(historyColors.self.label, "You");
+    assert.equal(historyColors.opponent.label, "Opponent");
     assert.notEqual(historyColors.ev, historyColors.identity);
     assert.deepEqual(r.actual.steps, submitted.draft);
     cases.push(
@@ -584,7 +584,7 @@ module.exports = async function assistanceUX(
         else assert.equal(result.error, 0);
         assert.equal(result.perspective, scenario === "match-teal" ? 1 : 0);
         assert.match(
-          await edge.locator("#move-feedback").innerText(),
+          (await edge.locator("#move-feedback").innerText()).replace(/\s+/g, " "),
           scenario === "match-teal"
             ? /Equity lost 0.000/
             : scenario === "warning"

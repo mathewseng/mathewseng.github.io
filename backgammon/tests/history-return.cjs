@@ -56,10 +56,14 @@ module.exports = async function historyReturn(browser, base, out, name) {
       const sources = [];
       try {
         for (let player = 0; player < 2; player++) {
-          if (player)
+          if (player) {
+            const cubeSource = r.clone(game.state);
+            const cubeResult = await engine.analyze(cubeSource, { preset: "quick" });
             game = t.playAction(game, { type: "roll", dice: [4, 3] });
-          const source = r.clone(game.state),
-            steps = r.legalTurns(source)[0].steps;
+            game.events.at(-1).evaluation = compactEvaluation(cubeSource, cubeResult);
+          }
+          const source = r.clone(game.state);
+          const steps = r.legalTurns(source)[0].steps;
           sources.push(source);
           const result = await engine.analyze(source, {
             preset: "quick",
@@ -98,6 +102,17 @@ module.exports = async function historyReturn(browser, base, out, name) {
         const action = document.querySelector("#roll").getBoundingClientRect();
         return {boardHeight:board.height, boardBottom:board.bottom, appBottom:app.bottom, reviewTop:review.top, actionBottom:action.bottom, overflow:document.documentElement.scrollWidth>innerWidth+1, home:document.querySelector("#move-feedback").parentElement.className};
       });
+      const density = await page.locator("#move-feedback .feedback-review").evaluateAll(rows => rows.map(row => ({
+        height: row.getBoundingClientRect().height,
+        clipped: row.scrollWidth > row.clientWidth + 1,
+        values: [...row.querySelectorAll('.decision-value')].every(n => n.scrollWidth <= n.clientWidth + 1),
+      })));
+      for (const row of density) {
+        assert.equal(row.clipped,false,`${width}: row clips`);
+        assert.equal(row.values,true,`${width}: equity clips`);
+        assert.ok(row.height <= (width >= 1366 ? 76 : 190),`${width}: history row too tall (${row.height})`);
+      }
+      if ([390,1366].includes(width)) console.log(`${name} ${width}: row heights ${density.map(r=>r.height).join(', ')}`);
       assert.equal(layout.home,"play-review","history always belongs below the table");
       assert.equal(layout.overflow,false,`${name} ${width}: horizontal overflow`);
       assert.ok(layout.reviewTop>=layout.appBottom-1,`${name} ${width}: history overlaps playing area`);
@@ -121,12 +136,35 @@ module.exports = async function historyReturn(browser, base, out, name) {
       side: row.dataset.historySide,
       count: row.querySelectorAll('.decision-values-compact').length,
       labels: [...row.querySelectorAll('.decision-value .muted')].map(n=>n.textContent),
+      best: row.querySelector('.decision-values-compact').dataset.bestPlayed === 'true',
+      duplicatedMove: !!row.querySelector('.feedback-best'),
+      identity: row.querySelector('.history-player').textContent,
     })));
-    assert.ok(comparisons.length >= 2);
+    assert.ok(comparisons.length >= 3);
+    assert.ok(comparisons.some(row => row.best), "best-played row is tested");
     for(const row of comparisons) {
       assert.equal(row.count,1);
-      assert.deepEqual(row.labels,['Before',row.side === 'opponent' ? 'Opponent’s choice' : 'Your choice','Best choice']);
+      assert.deepEqual(row.labels,['Before',...(!row.best ? [row.side === 'opponent' ? 'Opponent’s choice' : 'Your choice'] : []),'Best choice']);
+      assert.equal(row.duplicatedMove,!row.best,"only show a best alternative when it differs");
+      assert.equal(row.identity,row.side === 'opponent' ? 'Opponent' : 'You');
     }
+    // Long names and the effective viewport at 200% zoom may add height,
+    // but never hide a value. This emulates layout width, not physical zoom.
+    for (const [width, height] of [[390,844],[1366,768]]) {
+      await page.setViewportSize({width: Math.round(width / 2), height: Math.round(height / 2)});
+      const overflow = await page.evaluate(async () => {
+        const detail = document.querySelector('.history-detail'), old = detail.textContent;
+        detail.textContent = 'Alexandria-with-a-very-long-player-name · Move · Standard';
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const clipped = [...document.querySelectorAll('#move-feedback, #move-feedback .feedback-review, #move-feedback .decision-value')]
+          .filter(n => n.scrollWidth > n.clientWidth + 1)
+          .map(n => ({class:n.className, width:n.clientWidth, scroll:n.scrollWidth}));
+        detail.textContent = old;
+        return clipped;
+      });
+      assert.deepEqual(overflow,[],`${width}: zoom/long name clips history`);
+    }
+    await page.setViewportSize({width:1440,height:900});
     const checkColors = async () => {
       const colors = await page.evaluate(() =>
         [
@@ -230,7 +268,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
     await page.keyboard.press("Escape");
     await page
       .locator(
-        '#move-feedback .feedback-review[data-history-side="opponent"]',
+        '#move-feedback .feedback-review[data-history-side="opponent"][data-decision-type="checker"]',
       )
       .click();
     await page.locator("#return-position").waitFor();
