@@ -304,6 +304,142 @@ const server = http.createServer((req, res) => {
         ),
       );
     }
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await page.reload();
+    await ready();
+    for (const [mode, lengths] of [
+      ["single", [2, 3, 4, 5, 6]],
+      ["full", [2, 3, 5, 7, 11]],
+    ]) {
+      await page.locator(`button[data-mode="${mode}"]`).click();
+      await ready();
+      assert.equal(await page.locator("#featured").isVisible(), false);
+      for (let dice = 2; dice <= 6; dice++) {
+        await page.locator(`[data-n="${dice}"]`).click();
+        await ready();
+        assert.equal(
+          await page.locator("#distribution .outcome").count(),
+          lengths[dice - 2],
+        );
+        assert.equal(
+          await page
+            .locator("#results-body tr")
+            .first()
+            .locator(".payout")
+            .count(),
+          lengths[dice - 2],
+        );
+        assert.ok(
+          (await page.locator("#analysis").textContent()).includes(
+            `= 0 / ${6 ** dice} = 0`,
+          ),
+        );
+      }
+    }
+    assert.deepEqual(
+      await page.locator("#distribution .outcome b").allTextContents(),
+      [
+        "Singles",
+        "Pair",
+        "2 pair",
+        "3 pair",
+        "Trips",
+        "Boat",
+        "2 trips",
+        "Quads",
+        "Quads + pair",
+        "Quints",
+        "Sexts",
+      ],
+    );
+    assert.match(
+      await page.locator("#distribution .outcome").last().textContent(),
+      /6 \/ 46,656/,
+    );
+    const originalRanks = await page.locator(".rank-button").allTextContents();
+    const keys = await page
+      .locator("#results-head button")
+      .evaluateAll((buttons) => buttons.map((b) => b.dataset.sort));
+    for (let column = 0; column < keys.length; column++) {
+      for (let click = 0; click < 2; click++) {
+        const button = page.locator(
+          `#results-head [data-sort="${keys[column]}"]`,
+        );
+        await button.click();
+        const direction = await button.locator("..").getAttribute("aria-sort");
+        const values = await page
+          .locator("#results-body tr")
+          .evaluateAll(
+            (rows, column) =>
+              rows.map((row) => Number(row.cells[column].textContent)),
+            column,
+          );
+        assert.deepEqual(
+          values,
+          [...values].sort((a, b) =>
+            direction === "ascending" ? a - b : b - a,
+          ),
+        );
+        assert.deepEqual(
+          (await page.locator(".rank-button").allTextContents()).sort(),
+          [...originalRanks].sort(),
+        );
+      }
+    }
+    const rank = await page.locator(".rank-button").first().textContent();
+    await page.locator(".rank-button").first().click();
+    assert.equal(
+      await page.locator("#analysis h2").textContent(),
+      `Rank ${rank}`,
+    );
+    await page.locator('#results-head [data-sort="rank"]').click();
+    await page.locator("#results-scroll").evaluate((el) => (el.scrollLeft = 0));
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollHeight <= innerHeight,
+      ),
+    );
+    await page.screenshot({
+      path: path.join(screenshotDir, "full-sets-desktop.png"),
+      fullPage: true,
+    });
+    await page.locator("#open-checker").click();
+    assert.equal(await page.locator("#checker-mode").inputValue(), "full");
+    await page.locator("#checker-n").selectOption("2");
+    await page.locator("#checker-payouts").fill("-1, 6");
+    assert.match(
+      await page.locator("#checker-result").textContent(),
+      /Exact numerator: 6/,
+    );
+    assert.match(
+      await page.locator("#checker-order").textContent(),
+      /Singles → Pair/,
+    );
+    assert.match(await page.locator("#apply-repair").textContent(), /Use \+5/);
+    await page.locator("#apply-repair").click();
+    assert.match(
+      await page.locator("#checker-result").textContent(),
+      /Exactly fair/,
+    );
+    await page.locator("#checker-mode").selectOption("single");
+    assert.match(
+      await page.locator("#checker-result").textContent(),
+      /Exactly fair/,
+    );
+    await page.keyboard.press("Escape");
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    );
+    await page.screenshot({
+      path: path.join(screenshotDir, "full-sets-mobile.png"),
+      fullPage: true,
+    });
+    await page.locator('button[data-mode="chosen"]').click();
+    await ready();
+    assert.equal(await page.locator("#distribution .outcome").count(), 7);
     assert.deepEqual(errors, []);
     console.log(
       `Dice browser checks passed: route, worker, filters, rankings, exact checker/repair, responsiveness, keyboard, mobile. Screenshots: ${screenshotDir}`,

@@ -1,0 +1,127 @@
+// Exact counts of ordered rolls. Face-frequency vectors avoid rolling every
+// permutation: each vector contributes N! / product(count[face]!).
+export const MODES = Object.freeze({
+  chosen: "Chosen face",
+  single: "Single sets",
+  full: "Full sets",
+});
+const FULL_CATEGORIES = [
+  ["singles", "Singles", "", "Every die shows a different face."],
+  ["pair", "Pair", "2", "One pair; all remaining dice are distinct singles."],
+  [
+    "two-pair",
+    "2 pair",
+    "2,2",
+    "Two pairs; any remaining dice are distinct singles.",
+  ],
+  ["three-pair", "3 pair", "2,2,2", "Three pairs."],
+  [
+    "trips",
+    "Trips",
+    "3",
+    "Three of a kind; all remaining dice are distinct singles.",
+  ],
+  [
+    "boat",
+    "Boat",
+    "3,2",
+    "Full house: a triple and a pair, plus a single with six dice.",
+  ],
+  ["two-trips", "2 trips", "3,3", "Two triples."],
+  [
+    "quads",
+    "Quads",
+    "4",
+    "Four of a kind; any remaining dice are distinct singles.",
+  ],
+  ["quads-pair", "Quads + pair", "4,2", "Four of a kind and a pair."],
+  ["quints", "Quints", "5", "Five of a kind, plus a single with six dice."],
+  ["sexts", "Sexts", "6", "Six of a kind."],
+];
+const SINGLE_LABELS = ["Singles", "Pair", "Trips", "Quads", "Quints", "Sexts"];
+const factorial = [1, 1, 2, 6, 24, 120, 720];
+const cache = new Map();
+export function validateGame(n, mode = "chosen") {
+  if (!Number.isInteger(n) || n < 2 || n > 6)
+    throw new RangeError("Choose 2 through 6 dice.");
+  if (!Object.hasOwn(MODES, mode))
+    throw new RangeError("Unknown hand-ranking mode.");
+}
+function categoryKey(counts, mode) {
+  if (mode === "single") return `set-${Math.max(...counts)}`;
+  const pattern = counts
+    .filter((v) => v > 1)
+    .sort((a, b) => b - a)
+    .join(",");
+  return FULL_CATEGORIES.find((row) => row[2] === pattern)[0];
+}
+export function classifyHand(roll, mode = "full") {
+  validateGame(roll.length, mode);
+  if (mode === "chosen")
+    throw new RangeError("A chosen-face result also needs a chosen number.");
+  const counts = Array(6).fill(0);
+  for (const face of roll) {
+    if (!Number.isInteger(face) || face < 1 || face > 6)
+      throw new RangeError("Die faces must be integers from 1 through 6.");
+    counts[face - 1]++;
+  }
+  return categoryKey(counts, mode);
+}
+export function outcomes(n, mode = "chosen") {
+  validateGame(n, mode);
+  const cacheKey = `${n}:${mode}`;
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
+  let categories;
+  if (mode === "chosen") {
+    let choose = 1;
+    categories = Array.from({ length: n + 1 }, (_, k) => {
+      if (k) choose = (choose * (n - k + 1)) / k;
+      return {
+        key: `matches-${k}`,
+        label: `${k} ${k === 1 ? "match" : "matches"}`,
+        short: String(k),
+        detail: `${k} dice match the chosen face.`,
+        weight: choose * 5 ** (n - k),
+      };
+    });
+  } else {
+    const totals = new Map();
+    function visit(counts, remaining) {
+      if (counts.length === 5) {
+        const all = [...counts, remaining],
+          key = categoryKey(all, mode);
+        const ways =
+          factorial[n] / all.reduce((product, v) => product * factorial[v], 1);
+        totals.set(key, (totals.get(key) || 0) + ways);
+        return;
+      }
+      for (let v = 0; v <= remaining; v++) visit([...counts, v], remaining - v);
+    }
+    visit([], n);
+    categories = (
+      mode === "single"
+        ? SINGLE_LABELS.map((label, i) => ({
+            key: `set-${i + 1}`,
+            label,
+            detail:
+              i === 0
+                ? "Every die shows a different face."
+                : `The largest matching group contains ${i + 1} dice; smaller groups do not change this rank.`,
+          }))
+        : FULL_CATEGORIES.map(([key, label, , detail]) => ({
+            key,
+            label,
+            detail,
+          }))
+    )
+      .filter((row) => totals.has(row.key))
+      .map((row) => ({
+        ...row,
+        short: row.label,
+        weight: totals.get(row.key),
+      }));
+  }
+  const frozen = Object.freeze(categories.map(Object.freeze));
+  cache.set(cacheKey, frozen);
+  return frozen;
+}

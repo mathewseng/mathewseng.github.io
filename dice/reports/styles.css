@@ -1285,3 +1285,113 @@ dialog[open] {
     scroll-behavior: auto !important;
   }
 }
+
+/* Scoring modes share the same workspace and preserve hand-rank order. */
+.mode-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+.mode-tabs {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  background: var(--panel);
+  border-radius: 7px;
+  padding: 3px;
+}
+.mode-tabs button {
+  min-height: 34px;
+  padding: 7px 13px;
+  border-color: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+.mode-tabs button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: #635638;
+  background: #29261e;
+}
+.mode-line .hint {
+  max-width: 580px;
+  font-size: 11px;
+}
+.coverage-note {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  max-height: 190px;
+  flex-shrink: 0;
+  overflow: auto;
+}
+.coverage-note summary {
+  color: var(--accent);
+  padding: 3px 0;
+}
+.coverage-note p {
+  margin-top: 10px;
+}
+th button {
+  min-height: 28px;
+}
+.chart-scroll {
+  overflow-x: auto;
+}
+.chart-scroll .payout-chart {
+  max-height: none;
+}
+.mini-scroll td small {
+  display: block;
+  white-space: normal;
+  min-width: 200px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.contributions td:first-child {
+  font-family: inherit;
+  white-space: normal;
+}
+.checker-fields {
+  grid-template-columns: minmax(0, 1fr) 75px;
+}
+.checker-fields > label:last-child {
+  grid-column: 1 / -1;
+}
+#checker-order {
+  margin: -10px 0 20px;
+}
+@media (max-width: 980px) {
+  .mode-line {
+    align-items: start;
+    gap: 15px;
+  }
+  .mode-line .hint {
+    max-width: 400px;
+  }
+}
+@media (max-width: 640px) {
+  .mode-line {
+    display: block;
+    margin-bottom: 12px;
+  }
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .mode-tabs button {
+    padding-inline: 8px;
+  }
+  .mode-line .hint {
+    margin-top: 10px;
+  }
+  [data-mode="full"] .distribution {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .checker-fields {
+    grid-template-columns: minmax(0, 1fr) 65px;
+  }
+}

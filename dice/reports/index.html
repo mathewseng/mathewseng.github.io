@@ -39,11 +39,18 @@
             <h1>Fair Dice <span>Payout Explorer</span></h1>
           </div>
           <p class="explanation">
-            Choose a face. Roll 2–6 fair six-sided dice. Your
-            <strong>net payout</strong> depends on how many match.<br />Explore
-            integer payouts that balance to
+            Roll 2–6 fair six-sided dice and choose how hands are scored.
+            Explore <strong>net integer payouts</strong> that balance to
             <strong>exactly zero expected value</strong>.
           </p>
+        </div>
+        <div class="mode-line">
+          <div class="mode-tabs" role="group" aria-label="Hand-ranking mode">
+            <button data-mode="chosen" aria-pressed="true">Chosen face</button>
+            <button data-mode="single" aria-pressed="false">Single sets</button>
+            <button data-mode="full" aria-pressed="false">Full sets</button>
+          </div>
+          <p id="mode-description" class="hint"></p>
         </div>
         <div class="dice-line">
           <div class="dice-tabs" role="group" aria-label="Number of dice">
@@ -70,7 +77,9 @@
             <summary>Search filters <span aria-hidden="true">⌄</span></summary>
             <form id="filters">
               <fieldset>
-                <legend>Initial payout <span class="mono">p[0]</span></legend>
+                <legend>
+                  Initial payout <span id="initial-category">0 matches</span>
+                </legend>
                 <div class="input-pair">
                   <label
                     >Minimum<input
@@ -209,6 +218,37 @@
             </p>
             <span class="exact-tag">EV = 0</span>
           </div>
+          <details class="coverage-note">
+            <summary>How ranking and search coverage work</summary>
+            <p>
+              <strong>Complete</strong> means every integer schedule inside the
+              current bounds was considered, then scaled copies were removed.
+              <strong>Partial</strong> means the search hit 600,000 candidate
+              nodes or about 2.5 seconds; results are the best of the explored
+              candidates only. Narrow the bounds for a complete search.
+            </p>
+            <p>
+              The table is a <strong>shortlist</strong>, limited by Maximum
+              results. Recommended also keeps one representative per similar
+              curve family. Other ranking methods do not group curves. A
+              complete search does not mean every result is displayed.
+            </p>
+            <p>
+              <strong>Recommended score:</strong> 25% smoothness, 20% simple
+              amounts, 20% moderate maximum, 20% progressive jumps, and 15%
+              increasing payouts. Exact formulas are in “How the math works.”
+              Rank is the shortlist position for the selected ranking method;
+              header sorting preserves that rank.
+            </p>
+            <p>
+              Without bounds, there can be infinitely many distinct integer
+              payout proportions, even after removing scaled copies. For two
+              dice with a chosen face, (−m, 1, 25m−10) is fair and has no common
+              divisor for every integer m ≥ 1. The two-category set game is an
+              exception: with a negative initial payout, its only nonzero fair
+              proportion is −1 / +5.
+            </p>
+          </details>
           <div
             id="results-scroll"
             class="table-scroll"
@@ -225,9 +265,9 @@
             </table>
             <div id="empty-state" class="empty-state" hidden></div>
           </div>
-          <p class="table-foot">
-            Select a row to inspect the exact proof.
-            <span>+ profit &nbsp; − loss</span>
+          <p class="table-foot" id="table-sort-status" role="status">
+            Headers sort the displayed shortlist. Rank by selects which
+            schedules are shown.
           </p>
         </section>
 
@@ -250,24 +290,38 @@
           <details class="math-reference" id="math-reference">
             <summary>How the math works</summary>
             <p>
-              Every die independently matches the chosen face with probability
-              1/6. For N dice and k matches:
-            </p>
-            <p class="formula">
-              w(N,k) = C(N,k) × 5<sup>N−k</sup><br />P(k) = w(N,k) / 6<sup
-                >N</sup
-              ><br />EV = Σ w(N,k)p[k] / 6<sup>N</sup>
+              Each mode partitions all 6<sup>N</sup> ordered rolls into mutually
+              exclusive outcome categories. Hand ranks follow the displayed
+              order, not probability order.
             </p>
             <p>
-              A fair schedule has <strong>Σ w(N,k)p[k] = 0</strong>. The final
-              weight is always 1, so we enumerate the earlier payouts and solve
-              p[N] = −Σ<sub>k&lt;N</sub> w(N,k)p[k]. Integer bounds prune
+              <strong>Chosen face:</strong> w(N,k) = C(N,k) × 5<sup>N−k</sup>.
+              <strong>Single sets:</strong> group rolls by their largest
+              matching set. <strong>Full sets:</strong> distinguish the complete
+              multiplicity pattern, ignoring the identities of the faces.
+            </p>
+            <p>
+              For set modes, each face-frequency vector contributes N! / ∏
+              count[face]! ordered rolls. Add those integer counts within each
+              category; their sum is always 6<sup>N</sup>.
+            </p>
+            <p class="formula">
+              P(category j) = w[j] / 6<sup>N</sup><br />EV = Σ w[j]p[j] / 6<sup
+                >N</sup
+              >
+            </p>
+            <p>
+              A fair schedule has <strong>Σ w[j]p[j] = 0</strong>. With L
+              categories, solve p[L−1] = −Σ<sub>j&lt;L−1</sub> w[j]p[j] /
+              w[L−1]. The final weight is 1 for a chosen face and 6 for set
+              modes. Every set-mode weight is divisible by 6, so reducing the
+              weights restores a unit final weight. Integer bounds prune
               impossible branches.
             </p>
             <div class="mini-scroll">
               <table>
-                <caption>
-                  Exact weights, ordered from 0 to N matches
+                <caption id="weights-caption">
+                  Exact weights in hand-rank order
                 </caption>
                 <thead>
                   <tr>
@@ -292,9 +346,10 @@
               Constant payouts score 100.
             </p>
             <p>
-              <strong>Steepness</strong> = 100 × Σ max(d[k],0)(k−1)/(N−1) / Σ
+              <strong>Steepness</strong> = 100 × Σ max(d[k],0)(k−1)/(L−2) / Σ
               max(d[k],0). Equal positive jumps score 50; a final-only rise
-              scores 100. No rises score 0.
+              scores 100. With just two categories, a positive jump scores 100.
+              No rises score 0. L is the number of categories.
             </p>
             <p>
               <strong>Recommended</strong> = .25 × smoothness + 20 × simple
@@ -304,9 +359,10 @@
               uses max(0, maximum payout).
             </p>
             <p>
-              Winning means a positive <em>net</em> payout. All-match
-              probability is always 1/6<sup>N</sup>, even if a non-increasing
-              schedule pays its maximum elsewhere.
+              Winning means a positive <em>net</em> payout. The highest-ranked
+              category has probability 1/6<sup>N</sup> for a chosen face and
+              6/6<sup>N</sup> for set modes, even if a non-increasing schedule
+              pays its maximum elsewhere.
             </p>
           </details>
         </aside>
@@ -329,10 +385,17 @@
           </button>
         </header>
         <p class="hint">
-          Enter net integer payouts, from zero matches through all matches. The
+          Enter net integer payouts in the category order shown below. The
           result updates as you type.
         </p>
         <div class="checker-fields">
+          <label
+            >Scoring<select id="checker-mode">
+              <option value="chosen">Chosen face</option>
+              <option value="single">Single sets</option>
+              <option value="full">Full sets</option>
+            </select></label
+          >
           <label
             >Dice<select id="checker-n">
               <option>2</option>
@@ -350,11 +413,12 @@
               spellcheck="false"
           /></label>
         </div>
+        <p id="checker-order" class="hint"></p>
         <div id="checker-result" aria-live="polite"></div>
         <p class="hint">
           Edge is EV ÷ |p[0]|, using the initial loss as the stake. If p[0] is
           not negative, a stake-based edge is undefined. Filter checks use the
-          checker’s dice count and the current search bounds.
+          checker’s mode, dice count, and the current search bounds.
         </p>
       </section>
     </dialog>

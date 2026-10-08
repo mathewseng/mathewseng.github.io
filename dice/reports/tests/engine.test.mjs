@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   weights,
+  outcomes,
+  classifyHand,
+  sortDisplayed,
   evNumerator,
   isFair,
   solveFinal,
@@ -128,9 +131,9 @@ test("every ranking excludes scaled copies before its result limit, including wh
 function brute(o) {
   const rows = [];
   function visit(p) {
-    if (p.length === o.n + 1) {
+    if (p.length === weights(o.n, o.mode).length) {
       if (filterReasons(p, o).length === 0)
-        rows.push({ payouts: p, metrics: metrics(o.n, p) });
+        rows.push({ payouts: p, metrics: metrics(o.n, p, o.mode) });
       return;
     }
     const lo = o.minP0,
@@ -235,4 +238,194 @@ test("style and probability metrics have documented meanings", () => {
   const nonlinear = metrics(4, FEATURED[4]);
   assert.ok(nonlinear.smoothness < 100);
   assert.ok(nonlinear.steepness > 50);
+});
+
+test("exact set distributions cover every roll and omit impossible categories", () => {
+  const expected = {
+    single: {
+      2: [30, 6],
+      3: [120, 90, 6],
+      4: [360, 810, 120, 6],
+      5: [720, 5400, 1500, 150, 6],
+      6: [720, 28800, 14700, 2250, 180, 6],
+    },
+    full: {
+      2: [30, 6],
+      3: [120, 90, 6],
+      4: [360, 720, 90, 120, 6],
+      5: [720, 3600, 1800, 1200, 300, 150, 6],
+      6: [720, 10800, 16200, 1800, 7200, 7200, 300, 1800, 450, 180, 6],
+    },
+  };
+  for (const mode of ["single", "full"])
+    for (let n = 2; n <= 6; n++) {
+      assert.deepEqual(weights(n, mode), expected[mode][n]);
+      const counted = new Map();
+      for (let encoded = 0; encoded < 6 ** n; encoded++) {
+        let code = encoded;
+        const roll = Array.from({ length: n }, () => {
+          const face = (code % 6) + 1;
+          code = Math.floor(code / 6);
+          return face;
+        });
+        const key = classifyHand(roll, mode);
+        counted.set(key, (counted.get(key) || 0) + 1);
+      }
+      assert.deepEqual(
+        outcomes(n, mode).map((row) => counted.get(row.key)),
+        expected[mode][n],
+      );
+      assert.equal(
+        [...counted.values()].reduce((sum, v) => sum + v, 0),
+        6 ** n,
+      );
+      assert.equal(counted.size, outcomes(n, mode).length);
+    }
+  assert.deepEqual(
+    outcomes(6, "full").map((row) => row.label),
+    [
+      "Singles",
+      "Pair",
+      "2 pair",
+      "3 pair",
+      "Trips",
+      "Boat",
+      "2 trips",
+      "Quads",
+      "Quads + pair",
+      "Quints",
+      "Sexts",
+    ],
+  );
+  assert.deepEqual(
+    outcomes(4, "full").map((row) => row.label),
+    ["Singles", "Pair", "2 pair", "Trips", "Quads"],
+  );
+  assert.throws(() => weights(4, "unknown"));
+});
+test("set classification distinguishes full patterns and largest-group scoring", () => {
+  const examples = [
+    [[1, 2, 3, 4, 5, 6], "singles", "set-1"],
+    [[1, 1, 2, 3, 4, 5], "pair", "set-2"],
+    [[1, 1, 2, 2, 3, 4], "two-pair", "set-2"],
+    [[1, 1, 2, 2, 3, 3], "three-pair", "set-2"],
+    [[1, 1, 1, 2, 3, 4], "trips", "set-3"],
+    [[1, 1, 1, 2, 2, 3], "boat", "set-3"],
+    [[1, 1, 1, 2, 2, 2], "two-trips", "set-3"],
+    [[1, 1, 1, 1, 2, 3], "quads", "set-4"],
+    [[1, 1, 1, 1, 2, 2], "quads-pair", "set-4"],
+    [[1, 1, 1, 1, 1, 2], "quints", "set-5"],
+    [[1, 1, 1, 1, 1, 1], "sexts", "set-6"],
+  ];
+  for (const [roll, full, single] of examples) {
+    assert.equal(classifyHand(roll, "full"), full);
+    assert.equal(
+      classifyHand(
+        roll.reverse().map((v) => 7 - v),
+        "single",
+      ),
+      single,
+    );
+  }
+  assert.throws(() => classifyHand([0, 2]));
+});
+test("set fairness and final-payout repair use the six-outcome final weight", () => {
+  for (const mode of ["single", "full"]) {
+    assert.equal(evNumerator(2, [-1, 5], mode), 0n);
+    assert.equal(evNumerator(2, [-1, 6], mode), 6n);
+    assert.equal(solveFinal(2, [-1], mode), 5n);
+    assert.deepEqual(
+      enumerate({ n: 2, mode }).rows.map((row) => row.payouts),
+      [[-1, 5]],
+    );
+    const m = metrics(2, [-1, 5], mode);
+    assert.equal(m.maxMatchWeight, 6);
+    assert.equal(m.steepness, 100);
+    assert.equal(m.smoothness, 100);
+  }
+  assert.equal(solveFinal(4, [-1, 0, 1, 2], "full"), 5n);
+  assert.equal(evNumerator(4, [-1, 0, 1, 2, 5], "full"), 0n);
+  assert.equal(
+    solveFinal(4, [-9007199254740993n, 0, 0], "single"),
+    540431955284459580n,
+  );
+  assert.throws(() => evNumerator(6, [1, 2, 3, 4, 5, 6], "full"));
+});
+test("pruned set searches match exhaustive brute force with either zero or ordering setting", () => {
+  for (const mode of ["single", "full"])
+    for (const n of [2, 3, 4])
+      for (const strict of [true, false])
+        for (const allowZero of [true, false]) {
+          const o = normalizeOptions({
+            mode,
+            n,
+            minP0: -2,
+            maxP0: 0,
+            maxPayout: 4,
+            strict,
+            allowZero,
+            sort: "lowest-max",
+            limit: 200,
+          });
+          const expected = brute(o),
+            actual = enumerate(o, { maxMs: Infinity, maxNodes: Infinity });
+          assert.equal(actual.complete, true);
+          assert.equal(actual.found, expected.length);
+          assert.deepEqual(actual.rows, expected.slice(0, 200));
+        }
+  for (const mode of ["single", "full"])
+    for (const n of [5, 6]) {
+      const result = enumerate({ n, mode }, { maxMs: Infinity });
+      assert.equal(result.complete, true);
+      assert.ok(result.found > 0);
+      for (const row of result.rows)
+        assert.deepEqual(filterReasons(row.payouts, { n, mode }), []);
+    }
+});
+test("every displayed column supports both sort directions without changing rank or membership", () => {
+  const rows = enumerate({ n: 4, mode: "full" }).rows.map((row, index) => ({
+    ...row,
+    rank: index + 1,
+  }));
+  for (const key of [
+    "rank",
+    "payout:0",
+    "payout:1",
+    "payout:2",
+    "payout:3",
+    "payout:4",
+    "max",
+    "range",
+    "largestJump",
+    "smoothness",
+    "steepness",
+    "recommended",
+  ]) {
+    const value = (row) =>
+      key === "rank"
+        ? row.rank
+        : key.startsWith("payout:")
+          ? row.payouts[Number(key.slice(7))]
+          : row.metrics[key];
+    for (const dir of ["asc", "desc"]) {
+      const sorted = sortDisplayed(rows, key, dir);
+      assert.deepEqual(
+        sorted.map((row) => row.rank).sort((a, b) => a - b),
+        rows.map((row) => row.rank),
+      );
+      assert.ok(
+        sorted.every(
+          (row, i) =>
+            !i ||
+            (dir === "asc"
+              ? value(sorted[i - 1]) <= value(row)
+              : value(sorted[i - 1]) >= value(row)),
+        ),
+      );
+    }
+  }
+  assert.deepEqual(
+    rows.map((row) => row.rank),
+    Array.from({ length: rows.length }, (_, i) => i + 1),
+  );
 });

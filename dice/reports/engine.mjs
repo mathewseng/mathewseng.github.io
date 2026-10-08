@@ -1,7 +1,11 @@
+import { outcomes, validateGame } from "./outcomes.mjs";
+export { outcomes, MODES, classifyHand } from "./outcomes.mjs";
+
 // Fairness is an integer identity. BigInt is used for public/checker arithmetic;
 // the bounded search uses safe integer Numbers (largest sum <= 6^6 * 1,000,000).
 export const DEFAULTS = Object.freeze({
   n: 4,
+  mode: "chosen",
   minP0: -5,
   maxP0: -1,
   maxPayout: 100,
@@ -24,17 +28,8 @@ export const SORTS = [
   "largest-jump",
   "range",
 ];
-function diceCount(n) {
-  if (!Number.isInteger(n) || n < 2 || n > 6)
-    throw new RangeError("Choose 2 through 6 dice.");
-}
-export function weights(n) {
-  diceCount(n);
-  let choose = 1;
-  return Array.from({ length: n + 1 }, (_, k) => {
-    if (k) choose = (choose * (n - k + 1)) / k;
-    return choose * 5 ** (n - k);
-  });
+export function weights(n, mode = "chosen") {
+  return outcomes(n, mode).map((row) => row.weight);
 }
 export function integer(value) {
   if (typeof value === "bigint") return value;
@@ -46,23 +41,28 @@ export function integer(value) {
     "Use whole numbers (up to 100 digits), with no decimals.",
   );
 }
-export function evNumerator(n, payouts) {
-  if (payouts.length !== n + 1)
-    throw new RangeError(`Enter exactly ${n + 1} payouts.`);
-  return weights(n).reduce(
-    (sum, w, k) => sum + BigInt(w) * integer(payouts[k]),
-    0n,
-  );
+export function evNumerator(n, payouts, mode = "chosen") {
+  const w = weights(n, mode);
+  if (payouts.length !== w.length)
+    throw new RangeError(`Enter exactly ${w.length} payouts.`);
+  return w.reduce((sum, w, k) => sum + BigInt(w) * integer(payouts[k]), 0n);
 }
-export function isFair(n, payouts) {
-  return evNumerator(n, payouts) === 0n;
+export function isFair(n, payouts, mode = "chosen") {
+  return evNumerator(n, payouts, mode) === 0n;
 }
-export function solveFinal(n, earlier) {
-  if (earlier.length !== n)
-    throw new RangeError(`Enter exactly ${n} earlier payouts.`);
-  return -weights(n)
-    .slice(0, n)
-    .reduce((sum, w, k) => sum + BigInt(w) * integer(earlier[k]), 0n);
+export function solveFinal(n, earlier, mode = "chosen") {
+  const w = weights(n, mode),
+    last = w.length - 1;
+  if (earlier.length !== last)
+    throw new RangeError(`Enter exactly ${last} earlier payouts.`);
+  const numerator = -w
+    .slice(0, last)
+    .reduce((sum, weight, k) => sum + BigInt(weight) * integer(earlier[k]), 0n);
+  if (numerator % BigInt(w[last]) !== 0n)
+    throw new RangeError(
+      "No integer final payout can balance these earlier payouts.",
+    );
+  return numerator / BigInt(w[last]);
 }
 export function payoutDivisor(payouts) {
   return payouts.reduce((divisor, value) => {
@@ -72,7 +72,7 @@ export function payoutDivisor(payouts) {
 }
 export function normalizeOptions(input = {}) {
   const o = { ...DEFAULTS, ...input };
-  diceCount(o.n);
+  validateGame(o.n, o.mode);
   for (const key of ["minP0", "maxP0", "maxPayout", "limit"]) {
     if (!Number.isSafeInteger(o[key]))
       throw new RangeError("All filter values must be whole numbers.");
@@ -94,7 +94,8 @@ export function normalizeOptions(input = {}) {
 }
 export function filterReasons(payouts, input = {}) {
   const o = normalizeOptions(input);
-  if (payouts.length !== o.n + 1) return [`Needs ${o.n + 1} payouts.`];
+  const length = outcomes(o.n, o.mode).length;
+  if (payouts.length !== length) return [`Needs ${length} payouts.`];
   let p;
   try {
     p = payouts.map(integer);
@@ -115,21 +116,29 @@ export function filterReasons(payouts, input = {}) {
     reasons.push(
       `Schedule is a ${divisor}× scaled copy of smaller integer payouts.`,
     );
-  if (!isFair(o.n, p)) reasons.push("Expected value is not exactly zero.");
+  if (!isFair(o.n, p, o.mode))
+    reasons.push("Expected value is not exactly zero.");
   return reasons;
 }
-export function metrics(n, p) {
-  const w = weights(n),
+export function metrics(n, p, mode = "chosen") {
+  const w = weights(n, mode),
+    steps = p.length - 1,
     total = 6 ** n;
   const jumps = p.slice(1).map((v, i) => v - p[i]);
-  const mean = jumps.reduce((s, d) => s + d, 0) / n;
-  const meanAbs = jumps.reduce((s, d) => s + Math.abs(d), 0) / n;
-  const variance = jumps.reduce((s, d) => s + (d - mean) ** 2, 0) / n;
+  const mean = jumps.reduce((s, d) => s + d, 0) / steps;
+  const meanAbs = jumps.reduce((s, d) => s + Math.abs(d), 0) / steps;
+  const variance = jumps.reduce((s, d) => s + (d - mean) ** 2, 0) / steps;
   const smoothness = 100 / (1 + (meanAbs ? Math.sqrt(variance) / meanAbs : 0));
   const rise = jumps.reduce((s, d) => s + Math.max(0, d), 0);
   const steepness = rise
-    ? (100 * jumps.reduce((s, d, i) => s + (Math.max(0, d) * i) / (n - 1), 0)) /
-      rise
+    ? steps === 1
+      ? 100
+      : (100 *
+          jumps.reduce(
+            (s, d, i) => s + (Math.max(0, d) * i) / Math.max(1, steps - 1),
+            0,
+          )) /
+        rise
     : 0;
   const max = Math.max(...p),
     range = max - Math.min(...p);
@@ -146,14 +155,13 @@ export function metrics(n, p) {
           ) +
           (d < jumps[i] ? 1 : 0),
         0,
-      ) /
-    (n - 1);
+      ) / Math.max(1, steps - 1);
   const recommended =
     0.25 * smoothness +
     20 * simple +
     20 / (1 + Math.max(0, max) / 50) +
     20 / (1 + bend) +
-    (15 * jumps.filter((d) => d > 0).length) / n;
+    (15 * jumps.filter((d) => d > 0).length) / steps;
   return {
     max,
     range,
@@ -164,7 +172,7 @@ export function metrics(n, p) {
     recommended,
     winWeight: w.reduce((s, v, k) => s + (p[k] > 0 ? v : 0), 0),
     total,
-    maxMatchWeight: 1,
+    maxMatchWeight: w.at(-1),
   };
 }
 export function compareSchedules(sort) {
@@ -221,7 +229,10 @@ export function enumerate(
   { maxNodes = 600000, maxMs = 2500, onProgress = () => {} } = {},
 ) {
   const o = normalizeOptions(input),
-    w = weights(o.n),
+    rawWeights = weights(o.n, o.mode),
+    divisor = rawWeights.reduce((d, v) => gcd(d, v), 0),
+    w = rawWeights.map((v) => v / divisor),
+    last = w.length - 1,
     started = performance.now();
   const compare = compareSchedules(o.sort),
     pool = new Map();
@@ -236,7 +247,7 @@ export function enumerate(
     if (payouts.reduce((divisor, v) => gcd(divisor, Math.abs(v)), 0) > 1)
       return;
     found++;
-    const m = metrics(o.n, payouts),
+    const m = metrics(o.n, payouts, o.mode),
       row = { payouts, metrics: m };
     const key =
       o.sort === "recommended" ? shapeKey(payouts, m) : payouts.join(",");
@@ -250,13 +261,24 @@ export function enumerate(
     }
   }
   function* visit(p, sum, i) {
+    if (i === last) {
+      const final = sum === 0 ? 0 : -sum / w[last];
+      yield Number.isInteger(final) &&
+      final >= o.minP0 &&
+      final <= o.maxPayout &&
+      (!o.strict || final > p.at(-1)) &&
+      (o.allowZero || final !== 0)
+        ? [...p, final]
+        : null;
+      return;
+    }
     let lo = o.strict ? p[i - 1] + 1 : o.minP0;
-    let hi = o.strict ? o.maxPayout - (o.n - i) : o.maxPayout;
+    let hi = o.strict ? o.maxPayout - (last - i) : o.maxPayout;
     if (o.strict) {
       const offset = w.slice(i + 1).reduce((s, v, j) => s + v * (j + 1), 0);
       const maxTail = w
         .slice(i + 1)
-        .reduce((s, v, j) => s + v * (o.maxPayout - (o.n - (i + j + 1))), 0);
+        .reduce((s, v, j) => s + v * (o.maxPayout - (last - (i + j + 1))), 0);
       lo = Math.max(lo, Math.ceil((-sum - maxTail) / w[i]));
       hi = Math.min(hi, Math.floor((-sum - offset) / suffix[i]));
     } else {
@@ -270,9 +292,10 @@ export function enumerate(
         continue;
       }
       const next = sum + w[i] * v;
-      if (i === o.n - 1) {
-        const final = next === 0 ? 0 : -next;
+      if (i === last - 1) {
+        const final = next === 0 ? 0 : -next / w[last];
         const valid =
+          Number.isInteger(final) &&
           final >= o.minP0 &&
           final <= o.maxPayout &&
           (!o.strict || final > v) &&
@@ -325,4 +348,21 @@ export function enumerate(
     elapsedMs: Math.round(performance.now() - started),
     grouped: o.sort === "recommended",
   };
+}
+
+export function sortDisplayed(rows, key = "rank", direction = "asc") {
+  if (!["asc", "desc"].includes(direction))
+    throw new RangeError("Unknown sort direction.");
+  const value = (row) =>
+    key === "rank"
+      ? row.rank
+      : key.startsWith("payout:")
+        ? row.payouts[Number(key.slice(7))]
+        : row.metrics[key];
+  if (rows.some((row) => !Number.isFinite(value(row))))
+    throw new RangeError("Unknown table column.");
+  return [...rows].sort(
+    (a, b) =>
+      (direction === "asc" ? 1 : -1) * (value(a) - value(b)) || a.rank - b.rank,
+  );
 }
