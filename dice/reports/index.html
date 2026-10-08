@@ -24,55 +24,340 @@
     <div class="app-shell">
       <header class="header">
         <div class="topline">
-          <nav class="breadcrumbs" aria-label="Breadcrumb">
-            <a class="monogram" href="/">MS</a><span>/</span
-            ><a href="/dice/">Dice</a><span>/</span
-            ><span aria-current="page">Reports</span>
-          </nav>
-          <button class="quiet-button" id="open-checker">
-            Custom payout checker <span aria-hidden="true">↗</span>
-          </button>
-        </div>
-        <div class="intro">
-          <div>
-            <p class="eyebrow">PROBABILITY LAB</p>
-            <h1>Fair Dice <span>Payout Explorer</span></h1>
+          <div class="brand">
+            <a class="monogram" href="/dice/" aria-label="Dice home">⚄</a>
+            <h1>Fair Dice <span>Payout Lab</span></h1>
           </div>
-          <p class="explanation">
-            Roll 2–6 fair six-sided dice and choose how hands are scored.
-            Explore <strong>net integer payouts</strong> that balance to
-            <strong>exactly zero expected value</strong>.
-          </p>
+          <nav class="view-nav" aria-label="Workspace">
+            <button data-view="explore" aria-pressed="true">Explore</button>
+            <button
+              data-view="analysis"
+              class="mobile-analysis"
+              aria-pressed="false"
+            >
+              Analysis
+            </button>
+            <button data-view="play" aria-pressed="false">
+              Play <span aria-hidden="true">↗</span>
+            </button>
+          </nav>
+          <button class="quiet-button" id="open-checker">Custom payouts</button>
         </div>
-        <div class="mode-line">
-          <div class="mode-tabs" role="group" aria-label="Hand-ranking mode">
-            <button data-mode="chosen" aria-pressed="true">Chosen face</button>
-            <button data-mode="single" aria-pressed="false">Single sets</button>
-            <button data-mode="full" aria-pressed="false">Full sets</button>
+        <div class="explore-controls">
+          <div class="game-controls">
+            <div class="mode-tabs" role="group" aria-label="Hand-ranking mode">
+              <button data-mode="chosen" aria-pressed="true">
+                Chosen face
+              </button>
+              <button data-mode="single" aria-pressed="false">
+                Single sets
+              </button>
+              <button data-mode="full" aria-pressed="false">Full sets</button>
+            </div>
+            <div class="dice-tabs" role="group" aria-label="Number of dice">
+              <button data-n="2" aria-pressed="false">
+                2 <span>Dice</span>
+              </button>
+              <button data-n="3" aria-pressed="false">
+                3 <span>Dice</span>
+              </button>
+              <button data-n="4" aria-pressed="true">
+                4 <span>Dice</span>
+              </button>
+              <button data-n="5" aria-pressed="false">
+                5 <span>Dice</span>
+              </button>
+              <button data-n="6" aria-pressed="false">
+                6 <span>Dice</span>
+              </button>
+            </div>
+            <button class="quiet-button" data-open="odds-dialog">
+              Probabilities
+            </button>
           </div>
           <p id="mode-description" class="hint"></p>
         </div>
-        <div class="dice-line">
-          <div class="dice-tabs" role="group" aria-label="Number of dice">
-            <button data-n="2" aria-pressed="false">2 <span>Dice</span></button>
-            <button data-n="3" aria-pressed="false">3 <span>Dice</span></button>
-            <button data-n="4" aria-pressed="true">4 <span>Dice</span></button>
-            <button data-n="5" aria-pressed="false">5 <span>Dice</span></button>
-            <button data-n="6" aria-pressed="false">6 <span>Dice</span></button>
-          </div>
-          <span class="distribution-label" id="distribution-label"
-            >Exact outcome distribution</span
-          >
-        </div>
-        <div
-          id="distribution"
-          class="distribution"
-          aria-labelledby="distribution-label"
-        ></div>
       </header>
 
-      <main class="workspace">
-        <aside class="filters-panel">
+      <main class="workspace" id="explore-workspace">
+        <section class="results-panel" aria-labelledby="results-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">ZERO-EV INTEGER PAYOUTS</p>
+              <h2 id="results-title" tabindex="-1">
+                Payout schedules<span
+                  class="live-dot"
+                  aria-hidden="true"
+                ></span>
+              </h2>
+            </div>
+            <button class="quiet-button" data-open="filters-dialog">
+              Filters
+            </button>
+            <label class="sort-label"
+              >Rank by<select id="ranking">
+                <option value="recommended">Recommended</option>
+                <option value="smoothest">Smoothest</option>
+                <option value="steepest">Steepest</option>
+                <option value="lowest-max">Lowest maximum payout</option>
+                <option value="jackpot">Highest jackpot</option>
+                <option value="lowest-loss">Lowest initial loss</option>
+                <option value="largest-jump">Smallest largest jump</option>
+                <option value="range">Smallest payout range</option>
+              </select></label
+            >
+          </div>
+          <div id="featured" class="featured" hidden></div>
+          <div class="search-meta">
+            <p id="search-status" role="status" aria-live="polite">
+              Preparing exact search…
+            </p>
+            <button
+              class="text-button"
+              data-open="coverage-dialog"
+              aria-label="How ranking and search coverage work"
+            >
+              About ranking
+            </button>
+          </div>
+          <div
+            id="results-scroll"
+            class="table-scroll"
+            tabindex="0"
+            aria-label="Payout schedules, scroll for more columns and rows"
+          >
+            <table id="results-table">
+              <caption class="sr-only">
+                Ranked fair payout schedules. Select a rank button to inspect a
+                schedule. All payouts are net units.
+              </caption>
+              <thead id="results-head"></thead>
+              <tbody id="results-body"></tbody>
+            </table>
+            <div id="empty-state" class="empty-state" hidden></div>
+          </div>
+          <div class="selection-bar">
+            <div>
+              <span class="hint">Selected schedule</span
+              ><strong id="selection-name">Finding schedules…</strong>
+            </div>
+            <button class="primary-button" id="play-selected" disabled>
+              Play this schedule <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <p class="table-foot" id="table-sort-status" role="status">
+            Headers sort the displayed shortlist. Rank by selects which
+            schedules are shown.
+          </p>
+        </section>
+
+        <aside
+          id="inspector"
+          class="inspector"
+          aria-label="Selected schedule analysis"
+          tabindex="-1"
+        >
+          <div class="inspector-heading">
+            <p class="eyebrow">SCHEDULE INSPECTOR</p>
+            <span class="exact-tag">EXACT ARITHMETIC</span>
+          </div>
+          <button
+            class="primary-button inspector-play"
+            id="play-inspected"
+            disabled
+          >
+            Play this schedule ↗
+          </button>
+          <div id="analysis">
+            <p class="hint">
+              Select a schedule to see its payout curve and exact expected
+              value.
+            </p>
+          </div>
+          <details class="math-reference" id="math-reference">
+            <summary>How the math works</summary>
+            <p>
+              Each mode partitions all 6<sup>N</sup> ordered rolls into mutually
+              exclusive outcome categories. Hand ranks follow the displayed
+              order. Four-dice full sets rank trips before two pair. Six-dice
+              full sets share payouts for trips / boat and three pair / quads.
+            </p>
+            <p>
+              <strong>Chosen face:</strong> w(N,k) = C(N,k) × 5<sup>N−k</sup>.
+              <strong>Single sets:</strong> group rolls by their largest
+              matching set. <strong>Full sets:</strong> distinguish the complete
+              multiplicity pattern, ignoring the identities of the faces.
+            </p>
+            <p>
+              For set modes, each face-frequency vector contributes N! / ∏
+              count[face]! ordered rolls. Add those integer counts within each
+              category; their sum is always 6<sup>N</sup>.
+            </p>
+            <p class="formula">
+              P(category j) = w[j] / 6<sup>N</sup><br />EV = Σ w[j]p[j] / 6<sup
+                >N</sup
+              >
+            </p>
+            <p>
+              A fair schedule has <strong>Σ w[j]p[j] = 0</strong>. With L
+              categories, solve p[L−1] = −Σ<sub>j&lt;L−1</sub> w[j]p[j] /
+              w[L−1]. The final weight is 1 for a chosen face and 6 for set
+              modes. Every set-mode weight is divisible by 6, so reducing the
+              weights restores a unit final weight. Integer bounds prune
+              impossible branches.
+            </p>
+            <div class="mini-scroll">
+              <table>
+                <caption id="weights-caption">
+                  Exact weights in hand-rank order
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Dice</th>
+                    <th>Weights</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody id="all-weights"></tbody>
+              </table>
+            </div>
+            <p>
+              Fairness uses exact integer arithmetic, never rounded
+              probabilities. Search bounds keep every Number operation within
+              JavaScript’s safe integer range; the checker and EV proofs use
+              BigInt. Percentages, charts, and style scores are display
+              approximations.
+            </p>
+            <p>
+              <strong>Smoothness</strong> = 100 / (1 + σ(d) / mean(|d|)), where
+              d is the sequence of adjacent jumps. Higher means more even jumps.
+              Constant payouts score 100.
+            </p>
+            <p>
+              <strong>Steepness</strong> = 100 × Σ max(d[k],0)(k−1)/(L−2) / Σ
+              max(d[k],0). Equal positive jumps score 50; a final-only rise
+              scores 100. With just two categories, a positive jump scores 100.
+              No rises score 0. L is the number of categories.
+            </p>
+            <p>
+              <strong>Recommended</strong> = .25 × smoothness + 20 × simple
+              share + 20/(1 + max/50) + 20/(1 + bend) + 15 × increasing-jump
+              share. Bend averages |log₂((|next jump|+1)/(|previous
+              jump|+1))−1|, plus 1 for each shrinking jump. The maximum term
+              uses max(0, maximum payout).
+            </p>
+            <p>
+              Winning means a positive <em>net</em> payout. The highest-ranked
+              category has probability 1/6<sup>N</sup> for a chosen face and
+              6/6<sup>N</sup> for set modes, even if a non-increasing schedule
+              pays its maximum elsewhere.
+            </p>
+          </details>
+        </aside>
+      </main>
+      <main
+        id="play-workspace"
+        class="play-workspace"
+        hidden
+        aria-label="Play dice"
+      >
+        <section class="play-table" aria-label="Dice table">
+          <div class="play-top">
+            <div>
+              <p class="eyebrow">PLAY · NET UNITS</p>
+              <h2 id="play-title">Choose a schedule</h2>
+              <p id="play-subtitle" class="hint"></p>
+            </div>
+            <div class="pnl-block">
+              <span>Session PnL</span><strong id="pnl" class="neutral">0</strong
+              ><small id="round-count">0 rolls</small>
+            </div>
+          </div>
+          <div
+            id="face-picker"
+            class="face-picker"
+            role="group"
+            aria-label="Choose a face before rolling"
+          >
+            <span>Choose a face</span>
+            <div id="face-buttons"></div>
+          </div>
+          <div id="dice-stage" class="dice-stage" data-effect="ready">
+            <div class="table-ring" aria-hidden="true"></div>
+            <div
+              id="dice"
+              class="dice"
+              role="img"
+              aria-label="Dice ready to roll"
+            ></div>
+            <div id="particles" class="particles" aria-hidden="true"></div>
+            <div
+              class="roll-result"
+              id="roll-result"
+              role="status"
+              aria-live="polite"
+            >
+              <p id="result-label">Ready when you are</p>
+              <strong id="result-payout">Roll the dice</strong
+              ><span id="result-detail"
+                >Every roll uses your selected payouts.</span
+              >
+            </div>
+          </div>
+          <div class="roll-actions">
+            <button
+              class="primary-button roll-button"
+              id="roll-button"
+              disabled
+            >
+              Roll dice <span aria-hidden="true">↗</span>
+            </button>
+            <p class="hint">Fair dice. Exact payouts. No starting balance.</p>
+          </div>
+          <div class="recent-rolls">
+            <span class="hint">Recent</span>
+            <ol id="roll-history" aria-label="Recent payouts"></ol>
+            <button class="text-button" id="reset-pnl">Reset PnL</button>
+          </div>
+          <p id="play-error" class="error" role="alert"></p>
+        </section>
+        <aside class="paytable-panel" aria-label="Active payout schedule">
+          <div class="paytable-heading">
+            <div>
+              <p class="eyebrow">YOUR PAYOUTS</p>
+              <label for="play-schedule">Schedule</label>
+            </div>
+            <button class="text-button" id="choose-schedule">
+              Browse schedules ↗
+            </button>
+          </div>
+          <select id="play-schedule" aria-label="Payout schedule"></select>
+          <div
+            id="play-paytable"
+            class="play-paytable"
+            tabindex="0"
+            aria-label="Payouts and probabilities"
+          ></div>
+          <p class="hint paytable-note">
+            Payouts are net profit or loss. PnL adds every settled roll across
+            schedules in this tab.
+          </p>
+        </aside>
+      </main>
+    </div>
+    <dialog id="filters-dialog" aria-labelledby="filters-title">
+      <div class="dialog-content">
+        <header class="dialog-head">
+          <h2 id="filters-title">Search filters</h2>
+          <button
+            data-close="filters-dialog"
+            class="close-button"
+            aria-label="Close filters"
+          >
+            ×
+          </button>
+        </header>
+        <section class="filters-panel">
           <details id="filters-disclosure" open>
             <summary>Search filters <span aria-hidden="true">⌄</span></summary>
             <form id="filters">
@@ -185,189 +470,79 @@
               </p>
             </details>
           </div>
-        </aside>
-
-        <section class="results-panel" aria-labelledby="results-title">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">GENERATED SCHEDULES</p>
-              <h2 id="results-title" tabindex="-1">
-                Fair by construction<span
-                  class="live-dot"
-                  aria-hidden="true"
-                ></span>
-              </h2>
-            </div>
-            <label class="sort-label"
-              >Rank by<select id="ranking">
-                <option value="recommended">Recommended</option>
-                <option value="smoothest">Smoothest</option>
-                <option value="steepest">Steepest</option>
-                <option value="lowest-max">Lowest maximum payout</option>
-                <option value="jackpot">Highest jackpot</option>
-                <option value="lowest-loss">Lowest initial loss</option>
-                <option value="largest-jump">Smallest largest jump</option>
-                <option value="range">Smallest payout range</option>
-              </select></label
-            >
-          </div>
-          <div id="featured" class="featured" hidden></div>
-          <div class="search-meta">
-            <p id="search-status" role="status" aria-live="polite">
-              Preparing exact search…
-            </p>
-            <span class="exact-tag">EV = 0</span>
-          </div>
-          <details class="coverage-note">
-            <summary>How ranking and search coverage work</summary>
-            <p>
-              <strong>Complete</strong> means every integer schedule inside the
-              current bounds was considered, then scaled copies were removed.
-              <strong>Partial</strong> means the search hit 600,000 candidate
-              nodes or about 2.5 seconds; results are the best of the explored
-              candidates only. Narrow the bounds for a complete search.
-            </p>
-            <p>
-              The table is a <strong>shortlist</strong>, limited by Maximum
-              results. Recommended also keeps one representative per similar
-              curve family. Other ranking methods do not group curves. A
-              complete search does not mean every result is displayed.
-            </p>
-            <p>
-              <strong>Recommended score:</strong> 25% smoothness, 20% simple
-              amounts, 20% moderate maximum, 20% progressive jumps, and 15%
-              increasing payouts. Exact formulas are in “How the math works.”
-              Rank is the shortlist position for the selected ranking method;
-              header sorting preserves that rank.
-            </p>
-            <p>
-              Without bounds, there can be infinitely many distinct integer
-              payout proportions, even after removing scaled copies. For two
-              dice with a chosen face, (−m, 1, 25m−10) is fair and has no common
-              divisor for every integer m ≥ 1. The two-category set game is an
-              exception: with a negative initial payout, its only nonzero fair
-              proportion is −1 / +5.
-            </p>
-          </details>
-          <div
-            id="results-scroll"
-            class="table-scroll"
-            tabindex="0"
-            aria-label="Payout schedules, scroll for more columns and rows"
-          >
-            <table id="results-table">
-              <caption class="sr-only">
-                Ranked fair payout schedules. Select a rank button to inspect a
-                schedule. All payouts are net units.
-              </caption>
-              <thead id="results-head"></thead>
-              <tbody id="results-body"></tbody>
-            </table>
-            <div id="empty-state" class="empty-state" hidden></div>
-          </div>
-          <p class="table-foot" id="table-sort-status" role="status">
-            Headers sort the displayed shortlist. Rank by selects which
-            schedules are shown.
-          </p>
         </section>
 
-        <aside
-          id="inspector"
-          class="inspector"
-          aria-label="Selected schedule analysis"
-          tabindex="-1"
-        >
-          <div class="inspector-heading">
-            <p class="eyebrow">SCHEDULE INSPECTOR</p>
-            <span class="exact-tag">EXACT ARITHMETIC</span>
-          </div>
-          <div id="analysis">
-            <p class="hint">
-              Select a schedule to see its payout curve and exact expected
-              value.
-            </p>
-          </div>
-          <details class="math-reference" id="math-reference">
-            <summary>How the math works</summary>
-            <p>
-              Each mode partitions all 6<sup>N</sup> ordered rolls into mutually
-              exclusive outcome categories. Hand ranks follow the displayed
-              order, not probability order.
-            </p>
-            <p>
-              <strong>Chosen face:</strong> w(N,k) = C(N,k) × 5<sup>N−k</sup>.
-              <strong>Single sets:</strong> group rolls by their largest
-              matching set. <strong>Full sets:</strong> distinguish the complete
-              multiplicity pattern, ignoring the identities of the faces.
-            </p>
-            <p>
-              For set modes, each face-frequency vector contributes N! / ∏
-              count[face]! ordered rolls. Add those integer counts within each
-              category; their sum is always 6<sup>N</sup>.
-            </p>
-            <p class="formula">
-              P(category j) = w[j] / 6<sup>N</sup><br />EV = Σ w[j]p[j] / 6<sup
-                >N</sup
-              >
-            </p>
-            <p>
-              A fair schedule has <strong>Σ w[j]p[j] = 0</strong>. With L
-              categories, solve p[L−1] = −Σ<sub>j&lt;L−1</sub> w[j]p[j] /
-              w[L−1]. The final weight is 1 for a chosen face and 6 for set
-              modes. Every set-mode weight is divisible by 6, so reducing the
-              weights restores a unit final weight. Integer bounds prune
-              impossible branches.
-            </p>
-            <div class="mini-scroll">
-              <table>
-                <caption id="weights-caption">
-                  Exact weights in hand-rank order
-                </caption>
-                <thead>
-                  <tr>
-                    <th>Dice</th>
-                    <th>Weights</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody id="all-weights"></tbody>
-              </table>
-            </div>
-            <p>
-              Fairness uses exact integer arithmetic, never rounded
-              probabilities. Search bounds keep every Number operation within
-              JavaScript’s safe integer range; the checker and EV proofs use
-              BigInt. Percentages, charts, and style scores are display
-              approximations.
-            </p>
-            <p>
-              <strong>Smoothness</strong> = 100 / (1 + σ(d) / mean(|d|)), where
-              d is the sequence of adjacent jumps. Higher means more even jumps.
-              Constant payouts score 100.
-            </p>
-            <p>
-              <strong>Steepness</strong> = 100 × Σ max(d[k],0)(k−1)/(L−2) / Σ
-              max(d[k],0). Equal positive jumps score 50; a final-only rise
-              scores 100. With just two categories, a positive jump scores 100.
-              No rises score 0. L is the number of categories.
-            </p>
-            <p>
-              <strong>Recommended</strong> = .25 × smoothness + 20 × simple
-              share + 20/(1 + max/50) + 20/(1 + bend) + 15 × increasing-jump
-              share. Bend averages |log₂((|next jump|+1)/(|previous
-              jump|+1))−1|, plus 1 for each shrinking jump. The maximum term
-              uses max(0, maximum payout).
-            </p>
-            <p>
-              Winning means a positive <em>net</em> payout. The highest-ranked
-              category has probability 1/6<sup>N</sup> for a chosen face and
-              6/6<sup>N</sup> for set modes, even if a non-increasing schedule
-              pays its maximum elsewhere.
-            </p>
-          </details>
-        </aside>
-      </main>
-    </div>
+        <button class="primary-button" data-close="filters-dialog">
+          Show schedules
+        </button>
+      </div>
+    </dialog>
+    <dialog id="odds-dialog" aria-labelledby="distribution-label">
+      <div class="dialog-content">
+        <header class="dialog-head">
+          <h2 id="distribution-label">Exact outcome distribution</h2>
+          <button
+            data-close="odds-dialog"
+            class="close-button"
+            aria-label="Close probabilities"
+          >
+            ×
+          </button>
+        </header>
+        <p class="hint">
+          Grouped hands share one payout. Their probabilities add together.
+        </p>
+        <div
+          id="distribution"
+          class="distribution"
+          aria-labelledby="distribution-label"
+        ></div>
+      </div>
+    </dialog>
+    <dialog id="coverage-dialog" aria-labelledby="coverage-title">
+      <div class="dialog-content">
+        <header class="dialog-head">
+          <h2 id="coverage-title">Ranking &amp; coverage</h2>
+          <button
+            data-close="coverage-dialog"
+            class="close-button"
+            aria-label="Close ranking explanation"
+          >
+            ×
+          </button>
+        </header>
+        <div class="coverage-note">
+          <p>
+            <strong>Complete</strong> means every integer schedule inside the
+            current bounds was considered, then scaled copies were removed.
+            <strong>Partial</strong> means the search hit 600,000 candidate
+            nodes or about 2.5 seconds; results are the best of the explored
+            candidates only. Narrow the bounds for a complete search.
+          </p>
+          <p>
+            The table is a <strong>shortlist</strong>, limited by Maximum
+            results. Recommended also keeps one representative per similar curve
+            family. Other ranking methods do not group curves. A complete search
+            does not mean every result is displayed.
+          </p>
+          <p>
+            <strong>Recommended score:</strong> 25% smoothness, 20% simple
+            amounts, 20% moderate maximum, 20% progressive jumps, and 15%
+            increasing payouts. Exact formulas are in “How the math works.” Rank
+            is the shortlist position for the selected ranking method; header
+            sorting preserves that rank.
+          </p>
+          <p>
+            Without bounds, there can be infinitely many distinct integer payout
+            proportions, even after removing scaled copies. For two dice with a
+            chosen face, (−m, 1, 25m−10) is fair and has no common divisor for
+            every integer m ≥ 1. The two-category set game is an exception: with
+            a negative initial payout, its only nonzero fair proportion is −1 /
+            +5.
+          </p>
+        </div>
+      </div>
+    </dialog>
 
     <dialog id="checker-dialog" aria-labelledby="checker-title">
       <section class="checker-section">

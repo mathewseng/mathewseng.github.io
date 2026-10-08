@@ -121,6 +121,42 @@ export function outcomes(n, mode = "chosen") {
         weight: totals.get(row.key),
       }));
   }
+  // Payout ranks may combine distinct patterns. Keep their members explicit so
+  // the roll scorer and exact distribution use the same partition.
+  categories = categories.map((row) => ({ ...row, members: [row.key] }));
+  if (mode === "full" && n === 4) {
+    const order = ["singles", "pair", "trips", "two-pair", "quads"];
+    categories.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  }
+  if (mode === "full" && n === 6) {
+    const source = new Map(categories.map((row) => [row.key, row]));
+    const group = (key, label, short, members) => ({
+      key,
+      label,
+      short,
+      members,
+      detail: members.map((member) => source.get(member).detail).join(" Or: "),
+      weight: members.reduce(
+        (sum, member) => sum + source.get(member).weight,
+        0,
+      ),
+    });
+    categories = [
+      source.get("singles"),
+      source.get("pair"),
+      source.get("two-pair"),
+      group("trips-boat", "Trips / boat", "3 / boat", ["trips", "boat"]),
+      group("three-pair-quads", "3 pair / quads", "3P / 4", [
+        "three-pair",
+        "quads",
+      ]),
+      source.get("quads-pair"),
+      source.get("two-trips"),
+      source.get("quints"),
+      source.get("sexts"),
+    ];
+  }
+  categories.forEach((row) => Object.freeze(row.members));
   const frozen = Object.freeze(categories.map(Object.freeze));
   cache.set(cacheKey, frozen);
   return frozen;

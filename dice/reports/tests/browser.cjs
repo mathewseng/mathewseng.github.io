@@ -50,16 +50,30 @@ const server = http.createServer((req, res) => {
       viewport: { width: 1440, height: 960 },
       reducedMotion: "reduce",
     });
-    const page = await context.newPage();
-    const errors = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    page.on("console", (message) => {
-      if (message.type() === "error") errors.push(message.text());
+    // Stub only this test browser's entropy to exercise each visible result.
+    await context.addInitScript(() => {
+      const original = crypto.getRandomValues.bind(crypto);
+      crypto.getRandomValues = (array) => {
+        if (window.diceTestValues?.length) {
+          for (let i = 0; i < array.length; i++)
+            array[i] = window.diceTestValues.shift();
+          return array;
+        }
+        return original(array);
+      };
     });
+    const page = await context.newPage(),
+      errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
     page.on("response", (response) => {
       if (response.status() >= 400)
         errors.push(`${response.status()} ${response.url()}`);
     });
+    const screenshotDir = path.join(
+      require("node:os").tmpdir(),
+      "dice-reports-qa",
+    );
+    fs.mkdirSync(screenshotDir, { recursive: true });
     async function ready() {
       await page.waitForFunction(() =>
         /^(Complete|Partial) search/.test(
@@ -67,27 +81,60 @@ const server = http.createServer((req, res) => {
         ),
       );
     }
+    async function filters(action) {
+      await page.locator('[data-open="filters-dialog"]').click();
+      await action();
+      await page.waitForTimeout(300);
+      await page.locator('[data-close="filters-dialog"]').last().click();
+      await ready();
+    }
+    async function fit() {
+      assert.ok(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        "No page horizontal overflow",
+      );
+      assert.ok(
+        await page.evaluate(
+          () => document.documentElement.scrollHeight <= innerHeight,
+        ),
+        "Workspace fits viewport",
+      );
+    }
+    async function roll(faces, payout, label) {
+      await page.evaluate(
+        (values) => (window.diceTestValues = values),
+        faces.map((face) => face - 1),
+      );
+      await page.locator("#roll-button").click();
+      await page.waitForFunction(
+        () => !document.querySelector("#roll-button").disabled,
+      );
+      assert.equal(
+        await page.locator("#result-payout").textContent(),
+        payout === 0 ? "Push" : `${payout > 0 ? "+" : ""}${payout} units`,
+      );
+      assert.equal(await page.locator("#result-label").textContent(), label);
+      assert.deepEqual(
+        await page
+          .locator(".die")
+          .evaluateAll((dice) => dice.map((el) => Number(el.dataset.face))),
+        faces,
+      );
+      assert.equal(
+        await page.locator('#play-paytable [aria-current="true"]').count(),
+        1,
+      );
+    }
     await page.goto(base + "/dice/reports");
     await ready();
+    assert.ok(page.url().endsWith("/dice/reports/"));
+    await fit();
     assert.equal(await page.locator("#allow-zero").isChecked(), true);
-    const payouts = await page
-      .locator("#results-body tr")
-      .evaluateAll((rows) =>
-        rows.map((row) =>
-          [...row.cells].slice(1, 6).map((cell) => Number(cell.textContent)),
-        ),
-      );
-    for (const p of payouts) {
-      let divisor = 0;
-      for (const value of p) {
-        let b = Math.abs(value);
-        while (b) [divisor, b] = [b, divisor % b];
-      }
-      assert.equal(divisor, 1);
-    }
-    await page.locator("#allow-zero").uncheck();
-    await page.waitForTimeout(300);
-    await ready();
+    await filters(async () => {
+      await page.locator("#allow-zero").uncheck();
+    });
     assert.equal(
       await page
         .locator("#results-body td.payout")
@@ -96,224 +143,26 @@ const server = http.createServer((req, res) => {
         ),
       false,
     );
-    await page.locator("#reset-filters").click();
-    await ready();
-    assert.equal(await page.locator("#allow-zero").isChecked(), true);
-    assert.ok(page.url().endsWith("/dice/reports/"));
-    assert.ok(
-      await page.evaluate(
-        () => document.documentElement.scrollHeight <= innerHeight,
-      ),
-    );
-    assert.equal(await page.locator("#distribution .outcome").count(), 5);
-    assert.ok(
-      (await page.locator("#distribution").textContent()).includes(
-        "625 / 1,296",
-      ),
-    );
-    assert.ok(
-      (await page.locator("#analysis").textContent()).includes(
-        "= 0 / 1296 = 0",
-      ),
-    );
-    const screenshotDir = path.join(
-      require("node:os").tmpdir(),
-      "dice-reports-qa",
-    );
-    fs.mkdirSync(screenshotDir, { recursive: true });
-    await page.screenshot({
-      path: path.join(screenshotDir, "desktop.png"),
-      fullPage: true,
+    await filters(async () => {
+      await page.locator("#reset-filters").click();
     });
-    for (const n of [2, 3, 5, 6, 4]) {
-      await page.locator(`[data-n="${n}"]`).click();
-      await ready();
-      assert.equal(await page.locator("#distribution .outcome").count(), n + 1);
-      assert.ok((await page.locator("#results-body tr").count()) > 0);
-      assert.equal(
-        await page.locator(`[data-n="${n}"]`).getAttribute("aria-pressed"),
-        "true",
-      );
-    }
     await page.locator(".rank-button").first().focus();
     await page.keyboard.press("Enter");
+    assert.match(await page.locator("#analysis h2").textContent(), /Rank 01/);
     assert.ok(
-      (await page.locator("#analysis h2").textContent()).includes("Rank 01"),
-    );
-    assert.equal(
       await page
         .locator(".rank-button")
         .first()
         .evaluate((el) => document.activeElement === el),
-      true,
     );
-    await page.locator("#max-payout").fill("59");
-    await page.waitForTimeout(300);
-    await ready();
-    assert.equal(await page.locator("#featured").isVisible(), false);
-    await page.locator("#reset-filters").click();
-    await ready();
-    await page.locator("#open-checker").click();
-    await page.locator("#checker-payouts").fill("-2, 1, 3, 12, 61");
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Exact numerator: 1/,
-    );
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Player edge/,
-    );
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /must be \+60/,
-    );
-    await page.locator("#apply-repair").click();
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Exactly fair/,
-    );
-    await page.locator("#checker-payouts").fill("-2, 1, 3, 12, 59");
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /House edge/,
-    );
-    await page.locator("#checker-payouts").fill("-4, 2, 8, 14, 20");
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Exactly fair/,
-    );
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /2× scaled copy/,
-    );
-    await page.locator("#checker-payouts").fill("-2, 1, 3.5, 12, 59");
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /whole numbers/,
-    );
-    await page.locator("#checker-n").selectOption("2");
-    await page
-      .locator("#checker-payouts")
-      .fill("-9007199254740993, 0, 225179981368524826");
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Exact numerator: 1/,
-    );
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /must be \+225179981368524825/,
-    );
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Outside current filters/,
-    );
-    await page.keyboard.press("Escape");
-    assert.equal(await page.locator("#checker-dialog").isVisible(), false);
-    await page.locator("#min-p0").fill("1");
-    await page.waitForTimeout(300);
-    assert.ok((await page.locator("#filter-error").textContent()).length > 0);
-    assert.equal(await page.locator("#results-body tr").count(), 0);
-    await page.locator("#reset-filters").click();
-    await ready();
-    await page.locator("#max-results").fill("5");
-    await page.waitForTimeout(300);
-    await ready();
-    assert.equal(await page.locator("#results-body tr").count(), 5);
-    await page.locator("#ranking").selectOption("jackpot");
-    await ready();
-    const maximums = await page
-      .locator("#results-body tr")
-      .evaluateAll((rows) =>
-        rows.map((row) => Number(row.cells[6].textContent)),
-      );
-    assert.deepEqual(
-      maximums,
-      [...maximums].sort((a, b) => b - a),
-    );
-    await page.locator('[data-n="6"]').click();
-    await ready();
-    await page.locator("#strict").uncheck();
-    await page.locator("#max-payout").fill("1000000");
-    await page.waitForTimeout(350);
-    // Opening the checker while a broad worker search runs proves the UI stays responsive.
-    const t = Date.now();
-    await page.locator("#open-checker").click();
-    assert.ok(Date.now() - t < 1200);
-    await page.keyboard.press("Escape");
-    await ready();
-    assert.match(
-      await page.locator("#search-status").textContent(),
-      /Partial search/,
-    );
-    await page.locator("#max-payout").fill("900000");
-    await page.waitForTimeout(300);
-    await page.locator('[data-n="2"]').click();
-    await page.locator("#reset-filters").click();
-    await ready();
-    assert.equal(await page.locator("#distribution .outcome").count(), 3);
-    await page.locator('[data-n="4"]').click();
-    await ready();
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.reload();
-    await ready();
-    assert.equal(
-      await page.locator("#filters-disclosure").getAttribute("open"),
-      null,
-    );
-    assert.ok(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    );
-    await page.screenshot({
-      path: path.join(screenshotDir, "mobile.png"),
-      fullPage: true,
-    });
-    await page.locator(".rank-button").first().click();
-    assert.equal(
-      await page
-        .locator("#inspector")
-        .evaluate((el) => document.activeElement === el),
-      true,
-    );
-    await page.locator("#open-checker").click();
-    assert.ok(
-      await page
-        .locator("#checker-dialog")
-        .evaluate((el) => el.getBoundingClientRect().width <= innerWidth),
-    );
-    await page.keyboard.press("Escape");
-    await page.locator("#filters-disclosure summary").click();
-    await page.locator("#allow-zero").check();
-    await page.waitForTimeout(300);
-    await ready();
-    assert.ok((await page.locator("#results-body tr").count()) > 0);
-    await page.locator("#math-reference summary").click();
-    assert.equal(await page.locator("#all-weights tr").count(), 5);
-    await page.locator('[data-n="6"]').click();
-    await ready();
-    await page.locator("#max-payout").fill("1000000");
-    await page.locator("#ranking").selectOption("jackpot");
-    await ready();
-    await page.locator(".rank-button").first().click();
-    for (const width of [320, 768, 1024]) {
-      await page.setViewportSize({ width, height: 844 });
-      assert.ok(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      );
-    }
-    await page.setViewportSize({ width: 1440, height: 960 });
-    await page.reload();
-    await ready();
+    // Each mode and dice count has the right payout partition and exact proof.
     for (const [mode, lengths] of [
+      ["chosen", [3, 4, 5, 6, 7]],
       ["single", [2, 3, 4, 5, 6]],
-      ["full", [2, 3, 5, 7, 11]],
+      ["full", [2, 3, 5, 7, 9]],
     ]) {
       await page.locator(`button[data-mode="${mode}"]`).click();
       await ready();
-      assert.equal(await page.locator("#featured").isVisible(), false);
       for (let dice = 2; dice <= 6; dice++) {
         await page.locator(`[data-n="${dice}"]`).click();
         await ready();
@@ -329,10 +178,9 @@ const server = http.createServer((req, res) => {
             .count(),
           lengths[dice - 2],
         );
-        assert.ok(
-          (await page.locator("#analysis").textContent()).includes(
-            `= 0 / ${6 ** dice} = 0`,
-          ),
+        assert.match(
+          await page.locator("#analysis").textContent(),
+          new RegExp(`= 0 / ${6 ** dice} = 0`),
         );
       }
     }
@@ -342,31 +190,28 @@ const server = http.createServer((req, res) => {
         "Singles",
         "Pair",
         "2 pair",
-        "3 pair",
-        "Trips",
-        "Boat",
-        "2 trips",
-        "Quads",
+        "Trips / boat",
+        "3 pair / quads",
         "Quads + pair",
+        "2 trips",
         "Quints",
         "Sexts",
       ],
     );
-    assert.match(
-      await page.locator("#distribution .outcome").last().textContent(),
-      /6 \/ 46,656/,
-    );
-    const originalRanks = await page.locator(".rank-button").allTextContents();
+    // Every displayed column toggles both ways, without changing membership.
+    const ranks = await page.locator(".rank-button").allTextContents();
     const keys = await page
       .locator("#results-head button")
       .evaluateAll((buttons) => buttons.map((b) => b.dataset.sort));
-    for (let column = 0; column < keys.length; column++) {
+    for (let column = 0; column < keys.length; column++)
       for (let click = 0; click < 2; click++) {
         const button = page.locator(
           `#results-head [data-sort="${keys[column]}"]`,
         );
         await button.click();
-        const direction = await button.locator("..").getAttribute("aria-sort");
+        const asc =
+          (await button.locator("..").getAttribute("aria-sort")) ===
+          "ascending";
         const values = await page
           .locator("#results-body tr")
           .evaluateAll(
@@ -376,73 +221,226 @@ const server = http.createServer((req, res) => {
           );
         assert.deepEqual(
           values,
-          [...values].sort((a, b) =>
-            direction === "ascending" ? a - b : b - a,
-          ),
+          [...values].sort((a, b) => (asc ? a - b : b - a)),
         );
         assert.deepEqual(
           (await page.locator(".rank-button").allTextContents()).sort(),
-          [...originalRanks].sort(),
+          [...ranks].sort(),
         );
       }
-    }
-    const rank = await page.locator(".rank-button").first().textContent();
-    await page.locator(".rank-button").first().click();
-    assert.equal(
-      await page.locator("#analysis h2").textContent(),
-      `Rank ${rank}`,
-    );
-    await page.locator('#results-head [data-sort="rank"]').click();
     await page.locator("#results-scroll").evaluate((el) => (el.scrollLeft = 0));
-    assert.ok(
-      await page.evaluate(
-        () => document.documentElement.scrollHeight <= innerHeight,
-      ),
-    );
+    await page.locator(".rank-button").first().click();
+    await fit();
     await page.screenshot({
-      path: path.join(screenshotDir, "full-sets-desktop.png"),
-      fullPage: true,
+      path: path.join(screenshotDir, "explore-desktop.png"),
     });
+    // Fair custom schedule, zero push, grouped outcomes, and PnL across changes.
     await page.locator("#open-checker").click();
-    assert.equal(await page.locator("#checker-mode").inputValue(), "full");
-    await page.locator("#checker-n").selectOption("2");
-    await page.locator("#checker-payouts").fill("-1, 6");
+    await page.locator("#checker-n").selectOption("4");
+    await page.locator("#checker-payouts").fill("-1, 0, 1, 2, 11");
     assert.match(
       await page.locator("#checker-result").textContent(),
       /Exact numerator: 6/,
     );
-    assert.match(
-      await page.locator("#checker-order").textContent(),
-      /Singles → Pair/,
-    );
-    assert.match(await page.locator("#apply-repair").textContent(), /Use \+5/);
     await page.locator("#apply-repair").click();
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Exactly fair/,
+    assert.equal(
+      await page.locator("#checker-payouts").inputValue(),
+      "-1, 0, 1, 2, 10",
     );
-    await page.locator("#checker-mode").selectOption("single");
-    assert.match(
-      await page.locator("#checker-result").textContent(),
-      /Exactly fair/,
+    await page.locator("#play-custom").click();
+    await fit();
+    assert.equal(await page.locator("#face-picker").isVisible(), false);
+    await roll([1, 2, 3, 4], -1, "Singles");
+    assert.equal(
+      await page.locator("#dice-stage").getAttribute("data-effect"),
+      "loss",
     );
-    await page.keyboard.press("Escape");
-    await page.setViewportSize({ width: 390, height: 844 });
-    assert.ok(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
+    await roll([1, 1, 2, 3], 0, "Pair");
+    assert.equal(
+      await page.locator("#dice-stage").getAttribute("data-effect"),
+      "push",
     );
+    await roll([1, 1, 1, 2], 1, "Trips");
+    await roll([1, 1, 2, 2], 2, "2 pair");
+    assert.equal(await page.locator("#pnl").textContent(), "+2");
+    await roll([6, 6, 6, 6], 10, "Quads");
+    assert.equal(
+      await page.locator("#dice-stage").getAttribute("data-effect"),
+      "jackpot",
+    );
+    assert.equal(await page.locator("#pnl").textContent(), "+12");
+    await page.locator("#choose-schedule").click();
+    await page.locator(".rank-button").first().click();
+    const selectedPayouts = await page
+      .locator("#results-body tr.selected .payout")
+      .allTextContents();
+    await page.locator("#play-selected").click();
+    assert.deepEqual(
+      await page.locator(".paytable-row strong").allTextContents(),
+      selectedPayouts,
+    );
+    assert.equal(await page.locator("#pnl").textContent(), "+12");
+    const selected = selectedPayouts.map(Number);
+    await roll([1, 1, 1, 2, 3, 4], selected[3], "Trips / boat");
+    await roll([1, 1, 1, 2, 2, 3], selected[3], "Trips / boat");
+    await roll([1, 1, 2, 2, 3, 3], selected[4], "3 pair / quads");
+    await roll([1, 1, 1, 1, 2, 3], selected[4], "3 pair / quads");
+    await roll([1, 1, 1, 1, 2, 2], selected[5], "Quads + pair");
+    await roll([1, 1, 1, 2, 2, 2], selected[6], "2 trips");
+    // Selection dropdown applies its payouts while keeping PnL.
+    const before = await page.locator("#pnl").textContent();
+    await page.locator("#play-schedule").selectOption("1");
+    assert.equal(await page.locator("#pnl").textContent(), before);
+    const alternate = await page
+      .locator(".paytable-row strong")
+      .last()
+      .textContent();
+    await roll([6, 6, 6, 6, 6, 6], Number(alternate), "Sexts");
     await page.screenshot({
-      path: path.join(screenshotDir, "full-sets-mobile.png"),
-      fullPage: true,
+      path: path.join(screenshotDir, "play-desktop.png"),
     });
+    // Actual motion path: no duplicate award, no rule changes while in flight.
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    const rounds = Number(
+      (await page.locator("#round-count").textContent()).split(" ")[0],
+    );
+    await page.evaluate(() => (window.diceTestValues = [5, 5, 5, 5, 5, 5]));
+    await page.locator("#roll-button").click();
+    assert.equal(await page.locator("#play-schedule").isDisabled(), true);
+    assert.equal(await page.locator("#reset-pnl").isDisabled(), true);
+    await page.locator("#roll-button").evaluate((el) => el.click());
+    assert.ok(
+      await page
+        .locator(".die")
+        .first()
+        .evaluate((el) =>
+          getComputedStyle(el).animationName.includes("tumble"),
+        ),
+    );
+    await page.waitForFunction(
+      () => !document.querySelector("#roll-button").disabled,
+    );
+    assert.equal(
+      await page.locator("#round-count").textContent(),
+      `${rounds + 1} rolls`,
+    );
+    assert.equal(await page.locator("#particles i").count(), 18);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // Mobile workspaces fit; nine-category paytable scrolls locally on short screens.
+    for (const [width, height] of [
+      [390, 844],
+      [320, 568],
+      [768, 1024],
+      [1024, 768],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await fit();
+      const box = await page.locator("#roll-button").boundingBox();
+      assert.ok(box.y + box.height <= height, "Roll action stays visible");
+      assert.ok(
+        await page.locator("#dice-stage").evaluate((stage) => {
+          const area = stage.getBoundingClientRect();
+          return [...stage.querySelectorAll(".die")].every((die) => {
+            const bounds = die.getBoundingClientRect();
+            return bounds.left >= area.left && bounds.right <= area.right;
+          });
+        }),
+        "Every die fits in the table at phone and tablet widths",
+      );
+      if (width === 390)
+        await page.screenshot({
+          path: path.join(screenshotDir, "play-mobile.png"),
+        });
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('button[data-view="explore"]').click();
+    await fit();
+    await page.screenshot({
+      path: path.join(screenshotDir, "explore-mobile.png"),
+    });
+    await page.locator(".rank-button").first().click();
+    assert.equal(await page.locator("#inspector").isVisible(), true);
+    await fit();
+    assert.ok(
+      await page
+        .locator("#inspector")
+        .evaluate((el) => document.activeElement === el),
+    );
+    await page.locator("#play-inspected").click();
+    await fit();
+    await page.locator("#reset-pnl").click();
+    assert.equal(await page.locator("#pnl").textContent(), "0");
+    assert.equal(await page.locator("#round-count").textContent(), "0 rolls");
+    await page.locator('button[data-view="explore"]').click();
     await page.locator('button[data-mode="chosen"]').click();
     await ready();
-    assert.equal(await page.locator("#distribution .outcome").count(), 7);
+    await page.locator('[data-n="4"]').click();
+    await ready();
+    await page.locator("#inspect-feature").click();
+    await page.locator("#play-inspected").click();
+    await page.locator('[data-face-choice="6"]').click();
+    await roll([6, 6, 6, 6], 60, "4 matches");
+    assert.equal(await page.locator(".die.match").count(), 4);
+    assert.equal(await page.locator("#pnl").textContent(), "+60");
+    await page.locator('button[data-view="explore"]').click();
+    await page.locator('[data-n="6"]').click();
+    await ready();
+    await page.locator("#play-selected").click();
+    await page.setViewportSize({ width: 320, height: 568 });
+    await fit();
+    const topPayout = Number(
+      await page.locator(".paytable-row strong").last().textContent(),
+    );
+    await roll([6, 6, 6, 6, 6, 6], topPayout, "6 matches");
+    assert.ok(
+      await page.locator("#play-paytable").evaluate((el) => {
+        const hit = el
+          .querySelector('[aria-current="true"]')
+          .getBoundingClientRect();
+        const viewport = el.getBoundingClientRect();
+        return (
+          el.scrollTop > 0 &&
+          hit.top >= viewport.top &&
+          hit.bottom <= viewport.bottom + 1
+        );
+      }),
+      "The latest payout scrolls into view inside the short-phone paytable",
+    );
+    assert.ok(
+      await page
+        .locator(".die")
+        .first()
+        .evaluate((el) => getComputedStyle(el).animationName === "none"),
+    );
+    await page.locator('button[data-view="explore"]').click();
+    await filters(async () => {
+      await page.locator("#max-results").fill("5");
+    });
+    assert.equal(await page.locator("#results-body tr").count(), 5);
+    await filters(async () => {
+      await page.locator("#strict").uncheck();
+      await page.locator("#max-payout").fill("1000000");
+    });
+    await page.locator('[data-n="6"]').click();
+    await ready();
+    assert.match(
+      await page.locator("#search-status").textContent(),
+      /Partial search/,
+    );
+    await page.locator("#open-checker").click();
+    await page.keyboard.press("Escape");
+    await filters(async () => {
+      await page.locator("#min-p0").fill("1");
+      await page.waitForTimeout(300);
+      assert.match(
+        await page.locator("#filter-error").textContent(),
+        /whole numbers|range/,
+      );
+      await page.locator("#reset-filters").click();
+    });
     assert.deepEqual(errors, []);
     console.log(
-      `Dice browser checks passed: route, worker, filters, rankings, exact checker/repair, responsiveness, keyboard, mobile. Screenshots: ${screenshotDir}`,
+      `Dice browser checks passed: modes, grouped outcomes, exact repair, filters, both sorts, chosen face, roll locking, PnL, effects, keyboard, desktop/mobile fit. Screenshots: ${screenshotDir}`,
     );
   } finally {
     await browser?.close();

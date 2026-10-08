@@ -252,9 +252,9 @@ test("exact set distributions cover every roll and omit impossible categories", 
     full: {
       2: [30, 6],
       3: [120, 90, 6],
-      4: [360, 720, 90, 120, 6],
+      4: [360, 720, 120, 90, 6],
       5: [720, 3600, 1800, 1200, 300, 150, 6],
-      6: [720, 10800, 16200, 1800, 7200, 7200, 300, 1800, 450, 180, 6],
+      6: [720, 10800, 16200, 14400, 3600, 450, 300, 180, 6],
     },
   };
   for (const mode of ["single", "full"])
@@ -272,14 +272,19 @@ test("exact set distributions cover every roll and omit impossible categories", 
         counted.set(key, (counted.get(key) || 0) + 1);
       }
       assert.deepEqual(
-        outcomes(n, mode).map((row) => counted.get(row.key)),
+        outcomes(n, mode).map((row) =>
+          row.members.reduce((sum, key) => sum + counted.get(key), 0),
+        ),
         expected[mode][n],
       );
       assert.equal(
         [...counted.values()].reduce((sum, v) => sum + v, 0),
         6 ** n,
       );
-      assert.equal(counted.size, outcomes(n, mode).length);
+      assert.equal(
+        counted.size,
+        outcomes(n, mode).flatMap((row) => row.members).length,
+      );
     }
   assert.deepEqual(
     outcomes(6, "full").map((row) => row.label),
@@ -287,19 +292,17 @@ test("exact set distributions cover every roll and omit impossible categories", 
       "Singles",
       "Pair",
       "2 pair",
-      "3 pair",
-      "Trips",
-      "Boat",
-      "2 trips",
-      "Quads",
+      "Trips / boat",
+      "3 pair / quads",
       "Quads + pair",
+      "2 trips",
       "Quints",
       "Sexts",
     ],
   );
   assert.deepEqual(
     outcomes(4, "full").map((row) => row.label),
-    ["Singles", "Pair", "2 pair", "Trips", "Quads"],
+    ["Singles", "Pair", "Trips", "2 pair", "Quads"],
   );
   assert.throws(() => weights(4, "unknown"));
 });
@@ -343,8 +346,8 @@ test("set fairness and final-payout repair use the six-outcome final weight", ()
     assert.equal(m.steepness, 100);
     assert.equal(m.smoothness, 100);
   }
-  assert.equal(solveFinal(4, [-1, 0, 1, 2], "full"), 5n);
-  assert.equal(evNumerator(4, [-1, 0, 1, 2, 5], "full"), 0n);
+  assert.equal(solveFinal(4, [-1, 0, 1, 2], "full"), 10n);
+  assert.equal(evNumerator(4, [-1, 0, 1, 2, 10], "full"), 0n);
   assert.equal(
     solveFinal(4, [-9007199254740993n, 0, 0], "single"),
     540431955284459580n,

@@ -1,3 +1,5 @@
+import { createPlay } from "./play.js";
+import { payoutDivisor } from "./engine.mjs";
 import {
   DEFAULTS,
   MODES,
@@ -22,8 +24,85 @@ let n = 4,
   selected = null,
   worker = null,
   timer = 0,
-  pendingRepair = null;
+  pendingRepair = null,
+  customGame = null;
 let activeOptions = { ...DEFAULTS };
+const play = createPlay({
+  onBusy(busy) {
+    document
+      .querySelectorAll("button[data-n], button[data-mode]")
+      .forEach((el) => (el.disabled = busy));
+    $("play-selected").disabled = busy || !selected;
+    $("play-inspected").disabled = busy || !selected;
+    const customButton = $("play-custom");
+    if (customButton) customButton.disabled = busy;
+  },
+  onBrowse() {
+    setView("explore");
+  },
+});
+function setView(view) {
+  if (view === "play" && !play.hasGame) {
+    if (!selected || !useSelected(false)) return;
+  }
+  const wasInExplore = $("explore-workspace").contains(document.activeElement);
+  const wasInPlay = $("play-workspace").contains(document.activeElement);
+  document.documentElement.dataset.view = view;
+  $("explore-workspace").hidden = view === "play";
+  $("play-workspace").hidden = view !== "play";
+  document.querySelectorAll("[data-view]").forEach((el) => {
+    if (el.tagName === "BUTTON")
+      el.setAttribute("aria-pressed", String(el.dataset.view === view));
+  });
+  if (view === "play" && wasInExplore)
+    $("roll-button").focus({ preventScroll: true });
+  if (view === "explore" && wasInPlay)
+    $("results-title").focus({ preventScroll: true });
+}
+function selectionState() {
+  $("selection-name").textContent = selected
+    ? selected.title
+    : "Select a schedule";
+  $("play-selected").disabled = $("play-inspected").disabled =
+    !selected || play.busy;
+}
+function useSelected(switchView = true) {
+  if (!selected || play.busy) return false;
+  const choices = rows.map((row) => ({
+    payouts: row.payouts,
+    title: `Rank ${String(row.rank).padStart(2, "0")}`,
+  }));
+  const success = play.choose(
+    { n, mode, payouts: selected.payouts },
+    selected.title,
+    choices,
+  );
+  if (success && switchView) setView("play");
+  return success;
+}
+$("play-selected").addEventListener("click", () => useSelected());
+$("play-inspected").addEventListener("click", () => useSelected());
+document
+  .querySelectorAll("button[data-view]")
+  .forEach((button) =>
+    button.addEventListener("click", () => setView(button.dataset.view)),
+  );
+document
+  .querySelectorAll("[data-open]")
+  .forEach((button) =>
+    button.addEventListener("click", () => $(button.dataset.open).showModal()),
+  );
+document
+  .querySelectorAll("[data-close]")
+  .forEach((button) =>
+    button.addEventListener("click", () => $(button.dataset.close).close()),
+  );
+setView("explore");
+matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
+  if (!event.matches && document.documentElement.dataset.view === "analysis")
+    setView("explore");
+});
+
 const signed = (v) => `${v > 0 ? "+" : ""}${v}`;
 const tone = (v) => (v < 0 ? "negative" : v > 0 ? "positive" : "neutral");
 const pct = (a, b) => `${((100 * a) / b).toFixed(a / b < 0.001 ? 4 : 2)}%`;
@@ -79,7 +158,12 @@ function distribution() {
     chosen: "Choose one face before rolling. Rank by how many dice match it.",
     single:
       "No chosen face. Rank by the largest matching group; smaller sets do not affect the hand.",
-    full: "No chosen face. Rank by the complete pattern, in the order shown below. A boat is a triple + pair, with an extra single for six dice.",
+    full:
+      n === 6
+        ? "Trips / boat and 3 pair / quads share payouts. A boat is a triple + pair + single."
+        : n === 4
+          ? "Score the complete hand. Trips rank before the rarer 2 pair; quads pay last."
+          : "No chosen face. Score the complete hand pattern.",
   }[mode];
   $("initial-category").textContent = categories[0].label;
   $("weights-caption").textContent =
@@ -190,7 +274,8 @@ function contributionTable(dice, payouts, visual = false, scoringMode = mode) {
   return `<table class="contributions"><caption class="sr-only">Outcome probabilities and expected contribution per play, in net units</caption><thead><tr><th scope="col">${scoringMode === "chosen" ? "Matches" : "Hand"}</th><th scope="col">Probability</th><th scope="col">EV contribution</th></tr></thead><tbody>${products.map((v, k) => `<tr><td>${scoringMode === "chosen" ? k : categories[k].label}</td><td>${w[k]} / ${total}<small>${pct(w[k], total)}</small></td><td class="${tone(v)}">${visual ? `<span class="contribution-bar" aria-hidden="true" style="--bar:${Number(((v < 0n ? -v : v) * 24n) / max)}px"></span>` : ""}${v} / ${total}<small>≈ ${decimal(v, BigInt(total))} units</small></td></tr>`).join("")}</tbody></table>`;
 }
 function inspect(p, title = "Selected schedule", shouldScroll = false) {
-  selected = { payouts: p, metrics: metrics(n, p, mode) };
+  selected = { payouts: p, metrics: metrics(n, p, mode), title };
+  selectionState();
   const m = selected.metrics,
     total = 6 ** n,
     w = weights(n, mode),
@@ -203,13 +288,9 @@ function inspect(p, title = "Selected schedule", shouldScroll = false) {
       "units per play",
     )}${contributionTable(n, p, true)}</div>`;
   renderRows();
-  if (shouldScroll && matchMedia("(max-width: 980px)").matches) {
-    $("inspector").scrollIntoView({
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-      block: "start",
-    });
+  if (shouldScroll && matchMedia("(max-width: 760px)").matches) {
+    setView("analysis");
+    $("inspector").scrollTop = 0;
     $("inspector").focus({ preventScroll: true });
   }
 }
@@ -249,6 +330,7 @@ function search() {
   const featured = feature();
   rows = [];
   selected = null;
+  selectionState();
   renderRows();
   if (featured)
     inspect(
@@ -312,6 +394,7 @@ function search() {
 function clearResults() {
   rows = [];
   selected = null;
+  selectionState();
   renderRows();
   $("featured").hidden = true;
   $("analysis").innerHTML =
@@ -376,6 +459,7 @@ function customOptions(dice, scoringMode) {
 }
 function checkCustom() {
   pendingRepair = null;
+  customGame = null;
   const dice = Number($("checker-n").value),
     total = BigInt(6 ** dice),
     scoringMode = $("checker-mode").value,
@@ -410,6 +494,23 @@ function checkCustom() {
     $("checker-result").innerHTML =
       `<div class="checker-status ${fair ? "" : "unfair"}"><h3>${fair ? "Exactly fair · zero EV" : "Not zero EV"}</h3><p>Exact numerator: ${numerator}<br />EV = ${numerator} / ${total}${fair ? " = 0" : ` ≈ ${decimal(numerator, total)}`} units / play<br />${edge}</p></div>${contributionTable(dice, p, false, scoringMode)}${!fair ? `<div class="repair"><p>Keep the first ${categories.length - 1} payouts. For exactly zero EV, the payout for ${categories.at(-1).label} must be <strong>${signed(required)}</strong>.</p><p class="hint">${filterText}</p><button id="apply-repair">Use ${signed(required)} as final payout</button></div>` : `<p class="hint" style="margin-top:16px">${filterText}</p>`}`;
     if (!fair) pendingRepair = repaired;
+    if (
+      fair &&
+      p.every(
+        (v) =>
+          v >= BigInt(Number.MIN_SAFE_INTEGER) &&
+          v <= BigInt(Number.MAX_SAFE_INTEGER),
+      ) &&
+      payoutDivisor(p) <= 1n
+    ) {
+      customGame = { n: dice, mode: scoringMode, payouts: p.map(Number) };
+      const button = document.createElement("button");
+      button.id = "play-custom";
+      button.className = "primary-button";
+      button.textContent = "Play this custom schedule ↗";
+      button.disabled = play.busy;
+      $("checker-result").append(button);
+    }
   } catch (error) {
     $("checker-result").innerHTML = "";
     const p = document.createElement("p");
@@ -436,6 +537,11 @@ $("checker-payouts").addEventListener("input", checkCustom);
 $("checker-n").addEventListener("change", checkCustom);
 $("checker-mode").addEventListener("change", checkCustom);
 $("checker-result").addEventListener("click", (event) => {
+  if (event.target.closest("#play-custom") && customGame && !play.busy) {
+    play.choose(customGame, "Custom schedule");
+    $("checker-dialog").close();
+    setView("play");
+  }
   if (event.target.closest("#apply-repair") && pendingRepair) {
     $("checker-payouts").value = pendingRepair.join(", ");
     checkCustom();
@@ -447,6 +553,4 @@ document.querySelectorAll("button[data-mode]").forEach((button) =>
     search();
   }),
 );
-if (matchMedia("(max-width: 640px)").matches)
-  $("filters-disclosure").open = false;
 search();

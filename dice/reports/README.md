@@ -4,16 +4,21 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 
 - `outcomes.mjs`: the three game definitions, hand classification, and exact ordered-roll counts.
 - `engine.mjs`: exact BigInt EV/checker math, bounded integer enumeration, filters, style metrics, ranking, and displayed-row sorting.
+- `game.mjs`: unbiased dice sampling, grouped roll scoring, exact session PnL, and settle-once roll lifecycle.
+- `play.js`: animated play view, chosen-face selection, payout effects, paytable, and session controls.
 - `worker.js`: isolated search; replacing a search terminates its worker so stale results cannot overwrite current filters.
-- `app.js`, `index.html`, `styles.css`: mode and dice selection, report, reference examples, inspector, sortable shortlist, and custom checker.
-- `tests/engine.test.mjs`: exact identities, all ordered rolls versus multinomial counts, category classification, large integers, independent brute-force searches, budgets, and sorting.
+- `app.js`, `index.html`, `styles.css`: mode and dice selection, report, reference examples, inspector, sortable shortlist, play view, and custom checker.
+- `tests/engine.test.mjs` and `tests/game.test.mjs`: exact identities, all ordered rolls versus multinomial counts, category classification, large integers, independent brute-force searches, budgets, sorting, unbiased random sampling, exact roll scoring, and session state.
 - `tests/browser.cjs`: assembled-site checks for the route, actual worker, all modes/dice counts, bidirectional headers, keyboard/mobile behavior, and checker repair.
 
 ## Hand modes
 
 - **Chosen face:** choose a number before the roll; categories are 0 through N matches, with weights C(N,k)5^(N−k).
 - **Single sets:** no chosen number. Score the largest matching group: singles, pair, trips, quads, quints, sexts. For example, two pairs score as Pair, and a full house scores as Trips.
-- **Full sets:** no chosen number. Score the entire multiplicity pattern in this order: singles, pair, 2 pair, 3 pair, trips, boat (full house), 2 trips, quads, quads + pair, quints, sexts. Remaining dice must be distinct singles. With six dice a boat is 3+2+1; ordinary quads are 4+1+1. This is the requested rank order, not rarity order.
+- **Full sets:** score the complete multiplicity pattern. Remaining dice are distinct singles. With four dice the order is Singles, Pair, Trips, 2 pair, Quads (trips have 120 ordered outcomes and two pair have 90). With five dice the order is Singles, Pair, 2 pair, Trips, Boat, Quads, Quints.
+- **Six-dice Full sets:** Singles, Pair, 2 pair, **Trips / boat**, **3 pair / quads**, Quads + pair, 2 trips, Quints, Sexts. The grouped hands share one payout. Trips and boat each have 7,200 ordered outcomes, so their combined weight is 14,400. Three pair and ordinary quads each have 1,800, so their combined weight is 3,600. Final weights in payout order are `[720, 10800, 16200, 14400, 3600, 450, 300, 180, 6]`. A boat is 3+2+1; ordinary quads are 4+1+1. Singles stay the base rank regardless of rarity.
+
+Raw pattern classification stays separate from payout grouping. Each outcome exposes its constituent `members`; the play scorer and probability counts use the same mapping.
 
 Only categories possible for the selected N appear. The engine visits the face-frequency vectors summing to N and adds N! / ∏ count[face]! ordered rolls to the corresponding category. This partitions all 6^N rolls without double-counting. Tests independently enumerate every ordered roll up to six dice and verify the published counts.
 
@@ -43,10 +48,20 @@ Keep the best 800 representatives whenever the candidate pool exceeds 1,600. Sin
 
 Smoothness/steepness measure progression across category ranks, not probabilities. For L categories there are L−1 adjacent jumps; the two-category case has smoothness 100 and steepness 100 for a positive jump. Win probability counts positive net payouts. Stake-based edge uses the initial loss magnitude and is undefined for nonnegative initial payouts.
 
+## Play and layout
+
+Select a generated/reference schedule and choose **Play this schedule**, or play an exactly fair primitive custom schedule from the checker. The play view offers the current shortlist in a schedule selector. Its dice count, scoring mode, and paytable stay attached to that schedule when exploring other settings. Only Chosen face asks for a number before rolling.
+
+Each actual die uses `crypto.getRandomValues` with rejection sampling for the four uint32 values above the largest multiple of six. Cosmetic tumbling uses separate animation randomness. The roll locks its rules before animation starts; schedule, face, and reset controls are disabled in flight. Settlement happens once, including when a tab becomes hidden. Payouts accumulate as BigInt PnL with no starting balance. PnL persists across schedule changes in the current page session; Reset PnL clears it and the recent-roll list. Reloading starts a new session. Custom playable payouts must be safe integers; the analytical checker still supports 100-digit integers.
+
+Loss, push, win, big win (at least five times the initial loss), and top payout receive distinct labeled/color treatments. Top payouts and big wins add one short particle burst. Reduced-motion preference removes tumbling and celebrations; scoring remains identical. No sound or automatic repeated betting.
+
+Explore and Play share a viewport-sized app shell. Desktop shows the table and inspector side by side; mobile switches between Explore, Analysis, and Play. Filters, probabilities, ranking explanation, and the custom checker open as dialogs. Long tables, paytables, and analysis scroll internally. Very short landscape windows below 500px tall allow page scrolling to keep controls usable.
+
 ## Checks
 
 ```sh
-node --test dice/reports/tests/engine.test.mjs
+node --test dice/reports/tests/*.test.mjs
 node scripts/run-tests.mjs
 sh scripts/assemble-site.sh _site
 node dice/reports/tests/browser.cjs
