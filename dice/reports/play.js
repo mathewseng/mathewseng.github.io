@@ -13,10 +13,14 @@ export function createPlay({ onBusy, onBrowse }) {
     title = "",
     speed = "normal";
   function renderDice(values, reveal = false) {
-    diceView.show(values, reveal && game.mode === "chosen" ? chosenFace : null);
+    diceView.show(
+      values,
+      reveal && game.mode === "chosen" ? chosenFace : null,
+      reveal,
+    );
     $("dice").setAttribute(
       "aria-label",
-      reveal ? `Rolled ${values.join(", ")}` : "Dice ready to roll",
+      reveal ? `Top faces: ${values.join(", ")}` : "Dice ready to roll",
     );
   }
   function renderChoices() {
@@ -84,13 +88,15 @@ export function createPlay({ onBusy, onBrowse }) {
     $("result-label").textContent = result.label;
     $("result-payout").textContent =
       result.payout === 0 ? "Push" : `${signed(result.payout)} units`;
-    $("result-detail").textContent = {
+    const effectLabel = {
       loss: "Added to session PnL",
       push: "No profit, no loss",
       win: "A winning roll",
       "big-win": "Big win",
       jackpot: "Top payout!",
     }[result.effect];
+    $("result-detail").textContent =
+      `${effectLabel} · Top faces ${result.roll.join(" · ")}`;
     $("particles").innerHTML =
       speed !== "instant" &&
       !matchMedia("(prefers-reduced-motion: reduce)").matches &&
@@ -129,7 +135,7 @@ export function createPlay({ onBusy, onBrowse }) {
       $("dice-stage").dataset.effect = "ready";
       $("dice-stage").classList.remove("landed");
       $("particles").innerHTML = "";
-      $("result-label").textContent = "Ready when you are";
+      $("result-label").textContent = "Top faces count";
       $("result-payout").textContent = "Roll the dice";
       $("result-detail").textContent = "Your selected schedule is active.";
     }
@@ -189,7 +195,7 @@ export function createPlay({ onBusy, onBrowse }) {
               `Die ${index + 1} of ${values.length}`;
             $("dice").setAttribute(
               "aria-label",
-              `Revealed ${values.slice(0, index + 1).join(", ")}; remaining dice rolling`,
+              `Top faces: ${values.slice(0, index + 1).join(", ")}; remaining dice rolling`,
             );
           },
           onComplete: finish,

@@ -367,14 +367,10 @@ const server = http.createServer((req, res) => {
     await page.locator("#roll-button").evaluate((el) => el.click());
     assert.ok(
       await page
-        .locator(".die-cube")
+        .locator(".die-canvas")
         .first()
         .evaluate(
-          (el) =>
-            el.children.length === 6 &&
-            el
-              .getAnimations()
-              .some((a) => a.effect.getTiming().duration === 460),
+          (el) => el.width > 0 && el.style.transform.includes("translate"),
         ),
     );
     await page.waitForFunction(
@@ -395,16 +391,15 @@ const server = http.createServer((req, res) => {
         faces: [...document.querySelectorAll(".die")].map((d) =>
           Number(d.dataset.face),
         ),
-        visibleFaces: [...document.querySelectorAll(".die-cube")].map(
-          (cube) => {
-            const rotation = new DOMMatrix(getComputedStyle(cube).transform);
-            const faces = [...cube.children].map((face, index) => ({
-              value: index + 1,
-              facing: rotation.multiply(
-                new DOMMatrix(getComputedStyle(face).transform),
-              ).m33,
-            }));
-            return faces.sort((a, b) => b.facing - a.facing)[0].value;
+        labels: [...document.querySelectorAll(".die-value")].map((label) =>
+          Number(label.textContent),
+        ),
+        painted: [...document.querySelectorAll(".die-canvas")].every(
+          (canvas) => {
+            const pixels = canvas
+              .getContext("2d")
+              .getImageData(0, 0, canvas.width, canvas.height).data;
+            return pixels.some((value, i) => i % 4 === 3 && value > 0);
           },
         ),
         animations: document
@@ -415,7 +410,8 @@ const server = http.createServer((req, res) => {
     assert.deepEqual(instant, {
       busy: false,
       faces: [1, 2, 3, 4, 5, 6],
-      visibleFaces: [1, 2, 3, 4, 5, 6],
+      labels: [1, 2, 3, 4, 5, 6],
+      painted: true,
       animations: 0,
     });
     // Suspense rolls exactly one die at a time; PnL waits for the last die.
@@ -429,7 +425,9 @@ const server = http.createServer((req, res) => {
         revealed: [],
         earlyPnl: false,
         duration: 0,
+        hiddenResults: true,
       };
+      const started = performance.now();
       button.click();
       while (button.disabled) {
         observation.maxMoving = Math.max(
@@ -446,11 +444,11 @@ const server = http.createServer((req, res) => {
           observation.revealed.push(settled);
         observation.earlyPnl ||=
           document.querySelector("#pnl").textContent !== before;
-        const animation = document
-          .querySelector(".die.is-rolling .die-cube")
-          ?.getAnimations()[0];
-        if (animation)
-          observation.duration = animation.effect.getTiming().duration;
+        observation.hiddenResults &&= [
+          ...document.querySelectorAll(
+            '.die:not([data-state="settled"]) .die-value',
+          ),
+        ].every((label) => label.textContent === "·");
         await new Promise(requestAnimationFrame);
       }
       observation.revealed.push(
@@ -458,11 +456,16 @@ const server = http.createServer((req, res) => {
           Number(d.dataset.face),
         ),
       );
+      observation.duration = performance.now() - started;
       return observation;
     });
     assert.equal(suspense.maxMoving, 1);
     assert.equal(suspense.earlyPnl, false);
-    assert.equal(suspense.duration, 200);
+    assert.equal(suspense.hiddenResults, true);
+    assert.ok(
+      suspense.duration >= 1200 && suspense.duration < 2600,
+      `Six-die suspense takes about 1.2s: ${suspense.duration}ms`,
+    );
     assert.deepEqual(suspense.revealed, [
       [1],
       [1, 2],
