@@ -131,6 +131,40 @@ const server = http.createServer((req, res) => {
     await ready();
     assert.ok(page.url().endsWith("/dice/reports/"));
     await fit();
+    assert.equal(
+      await page.locator("#inspector-stdev").textContent(),
+      "2.89 units",
+    );
+    assert.match(
+      await page.locator("#analysis").textContent(),
+      /3 of 5 nonzero payouts share 2/,
+    );
+    for (const [sort, column, direction] of [
+      ["lowest-stdev", ".stdev-cell", 1],
+      ["highest-stdev", ".stdev-cell", -1],
+      ["simplest", ".simplicity-cell", -1],
+    ]) {
+      await page.locator("#ranking").selectOption(sort);
+      await ready();
+      const values = (await page.locator(column).allTextContents()).map(Number);
+      assert.ok(values.length > 0);
+      assert.deepEqual(
+        values,
+        [...values].sort((a, b) => direction * (a - b)),
+      );
+    }
+    await page.locator("#ranking").selectOption("recommended");
+    await ready();
+    await page.locator('[data-open="coverage-dialog"]').click();
+    assert.match(
+      await page.locator("#coverage-dialog").textContent(),
+      /50% simplicity/,
+    );
+    assert.match(
+      await page.locator("#coverage-dialog").textContent(),
+      /7\/\(4q\)/,
+    );
+    await page.keyboard.press("Escape");
     assert.equal(await page.locator("#allow-zero").isChecked(), true);
     await filters(async () => {
       await page.locator("#allow-zero").uncheck();

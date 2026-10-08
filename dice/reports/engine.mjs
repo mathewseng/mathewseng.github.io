@@ -27,6 +27,9 @@ export const SORTS = [
   "lowest-loss",
   "largest-jump",
   "range",
+  "lowest-stdev",
+  "highest-stdev",
+  "simplest",
 ];
 export function weights(n, mode = "chosen") {
   return outcomes(n, mode).map((row) => row.weight);
@@ -120,6 +123,103 @@ export function filterReasons(payouts, input = {}) {
     reasons.push("Expected value is not exactly zero.");
   return reasons;
 }
+const factorCache = new Map();
+function factorInfo(value) {
+  if (!Number.isSafeInteger(value))
+    throw new TypeError("Simplicity requires safe integer payouts.");
+  const amount = Math.abs(value);
+  if (factorCache.has(amount)) return factorCache.get(amount);
+  let remainder = amount,
+    factorCount = 0,
+    penalty = 0;
+  const factors = [];
+  const factorCost = (prime) =>
+    prime === 2
+      ? 0.05
+      : prime === 3
+        ? 0.075
+        : prime === 5
+          ? 0.09
+          : 0.09 + Math.log2(prime / 5);
+  for (
+    let prime = 2;
+    prime * prime <= remainder;
+    prime += prime === 2 ? 1 : 2
+  ) {
+    if (remainder % prime !== 0) continue;
+    factors.push(prime);
+    do {
+      factorCount++;
+      penalty += factorCost(prime);
+      remainder /= prime;
+    } while (remainder % prime === 0);
+  }
+  if (remainder > 1) {
+    factors.push(remainder);
+    factorCount++;
+    penalty += factorCost(remainder);
+  }
+  penalty += 0.025 * Math.max(0, factorCount - 1);
+  const info = {
+    score: amount === 0 ? 100 : amount === 1 ? 98 : 100 / (1 + penalty),
+    factors,
+  };
+  // Search amounts are bounded by one million. Cache repeat amounts without
+  // letting wide searches grow memory without limit.
+  if (factorCache.size >= 8192) factorCache.clear();
+  factorCache.set(amount, info);
+  return info;
+}
+export function amountSimplicity(value) {
+  return factorInfo(value).score;
+}
+export function scheduleSimplicity(p) {
+  if (!p.length) throw new RangeError("Provide at least one payout.");
+  const counts = new Map();
+  let amountTotal = 0,
+    nonzeroCount = 0,
+    sharedFactor = null,
+    sharedCount = 0;
+  let primeMultiplier = 1,
+    primePayoutCount = 0;
+  for (const value of p) {
+    const info = factorInfo(value);
+    amountTotal += info.score;
+    const amount = Math.abs(value);
+    if (amount > 5 && info.factors.length === 1 && info.factors[0] === amount) {
+      primePayoutCount++;
+      primeMultiplier *= 7 / (4 * amount);
+    }
+    // Zero is a simple push, but does not manufacture a shared-factor bonus.
+    if (value === 0) continue;
+    nonzeroCount++;
+    for (const prime of info.factors)
+      counts.set(prime, (counts.get(prime) || 0) + 1);
+  }
+  for (const [prime, count] of counts) {
+    if (
+      count >= 2 &&
+      (count > sharedCount || (count === sharedCount && prime < sharedFactor))
+    ) {
+      sharedFactor = prime;
+      sharedCount = count;
+    }
+  }
+  const amountScore = amountTotal / p.length;
+  const sharedScore = nonzeroCount ? (100 * sharedCount) / nonzeroCount : 0;
+  const baseSimplicity = 0.75 * amountScore + 0.25 * sharedScore;
+  return {
+    simplicity: baseSimplicity * primeMultiplier,
+    baseSimplicity,
+    primeMultiplier,
+    primePayoutCount,
+    amountSimplicity: amountScore,
+    sharedFactorScore: sharedScore,
+    sharedFactor,
+    sharedCount,
+    nonzeroCount,
+  };
+}
 export function metrics(n, p, mode = "chosen") {
   const w = weights(n, mode),
     steps = p.length - 1,
@@ -127,8 +227,18 @@ export function metrics(n, p, mode = "chosen") {
   const jumps = p.slice(1).map((v, i) => v - p[i]);
   const mean = jumps.reduce((s, d) => s + d, 0) / steps;
   const meanAbs = jumps.reduce((s, d) => s + Math.abs(d), 0) / steps;
-  const variance = jumps.reduce((s, d) => s + (d - mean) ** 2, 0) / steps;
-  const smoothness = 100 / (1 + (meanAbs ? Math.sqrt(variance) / meanAbs : 0));
+  const jumpVariance = jumps.reduce((s, d) => s + (d - mean) ** 2, 0) / steps;
+  const smoothness =
+    100 / (1 + (meanAbs ? Math.sqrt(jumpVariance) / meanAbs : 0));
+  // Population payout volatility per roll, weighted by the actual outcomes.
+  // These display metrics are approximate; fairness still uses the integer identity.
+  const expectedPayout =
+    w.reduce((sum, weight, k) => sum + weight * p[k], 0) / total;
+  const variance = w.reduce(
+    (sum, weight, k) => sum + (weight / total) * (p[k] - expectedPayout) ** 2,
+    0,
+  );
+  const stdev = Math.sqrt(variance);
   const rise = jumps.reduce((s, d) => s + Math.max(0, d), 0);
   const steepness = rise
     ? steps === 1
@@ -142,8 +252,7 @@ export function metrics(n, p, mode = "chosen") {
     : 0;
   const max = Math.max(...p),
     range = max - Math.min(...p);
-  const simple =
-    p.filter((v) => Math.abs(v) <= 10 || v % 5 === 0).length / p.length;
+  const simple = scheduleSimplicity(p);
   const bend =
     jumps
       .slice(1)
@@ -157,11 +266,11 @@ export function metrics(n, p, mode = "chosen") {
         0,
       ) / Math.max(1, steps - 1);
   const recommended =
-    0.25 * smoothness +
-    20 * simple +
-    20 / (1 + Math.max(0, max) / 50) +
-    20 / (1 + bend) +
-    (15 * jumps.filter((d) => d > 0).length) / steps;
+    0.5 * simple.simplicity +
+    0.2 * smoothness +
+    10 / (1 + Math.max(0, max) / 50) +
+    10 / (1 + bend) +
+    (10 * jumps.filter((d) => d > 0).length) / steps;
   return {
     max,
     range,
@@ -169,6 +278,9 @@ export function metrics(n, p, mode = "chosen") {
     largestJump: Math.max(...jumps.map(Math.abs)),
     smoothness,
     steepness,
+    variance,
+    stdev,
+    ...simple,
     recommended,
     winWeight: w.reduce((s, v, k) => s + (p[k] > 0 ? v : 0), 0),
     total,
@@ -188,6 +300,9 @@ export function compareSchedules(sort) {
       "lowest-loss": Math.max(0, -a.payouts[0]) - Math.max(0, -b.payouts[0]),
       "largest-jump": m.largestJump - q.largestJump,
       range: m.range - q.range,
+      "lowest-stdev": m.stdev - q.stdev,
+      "highest-stdev": q.stdev - m.stdev,
+      simplest: q.simplicity - m.simplicity,
     };
     return (
       differences[sort] ||

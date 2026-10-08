@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   weights,
+  SORTS,
+  amountSimplicity,
+  scheduleSimplicity,
   outcomes,
   classifyHand,
   sortDisplayed,
@@ -101,16 +104,7 @@ test("whole-schedule scaling uses an exact common divisor, including losses and 
   );
 });
 test("every ranking excludes scaled copies before its result limit, including when the base is outside bounds", () => {
-  for (const sort of [
-    "recommended",
-    "smoothest",
-    "steepest",
-    "lowest-max",
-    "jackpot",
-    "lowest-loss",
-    "largest-jump",
-    "range",
-  ]) {
+  for (const sort of SORTS) {
     const result = enumerate({ sort, limit: 200 });
     assert.ok(result.rows.length > 0);
     for (const row of result.rows) assert.equal(payoutDivisor(row.payouts), 1n);
@@ -201,16 +195,7 @@ test("bounded search is explicitly partial, ranks explored results, and respects
   );
 });
 test("ranking orders, result limits, and no-solution cases", () => {
-  for (const sort of [
-    "recommended",
-    "smoothest",
-    "steepest",
-    "lowest-max",
-    "jackpot",
-    "lowest-loss",
-    "largest-jump",
-    "range",
-  ]) {
+  for (const sort of SORTS) {
     const result = enumerate({ sort, limit: 7 });
     assert.ok(result.rows.length <= 7);
     assert.deepEqual(
@@ -400,6 +385,8 @@ test("every displayed column supports both sort directions without changing rank
     "max",
     "range",
     "largestJump",
+    "stdev",
+    "simplicity",
     "smoothness",
     "steepness",
     "recommended",
@@ -431,4 +418,109 @@ test("every displayed column supports both sort directions without changing rank
     rows.map((row) => row.rank),
     Array.from({ length: rows.length }, (_, i) => i + 1),
   );
+});
+
+test("payout volatility is probability-weighted, centered, and distinct from jump smoothness", () => {
+  const near = (actual, expected) =>
+    assert.ok(Math.abs(actual - expected) < 1e-10, `${actual} vs ${expected}`);
+  const pair = metrics(2, [-1, 5], "full");
+  near(pair.variance, 5);
+  near(pair.stdev, Math.sqrt(5));
+  near(metrics(4, FEATURED[4]).variance, 10830 / 1296);
+  near(metrics(4, [-1, 0, 1, 2, 10], "full").variance, 1440 / 1296);
+  near(metrics(2, [1, 7], "single").variance, 5); // nonzero EV must be centered
+  near(metrics(2, [-2, 10], "single").stdev, 2 * Math.sqrt(5));
+  assert.equal(metrics(2, [5, 5], "single").stdev, 0);
+  // Six-dice grouped weights: explicitly verify the sum of squares and mean.
+  const payouts = [-4, -3, -2, 0, 1, 2, 3, 4, 5];
+  const counts = [720, 10800, 16200, 14400, 3600, 450, 300, 180, 6];
+  const mean = counts.reduce((sum, w, i) => sum + w * payouts[i], 0) / 46656;
+  const expected =
+    counts.reduce((sum, w, i) => sum + w * payouts[i] ** 2, 0) / 46656 -
+    mean ** 2;
+  near(metrics(6, payouts, "full").variance, expected);
+});
+test("absolute amount simplicity favors zero, tiny primes, small factors and fewer repeats", () => {
+  const order = [0, 1, 2, 3, 5, 4];
+  for (let i = 1; i < order.length; i++)
+    assert.ok(amountSimplicity(order[i - 1]) > amountSimplicity(order[i]));
+  assert.equal(amountSimplicity(0), 100);
+  assert.equal(amountSimplicity(1), 98);
+  for (const n of [2, 3, 4, 5, 7, 11, 13, 49, 60, 97, 100, 999983])
+    assert.equal(amountSimplicity(-n), amountSimplicity(n));
+  assert.ok(amountSimplicity(4) > amountSimplicity(8));
+  assert.ok(amountSimplicity(8) > amountSimplicity(16));
+  assert.ok(amountSimplicity(7) > amountSimplicity(11));
+  assert.ok(amountSimplicity(11) > amountSimplicity(97));
+  assert.ok(amountSimplicity(60) > amountSimplicity(49));
+  assert.ok(amountSimplicity(7) > amountSimplicity(49));
+  assert.ok(
+    Math.abs(amountSimplicity(12) - 100 / (1 + 0.05 + 0.05 + 0.075 + 0.05)) <
+      1e-10,
+  );
+  assert.throws(() => amountSimplicity(1.5));
+});
+test("shared factors reward subsets without counting zeros, ones or repeated prime powers as extra matches", () => {
+  const shared = scheduleSimplicity([-1, 2, 4, 6, 8]);
+  assert.equal(shared.sharedFactor, 2);
+  assert.equal(shared.sharedCount, 4);
+  assert.equal(shared.sharedFactorScore, 80);
+  assert.equal(shared.baseSimplicity, 0.75 * shared.amountSimplicity + 20);
+  assert.equal(shared.simplicity, shared.baseSimplicity);
+  assert.deepEqual(scheduleSimplicity([1, -2, -4, -6, -8]), shared);
+  assert.equal(scheduleSimplicity([0, -1, 2, 4, 6, 8]).sharedFactorScore, 80);
+  assert.equal(scheduleSimplicity([0, 0, 1, -1, 2]).sharedFactorScore, 0);
+  assert.equal(scheduleSimplicity([8, 16, 25]).sharedCount, 2);
+  assert.equal(scheduleSimplicity([25, 9, 2, 0]).sharedFactor, null);
+  assert.equal(scheduleSimplicity([15, 6, 10]).sharedFactor, 2); // tie, deterministic
+  assert.ok(
+    filterReasons([-4, 2, 8, 14, 20]).some((s) => s.includes("scaled copy")),
+  );
+});
+test("any prime payout above five sharply reduces schedule simplicity, with sign symmetry and compounding", () => {
+  const seven = scheduleSimplicity([-1, 2, 7]);
+  assert.equal(seven.primePayoutCount, 1);
+  assert.equal(seven.primeMultiplier, 0.25);
+  assert.equal(seven.simplicity, seven.baseSimplicity * 0.25);
+  const eleven = scheduleSimplicity([-1, 2, 11]);
+  assert.ok(eleven.primeMultiplier < seven.primeMultiplier);
+  assert.ok(eleven.simplicity < seven.simplicity);
+  const both = scheduleSimplicity([-7, 2, 11]);
+  assert.equal(both.primeMultiplier, (0.25 * 7) / 44);
+  assert.deepEqual(both, scheduleSimplicity([7, -2, -11]));
+  assert.equal(scheduleSimplicity([-1, 14, 49]).primePayoutCount, 0);
+  assert.equal(scheduleSimplicity([-1, 0, 2, 3, 5]).primeMultiplier, 1);
+});
+test("Recommended gives simplicity exactly fifty points and new rankings select the best explored candidates", () => {
+  // Equal positive jumps give smoothness 100, bend 1, full increasing share.
+  const m = metrics(2, [-1, 2, 5]);
+  assert.ok(
+    Math.abs(
+      m.recommended - (0.5 * m.simplicity + 20 + 10 / (1 + 5 / 50) + 5 + 10),
+    ) < 1e-10,
+  );
+  for (const sort of ["lowest-stdev", "highest-stdev", "simplest"]) {
+    const o = normalizeOptions({
+      n: 2,
+      minP0: -2,
+      maxP0: 0,
+      maxPayout: 6,
+      strict: false,
+      sort,
+      limit: 5,
+    });
+    const expected = brute(o),
+      actual = enumerate(o, { maxNodes: Infinity, maxMs: Infinity });
+    assert.equal(actual.complete, true);
+    assert.deepEqual(actual.rows, expected.slice(0, 5));
+    const direction = sort === "lowest-stdev" ? 1 : -1,
+      key = sort === "simplest" ? "simplicity" : "stdev";
+    assert.ok(
+      actual.rows.every(
+        (row, i) =>
+          !i ||
+          direction * (row.metrics[key] - actual.rows[i - 1].metrics[key]) >= 0,
+      ),
+    );
+  }
 });
