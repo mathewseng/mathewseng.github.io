@@ -126,7 +126,6 @@ export function createDiceView(container) {
     cancelAnimationFrame(frame);
     active = null;
     container.style.setProperty("--dice-count", values.length);
-    container.style.setProperty("--dice-count", values.length);
     if (dice.length !== values.length) {
       container.innerHTML = values
         .map(
