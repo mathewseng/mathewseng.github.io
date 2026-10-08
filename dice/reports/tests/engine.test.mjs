@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import {
   weights,
   SORTS,
+  PREFERRED_AMOUNTS,
+  STARTING_LOSSES,
+  startingLossPreference,
   amountSimplicity,
   scheduleSimplicity,
   outcomes,
@@ -98,9 +101,14 @@ test("whole-schedule scaling uses an exact common divisor, including losses and 
   assert.deepEqual(filterReasons(FEATURED[4]), []);
   assert.ok(isFair(4, [-4, 2, 8, 14, 20]));
   assert.match(filterReasons([-4, 2, 8, 14, 20]).join(), /2× scaled copy/);
-  assert.deepEqual(
-    filterReasons([0, 0, 0], { n: 2, minP0: 0, maxP0: 0, strict: false }),
-    [],
+  assert.match(
+    filterReasons([0, 0, 0], {
+      n: 2,
+      minP0: 0,
+      maxP0: 0,
+      strict: false,
+    }).join(),
+    /starting-loss list/,
   );
 });
 test("every ranking excludes scaled copies before its result limit, including when the base is outside bounds", () => {
@@ -441,7 +449,7 @@ test("payout volatility is probability-weighted, centered, and distinct from jum
   near(metrics(6, payouts, "full").variance, expected);
 });
 test("absolute amount simplicity favors zero, tiny primes, small factors and fewer repeats", () => {
-  const order = [0, 1, 2, 3, 5, 4];
+  const order = [0, ...PREFERRED_AMOUNTS];
   for (let i = 1; i < order.length; i++)
     assert.ok(amountSimplicity(order[i - 1]) > amountSimplicity(order[i]));
   assert.equal(amountSimplicity(0), 100);
@@ -454,10 +462,11 @@ test("absolute amount simplicity favors zero, tiny primes, small factors and few
   assert.ok(amountSimplicity(11) > amountSimplicity(97));
   assert.ok(amountSimplicity(60) > amountSimplicity(49));
   assert.ok(amountSimplicity(7) > amountSimplicity(49));
+  assert.equal(amountSimplicity(12), 82);
   assert.ok(
-    Math.abs(amountSimplicity(12) - 100 / (1 + 0.05 + 0.05 + 0.075 + 0.05)) <
-      1e-10,
+    Math.abs(amountSimplicity(16) - 70 / (1 + 0.05 * 4 + 0.025 * 3)) < 1e-10,
   );
+  assert.ok(amountSimplicity(100) > amountSimplicity(9));
   assert.throws(() => amountSimplicity(1.5));
 });
 test("shared factors reward subsets without counting zeros, ones or repeated prime powers as extra matches", () => {
@@ -491,12 +500,13 @@ test("any prime payout above five sharply reduces schedule simplicity, with sign
   assert.equal(scheduleSimplicity([-1, 14, 49]).primePayoutCount, 0);
   assert.equal(scheduleSimplicity([-1, 0, 2, 3, 5]).primeMultiplier, 1);
 });
-test("Recommended gives simplicity exactly fifty points and new rankings select the best explored candidates", () => {
+test("Recommended gives simplicity fifty points and starting-loss preference thirty", () => {
   // Equal positive jumps give smoothness 100, bend 1, full increasing share.
   const m = metrics(2, [-1, 2, 5]);
   assert.ok(
     Math.abs(
-      m.recommended - (0.5 * m.simplicity + 20 + 10 / (1 + 5 / 50) + 5 + 10),
+      m.recommended -
+        (0.5 * m.simplicity + 30 + 10 + 5 / (1 + 5 / 50) + 1.25 + 2.5),
     ) < 1e-10,
   );
   for (const sort of ["lowest-stdev", "highest-stdev", "simplest"]) {
@@ -523,4 +533,72 @@ test("Recommended gives simplicity exactly fifty points and new rankings select 
       ),
     );
   }
+});
+
+test("starting losses follow the exact requested order and exclude every unlisted value", () => {
+  const expected = [
+    -1, -2, -3, -5, -4, -10, -6, -8, -12, -15, -20, -25, -30, -40, -50, -60,
+    -75, -100,
+  ];
+  assert.deepEqual(STARTING_LOSSES, expected);
+  assert.equal(startingLossPreference(-1), 100);
+  assert.equal(startingLossPreference(-2), 75);
+  for (let i = 1; i < expected.length; i++)
+    assert.ok(
+      startingLossPreference(expected[i - 1]) >
+        startingLossPreference(expected[i]),
+    );
+  for (const value of [-101, -99, -11, -9, -7, 0, 1])
+    assert.equal(startingLossPreference(value), 0);
+  // Independent fair primitive witness for each allowed starting loss.
+  for (const value of expected) {
+    const payouts = [value, 1, -25 * value - 10];
+    const options = {
+      n: 2,
+      minP0: value,
+      maxP0: value,
+      maxPayout: 2500,
+      limit: 200,
+      sort: "lowest-max",
+    };
+    assert.deepEqual(filterReasons(payouts, options), []);
+    assert.ok(
+      enumerate(options, { maxNodes: Infinity, maxMs: Infinity }).rows.some(
+        (r) => r.payouts.join() === payouts.join(),
+      ),
+    );
+  }
+  for (const sort of SORTS) {
+    const result = enumerate(
+      {
+        n: 2,
+        minP0: -100,
+        maxP0: 0,
+        maxPayout: 50,
+        strict: false,
+        sort,
+        limit: 200,
+      },
+      { maxNodes: Infinity, maxMs: Infinity },
+    );
+    assert.ok(result.rows.every((r) => expected.includes(r.payouts[0])));
+    assert.ok(
+      result.rows.some((r) => r.payouts.includes(0)),
+      "Zero remains allowed outside the starting loss",
+    );
+  }
+  assert.equal(
+    enumerate({ n: 2, minP0: -7, maxP0: -7, maxPayout: 200 }).found,
+    0,
+  );
+  assert.match(
+    filterReasons([-7, 1, 165], { n: 2, minP0: -10, maxPayout: 200 }).join(),
+    /starting-loss list/,
+  );
+  const capped = enumerate(
+    { n: 6, minP0: -100, maxP0: -1, maxPayout: 1000, strict: false },
+    { maxNodes: 500, maxMs: Infinity },
+  );
+  assert.equal(capped.complete, false);
+  assert.ok(capped.rows.every((r) => expected.includes(r.payouts[0])));
 });

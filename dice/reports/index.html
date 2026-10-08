@@ -242,13 +242,13 @@
               not change fairness.
             </p>
             <p>
-              <strong>Amount simplicity:</strong> ignore the sign. Zero scores
-              100, one scores 98. Otherwise factor the amount into primes,
-              counting repeats. Factor costs are 2 → .05, 3 → .075, 5 → .09, and
-              a prime q &gt; 5 → .09 + log₂(q/5). Add .025 for each factor after
-              the first. The score is 100/(1 + total cost). This gives 0 &gt; 1
-              &gt; 2 &gt; 3 &gt; 5 &gt; 4; large primes and repeated factors
-              reduce simplicity.
+              <strong>Amount simplicity:</strong> use absolute values. Zero
+              scores 100. Preferred amounts, in order, are 1, 2, 3, 5, 4, 10, 6,
+              8, 12, 15, 20, 25, 30, 40, 50, 60, 75, 100; their scores run from
+              98 down to 64 in steps of 2. Other amounts score 70/(1 + factor
+              cost). Prime-factor costs are 2 → .05, 3 → .075, 5 → .09, and
+              prime q &gt; 5 → .09 + log₂(q/5). Repeated factors count again,
+              plus .025 for each factor after the first.
             </p>
             <p>
               <strong>Base schedule simplicity</strong> = 75% mean amount
@@ -281,11 +281,15 @@
               No rises score 0. L is the number of categories.
             </p>
             <p>
-              <strong>Recommended</strong> = .50 × simplicity + .20 × smoothness
-              + 10/(1 + max/50) + 10/(1 + bend) + 10 × increasing-jump share.
-              Bend averages |log₂((|next jump|+1)/(|previous jump|+1))−1|, plus
-              1 for each shrinking jump. The maximum term uses max(0, maximum
-              payout).
+              <strong>Recommended</strong> = .50 × simplicity + .30 ×
+              starting-loss preference + .10 × smoothness + 5/(1 + max/50) +
+              2.5/(1 + bend) + 2.5 × increasing-jump share. Starting-loss
+              preference is 300/(r + 3), where r is its zero-based position in
+              the allowed order: −1 scores 100, −2 scores 75, −3 scores 60.
+              Unlisted starting losses score zero and are excluded from
+              generated schedules. Bend averages |log₂((|next
+              jump|+1)/(|previous jump|+1))−1|, plus 1 for each shrinking jump.
+              The maximum term uses max(0, maximum payout).
             </p>
             <p>
               Winning means a positive <em>net</em> payout. The highest-ranked
@@ -454,6 +458,12 @@
                       required
                   /></label>
                 </div>
+                <p class="hint">
+                  Only these starting losses are searched, in preference order:
+                  −1, −2, −3, −5, −4, −10, −6, −8, −12, −15, −20, −25, −30, −40,
+                  −50, −60, −75, −100. The range above narrows this list. Zero
+                  remains allowed in other columns.
+                </p>
               </fieldset>
               <label
                 >Maximum payout <span class="unit">units</span
@@ -514,15 +524,16 @@
           <div class="ranking-note">
             <p class="eyebrow">WHY RECOMMENDED?</p>
             <p>
-              Simple amounts, balanced growth, and a moderate jackpot. Similar
-              curves are grouped so more shapes surface.
+              Simple amounts and preferred starting losses lead the ranking.
+              Similar curves are grouped so more shapes surface.
             </p>
             <details>
               <summary>Scoring &amp; search limits</summary>
               <p>
                 Score out of 100: 50 for simplicity (prime factors and shared
-                factors), 20 for smooth jumps, 10 for a moderate maximum, 10 for
-                jumps growing around twofold, and 10 for increasing payouts.
+                factors), 30 for the starting-loss preference, 10 for smooth
+                jumps, 5 for a moderate maximum, 2.5 for jumps growing around
+                twofold, and 2.5 for increasing payouts.
               </p>
               <p>
                 Recommended keeps the best score in each curve family: same
@@ -582,10 +593,11 @@
         <div class="coverage-note">
           <p>
             <strong>Complete</strong> means every integer schedule inside the
-            current bounds was considered, then scaled copies were removed.
-            <strong>Partial</strong> means the search hit 600,000 candidate
-            nodes or about 2.5 seconds; results are the best of the explored
-            candidates only. Narrow the bounds for a complete search.
+            current bounds with an allowed starting loss was considered, then
+            scaled copies were removed. <strong>Partial</strong> means the
+            search hit 600,000 candidate nodes or about 2.5 seconds; results are
+            the best of the explored candidates only. Narrow the bounds for a
+            complete search.
           </p>
           <p>
             The table is a <strong>shortlist</strong>, limited by Maximum
@@ -594,23 +606,32 @@
             does not mean every result is displayed.
           </p>
           <p>
-            <strong>Recommended score:</strong> 50% simplicity, 20% smoothness,
-            10% moderate maximum, 10% progressive jumps, and 10% increasing
-            payouts. Exact formulas are in “How the math works.” Rank is the
-            shortlist position for the selected ranking method; header sorting
-            preserves that rank.
+            <strong>Recommended score:</strong> 50% simplicity, 30%
+            starting-loss preference, 10% smoothness, 5% moderate maximum, 2.5%
+            progressive jumps, and 2.5% increasing payouts. Exact formulas are
+            in “How the math works.” Rank is the shortlist position for the
+            selected ranking method; header sorting preserves that rank.
           </p>
           <p>
-            <strong>Simplicity:</strong> 0 &gt; 1 &gt; 2 &gt; 3 &gt; 5 &gt; 4.
-            Large prime factors cost more; repeated small factors have a mild
-            cost. Examples of amount scores: 0 = 100, 1 = 98, 2 ≈ 95.2, 3 ≈
-            93.0, 5 ≈ 91.7, 4 ≈ 88.9, 7 ≈ 63.5, 11 ≈ 44.9. Schedule simplicity
-            combines 75% average amount score with 25% shared-factor score: the
-            percentage of nonzero payouts sharing the most common prime factor
-            (at least two must share it). Negative signs are ignored. Then each
-            payout that is itself a prime q &gt; 5 multiplies the score by
-            7/(4q): ±7 cuts it to one quarter, and larger primes cost even more.
-            Multiple prime payouts compound. The inspector shows this deduction.
+            <strong>Starting losses:</strong> −1 &gt; −2 &gt; −3 &gt; −5 &gt; −4
+            &gt; −10 &gt; −6 &gt; −8 &gt; −12 &gt; −15 &gt; −20 &gt; −25 &gt;
+            −30 &gt; −40 &gt; −50 &gt; −60 &gt; −75 &gt; −100. Only listed
+            losses inside the chosen range are searched. Their preference scores
+            are 300/(r + 3), using zero-based rank r: −1 earns all 30 points,
+            −2 earns 22.5, −3 earns 18.
+          </p>
+          <p>
+            <strong>Simplicity:</strong> zero scores 100. The preferred absolute
+            amounts above score 98, 96, 94, …, 64 in that order. All other
+            amounts remain available in later columns and score 70/(1 + factor
+            cost). Large primes cost more; repeated small factors have a mild
+            cost. Negative signs are ignored. Schedule simplicity combines 75%
+            average amount score with 25% shared-factor score: the percentage of
+            nonzero payouts sharing the most common prime factor (at least two
+            must share it). Then each payout that is itself a prime q &gt; 5
+            multiplies the score by 7/(4q): ±7 cuts it
+            to one quarter, and larger primes cost even more. Multiple prime
+            payouts compound. The inspector shows this deduction.
           </p>
           <p>
             <strong>Std dev</strong> is the probability-weighted standard
@@ -619,12 +640,13 @@
             lowest or highest.
           </p>
           <p>
-            Without bounds, there can be infinitely many distinct integer payout
-            proportions, even after removing scaled copies. For two dice with a
-            chosen face, (−m, 1, 25m−10) is fair and has no common divisor for
-            every integer m ≥ 1. The two-category set game is an exception: with
-            a negative initial payout, its only nonzero fair proportion is −1 /
-            +5.
+            This search is finite because of the allowed starting losses and
+            payout bounds. If you remove the bounds and ordering rules, the
+            general problem can have infinitely many distinct fair integer
+            schedules: for two dice with a chosen face, (−1, −m, 25+10m) is
+            primitive and fair for every integer m ≥ 1. The two-category set
+            game is an exception: with a negative initial payout, its only
+            nonzero fair proportion is −1 / +5.
           </p>
         </div>
       </div>

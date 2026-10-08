@@ -1,6 +1,17 @@
 import { outcomes, validateGame } from "./outcomes.mjs";
 export { outcomes, MODES, classifyHand } from "./outcomes.mjs";
 
+// User preference order, shared by the starting-loss filter and amount scoring.
+export const PREFERRED_AMOUNTS = Object.freeze([
+  1, 2, 3, 5, 4, 10, 6, 8, 12, 15, 20, 25, 30, 40, 50, 60, 75, 100,
+]);
+export const STARTING_LOSSES = Object.freeze(PREFERRED_AMOUNTS.map((v) => -v));
+const startingLossSet = new Set(STARTING_LOSSES.map(BigInt));
+export function startingLossPreference(value) {
+  const rank = STARTING_LOSSES.indexOf(value);
+  return rank < 0 ? 0 : 300 / (rank + 3);
+}
+
 // Fairness is an integer identity. BigInt is used for public/checker arithmetic;
 // the bounded search uses safe integer Numbers (largest sum <= 6^6 * 1,000,000).
 export const DEFAULTS = Object.freeze({
@@ -106,6 +117,8 @@ export function filterReasons(payouts, input = {}) {
     return [error.message];
   }
   const reasons = [];
+  if (!startingLossSet.has(p[0]))
+    reasons.push("Initial payout is not in the allowed starting-loss list.");
   if (p[0] < BigInt(o.minP0) || p[0] > BigInt(o.maxP0))
     reasons.push("Initial payout is outside the p[0] range.");
   if (p.some((v) => v < BigInt(o.minP0) || v > BigInt(o.maxPayout)))
@@ -160,8 +173,14 @@ function factorInfo(value) {
     penalty += factorCost(remainder);
   }
   penalty += 0.025 * Math.max(0, factorCount - 1);
+  const preferredRank = PREFERRED_AMOUNTS.indexOf(amount);
   const info = {
-    score: amount === 0 ? 100 : amount === 1 ? 98 : 100 / (1 + penalty),
+    score:
+      amount === 0
+        ? 100
+        : preferredRank >= 0
+          ? 98 - 2 * preferredRank
+          : 70 / (1 + penalty),
     factors,
   };
   // Search amounts are bounded by one million. Cache repeat amounts without
@@ -267,10 +286,11 @@ export function metrics(n, p, mode = "chosen") {
       ) / Math.max(1, steps - 1);
   const recommended =
     0.5 * simple.simplicity +
-    0.2 * smoothness +
-    10 / (1 + Math.max(0, max) / 50) +
-    10 / (1 + bend) +
-    (10 * jumps.filter((d) => d > 0).length) / steps;
+    0.3 * startingLossPreference(p[0]) +
+    0.1 * smoothness +
+    5 / (1 + Math.max(0, max) / 50) +
+    2.5 / (1 + bend) +
+    (2.5 * jumps.filter((d) => d > 0).length) / steps;
   return {
     max,
     range,
@@ -280,6 +300,7 @@ export function metrics(n, p, mode = "chosen") {
     steepness,
     variance,
     stdev,
+    startingLossPreference: startingLossPreference(p[0]),
     ...simple,
     recommended,
     winWeight: w.reduce((s, v, k) => s + (p[k] > 0 ? v : 0), 0),
@@ -423,8 +444,9 @@ export function enumerate(
     }
   }
   const active = [];
-  for (const p0 of spread(o.minP0, Math.min(o.maxP0, o.maxPayout))) {
-    if (o.allowZero || p0 !== 0) active.push(visit([p0], w[0] * p0, 1));
+  for (const p0 of STARTING_LOSSES) {
+    if (p0 >= o.minP0 && p0 <= Math.min(o.maxP0, o.maxPayout))
+      active.push(visit([p0], w[0] * p0, 1));
   }
   // Round-robin starting losses avoids exhausting the budget on only one stake.
   while (active.length && !stopped) {
