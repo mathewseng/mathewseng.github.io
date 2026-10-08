@@ -4,6 +4,7 @@ export const MODES = Object.freeze({
   chosen: "Chosen face",
   single: "Single sets",
   full: "Full sets",
+  sum: "Sums",
 });
 const FULL_CATEGORIES = [
   ["singles", "Singles", "", "Every die shows a different face."],
@@ -42,10 +43,11 @@ const SINGLE_LABELS = ["Singles", "Pair", "Trips", "Quads", "Quints", "Sexts"];
 const factorial = [1, 1, 2, 6, 24, 120, 720];
 const cache = new Map();
 export function validateGame(n, mode = "chosen") {
-  if (!Number.isInteger(n) || n < 2 || n > 6)
-    throw new RangeError("Choose 2 through 6 dice.");
   if (!Object.hasOwn(MODES, mode))
     throw new RangeError("Unknown hand-ranking mode.");
+  const minimum = mode === "sum" ? 1 : 2;
+  if (!Number.isInteger(n) || n < minimum || n > 6)
+    throw new RangeError(`Choose ${minimum} through 6 dice.`);
 }
 function categoryKey(counts, mode) {
   if (mode === "single") return `set-${Math.max(...counts)}`;
@@ -65,6 +67,7 @@ export function classifyHand(roll, mode = "full") {
       throw new RangeError("Die faces must be integers from 1 through 6.");
     counts[face - 1]++;
   }
+  if (mode === "sum") return `sum-${roll.reduce((a, b) => a + b, 0)}`;
   return categoryKey(counts, mode);
 }
 export function outcomes(n, mode = "chosen") {
@@ -84,6 +87,22 @@ export function outcomes(n, mode = "chosen") {
         weight: choose * 5 ** (n - k),
       };
     });
+  } else if (mode === "sum") {
+    let counts = [1];
+    for (let die = 0; die < n; die++) {
+      const next = Array(counts.length + 6).fill(0);
+      counts.forEach((count, sum) => {
+        for (let face = 1; face <= 6; face++) next[sum + face] += count;
+      });
+      counts = next;
+    }
+    categories = Array.from({ length: 5 * n + 1 }, (_, i) => ({
+      key: `sum-${n + i}`,
+      label: `Sum ${n + i}`,
+      short: String(n + i),
+      detail: `The sum of ${n} ${n === 1 ? "die" : "dice"} is ${n + i}.`,
+      weight: counts[n + i],
+    }));
   } else {
     const totals = new Map();
     function visit(counts, remaining) {

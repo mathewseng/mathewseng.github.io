@@ -1,6 +1,12 @@
 import { outcomes, MODES } from "./outcomes.mjs";
 import { playableSchedule, createSession } from "./game.mjs";
 import { createDiceView } from "./dice-view.js";
+import {
+  sumPayoutGroups,
+  plainSumRule,
+  describeSumRule,
+  SUM_FAMILIES,
+} from "./sum-rules.mjs";
 const $ = (id) => document.getElementById(id);
 const signed = (v) => `${v > 0 ? "+" : ""}${v}`;
 const tone = (v) => (v < 0 ? "negative" : v > 0 ? "positive" : "neutral");
@@ -28,21 +34,30 @@ export function createPlay({ onBusy, onBrowse }) {
     choices.forEach((choice, i) => {
       const option = document.createElement("option");
       option.value = String(i);
-      option.textContent = `${choice.title} · ${choice.payouts.map(signed).join(" / ")}`;
+      option.textContent = `${choice.title} · ${game.mode === "sum" ? describeSumRule(choice.rule || plainSumRule(game.n, choice.payouts)) : choice.payouts.map(signed).join(" / ")}`;
       option.selected = choice.payouts.join() === game.payouts.join();
       $("play-schedule").append(option);
     });
   }
   function renderPaytable(index = -1) {
-    $("play-paytable").innerHTML = outcomes(game.n, game.mode)
+    const categories =
+      game.mode === "sum"
+        ? sumPayoutGroups(game.n, game.payouts)
+        : outcomes(game.n, game.mode).map((row, i) => ({
+            ...row,
+            indices: [i],
+            payout: game.payouts[i],
+          }));
+    $("play-paytable").dataset.mode = game.mode;
+    $("play-paytable").innerHTML = categories
       .map(
-        (row, i) =>
-          `<div class="paytable-row ${index === i ? "hit" : ""}" ${index === i ? 'aria-current="true"' : ""}><span>${row.label}<small>${((row.weight / 6 ** game.n) * 100).toFixed(row.weight / 6 ** game.n < 0.001 ? 4 : 2)}%</small></span><strong class="${tone(game.payouts[i])}">${signed(game.payouts[i])}</strong></div>`,
+        (row) =>
+          `<div class="paytable-row ${row.indices.includes(index) ? "hit" : ""}" ${row.indices.includes(index) ? 'aria-current="true"' : ""}><span>${row.label}<small>${((row.weight / 6 ** game.n) * 100).toFixed(row.weight / 6 ** game.n < 0.001 ? 4 : 2)}%</small></span><strong class="${tone(row.payout)}">${signed(row.payout)}</strong></div>`,
       )
       .join("");
     if (index >= 0) {
       const container = $("play-paytable"),
-        row = container.children[index];
+        row = container.querySelector('[aria-current="true"]');
       container.scrollTo({
         top: Math.max(
           0,
@@ -96,7 +111,7 @@ export function createPlay({ onBusy, onBrowse }) {
       jackpot: "Top payout!",
     }[result.effect];
     $("result-detail").textContent =
-      `${effectLabel} · Top faces ${result.roll.join(" · ")}`;
+      `${effectLabel} · ${game.mode === "sum" ? `${result.roll.join(" + ")} = ${result.roll.reduce((a, b) => a + b, 0)}` : `Top faces ${result.roll.join(" · ")}`}`;
     $("particles").innerHTML =
       speed !== "instant" &&
       !matchMedia("(prefers-reduced-motion: reduce)").matches &&
@@ -119,14 +134,26 @@ export function createPlay({ onBusy, onBrowse }) {
       game.n === validated.n &&
       game.mode === validated.mode &&
       game.payouts.join() === validated.payouts.join();
-    game = validated;
+    game = {
+      ...validated,
+      rule:
+        next.rule ||
+        (validated.mode === "sum"
+          ? plainSumRule(validated.n, validated.payouts)
+          : null),
+    };
     title = nextTitle;
     choices = [
-      { payouts: [...game.payouts], title },
+      { payouts: [...game.payouts], title, rule: game.rule },
       ...nextChoices.filter((c) => c.payouts.join() !== game.payouts.join()),
     ];
-    $("play-title").textContent = `${game.n} dice · ${MODES[game.mode]}`;
+    $("play-title").textContent =
+      `${game.n} ${game.n === 1 ? "die" : "dice"} · ${MODES[game.mode]}`;
     $("play-subtitle").textContent = title;
+    $("play-rule").hidden = game.mode !== "sum";
+    $("play-rule").textContent = game.rule
+      ? `${SUM_FAMILIES[game.rule.family]} · ${describeSumRule(game.rule)}`
+      : "";
     $("face-picker").hidden = game.mode !== "chosen";
     renderChoices();
     if (!same) {
@@ -211,7 +238,11 @@ export function createPlay({ onBusy, onBrowse }) {
   $("play-schedule").addEventListener("change", () => {
     const choice = choices[Number($("play-schedule").value)];
     const previous = [...choices];
-    choose({ ...game, payouts: choice.payouts }, choice.title, previous);
+    choose(
+      { ...game, payouts: choice.payouts, rule: choice.rule },
+      choice.title,
+      previous,
+    );
   });
   $("reset-pnl").addEventListener("click", () => {
     if (session.reset()) renderSession();

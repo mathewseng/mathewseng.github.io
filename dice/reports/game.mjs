@@ -6,7 +6,7 @@ export function rollDice(
   n,
   randomUint32 = () => crypto.getRandomValues(new Uint32Array(1))[0],
 ) {
-  validateGame(n);
+  validateGame(n, "sum");
   return Array.from({ length: n }, () => {
     let value;
     do {
@@ -56,7 +56,14 @@ export function scoreRoll(game, roll, chosenFace = 1) {
         ? "push"
         : payout === Math.max(...game.payouts)
           ? "jackpot"
-          : payout >= Math.max(1, Math.abs(game.payouts[0])) * 5
+          : payout >=
+              Math.max(
+                1,
+                game.mode === "sum"
+                  ? -Math.min(...game.payouts)
+                  : Math.abs(game.payouts[0]),
+              ) *
+                5
             ? "big-win"
             : "win";
   return { index, key, label: category.label, payout, effect, roll: [...roll] };

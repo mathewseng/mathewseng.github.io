@@ -2,7 +2,8 @@
 
 Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on GitHub Pages. Assets and the module worker use relative paths. No runtime packages, backend, or build step.
 
-- `outcomes.mjs`: the three game definitions, hand classification, and exact ordered-roll counts.
+- `outcomes.mjs`: the four game definitions, hand classification, and exact ordered-roll counts.
+- `sum-rules.mjs`: finite sum-rule catalogue, exact rule evaluation, readable descriptions, and grouped sum paytables.
 - `engine.mjs`: exact BigInt EV/checker math, bounded integer enumeration, filters, style metrics, ranking, and displayed-row sorting.
 - `game.mjs`: unbiased dice sampling, grouped roll scoring, exact session PnL, and settle-once roll lifecycle.
 - `dice-geometry.mjs`: a closed rounded-cube mesh, standard opposing faces, tabletop orientation, and camera transforms.
@@ -11,6 +12,7 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `worker.js`: isolated search; replacing a search terminates its worker so stale results cannot overwrite current filters.
 - `app.js`, `index.html`, `styles.css`: mode and dice selection, report, reference examples, inspector, sortable shortlist, play view, and custom checker.
 - `tests/engine.test.mjs` and `tests/game.test.mjs`: exact identities, all ordered rolls versus multinomial counts, category classification, large integers, independent brute-force searches, budgets, sorting, unbiased random sampling, exact roll scoring, and session state.
+- `tests/sums.test.mjs`: every ordered sum roll, every rule family and dice count, rule reconstruction, exact EV, filters, budgets, ranking, grouping, and one-die PnL.
 - `tests/browser.cjs`: assembled-site checks for the route, actual worker, all modes/dice counts, bidirectional headers, keyboard/mobile behavior, and checker repair.
 
 ## Hand modes
@@ -24,7 +26,27 @@ Raw pattern classification stays separate from payout grouping. Each outcome exp
 
 Only categories possible for the selected N appear. The engine visits the face-frequency vectors summing to N and adds N! / ∏ count[face]! ordered rolls to the corresponding category. This partitions all 6^N rolls without double-counting. Tests independently enumerate every ordered roll up to six dice and verify the published counts.
 
-## Search and precision
+## Sums (1–6 dice)
+
+Sums adds all rolled pips. Its `5N+1` outcomes run from N through 6N; integer convolution gives exact ordered-roll counts. One die is enabled only for Sums. The existing hand modes stay at 2–6 dice. Play scores the sum with no face choice, shows the addition after the roll, groups totals with identical payouts, and keeps the existing roll speeds and session PnL. The custom checker accepts one payout per total, including 100-digit BigInts and exact final-payout repair.
+
+`sumCandidates` interleaves seven finite rule families:
+
+- Two/three contiguous **ranges**, solving the last range payout from its integer weight.
+- **Middle/edges**: a contiguous winning or losing window versus its complement, reduced by the weight GCD.
+- **Mirrored tiers**: equal/opposite rewards on totals s and 7N−s, optionally with a central push band and a second payout tier.
+- **Every nth total**: periods 2–6 and each residue, with exact complementary weights.
+- **Ranges + bonus**: two base ranges and an additive periodic adjustment (−5, −3, −2, −1, +1, +2, +3, +5, +10); also a mirrored push band combined with an exactly fair periodic bet.
+- **Ranges × multiplier**: ×2, ×3, or ×5 on matching totals, including losses. Both two base ranges and mirrored push bands are explored. Multipliers that change only zeros are excluded.
+- **Stair steps**: widths 1–6, every offset and both directions, exactly centered and reduced to primitive integer payouts.
+
+Base amounts draw on the preferred signed list and zero within filters; balancing may produce other amounts, which retain the heavy simplicity penalty. This is a **finite catalogue of rule templates, not an exhaustive enumeration of arbitrary sum tables**. The existing 600,000-attempt / approximately 2.5-second budget applies. Complete means the catalogue was explored within the filters; Partial reports interruption. Every returned vector separately passes exact zero EV, integer bounds, and primitive-scale checks. Identical vectors are deduplicated, keeping the easiest available rule. Recommended also keeps one best representative per rule family and distinct signed payout palette; other ranking methods retain distinct tables. Rule-family filters expose alternatives that might not reach the overall top shortlist.
+
+For Sums the loss range applies to the **worst payout anywhere in the table**, allowing low totals to win. Nondecreasing is off by default and allows ties when enabled. It has a separate UI setting from hand modes' strictly-increasing toggle. The same preferred loss list applies to the worst loss. Zero payouts remain enabled by default.
+
+Sums rank with **50% simplicity, 30% worst-loss preference, 15% rule ease, 5% moderate maximum**, then apply the unlisted-amount multiplier once to the whole score. Simplicity counts distinct signed payout values, so a repeated range does not repeatedly punish or reward the same amount. Prime and unlisted penalties likewise count those distinct values. Rule ease = `100 / (1 + 0.25*max(0, parts−2) + exceptionCost)`: parts are base-range count, or 3 for periodic/stair-step rules; a range modifier adds 0.5 cost. Probability-weighted standard deviation still uses every total's actual probability. The compact shortlist shows rule, maximum loss/payout, standard deviation, simplicity, and score; every header sorts the shortlist. The inspector and play paytable group every total exactly once by payout, with the combined probabilities.
+
+## Search and precision (hand modes)
 
 Generated starting losses are restricted, in preference order, to **−1, −2, −3, −5, −4, −10, −6, −8, −12, −15, −20, −25, −30, −40, −50, −60, −75, −100**. The initial range narrows that list; bounds containing no allowed loss produce an empty complete search. Other payout columns still permit any integer within bounds, including zero. Custom fairness math remains unrestricted; the checker identifies an unlisted starting loss as outside the search filters.
 
@@ -40,11 +62,11 @@ Search values are safe integers: N ≤ 6, initial bounds within ±10,000, maximu
 
 Every worker stops at 600,000 candidate nodes or approximately 2.5 seconds. Initial losses are interleaved and each integer interval uses coprime traversal for coverage. This is deterministic exploration, not a uniform sample.
 
-**Complete search** means exhaustive within the configured bounds and allowed starting-loss list. **Partial search** means the node/time cap was reached, so ranking covers only explored candidates. Always trust the run's status; more categories, wider bounds, and slower devices can trigger the cap. Even a complete search displays only the requested maximum results, capped at 200.
+**Complete search** for hand modes means exhaustive within the configured bounds and allowed starting-loss list. **Partial search** means the node/time cap was reached, so ranking covers only explored candidates. Always trust the run's status; more categories, wider bounds, and slower devices can trigger the cap. Even a complete search displays only the requested maximum results, capped at 200.
 
 An unbounded search is not possible in general. Removing scaled copies still leaves infinitely many primitive schedules when there are enough categories. For example, unrestricted two-dice Chosen face schedules `[-1,-m,25+10m]` are distinct primitive fair schedules for every integer m ≥ 1. The actual search is finite because it also bounds every payout and restricts the starting loss. The two-category set game is an exception: with a negative initial payout its only primitive nonzero fair schedule is `[-1,5]`.
 
-Recommended uses the on-page transparent style score: 50% simplicity, 30% starting-loss preference, 10% smoothness, 5% moderate maximum payout, 2.5% progressive jumps, 2.5% increasing payouts, before the unlisted-amount penalty. Starting-loss preference is `300/(r+3)` for zero-based position r in the allowed list: −1 scores 100 and contributes 30 points, −2 scores 75 and contributes 22.5, −3 scores 60 and contributes 18. An unlisted initial payout scores zero and is excluded from generated results. It groups curves by initial payout, floor(log2(maximum)), and intermediate payouts normalized into eighths; each group keeps its best score. Other ranking methods do not group. This approximate shape grouping is distinct from exact scaled-copy removal. Featured schedules are unranked references for Chosen face only, with no score bonus.
+For hand modes, Recommended uses the on-page transparent style score: 50% simplicity, 30% starting-loss preference, 10% smoothness, 5% moderate maximum payout, 2.5% progressive jumps, 2.5% increasing payouts, before the unlisted-amount penalty. Starting-loss preference is `300/(r+3)` for zero-based position r in the allowed list: −1 scores 100 and contributes 30 points, −2 scores 75 and contributes 22.5, −3 scores 60 and contributes 18. An unlisted initial payout scores zero and is excluded from generated results. It groups curves by initial payout, floor(log2(maximum)), and intermediate payouts normalized into eighths; each group keeps its best score. Other ranking methods do not group. This approximate shape grouping is distinct from exact scaled-copy removal. Featured schedules are unranked references for Chosen face only, with no score bonus.
 
 Keep the best 800 representatives whenever the candidate pool exceeds 1,600. Since at most 200 results are shown, discarded rows cannot affect that ranking among explored candidates.
 

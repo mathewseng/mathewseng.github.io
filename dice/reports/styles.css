@@ -258,6 +258,16 @@ h1 span {
   font-size: 12px;
   white-space: nowrap;
 }
+.sum-search-note { margin: 0 0 8px; }
+td.sum-rule-cell { min-width: 250px; max-width: 340px; white-space: normal; text-align: left; }
+.sum-rule-cell strong { display: block; color: var(--ink); font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+.sum-rule-cell span { display: block; font: 12px/1.55 var(--mono); color: var(--muted); }
+.sum-rule-detail { font-size: 12px; line-height: 1.65; margin: 10px 0 14px; }
+.sum-rule-detail strong { display: block; margin-bottom: 5px; color: var(--accent); }
+.sum-paytable > div { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.sum-paytable small { display: block; color: var(--muted); margin-top: 3px; font-size: 10px; }
+.sum-paytable strong { font: 600 16px var(--mono); }
+.play-rule { flex: none; padding: 8px 0; line-height: 1.5; }
 .mode-tabs button[aria-pressed="true"],
 .dice-tabs button[aria-pressed="true"] {
   color: var(--accent);
@@ -1399,14 +1409,17 @@ label .unit {
   .mode-tabs {
     grid-column: 1/-1;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .mode-tabs button {
     padding: 7px 5px;
     min-height: 36px;
+    white-space: normal;
   }
   .dice-tabs button {
-    min-width: 44px;
+    min-width: 0;
+    flex: 1;
+    padding: 6px;
     min-height: 38px;
   }
   .dice-tabs button span {
@@ -1418,6 +1431,7 @@ label .unit {
   }
   .game-controls > .dice-tabs {
     gap: 3px;
+    min-width: 0;
   }
   #mode-description {
     font-size: 10px;
@@ -1843,4 +1857,16 @@ label .unit {
   .particles {
     display: none;
   }
+}
+
+@media (max-width: 760px) {
+  .play-paytable[data-mode="sum"] { display: block; }
+  .play-paytable[data-mode="sum"] .paytable-row { padding: 7px 9px; }
+  .play-paytable[data-mode="sum"] .paytable-row span { min-width: 0; font-size: 11px; }
+  .play-rule { margin: 0; padding: 5px 0; font-size: 10px; max-height: 50px; overflow: auto; }
+  td.sum-rule-cell { min-width: 205px; max-width: 250px; }
+}
+
+@media (min-height: 760px) and (max-width: 760px) {
+  .paytable-panel:has(.play-paytable[data-mode="sum"]) { max-height: 280px; }
 }

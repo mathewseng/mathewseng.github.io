@@ -1,4 +1,10 @@
 import { outcomes, validateGame } from "./outcomes.mjs";
+import {
+  sumCandidates,
+  plainSumRule,
+  sumRuleEase,
+  SUM_FAMILIES,
+} from "./sum-rules.mjs";
 export { outcomes, MODES, classifyHand } from "./outcomes.mjs";
 
 // User preference order, shared by the starting-loss filter and amount scoring.
@@ -24,6 +30,7 @@ export const DEFAULTS = Object.freeze({
   allowZero: true,
   limit: 40,
   sort: "recommended",
+  sumFamily: "all",
 });
 export const FEATURED = Object.freeze({
   3: [-2, 1, 8, 55],
@@ -86,6 +93,7 @@ export function payoutDivisor(payouts) {
 }
 export function normalizeOptions(input = {}) {
   const o = { ...DEFAULTS, ...input };
+  if (o.mode === "sum" && input.strict === undefined) o.strict = false;
   validateGame(o.n, o.mode);
   for (const key of ["minP0", "maxP0", "maxPayout", "limit"]) {
     if (!Number.isSafeInteger(o[key]))
@@ -102,6 +110,8 @@ export function normalizeOptions(input = {}) {
   if (o.limit < 1 || o.limit > 200)
     throw new RangeError("Choose between 1 and 200 results.");
   if (!SORTS.includes(o.sort)) throw new RangeError("Unknown ranking method.");
+  if (o.sumFamily !== "all" && !Object.hasOwn(SUM_FAMILIES, o.sumFamily))
+    throw new RangeError("Unknown sum rule family.");
   o.strict = Boolean(o.strict);
   o.allowZero = Boolean(o.allowZero);
   return o;
@@ -117,14 +127,22 @@ export function filterReasons(payouts, input = {}) {
     return [error.message];
   }
   const reasons = [];
-  if (!startingLossSet.has(p[0]))
+  const initial = o.mode === "sum" ? p.reduce((a, b) => (a < b ? a : b)) : p[0];
+  if (!startingLossSet.has(initial))
     reasons.push("Initial payout is not in the allowed starting-loss list.");
-  if (p[0] < BigInt(o.minP0) || p[0] > BigInt(o.maxP0))
+  if (initial < BigInt(o.minP0) || initial > BigInt(o.maxP0))
     reasons.push("Initial payout is outside the p[0] range.");
   if (p.some((v) => v < BigInt(o.minP0) || v > BigInt(o.maxPayout)))
     reasons.push("A payout is outside the minimum p[0]–maximum payout bounds.");
-  if (o.strict && p.some((v, k) => k > 0 && v <= p[k - 1]))
-    reasons.push("Payouts are not strictly increasing.");
+  if (
+    o.strict &&
+    p.some((v, k) => k > 0 && (o.mode === "sum" ? v < p[k - 1] : v <= p[k - 1]))
+  )
+    reasons.push(
+      o.mode === "sum"
+        ? "Payouts decrease as the total rises."
+        : "Payouts are not strictly increasing.",
+    );
   if (!o.allowZero && p.includes(0n))
     reasons.push("Zero payouts are disabled.");
   const divisor = payoutDivisor(p);
@@ -245,7 +263,7 @@ export function scheduleSimplicity(p) {
     nonzeroCount,
   };
 }
-export function metrics(n, p, mode = "chosen") {
+export function metrics(n, p, mode = "chosen", rule = null) {
   const w = weights(n, mode),
     steps = p.length - 1,
     total = 6 ** n;
@@ -277,7 +295,9 @@ export function metrics(n, p, mode = "chosen") {
     : 0;
   const max = Math.max(...p),
     range = max - Math.min(...p);
-  const simple = scheduleSimplicity(p);
+  const simple = scheduleSimplicity(mode === "sum" ? [...new Set(p)] : p);
+  const initial = mode === "sum" ? Math.min(...p) : p[0];
+  const ruleEase = mode === "sum" ? sumRuleEase(rule || plainSumRule(n, p)) : 0;
   const bend =
     jumps
       .slice(1)
@@ -291,16 +311,24 @@ export function metrics(n, p, mode = "chosen") {
         0,
       ) / Math.max(1, steps - 1);
   const recommended =
-    // Apply the unlisted-amount penalty once to the entire weighted score.
-    (0.5 * simple.baseSimplicity * simple.primeMultiplier +
-      0.3 * startingLossPreference(p[0]) +
-      0.1 * smoothness +
-      5 / (1 + Math.max(0, max) / 50) +
-      2.5 / (1 + bend) +
-      (2.5 * jumps.filter((d) => d > 0).length) / steps) *
-    simple.unlistedMultiplier;
+    mode === "sum"
+      ? (0.5 * simple.baseSimplicity * simple.primeMultiplier +
+          0.3 * startingLossPreference(initial) +
+          0.15 * ruleEase +
+          5 / (1 + Math.max(0, max) / 50)) *
+        simple.unlistedMultiplier
+      : // Apply the unlisted-amount penalty once to the entire weighted score.
+        (0.5 * simple.baseSimplicity * simple.primeMultiplier +
+          0.3 * startingLossPreference(p[0]) +
+          0.1 * smoothness +
+          5 / (1 + Math.max(0, max) / 50) +
+          2.5 / (1 + bend) +
+          (2.5 * jumps.filter((d) => d > 0).length) / steps) *
+        simple.unlistedMultiplier;
   return {
     max,
+    loss: Math.max(0, -initial),
+    ruleEase,
     range,
     jumps,
     largestJump: Math.max(...jumps.map(Math.abs)),
@@ -308,7 +336,7 @@ export function metrics(n, p, mode = "chosen") {
     steepness,
     variance,
     stdev,
-    startingLossPreference: startingLossPreference(p[0]),
+    startingLossPreference: startingLossPreference(initial),
     ...simple,
     recommended,
     winWeight: w.reduce((s, v, k) => s + (p[k] > 0 ? v : 0), 0),
@@ -326,7 +354,7 @@ export function compareSchedules(sort) {
       steepest: q.steepness - m.steepness,
       "lowest-max": m.max - q.max,
       jackpot: q.max - m.max,
-      "lowest-loss": Math.max(0, -a.payouts[0]) - Math.max(0, -b.payouts[0]),
+      "lowest-loss": m.loss - q.loss,
       "largest-jump": m.largestJump - q.largestJump,
       range: m.range - q.range,
       "lowest-stdev": m.stdev - q.stdev,
@@ -372,8 +400,10 @@ export function enumerate(
   input = {},
   { maxNodes = 600000, maxMs = 2500, onProgress = () => {} } = {},
 ) {
-  const o = normalizeOptions(input),
-    rawWeights = weights(o.n, o.mode),
+  const o = normalizeOptions(input);
+  if (o.mode === "sum")
+    return enumerateSumRules(o, { maxNodes, maxMs, onProgress });
+  const rawWeights = weights(o.n, o.mode),
     divisor = rawWeights.reduce((d, v) => gcd(d, v), 0),
     w = rawWeights.map((v) => v / divisor),
     last = w.length - 1,
@@ -492,6 +522,88 @@ export function enumerate(
     complete: !stopped,
     elapsedMs: Math.round(performance.now() - started),
     grouped: o.sort === "recommended",
+  };
+}
+
+function enumerateSumRules(o, { maxNodes, maxMs, onProgress }) {
+  const started = performance.now(),
+    compare = compareSchedules(o.sort),
+    unique = new Map();
+  const w = weights(o.n, "sum");
+  let nodes = 0,
+    complete = true,
+    lastProgress = started;
+  for (const candidate of sumCandidates(o, PREFERRED_AMOUNTS)) {
+    if (
+      nodes >= maxNodes ||
+      (nodes % 1024 === 0 && performance.now() - started >= maxMs)
+    ) {
+      complete = false;
+      break;
+    }
+    nodes++;
+    if (nodes % 1024 === 0 && performance.now() - lastProgress > 200) {
+      onProgress({ nodes, found: unique.size });
+      lastProgress = performance.now();
+    }
+    if (!candidate) continue;
+    const { rule } = candidate,
+      payouts = candidate.payouts.map((v) => v || 0),
+      minimum = Math.min(...payouts);
+    if (o.sumFamily !== "all" && rule.family !== o.sumFamily) continue;
+    if (
+      rule.modifier?.type === "multiply" &&
+      !payouts.some(
+        (v, i) =>
+          v !== 0 && (o.n + i) % rule.modifier.period === rule.modifier.offset,
+      )
+    )
+      continue;
+    if (
+      !STARTING_LOSSES.includes(minimum) ||
+      minimum < o.minP0 ||
+      minimum > o.maxP0 ||
+      payouts.some(
+        (v) =>
+          !Number.isSafeInteger(v) ||
+          v < o.minP0 ||
+          v > o.maxPayout ||
+          (!o.allowZero && v === 0),
+      ) ||
+      (o.strict && payouts.some((v, i) => i && v < payouts[i - 1])) ||
+      payouts.reduce((sum, v, i) => sum + v * w[i], 0) !== 0 ||
+      payouts.reduce((d, v) => gcd(d, Math.abs(v)), 0) !== 1
+    )
+      continue;
+    const key = payouts.join(),
+      previous = unique.get(key);
+    if (previous && previous.metrics.ruleEase >= sumRuleEase(rule)) continue;
+    unique.set(key, {
+      payouts,
+      rule,
+      metrics: metrics(o.n, payouts, "sum", rule),
+    });
+  }
+  let rows = [...unique.values()].sort(compare);
+  if (o.sort === "recommended") {
+    // Keep distinct ideas visible, without showing every shifted boundary of
+    // the same family and payout palette in the default shortlist.
+    const families = new Set();
+    rows = rows.filter((row) => {
+      const key = `${row.rule.family}:${[...new Set(row.payouts)].sort((a, b) => a - b).join()}`;
+      if (families.has(key)) return false;
+      families.add(key);
+      return true;
+    });
+  }
+  return {
+    rows: rows.slice(0, o.limit),
+    found: unique.size,
+    nodes,
+    complete,
+    elapsedMs: Math.round(performance.now() - started),
+    grouped: o.sort === "recommended",
+    scope: "sum-rules",
   };
 }
 

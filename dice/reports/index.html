@@ -53,8 +53,10 @@
                 Single sets
               </button>
               <button data-mode="full" aria-pressed="false">Full sets</button>
+              <button data-mode="sum" aria-pressed="false">Sums</button>
             </div>
             <div class="dice-tabs" role="group" aria-label="Number of dice">
+              <button data-n="1" aria-pressed="false" hidden>1 <span>Die</span></button>
               <button data-n="2" aria-pressed="false">
                 2 <span>Dice</span>
               </button>
@@ -113,6 +115,9 @@
             >
           </div>
           <div id="featured" class="featured" hidden></div>
+          <p class="hint sum-search-note" id="sum-search-note" hidden>
+            Use Filters → Rule family to explore a particular idea.
+          </p>
           <div class="search-meta">
             <p id="search-status" role="status" aria-live="polite">
               Preparing exact search…
@@ -192,6 +197,8 @@
               <strong>Single sets:</strong> group rolls by their largest
               matching set. <strong>Full sets:</strong> distinguish the complete
               multiplicity pattern, ignoring the identities of the faces.
+              <strong>Sums:</strong> add all pips; exact counts come from
+              repeatedly convolving the six equally likely die faces.
             </p>
             <p>
               For set modes, each face-frequency vector contributes N! / ∏
@@ -206,10 +213,17 @@
             <p>
               A fair schedule has <strong>Σ w[j]p[j] = 0</strong>. With L
               categories, solve p[L−1] = −Σ<sub>j&lt;L−1</sub> w[j]p[j] /
-              w[L−1]. The final weight is 1 for a chosen face and 6 for set
+              w[L−1]. The final weight is 1 for a chosen face or sum and 6 for set
               modes. Every set-mode weight is divisible by 6, so reducing the
               weights restores a unit final weight. Integer bounds prune
               impossible branches.
+            </p>
+            <p class="sum-only" hidden>
+              Sums use a catalogue of readable rules rather than the general
+              enumeration above. Ranges may share payouts; bonuses and
+              multipliers can interrupt the progression. Each proposed rule
+              is checked with the same exact integer EV identity. See About
+              ranking for the sum-specific score and search coverage.
             </p>
             <div class="mini-scroll">
               <table>
@@ -253,7 +267,7 @@
             <p>
               <strong>Base schedule simplicity</strong> = 75% mean amount
               simplicity + 25% shared-factor score. Amounts count equally across
-              payout categories. The shared score is the percentage of nonzero
+              payout categories, or distinct payout values in Sums. The shared score is the percentage of nonzero
               payouts divisible by the most widely shared prime, requiring at
               least two payouts. Ties use the smallest prime. Zeros are simple
               pushes but do not count toward sharing; ±1 count as nonzero
@@ -274,6 +288,7 @@
               whose absolute value is outside the preferred list multiplies
               both Simplicity and Recommended by 0.1. One unlisted amount
               removes 90% of each score; two remove 99%. Zero is exempt.
+              Sums count each distinct payout value once.
               Preferred-only schedules rank far above these in Recommended
               and Simplest; other ranking methods still use their chosen metric.
             </p>
@@ -289,7 +304,7 @@
               No rises score 0. L is the number of categories.
             </p>
             <p>
-              <strong>Recommended</strong> = (.50 × S + .30 ×
+              <strong>Recommended (hand modes)</strong> = (.50 × S + .30 ×
               starting-loss preference + .10 × smoothness + 5/(1 + max/50) +
               2.5/(1 + bend) + 2.5 × increasing-jump share) × U. S is simplicity
               after prime penalties but before the unlisted amount penalty;
@@ -415,6 +430,7 @@
             </button>
           </div>
           <select id="play-schedule" aria-label="Payout schedule"></select>
+          <p id="play-rule" class="hint play-rule" hidden></p>
           <div
             id="play-paytable"
             class="play-paytable"
@@ -446,7 +462,7 @@
             <form id="filters">
               <fieldset>
                 <legend>
-                  Initial payout <span id="initial-category">0 matches</span>
+                  <span id="loss-label">Initial payout</span> <span id="initial-category">0 matches</span>
                 </legend>
                 <div class="input-pair">
                   <label
@@ -471,12 +487,24 @@
                 </div>
                 <p class="hint">
                   Preferred absolute amounts: 1, 2, 3, 5, 4, 10, 6, 8, 12, 15,
-                  20, 25, 30, 40, 50, 60, 75, 100. Starting losses use their
+                  20, 25, 30, 40, 50, 60, 75, 100. Loss preferences use their
                   negatives, in this preference order, within the range above.
                   Zero remains allowed in other columns. Each payout outside
                   this list cuts Simplicity and Recommended by 90%.
                 </p>
               </fieldset>
+              <label id="sum-family-label" hidden>Rule family
+                <select id="sum-family" name="sumFamily">
+                  <option value="all">All ideas</option>
+                  <option value="ranges">Ranges</option>
+                  <option value="window">Middle / edges</option>
+                  <option value="mirror">Mirrored tiers</option>
+                  <option value="periodic">Every nth total</option>
+                  <option value="bonus">Ranges + bonus</option>
+                  <option value="multiplier">Ranges × multiplier</option>
+                  <option value="steps">Stair steps</option>
+                </select>
+              </label>
               <label
                 >Maximum payout <span class="unit">units</span
                 ><input
@@ -500,7 +528,7 @@
               /></label>
               <div class="toggle-group">
                 <label class="toggle-label"
-                  ><span>Strictly increasing</span
+                  ><span id="strict-label">Strictly increasing</span
                   ><input
                     name="strict"
                     id="strict"
@@ -518,7 +546,7 @@
                     checked /><span class="toggle" aria-hidden="true"></span
                 ></label>
               </div>
-              <p class="hint">
+              <p class="hint" id="bounds-hint">
                 All payouts stay between the minimum p[0] and maximum payout.
                 Negative = loss; zero = push. Scaled copies are excluded;
                 schedules use their smallest integer scale.
@@ -534,6 +562,14 @@
             </form>
           </details>
           <div class="ranking-note">
+            <p class="sum-only" hidden>
+              Sums: 50% amount simplicity, 30% worst-loss preference, 15% rule
+              ease, 5% moderate maximum, then the unlisted-amount penalty.
+              Rule families are searched within a finite catalogue; arbitrary
+              sum tables are not exhaustively enumerated. Repeated amounts count
+              once for simplicity. Ranges may repeat payouts; the increasing
+              option allows ties. Rule-family filters help explore other ideas.
+            </p>
             <p class="eyebrow">WHY RECOMMENDED?</p>
             <p>
               Simple amounts and preferred starting losses lead the ranking.
@@ -605,6 +641,29 @@
           </button>
         </header>
         <div class="coverage-note">
+          <p class="sum-only" hidden>
+            <strong>Sums:</strong> Complete means the finite rule catalogue was
+            explored within your filters, not every possible payout table.
+            We try two/three ranges, middle/edges, mirrored tiers, recurring
+            totals, ranges with addition or multiplication, and stair steps.
+            Exact sum counts come from repeated convolution of a six-sided die.
+            All returned tables satisfy Σ w[j]p[j] = 0 and use the smallest
+            integer scale. Recommended retains one best rule for each family
+            and payout palette; other rankings retain distinct tables.
+            The search stops at 600,000 candidate attempts or about 2.5 seconds;
+            Partial means the catalogue was not fully explored. The shortlist
+            still respects Maximum results, capped at 200. Headers sort only
+            those displayed rows; Rank by selects which tables enter the list.
+          </p>
+          <p class="sum-only" hidden>
+            <strong>Sum ranking:</strong> 50% simplicity of distinct payout
+            amounts, 30% preference for the worst loss, 15% rule ease, and 5%
+            moderate maximum. Rule ease = 100/(1 + 0.25 × max(0, parts−2) +
+            exception cost). Parts are the number of base ranges, or 3 for a
+            periodic/stair-step rule. A range bonus or multiplier adds 0.5 cost.
+            Every distinct unlisted payout multiplies both Simplicity and the
+            entire score by 0.1. This favors repeated ranges and short rules.
+          </p>
           <p>
             <strong>Complete</strong> means every integer schedule inside the
             current bounds with an allowed starting loss was considered, then
@@ -700,10 +759,12 @@
               <option value="chosen">Chosen face</option>
               <option value="single">Single sets</option>
               <option value="full">Full sets</option>
+              <option value="sum">Sums</option>
             </select></label
           >
           <label
             >Dice<select id="checker-n">
+              <option value="1" disabled>1</option>
               <option>2</option>
               <option>3</option>
               <option selected>4</option>
@@ -722,7 +783,8 @@
         <p id="checker-order" class="hint"></p>
         <div id="checker-result" aria-live="polite"></div>
         <p class="hint">
-          Edge is EV ÷ |p[0]|, using the initial loss as the stake. If p[0] is
+          For Sums, edge uses the worst loss as the stake. In other modes,
+          edge is EV ÷ |p[0]|, using the initial loss. If p[0] is
           not negative, a stake-based edge is undefined. Filter checks use the
           checker’s mode, dice count, and the current search bounds.
         </p>

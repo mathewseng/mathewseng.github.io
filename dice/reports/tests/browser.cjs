@@ -615,6 +615,88 @@ const server = http.createServer((req, res) => {
       );
       await page.locator("#reset-filters").click();
     });
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await page.locator('[data-mode="sum"]').click();
+    await ready();
+    assert.equal(await page.locator("#strict").isChecked(), false);
+    for (let dice = 1; dice <= 6; dice++) {
+      await page.locator(`[data-n="${dice}"]`).click();
+      await ready();
+      assert.match(
+        await page.locator("#search-status").textContent(),
+        /rule catalogue/,
+      );
+      assert.equal(await page.locator("#results-head th").count(), 7);
+      assert.ok(await page.locator(".sum-rule-cell").count());
+      await page.locator("#open-checker").click();
+      const payouts = (await page.locator("#checker-payouts").inputValue())
+        .split(",")
+        .map(Number);
+      assert.equal(payouts.length, 5 * dice + 1);
+      assert.match(
+        await page.locator("#checker-result").textContent(),
+        /Exactly fair/,
+      );
+      await page.keyboard.press("Escape");
+      await page.locator("#play-selected").click();
+      assert.equal(await page.locator("#face-picker").isVisible(), false);
+      await roll(Array(dice).fill(1), payouts[0], `Sum ${dice}`);
+      await roll(Array(dice).fill(6), payouts.at(-1), `Sum ${6 * dice}`);
+      assert.equal(
+        await page.locator("#play-paytable .paytable-row").count(),
+        new Set(payouts).size,
+      );
+      await fit();
+      await page.locator('button[data-view="explore"]').click();
+    }
+    await filters(async () => {
+      await page.locator("#sum-family").selectOption("multiplier");
+    });
+    assert.ok(await page.locator(".sum-rule-cell").count());
+    assert.match(
+      await page.locator(".sum-rule-cell").first().textContent(),
+      /Multiply by/,
+    );
+    await page.locator('#results-head [data-sort="ruleEase"]').click();
+    await page.locator('#results-head [data-sort="ruleEase"]').click();
+    await page.locator("#open-checker").click();
+    const sumPayouts = (await page.locator("#checker-payouts").inputValue())
+      .split(",")
+      .map(Number);
+    await page.keyboard.press("Escape");
+    await page
+      .locator("#results-scroll")
+      .screenshot({ path: path.join(screenshotDir, "sums-desktop.png") });
+    await page.locator("#play-selected").click();
+    await roll([1, 2, 3, 4, 5, 5], sumPayouts[14], "Sum 20");
+    assert.match(
+      await page.locator("#result-detail").textContent(),
+      /1 \+ 2 \+ 3 \+ 4 \+ 5 \+ 5 = 20/,
+    );
+    for (const width of [320, 390, 768, 1024]) {
+      await page.setViewportSize({ width, height: 844 });
+      await fit();
+      await page.screenshot({
+        path: path.join(screenshotDir, `sums-play-${width}.png`),
+      });
+      await page.locator('button[data-view="explore"]').click();
+      await fit();
+      await page.screenshot({
+        path: path.join(screenshotDir, `sums-explore-${width}.png`),
+      });
+      await page.locator('button[data-view="play"]').click();
+    }
+    await page.locator('button[data-view="explore"]').click();
+    await page.locator('[data-n="1"]').click();
+    await ready();
+    await page.locator('[data-mode="chosen"]').click();
+    await ready();
+    assert.equal(await page.locator('[data-n="1"]').isVisible(), false);
+    assert.equal(
+      await page.locator('[data-n="2"]').getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(await page.locator("#strict").isChecked(), true);
     assert.deepEqual(errors, []);
     console.log(
       `Dice browser checks passed: modes, grouped outcomes, exact repair, filters, both sorts, chosen face, roll locking, PnL, effects, keyboard, desktop/mobile fit. Screenshots: ${screenshotDir}`,
