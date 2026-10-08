@@ -5,6 +5,7 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `outcomes.mjs`: the three game definitions, hand classification, and exact ordered-roll counts.
 - `engine.mjs`: exact BigInt EV/checker math, bounded integer enumeration, filters, style metrics, ranking, and displayed-row sorting.
 - `game.mjs`: unbiased dice sampling, grouped roll scoring, exact session PnL, and settle-once roll lifecycle.
+- `dice-view.js`: six-sided CSS 3D dice, bounce/rotation paths, and cancelable simultaneous or sequential reveals.
 - `play.js`: animated play view, chosen-face selection, payout effects, paytable, and session controls.
 - `worker.js`: isolated search; replacing a search terminates its worker so stale results cannot overwrite current filters.
 - `app.js`, `index.html`, `styles.css`: mode and dice selection, report, reference examples, inspector, sortable shortlist, play view, and custom checker.
@@ -60,7 +61,9 @@ Smoothness/steepness measure progression across category ranks, not probabilitie
 
 Select a generated/reference schedule and choose **Play this schedule**, or play an exactly fair primitive custom schedule from the checker. The play view offers the current shortlist in a schedule selector. Its dice count, scoring mode, and paytable stay attached to that schedule when exploring other settings. Only Chosen face asks for a number before rolling.
 
-Each actual die uses `crypto.getRandomValues` with rejection sampling for the four uint32 values above the largest multiple of six. Cosmetic tumbling uses separate animation randomness. The roll locks its rules before animation starts; schedule, face, and reset controls are disabled in flight. Settlement happens once, including when a tab becomes hidden. Payouts accumulate as BigInt PnL with no starting balance. PnL persists across schedule changes in the current page session; Reset PnL clears it and the recent-roll list. Reloading starts a new session. Custom playable payouts must be safe integers; the analytical checker still supports 100-digit integers.
+Each actual die uses `crypto.getRandomValues` with rejection sampling for the four uint32 values above the largest multiple of six. Animation presents the locked outcome using permanent cube faces; it never swaps pips or samples another result. The roll locks its rules before animation starts; schedule, face, speed, and reset controls are disabled in flight. Settlement happens once, including when a tab becomes hidden. Payouts accumulate as BigInt PnL with no starting balance. PnL persists across schedule changes in the current page session; Reset PnL clears it and the recent-roll list. Reloading starts a new session. Custom playable payouts must be safe integers; the analytical checker still supports 100-digit integers.
+
+**Roll speed** defaults to Normal: all dice tumble together for 460ms with 12ms stagger (about half a second total). Instant reveals and settles synchronously without animation. Suspense rolls and reveals one die at a time for 200ms each (about 1.2 seconds for six dice); PnL updates only after the last reveal. Speed stays selected across schedules for this page session. Reduced motion reveals immediately in every mode.
 
 Loss, push, win, big win (at least five times the initial loss), and top payout receive distinct labeled/color treatments. Top payouts and big wins add one short particle burst. Reduced-motion preference removes tumbling and celebrations; scoring remains identical. No sound or automatic repeated betting.
 

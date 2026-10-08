@@ -101,6 +101,18 @@ const server = http.createServer((req, res) => {
         ),
         "Workspace fits viewport",
       );
+      if (await page.locator("#play-workspace").isVisible()) {
+        assert.ok(
+          await page.locator(".play-table").evaluate((table) => {
+            const bounds = table.getBoundingClientRect();
+            const recent = table
+              .querySelector(".recent-rolls")
+              .getBoundingClientRect();
+            return recent.bottom <= bounds.bottom;
+          }),
+          "Play controls and history fit above the paytable without overlapping",
+        );
+      }
     }
     async function roll(faces, payout, label) {
       await page.evaluate(
@@ -335,6 +347,12 @@ const server = http.createServer((req, res) => {
     });
     // Actual motion path: no duplicate award, no rule changes while in flight.
     await page.emulateMedia({ reducedMotion: "no-preference" });
+    assert.equal(
+      await page
+        .locator('[data-roll-speed="normal"]')
+        .getAttribute("aria-pressed"),
+      "true",
+    );
     const rounds = Number(
       (await page.locator("#round-count").textContent()).split(" ")[0],
     );
@@ -342,13 +360,21 @@ const server = http.createServer((req, res) => {
     await page.locator("#roll-button").click();
     assert.equal(await page.locator("#play-schedule").isDisabled(), true);
     assert.equal(await page.locator("#reset-pnl").isDisabled(), true);
+    assert.equal(
+      await page.locator('[data-roll-speed="instant"]').isDisabled(),
+      true,
+    );
     await page.locator("#roll-button").evaluate((el) => el.click());
     assert.ok(
       await page
-        .locator(".die")
+        .locator(".die-cube")
         .first()
-        .evaluate((el) =>
-          getComputedStyle(el).animationName.includes("tumble"),
+        .evaluate(
+          (el) =>
+            el.children.length === 6 &&
+            el
+              .getAnimations()
+              .some((a) => a.effect.getTiming().duration === 460),
         ),
     );
     await page.waitForFunction(
@@ -359,6 +385,120 @@ const server = http.createServer((req, res) => {
       `${rounds + 1} rolls`,
     );
     assert.equal(await page.locator("#particles i").count(), 18);
+    // Instant reveals and settles in the same event, without any animations.
+    await page.locator('[data-roll-speed="instant"]').click();
+    const instant = await page.evaluate(() => {
+      window.diceTestValues = [0, 1, 2, 3, 4, 5];
+      document.querySelector("#roll-button").click();
+      return {
+        busy: document.querySelector("#roll-button").disabled,
+        faces: [...document.querySelectorAll(".die")].map((d) =>
+          Number(d.dataset.face),
+        ),
+        visibleFaces: [...document.querySelectorAll(".die-cube")].map(
+          (cube) => {
+            const rotation = new DOMMatrix(getComputedStyle(cube).transform);
+            const faces = [...cube.children].map((face, index) => ({
+              value: index + 1,
+              facing: rotation.multiply(
+                new DOMMatrix(getComputedStyle(face).transform),
+              ).m33,
+            }));
+            return faces.sort((a, b) => b.facing - a.facing)[0].value;
+          },
+        ),
+        animations: document
+          .querySelector("#dice-stage")
+          .getAnimations({ subtree: true }).length,
+      };
+    });
+    assert.deepEqual(instant, {
+      busy: false,
+      faces: [1, 2, 3, 4, 5, 6],
+      visibleFaces: [1, 2, 3, 4, 5, 6],
+      animations: 0,
+    });
+    // Suspense rolls exactly one die at a time; PnL waits for the last die.
+    await page.locator('[data-roll-speed="suspense"]').click();
+    const suspense = await page.evaluate(async () => {
+      window.diceTestValues = [0, 1, 2, 3, 4, 5];
+      const button = document.querySelector("#roll-button");
+      const before = document.querySelector("#pnl").textContent;
+      const observation = {
+        maxMoving: 0,
+        revealed: [],
+        earlyPnl: false,
+        duration: 0,
+      };
+      button.click();
+      while (button.disabled) {
+        observation.maxMoving = Math.max(
+          observation.maxMoving,
+          document.querySelectorAll('.die[data-state="rolling"]').length,
+        );
+        const settled = [
+          ...document.querySelectorAll('.die[data-state="settled"]'),
+        ].map((d) => Number(d.dataset.face));
+        if (
+          settled.length &&
+          observation.revealed.at(-1)?.length !== settled.length
+        )
+          observation.revealed.push(settled);
+        observation.earlyPnl ||=
+          document.querySelector("#pnl").textContent !== before;
+        const animation = document
+          .querySelector(".die.is-rolling .die-cube")
+          ?.getAnimations()[0];
+        if (animation)
+          observation.duration = animation.effect.getTiming().duration;
+        await new Promise(requestAnimationFrame);
+      }
+      observation.revealed.push(
+        [...document.querySelectorAll(".die")].map((d) =>
+          Number(d.dataset.face),
+        ),
+      );
+      return observation;
+    });
+    assert.equal(suspense.maxMoving, 1);
+    assert.equal(suspense.earlyPnl, false);
+    assert.equal(suspense.duration, 200);
+    assert.deepEqual(suspense.revealed, [
+      [1],
+      [1, 2],
+      [1, 2, 3],
+      [1, 2, 3, 4],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5, 6],
+    ]);
+    // Hiding the page settles an interrupted sequence once and cancels its tail.
+    const interrupted = await page.evaluate(async () => {
+      const count = () =>
+        Number(
+          document.querySelector("#round-count").textContent.split(" ")[0],
+        );
+      const before = count();
+      window.diceTestValues = [5, 5, 5, 5, 5, 5];
+      document.querySelector("#roll-button").click();
+      Object.defineProperty(document, "hidden", {
+        configurable: true,
+        value: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      delete document.hidden;
+      const settled = count();
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+      return {
+        before,
+        settled,
+        after: count(),
+        moving: document.querySelectorAll(".is-rolling").length,
+      };
+    });
+    assert.equal(interrupted.settled, interrupted.before + 1);
+    assert.equal(interrupted.after, interrupted.settled);
+    assert.equal(interrupted.moving, 0);
+    await page.locator('[data-roll-speed="normal"]').click();
     await page.emulateMedia({ reducedMotion: "reduce" });
     // Mobile workspaces fit; nine-category paytable scrolls locally on short screens.
     for (const [width, height] of [

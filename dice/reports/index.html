@@ -346,6 +346,34 @@
             </div>
           </div>
           <div class="roll-actions">
+            <div
+              id="roll-speed"
+              class="roll-speed"
+              role="group"
+              aria-label="Roll speed"
+            >
+              <button
+                data-roll-speed="instant"
+                aria-pressed="false"
+                title="Reveal immediately"
+              >
+                Instant
+              </button>
+              <button
+                data-roll-speed="normal"
+                aria-pressed="true"
+                title="All dice roll together · about half a second"
+              >
+                Normal
+              </button>
+              <button
+                data-roll-speed="suspense"
+                aria-pressed="false"
+                title="One die at a time · 0.2 seconds each"
+              >
+                Suspense
+              </button>
+            </div>
             <button
               class="primary-button roll-button"
               id="roll-button"
@@ -353,7 +381,6 @@
             >
               Roll dice <span aria-hidden="true">↗</span>
             </button>
-            <p class="hint">Fair dice. Exact payouts. No starting balance.</p>
           </div>
           <div class="recent-rolls">
             <span class="hint">Recent</span>

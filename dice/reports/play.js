@@ -1,44 +1,23 @@
 import { outcomes, MODES } from "./outcomes.mjs";
 import { playableSchedule, createSession } from "./game.mjs";
+import { createDiceView } from "./dice-view.js";
 const $ = (id) => document.getElementById(id);
 const signed = (v) => `${v > 0 ? "+" : ""}${v}`;
 const tone = (v) => (v < 0 ? "negative" : v > 0 ? "positive" : "neutral");
-const PIPS = [
-  [],
-  [5],
-  [1, 9],
-  [1, 5, 9],
-  [1, 3, 7, 9],
-  [1, 3, 5, 7, 9],
-  [1, 3, 4, 6, 7, 9],
-];
 export function createPlay({ onBusy, onBrowse }) {
   const session = createSession();
+  const diceView = createDiceView($("dice"));
   let game = null,
     chosenFace = 1,
     choices = [],
     title = "",
-    interval = 0,
-    timeout = 0;
-  function diceMarkup(values) {
-    return values
-      .map(
-        (face, i) =>
-          `<div class="die" style="--i:${i};--tilt:${i % 2 ? 9 : -8}deg" data-face="${face}">${Array.from({ length: 9 }, (_, j) => `<i class="pip ${PIPS[face].includes(j + 1) ? "on" : ""}"></i>`).join("")}</div>`,
-      )
-      .join("");
-  }
+    speed = "normal";
   function renderDice(values, reveal = false) {
-    $("dice").innerHTML = diceMarkup(values);
-    $("dice").style.setProperty("--dice-count", values.length);
+    diceView.show(values, reveal && game.mode === "chosen" ? chosenFace : null);
     $("dice").setAttribute(
       "aria-label",
       reveal ? `Rolled ${values.join(", ")}` : "Dice ready to roll",
     );
-    if (reveal && game.mode === "chosen")
-      [...$("dice").children].forEach((el, i) =>
-        el.classList.toggle("match", values[i] === chosenFace),
-      );
   }
   function renderChoices() {
     $("play-schedule").innerHTML = "";
@@ -78,7 +57,7 @@ export function createPlay({ onBusy, onBrowse }) {
     $("reset-pnl").disabled = busy;
     $("choose-schedule").disabled = busy;
     document
-      .querySelectorAll("[data-face-choice]")
+      .querySelectorAll("[data-face-choice], [data-roll-speed]")
       .forEach((el) => (el.disabled = busy));
     onBusy(busy);
   }
@@ -96,8 +75,6 @@ export function createPlay({ onBusy, onBrowse }) {
       .join("");
   }
   function finish() {
-    clearInterval(interval);
-    clearTimeout(timeout);
     const result = session.settle();
     if (!result) return;
     renderDice(result.roll, true);
@@ -115,6 +92,7 @@ export function createPlay({ onBusy, onBrowse }) {
       jackpot: "Top payout!",
     }[result.effect];
     $("particles").innerHTML =
+      speed !== "instant" &&
       !matchMedia("(prefers-reduced-motion: reduce)").matches &&
       ["big-win", "jackpot"].includes(result.effect)
         ? Array.from(
@@ -174,6 +152,14 @@ export function createPlay({ onBusy, onBrowse }) {
       .forEach((el) => el.setAttribute("aria-pressed", String(el === button)));
     // A changed choice applies to the next roll; keep the last result intact.
   });
+  $("roll-speed").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-roll-speed]");
+    if (!button || session.state.rolling) return;
+    speed = button.dataset.rollSpeed;
+    document
+      .querySelectorAll("[data-roll-speed]")
+      .forEach((el) => el.setAttribute("aria-pressed", String(el === button)));
+  });
   $("roll-button").addEventListener("click", () => {
     if (!game || session.state.rolling) return;
     try {
@@ -188,23 +174,30 @@ export function createPlay({ onBusy, onBrowse }) {
       $("result-detail").textContent = "";
       $("dice-stage").classList.add("rolling");
       $("dice").setAttribute("aria-label", "Rolling dice");
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches)
-        timeout = setTimeout(finish, 50);
+      const instant =
+        speed === "instant" ||
+        matchMedia("(prefers-reduced-motion: reduce)").matches;
+      $("dice-stage").classList.toggle("instant-reveal", instant);
+      if (instant) finish();
       else {
-        interval = setInterval(() => {
-          // Preserve the die elements so their tumble animation runs through.
-          [...$("dice").children].forEach((die) => {
-            const face = 1 + Math.floor(Math.random() * 6);
-            die.dataset.face = face;
-            die.classList.remove("match");
-            [...die.children].forEach((pip, i) =>
-              pip.classList.toggle("on", PIPS[face].includes(i + 1)),
+        const values = session.pendingRoll;
+        diceView.roll(values, {
+          speed,
+          onReveal(index) {
+            if (speed !== "suspense") return;
+            $("result-label").textContent =
+              `Die ${index + 1} of ${values.length}`;
+            $("dice").setAttribute(
+              "aria-label",
+              `Revealed ${values.slice(0, index + 1).join(", ")}; remaining dice rolling`,
             );
-          });
-        }, 110);
-        timeout = setTimeout(finish, 1050 + game.n * 45);
+          },
+          onComplete: finish,
+        });
       }
     } catch (error) {
+      // If presentation fails after sampling, still award the locked roll once.
+      finish();
       $("play-error").textContent = error.message;
       setBusy(false);
     }

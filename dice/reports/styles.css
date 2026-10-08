@@ -1011,30 +1011,69 @@ label .unit {
   padding: 20px;
 }
 .die {
-  width: clamp(56px, 6.5vw, 90px);
-  aspect-ratio: 1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 10%;
-  padding: 12px;
-  border-radius: 18%;
-  background: linear-gradient(145deg, #fffdf8, #d9d4c9);
-  box-shadow:
-    inset 0 -4px 0 #b5b1a6,
-    0 10px 0 -3px #0003,
-    0 20px 30px #0004;
-  transform: rotate(var(--tilt));
+  --die-size: clamp(56px, 6.5vw, 90px);
+  --half-die: calc(var(--die-size) / 2);
+  width: var(--die-size);
+  height: var(--die-size);
   position: relative;
   flex: none;
-  color: #27272a;
-  transition:
-    box-shadow 0.3s,
-    background 0.3s;
+  perspective: 600px;
+  color: #292824;
+}
+.die-body,
+.die-cube {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+.die-cube {
+  position: relative;
+}
+.die-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  gap: 10%;
+  padding: 17%;
+  border-radius: 10%;
+  border: 1px solid #d9d4c9;
+  background: linear-gradient(145deg, #fffcf4, #e6dfd1);
+  box-shadow: inset 0 0 5px #fff8;
+  backface-visibility: hidden;
+}
+.face-1 {
+  transform: translateZ(var(--half-die));
+}
+.face-2 {
+  transform: rotateY(90deg) translateZ(var(--half-die));
+}
+.face-3 {
+  transform: rotateX(90deg) translateZ(var(--half-die));
+}
+.face-4 {
+  transform: rotateX(-90deg) translateZ(var(--half-die));
+}
+.face-5 {
+  transform: rotateY(-90deg) translateZ(var(--half-die));
+}
+.face-6 {
+  transform: rotateY(180deg) translateZ(var(--half-die));
+}
+.die-shadow {
+  position: absolute;
+  inset: 65% -8% -18%;
+  border-radius: 50%;
+  background: #000;
+  filter: blur(7px);
+  opacity: 0.5;
 }
 .pip {
   border-radius: 50%;
   background: currentColor;
+  box-shadow:
+    inset 0 1px 2px #0008,
+    0 1px 0 #fff8;
   opacity: 0;
   align-self: center;
   justify-self: center;
@@ -1044,9 +1083,20 @@ label .unit {
 .pip.on {
   opacity: 1;
 }
-.die.match {
+.die.match .die-face {
   background: linear-gradient(145deg, #fff1c9, #e9c46b);
+  border-color: #d9b766;
   color: #322819;
+}
+.die.is-waiting .die-body {
+  opacity: 0.2;
+}
+.die.is-waiting .pip {
+  opacity: 0;
+}
+.die.is-rolling .die-body,
+.die.is-rolling .die-cube {
+  will-change: transform;
 }
 .roll-result {
   text-align: center;
@@ -1096,42 +1146,11 @@ label .unit {
   );
   border-color: color-mix(in srgb, var(--glow) 10%, transparent);
 }
-.rolling .die {
-  animation: tumble 0.65s ease-in-out infinite;
-  animation-delay: calc(var(--i) * -85ms);
+.landed:not(.instant-reveal) .roll-result {
+  animation: reveal 0.2s ease-out both;
 }
-.landed .die {
-  animation: land 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--i) * 35ms);
-}
-.landed .roll-result {
-  animation: reveal 0.45s ease-out both;
-}
-.landed .table-ring {
-  animation: halo 1s ease-out;
-}
-@keyframes tumble {
-  0%,
-  100% {
-    transform: translateY(0) rotateX(0) rotateZ(var(--tilt));
-  }
-  40% {
-    transform: translateY(-25px) rotateX(160deg) rotateZ(100deg);
-  }
-  70% {
-    transform: translateY(-8px) rotateX(290deg) rotateZ(245deg);
-  }
-}
-@keyframes land {
-  0% {
-    transform: translateY(-28px) rotate(-22deg);
-  }
-  65% {
-    transform: translateY(3px) rotate(var(--tilt));
-  }
-  100% {
-    transform: translateY(0) rotate(var(--tilt));
-  }
+.landed:not(.instant-reveal) .table-ring {
+  animation: halo 0.5s ease-out;
 }
 @keyframes reveal {
   from {
@@ -1185,6 +1204,11 @@ label .unit {
 }
 .roll-actions {
   flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 20px;
   text-align: center;
   padding: 8px 0 18px;
 }
@@ -1197,9 +1221,24 @@ label .unit {
 .roll-button span {
   margin-left: 35px;
 }
-.roll-actions .hint {
-  font-size: 10px;
-  margin-top: 10px;
+.roll-speed {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.roll-speed button {
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+.roll-speed button[aria-pressed="true"] {
+  background: #303038;
+  color: var(--ink);
 }
 .recent-rolls {
   display: flex;
@@ -1349,8 +1388,7 @@ label .unit {
     gap: 13px;
   }
   .die {
-    width: clamp(40px, 6vw, 64px);
-    padding: 10px;
+    --die-size: clamp(40px, 6vw, 64px);
   }
 }
 @media (max-width: 760px) {
@@ -1581,8 +1619,7 @@ label .unit {
     padding: 12px;
   }
   .die {
-    width: clamp(38px, 10.6vw, 65px);
-    padding: 7px;
+    --die-size: clamp(36px, 9.6vw, 60px);
   }
   .dice:has(.die:nth-child(6)) {
     gap: 9px;
@@ -1603,14 +1640,17 @@ label .unit {
   }
   .roll-actions {
     padding: 2px 0 8px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .roll-speed button {
+    min-height: 36px;
+    min-width: 70px;
   }
   .roll-button {
     min-height: 48px;
     min-width: 220px;
     font-size: 15px;
-  }
-  .roll-actions .hint {
-    display: none;
   }
   .recent-rolls {
     gap: 10px;
@@ -1724,8 +1764,7 @@ label .unit {
     padding: 12px 10px 5px;
   }
   .die {
-    width: 37px;
-    padding: 6px;
+    --die-size: 35px;
   }
   .dice {
     gap: 10px;
@@ -1757,8 +1796,11 @@ label .unit {
     padding-top: 12px;
   }
   .dice-stage {
-    min-height: 135px;
+    min-height: 155px;
     gap: 10px;
+  }
+  .dice {
+    padding-top: 32px;
   }
   .roll-result {
     min-height: 60px;
@@ -1770,14 +1812,13 @@ label .unit {
     display: none;
   }
   .die {
-    width: 40px;
-    padding: 7px;
+    --die-size: 36px;
   }
   .paytable-panel {
-    max-height: 174px;
+    max-height: 140px;
   }
   .play-paytable {
-    max-height: 94px;
+    max-height: 60px;
   }
   .face-picker {
     margin-top: 5px;
@@ -1791,6 +1832,23 @@ label .unit {
   }
   .roll-button {
     min-height: 44px;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+    flex: 1;
+  }
+  .roll-button span {
+    margin-left: 8px;
+  }
+  .roll-actions {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .roll-speed button {
+    min-width: 0;
+    padding: 6px 7px;
+    font-size: 10px;
   }
   .featured {
     display: none;

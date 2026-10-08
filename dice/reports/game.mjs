@@ -72,6 +72,10 @@ export function createSession() {
     get state() {
       return { pnl, rounds, rolling: pending !== null, history: [...history] };
     },
+    // Animation can reveal locked dice individually without settling the wager.
+    get pendingRoll() {
+      return pending ? [...pending.roll] : null;
+    },
     begin(game, chosenFace = 1, randomUint32) {
       if (pending) return false;
       const locked = playableSchedule(game);

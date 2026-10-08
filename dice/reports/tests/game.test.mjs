@@ -78,7 +78,12 @@ test("sessions lock roll rules, settle once, accumulate exact PnL and reset expl
   );
   assert.equal(session.reset(), false);
   assert.equal(session.state.pnl, 0n);
+  const preview = session.pendingRoll;
+  assert.deepEqual(preview, [6, 6, 6, 6]);
+  preview.fill(1);
+  assert.deepEqual(session.pendingRoll, [6, 6, 6, 6]);
   assert.equal(session.settle().payout, 60);
+  assert.equal(session.pendingRoll, null);
   assert.equal(session.settle(), null);
   assert.equal(session.state.pnl, 60n);
   assert.equal(session.state.rounds, 1);
