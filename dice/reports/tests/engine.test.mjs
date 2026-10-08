@@ -490,7 +490,7 @@ test("any prime payout above five sharply reduces schedule simplicity, with sign
   const seven = scheduleSimplicity([-1, 2, 7]);
   assert.equal(seven.primePayoutCount, 1);
   assert.equal(seven.primeMultiplier, 0.25);
-  assert.equal(seven.simplicity, seven.baseSimplicity * 0.25);
+  assert.equal(seven.simplicity, seven.baseSimplicity * 0.25 * 0.1);
   const eleven = scheduleSimplicity([-1, 2, 11]);
   assert.ok(eleven.primeMultiplier < seven.primeMultiplier);
   assert.ok(eleven.simplicity < seven.simplicity);
@@ -499,6 +499,65 @@ test("any prime payout above five sharply reduces schedule simplicity, with sign
   assert.deepEqual(both, scheduleSimplicity([7, -2, -11]));
   assert.equal(scheduleSimplicity([-1, 14, 49]).primePayoutCount, 0);
   assert.equal(scheduleSimplicity([-1, 0, 2, 3, 5]).primeMultiplier, 1);
+});
+test("each unlisted absolute payout cuts simplicity and the whole Recommended score by ninety percent", () => {
+  assert.equal(
+    scheduleSimplicity([0, ...PREFERRED_AMOUNTS]).unlistedMultiplier,
+    1,
+  );
+  assert.equal(
+    scheduleSimplicity([0, ...PREFERRED_AMOUNTS]).unlistedPayoutCount,
+    0,
+  );
+  const one = metrics(2, [-1, 0, 16]);
+  assert.equal(one.unlistedPayoutCount, 1);
+  assert.equal(one.unlistedMultiplier, 0.1);
+  assert.equal(one.simplicity, one.baseSimplicity * 0.1);
+  // Independent calculation includes every Recommended component, then a single penalty.
+  const bend = Math.abs(Math.log2(17 / 2) - 1);
+  const raw =
+    0.5 * one.baseSimplicity +
+    30 +
+    0.1 * one.smoothness +
+    5 / (1 + 16 / 50) +
+    2.5 / (1 + bend) +
+    2.5;
+  assert.ok(Math.abs(one.recommended - raw * 0.1) < 1e-10);
+  assert.ok(one.recommended <= 10);
+  const two = metrics(2, [-1, 9, 16]);
+  assert.equal(two.unlistedPayoutCount, 2);
+  assert.equal(two.unlistedMultiplier, 0.01);
+  assert.ok(two.recommended <= 1);
+  assert.ok(two.simplicity <= 1);
+  assert.deepEqual(
+    scheduleSimplicity([-1, 9, -16]),
+    scheduleSimplicity([1, -9, 16]),
+  );
+  assert.equal(scheduleSimplicity([-7, 0, 1]).unlistedMultiplier, 0.1);
+  for (const sort of ["recommended", "simplest"]) {
+    const result = enumerate(
+      { sort, limit: 200 },
+      { maxNodes: Infinity, maxMs: Infinity },
+    );
+    const firstUnlisted = result.rows.findIndex(
+      (r) => r.metrics.unlistedPayoutCount > 0,
+    );
+    assert.ok(
+      firstUnlisted > 0,
+      "Both preferred and unlisted fair schedules are explored",
+    );
+    assert.ok(
+      result.rows
+        .slice(firstUnlisted)
+        .every((r) => r.metrics.unlistedPayoutCount > 0),
+      "Every fully preferred schedule comes before any unlisted amount",
+    );
+    assert.ok(
+      result.rows
+        .slice(0, 10)
+        .every((r) => r.metrics.unlistedPayoutCount === 0),
+    );
+  }
 });
 test("Recommended gives simplicity fifty points and starting-loss preference thirty", () => {
   // Equal positive jumps give smoothness 100, bend 1, full increasing share.

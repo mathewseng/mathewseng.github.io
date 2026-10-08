@@ -270,6 +270,14 @@
               extra prime-payout penalty.
             </p>
             <p>
+              <strong>Unlisted amount penalty:</strong> each nonzero payout
+              whose absolute value is outside the preferred list multiplies
+              both Simplicity and Recommended by 0.1. One unlisted amount
+              removes 90% of each score; two remove 99%. Zero is exempt.
+              Preferred-only schedules rank far above these in Recommended
+              and Simplest; other ranking methods still use their chosen metric.
+            </p>
+            <p>
               <strong>Smoothness</strong> = 100 / (1 + σ(d) / mean(|d|)), where
               d is the sequence of adjacent jumps. Higher means more even jumps.
               Constant payouts score 100.
@@ -281,9 +289,12 @@
               No rises score 0. L is the number of categories.
             </p>
             <p>
-              <strong>Recommended</strong> = .50 × simplicity + .30 ×
+              <strong>Recommended</strong> = (.50 × S + .30 ×
               starting-loss preference + .10 × smoothness + 5/(1 + max/50) +
-              2.5/(1 + bend) + 2.5 × increasing-jump share. Starting-loss
+              2.5/(1 + bend) + 2.5 × increasing-jump share) × U. S is simplicity
+              after prime penalties but before the unlisted amount penalty;
+              U = 0.1 to the power of the number of unlisted payouts. The
+              unlisted penalty is applied once to each score. Starting-loss
               preference is 300/(r + 3), where r is its zero-based position in
               the allowed order: −1 scores 100, −2 scores 75, −3 scores 60.
               Unlisted starting losses score zero and are excluded from
@@ -459,10 +470,11 @@
                   /></label>
                 </div>
                 <p class="hint">
-                  Only these starting losses are searched, in preference order:
-                  −1, −2, −3, −5, −4, −10, −6, −8, −12, −15, −20, −25, −30, −40,
-                  −50, −60, −75, −100. The range above narrows this list. Zero
-                  remains allowed in other columns.
+                  Preferred absolute amounts: 1, 2, 3, 5, 4, 10, 6, 8, 12, 15,
+                  20, 25, 30, 40, 50, 60, 75, 100. Starting losses use their
+                  negatives, in this preference order, within the range above.
+                  Zero remains allowed in other columns. Each payout outside
+                  this list cuts Simplicity and Recommended by 90%.
                 </p>
               </fieldset>
               <label
@@ -533,7 +545,9 @@
                 Score out of 100: 50 for simplicity (prime factors and shared
                 factors), 30 for the starting-loss preference, 10 for smooth
                 jumps, 5 for a moderate maximum, 2.5 for jumps growing around
-                twofold, and 2.5 for increasing payouts.
+                twofold, and 2.5 for increasing payouts. Then multiply the
+                entire score by 0.1 for each nonzero payout whose absolute
+                value is outside the preferred list.
               </p>
               <p>
                 Recommended keeps the best score in each curve family: same
@@ -608,15 +622,16 @@
           <p>
             <strong>Recommended score:</strong> 50% simplicity, 30%
             starting-loss preference, 10% smoothness, 5% moderate maximum, 2.5%
-            progressive jumps, and 2.5% increasing payouts. Exact formulas are
+            progressive jumps, and 2.5% increasing payouts, before the unlisted
+            amount penalty. Exact formulas are
             in “How the math works.” Rank is the shortlist position for the
             selected ranking method; header sorting preserves that rank.
           </p>
           <p>
-            <strong>Starting losses:</strong> −1 &gt; −2 &gt; −3 &gt; −5 &gt; −4
-            &gt; −10 &gt; −6 &gt; −8 &gt; −12 &gt; −15 &gt; −20 &gt; −25 &gt;
-            −30 &gt; −40 &gt; −50 &gt; −60 &gt; −75 &gt; −100. Only listed
-            losses inside the chosen range are searched. Their preference scores
+            <strong>Preferred absolute amounts, in order:</strong> 1, 2, 3, 5,
+            4, 10, 6, 8, 12, 15, 20, 25, 30, 40, 50, 60, 75, 100. Starting
+            losses must be the negatives of these amounts and inside the chosen
+            range. Their preference scores
             are 300/(r + 3), using zero-based rank r: −1 earns all 30 points,
             −2 earns 22.5, −3 earns 18.
           </p>
@@ -632,6 +647,14 @@
             multiplies the score by 7/(4q): ±7 cuts it
             to one quarter, and larger primes cost even more. Multiple prime
             payouts compound. The inspector shows this deduction.
+          </p>
+          <p>
+            <strong>Unlisted amounts:</strong> each nonzero payout outside the
+            preferred list, using its absolute value, cuts both Simplicity and
+            Recommended by 90%. Two cut them by 99%; three by 99.9%. Zero has
+            no penalty. These schedules fall far below preferred-only schedules
+            in Recommended and Simplest, but can appear when the shortlist has
+            room or when another ranking method is selected.
           </p>
           <p>
             <strong>Std dev</strong> is the probability-weighted standard

@@ -175,6 +175,7 @@ function factorInfo(value) {
   penalty += 0.025 * Math.max(0, factorCount - 1);
   const preferredRank = PREFERRED_AMOUNTS.indexOf(amount);
   const info = {
+    preferred: amount === 0 || preferredRank >= 0,
     score:
       amount === 0
         ? 100
@@ -200,10 +201,12 @@ export function scheduleSimplicity(p) {
     sharedFactor = null,
     sharedCount = 0;
   let primeMultiplier = 1,
-    primePayoutCount = 0;
+    primePayoutCount = 0,
+    unlistedPayoutCount = 0;
   for (const value of p) {
     const info = factorInfo(value);
     amountTotal += info.score;
+    if (!info.preferred) unlistedPayoutCount++;
     const amount = Math.abs(value);
     if (amount > 5 && info.factors.length === 1 && info.factors[0] === amount) {
       primePayoutCount++;
@@ -227,11 +230,14 @@ export function scheduleSimplicity(p) {
   const amountScore = amountTotal / p.length;
   const sharedScore = nonzeroCount ? (100 * sharedCount) / nonzeroCount : 0;
   const baseSimplicity = 0.75 * amountScore + 0.25 * sharedScore;
+  const unlistedMultiplier = 10 ** -unlistedPayoutCount;
   return {
-    simplicity: baseSimplicity * primeMultiplier,
+    simplicity: baseSimplicity * primeMultiplier * unlistedMultiplier,
     baseSimplicity,
     primeMultiplier,
     primePayoutCount,
+    unlistedMultiplier,
+    unlistedPayoutCount,
     amountSimplicity: amountScore,
     sharedFactorScore: sharedScore,
     sharedFactor,
@@ -285,12 +291,14 @@ export function metrics(n, p, mode = "chosen") {
         0,
       ) / Math.max(1, steps - 1);
   const recommended =
-    0.5 * simple.simplicity +
-    0.3 * startingLossPreference(p[0]) +
-    0.1 * smoothness +
-    5 / (1 + Math.max(0, max) / 50) +
-    2.5 / (1 + bend) +
-    (2.5 * jumps.filter((d) => d > 0).length) / steps;
+    // Apply the unlisted-amount penalty once to the entire weighted score.
+    (0.5 * simple.baseSimplicity * simple.primeMultiplier +
+      0.3 * startingLossPreference(p[0]) +
+      0.1 * smoothness +
+      5 / (1 + Math.max(0, max) / 50) +
+      2.5 / (1 + bend) +
+      (2.5 * jumps.filter((d) => d > 0).length) / steps) *
+    simple.unlistedMultiplier;
   return {
     max,
     range,
