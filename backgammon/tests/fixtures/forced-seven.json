@@ -1,0 +1,67 @@
+{
+  "provenance": "Reconstructed from user screenshots dated 2026-10-08; standard legal rules, no assumed bearoff policy.",
+  "state": {
+    "version": 1,
+    "points": [
+      0,
+      2,
+      3,
+      4,
+      -1,
+      4,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      0,
+      -1,
+      -2,
+      -2,
+      -3,
+      -2,
+      -2,
+      -1,
+      0
+    ],
+    "bar": [
+      0,
+      0
+    ],
+    "off": [
+      0,
+      0
+    ],
+    "turn": 0,
+    "dice": [
+      5,
+      6
+    ],
+    "phase": "move",
+    "cube": {
+      "value": 4,
+      "owner": null
+    },
+    "scores": [
+      0,
+      0
+    ],
+    "matchLength": 0,
+    "rules": {
+      "cube": true,
+      "jacoby": false,
+      "automaticDoubles": 0,
+      "immediateRedoubles": 0
+    },
+    "crawford": false,
+    "crawfordPlayed": false,
+    "gameNumber": 1,
+    "sequence": 0,
+    "result": null,
+    "pending": null
+  }
+}

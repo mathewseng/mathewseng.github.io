@@ -96,6 +96,12 @@ module.exports = async function cubeOptions(browser, base, out, name) {
         else
           assert.ok(Math.abs(parseFloat(cells[1]) - c.mwc * 100) < 0.051);
       }
+      for (const c of expected.choices) {
+        const option = page.getByRole("button", {name: `${c.label}: preview decision`, exact: true});
+        await option.click();
+        assert.equal(await option.getAttribute("aria-pressed"), "true");
+        assert.ok((await page.locator(".decision-caption").innerText()).includes(c.label));
+      }
       for (const [width, height] of [
         [320, 568],
         [375, 667],

@@ -10,6 +10,7 @@ import {
   matchingPaths,
   nextSteps,
   boardKey,
+  applyStep,
 } from "./rules.mjs";
 
 const forcedCache = new WeakMap(),
@@ -48,10 +49,20 @@ export function forcedContinuation(
         steps: matches[0].steps.slice(draft.length),
         complete: true,
       };
-    const next = nextSteps(paths, prefix);
-    if (next.length !== 1)
-      return { steps: prefix.slice(draft.length), complete: false };
-    prefix.push(next[0]);
+    // A compulsory step need not be first in every dice order. It is safe
+    // to play first only when EVERY distinct final board remains reachable.
+    // Counting paths (or playable dice) would confuse order with a choice.
+    const outcomes = new Set(matches.map((p) => boardKey(p.state)));
+    const next = nextSteps(paths, prefix).find(
+      (step) =>
+        new Set(
+          matchingPaths(matches, [...prefix, step]).map((p) =>
+            boardKey(p.state),
+          ),
+        ).size === outcomes.size,
+    );
+    if (!next) return { steps: prefix.slice(draft.length), complete: false };
+    prefix.push(next);
   }
 }
 
@@ -60,10 +71,82 @@ export function forcedContinuation(
 // undo/reset/recovery only restore the globally mandatory initial prefix.
 export function draftAutomation(state, draft, paths, advance = false) {
   const initial = forcedContinuation(state, [], paths);
-  const minDraft = initial.complete ? 0 : initial.steps.length;
-  if (draft.length >= minDraft && !advance)
-    return { steps: [], complete: false, minDraft };
-  return { ...forcedContinuation(state, draft, paths), minDraft };
+  const mandatory = initial.complete ? [] : initial.steps;
+  const same = (a, b) =>
+    a && b && a.from === b.from && a.to === b.to && a.die === b.die;
+  const starts = (steps) => mandatory.every((s, i) => same(s, steps[i]));
+  let normalized = draft;
+  if (draft.length && mandatory.length && !starts(draft)) {
+    // Recover drafts saved by an older policy without locking a chosen die.
+    // Reorder the same steps (or add only missing compulsory steps), keeping
+    // the exact set of choices the user had before recovery.
+    const counts = (steps) => {
+      const m = new Map();
+      for (const step of steps) {
+        const k = `${step.from}/${step.to}/${step.die}`;
+        m.set(k, (m.get(k) || 0) + 1);
+      }
+      return m;
+    };
+    const required = counts(draft);
+    for (const [k, n] of counts(mandatory))
+      required.set(k, Math.max(n, required.get(k) || 0));
+    const length = [...required.values()].reduce((a, b) => a + b, 0);
+    const outcomes = new Set(
+      matchingPaths(paths, draft).map((p) => boardKey(p.state)),
+    );
+    const current = boardKey(draft.reduce((s, st) => applyStep(s, st), state));
+    const dice = (steps) =>
+      steps
+        .map((st) => st.die)
+        .sort()
+        .join();
+    for (const path of matchingPaths(paths, mandatory)) {
+      const equivalent = path.steps.slice(0, draft.length);
+      if (
+        starts(equivalent) &&
+        dice(equivalent) === dice(draft) &&
+        boardKey(equivalent.reduce((s, st) => applyStep(s, st), state)) ===
+          current
+      ) {
+        normalized = equivalent;
+        break;
+      }
+      const candidate = path.steps.slice(0, length),
+        actual = counts(candidate);
+      if (
+        candidate.length !== length ||
+        actual.size !== required.size ||
+        [...required].some(([k, n]) => actual.get(k) !== n)
+      )
+        continue;
+      const remaining = new Set(
+        matchingPaths(paths, candidate).map((p) => boardKey(p.state)),
+      );
+      if (
+        remaining.size === outcomes.size &&
+        [...outcomes].every((k) => remaining.has(k))
+      ) {
+        normalized = candidate;
+        break;
+      }
+    }
+  }
+  // Noncanonical legacy paths that cannot safely be reordered must never have
+  // a chosen move locked just because it occupies the first array slot.
+  let minDraft = 0;
+  if (!normalized.length) minDraft = mandatory.length;
+  else
+    while (
+      minDraft < mandatory.length &&
+      same(mandatory[minDraft], normalized[minDraft])
+    )
+      minDraft++;
+  const plan =
+    normalized.length >= minDraft && !advance
+      ? { steps: [], complete: false, minDraft }
+      : { ...forcedContinuation(state, normalized, paths), minDraft };
+  return normalized === draft ? plan : { ...plan, replacement: normalized };
 }
 
 function append(table, action, actor, automatic = false) {
@@ -118,10 +201,7 @@ export function playAction(
   return settleForced(table);
 }
 export function takebackTarget(table, actor = null) {
-  if (
-    !table?.started ||
-    !["roll", "move", "over"].includes(table.state.phase)
-  )
+  if (!table?.started || !["roll", "move", "over"].includes(table.state.phase))
     return null;
   let cached = undoCache.get(table.events);
   if (!cached || cached.length !== table.events.length) {

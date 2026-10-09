@@ -590,7 +590,7 @@ function autoDraft(advance = false) {
   const source = state();
   const forced = draftAutomation(source, draft.draft, draft.paths, advance);
   draft.minDraft = forced.minDraft;
-  if (!forced.steps.length) return;
+  if (!forced.steps.length && !forced.replacement) return;
   const signature = JSON.stringify(draft.draft),
     id = model()?.id;
   queueMicrotask(() => {
@@ -606,13 +606,14 @@ function autoDraft(advance = false) {
     )
       return;
     const before = draft.current();
-    draft.draft.push(...forced.steps);
+    draft.draft = [...(forced.replacement || draft.draft), ...forced.steps];
     draft.selected = null;
     draft.hint = forced.complete
       ? "Draft complete. Confirm or revise your move."
       : "Forced step played. Choose your next move.";
     draft.render();
-    ui.board.playTurn(before, forced.steps);
+    if (forced.replacement) ui.board.animateRestore(before, draft.current(), "move");
+    else ui.board.playTurn(before, forced.steps);
     actions();
     detailDraft();
     persist();
@@ -942,6 +943,7 @@ function arrangeActions() {
             !practiceTarget(model(), player),
           title:
             "Local practice: rewind this side’s latest turn and replace its dice. The previous line stays in history.",
+          "data-practice-dice": "",
         },
       ),
     );
@@ -1887,7 +1889,7 @@ function renderFeedback() {
             ? () => restoreDecision(row, m.id)
             : undefined,
           onReplay: canReplayBest(row, m.id)
-            ? (steps) => replayBest(row, m.id, steps)
+            ? (steps, result) => replayBest(row, m.id, steps, result)
             : undefined,
         }).result(row.result),
       "feedback-review",
@@ -1965,7 +1967,7 @@ function canReplayBest(row, id) {
     undoTarget() === row.index
   );
 }
-async function replayBest(row, id, steps) {
+async function replayBest(row, id, steps, result = row.result) {
   if (!canReplayBest(row, id))
     throw new Error("This turn can no longer be taken back.");
   // Validate the original context before changing the live game.
@@ -1977,7 +1979,7 @@ async function replayBest(row, id, steps) {
   game = restored;
   feedback = {
     source: row.source,
-    result: { ...row.result, actual: row.result.candidates[0], error: 0 },
+    result: { ...result, actual: result.candidates[0], error: 0 },
   };
   draft.draft = [];
   boardKey = "";

@@ -27,6 +27,7 @@ module.exports = async function practiceUX(browser, base, out, name) {
     throw Error("Practice state did not settle");
   };
   const choose = async (id, dice) => {
+    if (!await page.locator(".practice-controls-dialog").count()) await page.locator("#all-controls").click();
     await page.locator("#" + id).click();
     const d = page.getByRole("dialog");
     await d
@@ -109,6 +110,7 @@ module.exports = async function practiceUX(browser, base, out, name) {
           ? ((a[0] = dice.shift()), a)
           : original(a);
     });
+    await page.locator("#all-controls").click();
     await page.locator("#reroll").click();
     await wait((g) => g.state.dice.join(",") === "5,4");
     // Replacing our previous roll rewinds the bot’s old reply as well.
@@ -143,6 +145,7 @@ module.exports = async function practiceUX(browser, base, out, name) {
       ).action.dice,
       [2, 1],
     );
+    await page.locator("#all-controls").click();
     await page.locator("#reroll-bot").click();
     await wait(
       (g) =>
@@ -183,7 +186,8 @@ module.exports = async function practiceUX(browser, base, out, name) {
           box.y + box.height <= height + 1,
           `${width} primary controls below viewport`,
         );
-      await page.locator("#set-bot-roll").click();
+      await page.locator("#all-controls").click();
+    await page.locator("#set-bot-roll").click();
       const dims = await page.getByRole("dialog").evaluate((e) => ({
         h: e.clientHeight,
         s: e.scrollHeight,

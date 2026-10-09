@@ -74,10 +74,7 @@ test("saved analysis follows only an identical replay prefix, preserving fresh g
     current = clone(saved);
   delete current.events[0].evaluation;
   mergeEvaluations(current, saved);
-  assert.deepEqual(
-    current.events[0].evaluation,
-    saved.events[0].evaluation,
-  );
+  assert.deepEqual(current.events[0].evaluation, saved.events[0].evaluation);
   current.events[0].evaluation.result.requestId = "new";
   mergeEvaluations(current, saved);
   assert.equal(current.events[0].evaluation.result.requestId, "new");
@@ -87,4 +84,19 @@ test("saved analysis follows only an identical replay prefix, preserving fresh g
   assert.equal(sameDecisionPrefix(saved, current, 3), false);
   mergeEvaluations(current, saved);
   assert.equal(current.events[0].evaluation, undefined);
+});
+
+test("saved checker reviews retain ten ranked candidates and the actual submitted move", () => {
+  const candidates = Array.from({ length: 18 }, (_, i) => ({
+    equity: 1 - i / 100,
+    steps: [{ from: 5, to: 4, die: 1 }],
+  }));
+  const original = { type: "checker", candidates, actual: candidates[17] };
+  const saved = compactEvaluation(null, original).result;
+  assert.equal(saved.candidates.length, 10);
+  assert.equal(saved.evaluatedCount, 18);
+  assert.deepEqual(saved.actual, candidates[17]);
+  assert.equal(original.candidates.length, 18);
+  saved.candidates[0].steps[0].to = 3;
+  assert.equal(original.candidates[0].steps[0].to, 4);
 });

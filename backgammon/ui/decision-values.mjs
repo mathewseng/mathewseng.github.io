@@ -1,22 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { el } from "./shell.mjs";
+import { el, button } from "./shell.mjs";
 import { equity, percentage } from "./analysis.mjs";
 export function decisionValues(
   f,
   compact = false,
-  { opponent = false } = {},
+  { opponent = false, onChoice } = {},
 ) {
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const rows = [
     ["Before", f.before, "before"],
     ...(!bestPlayed
-      ? [
-          [
-            opponent ? "Opponent’s choice" : "Your choice",
-            f.actual,
-            "actual",
-          ],
-        ]
+      ? [[opponent ? "Opponent’s choice" : "Your choice", f.actual, "actual"]]
       : []),
     ["Best choice", f.best, "best"],
   ];
@@ -112,11 +106,30 @@ export function decisionValues(
       el(
         "tbody",
         {},
-        ...tableRows.map(([label, c]) =>
+        ...tableRows.map(([label, c, kind]) =>
           el(
             "tr",
             {},
-            el("th", { scope: "row" }, label),
+            el(
+              "th",
+              { scope: "row" },
+              onChoice && kind !== "before"
+                ? (() => {
+                    const b = button(
+                      "",
+                      () => onChoice(c),
+                      "review-cube-choice",
+                      {
+                        "aria-label": `${c.notation}: preview decision`,
+                        "data-action": c.action,
+                        "aria-pressed": false,
+                      },
+                    );
+                    b.append(label);
+                    return b;
+                  })()
+                : label,
+            ),
             el("td", {}, equity(c.equity)),
             el(
               "td",

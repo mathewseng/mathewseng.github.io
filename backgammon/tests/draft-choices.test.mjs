@@ -25,53 +25,27 @@ const mirror = (s) => ({
 });
 const after = (s, d) => d.reduce((s, step) => applyStep(s, step), s);
 
-test("reported double sixes: both point-4 routes remain drafts with identical final positions", () => {
+test("reported double sixes: three common steps play automatically, preserving both final choices", () => {
   for (const s of [fixture, mirror(fixture)]) {
-    assertState(s);
     const p = (n) => (s.turn ? 23 - n : n),
       paths = legalPaths(s);
-    assert.equal(legalTurns(s).length, 2);
-    assert.equal(forcedTurn(s), null);
     const initial = draftAutomation(s, [], paths);
-    assert.deepEqual(initial, {
-      steps: [{ from: p(21), to: p(15), die: 6 }],
-      complete: false,
-      minDraft: 1,
-    });
-    const nearest = nearestRoutes(paths, initial.steps, p(3), s.turn);
-    assert.equal(nearest.length, 1);
-    assert.equal(nearest[0].from, p(15));
-    const draft = [...initial.steps, ...nearest[0].steps],
-      fill = draftAutomation(s, draft, paths, true);
-    assert.deepEqual(fill.steps, [{ from: p(21), to: p(15), die: 6 }]);
-    assert.equal(fill.complete, true);
-    const explicit = checkerRoutes(paths, initial.steps, p(21)).find(
-      (r) => r.to === p(3),
-    );
-    assert.equal(
-      boardKey(after(s, [...draft, ...fill.steps])),
-      boardKey(after(s, [...initial.steps, ...explicit.steps])),
-    );
-    // Completion of a preview must not mean this original roll was forced.
+    assert.equal(legalTurns(s).length, 2);
+    assert.equal(initial.steps.length, 3);
+    assert.equal(initial.minDraft, 3);
+    assert.equal(initial.complete, false);
     assert.equal(forcedTurn(s), null);
-    for (const edit of [
-      draft,
-      [...draft, ...fill.steps].slice(0, -1),
-      initial.steps,
-    ])
-      assert.deepEqual(
-        draftAutomation(s, edit, paths).steps,
-        [],
-        "undo/reset/recovery cannot reapply a suffix",
-      );
-    const other = [...initial.steps, { from: p(21), to: p(15), die: 6 }];
-    const partial = draftAutomation(s, other, paths, true);
-    assert.deepEqual(partial.steps, [{ from: p(15), to: p(9), die: 6 }]);
-    assert.equal(
-      partial.complete,
-      false,
-      "two outcomes still remain after compulsory intermediate step",
-    );
+    const keys = new Set();
+    for (const target of [p(3), p(9)]) {
+      const route = nearestRoutes(paths, initial.steps, target, s.turn)[0];
+      assert.ok(route);
+      const draft = [...initial.steps, ...route.steps];
+      assert.equal(draft.length, 4);
+      assert.deepEqual(draftAutomation(s, draft, paths).steps, []);
+      keys.add(boardKey(after(s, draft)));
+    }
+    assert.equal(keys.size, 2);
+    assert.deepEqual(draftAutomation(s, initial.steps, paths).steps, []);
   }
 });
 

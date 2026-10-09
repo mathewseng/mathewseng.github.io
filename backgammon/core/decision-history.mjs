@@ -14,7 +14,7 @@ export function compactEvaluation(source, result) {
   if (compact.type === "checker") {
     compact.evaluatedCount =
       compact.evaluatedCount ?? compact.candidates.length;
-    compact.candidates = compact.candidates.slice(0, 1);
+    compact.candidates = compact.candidates.slice(0, 10);
   }
   return { result: compact };
 }

@@ -757,14 +757,11 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         return match ? Number(match[1]) * (match[2] === "Ivory" ? 1 : -1) : 0;
       }),
     );
-    const committed = await bot.evaluate(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        ).game.state.points,
-    );
+    const committed = await bot.evaluate(async () => {
+      const w = await (await import("/backgammon/core/storage.mjs")).get("work", "play");
+      const {applyStep} = await import("/backgammon/core/rules.mjs");
+      return (w.draft || []).reduce((s, step) => applyStep(s, step), w.game.state).points;
+    });
     assert.deepEqual(displayed, committed);
     if (browserName === "chromium")
       for (const [width, height] of [

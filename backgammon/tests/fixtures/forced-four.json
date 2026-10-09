@@ -1,0 +1,67 @@
+{
+  "provenance": "User screenshot 2026-10-08 22:48: 6/2 is compulsory, but the three has a choice.",
+  "state": {
+    "version": 1,
+    "points": [
+      1,
+      4,
+      2,
+      0,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -2,
+      0,
+      -2,
+      0,
+      -1
+    ],
+    "bar": [
+      0,
+      0
+    ],
+    "off": [
+      5,
+      10
+    ],
+    "turn": 0,
+    "dice": [
+      3,
+      4
+    ],
+    "phase": "move",
+    "cube": {
+      "value": 4,
+      "owner": null
+    },
+    "scores": [
+      0,
+      0
+    ],
+    "matchLength": 0,
+    "rules": {
+      "cube": true,
+      "jacoby": false,
+      "automaticDoubles": 0,
+      "immediateRedoubles": 0
+    },
+    "crawford": false,
+    "crawfordPlayed": false,
+    "gameNumber": 1,
+    "sequence": 0,
+    "result": null,
+    "pending": null
+  }
+}
