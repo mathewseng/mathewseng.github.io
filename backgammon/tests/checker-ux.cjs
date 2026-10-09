@@ -798,7 +798,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
               document.querySelector("#board").getBoundingClientRect().bottom <=
               document.querySelector("#player").getBoundingClientRect().top + 1,
           ),
-          "board must not overlap player strip",
+          `board must not overlap player strip at ${width}×${height}: ${JSON.stringify(await bot.evaluate(() => Object.fromEntries(["#board", "#player", ".stage", ".action-area"].map(s => [s, document.querySelector(s).getBoundingClientRect().toJSON()]))))}`,
         );
         if (width > 320)
           assert.ok(

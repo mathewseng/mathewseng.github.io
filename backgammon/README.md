@@ -174,6 +174,8 @@ The [highlight flowchart](/backgammon/controls/#highlights) explains source ring
 
 ## Desktop and mobile feature access
 
+Portrait phones keep player strips beside the full-width board and use a bottom action area with 48px primary buttons. The complete toolbar stays available above the board. **Analysis ↓** jumps to the scrollable Play history; its sticky header offers **Back to board ↑**. Short landscape windows keep side controls. Tiny windows and enlarged text may scroll rather than shrink the board or hide actions. Mobile form fields use 16px text to avoid Safari's automatic input-focus zoom; pinch zoom remains available. `tests/mobile-layout.cjs` checks nine viewport sizes, touch move/undo, stable board geometry, analysis navigation, and shared tool drawers in Chromium, Firefox and WebKit emulation.
+
 Play, Trainer, Solver and Library use the same controls and state at every width. **Details** (or **Results**) is available on every layout, including phone landscape; its Close control stays visible while the panel content scrolls. Selecting a Library item opens the drawer whenever its inspector is hidden. Settings → Display & controls includes All projects and the click/highlight guide on all screens.
 
 In Play, **All controls** opens the full Help & practice group on desktop and mobile, including the currently available hint, undo/reset, reroll and chosen-dice controls. It temporarily moves the same live buttons into the dialog and restores them on close; it does not copy their state or bypass game/online restrictions. Taking an action closes this menu before opening a subsequent dialog. The compact help strip and keyboard shortcuts remain available.

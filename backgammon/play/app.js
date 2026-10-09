@@ -151,6 +151,11 @@ reviewArea.append(el("header", { class: "review-header" },
   }, "ghost"),
 ));
 document.querySelector(".app").after(reviewArea);
+const analysisJump = button("Analysis ↓", () => {
+  reviewHeading.scrollIntoView({ block: "start" });
+  reviewHeading.focus({ preventScroll: true });
+}, "ghost", { id: "analysis-jump", "aria-label": "Go to analysis and history" });
+document.querySelector(".action-area").append(analysisJump);
 const reviewStatus = el("div", { class: "row wrap muted small", id: "auto-review-status", role: "status", hidden: true });
 reviewArea.append(reviewStatus);
 function renderReviewStatus() {
@@ -167,6 +172,7 @@ function renderReviewStatus() {
 function placeReview() {
   if (!ui.board.container.isConnected) return;
   const started = !!model()?.started;
+  analysisJump.hidden = !started;
   const app = document.querySelector(".app");
   app.classList.toggle("desktop-table", desktopTable.matches && started);
   app.classList.toggle("live-table", started);
