@@ -239,12 +239,15 @@ module.exports = async function decisionUX(
       .click();
     await page.locator("#game-review").click();
     await shot("game-review");
-    await page.locator("#analyze-session").click();
-    await page.waitForFunction(() =>
-      document
-        .querySelector('.session-review [role="status"]')
-        .textContent.includes("Completed"),
-    );
+    // Automatic review may already have filled every missing decision.
+    if (await page.locator("#analyze-session").isEnabled()) {
+      await page.locator("#analyze-session").click();
+      await page.waitForFunction(() =>
+        document
+          .querySelector('.session-review [role="status"]')
+          .textContent.includes("Completed"),
+      );
+    }
     await page.waitForFunction(
       () =>
         document.querySelector("#analyze-session").textContent ===

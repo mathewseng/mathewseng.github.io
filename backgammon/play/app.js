@@ -68,6 +68,7 @@ import {
 import { sessionReview } from "../ui/session-review.mjs";
 import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
+import { AutoReview } from "../core/auto-review.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
@@ -112,6 +113,17 @@ let config = {
   lastUndoNotice = null,
   epoch = 0;
 const analysis = new AnalysisPanel();
+const autoReview = new AutoReview({
+  engine: analysis.engine,
+  model: () => game,
+  idle: () => !document.hidden && !leaving && !botBusy && !committing && !assistanceJob && !opening.active,
+  save: () => persist(),
+  changed: () => {
+    renderedFeedback = null;
+    renderFeedback();
+    renderReviewStatus();
+  },
+});
 const feedbackStrip = el("div", {
   class: "play-feedback",
   id: "move-feedback",
@@ -139,6 +151,19 @@ reviewArea.append(el("header", { class: "review-header" },
   }, "ghost"),
 ));
 document.querySelector(".app").after(reviewArea);
+const reviewStatus = el("div", { class: "row wrap muted small", id: "auto-review-status", role: "status", hidden: true });
+reviewArea.append(reviewStatus);
+function renderReviewStatus() {
+  reviewStatus.hidden = !game?.started || config.mode !== "computer";
+  if (reviewStatus.hidden) return;
+  const pending = decisionHistory(game).filter(r => !r.feedback).length;
+  reviewStatus.replaceChildren(
+    el("span", {}, autoReview.error ? `Analysis paused: ${autoReview.error}` : pending
+      ? `${autoReview.job ? "Analyzing" : "Queued for analysis"} · ${pending} decision${pending === 1 ? "" : "s"} remaining`
+      : "Both players’ decisions are analyzed automatically."),
+    ...(autoReview.error ? [button("Retry analysis", () => autoReview.retry(), "ghost")] : []),
+  );
+}
 function placeReview() {
   if (!ui.board.container.isConnected) return;
   const started = !!model()?.started;
@@ -335,8 +360,15 @@ addEventListener("beforeunload", (e) => {
   }
 });
 addEventListener("pagehide", () => {
+  autoReview.pause();
   stopComputer();
   persist();
+});
+addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    autoReview.pause();
+    if (analysis.engine.active?.priority === -10) analysis.engine.cancelActive();
+  } else autoReview.update();
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -577,6 +609,8 @@ function render() {
     autoDraft();
     if (m?.started && config.mode === "computer") computerTurn();
   }
+  renderReviewStatus();
+  autoReview.update();
 }
 function autoDraft(advance = false) {
   if (!ui.board.container.isConnected) return;
@@ -1761,7 +1795,7 @@ function feedbackToggle() {
     {
       class: "check feedback-toggle",
       title:
-        "Evaluate your checker and cube decisions, including choosing not to double. Compare before, your choice and best choice.",
+        "Show the decision comparison and evaluate before confirmation. Both players’ committed decisions are saved and analyzed even when this is off.",
     },
     el("input", {
       type: "checkbox",
@@ -1897,7 +1931,9 @@ function renderFeedback() {
           el(
             "span",
             { class: "history-pending-status muted small" },
-            row.forced ? "Forced · no choice" : "Not analyzed",
+            config.mode === "computer"
+              ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
+              : row.forced ? "Forced · no choice" : "Not analyzed",
           ),
         ),
       );
@@ -2040,6 +2076,7 @@ function unlockDraft() {
   draft.render();
   actions();
   detailDraft();
+  autoReview.update();
 }
 function assistance(kind) {
   const job = {

@@ -531,6 +531,9 @@ const server = http.createServer((req, res) => {
         (report.historyTree ||= []).push(
           await require("./history-tree.cjs")(browser, base, out, browserName),
         );
+        (report.autoReview ||= []).push(
+          await require("./auto-review.cjs")(browser, base, out, browserName),
+        );
         (report.historyReturn ||= []).push(
           await require("./history-return.cjs")(
             browser,

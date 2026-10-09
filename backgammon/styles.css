@@ -2598,6 +2598,7 @@ button.teal-die:hover {
   justify-content: space-between;
   gap: 12px;
 }
+#auto-review-status { grid-column: 1 / -1; align-self: start; }
 .review-header h2 { flex: 1 1 180px; margin: 0; font-size: 18px; scroll-margin-top: 20px; }
 .review-header button { flex: none; font-size: 14px; padding-inline: 10px; }
 .play-review .inspector {

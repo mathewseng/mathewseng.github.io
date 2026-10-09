@@ -163,6 +163,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       0,
     );
     await page.keyboard.press("Escape");
+    await page.locator(".decision-dialog").waitFor({ state: "detached" });
     await page.evaluate(() => {
       const { source, result, decisionReview } = reviewFixture;
       decisionReview(source, { onReplay: () => {} }).result({
@@ -176,6 +177,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       "best played needs no corrective action",
     );
     await page.keyboard.press("Escape");
+    await page.locator(".decision-dialog").waitFor({ state: "detached" });
     await page.setViewportSize({ width: 320, height: 568 });
     await page.evaluate(() => {
       const { source, result, decisionReview } = reviewFixture;
