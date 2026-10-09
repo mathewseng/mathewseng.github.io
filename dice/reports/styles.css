@@ -506,6 +506,9 @@ td.rank-cell {
   justify-content: space-between;
   margin-bottom: 12px;
 }
+.inspector-nav {
+  display: none;
+}
 .inspector-heading .eyebrow {
   margin: 0;
 }
@@ -961,6 +964,29 @@ label .unit {
 .pnl-block small {
   font: 10px var(--mono);
   color: var(--muted);
+}
+.percentile-button {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  margin: 2px 0 0 auto;
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.percentile-button b {
+  font: 600 12px var(--mono);
+  color: var(--accent);
+}
+#percentile-dialog {
+  max-width: 480px;
+}
+#percentile-dialog p + p {
+  margin-top: 14px;
 }
 .face-picker {
   display: flex;
@@ -1451,6 +1477,19 @@ label .unit {
     display: none;
     border: 0;
   }
+  .inspector-nav {
+    display: flex;
+    position: sticky;
+    top: -14px;
+    z-index: 4;
+    margin: -14px -14px 14px;
+    padding: 8px 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+  .inspector-nav button {
+    min-height: 44px;
+  }
   .inspector-heading {
     margin-bottom: 12px;
   }
@@ -1562,6 +1601,13 @@ label .unit {
   }
   .pnl-block small {
     font-size: 9px;
+  }
+  .percentile-button {
+    gap: 5px;
+    font-size: 10px;
+  }
+  .percentile-button b {
+    font-size: 11px;
   }
   .face-picker {
     margin-top: 10px;
@@ -1758,6 +1804,19 @@ label .unit {
 @media (max-height: 720px) and (max-width: 760px) {
   .play-table {
     padding-top: 12px;
+  }
+  .play-top {
+    position: relative;
+  }
+  .play-top > div:first-child {
+    padding-bottom: 26px;
+  }
+  .percentile-button {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    justify-content: flex-start;
+    margin: 0;
   }
   .dice-stage {
     min-height: 155px;

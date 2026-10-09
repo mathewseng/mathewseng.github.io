@@ -167,6 +167,11 @@
           aria-label="Selected schedule analysis"
           tabindex="-1"
         >
+          <div class="inspector-nav">
+            <button id="back-to-schedules" class="quiet-button">
+              ← Back to schedules
+            </button>
+          </div>
           <div class="inspector-heading">
             <p class="eyebrow">SCHEDULE INSPECTOR</p>
             <span class="exact-tag">EXACT ARITHMETIC</span>
@@ -342,6 +347,16 @@
             <div class="pnl-block">
               <span>Session PnL</span><strong id="pnl" class="neutral">0</strong
               ><small id="round-count">0 rolls</small>
+              <button
+                class="percentile-button"
+                data-open="percentile-dialog"
+                aria-label="About session percentile"
+              >
+                <span>Percentile ⓘ</span>
+                <b id="session-percentile" data-state="empty" aria-live="polite"
+                  >—</b
+                >
+              </button>
             </div>
           </div>
           <div
@@ -789,6 +804,39 @@
           checker’s mode, dice count, and the current search bounds.
         </p>
       </section>
+    </dialog>
+    <dialog id="percentile-dialog" aria-labelledby="percentile-title">
+      <div class="dialog-content">
+        <header class="dialog-head">
+          <h2 id="percentile-title">Session percentile</h2>
+          <button
+            class="close-button"
+            data-close="percentile-dialog"
+            aria-label="Close percentile explanation"
+          >
+            ×
+          </button>
+        </header>
+        <p id="percentile-detail" role="status">
+          Roll to see how your session compares.
+        </p>
+        <p class="hint">
+          Your total PnL compared with independent sessions using the same
+          sequence of payout tables and the same number of rolls. Every outcome
+          is weighted by its dice probability, including when you switch games.
+        </p>
+        <p class="hint">
+          Percentile = chance of a lower PnL + half the chance of a tied PnL.
+          Higher means you have done better; 50% is the middle. This measures
+          the session so far, not the next roll.
+        </p>
+        <p class="hint">
+          We combine the full payout distributions. When they grow too large, we
+          retain probability intervals and show a bounded percentile range. No
+          simulated players or normal-distribution assumption. Reset PnL starts
+          a new comparison.
+        </p>
+      </div>
     </dialog>
     <noscript
       ><p class="no-script">

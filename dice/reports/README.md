@@ -9,10 +9,12 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `dice-geometry.mjs`: a closed rounded-cube mesh, standard opposing faces, tabletop orientation, and camera transforms.
 - `dice-view.js`: lit Canvas projections of the 3D mesh, contact shadows, roll paths, and cancelable simultaneous or sequential reveals.
 - `play.js`: animated play view, chosen-face selection, payout effects, paytable, and session controls.
+- `percentile.mjs`, `percentile-worker.js`: weighted session-PnL distributions and percentile bounds, computed off the UI thread.
 - `worker.js`: isolated search; replacing a search terminates its worker so stale results cannot overwrite current filters.
 - `app.js`, `index.html`, `styles.css`: mode and dice selection, report, reference examples, inspector, sortable shortlist, play view, and custom checker.
 - `tests/engine.test.mjs` and `tests/game.test.mjs`: exact identities, all ordered rolls versus multinomial counts, category classification, large integers, independent brute-force searches, budgets, sorting, unbiased random sampling, exact roll scoring, and session state.
 - `tests/sums.test.mjs`: every ordered sum roll, every rule family and dice count, rule reconstruction, exact EV, filters, budgets, ranking, grouping, and one-die PnL.
+- `tests/percentile.test.mjs`: independent mixed-session enumeration, ties, long sessions, large PnL, and compressed-distribution bounds.
 - `tests/browser.cjs`: assembled-site checks for the route, actual worker, all modes/dice counts, bidirectional headers, keyboard/mobile behavior, and checker repair.
 
 ## Hand modes
@@ -92,9 +94,13 @@ Each actual die uses `crypto.getRandomValues` with rejection sampling for the fo
 
 **Roll speed** defaults to Normal: all dice tumble together for 460ms with 12ms stagger (about half a second total). Instant reveals and settles synchronously without animation. Suspense rolls and reveals one die at a time for 200ms each (about 1.2 seconds for six dice); PnL updates only after the last reveal. Speed stays selected across schedules for this page session. Reduced motion reveals immediately in every mode.
 
+**Session percentile** compares total PnL with independent sessions using the same sequence of payout schedules and number of rolls. Each roll convolves its exact outcome counts with the accumulated payout distribution, including across mode or schedule changes. The midrank percentile is `100 × (P(other PnL < yours) + ½ P(other PnL = yours))`; ties count halfway, so a one-roll fair ±1 game shows 25% after a loss and 75% after a win. Payout coordinates remain BigInts; normalized probability masses use floating-point arithmetic. This measures the observed session and does not predict the next roll.
+
+The module worker retains up to 4,096 distribution bins. Small distributions retain every payout atom. Larger ones merge adjacent probability quantiles into intervals while preserving their full support and mass; later convolutions propagate those intervals. The displayed lower/upper percentile bounds account for all possible locations of that mass and round outward. Bounds can widen in long sessions with varied or very large custom payouts; the UI displays a range rather than a simulated or normal-approximation point estimate. A single value is shown when both bounds agree to numerical tolerance. Reset PnL terminates the worker and starts a new distribution, and revision checks prevent delayed responses from replacing the current result.
+
 Loss, push, win, big win (at least five times the initial loss), and top payout receive distinct labeled/color treatments. Top payouts and big wins add one short particle burst. Reduced-motion preference removes tumbling and celebrations; scoring remains identical. No sound or automatic repeated betting.
 
-Explore and Play share a viewport-sized app shell. Desktop shows the table and inspector side by side; mobile switches between Explore, Analysis, and Play. Filters, probabilities, ranking explanation, and the custom checker open as dialogs. Long tables, paytables, and analysis scroll internally. Very short landscape windows below 500px tall allow page scrolling to keep controls usable.
+Explore and Play share a viewport-sized app shell. Desktop shows the table and inspector side by side; mobile switches between Explore, Analysis, and Play. Mobile Analysis has a sticky **Back to schedules** button that restores the list's scroll position and selected-row focus; Escape also returns when no dialog is open. Filters, probabilities, ranking explanation, percentile details, and the custom checker open as dialogs. Long tables, paytables, and analysis scroll internally. Very short landscape windows below 500px tall allow page scrolling to keep controls usable.
 
 ## Checks
 

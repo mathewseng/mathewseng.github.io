@@ -34,6 +34,7 @@ let n = 4,
   customGame = null;
 let handStrict = true,
   sumStrict = false;
+let browseScrollTop = 0;
 let activeOptions = { ...DEFAULTS };
 const play = createPlay({
   onBusy(busy) {
@@ -55,6 +56,9 @@ function setView(view) {
   }
   const wasInExplore = $("explore-workspace").contains(document.activeElement);
   const wasInPlay = $("play-workspace").contains(document.activeElement);
+  const previousView = document.documentElement.dataset.view;
+  if (view === "analysis" && previousView === "explore")
+    browseScrollTop = $("results-scroll").scrollTop;
   document.documentElement.dataset.view = view;
   $("explore-workspace").hidden = view === "play";
   $("play-workspace").hidden = view !== "play";
@@ -66,7 +70,28 @@ function setView(view) {
     $("roll-button").focus({ preventScroll: true });
   if (view === "explore" && wasInPlay)
     $("results-title").focus({ preventScroll: true });
+  if (view === "explore" && previousView === "analysis") {
+    $("results-scroll").scrollTop = browseScrollTop;
+    const index = rows.findIndex(
+      (row) => row.payouts.join() === selected?.payouts.join(),
+    );
+    const button = document.querySelector(
+      `#results-body [data-index="${index}"] .rank-button`,
+    );
+    (button || $("results-title")).focus({ preventScroll: true });
+  }
 }
+$("back-to-schedules").addEventListener("click", () => setView("explore"));
+document.addEventListener("keydown", (event) => {
+  if (
+    event.key === "Escape" &&
+    document.documentElement.dataset.view === "analysis" &&
+    !document.querySelector("dialog[open]")
+  ) {
+    event.preventDefault();
+    setView("explore");
+  }
+});
 function selectionState() {
   $("selection-name").textContent = selected
     ? selected.title

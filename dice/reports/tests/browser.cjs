@@ -123,6 +123,14 @@ const server = http.createServer((req, res) => {
       await page.waitForFunction(
         () => !document.querySelector("#roll-button").disabled,
       );
+      await page.waitForFunction(() => {
+        const percentile = document.querySelector("#session-percentile");
+        return (
+          percentile.dataset.state === "ready" &&
+          percentile.dataset.rounds ===
+            document.querySelector("#round-count").textContent.split(" ")[0]
+        );
+      });
       assert.equal(
         await page.locator("#result-payout").textContent(),
         payout === 0 ? "Push" : `${payout > 0 ? "+" : ""}${payout} units`,
@@ -543,11 +551,47 @@ const server = http.createServer((req, res) => {
         .locator("#inspector")
         .evaluate((el) => document.activeElement === el),
     );
+    await page
+      .locator("#inspector")
+      .evaluate((el) => (el.scrollTop = el.scrollHeight));
+    const backBounds = await page.locator("#back-to-schedules").boundingBox();
+    assert.ok(backBounds.y >= 0 && backBounds.y + backBounds.height <= 844);
+    await page.locator("#back-to-schedules").click();
+    assert.equal(await page.locator(".results-panel").isVisible(), true);
+    assert.equal(await page.locator("#inspector").isVisible(), false);
+    assert.equal(
+      await page
+        .locator("#results-body .rank-button")
+        .first()
+        .evaluate((el) => el === document.activeElement),
+      true,
+    );
+    const lastSchedule = page.locator("#results-body .rank-button").last();
+    await lastSchedule.scrollIntoViewIfNeeded();
+    const browsePosition = await page
+      .locator("#results-scroll")
+      .evaluate((el) => el.scrollTop);
+    await lastSchedule.click();
+    await page.screenshot({
+      path: path.join(screenshotDir, "mobile-inspector-back.png"),
+    });
+    await page.locator("#back-to-schedules").click();
+    assert.ok(
+      Math.abs(
+        (await page.locator("#results-scroll").evaluate((el) => el.scrollTop)) -
+          browsePosition,
+      ) <= 1,
+    );
+    await page.locator("#results-body .rank-button").first().click();
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#inspector").isVisible(), false);
+    await page.locator("#results-body .rank-button").first().click();
     await page.locator("#play-inspected").click();
     await fit();
     await page.locator("#reset-pnl").click();
     assert.equal(await page.locator("#pnl").textContent(), "0");
     assert.equal(await page.locator("#round-count").textContent(), "0 rolls");
+    assert.equal(await page.locator("#session-percentile").textContent(), "—");
     await page.locator('button[data-view="explore"]').click();
     await page.locator('button[data-mode="chosen"]').click();
     await ready();
@@ -697,6 +741,64 @@ const server = http.createServer((req, res) => {
       "true",
     );
     assert.equal(await page.locator("#strict").isChecked(), true);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator("#open-checker").click();
+    await page.locator("#checker-mode").selectOption("sum");
+    await page.locator("#checker-n").selectOption("1");
+    await page.locator("#checker-payouts").fill("-1, -1, -1, 1, 1, 1");
+    await page.locator("#play-custom").click();
+    await page.locator("#reset-pnl").click();
+    await page.locator('[data-roll-speed="instant"]').click();
+    await roll([6], 1, "Sum 6");
+    assert.equal(
+      await page.locator("#session-percentile").textContent(),
+      "75.0%",
+    );
+    await page.locator('[data-open="percentile-dialog"]').click();
+    assert.match(
+      await page.locator("#percentile-detail").textContent(),
+      /75.0% after 1 roll/,
+    );
+    await page.keyboard.press("Escape");
+    await page.locator("#open-checker").click();
+    await page.locator("#checker-mode").selectOption("single");
+    await page.locator("#checker-n").selectOption("2");
+    await page.locator("#checker-payouts").fill("-1, 5");
+    await page.locator("#play-custom").click();
+    assert.equal(
+      await page.locator("#session-percentile").textContent(),
+      "75.0%",
+    );
+    await roll([1, 1], 5, "Pair");
+    assert.equal(await page.locator("#pnl").textContent(), "+6");
+    assert.equal(
+      await page.locator("#session-percentile").textContent(),
+      "95.8%",
+    );
+    await page.screenshot({
+      path: path.join(screenshotDir, "session-percentile-mobile.png"),
+    });
+    await fit();
+    await page.locator("#reset-pnl").click();
+    assert.equal(
+      await page.locator("#session-percentile").getAttribute("data-state"),
+      "empty",
+    );
+    await roll([1, 2], -1, "Singles");
+    assert.equal(
+      await page.locator("#session-percentile").textContent(),
+      "41.7%",
+    );
+    await page.evaluate(() => {
+      window.diceTestValues = [0, 0];
+    });
+    await page.locator("#roll-button").click();
+    await page.locator("#reset-pnl").click();
+    await page.waitForTimeout(100);
+    assert.equal(
+      await page.locator("#session-percentile").getAttribute("data-state"),
+      "empty",
+    );
     assert.deepEqual(errors, []);
     console.log(
       `Dice browser checks passed: modes, grouped outcomes, exact repair, filters, both sorts, chosen face, roll locking, PnL, effects, keyboard, desktop/mobile fit. Screenshots: ${screenshotDir}`,

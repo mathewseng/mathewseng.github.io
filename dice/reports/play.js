@@ -1,6 +1,7 @@
 import { outcomes, MODES } from "./outcomes.mjs";
 import { playableSchedule, createSession } from "./game.mjs";
 import { createDiceView } from "./dice-view.js";
+import { formatPercentile } from "./percentile.mjs";
 import {
   sumPayoutGroups,
   plainSumRule,
@@ -18,6 +19,71 @@ export function createPlay({ onBusy, onBrowse }) {
     choices = [],
     title = "",
     speed = "normal";
+  let percentileWorker = null,
+    percentileRevision = 0,
+    percentileFailed = false;
+  function resetPercentile() {
+    percentileWorker?.terminate();
+    percentileWorker = null;
+    percentileFailed = false;
+    percentileRevision++;
+    $("session-percentile").textContent = "—";
+    $("session-percentile").dataset.state = "empty";
+    delete $("session-percentile").dataset.rounds;
+    $("percentile-detail").textContent =
+      "Roll to see how your session compares.";
+  }
+  function failPercentile() {
+    percentileWorker?.terminate();
+    percentileWorker = null;
+    percentileFailed = true;
+    percentileRevision++;
+    $("session-percentile").textContent = "Unavailable";
+    $("session-percentile").dataset.state = "error";
+    $("percentile-detail").textContent =
+      "The percentile calculation could not finish. Your PnL is unaffected. Reset PnL to start a fresh comparison.";
+  }
+  function updatePercentile() {
+    if (percentileFailed) return;
+    try {
+      if (!percentileWorker) {
+        const worker = new Worker(
+          new URL("./percentile-worker.js", import.meta.url),
+          { type: "module" },
+        );
+        percentileWorker = worker;
+        worker.onmessage = ({ data }) => {
+          if (worker !== percentileWorker) return;
+          if (data.error) {
+            failPercentile();
+            return;
+          }
+          if (data.revision !== percentileRevision) return;
+          const result = data.result,
+            label = formatPercentile(result);
+          $("session-percentile").textContent = label;
+          $("session-percentile").dataset.state = "ready";
+          $("session-percentile").dataset.rounds = String(result.rounds);
+          $("percentile-detail").textContent =
+            `Session PnL percentile: ${label} after ${result.rounds} ${result.rounds === 1 ? "roll" : "rolls"}. ${result.exact ? "All possible session outcomes are weighted by their odds; ties count halfway." : "This range bounds the percentile after compressing the session distribution."}`;
+        };
+        worker.onerror = () => {
+          if (worker === percentileWorker) failPercentile();
+        };
+      }
+      $("session-percentile").textContent = "…";
+      $("session-percentile").dataset.state = "calculating";
+      $("percentile-detail").textContent =
+        "Calculating your session percentile…";
+      percentileWorker.postMessage({
+        revision: ++percentileRevision,
+        game: { n: game.n, mode: game.mode, payouts: game.payouts },
+        pnl: session.state.pnl,
+      });
+    } catch {
+      failPercentile();
+    }
+  }
   function renderDice(values, reveal = false) {
     diceView.show(
       values,
@@ -124,6 +190,7 @@ export function createPlay({ onBusy, onBrowse }) {
         : "";
     renderPaytable(result.index);
     renderSession();
+    updatePercentile();
     setBusy(false);
   }
   function choose(next, nextTitle = "Selected schedule", nextChoices = []) {
@@ -245,7 +312,10 @@ export function createPlay({ onBusy, onBrowse }) {
     );
   });
   $("reset-pnl").addEventListener("click", () => {
-    if (session.reset()) renderSession();
+    if (session.reset()) {
+      renderSession();
+      resetPercentile();
+    }
   });
   $("choose-schedule").addEventListener("click", onBrowse);
   document.addEventListener("visibilitychange", () => {
