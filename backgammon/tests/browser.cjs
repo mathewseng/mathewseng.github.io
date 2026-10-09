@@ -501,6 +501,9 @@ const server = http.createServer((req, res) => {
         (report.draftChoices ||= []).push(
           await require("./draft-choices.cjs")(browser, base, out, browserName),
         );
+        (report.backgroundFocus ||= []).push(
+          await require("./background-focus.cjs")(browser, base, out, browserName),
+        );
         (report.openingHints ||= []).push(
           await require("./opening-hints.cjs")(browser, base, out, browserName),
         );

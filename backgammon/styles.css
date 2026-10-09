@@ -467,6 +467,11 @@ h3 {
   overflow: visible;
   user-select: none;
 }
+/* Background clicks can focus the SVG itself. Only its actual controls need
+   focus indicators; their point/die styles remain independent below. */
+.bg-board:focus {
+  outline: none;
+}
 .point {
   cursor: default;
 }
