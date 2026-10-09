@@ -23,9 +23,7 @@ export const settingsDefaults = {
 };
 export function settings() {
   try {
-    const saved = JSON.parse(
-      localStorage.getItem(PREFIX + "settings") || "{}",
-    );
+    const saved = JSON.parse(localStorage.getItem(PREFIX + "settings") || "{}");
     return {
       ...settingsDefaults,
       ...saved,
@@ -77,8 +75,7 @@ async function transact(store, mode, fn) {
       reject(tx.error || new Error("Storage transaction aborted."));
   });
 }
-export const get = (store, id) =>
-  transact(store, "readonly", (s) => s.get(id));
+export const get = (store, id) => transact(store, "readonly", (s) => s.get(id));
 export const all = (store = "items") =>
   transact(store, "readonly", (s) => s.getAll());
 export const remove = (store, id) =>
@@ -114,31 +111,36 @@ export function validateItem(item) {
   )
     throw new Error("Invalid tags.");
   if (item.kind === "match") {
-    const states = replay(item.initial, item.events);
-    for (const [index, event] of item.events.entries()) {
-      if (!event.evaluation) continue;
-      if (!event.evaluation.result)
-        throw new Error("Missing decision evaluation.");
-      validateItem({
-        version: 1,
-        id: "evaluation",
-        kind: "position",
-        title: "",
-        notes: "",
-        collection: "",
-        tags: [],
-        createdAt: 0,
-        updatedAt: 0,
-        state: states[index],
-        analysis: event.evaluation.result,
-      });
-    }
     validateTakebacks(item, true);
+    const validateLine = (initial, events) => {
+      const states = replay(initial, events);
+      for (const [index, event] of events.entries()) {
+        if (!event.evaluation) continue;
+        if (!event.evaluation.result)
+          throw new Error("Missing decision evaluation.");
+        validateItem({
+          version: 1,
+          id: "evaluation",
+          kind: "position",
+          title: "",
+          notes: "",
+          collection: "",
+          tags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          state: states[index],
+          analysis: event.evaluation.result,
+        });
+      }
+    };
+    validateLine(item.initial, item.events);
+    for (const entry of item.undoLog || []) {
+      validateLine(entry.initial, entry.events);
+      if (entry.prefix) validateLine(item.initial, entry.prefix);
+    }
     if (
       item.status !== undefined &&
-      !["in-progress", "game-complete", "match-complete"].includes(
-        item.status,
-      )
+      !["in-progress", "game-complete", "match-complete"].includes(item.status)
     )
       throw new Error("Invalid saved game status.");
   } else if (item.kind !== "collection") assertState(item.state);

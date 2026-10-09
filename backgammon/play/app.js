@@ -66,6 +66,8 @@ import {
   sameDecisionPrefix,
 } from "../core/decision-history.mjs";
 import { sessionReview } from "../ui/session-review.mjs";
+import { historyExplorer } from "../ui/history-tree.mjs";
+import { returnToHistory } from "../core/history-tree.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
@@ -130,6 +132,7 @@ const reviewArea = el("section", {
 const reviewHeading = el("h2", { id: "review-heading", tabindex: "-1" }, "Analysis & history");
 reviewArea.append(el("header", { class: "review-header" },
   reviewHeading,
+  button("History tree", showHistoryTree, "", {id: "history-tree"}),
   button("Back to board ↑", () => {
     window.scrollTo({ top: 0 });
     $("panel-toggle").focus({ preventScroll: true });
@@ -229,7 +232,7 @@ installPlayShortcuts({
     const selectors = {
       roll: "#roll,#begin-turn",
       confirm: "#confirm,#begin-turn,#start-match,#next-game",
-      undo: "#undo,#undo-turn",
+      undo: "#undo",
       reset: "#reset-draft",
       double: "#double-cube",
       drop: "#drop-cube",
@@ -1588,6 +1591,7 @@ function panel() {
         { class: "muted small" },
         "Game history saves automatically in this browser, including unfinished games.",
       ),
+      button("History tree", showHistoryTree),
       el("a", { href: "/backgammon/library/#games" }, "All game history"),
       button("Export this match", async () => {
         await saveMatchHistory(m, names(), config.mode);
@@ -1785,6 +1789,29 @@ function feedbackToggle() {
     "Show move feedback",
   );
 }
+async function restoreHistoryPath(path, id) {
+  if (config.mode === "online" || game?.id !== id || committing || assistanceJob)
+    throw new Error("The table is busy or has changed. Close history and try again.");
+  const restored = returnToHistory(game, path);
+  stopComputer();
+  game = config.mode === "computer" ? changeControl(restored, decisionPlayer(restored.state)) : restored;
+  config = {...game.config};
+  feedback = null; draft.draft = []; boardKey = "";
+  if (opening.active) opening.dismiss();
+  await persist(); render();
+  window.scrollTo({top: 0, behavior: "instant"});
+  toast("Position restored. Both lines remain in the history tree.");
+}
+function showHistoryTree() {
+  const m = model();
+  if (!m?.started) return;
+  try {
+    historyExplorer({...m, names: names()}, {
+      onReturn: config.mode === "online" ? undefined : path => restoreHistoryPath(path, m.id),
+    });
+  } catch (error) { showError(error); }
+}
+
 function showSessionReview() {
   const m = model();
   if (!m) return;
@@ -1793,6 +1820,7 @@ function showSessionReview() {
     {
       gameNumber: state().phase === "over" ? state().gameNumber : null,
       allowAnalysis: config.mode !== "online",
+      onHistoryReturn: config.mode !== "online" ? path => restoreHistoryPath(path, m.id) : undefined,
       onReturn: config.mode !== "online"
         ? (row) => restoreDecision(row, m.id)
         : undefined,

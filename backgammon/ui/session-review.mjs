@@ -9,6 +9,7 @@ import {
 import { clone } from "../core/rules.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 import { EngineClient } from "../engine/client.mjs";
+import { historyExplorer } from "./history-tree.mjs";
 import { decisionReview } from "./decision-review.mjs";
 export function sessionReview(
   model,
@@ -17,6 +18,7 @@ export function sessionReview(
     allowAnalysis = true,
     gameNumber = null,
     onReturn,
+    onHistoryReturn,
   } = {},
 ) {
   const snapshot = clone(model),
@@ -72,6 +74,7 @@ export function sessionReview(
     const actions = el(
       "div",
       { class: "row wrap" },
+      button("History tree", () => historyExplorer(snapshot, {onReturn: onHistoryReturn ? async path => { await onHistoryReturn(path); d.close(); } : undefined})),
       field(
         "Game",
         select(

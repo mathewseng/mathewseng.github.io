@@ -79,3 +79,12 @@ test("revised defaults migrate untouched bindings and retain user customizations
   old.top0 = ["j"];
   assert.deepEqual(normalizeShortcuts(old), old);
 });
+
+test("undo shortcut is draft-only, including remapped keys", () => {
+  for (const key of ["z", "j"]) {
+    const bindings = {...DEFAULT_SHORTCUTS, undo:[key]};
+    assert.equal(shortcutAction(bindings,key,"move"),"undo");
+    for (const phase of ["roll","over","double","opening","setup"])
+      assert.notEqual(shortcutAction(bindings,key,phase),"undo");
+  }
+});

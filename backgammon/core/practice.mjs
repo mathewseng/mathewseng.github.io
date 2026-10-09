@@ -57,6 +57,7 @@ export function replacePracticeRoll(source, player, dice) {
     by: player,
     acceptedBy: null,
     initial: clone(target.state),
+    prefix: clone(table.events.slice(0, target.index)),
     events: removed,
     reason: "practice-roll",
     originalDice: clone(target.state.dice),
@@ -95,6 +96,7 @@ export function returnToDecision(source, index, expected) {
     by: decisionPlayer(state),
     acceptedBy: null,
     initial: clone(state),
+    prefix: clone(table.events.slice(0, index)),
     events: table.events.slice(index),
     reason: "history-return",
   });

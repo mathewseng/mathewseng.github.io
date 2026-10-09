@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { historyExplorer } from "../ui/history-tree.mjs";
 import {
   all,
   get,
@@ -283,13 +284,14 @@ function inspector() {
         "primary",
         { id: "review-decisions" },
       ),
+      button("History tree", () => historyExplorer(item), "", {id: "library-history-tree"}),
     );
   if (item.kind === "match" && item.undoLog?.length)
     p.append(
       el(
         "p",
         { class: "muted small" },
-        `${item.undoLog.length} accepted takeback${item.undoLog.length === 1 ? "" : "s"}. Export includes the original undone turns; match review follows the current line.`,
+        `${item.undoLog.length} saved history ${item.undoLog.length === 1 ? "line" : "lines"}. Explore earlier variations in History tree. Exports include every saved line.`,
       ),
     );
   if (item.kind !== "collection") {

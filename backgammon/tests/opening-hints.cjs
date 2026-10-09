@@ -20,6 +20,8 @@ module.exports=async function openingHints(browser,base,out,name){
       for(const value of [2,4]){
         await click(page.locator("#roll"));
         await page.waitForFunction(async value=>(await(await import("/backgammon/core/storage.mjs")).get("work","play"))?.game.state.cube.value===value,value);
+        // Persistence completes before the opening animation refreshes its copy.
+        await page.waitForFunction(value=>document.querySelector(".opening-roll")?.textContent.includes(`Stakes are now ${value}`),value);
         assert.match(await page.locator(".opening-roll").innerText(),new RegExp(`Stakes are now ${value}`));
       }
       await click(page.locator("#roll"));
@@ -35,6 +37,7 @@ module.exports=async function openingHints(browser,base,out,name){
       await click(page.getByRole("button",{name:"Display & controls",exact:true}));
       await page.locator("#move-hints").uncheck();
       await click(page.locator(".settings-dialog").getByRole("button",{name:"Close",exact:true}));
+      await page.locator("#board .bg-board.no-move-hints").waitFor();
       const visibleRings=()=>page.locator("#board .source-ring").evaluateAll(es=>es.filter(e=>getComputedStyle(e).display!=="none").length);
       assert.equal(await visibleRings(),await page.locator("#board .point.selected .source-ring").count(),
         "only the selected checker may retain a ring");

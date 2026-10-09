@@ -24,7 +24,7 @@ export function shortcutControls() {
     el(
       "p",
       { class: "muted small" },
-      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C doubles or immediately redoubles; D drops. B selects the bar first, otherwise bears off. Enter or Space rolls. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
+      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C doubles or immediately redoubles; D drops. B selects the bar first, otherwise bears off. Enter or Space rolls. Z only undoes an unconfirmed checker step. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
     ),
   );
   for (const [label, defs] of [

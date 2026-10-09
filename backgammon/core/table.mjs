@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Table policy, separate from the rules used by editors and training exercises.
+import { historyStateKey } from "./history-tree.mjs";
 import {
   clone,
   transition,
@@ -239,6 +240,7 @@ export function undoTurn(source, target, by, acceptedBy = null) {
     by,
     acceptedBy,
     initial: clone(restored),
+    prefix: clone(table.events.slice(0, target)),
     events: removed,
   });
   table.replayDice = [
@@ -277,7 +279,16 @@ export function validateTakebacks(table, verify = false) {
         entry.events.length > 10000
       )
         throw new Error("Invalid takeback record.");
-      if (verify) replay(entry.initial, entry.events);
+      if (entry.prefix !== undefined && (!Array.isArray(entry.prefix) || entry.prefix.length > 10000))
+        throw new Error("Invalid history branch prefix.");
+      if (verify) {
+        replay(entry.initial, entry.events);
+        if (entry.prefix !== undefined) {
+          const before = replay(table.initial, entry.prefix).at(-1);
+          if (historyStateKey(before) !== historyStateKey(entry.initial))
+            throw new Error("History branch does not match its original position.");
+        }
+      }
     }
   }
 }

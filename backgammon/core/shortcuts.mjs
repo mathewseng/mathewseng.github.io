@@ -25,9 +25,9 @@ export const SHORTCUTS = [
   { id: "off", label: "Bear off", keys: ["a"], phases: ["move"] },
   {
     id: "undo",
-    label: "Undo step / last turn",
+    label: "Undo draft step",
     keys: ["z"],
-    phases: ["move", "roll", "over"],
+    phases: ["move"],
   },
   { id: "reset", label: "Reset draft", keys: ["x"], phases: ["move"] },
   {
