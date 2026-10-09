@@ -13,7 +13,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/`, `fantasyland-report/` |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `dodge/`, `calculations/` |
 | `blackjack/` | Blackjack hub: `strategy/` |
-| `dice/` | Dice hub: `reports/` (exact fair payout explorer and custom checker) |
+| `dice/` | Dice hub: `reports/` (exact fair payouts, custom checker, two-dice matchup and probability reports) |
 | `backgammon/` | Backgammon hub: `play/`, `trainer/`, `solver/`, `library/`; pinned GNUbg WASM |
 | `shared/` | Code shared across project families: `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, and `hub.css` + `hub.js` for the landing and hub pages |
 | `jazz-piano-ml/` | Python source project; not published |

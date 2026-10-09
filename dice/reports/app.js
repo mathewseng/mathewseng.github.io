@@ -1,4 +1,5 @@
 import { createPlay } from "./play.js";
+import { createMatchups } from "./matchups.js";
 import { payoutDivisor } from "./engine.mjs";
 import {
   plainSumRule,
@@ -36,6 +37,7 @@ let handStrict = true,
   sumStrict = false;
 let browseScrollTop = 0;
 let activeOptions = { ...DEFAULTS };
+let matchupsReady = false;
 const play = createPlay({
   onBusy(busy) {
     document
@@ -51,6 +53,10 @@ const play = createPlay({
   },
 });
 function setView(view) {
+  if (view === "matchups" && !matchupsReady) {
+    createMatchups($("matchups-workspace"));
+    matchupsReady = true;
+  }
   if (view === "play" && !play.hasGame) {
     if (!selected || !useSelected(false)) return;
   }
@@ -60,8 +66,11 @@ function setView(view) {
   if (view === "analysis" && previousView === "explore")
     browseScrollTop = $("results-scroll").scrollTop;
   document.documentElement.dataset.view = view;
-  $("explore-workspace").hidden = view === "play";
+  $("explore-workspace").hidden = view === "play" || view === "matchups";
   $("play-workspace").hidden = view !== "play";
+  $("matchups-workspace").hidden = view !== "matchups";
+  document.querySelector(".skip-link").href = view === "matchups" ? "#match-title" : "#results-title";
+  document.querySelector(".skip-link").textContent = view === "matchups" ? "Skip to matchup probabilities" : "Skip to payout schedules";
   document.querySelectorAll("[data-view]").forEach((el) => {
     if (el.tagName === "BUTTON")
       el.setAttribute("aria-pressed", String(el.dataset.view === view));
@@ -104,6 +113,7 @@ document.addEventListener("keydown", (event) => {
     event.shiftKey ||
     event.isComposing ||
     play.busy ||
+    document.documentElement.dataset.view === "matchups" ||
     document.querySelector("dialog[open]") ||
     event.target.isContentEditable ||
     event.target.closest?.(
@@ -196,7 +206,10 @@ document
   .forEach((button) =>
     button.addEventListener("click", () => $(button.dataset.close).close()),
   );
-setView("explore");
+setView(location.hash === "#matchups" ? "matchups" : "explore");
+window.addEventListener("hashchange", () => {
+  if (location.hash === "#matchups") setView("matchups");
+});
 matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
   if (!event.matches && document.documentElement.dataset.view === "analysis")
     setView("explore");

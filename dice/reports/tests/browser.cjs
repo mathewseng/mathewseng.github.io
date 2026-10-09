@@ -1016,9 +1016,10 @@ const server = http.createServer((req, res) => {
     await page.screenshot({
       path: path.join(screenshotDir, "session-sigma-desktop.png"),
     });
+    await require("./matchups-browser.cjs")(page, base, screenshotDir);
     assert.deepEqual(errors, []);
     console.log(
-      `Dice browser checks passed: modes, grouped outcomes, exact repair, filters, both sorts, chosen face, roll locking, PnL, effects, keyboard, desktop/mobile fit. Screenshots: ${screenshotDir}`,
+      `Dice browser checks passed: modes, grouped outcomes, exact repair, filters, both sorts, chosen face, roll locking, PnL, effects, keyboard, desktop/mobile fit, matchups, handicaps, probability charts, catalogue, CSV export. Screenshots: ${screenshotDir}`,
     );
   } finally {
     await browser?.close();

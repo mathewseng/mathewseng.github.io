@@ -3,6 +3,8 @@
 Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on GitHub Pages. Assets and the module worker use relative paths. No runtime packages, backend, or build step.
 
 - `outcomes.mjs`: the four game definitions, hand classification, and exact ordered-roll counts.
+- `matchups.mjs`: 18 two-dice scoring rules, all 324 ordered matchups, conditional roll probabilities, half-point handicaps, and 43 one-pair events.
+- `matchups.js`, `matchups.css`: Matchups workspace with exact win/tie/loss reports, distributions, handicap curves, conditional heatmap, searchable catalogue, matrix, and CSV export.
 - `sum-rules.mjs`: finite sum-rule catalogue, exact rule evaluation, readable descriptions, and grouped sum paytables.
 - `engine.mjs`: exact BigInt EV/checker math, bounded integer enumeration, filters, style metrics, ranking, and displayed-row sorting.
 - `game.mjs`: unbiased dice sampling, grouped roll scoring, exact session PnL, and settle-once roll lifecycle.
@@ -16,6 +18,17 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `tests/sums.test.mjs`: every ordered sum roll, every rule family and dice count, rule reconstruction, exact EV, filters, budgets, ranking, grouping, and one-die PnL.
 - `tests/percentile.test.mjs`: independent mixed-session enumeration, ties, long sessions, large PnL, dense/sparse distributions, sigma coverage, and the 169-roll regression.
 - `tests/browser.cjs`: assembled-site checks for the route, actual worker, all modes/dice counts, bidirectional headers, keyboard/mobile behavior, and checker repair.
+- `tests/matchups.test.mjs`, `tests/matchups-browser.cjs`: independently enumerated matchup fixtures, probability conservation, reversed sides, conditional counts, modulo/average precision, handicaps, and desktop/mobile report interactions. The browser checks run from `tests/browser.cjs`.
+
+## Two-dice matchups
+
+Open **Matchups** or link directly to `/dice/reports/#matchups`. Each side rolls its own two independent fair six-sided dice. All 36 × 36 = 1,296 ordered four-dice outcomes are equally likely. Higher score wins; ties are counted separately. The average keeps half-points, and modulo means the remainder (sum mod 10 maps 10, 11, 12 to 0, 1, 2). Scores and comparisons use integer or half-integer values, with doubled comparisons; no simulation or floating-point tolerance decides outcomes.
+
+Compare Sum, Max, Min, Average, Product, Gap, Sum mod 10/7/6, 2 × max/min, doubles +6, even sum +3, closeness to seven, first die, sum ±2, and the median with a fixed 3. The 24 featured pairings include all requested basic matchups. The searchable 324-row catalogue covers every ordered pairing of these 18 rules at zero added handicap. The overview matrix shows 12 core rules. This is a finite scoring-rule catalogue, not all possible dice games.
+
+The comparison supports a −36 to +36 handicap added to A after its score rule, in half-points. The slider and probability curves cover −12 to +12. Swap reverses both sides and the handicap, preserving ties and exchanging wins/losses. The closest balance minimizes the absolute win/loss count difference within the plotted half-point range; it does not promise a perfectly fair matchup. Win-if-ties-reroll is wins / (wins + losses), undefined if every outcome ties. Raw win/tie/loss always use 1,296 outcomes. Charts use rounded display values only.
+
+Score distributions each total 36 rolls. The conditional 6 × 6 heatmap holds A’s roll fixed and counts B’s 36 possibilities. The Two-dice odds tab lists 43 exact events on a single pair; events overlap and are not a partition. The same-roll product comparisons are explicitly labeled to distinguish them from independent opposing pairs. CSV exports all 324 unadjusted pairings, including counts and decimal probabilities, regardless of catalogue filters.
 
 ## Hand modes
 
