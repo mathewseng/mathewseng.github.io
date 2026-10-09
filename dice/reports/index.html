@@ -21,6 +21,7 @@
   </head>
   <body>
     <a class="skip-link" href="#results-title">Skip to payout schedules</a>
+    <p id="schedule-navigation-status" class="sr-only" role="status"></p>
     <div class="app-shell">
       <header class="header">
         <div class="topline">
@@ -134,12 +135,13 @@
             id="results-scroll"
             class="table-scroll"
             tabindex="0"
-            aria-label="Payout schedules, scroll for more columns and rows"
+            aria-label="Payout schedules. Arrow keys select schedules; scroll for more columns and rows."
           >
             <table id="results-table">
               <caption class="sr-only">
                 Ranked fair payout schedules. Select a rank button to inspect a
-                schedule. All payouts are net units.
+                schedule. Arrow keys select the previous or next schedule in
+                displayed order. All payouts are net units.
               </caption>
               <thead id="results-head"></thead>
               <tbody id="results-body"></tbody>
@@ -148,7 +150,10 @@
           </div>
           <div class="selection-bar">
             <div>
-              <span class="hint">Selected schedule</span
+              <span
+                class="hint"
+                title="Arrow keys select the previous or next schedule"
+                >Selected · ↑↓ / ←→</span
               ><strong id="selection-name">Finding schedules…</strong>
             </div>
             <button class="primary-button" id="play-selected" disabled>
@@ -438,7 +443,11 @@
           <div class="paytable-heading">
             <div>
               <p class="eyebrow">YOUR PAYOUTS</p>
-              <label for="play-schedule">Schedule</label>
+              <label
+                for="play-schedule"
+                title="Arrow keys select the previous or next schedule"
+                >Schedule · ↑↓ / ←→</label
+              >
             </div>
             <button class="text-button" id="choose-schedule">
               Browse schedules ↗
@@ -820,22 +829,59 @@
         <p id="percentile-detail" role="status">
           Roll to see how your session compares.
         </p>
-        <p class="hint">
-          Your total PnL compared with independent sessions using the same
-          sequence of payout tables and the same number of rolls. Every outcome
-          is weighted by its dice probability, including when you switch games.
-        </p>
-        <p class="hint">
-          Percentile = chance of a lower PnL + half the chance of a tied PnL.
-          Higher means you have done better; 50% is the middle. This measures
-          the session so far, not the next roll.
-        </p>
-        <p class="hint">
-          We combine the full payout distributions. When they grow too large, we
-          retain probability intervals and show a bounded percentile range. No
-          simulated players or normal-distribution assumption. Reset PnL starts
-          a new comparison.
-        </p>
+        <section id="session-spread" aria-label="Session PnL spread" hidden>
+          <dl class="metric-grid">
+            <div>
+              <dt id="session-stdev-label">Session standard deviation</dt>
+              <dd id="session-stdev"></dd>
+            </div>
+            <div>
+              <dt>Your PnL vs. expected</dt>
+              <dd id="session-zscore"></dd>
+            </div>
+          </dl>
+          <p id="session-expected" class="hint"></p>
+          <table class="sigma-table">
+            <caption class="sr-only">
+              PnL bands around the expected session result
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Band</th>
+                <th scope="col">PnL range</th>
+                <th scope="col">Chance inside</th>
+              </tr>
+            </thead>
+            <tbody id="session-sigma-bands"></tbody>
+          </table>
+          <p id="session-possible" class="hint"></p>
+          <p id="session-method" class="hint"></p>
+        </section>
+        <details class="percentile-method">
+          <summary>How the comparison works</summary>
+          <p class="hint">
+            We compare total PnL with independent sessions using the same
+            sequence of payout tables and number of rolls. Percentile is the
+            chance of a lower PnL plus half the chance of a tie. Higher means
+            you have done better.
+          </p>
+          <p class="hint">
+            Session variance adds each roll’s probability-weighted variance.
+            Standard deviation is its square root; for one unchanged table, σ =
+            per-roll σ × √rolls. The bands are centered on expected PnL, which
+            is zero for these fair games.
+          </p>
+          <p class="hint">
+            Band probabilities come from the payout distribution, so they need
+            not match 68%, 95%, and 99.7%. For exceptionally large distributions
+            beyond the calculation budget, the panel explicitly labels a normal
+            estimate; standard deviation still uses the actual dice odds.
+          </p>
+          <p class="hint">
+            Reset PnL starts a new comparison. These statistics describe the
+            session so far, not the next roll.
+          </p>
+        </details>
       </div>
     </dialog>
     <noscript

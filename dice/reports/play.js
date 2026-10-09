@@ -11,6 +11,13 @@ import {
 const $ = (id) => document.getElementById(id);
 const signed = (v) => `${v > 0 ? "+" : ""}${v}`;
 const tone = (v) => (v < 0 ? "negative" : v > 0 ? "positive" : "neutral");
+const units = (value, digits = 1) =>
+  Math.abs(value) >= 1e9
+    ? value.toExponential(2)
+    : value.toLocaleString("en-US", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
 export function createPlay({ onBusy, onBrowse }) {
   const session = createSession();
   const diceView = createDiceView($("dice"));
@@ -32,6 +39,7 @@ export function createPlay({ onBusy, onBrowse }) {
     delete $("session-percentile").dataset.rounds;
     $("percentile-detail").textContent =
       "Roll to see how your session compares.";
+    $("session-spread").hidden = true;
   }
   function failPercentile() {
     percentileWorker?.terminate();
@@ -42,6 +50,7 @@ export function createPlay({ onBusy, onBrowse }) {
     $("session-percentile").dataset.state = "error";
     $("percentile-detail").textContent =
       "The percentile calculation could not finish. Your PnL is unaffected. Reset PnL to start a fresh comparison.";
+    $("session-spread").hidden = true;
   }
   function updatePercentile() {
     if (percentileFailed) return;
@@ -65,7 +74,28 @@ export function createPlay({ onBusy, onBrowse }) {
           $("session-percentile").dataset.state = "ready";
           $("session-percentile").dataset.rounds = String(result.rounds);
           $("percentile-detail").textContent =
-            `Session PnL percentile: ${label} after ${result.rounds} ${result.rounds === 1 ? "roll" : "rolls"}. ${result.exact ? "All possible session outcomes are weighted by their odds; ties count halfway." : "This range bounds the percentile after compressing the session distribution."}`;
+            `Session PnL percentile: ${label} after ${result.rounds} ${result.rounds === 1 ? "roll" : "rolls"}.${result.exact ? "" : " Normal estimate."}`;
+          $("session-stdev-label").textContent =
+            `Std dev · ${result.rounds} ${result.rounds === 1 ? "roll" : "rolls"}`;
+          $("session-stdev").textContent = `${units(result.stdev, 2)} units`;
+          $("session-zscore").textContent =
+            result.zScore === null
+              ? "No variation"
+              : `${result.zScore > 0 ? "+" : ""}${units(result.zScore, 2)}σ`;
+          $("session-expected").textContent =
+            `Expected PnL: ${units(result.mean)} units`;
+          $("session-sigma-bands").innerHTML = result.bands
+            .map(
+              (band) =>
+                `<tr><th scope="row">±${band.sigma}σ</th><td>${units(band.lower)} to ${units(band.upper)}</td><td>${band.probability.toFixed(1)}%</td></tr>`,
+            )
+            .join("");
+          $("session-possible").textContent =
+            `Possible PnL: ${BigInt(result.minimum).toLocaleString("en-US")} to ${BigInt(result.maximum).toLocaleString("en-US")} units`;
+          $("session-method").textContent = result.exact
+            ? "Probabilities use the full weighted payout distribution; ties count halfway in the percentile."
+            : "Normal estimate: this distribution exceeds the calculation budget. Percentile and band probabilities are approximate; standard deviation still uses the actual payout odds.";
+          $("session-spread").hidden = false;
         };
         worker.onerror = () => {
           if (worker === percentileWorker) failPercentile();
@@ -75,6 +105,7 @@ export function createPlay({ onBusy, onBrowse }) {
       $("session-percentile").dataset.state = "calculating";
       $("percentile-detail").textContent =
         "Calculating your session percentile…";
+      $("session-spread").hidden = true;
       percentileWorker.postMessage({
         revision: ++percentileRevision,
         game: { n: game.n, mode: game.mode, payouts: game.payouts },
@@ -210,10 +241,11 @@ export function createPlay({ onBusy, onBrowse }) {
           : null),
     };
     title = nextTitle;
-    choices = [
-      { payouts: [...game.payouts], title, rule: game.rule },
-      ...nextChoices.filter((c) => c.payouts.join() !== game.payouts.join()),
-    ];
+    const activeChoice = { payouts: [...game.payouts], title, rule: game.rule },
+      isActive = (choice) => choice.payouts.join() === game.payouts.join();
+    choices = nextChoices.some(isActive)
+      ? nextChoices.map((choice) => (isActive(choice) ? activeChoice : choice))
+      : [activeChoice, ...nextChoices];
     $("play-title").textContent =
       `${game.n} ${game.n === 1 ? "die" : "dice"} · ${MODES[game.mode]}`;
     $("play-subtitle").textContent = title;
@@ -302,14 +334,16 @@ export function createPlay({ onBusy, onBrowse }) {
       setBusy(false);
     }
   });
-  $("play-schedule").addEventListener("change", () => {
-    const choice = choices[Number($("play-schedule").value)];
-    const previous = [...choices];
-    choose(
+  function selectChoice(index) {
+    const choice = choices[index];
+    return choose(
       { ...game, payouts: choice.payouts, rule: choice.rule },
       choice.title,
-      previous,
+      choices,
     );
+  }
+  $("play-schedule").addEventListener("change", () => {
+    selectChoice(Number($("play-schedule").value));
   });
   $("reset-pnl").addEventListener("click", () => {
     if (session.reset()) {
@@ -323,6 +357,13 @@ export function createPlay({ onBusy, onBrowse }) {
   });
   return {
     choose,
+    stepSchedule(direction) {
+      if (session.state.rolling || !game || choices.length < 2) return false;
+      const current = $("play-schedule").selectedIndex,
+        next = Math.max(0, Math.min(choices.length - 1, current + direction));
+      if (next !== current) selectChoice(next);
+      return true;
+    },
     get hasGame() {
       return game !== null;
     },

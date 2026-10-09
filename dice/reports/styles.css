@@ -988,6 +988,44 @@ label .unit {
 #percentile-dialog p + p {
   margin-top: 14px;
 }
+.sigma-table {
+  width: 100%;
+  margin: 10px 0 14px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.sigma-table th,
+.sigma-table td {
+  padding: 10px 5px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: normal;
+}
+.sigma-table th:first-child {
+  text-align: left;
+}
+.sigma-table thead th {
+  font: 10px var(--mono);
+  color: var(--muted);
+}
+.sigma-table tbody th {
+  color: var(--accent);
+}
+#session-spread .hint {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.percentile-method {
+  margin-top: 18px;
+}
+.percentile-method summary {
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.percentile-method > p {
+  margin-top: 12px;
+}
 .face-picker {
   display: flex;
   align-items: center;

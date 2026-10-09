@@ -79,6 +79,7 @@ function setView(view) {
       `#results-body [data-index="${index}"] .rank-button`,
     );
     (button || $("results-title")).focus({ preventScroll: true });
+    if (button) revealScheduleRow(button);
   }
 }
 $("back-to-schedules").addEventListener("click", () => setView("explore"));
@@ -91,7 +92,69 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     setView("explore");
   }
+  const direction = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[
+    event.key
+  ];
+  if (
+    !direction ||
+    event.defaultPrevented ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    event.isComposing ||
+    play.busy ||
+    document.querySelector("dialog[open]") ||
+    event.target.isContentEditable ||
+    event.target.closest?.(
+      'input, textarea, select, [role="textbox"], [role="combobox"], [role="slider"], [role="menu"], [role="listbox"]',
+    )
+  )
+    return;
+  if (document.documentElement.dataset.view === "play") {
+    if (play.stepSchedule(direction)) {
+      event.preventDefault();
+      $("schedule-navigation-status").textContent =
+        `Selected ${$("play-schedule").selectedOptions[0].textContent}`;
+    }
+  } else if (stepSchedule(direction)) event.preventDefault();
 });
+function stepSchedule(direction) {
+  if (!rows.length || $("results-table").getAttribute("aria-busy") === "true")
+    return false;
+  const ordered = sortDisplayed(rows, tableSort.key, tableSort.direction),
+    current = ordered.findIndex(
+      (row) => row.payouts.join() === selected?.payouts.join(),
+    ),
+    index =
+      current < 0
+        ? direction > 0
+          ? 0
+          : ordered.length - 1
+        : Math.max(0, Math.min(ordered.length - 1, current + direction)),
+    next = ordered[index];
+  if (index !== current) {
+    inspect(next.payouts, `Rank ${String(next.rank).padStart(2, "0")}`);
+    $("schedule-navigation-status").textContent = `Selected ${selected.title}`;
+  }
+  if (document.documentElement.dataset.view === "explore") {
+    const button = document.querySelector(
+      `#results-body [data-index="${next.index}"] .rank-button`,
+    );
+    button.focus({ preventScroll: true });
+    revealScheduleRow(button);
+  }
+  return true;
+}
+function revealScheduleRow(button) {
+  const scroll = $("results-scroll"),
+    bounds = scroll.getBoundingClientRect(),
+    rowBounds = button.closest("tr").getBoundingClientRect(),
+    top = bounds.top + $("results-head").getBoundingClientRect().height;
+  if (rowBounds.top < top) scroll.scrollTop += rowBounds.top - top;
+  else if (rowBounds.bottom > bounds.bottom)
+    scroll.scrollTop += rowBounds.bottom - bounds.bottom;
+}
 function selectionState() {
   $("selection-name").textContent = selected
     ? selected.title
@@ -101,11 +164,13 @@ function selectionState() {
 }
 function useSelected(switchView = true) {
   if (!selected || play.busy) return false;
-  const choices = rows.map((row) => ({
-    payouts: row.payouts,
-    rule: row.rule,
-    title: `Rank ${String(row.rank).padStart(2, "0")}`,
-  }));
+  const choices = sortDisplayed(rows, tableSort.key, tableSort.direction).map(
+    (row) => ({
+      payouts: row.payouts,
+      rule: row.rule,
+      title: `Rank ${String(row.rank).padStart(2, "0")}`,
+    }),
+  );
   const success = play.choose(
     { n, mode, payouts: selected.payouts, rule: selected.rule },
     selected.title,

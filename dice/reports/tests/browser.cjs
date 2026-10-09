@@ -209,6 +209,24 @@ const server = http.createServer((req, res) => {
         .first()
         .evaluate((el) => document.activeElement === el),
     );
+    for (const [key, rank] of [
+      ["ArrowDown", "02"],
+      ["ArrowRight", "03"],
+      ["ArrowLeft", "02"],
+      ["ArrowUp", "01"],
+      ["ArrowUp", "01"],
+      ["Shift+ArrowDown", "01"],
+    ]) {
+      await page.keyboard.press(key);
+      assert.equal(
+        await page.locator("#selection-name").textContent(),
+        `Rank ${rank}`,
+      );
+      assert.equal(
+        await page.locator(".rank-button:focus").textContent(),
+        rank,
+      );
+    }
     // Each mode and dice count has the right payout partition and exact proof.
     for (const [mode, lengths] of [
       ["chosen", [3, 4, 5, 6, 7]],
@@ -284,6 +302,42 @@ const server = http.createServer((req, res) => {
       }
     await page.locator("#results-scroll").evaluate((el) => (el.scrollLeft = 0));
     await page.locator(".rank-button").first().click();
+    const navigationOrder = await page
+      .locator(".rank-button")
+      .allTextContents();
+    await page.keyboard.press("ArrowDown");
+    assert.equal(
+      await page.locator("#analysis h2").textContent(),
+      `Rank ${navigationOrder[1]}`,
+    );
+    await page.keyboard.press("ArrowRight");
+    assert.equal(
+      await page.locator("#analysis h2").textContent(),
+      `Rank ${navigationOrder[2]}`,
+    );
+    await page.locator(".rank-button").last().click();
+    await page.keyboard.press("ArrowDown");
+    assert.equal(
+      await page.locator("#analysis h2").textContent(),
+      `Rank ${navigationOrder.at(-1)}`,
+    );
+    await page.keyboard.press("ArrowUp");
+    assert.equal(
+      await page.locator("#analysis h2").textContent(),
+      `Rank ${navigationOrder.at(-2)}`,
+    );
+    const horizontalScroll = await page
+      .locator("#results-scroll")
+      .evaluate((el) => {
+        el.scrollLeft = 100;
+        return el.scrollLeft;
+      });
+    await page.keyboard.press("ArrowUp");
+    assert.equal(
+      await page.locator("#results-scroll").evaluate((el) => el.scrollLeft),
+      horizontalScroll,
+    );
+    await page.locator("#results-scroll").evaluate((el) => (el.scrollLeft = 0));
     await fit();
     await page.screenshot({
       path: path.join(screenshotDir, "explore-desktop.png"),
@@ -292,6 +346,18 @@ const server = http.createServer((req, res) => {
     await page.locator("#open-checker").click();
     await page.locator("#checker-n").selectOption("4");
     await page.locator("#checker-payouts").fill("-1, 0, 1, 2, 11");
+    const selectionBeforeEditing = await page
+      .locator("#selection-name")
+      .textContent();
+    await page.keyboard.press("ArrowLeft");
+    assert.equal(
+      await page.locator("#selection-name").textContent(),
+      selectionBeforeEditing,
+    );
+    assert.equal(
+      await page.locator("#checker-payouts").inputValue(),
+      "-1, 0, 1, 2, 11",
+    );
     assert.match(
       await page.locator("#checker-result").textContent(),
       /Exact numerator: 6/,
@@ -302,6 +368,12 @@ const server = http.createServer((req, res) => {
       "-1, 0, 1, 2, 10",
     );
     await page.locator("#play-custom").click();
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.locator("#play-schedule option").count(), 1);
+    assert.equal(
+      await page.locator("#play-subtitle").textContent(),
+      "Custom schedule",
+    );
     await fit();
     assert.equal(await page.locator("#face-picker").isVisible(), false);
     await roll([1, 2, 3, 4], -1, "Singles");
@@ -330,6 +402,16 @@ const server = http.createServer((req, res) => {
       .allTextContents();
     await page.locator("#play-selected").click();
     assert.deepEqual(
+      await page
+        .locator("#play-schedule option")
+        .evaluateAll((options) =>
+          options.map((option) =>
+            option.textContent.split(" · ")[0].replace("Rank ", ""),
+          ),
+        ),
+      navigationOrder,
+    );
+    assert.deepEqual(
       await page.locator(".paytable-row strong").allTextContents(),
       selectedPayouts,
     );
@@ -350,6 +432,53 @@ const server = http.createServer((req, res) => {
       .last()
       .textContent();
     await roll([6, 6, 6, 6, 6, 6], Number(alternate), "Sexts");
+    const sessionBeforeArrows = await page.locator("#pnl").textContent(),
+      percentileBeforeArrows = await page
+        .locator("#session-percentile")
+        .textContent(),
+      playOrder = await page.locator("#play-schedule option").allTextContents();
+    await page.locator("#roll-button").focus();
+    for (const [key, index] of [
+      ["ArrowRight", 2],
+      ["ArrowLeft", 1],
+      ["ArrowUp", 0],
+      ["ArrowLeft", 0],
+      ["ArrowDown", 1],
+    ]) {
+      await page.keyboard.press(key);
+      assert.equal(
+        await page.locator("#play-schedule").inputValue(),
+        String(index),
+      );
+      assert.deepEqual(
+        await page.locator("#play-schedule option").allTextContents(),
+        playOrder,
+      );
+      assert.equal(
+        await page.locator("#pnl").textContent(),
+        sessionBeforeArrows,
+      );
+      assert.equal(
+        await page.locator("#session-percentile").textContent(),
+        percentileBeforeArrows,
+      );
+    }
+    await page.locator("#play-schedule").focus();
+    // Native select navigation differs by platform. The global shortcut must
+    // leave its key event uncancelled and not perform an additional selection.
+    assert.equal(
+      await page.locator("#play-schedule").evaluate((el) =>
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "ArrowDown",
+            bubbles: true,
+            cancelable: true,
+          }),
+        ),
+      ),
+      true,
+    );
+    assert.equal(await page.locator("#play-schedule").inputValue(), "1");
     await page.screenshot({
       path: path.join(screenshotDir, "play-desktop.png"),
     });
@@ -367,6 +496,8 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => (window.diceTestValues = [5, 5, 5, 5, 5, 5]));
     await page.locator("#roll-button").click();
     assert.equal(await page.locator("#play-schedule").isDisabled(), true);
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.locator("#play-schedule").inputValue(), "1");
     assert.equal(await page.locator("#reset-pnl").isDisabled(), true);
     assert.equal(
       await page.locator('[data-roll-speed="instant"]').isDisabled(),
@@ -554,6 +685,18 @@ const server = http.createServer((req, res) => {
     await page
       .locator("#inspector")
       .evaluate((el) => (el.scrollTop = el.scrollHeight));
+    const firstMobileRank = await page.locator("#analysis h2").textContent();
+    await page.keyboard.press("ArrowDown");
+    assert.notEqual(
+      await page.locator("#analysis h2").textContent(),
+      firstMobileRank,
+    );
+    assert.equal(await page.locator("#inspector").isVisible(), true);
+    await page.keyboard.press("ArrowUp");
+    assert.equal(
+      await page.locator("#analysis h2").textContent(),
+      firstMobileRank,
+    );
     const backBounds = await page.locator("#back-to-schedules").boundingBox();
     assert.ok(backBounds.y >= 0 && backBounds.y + backBounds.height <= 844);
     await page.locator("#back-to-schedules").click();
@@ -759,6 +902,17 @@ const server = http.createServer((req, res) => {
       await page.locator("#percentile-detail").textContent(),
       /75.0% after 1 roll/,
     );
+    assert.equal(
+      await page.locator("#session-stdev").textContent(),
+      "1.00 units",
+    );
+    assert.equal(await page.locator("#session-zscore").textContent(), "+1.00σ");
+    assert.deepEqual(
+      await page
+        .locator("#session-sigma-bands tr td:last-child")
+        .allTextContents(),
+      ["100.0%", "100.0%", "100.0%"],
+    );
     await page.keyboard.press("Escape");
     await page.locator("#open-checker").click();
     await page.locator("#checker-mode").selectOption("single");
@@ -775,6 +929,18 @@ const server = http.createServer((req, res) => {
       await page.locator("#session-percentile").textContent(),
       "95.8%",
     );
+    await page.locator('[data-open="percentile-dialog"]').click();
+    assert.equal(
+      await page.locator("#session-stdev").textContent(),
+      "2.45 units",
+    );
+    assert.deepEqual(
+      await page
+        .locator("#session-sigma-bands tr td:last-child")
+        .allTextContents(),
+      ["83.3%", "91.7%", "100.0%"],
+    );
+    await page.keyboard.press("Escape");
     await page.screenshot({
       path: path.join(screenshotDir, "session-percentile-mobile.png"),
     });
@@ -799,6 +965,57 @@ const server = http.createServer((req, res) => {
       await page.locator("#session-percentile").getAttribute("data-state"),
       "empty",
     );
+    assert.equal(await page.locator("#session-spread").isHidden(), true);
+    // Reproduce the reported long session without interval compression.
+    await page.locator("#open-checker").click();
+    await page.locator("#checker-mode").selectOption("full");
+    await page.locator("#checker-n").selectOption("5");
+    await page.locator("#checker-payouts").fill("-2, -1, 0, 2, 4, 8, 40");
+    await page.locator("#play-custom").click();
+    await page.locator("#reset-pnl").click();
+    await page.evaluate(() => {
+      for (let i = 0; i < 169; i++) {
+        window.diceTestValues = i < 155 ? [0, 0, 1, 1, 2] : [0, 0, 1, 2, 3];
+        document.querySelector("#roll-button").click();
+      }
+    });
+    await page.waitForFunction(
+      () =>
+        document.querySelector("#session-percentile").dataset.rounds === "169",
+    );
+    assert.equal(await page.locator("#pnl").textContent(), "-14");
+    assert.equal(
+      await page.locator("#session-percentile").textContent(),
+      "32.1%",
+    );
+    await page.locator('[data-open="percentile-dialog"]').click();
+    assert.equal(
+      await page.locator("#session-stdev").textContent(),
+      "27.69 units",
+    );
+    assert.equal(await page.locator("#session-zscore").textContent(), "-0.51σ");
+    assert.deepEqual(
+      await page
+        .locator("#session-sigma-bands tr td:last-child")
+        .allTextContents(),
+      ["69.4%", "95.5%", "99.4%"],
+    );
+    await page.screenshot({
+      path: path.join(screenshotDir, "session-sigma-mobile.png"),
+    });
+    await page.setViewportSize({ width: 320, height: 568 });
+    assert.ok(
+      await page
+        .locator("#percentile-dialog")
+        .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    );
+    assert.ok(
+      await page.locator('[data-close="percentile-dialog"]').isVisible(),
+    );
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await page.screenshot({
+      path: path.join(screenshotDir, "session-sigma-desktop.png"),
+    });
     assert.deepEqual(errors, []);
     console.log(
       `Dice browser checks passed: modes, grouped outcomes, exact repair, filters, both sorts, chosen face, roll locking, PnL, effects, keyboard, desktop/mobile fit. Screenshots: ${screenshotDir}`,
