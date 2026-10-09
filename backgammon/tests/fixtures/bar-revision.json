@@ -1,0 +1,93 @@
+{
+  "provenance": "Reconstructed from user screenshots dated 2026-10-08 22:22. Both bar/24/20 and bar/21/20 must offer points 21 and 24.",
+  "state": {
+    "version": 1,
+    "points": [
+      -1,
+      0,
+      0,
+      0,
+      -1,
+      5,
+      0,
+      3,
+      0,
+      0,
+      0,
+      -4,
+      5,
+      0,
+      -1,
+      0,
+      -3,
+      0,
+      -5,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "bar": [
+      1,
+      0
+    ],
+    "off": [
+      0,
+      0
+    ],
+    "turn": 0,
+    "dice": [
+      1,
+      4
+    ],
+    "phase": "move",
+    "cube": {
+      "value": 2,
+      "owner": null
+    },
+    "scores": [
+      0,
+      0
+    ],
+    "matchLength": 0,
+    "rules": {
+      "cube": true,
+      "jacoby": false,
+      "automaticDoubles": 0,
+      "immediateRedoubles": 0
+    },
+    "crawford": false,
+    "crawfordPlayed": false,
+    "gameNumber": 1,
+    "sequence": 0,
+    "result": null,
+    "pending": null
+  },
+  "drafts": [
+    [
+      {
+        "from": "bar",
+        "to": 23,
+        "die": 1
+      },
+      {
+        "from": 23,
+        "to": 19,
+        "die": 4
+      }
+    ],
+    [
+      {
+        "from": "bar",
+        "to": 20,
+        "die": 4
+      },
+      {
+        "from": 20,
+        "to": 19,
+        "die": 1
+      }
+    ]
+  ]
+}

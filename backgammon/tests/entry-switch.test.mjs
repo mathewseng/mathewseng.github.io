@@ -34,7 +34,7 @@ test("alternate bar entry releases the first die and restores/replaces hits for 
         paths = legalPaths(s);
       for (const die of dice) {
         const first = paths.find((p) => p.steps[0].die === die).steps[0];
-        const routes = entrySwitchRoutes(s, paths, [first]);
+        const routes = entrySwitchRoutes(s, paths, [first]).filter(r => r.remaining.length === 1);
         assert.equal(routes.length, 1);
         const r = routes[0],
           result = at(s, r.remaining);
@@ -47,7 +47,7 @@ test("alternate bar entry releases the first die and restores/replaces hits for 
         assert.equal(result.points[r.to], turn ? -1 : 1);
         assert.deepEqual(result.bar, turn ? [1, 0] : [0, 1]);
         assertState(result);
-        const back = entrySwitchRoutes(s, paths, r.remaining)[0];
+        const back = entrySwitchRoutes(s, paths, r.remaining).find(r => r.remaining.length === 1);
         assert.deepEqual(back.remaining, [first]);
         assert.deepEqual(s.dice, dice);
       }
@@ -73,11 +73,11 @@ test("blocked entries, higher-die restrictions, doubles and consumed dice never 
       ps = legalPaths(state);
     for (const p of ps) {
       const routes = entrySwitchRoutes(state, ps, p.steps);
-      if (dice[0] === dice[1]) assert.deepEqual(routes, []);
+      if (dice[0] === dice[1]) assert.equal(routes.length, p.steps.length - 1);
       for (const route of routes) {
         assert.ok(matchingPaths(ps, route.remaining).length);
         assertState(at(state, route.remaining));
-        assert.equal(route.remaining.length, 1, "a completed entry chain can restart with the other die");
+        assert.ok(route.remaining.length > 0 && route.remaining.length < p.steps.length, "a completed single-checker chain can use fewer dice");
       }
     }
   }
@@ -104,8 +104,9 @@ test("seeded entry variations only expose replacements that remain full-turn pre
           count++;
           assert.ok(matchingPaths(paths, route.remaining).length);
           assertState(at(s, route.remaining));
-          assert.notEqual(route.die, route.replacedDie);
-          assert.ok(route.remaining.length <= n && route.remaining.length > 0);
+          assert.notEqual(route.from, route.to);
+          assert.ok(route.remaining.length <= (s.dice[0] === s.dice[1] ? 4 : 2) && route.remaining.length > 0);
+          assert.equal(at(s, route.remaining).points[route.to], turn ? -1 : 1);
         }
       }
   }

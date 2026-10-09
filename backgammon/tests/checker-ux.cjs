@@ -339,12 +339,12 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       );
       assert.match(
         await alternate.getAttribute("aria-label"),
-        /change bar entry to die 2 instead of 1/,
+        /revise checker to use dice 2/,
       );
       assert.ok(await page.locator('[data-point="21"].destination').count());
       assert.match(
         await page.locator("#draft-line").innerText(),
-        /change the entry die/,
+        /revise this checker’s entry/,
       );
       await shot(`bar-alternate-${orientation}`);
       await page.locator('[data-point="18"]').click();
@@ -482,9 +482,9 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await drag(23, 15);
     assert.equal((await info()).draft.length, 4);
     await drag(15, 19);
-    assert.equal((await info()).draft.length, 4, "intermediate stops are no longer board-return targets");
-    assert.equal(await page.locator(".board-die.consumed").count(), 4);
-    await drag(15, 23);
+    assert.equal((await info()).draft.length, 2, "intermediate stops revise the checker’s dice");
+    assert.equal(await page.locator(".board-die.consumed").count(), 2);
+    await drag(19, 23);
     assert.equal((await info()).draft.length, 0);
     await load("bar");
     await drag("bar", 23);
@@ -500,7 +500,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       "both dice combined destinations",
       "all four doubles destinations",
       "tap back after complete turn",
-      "drag returns a combined move only to its pre-roll origin",
+      "drag revises a partial chain; amber returns to the pre-roll origin",
       "bar and bearoff drag reversals",
       "larger on-board dice",
     );

@@ -175,11 +175,12 @@ module.exports = async function draftChoices(browser, base, out, name) {
           await settled(3);
           await tap(p(3), "disc");
           await tap(p(9));
-          await settled(3); // Neither an intermediate stop nor a forced origin is a return target.
+          await settled(2); // Intermediate stop revises the journey without refilling the suffix.
+          assert.equal(await page.locator(`[data-point="${p(21)}"].return-destination`).count(), 0, "forced origin stays protected");
           await page.locator("#undo").click();
-          await settled(2); // The separate Undo button can still remove that individual step.
-          await page.locator("#reset-draft").click();
-          await settled(1);
+          await settled(1); // Undo removes the remaining chosen step, preserving the forced prefix.
+          assert.ok(await page.locator("#undo").isDisabled());
+          assert.ok(await page.locator("#reset-draft").isDisabled());
           await tap(p(15)); // Point-space uses 22/16, then previews the mandatory 16/10.
           await settled(3);
           await tap(p(9)); // Bring the other checker to 10: the other legal final position.

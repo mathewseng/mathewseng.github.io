@@ -176,7 +176,7 @@ module.exports = async function originReturns(browser, base, out, name) {
           );
           assert.equal(
             await page.locator(`[data-point="${p(10)}"].destination`).count(),
-            0,
+            1,
           );
           if (!turn && !orientation)
             await page.screenshot({
@@ -189,9 +189,9 @@ module.exports = async function originReturns(browser, base, out, name) {
           await wait([]); // Orange returns the entire 16/11/8 chain.
           await load(turn, orientation);
           await tap(p(10));
-          await wait(original); // Unhighlighted intermediate point is quiet.
+          await wait(original.slice(0, 1)); // Intermediate stop is a teal dice revision.
           await page.locator("#undo").click();
-          await wait(original.slice(0, 1)); // Stepwise Undo is still available.
+          await wait([]); // Stepwise Undo is still available.
           if (!touch) {
             await load(turn, orientation);
             const a = await coords(p(7), true),

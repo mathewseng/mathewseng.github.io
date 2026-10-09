@@ -999,14 +999,14 @@ export class Board {
           n && (v > 0 ? 0 : 1) === lastMove?.player
             ? Math.min(n, lastMove.points[p] || 0)
             : 0;
-      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? revisionTargets.includes(p) ? ", alternate-die destination: tap point space to revise the draft" : ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
+      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? revisionTargets.includes(p) ? ", dice-revision destination: tap point space to revise the draft" : ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
         destinations.includes(p)
           ? ", legal destination, dice " +
             moves
               .filter((m) => m.to === p)
               .map((m) =>
                 m.switchDie
-                  ? `change ${m.origin === "bar" ? "bar entry" : "first die"} to die ${m.die} instead of ${m.replacedDie}`
+                  ? `revise checker to use dice ${m.steps.map((st) => st.die).join(" then ")}`
                   : m.undo
                     ? "move back"
                     : m.steps?.map((st) => st.die).join(" then ") || m.die,

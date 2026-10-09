@@ -13,8 +13,8 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=e5b75d1c65514601" />
-    <link rel="stylesheet" href="./controls.css?bgv=e5b75d1c65514601" />
+    <link rel="stylesheet" href="../styles.css?bgv=cf924bcb3368acb4" />
+    <link rel="stylesheet" href="./controls.css?bgv=cf924bcb3368acb4" />
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -79,7 +79,7 @@
               <p>
                 <strong>Play the selected checker.</strong><br />This also
                 works onto a friendly stack. A highlighted return or
-                alternate-die target revises the draft.
+                dice-revision target revises the draft.
               </p>
             </div>
             <div class="flow-next">No · if selected, switch to a movable resident or clear selection.
@@ -95,7 +95,7 @@
               <p>
                 <strong>Play the nearest legal checker.</strong
                 ><br />Repeated clicks in the open point area can build a
-                point or use doubles. If no forward move lands here, use a legal alternate-die revision—even after both dice were used. An active selection limits this to its own routes.
+                point or use doubles. If no forward move lands here, use a legal dice revision—even after both dice were used. An active selection limits this to its own routes.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -176,7 +176,7 @@
                 <strong>Only that checker’s routes are highlighted.</strong
                 ><br />Its disc has a solid selection ring. Other source
                 rings disappear. Check its legal forward moves,
-                alternate-die landings and draft returns below.
+                dice-revision landings and draft returns below.
               </p>
             </div>
             <div class="flow-next">No · use all eligible checkers ↓</div>
@@ -190,7 +190,7 @@
               <span class="flow-yes">Yes →</span>
               <p>
                 <strong>Show a dashed source ring.</strong><br />A checker
-                with a legal remaining-dice move, alternate-die revision or original-position return is
+                with a legal remaining-dice move, dice revision or original-position return is
                 a source. Blocked checkers have no source ring. Only the bar
                 is a forward source while entry is required.
               </p>
@@ -208,7 +208,7 @@
                 <strong>Show a colored point wash and outline.</strong
                 ><br />With a selection, show the dice used and a landing
                 ring where space permits. A sum means one checker uses
-                multiple dice; <strong>↔</strong> changes its first die, even after a combined move. Legal revisions glow before selection too.
+                multiple dice; <strong>↔</strong> revises its journey using its own dice and any unused dice. Both bar/24/20 and bar/21/20 with 1–4 offer 21 and 24. Other checkers’ moves and compulsory steps stay fixed. Legal revisions glow before selection too.
                 Legal bearoff destinations light the OFF tray.
               </p>
             </div>
@@ -306,7 +306,7 @@
             </tr>
             <tr role="row" id="case-occupied-selected">
               <th role="rowheader" scope="row" data-label="Situation">Movable friendly stack on the selected checker’s destination</th>
-              <td role="cell" data-label="What is highlighted">Destination wash with die/sum, return arrow or alternate-die label.</td>
+              <td role="cell" data-label="What is highlighted">Destination wash with die/sum, return arrow or dice-revision label.</td>
               <td role="cell" data-label="Click the checker">Switch selection to the resident checker.</td>
               <td role="cell" data-label="Click point / tray space">Use the selected checker’s advertised route, even if another checker is closer.</td>
             </tr>
@@ -341,7 +341,7 @@
               <td role="cell" data-label="Click point / tray space">Clear selection quietly. Do not play a hidden route from another checker on the same click.</td>
             </tr>
             <tr role="row" id="case-reversible">
-              <th role="rowheader" scope="row" data-label="Situation">Moved checker that can continue, change its first die, or return</th>
+              <th role="rowheader" scope="row" data-label="Situation">Moved checker that can continue, revise its dice, or return</th>
               <td role="cell" data-label="What is highlighted">Source ring when unselected; solid ring when selected.</td>
               <td role="cell" data-label="Click the checker">Select it; show all its forward and revision routes.</td>
               <td role="cell" data-label="Click point / tray space">Resolve an advertised arrival first. If nobody can land/return here, select it.</td>
@@ -365,10 +365,10 @@
               <td role="cell" data-label="Click point / tray space">Follow the displayed route: forward without selection, explicit selected return when amber.</td>
             </tr>
             <tr role="row" id="case-switch">
-              <th role="rowheader" scope="row" data-label="Situation">Alternate first die / bar-entry die</th>
-              <td role="cell" data-label="What is highlighted">Legal revisions glow before selection too. Selected destinations show ↔ and the replacement die.</td>
+              <th role="rowheader" scope="row" data-label="Situation">Revise a moved checker’s placement</th>
+              <td role="cell" data-label="What is highlighted">Legal revisions glow before selection too. Selected destinations show ↔ and the revised journey’s dice total.</td>
               <td role="cell" data-label="Click the checker">Movable resident selects; otherwise perform the advertised revision.</td>
-              <td role="cell" data-label="Click point / tray space">Restart that checker with the other die, including after a combined move; preserve unrelated steps and release the replaced dice.</td>
+              <td role="cell" data-label="Click point / tray space">Revise that checker to any legal placement, including shorter chains and doubles. Preserve other checkers’ steps and compulsory moves; restore the released dice.</td>
             </tr>
             <tr role="row" id="case-multiple">
               <th role="rowheader" scope="row" data-label="Situation">Combined dice or doubles destination</th>
@@ -391,7 +391,7 @@
             <tr role="row" id="case-off-source">
               <th role="rowheader" scope="row" data-label="Situation">A checker borne off in this draft can be returned</th>
               <td role="cell" data-label="What is highlighted">Dashed outline around your off tray; solid when selected.</td>
-              <td role="cell" data-label="Click the checker">Click its checker/count marker or a stored strip to select/deselect OFF, then choose its return or alternate-die target.</td>
+              <td role="cell" data-label="Click the checker">Click its checker/count marker or a stored strip to select/deselect OFF, then choose its return or dice-revision target.</td>
               <td role="cell" data-label="Click point / tray space">If OFF is a legal destination, bear off the selected/nearest checker. Otherwise select/deselect reversible OFF.</td>
             </tr>
             <tr role="row" id="case-off-old">

@@ -120,7 +120,7 @@ module.exports = async function directPlay(browser, base, out, name) {
     );
     assert.match(
       await page.locator('[data-point="9"]').getAttribute("aria-label"),
-      /change first die/,
+      /revise checker to use dice 3/,
     );
     await shot("alternate-initial-die");
     await click(9, false);

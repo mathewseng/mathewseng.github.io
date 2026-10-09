@@ -613,15 +613,23 @@ export class DraftBoard {
     );
   }
   entrySwitches() {
-    return dieSwitchRoutes(this.state, this.paths, this.draft).filter((r) =>
-      r.remaining.length >= this.minDraft &&
-      r.remaining
-        .slice(0, this.minDraft)
-        .every(
-          (s, i) => JSON.stringify(s) === JSON.stringify(this.draft[i]),
+    const key = JSON.stringify([this.draft, this.minDraft]);
+    if (
+      this.revisionCache?.state !== this.state ||
+      this.revisionCache.paths !== this.paths ||
+      this.revisionCache.key !== key
+    )
+      this.revisionCache = {
+        state: this.state,
+        paths: this.paths,
+        key,
+        routes: dieSwitchRoutes(
+          this.state, this.paths, this.draft, this.minDraft,
         ),
-    );
+      };
+    return this.revisionCache.routes;
   }
+
   sources() {
     return [
       ...new Set(
@@ -816,7 +824,7 @@ export class DraftBoard {
           choices.map((route) =>
             button(
               route.switchDie
-                ? `Change ${route.origin === "bar" ? "entry" : "first die"} · use ${route.die} instead of ${route.replacedDie}`
+                ? `Revise checker · ${notation(route.steps, this.state.turn)}`
                 : route.undo
                   ? `Move back · restore ${route.steps.map((st) => st.die).join(" + ")}`
                   : single
@@ -899,7 +907,7 @@ export class DraftBoard {
     const before = this.current();
     this.draft = [...next];
     this.hint = route.switchDie
-      ? `${route.origin === "bar" ? "Entry" : "Move"} uses ${route.die} now. Die ${route.replacedDie} is available again.`
+      ? "Checker revised. Used and remaining dice updated."
       : route.undo
         ? "Checker moved back. Its dice are available again."
         : "";
@@ -940,7 +948,9 @@ export class DraftBoard {
       );
     if (route.undo && route.steps.length > 1)
       this.board.animateRestore(before, this.current(), "undo");
-    this.onChange({ kind: route.undo ? "undo" : "move" });
+    this.onChange({
+      kind: route.undo ? "undo" : route.switchDie ? "revision" : "move",
+    });
   }
   undo() {
     if (this.draft.length <= this.minDraft) return;
@@ -1019,8 +1029,8 @@ export class DraftBoard {
       : this.hint ||
         (switchEntry
           ? switchEntry.origin === "bar"
-            ? `Tap ↔${switchEntry.die} to change the entry die. ↶ returns to the bar.`
-            : `Tap ↔${switchEntry.die} to change the first die. ↶ returns to the starting point.`
+            ? "Tap ↔ to revise this checker’s entry. ↶ returns to the bar."
+            : "Tap ↔ to revise this checker’s dice. ↶ returns to the starting point."
           : this.enabled && this.state.phase === "move"
             ? this.complete()
               ? this.draft.length
@@ -1049,7 +1059,7 @@ export class DraftBoard {
         ]),
         ...switches.map((route, i) => [
           `switch-${i}`,
-          `Change ${notation([{ from: route.origin, to: route.from }], this.state.turn)} ${route.origin === "bar" ? "entry" : "first die"} · use die ${route.die} instead of ${route.replacedDie}`,
+          `Revise ${notation([{ from: route.origin, to: route.from }], this.state.turn)} → ${notation(route.steps, this.state.turn)}`,
         ]),
       ],
       "",

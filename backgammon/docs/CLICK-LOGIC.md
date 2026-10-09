@@ -23,7 +23,7 @@ flowchart TD
   S -- No --> H{Any checker can legally land here?}
   H -- Yes --> I[Use nearest legal incoming checker]
   I --> R
-  H -- No --> AD{Legal alternate-die landing here?}
+  H -- No --> AD{Legal dice-revision landing here?}
   AD -- Yes --> AE[Revise checker route and restore unused dice]
   AD -- No --> K{Legal draft return to this location?}
   K -- Yes --> L[Use nearest return route]
@@ -36,9 +36,9 @@ flowchart TD
   N -- No --> P[Ask which die or route]
 ```
 
-A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly clears the selection. With no selection, it brings the nearest legal checker. With no selection and no forward arrival, a legal alternate-die landing revises the draft. Otherwise an amber return target brings back the nearest eligible checker before falling back to resident selection or deselection.
+A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly clears the selection. With no selection, it brings the nearest legal checker. With no selection and no forward arrival, a legal dice-revision landing revises the draft. Otherwise an amber return target brings back the nearest eligible checker before falling back to resident selection or deselection.
 
-Bar-entry priority and complete-turn legality constrain every route. Selecting another checker cannot bypass the bar. A selected legal route may be a forward move, draft return or alternate-die entry. A checker without a legal forward move, alternate-die revision or draft return cannot be selected; clicking it clears the existing selection unless its location advertises a legal destination. Dragging remains explicit source → destination input; an invalid drop cancels.
+Bar-entry priority and complete-turn legality constrain every route. Selecting another checker cannot bypass the bar. A selected legal route may be a forward move, draft return or dice-revision entry. A checker without a legal forward move, dice revision or draft return cannot be selected; clicking it clears the existing selection unless its location advertises a legal destination. Dragging remains explicit source → destination input; an invalid drop cancels.
 
 Route resolution deduplicates equivalent outcomes and consumed dice. For combined shortcuts with the same dice, a hitting route beats a quiet one; distinct hitting outcomes remain explicit choices. Different die use may also need a choice. Manual intermediate moves can still avoid a hit. Board returns restore the checker’s entire journey to its pre-roll origin, never an intermediate stop. In a stack, the latest arrival is the checker continued by the next move. Journeys containing a forced prefix cannot return; the separate Undo button can still remove individual chosen steps. Alternate-die revisions can restart a completed chain with the other die while preserving unrelated steps and complete-turn legality.
 
@@ -59,9 +59,9 @@ The [website highlight flowchart](https://mathewseng.github.io/backgammon/contro
 
 - An enabled live draft supplies legal routes; previews and disabled boards suppress destinations.
 - With no selection, `sources()` supplies forward and reversible draft sources, and `availableRoutes()` and legal die revisions supply reachable destinations, including alternative first-die landings after both dice were used. Source discs have dashed rings.
-- With a selection, only that checker’s ring and routes are emphasized. Its ring is solid. Routes include forward, draft-return and alternate-first-die revisions.
+- With a selection, only that checker’s ring and routes are emphasized. Its ring is solid. Routes include forward, draft-return and checker-journey revisions.
 - Reversible off checkers have a source outline around their tray. Their strips and checker-sized count markers are disc-selection targets; open tray space is destination input.
-- Reachable points have a wash/outline. Selected destinations add die/sum or alternate-die labels and a landing ring when stack space permits; OFF is highlighted when reachable.
+- Reachable points have a wash/outline. Selected destinations add die/sum or dice-revision labels and a landing ring when stack space permits; OFF is highlighted when reachable.
 - Undo targets use the undo palette and a single solid outline at the pre-roll origin. An explicit selected undo route has priority; without selection, forward reachability has priority when both exist. Forced prefixes cannot be undone.
 - Hover feedback is limited to actionable live points (or the position editor); unavailable points do not acquire a playable-looking glow.
 - Last-turn checkers/ghosts and keyboard focus are independent historical/focus indicators, not legal destinations or recommendations.
@@ -71,3 +71,5 @@ Vertical swipes on open board space scroll the page; starting on an actual movab
 The diagram describes ordinary pointer input. Keyboard-only undo is the explicit exception above. A drop is always constrained to the dragged checker; invalid or outside drops cancel. Point-number lanes accept destination clicks and drops.
 
 A roll with more than one legal final position always requires Confirm, regardless of shortcut length or input method. A fresh forward choice can preview its forced continuation; Undo, Reset and reverse moves leave removed choices undone. Only the globally compulsory initial prefix is locked. Fully forced original rolls and passes still advance automatically.
+
+Selected moved checkers expose every legal placement obtained by revising their own steps and spending any unused dice. Both bar/24/20 and bar/21/20 with 1–4 show points 21 and 24 simultaneously. Partial chains, doubles and bearoff use the same rule. Other checkers’ moves remain in order, and the compulsory prefix is unchanged. Every replacement is a prefix of a complete legal turn. Teal ↔ targets revise the journey; amber ↶ only returns to the pre-roll origin. A revision never refills its removed continuation or confirms the turn.

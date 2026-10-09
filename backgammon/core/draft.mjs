@@ -75,7 +75,7 @@ export function reverseRoutes(state, paths, draft) {
 // Checkers are indistinguishable in canonical state. For draft interaction the
 // most recent arrival is the top checker, so continuing that stack continues
 // its journey. Undo still removes an individual step separately.
-export function originalReturnRoutes(state, paths, draft, minDraft = 0) {
+function draftCheckers(state, draft) {
   const stacks = new Map();
   const add = (point, count) =>
     stacks.set(
@@ -87,10 +87,14 @@ export function originalReturnRoutes(state, paths, draft, minDraft = 0) {
   state.points.forEach((n, p) => add(p, Math.max(0, n * sign(state.turn))));
   for (const [i, step] of draft.entries()) {
     const checker = stacks.get(step.from)?.pop();
-    if (!checker) return [];
+    if (!checker) return new Map();
     checker.indices.push(i);
     stacks.get(step.to).push(checker);
   }
+  return stacks;
+}
+export function originalReturnRoutes(state, paths, draft, minDraft = 0) {
+  const stacks = draftCheckers(state, draft);
   const reversals = reverseRoutes(state, paths, draft);
   const results = new Map();
   for (const [from, checkers] of stacks)
@@ -110,39 +114,63 @@ export function originalReturnRoutes(state, paths, draft, minDraft = 0) {
   return [...results.values()];
 }
 
-// Change the first die of a drafted checker move (including bar entry).
-// Preserve unrelated steps, and derive replacements only from complete legal
-// paths: bar priority, maximum dice use and the higher-die rule still apply.
-export function dieSwitchRoutes(state, paths, draft) {
-  const routes = new Map();
-  for (const back of reverseRoutes(state, paths, draft)) {
-    // A completed chain can be rewound and restarted with the other die too.
-    // Only replace a continuous journey, leaving independent checkers intact.
-    if (
-      back.steps[0].from !== back.to ||
-      back.steps.at(-1).to !== back.from ||
-      back.steps.some((step, i) => i && step.from !== back.steps[i - 1].to)
-    )
-      continue;
-    const old = back.steps[0];
-    for (const entry of checkerRoutes(paths, back.remaining, back.to)) {
-      if (
-        entry.steps.length !== 1 ||
-        entry.die === old.die ||
-        entry.to === back.from
-      )
-        continue;
-      const remaining = [...back.remaining, ...entry.steps];
-      routes.set(JSON.stringify(remaining), {
-        from: back.from,
-        origin: back.to,
-        to: entry.to,
-        die: entry.die,
-        steps: entry.steps,
-        remaining,
-        switchDie: true,
-        replacedDie: old.die,
-      });
+// Revise one checker's editable journey using its dice plus still-unused dice.
+// Fixed steps retain their order, including other checkers and the forced prefix.
+// Match them against complete legal paths, interleaving only this checker's new
+// continuous journey. This also permits revisions after bar entry when removing
+// that entry alone would leave the other checker's moves illegal as a prefix.
+// The historical function/property names are retained for the shared UI API.
+export function dieSwitchRoutes(state, paths, draft, minDraft = 0) {
+  const routes = new Map(),
+    locked = draft.slice(0, minDraft);
+  const same = (a, b) =>
+    a && b && a.from === b.from && a.to === b.to && a.die === b.die;
+  const candidates = matchingPaths(paths, locked);
+  for (const [from, checkers] of draftCheckers(state, draft)) {
+    for (const checker of checkers) {
+      const editable = checker.indices.filter((i) => i >= minDraft);
+      if (!editable.length) continue;
+      const fixed = draft
+        .slice(minDraft)
+        .filter((_, i) => !editable.includes(i + minDraft));
+      const origin = draft[editable[0]].from;
+      const lockedJourney = checker.indices
+        .filter((i) => i < minDraft)
+        .map((i) => draft[i]);
+      for (const path of candidates) {
+        const walk = (index, fixedIndex, point, steps) => {
+          if (
+            fixedIndex === fixed.length &&
+            (steps.length || lockedJourney.length) &&
+            point !== from
+          ) {
+            const remaining = path.steps.slice(0, index);
+            // Ordinary forward chains already have their own simpler affordance.
+            if (!draft.every((st, i) => same(st, remaining[i]))) {
+              const key = `${from}:${JSON.stringify(remaining)}`,
+                journey = [...lockedJourney, ...steps];
+              routes.set(key, {
+                from,
+                origin: checker.origin,
+                to: point,
+                steps: journey,
+                remaining,
+                die: journey.reduce((sum, st) => sum + st.die, 0),
+                switchDie: true,
+                replacedDie: draft[editable[0]].die,
+                replacedSteps: editable.map((i) => draft[i]),
+              });
+            }
+          }
+          const step = path.steps[index];
+          if (!step) return;
+          if (same(step, fixed[fixedIndex]))
+            walk(index + 1, fixedIndex + 1, point, steps);
+          if (point !== "off" && step.from === point)
+            walk(index + 1, fixedIndex, step.to, [...steps, step]);
+        };
+        walk(minDraft, 0, origin, []);
+      }
     }
   }
   return [...routes.values()];
