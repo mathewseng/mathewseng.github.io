@@ -37,7 +37,7 @@ let handStrict = true,
   sumStrict = false;
 let browseScrollTop = 0;
 let activeOptions = { ...DEFAULTS };
-let matchupsReady = false;
+let matchups = null;
 const play = createPlay({
   onBusy(busy) {
     document
@@ -53,13 +53,13 @@ const play = createPlay({
   },
 });
 function setView(view) {
-  if (view === "matchups" && !matchupsReady) {
-    createMatchups($("matchups-workspace"));
-    matchupsReady = true;
+  if (view === "matchups" && !matchups) {
+    matchups = createMatchups($("matchups-workspace"));
   }
   if (view === "play" && !play.hasGame) {
     if (!selected || !useSelected(false)) return;
   }
+  if (view !== "matchups") matchups?.leave();
   const wasInExplore = $("explore-workspace").contains(document.activeElement);
   const wasInPlay = $("play-workspace").contains(document.activeElement);
   const previousView = document.documentElement.dataset.view;
@@ -69,7 +69,7 @@ function setView(view) {
   $("explore-workspace").hidden = view === "play" || view === "matchups";
   $("play-workspace").hidden = view !== "play";
   $("matchups-workspace").hidden = view !== "matchups";
-  document.querySelector(".skip-link").href = view === "matchups" ? "#match-title" : "#results-title";
+  document.querySelector(".skip-link").href = view === "matchups" ? "#matchups-workspace" : "#results-title";
   document.querySelector(".skip-link").textContent = view === "matchups" ? "Skip to matchup probabilities" : "Skip to payout schedules";
   document.querySelectorAll("[data-view]").forEach((el) => {
     if (el.tagName === "BUTTON")

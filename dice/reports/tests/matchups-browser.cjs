@@ -218,7 +218,7 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
 
   for (const width of [760, 390, 320]) {
     await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
-    for (const name of ["compare", "catalogue", "events", "four"]) {
+    for (const name of ["compare", "play", "catalogue", "events", "four"]) {
       await page.locator(`[data-match-tab="${name}"]`).click();
       assert.ok(
         await page.evaluate(
@@ -252,4 +252,5 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
     assert.equal(await page.locator("#matchups-workspace").isVisible(), true);
   }
   await page.setViewportSize({ width: 1440, height: 960 });
+  await require("./matchup-play-browser.cjs")(page, screenshotDir);
 };

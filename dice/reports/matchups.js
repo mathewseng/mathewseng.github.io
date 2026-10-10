@@ -13,6 +13,7 @@ import {
   ruleAgreement,
   fraction,
 } from "./matchups.mjs";
+import { createMatchupPlay } from "./matchup-play.js";
 
 const pct = (count, total = 1296) => `${((100 * count) / total).toFixed(2)}%`;
 const signed = (value) =>
@@ -60,7 +61,7 @@ export function createMatchups(root) {
     (rule) => `<option value="${rule.id}">${rule.name}</option>`,
   ).join("");
   root.innerHTML = `
-    <div class="match-shell">
+    <div class="match-shell" data-panel="compare">
       <header class="match-heading">
         <div><p class="eyebrow">EXACT TWO-DICE PROBABILITIES</p><h2 id="match-title" tabindex="-1">Two dice against two dice</h2>
         <p class="hint">Four independent fair d6. Higher score wins; equal scores tie. Every one of the 1,296 ordered outcomes counts equally.</p></div>
@@ -68,10 +69,12 @@ export function createMatchups(root) {
       </header>
       <nav class="match-tabs" aria-label="Probability reports">
         <button data-match-tab="compare" aria-pressed="true">Compare rules</button>
+        <button data-match-tab="play" aria-pressed="false">Play matchup</button>
         <button data-match-tab="catalogue" aria-pressed="false">All ${catalogue.length.toLocaleString("en-US")} matchups</button>
         <button data-match-tab="events" aria-pressed="false">Two-dice odds</button>
         <button data-match-tab="four" aria-pressed="false">Four-dice odds</button>
       </nav>
+      <section data-match-panel="play" aria-label="Play the selected matchup" hidden><div id="match-play"></div></section>
       <section data-match-panel="compare" aria-label="Compare scoring rules">
         <div class="match-section-head"><span class="hint">${SCORE_RULES.length} scoring rules · choose different rules for A and B</span><button id="match-jump-featured" class="match-text-button">Browse ${featured.length} featured matchups ↓</button></div>
         <div class="match-controls">
@@ -153,8 +156,21 @@ export function createMatchups(root) {
     b = "sum",
     handicap = 0,
     selectedRoll = 20;
+  const matchupPlay = createMatchupPlay($("match-play"), {
+    onChange(nextA, nextB, nextHandicap) {
+      a = nextA;
+      b = nextB;
+      handicap = nextHandicap;
+      render();
+    },
+    onCompare() {
+      panel("compare");
+    },
+  });
 
   function panel(name) {
+    if (name !== "play") matchupPlay.finish();
+    root.querySelector(".match-shell").dataset.panel = name;
     root
       .querySelectorAll("[data-match-tab]")
       .forEach((button) =>
@@ -184,7 +200,7 @@ export function createMatchups(root) {
     $("match-a-formula").textContent = scoreRule(a).formula;
     $("match-b-formula").textContent = scoreRule(b).formula;
     $("match-result").innerHTML =
-      `<div class="match-result-heading"><h3>${scoreRule(a).name}${handicap ? ` ${signed(handicap)}` : ""} <span>vs</span> ${scoreRule(b).name}</h3><span class="hint">A’s perspective</span></div>
+      `<div class="match-result-heading"><h3>${scoreRule(a).name}${handicap ? ` ${signed(handicap)}` : ""} <span>vs</span> ${scoreRule(b).name}</h3><button class="match-text-button" data-match-start>Play this matchup ↗</button></div>
       <div class="match-metrics">${[
         ["wins", "A wins"],
         ["ties", "Tie"],
@@ -201,6 +217,7 @@ export function createMatchups(root) {
     renderHandicaps();
     renderMargins();
     renderRolls();
+    matchupPlay.choose(a, b, handicap);
   }
   function renderDistribution() {
     const left = scoreDistribution(a, handicap),
@@ -402,6 +419,11 @@ export function createMatchups(root) {
     "Sum probabilities for two fair dice, from 2 through 12",
   );
   root.addEventListener("click", (event) => {
+    if (event.target.closest("[data-match-start]")) {
+      panel("play");
+      root.scrollTop = 0;
+      $("match-play-roll").focus({ preventScroll: true });
+    }
     const tab = event.target.closest("[data-match-tab]");
     if (tab) panel(tab.dataset.matchTab);
     const picked = event.target.closest("[data-match-a]");
@@ -543,6 +565,7 @@ export function createMatchups(root) {
     "match-four-status",
     "match-four-events",
   );
+  return { leave: () => matchupPlay.finish() };
 }
 
 function marginChart(rows) {

@@ -5,6 +5,8 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `outcomes.mjs`: the four game definitions, hand classification, and exact ordered-roll counts.
 - `matchups.mjs`: 32 two-dice scoring rules, all 1,024 ordered matchups, score margins, scoring-rule agreement, conditional roll probabilities, half-point handicaps, 123 one-pair events, and 29 four-dice events.
 - `matchups.js`, `matchups.css`: Matchups workspace with exact win/tie/loss reports, score and margin distributions, handicap curves and tables, conditional heatmap, searchable catalogue, selectable win/tie/loss matrix, scoring-agreement heatmap, and CSV export.
+- `matchup-game.mjs`: immutable matchup rules, unbiased four-dice sampling, exact score comparison, settle-once session counts, and recent rolls.
+- `matchup-play.js`, `matchup-play.css`: animated two-pair play, independent counts per matchup/handicap, observed versus exact probabilities, and session controls.
 - `sum-rules.mjs`: finite sum-rule catalogue, exact rule evaluation, readable descriptions, and grouped sum paytables.
 - `engine.mjs`: exact BigInt EV/checker math, bounded integer enumeration, filters, style metrics, ranking, and displayed-row sorting.
 - `game.mjs`: unbiased dice sampling, grouped roll scoring, exact session PnL, and settle-once roll lifecycle.
@@ -19,6 +21,7 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `tests/percentile.test.mjs`: independent mixed-session enumeration, ties, long sessions, large PnL, dense/sparse distributions, sigma coverage, and the 169-roll regression.
 - `tests/browser.cjs`: assembled-site checks for the route, actual worker, all modes/dice counts, bidirectional headers, keyboard/mobile behavior, and checker repair.
 - `tests/matchups.test.mjs`, `tests/matchups-browser.cjs`: independently enumerated matchup fixtures, probability conservation, reversed sides, conditional counts, modulo/average precision, margins, rule-agreement marginals, event counts, handicaps, and desktop/mobile report interactions. The browser checks run from `tests/browser.cjs`.
+- `tests/matchup-game.test.mjs`, `tests/matchup-play-browser.cjs`: play/report agreement over all 1,296 outcomes, locked rules and dice, count conservation, separate sessions, reset, animation/reduced motion, interrupted rolls, and phone layouts. Play browser checks are included in the report browser suite.
 
 ## Two-dice matchups
 
@@ -33,6 +36,14 @@ Score distributions each total 36 rolls. The margin histogram shows A’s adjust
 The Two-dice odds tab lists 123 exact events on a single pair, including complete sum/max/min/gap/product distributions and all 21 unordered pairs. The Four-dice odds tab lists 29 events involving both pairs: shared faces, doubles, repeated faces, sixes, totals, die-for-die dominance, and scoring disagreements. Events overlap and are not a partition. Same-roll product comparisons on one pair are explicitly labeled to distinguish them from opposing independent pairs. Each list states its own denominator (36 or 1,296).
 
 The four-dice scoring-agreement heatmap evaluates the same contest twice: both players use rule X, then both use rule Y. The 3 × 3 joint table separates unchanged results, winner reversals, and a tie becoming decisive (or vice versa). This differs from the main comparator, where A uses one rule and B another. For sum versus product, 1,176 contests keep the same result, 20 flip the winner, and 100 change tie status. All nine cells sum to 1,296; row/column marginals equal the corresponding mirror matchup. CSV exports all 1,024 unadjusted pairings, including counts and decimal probabilities, regardless of catalogue filters.
+
+### Play a matchup
+
+Select **Play this matchup** in the comparison or open **Play matchup**. Side A, Side B, and A’s half-point handicap stay synchronized with the report. Both sides roll their own two dice, using the same unbiased `crypto.getRandomValues` rejection sampler as payout play. Four faces are sampled once before animation. The existing 3D canvas dice tumble simultaneously for about half a second, then display each pair’s score and the winner or tie. Instant and reduced-motion modes settle immediately. The handicap is added after A’s scoring rule, and scores preserve half-points.
+
+The scoreboard shows A wins, ties, and A losses/B wins as counts and observed percentages next to their exact probabilities and reduced fractions. Observed percentages use settled rolls only; the exact reference always uses all 1,296 possible outcomes. No-roll percentages are shown as a dash. Two aligned bars compare observed and exact outcomes, and recent history retains the last 12 rolls with faces, scores, and results. On phones, the roll action stays docked while scrolling between dice and the scoreboard.
+
+Each ordered matchup and handicap has a separate in-memory session. Changing rules opens that session; returning restores its counts and most recent result. **Reset counts** clears only the current session. Reloading clears all sessions. Rolling locks rules, handicap, speed, and reset until both pairs settle. Leaving the play tab, leaving Matchups, or hiding the document finishes an in-flight roll once and cancels its animations. Repeated clicks cannot sample or count an additional roll while one is pending. Payout Play and its PnL remain separate.
 
 ## Hand modes
 
