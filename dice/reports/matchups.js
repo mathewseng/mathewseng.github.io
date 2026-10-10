@@ -8,6 +8,9 @@ import {
   handicapSeries,
   matchupCatalogue,
   twoDiceEvents,
+  fourDiceEvents,
+  marginDistribution,
+  ruleAgreement,
   fraction,
 } from "./matchups.mjs";
 
@@ -52,6 +55,7 @@ export function createMatchups(root) {
     ...compareRules(a, b),
   }));
   const events = twoDiceEvents();
+  const fourEvents = fourDiceEvents();
   const options = SCORE_RULES.map(
     (rule) => `<option value="${rule.id}">${rule.name}</option>`,
   ).join("");
@@ -64,10 +68,12 @@ export function createMatchups(root) {
       </header>
       <nav class="match-tabs" aria-label="Probability reports">
         <button data-match-tab="compare" aria-pressed="true">Compare rules</button>
-        <button data-match-tab="catalogue" aria-pressed="false">All ${catalogue.length} matchups</button>
+        <button data-match-tab="catalogue" aria-pressed="false">All ${catalogue.length.toLocaleString("en-US")} matchups</button>
         <button data-match-tab="events" aria-pressed="false">Two-dice odds</button>
+        <button data-match-tab="four" aria-pressed="false">Four-dice odds</button>
       </nav>
       <section data-match-panel="compare" aria-label="Compare scoring rules">
+        <div class="match-section-head"><span class="hint">${SCORE_RULES.length} scoring rules · choose different rules for A and B</span><button id="match-jump-featured" class="match-text-button">Browse ${featured.length} featured matchups ↓</button></div>
         <div class="match-controls">
           <label>Side A<select id="match-a">${options}</select><small id="match-a-formula"></small></label>
           <button id="match-swap" class="quiet-button" aria-label="Swap sides and reverse the handicap">⇄ <span>Swap</span></button>
@@ -89,22 +95,32 @@ export function createMatchups(root) {
             <label class="match-slider-label" for="match-handicap-slider">Adjust A’s handicap <output id="match-handicap-value">0</output></label>
             <input id="match-handicap-slider" type="range" min="-12" max="12" step="0.5" value="0" />
             <p id="match-handicap-note" class="hint"></p>
+            <button id="match-balance" class="match-text-button">Use closest balance</button>
+            <details class="match-details"><summary>Exact handicap probabilities</summary><div id="match-handicap-table" class="match-table-wrap"></div></details>
           </section>
         </div>
+        <section class="match-margin-section">
+          <div class="match-section-head"><div><h3>How much does A win or lose by?</h3><p class="hint">A’s score minus B’s, including the selected handicap. Negative margins are losses; zero is a tie.</p></div></div>
+          <div class="match-chart-pair">
+            <div><div class="match-legend">${swatch("losses", "A loses")}${swatch("ties", "Tie")}${swatch("wins", "A wins")}</div><div id="match-margin-chart"></div><p id="match-margin-note" class="hint"></p></div>
+            <div><div id="match-margin-thresholds" class="match-table-wrap"></div><p class="hint">“By ≥” includes the boundary. All probabilities are per contest, including contests that tie.</p></div>
+          </div>
+          <details class="match-details"><summary>Every exact score margin</summary><div id="match-margin-table" class="match-table-wrap"></div></details>
+        </section>
         <div class="match-roll-section">
           <div><p class="eyebrow">AFTER A ROLLS</p><h3>How strong is your roll?</h3><p class="hint">Each cell shows A’s chance of beating B’s 36 possible rolls. Rows are A’s first die; columns are A’s second die. Select a cell for ties and exact counts.</p>
           <p id="match-roll-detail" class="match-roll-detail" role="status"></p>
           <div class="match-heat-legend"><span>0% wins</span><i></i><span>100% wins</span></div></div>
           <div id="match-roll-grid" class="match-roll-grid"></div>
         </div>
-        <section class="match-featured"><div class="match-section-head"><div><p class="eyebrow">START EXPLORING</p><h3>Interesting matchups</h3></div><span class="hint">Fixed reference list · no added handicap</span></div>
+        <section class="match-featured" id="match-featured"><div class="match-section-head"><div><p class="eyebrow">START EXPLORING</p><h3 tabindex="-1" id="match-featured-title">${featured.length} interesting matchups</h3></div><span class="hint">First seven: the essentials · no added handicap</span></div>
           ${comparisonTable("match-featured-body", featured, "Interesting two-dice matchups")}
         </section>
       </section>
       <section data-match-panel="catalogue" aria-label="All scoring rule matchups" hidden>
-        <div class="match-section-head"><div><h3>The matchup map</h3><p class="hint">A is the row, B is the column. Cells show P(A &gt; B), excluding ties. Select one to inspect it. No added handicap.</p></div></div>
-        <div class="match-heat-legend"><span>0% A wins</span><i></i><span>100% A wins</span></div>
-        <div id="match-matrix" class="match-matrix-wrap" tabindex="0" role="region" aria-label="Win probability matrix, scroll for all rules"></div>
+        <div class="match-section-head"><div><h3>The matchup map</h3><p class="hint">A is the row, B is the column. Select a cell to inspect its win, tie, and loss probabilities. No added handicap.</p></div></div>
+        <div class="match-map-controls"><label>Cell probability<select id="match-matrix-metric"><option value="wins">A wins</option><option value="ties">Tie</option><option value="losses">B wins</option></select></label><label>Rules in map<select id="match-matrix-scope"><option value="core">12 core rules</option><option value="all">All ${SCORE_RULES.length} rules</option></select></label><div class="match-heat-legend"><span>0%</span><i></i><span>100%</span></div></div>
+        <div id="match-matrix" class="match-matrix-wrap" tabindex="0" role="region" aria-label="Matchup probability matrix, scroll for all rules"></div>
         <div class="match-catalogue-controls">
           <label>Find a rule<input id="match-search" type="search" placeholder="e.g. sum, max, product" /></label>
           <label>Show<select id="match-filter"><option value="all">All matchups</option><option value="balanced">Balanced (win/loss gap ≤ 5 points)</option><option value="ties">Frequent ties (≥ 15%)</option><option value="favorites">A favored (&gt; 50% wins)</option><option value="underdogs">A underdog (&lt; 25% wins)</option></select></label>
@@ -113,6 +129,16 @@ export function createMatchups(root) {
         </div>
         <p id="match-catalogue-status" class="hint" role="status"></p>
         ${comparisonTable("match-catalogue-body", catalogue, "All two-dice scoring rule matchups")}
+      </section>
+      <section data-match-panel="four" aria-label="Four-dice event probabilities" hidden>
+        <div class="match-section-head"><div><h3>One contest, two ways to score</h3><p class="hint">A and B each roll two dice. First, both players use rule X; then both use rule Y on the same rolls. Does changing the rule change the winner?</p></div></div>
+        <div class="match-agreement-layout">
+          <div><div class="match-map-controls"><label>Rule X (rows)<select id="match-agreement-x">${options}</select></label><label>Rule Y (columns)<select id="match-agreement-y">${options}</select></label></div><div id="match-agreement-summary" class="match-agreement-summary" aria-live="polite"></div><p class="hint">Each cell is a joint probability out of 1,296 contests. A tie becoming a win or loss is counted separately from a winner flipping.</p></div>
+          <div><div id="match-agreement-grid" class="match-table-wrap"></div><div class="match-legend">${swatch("wins", "Same result")}${swatch("ties", "Tie changes")}${swatch("losses", "Winner flips")}</div></div>
+        </div>
+        <div class="match-events-toolbar"><label>Find a four-dice event<input id="match-four-search" type="search" placeholder="e.g. shared, doubles, sum, product" /></label><span id="match-four-status" class="hint" role="status"></span></div>
+        <p class="hint">A = (a, b), B = (c, d). These overlapping events always use the original die faces, without a handicap.</p>
+        <div id="match-four-events"></div>
       </section>
       <section data-match-panel="events" aria-label="Single pair event probabilities" hidden>
         <div class="match-section-head"><div><h3>One pair, 36 equally likely rolls</h3><p class="hint">These events describe a single pair of dice. Events can overlap; their probabilities are not meant to sum to 100%.</p></div></div>
@@ -173,6 +199,7 @@ export function createMatchups(root) {
       <p class="match-result-note"><span>Win if ties reroll: <strong>${decisive ? pct(result.wins, decisive) : "undefined (always ties)"}</strong></span><span>Win/loss edge: <strong>${signed(Number(((100 * (result.wins - result.losses)) / result.total).toFixed(2)))} percentage points</strong></span></p>`;
     renderDistribution();
     renderHandicaps();
+    renderMargins();
     renderRolls();
   }
   function renderDistribution() {
@@ -217,6 +244,35 @@ export function createMatchups(root) {
       ${Math.abs(handicap) <= 12 ? `<line class="match-current-line" x1="${x(handicap)}" x2="${x(handicap)}" y1="18" y2="157"/>` : ""}</svg>`;
     $("match-handicap-note").textContent =
       `Closest win/loss balance in this chart: A ${signed(closest.handicap)} (${pct(closest.wins)} wins, ${pct(closest.ties)} ties, ${pct(closest.losses)} losses).${Math.abs(handicap) > 12 ? " Current handicap is outside the chart and slider range." : ""}`;
+    $("match-balance").dataset.handicap = closest.handicap;
+    $("match-balance").textContent =
+      `Use A ${signed(closest.handicap)} · closest balance in ±12`;
+    $("match-handicap-table").innerHTML =
+      `<table class="match-table"><caption class="sr-only">Exact probabilities at each half-point handicap</caption><thead><tr><th>Added to A</th><th>A wins</th><th>Tie</th><th>B wins</th></tr></thead><tbody>${series.map((row) => `<tr><th scope="row">${signed(row.handicap)}</th>${["wins", "ties", "losses"].map((key) => `<td>${pct(row[key])}<small class="match-exact">${fraction(row[key], 1296)}</small></td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  function renderMargins() {
+    const rows = marginDistribution(a, b, handicap);
+    $("match-margin-chart").innerHTML = marginChart(rows);
+    const mean =
+      rows.reduce((sum, row) => sum + row.margin * row.count, 0) / 1296;
+    $("match-margin-note").textContent =
+      `Margin range ${signed(rows[0].margin)} to ${signed(rows.at(-1).margin)}. Average margin ${signed(Number(mean.toFixed(2)))} points; a higher average score does not by itself determine the win probability.`;
+    $("match-margin-thresholds").innerHTML =
+      `<table class="match-table"><caption>Chances of a win or loss by at least…</caption><thead><tr><th>Points</th><th>A wins by ≥</th><th>A loses by ≥</th></tr></thead><tbody>${[
+        0.5, 1, 2, 3, 5, 10,
+      ]
+        .map((n) => {
+          const wins = rows
+            .filter((row) => row.margin >= n)
+            .reduce((sum, row) => sum + row.count, 0);
+          const losses = rows
+            .filter((row) => row.margin <= -n)
+            .reduce((sum, row) => sum + row.count, 0);
+          return `<tr><th scope="row">${n}</th><td class="match-win-text">${pct(wins)}<small class="match-exact">${fraction(wins, 1296)}</small></td><td class="match-loss-text">${pct(losses)}<small class="match-exact">${fraction(losses, 1296)}</small></td></tr>`;
+        })
+        .join("")}</tbody></table>`;
+    $("match-margin-table").innerHTML =
+      `<table class="match-table"><caption class="sr-only">Exact score margins, A minus B</caption><thead><tr><th>Margin</th><th>Probability</th><th>Exact outcomes</th></tr></thead><tbody>${rows.map((row) => `<tr><th scope="row">${signed(row.margin)}</th><td>${pct(row.count)}</td><td>${exact(row.count)}</td></tr>`).join("")}</tbody></table>`;
   }
   function renderRolls() {
     const rows = conditionalRolls(a, b, handicap);
@@ -256,14 +312,18 @@ export function createMatchups(root) {
     $("match-catalogue-status").textContent =
       `${rows.length} of ${catalogue.length} matchups. All use zero added handicap. ${rows.length ? "Select a row to compare." : "No matches. Try another rule or filter."}`;
   }
-  function renderEvents() {
-    const query = $("match-event-search").value.trim().toLowerCase();
-    const filtered = events.filter((item) =>
+  function renderEvents(
+    items = events,
+    searchId = "match-event-search",
+    statusId = "match-event-status",
+    targetId = "match-events",
+  ) {
+    const query = $(searchId).value.trim().toLowerCase();
+    const filtered = items.filter((item) =>
       `${item.group} ${item.label}`.toLowerCase().includes(query),
     );
-    $("match-event-status").textContent =
-      `${filtered.length} of ${events.length} events`;
-    $("match-events").innerHTML =
+    $(statusId).textContent = `${filtered.length} of ${items.length} events`;
+    $(targetId).innerHTML =
       [...new Set(filtered.map((item) => item.group))]
         .map(
           (group) =>
@@ -271,26 +331,71 @@ export function createMatchups(root) {
               .filter((item) => item.group === group)
               .map(
                 (item) =>
-                  `<li><span>${item.label}</span><span class="match-event-track" aria-hidden="true"><i style="width:${(item.count / 36) * 100}%"></i></span><strong>${pct(item.count, 36)}</strong><small>${exact(item.count, 36)}</small></li>`,
+                  `<li><span>${item.label}</span><span class="match-event-track" aria-hidden="true"><i style="width:${(item.count / item.total) * 100}%"></i></span><strong>${pct(item.count, item.total)}</strong><small>${fraction(item.count, item.total)}<span class="match-exact">${item.count.toLocaleString("en-US")} / ${item.total.toLocaleString("en-US")}</span></small></li>`,
               )
               .join("")}</ul></section>`,
         )
         .join("") ||
       `<p class="hint">No events match. Try “sum”, “prime”, or “doubles”.</p>`;
   }
-  const matrixRules = SCORE_RULES.slice(0, 12);
-  $("match-matrix").innerHTML =
-    `<table class="match-matrix"><caption>12 core rules · full ${SCORE_RULES.length}-rule catalogue below · P(A wins), %</caption><thead><tr><th scope="col">A ↓ / B →</th>${matrixRules.map((rule) => `<th scope="col">${rule.name}</th>`).join("")}</tr></thead><tbody>${matrixRules
+  function renderMatrix() {
+    const matrixRules =
+      $("match-matrix-scope").value === "all"
+        ? SCORE_RULES
+        : SCORE_RULES.slice(0, 12);
+    const metric = $("match-matrix-metric").value;
+    const metricName = { wins: "A wins", ties: "Tie", losses: "B wins" }[
+      metric
+    ];
+    $("match-matrix").setAttribute(
+      "aria-label",
+      `${metricName} probability matrix, scroll for all rules`,
+    );
+    $("match-matrix").innerHTML =
+      `<table class="match-matrix" style="min-width:${matrixRules.length * 64 + 95}px"><caption>${matrixRules.length} rules · P(${metricName}), % · full ${SCORE_RULES.length}-rule catalogue below</caption><thead><tr><th scope="col">A ↓ / B →</th>${matrixRules.map((rule) => `<th scope="col">${rule.name}</th>`).join("")}</tr></thead><tbody>${matrixRules
+        .map(
+          (left) =>
+            `<tr><th scope="row">${left.name}</th>${matrixRules
+              .map((right) => {
+                const row = compareRules(left.id, right.id);
+                return `<td><button data-match-a="${left.id}" data-match-b="${right.id}" style="--heat:${row[metric] / 1296};--heat-ink:${row[metric] >= 648 ? "#000" : "#fff"}" aria-label="${left.name} vs ${right.name}: ${pct(row.wins)} A wins, ${pct(row.ties)} ties, ${pct(row.losses)} B wins">${((100 * row[metric]) / 1296).toFixed(1)}</button></td>`;
+              })
+              .join("")}</tr>`,
+        )
+        .join("")}</tbody></table>`;
+  }
+  function renderAgreement() {
+    const xId = $("match-agreement-x").value,
+      yId = $("match-agreement-y").value;
+    const counts = ruleAgreement(xId, yId);
+    const labels = ["A wins", "Tie", "B wins"];
+    const same = counts[0][0] + counts[1][1] + counts[2][2];
+    const flips = counts[0][2] + counts[2][0];
+    const changes = 1296 - same - flips;
+    $("match-agreement-summary").innerHTML = [
+      [same, "same result", "wins"],
+      [flips, "winner flips", "losses"],
+      [changes, "tie becomes decisive, or vice versa", "ties"],
+    ]
       .map(
-        (left) =>
-          `<tr><th scope="row">${left.name}</th>${matrixRules
-            .map((right) => {
-              const row = compareRules(left.id, right.id);
-              return `<td><button data-match-a="${left.id}" data-match-b="${right.id}" style="--heat:${row.wins / 1296};--heat-ink:${row.wins >= 648 ? "#000" : "#fff"}" aria-label="${left.name} vs ${right.name}: ${pct(row.wins)} A wins, ${pct(row.ties)} ties, ${pct(row.losses)} B wins">${((100 * row.wins) / 1296).toFixed(1)}</button></td>`;
-            })
-            .join("")}</tr>`,
+        ([count, label, kind]) =>
+          `<p><strong class="match-${kind}-value">${pct(count)}</strong><span>${label}<small class="match-exact">${exact(count)}</small></span></p>`,
       )
-      .join("")}</tbody></table>`;
+      .join("");
+    $("match-agreement-grid").innerHTML =
+      `<table class="match-agreement-table"><caption>Rows: ${scoreRule(xId).name} · columns: ${scoreRule(yId).name}</caption><thead><tr><th scope="col">X ↓ / Y →</th>${labels.map((label) => `<th scope="col">${label}</th>`).join("")}</tr></thead><tbody>${counts
+        .map(
+          (row, i) =>
+            `<tr><th scope="row">${labels[i]}</th>${row
+              .map((count, j) => {
+                const kind =
+                  i === j ? "wins" : i === 1 || j === 1 ? "ties" : "losses";
+                return `<td class="match-agreement-${kind}" style="--joint:${count / 1296}"><strong>${pct(count)}</strong><small>${fraction(count, 1296)}</small><span class="sr-only">${count} of 1296 contests</span></td>`;
+              })
+              .join("")}</tr>`,
+        )
+        .join("")}</tbody></table>`;
+  }
   $("match-sum-chart").innerHTML = distributionChart(
     scoreDistribution("sum"),
     [],
@@ -357,13 +462,35 @@ export function createMatchups(root) {
     $("match-error").hidden = true;
     render();
   });
+  $("match-balance").addEventListener("click", () => {
+    handicap = Number($("match-balance").dataset.handicap);
+    render();
+  });
+  $("match-jump-featured").addEventListener("click", () => {
+    $("match-featured").scrollIntoView({ block: "start" });
+    $("match-featured-title").focus({ preventScroll: true });
+  });
+  ["match-matrix-metric", "match-matrix-scope"].forEach((id) =>
+    $(id).addEventListener("change", renderMatrix),
+  );
+  ["match-agreement-x", "match-agreement-y"].forEach((id) =>
+    $(id).addEventListener("change", renderAgreement),
+  );
   ["match-search", "match-filter", "match-sort"].forEach((id) =>
     $(id).addEventListener(
       id === "match-search" ? "input" : "change",
       renderCatalogue,
     ),
   );
-  $("match-event-search").addEventListener("input", renderEvents);
+  $("match-event-search").addEventListener("input", () => renderEvents());
+  $("match-four-search").addEventListener("input", () =>
+    renderEvents(
+      fourEvents,
+      "match-four-search",
+      "match-four-status",
+      "match-four-events",
+    ),
+  );
   $("match-download").addEventListener("click", () => {
     const csv = [
       [
@@ -407,6 +534,40 @@ export function createMatchups(root) {
   render();
   renderCatalogue();
   renderEvents();
+  renderMatrix();
+  $("match-agreement-y").value = "product";
+  renderAgreement();
+  renderEvents(
+    fourEvents,
+    "match-four-search",
+    "match-four-status",
+    "match-four-events",
+  );
+}
+
+function marginChart(rows) {
+  const min = Math.min(0, rows[0].margin),
+    max = Math.max(0, rows.at(-1).margin);
+  const step = rows.some((row) => !Number.isInteger(row.margin)) ? 0.5 : 1;
+  const slots = (max - min) / step + 1,
+    width = 532 / slots;
+  const peak = Math.max(...rows.map((row) => row.count));
+  const x = (value) => 42 + ((value - min) / step) * width + width / 2;
+  const y = (count) => 156 - (count / peak) * 124;
+  const tickStep =
+    [0.5, 1, 2, 5, 10, 20].find((value) => value >= (max - min) / 6) || 20;
+  const ticks = [];
+  for (
+    let value = Math.ceil(min / tickStep) * tickStep;
+    value <= max;
+    value += tickStep
+  )
+    ticks.push(value);
+  return `<svg class="match-chart" viewBox="0 0 600 195" role="img" aria-label="Probability of each score margin for A minus B. Negative is a loss, zero a tie, positive a win. Exact values in the table below.">
+    ${[0, peak / 2, peak].map((count) => `<line class="match-gridline" x1="42" x2="574" y1="${y(count)}" y2="${y(count)}"/><text x="34" y="${y(count) + 4}" text-anchor="end">${((100 * count) / 1296).toFixed(1)}%</text>`).join("")}
+    <line class="match-current-line" x1="${x(0)}" x2="${x(0)}" y1="22" y2="156"/>
+    ${rows.map((row) => `<rect class="match-fill-${row.margin > 0 ? "wins" : row.margin < 0 ? "losses" : "ties"}" x="${x(row.margin) - width * 0.38}" y="${y(row.count)}" width="${Math.max(1, width * 0.76)}" height="${156 - y(row.count)}" rx="1"><title>Margin ${signed(row.margin)}: ${pct(row.count)} (${fraction(row.count, 1296)})</title></rect>`).join("")}
+    ${ticks.map((value) => `<text x="${x(value)}" y="177" text-anchor="middle">${signed(value)}</text>`).join("")}<text x="574" y="193" text-anchor="end">A − B, points</text></svg>`;
 }
 
 function distributionChart(left, right, label) {

@@ -17,8 +17,26 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
     await page.locator(".match-metrics small").nth(1).textContent(),
     /146 \/ 1,296 = 73\/648/,
   );
-  assert.equal(await page.locator("#match-featured-body tr").count(), 24);
+  assert.equal(await page.locator("#match-featured-body tr").count(), 48);
   assert.equal(await page.locator("[data-match-roll]").count(), 36);
+  assert.equal(await page.locator("#match-margin-chart rect").count(), 21);
+  assert.match(
+    await page
+      .locator("#match-margin-thresholds tbody tr")
+      .nth(1)
+      .textContent(),
+    /44.37%.*575\/1296.*44.37%/,
+  );
+  await page.locator("#match-jump-featured").click();
+  assert.equal(
+    await page
+      .locator("#match-featured-title")
+      .evaluate((el) => el === document.activeElement),
+    true,
+  );
+  await page
+    .locator('#match-featured-body [data-match-a="sum"][data-match-b="sum"]')
+    .click();
   await page.screenshot({
     path: path.join(screenshotDir, "matchups-desktop.png"),
   });
@@ -46,6 +64,14 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   assert.equal(await page.locator("#match-handicap").inputValue(), "-0.5");
   await page.locator("#match-handicap").fill("0.3");
   assert.equal(await page.locator("#match-error").isVisible(), true);
+  await page.locator("#match-reset").click();
+  await page.locator("#match-b").selectOption("plus2");
+  await page.locator("#match-balance").click();
+  assert.equal(await page.locator("#match-handicap").inputValue(), "2");
+  assert.deepEqual(
+    await page.locator(".match-metrics strong").allTextContents(),
+    ["44.37%", "11.27%", "44.37%"],
+  );
   await page.locator("#match-reset").click();
   assert.equal(await page.locator("#match-error").isVisible(), false);
   await page.locator("#match-handicap").fill("36");
@@ -85,13 +111,32 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   );
 
   await page.locator('[data-match-tab="catalogue"]').click();
-  assert.equal(await page.locator("#match-catalogue-body tr").count(), 324);
+  assert.equal(await page.locator("#match-catalogue-body tr").count(), 1024);
   assert.equal(await page.locator("#match-matrix button").count(), 144);
   await page.screenshot({
     path: path.join(screenshotDir, "matchups-matrix-desktop.png"),
   });
+  await page.locator("#match-matrix-metric").selectOption("ties");
+  assert.equal(
+    await page
+      .locator('#match-matrix [data-match-a="sum"][data-match-b="sum"]')
+      .textContent(),
+    "11.3",
+  );
+  await page.locator("#match-matrix-scope").selectOption("all");
+  assert.equal(await page.locator("#match-matrix button").count(), 1024);
+  assert.equal(
+    await page
+      .locator(
+        '#match-matrix [data-match-a="doubles-only"][data-match-b="doubles-only"]',
+      )
+      .textContent(),
+    "69.9",
+  );
+  await page.locator("#match-matrix-scope").selectOption("core");
+  await page.locator("#match-matrix-metric").selectOption("wins");
   await page.locator("#match-search").fill("product");
-  assert.equal(await page.locator("#match-catalogue-body tr").count(), 35);
+  assert.equal(await page.locator("#match-catalogue-body tr").count(), 183);
   await page.locator("#match-search").fill("no-such-rule");
   assert.equal(await page.locator("#match-catalogue-body tr").count(), 0);
   assert.match(
@@ -101,7 +146,7 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   await page.locator("#match-search").fill("");
   await page.locator("#match-filter").selectOption("balanced");
   const balanced = await page.locator("#match-catalogue-body tr").count();
-  assert.ok(balanced >= 18 && balanced < 324);
+  assert.ok(balanced >= 32 && balanced < 1024);
   await page.locator("#match-filter").selectOption("all");
   await page.locator("#match-sort").selectOption("ties");
   const ties = (
@@ -118,7 +163,8 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   const download = await downloadPromise;
   assert.equal(download.suggestedFilename(), "two-dice-matchups.csv");
   const csv = await fs.readFile(await download.path(), "utf8");
-  assert.equal(csv.split("\r\n").length, 325);
+  assert.equal(csv.split("\r\n").length, 1025);
+  assert.match(csv, /"Doubles score zero"/);
   assert.match(csv, /"sum"/i);
   await page
     .locator('#match-matrix [data-match-a="product"][data-match-b="sum"]')
@@ -135,7 +181,7 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   );
 
   await page.locator('[data-match-tab="events"]').click();
-  assert.equal(await page.locator("#match-events li").count(), 43);
+  assert.equal(await page.locator("#match-events li").count(), 123);
   await page.screenshot({
     path: path.join(screenshotDir, "matchups-events-desktop.png"),
   });
@@ -144,9 +190,35 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   assert.match(await page.locator("#match-events li").textContent(), /30.56%/);
   await page.locator("#match-event-search").fill("");
 
+  await page.locator('[data-match-tab="four"]').click();
+  assert.equal(await page.locator("#match-four-events li").count(), 29);
+  assert.deepEqual(
+    await page.locator("#match-agreement-summary strong").allTextContents(),
+    ["90.74%", "1.54%", "7.72%"],
+  );
+  assert.equal(await page.locator("#match-agreement-grid td").count(), 9);
+  await page.screenshot({
+    path: path.join(screenshotDir, "matchups-four-desktop.png"),
+  });
+  await page.locator("#match-agreement-y").selectOption("avg");
+  assert.deepEqual(
+    await page.locator("#match-agreement-summary strong").allTextContents(),
+    ["100.00%", "0.00%", "0.00%"],
+  );
+  await page.locator("#match-agreement-y").selectOption("product");
+  await page.locator("#match-four-search").fill("Same pair, either order");
+  assert.equal(await page.locator("#match-four-events li").count(), 1);
+  assert.match(
+    await page.locator("#match-four-events li").textContent(),
+    /5.09%.*11\/216.*66 \/ 1,296/,
+  );
+  await page.locator("#match-four-search").fill("no-such-event");
+  assert.equal(await page.locator("#match-four-events li").count(), 0);
+  await page.locator("#match-four-search").fill("");
+
   for (const width of [760, 390, 320]) {
     await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
-    for (const name of ["compare", "catalogue", "events"]) {
+    for (const name of ["compare", "catalogue", "events", "four"]) {
       await page.locator(`[data-match-tab="${name}"]`).click();
       assert.ok(
         await page.evaluate(

@@ -105,6 +105,90 @@ export const SCORE_RULES = [
     formula: "middle value of a, b, and a fixed 3",
     score: (a, b) => a + b + 3 - Math.min(a, b, 3) - Math.max(a, b, 3),
   },
+  {
+    id: "floor-avg",
+    name: "Average, round down",
+    formula: "floor((a + b) / 2)",
+    score: (a, b) => Math.floor((a + b) / 2),
+  },
+  {
+    id: "ceil-avg",
+    name: "Average, round up",
+    formula: "ceil((a + b) / 2)",
+    score: (a, b) => Math.ceil((a + b) / 2),
+  },
+  {
+    id: "double-gap",
+    name: "2 × gap",
+    formula: "2 × |a − b|",
+    score: (a, b) => 2 * Math.abs(a - b),
+  },
+  {
+    id: "weighted-max",
+    name: "Sum + max",
+    formula: "a + b + max(a, b)",
+    score: (a, b) => a + b + Math.max(a, b),
+  },
+  {
+    id: "weighted-min",
+    name: "Sum + min",
+    formula: "a + b + min(a, b)",
+    score: (a, b) => a + b + Math.min(a, b),
+  },
+  {
+    id: "product-mod10",
+    name: "Product mod 10",
+    formula: "(a × b) mod 10 · keep the last digit",
+    score: (a, b) => (a * b) % 10,
+  },
+  {
+    id: "product-mod6",
+    name: "Product mod 6",
+    formula: "(a × b) mod 6 · remainder 0–5",
+    score: (a, b) => (a * b) % 6,
+  },
+  {
+    id: "cap7",
+    name: "Sum capped at 7",
+    formula: "min(a + b, 7) · all higher sums score 7",
+    score: (a, b) => Math.min(a + b, 7),
+  },
+  {
+    id: "doubles-only",
+    name: "Doubles only",
+    formula: "a + b for doubles; otherwise 0",
+    score: (a, b) => (a === b ? a + b : 0),
+  },
+  {
+    id: "no-doubles",
+    name: "Doubles score zero",
+    formula: "0 for doubles; otherwise a + b",
+    score: (a, b) => (a === b ? 0 : a + b),
+  },
+  {
+    id: "far7",
+    name: "Far from seven",
+    formula: "|a + b − 7| · extremes score more",
+    score: (a, b) => Math.abs(a + b - 7),
+  },
+  {
+    id: "prime-bonus",
+    name: "Prime sum +3",
+    formula: "a + b + 3 if sum is prime; otherwise a + b",
+    score: (a, b) => a + b + ([2, 3, 5, 7, 11].includes(a + b) ? 3 : 0),
+  },
+  {
+    id: "odd",
+    name: "Odd sum +3",
+    formula: "a + b + 3 if sum is odd; otherwise a + b",
+    score: (a, b) => a + b + ((a + b) % 2 ? 3 : 0),
+  },
+  {
+    id: "mod12",
+    name: "Sum mod 12",
+    formula: "(a + b) mod 12 · double six scores 0",
+    score: (a, b) => (a + b) % 12,
+  },
 ];
 
 const byId = new Map(SCORE_RULES.map((rule) => [rule.id, rule]));
@@ -178,6 +262,35 @@ export function handicapSeries(aId, bId) {
   });
 }
 
+// The full distribution of A's score minus B's, including A's handicap.
+export function marginDistribution(aId, bId, handicap = 0) {
+  const counts = new Map();
+  for (const a of scoreDistribution(aId, handicap))
+    for (const b of scoreDistribution(bId)) {
+      const margin = (2 * a.score - 2 * b.score) / 2;
+      counts.set(margin, (counts.get(margin) || 0) + a.count * b.count);
+    }
+  return [...counts]
+    .sort(([a], [b]) => a - b)
+    .map(([margin, count]) => ({ margin, count }));
+}
+
+// Both players use rule X, then both use rule Y on the SAME four dice.
+// Rows/columns are A wins, tie, B wins. Unlike compareRules, this compares
+// the two ways of judging one contest, not different rules assigned to A/B.
+export function ruleAgreement(xId, yId) {
+  const x = scoreRule(xId).score,
+    y = scoreRule(yId).score;
+  const counts = Array.from({ length: 3 }, () => [0, 0, 0]);
+  for (const [a, b] of ROLLS)
+    for (const [c, d] of ROLLS) {
+      const row = 1 - Math.sign(x(a, b) - x(c, d));
+      const col = 1 - Math.sign(y(a, b) - y(c, d));
+      counts[row][col]++;
+    }
+  return counts;
+}
+
 // Ordered pairs: A's score rule is always first. Every entry has zero handicap.
 export const FEATURED_MATCHUPS = [
   ["sum", "sum", "The regular game"],
@@ -204,6 +317,30 @@ export const FEATURED_MATCHUPS = [
   ["max", "max", "Best-die mirror match"],
   ["product", "product", "Product mirror match"],
   ["avg", "avg", "Same ordering as sum vs sum"],
+  ["max", "sum", "Can the best die beat a whole pair?"],
+  ["min", "avg", "The lower-die underdog"],
+  ["sum", "avg", "A full sum against a half sum"],
+  ["product", "max", "Multiplication against the best die"],
+  ["product", "min", "A large scoring advantage"],
+  ["product", "weighted-max", "Multiply vs add the higher die twice"],
+  ["product", "weighted-min", "Multiply vs add the lower die twice"],
+  ["weighted-max", "weighted-min", "Reward the best die or the worst?"],
+  ["avg", "floor-avg", "The cost of rounding down"],
+  ["avg", "ceil-avg", "The benefit of rounding up"],
+  ["floor-avg", "ceil-avg", "Rounding in opposite directions"],
+  ["double-gap", "sum", "Spread against total pips"],
+  ["gap", "far7", "Different rules, identical distributions"],
+  ["center", "far7", "Middle rolls against extreme rolls"],
+  ["mod10", "product-mod10", "Last digit: add or multiply?"],
+  ["mod6", "product-mod6", "A uniform remainder against a skewed one"],
+  ["sum", "cap7", "The cost of a seven-point ceiling"],
+  ["cap7", "cap7", "A mirror game with many ties"],
+  ["doubles-only", "min", "Rare high scores against steady low scores"],
+  ["doubles-only", "doubles-only", "Most contests tie at zero"],
+  ["no-doubles", "sum", "Doubles become a penalty"],
+  ["prime-bonus", "even", "Prime bonus against even bonus"],
+  ["even", "odd", "Same bonus frequency, different outcomes"],
+  ["sum", "mod12", "Only double six wraps to zero"],
 ];
 
 export function matchupCatalogue() {
@@ -301,7 +438,216 @@ export function twoDiceEvents() {
       "Product = sum (same roll)",
       (a, b) => a * b === a + b,
     ),
+    event(
+      "Extremes & products",
+      "Product < sum (same roll)",
+      (a, b) => a * b < a + b,
+    ),
+    ...["max", "min", "gap", "product"].flatMap((id) =>
+      scoreDistribution(id).map(({ score, count }) => ({
+        group: `${scoreRule(id).name} distribution`,
+        label: `${scoreRule(id).name} = ${score}`,
+        count,
+        total: 36,
+      })),
+    ),
+    ...[2, 3, 4, 5, 6].flatMap((n) => [
+      event(
+        "High & low thresholds",
+        `Min ≥ ${n} (both dice at least ${n})`,
+        (a, b) => Math.min(a, b) >= n,
+      ),
+      event(
+        "High & low thresholds",
+        `Max ≥ ${n} (at least one die at least ${n})`,
+        (a, b) => Math.max(a, b) >= n,
+      ),
+    ]),
+    ...Array.from({ length: 8 }, (_, i) =>
+      event("Sum thresholds", `Sum ≤ ${i + 3}`, (a, b) => a + b <= i + 3),
+    ),
+    event(
+      "Patterns",
+      "Sum between 6 and 8, inclusive",
+      (a, b) => a + b >= 6 && a + b <= 8,
+    ),
+    event(
+      "Patterns",
+      "Both dice prime (2, 3, or 5)",
+      (a, b) => [2, 3, 5].includes(a) && [2, 3, 5].includes(b),
+    ),
+    event(
+      "Parity & divisibility",
+      "One die divides the other",
+      (a, b) => Math.max(a, b) % Math.min(a, b) === 0,
+    ),
+    event("Parity & divisibility", "Product is a perfect square", (a, b) =>
+      Number.isInteger(Math.sqrt(a * b)),
+    ),
+    ...ROLLS.filter(([a, b]) => a <= b).map(([x, y]) =>
+      event(
+        "Exact unordered pairs",
+        `${x} and ${y}${x === y ? " (doubles)" : ", either order"}`,
+        (a, b) => Math.min(a, b) === x && Math.max(a, b) === y,
+      ),
+    ),
   ];
+}
+
+export function fourDiceEvents() {
+  const specs = [
+    [
+      "Shared faces",
+      "Identical ordered rolls",
+      (a, b, c, d) => a === c && b === d,
+    ],
+    [
+      "Shared faces",
+      "Same pair, either order",
+      (a, b, c, d) =>
+        Math.min(a, b) === Math.min(c, d) && Math.max(a, b) === Math.max(c, d),
+    ],
+    [
+      "Shared faces",
+      "At least one face shared by A and B",
+      (a, b, c, d) => [a, b].some((n) => n === c || n === d),
+    ],
+    [
+      "Shared faces",
+      "No faces shared by A and B",
+      (a, b, c, d) => [a, b].every((n) => n !== c && n !== d),
+    ],
+    [
+      "Shared faces",
+      "Exactly one distinct face shared",
+      (a, b, c, d) =>
+        new Set([a, b].filter((n) => n === c || n === d)).size === 1,
+    ],
+    [
+      "Shared faces",
+      "Two distinct faces shared",
+      (a, b, c, d) => a !== b && ((a === c && b === d) || (a === d && b === c)),
+    ],
+    [
+      "Doubles & repeats",
+      "Both players roll doubles",
+      (a, b, c, d) => a === b && c === d,
+    ],
+    [
+      "Doubles & repeats",
+      "Exactly one player rolls doubles",
+      (a, b, c, d) => (a === b) !== (c === d),
+    ],
+    [
+      "Doubles & repeats",
+      "Neither player rolls doubles",
+      (a, b, c, d) => a !== b && c !== d,
+    ],
+    [
+      "Doubles & repeats",
+      "All four dice show different faces",
+      (...dice) => new Set(dice).size === 4,
+    ],
+    [
+      "Doubles & repeats",
+      "At least one repeated face across four dice",
+      (...dice) => new Set(dice).size < 4,
+    ],
+    [
+      "Doubles & repeats",
+      "All four dice show the same face",
+      (...dice) => new Set(dice).size === 1,
+    ],
+    [
+      "Sixes across four dice",
+      "At least one 6 across four dice",
+      (...dice) => dice.includes(6),
+    ],
+    [
+      "Sixes across four dice",
+      "Exactly one 6 across four dice",
+      (...dice) => dice.filter((n) => n === 6).length === 1,
+    ],
+    [
+      "Sixes across four dice",
+      "Each player has at least one 6",
+      (a, b, c, d) => (a === 6 || b === 6) && (c === 6 || d === 6),
+    ],
+    ["Totals & margins", "Equal sums", (a, b, c, d) => a + b === c + d],
+    [
+      "Totals & margins",
+      "A’s sum beats B’s sum",
+      (a, b, c, d) => a + b > c + d,
+    ],
+    [
+      "Totals & margins",
+      "Sums differ by exactly 1",
+      (a, b, c, d) => Math.abs(a + b - c - d) === 1,
+    ],
+    [
+      "Totals & margins",
+      "Sums differ by at least 5",
+      (a, b, c, d) => Math.abs(a + b - c - d) >= 5,
+    ],
+    [
+      "Totals & margins",
+      "Both sums have the same parity",
+      (a, b, c, d) => (a + b) % 2 === (c + d) % 2,
+    ],
+    [
+      "Totals & margins",
+      "Combined total across four dice is 14",
+      (a, b, c, d) => a + b + c + d === 14,
+    ],
+    [
+      "Die-for-die contests",
+      "A beats B in both corresponding positions",
+      (a, b, c, d) => a > c && b > d,
+    ],
+    [
+      "Die-for-die contests",
+      "A is no lower in either corresponding position",
+      (a, b, c, d) => a >= c && b >= d,
+    ],
+    [
+      "Die-for-die contests",
+      "A’s max and min both strictly beat B’s",
+      (a, b, c, d) =>
+        Math.max(a, b) > Math.max(c, d) && Math.min(a, b) > Math.min(c, d),
+    ],
+    [
+      "Die-for-die contests",
+      "A’s lowest die beats B’s highest die",
+      (a, b, c, d) => Math.min(a, b) > Math.max(c, d),
+    ],
+    [
+      "Scoring disagreements",
+      "A wins on sum but loses on product",
+      (a, b, c, d) => a + b > c + d && a * b < c * d,
+    ],
+    [
+      "Scoring disagreements",
+      "A wins on max but loses on min",
+      (a, b, c, d) =>
+        Math.max(a, b) > Math.max(c, d) && Math.min(a, b) < Math.min(c, d),
+    ],
+    [
+      "Scoring disagreements",
+      "Equal sums but different products",
+      (a, b, c, d) => a + b === c + d && a * b !== c * d,
+    ],
+    [
+      "Scoring disagreements",
+      "Equal products but different sums",
+      (a, b, c, d) => a * b === c * d && a + b !== c + d,
+    ],
+  ];
+  return specs.map(([group, label, predicate]) => {
+    let count = 0;
+    for (const [a, b] of ROLLS)
+      for (const [c, d] of ROLLS) if (predicate(a, b, c, d)) count++;
+    return { group, label, count, total: 1296 };
+  });
 }
 
 export function fraction(count, total) {
