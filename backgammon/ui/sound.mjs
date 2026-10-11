@@ -24,6 +24,7 @@ export class SoundPlayer {
     createContext,
     preferences = soundPreferences,
     visible = () => !document.hidden,
+    now = () => performance.now(),
   } = {}) {
     this.createContext =
       createContext ||
@@ -33,6 +34,7 @@ export class SoundPlayer {
       });
     this.preferences = preferences;
     this.visible = visible;
+    this.now = now;
     this.buffers = new Map();
     this.voices = new Set();
     this.last = new Map();
@@ -81,8 +83,10 @@ export class SoundPlayer {
       ctx?.state !== "running"
     )
       return false;
-    const now = ctx.currentTime;
-    if (now - (this.last.get(name) ?? -Infinity) < 0.035) return false;
+    // Debounce UI events against elapsed page time. The audio device's sample
+    // clock can stall while its context still reports "running".
+    const now = this.now();
+    if (now - (this.last.get(name) ?? -Infinity) < 35) return false;
     let source;
     try {
       let buffer = this.buffers.get(name);

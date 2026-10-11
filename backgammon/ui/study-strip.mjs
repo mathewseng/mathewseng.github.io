@@ -44,19 +44,26 @@ export class StudyStrip {
     const candidates = (result.candidates || []).slice(0, 10);
     for (const extra of [result.actual, result.candidates?.find(c => c.key === previewKey)])
       if (extra && !candidates.some(c => c.key === extra.key)) candidates.push(extra);
-    if (this.result !== result || this.candidates.map(c => c.key).join("|") !== candidates.map(c => c.key).join("|")) {
+    const earlierPreview = isChecker && !!preview && !candidates.some(c => c.key === previewKey);
+    if (this.result !== result || this.earlierPreview !== earlierPreview || this.candidates.map(c => c.key).join("|") !== candidates.map(c => c.key).join("|")) {
       this.candidates = candidates;
       this.select.replaceChildren(el("option", { value: -1 }, "Original position"),
+        ...(earlierPreview ? [el("option", { value: -2, disabled: true }, "Earlier preview · outside current analysis")] : []),
         ...this.candidates.map((c, i) => el("option", { value: i },
           `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + this.playedLabel : ""}`)));
       this.result = result;
+      this.earlierPreview = earlierPreview;
     }
-    const chosen = preview ? this.candidates.findIndex(c => c.key === previewKey) : -1;
+    const chosen = earlierPreview ? -2 : preview ? this.candidates.findIndex(c => c.key === previewKey) : -1;
     this.select.value = String(chosen);
     this.previous.disabled = chosen < 0;
     this.next.disabled = chosen >= this.candidates.length - 1;
     if (isChecker) {
       this.heading.textContent = `${result.settings.name} · move previews`;
+      if (earlierPreview) {
+        this.value.textContent = "This preview was not retained at the current depth.";
+        return;
+      }
       const candidate = this.candidates[Math.max(0, chosen)];
       const value = candidate?.mwc == null ? equity(candidate?.equity ?? 0) : percentage(candidate.mwc);
       this.value.textContent = candidate

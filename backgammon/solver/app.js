@@ -44,7 +44,6 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   brush = "ivory",
   result = null,
   previousResult = null,
-  autoDeep = true,
   checkpoint = null,
   rolloutTrials = 256,
   preview = null,
@@ -99,7 +98,7 @@ const sourceControl = button("Source", () => {
   preview = null;
   render();
 }, "source-preview-control");
-analysis.preset = "deep";
+analysis.preset = "auto";
 const normalPoint = draft.board.onPoint;
 draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
 const hash = new URLSearchParams(location.hash.slice(1)),
@@ -393,23 +392,22 @@ function panel(problems) {
         "Analysis strength",
         select(
           [
-            ["auto", "Auto · Quick then Deep"],
+            ["auto", "Auto · deepest within ~1 second"],
             ...Object.entries(PRESETS).map(([key, value]) => [
               key,
               `${value.name} · ${value.plies} ply`,
             ]),
           ],
-          autoDeep ? "auto" : analysis.preset,
+          analysis.preset,
           (value) => {
-            autoDeep = value === "auto";
-            analysis.preset = autoDeep ? "deep" : value;
+            analysis.preset = value;
           },
         ),
       ),
       el(
         "p",
         { class: "muted small" },
-        "Auto shows a completed Quick result, then refines to Deep. Expert and Research screen at 2 ply, then compare finalists at 3 or 4 ply. All use pruning and zero noise.",
+        "Auto searches up to 4 ply for about one second after loading, keeping the deepest completed result. It screens at 0 ply: top 16, up to 24 within 0.160 equity, plus the played move. Fixed Quick, Standard and Deep evaluate every legal result. Expert and Research compare 2-ply finalists at 3 or 4 ply. All use pruning and zero noise.",
       ),
     ),
     analysis.status,
@@ -778,11 +776,7 @@ async function analyze() {
   const key = positionKey(source);
   try {
     const event = review?.events[index];
-    for (const preset of autoDeep ? ["quick", "deep"] : [analysis.preset]) {
-      const answer = await analysis.run(source, {
-        preset,
-        submitted: event?.action.type === "move" ? event.action.steps : null,
-      });
+    const show = (answer) => {
       if (token !== analysisEpoch || key !== positionKey(source)) return;
       if (
         answer.type === "cube" &&
@@ -793,12 +787,17 @@ async function analyze() {
         )
       )
         Object.assign(answer, gradeCube(source, answer, event.action.type));
-      previousResult =
-        result?.positionKey === answer.positionKey ? result : null;
+      if (result?.positionKey !== answer.positionKey) previousResult = null;
+      else if (result.settings.plies !== answer.settings.plies) previousResult = result;
       result = answer;
       if (review) reviewResults.set(index, answer);
       render();
-    }
+    };
+    const answer = await analysis.run(source, {
+      submitted: event?.action.type === "move" ? event.action.steps : null,
+      onEvaluation: show,
+    });
+    show(answer);
   } catch (e) {
     if (token === analysisEpoch && e.name !== "AbortError") showError(e);
   } finally {

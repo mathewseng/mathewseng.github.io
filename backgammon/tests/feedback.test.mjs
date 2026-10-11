@@ -98,6 +98,7 @@ function context() {
 test("audio is lazy, never queues blocked cues and releases bounded voices on mute/background", async () => {
   const ctx = context();
   let created = 0,
+    clock = 1000,
     visible = true,
     pref = { ...DEFAULT_SOUND };
   const player = new SoundPlayer({
@@ -107,6 +108,7 @@ test("audio is lazy, never queues blocked cues and releases bounded voices on mu
     },
     preferences: () => pref,
     visible: () => visible,
+    now: () => clock,
   });
   assert.equal(player.play("roll"), false);
   assert.equal(created, 0);
@@ -120,7 +122,7 @@ test("audio is lazy, never queues blocked cues and releases bounded voices on mu
     "Duplicate contact inside 35ms is suppressed",
   );
   for (const name of Object.keys(CUES)) {
-    ctx.currentTime += 0.05;
+    clock += 50;
     player.play(name);
   }
   assert.equal(player.voices.size, 8);
@@ -151,6 +153,20 @@ test("audio is lazy, never queues blocked cues and releases bounded voices on mu
   assert.equal(player.buffers.size, 0);
   assert.equal(player.voices.size, 0);
   assert.equal(ctx.state, "closed");
+});
+test("opening die cues recover after 35 ms even when the audio sample clock stalls", async () => {
+  const ctx = context();
+  let clock = 0;
+  const player = new SoundPlayer({createContext:()=>ctx,preferences:()=>DEFAULT_SOUND,visible:()=>true,now:()=>clock});
+  await player.unlock();
+  assert.equal(player.play("die"),true);
+  clock = 20;
+  assert.equal(player.play("die"),false);
+  clock = 350;
+  assert.equal(ctx.currentTime,1,"Audio sample time has not advanced");
+  assert.equal(player.play("die"),true);
+  assert.equal(ctx.sources.length,2);
+  player.destroy();
 });
 test("unsupported/blocked Web Audio is silent and never breaks game actions", async () => {
   for (const createContext of [

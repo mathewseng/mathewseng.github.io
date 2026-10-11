@@ -15,8 +15,13 @@ import {
 } from "../core/rules.mjs";
 import { toXGID as exportXGID } from "../core/xgid.mjs";
 import { ENGINE_VERSION, PRESETS, CAPABILITIES } from "./metadata.mjs";
+import { ADAPTIVE_ROOT } from "./adaptive.mjs";
 const toXGID = (s) => exportXGID(s, { engine: true });
 export function createEvaluator(module) {
+  // One completed 2-ply root list, keyed by the full decision context and exact
+  // candidate set. Deeper presets reuse it without mixing depths in rankings.
+  let screeningCache = null;
+  let quickCache = null;
   if (module.cwrap("init", "number", [])() !== 0)
     throw new Error("GNUbg could not initialize its data.");
   const score = module.cwrap("bg_score", "number", [
@@ -73,6 +78,7 @@ export function createEvaluator(module) {
       preset = "quick",
       kind = s.phase === "move" ? "checker" : "cube",
       submitted = null,
+      { automatic = false } = {},
     ) {
       assertState(s);
       const settings = PRESETS[preset];
@@ -167,14 +173,14 @@ export function createEvaluator(module) {
       if (s.phase !== "move")
         throw new Error("Checker analysis requires rolled dice.");
       const turns = legalTurns(s);
-      let candidates = turns
-        .map((turn) => {
+      const submittedKey = submitted ? boardKey(commitTurn(s, submitted)) : null;
+      const scoreTurns = (choices, plies) => choices.map((turn) => {
           // Preserve the original player on roll, cube and match context in the after-XGID.
           const after = { ...turn.state, dice: [], phase: "roll" };
           const value = call(score, [
             xgid,
             toXGID(after),
-            Math.min(2, settings.plies),
+            plies,
             beavers,
           ]);
           return {
@@ -185,12 +191,31 @@ export function createEvaluator(module) {
           };
         })
         .sort((a, b) => b.equity - a.equity);
-      let screening = null;
+      let rootTurns = turns, screening = null;
+      if (automatic && settings.plies > 0) {
+        const quick = quickCache?.key === base.positionKey
+          ? structuredClone(quickCache.candidates) : scoreTurns(turns, 0);
+        const finalists = quick.filter((c, i) => i < ADAPTIVE_ROOT.minimum ||
+          (i < ADAPTIVE_ROOT.maximum && quick[0].equity - c.equity <= ADAPTIVE_ROOT.threshold) ||
+          c.key === submittedKey);
+        const keys = new Set(finalists.map(c => c.key));
+        rootTurns = turns.filter(t => keys.has(t.key));
+        base.settings.rootFilter = { ...ADAPTIVE_ROOT };
+        if (rootTurns.length < turns.length)
+          screening = { plies: 0, total: turns.length, finalists: rootTurns.length,
+            threshold: ADAPTIVE_ROOT.threshold, previousBest: quick[0].key,
+            excluded: quick.filter(c => !keys.has(c.key)) };
+      }
+      const rootKey = JSON.stringify(rootTurns.map(t => t.key));
+      let candidates = settings.plies > 2 && screeningCache?.key === base.positionKey && screeningCache.rootKey === rootKey
+        ? structuredClone(screeningCache.candidates)
+        : scoreTurns(rootTurns, Math.min(2, settings.plies));
+      if (settings.plies === 0)
+        quickCache = { key: base.positionKey, candidates: structuredClone(candidates) };
+      if (settings.plies >= 2)
+        screeningCache = { key: base.positionKey, rootKey, candidates: structuredClone(candidates) };
       if (settings.plies > 2) {
         const original = candidates;
-        const submittedKey = submitted
-          ? boardKey(commitTurn(s, submitted))
-          : null;
         const finalists = original.filter(
           (c, i) =>
             i < 2 ||
@@ -219,6 +244,7 @@ export function createEvaluator(module) {
           threshold: settings.threshold,
           excluded: original.filter((c) => !finalists.includes(c)),
           previousBest: original[0].key,
+          ...(screening ? { initial: screening } : {}),
         };
       }
       let actual = null;

@@ -4,7 +4,7 @@ The live report is `/backgammon/reports/`, linked from the hub and Solver. Its d
 
 ## Analysis modes
 
-Solver defaults to Auto: complete 0-ply Quick, show it, then complete 2-ply Deep. Position changes, editing, navigation and cancellation invalidate outstanding requests. A completed Quick answer remains usable if deeper work is cancelled. Rank changes are shown only between completed results for the same decision.
+Solver defaults to Auto: search up to four plies within a target of one second after initialization, retaining the deepest fully completed comparison. Each completed depth is published before deeper work begins. The parent terminates synchronous WASM when the budget expires; unfinished scores are discarded. Automatic 1/2-ply searches screen at zero ply (top sixteen, up to twenty-four within 0.160 equity, plus the submitted move), then apply the Expert/Research finalist filters for 3/4 ply. Fixed Quick/Standard/Deep remain exhaustive. Position changes, editing, navigation and cancellation invalidate outstanding requests. Rank changes are shown only between completed results for the same decision. See `ENGINE.md` for cache identity and `OPTIMIZATION.md` for validation and measured timings.
 
 Play stores `reviewStrength` separately from `strength`. Hints and human-decision feedback default to Deep even against a Quick bot. Computer moves continue using the configured bot strength. Both fields survive Solver/Play context and session recovery.
 
@@ -30,7 +30,7 @@ Completed batches are stored in IndexedDB work/solver-rollout. The checkpoint bi
 
 All results identify the engine/version and observation date. Raw JSON is linked from the report. The historical reference corpus is used for testing; it is not silently presented as original lessons. GNUbg source/license attribution remains in About and the report.
 
-`node backgammon/scripts/auto-benchmark.cjs` adds separately measured Quick → Deep first/final response timing to the speed report. These pipeline measurements include initialization and exclude rendering; they are not an assertion about touch-to-paint latency.
+`node backgammon/scripts/auto-benchmark.cjs` reproduces the previous Quick → Deep pipeline for the historical speed report. The current default is measured by `scripts/adaptive-benchmark.cjs`: five samples per position/browser, startup reported separately, actual completed depth and wall-clock budget included. `scripts/adaptive-accuracy.cjs` compares the root screen with exhaustive two-ply evaluation, including arbitrary moves outside it. These measurements are not assertions about physical-phone or touch-to-paint latency.
 
 Numeric reproducibility is tested within 0.000001 equity/standard error. Saved batch moments and simulation seeds are reused verbatim, but GNUbg's floating-point evaluation cache can change the final few digits of newly computed batches after a worker restart. The resume test checks candidate identity, sample counts, scores and standard errors within this tolerance; it does not require byte-identical floating-point outputs.
 

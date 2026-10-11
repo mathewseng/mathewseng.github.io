@@ -19,6 +19,14 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     });
     await page.reload();
     await page.waitForFunction(() => document.querySelector(".study-strip:not([hidden])") && document.querySelector("#analyze")?.textContent === "Analyze");
+    // Fix depth for this ten-preview navigation test. Auto's completed depth
+    // and screened list legitimately depend on this browser's speed.
+    await page.locator("#panel-toggle").tap();
+    await page.getByText("Analysis settings",{exact:true}).click();
+    await page.getByLabel("Analysis strength",{exact:true}).selectOption("deep");
+    await page.locator("#details-dialog .close").tap();
+    await page.locator("#analyze").tap();
+    await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze"&&document.querySelector("#message")?.textContent.includes("· Deep"));
     const source = await saved();
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932]]) {
       await page.setViewportSize({width,height});

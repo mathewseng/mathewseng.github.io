@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { positionKey, boardKey, commitTurn } from "../core/rules.mjs";
 import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
+import { ADAPTIVE_SEARCH } from "./adaptive.mjs";
 // One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
 export class EngineClient {
   constructor({
@@ -56,6 +57,20 @@ export class EngineClient {
           this.fail(new Error(data.message));
         else if (this.active && data.id === this.active.id) {
           const job = this.active;
+          if (data.type === "evaluation" && job.preset === "auto" && !job.rollout) {
+            job.completed = data.result;
+            try {
+              for (const listener of job.evaluationListeners) listener(structuredClone(data.result));
+            } catch (e) {
+              this.fail(e);
+              return;
+            }
+            // Quick is allowed to finish on a particularly slow device. Never
+            // return partial scores or fail merely because no depth fit yet.
+            if (this.active === job && performance.now() - job.started >= ADAPTIVE_SEARCH.targetMs)
+              this.finishBudget(job);
+            return;
+          }
           if (data.type === "progress") {
             try {
               for (const listener of job.progressListeners)
@@ -67,6 +82,7 @@ export class EngineClient {
           }
           this.active = null;
           clearTimeout(this.jobTimeout);
+          clearTimeout(this.budgetTimeout);
           if (data.type === "error") job.reject(new Error(data.message));
           else {
             this.cache.set(job.key, data.result);
@@ -105,6 +121,7 @@ export class EngineClient {
       priority = 10,
       rollout = null,
       onProgress = () => {},
+      onEvaluation = () => {},
     } = {},
   ) {
     // Unscreened checker analysis scores every legal result at one depth.
@@ -114,14 +131,14 @@ export class EngineClient {
     const sharedChecker =
       kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
     let submittedKey = null;
-    if (sharedChecker && submitted) {
+    if (kind === "checker" && submitted) {
       try {
         submittedKey = boardKey(commitTurn(state, submitted));
       } catch (error) {
         return Promise.reject(error);
       }
     }
-    const forCaller = (promise) => !submittedKey ? promise : promise.then(result => {
+    const forCaller = (promise) => !(sharedChecker && submittedKey) ? promise : promise.then(result => {
       const actual = result.candidates.find(c => c.key === submittedKey);
       if (!actual)
         throw new Error("Submitted result missing from complete legal move set.");
@@ -136,7 +153,7 @@ export class EngineClient {
       positionKey(state),
       preset,
       kind,
-      sharedChecker ? null : submitted,
+      sharedChecker ? null : submittedKey || submitted,
       rollout,
     ]);
     if (this.cache.has(key)) {
@@ -148,6 +165,7 @@ export class EngineClient {
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
     if (existing) {
       existing.progressListeners.add(onProgress);
+      existing.evaluationListeners.add(onEvaluation);
       existing.priority = Math.max(existing.priority, priority);
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
       if (this.active && existing !== this.active && existing.priority > this.active.priority)
@@ -165,6 +183,7 @@ export class EngineClient {
       priority,
       rollout,
       progressListeners: new Set([onProgress]),
+      evaluationListeners: new Set([onEvaluation]),
     };
     job.promise = new Promise((resolve, reject) =>
       Object.assign(job, { resolve, reject }),
@@ -194,7 +213,8 @@ export class EngineClient {
       if (!this.queue.length) return;
       const job = this.queue.shift();
       this.active = job;
-      this.onStatus("busy", `Evaluating ${job.preset}…`);
+      job.started = performance.now();
+      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Searching deeper · about 1 second…" : `Evaluating ${job.preset}…`);
       this.worker.postMessage({
         id: job.id,
         type: "analyze",
@@ -204,6 +224,8 @@ export class EngineClient {
         submitted: job.submitted,
         rollout: job.rollout,
       });
+      if (job.preset === "auto" && !job.rollout)
+        this.budgetTimeout = setTimeout(() => this.finishBudget(job), ADAPTIVE_SEARCH.targetMs);
       this.jobTimeout = setTimeout(
         () =>
           this.fail(
@@ -217,15 +239,37 @@ export class EngineClient {
       );
     } catch (e) {
       // A cancelled initializer must not reject work queued for its replacement.
-      if (generation === this.generation)
-        for (const job of this.queue.splice(0)) job.reject(e);
+      if (generation === this.generation) this.fail(e);
     } finally {
       this.pumping = false;
       if (!this.active && this.queue.length) this.pump();
     }
   }
+  finishBudget(job) {
+    if (this.active !== job || !job.completed) return;
+    const result = {
+      ...job.completed,
+      elapsedMs: performance.now() - job.started,
+      budget: { ...job.completed.budget, reason: "time-budget" },
+    };
+    clearTimeout(this.jobTimeout);
+    clearTimeout(this.budgetTimeout);
+    // A message cannot interrupt a synchronous native search. Terminate it,
+    // invalidate its generation, then lazily initialize for the next request.
+    this.generation++;
+    this.worker?.terminate();
+    this.worker = null;
+    this.ready = false;
+    this.active = null;
+    this.cache.set(job.key, result);
+    while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
+    job.resolve(result);
+    this.onStatus("ready", `Analysis complete · ${result.settings.plies} ply in ${(result.elapsedMs / 1000).toFixed(2)} s`);
+    this.pump();
+  }
   cancelActive(message = "Analysis cancelled.") {
     clearTimeout(this.jobTimeout);
+    clearTimeout(this.budgetTimeout);
     clearTimeout(this.initTimeout);
     this.generation++;
     this.worker?.terminate();
@@ -252,6 +296,7 @@ export class EngineClient {
     this.initReject = null;
     clearTimeout(this.initTimeout);
     clearTimeout(this.jobTimeout);
+    clearTimeout(this.budgetTimeout);
     this.worker?.terminate();
     this.worker = null;
     this.ready = false;

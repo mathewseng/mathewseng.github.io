@@ -218,7 +218,7 @@ export function resultView(
         el(
           "p",
           { class: "muted small" },
-          `${result.screening.finalists} finalists from ${result.screening.total} alternatives screened at ${result.screening.plies} ply. A screened-out move can still be better; only finalists are compared above.`,
+          `${result.screening.finalists} finalists from ${result.screening.total} alternatives screened at ${result.screening.plies} ply${result.screening.initial ? `, after a 0-ply screen retained ${result.screening.initial.finalists}` : ""}. A screened-out move can still be better; only finalists are compared above.`,
         ),
       );
     if (result.method === "rollout")
@@ -240,6 +240,8 @@ export function resultView(
       ),
     );
   node.append(
+    ...(result.budget ? [el("p", { class: "muted small", id: "analysis-budget" },
+      `Auto · ${result.settings.plies} ply completed · ${result.budget.reason === "searching" ? "searching deeper…" : result.budget.reason === "maximum-depth" ? "maximum depth reached" : "~1 s search budget"}. Engine loading is separate; deeper manual searches remain available.`)] : []),
     el(
       "p",
       { class: "muted small" },

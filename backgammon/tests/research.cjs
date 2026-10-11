@@ -114,22 +114,22 @@ module.exports = async function research(browser, base, output) {
       };
     });
     console.log("Real research engine checks", checks);
-    // Automatic Quick -> Deep uses actual worker results, with navigation-safe cancellation.
+    // Time-budgeted refinement uses completed worker results and safely cancels.
     const url = await page.evaluate(async () => {
       const { shareURL } = await import("/backgammon/core/xgid.mjs");
-      const { initialState } = await import("/backgammon/core/rules.mjs");
-      return shareURL(
-        initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
-      );
+      // A race keeps this UI checkpoint/reload test bounded in Firefox.
+      // Opening/contact depth and accuracy are covered by engine tests.
+      const fixtures = (await (await fetch("/backgammon/data/exercises.json")).json()).items;
+      return shareURL(fixtures.find(f => f.topic === "race").state);
     });
     await page.goto(url);
     await page.waitForFunction(
       () =>
         document.querySelector("#analyze")?.textContent === "Analyze" &&
-        document.querySelector("#message")?.textContent.includes("· Deep") &&
-        !!document.querySelector("#analysis-comparison"),
+        document.querySelector("#analysis-budget")?.textContent.includes("completed") &&
+        !document.querySelector("#analysis-budget")?.textContent.includes("searching deeper"),
     );
-    assert.ok(await page.locator("#analysis-comparison").count());
+    assert.ok(await page.locator("#analysis-budget").count());
     await page.screenshot({
       path: output + "/solver-auto-desktop.png",
       fullPage: true,
@@ -150,8 +150,8 @@ module.exports = async function research(browser, base, output) {
     await page.waitForFunction(
       () =>
         document.querySelector("#analyze")?.textContent === "Analyze" &&
-        document.querySelector("#message")?.textContent.includes("· Deep") &&
-        !!document.querySelector("#analysis-comparison"),
+        document.querySelector("#analysis-budget")?.textContent.includes("completed") &&
+        !document.querySelector("#analysis-budget")?.textContent.includes("searching deeper"),
     );
     await page.locator("#rollout-controls summary").click();
     assert.match(

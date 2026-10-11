@@ -48,6 +48,28 @@ async function json(path) {
 }
 $("release").textContent = ENGINE_VERSION;
 try {
+  const [report, accuracy] = await Promise.all([json("../data/adaptive-benchmark.json"), json("../data/adaptive-accuracy.json")]);
+  let browserName = report.results[0].browser;
+  const target = el("div", {});
+  const draw = () => {
+    const browser = report.results.find(b => b.browser === browserName);
+    target.replaceChildren(table(["Position", "Completed depth", "Median", "Range"], browser.rows.map(row => {
+      const depths = [...new Set(row.completedPlies)].sort((a,b)=>a-b);
+      return [row.topic, `${depths.join(" / ")} ply`, time(row.summary.median), `${time(row.summary.min)}–${time(row.summary.max)}`];
+    }), `${browser.browser} ${browser.version} · five fresh-worker samples per position; search time excludes loading.`));
+  };
+  $("automatic-content").append(
+    el("p", {class:"muted"}, `${report.results[0].engine} · measured ${new Date(report.recordedAt).toLocaleString()}`),
+    field("Automatic search browser", select(report.results.map(b=>[b.browser,b.browser]), browserName, value=>{browserName=value;draw();})),
+    target,
+    el("p", {}, `The automatic root filter retained the exhaustive two-ply best move in ${accuracy.summary.identicalBest} of ${accuracy.summary.positions} tested positions. ${accuracy.summary.arbitraryMoveChecks} submitted moves outside the filtered list were also graded against exhaustive analysis. This is same-engine agreement, not proof of perfect play or an Elo improvement.`),
+    el("p", {class:"muted"}, `${report.environment.cpu} · ${report.environment.os}. ${report.method}`),
+    el("p", {}, "Auto first evaluates every move at zero ply, then retains the top 16, up to 24 within 0.160 equity, and the played move. Three- and four-ply searches narrow the list further. Filtering can miss a better move; fixed Standard and Deep retain all legal results. Every displayed comparison uses one completed depth."),
+    el("p", {}, link("Download automatic timings", "../data/adaptive-benchmark.json"), " · ", link("Download filter validation", "../data/adaptive-accuracy.json")),
+  );
+  draw();
+} catch (e) { $("automatic-content").append(el("p", {class:"error"}, e.message)); }
+try {
   const report = await json("../data/native-benchmark.json");
   let browserName = report.results[0].browser, preset = "deep", condition = "cold";
   const target = el("div", {});
@@ -139,7 +161,7 @@ try {
     const median = (xs) =>
       [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
     $("speed-content").append(
-      el("h3", {}, "Automatic refinement"),
+      el("h3", {}, "Previous automatic pipeline · Quick then Deep"),
       table(
         ["Position", "Quick first answer", "Deep final answer"],
         speed.auto.rows.map((r) => [
@@ -221,7 +243,7 @@ $("method-content").append(
     ...[
       [
         "Auto",
-        "A completed Quick answer appears first; a completed Deep answer replaces it. The UI reports when the preferred move changes.",
+        "Search up to four plies for about one second after loading. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
       ],
       [
         "Quick / Standard / Deep",

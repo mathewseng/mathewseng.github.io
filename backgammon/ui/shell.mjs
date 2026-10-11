@@ -496,7 +496,7 @@ export function about() {
       el(
         "p",
         {},
-        "Solver supports 0–4 ply evaluation and resumable GNUbg rollouts with sampling error. Rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
+        "Solver defaults to the deepest completed search within about one second, up to 4 ply, with a screened candidate list. Full 0–2 ply searches remain available. Resumable GNUbg rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",

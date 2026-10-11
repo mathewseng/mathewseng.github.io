@@ -2,6 +2,7 @@
 import { supportsSIMD, backendPath } from "./backend.mjs";
 import { createEvaluator } from "./evaluate.mjs";
 import { runRollout } from "./rollout.mjs";
+import { runAdaptive } from "./adaptive.mjs";
 let evaluator, activeBackend;
 async function init() {
   const start = performance.now();
@@ -101,7 +102,10 @@ self.onmessage = async ({ data }) => {
           request.submitted,
           (checkpoint) => postMessage({ id, type: "progress", checkpoint }),
         )
-      : evaluator.analyze(
+      : request.preset === "auto"
+        ? runAdaptive(evaluator, request.state, request.kind, request.submitted,
+            result => postMessage({ id, type: "evaluation", result: { ...result, backend: activeBackend, requestId: id } }))
+        : evaluator.analyze(
           request.state,
           request.preset,
           request.kind,
