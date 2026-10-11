@@ -37,6 +37,7 @@ import { reducedMotion } from "./motion.mjs";
 import { startUpdates } from "./updates.mjs";
 import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
+import { installDialogBehavior } from "./dialog-behavior.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -87,9 +88,10 @@ export function showError(e) {
   toast(e?.message || String(e));
   console.error(e);
 }
-export function dialog(title, content, actions = []) {
-  const d = el("dialog", { class: "dialog", "aria-label": title }),
+export function dialog(title, content, actions = [], options = {}) {
+  const d = el("dialog", { class: `dialog${options.sheet ? " drawer" : ""}`, "aria-label": title }),
     close = button("Close", () => d.close(), "ghost close");
+  installDialogBehavior(d, { dismissible: options.sheet || options.dismissible });
   d.append(
     el("div", { class: "dialog-header" }, el("h2", {}, title), close),
     el("div", { class: "dialog-body" }, content),
@@ -265,7 +267,7 @@ export function shell(page, title, subtitle = "") {
 function installMobileTools(page) {
   document.querySelector(".app").dataset.page = page;
   const toolbar = $("toolbar");
-  const trigger = button("More", () => {
+  const trigger = button("Tools", () => {
     if (document.querySelector(".tool-menu-dialog")) return;
     const controls = [...toolbar.children].filter(n => n !== trigger && n.id !== "panel-toggle");
     const anchors = controls.map(n => {
@@ -274,7 +276,7 @@ function installMobileTools(page) {
       return anchor;
     });
     const menu = el("div", { class: "mobile-tool-list" }, ...controls);
-    const d = dialog(`${page[0].toUpperCase() + page.slice(1)} tools`, menu);
+    const d = dialog(`${page[0].toUpperCase() + page.slice(1)} tools`, menu, [], { sheet: true });
     d.classList.add("drawer", "tool-menu-dialog");
     trigger.setAttribute("aria-expanded", "true");
     let restored = false;
@@ -303,7 +305,7 @@ export function openPanel() {
   if (existing?.open) { existing.querySelector(".close").focus(); return; }
   const body = $("panel"),
     home = $("inspector");
-  const d = dialog("Details", body);
+  const d = dialog("Details", body, [], { sheet: true });
   d.id = "details-dialog";
   d.classList.add("drawer");
   d.addEventListener("close", () => home.append(body));
@@ -454,6 +456,8 @@ export async function preferences() {
       display,
       keys,
     ),
+    [],
+    { dismissible: true },
   );
   d.classList.add("settings-dialog");
   // Keep navigation outside the scrolling editor: tabs and Close must always
@@ -552,11 +556,13 @@ export function players(s, names = ["Ivory", "Teal"]) {
           class: `checker-dot${p ? " teal" : ""}`,
           "aria-hidden": true,
         }),
-        el("strong", {}, names[p]),
+        el("strong", { title: names[p] }, names[p]),
+        active ? el("span", { class: "player-status" },
+          s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
       ),
       el(
         "span",
-        { class: "muted" },
+        { class: "muted player-stats" },
         `${s.scores[p]}${s.matchLength ? " / " + s.matchLength : ""} · ${pipCount(s, p)} pips`,
       ),
     );

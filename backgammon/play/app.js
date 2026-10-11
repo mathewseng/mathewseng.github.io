@@ -202,7 +202,7 @@ const helpActions = el("div", {
 });
 const allControls = button("All controls", () => {
   if (document.querySelector(".practice-controls-dialog")) return;
-  const d = dialog("Help & practice", helpActions);
+  const d = dialog("Help & practice", helpActions, [], { sheet: true });
   d.classList.add("practice-controls-dialog");
   const closeOnAction = (event) => {
     if (event.target.closest("button:not(:disabled)")) d.close();

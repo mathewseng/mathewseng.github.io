@@ -544,6 +544,9 @@ const server = http.createServer((req, res) => {
         (report.mobileQuick ||= []).push(
           await require("./mobile-quick.cjs")(browser, base, out, browserName),
         );
+        (report.mobileSheets ||= []).push(
+          await require("./mobile-sheets.cjs")(browser, base, out, browserName),
+        );
         (report.clickGuide ||= []).push(
           await require("./click-guide.cjs")(browser, base, out, browserName),
         );

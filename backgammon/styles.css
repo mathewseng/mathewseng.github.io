@@ -31,6 +31,10 @@ body {
   background: var(--bg);
   color: var(--text);
 }
+html.bg-dialog-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 button,
 input,
 select,
@@ -431,11 +435,17 @@ h3 {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  flex: 1;
 }
 .player-name strong {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 40ch;
+}
+.player-stats {
+  flex: none;
+  white-space: nowrap;
 }
 .checker-dot {
   width: 12px;
@@ -447,10 +457,15 @@ h3 {
 .checker-dot.teal {
   background: var(--board-checker1, #72b8ad);
 }
-.player-strip.active .player-name:after {
-  content: "On turn";
+.player-status {
   color: var(--accent);
   font-size: 12px;
+  font-weight: 550;
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  line-height: 18px;
 }
 .board-slot {
   display: flex;
@@ -1139,13 +1154,6 @@ h3 {
   }
   .player-name strong {
     max-width: 18ch;
-  }
-  .player-strip.active .player-name:after {
-    display: none;
-  }
-  .player-strip.active .checker-dot {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
   }
   .inspector {
     display: none;
@@ -3662,4 +3670,36 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   .hub-backgammon #hub-board { order: 2; margin: 0; width: 100%; aspect-ratio: 876 / 660; }
   .hub-backgammon .hub-main > p { order: 3; margin: 0; }
   .hub-backgammon .hub-update { order: 4; }
+}
+
+/* Phone utility sheets open near the thumb and leave their Close action fixed.
+   Landscape keeps a centered dialog to use its limited height efficiently. */
+@media (max-width: 700px) and (min-height: 501px) {
+  .dialog.drawer[open]:not([data-keyboard]) {
+    inset: auto 0 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 18px 18px 0 0;
+    border-inline: 0;
+    border-bottom: 0;
+    padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    animation: bg-sheet-enter 160ms ease-out;
+  }
+  .dialog.drawer .dialog-header { margin-bottom: 12px; padding-bottom: 12px; }
+  .dialog.drawer .dialog-header h2 { font-size: 18px; }
+  .dialog.drawer .dialog-header .close { min-height: 44px; }
+  .dialog.drawer :is(.mobile-tool-list, .action-help) { gap: 8px; }
+  .dialog.drawer :is(.mobile-tool-list, .action-help) > button {
+    min-height: 50px;
+    font-size: 15px;
+    background: var(--surface);
+    border-color: var(--line);
+  }
+  .player-strip { gap: 8px; }
+  .player-name { gap: 6px; }
+}
+@keyframes bg-sheet-enter {
+  from { transform: translateY(16px); opacity: .7; }
+  to { transform: translateY(0); opacity: 1; }
 }
