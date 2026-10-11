@@ -169,6 +169,8 @@ Solver defaults to **Auto · deepest within ~1 second**. It publishes completed 
 
 After assembling `_site` and serving it locally, `node backgammon/scripts/adaptive-benchmark.cjs` records five fresh-worker timing samples for seven positions in Chromium, Firefox and WebKit. `node backgammon/scripts/adaptive-accuracy.cjs` checks the automatic root screen against exhaustive two-ply analysis on 300 historical reference positions and 31 authored checker fixtures, including submitted moves outside the screen. These reports appear on the Engine report page. See [the optimization audit](docs/OPTIMIZATION.md) for the measured scope and limitations.
 
+The [300-position depth study](docs/DEPTH-STUDY.md) compares fixed 2-, 3- and 4-ply recommendations, common-depth equity gaps, historical reference losses and desktop WebKit timings. `node backgammon/scripts/depth-study.cjs` runs against `_site` with a fresh worker for each position/depth and saves resumable checkpoints. It does not change the application's engine or defaults.
+
 **Roll out this decision** runs real GNUbg simulations in completed 32-trial batches, with 64/256/1024/4096 trials, statistical sampling intervals, cancellation and locally persisted resume. This rollout policy is 0-ply and supports ordinary cube/match play; beavers/raccoons remain tree-analysis only. Sampling intervals exclude policy bias and screening risk. The [engine accuracy & speed report](/backgammon/reports/) provides recorded per-setting measurements, external reference results, raw downloads and an explicit on-device measurement button. See [docs/RESEARCH.md](docs/RESEARCH.md) for full methodology, limits and reproduction.
 
 ## Optional board equity bar
