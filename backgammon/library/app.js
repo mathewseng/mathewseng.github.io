@@ -119,14 +119,14 @@ function render() {
       { class: "library-filters" },
       search,
       typeFilter,
-      select(
+      Object.assign(select(
         [["", "All collections"], ...collections.map((c) => [c, c])],
         collection,
         (v) => {
           collection = v;
           renderList();
         },
-      ),
+      ), { ariaLabel: "Collection filter" }),
     ),
     el("div", { id: "items" }),
   );
@@ -205,20 +205,17 @@ function renderList() {
     if (item.kind === "match") {
       const decisions = decisionHistory(item);
       const summary = el("div", { class: "library-session-summary" });
-      for (const n of [...new Set(decisions.map((r) => r.game))]) {
-        const rows = decisions.filter((r) => r.game === n);
+      if (decisions.length) {
+        const totals = [0, 1].map(player => decisionTotals(decisions, player));
+        const games = new Set(decisions.map(r => r.game)).size;
         summary.append(
-          el(
-            "p",
-            {},
-            `Game ${n} · ` +
-              [0, 1]
-                .map((p) => {
-                  const t = decisionTotals(rows, p);
-                  return `${item.names?.[p] || (p ? "Teal" : "Ivory")}: ${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV points lost" : "equity lost"} (${t.evaluated} evaluated, ${t.pending} unreviewed)`;
-                })
-                .join(" · "),
-          ),
+          el("div", { class: "library-session-players" }, ...totals.map((t, player) =>
+            el("div", { class: "library-session-player", "data-player": player },
+              el("strong", {}, item.names?.[player] || (player ? "Teal" : "Ivory")),
+              el("span", {}, `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV points lost" : "equity lost"}`),
+            ))),
+          el("p", { class: "library-session-count" },
+            `${games} ${games === 1 ? "game" : "games"} · ${totals.reduce((n, t) => n + t.evaluated, 0)} evaluated · ${totals.reduce((n, t) => n + t.pending, 0)} unreviewed`),
         );
       }
       if (!decisions.length)
@@ -263,6 +260,14 @@ function inspector() {
       maxlength: 100,
       placeholder: "Collection name",
     });
+  p.append(el("h2", { class: "library-selected-title" }, item.title));
+  if (item.kind !== "collection")
+    p.append(button(
+      item.kind === "match" ? "Review match in Solver" : "Open in Solver",
+      () => (location.href = `/backgammon/solver/?item=${encodeURIComponent(item.id)}`),
+      item.kind === "match" ? "" : "primary",
+      { class: item.kind === "match" ? "library-open" : "primary library-open" },
+    ));
   if (item.kind === "match")
     p.append(
       button(
@@ -295,7 +300,7 @@ function inspector() {
       ),
     );
   if (item.kind !== "collection") {
-    const slot = el("div", { style: "aspect-ratio:876/600" });
+    const slot = el("div", { class: "library-preview" });
     p.append(slot);
     const board = new Board(slot);
     board.render(
@@ -328,11 +333,6 @@ function inspector() {
         await refresh();
       },
       "primary",
-    ),
-    button(
-      item.kind === "match" ? "Review match" : "Open in Solver",
-      () =>
-        (location.href = `/backgammon/solver/?item=${encodeURIComponent(item.id)}`),
     ),
     button("Export item", () =>
       download(

@@ -6,8 +6,9 @@ import { boardKey } from "../core/rules.mjs";
 // Keep previews beside the board on phones. These are the same evaluated
 // candidates used by the full results panel; choosing one never edits a game.
 export class StudyStrip {
-  constructor(onPreview) {
+  constructor(onPreview, { container = document.querySelector(".action-area"), playedLabel = "played" } = {}) {
     this.onPreview = onPreview;
+    this.playedLabel = playedLabel;
     this.candidates = [];
     this.select = el("select", {
       "aria-label": "Preview evaluated move",
@@ -26,7 +27,7 @@ export class StudyStrip {
     this.node = el("section", { class: "study-strip", hidden: true, "aria-label": "Position review" },
       el("div", { class: "study-strip-heading" }, this.heading),
       this.chooser, this.value, this.details);
-    document.querySelector(".action-area").prepend(this.node);
+    container.prepend(this.node);
   }
   choose(index) {
     if (index < -1 || index >= this.candidates.length) return;
@@ -47,7 +48,7 @@ export class StudyStrip {
       this.candidates = candidates;
       this.select.replaceChildren(el("option", { value: -1 }, "Original position"),
         ...this.candidates.map((c, i) => el("option", { value: i },
-          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · played" : ""}`)));
+          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + this.playedLabel : ""}`)));
       this.result = result;
     }
     const chosen = preview ? this.candidates.findIndex(c => c.key === previewKey) : -1;

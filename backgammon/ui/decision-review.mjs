@@ -15,6 +15,7 @@ import { decisionValues, lossLegend } from "./decision-values.mjs";
 import { equity, percentage } from "./analysis.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
+import { StudyStrip } from "./study-strip.mjs";
 
 // A separate instance of the shared renderer: previews cannot touch the live
 // DraftBoard. Callers own live analysis; this dialog owns and cancels the
@@ -33,6 +34,7 @@ export function decisionReview(
 ) {
   const slot = el("div", { class: "decision-board" });
   const body = el("div", { class: "decision-content" });
+  const previewControls = el("div", { class: "review-preview-controls" });
   const controls = el("div", { class: "row wrap decision-choices" });
   const caption = el("p", { class: "decision-caption", role: "status" });
   const d = dialog(
@@ -40,7 +42,7 @@ export function decisionReview(
     el(
       "div",
       { class: "decision-layout" },
-      el("div", { class: "decision-position" }, slot, controls, caption),
+      el("div", { class: "decision-position" }, slot, controls, previewControls, caption),
       body,
     ),
   );
@@ -77,7 +79,7 @@ export function decisionReview(
   const notes = el("div", { class: "decision-notes", hidden: true });
   const layout = d.querySelector(".decision-layout");
   layout.append(notes);
-  let moveListResize = () => {};
+  let moveListResize = () => {}, revealSelectedMove = () => {};
   const resizeMoves = () => moveListResize();
   window.addEventListener("resize", resizeMoves);
   d.addEventListener(
@@ -90,7 +92,10 @@ export function decisionReview(
   const narrow = matchMedia("(max-width: 700px)");
   const setView = (view) => {
     d.dataset.reviewView = view;
-    if (view === "decision") queueMicrotask(() => moveListResize());
+    if (view === "decision") queueMicrotask(() => {
+      moveListResize();
+      revealSelectedMove();
+    });
     notes.hidden = view !== "notes";
     views
       .querySelectorAll("button")
@@ -174,8 +179,16 @@ export function decisionReview(
   };
 
   let savedEngine = null,
-    selectPreview = () => {};
+    selectPreview = () => {},
+    previewResult = null;
   const board = new Board(slot);
+  const strip = new StudyStrip((candidate) => {
+    const rank = previewResult?.candidates.indexOf(candidate) ?? -1;
+    show(candidate?.steps || [], candidate
+      ? rank >= 0 ? `Move ${rank + 1}` : opponent ? "Opponent’s move" : "Your move"
+      : "Position", !!candidate);
+  }, { container: previewControls, playedLabel: opponent ? "Opponent’s move" : "Your move" });
+  strip.node.classList.add("review-preview-strip");
   const show = (steps, label, animate = false) => {
     const after = steps.reduce((s, step) => applyStep(s, step), source);
     board.render(after, {
@@ -186,6 +199,7 @@ export function decisionReview(
     });
     if (animate) board.playTurn(source, steps);
     selectPreview(steps, label);
+    strip.set(previewResult, label === "Position" ? null : after);
     caption.textContent = `${label} · ${steps.length ? notation(steps, source.turn) : label === "Position" ? "original roll" : "Pass"}`;
     controls
       .querySelectorAll("button")
@@ -204,6 +218,8 @@ export function decisionReview(
   const api = {
     dialog: d,
     loading(status, preset) {
+      previewResult = null;
+      strip.set(null);
       controls.replaceChildren();
       show([], "Position");
       body.replaceChildren(
@@ -218,6 +234,8 @@ export function decisionReview(
       );
     },
     error(error, retry) {
+      previewResult = null;
+      strip.set(null);
       body.replaceChildren(
         el("p", { class: "notice", role: "alert" }, error.message),
         el(
@@ -230,7 +248,10 @@ export function decisionReview(
     },
     result(result, expandSaved = true, freshReview = false) {
       moveListResize = () => {};
+      revealSelectedMove = () => {};
       selectPreview = () => {};
+      previewResult = result.type === "cube" ? null : result;
+      strip.set(null);
       hintResult = result.type !== "cube" && !result.actual;
       defaultView();
       if (result.type === "cube") {
@@ -456,9 +477,7 @@ export function decisionReview(
                 redraw();
                 if (narrow.matches || innerHeight < 500) {
                   setView("board");
-                  controls
-                    .querySelector("button")
-                    ?.focus({ preventScroll: true });
+                  strip.select.focus({ preventScroll: true });
                 } else
                   rows
                     .querySelector(`[data-rank="${rank + 1}"]`)
@@ -550,6 +569,16 @@ export function decisionReview(
         redraw();
         page = Math.floor(anchor / pageSize);
         redraw();
+      };
+      revealSelectedMove = () => {
+        // A long move or a "Your choice" label can reduce the fitted page
+        // size. Re-anchor after fitting so the selected move stays visible.
+        for (let i = 0; i < candidates.length; i++) {
+          if (selected >= 0) page = Math.floor(selected / pageSize);
+          const size = pageSize;
+          redraw();
+          if (pageSize === size) break;
+        }
       };
       selectPreview = (steps, label) => {
         const key = boardKey(steps.reduce((s, st) => applyStep(s, st), source));

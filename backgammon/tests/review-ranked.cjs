@@ -89,9 +89,40 @@ module.exports = async function reviewRanked(browser, base, out, name) {
             expected[rank - 1].notation,
           ),
         );
+        if (p === 0 && (width <= 700 || height <= 500)) {
+          const chooser = page.getByLabel("Preview evaluated move", {exact:true});
+          assert.ok(await chooser.isVisible(), "phone review keeps alternatives beside the board");
+          assert.ok(await chooser.evaluate(n => n === document.activeElement), "preview selection moves focus to its visible controls");
+          assert.equal(await chooser.inputValue(), String(rank - 1));
+          const boardBox = await page.locator(".decision-board").boundingBox();
+          const played = await chooser.locator("option").evaluateAll(ns => ns.find(n => n.textContent.includes("· Your move"))?.value);
+          assert.ok(played !== undefined, "played move is available even outside the top ten");
+          await chooser.selectOption(played);
+          assert.equal(await chooser.inputValue(), played);
+          await chooser.selectOption("9");
+          assert.match(await page.locator(".decision-caption").textContent(), /Move 10 ·/);
+          await page.getByRole("button", {name:"Previous move preview",exact:true}).tap();
+          assert.equal(await chooser.inputValue(), "8");
+          await chooser.selectOption("-1");
+          assert.ok(await page.getByRole("button", {name:"Previous move preview",exact:true}).isDisabled());
+          await page.getByRole("button", {name:"Next move preview",exact:true}).tap();
+          assert.equal(await chooser.inputValue(), "0");
+          assert.deepEqual(await page.locator(".decision-board").boundingBox(), boardBox, "preview controls never resize the board");
+          const fit = await page.locator(".decision-dialog").evaluate(d => ({
+            overflow: d.scrollHeight > d.clientHeight + 1 || d.scrollWidth > d.clientWidth + 1,
+            board: d.querySelector(".decision-board").getBoundingClientRect().bottom,
+            controls: d.querySelector(".review-preview-controls").getBoundingClientRect().bottom,
+            footer: d.querySelector("footer").getBoundingClientRect().top,
+          }));
+          assert.ok(!fit.overflow && Math.max(fit.board, fit.controls) <= fit.footer + 1, JSON.stringify({width,height,fit}));
+          if (p === 0) await page.screenshot({path:path.join(out, `${name}-ranked-board-${width}.png`)});
+          await chooser.selectOption("9");
+        }
         await page
           .getByRole("button", { name: "Comparison", exact: true })
           .click();
+        if (p === 0 && (width <= 700 || height <= 500))
+          assert.ok(await page.locator('.review-move[data-rank="10"][aria-pressed="true"]').isVisible(), "Comparison opens at the move currently previewed");
         if (
           !(await page
             .getByRole("button", { name: "Next moves", exact: true })

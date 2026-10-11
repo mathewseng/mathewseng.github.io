@@ -338,9 +338,13 @@ module.exports = async function assistanceUX(
     await reviewed.click();
     if (await page.locator(".decision-tabs").count())
       await page.locator('.decision-tabs [data-view="board"]').click();
-    await page
-      .getByRole("button", { name: opponent ? "Opponent’s move" : "Your move", exact: true })
-      .click();
+    const preview = page.getByLabel("Preview evaluated move", {exact:true});
+    const playedValue = await preview.locator("option").evaluateAll(
+      (options, label) => options.find(o => o.textContent.includes(`· ${label}`))?.value,
+      opponent ? "Opponent’s move" : "Your move",
+    );
+    assert.ok(playedValue !== undefined, "review labels the actual player's move in its picker");
+    await preview.selectOption(playedValue);
     await shot("review-phone");
     await close();
     await page.locator("#panel-toggle").click();
