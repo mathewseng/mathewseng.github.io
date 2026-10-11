@@ -60,6 +60,8 @@ const draft = new DraftBoard(ui.board, () => {
   savePractice();
 });
 const study = new StudyStrip(previewCandidate);
+const practiceHelp = el("div", { class: "trainer-help", role: "group", hidden: true, "aria-label": "Practice help" });
+document.querySelector(".action-main").prepend(practiceHelp);
 function previewCandidate(candidate) {
   preview = candidate
     ? candidate.steps.reduce((s, st) => applyStep(s, st), exercise.state)
@@ -146,7 +148,7 @@ async function next() {
 }
 function render() {
   study.set(exercise && revealed ? result : null, preview || (revealed ? draft.current() : null));
-  $("panel-toggle").textContent = revealed ? "Results" : "Details";
+  $("panel-toggle").textContent = revealed ? "Results" : "Practice";
   ui.equityBar.set({
     state: exercise?.state,
     result: revealed ? result : null,
@@ -157,6 +159,10 @@ function render() {
         : "",
   });
   if (!exercise) {
+    practiceHelp.hidden = true;
+    draft.enabled = false;
+    draft.render();
+    $("subtitle").textContent = "Saved practice";
     $("message").textContent = "No saved exercises in this collection yet.";
     $("actions").replaceChildren(
       button(
@@ -175,12 +181,14 @@ function render() {
   draft.enabled = !revealed && !busy;
   draft.render();
   $("subtitle").textContent =
-    `Decision ${count + 1} of ${length} · ${exercise.state.matchLength ? exercise.state.matchLength + "-point match" : "Unlimited points"} · ${exercise.state.phase === "double" ? "cube offered" : exercise.state.phase === "roll" ? "before roll" : "checker play"}`;
+    `${count + 1} of ${length} · ${exercise.state.matchLength ? exercise.state.matchLength + "-point match" : "Unlimited points"}`;
   actions();
   panel();
   savePractice();
 }
 function actions() {
+  practiceHelp.replaceChildren();
+  practiceHelp.hidden = !exercise || busy || revealed;
   if (!exercise) return;
   const s = exercise.state,
     a = $("actions");
@@ -222,8 +230,9 @@ function actions() {
       : s.phase === "double"
         ? `${offerName(s)} to ${s.cube.value * 2}. ${playerName(decisionPlayer(s))} to decide.`
         : "Would you double or roll?";
+  practiceHelp.append(button("Hint", hint, "ghost"));
   if (s.phase === "move")
-    a.append(
+    practiceHelp.append(
       button("Undo", () => draft.undo(), "", {
         disabled: !draft.draft.length,
       }),
@@ -231,6 +240,10 @@ function actions() {
         disabled: !draft.draft.length,
         id: "reset-draft",
       }),
+    );
+  practiceHelp.append(button("Skip", skip, "ghost"));
+  if (s.phase === "move")
+    a.append(
       button("Submit move", () => submit(clone(draft.draft)), "primary", {
         disabled: !draft.complete(),
         id: "submit-decision",
@@ -318,20 +331,6 @@ function panel() {
         "Choose on the board. The answer stays hidden until you submit.",
       ),
       el("div", { id: "draft-controls" }),
-      el(
-        "div",
-        { class: "row" },
-        button("Hint", hint),
-        button(
-          "Skip",
-          async () => {
-            await recordPractice(exercise.id, { skip: true, hint: hinted });
-            count++;
-            count >= length ? finish() : next();
-          },
-          "ghost",
-        ),
-      ),
     );
     draftControls();
   }
@@ -437,7 +436,14 @@ async function submit(decision) {
     render();
   }
 }
+async function skip() {
+  if (busy || revealed || !exercise) return;
+  await recordPractice(exercise.id, { skip: true, hint: hinted });
+  count++;
+  count >= length ? finish() : next();
+}
 async function hint() {
+  if (busy || revealed || !exercise) return;
   hinted = true;
   busy = true;
   render();
@@ -468,6 +474,9 @@ function finishOrNext() {
 function finish() {
   analysis.cancel();
   study.set(null);
+  practiceHelp.hidden = true;
+  draft.enabled = false;
+  draft.render();
   $("message").textContent =
     `Session complete · ${count} decisions studied.`;
   $("actions").replaceChildren(button("Practice again", begin, "primary"));

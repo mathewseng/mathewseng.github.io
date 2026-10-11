@@ -3458,7 +3458,7 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
 
 /* Study controls occupy spare phone space without covering or resizing the
    board. Small/zoomed viewports may extend naturally instead of clipping. */
-@media (max-width: 700px) and (min-height: 501px), (max-width: 649px) {
+@media (max-width: 700px) and (min-height: 501px), (max-width: 649px), (max-height: 500px) and (min-width: 650px) {
   .study-strip:not([hidden]) { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
   .study-strip-heading { font-size: 13px; color: var(--muted); }
   .study-preview-controls:not([hidden]) { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; }
@@ -3564,4 +3564,63 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   }
   .decision-dialog .review-preview-controls { align-self: center; }
   .decision-dialog .review-preview-strip:not([hidden]) { padding: 0; border: 0; }
+}
+
+/* Trainer keeps its ordinary help beside the decision, not behind a drawer. */
+.trainer-help { display: flex; gap: 6px; flex-wrap: wrap; }
+.trainer-help button { min-height: 44px; }
+.app[data-page="trainer"] .action-main { justify-content: space-between; gap: 8px; }
+.app[data-page="trainer"] .tool-head .subtitle { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 700px), (max-height: 500px) {
+  .app[data-page="trainer"] .action-main { flex-direction: column; align-items: stretch; }
+  .trainer-help { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .trainer-help button { padding-inline: 6px; font-size: 14px; }
+  .app[data-page="trainer"] #actions { width: 100%; }
+  .app[data-page="trainer"] #actions > button { flex: 1; min-height: 48px; }
+}
+
+/* Short study screens use one side dock. The full inspector stays in Details
+   instead of exposing a clipped form behind the primary controls. */
+@media (max-height: 500px) and (min-width: 650px) {
+  .app:is([data-page="trainer"], [data-page="solver"]) { position: relative; grid-template-rows: 46px 0 minmax(0, 1fr); }
+  .app:is([data-page="trainer"], [data-page="solver"]) .workspace { grid-row: 3; }
+  .app:is([data-page="trainer"], [data-page="solver"]) .inspector { display: none; }
+  .app:is([data-page="trainer"], [data-page="solver"]) .tool-head {
+    position: absolute; top: calc(46px + env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right)); width: 224px;
+    min-height: 44px; padding: 0; z-index: 2;
+  }
+  .app:is([data-page="trainer"], [data-page="solver"]) .tool-head > div:first-child { display: none; }
+  .app:is([data-page="trainer"], [data-page="solver"]) #toolbar { width: 100%; justify-content: flex-end; gap: 6px; }
+  .app:is([data-page="trainer"], [data-page="solver"]) #toolbar > :not(#mobile-tools):not(#panel-toggle) { display: none; }
+  .app:is([data-page="trainer"], [data-page="solver"]) #toolbar > #mobile-tools,
+  .app:is([data-page="trainer"], [data-page="solver"]) #toolbar > #panel-toggle { display: block; min-height: 44px; font-size: 14px; }
+  .app:is([data-page="trainer"], [data-page="solver"]) .action-area {
+    display: flex; flex-direction: column; justify-content: flex-start; gap: 6px;
+    max-height: calc(100% - 48px); overflow-y: auto; border-top: 0;
+    padding-top: 4px;
+  }
+  .app:is([data-page="trainer"], [data-page="solver"]) .action-area > * { flex: none; }
+  .app:is([data-page="trainer"], [data-page="solver"]) .action-message { order: 1; }
+  .app:is([data-page="trainer"], [data-page="solver"]) .action-main { order: 2; }
+  .app:is([data-page="trainer"], [data-page="solver"]) .action-area #draft-line { display: none; }
+  .app[data-page="solver"] .study-editor:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
+  .app[data-page="solver"] .action-message { font-size: 13px; }
+  .app[data-page="solver"] .study-strip:not([hidden]) { border: 0; padding-top: 0; }
+  .app[data-page="trainer"] .study-strip:not([hidden]) { border: 0; padding-top: 0; }
+}
+
+/* Save/import/confirmation sheets keep Close and their final action visible.
+   Only a long form scrolls, including when the on-screen keyboard is open. */
+@media (max-width: 700px), (max-height: 500px) {
+  .dialog[open]:not(.decision-dialog):not(.settings-dialog):not(.history-dialog):not(.session-dialog) {
+    display: flex; flex-direction: column; overflow: hidden;
+    max-height: min(92dvh, calc(var(--dialog-visible-height, 100dvh) - 24px));
+  }
+  .dialog:not(.decision-dialog):not(.settings-dialog):not(.history-dialog):not(.session-dialog) > .dialog-header { flex: none; margin-bottom: 12px; }
+  .dialog:not(.decision-dialog):not(.settings-dialog):not(.history-dialog):not(.session-dialog) > .dialog-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  .dialog:not(.decision-dialog):not(.settings-dialog):not(.history-dialog):not(.session-dialog) > footer { flex: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .dialog > footer:empty { display: none; }
+  .dialog > footer button { min-height: 48px; }
+  .dialog[data-keyboard] { top: var(--dialog-visible-top); bottom: auto; margin-block: 12px 0; max-height: calc(var(--dialog-visible-height) - 24px); }
 }
