@@ -285,8 +285,7 @@ installPlayShortcuts({
     if (action === "help") {
       preferences()
         .then(() =>
-          [...document.querySelectorAll(".settings-tabs button")]
-            .find((b) => b.textContent === "Keyboard")
+          document.querySelector('.settings-tabs button[aria-label="Keyboard"]')
             ?.click(),
         )
         .catch(showError);

@@ -359,7 +359,7 @@ export async function preferences() {
   addEventListener("bg-sound", updateSounds);
   const display = el(
     "div",
-    { class: "stack" },
+    { class: "stack settings-display" },
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
     el("label", { class: "check" }, moveHints, "Show legal-move hints"),
@@ -401,10 +401,10 @@ export async function preferences() {
     class: "segmented settings-tabs",
     "aria-label": "Settings sections",
   });
-  for (const [label, section] of [
-    ["Board colors", colors],
-    ["Display & controls", display],
-    ["Keyboard", keys],
+  for (const [label, shortLabel, section] of [
+    ["Board colors", "Board", colors],
+    ["Display & controls", "Display", display],
+    ["Keyboard", "Keyboard", keys],
   ]) {
     const tab = button(
       label,
@@ -414,26 +414,34 @@ export async function preferences() {
         keys.hidden = section !== keys;
         for (const t of tabs.children)
           t.setAttribute("aria-pressed", String(t === tab));
+        d.querySelector(".dialog-body").scrollTop = 0;
       },
       "",
-      { "aria-pressed": section === colors },
+      { "aria-pressed": section === colors, "aria-label": label },
+    );
+    tab.replaceChildren(
+      el("span", { class: "settings-tab-wide", "aria-hidden": true }, label),
+      el("span", { class: "settings-tab-short", "aria-hidden": true }, shortLabel),
     );
     tabs.append(tab);
   }
   const release = releaseStatus();
+  display.append(el("details", { class: "settings-updates" },
+    el("summary", {}, "App version & updates"), release));
   const d = dialog(
     "Settings",
     el(
       "div",
       { class: "settings-content" },
-      release,
-      tabs,
       colors,
       display,
       keys,
     ),
   );
   d.classList.add("settings-dialog");
+  // Keep navigation outside the scrolling editor: tabs and Close must always
+  // remain reachable on a phone, including with its software keyboard open.
+  d.querySelector(".dialog-header").after(tabs);
   d.addEventListener("close", () =>
     dispatchEvent(new Event("bg-settings")),
   );
