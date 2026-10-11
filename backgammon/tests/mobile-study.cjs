@@ -86,6 +86,15 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     }
     await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("0");
     await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("-1");
+    await page.locator("#mobile-tools").tap();
+    await page.locator(".tool-menu-dialog #equity-toggle").tap();
+    await page.waitForFunction(() => document.querySelector("#equity-bar")?.dataset.state === "ready");
+    await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("0");
+    assert.equal(await page.locator("#equity-bar").getAttribute("data-state"),"unavailable","alternate preview must not claim source equity");
+    await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("-1");
+    assert.equal(await page.locator("#equity-bar").getAttribute("data-state"),"ready","original preview restores decision equity");
+    await page.locator("#mobile-tools").tap();
+    await page.locator(".tool-menu-dialog #equity-toggle").tap();
     const trainerOriginal = await page.evaluate(async () => {
       const {get} = await import("/backgammon/core/storage.mjs");
       const s = await get("work","trainer");

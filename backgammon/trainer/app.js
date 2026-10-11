@@ -152,7 +152,7 @@ function render() {
     result: revealed ? result : null,
     blocked: !revealed
       ? "Equity stays hidden until you submit or reveal the answer."
-      : preview
+      : preview && exercise && boardKey(preview) !== boardKey(exercise.state)
         ? "Return to the original position to see decision equity."
         : "",
   });
