@@ -26,12 +26,12 @@ const os = require("node:os");
       ).items;
       const startup = [];
       for (let i = 0; i < 10; i++) {
-        const e = new EngineClient();
+        const e = new EngineClient({ openingBook: null });
         await e.start();
         startup.push(e.startup);
         e.destroy();
       }
-      const engine = new EngineClient();
+      const engine = new EngineClient({ openingBook: null });
       await engine.start();
       const samples = [];
       for (const topic of ["opening", "contact", "race", "bearoff", "cube"]) {
@@ -46,7 +46,7 @@ const os = require("node:os");
           }
           const cold = [];
           for (let j = 0; j < 5; j++) {
-            const fresh = new EngineClient();
+            const fresh = new EngineClient({ openingBook: null });
             await fresh.start();
             const result = await fresh.analyze(state, { preset });
             cold.push(result.elapsedMs);

@@ -19,7 +19,7 @@ const fs = require("node:fs");
         await fetch("/backgammon/data/exercises.json")
       ).json();
       const { EngineClient } = await import("/backgammon/engine/client.mjs");
-      const engine = new EngineClient();
+      const engine = new EngineClient({ openingBook: null });
       for (const item of data.items) {
         item.analysis = await engine.analyze(item.state);
         item.analysis.provenance =

@@ -186,7 +186,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
         { initialState, transition, decisionPlayer } =
           await import("/backgammon/core/rules.mjs"),
         { gradeCube } = await import("/backgammon/engine/cube-grade.mjs");
-      const e = new EngineClient(),
+      const e = new EngineClient({ openingBook: null }),
         rows = [];
       const near = (a, b) => {
         if (Math.abs(a - b) > 0.00002)

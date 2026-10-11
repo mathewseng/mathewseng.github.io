@@ -32,6 +32,8 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "engine/vendor/simd/gnubg-core-module.wasm",
       "engine/backend.mjs",
       "engine/adaptive.mjs",
+      "engine/opening-book.mjs",
+      "engine/opening-book-data/index.json",
       "engine/worker.mjs",
       "engine/source/gnubg-core-955555c-bg1.tar.gz",
       "engine/source/gnubg-core-955555c-bg2.tar.gz",
@@ -81,7 +83,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
           'importScripts("./offline-manifest.js?v=generated");',
         ),
       );
-    for (const file of [...manifest.self.BG_SHELL, ...manifest.self.BG_ENGINE]
+    for (const file of [...manifest.self.BG_SHELL, ...manifest.self.BG_ENGINE, ...Object.keys(manifest.self.BG_BOOK_DIGESTS)]
       .filter((file) => file.startsWith("/backgammon/"))
       .sort()) {
       const source = readFileSync(join(site, file));
@@ -115,6 +117,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
     for (const file of [
       ...manifest.self.BG_SHELL,
       ...manifest.self.BG_ENGINE,
+      ...Object.keys(manifest.self.BG_BOOK_DIGESTS),
     ]) {
       assert.ok(
         existsSync(join(site, file)),
@@ -130,6 +133,10 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
         !file.startsWith("/backgammon/refresh/"),
         "Recovery stays outside the offline cache",
       );
+    }
+    for (const [file, digest] of Object.entries(manifest.self.BG_BOOK_DIGESTS)) {
+      assert.equal(digest, createHash("sha256").update(readFileSync(join(site, file))).digest("hex"));
+      assert.ok(!manifest.self.BG_SHELL.includes(file), "book is not downloaded on hub installation");
     }
     for (const file of manifest.self.BG_ENGINE) {
       assert.equal(

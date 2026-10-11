@@ -486,8 +486,9 @@ export function about() {
       el(
         "p",
         {},
-        "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful when the cube is enabled, deterministic, pruning enabled, no noise. Every legal resulting position is evaluated at the selected depth.",
+        "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful when the cube is enabled, deterministic, pruning enabled, no noise. Live Quick, Standard and Deep searches evaluate every legal resulting position at the selected depth.",
       ),
+      el("p", {}, "Default Jacoby money games use a precomputed 3-ply opening book: all 15 opening rolls and all 21 replies to 34 opening moves within 0.040 equity of best. Book entries override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
       el(
         "p",
         {},
@@ -496,7 +497,7 @@ export function about() {
       el(
         "p",
         {},
-        "Solver defaults to the deepest completed search within about one second, up to 4 ply, with a screened candidate list. Full 0–2 ply searches remain available. Resumable GNUbg rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
+        "Solver Auto completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",

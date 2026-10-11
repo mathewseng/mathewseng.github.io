@@ -41,7 +41,7 @@ module.exports = async function backendLoading(browser, base) {
           const {EngineClient} = await import("/backgammon/engine/client.mjs");
           const {initialState} = await import("/backgammon/core/rules.mjs");
           const url = `/__engine_test/${mode}/backgammon/engine/worker.mjs${mode === "scalar" ? "?backend=scalar" : ""}`;
-          const e = new EngineClient({workerFactory: () => new Worker(url, {type: "module"})});
+          const e = new EngineClient({openingBook:null,workerFactory: () => new Worker(url, {type: "module"})});
           let initialError;
           const analyze = () => e.analyze(initialState({phase: "move", dice: [3,1], matchLength: 0}), {preset: "quick"});
           try {

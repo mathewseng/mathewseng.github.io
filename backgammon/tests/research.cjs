@@ -17,7 +17,7 @@ module.exports = async function research(browser, base, output) {
       const fixtures = (
         await (await fetch("/backgammon/data/exercises.json")).json()
       ).items;
-      const e = new EngineClient(),
+      const e = new EngineClient({ openingBook: null }),
         s = fixtures.find((f) => f.topic === "race").state;
       const whole = await e.analyze(s, { rollout: { trials: 64, seed: 7788 } });
       e.cache.clear();

@@ -44,6 +44,11 @@ jobs:
       - name: Test assembled Backgammon application
         run: node backgammon/tests/browser.cjs
 
+      - name: Test Backgammon opening book against live GNUbg
+        env:
+          BG_BROWSERS: chromium
+        run: node backgammon/tests/opening-book-browser.cjs
+
   gym:
     runs-on: ubuntu-latest
     defaults:

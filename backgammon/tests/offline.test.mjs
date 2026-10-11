@@ -277,3 +277,18 @@ test("service-worker activation leaves other families and the current cache inta
   await completed;
   assert.deepEqual(h.deleted, ["backgammon-assets-old"]);
 });
+
+test("opening book caches only the requested verified shard, works offline, and refuses mixed releases", async () => {
+  const h = harness(), path = "/backgammon/engine/opening-book-data/index.json";
+  h.self.BG_BOOK_DIGESTS = { [path]: createHash("sha256").update(path).digest("hex") };
+  const result = await h.request(path);
+  assert.equal(result.status, 200);
+  assert.equal(h.fetches(), 1, "no engine or other reply shards downloaded");
+  assert.equal(h.saved.size, 1);
+  h.offline();
+  assert.equal(await (await h.request(path)).text(), path);
+  const stale = harness();
+  stale.self.BG_BOOK_DIGESTS = { [path]: "wrong-release" };
+  assert.equal((await stale.request(path)).status, 503);
+  assert.equal(stale.saved.size, 0);
+});

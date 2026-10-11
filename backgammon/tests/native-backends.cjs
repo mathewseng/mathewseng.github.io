@@ -7,8 +7,8 @@ module.exports=async function nativeBackends(browser,base,{corpus=true}={}) {
       const {EngineClient}=await import("/backgammon/engine/client.mjs");
       const {initialState,clone,legalTurns}=await import("/backgammon/core/rules.mjs");
       const {ENGINE_VERSION}=await import("/backgammon/engine/metadata.mjs");
-      const scalar=new EngineClient({workerFactory:()=>new Worker("/backgammon/engine/worker.mjs?backend=scalar",{type:"module"})});
-      const simd=new EngineClient();
+      const scalar=new EngineClient({openingBook:null,workerFactory:()=>new Worker("/backgammon/engine/worker.mjs?backend=scalar",{type:"module"})});
+      const simd=new EngineClient({ openingBook: null });
       const rows=[],checks=[];
       const check=(ok,message)=>{if(!ok)throw Error(message);};
       const compare=(a,b,label)=>{

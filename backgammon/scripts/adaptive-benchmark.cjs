@@ -26,7 +26,7 @@ const summary = values => {
         for (const { topic,state } of cases) {
           const samples = [];
           for (let sample = 0; sample < n; sample++) {
-            const client = new EngineClient(), levels = [];
+            const client = new EngineClient({ openingBook: null }), levels = [];
             try {
               await client.start();
               const start = performance.now();
@@ -37,7 +37,7 @@ const summary = values => {
               if (sample === 0) {
                 // Independent fresh worker at exactly the completed preset:
                 // neither native caches nor our retained screening are shared.
-                const reference = new EngineClient();
+                const reference = new EngineClient({ openingBook: null });
                 try {
                   const preset = Object.entries((await import("/backgammon/engine/metadata.mjs")).PRESETS).find(([,v]) => v.plies === result.settings.plies)[0];
                   const expected = await reference.analyze(state, {preset});

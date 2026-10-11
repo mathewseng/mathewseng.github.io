@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
 // Release URL is generated with the manifest; keep the registration URL stable.
-importScripts("./offline-manifest.js?v=147ae5c7de416cc2");
+importScripts("./offline-manifest.js?v=3f0a6af9ac86b5e4");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
 function cacheShell() {
@@ -163,6 +163,23 @@ async function warmEngine() {
       });
   return warming;
 }
+const bookDownloads = new Map();
+async function bookFile(key) {
+  const cache = await caches.open(CACHE), saved = await cache.match(key);
+  if (saved) return saved;
+  if (!bookDownloads.has(key)) bookDownloads.set(key, (async () => {
+    try {
+      const response = await fetch(key, { cache: "no-store" });
+      if (!response.ok) throw new Error("Opening book unavailable.");
+      const digest = await crypto.subtle.digest("SHA-256", await response.clone().arrayBuffer());
+      const hex = [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2, "0")).join("");
+      if (hex !== self.BG_BOOK_DIGESTS[key]) throw new Error("Opening book update pending.");
+      await cache.put(key, response.clone());
+      return response;
+    } finally { bookDownloads.delete(key); }
+  })());
+  return (await bookDownloads.get(key)).clone();
+}
 function fromRelease(response) {
   // CacheStorage owns offline reuse. A second, browser-managed response cache
   // can otherwise bypass this worker and mix old module imports with a new
@@ -188,6 +205,12 @@ self.addEventListener("fetch", (event) => {
   )
     return;
   const key = u.pathname.endsWith("/") ? u.pathname + "index.html" : u.pathname;
+  if (self.BG_BOOK_DIGESTS?.[key]) {
+    // Cache only the requested shard; never pull the whole book onto the hub.
+    // A deployed update cannot mix new book values with an old active release.
+    event.respondWith(bookFile(key).then(fromRelease).catch(error => new Response(error.message, { status: 503 })));
+    return;
+  }
   if (self.BG_ENGINE.includes(key)) {
     event.respondWith(
       warmEngine()

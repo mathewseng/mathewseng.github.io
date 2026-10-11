@@ -2,14 +2,17 @@
 import { positionKey, boardKey, commitTurn } from "../core/rules.mjs";
 import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
 import { ADAPTIVE_SEARCH } from "./adaptive.mjs";
+import { OpeningBook, bookEligible } from "./opening-book.mjs";
 // One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
 export class EngineClient {
   constructor({
     workerFactory = () =>
       new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" }),
     onStatus = () => {},
+    openingBook = new OpeningBook(),
   } = {}) {
     this.factory = workerFactory;
+    this.book = openingBook;
     this.onStatus = onStatus;
     this.queue = [];
     this.cache = new Map();
@@ -124,6 +127,7 @@ export class EngineClient {
       submitted = null,
       priority = 10,
       rollout = null,
+      useBook = true,
       onProgress = () => {},
       onEvaluation = () => {},
     } = {},
@@ -132,8 +136,9 @@ export class EngineClient {
     // Grading a move is a projection of that same result, not another WASM job.
     // Screened searches/rollouts still depend on the submitted move because
     // they must explicitly add it to their finalist set.
+    const tryBook = !!this.book && bookEligible(state, { preset, kind, rollout, useBook });
     const sharedChecker =
-      kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
+      !tryBook && kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
     let submittedKey = null;
     if (kind === "checker" && submitted) {
       try {
@@ -160,6 +165,7 @@ export class EngineClient {
       kind,
       sharedChecker ? null : submittedKey || submitted,
       rollout,
+      tryBook,
     ]);
     if (this.cache.has(key)) {
       const result = this.cache.get(key);
@@ -187,6 +193,7 @@ export class EngineClient {
       submitted: sharedChecker ? null : submitted,
       priority,
       rollout,
+      tryBook,
       progressListeners: new Set([onProgress]),
       evaluationListeners: new Set([onEvaluation]),
     };
@@ -209,8 +216,25 @@ export class EngineClient {
   async pump() {
     if (this.active || !this.queue.length || this.pumping) return;
     this.pumping = true;
-    let generation;
+    let generation = this.generation;
     try {
+      const pending = this.queue[0];
+      if (pending.tryBook) {
+        this.queue.shift(); this.active = pending;
+        const result = await this.book.lookup(pending.state, pending);
+        if (this.active !== pending) return;
+        generation = this.generation;
+        if (result) {
+          this.active = null;
+          result.requestId = pending.id;
+          this.cache.set(pending.key, result);
+          while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
+          pending.resolve(result);
+          this.onStatus("ready", `Opening book · ${result.settings.plies} ply · ready`);
+          return;
+        }
+        this.active = null; this.queue.unshift(pending);
+      }
       const ready = this.start();
       generation = this.generation;
       await ready;

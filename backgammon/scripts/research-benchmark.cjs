@@ -34,7 +34,7 @@ const fs = require("node:fs"),
             cached = [],
             endToEnd = [];
           for (let i = 0; i < 3; i++) {
-            const e = new EngineClient();
+            const e = new EngineClient({ openingBook: null });
             const t = performance.now();
             const options = preset.startsWith("rollout")
               ? {

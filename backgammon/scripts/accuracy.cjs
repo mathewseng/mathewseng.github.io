@@ -18,7 +18,7 @@ const fs = require("node:fs");
         await fetch("/backgammon/data/accuracy-reference.json")
       ).json();
       const rows = [];
-      const engine = new EngineClient();
+      const engine = new EngineClient({ openingBook: null });
       try {
         for (const [index, row] of corpus.items.entries()) {
           const results = {};

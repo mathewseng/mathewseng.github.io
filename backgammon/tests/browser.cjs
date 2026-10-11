@@ -183,7 +183,7 @@ const server = http.createServer((req, res) => {
           const { initialState, legalTurns, positionKey } =
             await import("/backgammon/core/rules.mjs");
           const { fromXGID } = await import("/backgammon/core/xgid.mjs");
-          const engine = new EngineClient();
+          const engine = new EngineClient({ openingBook: null });
           const fixtures = (
             await (await fetch("/backgammon/data/exercises.json")).json()
           ).items;

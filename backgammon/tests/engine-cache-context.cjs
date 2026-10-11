@@ -20,7 +20,7 @@ module.exports = async function engineCacheContext(browser, base) {
       ];
       const rows = [];
       for (const {name,warm,state,preset} of contexts) {
-        const cold = new EngineClient(), reused = new EngineClient();
+        const cold = new EngineClient({ openingBook: null }), reused = new EngineClient({ openingBook: null });
         try {
           const expected = await cold.analyze(state,{preset});
           for (const job of warm) await reused.analyze(job.state,{preset:job.preset});

@@ -19,7 +19,7 @@ module.exports = async function engineReuse(browser, base) {
         {topic:"match",state:initialState({phase:"move",dice:[3,1],matchLength:7,scores:[2,4]})},
       ];
       let jobs = 0;
-      const engine = new EngineClient({workerFactory: () => {
+      const engine = new EngineClient({openingBook:null,workerFactory: () => {
         const w = new Worker("/backgammon/engine/worker.mjs",{type:"module"});
         const send = w.postMessage.bind(w);
         w.postMessage = message => { if (message.type === "analyze") jobs++; send(message); };

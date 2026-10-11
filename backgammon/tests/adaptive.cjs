@@ -9,7 +9,7 @@ module.exports = async function adaptive(browser,base,out,name="browser") {
       const {initialState,legalTurns,positionKey}=await import("/backgammon/core/rules.mjs");
       const {PRESETS}=await import("/backgammon/engine/metadata.mjs");
       const state=initialState({phase:"move",dice:[3,3]}), submitted=legalTurns(state).at(-1).steps;
-      const e=new EngineClient(), updates=[];
+      const e=new EngineClient({ openingBook: null }), updates=[];
       try {
         await e.start();
         const start=performance.now();

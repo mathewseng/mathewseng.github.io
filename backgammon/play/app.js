@@ -541,6 +541,7 @@ function render() {
   placeReview();
   const m = model(),
     s = state();
+  if (config.mode !== "online") analysis.engine.book?.prepare(s);
   playersButton.hidden = !m?.started || config.mode === "online";
   playersButton.disabled = committing;
   draft.lastMove = lastMove(m);

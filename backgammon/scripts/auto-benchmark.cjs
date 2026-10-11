@@ -17,7 +17,7 @@ const { chromium } = require("playwright"),
       for (const topic of ["opening", "contact", "race", "bearoff", "cube"]) {
         const samples = [];
         for (let i = 0; i < 3; i++) {
-          const e = new EngineClient(),
+          const e = new EngineClient({ openingBook: null }),
             s = f.find((x) => x.topic === topic).state,
             start = performance.now();
           const q = await e.analyze(s, { preset: "quick" }),

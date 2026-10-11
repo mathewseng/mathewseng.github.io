@@ -100,7 +100,7 @@ const server = http.createServer((req, res) => {
       const schedule = Array.from({ length: 100 }, (_, n) => groups.map(group => group[n])).flat();
       const presets = ["deep", "expert", "research"];
       async function evaluate(row, preset, submitted = null) {
-        const engine = new EngineClient();
+        const engine = new EngineClient({ openingBook: null });
         try {
           const start = performance.now();
           await engine.start();
