@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEPTHS, distribution, summarize } from "../scripts/summarize-depth-study.mjs";
+import { parseBenchmarkMove } from "../scripts/benchmark-reference.mjs";
 
 function fixture() {
   const corpus = { items: ["contact", "race", "crashed"].map((topic, index) => ({
@@ -48,6 +49,22 @@ test("reference coverage uses paired denominators and never turns missing values
   assert.equal(all.comparisons[1].historicalReference.worse, 2);
   assert.equal(all.comparisons[0].historicalReference.better, 3);
   assert.equal(all.referenceLoss[0].commonCovered.n, 2);
+});
+
+test("historical reference uses stored rollout gaps, independently of the new engine equities", () => {
+  const key = "OAHDPAABDAOAHDPAABDA";
+  const parsed = parseBenchmarkMove(`m ${key} 3 1 ${key} 0.120 ${key} 0.003`);
+  assert.equal(parsed.reference[0].equity, 0.120);
+  assert.equal(parsed.reference[0].loss, 0);
+  assert(Math.abs(parsed.reference[1].equity - 0.117) < 1e-12);
+  assert.equal(parsed.reference[1].loss, 0.003);
+  const { report, corpus } = fixture();
+  const before = summarize(report, corpus, { expectedCount: 3 }).groups[0].referenceLoss;
+  // A different numerical scale/depth estimate must not change the historical
+  // reference gap when the selected resulting boards remain the same.
+  for (const sample of [...report.samples, ...report.supplementalGrades])
+    for (const candidate of sample.candidates) candidate.equity -= 0.5;
+  assert.deepEqual(summarize(report, corpus, { expectedCount: 3 }).groups[0].referenceLoss, before);
 });
 
 test("equivalent move notation does not count as a changed resulting position", () => {

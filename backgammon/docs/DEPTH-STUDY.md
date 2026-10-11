@@ -43,6 +43,10 @@ The narrower four-ply screen omitted the three-ply winner in four cases. Each wa
 
 The same 298 positions have reference coverage for the chosen move at all three depths. Two uncovered race positions remain missing and are excluded, never assigned zero loss. All changed-choice comparisons below are covered. The reference comes from the previously recorded GNUbg 1.00 benchmark files and 1,296-game rollouts with a limited candidate list. It is old, noisy, from the same engine family, and not a modern independent gold standard or a held-out training guarantee.
 
+Here **reference loss = reference equity of its listed best move − reference equity of our chosen move**. Both numbers come from the historical file; the engine's new equity is not subtracted from a historical equity. `scripts/benchmark-reference.mjs` reads the first candidate's absolute equity and the subsequent candidates' stored losses. The reported 0.002981 at four ply is their mean over the common 298 covered positions, **not a known distance from perfect play**, not the difference between three- and four-ply evaluations, and not a win-probability percentage. Of those 298 four-ply decisions, 241 have reference loss within 0.000001 of zero. The ten largest losses contribute 56.3% of the total.
+
+Four ply can disagree because it still uses finite-depth neural evaluations, internal pruning and a root shortlist. The rollout reference also has sampling uncertainty and its own playing policy; it is not an exact answer to which every deeper search must converge. Zero loss relative to the engine's own best evaluated move is a different metric from agreement with this external reference.
+
 | Depth | Mean loss against reference, common 298 positions |
 | --- | ---: |
 | 2 ply | 0.003193 |
@@ -56,6 +60,38 @@ The same 298 positions have reference coverage for the chosen move at all three 
 | 2 → 4 | 14 | 9 | 2 | +0.000212 |
 
 The counts above concern changed choices; unchanged choices contribute zero to the mean. Four ply improves more changed decisions than it worsens, but its regressions are larger in aggregate. This small average difference does not establish that three ply is universally stronger. The class results differ: four ply improves the contact and race reference averages relative to three ply, but worsens the crashed average. Against the reference, the median absolute difference among changed moves is 0.007851 for 2 → 3 and 0.006901 for 3 → 4, considerably different from the deeper evaluator's own margins for those switches.
+
+## Five-ply feasibility pilot
+
+A separate experiment on October 11, 2026, 22:05–22:11 UTC evaluated **six deliberately selected cases** at four and five ply. This is a diagnostic follow-up, not a replacement for the 300-position study and not a representative accuracy or average-latency sample. [Complete settings, inputs, hashes and results](five-ply-pilot-results.json).
+
+The temporary engine was built from the shipped bg5 corresponding-source archive with pinned Emscripten 4.0.15. Its only C change raises `bg_score`'s checker-depth guard from four to five. GNUbg's evaluation context/cache have four depth bits and its `ScoreMove` evaluation recurses to the supplied depth. Weights, internal pruning and the SIMD implementation are unchanged. Cube bindings remain capped at four. **The experimental binary is not shipped, and application capabilities/defaults remain unchanged.**
+
+Each position uses an identical fixed candidate pool at both depths: all original four-ply finalists, the two-/three-/four-ply winners and the historical reference's leader. This deliberately includes known disputed moves and has access to the reference answer; it must not be treated as an independent accuracy benchmark. Four-ply scores agree with the production study within 0.00001. Both depths actually ran in fresh single-threaded WASM workers in desktop WebKit 26.0, with alternating depth order and a 300-second job limit; all twelve jobs completed. The M4 Pro recorded AC power at both start and finish. One timing observation per position/depth, initialization excluded, local HTTP and potentially warm browser caches. Background apps remained running.
+
+| Corpus index / class | Candidates | 4-ply time | 5-ply time | Choice changes? | Gain according to 5 ply | Reference loss at 4 → 5 |
+| --- | ---: | ---: | ---: | --- | ---: | ---: |
+| 58 / contact | 6 | 1.373 s | 35.742 s | No | 0 | 0.067226 → 0.067226 |
+| 89 / contact | 4 | 8.164 s | 247.724 s | Yes | 0.002858 | 0 → 0.062596 |
+| 139 / race | 5 | 0.618 s | 0.529 s | No | 0 | 0 → 0 |
+| 150 / race | 5 | 0.102 s | 0.119 s | No | 0 | 0.001630 → 0.001630 |
+| 216 / crashed | 6 | 14.717 s | 19.432 s | Yes | 0.032305 | 0.091874 → 0.012021 |
+| 250 / crashed | 2 | 0.039 s | 0.051 s | No | 0 | 0 → 0 |
+
+Times above cover scoring the fixed pool, excluding the root screen used by application presets. They are not directly interchangeable with the earlier preset timings. Fast database/near-terminal positions and a single timing sample also mean observed time need not increase with depth in every row. No percentile or general speed multiplier is inferred from these six selected cases.
+
+The gain column evaluates **both choices at five ply**. At contact index 89, five ply changes `8/5 9/4` to `8/5 6/1`; at crashed index 216 it changes `15/13 17/16` to `15/13 14/13`. The historical reference opposes the former and favors the latter. The broader pool also recovers the previously omitted three-ply winner at index 58 even at four ply, and five ply retains it. These results establish that a real five-ply evaluation is feasible, but not that it is uniformly more accurate or appropriate for a one-second default. Six ply has not been benchmarked. Higher-sample rollouts with explicit policy, candidate coverage and uncertainty would provide a better accuracy check than treating either depth as truth.
+
+Reproduce without modifying the deployed engine:
+
+```sh
+# First activate the pinned Emscripten 4.0.15 environment.
+sh backgammon/scripts/build-five-ply-pilot.sh
+# Use the temporary PILOT_BUILD directory printed by the build:
+BG_PILOT_BUILD=/path/printed/by/build node backgammon/scripts/five-ply-pilot.cjs
+```
+
+The runner starts its own local server and saves results under `backgammon/test-results/five-ply-pilot/`. The shipped source archive plus the small build script provide the complete experimental source modification. No generated experimental assets are added to deployment or the offline cache.
 
 ## Time cost on this computer
 
