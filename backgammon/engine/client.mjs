@@ -65,10 +65,8 @@ export class EngineClient {
               this.fail(e);
               return;
             }
-            // Quick is allowed to finish on a particularly slow device. Never
-            // return partial scores or fail merely because no depth fit yet.
-            if (this.active === job && performance.now() - job.started >= ADAPTIVE_SEARCH.targetMs)
-              this.finishBudget(job);
+            // Intermediate 0/1-ply updates do not resolve Auto. The worker must
+            // complete at least 2 ply, regardless of how long earlier stages took.
             return;
           }
           if (data.type === "progress") {
@@ -82,7 +80,13 @@ export class EngineClient {
           }
           this.active = null;
           clearTimeout(this.jobTimeout);
-          clearTimeout(this.budgetTimeout);
+          if (data.type !== "error" && job.preset === "auto" && !job.rollout &&
+              !(data.result?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies)) {
+            job.reject(new Error("Automatic analysis ended before the required 2 ply. Retry the analysis."));
+            this.onStatus("error", "Automatic analysis did not complete 2 ply.");
+            this.pump();
+            return;
+          }
           if (data.type === "error") job.reject(new Error(data.message));
           else {
             this.cache.set(job.key, data.result);
@@ -215,7 +219,7 @@ export class EngineClient {
       const job = this.queue.shift();
       this.active = job;
       job.started = performance.now();
-      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · up to about 1 second…" : `Evaluating ${job.preset}…`);
+      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · at least 2 ply…" : `Evaluating ${job.preset}…`);
       this.worker.postMessage({
         id: job.id,
         type: "analyze",
@@ -225,8 +229,6 @@ export class EngineClient {
         submitted: job.submitted,
         rollout: job.rollout,
       });
-      if (job.preset === "auto" && !job.rollout)
-        this.budgetTimeout = setTimeout(() => this.finishBudget(job), ADAPTIVE_SEARCH.targetMs);
       this.jobTimeout = setTimeout(
         () =>
           this.fail(
@@ -246,31 +248,8 @@ export class EngineClient {
       if (!this.active && this.queue.length) this.pump();
     }
   }
-  finishBudget(job) {
-    if (this.active !== job || !job.completed) return;
-    const result = {
-      ...job.completed,
-      elapsedMs: performance.now() - job.started,
-      budget: { ...job.completed.budget, reason: "time-budget" },
-    };
-    clearTimeout(this.jobTimeout);
-    clearTimeout(this.budgetTimeout);
-    // A message cannot interrupt a synchronous native search. Terminate it,
-    // invalidate its generation, then lazily initialize for the next request.
-    this.generation++;
-    this.worker?.terminate();
-    this.worker = null;
-    this.ready = false;
-    this.active = null;
-    this.cache.set(job.key, result);
-    while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
-    job.resolve(result);
-    this.onStatus("ready", `Analysis complete · ${result.settings.plies} ply in ${(result.elapsedMs / 1000).toFixed(2)} s`);
-    this.pump();
-  }
   cancelActive(message = "Analysis cancelled.") {
     clearTimeout(this.jobTimeout);
-    clearTimeout(this.budgetTimeout);
     clearTimeout(this.initTimeout);
     this.generation++;
     this.worker?.terminate();
@@ -297,7 +276,6 @@ export class EngineClient {
     this.initReject = null;
     clearTimeout(this.initTimeout);
     clearTimeout(this.jobTimeout);
-    clearTimeout(this.budgetTimeout);
     this.worker?.terminate();
     this.worker = null;
     this.ready = false;

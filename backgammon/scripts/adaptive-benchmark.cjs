@@ -66,6 +66,7 @@ const summary = values => {
     } finally { await browser.close(); }
   }
   const report = {recordedAt:new Date().toISOString(),environment:{cpu:os.cpus()[0].model,os:`${os.platform()} ${os.release()} ${os.arch()}`},
-    method:"Local HTTP assembled site; fresh worker/native cache each sample; HTTP and compilation caches may be warm. Startup components recorded separately. Wall time includes worker messages and deadline termination. Maximum four plies. First sample per position checked against an independent fixed-depth worker at the completed preset. Median/range only; no p95. Desktop measurements, not a physical-phone benchmark.",results};
-  fs.writeFileSync(process.env.BG_ADAPTIVE_REPORT || "backgammon/data/adaptive-benchmark.json",JSON.stringify(report,null,2)+"\n");
+    method:"Local HTTP assembled site; fresh worker/native cache each sample; HTTP and compilation caches may be warm. Startup components recorded separately. Wall time includes worker messages and admitted complete stages. Auto requires at least two plies; deeper stages are skipped above a five-second estimate or for a substantial stable lead. Maximum four plies. First sample per position checked against an independent fixed-depth worker at the completed preset. Median/range only; no p95. Desktop measurements, not a physical-phone benchmark.",results};
+  fs.mkdirSync("backgammon/test-results",{recursive:true});
+  fs.writeFileSync(process.env.BG_ADAPTIVE_REPORT || "backgammon/test-results/adaptive-current.json",JSON.stringify(report,null,2)+"\n");
 })().catch(e => {console.error(e);process.exitCode=1;});

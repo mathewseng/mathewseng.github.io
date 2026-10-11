@@ -392,7 +392,7 @@ function panel(problems) {
         "Analysis strength",
         select(
           [
-            ["auto", "Auto · balanced (~1 second)"],
+            ["auto", "Auto · 2 ply minimum"],
             ...Object.entries(PRESETS).map(([key, value]) => [
               key,
               `${value.name} · ${value.plies} ply`,
@@ -407,7 +407,7 @@ function panel(problems) {
       el(
         "p",
         { class: "muted small" },
-        "Auto searches up to 4 ply for about one second after loading, keeping the deepest completed result. It screens at 0 ply: top 16, up to 24 within 0.160 equity, plus the played move. Fixed Quick, Standard and Deep evaluate every legal result. Expert and Research compare 2-ply finalists at 3 or 4 ply. All use pruning and zero noise.",
+        "Auto always completes at least 2 ply, normally tries 3, and can reach 4. A deeper stage is skipped if estimated above 5 seconds or the leading move has a substantial, stable advantage. Estimates can be wrong; Cancel remains available. It screens at 0 ply: top 16, up to 24 within 0.160 equity, plus the played move. Fixed Quick, Standard and Deep evaluate every legal result. Expert and Research compare 2-ply finalists at 3 or 4 ply. All use pruning and zero noise.",
       ),
     ),
     analysis.status,

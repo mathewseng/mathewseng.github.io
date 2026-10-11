@@ -73,9 +73,11 @@ With the October 11 mobile improvements included, 293 repository tests and the f
 
 The faster executable preserves the existing decisions; it does not introduce stronger weights or a new rollout policy. Expert/Research still use a screened root list, and rollouts still use 0-ply checker/cube decisions. Those limits need separate experiments against recorded reference positions and a separately built GNUbg executable before changing defaults or claiming stronger play. GNUbg’s [official manual](https://www.gnu.org/software/gnubg/manual/gnubg.html) describes deeper rollout policies and their substantial cost. The next investigation is explicit, reproducible 2-ply rollout policy with correctly initialized move filters, bounded checkpoint batches, and measured policy differences—not merely increasing sample count or silently calling a deeper tree search a rollout.
 
-## One-second automatic search
+## Historical one-second automatic search
 
-Solver now defaults to a measured time budget rather than always stopping at two plies. It publishes complete 0/1/2/3/4-ply comparisons and retains the deepest finished result when the parent terminates the worker at about 1,000 ms. Initialization is excluded from that search budget. An unusually slow first evaluation is allowed to finish; no partial ranking or mixed-depth loss is returned. Fixed depths remain available when completeness or more time matters.
+This section records the older deadline-based policy. Current Auto requires at least 2 ply and gates deeper stages by a five-second estimate; see [SEARCH-POLICY.md](SEARCH-POLICY.md).
+
+At this release, Solver defaulted to a measured time budget rather than always stopping at two plies. It publishes complete 0/1/2/3/4-ply comparisons and retains the deepest finished result when the parent terminates the worker at about 1,000 ms. Initialization is excluded from that search budget. An unusually slow first evaluation is allowed to finish; no partial ranking or mixed-depth loss is returned. Fixed depths remain available when completeness or more time matters.
 
 Automatic search scores all legal resulting positions at zero ply, retains the first sixteen plus up to twenty-four within 0.160 equity, and always adds the submitted legal move. Higher depths use the existing Expert/Research filters. The adapter reuses a bounded two-ply root list when deepening rather than repeating the screening pass. Its key includes full position/match/rules context and the exact candidate set; full-depth manual analysis cannot accidentally reuse a reduced automatic list. Equivalent legal submitted paths now share the same job identity. Worker-send failures reject the active job and leave a working retry path.
 

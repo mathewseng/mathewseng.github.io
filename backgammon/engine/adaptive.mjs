@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { chooseSearchDecision, leadInfo, SEARCH_POLICY_VERSION } from './search-policy.mjs';
+import { chooseSearchDecision, leadInfo, SEARCH_POLICY_VERSION, SEARCH_LIMITS } from './search-policy.mjs';
 export const ADAPTIVE_SEARCH = Object.freeze({
   version: SEARCH_POLICY_VERSION,
-  targetMs: 1000,
+  ...SEARCH_LIMITS,
   presets: Object.freeze(["quick", "standard", "deep", "expert", "research"]),
 });
 // Broad 0-ply screening before automatic 1/2-ply searches. Keep sixteen even
@@ -10,8 +10,8 @@ export const ADAPTIVE_SEARCH = Object.freeze({
 // Fixed Quick/Standard/Deep remain exhaustive over legal resulting boards.
 export const ADAPTIVE_ROOT = Object.freeze({ plies: 0, minimum: 16, maximum: 24, threshold: 0.16 });
 
-// Publish only whole evaluations. A parent-thread deadline terminates WASM if
-// the next synchronous evaluation overruns; it retains this completed result.
+// Publish whole evaluations, always completing at least two plies. Deeper
+// stages are gated by estimated cost/stability, not an elapsed-time cutoff.
 export function runAdaptive(evaluator, state, kind, submitted, publish, now = () => performance.now()) {
   const start = now(), levels = [], evaluations = [];
   let result;
@@ -23,17 +23,19 @@ export function runAdaptive(evaluator, state, kind, submitted, publish, now = ()
     });
     const stageMs = now() - began;
     const completed = { ...evaluation, stageMs,
-      settings: { ...evaluation.settings, searchPolicy: SEARCH_POLICY_VERSION } };
+      settings: { ...evaluation.settings, searchPolicy: SEARCH_POLICY_VERSION, ...SEARCH_LIMITS } };
     evaluations.push(completed);
     levels.push({ preset, plies: completed.settings.plies, elapsedMs: stageMs });
     const elapsedMs = now() - start;
-    const decision = chooseSearchDecision(state, evaluations, elapsedMs, ADAPTIVE_SEARCH.targetMs, submitted);
+    const decision = completed.settings.plies < ADAPTIVE_SEARCH.minimumPlies
+      ? { reason: 'searching', lead: null, forecast: null }
+      : chooseSearchDecision(state, evaluations, submitted);
     const reason = levels.length === ADAPTIVE_SEARCH.presets.length ? 'maximum-depth'
-      : elapsedMs >= ADAPTIVE_SEARCH.targetMs ? 'time-budget' : decision.reason;
+      : decision.reason;
     result = {
       ...completed,
       elapsedMs,
-      budget: { targetMs: ADAPTIVE_SEARCH.targetMs, levels: [...levels], reason,
+      budget: { ...SEARCH_LIMITS, levels: [...levels], reason,
         policy: SEARCH_POLICY_VERSION, lead: leadInfo(completed, previous), forecast: decision.forecast },
     };
     publish(result);

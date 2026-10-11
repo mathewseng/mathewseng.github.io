@@ -1,36 +1,39 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ADAPTIVE_SEARCH, runAdaptive } from "../engine/adaptive.mjs";
+import { runAdaptive } from "../engine/adaptive.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { createEvaluator } from "../engine/evaluate.mjs";
 import { initialState, legalTurns, legalPaths, boardKey } from "../core/rules.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 
-test("adaptive search publishes complete, comparable depths and stops at its budget", () => {
+test("adaptive search completes affordable deeper stages even after a second has elapsed", () => {
   let clock = 0;
   const seen = [];
   const result = runAdaptive({ analyze(state, preset, kind, submitted) {
     assert.equal(submitted, "actual");
-    clock += [20, 80, 300, 800][PRESETS[preset].plies];
-    return { settings: PRESETS[preset], elapsedMs: 20, actual: { equity: 1 }, status: "complete" };
-  } }, {}, "checker", "actual", r => seen.push(r), () => clock);
-  assert.deepEqual(seen.map(r => r.settings.plies), [0, 1, 2, 3]);
-  assert.deepEqual(seen.map(r => r.budget.levels.length), [1, 2, 3, 4]);
-  assert.equal(result.budget.reason, "time-budget");
-  assert.equal(result.elapsedMs, 1200);
+    clock += [20, 80, 300, 800, 1400][PRESETS[preset].plies];
+    return { type:"cube", settings: PRESETS[preset], actual: { equity: 1 }, status: "complete" };
+  } }, initialState({phase:"roll"}), "cube", "actual", r => seen.push(r), () => clock);
+  assert.deepEqual(seen.map(r => r.settings.plies), [0, 1, 2, 3, 4]);
+  assert.deepEqual(seen.map(r => r.budget.levels.length), [1, 2, 3, 4, 5]);
+  assert.equal(result.budget.reason, "maximum-depth");
+  assert.equal(result.elapsedMs, 2600);
   assert.equal(result.status, "complete");
 });
 
-test("easy positions reach maximum depth; even slow first evaluations complete", () => {
-  for (const delay of [2, 1500]) {
-    let clock = 0;
-    const r = runAdaptive({ analyze(s, preset) {
-      clock += delay;
-      return { settings: PRESETS[preset], elapsedMs: delay };
-    } }, {}, "checker", null, () => {}, () => clock);
-    assert.equal(r.settings.plies, delay === 2 ? 4 : 0);
-    assert.equal(r.budget.reason, delay === 2 ? "maximum-depth" : "time-budget");
-  }
+test("even slow 0/1-ply searches must finish 2 ply before a cost stop", () => {
+  let clock = 0; const depths=[];
+  const r = runAdaptive({ analyze(s, preset) {
+    depths.push(PRESETS[preset].plies);
+    clock += [6000, 7000, 8000][PRESETS[preset].plies];
+    return {type:"cube", settings:PRESETS[preset],status:"complete"};
+  } }, initialState({phase:"roll"}), "cube", null, () => {}, () => clock);
+  assert.deepEqual(depths,[0,1,2]);
+  assert.equal(r.settings.plies,2);
+  assert.equal(r.elapsedMs,21000);
+  assert.equal(r.budget.reason,"predicted-cost");
+  assert.equal(r.budget.minimumPlies,2);
+  assert.equal(r.budget.maxNextStageMs,5000);
 });
 
 class WorkerMock {
@@ -43,65 +46,53 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 const completed = (plies = 2) => ({
   status: "complete", settings: { plies }, candidates: [{ key: "best", equity: .25 }],
   actual: { key: "actual", equity: .2 }, error: .05,
-  budget: { targetMs: 1000, levels: [{ plies }], reason: "searching" },
+  budget: { minimumPlies: 2, maxNextStageMs: 5000, levels: [{ plies }], reason: "searching" },
 });
 
-test("deadline keeps the last complete depth, interrupts WASM and rejects late messages", async () => {
-  const workers = [], client = new EngineClient({ workerFactory: () => {
-    const w = new WorkerMock(); workers.push(w); return w;
-  } });
+test("Auto never resolves with a shallow update, even after five seconds", async () => {
+  const w=new WorkerMock(),client=new EngineClient({workerFactory:()=>w});
   try {
-    const s = initialState({ phase: "move", dice: [3, 1] }), updates = [];
-    const pending = client.analyze(s, { preset: "auto", onEvaluation: r => updates.push(r) });
-    // Initialization time is not deducted from the search budget.
-    assert.equal(client.budgetTimeout, undefined);
-    workers[0].reply({ id: 0, type: "ready", elapsedMs: 3000 });
-    await tick();
-    const id = client.active.id, job = client.active;
-    workers[0].reply({ id, type: "evaluation", result: completed(1) });
-    assert.equal(updates.length, 1);
-    workers[0].reply({ id, type: "evaluation", result: completed(2) });
-    job.started = performance.now() - ADAPTIVE_SEARCH.targetMs;
-    client.finishBudget(job);
-    const answer = await pending;
-    assert.equal(answer.settings.plies, 2);
-    assert.equal(answer.error, .05);
-    assert.equal(answer.status, "complete");
-    assert.equal(answer.budget.reason, "time-budget");
-    assert.equal(workers[0].terminated, true);
-    assert.ok((await client.analyze(s, { preset: "auto" })).cached);
-    const next = client.analyze({ ...s, dice: [2, 1] }, { preset: "auto" });
-    workers[1].reply({ id: 0, type: "ready", elapsedMs: 30 });
-    await tick();
-    workers[0].reply({ id, type: "result", result: completed(4) });
-    workers[0].onerror({ message: "stale failure" });
-    workers[1].reply({ id: client.active.id, type: "result", result: completed(3) });
-    assert.equal((await next).settings.plies, 3);
-  } finally { client.destroy(); }
+    let settled=false;
+    const pending=client.analyze(initialState({phase:"roll"}),{preset:"auto"}).then(r=>{settled=true;return r;});
+    w.reply({id:0,type:"ready",elapsedMs:3000});await tick();
+    const job=client.active;job.started=performance.now()-10000;
+    assert.equal(client.budgetTimeout,undefined);
+    for(const depth of [0,1,2]) {
+      w.reply({id:job.id,type:"evaluation",result:completed(depth)});await tick();
+      assert.equal(settled,false);assert.equal(w.terminated,undefined);
+    }
+    w.reply({id:job.id,type:"result",result:completed(3)});
+    assert.equal((await pending).settings.plies,3);
+    assert((await client.analyze(initialState({phase:"roll"}),{preset:"auto"})).cached);
+  } finally {client.destroy();}
 });
 
-test("no completed evaluation at deadline waits for Quick; explicit cancellation still rejects", async () => {
-  for (const cancel of [false, true]) {
-    const w = new WorkerMock(), client = new EngineClient({ workerFactory: () => w });
+test("an erroneous shallow final result fails instead of being cached as completed Auto", async () => {
+  for(const depth of [0,1]) {
+    const w=new WorkerMock(),client=new EngineClient({workerFactory:()=>w});
     try {
-      const pending = client.analyze(initialState({ phase: "roll" }), { preset: "auto" });
-      w.reply({ id: 0, type: "ready", elapsedMs: 1 });
-      await tick();
-      const job = client.active;
-      job.started = performance.now() - 1500;
-      client.finishBudget(job);
-      assert.equal(w.terminated, undefined);
-      if (cancel) {
-        const rejected = assert.rejects(pending, { name: "AbortError" });
-        client.cancel();
-        await rejected;
-      } else {
-        w.reply({ id: job.id, type: "evaluation", result: completed(0) });
-        assert.equal((await pending).settings.plies, 0);
-        assert.equal(w.terminated, true);
-      }
-    } finally { client.destroy(); }
+      const pending=client.analyze(initialState({phase:"roll"}),{preset:"auto"});
+      const rejected=assert.rejects(pending,/required 2 ply/);
+      w.reply({id:0,type:"ready",elapsedMs:1});await tick();
+      w.reply({id:client.active.id,type:"result",result:completed(depth)});
+      await rejected;assert.equal(client.cache.size,0);
+    } finally {client.destroy();}
   }
+});
+
+test("explicit cancellation terminates Auto and a replacement ignores stale results/errors", async () => {
+  const workers=[],client=new EngineClient({workerFactory:()=>{const w=new WorkerMock();workers.push(w);return w;}});
+  try {
+    const state=initialState({phase:"roll"});
+    const first=client.analyze(state,{preset:"auto"});const rejected=assert.rejects(first,{name:"AbortError"});
+    workers[0].reply({id:0,type:"ready",elapsedMs:1});await tick();const id=client.active.id;
+    workers[0].reply({id,type:"evaluation",result:completed(1)});
+    client.cancel();await rejected;assert.equal(workers[0].terminated,true);
+    const next=client.analyze(state,{preset:"auto"});workers[1].reply({id:0,type:"ready",elapsedMs:1});await tick();
+    workers[0].reply({id,type:"result",result:completed(4)});workers[0].onerror({message:"stale failure"});
+    workers[1].reply({id:client.active.id,type:"result",result:completed(3)});
+    assert.equal((await next).settings.plies,3);
+  } finally {client.destroy();}
 });
 
 test("deeper evaluation reuses full 2-ply screening only for the identical context", () => {
@@ -170,7 +161,7 @@ test("equivalent submitted paths share automatic analysis; callbacks cannot alte
     const job=client.active,key=boardKey(first.state),result=completed(2);
     result.candidates=[{key,equity:.25}];result.actual=result.candidates[0];result.error=0;
     w.reply({id:job.id,type:"evaluation",result});
-    client.finishBudget(job);
+    w.reply({id:job.id,type:"result",result});
     assert.equal((await a).actual.equity,.25);
     assert.equal((await b).actual.equity,.25);
     assert.equal((await b).error,0);

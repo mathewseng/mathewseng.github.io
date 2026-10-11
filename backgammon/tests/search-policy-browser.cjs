@@ -24,11 +24,12 @@ const server=http.createServer((req,res)=>{
     const client=new EngineClient();
     try{
      const hint=await client.analyze(state,{preset:'auto'});
+     if(hint.settings.plies<2)throw Error('Auto ended below the minimum depth');
      if(hint.budget.reason==='clear-lead'&&(!hint.budget.lead.stable||hint.settings.plies<2))throw Error('Premature gap stop');
-     if(!hint.budget.forecast||hint.budget.policy!=='gap-time-v1')throw Error('Missing cost/model metadata');
+     if(!hint.budget.forecast||hint.budget.policy!=='minimum-two-v2')throw Error('Missing cost/model metadata');
      const submitted=hint.candidates.at(-1).steps;
      const actual=await client.analyze(state,{preset:'auto',submitted});
-     if(actual.budget.reason==='clear-lead'||!actual.actual)throw Error('Actual grading used the hint shortcut');
+     if(actual.settings.plies<2||actual.budget.reason==='clear-lead'||!actual.actual)throw Error('Actual grading used the hint shortcut');
      const preset=Object.keys(PRESETS).find(k=>PRESETS[k].plies===actual.settings.plies);
      const fixed=await client.analyze(state,{preset,submitted});
      if(Math.abs(actual.actual.equity-fixed.actual.equity)>1e-5)throw Error('Grading changed actual equity');

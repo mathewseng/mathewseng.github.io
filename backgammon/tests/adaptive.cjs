@@ -35,10 +35,13 @@ module.exports = async function adaptive(browser,base,out,name="browser") {
         if(!cancelled)throw Error("Explicit cancellation resolved unexpectedly");
         const retry=await e.analyze(next,{preset:"quick"});
         if(retry.positionKey!==positionKey(next))throw Error("Stale result after restart");
-        return {elapsedMs,completedPlies:a.settings.plies,actual:a.actual.notation,levels:updates.map(r=>r.settings.plies)};
+        const cube=await e.analyze(initialState({phase:"roll"}),{preset:"auto"});
+        if(cube.type!=="cube"||cube.settings.plies<2||!Number.isFinite(cube.equity))throw Error("Cube Auto did not complete its minimum depth");
+        return {elapsedMs,completedPlies:a.settings.plies,cubePlies:cube.settings.plies,cubeReason:cube.budget.reason,
+          actual:a.actual.notation,levels:updates.map(r=>r.settings.plies)};
       } finally {e.destroy();}
     });
-    assert.ok(report.completedPlies>=0&&report.completedPlies<=4);
+    assert.ok(report.completedPlies>=2&&report.completedPlies<=4);
     // A deeper screen may discard the move being previewed. Preserve the
     // board but never label it Original or display the new leader's equity.
     assert.deepEqual(await page.evaluate(async()=>{

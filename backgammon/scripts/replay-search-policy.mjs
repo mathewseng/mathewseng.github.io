@@ -2,7 +2,8 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { chooseSearchDecision, forecastNext } from '../engine/search-policy.mjs';
+import { chooseSearchDecision, forecastNext, SEARCH_POLICY_VERSION } from '../engine/search-policy.mjs';
+if (SEARCH_POLICY_VERSION !== 'gap-time-v1') throw new Error('Historical one-second replay: run this script from revision f344694. Current Auto uses minimum-two-v2.');
 const traces = JSON.parse(fs.readFileSync(new URL('../docs/search-policy-traces.json',import.meta.url)));
 const analysis = JSON.parse(fs.readFileSync(new URL('../docs/search-policy-analysis.json',import.meta.url)));
 const corpus = JSON.parse(fs.readFileSync(new URL('../data/accuracy-reference.json',import.meta.url)));

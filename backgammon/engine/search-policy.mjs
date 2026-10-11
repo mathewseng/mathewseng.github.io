@@ -2,7 +2,8 @@
 import { SEARCH_MODEL } from './search-model.mjs';
 import { PRESETS } from './metadata.mjs';
 
-export const SEARCH_POLICY_VERSION = 'gap-time-v1';
+export const SEARCH_POLICY_VERSION = 'minimum-two-v2';
+export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 2, maxNextStageMs: 5000 });
 
 export function leadInfo(current, previous) {
   const a = current?.candidates, b = previous?.candidates;
@@ -42,6 +43,14 @@ export function timingFeatures(state, current, previous, nextCount) {
 export function forecastNext(state, evaluations) {
   const current = evaluations.at(-1), previous = evaluations.at(-2);
   const depth = current?.settings.plies, model = SEARCH_MODEL.depths[depth];
+  // Cube searches do not enumerate root checker candidates. Extrapolate their
+  // observed stage growth instead; this is a rough estimate, not a trained ETA.
+  if (current?.type === 'cube' && [2, 3].includes(depth) &&
+      Number.isFinite(current.stageMs) && Number.isFinite(previous?.stageMs)) {
+    const cost = Math.max(.25, current.stageMs);
+    return { nextPlies: depth + 1, estimateMs: cost * Math.max(1, cost / Math.max(.25, previous.stageMs)),
+      model: 'observed-cube-growth-v1' };
+  }
   const count = nextCandidateCount(evaluations);
   if (!model || !count || !previous?.candidates?.length || !state?.points ||
       !Number.isFinite(current.stageMs) || !Number.isFinite(previous.stageMs)) return null;
@@ -56,16 +65,16 @@ export function forecastNext(state, evaluations) {
   return {
     nextPlies: depth + 1, candidates: count, estimateMs,
     // Empirical residual spread, not a calibrated confidence interval and not
-    // a promise across browsers/devices. The parent deadline remains required.
+    // a promise across browsers/devices. Users can cancel an underestimated job.
     lowMs: estimateMs * Math.exp(model.residualP10),
     highMs: estimateMs * Math.exp(model.residualP90),
     model: SEARCH_MODEL.version,
   };
 }
 
-export function chooseSearchDecision(state, evaluations, elapsedMs, targetMs, submitted = null) {
+export function chooseSearchDecision(state, evaluations, submitted = null) {
   const current = evaluations.at(-1), previous = evaluations.at(-2);
-  if (current?.type !== 'checker' || ![2, 3].includes(current.settings.plies))
+  if (!['checker', 'cube'].includes(current?.type) || ![2, 3].includes(current.settings.plies))
     return { reason: 'searching', lead: null, forecast: null };
   const lead = leadInfo(current, previous), forecast = forecastNext(state, evaluations);
   // Match equity and actual-move grading need more than a stable top ranking.
@@ -74,9 +83,9 @@ export function chooseSearchDecision(state, evaluations, elapsedMs, targetMs, su
   if (!submitted && !state.matchLength && lead?.stable && lead.gap >= margin &&
       lead.previousGap >= .02 && forecast?.estimateMs >= 50)
     return { reason: 'clear-lead', lead, forecast };
-  // Skip only a stage forecast to be comfortably outside the remaining time.
-  // Very short timings are noisy; still try the next level when current <10 ms.
-  if (current.stageMs >= 10 && forecast && forecast.estimateMs > SEARCH_MODEL.policy.costMultiplier * Math.max(0, targetMs-elapsedMs))
+  // Five seconds is an estimate for the NEXT stage, not a total-time deadline.
+  // Completing the minimum depth never consumes the allowance for trying 3 ply.
+  if (forecast && forecast.estimateMs > SEARCH_LIMITS.maxNextStageMs)
     return { reason: 'predicted-cost', lead, forecast };
   return { reason: 'searching', lead, forecast };
 }

@@ -1,6 +1,6 @@
 # Adaptive depth: gap, stability and measured cost
 
-Auto now balances decision stability and computation cost instead of spending the entire one-second allowance on every position. It still publishes only completed evaluations and never combines move scores from different depths. This changes the search controller, not GNUbg's neural network or evaluation formulas. Engine: `gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5`; policy: `gap-time-v1`.
+Auto always completes at least two plies, normally tries three, and may reach four. A deeper stage is skipped only for a substantial, stable lead or an estimated cost above five seconds. It still publishes only completed evaluations and never combines move scores from different depths. This changes the search controller, not GNUbg's neural network or evaluation formulas. Engine: `gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5`; current policy: `minimum-two-v2`. The timing model and recorded one-second experiments below remain `gap-time-v1`; their latency figures do not describe the new policy.
 
 ## Does the best-versus-second-best gap help?
 
@@ -31,19 +31,21 @@ Models were selected using four-fold cross-validation inside training groups. Al
 | 2 → 3 ply | 68 | 3.38× | 2.01× | 6.18× |
 | 3 → 4 ply | 47 | 3.49× | 1.94× | 8.23× |
 
-Factor error is `max(predicted/actual, actual/predicted)`. The 21 held-out censored 4-ply stages are excluded from these factor errors, not silently assigned exact durations. Both completed and censored rows can establish whether the actual stage exceeded one second. The model classified that threshold correctly for 67/68 and 54/68 cases respectively; a simple last-time multiplier got 65/68 and 55/68. Better numerical estimates do not imply better classification on every metric. Residual ranges are empirical completed-sample spread, not calibrated confidence intervals. Timing is deliberately treated as a rough scheduling hint, with the parent-thread deadline still enforced.
+Factor error is `max(predicted/actual, actual/predicted)`. The 21 held-out censored 4-ply stages are excluded from these factor errors, not silently assigned exact durations. Both completed and censored rows can establish whether the actual stage exceeded one second. The model classified that threshold correctly for 67/68 and 54/68 cases respectively; a simple last-time multiplier got 65/68 and 55/68. Better numerical estimates do not imply better classification on every metric. Residual ranges are empirical completed-sample spread, not calibrated confidence intervals. Timing is a rough scheduling hint. The current five-second decision threshold lies beyond the four-second-capped training data, so a started stage may take materially longer than its estimate. The limit is an estimate, not a five-second wall-time promise.
 
-## Runtime policy
+## Current runtime policy: minimum-two-v2
 
-1. Start with 0 ply and deepen through 1 and 2 if the deadline allows. Even if 0 ply alone overruns, finish that first result rather than return nothing.
-2. At 2 or 3 ply, stop for a clear lead only if the same resulting board won the preceding depth, its preceding lead was ≥0.020, its current lead is ≥0.040 cubeless / ≥0.080 cubeful money, and the predicted next stage costs at least 50 ms. Otherwise cheap deeper work is still worthwhile.
-3. Do not use the gap shortcut for match play or grading a submitted move. A settled winner does not settle a losing move's equity. They may still stop for cost or at the deadline. Cube-decision analysis keeps its existing deadline-based deepening.
-4. Skip a stage if its predicted cost exceeds **twice** the remaining allowance. Ignore that cost shortcut when the current stage took under 10 ms, where measurement noise is large.
-5. Otherwise try the next depth, up to 4 ply. The main thread terminates synchronous WASM at the one-second target and retains the last complete comparison. Initialization is outside this allowance.
+1. Complete 0, 1 and **2 ply**, regardless of how long those stages take. Intermediate 0/1-ply updates are previews; they cannot resolve or cache a final Auto request.
+2. At 2 or 3 ply, stop for a clear lead only if the same resulting board won the preceding depth, its preceding lead was ≥0.020, its current lead is ≥0.040 cubeless / ≥0.080 cubeful money, and the predicted next stage costs at least 50 ms. Cheap deeper work is still worthwhile.
+3. Do not use the gap shortcut for match play or grading a submitted move: a settled winner does not settle a losing move's equity.
+4. Skip a deeper stage when its estimated cost is **strictly greater than 5,000 ms**. Exactly five seconds is eligible. This is the cost of that next depth, not remaining time from a total allowance. Cube analysis uses observed stage growth for a rough estimate and does not use the checker gap shortcut.
+5. Otherwise complete the next depth, up to 4 ply. Removing the old one-second timer ensures a slow device still reaches the two-ply minimum and can attempt three. Explicit cancellation still terminates the worker; initialization/engine failures and the existing five-minute job watchdog reject the request rather than return 0/1 ply as final Auto. A started deeper stage can exceed five seconds if underestimated.
 
 Auto now always retains the preceding winner when the next root filter narrows, as well as the submitted move. This prevents an apparent leader change caused solely by removing the previous leader. Fixed presets keep their existing documented filters. Auto cache identity and saved settings include the policy version. The result footer reports the completed depth, reason for stopping, top-two gap and rough next-stage estimate. Fixed depths and rollouts remain available.
 
-## Replay check
+Current-policy verification passed 317 repository tests and assembled-site real-WASM checks in Chromium, Firefox and WebKit, including checker/cube minimum depth, complete-depth grading, cancellation/restart, rejection of shallow final responses, and the strict greater-than-five-seconds boundary. Desktop and mobile Solver screenshots were inspected. These are functional checks, not a new latency benchmark.
+
+## Historical gap-time-v1 replay check
 
 Replaying the measured stages against the same one-second deadline:
 
@@ -54,7 +56,7 @@ Replaying the measured stages against the same one-second deadline:
 
 The held-out saving is 45.5%; 24/68 return a shallower completed depth. This is a **trace replay**, not a live latency claim. Both choices are compared at the baseline's deepest completed depth, not to perfect play. Equal selected moves do not prove equal equity accuracy, probability calibration, or rollout agreement. Source: `search-policy-replay.json`. Runtime and corpus behavior can differ on other devices, rule contexts, unseen positions, or when system load changes.
 
-## Live paired validation
+## Historical gap-time-v1 live paired validation
 
 A subsequent fresh-worker test ran both controllers on each of the 68 test cases, alternating which arm ran first. It used the real `EngineClient` and actual deadline termination in WebKit 26.0 on the same M4 Pro. The baseline changes only the stopping rule; both arms use the same root screening and previous-winner retention. Engine startup is excluded and individually recorded. One paired sample per case/context, with no CPU throttling or concurrent benchmark.
 
@@ -69,14 +71,14 @@ Regression checks cover threshold safeguards, measured-speed scaling, canonical 
 
 ## Reproduce
 
+The one-second replay and paired benchmark describe revision `f344694`. Run `replay-search-policy.mjs` and `search-policy-live.cjs` from that revision in a separate checkout; both deliberately reject a different runtime policy to avoid rewriting historical evidence with incompatible results. The other commands below apply to the current checkout. No new latency benchmark is claimed for `minimum-two-v2`.
+
 ```sh
 node backgammon/scripts/offline-manifest.mjs
 sh scripts/assemble-site.sh _site
 node backgammon/scripts/search-policy-study.cjs
 # Inspect completed output, then copy to docs/search-policy-traces.json for fitting.
 OPENBLAS_NUM_THREADS=1 python3 backgammon/scripts/analyze-search-policy.py
-node backgammon/scripts/replay-search-policy.mjs
-node backgammon/scripts/search-policy-live.cjs
 node backgammon/scripts/verify-search-policy.mjs
 node backgammon/tests/search-policy-browser.cjs
 node --test backgammon/tests/search-policy.test.mjs backgammon/tests/adaptive.test.mjs backgammon/tests/client.test.mjs
