@@ -3354,6 +3354,7 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
 
 /* Phone tools use the same buttons in a sheet; desktop keeps its full toolbar. */
 .mobile-tools-toggle, .undo-turn-label-phone { display: none; }
+.study-strip, .study-editor { display: none; }
 .setup-study > .stack { padding-top: 10px; }
 .mobile-tool-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mobile-tool-list > button { min-height: 48px; white-space: normal; background: var(--surface); border-color: var(--line); }
@@ -3424,4 +3425,24 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   .drawer .dialog-header button.close { min-width: 64px; }
   .library-filters { gap: 8px; margin-bottom: 8px; }
   .library-item { padding-block: 16px; }
+}
+
+/* Study controls occupy spare phone space without covering or resizing the
+   board. Small/zoomed viewports may extend naturally instead of clipping. */
+@media (max-width: 700px) and (min-height: 501px), (max-width: 649px) {
+  .study-strip:not([hidden]) { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .study-strip-heading { font-size: 13px; color: var(--muted); }
+  .study-preview-controls:not([hidden]) { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; }
+  .study-preview-controls button { padding: 8px; font-size: 20px; }
+  .study-preview-controls select { font-size: 16px; font-weight: 550; }
+  .study-preview-value { font-size: 13px; line-height: 1.4; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .study-strip > button { justify-self: start; padding-inline: 0; color: var(--accent); }
+  .study-editor:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; padding-bottom: 4px; }
+  .app[data-page="solver"] .action-area:has(.study-strip:not([hidden])) #message { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .app[data-page="solver"] #draft-line,
+  .app[data-page="solver"] .source-preview-control,
+  .app[data-page="trainer"] .action-area:has(.study-strip:not([hidden])) #draft-line { display: none; }
+  .app[data-page="trainer"] .action-area:has(.study-strip:not([hidden])) { gap: 6px; }
+  .app[data-page="solver"] .action-area,
+  .app[data-page="trainer"] .action-area { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 }

@@ -32,6 +32,7 @@ import {
   copy,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
 import { rolloutUnsupported } from "../engine/rollout.mjs";
@@ -56,6 +57,21 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   openedPosition = false;
 const analysis = new AnalysisPanel(),
   draft = new DraftBoard(ui.board, () => {});
+const study = new StudyStrip(previewCandidate);
+const brushSelect = select(
+  [["ivory", "Place Ivory"], ["teal", "Place Teal"], ["remove", "Remove checker"]],
+  brush,
+  value => { brush = value; render(); },
+);
+brushSelect.setAttribute("aria-label", "Board editing tool");
+const mobileEditor = el("div", { class: "study-editor", hidden: true },
+  brushSelect, button("Dice & rules", contextDialog));
+study.node.after(mobileEditor);
+function previewCandidate(candidate) {
+  preview = candidate ? candidate.steps.reduce((s, st) => applyStep(s, st), source) : null;
+  render();
+  closeStudyPanel();
+}
 // Analysis can finish between pointerdown and pointerup. Keep these controls
 // connected so a completed-result repaint cannot swallow a click or focus.
 const editControl = button(
@@ -82,7 +98,7 @@ const analyzeControl = button(
 const sourceControl = button("Source", () => {
   preview = null;
   render();
-});
+}, "source-preview-control");
 analysis.preset = "deep";
 const normalPoint = draft.board.onPoint;
 draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
@@ -195,6 +211,9 @@ async function saveDraft() {
 }
 function render() {
   const problems = errors(source);
+  study.set(editing || problems.length ? null : result, preview);
+  mobileEditor.hidden = !editing;
+  brushSelect.value = brush;
   ui.equityBar.set({
     state: source,
     result,
@@ -327,7 +346,7 @@ function panel(problems) {
             ["remove", "Return checker to off"],
           ],
           brush,
-          (v) => (brush = v),
+          (v) => { brush = v; brushSelect.value = v; },
         ),
       ),
       button("Edit exact point counts", pointDialog),
@@ -400,10 +419,7 @@ function panel(problems) {
       resultView(result, {
         source,
         previous: previousResult,
-        onPreview: (c) => {
-          preview = c.steps.reduce((s, st) => applyStep(s, st), source);
-          render();
-        },
+        onPreview: previewCandidate,
       }),
       button("Save as exercise", () =>
         saveDialog(source, "position", {

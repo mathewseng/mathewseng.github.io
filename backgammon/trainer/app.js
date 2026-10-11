@@ -36,6 +36,7 @@ import {
   confirmDialog,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "../ui/decision-values.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
@@ -58,6 +59,14 @@ const draft = new DraftBoard(ui.board, () => {
   draftControls();
   savePractice();
 });
+const study = new StudyStrip(previewCandidate);
+function previewCandidate(candidate) {
+  preview = candidate
+    ? candidate.steps.reduce((s, st) => applyStep(s, st), exercise.state)
+    : clone(exercise.state);
+  render();
+  closeStudyPanel();
+}
 try {
   const response = await fetch("../data/exercises.json");
   if (!response.ok)
@@ -136,6 +145,8 @@ async function next() {
   render();
 }
 function render() {
+  study.set(exercise && revealed ? result : null, preview || (revealed ? draft.current() : null));
+  $("panel-toggle").textContent = revealed ? "Results" : "Details";
   ui.equityBar.set({
     state: exercise?.state,
     result: revealed ? result : null,
@@ -344,18 +355,12 @@ function panel() {
     );
     p.append(
       resultView(result, {
-        onPreview: (c) => {
-          preview = c.steps.reduce(
-            (s, step) => applyStep(s, step),
-            exercise.state,
-          );
-          render();
-        },
+        onPreview: previewCandidate,
       }),
       button(
         "Original position",
         () => {
-          preview = null;
+          preview = clone(exercise.state);
           render();
         },
         "ghost",
@@ -462,6 +467,7 @@ function finishOrNext() {
 }
 function finish() {
   analysis.cancel();
+  study.set(null);
   $("message").textContent =
     `Session complete · ${count} decisions studied.`;
   $("actions").replaceChildren(button("Practice again", begin, "primary"));

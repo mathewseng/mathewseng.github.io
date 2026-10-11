@@ -446,9 +446,13 @@ module.exports = async function assistanceUX(
         "cancel during real worker initialization; stale work discarded; failed asset has working retry",
       );
 
-      await assign("play-both"); // Terminates the warm worker before the next check.
+      await assign("play-both");
       await assign("bot-teal");
       await page.setViewportSize({ width: 1366, height: 768 });
+      // A hint now supplies the complete grading cache too. Reload to test a
+      // genuinely cold feedback request, not a completed cached evaluation.
+      await page.goto(base + "/backgammon/play/");
+      await page.locator("#resume-match").click();
       await finishDraft();
       const pending = await saved();
       assetMode = "hold";

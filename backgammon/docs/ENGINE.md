@@ -17,7 +17,9 @@ node backgammon/tests/browser.cjs
 
 ## Binding changes
 
-Current binding **bg3** extends the depth bound to four and exports `bg_rollout(original, after, trials, seed)`. Checker batches use `ScoreMoveRollout`; cube batches use `GeneralCubeDecisionR`. The same source archive includes the full modified engine and patched build. The reproducible `patch-engine.py` removes diagnostic rollout spam, implements the RNG setter for valid seeded calls and uses a no-op event hook; the JS worker yields between completed batches. The RNG and simulation policy are initialized explicitly on every batch. No pthreads or deployment headers are required.
+Current binding **bg4** fixes two native evaluation-cache collisions. `EvalKey` now uses bit 29 to distinguish match play from money play (double-match-point has zero away-score bits), and bit 28 to distinguish the cube-efficiency model selected by a root depth of at least two plies. The previous key recorded remaining depth but omitted the root-depth model used by `EvalEfficiency`. These changes preserve neural weights and search depth while preventing results from a different calculation context being reused. Regression tests compare mixed-context warm-worker results with fresh-worker results.
+
+Binding **bg3** added the four-ply depth bound and `bg_rollout(original, after, trials, seed)`; bg4 retains those capabilities. Checker batches use `ScoreMoveRollout`; cube batches use `GeneralCubeDecisionR`. The bg4 corresponding-source archive includes the full modified engine and patched build. The reproducible `patch-engine.py` also removes diagnostic rollout spam, implements the RNG setter for valid seeded calls and uses a no-op event hook; the JS worker yields between completed batches. The RNG and simulation policy are initialized explicitly on every batch. No pthreads or deployment headers are required.
 
 
 - Export `bg_score(originalXgid, afterXgid, plies, beavers)`, `bg_cube(xgid, plies, beavers)` and `bg_value(xgid, plies, beavers)` as allocated JSON. The JS adapter always frees returned buffers. Keep original `hint` exported for independent binding regression comparisons.
@@ -33,6 +35,8 @@ The upstream public hint list caps at 40. Our application enumerates complete le
 ## Worker and capabilities
 
 The engine runs in one dedicated module Worker; the WASM itself is single-threaded. Asset transfer, compilation, initialization and computation are timed separately. Fetch failures, initialization failure, worker crash and timeouts reject pending promises. Cancel terminates the worker, frees its WASM address space, and invalidates its generation. A later request creates a fresh worker. Posting a cancel message alone would not interrupt synchronous WASM and is deliberately not used.
+
+Quick/Standard/Deep checker requests share their full-candidate result regardless of which legal move a caller submits. The client validates the submitted complete turn and returns a caller-specific grade without mutating the cached hint. Screened Expert/Research and rollout searches keep the submitted move in their identity. A foreground duplicate promotes an already queued background job; duplicate rollout subscribers receive the same completed checkpoints. Late errors from terminated workers are ignored, and worker creation/send failures leave a retryable client. Cache and queue bounds remain 64 results/32 jobs.
 
 Capabilities are explicit in `engine/metadata.mjs`: checker analysis, legal arbitrary-move grading, cube and match contexts, Jacoby, automatic opening stakes, beavers and raccoons, and 0–4 ply. Binding **bg3** adds real GNUbg rollouts for ordinary cube/match rules, independent 32-trial batches, resumable sample moments, and sampling intervals. See `RESEARCH.md` for policy, seeding, uncertainty, candidate screening and limits. Beavers/raccoons remain tree-only. The worker serializes the core’s global rollout context and yields between batches; cancellation terminates it.
 

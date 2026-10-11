@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { positionKey } from "../core/rules.mjs";
-import { ENGINE_VERSION } from "./metadata.mjs";
+import { positionKey, boardKey, commitTurn } from "../core/rules.mjs";
+import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
 // One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
 export class EngineClient {
   constructor({
@@ -23,15 +23,22 @@ export class EngineClient {
     if (this.ready) return Promise.resolve();
     const generation = ++this.generation;
     this.onStatus("loading", "Loading GNUbg and its local databases…");
-    this.initializing = new Promise((resolve, reject) => {
+    let resolveReady;
+    const pending = new Promise((resolve, reject) => {
+      resolveReady = resolve;
       this.initReject = reject;
+    });
+    this.initializing = pending;
+    try {
       this.worker = this.factory();
-      this.worker.onerror = (e) =>
+      this.worker.onerror = (e) => {
+        if (generation !== this.generation) return;
         this.fail(
           new Error(
             e.message || "The analysis worker stopped. Retry to load it again.",
           ),
         );
+      };
       this.worker.onmessage = ({ data }) => {
         if (generation !== this.generation) return;
         if (data.type === "ready") {
@@ -44,14 +51,15 @@ export class EngineClient {
             "ready",
             `GNUbg ready · ${(data.elapsedMs / 1000).toFixed(2)} s startup`,
           );
-          resolve();
+          resolveReady();
         } else if (data.id === 0 && data.type === "error")
           this.fail(new Error(data.message));
         else if (this.active && data.id === this.active.id) {
           const job = this.active;
           if (data.type === "progress") {
             try {
-              job.onProgress(data.checkpoint);
+              for (const listener of job.progressListeners)
+                listener(data.checkpoint);
             } catch (e) {
               this.fail(e);
             }
@@ -83,8 +91,10 @@ export class EngineClient {
         45000,
       );
       this.worker.postMessage({ id: 0, type: "init" });
-    });
-    return this.initializing;
+    } catch (error) {
+      this.fail(error);
+    }
+    return pending;
   }
   analyze(
     state,
@@ -97,32 +107,64 @@ export class EngineClient {
       onProgress = () => {},
     } = {},
   ) {
+    // Unscreened checker analysis scores every legal result at one depth.
+    // Grading a move is a projection of that same result, not another WASM job.
+    // Screened searches/rollouts still depend on the submitted move because
+    // they must explicitly add it to their finalist set.
+    const sharedChecker =
+      kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
+    let submittedKey = null;
+    if (sharedChecker && submitted) {
+      try {
+        submittedKey = boardKey(commitTurn(state, submitted));
+      } catch (error) {
+        return Promise.reject(error);
+      }
+    }
+    const forCaller = (promise) => !submittedKey ? promise : promise.then(result => {
+      const actual = result.candidates.find(c => c.key === submittedKey);
+      if (!actual)
+        throw new Error("Submitted result missing from complete legal move set.");
+      return {
+        ...result,
+        actual,
+        error: Math.max(0, result.candidates[0].equity - actual.equity),
+      };
+    });
     const key = JSON.stringify([
       ENGINE_VERSION,
       positionKey(state),
       preset,
       kind,
-      submitted,
+      sharedChecker ? null : submitted,
       rollout,
     ]);
     if (this.cache.has(key)) {
       const result = this.cache.get(key);
       this.cache.delete(key);
       this.cache.set(key, result);
-      return Promise.resolve({ ...result, cached: true });
+      return forCaller(Promise.resolve({ ...result, cached: true }));
     }
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
-    if (existing) return existing.promise;
+    if (existing) {
+      existing.progressListeners.add(onProgress);
+      existing.priority = Math.max(existing.priority, priority);
+      this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
+      if (this.active && existing !== this.active && existing.priority > this.active.priority)
+        this.cancelActive("Superseded by the current request.");
+      this.pump();
+      return forCaller(existing.promise);
+    }
     const job = {
       id: ++this.serial,
       key,
       state: structuredClone(state),
       preset,
       kind,
-      submitted,
+      submitted: sharedChecker ? null : submitted,
       priority,
       rollout,
-      onProgress,
+      progressListeners: new Set([onProgress]),
     };
     job.promise = new Promise((resolve, reject) =>
       Object.assign(job, { resolve, reject }),
@@ -138,7 +180,7 @@ export class EngineClient {
     if (this.active && priority > this.active.priority)
       this.cancelActive("Superseded by the current request.");
     this.pump();
-    return job.promise;
+    return forCaller(job.promise);
   }
   async pump() {
     if (this.active || !this.queue.length || this.pumping) return;

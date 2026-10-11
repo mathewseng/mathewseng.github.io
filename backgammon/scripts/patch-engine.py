@@ -4,6 +4,27 @@ p=Path(sys.argv[1])
 x=p/'src/xgid.c'
 s=x.read_text().replace('return getCubeInfoFromMatchStateWithBeavers(pci, pms, 3);','return getCubeInfoFromMatchStateWithBeavers(pci, pms, 0);')
 x.write_text(s)
+
+# Cubeful leaf equity depends on the root evaluation's cube-efficiency model
+# (EvalEfficiency switches at two plies), not just remaining search depth.
+# Also distinguish money play from double-match-point: both otherwise encode
+# zero away-score bits, but their cubeful cache values use different units.
+x=p/'src/eval.c'
+s=x.read_text()
+needle='''    if (nPlies || fCubefulEquity) {
+        /* In match play'''
+assert s.count(needle) == 1, 'Pinned EvalKey context changed'
+s=s.replace(needle, '''    if (nPlies || fCubefulEquity) {
+        /* Web bg4: bit 29 separates match-winning chance from money equity. */
+        iKey ^= ((pci->nMatchTo != 0) << 29);
+        /* In match play''')
+needle='''        if (fCubefulEquity)
+            iKey ^= 0x6a47b47e;'''
+assert s.count(needle) == 1, 'Pinned EvalKey cubeful marker changed'
+s=s.replace(needle, '''        if (fCubefulEquity)
+            /* Web bg4: bit 28 identifies EvalEfficiency's root-depth model. */
+            iKey ^= 0x6a47b47e ^ ((pec->nPlies >= 2) << 28);''')
+x.write_text(s)
 x=p/'Makefile.emcc'
 s=x.read_text().replace('"_hint",','"_hint", "_bg_score", "_bg_cube", "_bg_value", "_bg_rollout",').replace('-s EXPORT_ES6','-s EXPORT_ES6 -s ENVIRONMENT=web,worker,node')
 x.write_text(s)

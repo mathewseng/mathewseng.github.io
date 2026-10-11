@@ -502,6 +502,12 @@ const server = http.createServer((req, res) => {
         (report.backgroundFocus ||= []).push(
           await require("./background-focus.cjs")(browser, base, out, browserName),
         );
+        (report.engineReuse ||= []).push(
+          {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
+        );
+        (report.engineCacheContext ||= []).push(
+          {browser: browserName, cases: await require("./engine-cache-context.cjs")(browser, base)},
+        );
         (report.openingHints ||= []).push(
           await require("./opening-hints.cjs")(browser, base, out, browserName),
         );
@@ -513,6 +519,9 @@ const server = http.createServer((req, res) => {
         );
         (report.mobileLayout ||= []).push(
           await require("./mobile-layout.cjs")(browser, base, out, browserName),
+        );
+        (report.mobileStudy ||= []).push(
+          await require("./mobile-study.cjs")(browser, base, out, browserName),
         );
         (report.clickGuide ||= []).push(
           await require("./click-guide.cjs")(browser, base, out, browserName),

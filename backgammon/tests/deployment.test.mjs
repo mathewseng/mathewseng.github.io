@@ -31,7 +31,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "engine/worker.mjs",
       "engine/source/gnubg-core-955555c-bg1.tar.gz",
       "engine/source/gnubg-core-955555c-bg2.tar.gz",
-      "engine/source/gnubg-core-955555c-bg3.tar.gz",
+      "engine/source/gnubg-core-955555c-bg4.tar.gz",
       "data/speed-report.json",
       "data/accuracy-report.json",
       "data/native-validation.json",
