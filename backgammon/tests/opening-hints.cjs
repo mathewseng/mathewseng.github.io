@@ -36,7 +36,10 @@ module.exports=async function openingHints(browser,base,out,name){
       await page.locator("#move-hints").uncheck();
       await click(page.locator(".settings-dialog").getByRole("button",{name:"Close",exact:true}));
       await page.locator("#board .bg-board.no-move-hints").waitFor();
-      const visibleRings=()=>page.locator("#board .source-ring").evaluateAll(es=>es.filter(e=>getComputedStyle(e).display!=="none").length);
+      // Closing Settings dispatches a queued board render. Query and inspect in
+      // one browser task: evaluateAll can capture nodes that render detaches,
+      // whose computed display is then empty instead of the live CSS value.
+      const visibleRings=()=>page.evaluate(()=>[...document.querySelectorAll("#board .source-ring")].filter(e=>getComputedStyle(e).display!=="none").length);
       await page.waitForFunction(()=>[...document.querySelectorAll("#board .point:not(.selected) .source-ring")].every(e=>getComputedStyle(e).display==="none"));
       assert.equal(await visibleRings(),await page.locator("#board .point.selected .source-ring").count(),
         "only the selected checker may retain a ring");
