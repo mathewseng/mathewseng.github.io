@@ -23,9 +23,9 @@ try {
   const recent = document.getElementById("recent"),
     saved = await get("work", "play"),
     items = await all();
-  if (saved) {
+  if (saved?.game?.id && saved.game.config?.mode !== "online") {
     const a = document.createElement("a");
-    a.href = "/backgammon/play/";
+    a.href = `/backgammon/play/#resume=${encodeURIComponent(saved.game.id)}`;
     a.textContent = "Resume your game";
     recent.append(a);
   }

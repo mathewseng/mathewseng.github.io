@@ -3382,6 +3382,7 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
 /* Phone tools use the same buttons in a sheet; desktop keeps its full toolbar. */
 .mobile-tools-toggle, .undo-turn-label-phone { display: none; }
 .study-strip, .study-editor, .touch-moves { display: none; }
+.touch-destinations { display: none; }
 .touch-moves select { min-height: 44px; font-size: 16px; padding-inline: 8px 24px; background-position: right 8px center; }
 .touch-moves select:disabled { opacity: .55; }
 .setup-study > .stack { padding-top: 10px; }
@@ -3623,4 +3624,42 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   .dialog > footer:empty { display: none; }
   .dialog > footer button { min-height: 48px; }
   .dialog[data-keyboard] { top: var(--dialog-visible-top); bottom: auto; margin-block: 12px 0; max-height: calc(var(--dialog-visible-height) - 24px); }
+}
+
+/* On tall phones, use the spare space for one-tap moves. Shorter or zoomed
+   windows retain the same complete From/To pickers without squeezing the board. */
+@media (max-width: 500px) and (min-height: 760px) and (max-aspect-ratio: 1/2) {
+  .touch-destinations:not([hidden]) { display: grid; gap: 6px; grid-column: 1 / -1; grid-row: 1; padding-block: 6px; }
+  .touch-destinations-heading { font-size: 14px; color: var(--muted); }
+  .touch-destination-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(48px, 1fr)); gap: 6px; }
+  .touch-destination-buttons button { min-height: 48px; padding: 8px 4px; font-size: 17px; color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .touch-destination-buttons button[data-kind="return"] { color: var(--board-undo); border-color: var(--board-undo); }
+  .action-area:has(.touch-destinations:not([hidden])) { grid-template-rows: auto auto auto auto; }
+  .app .action-area:has(.touch-destinations:not([hidden])) .touch-moves,
+  .app .action-area:has(.touch-destinations:not([hidden])) #analysis-jump { grid-row: 2; }
+  .app .action-area:has(.touch-destinations:not([hidden])) .action-message { grid-row: 3; }
+  .app .action-area:has(.touch-destinations:not([hidden])) .action-main { grid-row: 4; }
+}
+
+/* Put the four entrances before the decorative position on a phone. The hub
+   stays a useful launch pad, including before the engine has downloaded. */
+@media (max-width: 700px) {
+  .hub-backgammon .shell { padding-inline: max(18px, env(safe-area-inset-left)) max(18px, env(safe-area-inset-right)); }
+  .hub-backgammon .hub-main { display: grid; gap: 18px; padding-block: 20px; }
+  .hub-backgammon .hub-layout { display: contents; }
+  .hub-backgammon .hub-intro { order: 0; }
+  .hub-backgammon .hub-intro .eyebrow { display: none; }
+  .hub-backgammon .hub-intro h1 { margin: 0 0 10px; font-size: 32px; letter-spacing: -1px; }
+  .hub-backgammon .hub-intro p { font-size: 15px; margin-bottom: 16px; max-width: none; }
+  .hub-backgammon .hub-intro .primary { display: flex; justify-content: space-between; align-items: center; min-height: 50px; width: 100%; }
+  .hub-backgammon .hub-recent:empty { display: none; }
+  .hub-backgammon .hub-recent:not(:empty) { margin-top: 8px; gap: 0; }
+  .hub-backgammon .hub-recent a { display: flex; align-items: center; min-height: 44px; }
+  .hub-backgammon .hub-tools { order: 1; margin: 0; }
+  .hub-backgammon .hub-tools a { padding: 14px 0; }
+  .hub-backgammon .hub-tools h2 { display: flex; align-items: center; justify-content: space-between; font-size: 18px; margin-bottom: 5px; }
+  .hub-backgammon .hub-tools p { font-size: 14px; line-height: 1.45; }
+  .hub-backgammon #hub-board { order: 2; margin: 0; width: 100%; aspect-ratio: 876 / 660; }
+  .hub-backgammon .hub-main > p { order: 3; margin: 0; }
+  .hub-backgammon .hub-update { order: 4; }
 }

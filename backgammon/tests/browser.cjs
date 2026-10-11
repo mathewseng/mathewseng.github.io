@@ -541,6 +541,9 @@ const server = http.createServer((req, res) => {
         (report.touchMoves ||= []).push(
           await require("./touch-moves.cjs")(browser, base, out, browserName),
         );
+        (report.mobileQuick ||= []).push(
+          await require("./mobile-quick.cjs")(browser, base, out, browserName),
+        );
         (report.clickGuide ||= []).push(
           await require("./click-guide.cjs")(browser, base, out, browserName),
         );
