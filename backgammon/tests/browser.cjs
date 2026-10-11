@@ -535,6 +535,9 @@ const server = http.createServer((req, res) => {
         (report.mobileFlow ||= []).push(
           await require("./mobile-flow.cjs")(browser, base, out, browserName),
         );
+        (report.mobileHistory ||= []).push(
+          await require("./mobile-history.cjs")(browser, base, out, browserName),
+        );
         (report.mobileSettings ||= []).push(
           await require("./mobile-settings.cjs")(browser, base, out, browserName),
         );

@@ -159,6 +159,20 @@ const analysisJump = button("Analysis ↓", () => {
 document.querySelector(".action-area").append(analysisJump);
 const reviewStatus = el("div", { class: "row wrap muted small", id: "auto-review-status", role: "status", hidden: true });
 reviewArea.append(reviewStatus);
+let feedbackFilter = "all";
+const feedbackFilters = el("div", {
+  class: "history-filters", role: "group", "aria-label": "Filter decision history", hidden: true,
+});
+const feedbackFilterButtons = new Map(["all", "self", "opponent"].map(value => {
+  const control = button("", () => {
+    feedbackFilter = value;
+    renderedFeedback = null;
+    renderFeedback();
+  }, "", { "data-history-filter": value, "aria-pressed": value === feedbackFilter });
+  feedbackFilters.append(control);
+  return [value, control];
+}));
+reviewArea.append(feedbackFilters);
 function renderReviewStatus() {
   reviewStatus.hidden = !game?.started || config.mode !== "computer";
   if (reviewStatus.hidden) return;
@@ -1367,7 +1381,7 @@ function renderActions() {
       }),
     );
   } else if (s.phase === "move") {
-    $("message").textContent = mine
+    const instruction = mine
       ? draft.complete()
         ? draft.draft.length
           ? "Turn ready to confirm."
@@ -1376,6 +1390,7 @@ function renderActions() {
           ? "Enter from the bar first."
           : "Use all playable dice, then confirm."
       : `${names()[s.turn]} is moving`;
+    $("message").replaceChildren(mine ? draft.progressMessage(instruction) : instruction);
     if (config.mode === "computer" && myTurn(s))
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     a.append(
@@ -1899,20 +1914,36 @@ function renderFeedback() {
     ((config.mode === "computer" && config.tutor) ||
       state().phase === "over")
   );
+  feedbackFilters.hidden = feedbackStrip.hidden;
   if (feedbackStrip.hidden) return;
   if (renderedFeedback === m.events) return;
   renderedFeedback = m.events;
   const rows = decisionHistory(m).reverse();
+  const viewer = config.mode === "online" ? online.seat : config.humanSide;
+  const sideOf = row => row.player === viewer ? "self" : "opponent";
+  for (const [value, control] of feedbackFilterButtons) {
+    const player = value === "self" ? viewer : 1 - viewer;
+    const label = value === "all" ? "All" : config.mode === "local"
+      ? names()[player] : value === "self" ? "You" : "Opponent";
+    const count = value === "all" ? rows.length : rows.filter(row => sideOf(row) === value).length;
+    control.setAttribute("aria-pressed", String(value === feedbackFilter));
+    control.setAttribute("aria-label", `${label} · ${count} decision${count === 1 ? "" : "s"}`);
+    control.title = label;
+    if (value !== "all") control.dataset.player = player;
+    control.replaceChildren(el("span", { class: "history-filter-label" }, label),
+      el("span", { class: "history-filter-count", "aria-hidden": true }, count));
+  }
+  const shown = rows.filter(row => feedbackFilter === "all" || sideOf(row) === feedbackFilter);
   feedbackStrip.replaceChildren(
     el("h2", { class: "sr-only" }, "Decision history"),
     el("p", { class: "history-context muted" },
       `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each mover’s perspective. Select a row to review.`,
     ),
   );
-  for (const row of rows) {
-    const viewer =
-      config.mode === "online" ? online.seat : config.humanSide;
-    const side = row.player === viewer ? "self" : "opponent";
+  if (!shown.length) feedbackStrip.append(el("p", { class: "history-empty muted", role: "status" },
+    rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins."));
+  for (const row of shown) {
+    const side = sideOf(row);
     const playerLabel =
       config.mode === "local"
         ? names()[row.player]

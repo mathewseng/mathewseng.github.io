@@ -689,6 +689,20 @@ export class DraftBoard {
       (p) => p.steps.length === this.draft.length,
     );
   }
+  progressMessage(idle, ready = "Ready to confirm") {
+    if (!this.draft.length) return document.createTextNode(idle);
+    // Count playable steps, not merely unused dice: a blocked die and winning
+    // partway through a roll must not leave a misleading "move left" label.
+    const left = Math.max(0, ...matchingPaths(this.paths, this.draft)
+      .map(path => path.steps.length - this.draft.length));
+    return el("span", { class: "draft-progress", "data-complete": String(left === 0) },
+      el("span", { class: "draft-progress-moves" },
+        el("span", { class: "sr-only" }, "Draft: "),
+        notation(this.draft, this.state.turn)),
+      el("span", { class: "draft-progress-status" },
+        left ? `${left} move${left === 1 ? "" : "s"} left` : ready),
+    );
+  }
   reverseMoves() {
     return originalReturnRoutes(
       this.state, this.paths, this.draft, this.minDraft,

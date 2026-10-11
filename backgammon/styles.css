@@ -3703,3 +3703,23 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   from { transform: translateY(16px); opacity: .7; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Keep the current draft readable without asking phone players to open
+   Details or infer tiny consumed dice. It replaces the existing status row. */
+.draft-progress { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 12px; }
+.draft-progress-moves { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.draft-progress-status { color: var(--muted); font-size: 14px; }
+.draft-progress[data-complete="true"] .draft-progress-status { color: var(--accent); }
+
+/* Filtering preserves the list's player colors and keeps EV color separate. */
+.history-filters:not([hidden]) { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, .7fr) minmax(0, 1fr) minmax(0, 1.35fr); gap: 6px; width: min(100%, 520px); align-self: start; }
+.history-filters button { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 44px; padding: 8px 10px; font-size: 14px; }
+.history-filters button[aria-pressed="true"] { background: var(--surface); border-color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+.history-filter-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-filters [data-player] .history-filter-label::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--board-checker0); box-shadow: 0 0 0 1px var(--muted); }
+.history-filters [data-player="1"] .history-filter-label::before { background: var(--board-checker1); }
+.history-filter-count { font-variant-numeric: tabular-nums; font-weight: 450; color: var(--muted); }
+.history-empty { margin: 12px 0 20px; }
+@media (max-width: 360px) {
+  .history-filters button { padding-inline: 6px; gap: 5px; }
+}

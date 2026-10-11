@@ -224,12 +224,14 @@ function actions() {
     );
     return;
   }
-  $("message").textContent =
+  const instruction =
     s.phase === "move"
       ? "Find your move, then submit."
       : s.phase === "double"
         ? `${offerName(s)} to ${s.cube.value * 2}. ${playerName(decisionPlayer(s))} to decide.`
         : "Would you double or roll?";
+  $("message").replaceChildren(s.phase === "move"
+    ? draft.progressMessage(instruction, "Ready to submit") : instruction);
   practiceHelp.append(button("Hint", hint, "ghost"));
   if (s.phase === "move")
     practiceHelp.append(
