@@ -11,8 +11,28 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       crypto.getRandomValues = a => a instanceof Uint8Array && a.length === 1 && bytes.length ? ((a[0] = bytes.shift()),a) : random(a);
     });
     await page.goto(base + "/backgammon/play/");
+    await page.setViewportSize({width:390,height:844});
+    await page.getByRole("button", {name:"Computer",exact:true}).waitFor();
+    assert.equal(await page.getByRole("button", {name:"Computer",exact:true}).getAttribute("aria-pressed"), "true", "setup communicates the chosen mode");
+    assert.equal(await page.getByRole("button", {name:"Same device",exact:true}).getAttribute("aria-pressed"), "false");
+    for (const width of [320,375,390,430]) {
+      await page.setViewportSize({width,height:width===320?568:844});
+      assert.ok(await page.getByLabel("Match length",{exact:true}).isVisible(), "phone setup is inline");
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await shot(`setup-${width}`);
+    }
+    await page.getByRole("button", {name:"Online",exact:true}).tap();
+    assert.ok(await page.locator("#create-room").isVisible(), "create/join remain visible without a drawer");
+    await page.getByLabel("Your name",{exact:true}).fill("Long mobile player name");
+    await page.setViewportSize({width:390,height:460});
+    await page.getByLabel("Room code",{exact:true}).fill("ABC234");
+    assert.equal(await page.getByLabel("Room code",{exact:true}).inputValue(), "ABC234", "fields remain usable with a shortened keyboard viewport");
+    await page.setViewportSize({width:390,height:844});
     await page.getByRole("button", {name:"Same device",exact:true}).click();
+    await page.locator(".game-rules > summary").tap();
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
     await page.locator("#start-match").click();
+    await page.waitForFunction(() => scrollY === 0);
     await page.locator("#roll").click();
     await page.locator("#begin-turn").click();
     for (const [width,height] of sizes) {
@@ -41,10 +61,38 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       }
     }
     await page.setViewportSize({width:390,height:844});
+    // Secondary tools share the original stateful buttons, including after
+    // closing, rotating and launching a second dialog from the sheet.
+    assert.ok(!(await page.locator("#equity-toggle").isVisible()));
+    await page.locator("#mobile-tools").focus();
+    await page.keyboard.press("Enter");
+    await page.locator(".tool-menu-dialog").waitFor();
+    await page.keyboard.press("Escape");
+    await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
+    assert.ok(await page.locator("#mobile-tools").evaluate(n => document.activeElement === n), "sheet returns keyboard focus");
+    await page.locator("#mobile-tools").tap();
+    await shot("tools");
+    await page.locator(".tool-menu-dialog #equity-toggle").tap();
+    await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
+    assert.equal(await page.locator("#equity-toggle").getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator("#equity-toggle").count(), 1);
+    await page.locator("#mobile-tools").tap();
+    await page.locator(".tool-menu-dialog #equity-toggle").tap();
+    await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
+    await page.locator("#mobile-tools").tap();
+    await page.setViewportSize({width:1024,height:768});
+    await page.locator(".tool-menu-dialog .close").click();
+    await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
+    assert.ok(await page.locator("#toolbar #equity-toggle").isVisible(), "original tools return to the desktop toolbar");
+    await page.setViewportSize({width:390,height:844});
     // Actual touch input, then reverse the draft. Board geometry stays fixed.
     const before = await page.locator("#board").boundingBox();
     await page.locator('#board [data-point="12"] .checker > circle').first().tap();
     await page.locator('#board [data-point="6"] .point-number-hit').tap();
+    for (const id of ["undo-turn", "undo", "reset-draft", "all-controls"]) {
+      const box = await page.locator(`#${id}`).boundingBox();
+      assert.ok(box && box.x >=0 && box.x+box.width<=390 && box.height>=44, `${id} needs no horizontal scrolling`);
+    }
     await page.locator("#all-controls").tap();
     await page.locator(".practice-controls-dialog #undo").tap();
     await page.locator(".practice-controls-dialog").waitFor({state:"detached"});
@@ -92,8 +140,21 @@ module.exports = async function mobileLayout(browser, base, out, name) {
         assert.ok(fonts.every(n => n >=16), `${route} must avoid input zoom`);
         await page.locator("#details-dialog").getByRole("button",{name:"Close",exact:true}).tap();
       }
+      await page.locator("#mobile-tools").tap();
+      if (route === "solver") {
+        await page.locator(".tool-menu-dialog").getByRole("button",{name:"Save",exact:true}).tap();
+        await page.getByRole("dialog",{name:"Save to Library",exact:true}).waitFor();
+        await page.getByLabel("Name",{exact:true}).fill("Phone study");
+        await page.getByRole("dialog",{name:"Save to Library",exact:true}).getByRole("button",{name:"Save",exact:true}).tap();
+        await page.getByRole("dialog").waitFor({state:"detached"});
+        assert.equal(await page.locator("#toolbar").getByRole("button",{name:"Save",exact:true,includeHidden:true}).count(),1);
+      } else {
+        assert.ok(await page.locator(".tool-menu-dialog button:not(.close)").count() > 0);
+        await page.locator(".tool-menu-dialog .close").tap();
+        await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
+      }
     }
     assert.deepEqual(errors, []);
-    return {browser:name,viewports:sizes.length,touchMoveUndo:true,cubeReplies:true,enlargedContent:true,analysisNavigation:true,sharedInputs:true};
+    return {browser:name,viewports:sizes.length,touchMoveUndo:true,cubeReplies:true,enlargedContent:true,analysisNavigation:true,sharedInputs:true,inlineSetup:true,mobileTools:true,rotation:true,shortenedKeyboardViewport:true};
   } finally {await context.close();}
 };

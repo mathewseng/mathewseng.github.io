@@ -1,3 +1,4 @@
+const { clickTool } = require("./tool-access.cjs");
 const assert = require("node:assert/strict"),
   path = require("node:path");
 module.exports = async function equityBarUX(browser, base, out, name) {
@@ -55,7 +56,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     );
     assert.equal(await page.locator("#equity-bar").isVisible(), false);
     assert.equal(assets, 0);
-    await page.locator("#equity-toggle").click();
+    await clickTool(page, "#equity-toggle");
     await page
       .locator('#equity-bar[data-state="ready"]')
       .waitFor({ timeout: 60000 });
@@ -140,7 +141,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     );
     await page.locator("#reset-draft").click();
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
-    await page.locator("#equity-toggle").click();
+    await clickTool(page, "#equity-toggle");
     await page.waitForTimeout(50);
     assert.equal(page.workers().length, 0);
     // Cancellation during initialization must release the worker and reject stale completion.
@@ -148,15 +149,15 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       await route.continue().catch(() => {});
     });
-    await page.locator("#equity-toggle").click();
+    await clickTool(page, "#equity-toggle");
     await page.locator('#equity-bar[data-state="loading"]').waitFor();
-    await page.locator("#equity-toggle").click();
+    await clickTool(page, "#equity-toggle");
     await page.waitForTimeout(300);
     assert.equal(page.workers().length, 0);
     assert.equal(await page.locator("#equity-bar").isVisible(), false);
     await page.unroute("**/engine/vendor/*.wasm");
     await page.route("**/engine/vendor/*.wasm", (route) => route.abort());
-    await page.locator("#equity-toggle").click();
+    await clickTool(page, "#equity-toggle");
     await page
       .locator('#equity-bar[data-state="error"]')
       .waitFor({ timeout: 60000 });

@@ -1,3 +1,4 @@
+const { clickTool } = require("./tool-access.cjs");
 // Local table handoffs, opponent markers and automatic Solver work: real WASM.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -37,7 +38,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     );
   };
   const assign = async (id) => {
-    await page.locator("#players-control").click();
+    await clickTool(page, "#players-control");
     await page.locator(`#dialog-${id}`).click();
     await page.getByRole("dialog").waitFor({ state: "hidden" });
   };
@@ -89,7 +90,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       .getByLabel("Accessible move selection", { exact: true })
       .selectOption({ index: 1 });
     const partial = await saved();
-    await page.locator("#players-control").click();
+    await clickTool(page, "#players-control");
     assert.ok(await page.locator("#dialog-switch-sides").isDisabled());
     await page.locator("#dialog-play-both").click();
     assert.deepEqual((await saved()).draft, partial.draft);
@@ -221,7 +222,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
             ),
           `roll below fold at ${width}`,
         );
-      await page.locator("#players-control").click();
+      await clickTool(page, "#players-control");
       await shot(`players-${width}x${height}`);
       await page.keyboard.press("Escape");
     }

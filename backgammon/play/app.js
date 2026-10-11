@@ -85,6 +85,7 @@ import { installPlayShortcuts } from "../ui/shortcuts.mjs";
 import { preferences } from "../ui/shell.mjs";
 const ui = shell("play", "Play", "Your table. Your pace.");
 document.querySelector(".app").classList.add("play-page");
+let setupStudyOpen;
 let config = {
     rules: defaultPlayRules(0),
     mode: "computer",
@@ -176,6 +177,8 @@ function placeReview() {
   const app = document.querySelector(".app");
   app.classList.toggle("desktop-table", desktopTable.matches && started);
   app.classList.toggle("live-table", started);
+  app.classList.toggle("setup-table", !started);
+  app.dataset.mode = config.mode;
   reviewArea.hidden = !started;
   const feedbackHome = started ? reviewArea : document.querySelector(".action-area");
   const inspectorHome = started ? reviewArea : $("workspace");
@@ -758,24 +761,28 @@ function setupFields() {
           (v) => (config.strength = v),
         ),
       ),
-      feedbackToggle(),
-      reviewStrengthControl(),
-    );
-  if (config.mode === "computer" && config.tutor)
-    fields.append(
       el(
-        "label",
-        { class: "check" },
-        el("input", {
-          type: "checkbox",
-          checked: config.warning,
-          onChange: (e) => (config.warning = e.target.checked),
-        }),
-        "Warn before confirming a costly move",
+        "details",
+        {
+          class: "setup-study",
+          open: setupStudyOpen ?? !matchMedia("(max-width: 700px)").matches,
+          onToggle: e => { setupStudyOpen = e.currentTarget.open; },
+        },
+        el("summary", {}, "Feedback & hints"),
+        el("div", { class: "stack" },
+          feedbackToggle(),
+          reviewStrengthControl(),
+          ...(config.tutor ? [el("label", { class: "check" },
+            el("input", {
+              type: "checkbox", checked: config.warning,
+              onChange: e => { config.warning = e.target.checked; },
+            }), "Warn before confirming a costly move")] : []),
+        ),
       ),
     );
   if (config.mode === "local")
     fields.append(
+      el("div", { class: "pair setup-names" },
       field(
         "Ivory player",
         el("input", {
@@ -791,6 +798,7 @@ function setupFields() {
           maxlength: 24,
           onInput: (e) => (config.opponent = e.target.value),
         }),
+      ),
       ),
     );
   if (config.mode === "online") {
@@ -836,8 +844,8 @@ function setupFields() {
     fields.append(
       el(
         "p",
-        { class: "muted small" },
-        "Draft moves can be revised until you confirm. Rules remain fixed for the match or session.",
+        { class: "muted small setup-note" },
+        "You can revise your moves until you confirm.",
       ),
     );
   fields.append(
@@ -852,6 +860,7 @@ function setupFields() {
         () => {
           stopComputer();
           restore(saved);
+          window.scrollTo({ top: 0, behavior: "instant" });
         },
         "",
         { id: "resume-match" },
@@ -905,6 +914,7 @@ function start() {
   boardKey = "";
   persist();
   render();
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 function actions() {
   const table = model();
@@ -941,10 +951,15 @@ function actions() {
     $("actions").prepend(
       button("Undo last turn", requestTakeback, "", {
         id: "undo-turn",
+        "aria-label": "Undo last turn",
         disabled: !!unavailable,
         title:
           "Restore the last chosen checker turn. Committed dice are kept.",
       }),
+    );
+    $("undo-turn").replaceChildren(
+      el("span", { class: "undo-turn-label-wide" }, "Undo last turn"),
+      el("span", { class: "undo-turn-label-phone", "aria-hidden": "true" }, "Undo turn"),
     );
   } finally {
     arrangeActions();

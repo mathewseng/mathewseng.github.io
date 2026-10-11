@@ -11,6 +11,7 @@ module.exports = async function parity(browser, base, out, name) {
     errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const close = async () => {
+    if (!await page.getByRole("dialog").count()) return;
     await page
       .getByRole("dialog")
       .last()
@@ -53,14 +54,11 @@ module.exports = async function parity(browser, base, out, name) {
           hit: !!top && (top === n || n.contains(top)),
         };
       });
-      const closeBox = await page
-        .locator("#details-dialog .close")
-        .boundingBox();
-      assert.ok(
-        closeBox.y >= 0 &&
-          closeBox.y + closeBox.height <= page.viewportSize().height,
-        "Close remains in view while accessing every control",
-      );
+      if (await page.locator("#details-dialog").count()) {
+        const closeBox = await page.locator("#details-dialog .close").boundingBox();
+        assert.ok(closeBox.y >= 0 && closeBox.y + closeBox.height <= page.viewportSize().height,
+          "Close remains in view while accessing every control");
+      }
       assert.ok(
         fit.left >= -1 &&
           fit.right <= page.viewportSize().width + 1 &&
@@ -109,7 +107,9 @@ module.exports = async function parity(browser, base, out, name) {
         [1366, 768],
       ]) {
         await page.setViewportSize({ width, height });
-        await page.locator("#panel-toggle").click();
+        if (await page.locator("#panel-toggle").isVisible())
+          await page.locator("#panel-toggle").click();
+        else assert.ok(await page.locator("#panel").isVisible(), "inline setup replaces the phone drawer");
         assert.deepEqual(
           await inventory(),
           expected,

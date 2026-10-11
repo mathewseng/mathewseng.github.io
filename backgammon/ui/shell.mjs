@@ -46,6 +46,8 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === "text") n.textContent = v;
     else if (k === "checked") n.checked = v;
     else if (k === "value") n.value = v;
+    else if (k.startsWith("aria-") && v !== null)
+      n.setAttribute(k, String(v));
     else if (v !== false && v !== null)
       n.setAttribute(k, v === true ? "" : v);
   }
@@ -217,6 +219,7 @@ export function shell(page, title, subtitle = "") {
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
+  installMobileTools(page);
   startUpdates({
     onStatus: ({ state }) => {
       const brand = document.querySelector(".brand");
@@ -237,6 +240,45 @@ export function shell(page, title, subtitle = "") {
     activeEquity = new EquityBar(activeBoard, equityToggle);
   }
   return { board: activeBoard, panel: $("panel"), equityBar: activeEquity };
+}
+
+// Move the real controls into the phone sheet: no duplicate IDs, handlers or
+// toggle state. Anchors preserve their desktop order when the sheet closes.
+function installMobileTools(page) {
+  document.querySelector(".app").dataset.page = page;
+  const toolbar = $("toolbar");
+  const trigger = button("More", () => {
+    if (document.querySelector(".tool-menu-dialog")) return;
+    const controls = [...toolbar.children].filter(n => n !== trigger && n.id !== "panel-toggle");
+    const anchors = controls.map(n => {
+      const anchor = document.createComment("tool control");
+      n.before(anchor);
+      return anchor;
+    });
+    const menu = el("div", { class: "mobile-tool-list" }, ...controls);
+    const d = dialog(`${page[0].toUpperCase() + page.slice(1)} tools`, menu);
+    d.classList.add("drawer", "tool-menu-dialog");
+    trigger.setAttribute("aria-expanded", "true");
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      controls.forEach((node, i) => anchors[i].replaceWith(node));
+      trigger.setAttribute("aria-expanded", "false");
+    };
+    // Restore before an action rerenders or opens another dialog.
+    menu.addEventListener("click", event => {
+      if (event.target.closest("button:not(:disabled), a")) {
+        restore();
+        d.close();
+      }
+    }, { capture: true });
+    d.addEventListener("close", restore, { once: true });
+  }, "ghost mobile-tools-toggle", {
+    id: "mobile-tools", "aria-haspopup": "dialog", "aria-expanded": "false",
+    "aria-label": `${page[0].toUpperCase() + page.slice(1)} tools`,
+  });
+  toolbar.append(trigger);
 }
 export function openPanel() {
   const existing = document.getElementById("details-dialog");

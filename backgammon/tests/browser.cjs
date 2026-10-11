@@ -380,12 +380,7 @@ const server = http.createServer((req, res) => {
           await page.setViewportSize({ width: 390, height: 844 });
           await page.goto(base + "/backgammon/play/");
           await page.emulateMedia({ reducedMotion: "reduce" });
-          await page.locator("#panel-toggle").click();
-          await page.getByLabel("Ivory player").count();
-          await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "Close", exact: true })
-            .click();
+          assert.ok(await page.getByLabel("Match length", { exact: true }).isVisible(), "phone setup is directly available");
           await page
             .getByRole("button", { name: "Settings", exact: true })
             .focus();

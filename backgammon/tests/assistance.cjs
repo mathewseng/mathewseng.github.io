@@ -1,3 +1,4 @@
+const { clickTool } = require("./tool-access.cjs");
 // Hints and turn feedback against real GNUbg, served from the assembled site.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -378,7 +379,7 @@ module.exports = async function assistanceUX(
     cases.push("feedback and live toggle survive Solver round trip");
 
     // Same-device/online games must never expose hint or turn grading controls.
-    await page.locator("#players-control").click();
+    await clickTool(page, "#players-control");
     await page.locator("#dialog-play-both").click();
     // The native close event removes the dialog on a later browser task.
     // Count only after cleanup, rather than its now-inaccessible old toggle.
@@ -417,7 +418,7 @@ module.exports = async function assistanceUX(
           await route.continue().catch(() => {});
       };
       const assign = async (id) => {
-        await page.locator("#players-control").click();
+        await clickTool(page, "#players-control");
         await page.locator("#dialog-" + id).click();
       };
       await assign("bot-teal");

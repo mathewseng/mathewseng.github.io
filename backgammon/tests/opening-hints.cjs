@@ -13,9 +13,7 @@ module.exports=async function openingHints(browser,base,out,name){
         crypto.getRandomValues=a=>a instanceof Uint8Array&&a.length===1&&bytes.length?((a[0]=bytes.shift()),a):random(a);
       });
       await page.goto(base+"/backgammon/play/");
-      if(touch)await click(page.locator("#panel-toggle"));
       await click(page.getByRole("button",{name:"Same device",exact:true}));
-      if(touch)await click(page.locator("#details-dialog").getByRole("button",{name:"Close",exact:true}));
       await click(page.locator("#start-match"));
       for(const value of [2,4]){
         await click(page.locator("#roll"));

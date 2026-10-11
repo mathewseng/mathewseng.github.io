@@ -3351,3 +3351,77 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   .play-page.live-table #analysis-jump { display: block; justify-self: end; color: var(--accent); }
   .play-page.live-table #actions > button { min-height: 44px; font-size: 14px; }
 }
+
+/* Phone tools use the same buttons in a sheet; desktop keeps its full toolbar. */
+.mobile-tools-toggle, .undo-turn-label-phone { display: none; }
+.setup-study > .stack { padding-top: 10px; }
+.mobile-tool-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mobile-tool-list > button { min-height: 48px; white-space: normal; background: var(--surface); border-color: var(--line); }
+.mobile-tool-list > [aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); border-color: var(--accent); color: var(--accent); }
+@media (max-width: 700px) and (min-height: 501px), (max-width: 649px) {
+  .app .topbar, .play-page.live-table .topbar { height: 88px; }
+  .app .tool-head, .app:not(.play-page) .tool-head, .play-page.live-table .tool-head {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+    min-height: 60px; gap: 6px; padding-block: 6px;
+  }
+  .app .tool-head > div:first-child { min-width: 0; }
+  .app .tool-head h1 { font-size: 17px; }
+  .app .tool-head .subtitle { max-width: none; font-size: 12px; margin-top: 3px; line-height: 1.4; }
+  .app .toolbar-actions, .app:not(.play-page) .toolbar-actions, .play-page.live-table .toolbar-actions {
+    width: auto; gap: 4px; display: flex; flex-wrap: nowrap;
+  }
+  .app #toolbar > :not(#panel-toggle):not(#mobile-tools) { display: none; }
+  .app #toolbar > #mobile-tools, .app #toolbar > #panel-toggle {
+    display: block; flex: none; min-height: 44px; padding: 8px 10px; font-size: 14px;
+  }
+  .play-page.live-table .tool-head { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; min-height: 60px; }
+  .play-page.live-table .tool-head .subtitle { white-space: normal; margin: 0; font-size: 13px; }
+  .play-page.live-table .toolbar-actions { grid-column: 2; grid-row: 1; }
+  .play-page.live-table .tool-head > div:first-child { align-self: center; grid-column: 1; grid-row: 1; }
+
+  .app:not(.play-page) { min-height: calc(100vw * .754 + 320px); }
+
+  /* Setup is the task before play. Reveal it directly, with a reachable start
+     action; preserve the complete settings form and room flow at every width. */
+  .play-page.setup-table { height: auto; min-height: 100dvh; padding-bottom: 0; }
+  .play-page.setup-table .tool-head .subtitle { white-space: normal; font-size: 13px; }
+  .play-page.setup-table #toolbar { display: none; }
+  .play-page.setup-table .workspace { display: flex; flex-direction: column; gap: 12px; }
+  .play-page.setup-table .inspector { display: block; order: -1; border: 0; padding: 8px 2px 0; overflow: visible; }
+  .play-page.setup-table .panel-body { overflow: visible; }
+  .play-page.setup-table #panel :is(button, input, select, summary) { scroll-margin-block: 80px; }
+  .play-page.setup-table .stack { gap: 10px; }
+  .play-page.setup-table .game-rules { margin-top: 0; padding-top: 0; }
+  .play-page.setup-table .setup-note { margin: 0; }
+  .play-page.setup-table .panel-body > .stack > h2 { display: none; }
+  .play-page.setup-table .segmented { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .play-page.setup-table .segmented button { padding-inline: 6px; min-height: 48px; font-size: 14px; }
+  .play-page.setup-table .segmented button[aria-pressed="true"] { color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+  .play-page.setup-table .stage { display: block; height: auto; min-height: 0; position: static; margin-top: auto; }
+  .play-page.setup-table .stage > :not(.action-area), .play-page.setup-table .help-cluster,
+  .play-page.setup-table #message, .play-page.setup-table #draft-line { display: none; }
+  .play-page.setup-table .action-area { display: block; overflow: visible; border-top: 1px solid var(--line); background: var(--bg); padding: 10px 0 max(12px, env(safe-area-inset-bottom)); }
+  .play-page.setup-table .action-main { padding: 0; }
+  .play-page.setup-table #start-match { width: 100%; min-height: 50px; }
+  .play-page.setup-table[data-mode="online"]:has(#create-room) .stage { display: none; }
+  .play-page.setup-table #create-room, .play-page.setup-table #join-room { flex: 1; min-height: 48px; }
+
+  /* No sideways hunt for draft controls. Practice dice remain in All controls. */
+  .play-page.live-table .help-cluster { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .play-page.live-table .help-cluster .action-help { display: flex; flex-wrap: nowrap; overflow: visible; gap: 4px; }
+  .play-page.live-table .help-cluster .action-help > button { flex: 1; min-width: 44px; white-space: normal; font-size: 14px; padding-inline: 6px; min-height: 44px; }
+  .play-page.live-table .help-cluster #undo-turn { flex: 1.5; min-height: 44px; white-space: normal; }
+  .play-page.live-table .undo-turn-label-wide { display: none; }
+  .play-page.live-table .undo-turn-label-phone { display: inline; }
+  .play-page.live-table .action-area { border-top: 1px solid var(--line); padding-top: 8px; grid-template-rows: auto auto auto; }
+  .play-page.live-table .stage { grid-template-rows: 26px max-content 26px minmax(180px, 1fr); }
+  .play-page.live-table .action-main { gap: 8px; }
+  .play-page.live-table .draft-line { line-height: 1.4; }
+  .play-page.live-table #analysis-jump { border: 1px solid var(--line); border-radius: 7px; }
+  .play-page.live-table .action-message { line-height: 1.4; margin-bottom: 2px; }
+  .app .player-strip { padding-inline: 4px; }
+  .drawer .dialog-header { padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .drawer .dialog-header button.close { min-width: 64px; }
+  .library-filters { gap: 8px; margin-bottom: 8px; }
+  .library-item { padding-block: 16px; }
+}

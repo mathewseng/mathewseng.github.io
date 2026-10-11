@@ -19,13 +19,8 @@ const assert = require("node:assert/strict");
       p = await c.newPage();
     const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
     await p.goto(base + "/backgammon/play/");
-    await p.locator("#panel-toggle").tap();
     await p.getByRole("button", { name: "Same device", exact: true }).tap();
     await p.getByLabel("Ivory player").fill("Long name — localization");
-    await p
-      .getByRole("dialog")
-      .getByRole("button", { name: "Close", exact: true })
-      .tap();
     await p.locator("#start-match").tap();
     do {
       await p.locator("#roll").tap();
