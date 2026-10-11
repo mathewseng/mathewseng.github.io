@@ -241,7 +241,7 @@ export function resultView(
     );
   node.append(
     ...(result.budget ? [el("p", { class: "muted small", id: "analysis-budget" },
-      `Auto · ${result.settings.plies} ply completed · ${result.budget.reason === "searching" ? "searching deeper…" : result.budget.reason === "maximum-depth" ? "maximum depth reached" : "~1 s search budget"}. Engine loading is separate; deeper manual searches remain available.`)] : []),
+      `Auto · ${result.settings.plies} ply completed · ${({searching:"searching deeper…","maximum-depth":"maximum depth reached","clear-lead":"clear, stable lead","predicted-cost":"next depth unlikely to fit","time-budget":"~1 s search budget"})[result.budget.reason] || "complete"}.${result.budget.lead ? ` Top-two gap: ${result.budget.lead.gap < .001 ? "<0.001" : result.budget.lead.gap.toFixed(3)} equity.` : ""}${result.budget.forecast ? ` Next depth: ${result.budget.forecast.estimateMs >= 4000 ? ">4" : "~"+(result.budget.forecast.estimateMs/1000).toFixed(1)} s estimated from earlier depths; timing can vary.` : ""} Engine loading is separate; deeper manual searches remain available.`)] : []),
     el(
       "p",
       { class: "muted small" },

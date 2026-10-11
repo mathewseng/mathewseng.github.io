@@ -78,7 +78,7 @@ export function createEvaluator(module) {
       preset = "quick",
       kind = s.phase === "move" ? "checker" : "cube",
       submitted = null,
-      { automatic = false } = {},
+      { automatic = false, retainKeys = [] } = {},
     ) {
       assertState(s);
       const settings = PRESETS[preset];
@@ -197,7 +197,7 @@ export function createEvaluator(module) {
           ? structuredClone(quickCache.candidates) : scoreTurns(turns, 0);
         const finalists = quick.filter((c, i) => i < ADAPTIVE_ROOT.minimum ||
           (i < ADAPTIVE_ROOT.maximum && quick[0].equity - c.equity <= ADAPTIVE_ROOT.threshold) ||
-          c.key === submittedKey);
+          c.key === submittedKey || retainKeys.includes(c.key));
         const keys = new Set(finalists.map(c => c.key));
         rootTurns = turns.filter(t => keys.has(t.key));
         base.settings.rootFilter = { ...ADAPTIVE_ROOT };
@@ -221,7 +221,7 @@ export function createEvaluator(module) {
             i < 2 ||
             (i < settings.finalists &&
               original[0].equity - c.equity <= settings.threshold) ||
-            c.key === submittedKey,
+            c.key === submittedKey || (automatic && retainKeys.includes(c.key)),
         );
         candidates = finalists
           .map((c) => {

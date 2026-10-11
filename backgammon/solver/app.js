@@ -392,7 +392,7 @@ function panel(problems) {
         "Analysis strength",
         select(
           [
-            ["auto", "Auto · deepest within ~1 second"],
+            ["auto", "Auto · balanced (~1 second)"],
             ...Object.entries(PRESETS).map(([key, value]) => [
               key,
               `${value.name} · ${value.plies} ply`,

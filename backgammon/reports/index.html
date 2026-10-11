@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#11191d" />
     <title>Backgammon · Engine report</title>
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=af9d31a938690ee2" />
-    <link rel="stylesheet" href="./report.css?bgv=af9d31a938690ee2" />
-    <script type="module" src="./app.js?bgv=af9d31a938690ee2"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=f9259c2a723143a5" />
+    <link rel="stylesheet" href="./report.css?bgv=f9259c2a723143a5" />
+    <script type="module" src="./app.js?bgv=f9259c2a723143a5"></script>
   </head>
   <body class="engine-report">
     <header class="topbar">
@@ -34,7 +34,9 @@
       </nav>
       <section id="automatic">
         <h2>One-second automatic search</h2>
-        <p>The Solver's default keeps the deepest fully completed evaluation, up to four plies. Engine loading is measured separately. Harder positions and slower devices finish shallower.</p>
+        <p>Auto balances speed and decision stability, up to four plies within a one-second target. It can stop early for a clear, stable lead or when the next depth is unlikely to fit. Engine loading is separate.</p>
+        <p>The new gap/cost policy averaged 374 ms versus 687 ms for deadline-only search across 68 paired test cases on an M4 Pro, choosing the same move in all 68. This measures move agreement, not perfect play or equal equity accuracy. No physical iPhone was measured. <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/SEARCH-POLICY.md">Method, thresholds and limitations</a> · <a href="../docs/search-policy-live.json">Paired measurements</a></p>
+        <h3>Earlier deadline-only measurements</h3>
         <div id="automatic-content" aria-live="polite"></div>
       </section>
       <section id="acceleration">

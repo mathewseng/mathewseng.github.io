@@ -150,6 +150,7 @@ export class EngineClient {
     });
     const key = JSON.stringify([
       ENGINE_VERSION,
+      preset === 'auto' ? ADAPTIVE_SEARCH.version : null,
       positionKey(state),
       preset,
       kind,
@@ -214,7 +215,7 @@ export class EngineClient {
       const job = this.queue.shift();
       this.active = job;
       job.started = performance.now();
-      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Searching deeper · about 1 second…" : `Evaluating ${job.preset}…`);
+      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · up to about 1 second…" : `Evaluating ${job.preset}…`);
       this.worker.postMessage({
         id: job.id,
         type: "analyze",
