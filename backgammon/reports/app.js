@@ -46,10 +46,41 @@ async function json(path) {
     );
   return r.json();
 }
+$("release").textContent = ENGINE_VERSION;
+try {
+  const report = await json("../data/native-benchmark.json");
+  let browserName = report.results[0].browser, preset = "deep", condition = "cold";
+  const target = el("div", {});
+  const draw = () => {
+    const browser = report.results.find(b => b.browser === browserName);
+    target.replaceChildren(table(
+      ["Position", "Scalar", "SIMD", "Time saved"],
+      browser.rows.filter(r => r.preset === preset).map(r => {
+        const scalar = r.summary.scalar[condition].median;
+        const simd = r.summary.simd[condition].median;
+        return [r.topic, time(scalar), time(simd), Math.min(scalar, simd) < 10 ? "—" : `${((1 - simd / scalar) * 100).toFixed(1)}%`];
+      }),
+      `${browser.browser} ${browser.version} · ${label(preset)} · median of five paired workers. ${condition === "cold" ? "First search in each worker." : "Three repeated searches per worker; native caches warm."}`,
+    ));
+  };
+  $("acceleration-content").append(
+    el("p", {class:"muted"}, `${report.engine} · measured ${new Date(report.recordedAt).toLocaleString()}`),
+    el("div", {class:"row"},
+      field("Browser", select(report.results.map(b => [b.browser, b.browser]), browserName, value => {browserName = value; draw();})),
+      field("Analysis setting", select([["standard","Standard"],["deep","Deep"]], preset, value => {preset = value; draw();})),
+      field("Cache condition", select([["cold","Fresh worker"],["warm","Repeated search"]], condition, value => {condition = value; draw();})),
+    ),
+    target,
+    el("p", {class:"muted"}, `${report.environment.cpu} · ${report.environment.os}. ${report.environment.conditions}`),
+    el("p", {}, "Negative time saved means the accelerated build was slower in that measurement. Percentages are omitted below 10 ms; small differences and zero readings can be timer noise or rounding. Startup, transfer, compilation, raw samples and ranges are recorded separately in the download."),
+    link("Download paired engine measurements", "../data/native-benchmark.json"),
+  );
+  draw();
+} catch (e) {
+  $("acceleration-content").append(el("p", {class:"error"}, e.message));
+}
 try {
   const speed = await json("../data/speed-report.json");
-  $("release").textContent =
-    `${speed.engine} · measured ${new Date(speed.recordedAt).toLocaleString()}`;
   let topic = "contact";
   const target = el("div", {});
   function draw() {
@@ -75,6 +106,7 @@ try {
     );
   }
   $("speed-content").append(
+    el("p", {class:"muted"}, `${speed.engine} · measured ${new Date(speed.recordedAt).toLocaleString()}. Historical results below retain their original engine version.`),
     field(
       "Position type",
       select(

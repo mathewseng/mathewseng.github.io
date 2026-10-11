@@ -1,0 +1,62 @@
+--- a/src/lib/neuralnet.c
++++ b/src/lib/neuralnet.c
+@@ -28,6 +28,9 @@
+ #include "neuralnet.h"
+ #include "simd.h"
+ #include "sigmoid.h"
++#ifdef __wasm_simd128__
++#include <wasm_simd128.h>
++#endif
+ 
+ static int
+ NeuralNetCreate(neuralnet * pnn, unsigned int cInput, unsigned int cHidden,
+@@ -136,12 +139,23 @@
+         else {
+             float *pr = ar;
+ 
++#ifdef __wasm_simd128__
++            const v128_t amount = wasm_f32x4_splat(ari);
++            for (j = 0; j + 4 <= cHidden; j += 4) {
++                v128_t w = wasm_v128_load(prWeight + j);
++                if (ari != 1.0f) w = wasm_f32x4_mul(w, amount);
++                wasm_v128_store(pr + j, wasm_f32x4_add(wasm_v128_load(pr + j), w));
++            }
++            for (; j < cHidden; j++) pr[j] += prWeight[j] * ari;
++            prWeight += cHidden;
++#else
+             if (ari == 1.0f)
+                 for (j = cHidden; j; j--)
+                     *pr++ += *prWeight++;
+             else
+                 for (j = cHidden; j; j--)
+                     *pr++ += *prWeight++ * ari;
++#endif
+         }
+     }
+ 
+@@ -184,6 +198,17 @@
+         else {
+             float *pr = ar;
+ 
++#ifdef __wasm_simd128__
++            const v128_t amount = wasm_f32x4_splat(ari);
++            for (j = 0; j + 4 <= pnn->cHidden; j += 4) {
++                v128_t value = wasm_v128_load(pr + j), w = wasm_v128_load(prWeight + j);
++                if (ari == -1.0f) value = wasm_f32x4_sub(value, w);
++                else value = wasm_f32x4_add(value, ari == 1.0f ? w : wasm_f32x4_mul(w, amount));
++                wasm_v128_store(pr + j, value);
++            }
++            for (; j < pnn->cHidden; j++) pr[j] += prWeight[j] * ari;
++            prWeight += pnn->cHidden;
++#else
+             if (ari == 1.0f)
+                 for (j = pnn->cHidden; j; j--)
+                     *pr++ += *prWeight++;
+@@ -193,6 +218,7 @@
+             else
+                 for (j = pnn->cHidden; j; j--)
+                     *pr++ += *prWeight++ * ari;
++#endif
+         }
+     }
+ 

@@ -508,6 +508,12 @@ const server = http.createServer((req, res) => {
         (report.engineCacheContext ||= []).push(
           {browser: browserName, cases: await require("./engine-cache-context.cjs")(browser, base)},
         );
+        (report.backendLoading ||= []).push({browser: browserName,
+          cases: await require("./backend-loading.cjs")(browser, base),
+        });
+        (report.nativeBackends ||= []).push({browser: browserName,
+          ...(await require("./native-backends.cjs")(browser, base, {corpus: browserName === "chromium"})),
+        });
         (report.openingHints ||= []).push(
           await require("./opening-hints.cjs")(browser, base, out, browserName),
         );

@@ -145,7 +145,9 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.waitForTimeout(50);
     assert.equal(page.workers().length, 0);
     // Cancellation during initialization must release the worker and reject stale completion.
-    await page.route("**/engine/vendor/*.wasm", async (route) => {
+    // Block both backends: a failed SIMD load alone intentionally falls back.
+    const wasmAssets = /\/engine\/vendor\/(?:simd\/)?gnubg-core-module\.wasm(?:\?.*)?$/;
+    await page.route(wasmAssets, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 200));
       await route.continue().catch(() => {});
     });
@@ -155,13 +157,13 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.waitForTimeout(300);
     assert.equal(page.workers().length, 0);
     assert.equal(await page.locator("#equity-bar").isVisible(), false);
-    await page.unroute("**/engine/vendor/*.wasm");
-    await page.route("**/engine/vendor/*.wasm", (route) => route.abort());
+    await page.unroute(wasmAssets);
+    await page.route(wasmAssets, (route) => route.abort());
     await clickTool(page, "#equity-toggle");
     await page
       .locator('#equity-bar[data-state="error"]')
       .waitFor({ timeout: 60000 });
-    await page.unroute("**/engine/vendor/*.wasm");
+    await page.unroute(wasmAssets);
     await page.locator(".equity-retry").click();
     await page
       .locator('#equity-bar[data-state="ready"]')

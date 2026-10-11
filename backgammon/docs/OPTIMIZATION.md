@@ -33,10 +33,42 @@ Observed Deep **subsequent-grade** medians on Apple M4 Pro / Chromium 145 (milli
 
 Each hint-plus-grade pair sent two native search requests with the previous client and one with reuse. First-search complexity is unchanged by the client optimization; the raw file records those timings separately. These measurements do not establish a speedup for unrelated positions or devices.
 
-## Remaining optimization work
+## bg4 release evidence
 
 Validation also regenerated all 34 authored study fixtures and the 300-position historical cubeless reference report with bg4. All 900 reference best-move selections (300 positions × three presets) were unchanged. The mixed-context and full-candidate reuse regressions passed Chromium, Firefox and WebKit; actual rollout cancellation/resume passed all three engines. The reference corpus is cubeless and does not by itself exercise the two native cubeful-cache bugs.
 
 Release checks: 292 repository tests passed; all 13 targeted deployment/offline-manifest checks passed; the complete assembled-site Chromium suite passed. Phone study-preview and nine-viewport layout/touch checks also passed in Firefox and WebKit. Screenshots were inspected for 320px and 375px study flows, 390px play/editing/Library, cube review, and 844×390 landscape play. These are desktop browser emulations, not physical-phone measurements.
 
-The wider solver goal remains active. Prototype scalar/SIMD builds exist but are not deployed; they need reproducible build integration, cross-browser and numeric comparison, capability fallback and workload-level measurements. Deeper search/filter accuracy and rollout policy remain separate questions requiring external-reference evidence. No faster but weaker preset is substituted silently, and these cache improvements do not establish that every possible engine optimization is complete.
+## bg5: SIMD with a verified scalar fallback
+
+The production build now contains a standard SIMD executable plus the unchanged bg4 scalar executable. The neural weights and bearoff/MET package are identical; the default search depths and pruning are unchanged. Four independent hidden neurons are computed together without changing input summation order. The SIMD build uses `-O3 -flto -msimd128 -ffp-contract=off`; no relaxed SIMD, fast-math or threads. A capability probe selects the executable, and a failed SIMD load/compile/initialization retries the scalar build. The compiler is pinned to Emscripten 4.0.15, with both build targets in the corresponding source archive.
+
+`docs/backend-validation.json` records **645 comparisons**: 415 in Chromium, 115 in Firefox and 115 in WebKit. These cover all 34 authored fixtures at 0/1/2 ply, additional cube/match/player contexts, 3/4-ply samples, an arbitrary legal move, seeded rollouts and a SIMD-to-scalar checkpoint resume. Chromium additionally compares all 300 historical reference positions at Deep. Best decisions and candidate coverage agree. The largest observed difference across checked equities, probabilities and standard errors was **0.00000006**, below the 0.00001 test tolerance. Each browser also passed ten actual-HTTP asset, fallback, failure and retry cases. This proves tested implementation agreement, not perfect neural accuracy.
+
+### Paired measurements
+
+Run `node backgammon/scripts/native-benchmark.cjs` with no other heavy jobs. The committed `data/native-benchmark.json` retains every raw sample, canonical position, setting, build flag, executable hash, browser version and startup component. The public engine report can switch browser, depth and cache condition. Older depth/rollout reports remain labeled with their original engine and date.
+
+Observed Deep first-search medians on **Apple M4 Pro / macOS Darwin 25.5.0**, milliseconds, **five alternating paired fresh workers** per cell:
+
+| Position | Chromium 145 scalar → SIMD | Firefox 146 scalar → SIMD | WebKit 26 scalar → SIMD |
+| --- | ---: | ---: | ---: |
+| Opening | 167.1 → 138.1 | 1958 → 1512 | 184 → 151 |
+| Contact | 436.5 → 351.5 | 4938 → 3897 | 450 → 370 |
+| Race | 71.3 → 65.3 | 624 → 539 | 75 → 68 |
+| Bearoff | 2.3 → 2.4 | 4 → 3 | 3 → 3 |
+| Cube | 8.3 → 7.5 | 60 → 47 | 10 → 9 |
+| Doubles | 841.0 → 688.7 | 9720 → 7795 | 876 → 730 |
+| Match score | 211.9 → 176.0 | 2055 → 1667 | 202 → 164 |
+
+The opening/contact/doubles samples saved about **17–23%** of first-search compute time across these browser runs. This is a local desktop HTTP workload comparison, not a phone benchmark or a universal speed promise. Browser HTTP/WASM compilation caches may be warm even when the native evaluation cache is fresh. Three additional within-worker repeats show that already-cached calculations are mostly sub-millisecond to a few milliseconds; many differences there are beneath useful timer resolution. Small bearoff/cube timings do not establish a reliable speed gain. No p95 is claimed from five samples.
+
+### bg5 release checks
+
+All 34 study fixtures were rescored with bg5. The regenerated 300-position historical reference report checked 900 best-move selections across Quick/Standard/Deep; none changed from bg4. The corpus limitations above still apply.
+
+With the October 11 mobile improvements included, 293 repository tests and the full assembled-site Chromium suite passed, including real WASM, backend fallback/cancellation, offline updates, saved work and the new mobile task flows. Firefox and WebKit passed the real-engine research/report and mobile-flow suites. The paired benchmark report was visually inspected at desktop and phone widths; browser emulation is not physical-device testing. Engine/source asset checksums all match the distribution manifest.
+
+### Accuracy work still open
+
+The faster executable preserves the existing decisions; it does not introduce stronger weights or a new rollout policy. Expert/Research still use a screened root list, and rollouts still use 0-ply checker/cube decisions. Those limits need separate experiments against recorded reference positions and a separately built GNUbg executable before changing defaults or claiming stronger play. GNUbg’s [official manual](https://www.gnu.org/software/gnubg/manual/gnubg.html) describes deeper rollout policies and their substantial cost. The next investigation is explicit, reproducible 2-ply rollout policy with correctly initialized move filters, bounded checkpoint batches, and measured policy differences—not merely increasing sample count or silently calling a deeper tree search a rollout.

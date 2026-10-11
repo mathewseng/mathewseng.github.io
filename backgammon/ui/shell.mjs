@@ -477,7 +477,7 @@ export function about() {
       el(
         "p",
         {},
-        "GNUbg Core 955555c · web binding bg4. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution.",
+        "GNUbg Core 955555c · web binding bg5. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
       ),
       el(
         "p",
@@ -506,7 +506,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg4.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg5.tar.gz" },
         "Download corresponding engine source",
       ),
       el(

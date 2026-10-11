@@ -191,6 +191,17 @@ module.exports = async function research(browser, base, output) {
     await page.waitForFunction(() =>
       document.querySelector("#speed-content table"),
     );
+    assert.equal(await page.locator("#acceleration-content tbody tr").count(), 7);
+    assert.equal(page.workers().length, 0, "recorded reports do not start analysis workers");
+    for (const name of ["chromium", "firefox", "webkit"]) {
+      await page.getByLabel("Browser", {exact:true}).selectOption(name);
+      await page.getByLabel("Analysis setting", {exact:true}).selectOption("standard");
+      await page.getByLabel("Cache condition", {exact:true}).selectOption("warm");
+      assert.match(await page.locator("#acceleration-content caption").innerText(), new RegExp(name + ".*Standard.*native caches warm"));
+    }
+    await page.getByLabel("Browser", {exact:true}).selectOption("chromium");
+    await page.getByLabel("Analysis setting", {exact:true}).selectOption("deep");
+    await page.getByLabel("Cache condition", {exact:true}).selectOption("cold");
     assert.equal(await page.locator(".error").count(), 0);
     await page.screenshot({
       path: output + "/report-desktop.png",

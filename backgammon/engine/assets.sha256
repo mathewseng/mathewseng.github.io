@@ -5,3 +5,6 @@ c92d693d06aeb44802fa3dbf00a9dcb6c90c6d4d6eb3c3b9dfb9f735c8b7c028  backgammon/eng
 972c9eb242c2e0d5b843adc0ce78985872da0f7e0fda70ed59c6eea1a3c242d5  backgammon/engine/source/gnubg-core-955555c-bg2.tar.gz
 18e7702920c9325b22e0a03c320812e42d1ce15ebf32b31f75b4be168530f45d  backgammon/engine/source/gnubg-core-955555c-bg3.tar.gz
 895656099565c44f40d122d6996adc4e0e9b9d82746e95977397125fa9954296  backgammon/engine/source/gnubg-core-955555c-bg4.tar.gz
+63d391de43b1802584d167aff2117e580dfafb4f8145eb7cafea7ff5ee38ad7d  backgammon/engine/vendor/simd/gnubg-core-module.js
+e1a1445b4f19b85451980cfdd7d830c3d2575597400f936f1412b2ea6ec561e1  backgammon/engine/vendor/simd/gnubg-core-module.wasm
+48452a60b22a48e4df712aa7681f989fab4a5e7c0b7b76c762db6c31f82877c2  backgammon/engine/source/gnubg-core-955555c-bg5.tar.gz

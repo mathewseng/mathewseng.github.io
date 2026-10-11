@@ -1,5 +1,5 @@
 from pathlib import Path
-import sys
+import sys, subprocess
 p=Path(sys.argv[1])
 x=p/'src/xgid.c'
 s=x.read_text().replace('return getCubeInfoFromMatchStateWithBeavers(pci, pms, 3);','return getCubeInfoFromMatchStateWithBeavers(pci, pms, 0);')
@@ -27,7 +27,17 @@ s=s.replace(needle, '''        if (fCubefulEquity)
 x.write_text(s)
 x=p/'Makefile.emcc'
 s=x.read_text().replace('"_hint",','"_hint", "_bg_score", "_bg_cube", "_bg_value", "_bg_rollout",').replace('-s EXPORT_ES6','-s EXPORT_ES6 -s ENVIRONMENT=web,worker,node')
+s=s.replace('DISTDIR = dist', '''DISTDIR = dist
+
+# The scalar fallback keeps upstream -O2. SIMD preserves per-neuron operation
+# order; no fast-math, relaxed SIMD, pthreads or cross-origin isolation.
+ifeq ($(VARIANT),simd)
+CFLAGS := $(filter-out -O2,$(CFLAGS)) -O3 -flto -msimd128 -ffp-contract=off
+OBJDIR = obj_simd
+DISTDIR = dist_simd
+endif''')
 x.write_text(s)
+subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/neuralnet-simd.patch')], cwd=p, check=True)
 
 # Rollouts use seeded ISAAC directly. Remove upstream diagnostic spam and make
 # the fallback RNG setter real; event handling happens between worker batches.

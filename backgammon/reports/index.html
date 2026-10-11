@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#11191d" />
     <title>Backgammon · Engine report</title>
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=2073f2379c72cf37" />
-    <link rel="stylesheet" href="./report.css?bgv=2073f2379c72cf37" />
-    <script type="module" src="./app.js?bgv=2073f2379c72cf37"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=85489061eaba7482" />
+    <link rel="stylesheet" href="./report.css?bgv=85489061eaba7482" />
+    <script type="module" src="./app.js?bgv=85489061eaba7482"></script>
   </head>
   <body class="engine-report">
     <header class="topbar">
@@ -29,11 +29,16 @@
       </p>
       <p id="release" class="muted">Loading recorded measurements…</p>
       <nav class="report-tabs" aria-label="Report sections">
-        <a href="#speed">Speed</a><a href="#accuracy">Accuracy</a
+        <a href="#acceleration">Speed</a><a href="#accuracy">Accuracy</a
         ><a href="#method">Method & limits</a>
       </nav>
+      <section id="acceleration">
+        <h2>Engine acceleration</h2>
+        <p>Compare the accelerated engine with its scalar fallback at the same analysis settings. No shallower search or different weights.</p>
+        <div id="acceleration-content" aria-live="polite"></div>
+      </section>
       <section id="speed">
-        <h2>Speed by position</h2>
+        <h2>Historical depth comparison</h2>
         <p>
           Fresh calculations and cache hits are reported separately. Short
           bearoff positions are not representative of contact play.
