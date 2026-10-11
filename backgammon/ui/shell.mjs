@@ -36,6 +36,7 @@ import {
 import { reducedMotion } from "./motion.mjs";
 import { startUpdates } from "./updates.mjs";
 import { releaseStatus } from "./release-status.mjs";
+import { TouchMoves } from "./touch-moves.mjs";
 export const $ = (id) => document.getElementById(id);
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -581,6 +582,14 @@ export class DraftBoard {
     this.selected = null;
     this.paths = [];
     this.preferred = null;
+    const actionArea = board.container.closest(".stage")?.querySelector(".action-area");
+    if (actionArea)
+      this.touchMoves = new TouchMoves(actionArea, {
+        selectSource: (point) => point === null
+          ? this.clearSelection()
+          : this.point(point, { checkerTap: true }),
+        selectDestination: (point) => this.point(point, { activation: false }),
+      });
     board.onPoint = (p, options) => this.point(p, options);
     board.onBackground = () => this.clearSelection();
     const outsideBackground = (target) =>
@@ -1024,6 +1033,14 @@ export class DraftBoard {
     const s = this.preview || this.current();
     const display = settings();
     const moves = this.enabled && !this.preview ? this.routes() : [];
+    this.touchMoves?.update({
+      enabled: this.enabled && !this.preview && this.state.phase === "move",
+      hints: display.moveHints,
+      selected: this.selected,
+      sources: this.enabled && !this.preview ? this.sources() : [],
+      routes: moves,
+      orientation: display.orientation,
+    });
     this.board.render(s, {
       ...display,
       selected: this.enabled && !this.preview ? this.selected : null,

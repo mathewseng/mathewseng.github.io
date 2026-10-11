@@ -38,6 +38,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "licenses/GPL-3.0.txt",
       "core/rules.mjs",
       "ui/board.mjs",
+      "ui/touch-moves.mjs",
       "ui/updates.mjs",
       "styles.css",
       "data/exercises.json",

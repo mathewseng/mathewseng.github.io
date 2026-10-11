@@ -93,7 +93,7 @@ module.exports = async function actionAudit(browser, base, out, name) {
             const pos=await page.evaluate(()=>{const p=new DOMPoint(10,330).matrixTransform(document.querySelector(".bg-board").getScreenCTM());return {x:p.x,y:p.y};});
             if(touch)await page.touchscreen.tap(pos.x,pos.y);else await page.mouse.click(pos.x,pos.y);
           } else {
-            const selector=target==="page"?"#draft-line":target==="button"?"#preferences":'.board-die[role="button"]';
+            const selector=target==="page"?"#player":target==="button"?"#preferences":'.board-die[role="button"]';
             if(touch)await page.locator(selector).first().tap();else await page.locator(selector).first().click();
           }
           assert.deepEqual((await read()).draft,before.draft);

@@ -3,7 +3,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, hasTouch: true, reducedMotion: "reduce", serviceWorkers: "block" });
   const page = await context.newPage(), errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  const sizes = [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768],[1440,900]];
+  const sizes = [[320,568],[375,667],[390,844],[430,932],[667,375],[844,390],[932,430],[768,1024],[1024,768],[1366,768],[1440,900]];
   const shot = async label => page.screenshot({path: path.join(out, `${name}-mobile-${label}.png`)});
   try {
     await page.addInitScript(() => {
@@ -50,8 +50,21 @@ module.exports = async function mobileLayout(browser, base, out, name) {
         for (const gap of [metrics.board.top - metrics.opponent.bottom, metrics.player.top - metrics.board.bottom])
           assert.ok(gap >= -1 && gap < 3, "player strips hug the board without overlap");
         assert.ok(metrics.confirm.height >= 48, "large primary touch target");
+        const help = await page.locator(".help-cluster").boundingBox();
+        assert.ok(metrics.confirm.top >= help.y + help.height, "primary action follows help controls at the bottom");
       }
+      if (width <= 700 || height <= 500)
+        assert.ok(await page.locator(".touch-moves").isVisible(), "large move controls work in portrait and landscape");
       await shot(`play-${width}`);
+      if (width >= 650 && height <= 500) {
+        const detail = await page.locator("#panel-toggle").boundingBox();
+        const dock = await page.locator(".action-area").boundingBox();
+        assert.ok(detail.y + detail.height <= dock.y + 1, "landscape tools never overlap the action dock");
+        assert.ok(metrics.board.height > height - 110, "landscape reclaims the redundant header row for the board");
+        await page.locator("#mobile-tools").tap();
+        await page.locator(".tool-menu-dialog .close").tap();
+        await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
+      }
       if (width <=700 || height <=500) {
         await page.locator("#analysis-jump").tap();
         assert.ok(await page.locator("#review-heading").evaluate(e => document.activeElement === e));

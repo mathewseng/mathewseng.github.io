@@ -3354,7 +3354,9 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
 
 /* Phone tools use the same buttons in a sheet; desktop keeps its full toolbar. */
 .mobile-tools-toggle, .undo-turn-label-phone { display: none; }
-.study-strip, .study-editor { display: none; }
+.study-strip, .study-editor, .touch-moves { display: none; }
+.touch-moves select { min-height: 44px; font-size: 16px; padding-inline: 8px 24px; background-position: right 8px center; }
+.touch-moves select:disabled { opacity: .55; }
 .setup-study > .stack { padding-top: 10px; }
 .mobile-tool-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mobile-tool-list > button { min-height: 48px; white-space: normal; background: var(--surface); border-color: var(--line); }
@@ -3445,4 +3447,49 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   .app[data-page="trainer"] .action-area:has(.study-strip:not([hidden])) { gap: 6px; }
   .app[data-page="solver"] .action-area,
   .app[data-page="trainer"] .action-area { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+
+  /* Thumb-sized alternatives share the instruction row, so the board and
+     primary action stay in place while a checker is selected or revised. */
+  .touch-moves:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; min-width: 0; }
+  .play-page.live-table .touch-moves { grid-column: 1; grid-row: 1; align-self: center; }
+  .play-page.live-table .action-message { grid-row: 2; }
+  .play-page.live-table .action-main { grid-row: 3; flex-direction: column; }
+  .play-page.live-table #analysis-jump, .play-page.live-table .draft-line { grid-row: 1; }
+  .action-area:has(.touch-moves:not([hidden])) #draft-line { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .app[data-page="trainer"] .touch-moves { grid-row: 1; }
+  .app[data-page="trainer"] .action-message { grid-row: 2; }
+  .app[data-page="trainer"] .action-main { grid-row: 3; }
+}
+
+@media (max-height: 500px) and (min-width: 650px) {
+  /* Reclaim the second header row for the board. Secondary tools sit above
+     the side dock instead of making every checker smaller in landscape. */
+  .play-page.live-table { position: relative; }
+  .play-page.live-table .workspace { grid-row: 3; }
+  .play-page.live-table .tool-head {
+    position: absolute; top: calc(46px + env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right)); width: 224px;
+    min-height: 44px; padding: 0; z-index: 2;
+  }
+  .play-page.live-table .tool-head > div:first-child { display: none; }
+  .play-page.live-table #toolbar { width: 100%; justify-content: flex-end; gap: 6px; }
+  .play-page.live-table #toolbar > :not(#mobile-tools):not(#panel-toggle) { display: none; }
+  .play-page.live-table #toolbar > #mobile-tools,
+  .play-page.live-table #toolbar > #panel-toggle { display: block; min-height: 44px; font-size: 14px; }
+  .play-page.live-table .action-area { height: calc(100% - 48px); max-height: calc(100% - 48px); }
+  .touch-moves:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; grid-row: 1; min-width: 0; }
+  .action-area:has(.touch-moves:not([hidden])) #draft-line { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .action-area:has(.touch-moves:not([hidden])) .action-message { grid-row: 2; }
+  .action-area:has(.touch-moves:not([hidden])) .action-main { grid-row: 3; flex-direction: column; }
+  .action-area:has(.touch-moves:not([hidden])) #analysis-jump { grid-row: 4; }
+}
+
+/* viewport-fit=cover must still respect the phone's notch and home indicator. */
+@media (max-width: 1024px), (max-height: 500px) {
+  .app, .play-page.live-table {
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
 }
