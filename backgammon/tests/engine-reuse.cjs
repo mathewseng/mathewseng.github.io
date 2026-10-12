@@ -26,6 +26,7 @@ module.exports = async function engineReuse(browser, base) {
         return w;
       }});
       const rows = [];
+      let queuedDraft;
       function check(condition, message) { if (!condition) throw new Error(message); }
       try {
         for (const {topic,state} of cases) for (const preset of ["quick","standard","deep"]) {
@@ -66,8 +67,22 @@ module.exports = async function engineReuse(browser, base) {
           check(Math.abs(fresh.error - cached.error) <= 0.00002, "loss differs from fresh evaluation");
           rows.push({topic,preset,candidates:answer.candidates.length,maxDifference,dispatchMs,cachedMs});
         }
+        // A user can edit a draft while another search holds the worker.
+        // The queued request must grade the original move, not its later edits.
+        engine.cache.clear();
+        const state = initialState({phase:"move",dice:[3,1]}), turns = legalTurns(state);
+        const selected = structuredClone(turns.at(-1).steps), originalKey = turns.at(-1).key;
+        const busy = engine.analyze(fixtures.find(f=>f.topic === "contact").state,{priority:20});
+        const queued = engine.analyze(state,{preset:"expert",submitted:selected,priority:0});
+        selected.splice(0,selected.length,...structuredClone(turns[0].steps));
+        const [,answer] = await Promise.all([busy,queued]);
+        check(answer.actual.key === originalKey, "queued draft edits changed the move being graded");
+        check(answer.actual.key !== turns[0].key, "fixture must change the legal result");
+        const cached = await engine.analyze(state,{preset:"expert",submitted:turns.at(-1).steps});
+        check(cached.cached && cached.actual.key === originalKey, "queue mutation poisoned the grade cache");
+        queuedDraft = {actual:answer.actual.key,edited:turns[0].key,equity:answer.actual.equity,cachePreserved:true};
       } finally { engine.destroy(); }
-      return {engine:ENGINE_VERSION,rows,jobs};
+      return {engine:ENGINE_VERSION,rows,jobs,queuedDraft};
     });
     assert.equal(report.rows.length,18);
     assert.ok(report.rows.some(row=>row.candidates>40), "must grade beyond the upstream hint limit");

@@ -22,6 +22,34 @@ class WorkerMock {
   }
 }
 const wait = () => new Promise((r) => setTimeout(r, 0));
+test("queued grades and rollout options retain the exact request despite caller edits", async () => {
+  const worker = new WorkerMock(), client = new EngineClient({ workerFactory: () => worker, openingBook: null });
+  const state = initialState({ phase: "move", dice: [3, 1] });
+  const submitted = structuredClone(legalTurns(state).at(-1).steps);
+  const original = structuredClone(submitted);
+  const rollout = { trials: 64, seed: 7788, resume: { completed: 32, moments: [1, 2] } };
+  const originalRollout = structuredClone(rollout);
+  try {
+    const busy = client.analyze(initialState({ phase: "roll" }), { priority: 20 });
+    await wait();
+    const grade = client.analyze(state, { preset: "expert", submitted, priority: 0 });
+    const rolled = client.analyze(state, { submitted, rollout, priority: 0 });
+    // Cleanup may cancel these if an assertion fails before worker replies.
+    grade.catch(() => {}); rolled.catch(() => {});
+    submitted[0].to = "off";
+    submitted.pop();
+    rollout.trials = 256; rollout.seed = 9999; rollout.resume.moments[0] = 500;
+    worker.reply({ id: worker.messages.at(-1).id, type: "result", result: { valid: true } });
+    await busy; await wait();
+    assert.deepEqual(worker.messages.at(-1).submitted, original);
+    worker.reply({ id: worker.messages.at(-1).id, type: "result", result: { valid: true } });
+    await grade; await wait();
+    assert.deepEqual(worker.messages.at(-1).submitted, original);
+    assert.deepEqual(worker.messages.at(-1).rollout, originalRollout);
+    worker.reply({ id: worker.messages.at(-1).id, type: "result", result: { valid: true } });
+    await rolled;
+  } finally { client.destroy(); }
+});
 test("worker deduplicates requests, rejects cancellation and ignores terminated worker results", async () => {
   const workers = [],
     client = new EngineClient({

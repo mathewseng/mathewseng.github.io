@@ -204,9 +204,11 @@ export class EngineClient {
       state: structuredClone(state),
       preset,
       kind,
-      submitted: sharedChecker ? null : submitted,
+      // UI drafts and saved rollout checkpoints remain editable while a job is
+      // queued/loading. Evaluate the request that produced this cache key.
+      submitted: sharedChecker ? null : structuredClone(submitted),
       priority,
-      rollout,
+      rollout: structuredClone(rollout),
       tryBook,
       reuseHintKey,
       submittedKey,
