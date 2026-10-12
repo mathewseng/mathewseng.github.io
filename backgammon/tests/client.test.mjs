@@ -307,3 +307,99 @@ test("rollout grades keep the submitted move in their search identity", async ()
     worker.reply({id:worker.messages.at(-1).id,type:"result",result:{valid:true}}); await grade;
   } finally {client.destroy();}
 });
+
+const screenedFixture = (state, plies) => ({
+  type: 'checker', status: 'complete', settings: {plies},
+  candidates: legalTurns(state).slice(0,2).map((t,i)=>({key:t.key,steps:t.steps,equity:.2-i*.03,probabilities:[.5,.1,0,.1,0]})),
+  actual: null, error: null, screening: {plies:2,finalists:2},
+});
+test('3/4-ply hints grade a listed legal move without repeating search, with isolated returned data', async()=>{
+  const s=initialState({phase:'move',dice:[3,1]});
+  for(const [preset,plies] of [['expert',3],['research',4]]){
+    const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+    try{
+      const pending=client.analyze(s,{preset});await wait();
+      const result=screenedFixture(s,plies);
+      worker.reply({id:worker.messages.at(-1).id,type:'result',result});
+      const hint=await pending,steps=structuredClone(hint.candidates[1].steps),key=hint.candidates[1].key;
+      hint.candidates[1].equity=999;hint.candidates[0].probabilities[0]=999;
+      const grade=await client.analyze(s,{preset,submitted:steps});
+      assert.equal(grade.actual.key,key);assert.ok(Math.abs(grade.error-.03)<1e-12);
+      assert.equal(grade.reusedHint,true);assert.equal(grade.settings.plies,plies);
+      assert.equal(grade.candidates[0].probabilities[0],.5);
+      grade.actual.equity=999;grade.screening.finalists=999;
+      const again=await client.analyze(s,{preset,submitted:steps});
+      assert.equal(again.screening.finalists,2);assert.ok(Math.abs(again.error-.03)<1e-12);
+      const plain=await client.analyze(s,{preset});assert.equal(plain.actual,null);
+      plain.candidates[0].equity=999;
+      assert.equal((await client.analyze(s,{preset})).candidates[0].equity,.2);
+      assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
+    }finally{client.destroy();}
+  }
+});
+test('queued screened grades reuse a completed hint and promote it without cancelling its work',async()=>{
+  const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  const s=initialState({phase:'move',dice:[3,1]}),result=screenedFixture(s,3);
+  try{
+    const hint=client.analyze(s,{preset:'expert',priority:-10});await wait();
+    const a=client.analyze(s,{preset:'expert',submitted:result.candidates[1].steps,priority:-10});
+    const b=client.analyze(s,{preset:'expert',submitted:result.candidates[1].steps,priority:10});
+    assert.equal(a,b);assert.equal(client.active.priority,10);assert.equal(worker.terminated,false);
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result});await hint;
+    assert.equal((await a).reusedHint,true);assert.equal((await b).actual.key,result.candidates[1].key);
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
+  }finally{client.destroy();}
+});
+test('an omitted move, different preset or context, Auto and rollouts still require their own search',async()=>{
+  const s=initialState({phase:'move',dice:[3,1]});
+  for(const change of [
+    {submitted:legalTurns(s).at(-1).steps},
+    {preset:'research'}, {preset:'auto'}, {rollout:{trials:64,seed:1}},
+    {state:{...s,cube:{value:2,owner:0}}},
+    {state:{...s,matchLength:7,scores:[2,4]}},
+    {state:{...s,rules:{...s.rules,jacoby:true}}},
+  ]){
+    const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+    try{
+      const r=screenedFixture(s,3),hint=client.analyze(s,{preset:'expert'});await wait();
+      worker.reply({id:worker.messages.at(-1).id,type:'result',result:r});await hint;
+      const {state=s,...options}=change;
+      const grade=client.analyze(state,{preset:'expert',submitted:r.candidates[1].steps,...options});await wait();
+      assert.equal(worker.messages.filter(m=>m.type==='analyze').length,2,JSON.stringify(change));
+      worker.reply({id:worker.messages.at(-1).id,type:'result',result:screenedFixture(state,options.preset==='research'?4:3)});await grade;
+    }finally{client.destroy();}
+  }
+});
+
+test('Auto grading does not reuse an Auto hint that stopped on a clear lead',async()=>{
+  const s=initialState({phase:'move',dice:[3,1]}),worker=new WorkerMock();
+  const client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  try{
+    const hint=client.analyze(s,{preset:'auto'});await wait();
+    const r={...screenedFixture(s,2),budget:{reason:'clear-lead'}};
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:r});await hint;
+    const grade=client.analyze(s,{preset:'auto',submitted:r.candidates[1].steps});await wait();
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,2);
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:{...screenedFixture(s,3),budget:{reason:'predicted-cost'}}});
+    assert.equal((await grade).settings.plies,3);
+  }finally{client.destroy();}
+});
+
+test('book and cube cache hits are isolated from edits to returned outcomes',async()=>{
+  const source={type:'checker',status:'complete',settings:{plies:3},candidates:[{equity:.12,probabilities:[.5,.1,0,.1,0]}]};
+  const book=new EngineClient({openingBook:{lookup:async()=>structuredClone(source)},workerFactory:()=>{throw Error('Unexpected native worker');}});
+  try{
+    const s=initialState({phase:'move',dice:[3,1],matchLength:0,rules:{jacoby:true}});
+    const first=await book.analyze(s);first.candidates[0].equity=99;
+    const second=await book.analyze(s);assert.equal(second.candidates[0].equity,.12);
+    second.candidates[0].probabilities[0]=99;
+    assert.equal((await book.analyze(s)).candidates[0].probabilities[0],.5);
+  }finally{book.destroy();}
+  const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  try{
+    const s=initialState({phase:'roll'}),pending=client.analyze(s);await wait();
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:{type:'cube',outcomes:[.2,.1,1]}});
+    (await pending).outcomes[0]=99;
+    assert.equal((await client.analyze(s)).outcomes[0],.2);
+  }finally{client.destroy();}
+});

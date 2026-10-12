@@ -1,0 +1,1507 @@
+{
+  "schema": 1,
+  "baselineClientSha256": "f0ef30a8969a02da80955ca1c1174d1b90f2945940f058a062651d7c9cfce473",
+  "clientSha256": "f4486c8872aa47ca8a85b069f56bfe32562f1afd4bc241eec8b55fbbf609d8ed",
+  "recordedAt": "2026-10-12T04:51:20.708Z",
+  "baselineClient": "62f0259034e730a3783c980c86da259ba5b62a3a",
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "os": "darwin 25.5.0 arm64",
+    "browser": "firefox 146.0.1",
+    "condition": "Local HTTP on desktop, no artificial CPU throttle. One fresh-worker pair per case for functional validation, baseline first. Initialization excluded. Opening book disabled. Hint first, then grade its lowest-ranked evaluated candidate. Some checks overlapped repository/application tests. Single observations and timer-resolution zeroes do not support latency or device-speed conclusions. Not a physical-phone benchmark."
+  },
+  "rows": [
+    {
+      "topic": "contact",
+      "preset": "expert",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 5237,
+            "gradeMs": 4,
+            "dispatchMs": 1,
+            "totalMs": 5241,
+            "jobs": 2,
+            "candidates": 2,
+            "actual": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+            "equity": 0.81331855,
+            "loss": 0.11115563000000006
+          },
+          "reuse": {
+            "hintMs": 5262,
+            "gradeMs": 1,
+            "dispatchMs": 1,
+            "totalMs": 5263,
+            "jobs": 1,
+            "candidates": 2,
+            "actual": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+            "equity": 0.81331855,
+            "loss": 0.11115563000000006
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 5237,
+            "min": 5237,
+            "max": 5237
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 4,
+            "min": 4,
+            "max": 4
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 5241,
+            "min": 5241,
+            "max": 5241
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 5262,
+            "min": 5262,
+            "max": 5262
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 5263,
+            "min": 5263,
+            "max": 5263
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          -1,
+          0,
+          -1,
+          -1,
+          0,
+          5,
+          0,
+          3,
+          1,
+          0,
+          1,
+          -3,
+          1,
+          1,
+          0,
+          0,
+          -2,
+          0,
+          -5,
+          0,
+          1,
+          -2,
+          0,
+          2
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 1,
+        "dice": [
+          2,
+          1
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 21,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "contact",
+      "preset": "research",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 65469,
+            "gradeMs": 62464,
+            "dispatchMs": 1,
+            "totalMs": 127933,
+            "jobs": 2,
+            "candidates": 2,
+            "actual": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+            "equity": 0.8256706,
+            "loss": 0.09239363999999994
+          },
+          "reuse": {
+            "hintMs": 66670,
+            "gradeMs": 2,
+            "dispatchMs": 2,
+            "totalMs": 66672,
+            "jobs": 1,
+            "candidates": 2,
+            "actual": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+            "equity": 0.8256706,
+            "loss": 0.09239363999999994
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 65469,
+            "min": 65469,
+            "max": 65469
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 62464,
+            "min": 62464,
+            "max": 62464
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 127933,
+            "min": 127933,
+            "max": 127933
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 66670,
+            "min": 66670,
+            "max": 66670
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 2,
+            "min": 2,
+            "max": 2
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 2,
+            "min": 2,
+            "max": 2
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 66672,
+            "min": 66672,
+            "max": 66672
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          -1,
+          0,
+          -1,
+          -1,
+          0,
+          5,
+          0,
+          3,
+          1,
+          0,
+          1,
+          -3,
+          1,
+          1,
+          0,
+          0,
+          -2,
+          0,
+          -5,
+          0,
+          1,
+          -2,
+          0,
+          2
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 1,
+        "dice": [
+          2,
+          1
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 21,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "race",
+      "preset": "expert",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 797,
+            "gradeMs": 54,
+            "dispatchMs": 1,
+            "totalMs": 851,
+            "jobs": 2,
+            "candidates": 8,
+            "actual": "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+            "equity": -1.74785876,
+            "loss": 0.007369629999999905
+          },
+          "reuse": {
+            "hintMs": 748,
+            "gradeMs": 0,
+            "dispatchMs": 0,
+            "totalMs": 748,
+            "jobs": 1,
+            "candidates": 8,
+            "actual": "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+            "equity": -1.74785876,
+            "loss": 0.007369629999999905
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 797,
+            "min": 797,
+            "max": 797
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 54,
+            "min": 54,
+            "max": 54
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 851,
+            "min": 851,
+            "max": 851
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 748,
+            "min": 748,
+            "max": 748
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 748,
+            "min": 748,
+            "max": 748
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          8,
+          0,
+          1,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          1,
+          1,
+          -1,
+          -3,
+          -10
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          1
+        ],
+        "turn": 0,
+        "dice": [
+          2,
+          4
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 343,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "race",
+      "preset": "research",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 3959,
+            "gradeMs": 3,
+            "dispatchMs": 1,
+            "totalMs": 3962,
+            "jobs": 2,
+            "candidates": 4,
+            "actual": "8,0,1,0,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+            "equity": -1.74167562,
+            "loss": 0.002762200000000048
+          },
+          "reuse": {
+            "hintMs": 3747,
+            "gradeMs": 0,
+            "dispatchMs": 0,
+            "totalMs": 3747,
+            "jobs": 1,
+            "candidates": 4,
+            "actual": "8,0,1,0,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+            "equity": -1.74167562,
+            "loss": 0.002762200000000048
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 3959,
+            "min": 3959,
+            "max": 3959
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 3,
+            "min": 3,
+            "max": 3
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 3962,
+            "min": 3962,
+            "max": 3962
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 3747,
+            "min": 3747,
+            "max": 3747
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 3747,
+            "min": 3747,
+            "max": 3747
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          8,
+          0,
+          1,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          1,
+          1,
+          -1,
+          -3,
+          -10
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          1
+        ],
+        "turn": 0,
+        "dice": [
+          2,
+          4
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 343,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "bearoff",
+      "preset": "expert",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 8,
+            "gradeMs": 3,
+            "dispatchMs": 1,
+            "totalMs": 11,
+            "jobs": 2,
+            "candidates": 6,
+            "actual": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-2,-5,0,0,8,5",
+            "equity": -1,
+            "loss": 0
+          },
+          "reuse": {
+            "hintMs": 9,
+            "gradeMs": 0,
+            "dispatchMs": 0,
+            "totalMs": 9,
+            "jobs": 1,
+            "candidates": 6,
+            "actual": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-2,-5,0,0,8,5",
+            "equity": -1,
+            "loss": 0
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 8,
+            "min": 8,
+            "max": 8
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 3,
+            "min": 3,
+            "max": 3
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 11,
+            "min": 11,
+            "max": 11
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 9,
+            "min": 9,
+            "max": 9
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 9,
+            "min": 9,
+            "max": 9
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -2,
+          -6,
+          -5
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          8,
+          1
+        ],
+        "turn": 1,
+        "dice": [
+          2,
+          2
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 177,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "bearoff",
+      "preset": "research",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 11,
+            "gradeMs": 2,
+            "dispatchMs": 0,
+            "totalMs": 13,
+            "jobs": 2,
+            "candidates": 4,
+            "actual": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-4,-7,0,0,8,3",
+            "equity": -1,
+            "loss": 0
+          },
+          "reuse": {
+            "hintMs": 11,
+            "gradeMs": 1,
+            "dispatchMs": 1,
+            "totalMs": 12,
+            "jobs": 1,
+            "candidates": 4,
+            "actual": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-4,-7,0,0,8,3",
+            "equity": -1,
+            "loss": 0
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 11,
+            "min": 11,
+            "max": 11
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 2,
+            "min": 2,
+            "max": 2
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 13,
+            "min": 13,
+            "max": 13
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 11,
+            "min": 11,
+            "max": 11
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 12,
+            "min": 12,
+            "max": 12
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -2,
+          -6,
+          -5
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          8,
+          1
+        ],
+        "turn": 1,
+        "dice": [
+          2,
+          2
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 177,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "doubles",
+      "preset": "expert",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 17973,
+            "gradeMs": 1032,
+            "dispatchMs": 3,
+            "totalMs": 19005,
+            "jobs": 2,
+            "candidates": 5,
+            "actual": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,2,0,0,0,0,0,0,0",
+            "equity": 0.31642812,
+            "loss": 0.06715471
+          },
+          "reuse": {
+            "hintMs": 18021,
+            "gradeMs": 3,
+            "dispatchMs": 3,
+            "totalMs": 18024,
+            "jobs": 1,
+            "candidates": 5,
+            "actual": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,2,0,0,0,0,0,0,0",
+            "equity": 0.31642812,
+            "loss": 0.06715471
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 17973,
+            "min": 17973,
+            "max": 17973
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 1032,
+            "min": 1032,
+            "max": 1032
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 3,
+            "min": 3,
+            "max": 3
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 19005,
+            "min": 19005,
+            "max": 19005
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 18021,
+            "min": 18021,
+            "max": 18021
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 3,
+            "min": 3,
+            "max": 3
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 3,
+            "min": 3,
+            "max": 3
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 18024,
+            "min": 18024,
+            "max": 18024
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          -2,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0,
+          3,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          -5,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [
+          3,
+          3
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 5,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 0,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "doubles",
+      "preset": "research",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 98406,
+            "gradeMs": 89303,
+            "dispatchMs": 5,
+            "totalMs": 187709,
+            "jobs": 2,
+            "candidates": 2,
+            "actual": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-3,0,-5,0,2,0,0,0,0,0,0,0",
+            "equity": 0.3378132,
+            "loss": 0.05350463999999999
+          },
+          "reuse": {
+            "hintMs": 97407,
+            "gradeMs": 4,
+            "dispatchMs": 4,
+            "totalMs": 97411,
+            "jobs": 1,
+            "candidates": 2,
+            "actual": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-3,0,-5,0,2,0,0,0,0,0,0,0",
+            "equity": 0.3378132,
+            "loss": 0.05350463999999999
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 98406,
+            "min": 98406,
+            "max": 98406
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 89303,
+            "min": 89303,
+            "max": 89303
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 5,
+            "min": 5,
+            "max": 5
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 187709,
+            "min": 187709,
+            "max": 187709
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 97407,
+            "min": 97407,
+            "max": 97407
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 4,
+            "min": 4,
+            "max": 4
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 4,
+            "min": 4,
+            "max": 4
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 97411,
+            "min": 97411,
+            "max": 97411
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          -2,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0,
+          3,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          -5,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [
+          3,
+          3
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 5,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 0,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "match",
+      "preset": "expert",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 6244,
+            "gradeMs": 2,
+            "dispatchMs": 0,
+            "totalMs": 6246,
+            "jobs": 2,
+            "candidates": 2,
+            "actual": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+            "equity": 0.07427877,
+            "loss": 0.25369987
+          },
+          "reuse": {
+            "hintMs": 6380,
+            "gradeMs": 0,
+            "dispatchMs": 0,
+            "totalMs": 6380,
+            "jobs": 1,
+            "candidates": 2,
+            "actual": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+            "equity": 0.07427877,
+            "loss": 0.25369987
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 6244,
+            "min": 6244,
+            "max": 6244
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 2,
+            "min": 2,
+            "max": 2
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 6246,
+            "min": 6246,
+            "max": 6246
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 6380,
+            "min": 6380,
+            "max": 6380
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 6380,
+            "min": 6380,
+            "max": 6380
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          -2,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0,
+          3,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          -5,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [
+          3,
+          1
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          2,
+          4
+        ],
+        "matchLength": 7,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 0,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "topic": "match",
+      "preset": "research",
+      "samples": [
+        {
+          "baseline": {
+            "hintMs": 103045,
+            "gradeMs": 99161,
+            "dispatchMs": 0,
+            "totalMs": 202206,
+            "jobs": 2,
+            "candidates": 2,
+            "actual": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+            "equity": 0.07527351,
+            "loss": 0.24921801999999998
+          },
+          "reuse": {
+            "hintMs": 99306,
+            "gradeMs": 1,
+            "dispatchMs": 1,
+            "totalMs": 99307,
+            "jobs": 1,
+            "candidates": 2,
+            "actual": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+            "equity": 0.07527351,
+            "loss": 0.24921801999999998
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "hintMs": {
+            "n": 1,
+            "median": 103045,
+            "min": 103045,
+            "max": 103045
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 99161,
+            "min": 99161,
+            "max": 99161
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 202206,
+            "min": 202206,
+            "max": 202206
+          }
+        },
+        "reuse": {
+          "hintMs": {
+            "n": 1,
+            "median": 99306,
+            "min": 99306,
+            "max": 99306
+          },
+          "gradeMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "dispatchMs": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1
+          },
+          "totalMs": {
+            "n": 1,
+            "median": 99307,
+            "min": 99307,
+            "max": 99307
+          }
+        }
+      },
+      "state": {
+        "version": 1,
+        "points": [
+          -2,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0,
+          3,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          -5,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [
+          3,
+          1
+        ],
+        "phase": "move",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          2,
+          4
+        ],
+        "matchLength": 7,
+        "rules": {
+          "cube": true,
+          "jacoby": false,
+          "automaticDoubles": 0,
+          "immediateRedoubles": 0
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 0,
+        "result": null,
+        "pending": null
+      }
+    }
+  ],
+  "assets": {
+    "engine/client.mjs": "f4486c8872aa47ca8a85b069f56bfe32562f1afd4bc241eec8b55fbbf609d8ed",
+    "engine/evaluate.mjs": "0d5152772f15c4ecec0ce4d9ab02ad53fc4840f1be77ca613f41fe6969c77cc2",
+    "engine/metadata.mjs": "ec3cd8c5e7385d2f155c502c15709f16e16c848644d463d58d48147504335295",
+    "engine/vendor/simd/gnubg-core-module.js": "63d391de43b1802584d167aff2117e580dfafb4f8145eb7cafea7ff5ee38ad7d",
+    "engine/vendor/simd/gnubg-core-module.wasm": "e1a1445b4f19b85451980cfdd7d830c3d2575597400f936f1412b2ea6ec561e1",
+    "engine/vendor/gnubg-core-module.wasm": "77037f63ec4948870c3f417255991b064c19b673fb0f23d2265b5e26dd753cda",
+    "engine/vendor/gnubg-core-module.data": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49",
+    "core/rules.mjs": "49656e0f61a05e04d83877c2fb450ea9c8850ddc2c0542080a1086b8a5fdcba4",
+    "core/xgid.mjs": "fc77e5d442c9b2085842089c0fc2760fce84980f5d6b83ff63f6b82027427b1c"
+  }
+}

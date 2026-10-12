@@ -92,7 +92,9 @@ export class EngineClient {
           }
           if (data.type === "error") job.reject(new Error(data.message));
           else {
-            this.cache.set(job.key, data.result);
+            // Returned results are editable previews; never expose the object
+            // retained for future hints/grades to a caller's mutations.
+            this.cache.set(job.key, structuredClone(data.result));
             while (this.cache.size > 64)
               this.cache.delete(this.cache.keys().next().value);
             job.resolve(data.result);
@@ -148,7 +150,8 @@ export class EngineClient {
         return Promise.reject(error);
       }
     }
-    const forCaller = (promise) => !(sharedChecker && submittedKey) ? promise : promise.then(result => {
+    const forCaller = (promise) => !(sharedChecker && submittedKey) ? promise : promise.then(source => {
+      const result = structuredClone(source);
       const actual = result.candidates.find(c => c.key === submittedKey);
       if (!actual)
         throw new Error("Submitted result missing from complete legal move set.");
@@ -158,30 +161,40 @@ export class EngineClient {
         error: Math.max(0, result.candidates[0].equity - actual.equity),
       };
     });
-    const key = JSON.stringify([
+    const keyFor = actual => JSON.stringify([
       ENGINE_VERSION,
       preset === 'auto' ? ADAPTIVE_SEARCH.version : null,
       positionKey(state),
       preset,
       kind,
-      sharedChecker ? null : submittedKey || submitted,
+      actual,
       rollout,
       tryBook,
     ]);
+    const key = keyFor(sharedChecker ? null : submittedKey || submitted);
+    // A fixed-depth screened hint has already evaluated its listed candidates
+    // at the requested depth. Grade one of those directly. Auto cannot use this
+    // shortcut: actual-move grading disables its clear-lead stopping rule.
+    const reuseHintKey = kind === "checker" && !rollout && !tryBook &&
+      PRESETS[preset]?.plies > 2 && submittedKey ? keyFor(null) : null;
     if (this.cache.has(key)) {
       const result = this.cache.get(key);
       this.cache.delete(key);
       this.cache.set(key, result);
-      return forCaller(Promise.resolve({ ...result, cached: true }));
+      return forCaller(Promise.resolve({ ...structuredClone(result), cached: true }));
     }
+    const reused = this.reuseGrade(reuseHintKey, preset, submittedKey);
+    if (reused) return Promise.resolve(reused);
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
     if (existing) {
       existing.progressListeners.add(onProgress);
       existing.evaluationListeners.add(onEvaluation);
       existing.priority = Math.max(existing.priority, priority);
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
-      if (this.active && existing !== this.active && existing.priority > this.active.priority)
-        this.cancelActive("Superseded by the current request.");
+      if (this.active && existing !== this.active && existing.priority > this.active.priority) {
+        if (existing.reuseHintKey === this.active.key) this.active.priority = existing.priority;
+        else this.cancelActive("Superseded by the current request.");
+      }
       this.pump();
       return forCaller(existing.promise);
     }
@@ -195,6 +208,8 @@ export class EngineClient {
       priority,
       rollout,
       tryBook,
+      reuseHintKey,
+      submittedKey,
       progressListeners: new Set([onProgress]),
       evaluationListeners: new Set([onEvaluation]),
     };
@@ -209,10 +224,24 @@ export class EngineClient {
     }
     this.queue.push(job);
     this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
-    if (this.active && priority > this.active.priority)
-      this.cancelActive("Superseded by the current request.");
+    if (this.active && priority > this.active.priority) {
+      if (reuseHintKey === this.active.key) this.active.priority = priority;
+      else this.cancelActive("Superseded by the current request.");
+    }
     this.pump();
     return forCaller(job.promise);
+  }
+  reuseGrade(key, preset, submittedKey) {
+    if (!key) return null;
+    const hint = this.cache.get(key);
+    if (hint?.status !== "complete" || hint.type !== "checker" ||
+        hint.settings?.plies !== PRESETS[preset]?.plies ||
+        !hint.candidates?.some(c => c.key === submittedKey)) return null;
+    this.cache.delete(key); this.cache.set(key, hint);
+    const result = structuredClone(hint);
+    const actual = result.candidates.find(c => c.key === submittedKey);
+    return { ...result, actual, error: Math.max(0, result.candidates[0].equity - actual.equity),
+      cached: true, reusedHint: true };
   }
   async pump() {
     if (this.active || !this.queue.length || this.pumping) return;
@@ -220,6 +249,14 @@ export class EngineClient {
     let generation = this.generation;
     try {
       const pending = this.queue[0];
+      // A matching hint may have completed while this grade was queued. Check
+      // before starting or messaging a worker, including concurrent callers.
+      const reused = this.reuseGrade(pending.reuseHintKey, pending.preset, pending.submittedKey);
+      if (reused) {
+        this.queue.shift();
+        pending.resolve({ ...reused, requestId: pending.id });
+        return;
+      }
       if (pending.tryBook) {
         this.queue.shift(); this.active = pending;
         const result = await this.book.lookup(pending.state, pending);
@@ -228,7 +265,7 @@ export class EngineClient {
         if (result) {
           this.active = null;
           result.requestId = pending.id;
-          this.cache.set(pending.key, result);
+          this.cache.set(pending.key, structuredClone(result));
           while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
           pending.resolve(result);
           this.onStatus("ready", `Opening book · ${result.settings.plies} ply · ready`);
