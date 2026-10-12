@@ -4,6 +4,7 @@ import { clone, notation, decisionPlayer } from "../core/rules.mjs";
 import { settings } from "../core/storage.mjs";
 import { el, button, dialog } from "./shell.mjs";
 import { Board } from "./board.mjs";
+import { moveTrace } from "../core/move-trace.mjs";
 
 function eventLabel(event) {
   if (!event) return "Starting position";
@@ -286,7 +287,10 @@ export function historyExplorer(model, { onReturn } = {}) {
   function updateBoard() {
     const n = tree.nodes[selected],
       s = n.state;
-    board.render(s, { ...settings(), interactive: false, preview: true });
+    const steps = n.event?.action.type === "move" ? n.event.action.steps : null;
+    const dice = n.parent === null ? [] : tree.nodes[n.parent].state.dice;
+    board.render(s, { ...settings(), interactive: false, preview: true,
+      lastMove: steps ? moveTrace(s, n.event.actor, steps, dice) : null });
     caption.textContent = `${eventLabel(n.event)}${n.current ? " · Current position" : ""}`;
     trail.textContent = `Game ${s.gameNumber} · ${names[decisionPlayer(s)]} · ${s.phase === "move" ? `dice ${s.dice.join("–")}` : s.phase === "roll" ? "before roll" : s.phase} · cube ${s.cube.value} · score ${s.scores.join("–")}`;
     before.disabled = n.parent === null;

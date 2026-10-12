@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { moveTrace } from "../core/move-trace.mjs";
 import {
   initialState,
   clone,
@@ -68,6 +69,7 @@ const mobileEditor = el("div", { class: "study-editor", hidden: true },
 study.node.after(mobileEditor);
 function previewCandidate(candidate) {
   preview = candidate ? candidate.steps.reduce((s, st) => applyStep(s, st), source) : null;
+  draft.previewTrace = candidate ? { state: preview, trace: moveTrace(preview, source.turn, candidate.steps, source.dice) } : null;
   render();
   closeStudyPanel();
 }

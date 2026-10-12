@@ -340,8 +340,8 @@ module.exports = async function assistanceUX(
       await page.locator('.decision-tabs [data-view="board"]').click();
     const preview = page.getByLabel("Preview evaluated move", {exact:true});
     const playedValue = await preview.locator("option").evaluateAll(
-      (options, label) => options.find(o => o.textContent.includes(`· ${label}`))?.value,
-      opponent ? "Opponent’s move" : "Your move",
+      (options, labels) => options.find(o => labels.some(label => o.textContent.includes(`· ${label}`)))?.value,
+      opponent ? ["Opponent’s move", "Best/their move"] : ["Your move", "Best/your move"],
     );
     assert.ok(playedValue !== undefined, "review labels the actual player's move in its picker");
     await preview.selectOption(playedValue);

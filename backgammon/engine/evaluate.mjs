@@ -22,6 +22,9 @@ export function createEvaluator(module) {
   // candidate set. Deeper presets reuse it without mixing depths in rankings.
   let screeningCache = null;
   let quickCache = null;
+  // One context, at most 32 independent 3-ply scores. Research can preserve
+  // Expert's leader without repeating its native work after progressive search.
+  let expertCache = null;
   if (module.cwrap("init", "number", [])() !== 0)
     throw new Error("GNUbg could not initialize its data.");
   const score = module.cwrap("bg_score", "number", [
@@ -216,27 +219,47 @@ export function createEvaluator(module) {
         screeningCache = { key: base.positionKey, rootKey, candidates: structuredClone(candidates) };
       if (settings.plies > 2) {
         const original = candidates;
+        const inFilter = (c, i, filter) => i < 2 ||
+          (i < filter.finalists && original[0].equity - c.equity <= filter.threshold);
+        const scoreFinalists = (choices, plies) => {
+          if (plies === 3 && (expertCache?.key !== base.positionKey || expertCache.rootKey !== rootKey))
+            expertCache = { key: base.positionKey, rootKey, rows: new Map() };
+          return choices.map(c => {
+            const cached = plies === 3 && expertCache.rows.get(c.key);
+            if (cached) return structuredClone(cached);
+            const turn = turns.find(t => t.key === c.key);
+            const scored = { ...c, ...call(score, [xgid,
+              toXGID({ ...turn.state, dice: [], phase: "roll" }), plies, beavers]) };
+            if (plies === 3) {
+              expertCache.rows.set(c.key, structuredClone(scored));
+              if (expertCache.rows.size > 32) expertCache.rows.delete(expertCache.rows.keys().next().value);
+            }
+            return scored;
+          }).sort((a, b) => b.equity - a.equity);
+        };
         const finalists = original.filter(
           (c, i) =>
-            i < 2 ||
-            (i < settings.finalists &&
-              original[0].equity - c.equity <= settings.threshold) ||
+            inFilter(c, i, settings) ||
             c.key === submittedKey || (automatic && retainKeys.includes(c.key)),
         );
-        candidates = finalists
-          .map((c) => {
-            const turn = turns.find((t) => t.key === c.key);
-            return {
-              ...c,
-              ...call(score, [
-                xgid,
-                toXGID({ ...turn.state, dice: [], phase: "roll" }),
-                settings.plies,
-                beavers,
-              ]),
-            };
-          })
-          .sort((a, b) => b.equity - a.equity);
+        let retainedLeader = null;
+        if (settings.plies === 4) {
+          base.settings.screeningPolicy = 'retain-expert-leader-v1';
+          const expertChoices = original.filter((c, i) => inFilter(c, i, PRESETS.expert));
+          const keys = new Set(finalists.map(c => c.key));
+          if (expertChoices.every(c => keys.has(c.key))) {
+            // No 3-ply evaluation is needed to know its winner is included.
+            retainedLeader = { plies: 3, candidates: expertChoices.length, key: null,
+              added: false, reason: 'all-expert-candidates-retained' };
+          } else {
+            const leader = scoreFinalists(expertChoices, 3)[0];
+            const added = !keys.has(leader.key);
+            if (added) finalists.push(original.find(c => c.key === leader.key));
+            retainedLeader = { plies: 3, candidates: expertChoices.length, key: leader.key,
+              equity: leader.equity, added, reason: 'expert-leader-retained' };
+          }
+        }
+        candidates = scoreFinalists(finalists, settings.plies);
         screening = {
           plies: 2,
           total: turns.length,
@@ -244,6 +267,7 @@ export function createEvaluator(module) {
           threshold: settings.threshold,
           excluded: original.filter((c) => !finalists.includes(c)),
           previousBest: original[0].key,
+          ...(retainedLeader ? { retainedLeader } : {}),
           ...(screening ? { initial: screening } : {}),
         };
       }

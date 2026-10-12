@@ -39,6 +39,8 @@ For the 3 → 4 transition, 22 of 29 changed choices differ by at most 0.005 acc
 
 The narrower four-ply screen omitted the three-ply winner in four cases. Each was explicitly rescored at four ply outside the baseline timing. One omitted move was better than the default four-ply winner by 0.005460 (contact, source line 684608). The summary preserves this negative gain rather than clamping it to zero or replacing the original four-ply recommendation. The other omissions included one numerical tie. A broader screen or retaining the three-ply winner is a possible follow-up; it was not silently applied to these results.
 
+**Subsequent implementation:** fixed Research now retains that three-ply leader; [RESEARCH-SCREEN.md](RESEARCH-SCREEN.md) reproduces all four omissions on bg6 and measures the additional work. The historical tables, timing samples and comparisons in this document remain unchanged.
+
 ## Comparison with the historical rollout reference
 
 The same 298 positions have reference coverage for the chosen move at all three depths. Two uncovered race positions remain missing and are excluded, never assigned zero loss. All changed-choice comparisons below are covered. The reference comes from the previously recorded GNUbg 1.00 benchmark files and 1,296-game rollouts with a limited candidate list. It is old, noisy, from the same engine family, and not a modern independent gold standard or a held-out training guarantee.

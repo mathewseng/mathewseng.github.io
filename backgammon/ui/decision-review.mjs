@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el, button, dialog } from "./shell.mjs";
 import { Board } from "./board.mjs";
+import { moveTrace } from "../core/move-trace.mjs";
 import { settings } from "../core/storage.mjs";
 import {
   applyStep,
@@ -180,14 +181,16 @@ export function decisionReview(
 
   let savedEngine = null,
     selectPreview = () => {},
-    previewResult = null;
+    previewResult = null,
+    bestPreviewLabel = "Best move";
   const board = new Board(slot);
   const strip = new StudyStrip((candidate) => {
     const rank = previewResult?.candidates.indexOf(candidate) ?? -1;
     show(candidate?.steps || [], candidate
-      ? rank >= 0 ? `Move ${rank + 1}` : opponent ? "Opponent’s move" : "Your move"
+      ? rank === 0 ? bestPreviewLabel : rank > 0 ? `Move ${rank + 1}` : opponent ? "Opponent’s move" : "Your move"
       : "Position", !!candidate);
   }, { container: previewControls, playedLabel: opponent ? "Opponent’s move" : "Your move" });
+  strip.bestPlayedLabel = opponent ? "Best/their move" : "Best/your move";
   strip.node.classList.add("review-preview-strip");
   const show = (steps, label, animate = false) => {
     const after = steps.reduce((s, step) => applyStep(s, step), source);
@@ -196,6 +199,7 @@ export function decisionReview(
       interactive: false,
       preview: true,
       usedDice: steps.map((s) => s.die),
+      lastMove: label === "Position" ? null : moveTrace(after, source.turn, steps, source.dice),
     });
     if (animate) board.playTurn(source, steps);
     selectPreview(steps, label);
@@ -285,11 +289,15 @@ export function decisionReview(
               b.setAttribute("aria-pressed", b.textContent === label),
             );
         };
+        const sameDecision = f.actual?.action === f.best.action;
+        const bestDecisionLabel = sameDecision
+          ? opponent ? "Best/their decision" : "Best/your decision"
+          : "Best decision";
         controls.replaceChildren(
           ...[
             ["Position", null],
-            ["Best decision", f.best],
-            [opponent ? "Opponent’s decision" : "Your decision", f.actual],
+            [bestDecisionLabel, f.best],
+            ...(!sameDecision && f.actual ? [[opponent ? "Opponent’s decision" : "Your decision", f.actual]] : []),
           ].map(([label, c]) =>
             button(label, () => showCube(c, label), "", {
               "aria-pressed": false,
@@ -333,15 +341,21 @@ export function decisionReview(
           ),
         );
         paginateNotes();
-        showCube(null, "Position");
+        showCube(f.best, bestDecisionLabel);
         return;
       }
       const best = result.candidates[0];
+      const sameMove = result.actual &&
+        boardKey(best.steps.reduce((s, st) => applyStep(s, st), source)) ===
+        boardKey(result.actual.steps.reduce((s, st) => applyStep(s, st), source));
+      bestPreviewLabel = sameMove
+        ? opponent ? "Best/their move" : "Best/your move"
+        : "Best move";
       const choices = [
         ["Position", null],
-        ["Best move", best],
+        [bestPreviewLabel, best],
       ];
-      if (result.actual)
+      if (result.actual && !sameMove)
         choices.push([
           opponent ? "Opponent’s move" : "Your move",
           result.actual,
@@ -473,7 +487,7 @@ export function decisionReview(
               "",
               () => {
                 selected = rank;
-                show(c.steps, `Move ${rank + 1}`, true);
+                show(c.steps, rank === 0 ? bestPreviewLabel : `Move ${rank + 1}`, true);
                 redraw();
                 if (narrow.matches || innerHeight < 500) {
                   setView("board");
@@ -501,7 +515,7 @@ export function decisionReview(
                       el(
                         "small",
                         {},
-                        opponent ? "Opponent’s choice" : "Your choice",
+                        rank === 0 ? bestPreviewLabel : opponent ? "Opponent’s choice" : "Your choice",
                       ),
                     ]
                   : []),
@@ -598,7 +612,7 @@ export function decisionReview(
       };
       paginateNotes();
       redraw();
-      show(best.steps, "Best move", true);
+      show(best.steps, bestPreviewLabel, true);
       // Older saved reviews retained only one candidate. Re-evaluate the entire
       // comparison together; never mix old equities with new candidate scores.
       const preset = Object.keys(PRESETS).find(

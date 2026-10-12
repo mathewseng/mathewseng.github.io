@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { moveTrace } from "../core/move-trace.mjs";
 import {
   legalPaths,
   clone,
@@ -66,6 +67,7 @@ function previewCandidate(candidate) {
   preview = candidate
     ? candidate.steps.reduce((s, st) => applyStep(s, st), exercise.state)
     : clone(exercise.state);
+  draft.previewTrace = candidate ? { state: preview, trace: moveTrace(preview, exercise.state.turn, candidate.steps, exercise.state.dice) } : null;
   render();
   closeStudyPanel();
 }

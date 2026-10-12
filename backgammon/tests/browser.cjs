@@ -421,6 +421,9 @@ const server = http.createServer((req, res) => {
         fs.mkdirSync(researchOutput, { recursive: true });
         await require("./research.cjs")(browser, base, researchOutput);
         report.adaptive = await require("./adaptive.cjs")(browser, base, out, browserName);
+        (report.moveArrows ||= []).push(
+          await require("./move-arrows.cjs")(browser, base, out, browserName),
+        );
         (report.lastMoveUX ||= []).push(
           await require("./last-move.cjs")(browser, base, out, browserName),
         );
@@ -505,6 +508,9 @@ const server = http.createServer((req, res) => {
         );
         (report.engineReuse ||= []).push(
           {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
+        );
+        (report.researchScreen ||= []).push(
+          {browser: browserName, cases: await require("./research-screen.cjs")(browser, base, out, browserName)},
         );
         (report.engineCacheContext ||= []).push(
           {browser: browserName, cases: await require("./engine-cache-context.cjs")(browser, base)},

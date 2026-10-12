@@ -131,6 +131,12 @@ module.exports = async function lastMoveUX(browser, base, out, browserName) {
           result.dice,
         );
         assert.equal(await page.locator(".last-roll [role=button]").count(), 0);
+        const arrowCount = await page.locator(".last-move-arrow").count();
+        assert.equal(arrowCount > 0, kind !== "pass", `${kind}: arrows accompany moved checkers`);
+        if (kind === "chain" || kind === "bar-hit") assert.equal(arrowCount, 1, "a chained move has one origin-to-landing arrow");
+        assert.ok(await page.locator(".last-move-arrows").evaluateAll(ns => ns.every(n => getComputedStyle(n).pointerEvents === "none")));
+        assert.ok(await page.locator(".move-arrow-line").evaluateAll(ns => ns.every(n => !/NaN|Infinity/.test(n.getAttribute("d")) && n.getTotalLength() > 0)));
+        assert.ok(await page.locator(".last-move-arrows mask").evaluateAll(ns => ns.every(n => n.querySelectorAll("circle").length > 0)), "live faces are masked even if a crowded cluster prevents routing");
         assert.equal(
           await page
             .locator(".last-move-ghost")
@@ -157,7 +163,7 @@ module.exports = async function lastMoveUX(browser, base, out, browserName) {
               [844, 390],
               [1366, 768],
             ]
-          : [[390, 844]]) {
+          : [[390, 844], [1366, 768]]) {
           await page.setViewportSize({
             width: viewport[0],
             height: viewport[1],
@@ -178,7 +184,7 @@ module.exports = async function lastMoveUX(browser, base, out, browserName) {
         await page.getByRole("button", { name: "Roll", exact: true }).click();
         assert.equal(
           await page
-            .locator(".last-move-ghost,.last-roll,.last-moved-checker")
+            .locator(".last-move-ghost,.last-roll,.last-moved-checker,.last-move-arrow")
             .count(),
           0,
         );

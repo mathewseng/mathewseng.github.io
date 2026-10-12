@@ -1124,7 +1124,9 @@ export class DraftBoard {
         this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
       preferredDie: this.preferred,
       hideDice: !!this.hideDice,
-      lastMove: this.preview ? null : this.lastMove,
+      lastMove: this.preview
+        ? this.previewTrace?.state === this.preview ? this.previewTrace.trace : null
+        : this.lastMove,
     });
     players(s, this.names);
     $("draft-line").setAttribute("role", "status");

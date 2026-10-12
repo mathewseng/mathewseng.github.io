@@ -7,6 +7,7 @@ import {
   playerName,
   positionKey,
 } from "./rules.mjs";
+import { moveTrace } from "./move-trace.mjs";
 
 export function defaultPlayRules(matchLength) {
   return {
@@ -111,17 +112,6 @@ export function lastMove(game) {
       break;
     if (event.action.type !== "move") continue;
     if (event.actor === game.state.turn) return null;
-    const counts = new Map(),
-      origins = new Map(),
-      changes = new Map();
-    for (const step of event.action.steps) {
-      if (counts.get(step.from))
-        counts.set(step.from, counts.get(step.from) - 1);
-      else origins.set(step.from, (origins.get(step.from) || 0) + 1);
-      counts.set(step.to, (counts.get(step.to) || 0) + 1);
-      changes.set(step.from, (changes.get(step.from) || 0) - 1);
-      changes.set(step.to, (changes.get(step.to) || 0) + 1);
-    }
     let dice = game.initial?.dice || [];
     for (let i = index - 1; i >= 0; i--) {
       const action = game.events[i].action;
@@ -134,23 +124,7 @@ export function lastMove(game) {
         break;
       }
     }
-    return {
-      player: event.actor,
-      dice: clone(dice),
-      steps: clone(event.action.steps),
-      points: Object.fromEntries([...counts].filter(([, n]) => n > 0)),
-      // Recover this player's original stack sizes from committed deltas. Hits
-      // only change the other player's checkers; no replay or new dice needed.
-      origins: Object.fromEntries(
-        [...origins].map(([point, count]) => {
-          const after =
-            point === "bar"
-              ? game.state.bar[event.actor]
-              : Math.max(0, game.state.points[point] * (event.actor ? -1 : 1));
-          return [point, { count, before: after - changes.get(point) }];
-        }),
-      ),
-    };
+    return moveTrace(game.state, event.actor, event.action.steps, dice);
   }
   return null;
 }

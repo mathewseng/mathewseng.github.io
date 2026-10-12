@@ -71,12 +71,12 @@ test('automatic 4-ply search evaluates the 3-ply winner even when its 2-ply rank
   const s=state();engine.analyze(s,'quick');engine.analyze(s,'deep','checker',null,{automatic:true});
   const expert=engine.analyze(s,'expert','checker',null,{automatic:true});
   const wanted=expert.candidates[0].key;
-  const old=engine.analyze(s,'research','checker',null,{automatic:true});
-  assert(!old.candidates.some(c=>c.key===wanted),'Fixture must expose the narrower-screen omission');
+  const guarded=engine.analyze(s,'research','checker',null,{automatic:true});
+  assert(guarded.candidates.some(c=>c.key===wanted),'Research itself must preserve the Expert leader');
   const retained=engine.analyze(s,'research','checker',null,{automatic:true,retainKeys:[wanted]});
   assert.equal(retained.candidates[0].key,wanted);
   assert(retained.candidates.every(c=>Number.isFinite(c.equity)));
-  assert(!engine.analyze(s,'research').candidates.some(c=>c.key===wanted),'Automatic retention must not alter fixed presets');
+  assert.equal(engine.analyze(s,'research').candidates[0].key,wanted,'Fixed Research must preserve the leader too');
 });
 
 test('next-stage cost gate accepts five seconds and skips only estimates strictly above it',()=>{

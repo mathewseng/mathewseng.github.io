@@ -3,7 +3,9 @@ import { playerName, distance, applyStep } from "../core/rules.mjs";
 import { reducedMotion, checkerFlight } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
+import { routeArrow } from "./move-arrow-route.mjs";
 const NS = "http://www.w3.org/2000/svg";
+let boardSerial = 0;
 const STACK_LIMIT = 5,
   CHECKER_RADIUS = 22;
 // Five touching discs fit between the frame and the destination-label lane.
@@ -93,6 +95,86 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
     }
   }
   return ghosts;
+}
+// Arrows connect display identities, not legal paths. Route around the final
+// stacks and dice, then mask checker faces as a fallback in very dense positions.
+export function lastMoveArrows(state, trace, orientation = 0, obstacles = []) {
+  if (!trace?.checkers?.length) return [];
+  const position = (point, index) => {
+    if (point === "bar") return { x: 408, y: trace.player !== orientation ? 100 : 506 };
+    if (point === "off") return { x: 843, y: trace.player !== orientation ? 250 : 410 };
+    const g = pointGeometry(point, orientation);
+    return { x: g.x + 30, y: stackY(g.top, Math.min(index, STACK_LIMIT - 1)) };
+  };
+  const blockers = [...obstacles];
+  for (const ghost of lastMoveGhosts(trace, orientation))
+    blockers.push({ x: ghost.x, y: ghost.y, r: 28 });
+  for (let p = 0; p < 24; p++) {
+    const g = pointGeometry(p, orientation);
+    for (let i = 0; i < Math.min(Math.abs(state.points[p]), STACK_LIMIT); i++)
+      blockers.push({ x: g.x + 30, y: stackY(g.top, i), r: 28 });
+  }
+  for (const p of [0, 1]) {
+    if (state.bar[p]) blockers.push({ x: 408, y: p !== orientation ? 100 : 506, r: 28 });
+    if (state.off[p]) blockers.push({ x: 843, y: p !== orientation ? 250 : 410, r: 28 });
+  }
+  // Repeated transfers share one arrow between the exposed tops of the stacks.
+  // Four crisscrossing lines for a double obscure both the ghosts and the move.
+  const transfers = new Map();
+  for (const piece of trace.checkers) {
+    const key = `${piece.from}:${piece.to}`, earlier = transfers.get(key);
+    transfers.set(key, earlier ? { ...earlier, count: earlier.count + 1,
+      fromIndex: Math.max(earlier.fromIndex, piece.fromIndex),
+      toIndex: Math.max(earlier.toIndex, piece.toIndex) } : { ...piece, count: 1 });
+  }
+  const seen = new Set(), arrows = [];
+  for (const piece of transfers.values()) {
+    const from = position(piece.from, piece.fromIndex), to = position(piece.to, piece.toIndex);
+    const key = `${from.x},${from.y}:${to.x},${to.y}`;
+    if (seen.has(key)) continue; // Tall stacks share a visible slot.
+    seen.add(key);
+    const route = routeArrow(from, to, blockers);
+    if (route) arrows.push({ ...route, from, to, origin: piece.from, destination: piece.to, count: piece.count });
+  }
+  return arrows;
+}
+function moveArrowLayer(state, trace, orientation, children, id) {
+  const faces = children.flatMap(n => [...n.querySelectorAll(".checker > circle:first-child")]);
+  const obstacles = [];
+  for (const group of children) {
+    for (const die of group.querySelectorAll(".board-die")) {
+      if (group.getAttribute("display") === "none") continue;
+      const x = Number(die.getAttribute("transform").match(/translate\(([-\d.]+)/)[1]);
+      obstacles.push({ x: x - 40, y: 290, width: 80, height: 84 });
+    }
+    if (group.classList.contains("board-cube")) {
+      const r = group.firstChild;
+      obstacles.push({ x: 817, y: Number(r.getAttribute("y")) - 8, width: 52, height: 52 });
+    }
+  }
+  const arrows = lastMoveArrows(state, trace, orientation, obstacles);
+  const layer = svg("g", { class: "last-move-arrows", "pointer-events": "none", "aria-hidden": "true" });
+  if (!arrows.length) return layer;
+  const mask = svg("mask", { id, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 876, height: 660 });
+  mask.append(svg("rect", { width: 876, height: 660, fill: "white" }));
+  for (const face of faces)
+    mask.append(svg("circle", { cx: face.getAttribute("cx"), cy: face.getAttribute("cy"), r: 25, fill: "black" }));
+  // Protect dice even if no clear route exists. Padding also keeps arrowheads
+  // away from the pips and consumed-die marks.
+  for (const obstacle of obstacles) mask.append(svg("rect", { ...obstacle, fill: "black", rx: 6 }));
+  const defs = svg("defs"); defs.append(mask); layer.append(defs);
+  const ink = svg("g", { mask: `url(#${id})`, fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" });
+  for (const arrow of arrows) {
+    const g = svg("g", { class: "last-move-arrow", "data-origin": arrow.origin, "data-destination": arrow.destination, "data-count": arrow.count });
+    g.append(svg("path", { d: arrow.d, stroke: boardColor(`count${trace.player}`), "stroke-width": 4.5, opacity: 0.75 }));
+    g.append(svg("path", { d: arrow.d, stroke: boardColor(`checker${trace.player}`), "stroke-width": 2.5, class: "move-arrow-line", opacity: 0.9 }));
+    g.append(svg("path", { d: "M0 0 L-9 -4.5 Q-7 0 -9 4.5 Z",
+      transform: `translate(${arrow.tip.x} ${arrow.tip.y}) rotate(${arrow.angle})`,
+      fill: boardColor(`checker${trace.player}`), stroke: boardColor(`count${trace.player}`), "stroke-width": 1 }));
+    ink.append(g);
+  }
+  layer.append(ink);
+  return layer;
 }
 function originGhost({ x, y, count }, player) {
   const g = svg("g", {
@@ -201,6 +283,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
 }
 export class Board {
   constructor(container, onPoint = () => {}) {
+    this.arrowMaskId = `move-arrows-${++boardSerial}`;
     this.container = container;
     this.onPoint = onPoint;
     this.svg = svg("svg", {
@@ -1382,7 +1465,7 @@ export class Board {
       children.push(cube);
     }
     const historicalDice =
-      !s.dice.length && lastMove?.dice?.length === 2 && !preview;
+      !s.dice.length && lastMove?.dice?.length === 2;
     children.push(
       svg(
         "text",
@@ -1428,6 +1511,8 @@ export class Board {
         },
       ),
     );
+    if (lastMove?.checkers?.length)
+      children.push(moveArrowLayer(s, lastMove, orientation, children, this.arrowMaskId));
     this.svg.replaceChildren(...children);
     if (
       selected !== null &&

@@ -38,6 +38,8 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       }
     });
     assert.equal(expected.length, 10);
+    assert.match(await page.locator(".decision-caption").textContent(), /^Best move ·/);
+    assert.ok(await page.locator(".decision-board .last-move-arrow").count() > 0);
     assert.equal(await page.locator("#undo-play-best").count(), 1);
     const sizes = [
       [320, 568],
@@ -82,7 +84,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
         await rows.first().click();
         assert.match(
           await page.locator(".decision-caption").innerText(),
-          new RegExp(`Move ${rank} ·`),
+          new RegExp(rank === 1 ? "Best move ·" : `Move ${rank} ·`),
         );
         assert.ok(
           (await page.locator(".decision-caption").innerText()).includes(
@@ -189,6 +191,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       1,
     );
     await page.getByRole("button", { name: "Position", exact: true }).click();
+    assert.equal(await page.locator(".decision-board .last-move-arrow").count(), 0);
     assert.equal(
       await page.locator('.review-move[aria-pressed="true"]').count(),
       0,
@@ -207,6 +210,19 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       0,
       "best played needs no corrective action",
     );
+    assert.match(await page.locator(".decision-caption").textContent(), /^Best\/your move ·/);
+    assert.equal(await page.locator(".decision-choices button").count(), 2);
+    assert.equal(await page.getByRole("button", {name: "Your move", exact:true}).count(), 0);
+    assert.ok(await page.getByRole("button", {name: "Best/your move",exact:true}).getAttribute("aria-pressed") === "true");
+    await page.keyboard.press("Escape");
+    await page.locator(".decision-dialog").waitFor({ state: "detached" });
+    await page.evaluate(() => {
+      const { source, result, decisionReview } = reviewFixture;
+      decisionReview(source, { opponent: true }).result({...result, actual: result.candidates[0]});
+    });
+    assert.match(await page.locator(".decision-caption").textContent(), /^Best\/their move ·/);
+    assert.equal(await page.locator(".decision-choices button").count(), 2);
+    assert.ok(await page.locator(".decision-board .last-move-arrow").count() > 0);
     await page.keyboard.press("Escape");
     await page.locator(".decision-dialog").waitFor({ state: "detached" });
     await page.setViewportSize({ width: 320, height: 568 });

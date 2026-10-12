@@ -9,6 +9,7 @@ export class StudyStrip {
   constructor(onPreview, { container = document.querySelector(".action-area"), playedLabel = "played" } = {}) {
     this.onPreview = onPreview;
     this.playedLabel = playedLabel;
+    this.bestPlayedLabel = `Best · ${playedLabel}`;
     this.candidates = [];
     this.select = el("select", {
       "aria-label": "Preview evaluated move",
@@ -50,7 +51,7 @@ export class StudyStrip {
       this.select.replaceChildren(el("option", { value: -1 }, "Original position"),
         ...(earlierPreview ? [el("option", { value: -2, disabled: true }, "Earlier preview · outside current analysis")] : []),
         ...this.candidates.map((c, i) => el("option", { value: i },
-          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + this.playedLabel : ""}`)));
+          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + (i === 0 ? this.bestPlayedLabel : this.playedLabel) : ""}`)));
       this.result = result;
       this.earlierPreview = earlierPreview;
     }

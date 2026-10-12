@@ -221,6 +221,9 @@ export function resultView(
           `${result.screening.finalists} finalists from ${result.screening.total} alternatives screened at ${result.screening.plies} ply${result.screening.initial ? `, after a 0-ply screen retained ${result.screening.initial.finalists}` : ""}. A screened-out move can still be better; only finalists are compared above.`,
         ),
       );
+    if (result.screening?.retainedLeader)
+      details.append(el("p", { class: "muted small" },
+        "Research keeps the 3-ply shortlist’s leader and evaluates it alongside every other finalist at 4 ply. Completed 3-ply work is reused for this check."));
     if (result.method === "rollout")
       details.append(
         el(
