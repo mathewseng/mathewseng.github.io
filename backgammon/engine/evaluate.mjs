@@ -22,9 +22,10 @@ export function createEvaluator(module) {
   // candidate set. Deeper presets reuse it without mixing depths in rankings.
   let screeningCache = null;
   let quickCache = null;
-  // One context, at most 32 independent 3-ply scores. Research can preserve
-  // Expert's leader without repeating its native work after progressive search.
-  let expertCache = null;
+  // One exact context per depth, at most 32 independent scores each. Keep
+  // completed finalists when grading another legal move outside the hint list;
+  // a native transposition cache need not retain a whole deep result.
+  const finalistCaches = new Map();
   if (module.cwrap("init", "number", [])() !== 0)
     throw new Error("GNUbg could not initialize its data.");
   const score = module.cwrap("bg_score", "number", [
@@ -222,19 +223,22 @@ export function createEvaluator(module) {
         const inFilter = (c, i, filter) => i < 2 ||
           (i < filter.finalists && original[0].equity - c.equity <= filter.threshold);
         const scoreFinalists = (choices, plies) => {
-          if (plies === 3 && (expertCache?.key !== base.positionKey || expertCache.rootKey !== rootKey))
-            expertCache = { key: base.positionKey, rootKey, rows: new Map() };
+          let cache = finalistCaches.get(plies);
+          if (cache?.key !== base.positionKey || cache.rootKey !== rootKey) {
+            cache = { key: base.positionKey, rootKey, rows: new Map() };
+            finalistCaches.set(plies, cache);
+          }
           return choices.map(c => {
-            const cached = plies === 3 && expertCache.rows.get(c.key);
-            if (cached) return structuredClone(cached);
+            const cached = cache.rows.get(c.key);
+            if (cached) return { ...c, ...structuredClone(cached) };
             const turn = turns.find(t => t.key === c.key);
-            const scored = { ...c, ...call(score, [xgid,
-              toXGID({ ...turn.state, dice: [], phase: "roll" }), plies, beavers]) };
-            if (plies === 3) {
-              expertCache.rows.set(c.key, structuredClone(scored));
-              if (expertCache.rows.size > 32) expertCache.rows.delete(expertCache.rows.keys().next().value);
-            }
-            return scored;
+            const scored = call(score, [xgid,
+              toXGID({ ...turn.state, dice: [], phase: "roll" }), plies, beavers]);
+            // Cache only native numbers. Legal paths and notation always come
+            // from this request's independently validated complete turn set.
+            cache.rows.set(c.key, structuredClone(scored));
+            if (cache.rows.size > 32) cache.rows.delete(cache.rows.keys().next().value);
+            return { ...c, ...scored };
           }).sort((a, b) => b.equity - a.equity);
         };
         const finalists = original.filter(
@@ -292,6 +296,8 @@ export function createEvaluator(module) {
       };
     },
     shutdown() {
+      finalistCaches.clear();
+      screeningCache = quickCache = null;
       module.cwrap("shutdown", "number", [])();
     },
   };

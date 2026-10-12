@@ -1,0 +1,5877 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-12T14:08:59.310Z",
+  "method": "Lossless shared answers, keyed by SHA-256 of the original JSON payload. Each stage references answerId. All settings, high-depth scores, excluded keys, input positions, hashes, native call counts and raw timings retained. Diagnostic cases, not random sampling, a phone benchmark, or an independent strength test.",
+  "pairs": 15,
+  "runs": [
+    {
+      "schema": 1,
+      "startedAt": "2026-10-12T14:01:47.964Z",
+      "baselineRef": "0d5408ed2f7fd6fbda553002adcd19f14c584767",
+      "samples": 3,
+      "method": "Alternating paired fresh workers. Identical bg6 SIMD native assets. Hint then two legal moves outside that hint, then hint again. Initialization excluded. Native caches stay warm within each sequence. No opening lookup book. Diagnostic cases, not a random workload or playing-strength test. Local HTTP and desktop browser, no physical-phone or WAN claim. Median and range only for repeated samples.",
+      "environment": {
+        "cpu": "Apple M4 Pro",
+        "os": "darwin 25.5.0 arm64",
+        "load": [
+          2.9375,
+          4.10693359375,
+          5.66455078125
+        ]
+      },
+      "hashes": {
+        "baseline": "8f0cdd61a366a1ed24eb093c8905678bf53e2547bacc7dd14e4f3a399db46095",
+        "worker": "84b1cfc99b52b20410165dd8a94c101e58367a734241ccd08476fdf0be73f0de",
+        "script": "b56466f6124a30e4ad7eb175958fe517b9ffca19e85d8daf986e37b4a8dbc983",
+        "engine/evaluate.mjs": "f6fc8bccc33155bd1aee81fd2827865f68bdf679dd25cb320dc0d84908ba9bdf",
+        "engine/metadata.mjs": "24ccf6fb42ffe829a33973be3a9c1b8252a9747ccf8aedcaceffa2c17e9033b6",
+        "core/rules.mjs": "49656e0f61a05e04d83877c2fb450ea9c8850ddc2c0542080a1086b8a5fdcba4",
+        "core/xgid.mjs": "fc77e5d442c9b2085842089c0fc2760fce84980f5d6b83ff63f6b82027427b1c",
+        "engine/vendor/simd/gnubg-core-module.js": "f205ccbc36e67cd8b967831b4450d62b635e460db13ce7ceea9008888483937d",
+        "engine/vendor/simd/gnubg-core-module.wasm": "e96c98e843c0952e5735b32041dfe65ed574208fc8ef4016ac8c87c89d19fac3",
+        "engine/vendor/gnubg-core-module.data": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49"
+      },
+      "rows": [
+        {
+          "id": "contact",
+          "preset": "research",
+          "sample": 0,
+          "maxDifference": 2.399999999846969e-7,
+          "baseline": {
+            "startupMs": 45.19999998807907,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5089.699999988079,
+                "calls": {
+                  "2": 38,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 7506.899999976158,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "20248280b520256c7219a4b3f1daf9d5460a539c7d894da7d8490024b1c204c9"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 7408.100000023842,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 4852.800000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 45.299999952316284,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5070.5,
+                "calls": {
+                  "2": 38,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 2759.400000035763,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "10cdf1ba2d0f5d6f513d7ade100d0cb4e6fbc3b4f23053db46814315763ef079"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 2663,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.3999999761581421,
+                "calls": {
+                  "2": 0,
+                  "4": 0
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              }
+            ]
+          }
+        },
+        {
+          "id": "contact",
+          "preset": "research",
+          "sample": 1,
+          "maxDifference": 2.399999999846969e-7,
+          "candidate": {
+            "startupMs": 42.80000001192093,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5102.100000023842,
+                "calls": {
+                  "2": 38,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 2769.5,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "10cdf1ba2d0f5d6f513d7ade100d0cb4e6fbc3b4f23053db46814315763ef079"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 2728.100000023842,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.5,
+                "calls": {
+                  "2": 0,
+                  "4": 0
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              }
+            ]
+          },
+          "baseline": {
+            "startupMs": 42.90000003576279,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5136.299999952316,
+                "calls": {
+                  "2": 38,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 7659,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "20248280b520256c7219a4b3f1daf9d5460a539c7d894da7d8490024b1c204c9"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 7569.800000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 4965.599999964237,
+                "calls": {
+                  "2": 0,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              }
+            ]
+          }
+        },
+        {
+          "id": "contact",
+          "preset": "research",
+          "sample": 2,
+          "maxDifference": 2.399999999846969e-7,
+          "baseline": {
+            "startupMs": 47.19999998807907,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5285.900000035763,
+                "calls": {
+                  "2": 38,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 7688.300000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "20248280b520256c7219a4b3f1daf9d5460a539c7d894da7d8490024b1c204c9"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 7582,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 4905.600000023842,
+                "calls": {
+                  "2": 0,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 45,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5449.900000035763,
+                "calls": {
+                  "2": 38,
+                  "4": 2
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 2907.399999976158,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "10cdf1ba2d0f5d6f513d7ade100d0cb4e6fbc3b4f23053db46814315763ef079"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 2696.300000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.5,
+                "calls": {
+                  "2": 0,
+                  "4": 0
+                },
+                "answerId": "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0"
+              }
+            ]
+          }
+        },
+        {
+          "id": "race",
+          "preset": "research",
+          "sample": 0,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 46.09999996423721,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 356.80000001192093,
+                "calls": {
+                  "2": 28,
+                  "3": 8,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 52.200000047683716,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 65.89999997615814,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 1,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 43.90000003576279,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 351.89999997615814,
+                "calls": {
+                  "2": 28,
+                  "3": 8,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 52,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 66.09999996423721,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 1,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              }
+            ]
+          }
+        },
+        {
+          "id": "race",
+          "preset": "research",
+          "sample": 1,
+          "maxDifference": 0,
+          "candidate": {
+            "startupMs": 45.700000047683716,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 355.69999998807907,
+                "calls": {
+                  "2": 28,
+                  "3": 8,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 52.80000001192093,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 66.10000002384186,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.8999999761581421,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              }
+            ]
+          },
+          "baseline": {
+            "startupMs": 43.30000001192093,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 355.69999998807907,
+                "calls": {
+                  "2": 28,
+                  "3": 8,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 52.30000001192093,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 73.80000001192093,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 1.0999999642372131,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              }
+            ]
+          }
+        },
+        {
+          "id": "race",
+          "preset": "research",
+          "sample": 2,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 45.19999998807907,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 354.69999998807907,
+                "calls": {
+                  "2": 28,
+                  "3": 8,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 52.80000001192093,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 65.30000001192093,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 1.0999999642372131,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 43.80000001192093,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 356.5,
+                "calls": {
+                  "2": 28,
+                  "3": 8,
+                  "4": 4
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 58.80000001192093,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 67.09999996423721,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.8999999761581421,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec"
+              }
+            ]
+          }
+        },
+        {
+          "id": "bearoff",
+          "preset": "research",
+          "sample": 0,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 46.89999997615814,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5.400000035762787,
+                "calls": {
+                  "2": 6,
+                  "3": 6,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1.300000011920929,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1.199999988079071,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.30000001192092896,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 44.40000003576279,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5.100000023841858,
+                "calls": {
+                  "2": 6,
+                  "3": 6,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1.100000023841858,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.3999999761581421,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              }
+            ]
+          }
+        },
+        {
+          "id": "bearoff",
+          "preset": "research",
+          "sample": 1,
+          "maxDifference": 0,
+          "candidate": {
+            "startupMs": 43.89999997615814,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5.600000023841858,
+                "calls": {
+                  "2": 6,
+                  "3": 6,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1.300000011920929,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.40000003576278687,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              }
+            ]
+          },
+          "baseline": {
+            "startupMs": 43.59999996423721,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5,
+                "calls": {
+                  "2": 6,
+                  "3": 6,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1.0999999642372131,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1.300000011920929,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.30000001192092896,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              }
+            ]
+          }
+        },
+        {
+          "id": "bearoff",
+          "preset": "research",
+          "sample": 2,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 45.19999998807907,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5.100000023841858,
+                "calls": {
+                  "2": 6,
+                  "3": 6,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1.0999999642372131,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1.2000000476837158,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.3999999761581421,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 43.90000003576279,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 5,
+                "calls": {
+                  "2": 6,
+                  "3": 6,
+                  "4": 4
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1.0999999642372131,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1.100000023841858,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.30000001192092896,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6"
+              }
+            ]
+          }
+        },
+        {
+          "id": "crashed",
+          "preset": "research",
+          "sample": 0,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 44.39999997615814,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 8885.100000023842,
+                "calls": {
+                  "2": 44,
+                  "3": 8,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 10142.5,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 6
+                },
+                "answerId": "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 9702.199999988079,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 6
+                },
+                "answerId": "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 8222.600000023842,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 47.30000001192093,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 8900.099999964237,
+                "calls": {
+                  "2": 44,
+                  "3": 8,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1934.300000011921,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1402.699999988079,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.5,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              }
+            ]
+          }
+        },
+        {
+          "id": "crashed",
+          "preset": "research",
+          "sample": 1,
+          "maxDifference": 0,
+          "candidate": {
+            "startupMs": 46.299999952316284,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 8993.5,
+                "calls": {
+                  "2": 44,
+                  "3": 8,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1924.8999999761581,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1405.300000011921,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.6000000238418579,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              }
+            ]
+          },
+          "baseline": {
+            "startupMs": 44,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 8975,
+                "calls": {
+                  "2": 44,
+                  "3": 8,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 10192.699999988079,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 6
+                },
+                "answerId": "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 9733.899999976158,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 6
+                },
+                "answerId": "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 8268.400000035763,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              }
+            ]
+          }
+        },
+        {
+          "id": "crashed",
+          "preset": "research",
+          "sample": 2,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 48.80000001192093,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 8973.5,
+                "calls": {
+                  "2": 44,
+                  "3": 8,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 10271.5,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 6
+                },
+                "answerId": "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 9719.400000035763,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 6
+                },
+                "answerId": "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 8274.5,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 44.19999998807907,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 8995.200000047684,
+                "calls": {
+                  "2": 44,
+                  "3": 8,
+                  "4": 5
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 1954.699999988079,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 1410.8999999761581,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 1
+                },
+                "answerId": "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.6000000238418579,
+                "calls": {
+                  "2": 0,
+                  "3": 0,
+                  "4": 0
+                },
+                "answerId": "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4"
+              }
+            ]
+          }
+        },
+        {
+          "id": "match",
+          "preset": "research",
+          "sample": 0,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 44.30000001192093,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 7167.399999976158,
+                "calls": {
+                  "2": 16,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 9837,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 9887.699999988079,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 7027,
+                "calls": {
+                  "2": 0,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 46.299999952316284,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 7210.800000011921,
+                "calls": {
+                  "2": 16,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 2824.900000035763,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 2806.800000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.30000001192092896,
+                "calls": {
+                  "2": 0,
+                  "4": 0
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              }
+            ]
+          }
+        },
+        {
+          "id": "match",
+          "preset": "research",
+          "sample": 1,
+          "maxDifference": 0,
+          "candidate": {
+            "startupMs": 45.299999952316284,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 7222.300000011921,
+                "calls": {
+                  "2": 16,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 2853.300000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 2811.599999964237,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.30000001192092896,
+                "calls": {
+                  "2": 0,
+                  "4": 0
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              }
+            ]
+          },
+          "baseline": {
+            "startupMs": 43.19999998807907,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 7200.600000023842,
+                "calls": {
+                  "2": 16,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 9911.700000047684,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 9920.199999988079,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 7052.800000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              }
+            ]
+          }
+        },
+        {
+          "id": "match",
+          "preset": "research",
+          "sample": 2,
+          "maxDifference": 0,
+          "baseline": {
+            "startupMs": 44.59999996423721,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 7186.800000011921,
+                "calls": {
+                  "2": 16,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 9972.800000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 10048.199999988079,
+                "calls": {
+                  "2": 0,
+                  "4": 3
+                },
+                "answerId": "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 7131.699999988079,
+                "calls": {
+                  "2": 0,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              }
+            ]
+          },
+          "candidate": {
+            "startupMs": 45.799999952316284,
+            "rows": [
+              {
+                "label": "hint",
+                "elapsedMs": 7224.200000047684,
+                "calls": {
+                  "2": 16,
+                  "4": 2
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              },
+              {
+                "label": "grade-0",
+                "elapsedMs": 2879.300000011921,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb"
+              },
+              {
+                "label": "grade-1",
+                "elapsedMs": 2849.599999964237,
+                "calls": {
+                  "2": 0,
+                  "4": 1
+                },
+                "answerId": "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76"
+              },
+              {
+                "label": "hint-again",
+                "elapsedMs": 0.19999998807907104,
+                "calls": {
+                  "2": 0,
+                  "4": 0
+                },
+                "answerId": "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8"
+              }
+            ]
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "contact",
+          "state": {
+            "version": 1,
+            "points": [
+              -1,
+              0,
+              -1,
+              -1,
+              0,
+              5,
+              0,
+              3,
+              1,
+              0,
+              1,
+              -3,
+              1,
+              1,
+              0,
+              0,
+              -2,
+              0,
+              -5,
+              0,
+              1,
+              -2,
+              0,
+              2
+            ],
+            "bar": [
+              0,
+              0
+            ],
+            "off": [
+              0,
+              0
+            ],
+            "turn": 1,
+            "dice": [
+              2,
+              1
+            ],
+            "phase": "move",
+            "cube": {
+              "value": 1,
+              "owner": null
+            },
+            "scores": [
+              0,
+              0
+            ],
+            "matchLength": 0,
+            "rules": {
+              "cube": true,
+              "jacoby": false,
+              "automaticDoubles": 0,
+              "immediateRedoubles": 0
+            },
+            "crawford": false,
+            "crawfordPlayed": false,
+            "gameNumber": 1,
+            "sequence": 21,
+            "result": null,
+            "pending": null
+          }
+        },
+        {
+          "id": "race",
+          "state": {
+            "version": 1,
+            "points": [
+              8,
+              0,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              2,
+              0,
+              0,
+              0,
+              1,
+              1,
+              -1,
+              -3,
+              -10
+            ],
+            "bar": [
+              0,
+              0
+            ],
+            "off": [
+              0,
+              1
+            ],
+            "turn": 0,
+            "dice": [
+              2,
+              4
+            ],
+            "phase": "move",
+            "cube": {
+              "value": 1,
+              "owner": null
+            },
+            "scores": [
+              0,
+              0
+            ],
+            "matchLength": 0,
+            "rules": {
+              "cube": true,
+              "jacoby": false,
+              "automaticDoubles": 0,
+              "immediateRedoubles": 0
+            },
+            "crawford": false,
+            "crawfordPlayed": false,
+            "gameNumber": 1,
+            "sequence": 343,
+            "result": null,
+            "pending": null
+          }
+        },
+        {
+          "id": "bearoff",
+          "state": {
+            "version": 1,
+            "points": [
+              7,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -2,
+              -6,
+              -5
+            ],
+            "bar": [
+              0,
+              0
+            ],
+            "off": [
+              8,
+              1
+            ],
+            "turn": 1,
+            "dice": [
+              2,
+              2
+            ],
+            "phase": "move",
+            "cube": {
+              "value": 1,
+              "owner": null
+            },
+            "scores": [
+              0,
+              0
+            ],
+            "matchLength": 0,
+            "rules": {
+              "cube": true,
+              "jacoby": false,
+              "automaticDoubles": 0,
+              "immediateRedoubles": 0
+            },
+            "crawford": false,
+            "crawfordPlayed": false,
+            "gameNumber": 1,
+            "sequence": 177,
+            "result": null,
+            "pending": null
+          }
+        },
+        {
+          "id": "crashed",
+          "state": {
+            "version": 1,
+            "points": [
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              2,
+              2,
+              2,
+              1,
+              2,
+              1,
+              0,
+              0,
+              0,
+              -3,
+              1,
+              -4,
+              2
+            ],
+            "bar": [
+              0,
+              0
+            ],
+            "off": [
+              0,
+              8
+            ],
+            "turn": 0,
+            "dice": [
+              2,
+              1
+            ],
+            "phase": "move",
+            "cube": {
+              "value": 1,
+              "owner": null
+            },
+            "scores": [
+              0,
+              0
+            ],
+            "matchLength": 0,
+            "rules": {
+              "cube": false,
+              "jacoby": false,
+              "automaticDoubles": 0,
+              "immediateRedoubles": 0
+            },
+            "crawford": false,
+            "crawfordPlayed": false,
+            "gameNumber": 1,
+            "sequence": 0,
+            "result": null,
+            "pending": null
+          }
+        },
+        {
+          "id": "match",
+          "state": {
+            "version": 1,
+            "points": [
+              -2,
+              0,
+              0,
+              0,
+              0,
+              5,
+              0,
+              3,
+              0,
+              0,
+              0,
+              -5,
+              5,
+              0,
+              0,
+              0,
+              -3,
+              0,
+              -5,
+              0,
+              0,
+              0,
+              0,
+              2
+            ],
+            "bar": [
+              0,
+              0
+            ],
+            "off": [
+              0,
+              0
+            ],
+            "turn": 0,
+            "dice": [
+              3,
+              1
+            ],
+            "phase": "move",
+            "cube": {
+              "value": 2,
+              "owner": 1
+            },
+            "scores": [
+              2,
+              4
+            ],
+            "matchLength": 7,
+            "rules": {
+              "cube": true,
+              "jacoby": false,
+              "automaticDoubles": 0,
+              "immediateRedoubles": 0
+            },
+            "crawford": false,
+            "crawfordPlayed": false,
+            "gameNumber": 1,
+            "sequence": 0,
+            "result": null,
+            "pending": null
+          }
+        }
+      ],
+      "browser": {
+        "name": "chromium",
+        "version": "145.0.7632.6"
+      },
+      "finishedAt": "2026-10-12T14:08:30.157Z",
+      "sourceFile": "backgammon/test-results/finalist-cache/chromium.json",
+      "sourceSha256": "b8fd8375cb2d201a80b440bd2ba077624b8393cba50331d7e932b78a88cc5324"
+    }
+  ],
+  "summaries": [
+    {
+      "sourceFile": "backgammon/test-results/finalist-cache/chromium.json",
+      "browser": {
+        "name": "chromium",
+        "version": "145.0.7632.6"
+      },
+      "id": "contact",
+      "preset": "research",
+      "samples": 3,
+      "maxDifference": 2.399999999846969e-7,
+      "stages": [
+        {
+          "label": "hint",
+          "baselineMs": {
+            "n": 3,
+            "median": 5136.299999952316,
+            "range": [
+              5089.699999988079,
+              5285.900000035763
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 5102.100000023842,
+            "range": [
+              5070.5,
+              5449.900000035763
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 38,
+              "4": 2
+            },
+            {
+              "2": 38,
+              "4": 2
+            },
+            {
+              "2": 38,
+              "4": 2
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 38,
+              "4": 2
+            },
+            {
+              "2": 38,
+              "4": 2
+            },
+            {
+              "2": 38,
+              "4": 2
+            }
+          ]
+        },
+        {
+          "label": "grade-0",
+          "baselineMs": {
+            "n": 3,
+            "median": 7659,
+            "range": [
+              7506.899999976158,
+              7688.300000011921
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 2769.5,
+            "range": [
+              2759.400000035763,
+              2907.399999976158
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "grade-1",
+          "baselineMs": {
+            "n": 3,
+            "median": 7569.800000011921,
+            "range": [
+              7408.100000023842,
+              7582
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 2696.300000011921,
+            "range": [
+              2663,
+              2728.100000023842
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "hint-again",
+          "baselineMs": {
+            "n": 3,
+            "median": 4905.600000023842,
+            "range": [
+              4852.800000011921,
+              4965.599999964237
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 0.5,
+            "range": [
+              0.3999999761581421,
+              0.5
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "4": 2
+            },
+            {
+              "2": 0,
+              "4": 2
+            },
+            {
+              "2": 0,
+              "4": 2
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "4": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sourceFile": "backgammon/test-results/finalist-cache/chromium.json",
+      "browser": {
+        "name": "chromium",
+        "version": "145.0.7632.6"
+      },
+      "id": "race",
+      "preset": "research",
+      "samples": 3,
+      "maxDifference": 0,
+      "stages": [
+        {
+          "label": "hint",
+          "baselineMs": {
+            "n": 3,
+            "median": 355.69999998807907,
+            "range": [
+              354.69999998807907,
+              356.80000001192093
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 355.69999998807907,
+            "range": [
+              351.89999997615814,
+              356.5
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 28,
+              "3": 8,
+              "4": 4
+            },
+            {
+              "2": 28,
+              "3": 8,
+              "4": 4
+            },
+            {
+              "2": 28,
+              "3": 8,
+              "4": 4
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 28,
+              "3": 8,
+              "4": 4
+            },
+            {
+              "2": 28,
+              "3": 8,
+              "4": 4
+            },
+            {
+              "2": 28,
+              "3": 8,
+              "4": 4
+            }
+          ]
+        },
+        {
+          "label": "grade-0",
+          "baselineMs": {
+            "n": 3,
+            "median": 52.30000001192093,
+            "range": [
+              52.200000047683716,
+              52.80000001192093
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 52.80000001192093,
+            "range": [
+              52,
+              58.80000001192093
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "grade-1",
+          "baselineMs": {
+            "n": 3,
+            "median": 65.89999997615814,
+            "range": [
+              65.30000001192093,
+              73.80000001192093
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 66.10000002384186,
+            "range": [
+              66.09999996423721,
+              67.09999996423721
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "hint-again",
+          "baselineMs": {
+            "n": 3,
+            "median": 1.0999999642372131,
+            "range": [
+              1,
+              1.0999999642372131
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 0.8999999761581421,
+            "range": [
+              0.8999999761581421,
+              1
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 4
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 4
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 4
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sourceFile": "backgammon/test-results/finalist-cache/chromium.json",
+      "browser": {
+        "name": "chromium",
+        "version": "145.0.7632.6"
+      },
+      "id": "bearoff",
+      "preset": "research",
+      "samples": 3,
+      "maxDifference": 0,
+      "stages": [
+        {
+          "label": "hint",
+          "baselineMs": {
+            "n": 3,
+            "median": 5.100000023841858,
+            "range": [
+              5,
+              5.400000035762787
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 5.100000023841858,
+            "range": [
+              5,
+              5.600000023841858
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            {
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            {
+              "2": 6,
+              "3": 6,
+              "4": 4
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            {
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            {
+              "2": 6,
+              "3": 6,
+              "4": 4
+            }
+          ]
+        },
+        {
+          "label": "grade-0",
+          "baselineMs": {
+            "n": 3,
+            "median": 1.0999999642372131,
+            "range": [
+              1.0999999642372131,
+              1.300000011920929
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 1,
+            "range": [
+              1,
+              1.0999999642372131
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "grade-1",
+          "baselineMs": {
+            "n": 3,
+            "median": 1.2000000476837158,
+            "range": [
+              1.199999988079071,
+              1.300000011920929
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 1.100000023841858,
+            "range": [
+              1.100000023841858,
+              1.300000011920929
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "hint-again",
+          "baselineMs": {
+            "n": 3,
+            "median": 0.30000001192092896,
+            "range": [
+              0.30000001192092896,
+              0.3999999761581421
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 0.3999999761581421,
+            "range": [
+              0.30000001192092896,
+              0.40000003576278687
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 4
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 4
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 4
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sourceFile": "backgammon/test-results/finalist-cache/chromium.json",
+      "browser": {
+        "name": "chromium",
+        "version": "145.0.7632.6"
+      },
+      "id": "crashed",
+      "preset": "research",
+      "samples": 3,
+      "maxDifference": 0,
+      "stages": [
+        {
+          "label": "hint",
+          "baselineMs": {
+            "n": 3,
+            "median": 8973.5,
+            "range": [
+              8885.100000023842,
+              8975
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 8993.5,
+            "range": [
+              8900.099999964237,
+              8995.200000047684
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 44,
+              "3": 8,
+              "4": 5
+            },
+            {
+              "2": 44,
+              "3": 8,
+              "4": 5
+            },
+            {
+              "2": 44,
+              "3": 8,
+              "4": 5
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 44,
+              "3": 8,
+              "4": 5
+            },
+            {
+              "2": 44,
+              "3": 8,
+              "4": 5
+            },
+            {
+              "2": 44,
+              "3": 8,
+              "4": 5
+            }
+          ]
+        },
+        {
+          "label": "grade-0",
+          "baselineMs": {
+            "n": 3,
+            "median": 10192.699999988079,
+            "range": [
+              10142.5,
+              10271.5
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 1934.300000011921,
+            "range": [
+              1924.8999999761581,
+              1954.699999988079
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 6
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 6
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 6
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "grade-1",
+          "baselineMs": {
+            "n": 3,
+            "median": 9719.400000035763,
+            "range": [
+              9702.199999988079,
+              9733.899999976158
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 1405.300000011921,
+            "range": [
+              1402.699999988079,
+              1410.8999999761581
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 6
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 6
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 6
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "hint-again",
+          "baselineMs": {
+            "n": 3,
+            "median": 8268.400000035763,
+            "range": [
+              8222.600000023842,
+              8274.5
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 0.6000000238418579,
+            "range": [
+              0.5,
+              0.6000000238418579
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 5
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "3": 0,
+              "4": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sourceFile": "backgammon/test-results/finalist-cache/chromium.json",
+      "browser": {
+        "name": "chromium",
+        "version": "145.0.7632.6"
+      },
+      "id": "match",
+      "preset": "research",
+      "samples": 3,
+      "maxDifference": 0,
+      "stages": [
+        {
+          "label": "hint",
+          "baselineMs": {
+            "n": 3,
+            "median": 7186.800000011921,
+            "range": [
+              7167.399999976158,
+              7200.600000023842
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 7222.300000011921,
+            "range": [
+              7210.800000011921,
+              7224.200000047684
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 16,
+              "4": 2
+            },
+            {
+              "2": 16,
+              "4": 2
+            },
+            {
+              "2": 16,
+              "4": 2
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 16,
+              "4": 2
+            },
+            {
+              "2": 16,
+              "4": 2
+            },
+            {
+              "2": 16,
+              "4": 2
+            }
+          ]
+        },
+        {
+          "label": "grade-0",
+          "baselineMs": {
+            "n": 3,
+            "median": 9911.700000047684,
+            "range": [
+              9837,
+              9972.800000011921
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 2853.300000011921,
+            "range": [
+              2824.900000035763,
+              2879.300000011921
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "grade-1",
+          "baselineMs": {
+            "n": 3,
+            "median": 9920.199999988079,
+            "range": [
+              9887.699999988079,
+              10048.199999988079
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 2811.599999964237,
+            "range": [
+              2806.800000011921,
+              2849.599999964237
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            },
+            {
+              "2": 0,
+              "4": 3
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            },
+            {
+              "2": 0,
+              "4": 1
+            }
+          ]
+        },
+        {
+          "label": "hint-again",
+          "baselineMs": {
+            "n": 3,
+            "median": 7052.800000011921,
+            "range": [
+              7027,
+              7131.699999988079
+            ]
+          },
+          "candidateMs": {
+            "n": 3,
+            "median": 0.30000001192092896,
+            "range": [
+              0.19999998807907104,
+              0.30000001192092896
+            ]
+          },
+          "baselineCalls": [
+            {
+              "2": 0,
+              "4": 2
+            },
+            {
+              "2": 0,
+              "4": 2
+            },
+            {
+              "2": 0,
+              "4": 2
+            }
+          ],
+          "candidateCalls": [
+            {
+              "2": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "4": 0
+            },
+            {
+              "2": 0,
+              "4": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "answers": {
+    "082e8fa834af5967d34bf526fb9fd3091d4df7c38821aeeb78598d54d13f34e0": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0\",1,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.91806424,
+          "cubeless": 0.74734002,
+          "probabilities": [
+            0.671341,
+            0.39254367,
+            0.09858175,
+            0.08117633,
+            0.00529108
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 18,
+              "to": 20,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-4,0,-1,-2,0,2,2,0,0,0",
+          "notation": "6/4 13/12"
+        },
+        {
+          "equity": 0.8256706,
+          "cubeless": 0.62637424,
+          "probabilities": [
+            0.6382212,
+            0.35856506,
+            0.0789265,
+            0.08200815,
+            0.00555155
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 11,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+          "notation": "13/11 13/12"
+        }
+      ],
+      "actual": null,
+      "error": null,
+      "screening": {
+        "finalists": 2,
+        "total": 38,
+        "excluded": [
+          "-1,0,0,-2,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,0,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,0,-3,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,0,1,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,0,-2,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-4,-1,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-3,-1,-1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-1,-1,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-1,0,-6,0,1,-2,0,2,1,0,0,0",
+          "0,0,-1,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,0,-2,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,0,0,5,-1,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,1,-3,0,2,0,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,-1,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-5,-1,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,0,-1,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-1,-1,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    },
+    "20248280b520256c7219a4b3f1daf9d5460a539c7d894da7d8490024b1c204c9": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0\",1,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.91806424,
+          "cubeless": 0.74734002,
+          "probabilities": [
+            0.671341,
+            0.39254367,
+            0.09858175,
+            0.08117633,
+            0.00529108
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 18,
+              "to": 20,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-4,0,-1,-2,0,2,2,0,0,0",
+          "notation": "6/4 13/12"
+        },
+        {
+          "equity": 0.8256706,
+          "cubeless": 0.62637448,
+          "probabilities": [
+            0.63822132,
+            0.35856503,
+            0.0789265,
+            0.08200814,
+            0.00555155
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 11,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+          "notation": "13/11 13/12"
+        },
+        {
+          "equity": 0.47220331,
+          "cubeless": 0.3572098,
+          "probabilities": [
+            0.58300292,
+            0.26413789,
+            0.04152874,
+            0.10830578,
+            0.00615689
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            },
+            {
+              "from": 12,
+              "to": 14,
+              "die": 2
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,0,1,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "notation": "13/12 12/10"
+        }
+      ],
+      "actual": {
+        "equity": 0.47220331,
+        "cubeless": 0.3572098,
+        "probabilities": [
+          0.58300292,
+          0.26413789,
+          0.04152874,
+          0.10830578,
+          0.00615689
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 11,
+            "to": 12,
+            "die": 1
+          },
+          {
+            "from": 12,
+            "to": 14,
+            "die": 2
+          }
+        ],
+        "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,0,1,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+        "notation": "13/12 12/10"
+      },
+      "error": 0.44586093,
+      "screening": {
+        "finalists": 3,
+        "total": 38,
+        "excluded": [
+          "-1,0,0,-2,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,0,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,0,-3,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,0,-2,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-4,-1,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-3,-1,-1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-1,-1,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-1,0,-6,0,1,-2,0,2,1,0,0,0",
+          "0,0,-1,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,0,-2,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,0,0,5,-1,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,1,-3,0,2,0,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,-1,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-5,-1,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,0,-1,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-1,-1,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    },
+    "b018daa2cabb1fc658fbb7601e3208c1c116277b325964a38266ef6302861aa5": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0\",1,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.91806424,
+          "cubeless": 0.74734002,
+          "probabilities": [
+            0.671341,
+            0.39254367,
+            0.09858175,
+            0.08117633,
+            0.00529108
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 18,
+              "to": 20,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-4,0,-1,-2,0,2,2,0,0,0",
+          "notation": "6/4 13/12"
+        },
+        {
+          "equity": 0.8256706,
+          "cubeless": 0.62637424,
+          "probabilities": [
+            0.6382212,
+            0.35856506,
+            0.0789265,
+            0.08200815,
+            0.00555155
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 11,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+          "notation": "13/11 13/12"
+        },
+        {
+          "equity": 0.11295903,
+          "cubeless": 0.09205005,
+          "probabilities": [
+            0.51444829,
+            0.19844255,
+            0.02420227,
+            0.15043075,
+            0.00906059
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 18,
+              "to": 19,
+              "die": 1
+            },
+            {
+              "from": 19,
+              "to": 21,
+              "die": 2
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,1,-3,0,2,0,0,0,0",
+          "notation": "6/5 5/3"
+        }
+      ],
+      "actual": {
+        "equity": 0.11295903,
+        "cubeless": 0.09205005,
+        "probabilities": [
+          0.51444829,
+          0.19844255,
+          0.02420227,
+          0.15043075,
+          0.00906059
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 18,
+            "to": 19,
+            "die": 1
+          },
+          {
+            "from": 19,
+            "to": 21,
+            "die": 2
+          }
+        ],
+        "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,1,-3,0,2,0,0,0,0",
+        "notation": "6/5 5/3"
+      },
+      "error": 0.80510521,
+      "screening": {
+        "finalists": 3,
+        "total": 38,
+        "excluded": [
+          "-1,0,0,-2,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,0,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,0,-3,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,0,1,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,0,-2,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-4,-1,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-3,-1,-1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-1,-1,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-1,0,-6,0,1,-2,0,2,1,0,0,0",
+          "0,0,-1,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,0,-2,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,0,0,5,-1,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,-1,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-5,-1,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,0,-1,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-1,-1,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    },
+    "10cdf1ba2d0f5d6f513d7ade100d0cb4e6fbc3b4f23053db46814315763ef079": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0\",1,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.91806424,
+          "cubeless": 0.74734002,
+          "probabilities": [
+            0.671341,
+            0.39254367,
+            0.09858175,
+            0.08117633,
+            0.00529108
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 18,
+              "to": 20,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-4,0,-1,-2,0,2,2,0,0,0",
+          "notation": "6/4 13/12"
+        },
+        {
+          "equity": 0.8256706,
+          "cubeless": 0.62637424,
+          "probabilities": [
+            0.6382212,
+            0.35856506,
+            0.0789265,
+            0.08200815,
+            0.00555155
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 11,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-1,-1,-1,0,0,-2,0,-5,0,1,-2,0,2,2,0,0,0",
+          "notation": "13/11 13/12"
+        },
+        {
+          "equity": 0.47220331,
+          "cubeless": 0.3572098,
+          "probabilities": [
+            0.58300292,
+            0.26413789,
+            0.04152874,
+            0.10830578,
+            0.00615689
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 11,
+              "to": 12,
+              "die": 1
+            },
+            {
+              "from": 12,
+              "to": 14,
+              "die": 2
+            }
+          ],
+          "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,0,1,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "notation": "13/12 12/10"
+        }
+      ],
+      "actual": {
+        "equity": 0.47220331,
+        "cubeless": 0.3572098,
+        "probabilities": [
+          0.58300292,
+          0.26413789,
+          0.04152874,
+          0.10830578,
+          0.00615689
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 11,
+            "to": 12,
+            "die": 1
+          },
+          {
+            "from": 12,
+            "to": 14,
+            "die": 2
+          }
+        ],
+        "key": "-1,0,-1,-1,0,5,0,3,1,0,1,-2,0,1,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+        "notation": "13/12 12/10"
+      },
+      "error": 0.44586093,
+      "screening": {
+        "finalists": 3,
+        "total": 38,
+        "excluded": [
+          "-1,0,0,-2,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-2,-1,1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,0,-1,0,-2,0,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,0,-3,0,2,1,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-2,0,2,1,0,0,0",
+          "-1,0,0,0,-2,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-4,-1,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-3,-1,-1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-1,-1,-5,0,1,-2,0,2,1,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,-1,1,0,0,-1,0,-6,0,1,-2,0,2,1,0,0,0",
+          "0,0,-1,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-4,0,-1,-2,0,2,1,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,0,-2,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,0,0,5,-1,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,1,-3,0,2,0,0,0,0",
+          "-1,0,0,-2,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,-1,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,-1,1,-2,0,2,0,0,0,0",
+          "0,-1,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-5,-1,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,0,-1,-6,0,1,-2,0,2,0,0,0,0",
+          "0,0,-2,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,0,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-2,1,-1,0,0,-2,0,-5,0,1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-1,-1,-5,0,1,-2,0,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-4,0,-1,-1,-1,2,1,0,0,0",
+          "-1,0,0,-1,-1,5,0,3,1,0,1,-3,1,1,0,0,-2,0,-5,0,1,-1,-1,2,0,0,0,0",
+          "-1,0,-1,-1,0,5,0,3,1,0,1,-3,1,1,0,0,-1,0,-6,0,1,-1,-1,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    },
+    "645e44d6b116ec710b195f003a4332e07275b103405a41d635b714c99b6bb7ec": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "current-cube-points",
+      "positionKey": "[\"8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1\",0,[2,4],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1.73891342,
+          "cubeless": -1.7389127,
+          "probabilities": [
+            4.2e-7,
+            0,
+            0,
+            0.73891354,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 19,
+              "to": 17,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 11,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "notation": "20/18 16/12"
+        },
+        {
+          "equity": -1.74008882,
+          "cubeless": -1.74008834,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74008781,
+            6.5e-7
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 11,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "notation": "16/14 16/12"
+        },
+        {
+          "equity": -1.74043286,
+          "cubeless": -1.74043202,
+          "probabilities": [
+            4.8e-7,
+            0,
+            0,
+            0.74043292,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 19,
+              "to": 17,
+              "die": 2
+            },
+            {
+              "from": 20,
+              "to": 16,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,2,1,1,0,0,0,-1,-3,-10,0,0,0,1",
+          "notation": "20/18 21/17"
+        },
+        {
+          "equity": -1.74167562,
+          "cubeless": -1.7416755,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74167407,
+            0.00000148
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 9,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "notation": "16/14 14/10"
+        }
+      ],
+      "actual": null,
+      "error": null,
+      "screening": {
+        "finalists": 4,
+        "total": 28,
+        "excluded": [
+          "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,2,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,0,1,2,0,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,1,0,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,0,0,2,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,0,0,2,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,0,0,2,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,1,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,1,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,0,1,0,0,1,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,1,0,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 8,
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "equity": -1.74048913,
+          "added": false,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "d8a96af903ff9326d2c89aaf8e92bba423d758ad84b89b0f76d4fd7fb9f54c10": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "current-cube-points",
+      "positionKey": "[\"8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1\",0,[2,4],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1.73891342,
+          "cubeless": -1.7389127,
+          "probabilities": [
+            4.2e-7,
+            0,
+            0,
+            0.73891354,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 19,
+              "to": 17,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 11,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "notation": "20/18 16/12"
+        },
+        {
+          "equity": -1.74008882,
+          "cubeless": -1.74008834,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74008781,
+            6.5e-7
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 11,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "notation": "16/14 16/12"
+        },
+        {
+          "equity": -1.74043286,
+          "cubeless": -1.74043202,
+          "probabilities": [
+            4.8e-7,
+            0,
+            0,
+            0.74043292,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 19,
+              "to": 17,
+              "die": 2
+            },
+            {
+              "from": 20,
+              "to": 16,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,2,1,1,0,0,0,-1,-3,-10,0,0,0,1",
+          "notation": "20/18 21/17"
+        },
+        {
+          "equity": -1.74167562,
+          "cubeless": -1.7416755,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74167407,
+            0.00000148
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 9,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "notation": "16/14 14/10"
+        },
+        {
+          "equity": -1.74318445,
+          "cubeless": -1.74318504,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74318498,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 18,
+              "die": 2
+            },
+            {
+              "from": 18,
+              "to": 14,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,1,2,0,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "notation": "21/19 19/15"
+        }
+      ],
+      "actual": {
+        "equity": -1.74318445,
+        "cubeless": -1.74318504,
+        "probabilities": [
+          0,
+          0,
+          0,
+          0.74318498,
+          0
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 20,
+            "to": 18,
+            "die": 2
+          },
+          {
+            "from": 18,
+            "to": 14,
+            "die": 4
+          }
+        ],
+        "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,1,2,0,0,0,1,0,-1,-3,-10,0,0,0,1",
+        "notation": "21/19 19/15"
+      },
+      "error": 0.0042710299999999535,
+      "screening": {
+        "finalists": 5,
+        "total": 28,
+        "excluded": [
+          "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,2,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,1,0,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,0,0,2,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,0,0,2,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,0,0,2,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,1,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,1,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,0,1,0,0,1,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,1,0,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 8,
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "equity": -1.74048913,
+          "added": false,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "36ad2afa228d9e549ae58ba32fb117eb2830e6bd8961c4083cbd417d4d3c0b62": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "current-cube-points",
+      "positionKey": "[\"8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1\",0,[2,4],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1.73891342,
+          "cubeless": -1.7389127,
+          "probabilities": [
+            4.2e-7,
+            0,
+            0,
+            0.73891354,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 19,
+              "to": 17,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 11,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "notation": "20/18 16/12"
+        },
+        {
+          "equity": -1.74008882,
+          "cubeless": -1.74008834,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74008781,
+            6.5e-7
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 11,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "notation": "16/14 16/12"
+        },
+        {
+          "equity": -1.74043286,
+          "cubeless": -1.74043202,
+          "probabilities": [
+            4.8e-7,
+            0,
+            0,
+            0.74043292,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 19,
+              "to": 17,
+              "die": 2
+            },
+            {
+              "from": 20,
+              "to": 16,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,2,1,1,0,0,0,-1,-3,-10,0,0,0,1",
+          "notation": "20/18 21/17"
+        },
+        {
+          "equity": -1.74167562,
+          "cubeless": -1.7416755,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74167407,
+            0.00000148
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 9,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "notation": "16/14 14/10"
+        },
+        {
+          "equity": -1.74734473,
+          "cubeless": -1.74734473,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0.74734479,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 18,
+              "die": 2
+            },
+            {
+              "from": 19,
+              "to": 15,
+              "die": 4
+            }
+          ],
+          "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,1,0,0,-1,-3,-10,0,0,0,1",
+          "notation": "21/19 20/16"
+        }
+      ],
+      "actual": {
+        "equity": -1.74734473,
+        "cubeless": -1.74734473,
+        "probabilities": [
+          0,
+          0,
+          0,
+          0.74734479,
+          0
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 20,
+            "to": 18,
+            "die": 2
+          },
+          {
+            "from": 19,
+            "to": 15,
+            "die": 4
+          }
+        ],
+        "key": "8,0,1,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,1,0,0,-1,-3,-10,0,0,0,1",
+        "notation": "21/19 20/16"
+      },
+      "error": 0.00843130999999997,
+      "screening": {
+        "finalists": 5,
+        "total": 28,
+        "excluded": [
+          "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,1,0,2,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,0,1,1,0,0,0,0,0,0,0,1,2,0,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,0,1,1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "8,0,1,1,0,0,1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,0,0,2,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,0,0,1,0,0,0,0,0,0,0,0,0,2,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,0,0,0,0,2,1,0,0,1,0,-1,-3,-10,0,0,0,1",
+          "9,0,0,0,0,1,1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,0,0,2,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,1,1,0,-1,-3,-10,0,0,0,1",
+          "8,1,1,0,1,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "8,0,2,1,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,0,1,0,0,1,0,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1",
+          "9,1,0,0,0,0,1,0,0,0,0,0,0,0,0,2,0,0,0,1,1,-1,-3,-10,0,0,0,1"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 8,
+          "key": "8,0,1,0,0,1,1,0,0,0,0,1,0,0,0,1,0,1,0,0,1,-1,-3,-10,0,0,0,1",
+          "equity": -1.74048913,
+          "added": false,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "1e1984e4120ae806c2af42771da072b2a59a6936aa2d93deb30d9a074ce329f6": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-6,-5,0,0,8,1\",1,[2,2],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1,
+          "cubeless": -1,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6,-7,0,0,8,2",
+          "notation": "4/2 3/1 3/1 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9952364,
+          "probabilities": [
+            0.0023818,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-5,-6,0,0,8,3",
+          "notation": "4/2 3/1 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9952364,
+          "probabilities": [
+            0.0023818,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-2,-4,-5,0,0,8,4",
+          "notation": "4/2 2/off 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9964273,
+          "probabilities": [
+            0.00178635,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-4,-7,0,0,8,3",
+          "notation": "3/1 3/1 2/off 2/off"
+        }
+      ],
+      "actual": null,
+      "error": null,
+      "screening": {
+        "finalists": 4,
+        "total": 6,
+        "excluded": [
+          "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-3,-6,0,0,8,4",
+          "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-2,-5,0,0,8,5"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 6,
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6,-7,0,0,8,2",
+          "equity": -1,
+          "added": false,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "0599f84ae2323286bc2aa79dae6c9320ad91242c86a8d47c05b0340cfba12bfd": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-6,-5,0,0,8,1\",1,[2,2],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1,
+          "cubeless": -1,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6,-7,0,0,8,2",
+          "notation": "4/2 3/1 3/1 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9952364,
+          "probabilities": [
+            0.0023818,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-5,-6,0,0,8,3",
+          "notation": "4/2 3/1 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9952364,
+          "probabilities": [
+            0.0023818,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-2,-4,-5,0,0,8,4",
+          "notation": "4/2 2/off 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9964273,
+          "probabilities": [
+            0.00178635,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-4,-7,0,0,8,3",
+          "notation": "3/1 3/1 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.99501324,
+          "probabilities": [
+            0.00249338,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-3,-6,0,0,8,4",
+          "notation": "3/1 2/off 2/off 2/off"
+        }
+      ],
+      "actual": {
+        "equity": -1,
+        "cubeless": -0.99501324,
+        "probabilities": [
+          0.00249338,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 21,
+            "to": 23,
+            "die": 2
+          },
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          },
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          },
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          }
+        ],
+        "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-3,-6,0,0,8,4",
+        "notation": "3/1 2/off 2/off 2/off"
+      },
+      "error": 0,
+      "screening": {
+        "finalists": 5,
+        "total": 6,
+        "excluded": [
+          "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-2,-5,0,0,8,5"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 6,
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6,-7,0,0,8,2",
+          "equity": -1,
+          "added": false,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "ff2979909b517ac7de786fd1976095f2a4e17cea167a3b641652908a96e19352": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 1,
+      "units": "current-cube-points",
+      "positionKey": "[\"7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-6,-5,0,0,8,1\",1,[2,2],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1,
+          "cubeless": -1,
+          "probabilities": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6,-7,0,0,8,2",
+          "notation": "4/2 3/1 3/1 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9952364,
+          "probabilities": [
+            0.0023818,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-5,-6,0,0,8,3",
+          "notation": "4/2 3/1 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9952364,
+          "probabilities": [
+            0.0023818,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 20,
+              "to": 22,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-2,-4,-5,0,0,8,4",
+          "notation": "4/2 2/off 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.9964273,
+          "probabilities": [
+            0.00178635,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 23,
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-4,-7,0,0,8,3",
+          "notation": "3/1 3/1 2/off 2/off"
+        },
+        {
+          "equity": -1,
+          "cubeless": -0.94328475,
+          "probabilities": [
+            0.02835763,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            },
+            {
+              "from": 22,
+              "to": "off",
+              "die": 2
+            }
+          ],
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-2,-5,0,0,8,5",
+          "notation": "2/off 2/off 2/off 2/off"
+        }
+      ],
+      "actual": {
+        "equity": -1,
+        "cubeless": -0.94328475,
+        "probabilities": [
+          0.02835763,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          },
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          },
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          },
+          {
+            "from": 22,
+            "to": "off",
+            "die": 2
+          }
+        ],
+        "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-2,-2,-5,0,0,8,5",
+        "notation": "2/off 2/off 2/off 2/off"
+      },
+      "error": 0,
+      "screening": {
+        "finalists": 5,
+        "total": 6,
+        "excluded": [
+          "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-3,-6,0,0,8,4"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 6,
+          "key": "7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6,-7,0,0,8,2",
+          "equity": -1,
+          "added": false,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "366ead07068273174975bb873b6f8295f4953584ef7cc2bcbeddc555e80f8fa4": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": false,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "current-cube-points",
+      "positionKey": "[\"2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8\",0,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":false,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1.67309737,
+          "cubeless": -1.67309737,
+          "probabilities": [
+            0.13588071,
+            0,
+            0,
+            0.72729677,
+            0.2175619
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 14,
+              "to": 12,
+              "die": 2
+            },
+            {
+              "from": 16,
+              "to": 15,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,3,2,0,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "15/13 17/16"
+        },
+        {
+          "equity": -1.67803502,
+          "cubeless": -1.67803502,
+          "probabilities": [
+            0.13549995,
+            0,
+            0,
+            0.72663724,
+            0.2223977
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 14,
+              "to": 12,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,4,1,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "15/13 14/13"
+        },
+        {
+          "equity": -1.69583428,
+          "cubeless": -1.69583428,
+          "probabilities": [
+            0.13872522,
+            0,
+            0,
+            0.72169423,
+            0.25159046
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 16,
+              "to": 14,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,3,1,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "17/15 14/13"
+        },
+        {
+          "equity": -1.71806836,
+          "cubeless": -1.71806836,
+          "probabilities": [
+            0.13330549,
+            0,
+            0,
+            0.73487371,
+            0.24980569
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,3,2,0,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "16/14 16/15"
+        },
+        {
+          "equity": -1.7198503,
+          "cubeless": -1.7198503,
+          "probabilities": [
+            0.13915968,
+            0,
+            0,
+            0.72404724,
+            0.27412254
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 16,
+              "to": 14,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,3,1,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "17/15 16/15"
+        }
+      ],
+      "actual": null,
+      "error": null,
+      "screening": {
+        "finalists": 5,
+        "total": 44,
+        "excluded": [
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,2,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,3,0,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,2,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,1,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,2,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,1,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,2,1,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,3,0,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,2,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,2,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,4,1,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,1,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,2,1,1,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,3,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,2,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,2,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,3,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,3,2,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,3,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,1,0,0,1,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,4,0,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,1,0,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,1,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,3,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,3,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,0,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,2,1,0,1,0,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,1,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,0,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 8,
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,4,1,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "equity": -1.7683022,
+          "added": true,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "a6aff711bdc20aebdb9187ac65eb79b0845cd3c95dab4cc8404addf9a373c703": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": false,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "current-cube-points",
+      "positionKey": "[\"2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8\",0,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":false,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1.67309737,
+          "cubeless": -1.67309737,
+          "probabilities": [
+            0.13588071,
+            0,
+            0,
+            0.72729677,
+            0.2175619
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 14,
+              "to": 12,
+              "die": 2
+            },
+            {
+              "from": 16,
+              "to": 15,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,3,2,0,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "15/13 17/16"
+        },
+        {
+          "equity": -1.67803502,
+          "cubeless": -1.67803502,
+          "probabilities": [
+            0.13549995,
+            0,
+            0,
+            0.72663724,
+            0.2223977
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 14,
+              "to": 12,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,4,1,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "15/13 14/13"
+        },
+        {
+          "equity": -1.69583428,
+          "cubeless": -1.69583428,
+          "probabilities": [
+            0.13872522,
+            0,
+            0,
+            0.72169423,
+            0.25159046
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 16,
+              "to": 14,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,3,1,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "17/15 14/13"
+        },
+        {
+          "equity": -1.71806836,
+          "cubeless": -1.71806836,
+          "probabilities": [
+            0.13330549,
+            0,
+            0,
+            0.73487371,
+            0.24980569
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,3,2,0,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "16/14 16/15"
+        },
+        {
+          "equity": -1.7198503,
+          "cubeless": -1.7198503,
+          "probabilities": [
+            0.13915968,
+            0,
+            0,
+            0.72404724,
+            0.27412254
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 16,
+              "to": 14,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,3,1,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "17/15 16/15"
+        },
+        {
+          "equity": -1.73539329,
+          "cubeless": -1.73539329,
+          "probabilities": [
+            0.10691363,
+            0,
+            0,
+            0.78467488,
+            0.16454566
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 23,
+              "to": 21,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "notation": "24/22 16/15"
+        }
+      ],
+      "actual": {
+        "equity": -1.73539329,
+        "cubeless": -1.73539329,
+        "probabilities": [
+          0.10691363,
+          0,
+          0,
+          0.78467488,
+          0.16454566
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 23,
+            "to": 21,
+            "die": 2
+          },
+          {
+            "from": 15,
+            "to": 14,
+            "die": 1
+          }
+        ],
+        "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,0,-3,2,-4,1,0,0,0,8",
+        "notation": "24/22 16/15"
+      },
+      "error": 0.06229591999999995,
+      "screening": {
+        "finalists": 6,
+        "total": 44,
+        "excluded": [
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,2,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,3,0,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,2,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,1,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,2,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,1,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,2,1,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,3,0,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,2,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,2,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,4,1,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,1,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,2,1,1,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,3,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,2,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,2,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,3,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,3,2,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,3,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,1,0,0,1,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,4,0,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,1,0,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,1,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,3,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,3,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,0,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,2,1,0,1,0,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,1,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,0,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 8,
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,4,1,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "equity": -1.7683022,
+          "added": true,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "6017d9820245f0d9f287f5500a2dc217b5f71c72aebde12559dd97a865816e1c": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": false,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "current-cube-points",
+      "positionKey": "[\"2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8\",0,[2,1],\"move\",{\"value\":1,\"owner\":null},[0,0],0,{\"cube\":false,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": -1.67309737,
+          "cubeless": -1.67309737,
+          "probabilities": [
+            0.13588071,
+            0,
+            0,
+            0.72729677,
+            0.2175619
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 14,
+              "to": 12,
+              "die": 2
+            },
+            {
+              "from": 16,
+              "to": 15,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,3,2,0,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "15/13 17/16"
+        },
+        {
+          "equity": -1.67803502,
+          "cubeless": -1.67803502,
+          "probabilities": [
+            0.13549995,
+            0,
+            0,
+            0.72663724,
+            0.2223977
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 14,
+              "to": 12,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,4,1,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "15/13 14/13"
+        },
+        {
+          "equity": -1.69583428,
+          "cubeless": -1.69583428,
+          "probabilities": [
+            0.13872522,
+            0,
+            0,
+            0.72169423,
+            0.25159046
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 16,
+              "to": 14,
+              "die": 2
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,3,1,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "17/15 14/13"
+        },
+        {
+          "equity": -1.71806836,
+          "cubeless": -1.71806836,
+          "probabilities": [
+            0.13330549,
+            0,
+            0,
+            0.73487371,
+            0.24980569
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 15,
+              "to": 13,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,3,2,0,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "16/14 16/15"
+        },
+        {
+          "equity": -1.7198503,
+          "cubeless": -1.7198503,
+          "probabilities": [
+            0.13915968,
+            0,
+            0,
+            0.72404724,
+            0.27412254
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 16,
+              "to": 14,
+              "die": 2
+            },
+            {
+              "from": 15,
+              "to": 14,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,3,1,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "notation": "17/15 16/15"
+        },
+        {
+          "equity": -1.72559166,
+          "cubeless": -1.72559166,
+          "probabilities": [
+            0.11123985,
+            0,
+            0,
+            0.77613604,
+            0.17193533
+          ],
+          "mwc": null,
+          "steps": [
+            {
+              "from": 23,
+              "to": 21,
+              "die": 2
+            },
+            {
+              "from": 16,
+              "to": 15,
+              "die": 1
+            }
+          ],
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,0,-3,2,-4,1,0,0,0,8",
+          "notation": "24/22 17/16"
+        }
+      ],
+      "actual": {
+        "equity": -1.72559166,
+        "cubeless": -1.72559166,
+        "probabilities": [
+          0.11123985,
+          0,
+          0,
+          0.77613604,
+          0.17193533
+        ],
+        "mwc": null,
+        "steps": [
+          {
+            "from": 23,
+            "to": 21,
+            "die": 2
+          },
+          {
+            "from": 16,
+            "to": 15,
+            "die": 1
+          }
+        ],
+        "key": "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,0,-3,2,-4,1,0,0,0,8",
+        "notation": "24/22 17/16"
+      },
+      "error": 0.052494290000000055,
+      "screening": {
+        "finalists": 6,
+        "total": 44,
+        "excluded": [
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,2,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,3,0,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,2,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,1,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,2,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,1,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,2,1,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,3,0,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,2,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,2,2,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,4,1,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,1,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,2,1,1,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,2,2,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,2,1,3,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,2,1,3,0,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,2,2,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,3,1,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,3,2,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,3,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,1,0,0,1,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,4,0,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,1,0,2,2,1,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,1,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,1,0,1,2,3,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,3,0,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,3,1,1,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,0,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,1,2,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,1,2,1,0,1,0,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,1,1,0,0,0,-3,2,-4,1,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,3,1,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,2,2,3,0,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,0,3,1,2,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8",
+          "2,0,0,0,0,0,0,0,0,0,1,1,2,2,1,2,1,0,0,1,-3,0,-4,2,0,0,0,8"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 8,
+          "key": "2,0,0,0,0,0,0,0,0,0,0,2,4,1,0,2,1,0,0,0,-3,1,-4,2,0,0,0,8",
+          "equity": -1.7683022,
+          "added": true,
+          "reason": "expert-leader-retained"
+        }
+      }
+    },
+    "90ae1bd9fd3d739b8a339118e2ae254298aa81922193055cce74f7f1ff5a8ba8": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "normalized-match-equity",
+      "positionKey": "[\"-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0\",0,[3,1],\"move\",{\"value\":2,\"owner\":1},[2,4],7,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.19200075,
+          "cubeless": 0.26023132,
+          "probabilities": [
+            0.54923534,
+            0.17651816,
+            0.00794976,
+            0.11757156,
+            0.00539401
+          ],
+          "mwc": 0.36191696,
+          "steps": [
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,2,4,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "notation": "8/5 6/5"
+        },
+        {
+          "equity": 0.010835,
+          "cubeless": 0.07988206,
+          "probabilities": [
+            0.49591261,
+            0.14083286,
+            0.00597149,
+            0.13750774,
+            0.00634497
+          ],
+          "mwc": 0.33095664,
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "notation": "13/10 24/23"
+        }
+      ],
+      "actual": null,
+      "error": null,
+      "screening": {
+        "finalists": 2,
+        "total": 16,
+        "excluded": [
+          "-2,0,0,0,1,4,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,1,0,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,1,0,0,0,1,0,0,0,0",
+          "-2,0,0,0,1,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,1,0,0,0,0,0",
+          "-2,0,0,0,1,5,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "-2,0,0,0,0,5,1,2,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,1,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "-2,0,1,0,0,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "-2,0,0,1,0,5,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,1,0,0,0,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,1,0,1,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,1,0,0,4,1,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,1,5,1,1,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    },
+    "0ee3a88200f4018b7e50f78c220cd033d89840cfa15e8f03191ec60434584aeb": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "normalized-match-equity",
+      "positionKey": "[\"-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0\",0,[3,1],\"move\",{\"value\":2,\"owner\":1},[2,4],7,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.19200075,
+          "cubeless": 0.26023132,
+          "probabilities": [
+            0.54923534,
+            0.17651816,
+            0.00794976,
+            0.11757156,
+            0.00539401
+          ],
+          "mwc": 0.36191696,
+          "steps": [
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,2,4,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "notation": "8/5 6/5"
+        },
+        {
+          "equity": 0.010835,
+          "cubeless": 0.07988206,
+          "probabilities": [
+            0.49591261,
+            0.14083286,
+            0.00597149,
+            0.13750774,
+            0.00634497
+          ],
+          "mwc": 0.33095664,
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "notation": "13/10 24/23"
+        },
+        {
+          "equity": -0.01547865,
+          "cubeless": 0.0557303,
+          "probabilities": [
+            0.49256265,
+            0.12603596,
+            0.0048992,
+            0.13121676,
+            0.00522295
+          ],
+          "mwc": 0.32645977,
+          "steps": [
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            },
+            {
+              "from": 20,
+              "to": 19,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,1,0,0,0,1,0,0,0,0",
+          "notation": "24/21 21/20"
+        }
+      ],
+      "actual": {
+        "equity": -0.01547865,
+        "cubeless": 0.0557303,
+        "probabilities": [
+          0.49256265,
+          0.12603596,
+          0.0048992,
+          0.13121676,
+          0.00522295
+        ],
+        "mwc": 0.32645977,
+        "steps": [
+          {
+            "from": 23,
+            "to": 20,
+            "die": 3
+          },
+          {
+            "from": 20,
+            "to": 19,
+            "die": 1
+          }
+        ],
+        "key": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,1,0,0,0,1,0,0,0,0",
+        "notation": "24/21 21/20"
+      },
+      "error": 0.2074794,
+      "screening": {
+        "finalists": 3,
+        "total": 16,
+        "excluded": [
+          "-2,0,0,0,1,4,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,1,0,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,1,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,1,0,0,0,0,0",
+          "-2,0,0,0,1,5,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "-2,0,0,0,0,5,1,2,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,1,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "-2,0,1,0,0,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "-2,0,0,1,0,5,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,1,0,0,0,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,1,0,1,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,1,0,0,4,1,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,1,5,1,1,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    },
+    "b9377e7e56ecd55e94bccb73ba76215df5a145e0d3d8484cb131c910794a3b76": {
+      "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+      "settings": {
+        "name": "Research",
+        "plies": 4,
+        "cubeful": true,
+        "pruning": true,
+        "deterministic": true,
+        "noise": 0,
+        "finalists": 4,
+        "threshold": 0.04,
+        "screeningPolicy": "retain-expert-leader-v1"
+      },
+      "perspective": 0,
+      "units": "normalized-match-equity",
+      "positionKey": "[\"-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0\",0,[3,1],\"move\",{\"value\":2,\"owner\":1},[2,4],7,{\"cube\":true,\"jacoby\":false,\"automaticDoubles\":0,\"immediateRedoubles\":0},false,false,null]",
+      "candidates": [
+        {
+          "equity": 0.19200075,
+          "cubeless": 0.26023132,
+          "probabilities": [
+            0.54923534,
+            0.17651816,
+            0.00794976,
+            0.11757156,
+            0.00539401
+          ],
+          "mwc": 0.36191696,
+          "steps": [
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,2,4,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "notation": "8/5 6/5"
+        },
+        {
+          "equity": 0.010835,
+          "cubeless": 0.07988206,
+          "probabilities": [
+            0.49591261,
+            0.14083286,
+            0.00597149,
+            0.13750774,
+            0.00634497
+          ],
+          "mwc": 0.33095664,
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "notation": "13/10 24/23"
+        },
+        {
+          "equity": -0.02761757,
+          "cubeless": 0.04373112,
+          "probabilities": [
+            0.48881364,
+            0.12412519,
+            0.00452405,
+            0.1324593,
+            0.00502137
+          ],
+          "mwc": 0.32438529,
+          "steps": [
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            }
+          ],
+          "key": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,1,0,0,0,0,0",
+          "notation": "24/21 24/23"
+        }
+      ],
+      "actual": {
+        "equity": -0.02761757,
+        "cubeless": 0.04373112,
+        "probabilities": [
+          0.48881364,
+          0.12412519,
+          0.00452405,
+          0.1324593,
+          0.00502137
+        ],
+        "mwc": 0.32438529,
+        "steps": [
+          {
+            "from": 23,
+            "to": 20,
+            "die": 3
+          },
+          {
+            "from": 23,
+            "to": 22,
+            "die": 1
+          }
+        ],
+        "key": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,1,0,0,0,0,0",
+        "notation": "24/21 24/23"
+      },
+      "error": 0.21961832,
+      "screening": {
+        "finalists": 3,
+        "total": 16,
+        "excluded": [
+          "-2,0,0,0,1,4,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,1,0,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,1,0,0,0,1,0,0,0,0",
+          "-2,0,0,0,1,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "-2,0,0,0,1,5,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "-2,0,0,0,0,5,1,2,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,0,5,1,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "-2,0,1,0,0,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "-2,0,0,1,0,5,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,1,0,0,0,4,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,1,0,1,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,1,0,0,4,1,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "-2,0,0,0,1,5,1,1,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+        ],
+        "retainedLeader": {
+          "plies": 3,
+          "candidates": 2,
+          "key": null,
+          "added": false,
+          "reason": "all-expert-candidates-retained"
+        }
+      }
+    }
+  }
+}

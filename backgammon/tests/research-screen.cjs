@@ -2,13 +2,13 @@ const assert = require('node:assert/strict');
 
 // Published worker/native assets; this reproduces the omitted-leader defect
 // independently of the study's baseline Git checkout or mocked score table.
-module.exports = async function researchScreen(browser, base, output, browserName) {
+module.exports = async function researchScreen(browser, base, output, browserName, { backend = null } = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block' });
   const page = await context.newPage(), errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
     await page.goto(base + '/backgammon/');
-    const rows = await page.evaluate(async () => {
+    const rows = await page.evaluate(async backend => {
       const { EngineClient } = await import('/backgammon/engine/client.mjs');
       const { initialState, legalTurns } = await import('/backgammon/core/rules.mjs');
       const { PRESETS } = await import('/backgammon/engine/metadata.mjs');
@@ -19,9 +19,23 @@ module.exports = async function researchScreen(browser, base, output, browserNam
         { id: 'owned-cube-match', state: initialState({ phase: 'move', dice: [3, 1],
           matchLength: 7, scores: [2, 4], cube: { value: 2, owner: 1 } }) }];
       const rows = [], check = (condition, message) => { if (!condition) throw Error(message); };
+      const create = () => new EngineClient({ openingBook: null,
+        ...(backend ? { workerFactory: () => new Worker('/backgammon/engine/worker.mjs?backend=' + backend,
+          { type: 'module' }) } : {}) });
+      const difference = (a, b) => {
+        check(a.key === b.key, 'different legal result');
+        let maximum = 0;
+        for (const field of ['equity', 'cubeless', 'mwc']) {
+          if (a[field] == null || b[field] == null) check(a[field] === b[field], 'match units changed');
+          else maximum = Math.max(maximum, Math.abs(a[field] - b[field]));
+        }
+        check(a.probabilities.length === b.probabilities.length, 'probability schema changed');
+        a.probabilities.forEach((v, i) => { maximum = Math.max(maximum, Math.abs(v - b.probabilities[i])); });
+        return maximum;
+      };
       for (const { id, state } of cases) {
-        const engine = new EngineClient({ openingBook: null });
-        const cold = new EngineClient({ openingBook: null });
+        const engine = create(), cold = create();
+        let direct;
         try {
           const deep = await engine.analyze(state, { preset: 'deep' });
           const oldPool = deep.candidates.filter((c, i) => i < 2 ||
@@ -44,11 +58,7 @@ module.exports = async function researchScreen(browser, base, output, browserNam
           for (const c of result.candidates) {
             const f = fresh.candidates.find(r => r.key === c.key);
             check(f, 'cold finalist missing');
-            for (const field of ['equity', 'cubeless', 'mwc']) {
-              if (c[field] == null || f[field] == null) check(c[field] === f[field], 'match units changed');
-              else maxDifference = Math.max(maxDifference, Math.abs(c[field] - f[field]));
-            }
-            c.probabilities.forEach((v, i) => { maxDifference = Math.max(maxDifference, Math.abs(v - f.probabilities[i])); });
+            maxDifference = Math.max(maxDifference, difference(c, f));
           }
           check(maxDifference < .00001, 'cache changed values ' + maxDifference);
           const submitted = legalTurns(state).find(t => !result.candidates.some(c => c.key === t.key));
@@ -57,12 +67,38 @@ module.exports = async function researchScreen(browser, base, output, browserNam
           check(grade.actual.key === submitted.key, 'unlisted submitted move was not graded');
           check(Math.abs(grade.error - (grade.candidates[0].equity - grade.actual.equity)) < 1e-9, 'inconsistent grading depth');
           check(result.candidates.every(c => grade.candidates.some(r => r.key === c.key)), 'grade lost a retained candidate');
-          rows.push({ id, gain, maxDifference, finalists: result.candidates.length,
+          for (const c of result.candidates)
+            check(difference(c, grade.candidates.find(r => r.key === c.key)) === 0, 'completed finalist was changed');
+
+          // No hint, progressive search, client cache, or warm native cache on
+          // this arm. Compare the whole grade against an independent worker.
+          cold.destroy(); direct = create();
+          const independent = await direct.analyze(state, { preset: 'research', submitted: submitted.steps });
+          check(independent.candidates.length === grade.candidates.length, 'grade coverage changed');
+          check(independent.candidates[0].key === grade.candidates[0].key, 'grade leader changed');
+          check(independent.units === grade.units && independent.perspective === grade.perspective, 'grade context changed');
+          let gradeDifference = Math.max(difference(grade.actual, independent.actual), Math.abs(grade.error - independent.error));
+          for (const c of grade.candidates) {
+            const other = independent.candidates.find(r => r.key === c.key);
+            check(other, 'direct grade omitted a finalist');
+            gradeDifference = Math.max(gradeDifference, difference(c, other));
+          }
+          check(gradeDifference < .00001, 'warm grading differs from direct grading ' + gradeDifference);
+
+          // Force dispatch to the evaluator instead of satisfying this request
+          // from the EngineClient result cache.
+          engine.cache.clear();
+          const repeated = await engine.analyze(state, { preset: 'research' });
+          check(repeated.candidates.length === result.candidates.length, 'submitted move leaked into hint');
+          for (const c of result.candidates)
+            check(difference(c, repeated.candidates.find(r => r.key === c.key)) === 0, 'hint changed after arbitrary grade');
+          rows.push({ id, gain, maxDifference, gradeDifference, finalists: result.candidates.length,
+            backend: grade.backend,
             actual: grade.actual.notation, engine: result.engine, settings: result.settings });
-        } finally { engine.destroy(); cold.destroy(); }
+        } finally { engine.destroy(); cold.destroy(); direct?.destroy(); }
       }
       return rows;
-    });
+    }, backend);
     if (output) {
       const url = await page.evaluate(async () => {
         const { shareURL } = await import('/backgammon/core/xgid.mjs');
