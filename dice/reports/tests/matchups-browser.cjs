@@ -253,4 +253,5 @@ module.exports = async function checkMatchups(page, base, screenshotDir) {
   }
   await page.setViewportSize({ width: 1440, height: 960 });
   await require("./matchup-play-browser.cjs")(page, screenshotDir);
+  await require("./cycles-browser.cjs")(page, base, screenshotDir);
 };

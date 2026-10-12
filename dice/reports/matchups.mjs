@@ -1,5 +1,6 @@
-// All scoring rules return integers or half-integers. Comparisons use doubled
-// scores, so every win/tie/loss count is exact (including half-point handicaps).
+import { CYCLE_RULES } from "./cycle-rules.mjs";
+
+// Quarter-point integer comparisons also cover cycle rules and half-point handicaps.
 export const ROLLS = Object.freeze(
   Array.from({ length: 36 }, (_, i) =>
     Object.freeze([Math.floor(i / 6) + 1, (i % 6) + 1]),
@@ -191,7 +192,8 @@ export const SCORE_RULES = [
   },
 ];
 
-const byId = new Map(SCORE_RULES.map((rule) => [rule.id, rule]));
+export const PLAY_RULES = [...SCORE_RULES, ...CYCLE_RULES];
+const byId = new Map(PLAY_RULES.map((rule) => [rule.id, rule]));
 export function scoreRule(id) {
   const rule = byId.get(id);
   if (!rule) throw new RangeError(`Unknown score rule: ${id}`);
@@ -225,9 +227,9 @@ export function compareRules(aId, bId, handicap = 0) {
   for (const left of a)
     for (const right of b) {
       const key =
-        left.score * 2 > right.score * 2
+        left.score * 4 > right.score * 4
           ? "wins"
-          : left.score * 2 === right.score * 2
+          : left.score * 4 === right.score * 4
             ? "ties"
             : "losses";
       result[key] += left.count * right.count;
@@ -244,9 +246,9 @@ export function conditionalRolls(aId, bId, handicap = 0) {
     const result = { a, b, score, wins: 0, ties: 0, losses: 0, total: 36 };
     for (const other of opponents) {
       const key =
-        score * 2 > other.score * 2
+        score * 4 > other.score * 4
           ? "wins"
-          : score * 2 === other.score * 2
+          : score * 4 === other.score * 4
             ? "ties"
             : "losses";
       result[key] += other.count;
@@ -267,7 +269,7 @@ export function marginDistribution(aId, bId, handicap = 0) {
   const counts = new Map();
   for (const a of scoreDistribution(aId, handicap))
     for (const b of scoreDistribution(bId)) {
-      const margin = (2 * a.score - 2 * b.score) / 2;
+      const margin = (4 * a.score - 4 * b.score) / 4;
       counts.set(margin, (counts.get(margin) || 0) + a.count * b.count);
     }
   return [...counts]

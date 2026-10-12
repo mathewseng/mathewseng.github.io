@@ -1,5 +1,6 @@
 import {
   SCORE_RULES,
+  PLAY_RULES,
   FEATURED_MATCHUPS,
   scoreRule,
   scoreDistribution,
@@ -13,6 +14,7 @@ import {
   ruleAgreement,
   fraction,
 } from "./matchups.mjs";
+import { createCycles } from "./cycles.js";
 import { createMatchupPlay } from "./matchup-play.js";
 
 const pct = (count, total = 1296) => `${((100 * count) / total).toFixed(2)}%`;
@@ -60,6 +62,11 @@ export function createMatchups(root) {
   const options = SCORE_RULES.map(
     (rule) => `<option value="${rule.id}">${rule.name}</option>`,
   ).join("");
+  const playOptions = `<optgroup label="Standard rules">${options}</optgroup><optgroup label="Fixed cycle rules">${PLAY_RULES.slice(
+    SCORE_RULES.length,
+  )
+    .map((rule) => `<option value="${rule.id}">${rule.name}</option>`)
+    .join("")}</optgroup>`;
   root.innerHTML = `
     <div class="match-shell" data-panel="compare">
       <header class="match-heading">
@@ -69,18 +76,20 @@ export function createMatchups(root) {
       </header>
       <nav class="match-tabs" aria-label="Probability reports">
         <button data-match-tab="compare" aria-pressed="true">Compare rules</button>
+        <button data-match-tab="cycles" aria-pressed="false">3-rule cycles</button>
         <button data-match-tab="play" aria-pressed="false">Play matchup</button>
         <button data-match-tab="catalogue" aria-pressed="false">All ${catalogue.length.toLocaleString("en-US")} matchups</button>
         <button data-match-tab="events" aria-pressed="false">Two-dice odds</button>
         <button data-match-tab="four" aria-pressed="false">Four-dice odds</button>
       </nav>
-      <section data-match-panel="play" aria-label="Play the selected matchup" hidden><div id="match-play"></div></section>
+      <section data-match-panel="cycles" aria-label="Simple three-rule cycles" hidden><div id="match-cycles"></div></section>
+      <section data-match-panel="play" aria-label="Play the selected matchup" hidden><div id="cycle-play-context" class="cycle-play-context" hidden><button id="cycle-play-back" class="match-text-button">← Back to cycle</button><span id="cycle-play-label"></span></div><div id="match-play"></div></section>
       <section data-match-panel="compare" aria-label="Compare scoring rules">
-        <div class="match-section-head"><span class="hint">${SCORE_RULES.length} scoring rules · choose different rules for A and B</span><button id="match-jump-featured" class="match-text-button">Browse ${featured.length} featured matchups ↓</button></div>
+        <div class="match-section-head"><span class="hint">${SCORE_RULES.length} standard rules + ${PLAY_RULES.length - SCORE_RULES.length} fixed cycle rules</span><button id="match-jump-featured" class="match-text-button">Browse ${featured.length} featured matchups ↓</button></div>
         <div class="match-controls">
-          <label>Side A<select id="match-a">${options}</select><small id="match-a-formula"></small></label>
+          <label>Side A<select id="match-a">${playOptions}</select><small id="match-a-formula"></small></label>
           <button id="match-swap" class="quiet-button" aria-label="Swap sides and reverse the handicap">⇄ <span>Swap</span></button>
-          <label>Side B<select id="match-b">${options}</select><small id="match-b-formula"></small></label>
+          <label>Side B<select id="match-b">${playOptions}</select><small id="match-b-formula"></small></label>
           <label class="match-handicap-label">Add to A’s score<input id="match-handicap" type="number" min="-36" max="36" step="0.5" value="0" aria-describedby="match-handicap-help" /><small id="match-handicap-help">−36 to +36, in half-points</small></label>
           <button id="match-reset" class="quiet-button">Reset</button>
         </div>
@@ -158,6 +167,7 @@ export function createMatchups(root) {
     selectedRoll = 20;
   const matchupPlay = createMatchupPlay($("match-play"), {
     onChange(nextA, nextB, nextHandicap) {
+      $("cycle-play-context").hidden = true;
       a = nextA;
       b = nextB;
       handicap = nextHandicap;
@@ -166,6 +176,27 @@ export function createMatchups(root) {
     onCompare() {
       panel("compare");
     },
+  });
+
+  const cycles = createCycles($("match-cycles"), {
+    onPlay(cycle, edgeIndex) {
+      const edge = cycle.edges[edgeIndex];
+      a = edge.a;
+      b = edge.b;
+      handicap = 0;
+      render();
+      $("cycle-play-label").textContent =
+        `${cycle.title} · ${"ABC"[edgeIndex]} plays as Side A; ${"ABC"[(edgeIndex + 1) % 3]} as Side B`;
+      $("cycle-play-context").hidden = false;
+      panel("play");
+      root.scrollTop = 0;
+      $("match-play-roll").focus({ preventScroll: true });
+    },
+  });
+  $("cycle-play-back").addEventListener("click", () => {
+    panel("cycles");
+    root.scrollTop = 0;
+    cycles.focus();
   });
 
   function panel(name) {
@@ -428,6 +459,7 @@ export function createMatchups(root) {
     if (tab) panel(tab.dataset.matchTab);
     const picked = event.target.closest("[data-match-a]");
     if (picked) {
+      $("cycle-play-context").hidden = true;
       a = picked.dataset.matchA;
       b = picked.dataset.matchB;
       handicap = 0;
@@ -450,12 +482,14 @@ export function createMatchups(root) {
   });
   ["match-a", "match-b"].forEach((id) =>
     $(id).addEventListener("change", () => {
+      $("cycle-play-context").hidden = true;
       a = $("match-a").value;
       b = $("match-b").value;
       render();
     }),
   );
   $("match-handicap").addEventListener("input", () => {
+    $("cycle-play-context").hidden = true;
     const input = $("match-handicap");
     const valid = input.value !== "" && input.checkValidity();
     $("match-error").hidden = valid;
@@ -468,23 +502,27 @@ export function createMatchups(root) {
     }
   });
   $("match-handicap-slider").addEventListener("input", () => {
+    $("cycle-play-context").hidden = true;
     handicap = Number($("match-handicap-slider").value);
     $("match-error").hidden = true;
     render();
   });
   $("match-swap").addEventListener("click", () => {
+    $("cycle-play-context").hidden = true;
     [a, b] = [b, a];
     handicap = -handicap;
     $("match-error").hidden = true;
     render();
   });
   $("match-reset").addEventListener("click", () => {
+    $("cycle-play-context").hidden = true;
     a = b = "sum";
     handicap = 0;
     $("match-error").hidden = true;
     render();
   });
   $("match-balance").addEventListener("click", () => {
+    $("cycle-play-context").hidden = true;
     handicap = Number($("match-balance").dataset.handicap);
     render();
   });
@@ -565,13 +603,21 @@ export function createMatchups(root) {
     "match-four-status",
     "match-four-events",
   );
-  return { leave: () => matchupPlay.finish() };
+  if (location.hash === "#cycles") panel("cycles");
+  return {
+    leave: () => matchupPlay.finish(),
+    openCycles: () => panel("cycles"),
+  };
 }
 
 function marginChart(rows) {
   const min = Math.min(0, rows[0].margin),
     max = Math.max(0, rows.at(-1).margin);
-  const step = rows.some((row) => !Number.isInteger(row.margin)) ? 0.5 : 1;
+  const step = rows.some((row) => !Number.isInteger(row.margin * 2))
+    ? 0.25
+    : rows.some((row) => !Number.isInteger(row.margin))
+      ? 0.5
+      : 1;
   const slots = (max - min) / step + 1,
     width = 532 / slots;
   const peak = Math.max(...rows.map((row) => row.count));
@@ -598,9 +644,12 @@ function distributionChart(left, right, label) {
     min = Math.min(...all.map((row) => row.score)),
     max = Math.max(...all.map((row) => row.score));
   const peak = Math.max(...all.map((row) => row.count)),
-    halfSteps = all.some((row) => !Number.isInteger(row.score));
-  const step = halfSteps ? 0.5 : 1,
-    slots = Math.round((max - min) / step) + 1;
+    step = all.some((row) => !Number.isInteger(row.score * 2))
+      ? 0.25
+      : all.some((row) => !Number.isInteger(row.score))
+        ? 0.5
+        : 1;
+  const slots = Math.round((max - min) / step) + 1;
   const width = 532 / slots,
     x = (score) => 42 + ((score - min) / step) * width + width / 2,
     y = (count) => 156 - (count / peak) * 124;

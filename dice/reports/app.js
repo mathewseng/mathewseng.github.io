@@ -206,9 +206,10 @@ document
   .forEach((button) =>
     button.addEventListener("click", () => $(button.dataset.close).close()),
   );
-setView(location.hash === "#matchups" ? "matchups" : "explore");
+setView(["#matchups", "#cycles"].includes(location.hash) ? "matchups" : "explore");
 window.addEventListener("hashchange", () => {
-  if (location.hash === "#matchups") setView("matchups");
+  if (["#matchups", "#cycles"].includes(location.hash)) setView("matchups");
+  if (location.hash === "#cycles") matchups.openCycles();
 });
 matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
   if (!event.matches && document.documentElement.dataset.view === "analysis")

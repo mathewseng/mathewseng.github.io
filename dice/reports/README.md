@@ -5,6 +5,8 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 - `outcomes.mjs`: the four game definitions, hand classification, and exact ordered-roll counts.
 - `matchups.mjs`: 32 two-dice scoring rules, all 1,024 ordered matchups, score margins, scoring-rule agreement, conditional roll probabilities, half-point handicaps, 123 one-pair events, and 29 four-dice events.
 - `matchups.js`, `matchups.css`: Matchups workspace with exact win/tie/loss reports, score and margin distributions, handicap curves and tables, conditional heatmap, searchable catalogue, selectable win/tie/loss matrix, scoring-agreement heatmap, and CSV export.
+- `cycles-data.mjs`, `cycle-rules.mjs`, `cycles.mjs`: 36 simple three-rule cycles, fixed score transforms, and exact edge probabilities.
+- `cycles.js`, `cycles.css`: searchable cycle browser, triangle diagrams, exact fractions/counts, filters, and play links for every edge.
 - `matchup-game.mjs`: immutable matchup rules, unbiased four-dice sampling, exact score comparison, settle-once session counts, and recent rolls.
 - `matchup-play.js`, `matchup-play.css`: animated two-pair play, independent counts per matchup/handicap, observed versus exact probabilities, and session controls.
 - `sum-rules.mjs`: finite sum-rule catalogue, exact rule evaluation, readable descriptions, and grouped sum paytables.
@@ -25,7 +27,7 @@ Published at `/dice/reports/`; `/dice/reports` resolves to the same directory on
 
 ## Two-dice matchups
 
-Open **Matchups** or link directly to `/dice/reports/#matchups`. Each side rolls its own two independent fair six-sided dice. All 36 × 36 = 1,296 ordered four-dice outcomes are equally likely. Higher score wins; ties are counted separately. The average keeps half-points, and modulo means the remainder (sum mod 10 maps 10, 11, 12 to 0, 1, 2). Scores and comparisons use integer or half-integer values, with doubled comparisons; no simulation or floating-point tolerance decides outcomes.
+Open **Matchups** or link directly to `/dice/reports/#matchups`. Each side rolls its own two independent fair six-sided dice. All 36 × 36 = 1,296 ordered four-dice outcomes are equally likely. Higher score wins; ties are counted separately. The average keeps half-points, and modulo means the remainder (sum mod 10 maps 10, 11, 12 to 0, 1, 2). Scores include exact quarter-points for fixed cycle rules, with integer comparisons after multiplying by four; no simulation or floating-point tolerance decides outcomes.
 
 Compare Sum, Max, Min, Average, Product, Gap, Sum mod 10/7/6/12, 2 × max/min/gap, doubles +6, even/odd/prime sum +3, closeness to or distance from seven, first die, sum ±2, the median with a fixed 3, rounded averages (up/down), sum + max/min, product mod 10/6, sum capped at seven, doubles only, and doubles scoring zero. The 48 featured pairings start with the seven requested basic matchups. The searchable 1,024-row catalogue covers every ordered pairing of these 32 rules at zero added handicap. The overview matrix can show 12 core rules or all 32, with win, tie, or loss probabilities. This is a finite scoring-rule catalogue, not all possible dice games.
 
@@ -44,6 +46,16 @@ Select **Play this matchup** in the comparison or open **Play matchup**. Side A,
 The scoreboard shows A wins, ties, and A losses/B wins as counts and observed percentages next to their exact probabilities and reduced fractions. Observed percentages use settled rolls only; the exact reference always uses all 1,296 possible outcomes. No-roll percentages are shown as a dash. Two aligned bars compare observed and exact outcomes, and recent history retains the last 12 rolls with faces, scores, and results. On phones, the roll action stays docked while scrolling between dice and the scoreboard.
 
 Each ordered matchup and handicap has a separate in-memory session. Changing rules opens that session; returning restores its counts and most recent result. **Reset counts** clears only the current session. Reloading clears all sessions. Rolling locks rules, handicap, speed, and reset until both pairs settle. Leaving the play tab, leaving Matchups, or hiding the document finishes an in-flight roll once and cancels its animations. Repeated clicks cannot sample or count an additional roll while one is pending. Payout Play and its PnL remain separate.
+
+## Simple three-rule cycles
+
+Open **Matchups → 3-rule cycles**, or `/dice/reports/#cycles`. The collection has 36 examples using highest, lowest, sum, average, product, and a designated first die, small integer multipliers (up to three), and fixed offsets. The first examples include High → Sum −2.25 → Low +2.25, its whole-number and half-point alternatives, and High −1 → Low +1 → First die. Those two alternative versions are labeled as having the same odds; other proportional rule-family duplicates are removed.
+
+Each arrow means strictly more wins than losses. The diagram labels the unconditional win percentage; the accompanying table gives exact reduced win/tie/loss fractions and raw counts out of 1,296. Cycles with ties may have win probabilities below 50%; this is stated explicitly. Filters select no ties, all raw win probabilities above 50%, whole-number scores, or no first-die-only rules. Tiny edges are called out, and all offsets remain fixed against every opponent.
+
+**Play** on any edge loads the complete fixed rule on each side with zero extra handicap, retains the existing independent session counts and animations, and provides **Back to cycle**. A cycle’s vertex B or C may play as Side A; the context bar states this mapping. Fixed cycle rules also appear in a separate group in the Compare and Play selectors. The original 32-rule/1,024-matchup catalogue stays scoped to the core rules. Comparison charts support quarter-point score coordinates; the additional handicap control still uses half-points.
+
+`node dice/reports/scripts/find-cycles.mjs` reproduces the curated data from a finite quarter-point search; it does not search arbitrary scoring functions. `tests/cycles.test.mjs` independently evaluates every edge and every actual played outcome in quarter units, verifies the original fixtures, and audits the unmodified core catalogue as acyclic. `tests/cycles-browser.cjs` checks every play link, filters, quarter-point scores, return navigation, and desktop/phone layouts as part of the browser suite.
 
 ## Hand modes
 

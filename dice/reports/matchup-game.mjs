@@ -2,7 +2,7 @@ import { rollDice } from "./game.mjs";
 import { compareRules, scoreRule } from "./matchups.mjs";
 
 export function scoreMatchupRoll({ a, b, handicap = 0 }, roll) {
-  // Share the report's rule/handicap validation and exact half-point scoring.
+  // Share the report's rule/handicap validation and exact quarter-point scoring.
   compareRules(a, b, handicap);
   if (
     !Array.isArray(roll) ||
@@ -16,9 +16,9 @@ export function scoreMatchupRoll({ a, b, handicap = 0 }, roll) {
   const aScore = aBase + handicap;
   const bScore = scoreRule(b).score(...bRoll);
   const outcome =
-    aScore * 2 > bScore * 2
+    aScore * 4 > bScore * 4
       ? "wins"
-      : aScore * 2 < bScore * 2
+      : aScore * 4 < bScore * 4
         ? "losses"
         : "ties";
   return Object.freeze({ aRoll, bRoll, aBase, aScore, bScore, outcome });

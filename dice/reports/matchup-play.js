@@ -1,6 +1,6 @@
 import { createDiceView } from "./dice-view.js";
 import { createMatchupSession } from "./matchup-game.mjs";
-import { SCORE_RULES, scoreRule, fraction } from "./matchups.mjs";
+import { SCORE_RULES, PLAY_RULES, scoreRule, fraction } from "./matchups.mjs";
 
 const pct = (count, total) => `${((count / total) * 100).toFixed(2)}%`;
 const signed = (value) =>
@@ -15,11 +15,16 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
   const options = SCORE_RULES.map(
     (rule) => `<option value="${rule.id}">${rule.name}</option>`,
   ).join("");
+  const playOptions = `<optgroup label="Standard rules">${options}</optgroup><optgroup label="Fixed cycle rules">${PLAY_RULES.slice(
+    SCORE_RULES.length,
+  )
+    .map((rule) => `<option value="${rule.id}">${rule.name}</option>`)
+    .join("")}</optgroup>`;
   root.innerHTML = `
     <div class="match-section-head"><h3>Play a matchup</h3><button id="match-play-compare" class="match-text-button">Analyze this matchup ↗</button></div>
     <div class="match-play-controls">
-      <label>Side A<select id="match-play-a">${options}</select></label>
-      <label>Side B<select id="match-play-b">${options}</select></label>
+      <label>Side A<select id="match-play-a">${playOptions}</select></label>
+      <label>Side B<select id="match-play-b">${playOptions}</select></label>
       <label>Add to A<input id="match-play-handicap" type="number" min="-36" max="36" step="0.5" value="0" aria-describedby="match-play-handicap-help" /></label>
     </div>
     <p id="match-play-handicap-help" class="hint">Handicap: −36 to +36 in half-points. Higher score wins.</p>

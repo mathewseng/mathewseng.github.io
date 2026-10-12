@@ -1,0 +1,469 @@
+.match-tabs {
+  flex-wrap: wrap;
+}
+.cycle-intro {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 800px;
+  margin: 0 0 24px;
+}
+.cycle-layout {
+  display: grid;
+  grid-template-columns: 265px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.cycle-browser {
+  position: sticky;
+  top: 14px;
+  min-width: 0;
+}
+.cycle-browser label + label {
+  margin-top: 12px;
+}
+.cycle-list {
+  max-height: 48vh;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border-top: 1px solid var(--line);
+}
+.cycle-list button {
+  display: block;
+  width: 100%;
+  padding: 13px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  text-align: left;
+}
+.cycle-list button[aria-pressed="true"] {
+  border-left-color: var(--accent);
+  background: var(--raised);
+}
+.cycle-list button span {
+  font-size: 13px;
+  font-weight: 550;
+}
+.cycle-list button small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 5px 0;
+}
+.cycle-list button em {
+  color: var(--accent);
+  font-size: 10px;
+  font-style: normal;
+}
+.cycle-detail {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 17px;
+}
+.cycle-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+}
+.cycle-detail-heading .hint {
+  margin: 9px 0 0;
+  line-height: 1.6;
+}
+.cycle-detail-heading .hint strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+.cycle-paging {
+  display: flex;
+  gap: 5px;
+}
+.cycle-paging button {
+  min-width: 40px;
+}
+.cycle-visual {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(160px, 1fr);
+  align-items: center;
+  gap: 22px;
+  padding: 20px 0;
+}
+.cycle-visual figure {
+  margin: 0;
+  min-width: 0;
+}
+.cycle-diagram {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.cycle-diagram circle {
+  fill: var(--panel);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.cycle-diagram marker path {
+  fill: var(--positive);
+}
+.cycle-arc {
+  stroke: var(--positive);
+  stroke-width: 2;
+  fill: none;
+}
+.cycle-diagram text {
+  font-family: var(--mono);
+}
+.cycle-node-label {
+  font-size: 25px;
+  fill: var(--ink);
+}
+.cycle-percent {
+  font-size: 20px;
+  fill: var(--positive);
+  paint-order: stroke;
+  stroke: var(--page);
+  stroke-width: 9px;
+  stroke-linejoin: round;
+}
+.cycle-edge-caption {
+  font-size: 12px;
+  fill: var(--muted);
+  paint-order: stroke;
+  stroke: var(--page);
+  stroke-width: 7px;
+}
+.cycle-center {
+  font-size: 15px;
+  fill: var(--muted);
+}
+.cycle-edge {
+  transition: opacity 160ms;
+}
+.cycle-detail[data-highlight="0"] .cycle-edge:not([data-diagram-edge="0"]),
+.cycle-detail[data-highlight="1"] .cycle-edge:not([data-diagram-edge="1"]),
+.cycle-detail[data-highlight="2"] .cycle-edge:not([data-diagram-edge="2"]) {
+  opacity: 0.25;
+}
+.cycle-visual figcaption {
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.6;
+}
+.cycle-rules {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cycle-rules li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+.cycle-letter {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.cycle-rules strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 550;
+}
+.cycle-rules small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.cycle-note,
+.cycle-explanation {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.cycle-note {
+  border-top: 1px solid var(--line);
+  margin: 0;
+  padding: 14px 0;
+}
+.cycle-odds table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.cycle-odds caption {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: left;
+  padding: 4px 0 16px;
+}
+.cycle-odds th,
+.cycle-odds td {
+  text-align: left;
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.cycle-odds th:first-child {
+  padding-left: 0;
+}
+.cycle-odds thead th {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  padding-top: 0;
+}
+.cycle-odds tbody th {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.cycle-odds td > strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 550;
+  font-family: var(--mono);
+}
+.cycle-odds td > small {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.cycle-wins > strong {
+  color: var(--positive);
+}
+.cycle-ties > strong {
+  color: var(--accent);
+}
+.cycle-losses > strong {
+  color: var(--negative);
+}
+.cycle-odds button {
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.cycle-odds tbody tr:hover {
+  background: var(--panel);
+}
+.cycle-play-context {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+.cycle-play-context[hidden] {
+  display: none;
+}
+.cycle-play-context span {
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cycle-visual {
+    animation: cycle-appear 180ms ease-out;
+  }
+  @keyframes cycle-appear {
+    from {
+      opacity: 0.35;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+@media (max-width: 1150px) {
+  .cycle-layout {
+    grid-template-columns: 225px minmax(0, 1fr);
+    gap: 22px;
+  }
+  .cycle-visual {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .cycle-diagram {
+    max-width: 470px;
+    margin: auto;
+  }
+  .cycle-rules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .cycle-rules li {
+    flex: 1;
+    min-width: 125px;
+    margin: 10px 0;
+    gap: 8px;
+  }
+  .cycle-rules strong {
+    font-size: 13px;
+  }
+  .cycle-odds td > strong {
+    font-size: 14px;
+  }
+}
+@media (max-width: 760px) {
+  .match-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cycle-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .cycle-browser {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 12px;
+  }
+  .cycle-browser label + label {
+    margin-top: 0;
+  }
+  .cycle-browser #cycle-count {
+    grid-column: 1 / -1;
+  }
+  .cycle-list {
+    grid-column: 1 / -1;
+    max-height: 145px;
+  }
+  .cycle-list button {
+    padding: 10px;
+  }
+  .cycle-list button em {
+    display: none;
+  }
+  .cycle-list button small {
+    margin-bottom: 0;
+  }
+  .cycle-intro {
+    font-size: 12px;
+    margin-bottom: 18px;
+  }
+  .cycle-detail-heading .hint {
+    font-size: 11px;
+  }
+  .cycle-visual {
+    padding: 12px 0;
+  }
+  .cycle-rules {
+    display: block;
+  }
+  .cycle-rules li {
+    margin: 12px 0;
+  }
+  .cycle-rules small {
+    margin: 2px 0 0;
+  }
+  .cycle-rules strong {
+    font-size: 14px;
+  }
+  .cycle-odds th,
+  .cycle-odds td {
+    padding: 12px 3px;
+  }
+  .cycle-odds td > strong {
+    font-size: 12px;
+  }
+  .cycle-odds td > small,
+  .cycle-odds .match-exact {
+    font-size: 9px;
+  }
+  .cycle-odds button {
+    min-height: 42px;
+    padding: 6px;
+    font-size: 11px;
+  }
+  .cycle-odds button span {
+    display: none;
+  }
+  .cycle-odds tbody th {
+    font-size: 11px;
+  }
+  .cycle-play-context {
+    align-items: start;
+  }
+}
+/* Keep the diagram and all three play actions close together. */
+.cycle-diagram {
+  max-width: 390px;
+  margin: auto;
+}
+.cycle-odds {
+  overflow-x: auto;
+}
+@media (max-width: 360px) {
+  .cycle-odds td > small {
+    font-size: 8px;
+  }
+  .cycle-odds th,
+  .cycle-odds td {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  .cycle-odds button {
+    font-size: 10px;
+    padding: 5px;
+  }
+}
+.match-shell .cycle-mobile-picker,
+#cycle-filter-toggle {
+  display: none;
+}
+@media (max-width: 760px) {
+  .match-shell[data-panel="cycles"] .match-heading .hint {
+    display: none;
+  }
+  .match-shell[data-panel="cycles"] .match-heading h2 {
+    font-size: 22px;
+    margin-bottom: 0;
+  }
+  .cycle-browser {
+    display: block;
+  }
+  .match-shell .cycle-mobile-picker {
+    display: flex;
+  }
+  #cycle-filter-toggle {
+    display: block;
+    margin-top: 4px;
+  }
+  .cycle-filter-fields,
+  .cycle-list {
+    display: none;
+  }
+  .cycle-browser[data-expanded="true"] .cycle-filter-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    margin: 8px 0;
+  }
+  #cycle-count {
+    margin: 4px 0 0;
+  }
+}
+.cycle-odds table,
+.cycle-odds caption {
+  white-space: normal;
+}
+.cycle-odds td > strong,
+.cycle-odds td > small {
+  white-space: nowrap;
+}
