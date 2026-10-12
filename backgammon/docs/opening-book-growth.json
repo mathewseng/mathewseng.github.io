@@ -25,18 +25,29 @@
     "decisions": 6363
   },
   "published": {
-    "thirdBoards": 64,
+    "thirdBoards": 1298,
     "fourthBoards": 32,
-    "bytes": 2828720,
+    "bytes": 28440889,
+    "gzipBytes": 9658109,
+    "indexBytes": 521012,
+    "largestShardBytes": 23674,
     "policy": {
-      "thirdBoards": 64,
-      "fourthBoards": 32
+      "thirdBoards": "all-near-best",
+      "replyEquityWindow": 0.04,
+      "fourthBoards": "preserve"
     },
-    "selection": "Fair dice, best-ranked book moves, deduplicated board probability; lexical tie break. Fourth-turn ranking is conditional on the selected third-turn branches.",
-    "thirdMass": 0.277777777777778,
-    "fourthMass": 0.02427983539094649,
+    "selection": "Every evaluated reply within 0.040 equity after every opening within 0.040 equity; deduplicated boards, all 21 rolls. Previously published fourth-turn coverage retained.",
     "generator": "backgammon/scripts/build-continuation-book.cjs",
-    "signature": "8c90f33692af90fa1dd88040cdb2ba831b197f2421e6234a4d3c64e80ac6a8e8",
-    "builtAt": "2026-10-11T23:53:19.241Z"
+    "signature": "9bdf5d11224277aa117d178826d55b0f30fb0e9976ef9ae09b2afb00ab0723bd",
+    "coverageSignature": "a96ed2f2c6a679ffb96978e676ce2cc4a6e273f44970f8d9062d06790cdb43db",
+    "builtAt": "2026-10-12T01:45:31.289Z",
+    "decisions": 27930,
+    "reused": 3320,
+    "seeded": 0,
+    "workers": 10,
+    "computedThisRun": 24610,
+    "elapsedSeconds": 5006.421,
+    "initialMissing": 24610,
+    "remaining": 0
   }
 }

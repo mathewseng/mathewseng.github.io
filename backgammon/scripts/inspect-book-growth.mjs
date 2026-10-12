@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // No engine work: count third-turn positions already implied by the reply book.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { boardKey } from '../core/rules.mjs';
 import { nextBoard, rowSteps, stateForBoard, thirdBranches } from './book-branches.mjs';
 const dir = new URL('../engine/opening-book-data/', import.meta.url);
@@ -24,5 +25,8 @@ console.log(JSON.stringify({ scope: 'All 34 near-best openings, then replies wit
   published: { thirdBoards: Object.values(index.continuations || {}).filter(r=>r.turn===3).length,
     fourthBoards: Object.values(index.continuations || {}).filter(r=>r.turn===4).length,
     bytes: readdirSync(dir).reduce((n,f)=>n+statSync(new URL(f,dir)).size,0),
+    gzipBytes: readdirSync(dir).reduce((n,f)=>n+gzipSync(readFileSync(new URL(f,dir))).length,0),
+    indexBytes: statSync(new URL('index.json',dir)).size,
+    largestShardBytes: Math.max(...readdirSync(dir).filter(f=>f!=='index.json').map(f=>statSync(new URL(f,dir)).size)),
     ...index.continuationBuild },
 }, null, 2));

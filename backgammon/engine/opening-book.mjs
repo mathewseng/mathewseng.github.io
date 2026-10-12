@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { assertState, initialState, boardKey, positionKey, commitTurn, legalPaths, notation } from '../core/rules.mjs';
 import { ENGINE_VERSION } from './metadata.mjs';
-export const BOOK_ID = 'jacoby-3ply-v2';
+export const BOOK_ID = 'jacoby-3ply-v3';
 const START_STATE = initialState({ matchLength: 0 });
 const START = boardKey(START_STATE);
 const BASE = new URL('./opening-book-data/', import.meta.url);

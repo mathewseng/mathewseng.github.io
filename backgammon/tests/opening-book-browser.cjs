@@ -23,17 +23,20 @@ const server=http.createServer((req,res)=>{let url=new URL(req.url,'http://local
      return {bookId:idx.id,firstLookupMs,n:samples.length,medianMs:sorted[Math.floor(sorted.length/2)],p95Ms:sorted[Math.floor(sorted.length*.95)],maxMs:sorted.at(-1),samples};
     }finally{client.destroy();}
    });
-   assert.equal(measured.n,2745);
+   assert.equal(measured.n,28659);
    const native=await page.evaluate(async()=>{
     const {EngineClient}=await import('/backgammon/engine/client.mjs'),{initialState}=await import('/backgammon/core/rules.mjs');
     const {boardKey}=await import('/backgammon/core/rules.mjs');
     const later=turn=>bookCases.find(s=>bookIndex.continuations[boardKey(s)]?.turn===turn);
-    const client=new EngineClient(),rows=[],fixtures=[bookCases[1],bookCases[8],bookCases[14],bookCases[25],bookCases[35],bookCases[728],later(3),{...later(3),dice:[6,6]},later(4),{...later(4),dice:[4,2]}];
+    const third=bookCases.filter(s=>bookIndex.continuations[boardKey(s)]?.turn===3);
+    const sampleThird=[third[Math.floor(third.length*.25)],third[Math.floor(third.length*.5)],third[Math.floor(third.length*.75)],third.at(-1)];
+    const client=new EngineClient(),rows=[],fixtures=[bookCases[1],bookCases[8],bookCases[14],bookCases[25],bookCases[35],bookCases[728],later(3),{...later(3),dice:[6,6]},later(4),{...later(4),dice:[4,2]},...sampleThird];
     const mirror=s=>({...s,turn:1-s.turn,points:[...s.points].reverse().map(n=>-n),bar:[...s.bar].reverse(),off:[...s.off].reverse()});
     try{
      for(let i=0;i<fixtures.length;i++){
       const source={...(i%2?mirror(fixtures[i]):fixtures[i]),cube:{value:[1,2,4,64,1024][i%5],owner:null}};
       const book=await client.analyze(source,{preset:'expert'}),chosen=book.candidates[0],live=await client.analyze(source,{preset:'expert',submitted:chosen.steps,useBook:false});
+      if(live.book||live.settings.plies!==3||!client.worker)throw Error('Native cross-check did not run live 3-ply WASM');
       const pairs=[[chosen.equity,live.actual.equity],[chosen.cubeless,live.actual.cubeless],...chosen.probabilities.map((p,j)=>[p,live.actual.probabilities[j]])];
       const difference=Math.max(...pairs.map(([a,b])=>Math.abs(a-b)));
       if(difference>1e-5)throw Error('Book/native mismatch '+difference);
@@ -70,11 +73,18 @@ const server=http.createServer((req,res)=>{let url=new URL(req.url,'http://local
     return id;
    },later[0]);
    await page.goto(base+'/backgammon/play/#resume='+id);
-   await page.waitForFunction(async()=>{
-    const st=await import('/backgammon/core/storage.mjs'),work=await st.get('work','play');
-    return work?.game?.events.some(e=>e.action.type==='move'&&e.evaluation?.result?.book);
-   });
-   const played=await page.evaluate(async()=>{const st=await import('/backgammon/core/storage.mjs');const work=await st.get('work','play');return work.game.events.find(e=>e.action.type==='move').evaluation.result;});
+   // waitForFunction treats an async predicate's Promise as truthy before its
+   // IndexedDB result is available. Await each read and keep the matching event.
+   let played;
+   const until=Date.now()+30000;
+   while(!played&&Date.now()<until){
+    played=await page.evaluate(async id=>{
+     const st=await import('/backgammon/core/storage.mjs'),work=await st.get('work','play');
+     return work?.game?.id===id&&work.game.events.find(e=>e.action.type==='move'&&e.evaluation?.result?.book)?.evaluation.result;
+    },id);
+    if(!played)await page.waitForTimeout(30);
+   }
+   assert.ok(played,'Bot did not commit a book move within 30 seconds');
    assert.equal(played.book.stage,'third-turn');assert.equal(played.settings.plies,3);
    await page.screenshot({path:`${out}/${name}-play-390.png`,fullPage:true,animations:'disabled'});
    if(name==='chromium') {
@@ -83,17 +93,24 @@ const server=http.createServer((req,res)=>{let url=new URL(req.url,'http://local
      await tab.goto(base+'/backgammon/');
      await tab.evaluate(async()=>{await navigator.serviceWorker.register('/backgammon/sw.js',{scope:'/backgammon/'});await navigator.serviceWorker.ready;});
      await tab.reload();await tab.waitForFunction(()=>!!navigator.serviceWorker.controller);
-     const warm=await tab.evaluate(async reply=>{
-      const {EngineClient}=await import('/backgammon/engine/client.mjs'),{initialState,commitTurn}=await import('/backgammon/core/rules.mjs');
+     const warm=await tab.evaluate(async positions=>{
+      const {EngineClient}=await import('/backgammon/engine/client.mjs');
       const e=new EngineClient({workerFactory:()=>{throw Error('Offline book should not load WASM');}});
-      try {const answer=await e.analyze(reply,{preset:'auto'});
-       if(answer.book.stage!=='fourth-turn')throw Error('Missing fourth-turn offline entry');
-       return {reply,key:answer.candidates[0].key};
+      try {const entries=[];for(const [i,state] of positions.entries()){
+       const answer=await e.analyze(state,{preset:'auto'});
+       if(answer.book.stage!==['third-turn','fourth-turn'][i])throw Error('Missing offline entry');
+       entries.push({state,key:answer.candidates[0].key});
+      }return entries;
       }finally{e.destroy();}
-     },later[1]);
+     },later);
      await offline.setOffline(true);await tab.reload();
-     const key=await tab.evaluate(async s=>{const {EngineClient}=await import('/backgammon/engine/client.mjs');const e=new EngineClient({workerFactory:()=>{throw Error('Offline book should not load WASM');}});try{return (await e.analyze(s,{preset:'auto'})).candidates[0].key;}finally{e.destroy();}},warm.reply);
-     assert.equal(key,warm.key);
+     const keys=await tab.evaluate(async entries=>{
+      const {EngineClient}=await import('/backgammon/engine/client.mjs');
+      const e=new EngineClient({workerFactory:()=>{throw Error('Offline book should not load WASM');}});
+      try {const keys=[];for(const entry of entries)keys.push((await e.analyze(entry.state,{preset:'auto'})).candidates[0].key);return keys;}
+      finally{e.destroy();}
+     },warm);
+     assert.deepEqual(keys,warm.map(entry=>entry.key));
     } finally {await offline.close();}
    }
    assert.deepEqual(errors,[]);report.browsers.push({name,version:browser.version(),...measured,native});console.log(name,JSON.stringify({...measured,samples:undefined,native}));

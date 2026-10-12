@@ -21,6 +21,12 @@ module.exports = async function keyboardUX(
           await import("/backgammon/core/storage.mjs")
         ).get("work", "play"),
     );
+  // Persistence can finish before the commit's finally block redraws controls.
+  // Match what a user can operate, rather than racing the IndexedDB write.
+  const ready = (selector) => page.waitForFunction(selector => {
+    const control = document.querySelector(selector);
+    return control && !control.disabled && !control.hidden;
+  }, selector);
   const wait = async (predicate) => {
     const until = Date.now() + 15000;
     while (Date.now() < until) {
@@ -34,7 +40,7 @@ module.exports = async function keyboardUX(
           saved: await saved(),
           errors,
           ui: await page.evaluate(() => ({
-            focus: document.activeElement?.outerHTML,
+            focus: { tag: document.activeElement?.tagName, id: document.activeElement?.id },
             message: document.querySelector("#message")?.textContent,
             selected:
               document.querySelector(".point.selected")?.dataset.point,
@@ -116,16 +122,20 @@ module.exports = async function keyboardUX(
     await page.keyboard.press("1");
     await page.keyboard.press("e");
     await wait((s) => s.draft.length === 2);
+    await ready("#confirm");
     await page.keyboard.press("Enter");
     await wait(
       (s) => s.game.state.phase === "roll" && s.game.state.turn === 1,
     );
+    await ready("#double-cube");
     await page.keyboard.press("c");
     await wait((s) => s.game.state.phase === "double");
+    await ready("#take-cube");
     await page.keyboard.press("t");
     await wait(
       (s) => s.game.state.phase === "roll" && s.game.state.cube.value === 2,
     );
+    await ready("#roll");
     await page.keyboard.press("d");
     assert.equal((await saved()).game.state.phase, "roll");
     await page.keyboard.press("Enter");

@@ -6,7 +6,7 @@ import { initialState, boardKey, legalTurns, commitTurn, positionKey } from '../
 import { OpeningBook, bookContext, bookBoardKey, bookResult } from '../engine/opening-book.mjs';
 import { EngineClient } from '../engine/client.mjs';
 import { ENGINE_VERSION } from '../engine/metadata.mjs';
-import { CONTINUATION_POLICY, thirdBranches, fourthBranches, nextBoard, stateForBoard, rankBranches } from '../scripts/book-branches.mjs';
+import { CONTINUATION_POLICY, thirdBranches, fourthBranches, nextBoard, stateForBoard, rankBranches, nearThirdBranches } from '../scripts/book-branches.mjs';
 const base = new URL('../engine/opening-book-data/', import.meta.url);
 const index = JSON.parse(readFileSync(new URL('index.json', base)));
 const state = (dice = [3, 1]) => initialState({ matchLength: 0, phase: 'move', dice, rules: { jacoby: true } });
@@ -151,25 +151,30 @@ test('warming the native worker during a pending book load does not strand the l
   } finally {client.destroy();}
 });
 
-test('third/fourth-turn selection is reproducible, deduplicated, and comes from legal best-move histories', () => {
+test('full third-turn coverage includes every near-best opening/reply branch and preserves fourth-turn entries', () => {
   const readShard=file=>JSON.parse(readFileSync(new URL(file,base)));
-  const allThird=thirdBranches(index,readShard,Infinity),third=thirdBranches(index,readShard);
-  const fourth=fourthBranches(third,board=>readShard(index.continuations[board].file).rolls);
-  assert.equal(allThird.length,303);
-  assert.ok(Math.abs(allThird.reduce((n,b)=>n+b.weight,0)-1)<1e-10);
-  assert.equal(third.length,CONTINUATION_POLICY.thirdBoards);
-  assert.equal(fourth.length,CONTINUATION_POLICY.fourthBoards);
-  const expected=new Set([...third,...fourth].map(b=>b.board));
-  assert.deepEqual(new Set(Object.keys(index.continuations)),expected);
-  assert.equal(readdirSync(base).filter(f=>f.startsWith('turn-')).length,expected.size);
+  const third=nearThirdBranches(index,readShard);
+  assert.equal(third.length,1298);
+  assert.equal(third.reduce((n,b)=>n+b.paths,0),1357);
+  assert.equal(nearThirdBranches(index,readShard,0).length,684);
+  assert.equal(nearThirdBranches(index,readShard,.020).length,959);
+  assert.throws(()=>nearThirdBranches(index,readShard,-1),/Invalid/);
+  // The existing fourth-turn extension is retained, rather than silently
+  // replaced by a new selection when third-turn coverage widens.
+  const fourth=fourthBranches(thirdBranches(index,readShard,64),board=>readShard(index.continuations[board].file).rolls,32);
+  assert.equal(fourth.length,32);
+  assert.deepEqual(new Set(Object.keys(index.continuations)),new Set([...third,...fourth].map(b=>b.board)));
+  assert.equal(readdirSync(base).filter(f=>f.startsWith('turn-')).length,1330);
   assert.deepEqual(index.continuationBuild.policy,CONTINUATION_POLICY);
   for(const [turn,branches] of [[3,third],[4,fourth]])for(const b of branches){
     const ref=index.continuations[b.board];assert.equal(ref.turn,turn);
-    assert.equal(ref.weight,b.weight);assert.deepEqual(ref.parent,b.parent);
+    assert.deepEqual(ref.parent,b.parent);
+    if(turn===3) {assert.equal(ref.paths,b.paths);assert.equal(ref.weight,undefined,'no invented probability for near-best choices');}
+    else assert.equal(ref.weight,b.weight);
     assert.equal(boardKey(nextBoard(stateForBoard(b.parent.board,[...b.parent.roll].map(Number)),b.parent.steps)),b.board);
   }
   const board=third[0];
-  assert.equal(rankBranches([{...board,weight:.2},{...board,weight:.3}],2)[0].weight,.5,'duplicate histories add probability');
+  assert.equal(rankBranches([{...board,weight:.2},{...board,weight:.3}],2)[0].weight,.5);
   assert.equal(rankBranches([{...board,weight:.2},{...board,weight:.3}],2).length,1);
 });
 
@@ -188,6 +193,11 @@ test('every third/fourth-turn roll is legal, mirrored, consistently graded and l
       assert.equal(result.candidates[0].notation,reverse.candidates[0].notation);
       assert.equal(result.candidates.length,entry.rows.length);
       assert.ok(result.candidates.length>=Math.min(10,entry.total));
+      for(const c of result.candidates){
+        const [win,gammon,backgammon,loseGammon,loseBackgammon]=c.probabilities;
+        assert.ok(backgammon<=gammon+1e-7 && gammon<=win+1e-7);
+        assert.ok(loseBackgammon<=loseGammon+1e-7 && loseGammon<=1-win+1e-7);
+      }
       const turns=legalTurns(s);assert.equal(turns.length,entry.total);
       const graded=bookResult(s,entry,index,'auto',result.candidates.at(-1).steps);
       assert.equal(graded.actual.key,result.candidates.at(-1).key);
@@ -197,14 +207,13 @@ test('every third/fourth-turn roll is legal, mirrored, consistently graded and l
       count++;
     }
   }
-  assert.equal(count,2016);assert.ok(book.files.size<=9,'bounded memory even across all later boards');
+  assert.equal(count,27930);assert.ok(book.files.size<=9,'bounded memory even across all later boards');
 });
 
 test('membership skips unlisted later boards without shard downloads and retains native hint/grade reuse', async () => {
   const calls=[],book=new OpeningBook({fetcher:url=>{calls.push(url.pathname);return read(url);}});
   await book.prepare(state());
-  const all=thirdBranches(index,f=>JSON.parse(readFileSync(new URL(f,base))),Infinity);
-  const outside=stateForBoard(all.find(b=>!index.continuations[b.board]).board);
+  const outside=initialState({matchLength:0,phase:'move',dice:[2,1],rules:{jacoby:true},points:Array.from({length:24},(_,i)=>i===5?15:i===18?-15:0)});
   assert.equal(bookContext(outside),true);assert.equal(book.mayHave(outside),false);
   assert.equal(await book.lookup(outside,options),null);assert.equal(calls.length,1);
   let requests=0;

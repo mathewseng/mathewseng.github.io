@@ -1,4 +1,4 @@
-# Opening book through selected fourth-turn positions
+# Opening book with full near-best third-turn coverage
 
 `engine/opening-book.mjs` serves genuine, precomputed GNUbg **bg5**, 3-ply checker evaluations before the engine worker starts. It is shared by Play (computer, hint and review), Trainer and Solver. Online play retains its existing prohibition on engine assistance.
 
@@ -6,7 +6,7 @@
 
 - All **15 unequal opening rolls**, both players and either dice order. Every legal resulting opening board is evaluated at 3 ply; equivalent step orders share an entry.
 - Every opening within **0.040 current-cube equity** of the best 3-ply opening is included, not only the first-ranked move. That produces **34 distinct opening boards**, with every one of the **21 reply rolls** (including doubles): **714 replies**.
-- **Partial later-turn coverage:** all 21 rolls at **64 selected third-turn boards** and **32 selected fourth-turn boards**, adding **2,016 decisions** (2,745 total). Here a turn means one player's complete turn, not a die or a search ply. The table still evaluates each position at **3 search plies**, including fourth-turn positions.
+- **Full third-turn coverage within the stated near-best window:** all 21 rolls at **1,298 distinct third-turn boards** after every qualifying opening and every evaluated reply within 0.040 equity of best. This adds **27,258 third-turn decisions**. The existing **32 selected fourth-turn boards** and their 672 decisions are retained, giving **28,659 decisions total**. Fourth-turn coverage remains partial. Here a turn means one player's complete turn, not a die or a search ply. The table still evaluates each position at **3 search plies**, including fourth-turn positions.
 - Reply and later-turn generation first scores every legal result at 2 ply. It retains at least the top ten, plus **every** candidate within 0.080 of the 2-ply leader, with no count cap. Each retained candidate is then evaluated at 3 ply. The table ranks only these consistent-depth results; screened-out moves can still be better. This is tree evaluation, not a rollout, proof of optimality, or proprietary opening database.
 - Entries override Quick, Standard, Deep, Expert and Auto **at these positions only**. Actual settings say **Opening book · 3 ply**, and preserve the requested preset. Research (4 ply) and rollouts always compute live. Auto returns the completed 3-ply entry rather than manufacturing intermediate depth updates or timing forecasts.
 - An arbitrary legal submitted opening is covered because openings are exhaustive. If a submitted reply is outside the 3-ply shortlist, the normal live search evaluates that move and alternatives at the requested settings together. It never subtracts a 2-ply actual equity from a 3-ply book leader.
@@ -15,9 +15,9 @@ The 0.040 opening window defines “near-best” for this book; it is not a conf
 
 ## Later-turn selection and growth
 
-`book-branches.mjs` is a deterministic build-time planner. It follows the best-ranked opening and best-ranked reply, weights fair opening rolls equally (1/15), weights subsequent unequal rolls 2/36 and doubles 1/36, merges transpositions, then retains the 64 highest-weight third-turn boards. Equal weights use a lexical board-key tie break. After evaluating all rolls there, it follows the best-ranked third-turn moves, merges resulting boards and keeps the 32 highest-weight fourth-turn boards. The manifest records each parent board, roll and legal move, probability weight, generation signature and actual engine source hashes.
+`book-branches.mjs` deterministically enumerates every qualifying reply after all 34 near-best opening boards, merges transpositions and includes all 21 dice combinations for each distinct third-turn board. The 1,357 qualifying reply paths produce 1,298 distinct boards. There is no position-count cap or probability cutoff. A stored legal parent path makes every board reproducible; `paths` counts qualifying histories rather than inventing probabilities for human choices among near-best moves.
 
-This is a **storage/generation budget**, not a claim that unlisted lines are bad or rare in human play. The original complete reply coverage after all 34 near-best openings remains intact. The later-turn selection assumes best-ranked book play; it does not cover every near-best opening/reply combination. The 64 third-turn boards represent **27.78%** of paths under the stated best-move/fair-dice model, not a measured hit rate for users. The 32 fourth-turn boards represent **2.43%** of all paths under that model (**8.74%** conditional on reaching the selected third-turn boards). Their weights count only paths through those third-turn boards; `continuationBuild.fourthMass` records that unconditional model mass. No background engine search or extra battery use is needed for lookup.
+The 32 previously published fourth-turn boards are preserved with identical evaluations. Their canonical boards and legal parent paths are retained in `scripts/retained-fourth-boards.json`, so rebuilding the opening/reply index from scratch does not lose that coverage. They were selected from the original 64-board third-turn subset by following the best-ranked move and weighting fair dice; this release does not expand fourth-turn coverage or imply that other fourth-turn positions are unimportant. Positions outside the lookup table continue to use live analysis.
 
 [Recorded branching counts and build metadata](opening-book-growth.json) from the current reply table:
 
@@ -28,9 +28,13 @@ This is a **storage/generation budget**, not a claim that unlisted lines are bad
 | All 34 openings, replies within 0.020 equity | 959 | 20,139 |
 | All 34 openings, replies within 0.040 equity | 1,298 | 27,258 |
 
-These counts use the evaluated reply shortlist, not uncomputed alternatives. Exhaustive fourth-turn coverage grows again: even one chosen move for every third-turn decision can create up to 21 further roll decisions per branch before transposition deduplication. The bounded extension keeps deployment, lazy transfers and reproducible generation manageable. `inspect-book-growth.mjs` reproduces the measured counts without running WASM.
+These counts use the evaluated reply shortlist, not uncomputed alternatives. Exhaustive fourth-turn coverage grows again: even one chosen move for every third-turn decision can create up to 21 further roll decisions per branch before transposition deduplication. Full fourth-turn generation is a separate expansion; it is not required to cover every third-turn board. `inspect-book-growth.mjs` reproduces the measured counts without running WASM.
 
-The continuation generator has its own resumable checkpoint. Its signature includes the base evaluations, native assets, scoring worker and branch planner; mismatched inputs cannot silently resume. Rebuild both generators in order when changing the engine, evaluation policy or book version. Index membership and per-file SHA-256 hashes prevent mixed-book reuse; every selected board must finish all 21 rolls before publishing the index.
+The continuation generator uses **one atomic checkpoint file per board**, holding at most 21 results. It flushes and replaces that small file after each completed decision. It never rewrites the entire growing book. Eight independent workers run by default, with one active board per worker and a cursor-based queue. Checkpoints live under ignored `test-results/book-checkpoints/<scoring-signature>/`.
+
+The scoring signature includes the engine revision, exact native source/data hashes, evaluation settings, rule context and scoring-worker source. Coverage policy and book version are separate: widening coverage reuses completed, identically scored boards. Existing published results are imported only after verifying their source context, shard version, SHA-256 and legal moves. Resume verifies checkpoint checksums and board identity; changed numerical inputs use a separate directory. A process lock prevents concurrent writers, and a dead process's lock can be recovered. Interruptions finish and save in-flight jobs; abrupt termination can lose only in-flight work, not completed boards. A hung evaluation has a timeout and leaves its decision unfinished for retry.
+
+Publication is staged separately and validates every planned roll before replacing the data directory. The preceding data directory remains in the checkpoint directory as `previous-publication` for recovery. A small publication journal restores the previous complete directory if the process stops between the two directory renames. The deployment never includes checkpoints or a partially generated book.
 
 ## Exact context matching
 
@@ -42,7 +46,7 @@ Current-cube equity in this centered money context is invariant under absolute c
 
 ## Loading, offline behavior and failure
 
-The complete book occupies 2,828,720 bytes before compression. The index is 67,389 bytes; the largest position shard is 23,098 bytes. The index contains board identities and metadata; evaluations are split into one file per board, each containing 21 rolls. Play prepares the relevant shard from the committed position before the next roll. No WASM is required for a book hit. The first uncached lookup still needs a file transfer; “instant” refers to already loaded entries, not arbitrary network conditions.
+Evaluations are split into one file per board, each containing 21 rolls. The index contains exact board identities and metadata. Play prepares the relevant shard from the committed position before the next roll; the full book is never downloaded for a single game. No WASM is required for a book hit. The first uncached lookup still needs a file transfer; “instant” refers to already loaded entries, not arbitrary network conditions. The complete release is **28.44 MB raw / 9.66 MB gzip**, summing compression of individual files. The index is about **521 KB raw**, and the largest board shard is **23.7 KB raw**. Exact counts are recorded in `opening-book-growth.json`; gzip measurements are file-size measurements, not a claim about a particular network connection.
 
 The hub does not preload the book. Book files are separate from the service worker's shell and engine groups. Only requested shards are cached, with release-specific SHA-256 checks; an old active release refuses a new mismatching file. Downloaded entries work offline. The in-memory loader retains the index and up to eight shards. Loads have a 1.5-second timeout and failed downloads back off for 30 seconds; unavailable, corrupt or mismatched data falls back to the normal engine. Cancellation rejects the analysis request immediately and late lookup results cannot populate its cache. Native benchmarks disable the book explicitly.
 
@@ -60,20 +64,31 @@ node backgammon/tests/opening-book-browser.cjs
 node scripts/run-tests.mjs
 ```
 
-The generator uses the actual assembled SIMD WASM in quiet Chromium workers. Four workers by default compute independent positions (`BG_BOOK_WORKERS=1` through `8` controls the continuation generator); this is build tooling, not multithreaded browser WASM. It saves a resumable checkpoint under ignored `test-results/`, validates input hashes before resuming, and writes deployment files only after every entry completes. To rebuild after changing the inputs, move the old checkpoint out of the way. Change the shared `BOOK_ID` when changing the format, policy or engine; regenerate the offline manifest afterwards. Build timestamps and timings can differ between runs; verify numerical values within the engine's test tolerance, not timestamp-byte reproducibility.
+The continuation generator uses the assembled SIMD WASM in quiet Chromium workers. `BG_BOOK_WORKERS=1` through `16` changes build concurrency (default 8); it does not change analysis depth or introduce multithreaded browser WASM. Useful commands:
 
-The pure suite checks all 2,745 decisions, legal paths, exhaustive near-best opening coverage, every reply roll, both players, rule exclusions, arbitrary grading, version/failure handling, worker-free dispatch and cancellation. The browser suite serves `_site`, checks every book position, compares opening, reply, third-turn and fourth-turn sampled values against live GNUbg at 3 ply within 0.00001, tests unsupported-context fallback, measures first-transfer versus warm lookup latency, and captures desktop/mobile Solver views in Chromium, Firefox and WebKit. Screenshots and raw observations are written to `test-results/opening-book/`. These are desktop-browser measurements and phone viewport emulation, not real iPhone measurements.
+```sh
+# Validate inputs, import existing results and report work remaining, without publishing.
+node backgammon/scripts/build-continuation-book.cjs --plan
+# Gracefully stop after at least 8 new decisions, to exercise resume.
+BG_BOOK_STOP_AFTER=8 node backgammon/scripts/build-continuation-book.cjs
+# Resume normally; completed results are reused.
+node backgammon/scripts/build-continuation-book.cjs
+```
+
+Other in-flight workers may finish after the stop threshold. SIGINT/SIGTERM also stop gracefully. Re-running a complete build's `--plan` reports zero missing decisions without loading WASM. The numerical scoring signature is independent of worker count. Change the shared `BOOK_ID` for a published coverage/format change and regenerate the offline manifest after publication. Build timestamps and durations are not numerical provenance; compare evaluation values with the tested tolerance.
+
+The pure suite checks all 28,659 decisions, legal paths, exhaustive near-best opening coverage, every reply roll, both players, rule exclusions, arbitrary grading, version/failure handling, worker-free dispatch and cancellation. The browser suite serves `_site`, checks every book position, compares opening, reply, third-turn and fourth-turn sampled values against live GNUbg at 3 ply within 0.00001, tests unsupported-context fallback, measures first-transfer versus warm lookup latency, and captures desktop/mobile Solver views in Chromium, Firefox and WebKit. Screenshots and raw observations are written to `test-results/opening-book/`. These are desktop-browser measurements and phone viewport emulation, not real iPhone measurements.
 
 The generator and adapter are GPL-3.0-or-later, under the Backgammon application's existing license. The book was generated with the pinned engine and bundled weights; no external lesson or opening database was copied. Engine source, licenses and rebuild instructions remain in [ENGINE.md](ENGINE.md).
 
-## Measured lookup latency
+## Validation and measured performance
 
-[Recorded browser observations](opening-book-validation.json), M4 Pro / macOS, 2,745 warm decisions per browser:
+`opening-book-validation.json` records the most recent assembled-site browser run, with exact book ID, environment, timing summaries and sampled native comparisons. Raw per-decision observations remain in the ignored `test-results/opening-book/report.json`. `opening-book-growth.json` records coverage and release sizes. Browser measurements use the actual WASM and book assets served locally; phone-sized screenshots are emulation, not physical iPhone benchmarks. Native cross-checks must agree within 0.00001 equity/probability. Warm lookup timings exclude transfer and include validation/client dispatch; timer-resolution zeroes are not zero computation.
 
-| Browser | Median | p95 | Slowest |
-| --- | ---: | ---: | ---: |
-| Chromium 145 | 0.2 ms | 3.3 ms | 7.4 ms |
-| Firefox 146 | below timer resolution | 4 ms | 11 ms |
-| WebKit 26 | below timer resolution | 3 ms | 8 ms |
+For `jacoby-3ply-v3`, all **28,659 decisions passed in Chromium 145, Firefox 146 and WebKit 26**. Warm lookup p95 was **3.3 ms, 4.0 ms and 4.0 ms**, respectively, on this Apple M4 Pro. All **42 live 3-ply WASM comparisons** passed, with maximum numerical difference **0.00000024**. Direct third/fourth-turn Solver links, book-backed bot play, unsupported-context fallback, and downloaded third/fourth-turn entries after an offline reload passed. Seven screenshots were visually inspected: desktop/phone third-turn Solver results in all three browsers, plus phone Play in Chromium.
 
-The first index lookup over local HTTP took 2.3 / 8 / 5 ms respectively, including transfer. Those are not Internet download timings. Warm measurements include legal-path validation and client dispatch, exclude file transfer, and use a fresh result for each position rather than the client's result cache. Zero-valued observations reflect browser timer resolution, not zero computation. Thirty native 3-ply cross-checks across the three browsers differed by at most **0.00000003** equity/probability. The bot committed a legal third-turn book move; direct Solver links were exercised for both third- and fourth-turn positions on desktop and phone viewports. Captured screenshots were inspected. Chromium additionally verifies a previously downloaded fourth-turn entry survives an offline reload without WASM. All 328 repository tests passed, including deployment-artifact inclusion and release hashing. The browser measurements use `BOOK_ID=jacoby-3ply-v2`.
+`node scripts/run-tests.mjs` passed **335 tests**; assembled deployment/checkpoint checks and the full Chromium application suite also passed. Keyboard integration passed in Chromium, Firefox and WebKit. Testing corrected two existing harness races: keyboard input before the persisted turn's controls were redrawn, and an asynchronous IndexedDB predicate incorrectly used with Playwright's synchronous `waitForFunction` polling. These changes wait for observable readiness; they do not change gameplay.
+
+[Generation observations](opening-book-generation.json): **25,914 new decisions** were computed, and all **2,745 previously published decisions** were preserved numerically. The elapsed span was **90.5 minutes**, including resume/shutdown checks, on this Apple M4 Pro. Generation used eight workers initially and ten for most of the run. Concurrent per-decision worker timing averaged **2,025.6 ms**, with **2,131.3 ms median** and **2,890.7 ms p95**; these are build timings with concurrency, not single-worker or phone latency estimates. The completed generator's `--plan` reports **27,930 reused later-turn decisions and zero missing**, without starting WASM.
+
+Resume testing exposed Playwright's automatic signal shutdown closing workers before checkpointing. The generator now owns signal handling, and a real SIGTERM/resume check passed after that correction. Unit coverage also exercises interrupted temporary writes, checksum failures, changed-input isolation, stale locks, concurrent writers, failed publication and recovery between directory renames.

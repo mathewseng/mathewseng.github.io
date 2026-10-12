@@ -1,0 +1,22 @@
+{
+  "book": "jacoby-3ply-v3",
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "method": "Real assembled SIMD WASM; 8 then 10 independent workers; resumability/shutdown tests included in the elapsed span. Per-decision wall timings were recorded inside each concurrently running worker, not a single-worker latency benchmark.",
+  "preservedDecisions": 2745,
+  "importedLaterDecisions": 2016,
+  "newDecisions": 25914,
+  "startedAt": "2026-10-12T00:14:59.077Z",
+  "finishedAt": "2026-10-12T01:45:31.310Z",
+  "elapsedSpanSeconds": 5432.233,
+  "decisionMs": {
+    "mean": 2025.6198772862779,
+    "median": 2131.300000011921,
+    "p95": 2890.699999988079,
+    "max": 5133.899999976158
+  }
+}
