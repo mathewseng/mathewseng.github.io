@@ -7,12 +7,17 @@ case "$(emcc --version)" in
   *) echo "Activate the pinned Emscripten 4.0.15." >&2; exit 1 ;;
 esac
 variant=${1:-}
-case "$variant" in cache|activation|move-index|output|profile) ;; *) echo "Usage: $0 cache|activation|move-index|output|profile" >&2; exit 1 ;; esac
+case "$variant" in baseline|cache|activation|move-index|output|hidden-block|prune-state|combined|profile) ;; *) echo "Usage: $0 baseline|cache|activation|move-index|output|hidden-block|prune-state|combined|profile" >&2; exit 1 ;; esac
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 build=$(mktemp -d "${TMPDIR:-/tmp}/bg-native-$variant.XXXXXX")
 tar -xzf "$root/engine/source/gnubg-core-955555c-bg5.tar.gz" -C "$build"
 case "$variant" in
-  activation|move-index|output) python3 "$root/scripts/patch-$variant-pilot.py" "$build" ;;
+  activation|move-index|output|hidden-block|prune-state) python3 "$root/scripts/patch-$variant-pilot.py" "$build" ;;
+  combined)
+    python3 "$root/scripts/patch-output-pilot.py" "$build"
+    python3 "$root/scripts/patch-activation-pilot.py" "$build"
+    python3 "$root/scripts/patch-move-index-pilot.py" "$build"
+  ;;
   cache) python3 - "$build" <<'PY'
 from pathlib import Path
 import sys
@@ -40,6 +45,9 @@ p.write_text(p.read_text().replace('-O3 -flto -msimd128 -ffp-contract=off', '-O3
 PY
   ;;
 esac
+if [ "${BG_NATIVE_PROBES:-0}" = 1 ]; then
+  python3 "$root/scripts/patch-native-probes.py" "$build"
+fi
 if ! make -C "$build" -f Makefile.emcc VARIANT=simd -j4 > "$build/build.log" 2>&1; then
   tail -n 20 "$build/build.log" >&2
   exit 1
