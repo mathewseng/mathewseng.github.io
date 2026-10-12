@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { assertState, initialState, boardKey, positionKey, commitTurn, legalPaths, notation } from '../core/rules.mjs';
 import { ENGINE_VERSION } from './metadata.mjs';
-export const BOOK_ID = 'jacoby-3ply-v1';
+export const BOOK_ID = 'jacoby-3ply-v2';
 const START_STATE = initialState({ matchLength: 0 });
 const START = boardKey(START_STATE);
-const HOME_CHECKERS = START_STATE.points.map(n => Math.max(0, n));
 const BASE = new URL('./opening-book-data/', import.meta.url);
 const mirrorPoint = point => typeof point === 'number' ? 23 - point : point;
 export const bookBoardKey = state => boardKey(state.turn === 0 ? state : {
@@ -19,12 +18,7 @@ export function bookContext(state) {
   return state?.matchLength === 0 && state.rules?.cube === true &&
     state.rules.jacoby === true && !state.rules.immediateRedoubles &&
     state.cube?.owner === null && !state.pending && !state.crawford &&
-    !state.crawfordPlayed && ['opening', 'roll', 'move'].includes(state.phase) &&
-    // The player has not moved any checkers yet. Fast reject after the opening
-    // pair, retaining the normal full-candidate hint/grade cache thereafter.
-    state.bar?.[state.turn] === 0 && state.off?.[state.turn] === 0 &&
-    HOME_CHECKERS.every((n, i) => n === Math.max(0,
-      state.turn ? -state.points?.[23 - i] : state.points?.[i]));
+    !state.crawfordPlayed && ['opening', 'roll', 'move'].includes(state.phase);
 }
 export function bookEligible(state, { preset, kind, rollout, useBook = true } = {}) {
   return useBook && !rollout && kind === 'checker' && state.phase === 'move' &&
@@ -67,6 +61,7 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
   // The book is screened at 3 ply. An unlisted actual move needs a fresh,
   // consistently evaluated candidate set, not a fabricated or mixed-depth grade.
   if (actualKey && !actual) return null;
+  const board = bookBoardKey(state), laterTurn = index.continuations?.[board]?.turn;
   return { engine: ENGINE_VERSION, settings: { ...structuredClone(index.settings), requestedPreset },
     positionKey: positionKey(state), status: 'complete', perspective: state.turn,
     units: 'current-cube-points', type: 'checker', candidates, actual,
@@ -74,8 +69,10 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
     screening: entry.total > candidates.length ? { plies: 2, total: entry.total,
       finalists: candidates.length, threshold: .080, minimum: 10 } : null,
     elapsedMs: performance.now() - started, cached: true,
-    book: { id: BOOK_ID, source: 'precomputed', stage: bookBoardKey(state) === START ? 'opening' : 'reply',
-      openingWindow: index.threshold, builtAt: index.provenance.builtAt },
+    book: { id: BOOK_ID, source: 'precomputed',
+      stage: board === START ? 'opening' : laterTurn === 3 ? 'third-turn' : laterTurn === 4 ? 'fourth-turn' : 'reply',
+      openingWindow: index.threshold,
+      builtAt: laterTurn ? index.continuationBuild.builtAt : index.provenance.builtAt },
   };
 }
 export class OpeningBook {
@@ -83,6 +80,7 @@ export class OpeningBook {
     this.fetcher = fetcher;
     this.files = new Map();
     this.failures = new Map();
+    this.index = null;
   }
   async load(file) {
     if ((this.failures.get(file) || 0) > Date.now()) return null;
@@ -94,34 +92,41 @@ export class OpeningBook {
         if (!response.ok) throw new Error('Opening book unavailable.');
         const text = await response.text();
         if (text.length > 2_000_000) throw new Error('Opening book file is too large.');
-        return validateHeader(JSON.parse(text));
+        const value = validateHeader(JSON.parse(text));
+        if (file === 'index.json') this.index = value;
+        return value;
       } catch {
         this.files.delete(file); this.failures.set(file, Date.now() + 30000);
         return null; // Missing/offline/stale book: live GNUbg is still usable.
       } finally { clearTimeout(timeout); }
     });
     this.files.set(file, pending);
-    // Index plus a bounded set of reply shards; CacheStorage handles offline reuse.
+    // Index plus eight board shards, regardless of how large the book becomes.
     while (this.files.size > 9) {
       const oldest = [...this.files.keys()].find(k => k !== 'index.json' && k !== file);
       this.files.delete(oldest);
     }
     return pending;
   }
+  mayHave(state) {
+    if (!bookContext(state)) return false;
+    if (!this.index) return true; // One small index fetch; never scan/download shards.
+    const board = bookBoardKey(state);
+    return board === START || !!this.index.replies?.[board] || !!this.index.continuations?.[board];
+  }
   async entry(state) {
-    if (!bookContext(state)) return null;
+    if (!this.mayHave(state)) return null;
     const index = await this.load('index.json');
     if (!index) return null;
     const board = bookBoardKey(state), roll = [...state.dice].sort((a, b) => b - a).join('');
     if (board === START) return { index, entry: index.openings?.[roll] };
-    const ref = index.replies?.[board];
-    if (!ref || !/^reply-[a-f0-9]{16}\.json$/.test(ref.file)) return null;
+    const ref = index.replies?.[board] || index.continuations?.[board];
+    if (!ref || !/^(?:reply|turn)-[a-f0-9]{16}\.json$/.test(ref.file)) return null;
     const shard = await this.load(ref.file);
     return shard?.board === board ? { index, entry: shard.rolls?.[roll] } : null;
   }
   prepare(state) {
-    // Called with committed positions, so the reply shard is normally fetched
-    // during the opponent's turn / before the next roll, without loading WASM.
+    // Called with committed positions, before the next roll, without loading WASM.
     return this.entry(state).catch(() => null);
   }
   async lookup(state, options) {

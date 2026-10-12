@@ -245,7 +245,7 @@ export function resultView(
     el(
       "p",
       { class: "muted small" },
-      `${result.settings.name} · ${result.settings.plies} ply · ${(result.elapsedMs / 1000).toFixed(2)} s${result.book ? " · precomputed opening book" : result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. Cubeless equity and engine metadata are included in saved results.`,
+      `${result.settings.name} · ${result.settings.plies} ply · ${(result.elapsedMs / 1000).toFixed(2)} s${result.book ? ` · precomputed opening book${result.book.stage === "third-turn" ? " (turn 3)" : result.book.stage === "fourth-turn" ? " (turn 4)" : ""}` : result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. Cubeless equity and engine metadata are included in saved results.`,
     ),
   );
   return node;

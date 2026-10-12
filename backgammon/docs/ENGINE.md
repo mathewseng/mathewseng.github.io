@@ -36,7 +36,7 @@ The upstream public hint list caps at 40. Our application enumerates complete le
 
 ## Opening book
 
-Default Jacoby money openings and first replies use a precomputed 3-ply table before loading WASM: 15 opening rolls, 34 near-best opening boards within 0.040 equity, and all 714 reply rolls. Results explicitly identify their book origin and depth. Other contexts, unlisted submitted moves, Research and rollouts use live evaluation. See [OPENING-BOOK.md](OPENING-BOOK.md) for coverage, screening, generation, context safeguards and verification.
+Default Jacoby money openings and first replies use a precomputed 3-ply table before loading WASM: 15 opening rolls, 34 near-best opening boards within 0.040 equity, and all 714 reply rolls. Selected later branches add 64 third-turn and 32 fourth-turn boards, each with all 21 rolls at 3-ply evaluation; this later coverage is partial. Results explicitly identify their book origin and depth. Other contexts, unlisted submitted moves, Research and rollouts use live evaluation. See [OPENING-BOOK.md](OPENING-BOOK.md) for coverage, screening, generation, context safeguards and verification.
 
 ## Worker and capabilities
 

@@ -488,7 +488,7 @@ export function about() {
         {},
         "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful when the cube is enabled, deterministic, pruning enabled, no noise. Live Quick, Standard and Deep searches evaluate every legal resulting position at the selected depth.",
       ),
-      el("p", {}, "Default Jacoby money games use a precomputed 3-ply opening book: all 15 opening rolls and all 21 replies to 34 opening moves within 0.040 equity of best. Book entries override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
+      el("p", {}, "Default Jacoby money games use a precomputed 3-ply opening book: all 15 opening rolls and all 21 replies to 34 opening moves within 0.040 equity of best, plus all rolls at 64 selected third-turn and 32 selected fourth-turn positions. Later-turn coverage is partial, ranked by fair-dice probability along best-ranked book moves. Book entries override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
       el(
         "p",
         {},

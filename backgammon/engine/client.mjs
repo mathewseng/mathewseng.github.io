@@ -136,7 +136,8 @@ export class EngineClient {
     // Grading a move is a projection of that same result, not another WASM job.
     // Screened searches/rollouts still depend on the submitted move because
     // they must explicitly add it to their finalist set.
-    const tryBook = !!this.book && bookEligible(state, { preset, kind, rollout, useBook });
+    const tryBook = !!this.book && bookEligible(state, { preset, kind, rollout, useBook }) &&
+      (this.book.mayHave?.(state) ?? true);
     const sharedChecker =
       !tryBook && kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
     let submittedKey = null;

@@ -1,0 +1,42 @@
+{
+  "scope": "All 34 near-best openings, then replies within the stated 3-ply equity window",
+  "counts": [
+    {
+      "replyEquityWindow": 0,
+      "paths": 714,
+      "thirdTurnBoards": 684,
+      "thirdTurnDecisions": 14364
+    },
+    {
+      "replyEquityWindow": 0.02,
+      "paths": 1004,
+      "thirdTurnBoards": 959,
+      "thirdTurnDecisions": 20139
+    },
+    {
+      "replyEquityWindow": 0.04,
+      "paths": 1357,
+      "thirdTurnBoards": 1298,
+      "thirdTurnDecisions": 27258
+    }
+  ],
+  "bestOpeningAndReply": {
+    "boards": 303,
+    "decisions": 6363
+  },
+  "published": {
+    "thirdBoards": 64,
+    "fourthBoards": 32,
+    "bytes": 2828720,
+    "policy": {
+      "thirdBoards": 64,
+      "fourthBoards": 32
+    },
+    "selection": "Fair dice, best-ranked book moves, deduplicated board probability; lexical tie break. Fourth-turn ranking is conditional on the selected third-turn branches.",
+    "thirdMass": 0.277777777777778,
+    "fourthMass": 0.02427983539094649,
+    "generator": "backgammon/scripts/build-continuation-book.cjs",
+    "signature": "8c90f33692af90fa1dd88040cdb2ba831b197f2421e6234a4d3c64e80ac6a8e8",
+    "builtAt": "2026-10-11T23:53:19.241Z"
+  }
+}

@@ -5,26 +5,7 @@ const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../scrip
 const root=path.resolve('_site'),out=path.resolve('backgammon/engine/opening-book-data');
 const checkpoint=path.resolve('backgammon/test-results/opening-book-build.json');
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
-const worker=`
-import create from '/backgammon/engine/vendor/simd/gnubg-core-module.js';
-import {createEvaluator} from '/backgammon/engine/evaluate.mjs';
-import {legalTurns,boardKey} from '/backgammon/core/rules.mjs';
-import {toXGID} from '/backgammon/core/xgid.mjs';
-const module=await create({locateFile:p=>p.endsWith('.data')?'/backgammon/engine/vendor/'+p:'/backgammon/engine/vendor/simd/'+p});
-const engine=createEvaluator(module),score=module.cwrap('bg_score','number',['string','string','number','number']);
-postMessage({ready:true});
-onmessage=({data:{state,opening}})=>{try{
- const start=performance.now(),two=engine.analyze(state,'deep'),turns=legalTurns(state);
- // Every opening is scored at 3 ply. Replies keep >=10, plus every 2-ply
- // candidate within .080 (no count cap); every retained candidate gets 3 ply.
- const selected=two.candidates.filter((c,i)=>opening||i<10||two.candidates[0].equity-c.equity<=.080);
- const rows=selected.map(c=>{const t=turns.find(t=>t.key===c.key),p=score(toXGID(state,{engine:true}),toXGID({...t.state,dice:[],phase:'roll'},{engine:true}),3,0);
-  if(!p)throw Error('Empty GNUbg evaluation');let v;try{v=JSON.parse(module.UTF8ToString(p));}finally{module._free(p);}
-  if(v.error||!Number.isFinite(v.equity)||v.probabilities.some(x=>!Number.isFinite(x)))throw Error('Invalid GNUbg evaluation');
-  return {steps:c.steps,equity:v.equity,cubeless:v.cubeless,probabilities:v.probabilities};
- }).sort((a,b)=>b.equity-a.equity);
- postMessage({rows,total:turns.length,elapsedMs:performance.now()-start});
-}catch(e){postMessage({error:e.message});}};`;
+const worker=require('./book-evaluator.cjs');
 const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost').pathname;
  if(url==='/book-worker.mjs'){res.setHeader('Content-Type','text/javascript');return res.end(worker);}
  if(url==='/')return res.end('<!doctype html><title>Opening book generation</title>');
@@ -33,6 +14,7 @@ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://loc
  fs.readFile(f,(e,b)=>{if(e)res.writeHead(404);res.end(e?'Not found':b);});});
 (async()=>{
  const {initialState,commitTurn,boardKey}=await import('../core/rules.mjs');const {ENGINE_VERSION}=await import('../engine/metadata.mjs');
+ const {BOOK_ID}=await import('../engine/opening-book.mjs');
  const files=['engine/evaluate.mjs','engine/vendor/simd/gnubg-core-module.js','engine/vendor/simd/gnubg-core-module.wasm','engine/vendor/gnubg-core-module.data','core/rules.mjs','core/xgid.mjs'];
  const assets=Object.fromEntries(files.map(p=>{const b=fs.readFileSync('backgammon/'+p);if(!b.equals(fs.readFileSync(path.join(root,'backgammon',p))))throw Error('Reassemble _site: '+p);return [p,hash(b)];}));
  const signature=hash(JSON.stringify({assets,worker,engine:ENGINE_VERSION}));
@@ -70,7 +52,7 @@ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://loc
   }await tab.close();
  }));
  const compact=r=>({total:r.total,rows:r.rows.map(c=>[c.steps.map(s=>[s.from,s.to,s.die]),c.equity,c.cubeless,...c.probabilities])});
- const index={schema:1,id:'jacoby-3ply-v1',engine:ENGINE_VERSION,plies:3,threshold:.040,context:{matchLength:0,cube:true,jacoby:true,immediateRedoubles:0,cubeOwner:null},settings:{name:'Opening book',plies:3,cubeful:true,pruning:true,deterministic:true,noise:0,replyFilter:{plies:2,minimum:10,threshold:.080}},openings:{},replies:{},provenance:{assets,builtAt:new Date().toISOString(),generator:'backgammon/scripts/build-opening-book.cjs'}};
+ const index={schema:1,id:BOOK_ID,engine:ENGINE_VERSION,plies:3,threshold:.040,context:{matchLength:0,cube:true,jacoby:true,immediateRedoubles:0,cubeOwner:null},settings:{name:'Opening book',plies:3,cubeful:true,pruning:true,deterministic:true,noise:0,replyFilter:{plies:2,minimum:10,threshold:.080}},openings:{},replies:{},provenance:{assets,builtAt:new Date().toISOString(),generator:'backgammon/scripts/build-opening-book.cjs'}};
  for(const [roll,r] of Object.entries(openingEntries))index.openings[roll]={...compact(r),near:r.near};
  for(const [id,s] of positions){const body=JSON.stringify({schema:1,id:index.id,engine:ENGINE_VERSION,board:boardKey(s),rolls:Object.fromEntries(Object.entries(progress.replies[id]).map(([roll,r])=>[roll,compact(r)]))})+'\n';
   const file=`reply-${id}.json`;fs.writeFileSync(path.join(out,file),body);index.replies[boardKey(s)]={file,sha256:hash(body)};

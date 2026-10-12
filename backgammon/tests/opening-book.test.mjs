@@ -6,6 +6,7 @@ import { initialState, boardKey, legalTurns, commitTurn, positionKey } from '../
 import { OpeningBook, bookContext, bookBoardKey, bookResult } from '../engine/opening-book.mjs';
 import { EngineClient } from '../engine/client.mjs';
 import { ENGINE_VERSION } from '../engine/metadata.mjs';
+import { CONTINUATION_POLICY, thirdBranches, fourthBranches, nextBoard, stateForBoard, rankBranches } from '../scripts/book-branches.mjs';
 const base = new URL('../engine/opening-book-data/', import.meta.url);
 const index = JSON.parse(readFileSync(new URL('index.json', base)));
 const state = (dice = [3, 1]) => initialState({ matchLength: 0, phase: 'move', dice, rules: { jacoby: true } });
@@ -148,4 +149,90 @@ test('warming the native worker during a pending book load does not strand the l
     assert.equal((await pending).settings.plies,3);
     assert.equal(client.active,null);
   } finally {client.destroy();}
+});
+
+test('third/fourth-turn selection is reproducible, deduplicated, and comes from legal best-move histories', () => {
+  const readShard=file=>JSON.parse(readFileSync(new URL(file,base)));
+  const allThird=thirdBranches(index,readShard,Infinity),third=thirdBranches(index,readShard);
+  const fourth=fourthBranches(third,board=>readShard(index.continuations[board].file).rolls);
+  assert.equal(allThird.length,303);
+  assert.ok(Math.abs(allThird.reduce((n,b)=>n+b.weight,0)-1)<1e-10);
+  assert.equal(third.length,CONTINUATION_POLICY.thirdBoards);
+  assert.equal(fourth.length,CONTINUATION_POLICY.fourthBoards);
+  const expected=new Set([...third,...fourth].map(b=>b.board));
+  assert.deepEqual(new Set(Object.keys(index.continuations)),expected);
+  assert.equal(readdirSync(base).filter(f=>f.startsWith('turn-')).length,expected.size);
+  assert.deepEqual(index.continuationBuild.policy,CONTINUATION_POLICY);
+  for(const [turn,branches] of [[3,third],[4,fourth]])for(const b of branches){
+    const ref=index.continuations[b.board];assert.equal(ref.turn,turn);
+    assert.equal(ref.weight,b.weight);assert.deepEqual(ref.parent,b.parent);
+    assert.equal(boardKey(nextBoard(stateForBoard(b.parent.board,[...b.parent.roll].map(Number)),b.parent.steps)),b.board);
+  }
+  const board=third[0];
+  assert.equal(rankBranches([{...board,weight:.2},{...board,weight:.3}],2)[0].weight,.5,'duplicate histories add probability');
+  assert.equal(rankBranches([{...board,weight:.2},{...board,weight:.3}],2).length,1);
+});
+
+test('every third/fourth-turn roll is legal, mirrored, consistently graded and loadable without WASM', async () => {
+  const book=makeBook();let count=0;
+  for(const [board,ref] of Object.entries(index.continuations)){
+    const bytes=readFileSync(new URL(ref.file,base)),shard=JSON.parse(bytes);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),ref.sha256);
+    assert.equal(shard.board,board);assert.equal(Object.keys(shard.rolls).length,21);
+    for(let a=1;a<=6;a++)for(let b=1;b<=a;b++){
+      const s=stateForBoard(board,[a,b]),entry=shard.rolls[`${a}${b}`];
+      const result=await book.lookup(s,options),reverse=await book.lookup(mirror(s),options);
+      assert.ok(result);assert.equal(result.book.stage,ref.turn===3?'third-turn':'fourth-turn');
+      assert.equal(result.settings.plies,3);assert.equal(result.perspective,0);assert.equal(reverse.perspective,1);
+      assert.equal(result.candidates[0].equity,reverse.candidates[0].equity);
+      assert.equal(result.candidates[0].notation,reverse.candidates[0].notation);
+      assert.equal(result.candidates.length,entry.rows.length);
+      assert.ok(result.candidates.length>=Math.min(10,entry.total));
+      const turns=legalTurns(s);assert.equal(turns.length,entry.total);
+      const graded=bookResult(s,entry,index,'auto',result.candidates.at(-1).steps);
+      assert.equal(graded.actual.key,result.candidates.at(-1).key);
+      assert.equal(graded.error,result.candidates[0].equity-graded.actual.equity);
+      const unlisted=turns.find(t=>!result.candidates.some(c=>c.key===t.key));
+      if(unlisted)assert.equal(await book.lookup(s,{...options,submitted:unlisted.steps}),null);
+      count++;
+    }
+  }
+  assert.equal(count,2016);assert.ok(book.files.size<=9,'bounded memory even across all later boards');
+});
+
+test('membership skips unlisted later boards without shard downloads and retains native hint/grade reuse', async () => {
+  const calls=[],book=new OpeningBook({fetcher:url=>{calls.push(url.pathname);return read(url);}});
+  await book.prepare(state());
+  const all=thirdBranches(index,f=>JSON.parse(readFileSync(new URL(f,base))),Infinity);
+  const outside=stateForBoard(all.find(b=>!index.continuations[b.board]).board);
+  assert.equal(bookContext(outside),true);assert.equal(book.mayHave(outside),false);
+  assert.equal(await book.lookup(outside,options),null);assert.equal(calls.length,1);
+  let requests=0;
+  const candidates=legalTurns(outside).map((t,i)=>({key:t.key,steps:t.steps,equity:-i/100}));
+  const client=new EngineClient({openingBook:book,workerFactory:()=>({
+    postMessage(m){if(m.type!=='init')requests++;queueMicrotask(()=>this.onmessage({data:m.type==='init'?{type:'ready',id:0,elapsedMs:1}:{id:m.id,type:'result',result:{settings:{plies:2},candidates}}}));},terminate(){},
+  })});
+  try{
+    await client.analyze(outside,{preset:'deep'});
+    const grade=await client.analyze(outside,{preset:'deep',submitted:candidates[1].steps});
+    assert.equal(grade.actual.key,candidates[1].key);assert.equal(requests,1);assert.equal(calls.length,1);
+  }finally{client.destroy();}
+  // A fresh client opening a direct Solver link must find a later-turn shard.
+  const ref=Object.values(index.continuations).find(r=>r.turn===4),board=Object.keys(index.continuations).find(k=>index.continuations[k]===ref);
+  calls.length=0;const fresh=new OpeningBook({fetcher:url=>{calls.push(url.pathname);return read(url);}});
+  const hit=await fresh.lookup(stateForBoard(board),options);
+  assert.equal(hit.book.stage,'fourth-turn');assert.equal(calls.length,2);
+  const later=stateForBoard(board);
+  for(const changed of [{matchLength:7},{cube:{value:2,owner:0}},{rules:{...later.rules,jacoby:false}},{rules:{...later.rules,immediateRedoubles:2}}])
+    assert.equal(await fresh.lookup({...later,...changed},options),null);
+  for(const changed of [{preset:'research'},{kind:'cube'},{rollout:{}},{useBook:false}])
+    assert.equal(await fresh.lookup(later,{...options,...changed}),null);
+  const stale=structuredClone(index);stale.id='jacoby-3ply-v1';
+  assert.equal(await new OpeningBook({fetcher:async()=>new Response(JSON.stringify(stale))}).lookup(later,options),null);
+  const wrongBoard=new OpeningBook({fetcher:async url=>{
+    const value=JSON.parse(await (await read(url)).text());
+    if(value.board)value.board=boardKey(state());
+    return new Response(JSON.stringify(value));
+  }});
+  assert.equal(await wrongBoard.lookup(later,options),null,'a legal-looking shard for a different board is not reusable');
 });

@@ -67,7 +67,7 @@ On phones, Solver and revealed Trainer answers have a compact move-preview strip
 
 ## Opening and reply lookup
 
-Default Jacoby money games use an instant, preloaded **3-ply opening book**: all 15 opening rolls, plus all 21 replies to each of 34 openings within **0.040 equity** of best (714 reply positions). Both players, dice orders and centered cubes raised by opening ties are supported. The book is shared across bot play, hints, grading, Trainer and Solver. Entries say **Opening book · 3 ply**, overriding Quick through Expert and Auto only where covered. Research, rollouts, other rules/match contexts, and unlisted replies use live GNUbg. The initial download still depends on network speed; previously downloaded tables work offline. See [coverage, generation and tests](docs/OPENING-BOOK.md).
+Default Jacoby money games use an instant, preloaded **3-ply opening book**: all 15 opening rolls, plus all 21 replies to each of 34 openings within **0.040 equity** of best (714 reply positions). A bounded extension adds all rolls at 64 selected third-turn and 32 fourth-turn boards (2,016 more decisions); later-turn coverage is partial. Both players, dice orders and centered cubes raised by opening ties are supported. The book is shared across bot play, hints, grading, Trainer and Solver. Entries say **Opening book · 3 ply**, overriding Quick through Expert and Auto only where covered. Research, rollouts, other rules/match contexts, and unlisted replies use live GNUbg. The initial download still depends on network speed; previously downloaded tables work offline. See [coverage, generation and tests](docs/OPENING-BOOK.md).
 
 ## Engine, evaluation and licensing
 
