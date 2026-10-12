@@ -51,7 +51,7 @@ export class StudyStrip {
       this.select.replaceChildren(el("option", { value: -1 }, "Original position"),
         ...(earlierPreview ? [el("option", { value: -2, disabled: true }, "Earlier preview · outside current analysis")] : []),
         ...this.candidates.map((c, i) => el("option", { value: i },
-          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + (i === 0 ? this.bestPlayedLabel : this.playedLabel) : ""}`)));
+          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + (i === 0 ? this.bestPlayedLabel : this.playedLabel) : i === 0 ? " · Best" : ""}`)));
       this.result = result;
       this.earlierPreview = earlierPreview;
     }

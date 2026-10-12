@@ -26,9 +26,17 @@ export function gradeDecision(source, result, action) {
 export function decisionHistory(model) {
   const states = replay(model.initial, model.events);
   const rows = [];
+  let turn = 1, turnStart = 0;
   model.events.forEach((event, index) => {
     const source = states[index],
       a = event.action;
+    if (index && source.gameNumber !== states[index - 1].gameNumber) {
+      turn = 1;
+      turnStart = index;
+    } else if (index && model.events[index - 1].action.type === "move") {
+      turn++;
+      turnStart = index;
+    }
     const eligible =
       a.type === "move" ||
       (source.phase === "roll" &&
@@ -51,6 +59,9 @@ export function decisionHistory(model) {
     rows.push({
       index,
       game: source.gameNumber,
+      turn,
+      turnStart,
+      turnPlayer: source.turn,
       player: event.actor,
       source,
       action: a,
@@ -65,6 +76,25 @@ export function decisionHistory(model) {
     });
   });
   return rows;
+}
+
+// One display row per player's decisions in a turn. A cube exchange can put
+// another player's response between the offer and checker play. Keep that
+// response separate, and preserve every original decision/grade/return target.
+// Keys come from event boundaries, never adjacency, dice or checker position.
+export function groupDecisionTurns(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = `${row.game}:${row.turnStart}:${row.player}`;
+    if (!groups.has(key)) groups.set(key, {
+      key, game: row.game, turn: row.turn, player: row.player,
+      response: row.player !== row.turnPlayer, decisions: [],
+    });
+    groups.get(key).decisions.push(row);
+  }
+  return [...groups.values()].map(group => ({
+    ...group, decisions: group.decisions.sort((a, b) => a.index - b.index),
+  })).sort((a, b) => a.decisions.at(-1).index - b.decisions.at(-1).index);
 }
 export function decisionTotals(rows, player) {
   const own = rows.filter((r) => r.player === player),

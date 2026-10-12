@@ -199,7 +199,7 @@ module.exports = async function assistanceUX(
         self: color("self"),
         opponent: color("opponent"),
         ev: getComputedStyle(review.querySelector(".value")).color,
-        identity: getComputedStyle(review.querySelector(".history-player"))
+        identity: getComputedStyle(review.closest(".history-turn").querySelector(".history-player"))
           .color,
       };
     });

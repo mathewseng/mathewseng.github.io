@@ -58,6 +58,8 @@ module.exports = async function touchMoves(browser, base, out, name) {
       for(const target of [p(20),p(23)]) assert.ok(revised.includes(String(target)),"both first-die entries remain available after combined entry");
       await destination.selectOption({value:String(p(20))});
       assert.deepEqual((await read()).draft,[{from:"bar",to:p(20),die:4}]);
+      assert.equal((await read()).selected,null,"revised entry shows all moves");
+      await source.selectOption({value:String(p(20))});
       await destination.selectOption({value:String(p(19))});
       assert.equal((await read()).draft.length,2);
     }

@@ -169,7 +169,9 @@ module.exports = async function actionAudit(browser, base, out, name) {
         await set("bar-repeat",turn,orientation,"bar");
         await page.locator(`[data-point="${p(19)}"]`).focus();
         await page.keyboard.press("Enter");
-        assert.equal((await read()).selected,p(19),"entry landing is automatically selected");
+        assert.equal((await read()).selected,null,"entry clears selection for all legal moves");
+        await page.keyboard.press("Enter");
+        assert.equal((await read()).selected,p(19),"next point key explicitly selects the entered checker");
         await page.keyboard.press("Enter");
         assert.equal((await read()).selected,null,"same point key deselects regardless of speed");
         assert.equal((await read()).draft.length,1);

@@ -100,6 +100,11 @@ module.exports = async function cubeOptions(browser, base, out, name) {
         const option = page.getByRole("button", {name: `${c.label}: preview decision`, exact: true});
         await option.click();
         assert.equal(await option.getAttribute("aria-pressed"), "true");
+        const selected=page.locator('.decision-choices button[aria-pressed="true"]');
+        const action=await option.getAttribute("data-action");
+        const hasButton=await page.locator(`.decision-choices button[data-action="${action}"]`).count();
+        assert.equal(await selected.count(),hasButton,"cube table selection also highlights the matching preview button");
+        if(hasButton) assert.equal(await selected.getAttribute("data-action"),action);
         assert.ok((await page.locator(".decision-caption").innerText()).includes(c.label));
       }
       for (const [width, height] of [

@@ -36,7 +36,7 @@ export function decisionReview(
   const slot = el("div", { class: "decision-board" });
   const body = el("div", { class: "decision-content" });
   const previewControls = el("div", { class: "review-preview-controls" });
-  const controls = el("div", { class: "row wrap decision-choices" });
+  const controls = el("div", { class: "row wrap decision-choices", role: "group", "aria-label": "Board preview" });
   const caption = el("p", { class: "decision-caption", role: "status" });
   const d = dialog(
     title,
@@ -205,9 +205,15 @@ export function decisionReview(
     selectPreview(steps, label);
     strip.set(previewResult, label === "Position" ? null : after);
     caption.textContent = `${label} · ${steps.length ? notation(steps, source.turn) : label === "Position" ? "original roll" : "Pass"}`;
-    controls
-      .querySelectorAll("button")
-      .forEach((b) => b.setAttribute("aria-pressed", b.textContent === label));
+    controls.querySelectorAll("button").forEach((b) =>
+      b.setAttribute("aria-pressed", label === "Position"
+        ? b.dataset.preview === "position"
+        : b.dataset.preview === "move" && b.dataset.positionKey === boardKey(after)),
+    );
+    // The native picker can truncate long notation in phone landscape. Keep
+    // the current view's identity visible outside that field as well.
+    if (previewResult) strip.heading.textContent =
+      `${controls.querySelector('[aria-pressed="true"]')?.textContent || label} · ${previewResult.settings.name}`;
   };
   show([], "Position");
   d.addEventListener(
@@ -286,7 +292,7 @@ export function decisionReview(
           controls
             .querySelectorAll("button")
             .forEach((b) =>
-              b.setAttribute("aria-pressed", b.textContent === label),
+              b.setAttribute("aria-pressed", b.dataset.action === (choice?.action || "position")),
             );
         };
         const sameDecision = f.actual?.action === f.best.action;
@@ -301,6 +307,7 @@ export function decisionReview(
           ].map(([label, c]) =>
             button(label, () => showCube(c, label), "", {
               "aria-pressed": false,
+              "data-action": c?.action || "position",
             }),
           ),
         );
@@ -364,6 +371,8 @@ export function decisionReview(
         ...choices.map(([label, c]) =>
           button(label, () => show(c?.steps || [], label, !!c), "", {
             "aria-pressed": false,
+            "data-preview": c ? "move" : "position",
+            ...(c ? { "data-position-key": boardKey(c.steps.reduce((s, step) => applyStep(s, step), source)) } : {}),
           }),
         ),
       );

@@ -64,6 +64,7 @@ import { decisionReview } from "../ui/decision-review.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 import {
   decisionHistory,
+  groupDecisionTurns,
   compactEvaluation,
   sameDecisionPrefix,
 } from "../core/decision-history.mjs";
@@ -1947,7 +1948,7 @@ function renderFeedback() {
   if (feedbackStrip.hidden) return;
   if (renderedFeedback === m.events) return;
   renderedFeedback = m.events;
-  const rows = decisionHistory(m).reverse();
+  const rows = decisionHistory(m);
   const viewer = config.mode === "online" ? online.seat : config.humanSide;
   const sideOf = row => row.player === viewer ? "self" : "opponent";
   for (const [value, control] of feedbackFilterButtons) {
@@ -1962,110 +1963,119 @@ function renderFeedback() {
     control.replaceChildren(el("span", { class: "history-filter-label" }, label),
       el("span", { class: "history-filter-count", "aria-hidden": true }, count));
   }
-  const shown = rows.filter(row => feedbackFilter === "all" || sideOf(row) === feedbackFilter);
+  const reviewIndex = rows.filter(row => row.feedback && row.player === config.humanSide).at(-1)?.index;
+  const shown = groupDecisionTurns(rows.filter(row => feedbackFilter === "all" || sideOf(row) === feedbackFilter)).reverse();
   feedbackStrip.replaceChildren(
     el("h2", { class: "sr-only" }, "Decision history"),
     el("p", { class: "history-context muted" },
-      `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each mover’s perspective. Select a row to review.`,
+      `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each decision maker’s perspective. Select Cube or Move to review.`,
     ),
   );
   if (!shown.length) feedbackStrip.append(el("p", { class: "history-empty muted", role: "status" },
     rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins."));
-  for (const row of shown) {
-    const side = sideOf(row);
-    const playerLabel =
-      config.mode === "local"
-        ? names()[row.player]
-        : side === "self" ? "You" : "Opponent";
-    const detail = [
-      ...(config.mode !== "local" && names()[row.player] !== playerLabel
-        ? [names()[row.player]] : []),
-      row.action.type === "move" ? "Move" : "Cube",
-      ...(row.result ? [row.result.settings.name] : []),
-    ].join(" · ");
-    const identity = () => el("span", { class: "history-identity" },
+  for (const group of shown) {
+    const side = sideOf(group);
+    const playerLabel = config.mode === "local" ? names()[group.player]
+      : side === "self" ? "You" : "Opponent";
+    const decisions = el("div", { class: "history-turn-decisions" });
+    const identity = el("div", { class: "history-identity" },
       el("span", { class: "history-player" }, playerLabel),
-      el("span", { class: "history-detail muted" }, detail),
+      ...(config.mode !== "local" && names()[group.player] !== playerLabel
+        ? [el("span", { class: "history-detail muted" }, names()[group.player])] : []),
+      el("span", { class: "history-turn-label muted" },
+        `Game ${group.game} · Turn ${group.turn}${group.response ? " · Response" : ""}`),
     );
-    if (!row.feedback) {
-      feedbackStrip.append(
-        el(
-          "div",
-          {
-            class: "feedback-pending",
-            "data-history-side": side,
-            "data-history-player": row.player,
-          },
-          identity(),
-          el("span", { class: "history-move" }, row.label),
-          ...(canReturnToDecision(row, m.id)
-            ? [
-                button(
-                  "Return",
-                  () => restoreDecision(row, m.id),
-                  "ghost",
-                  { "aria-label": "Return to this position", title: "Return to this position" },
-                ),
-              ]
-            : []),
+    feedbackStrip.append(el("section", {
+      class: "history-turn",
+      "data-history-player": group.player,
+      "data-history-side": side,
+      "data-turn-key": group.key,
+      "aria-label": `${playerLabel} · Game ${group.game} · Turn ${group.turn}${group.response ? " · Cube response" : ""}`,
+    }, identity, decisions));
+    for (const row of group.decisions) {
+      const kind = row.action.type === "move" ? "Move" : "Cube";
+      const detail = () => el("span", { class: "history-kind muted" },
+        el("span", { class: "history-kind-label" }, kind),
+        ...(row.result ? [el("span", {}, ` · ${row.result.settings.name}`)] : []),
+      );
+      if (!row.feedback) {
+        decisions.append(
           el(
-            "span",
-            { class: "history-pending-status muted small" },
-            config.mode === "computer"
-              ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
-              : row.forced ? "Forced · no choice" : "Not analyzed",
+            "div",
+            {
+              class: "feedback-pending",
+              "data-history-side": side,
+              "data-history-player": row.player,
+            },
+            el("span", { class: "history-move" }, detail(), el("span", { class: "history-played" }, row.label)),
+            ...(canReturnToDecision(row, m.id)
+              ? [
+                  button(
+                    "Return",
+                    () => restoreDecision(row, m.id),
+                    "ghost",
+                    { "aria-label": "Return to this position", title: "Return to this position" },
+                  ),
+                ]
+              : []),
+            el(
+              "span",
+              { class: "history-pending-status muted small" },
+              config.mode === "computer"
+                ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
+                : row.forced ? "Forced · no choice" : "Not analyzed",
+            ),
           ),
+        );
+        continue;
+      }
+      const f = row.feedback;
+      const review = button(
+        "",
+        () =>
+          decisionReview(row.source, {
+            opponent: side === "opponent",
+            title:
+              row.result.type === "cube"
+                ? "Cube decision"
+                : "Checker decision",
+            onReturn: canReturnToDecision(row, m.id)
+              ? () => restoreDecision(row, m.id)
+              : undefined,
+            onReplay: canReplayBest(row, m.id)
+              ? (steps, result) => replayBest(row, m.id, steps, result)
+              : undefined,
+          }).result(row.result),
+        "feedback-review",
+        {
+          ...(row.index === reviewIndex
+            ? { id: "review-feedback" }
+            : {}),
+          "data-loss-tone": f.tone,
+          "data-history-side": side,
+          "data-history-player": row.player,
+          "data-decision-type": row.result.type,
+          title: `${playerLabel} · ${kind}: ${row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
+        },
+      );
+      const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
+      review.append(
+        el("span", { class: "history-move" },
+          detail(),
+          el("span", { class: "history-played" }, row.label),
+          ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
+            el("span", { class: "history-best-label" }, "Best "),
+            f.best.notation,
+          )] : []),
+        ),
+        decisionValues(f, true, { opponent: side === "opponent" }),
+        el("span", { class: "history-loss" },
+          el("span", { class: "muted" }, f.label),
+          el("strong", { class: "value" }, f.value),
         ),
       );
-      continue;
+      decisions.append(review);
     }
-    const f = row.feedback;
-    const review = button(
-      "",
-      () =>
-        decisionReview(row.source, {
-          opponent: side === "opponent",
-          title:
-            row.result.type === "cube"
-              ? "Cube decision"
-              : "Checker decision",
-          onReturn: canReturnToDecision(row, m.id)
-            ? () => restoreDecision(row, m.id)
-            : undefined,
-          onReplay: canReplayBest(row, m.id)
-            ? (steps, result) => replayBest(row, m.id, steps, result)
-            : undefined,
-        }).result(row.result),
-      "feedback-review",
-      {
-        ...(row.player === config.humanSide &&
-        !feedbackStrip.querySelector("#review-feedback")
-          ? { id: "review-feedback" }
-          : {}),
-        "data-loss-tone": f.tone,
-        "data-history-side": side,
-        "data-history-player": row.player,
-        "data-decision-type": row.result.type,
-        title: `${f.quality}. ${f.units}. Open equity and EV comparison.`,
-      },
-    );
-    const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
-    review.append(
-      identity(),
-      el("span", { class: "history-move" },
-        el("span", { class: "history-played" }, row.label),
-        ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
-          el("span", { class: "history-best-label" }, "Best "),
-          f.best.notation,
-        )] : []),
-      ),
-      decisionValues(f, true, { opponent: side === "opponent" }),
-      el("span", { class: "history-loss" },
-        el("span", { class: "muted" }, f.label),
-        el("strong", { class: "value" }, f.value),
-      ),
-    );
-    feedbackStrip.append(review);
   }
   feedbackStrip.append(
     button("Review session", showSessionReview, "ghost", {

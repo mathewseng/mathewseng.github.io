@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=ee3db5ca9e7eedff" />
-    <link rel="stylesheet" href="./controls.css?bgv=ee3db5ca9e7eedff" />
-    <script type="module" src="../ui/update-page.mjs?bgv=ee3db5ca9e7eedff"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=d4663d71e929fc9f" />
+    <link rel="stylesheet" href="./controls.css?bgv=d4663d71e929fc9f" />
+    <script type="module" src="../ui/update-page.mjs?bgv=d4663d71e929fc9f"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -381,7 +381,7 @@
               <th role="rowheader" scope="row" data-label="Situation">Your checker(s) on the bar</th>
               <td role="cell" data-label="What is highlighted">Bar source ring; initially selected when entry is possible. Other forward sources are unavailable.</td>
               <td role="cell" data-label="Click the checker">Select/deselect the bar checker.</td>
-              <td role="cell" data-label="Click point / tray space">Select/deselect unless this is an advertised return target. Entry routes can use several dice but must obey bar priority.</td>
+              <td role="cell" data-label="Click point / tray space">Select/deselect unless this is an advertised return target. After entry, selection clears and all remaining legal moves appear. Entry routes can use several dice; checkers still on the bar keep priority.</td>
             </tr>
             <tr role="row" id="case-bar-return">
               <th role="rowheader" scope="row" data-label="Situation">Bar is a draft-return destination</th>
@@ -410,7 +410,7 @@
             <tr role="row" id="case-repeat">
               <th role="rowheader" scope="row" data-label="Situation">Repeated clicks, fast or slow</th>
               <td role="cell" data-label="What is highlighted">Current legal markers update after each step. Click speed never changes the rules.</td>
-              <td role="cell" data-label="Click the checker">A disc click selects/deselects at any speed. A completed forward draft keeps its reversible landing selected.</td>
+              <td role="cell" data-label="Click the checker">A disc click selects/deselects at any speed. A completed forward draft keeps its reversible landing selected, except after bar entry, which clears selection.</td>
               <td role="cell" data-label="Click point / tray space">Use the currently selected route, or the nearest incoming checker with no selection. Repeated taps build a point while that arrival remains available. Once complete, the next tap on the selected landing deselects it.</td>
             </tr>
             <tr role="row" id="case-history">

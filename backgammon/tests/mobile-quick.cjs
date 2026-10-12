@@ -79,6 +79,8 @@ module.exports = async function mobileQuick(browser, base, out, name) {
       await set("bar",turn,orientation);
       await tap(p(20));
       assert.deepEqual((await read()).draft,[{from:"bar",to:p(20),die:4}],"bar-entry revision uses the other die");
+      assert.equal((await read()).selected,null,"bar entry returns to all available moves");
+      await select(p(20));
       await tap(p(19));
       assert.equal((await read()).draft.length,2);
     }

@@ -104,13 +104,14 @@ module.exports = async function historyReturn(browser, base, out, name) {
       });
       const density = await page.locator("#move-feedback .feedback-review").evaluateAll(rows => rows.map(row => ({
         height: row.getBoundingClientRect().height,
+        combined: row.closest('.history-turn').querySelectorAll('.feedback-review').length > 1,
         clipped: row.scrollWidth > row.clientWidth + 1,
         values: [...row.querySelectorAll('.decision-value')].every(n => n.scrollWidth <= n.clientWidth + 1),
       })));
       for (const row of density) {
         assert.equal(row.clipped,false,`${width}: row clips`);
         assert.equal(row.values,true,`${width}: equity clips`);
-        assert.ok(row.height <= (width >= 1366 ? 76 : 190),`${width}: history row too tall (${row.height})`);
+        assert.ok(row.height <= (width >= 1366 ? row.combined ? 135 : 76 : 190),`${width}: history row too tall (${row.height})`);
       }
       if ([390,1366].includes(width)) console.log(`${name} ${width}: row heights ${density.map(r=>r.height).join(', ')}`);
       assert.equal(layout.home,"play-review","history always belongs below the table");
@@ -138,7 +139,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
       labels: [...row.querySelectorAll('.decision-value .muted')].map(n=>n.textContent),
       best: row.querySelector('.decision-values-compact').dataset.bestPlayed === 'true',
       duplicatedMove: !!row.querySelector('.feedback-best'),
-      identity: row.querySelector('.history-player').textContent,
+      identity: row.closest('.history-turn').querySelector('.history-player').textContent,
     })));
     assert.ok(comparisons.length >= 3);
     assert.ok(comparisons.some(row => row.best), "best-played row is tested");
@@ -169,7 +170,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
       const colors = await page.evaluate(() =>
         [
           ...document.querySelectorAll(
-            "#move-feedback [data-history-player]",
+            "#move-feedback .history-turn[data-history-player]",
           ),
         ].map((row) => {
           const player = row.dataset.historyPlayer;

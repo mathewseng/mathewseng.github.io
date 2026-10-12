@@ -13,6 +13,7 @@ import {
   compactEvaluation,
   mergeEvaluations,
   sameDecisionPrefix,
+  groupDecisionTurns,
 } from "../core/decision-history.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 function fixture() {
@@ -99,4 +100,67 @@ test("saved checker reviews retain ten ranked candidates and the actual submitte
   assert.equal(original.candidates.length, 18);
   saved.candidates[0].steps[0].to = 3;
   assert.equal(original.candidates[0].steps[0].to, 4);
+});
+
+function turnFixture(initial = initialState({phase: "roll", matchLength: 0})) {
+  const model = {initial, events: [], state: initial};
+  return {
+    model,
+    add(type, actor = model.state.turn, extra = {}) {
+      const action = {type, ...extra};
+      model.state = transition(model.state, action, actor);
+      model.events.push({actor, action});
+    },
+    move() { this.add("move", model.state.turn, {steps: legalTurns(model.state)[0].steps}); },
+  };
+}
+
+test("turn rows combine pre-roll and checker play without combining successive turns", () => {
+  const f = turnFixture();
+  for (let n = 0; n < 3; n++) { f.add("roll", f.model.state.turn, {dice: [3, 1]}); f.move(); }
+  const rows = decisionHistory(f.model), before = clone(rows), groups = groupDecisionTurns(rows);
+  assert.deepEqual(groups.map(g => [g.turn, g.player, g.decisions.map(r => r.action.type)]),
+    [[1, 0, ["roll", "move"]], [2, 1, ["roll", "move"]], [3, 0, ["roll", "move"]]]);
+  assert.deepEqual(rows, before, "display grouping never mutates decision records");
+  assert.deepEqual(groupDecisionTurns([...rows].reverse()), groups, "independent of display sorting");
+  assert.deepEqual(groups.flatMap(g => g.decisions).map(r => r.index), rows.map(r => r.index));
+});
+
+test("cube exchange preserves responder identity, original cube and return targets", () => {
+  const f = turnFixture();
+  f.add("double"); f.add("take", 1); f.add("roll", 0, {dice: [4, 2]}); f.move();
+  const groups = groupDecisionTurns(decisionHistory(f.model));
+  const own = groups.find(g => g.player === 0), response = groups.find(g => g.player === 1);
+  assert.deepEqual(own.decisions.map(r => [r.index, r.action.type, r.source.cube.value]), [[0, "double", 1], [3, "move", 2]]);
+  assert.equal(own.response, false);
+  assert.equal(response.response, true);
+  assert.deepEqual(response.decisions.map(r => [r.index, r.action.type]), [[1, "take"]]);
+  assert.equal(own.turn, response.turn);
+});
+
+test("beaver/raccoon responses retain all decisions without crossing a game boundary", () => {
+  const f = turnFixture(initialState({phase:"roll", matchLength:0, rules:{immediateRedoubles:2}}));
+  f.add("double", 0); f.add("beaver", 1); f.add("raccoon", 0); f.add("take", 1);
+  f.add("roll", 0, {dice:[5,2]}); f.move();
+  const groups = groupDecisionTurns(decisionHistory(f.model));
+  assert.deepEqual(groups.find(g => g.player === 0).decisions.map(r => r.action.type), ["double", "raccoon", "move"]);
+  assert.deepEqual(groups.find(g => g.player === 1).decisions.map(r => r.action.type), ["beaver", "take"]);
+  const games = groupDecisionTurns(decisionHistory(fixture()));
+  assert.deepEqual(games.map(g => [g.game, g.turn, g.player]), [[1,1,0], [1,1,1], [2,1,0]]);
+});
+
+test("opening ties, pending rolls, and forced passes do not blur turn boundaries", () => {
+  const f = turnFixture(initialState({matchLength:0}));
+  f.add("opening", 0, {dice:[3,3]}); f.add("opening", 0, {dice:[6,1]}); f.move();
+  f.add("roll", 1, {dice:[4,2]});
+  const groups = groupDecisionTurns(decisionHistory(f.model));
+  assert.deepEqual(groups.map(g => [g.turn, g.decisions.map(r => r.action.type)]), [[1,["move"]], [2,["roll"]]]);
+  const blocked = initialState({phase:"move", dice:[1,2], matchLength:0});
+  blocked.points = Array(24).fill(0); blocked.bar=[1,0]; blocked.off=[14,0];
+  blocked.points[23]=-7; blocked.points[22]=-8;
+  const pass = turnFixture(blocked); pass.move(); pass.add("roll", 1, {dice:[6,3]}); pass.move();
+  const passed = groupDecisionTurns(decisionHistory(pass.model));
+  assert.equal(passed[0].decisions[0].label, "Pass — no legal move");
+  assert.equal(passed[0].decisions[0].forced, true);
+  assert.equal(passed[1].turn, 2);
 });

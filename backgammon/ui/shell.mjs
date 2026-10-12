@@ -1000,20 +1000,20 @@ export class DraftBoard {
     const nextSources = [
       ...new Set(this.candidates().map((st) => st.from)),
     ];
-    const entered =
-      route.switchDie ||
-      (!route.undo &&
-        route.steps.length === 1 &&
-        route.steps[0].from === "bar");
+    // Finishing/revising an entry returns to the overview, including multi-die
+    // entries. The remaining legal paths still enforce priority for the bar.
+    const entered = !route.undo && route.steps.some((step) => step.from === "bar");
     this.selected =
-      entered && !this.current().bar[this.state.turn]
-        ? route.to
-        : nextSources.length === 1
-          ? nextSources[0]
-          : !nextSources.length && !route.undo &&
-              this.reverseMoves().some((r) => r.from === route.to)
-            ? route.to
-            : null;
+      entered
+        ? null
+        : route.switchDie && !this.current().bar[this.state.turn]
+          ? route.to
+          : nextSources.length === 1
+            ? nextSources[0]
+            : !nextSources.length && !route.undo &&
+                this.reverseMoves().some((r) => r.from === route.to)
+              ? route.to
+              : null;
     this.render();
     if (route.switchDie)
       this.board.animateRestore(before, this.current(), "move");

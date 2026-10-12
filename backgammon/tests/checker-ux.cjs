@@ -323,6 +323,8 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     for (const orientation of [0, 1]) {
       await load("bar", orientation);
       await page.locator('[data-point="23"]').click();
+      assert.equal((await info()).selected, null, "entry shows the full move overview");
+      await page.locator('[data-point="23"] .checker > circle').first().click();
       assert.equal((await info()).selected, 23);
       assert.equal(
         await page

@@ -58,10 +58,14 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.locator(".draft-progress").waitFor({state:"detached"});
     // Real GNUbg results, including both players' checker and cube decisions.
     await page.waitForFunction(()=>document.querySelectorAll(".feedback-review").length===5,null,{timeout:60000});
+    assert.equal(await page.locator(".history-turn").count(),3,"five decisions share three turn rows");
+    assert.deepEqual(await page.locator(".history-turn").evaluateAll(es=>es.map(e=>[...e.querySelectorAll(".feedback-review")].map(b=>b.dataset.decisionType))),
+      [["cube"],["cube","checker"],["cube","checker"]]);
     const original=await saved();
     await page.locator("#analysis-jump").tap();
     await page.locator('[data-history-filter="self"]').tap();
     assert.equal(await page.locator(".feedback-review").count(),3);
+    assert.equal(await page.locator(".history-turn").count(),2);
     assert.equal(await page.locator('.feedback-review[data-history-side="opponent"]').count(),0);
     assert.match(await page.locator('[data-history-filter="self"]').getAttribute("aria-label"), /3 decisions/);
     await shot("your-decisions");
@@ -71,6 +75,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     assert.equal(await page.locator('[data-history-filter="self"]').getAttribute("aria-pressed"),"true");
     await page.locator('[data-history-filter="opponent"]').tap();
     assert.equal(await page.locator(".feedback-review").count(),2);
+    assert.equal(await page.locator(".history-turn").count(),1);
     assert.equal(await page.locator('.feedback-review[data-history-side="self"]').count(),0);
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[1366,768]]) {
       await page.setViewportSize({width,height});
@@ -79,6 +84,19 @@ module.exports = async function mobileHistory(browser, base, out, name) {
         const r=e.getBoundingClientRect();return {height:r.height,left:r.left,right:r.right};
       }));
       assert.ok(buttons.every(r=>r.height>=44 && r.left>=0 && r.right<=width+1));
+      const groups=await page.locator(".history-turn").evaluateAll(es=>es.map(e=>{
+        const r=e.getBoundingClientRect();
+        const buttons=[...e.querySelectorAll(".feedback-review")].map(b=>{const q=b.getBoundingClientRect();return {x:q.x,y:q.y,width:q.width,height:q.height}});
+        return {width:r.width,scrollWidth:e.scrollWidth,height:r.height,buttons};
+      }));
+      for(const g of groups) {
+        assert.ok(g.scrollWidth<=g.width+1,"turn content does not overflow");
+        assert.ok(g.buttons.every(b=>b.height>=44 && b.x>=0 && b.x+b.width<=width+1));
+        if(width===1366) {
+          assert.equal(g.buttons[0].y,g.buttons[1].y,"cube and move share one desktop row");
+          assert.ok(g.height<135,"a combined turn is shorter than two separate cards");
+        }
+      }
       assert.ok(await page.locator('[data-history-filter="opponent"] .history-filter-label').evaluate(n=>n.scrollWidth<=n.clientWidth+1),"Opponent label is readable in full");
       if (width>=1025) assert.ok((await page.locator("#move-feedback").boundingBox()).width>700,"filters never push desktop history into the narrow column");
       await shot(`opponent-${width}`);
@@ -87,6 +105,13 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.locator('[data-history-filter="all"]').focus();
     await page.keyboard.press("Enter");
     assert.equal(await page.locator(".feedback-review").count(),5);
+    assert.equal(await page.locator(".history-turn").count(),3);
+    for (const [width,height] of [[390,844],[1366,768]]) {
+      await page.setViewportSize({width,height});
+      await page.evaluate(()=>document.querySelector("#review-heading").scrollIntoView({block:"start"}));
+      await shot(`all-${width}`);
+    }
+    await page.setViewportSize({width:390,height:844});
     assert.ok(await page.locator('[data-history-filter="all"]').evaluate(e=>e===document.activeElement),"keyboard focus stays on filter");
     assert.deepEqual((await saved()).game,original.game,"history filters and previews never alter the game or analysis");
     await page.getByRole("button",{name:"Back to board ↑",exact:true}).tap();

@@ -3131,98 +3131,82 @@ button.teal-die:hover {
   .decision-dialog .decision-tabs button { padding-inline: 6px; }
 }
 
-/* Dense decision rows: identity, played/best move, comparison, loss.
-   Container sizing follows the actual history width beside the inspector. */
-.play-review .play-feedback {
-  container-type: inline-size;
-  gap: 5px;
-}
-.history-context {
-  margin: 0 0 7px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.play-feedback .feedback-review {
+/* One turn shares its player identity; cube and checker grades stay independent.
+   On wide tables the two decisions sit side by side, on phones they stack. */
+.play-review .play-feedback { container-type: inline-size; gap: 6px; }
+.history-context { margin: 0 0 7px; font-size: 13px; line-height: 1.5; }
+.play-feedback .history-turn { display: grid; padding: 0; min-width: 0; }
+.history-identity { display: grid; gap: 2px; min-width: 0; padding: 9px 12px; }
+.play-feedback .history-player { font-size: 15px; font-weight: 650; }
+.history-detail, .history-turn-label { font-size: 12px; overflow-wrap: anywhere; }
+.history-turn .history-identity { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 8px; }
+.history-turn .history-turn-label { grid-column: 2; grid-row: 1 / 3; text-align: right; }
+.history-turn-decisions { display: grid; min-width: 0; }
+.play-feedback .history-turn :is(.feedback-review, .feedback-pending) {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "identity loss" "move move" "equity equity";
-  gap: 5px 14px;
+  grid-template-areas: "move loss" "equity equity";
+  gap: 7px 14px;
+  min-height: 44px;
   padding: 8px 12px;
   line-height: 1.35;
   align-items: center;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--history-color) 15%, transparent);
+  border-radius: 0;
+  background: transparent;
 }
-.play-feedback .feedback-review:hover {
-  background: color-mix(in srgb, var(--history-color) 12%, var(--bg));
+.play-feedback .history-turn .feedback-review:hover {
+  background: color-mix(in srgb, var(--history-color) 8%, transparent);
 }
-.history-identity { grid-area: identity; display: grid; gap: 2px; min-width: 0; }
-.play-feedback .history-player { font-size: 15px; font-weight: 650; }
-.history-detail { font-size: 12px; overflow-wrap: anywhere; }
 .history-move { grid-area: move; display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.history-kind { font-size: 12px; }
+.history-kind-label { color: var(--text); font-weight: 600; }
 .history-played { font-size: 14px; font-weight: 550; font-variant-numeric: tabular-nums; }
-.play-feedback .feedback-best { font-size: 13px; }
+.play-feedback .feedback-best { font-size: 12px; }
 .history-best-label { font-weight: 600; }
 .history-loss { grid-area: loss; display: grid; gap: 2px; text-align: right; align-self: start; }
 .history-loss .muted { font-size: 12px; }
 .history-loss .value { color: var(--loss-color); font-size: 16px; font-variant-numeric: tabular-nums; }
-.play-feedback .decision-values-compact {
-  grid-area: equity;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  min-width: 0;
-}
-/* Units are stated once above the list and remain in each row’s accessible text. */
+.play-feedback .decision-values-compact { grid-area: equity; border: 0; margin: 0; padding: 0; min-width: 0; }
+/* Units are shared by the list, also available to assistive technology per decision. */
 .play-feedback .decision-value-caption { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .play-feedback .decision-value { padding-inline: 10px; gap: 2px; }
 .play-feedback .decision-value:first-child { padding-left: 0; }
 .play-feedback .decision-value .muted { font-size: 12px; }
 .play-feedback .decision-value strong { font-size: 15px; }
-/* Pending rows keep the same identity and a compact, explicit return action. */
-.play-feedback .feedback-pending {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "identity move" "status return";
-  gap: 6px 14px;
-  align-items: center;
-  padding-block: 8px;
-}
-.play-feedback .feedback-pending .history-move { text-align: right; }
+.play-feedback .history-turn .feedback-pending { grid-template-areas: "move return" "status status"; }
 .history-pending-status { grid-area: status; }
 .play-feedback .feedback-pending button { grid-area: return; justify-self: end; padding-inline: 10px; }
-@container (min-width: 760px) {
-  .play-feedback .feedback-review,
-  .play-feedback .feedback-pending {
-    grid-template-columns: 130px minmax(100px, 1fr) 350px 76px;
-    gap: 16px;
-    min-height: 64px;
+@container (min-width: 900px) {
+  .play-feedback .history-turn { grid-template-columns: 145px minmax(0, 1fr); }
+  .history-turn .history-identity { display: flex; flex-direction: column; justify-content: center; }
+  .history-turn .history-turn-label { text-align: left; }
+  .history-turn-decisions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .play-feedback .history-turn :is(.feedback-review, .feedback-pending) {
+    border-top: 0;
+    border-left: 1px solid color-mix(in srgb, var(--history-color) 15%, transparent);
   }
-  .play-feedback .feedback-review { grid-template-areas: "identity move equity loss"; }
-  .play-feedback .feedback-pending { grid-template-areas: "identity move status return"; }
-  .play-feedback .feedback-pending .history-move { text-align: left; }
+  .history-turn-decisions > :only-child { grid-column: 1 / -1; }
+  .play-feedback .history-turn .feedback-review:only-child {
+    grid-template-columns: minmax(180px, 1fr) minmax(280px, 1fr) 76px;
+    grid-template-areas: "move equity loss";
+  }
+  .play-feedback .history-turn .feedback-pending:only-child {
+    grid-template-columns: minmax(180px, 1fr) minmax(200px, 1fr) 76px;
+    grid-template-areas: "move status return";
+  }
   .history-loss { align-self: center; }
-  .play-feedback .decision-value-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .play-feedback .decision-values-compact[data-best-played="true"] [data-value-kind="best"] { grid-column: 3; }
 }
-/* At high zoom, use extra height instead of clipping names or equity values. */
+/* At high zoom, add height instead of clipping labels or equity values. */
 @container (max-width: 280px) {
-  .play-feedback .feedback-review {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "identity" "move" "equity" "loss";
-  }
+  .history-turn .history-identity { display: flex; flex-direction: column; }
+  .play-feedback .history-turn .feedback-review { grid-template-columns: minmax(0, 1fr); grid-template-areas: "move" "equity" "loss"; }
   .play-feedback .decision-value-grid { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-  .play-feedback .decision-value {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    border: 0;
-    padding: 0;
-  }
+  .play-feedback .decision-value { display: flex; justify-content: space-between; gap: 8px; border: 0; padding: 0; }
   .play-feedback .decision-value strong { flex: none; }
   .history-loss { display: flex; justify-content: space-between; align-items: baseline; }
   .play-feedback .history-player { overflow-wrap: anywhere; }
-  .play-feedback .feedback-pending {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "identity" "move" "status" "return";
-  }
-  .play-feedback .feedback-pending .history-move { text-align: left; }
+  .play-feedback .history-turn .feedback-pending { grid-template-columns: minmax(0, 1fr); grid-template-areas: "move" "status" "return"; }
 }
 
 /* Hide assistance without removing legal hit regions or changing input rules. */
@@ -3545,6 +3529,13 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
    compare ten alternatives without bouncing between Board and Comparison. */
 .review-preview-controls { display: none; }
 .decision-tabs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.decision-choices button[aria-pressed="true"],
+.decision-choices button[aria-pressed="true"]:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #112a26;
+  box-shadow: inset 0 -3px 0 #112a2638;
+}
 .library-preview { aspect-ratio: 876 / 660; }
 .library-selected-title { overflow-wrap: anywhere; }
 .library-open { width: 100%; }

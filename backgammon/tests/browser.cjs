@@ -424,6 +424,9 @@ const server = http.createServer((req, res) => {
         (report.moveArrows ||= []).push(
           await require("./move-arrows.cjs")(browser, base, out, browserName),
         );
+        (report.reviewSelection ||= []).push(
+          await require("./review-selection.cjs")(browser, base, out, browserName),
+        );
         (report.lastMoveUX ||= []).push(
           await require("./last-move.cjs")(browser, base, out, browserName),
         );
@@ -547,6 +550,9 @@ const server = http.createServer((req, res) => {
         );
         (report.mobileSettings ||= []).push(
           await require("./mobile-settings.cjs")(browser, base, out, browserName),
+        );
+        (report.barEntry ||= []).push(
+          await require("./bar-entry.cjs")(browser, base, out, browserName),
         );
         (report.touchMoves ||= []).push(
           await require("./touch-moves.cjs")(browser, base, out, browserName),
