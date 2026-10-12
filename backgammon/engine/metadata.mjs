@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 export const ENGINE_VERSION =
-  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5";
+  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6";
 export const PRESETS = Object.freeze({
   quick: {
     name: "Quick",

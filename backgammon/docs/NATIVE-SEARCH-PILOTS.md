@@ -1,6 +1,6 @@
 # Native search experiments and request isolation
 
-The deployed solver still uses **GNUbg bg5**, with its existing weights, search depths, filters and opening book. This investigation produced a verified request-isolation fix and reproducible native optimization candidates. Native candidates remain experimental: timing improvements alone do not establish that a build is ready to replace the distributed engine.
+This historical investigation used deployed **GNUbg bg5** and produced a request-isolation fix and reproducible native optimization candidates. The combined candidate subsequently passed the additional memory, reproducibility and release checks documented in [BG6-RELEASE.md](BG6-RELEASE.md). Other candidates remain experimental; the measurements below retain their original executable identities.
 
 ## Shipped correctness fix
 
@@ -113,4 +113,4 @@ The client unit suite passed all 19 tests. The real-WASM regression served the a
 
 The combined native candidate subsequently passed **645 production-worker numerical comparisons**: 415 in Chromium (including the 300-position corpus), 115 in Firefox and 115 in WebKit. Maximum scalar/candidate difference was **0.00000006**, with identical best decisions. All **15 warm/fresh cache-context comparisons** passed (maximum difference 0.00000078), as did **30 loading/fallback/retry cases** across the three browsers. Seeded rollout, cancellation and cross-backend checkpoint resume were included in each browser's numerical suite. The thresholds remain 0.00001; zero recorded differences in the separate native SIMD baseline comparisons above should not be confused with these scalar comparisons.
 
-The complete site test run passed **341 tests**. The third-turn book's completed `--plan` check reused all **27,930 later-turn decisions with zero missing**, without starting WASM. Live checks confirmed all five Backgammon routes and an exact match between the published and local `jacoby-3ply-v3` index. No native candidate assets or test bindings were distributed.
+The complete site test run passed **341 tests**. The third-turn book's completed `--plan` check reused all **27,930 later-turn decisions with zero missing**, without starting WASM. Live checks confirmed all five Backgammon routes and an exact match between the published and local `jacoby-3ply-v3` index. At that stage no native candidate assets or test bindings were distributed. The later bg6 release is documented separately; it contains no test bindings.

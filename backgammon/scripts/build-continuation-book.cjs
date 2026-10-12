@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Full third-turn coverage; reuse existing fourth-turn entries without widening
-// that separate scope. Run after assembling _site. All computation is real WASM.
+// that separate scope. Uses the historical book's pinned real WASM inputs.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require('playwright'), { launchQuietBrowser } = require('../../scripts/quiet-browser.cjs');
 const worker = require('./book-evaluator.cjs');
 const { BookCheckpoint, boardId, digest, atomicJSON, recoverPublication } = require('./book-checkpoint.cjs');
-const root = path.resolve('_site'), out = path.resolve('backgammon/engine/opening-book-data');
+const { resolveBookInputs, recipe } = require('./book-inputs.cjs');
+const root = resolveBookInputs(), out = path.resolve('backgammon/engine/opening-book-data');
 const workers = Number(process.env.BG_BOOK_WORKERS || 8);
 const stopAfter = Number(process.env.BG_BOOK_STOP_AFTER || Infinity);
 if (!Number.isInteger(workers) || workers < 1 || workers > 16) throw Error('BG_BOOK_WORKERS must be an integer from 1 to 16.');
@@ -23,18 +24,17 @@ const server = http.createServer((req, res) => {
   fs.readFile(file, (e, b) => { if (e) res.writeHead(404); res.end(e ? 'Not found' : b); });
 });
 (async () => {
-  const { ENGINE_VERSION } = await import('../engine/metadata.mjs');
   const { BOOK_ID, bookResult } = await import('../engine/opening-book.mjs');
   const { nearThirdBranches, stateForBoard, CONTINUATION_POLICY } = await import('./book-branches.mjs');
   recoverPublication(out, path.resolve('backgammon/test-results/book-checkpoints'));
   const index = read('index.json');
-  if (index.engine !== ENGINE_VERSION || index.plies !== 3 || index.threshold !== .040) throw Error('Rebuild the opening book first.');
+  if (index.engine !== recipe.engine || index.plies !== 3 || index.threshold !== .040) throw Error('Rebuild the opening book first.');
   const expectedSettings = { name: 'Opening book', plies: 3, cubeful: true, pruning: true, deterministic: true, noise: 0, replyFilter: { plies: 2, minimum: 10, threshold: .080 } };
   const expectedContext = { matchLength: 0, cube: true, jacoby: true, immediateRedoubles: 0, cubeOwner: null };
   const { isDeepStrictEqual } = require('node:util');
   if (!isDeepStrictEqual(index.settings, expectedSettings) || !isDeepStrictEqual(index.context, expectedContext)) throw Error('Unsupported source book settings or rule context.');
   for (const [file, hash] of Object.entries(index.provenance.assets)) {
-    if (digest(fs.readFileSync('backgammon/' + file)) !== hash || digest(fs.readFileSync(path.join(root, 'backgammon', file))) !== hash) throw Error('Native input mismatch: ' + file);
+    if (digest(fs.readFileSync(path.join(root, 'backgammon', file))) !== hash) throw Error('Native input mismatch: ' + file);
   }
   // Numerical identity is separate from coverage policy and deployment version:
   // adding branches must not discard completed, identically evaluated boards.

@@ -36,8 +36,10 @@ CFLAGS := $(filter-out -O2,$(CFLAGS)) -O3 -flto -msimd128 -ffp-contract=off
 OBJDIR = obj_simd
 DISTDIR = dist_simd
 endif''')
+s=s.replace("SRC := $(shell find src -name '*.c')", "SRC := $(sort $(shell find src -name '*.c' ! -name '._*'))")
 x.write_text(s)
 subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/neuralnet-simd.patch')], cwd=p, check=True)
+subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/native-search-bg6.patch')], cwd=p, check=True)
 
 # Rollouts use seeded ISAAC directly. Remove upstream diagnostic spam and make
 # the fallback RNG setter real; event handling happens between worker batches.

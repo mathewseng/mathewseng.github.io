@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { initialState, boardKey, legalTurns, commitTurn, positionKey } from '../core/rules.mjs';
-import { OpeningBook, bookContext, bookBoardKey, bookResult } from '../engine/opening-book.mjs';
+import { OpeningBook, bookContext, bookBoardKey, bookResult, BOOK_ENGINE_VERSION } from '../engine/opening-book.mjs';
 import { EngineClient } from '../engine/client.mjs';
 import { ENGINE_VERSION } from '../engine/metadata.mjs';
 import { CONTINUATION_POLICY, thirdBranches, fourthBranches, nextBoard, stateForBoard, rankBranches, nearThirdBranches } from '../scripts/book-branches.mjs';
@@ -16,8 +16,20 @@ const read = url => Promise.resolve(new Response(readFileSync(new URL(url.pathna
 const makeBook = () => new OpeningBook({ fetcher: read });
 const wait = () => new Promise(r=>setTimeout(r,0));
 
+test('historical book keeps its computation engine and rejects relabeled data', async () => {
+  assert.notEqual(BOOK_ENGINE_VERSION, ENGINE_VERSION);
+  const engine = new EngineClient({ openingBook: makeBook(), workerFactory: () => { throw Error('Book hit must not load WASM'); } });
+  try {
+    const result = await engine.analyze(state(), { preset: 'auto' });
+    assert.equal(result.engine, BOOK_ENGINE_VERSION);
+    assert.equal(result.book.id, index.id);
+    assert.equal(result.candidates[0].equity, index.openings['31'].rows[0][1]);
+    assert.throws(() => bookResult(state(), index.openings['31'], { ...index, engine: ENGINE_VERSION }, 'auto'), /version mismatch/);
+  } finally { engine.destroy(); }
+});
+
 test('book covers all 15 opening rolls and every 3-ply opening within .040; every reply roll is legal', () => {
-  assert.equal(index.engine, ENGINE_VERSION);
+  assert.equal(index.engine, BOOK_ENGINE_VERSION);
   assert.equal(Object.keys(index.openings).length, 15);
   const expectedBoards = new Set();
   for (let a=2;a<=6;a++) for(let b=1;b<a;b++) {

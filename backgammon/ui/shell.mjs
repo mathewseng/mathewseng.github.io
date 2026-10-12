@@ -481,14 +481,14 @@ export function about() {
       el(
         "p",
         {},
-        "GNUbg Core 955555c · web binding bg5. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
+        "GNUbg Core 955555c · web binding bg6. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
       ),
       el(
         "p",
         {},
         "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful when the cube is enabled, deterministic, pruning enabled, no noise. Live Quick, Standard and Deep searches evaluate every legal resulting position at the selected depth.",
       ),
-      el("p", {}, "Default Jacoby money games use a precomputed 3-ply opening book: all 15 opening rolls and all 21 replies to 34 opening moves within 0.040 equity of best, plus all rolls at 64 selected third-turn and 32 selected fourth-turn positions. Later-turn coverage is partial, ranked by fair-dice probability along best-ranked book moves. Book entries override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
+      el("p", {}, "Default Jacoby money games use a precomputed bg5 3-ply book: all 15 opening rolls, all replies to 34 near-best openings, and all rolls at 1,298 third-turn positions after evaluated replies within 0.040 equity of best. Replies use a documented candidate filter; 32 fourth-turn positions have partial coverage. Book entries retain their original engine provenance and override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
       el(
         "p",
         {},
@@ -511,7 +511,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg5.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg6.tar.gz" },
         "Download corresponding engine source",
       ),
       el(

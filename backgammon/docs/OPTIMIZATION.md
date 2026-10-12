@@ -111,4 +111,4 @@ The repository test runner passed 301 tests. After the final sound-clock regress
 
 ### Rollout research remains separate
 
-A two-ply rollout binding was prototyped against a separately built GNUbg 1.08.003 executable. One two-trial contact fixture differed by about 0.01038 equity, including with the native evaluation cache disabled. This is not sufficient evidence to distribute that extension as verified. The production native engine remains **955555c + bg5**, with the existing validated zero-ply rollout policy and unchanged weights/data. Automatic tree depth and rollout policy are distinct settings; no stronger rollout claim is made.
+A two-ply rollout binding was prototyped against a separately built GNUbg 1.08.003 executable. One two-trial contact fixture differed by about 0.01038 equity, including with the native evaluation cache disabled. This is not sufficient evidence to distribute that extension as verified. The production native engine is now **955555c + bg6**, with the existing validated zero-ply rollout policy and unchanged weights/data. Automatic tree depth and rollout policy are distinct settings; no stronger rollout claim is made.

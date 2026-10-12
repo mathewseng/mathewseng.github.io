@@ -2,7 +2,8 @@
 // Reproducible, resumable GNUbg opening/reply book. No third-party move database.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),crypto=require('node:crypto');
 const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../scripts/quiet-browser.cjs');
-const root=path.resolve('_site'),out=path.resolve('backgammon/engine/opening-book-data');
+const {resolveBookInputs,recipe}=require('./book-inputs.cjs');
+const root=resolveBookInputs(),out=path.resolve('backgammon/engine/opening-book-data');
 const checkpoint=path.resolve('backgammon/test-results/opening-book-build.json');
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const worker=require('./book-evaluator.cjs');
@@ -13,10 +14,10 @@ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://loc
  res.setHeader('Content-Type',({'.mjs':'text/javascript','.js':'text/javascript','.wasm':'application/wasm','.json':'application/json'})[path.extname(f)]||'text/html');
  fs.readFile(f,(e,b)=>{if(e)res.writeHead(404);res.end(e?'Not found':b);});});
 (async()=>{
- const {initialState,commitTurn,boardKey}=await import('../core/rules.mjs');const {ENGINE_VERSION}=await import('../engine/metadata.mjs');
+ const {initialState,commitTurn,boardKey}=await import('../core/rules.mjs');const ENGINE_VERSION=recipe.engine;
  const {BOOK_ID}=await import('../engine/opening-book.mjs');
  const files=['engine/evaluate.mjs','engine/vendor/simd/gnubg-core-module.js','engine/vendor/simd/gnubg-core-module.wasm','engine/vendor/gnubg-core-module.data','core/rules.mjs','core/xgid.mjs'];
- const assets=Object.fromEntries(files.map(p=>{const b=fs.readFileSync('backgammon/'+p);if(!b.equals(fs.readFileSync(path.join(root,'backgammon',p))))throw Error('Reassemble _site: '+p);return [p,hash(b)];}));
+ const assets=Object.fromEntries(files.map(p=>[p,hash(fs.readFileSync(path.join(root,'backgammon',p)))]));
  const signature=hash(JSON.stringify({assets,worker,engine:ENGINE_VERSION}));
  fs.mkdirSync(path.dirname(checkpoint),{recursive:true});fs.mkdirSync(out,{recursive:true});
  let progress=fs.existsSync(checkpoint)?JSON.parse(fs.readFileSync(checkpoint)):null;

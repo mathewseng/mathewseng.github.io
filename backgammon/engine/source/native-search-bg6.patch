@@ -1,0 +1,192 @@
+--- a/src/lib/neuralnet.h
++++ b/src/lib/neuralnet.h
+@@ -35,0 +36,3 @@
++#ifdef __wasm_simd128__
++    float *arOutputWeight4;
++#endif
+--- a/src/lib/neuralnet.c
++++ b/src/lib/neuralnet.c
+@@ -44,0 +45,3 @@
++#ifdef __wasm_simd128__
++    pnn->arOutputWeight4 = NULL;
++#endif
+@@ -80,0 +84,26 @@
++#ifdef __wasm_simd128__
++    sse_free(pnn->arOutputWeight4);
++    pnn->arOutputWeight4 = NULL;
++#endif
++}
++
++/* Keep the original on-disk/output-major weights intact for save/load.
++ * This small extra layout packs four independent output neurons together. */
++static int PackOutputWeights(neuralnet *pnn)
++{
++#ifdef __wasm_simd128__
++    const unsigned int groups = pnn->cOutput / 4;
++    if (groups) {
++        pnn->arOutputWeight4 = sse_malloc(groups * pnn->cHidden * 4 * sizeof(float));
++        /* Packing is an optimization. Retain the original output loop if
++         * this optional allocation is unavailable. Required weights were
++         * already loaded successfully; no result or precision is changed. */
++        if (!pnn->arOutputWeight4) return 0;
++        for (unsigned int g = 0; g < groups; g++)
++            for (unsigned int j = 0; j < pnn->cHidden; j++)
++                for (unsigned int lane = 0; lane < 4; lane++)
++                    pnn->arOutputWeight4[(g * pnn->cHidden + j) * 4 + lane] =
++                        pnn->arOutputWeight[(g * 4 + lane) * pnn->cHidden + j];
++    }
++#endif
++    return 0;
+@@ -118,0 +148,59 @@
++}
++
++static void OutputNodes(const neuralnet *pnn, const float *ar, float *arOutput)
++{
++    unsigned int i = 0, j;
++#ifdef __wasm_simd128__
++    for (; pnn->arOutputWeight4 && i + 4 <= pnn->cOutput; i += 4) {
++        const float *weights = pnn->arOutputWeight4 + i * pnn->cHidden;
++        v128_t sum = wasm_v128_load(pnn->arOutputThreshold + i);
++        for (j = 0; j < pnn->cHidden; j++)
++            sum = wasm_f32x4_add(sum, wasm_f32x4_mul(wasm_f32x4_splat(ar[j]),
++                wasm_v128_load(weights + j * 4)));
++        float sums[4];
++        wasm_v128_store(sums, sum);
++        for (unsigned int lane = 0; lane < 4; lane++)
++            arOutput[i + lane] = sigmoid(-pnn->rBetaOutput * sums[lane]);
++    }
++#endif
++    for (; i < pnn->cOutput; i++) {
++        float r = pnn->arOutputThreshold[i];
++        const float *weights = pnn->arOutputWeight + i * pnn->cHidden;
++        for (j = 0; j < pnn->cHidden; j++) r += ar[j] * weights[j];
++        arOutput[i] = sigmoid(-pnn->rBetaOutput * r);
++    }
++}
++
++/* Four independent hidden activations. Lookup indices are bounded before
++ * scalar gathers. Keep sigmoid.h's arithmetic order and cutoff constants;
++ * no approximation change, fused operation, or reassociated reduction. */
++static void
++ActivateHidden(float *ar, unsigned int count, float beta)
++{
++    unsigned int i = 0;
++#ifdef __wasm_simd128__
++    const v128_t zero = wasm_f32x4_splat(0.0f);
++    const v128_t one = wasm_f32x4_splat(1.0f);
++    const v128_t ten = wasm_f32x4_splat(10.0f);
++    const v128_t scale = wasm_f32x4_splat(-beta);
++    for (; i + 4 <= count; i += 4) {
++        const v128_t xin = wasm_f32x4_mul(scale, wasm_v128_load(ar + i));
++        const v128_t magnitude = wasm_f32x4_abs(xin);
++        const v128_t x1 = wasm_f32x4_mul(ten, wasm_f32x4_min(magnitude, ten));
++        const v128_t index = wasm_i32x4_trunc_sat_f32x4(x1);
++        const v128_t lookup = wasm_f32x4_make(
++            e[wasm_i32x4_extract_lane(index, 0)], e[wasm_i32x4_extract_lane(index, 1)],
++            e[wasm_i32x4_extract_lane(index, 2)], e[wasm_i32x4_extract_lane(index, 3)]);
++        const v128_t fraction = wasm_f32x4_add(
++            wasm_f32x4_convert_i32x4(wasm_i32x4_sub(wasm_i32x4_splat(10), index)), x1);
++        const v128_t reciprocal = wasm_f32x4_div(one,
++            wasm_f32x4_add(one, wasm_f32x4_mul(lookup, fraction)));
++        const v128_t positive = wasm_f32x4_ge(xin, zero);
++        const v128_t normal = wasm_v128_bitselect(reciprocal,
++            wasm_f32x4_sub(one, reciprocal), positive);
++        const v128_t extreme = wasm_v128_bitselect(wasm_f32x4_splat(1.0f / 19931.370438230298f),
++            wasm_f32x4_splat(19930.370438230298f / 19931.370438230298f), positive);
++        wasm_v128_store(ar + i, wasm_v128_bitselect(normal, extreme, wasm_f32x4_lt(magnitude, ten)));
++    }
++#endif
++    for (; i < count; i++) ar[i] = sigmoid(-beta * ar[i]);
+@@ -165,14 +253,3 @@
+-    for (i = 0; i < cHidden; i++)
+-        ar[i] = sigmoid(-pnn->rBetaHidden * ar[i]);
+-
+-    /* Calculate activity at output nodes */
+-    prWeight = pnn->arOutputWeight;
+-
+-    for (i = 0; i < pnn->cOutput; i++) {
+-        float r = pnn->arOutputThreshold[i];
+-
+-        for (j = 0; j < cHidden; j++)
+-            r += ar[j] * *prWeight++;
+-
+-        arOutput[i] = sigmoid(-pnn->rBetaOutput * r);
+-    }
++    ActivateHidden(ar, cHidden, pnn->rBetaHidden);
++
++    OutputNodes(pnn, ar, arOutput);
+@@ -225,14 +302,3 @@
+-    for (i = 0; i < pnn->cHidden; i++)
+-        ar[i] = sigmoid(-pnn->rBetaHidden * ar[i]);
+-
+-    /* Calculate activity at output nodes */
+-    prWeight = pnn->arOutputWeight;
+-
+-    for (i = 0; i < pnn->cOutput; i++) {
+-        float r = pnn->arOutputThreshold[i];
+-
+-        for (j = 0; j < pnn->cHidden; j++)
+-            r += ar[j] * *prWeight++;
+-
+-        arOutput[i] = sigmoid(-pnn->rBetaOutput * r);
+-    }
++    ActivateHidden(ar, pnn->cHidden, pnn->rBetaHidden);
++
++    OutputNodes(pnn, ar, arOutput);
+@@ -324 +390 @@
+-    return 0;
++    return PackOutputWeights(pnn);
+@@ -359 +425 @@
+-    return 0;
++    return PackOutputWeights(pnn);
+--- a/src/eval.c
++++ b/src/eval.c
+@@ -2458,0 +2459,27 @@
++/* The web build runs one search per WASM worker. GenerateMoves already
++ * borrows a single move buffer; this index has the same non-reentrant lifetime.
++ * Epochs avoid clearing 8192 slots for every dice outcome. Full position keys
++ * are still compared, so hash collisions cannot discard a distinct move. */
++#define WEB_MOVE_SLOTS 8192
++static unsigned int webMoveEpoch;
++static unsigned int webMoveEpochs[WEB_MOVE_SLOTS];
++static unsigned int webMoveIndices[WEB_MOVE_SLOTS];
++static void WebMoveIndexReset(void)
++{
++    if (++webMoveEpoch == 0) {
++        memset(webMoveEpochs, 0, sizeof(webMoveEpochs));
++        webMoveEpoch = 1;
++    }
++}
++static unsigned int WebMoveSlot(const positionkey *key, const movelist *pml)
++{
++    unsigned int hash = 2166136261u;
++    for (unsigned int k = 0; k < 7; k++) hash = (hash ^ key->data[k]) * 16777619u;
++    hash ^= hash >> 16;
++    unsigned int slot = hash & (WEB_MOVE_SLOTS - 1);
++    while (webMoveEpochs[slot] == webMoveEpoch &&
++           !EqualKeys(*key, pml->amMoves[webMoveIndices[slot]].key))
++        slot = (slot + 1) & (WEB_MOVE_SLOTS - 1);
++    return slot;
++}
++
+@@ -2480 +2507 @@
+-        if (cMoves > pml->cMaxMoves || cPip > pml->cMaxPips)
++        if (cMoves > pml->cMaxMoves || cPip > pml->cMaxPips) {
+@@ -2481,0 +2509,2 @@
++            WebMoveIndexReset();
++        }
+@@ -2489,5 +2518,4 @@
+-    for (i = 0; i < pml->cMoves; i++) {
+-
+-        pm = &(pml->amMoves[i]);
+-
+-        if (EqualKeys(key, pm->key)) {
++    const unsigned int slot = WebMoveSlot(&key, pml);
++    if (webMoveEpochs[slot] == webMoveEpoch) {
++        pm = &(pml->amMoves[webMoveIndices[slot]]);
++        {
+@@ -2508,0 +2537,2 @@
++    webMoveEpochs[slot] = webMoveEpoch;
++    webMoveIndices[slot] = pml->cMoves;
+@@ -2670,0 +2701 @@
++    WebMoveIndexReset();

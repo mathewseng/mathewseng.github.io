@@ -1,6 +1,6 @@
 # Adaptive depth: gap, stability and measured cost
 
-Auto always completes at least two plies, normally tries three, and may reach four. A deeper stage is skipped only for a substantial, stable lead or an estimated cost above five seconds. It still publishes only completed evaluations and never combines move scores from different depths. This changes the search controller, not GNUbg's neural network or evaluation formulas. Engine: `gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5`; current policy: `minimum-two-v2`. The timing model and recorded one-second experiments below remain `gap-time-v1`; their latency figures do not describe the new policy.
+Auto always completes at least two plies, normally tries three, and may reach four. A deeper stage is skipped only for a substantial, stable lead or an estimated cost above five seconds. It still publishes only completed evaluations and never combines move scores from different depths. This changes the search controller, not GNUbg's neural network or evaluation formulas. Current engine: `gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6` (same numerical model); recorded studies below used bg5. Current policy: `minimum-two-v2`. The timing model and recorded one-second experiments below remain `gap-time-v1`; their latency figures do not describe the new policy.
 
 ## Does the best-versus-second-best gap help?
 

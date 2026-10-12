@@ -6,7 +6,7 @@ const os = require('node:os'), crypto = require('node:crypto');
 const { launchQuietBrowser } = require('../../scripts/quiet-browser.cjs');
 const browsers = require('playwright');
 const root = process.cwd(), variants = {
-  baseline:path.resolve('backgammon/engine/vendor/simd'),
+  baseline:path.resolve(process.env.BG_BASELINE || 'backgammon/engine/vendor/simd'),
   candidate:path.resolve(process.env.BG_CANDIDATE || 'backgammon/test-results/activation-pilot/dist_simd'),
 };
 const output = process.env.BG_OUTPUT || 'backgammon/test-results/activation-pilot/results.json';

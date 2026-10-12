@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { assertState, initialState, boardKey, positionKey, commitTurn, legalPaths, notation } from '../core/rules.mjs';
-import { ENGINE_VERSION } from './metadata.mjs';
 export const BOOK_ID = 'jacoby-3ply-v3';
+// Keep historical evaluations labeled with the engine that computed them.
+// bg6 is an implementation optimization, verified against this same bg5 core.
+export const BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5';
 const START_STATE = initialState({ matchLength: 0 });
 const START = boardKey(START_STATE);
 const BASE = new URL('./opening-book-data/', import.meta.url);
@@ -25,7 +27,7 @@ export function bookEligible(state, { preset, kind, rollout, useBook = true } = 
     ['auto', 'quick', 'standard', 'deep', 'expert'].includes(preset) && bookContext(state);
 }
 function validateHeader(value) {
-  if (value?.schema !== 1 || value.id !== BOOK_ID || value.engine !== ENGINE_VERSION)
+  if (value?.schema !== 1 || value.id !== BOOK_ID || value.engine !== BOOK_ENGINE_VERSION)
     throw new Error('Opening book version mismatch.');
   return value;
 }
@@ -62,7 +64,7 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
   // consistently evaluated candidate set, not a fabricated or mixed-depth grade.
   if (actualKey && !actual) return null;
   const board = bookBoardKey(state), laterTurn = index.continuations?.[board]?.turn;
-  return { engine: ENGINE_VERSION, settings: { ...structuredClone(index.settings), requestedPreset },
+  return { engine: BOOK_ENGINE_VERSION, settings: { ...structuredClone(index.settings), requestedPreset },
     positionKey: positionKey(state), status: 'complete', perspective: state.turn,
     units: 'current-cube-points', type: 'checker', candidates, actual,
     error: actual ? Math.max(0, candidates[0].equity - actual.equity) : null,

@@ -10,7 +10,7 @@ const fs = require("node:fs");
       : {}),
   });
   try {
-    const p = await browser.newPage();
+    const p = await browser.newPage({ serviceWorkers: "block" });
     await p.goto(
       (process.env.BG_BASE_URL || "http://127.0.0.1:8765") + "/backgammon/",
     );

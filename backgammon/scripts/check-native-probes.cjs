@@ -45,8 +45,10 @@ const server = http.createServer((req, res) => {
         };
         const moves = module.cwrap('bg_probe_moves', 'number', ['string', 'number']);
         const network = module.cwrap('bg_probe_network', 'number', ['number', 'number', 'number']);
+        const lifecycle = module._bg_probe_lifecycle && module.cwrap('bg_probe_lifecycle', 'number', ['number', 'number']);
         probes[name] = {
           moves: (...args) => call(moves, args), network: (...args) => call(network, args),
+          lifecycle: lifecycle ? (...args) => call(lifecycle, args) : null,
           epoch: module.cwrap('bg_probe_epoch', null, ['number']),
           collisions: module.cwrap('bg_probe_collisions', 'number', []),
         };
@@ -62,6 +64,19 @@ const server = http.createServer((req, res) => {
       return rows;
     });
     console.log('All six networks passed full/incremental differential tests'); save();
+    report.lifecycle = await page.evaluate(required => {
+      const fn = probes.candidate.lifecycle;
+      if (!fn) { if (required) throw Error('Lifecycle instrumentation missing'); return null; }
+      const rows = [];
+      for (const failPacking of [0, 1]) for (let repeat = 0; repeat < 2; repeat++) {
+        const result = fn(failPacking, 64);
+        if (result.loaded !== 384 || result.heapDelta !== 0 || result.unpacked !== (failPacking ? 384 : 0))
+          throw Error('Lifecycle test failed: ' + JSON.stringify(result));
+        rows.push({ failPacking, repeat, ...result });
+      }
+      return rows;
+    }, process.env.BG_REQUIRE_LIFECYCLE === '1');
+    if (report.lifecycle) { console.log('Packed-weight failure and 1,536 load/free cycles passed'); save(); }
     const fixtures = JSON.parse(fs.readFileSync('backgammon/data/exercises.json')).items;
     const corpus = JSON.parse(fs.readFileSync('backgammon/data/accuracy-reference.json')).items;
     for (const [index, item] of [...fixtures, ...corpus].entries()) {

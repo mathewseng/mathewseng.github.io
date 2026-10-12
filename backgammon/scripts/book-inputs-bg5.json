@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5",
+  "sourceCommit": "62f0259034e730a3783c980c86da259ba5b62a3a",
+  "archive": "book-inputs-bg5.tar.gz",
+  "archiveSHA256": "eb1e3880589b7b0f727d682ba6a0ab9d3832c197320d90d741a4fc484513eb1f",
+  "assets": {
+    "COPYING.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "core/rules.mjs": "49656e0f61a05e04d83877c2fb450ea9c8850ddc2c0542080a1086b8a5fdcba4",
+    "core/xgid.mjs": "fc77e5d442c9b2085842089c0fc2760fce84980f5d6b83ff63f6b82027427b1c",
+    "engine/adaptive.mjs": "a503b850be18b483eaab7783748c7103cc1286ae82400fed22d1a783878031ee",
+    "engine/evaluate.mjs": "0d5152772f15c4ecec0ce4d9ab02ad53fc4840f1be77ca613f41fe6969c77cc2",
+    "engine/metadata.mjs": "ec3cd8c5e7385d2f155c502c15709f16e16c848644d463d58d48147504335295",
+    "engine/search-model.mjs": "4f1586a7222653050093c0b39ecf38f345870984bff190a59922033d48153e7d",
+    "engine/search-policy.mjs": "27606eb0f57611377eb3bd34538b98721ea0d08df7d314a39a68fa3bb5ba615b",
+    "engine/vendor/simd/gnubg-core-module.js": "63d391de43b1802584d167aff2117e580dfafb4f8145eb7cafea7ff5ee38ad7d",
+    "engine/vendor/simd/gnubg-core-module.wasm": "e1a1445b4f19b85451980cfdd7d830c3d2575597400f936f1412b2ea6ec561e1"
+  },
+  "sharedData": {
+    "file": "engine/vendor/gnubg-core-module.data",
+    "sha256": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49"
+  }
+}
