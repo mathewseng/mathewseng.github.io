@@ -616,6 +616,7 @@ const server = http.createServer((req, res) => {
         report.refreshUX.push(
           await require("./refresh.cjs")(browser, out, browserName),
         );
+        (report.pageProgress ||= []).push(await require("./page-progress.cjs")(browser, base));
         report.updatesUX ||= [];
         report.updatesUX.push(
           await require("./updates.cjs")(browser, out, browserName),

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { startUpdates, resumedAfterUpdate } from "../ui/updates.mjs";
+import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import { historyExplorer } from "../ui/history-tree.mjs";
 import {
   all,
@@ -34,6 +36,13 @@ import {
   toast,
   showError,
 } from "../ui/shell.mjs";
+
+// Let the document finish loading while the service-worker gate runs.
+// Only start the tool after the gate has finished or allowed offline use.
+async function boot() {
+await startUpdates();
+resumedAfterUpdate();
+const pageProgress = readPageProgress();
 shell("library", "Library", "Saved in this browser. Yours to keep.");
 let items = [],
   selected = null,
@@ -71,6 +80,22 @@ function exportDialog() {
   );
 }
 await refresh();
+if (pageProgress) {
+  query = pageProgress.query || "";
+  collection = pageProgress.collection || "";
+  kind = pageProgress.kind || "";
+  selected = items.find((i) => i.id === pageProgress.selected) || null;
+  render();
+}
+keepPageProgress(() => ({
+  query,
+  collection,
+  kind,
+  selected: selected?.id,
+  fields: [...$("panel").querySelectorAll("input,textarea")].map(
+    (n) => n.value,
+  ),
+}));
 async function refresh() {
   try {
     items = (await all()).sort((a, b) => b.updatedAt - a.updatedAt);
@@ -260,6 +285,12 @@ function inspector() {
       maxlength: 100,
       placeholder: "Collection name",
     });
+  if (pageProgress?.selected === item.id && pageProgress.fields) {
+    [title, notes, tags, group].forEach((n, i) => {
+      n.value = pageProgress.fields[i] ?? n.value;
+    });
+    pageProgress.fields = null;
+  }
   p.append(el("h2", { class: "library-selected-title" }, item.title));
   if (item.kind !== "collection")
     p.append(button(
@@ -448,3 +479,7 @@ async function showDue() {
     ),
   );
 }
+
+document.documentElement.dataset.appReady = "true";
+}
+boot();

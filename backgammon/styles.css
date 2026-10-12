@@ -171,19 +171,28 @@ h3 {
   min-height: 44px;
 }
 .app-update-dialog {
-  max-width: min(360px, calc(100vw - 32px));
-  padding: 22px;
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  padding: 28px;
+  color: var(--text, #f0eee5);
+  background: var(--panel, #172226);
+  border: 1px solid var(--line, #36494b);
+  border-radius: 18px;
+  font: 16px/1.5 system-ui, sans-serif;
 }
-.app-update-dialog p {
-  margin: 0;
-}
-.app-update-dialog::backdrop {
-  background: #11191d99;
-}
+.app-update-dialog:focus-visible { outline: none; }
+.app-update-dialog h2 { margin: 0 0 14px; font-size: 22px; letter-spacing: -.02em; }
+.app-update-dialog p { margin: 0; }
+.app-update-dialog progress { display: block; width: 100%; height: 8px; margin: 24px 0 8px; border: 0; border-radius: 4px; overflow: hidden; accent-color: var(--accent, #9dd5c9); background: #314044; }
+.app-update-dialog progress::-webkit-progress-bar { background: #314044; }
+.app-update-dialog progress::-webkit-progress-value { background: var(--accent, #9dd5c9); border-radius: 4px; }
+.app-update-dialog progress::-moz-progress-bar { background: var(--accent, #9dd5c9); }
+.app-update-dialog .update-count { text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; }
+.app-update-dialog .update-note { margin-top: 20px; color: var(--muted, #afbec0); font-size: 14px; }
+.app-update-dialog button { margin-top: 20px; }
+.app-update-dialog [hidden] { display: none; }
+.app-update-dialog::backdrop { background: #0b131bd9; }
 .brand[data-update-ready]::after {
   content: "";
   width: 7px;
@@ -1539,7 +1548,7 @@ details .stack {
   fill: none;
   stroke: var(--board-source, #b6eee0);
   stroke-width: 4.5;
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 4 6;
   opacity: 1;
 }
 .point.movable {
@@ -2122,7 +2131,9 @@ button.teal-die:hover {
 .point .source-ring {
   stroke-width: 2.8;
   vector-effect: non-scaling-stroke;
-  stroke-dasharray: 4 3;
+  stroke-dasharray: 4 6;
+  stroke-dashoffset: 2;
+  stroke-linecap: round;
 }
 .point.selected .source-ring {
   stroke-width: 4;
@@ -3723,3 +3734,6 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
 @media (max-width: 360px) {
   .history-filters button { padding-inline: 6px; gap: 5px; }
 }
+
+/* Dash units divide the normalized circumference exactly; no seam fragment. */
+.point circle.source-ring, .point circle.ring-halo { vector-effect: none; }

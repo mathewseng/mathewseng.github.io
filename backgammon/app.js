@@ -4,7 +4,11 @@ import { initialState } from "./core/rules.mjs";
 import { get, all, settings } from "./core/storage.mjs";
 import { applyBoardTheme } from "./core/appearance.mjs";
 import { startUpdates } from "./ui/updates.mjs";
-startUpdates({
+
+// Let the document finish loading while the service-worker gate runs.
+// Only start the tool after the gate has finished or allowed offline use.
+async function boot() {
+await startUpdates({
   hub: true,
   onStatus: ({ state, message }) => {
     const status = document.getElementById("app-update-status");
@@ -37,3 +41,7 @@ try {
     recent.append(a);
   }
 } catch {}
+
+document.documentElement.dataset.appReady = "true";
+}
+boot();

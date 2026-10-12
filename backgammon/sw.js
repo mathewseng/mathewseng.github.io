@@ -1,20 +1,56 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
 // Release URL is generated with the manifest; keep the registration URL stable.
-importScripts("./offline-manifest.js?v=3f1a57d4dcf802f0");
+importScripts("./offline-manifest.js?v=ee3db5ca9e7eedff");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
-function cacheShell() {
-  // Refresh the HTTP cache too: a new manifest must not install old JS/CSS.
-  return caches
-    .open(CACHE)
-    .then((cache) =>
-      cache.addAll(
-        self.BG_SHELL.map(
-          (path) =>
-            new Request(new URL(path, location.origin), { cache: "reload" }),
-        ),
-      ),
-    );
+async function cacheShell() {
+  const cache = await caches.open(CACHE),
+    responses = new Map();
+  let next = 0,
+    completed = 0;
+  async function progress() {
+    const data = {type:"BACKGAMMON_DOWNLOAD", completed, total:self.BG_SHELL.length};
+    const clients = await self.clients.matchAll({
+      type: "window",
+      includeUncontrolled: true,
+    });
+    for (const client of clients)
+      if (
+        new URL(client.url).origin === location.origin &&
+        new URL(client.url).pathname.startsWith("/backgammon/")
+      )
+        client.postMessage(data);
+  }
+  // WebKit can defer client enumeration during navigation. Progress delivery
+  // must never block the installation it describes.
+  progress().catch(() => {});
+  await Promise.all(
+    Array.from({ length: 6 }, async () => {
+      while (next < self.BG_SHELL.length) {
+        const path = self.BG_SHELL[next++];
+        const response = await fetch(
+          new Request(new URL(path, location.origin), { cache: "reload" }),
+          {signal: AbortSignal.timeout(30000)},
+        );
+        if (!response.ok) throw new Error(`App file unavailable: ${path}`);
+        // Buffer the body before counting a file; headers alone are not progress.
+        responses.set(
+          path,
+          new Response(await response.arrayBuffer(), {
+            status: response.status,
+            headers: response.headers,
+          }),
+        );
+        completed++;
+        progress().catch(() => {});
+      }
+    }),
+  );
+  // Publish only after every download succeeds. A failed install never replaces
+  // the active release; no game storage or other-family caches are touched.
+  await Promise.all(
+    [...responses].map(([path, response]) => cache.put(path, response)),
+  );
 }
 function removeOldCaches() {
   return caches
@@ -30,7 +66,7 @@ function removeOldCaches() {
 self.addEventListener("install", (event) => {
   event.waitUntil(cacheShell());
 });
-// A downloaded release waits until a quiet page locks input and asks to apply
+// A downloaded release waits until the page-load gate asks to apply
 // it, or the standalone recovery page explicitly refreshes it. Never claim
 // running clients: the requesting page reloads after activation completes.
 self.addEventListener("activate", (event) => {
@@ -53,7 +89,7 @@ self.addEventListener("message", (event) => {
         url.origin !== location.origin ||
         !(
           automatic
-            ? /^\/backgammon\/(?:(?:play|trainer|solver|library)\/)?(?:index\.html)?$/
+            ? /^\/backgammon\/(?:(?:play|trainer|solver|library|reports|controls)\/)?(?:index\.html)?$/
             : /^\/backgammon\/refresh\/(?:index\.html)?$/
         ).test(url.pathname)
       ) {
@@ -77,7 +113,7 @@ self.addEventListener("message", (event) => {
         reply({
           status: "busy",
           message: automatic
-            ? "Update ready. Finish and close your other Backgammon tabs or Home Screen windows, then return here."
+            ? "Close your other Backgammon tabs or Home Screen windows, then retry. Their saved progress will be kept."
             : "Close the other Backgammon tabs or Home Screen windows, then try again. Keep this refresh page open.",
         });
         return;

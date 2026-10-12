@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
+import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
 import {
   legalPaths,
@@ -41,6 +43,13 @@ import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "../ui/decision-values.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
+
+// Let the document finish loading while the service-worker gate runs.
+// Only start the tool after the gate has finished or allowed offline use.
+async function boot() {
+await startUpdates();
+resumedAfterUpdate();
+const pageProgress = readPageProgress();
 const ui = shell("trainer", "Trainer", "One position. One decision.");
 const analysis = new AnalysisPanel();
 let catalog = [],
@@ -85,7 +94,7 @@ try {
   while (groups.some((g) => g.length))
     for (const group of groups)
       if (group.length) catalog.push(group.shift());
-  const saved = location.hash ? null : await get("work", "trainer");
+  const saved = pageProgress || (location.hash ? null : await get("work", "trainer"));
   if (saved) {
     filter = saved.filter;
     length = saved.length;
@@ -109,6 +118,21 @@ try {
   $("message").textContent = e.message;
   $("actions").append(button("Retry", () => location.reload(), "primary"));
 }
+keepPageProgress(() =>
+  exercise
+    ? {
+        exerciseId: exercise.id,
+        filter,
+        length,
+        count,
+        draft: clone(draft.draft),
+        revealed,
+        hinted,
+        answer,
+        result,
+      }
+    : null,
+);
 async function begin() {
   analysis.cancel();
   count = 0;
@@ -515,7 +539,7 @@ async function savePractice() {
   }
 }
 addEventListener("beforeunload", (e) => {
-  if (draft.draft.length && !revealed) {
+  if (!isUpdateReload() && draft.draft.length && !revealed) {
     e.preventDefault();
     e.returnValue = "";
   }
@@ -535,3 +559,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
     }
   }),
 );
+
+document.documentElement.dataset.appReady = "true";
+}
+boot();

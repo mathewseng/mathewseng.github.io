@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
+import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import {
   initialState,
   legalPaths,
@@ -83,6 +85,13 @@ import {
 } from "../core/practice.mjs";
 import { installPlayShortcuts } from "../ui/shortcuts.mjs";
 import { preferences } from "../ui/shell.mjs";
+
+// Let the document finish loading while the service-worker gate runs.
+// Only start the tool after the gate has finished or allowed offline use.
+async function boot() {
+await startUpdates();
+const updatedOnLoad = resumedAfterUpdate();
+const pageProgress = readPageProgress();
 const ui = shell("play", "Play", "Your table. Your pace.");
 document.querySelector(".app").classList.add("play-page");
 let setupStudyOpen;
@@ -106,6 +115,7 @@ let config = {
   renderedFeedback = null,
   netStatus = "Not connected",
   saved = null,
+  persistedWork = null,
   committing = false,
   leaving = false,
   lastMotion = "",
@@ -376,7 +386,7 @@ $("toolbar").prepend(
   ),
 );
 addEventListener("beforeunload", (e) => {
-  if (!leaving && (online.room?.connected || draft.draft.length)) {
+  if (!isUpdateReload() && !leaving && (online.room?.connected || draft.draft.length)) {
     e.preventDefault();
     e.returnValue = "";
   }
@@ -439,6 +449,10 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
 );
 try {
   saved = await get("work", "play");
+  persistedWork = JSON.stringify(saved);
+  // Recover an unfinished local write, but never overwrite a newer save from
+  // another view/tab (or an explicitly imported recovery) with this tab's copy.
+  if (pageProgress?.game && (!saved || pageProgress.base === persistedWork)) saved = pageProgress;
   const study = await get("work", "study");
   if (study && params.get("study") === "1") {
     game = studyGame(study.state, study.context, crypto.randomUUID());
@@ -446,7 +460,7 @@ try {
     history.replaceState(null, "", `#resume=${game.id}`);
     resumeIntent(null);
   } else if (!roomCode) {
-    const id = params.get("resume") || resumeIntent();
+    const id = params.get("resume") || resumeIntent() || (updatedOnLoad && saved?.game?.id);
     if (id) {
       const original = await get("work", "solver-context");
       const recovery =
@@ -464,6 +478,18 @@ try {
 }
 render();
 if (game) await persist();
+keepPageProgress(() =>
+  game && config.mode !== "online"
+    ? {
+        base: persistedWork,
+        game,
+        positionKey: positionKey(game.state),
+        draft: clone(draft.draft),
+        feedback,
+      }
+    : null,
+);
+
 function resumeIntent(value) {
   try {
     const key = "backgammon.v1.resume-play";
@@ -1758,7 +1784,9 @@ async function persist() {
       feedback,
     };
     try {
-      await put("work", saved);
+      const snapshot = clone(saved);
+      await put("work", snapshot);
+      persistedWork = JSON.stringify(snapshot);
       await saveMatchHistory(current, current.names, current.config.mode);
     } catch (e) {
       showError(e);
@@ -2419,3 +2447,7 @@ async function computerTurn() {
     }
   }
 }
+
+document.documentElement.dataset.appReady = "true";
+}
+boot();

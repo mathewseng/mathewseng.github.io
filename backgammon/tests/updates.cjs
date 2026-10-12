@@ -8,7 +8,8 @@ module.exports = async function updatesUX(browser, out, browserName) {
   const root = path.resolve("_site");
   let release = "one",
     failAsset = false,
-    failWorker = false;
+    failWorker = false,
+    delayAssets = false;
   const requests = [];
   const mime = {
     ".html": "text/html",
@@ -19,6 +20,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
     ".svg": "image/svg+xml",
   };
   const server = http.createServer((req, res) => {
+    const servedRelease = release;
     const url = new URL(req.url, "http://localhost");
     let pathname = url.pathname;
     if (pathname.endsWith("/")) pathname += "index.html";
@@ -54,28 +56,34 @@ module.exports = async function updatesUX(browser, out, browserName) {
           .toString()
           .replace(
             /offline-manifest\.js\?v=[a-z0-9]+/,
-            `offline-manifest.js?v=${release}`,
+            `offline-manifest.js?v=${servedRelease}`,
           );
       else if (pathname === "/backgammon/offline-manifest.js")
         data = data
           .toString()
-          .replace(/BG_CACHE_VERSION='[^']+'/, `BG_CACHE_VERSION='${release}'`);
+          .replace(
+            /BG_CACHE_VERSION='[^']+'/,
+            `BG_CACHE_VERSION='${url.searchParams.get("v") || servedRelease}'`,
+          );
       else if (pathname.endsWith("index.html"))
         data = data
           .toString()
-          .replace("<html", `<html data-app-release="${release}"`)
-          .replace(/\?bgv=[a-z0-9]+/g, `?bgv=${release}`);
+          .replace("<html", `<html data-app-release="${servedRelease}"`)
+          .replace(/\?bgv=[a-z0-9]+/g, `?bgv=${servedRelease}`);
       else if (pathname.endsWith("/app.js"))
         data =
           data.toString() +
-          `\ndocument.documentElement.dataset.codeRelease = '${release}';`;
+          `\ndocument.documentElement.dataset.codeRelease = '${servedRelease}';`;
       else if (pathname === "/backgammon/ui/board.mjs")
         data =
           data.toString() +
-          `\ndocument.documentElement.dataset.boardCodeRelease = '${release}';`;
+          `\ndocument.documentElement.dataset.boardCodeRelease = '${servedRelease}';`;
       else if (pathname === "/backgammon/styles.css")
-        data = data.toString() + `\n:root { --cache-release: ${release}; }`;
-      res.end(data);
+        data =
+          data.toString() + `\n:root { --cache-release: ${servedRelease}; }`;
+      if (delayAssets && pathname.endsWith(".mjs"))
+        setTimeout(() => res.end(data), 100);
+      else res.end(data);
     });
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -84,9 +92,17 @@ module.exports = async function updatesUX(browser, out, browserName) {
     viewport: { width: 375, height: 667 },
   });
   const report = { cases: [], screenshots: [] },
-    errors = [];
+    errors = [],
+    expectedNetworkErrors = [];
   context.on("page", (page) =>
-    page.on("pageerror", (error) => errors.push(error.message)),
+    page.on("pageerror", (error) => {
+      if (
+        (failAsset || failWorker) &&
+        /backgammon\/sw\.js due to access control checks/.test(error.message)
+      )
+        expectedNetworkErrors.push(error.message); // WebKit's event for the deliberately failed worker install.
+      else errors.push(error.message);
+    }),
   );
   const shot = async (page, name) => {
     const file = `${browserName}-updates-${name}.png`;
@@ -106,13 +122,30 @@ module.exports = async function updatesUX(browser, out, browserName) {
       return { state: r.active.state, policy: r.updateViaCache };
     });
   const atRelease = async (page, version) => {
-    await page.waitForFunction(
-      (v) =>
-        document.documentElement.dataset.appRelease === v &&
-        document.readyState === "complete",
-      version,
-      { timeout: 60000 },
-    );
+    await page
+      .waitForFunction(
+        (v) =>
+          document.documentElement.dataset.appRelease === v &&
+          document.readyState === "complete",
+        version,
+        { timeout: 60000 },
+      )
+      .catch(async (error) => {
+        console.error(
+          "Update diagnostic",
+          version,
+          await page.evaluate(async () => {
+            const r = await navigator.serviceWorker.getRegistration();
+            return {
+              html: document.documentElement.dataset.appRelease,
+              code: document.documentElement.dataset.codeRelease,
+              body: document.body.innerText,
+              sw: [r?.active?.state, r?.installing?.state, r?.waiting?.state],
+            };
+          }),
+        );
+        throw error;
+      });
     await page.waitForFunction(
       () => !document.querySelector(".app-update-dialog[open]"),
     );
@@ -120,6 +153,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
       const status = document.getElementById("app-update-status");
       return !status || ["current", "offline"].includes(status.dataset.state);
     });
+    await page.waitForFunction(() => document.documentElement.dataset.appReady === "true");
     const styleRelease = await page.evaluate(() =>
       getComputedStyle(document.documentElement)
         .getPropertyValue("--cache-release")
@@ -143,7 +177,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
       const store = await import("/backgammon/core/storage.mjs");
       return {
         work: await store.get("work", "play"),
-        items: await store.all(),
+        items: (await store.all()).map(({ updatedAt, ...item }) => item),
         settings: localStorage.getItem("backgammon.v1.settings"),
         other: localStorage.getItem("poker.sentinel"),
       };
@@ -216,7 +250,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
     );
 
     release = "three";
-    await reconnect(page); // Simulated browser online event; the entire upgrade is real.
+    await page.reload(); // A new page load must finish the real update before entering the tool.
     await atRelease(page, "three");
     report.cases.push("automatic check and activation on reconnect");
     for (const [width, height] of [
@@ -304,51 +338,43 @@ module.exports = async function updatesUX(browser, out, browserName) {
       game,
       "Committed dice and unfinished draft unchanged",
     );
-    await page.locator(".brand[data-update-ready]").waitFor();
-    await shot(page, "game-retained");
-    const hub = await context.newPage();
-    await hub.goto(base + "/backgammon/");
-    await hub.waitForFunction(() =>
-      document
-        .getElementById("app-update-status")
-        .textContent.includes("Finish and close"),
-    );
-    assert.equal(
-      await hub.locator("html").getAttribute("data-app-release"),
-      "three",
-    );
-    assert.ok(
-      await hub.evaluate(async () =>
-        (await caches.keys()).includes("backgammon-assets-three"),
-      ),
-    );
-    await hub.setViewportSize({ width: 375, height: 667 });
-    await shot(hub, "other-game-open");
-    await page.close();
-    page = hub;
-    await page.bringToFront();
-    await page.evaluate(() => dispatchEvent(new Event("focus")));
+    // A load with a staged release cannot expose controls before activation.
+    let leavePrompts = 0;
+    page.on("dialog", (d) => { leavePrompts++; d.accept(); });
+    await page.reload();
     await atRelease(page, "four");
-    assert.deepEqual(await saved(page), game);
-    assert.equal(
-      await page.evaluate(
-        async () => await (await caches.match("/poker/sentinel")).text(),
-      ),
-      "keep",
+    await page.waitForFunction(() => document.querySelector("#board .point"));
+    const restored = await saved(page);
+    assert.deepEqual(
+      restored.work,
+      game.work,
+      "the exact game, committed dice and unfinished draft resume",
     );
+    assert.deepEqual(restored.items, game.items);
+    await shot(page, "game-restored");
+    const promptsBefore = leavePrompts;
+    await Promise.all([
+      page.waitForEvent("framenavigated", {predicate: frame => frame === page.mainFrame()}),
+      page.evaluate(() => dispatchEvent(new PageTransitionEvent("pageshow", {persisted:true}))),
+    ]);
+    await atRelease(page, "four");
+    await page.locator("#confirm").waitFor();
+    assert.equal(leavePrompts, promptsBefore, "history-cache reload does not prompt before restoring its draft");
+    assert.deepEqual((await saved(page)).work, restored.work);
+
     report.cases.push(
-      "active game and draft prevent automatic reload",
-      "another open Backgammon window prevents early activation",
-      "returning to the hub applies a staged update once other windows close",
-      "dice, draft and Library survive automatic activation exactly",
+      "load gate installs a staged update before play",
+      "active play is not interrupted by background downloads",
+      "draft, dice, Library and preferences survive the required reload",
     );
+    await page.goto(base + "/backgammon/");
+    await atRelease(page, "four");
 
     release = "five";
     failAsset = true;
-    await reconnect(page);
+    await page.reload();
     await page.waitForFunction(
-      () =>
-        document.getElementById("app-update-status").dataset.state === "error",
+      () => document.querySelector(".app-update-dialog button:not([hidden])"),
       null,
       { timeout: 60000 },
     );
@@ -364,7 +390,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
     assert.deepEqual(await saved(page), game);
     await shot(page, "failed-download");
     failAsset = false;
-    await reconnect(page);
+    await page.getByRole("button", { name: "Retry update" }).click();
     await atRelease(page, "five");
     assert.deepEqual(await saved(page), game);
     assert.deepEqual(errors, []);
@@ -381,18 +407,56 @@ module.exports = async function updatesUX(browser, out, browserName) {
         document.getElementById("app-update-status").dataset.state ===
         "offline",
     );
-    failWorker = false;
+    ((failWorker = false), (delayAssets = false));
     release = "six";
-    await reconnect(page);
+    await page.reload();
     await atRelease(page, "six");
     assert.deepEqual(await saved(page), game);
     release = "seven";
-    await page.goto(base + "/backgammon/solver/");
+    await page.setViewportSize({ width: 375, height: 667 });
+    delayAssets = true;
+    const solverNavigation = page.goto(base + "/backgammon/solver/", {
+      waitUntil: "commit",
+    });
+    await solverNavigation;
+    await page.locator(".app-update-dialog progress[value]").waitFor();
+    assert.equal(
+      await page.locator("#board").count(),
+      0,
+      "tool is not interactive during the required update",
+    );
+    const progress = await page
+      .locator("progress")
+      .evaluate((p) => ({ value: p.value, max: p.max }));
+    assert.ok(progress.value > 0 && progress.max > progress.value);
+    await shot(page, "downloading-phone");
     await atRelease(page, "seven");
-    assert.deepEqual(await saved(page), game);
+    delayAssets = false;
     report.cases.push(
-      "cached startup with a failed network check recovers on reconnect",
-      "an untouched direct tool visit updates automatically",
+      "real file download progress before tool initialization",
+      "retry after failed download",
+      "offline startup",
+      "no stale dependency cache after reload",
+    );
+
+    // Another live window must not be claimed or discarded by an updater.
+    const other = await context.newPage();
+    await other.goto(base + "/backgammon/");
+    release = "eight";
+    await page.bringToFront();
+    await page.reload({ waitUntil: "commit" });
+    await page.getByRole("button", { name: "Retry update" }).waitFor();
+    assert.match(
+      await page.locator(".update-message").textContent(),
+      /other Backgammon tabs/,
+    );
+    assert.equal(await page.locator("#board").count(), 0);
+    await shot(page, "other-tab");
+    await other.close();
+    await page.getByRole("button", { name: "Retry update" }).click();
+    await atRelease(page, "eight");
+    report.cases.push(
+      "another window pauses activation without losing its state",
     );
     assert.deepEqual(errors, []);
   } finally {
@@ -402,7 +466,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
   }
   fs.writeFileSync(
     path.join(out, `${browserName}-updates.json`),
-    JSON.stringify(report, null, 2),
+    JSON.stringify({ ...report, expectedNetworkErrors }, null, 2),
   );
   console.log(
     `${browserName}: automatic update checks passed (${report.cases.length} cases)`,

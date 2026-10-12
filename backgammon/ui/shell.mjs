@@ -34,7 +34,7 @@ import {
   setSoundPreferences,
 } from "./sound.mjs";
 import { reducedMotion } from "./motion.mjs";
-import { startUpdates } from "./updates.mjs";
+
 import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
 import { installDialogBehavior } from "./dialog-behavior.mjs";
@@ -240,17 +240,6 @@ export function shell(page, title, subtitle = "") {
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
   installMobileTools(page);
-  startUpdates({
-    onStatus: ({ state }) => {
-      const brand = document.querySelector(".brand");
-      const waiting = state === "waiting";
-      brand.toggleAttribute("data-update-ready", waiting);
-      brand.title = waiting
-        ? "Update ready. Finish your session, then return to the hub."
-        : "Backgammon hub";
-      brand.setAttribute("aria-label", brand.title);
-    },
-  });
   activeBoard = new Board($("board"));
   if (["play", "trainer", "solver"].includes(page)) {
     const equityToggle = button("Equity bar", () => {}, "ghost", {

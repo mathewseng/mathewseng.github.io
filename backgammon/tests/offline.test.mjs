@@ -35,7 +35,7 @@ function harness() {
       ]),
     ),
     addEventListener: (name, listener) => (handlers[name] = listener),
-    clients: { matchAll: async () => clients },
+    clients: { matchAll: async () => clients.map(c => ({postMessage() {}, ...c})) },
     registration: { active: {}, waiting: {} },
     skipWaiting: async () => activated++,
   };
@@ -46,6 +46,7 @@ function harness() {
     Response,
     Request,
     Headers,
+    AbortSignal,
     Uint8Array,
     crypto: webcrypto,
     location: { origin: "https://site.example" },
@@ -61,6 +62,7 @@ function harness() {
     fetch: async (path) => {
       fetches++;
       if (!online) throw new Error("Offline");
+      if (typeof path !== "string") shellRequests.push(path);
       return new Response(
         typeof path === "string" ? path : new URL(path.url).pathname,
       );
@@ -291,4 +293,18 @@ test("opening book caches only the requested verified shard, works offline, and 
   stale.self.BG_BOOK_DIGESTS = { [path]: "wrong-release" };
   assert.equal((await stale.request(path)).status, 503);
   assert.equal(stale.saved.size, 0);
+});
+
+test('install progress reports completed files and never waits for a window to enumerate', async () => {
+  const h=harness(), messages=[];
+  h.clients.push({id:'page',url:'https://site.example/backgammon/',postMessage:m=>messages.push(m)});
+  let pending;
+  h.handlers.install({waitUntil:p=>pending=p});await pending;
+  assert.deepEqual(messages.map(m=>m.completed),[0,1,2]);
+  assert.ok(messages.every(m=>m.total===2 && m.type==='BACKGAMMON_DOWNLOAD'));
+  const stalled=harness();
+  stalled.self.clients.matchAll=()=>new Promise(()=>{});
+  stalled.handlers.install({waitUntil:p=>pending=p});
+  await pending;
+  assert.equal(stalled.saved.size,2,'WebKit client-enumeration delay cannot stall shell installation');
 });

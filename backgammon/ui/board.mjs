@@ -13,6 +13,7 @@ const stackY = (top, slot) =>
   top ? 54 + slot * CHECKER_RADIUS * 2 : 606 - slot * CHECKER_RADIUS * 2;
 function svg(tag, attrs = {}, text) {
   const n = document.createElementNS(NS, tag);
+  if (tag === "circle" && attrs.class === "source-ring") attrs = {...attrs, pathLength: 120};
   for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
   if (text !== undefined) n.textContent = text;
   return n;
@@ -192,22 +193,21 @@ function originGhost({ x, y, count }, player) {
       opacity: 0.16,
     }),
   );
-  for (const [color, width, opacity] of [
-    ["surface", 6, 0.85],
-    ["caption", 2.5, 0.85],
-  ])
-    g.append(
-      svg("circle", {
-        cx: x,
-        cy: y,
-        r: CHECKER_RADIUS + 4,
-        fill: "none",
-        stroke: boardColor(color),
-        "stroke-width": width,
-        "stroke-dasharray": "3 5",
-        opacity,
-      }),
-    );
+  g.append(
+    svg("circle", {
+      cx: x,
+      cy: y,
+      r: CHECKER_RADIUS + 3,
+      fill: "none",
+      stroke: boardColor("caption"),
+      "stroke-width": 2,
+      pathLength: 120,
+      "stroke-dasharray": "2 4",
+      "stroke-dashoffset": 1,
+      "stroke-linecap": "round",
+      opacity: 0.9,
+    }),
+  );
   return g;
 }
 function patternOverlay(node, role) {
@@ -263,21 +263,31 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
     );
   if (moved) {
     g.classList.add("last-moved-checker");
-    for (const [color, width] of [
-      ["surface", 7],
-      ["selection", 3],
-    ])
-      g.append(
-        svg("circle", {
-          cx: x,
-          cy: y,
-          r: CHECKER_RADIUS + 2,
-          fill: "none",
-          stroke: boardColor(color),
-          "stroke-width": width,
-          "stroke-dasharray": "7 4",
-        }),
-      );
+    g.append(
+      svg("circle", {
+        cx: x,
+        cy: y,
+        r: CHECKER_RADIUS + 2,
+        fill: "none",
+        stroke: boardColor("surface"),
+        "stroke-width": 4,
+        opacity: 0.7,
+      }),
+    );
+    g.append(
+      svg("circle", {
+        cx: x,
+        cy: y,
+        r: CHECKER_RADIUS + 2,
+        fill: "none",
+        stroke: boardColor("selection"),
+        "stroke-width": 2.5,
+        pathLength: 120,
+        "stroke-dasharray": "4 6",
+        "stroke-dashoffset": 2,
+        "stroke-linecap": "round",
+      }),
+    );
   }
   return g;
 }

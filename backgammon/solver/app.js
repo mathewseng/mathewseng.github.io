@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { startUpdates, resumedAfterUpdate } from "../ui/updates.mjs";
+import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
 import {
   initialState,
@@ -39,6 +41,13 @@ import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
 import { rolloutUnsupported } from "../engine/rollout.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 import { matchesPlayContext } from "../core/play-session.mjs";
+
+// Let the document finish loading while the service-worker gate runs.
+// Only start the tool after the gate has finished or allowed offline use.
+async function boot() {
+await startUpdates();
+resumedAfterUpdate();
+const pageProgress = readPageProgress();
 const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
@@ -135,6 +144,23 @@ try {
 } catch (e) {
   showError(e);
 }
+if (pageProgress?.source) {
+  source = pageProgress.source;
+  sourceContext = pageProgress.sourceContext;
+  editing = pageProgress.editing;
+  result = pageProgress.result;
+  review = pageProgress.review;
+  index = pageProgress.index;
+  openedPosition = true;
+}
+keepPageProgress(() => ({
+  source,
+  sourceContext,
+  editing,
+  result,
+  review,
+  index,
+}));
 if (sourceContext)
   document.querySelector('.nav a[href="/backgammon/play/"]').href =
     `/backgammon/play/#resume=${encodeURIComponent(sourceContext.game.id)}`;
@@ -993,3 +1019,7 @@ function showReviewErrors() {
     ),
   );
 }
+
+document.documentElement.dataset.appReady = "true";
+}
+boot();

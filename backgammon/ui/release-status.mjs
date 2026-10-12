@@ -139,7 +139,7 @@ export function releaseStatus() {
     const messages = {
       current: "Up to date with the published site.",
       available:
-        "Different files are published. Finish your game, then use Refresh app.",
+        "An update is available. Reload this page to install it and restore your saved progress.",
       offline:
         "Couldn’t check the published site. Connect to the internet and try again.",
       unknown:

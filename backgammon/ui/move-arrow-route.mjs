@@ -1,148 +1,313 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Pure display routing, never move legality. A small, fixed board-space grid
-// keeps arrows in the gaps between stacks; string pulling removes grid zigzags.
+// Display geometry only. Tangents and circular arcs follow the union of checker
+// clearance discs (22px checker + 22px breathing room). Short C3 Hermite blends
+// join straight/circular spans; the SVG approximation is subpixel, not a claim
+// that a curved path or an animated checker has literally zero jerk.
+export const ARROW_CLEARANCE = 44;
+const TAU = Math.PI * 2,
+  EPS = 1e-6;
 const gap = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const within = (p) => p.x >= 8 && p.x <= 868 && p.y >= 26 && p.y <= 634;
 export function segmentClear(a, b, obstacles) {
-  return obstacles.every(o => {
-    const dx = b.x - a.x, dy = b.y - a.y;
+  return obstacles.every((o) => {
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
     if (o.r !== undefined) {
-      const t = Math.max(0, Math.min(1, ((o.x - a.x) * dx + (o.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
-      return Math.hypot(a.x + t * dx - o.x, a.y + t * dy - o.y) >= o.r;
+      const t = Math.max(
+        0,
+        Math.min(
+          1,
+          ((o.x - a.x) * dx + (o.y - a.y) * dy) / (dx * dx + dy * dy || 1),
+        ),
+      );
+      return Math.hypot(a.x + t * dx - o.x, a.y + t * dy - o.y) >= o.r - EPS;
     }
-    let low = 0, high = 1;
-    for (const [start, delta, min, max] of [[a.x, dx, o.x, o.x + o.width], [a.y, dy, o.y, o.y + o.height]]) {
-      if (Math.abs(delta) < 1e-9) { if (start < min || start > max) return true; }
-      else {
-        let t0 = (min - start) / delta, t1 = (max - start) / delta;
+    let low = 0,
+      high = 1;
+    for (const [s, d, min, max] of [
+      [a.x, dx, o.x, o.x + o.width],
+      [a.y, dy, o.y, o.y + o.height],
+    ]) {
+      if (Math.abs(d) < EPS) {
+        if (s < min || s > max) return true;
+      } else {
+        let t0 = (min - s) / d,
+          t1 = (max - s) / d;
         if (t0 > t1) [t0, t1] = [t1, t0];
-        low = Math.max(low, t0); high = Math.min(high, t1);
+        low = Math.max(low, t0);
+        high = Math.min(high, t1);
         if (low > high) return true;
       }
     }
     return false;
   });
 }
-function search(from, to, obstacles) {
-  const width = 85, height = 60, size = width * height;
-  const pos = id => ({ x: 24 + id % width * 10, y: 34 + Math.floor(id / width) * 10 });
-  const id = p => Math.max(0, Math.min(height - 1, Math.round((p.y - 34) / 10))) * width +
-    Math.max(0, Math.min(width - 1, Math.round((p.x - 24) / 10)));
-  const start = id(from), end = id(to), heap = [];
-  const costs = new Float64Array(size).fill(Infinity), parent = new Int32Array(size).fill(-1), closed = new Uint8Array(size);
-  function push(node, cost) {
-    const entry = { node, cost }; let i = heap.length;
-    heap.push(entry);
-    while (i && heap[(i - 1) >> 1].cost > cost) { heap[i] = heap[(i - 1) >> 1]; i = (i - 1) >> 1; }
-    heap[i] = entry;
+function line(a, b) {
+  return { kind: "line", a, b, length: gap(a, b) };
+}
+function arc(c, a, sweep) {
+  return { kind: "arc", c, a, sweep, length: Math.abs(sweep) * c.r };
+}
+function jet(span, s) {
+  if (span.kind === "line") {
+    const dx = (span.b.x - span.a.x) / span.length,
+      dy = (span.b.y - span.a.y) / span.length;
+    return [
+      { x: span.a.x + dx * s, y: span.a.y + dy * s },
+      { x: dx, y: dy },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    ];
+  }
+  const { c } = span,
+    sign = Math.sign(span.sweep),
+    t = span.a + (sign * s) / c.r,
+    co = Math.cos(t),
+    si = Math.sin(t);
+  return [
+    { x: c.x + c.r * co, y: c.y + c.r * si },
+    { x: -sign * si, y: sign * co },
+    { x: -co / c.r, y: -si / c.r },
+    { x: (sign * si) / c.r ** 2, y: (-sign * co) / c.r ** 2 },
+  ];
+}
+function route(from, to, blockers) {
+  const circles = [{ ...from, r: 0 }, { ...to, r: 0 }, ...blockers],
+    nodes = [],
+    edges = [],
+    rings = circles.map(() => []);
+  function node(i, p) {
+    const angle = Math.atan2(p.y - circles[i].y, p.x - circles[i].x);
+    const found = rings[i].find((n) => gap(nodes[n], p) < EPS);
+    if (found !== undefined) return found;
+    const id = nodes.length;
+    nodes.push({ ...p, angle, circle: i });
+    edges.push([]);
+    rings[i].push(id);
+    return id;
+  }
+  node(0, from);
+  node(1, to);
+  const join = (i, j, span) => edges[i].push({ to: j, span });
+  for (let i = 0; i < circles.length; i++)
+    for (let j = i + 1; j < circles.length; j++) {
+      const a = circles[i],
+        b = circles[j],
+        dx = b.x - a.x,
+        dy = b.y - a.y,
+        d2 = dx * dx + dy * dy;
+      if (d2 < EPS) continue;
+      for (const side of [1, -1])
+        for (const sign of [-1, 1]) {
+          const dr = a.r - side * b.r,
+            h2 = d2 - dr * dr;
+          if (h2 < -EPS) continue;
+          const h = Math.sqrt(Math.max(0, h2)) * sign,
+            nx = (dx * dr - dy * h) / d2,
+            ny = (dy * dr + dx * h) / d2;
+          const p = { x: a.x + nx * a.r, y: a.y + ny * a.r },
+            q = { x: b.x + nx * side * b.r, y: b.y + ny * side * b.r };
+          if (!within(p) || !within(q) || !segmentClear(p, q, blockers))
+            continue;
+          const u = node(i, p),
+            v = node(j, q);
+          join(u, v, line(p, q));
+          join(v, u, line(q, p));
+        }
+    }
+  for (let i = 2; i < circles.length; i++) {
+    const c = circles[i],
+      ring = rings[i].sort((a, b) => nodes[a].angle - nodes[b].angle);
+    for (let k = 0; k < ring.length; k++) {
+      const u = ring[k],
+        v = ring[(k + 1) % ring.length],
+        a = nodes[u].angle;
+      let sweep = (nodes[v].angle - a + TAU) % TAU;
+      if (sweep < EPS) continue;
+      const span = arc(c, a, sweep),
+        steps = Math.ceil(span.length / 3);
+      let clear = true;
+      for (let n = 0; n <= steps; n++) {
+        const p = jet(span, (span.length * n) / steps)[0];
+        if (
+          !within(p) ||
+          blockers.some((o) => o !== c && gap(o, p) < o.r - EPS)
+        ) {
+          clear = false;
+          break;
+        }
+      }
+      if (clear) {
+        join(u, v, span);
+        join(v, u, arc(c, a + sweep, -sweep));
+      }
+    }
+  }
+  const costs = new Float64Array(nodes.length).fill(Infinity),
+    prev = new Array(nodes.length),
+    heap = [];
+  function push(id, cost) {
+    let i = heap.length;
+    heap.push(null);
+    while (i && heap[(i - 1) >> 1].cost > cost) {
+      heap[i] = heap[(i - 1) >> 1];
+      i = (i - 1) >> 1;
+    }
+    heap[i] = { id, cost };
   }
   function pop() {
-    const best = heap[0], last = heap.pop();
+    const first = heap[0],
+      last = heap.pop();
     if (heap.length) {
       let i = 0;
       while (i * 2 + 1 < heap.length) {
-        let child = i * 2 + 1;
-        if (child + 1 < heap.length && heap[child + 1].cost < heap[child].cost) child++;
-        if (heap[child].cost >= last.cost) break;
-        heap[i] = heap[child]; i = child;
+        let j = i * 2 + 1;
+        if (j + 1 < heap.length && heap[j + 1].cost < heap[j].cost) j++;
+        if (heap[j].cost >= last.cost) break;
+        heap[i] = heap[j];
+        i = j;
       }
       heap[i] = last;
     }
-    return best.node;
+    return first;
   }
-  costs[start] = 0; push(start, gap(from, to));
+  costs[0] = 0;
+  push(0, 0);
   while (heap.length) {
-    const current = pop();
-    if (closed[current]) continue;
-    closed[current] = 1;
-    if (current === end) {
-      const points = [to]; let at = current;
-      while (at !== -1) { points.push(pos(at)); at = parent[at]; }
-      points.push(from); points.reverse();
-      const simple = [from]; let i = 0;
-      while (i < points.length - 1) {
-        let next = points.length - 1;
-        while (next > i + 1 && !segmentClear(points[i], points[next], obstacles)) next--;
-        simple.push(points[next]); i = next;
+    const { id, cost } = pop();
+    if (cost !== costs[id]) continue;
+    if (id === 1) {
+      const spans = [];
+      let at = 1;
+      while (at !== 0) {
+        spans.push(prev[at].span);
+        at = prev[at].from;
       }
-      return simple;
+      return spans.reverse().filter((s) => s.length > EPS);
     }
-    const a = pos(current);
-    for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
-      if (!dx && !dy) continue;
-      const x = current % width + dx, y = Math.floor(current / width) + dy;
-      if (x < 0 || x >= width || y < 0 || y >= height) continue;
-      const next = y * width + x, b = pos(next), cost = costs[current] + gap(a, b);
-      if (closed[next] || cost >= costs[next] || !segmentClear(a, b, obstacles)) continue;
-      costs[next] = cost; parent[next] = current; push(next, cost + gap(b, to));
+    for (const e of edges[id]) {
+      const next = cost + e.span.length;
+      if (next >= costs[e.to]) continue;
+      costs[e.to] = next;
+      prev[e.to] = { from: id, span: e.span };
+      push(e.to, next);
     }
   }
   return null;
 }
-function trim(points, radius) {
-  const center = points[0];
-  for (let i = 1; i < points.length; i++) {
-    const b = points[i];
-    if (gap(center, b) <= radius) continue;
-    const a = points[i - 1], dx = b.x - a.x, dy = b.y - a.y;
-    const ox = a.x - center.x, oy = a.y - center.y;
-    const length2 = dx * dx + dy * dy, dot = ox * dx + oy * dy;
-    const t = (-dot + Math.sqrt(Math.max(0, dot * dot - length2 *
-      (ox * ox + oy * oy - radius * radius)))) / length2;
-    return [{ x: a.x + dx * t, y: a.y + dy * t }, ...points.slice(i)];
-  }
-  return [points.at(-1)];
+// Degree-seven Hermite interpolation matches position, tangent, curvature and
+// third derivative at both ends. Coefficients use normalized t in [0,1].
+export function smoothJoin(left, right, length) {
+  return ["x", "y"].map((axis) => {
+    const c = [
+      left[0][axis],
+      left[1][axis] * length,
+      (left[2][axis] * length ** 2) / 2,
+      (left[3][axis] * length ** 3) / 6,
+    ];
+    const a = right[0][axis] - c.reduce((n, v) => n + v, 0),
+      b = right[1][axis] * length - c[1] - 2 * c[2] - 3 * c[3],
+      d = right[2][axis] * length ** 2 - 2 * c[2] - 6 * c[3],
+      e = right[3][axis] * length ** 3 - 6 * c[3];
+    return [
+      ...c,
+      35 * a - 15 * b + 2.5 * d - e / 6,
+      -84 * a + 39 * b - 7 * d + e / 2,
+      70 * a - 34 * b + 6.5 * d - e / 2,
+      -20 * a + 10 * b - 2 * d + e / 6,
+    ];
+  });
+}
+function poly(c, t, derivative = 0) {
+  return c.reduce((sum, v, i) => {
+    if (i < derivative) return sum;
+    let k = 1;
+    for (let j = 0; j < derivative; j++) k *= i - j;
+    return sum + v * k * t ** (i - derivative);
+  }, 0);
 }
 export function routeArrow(from, to, obstacles) {
   if (gap(from, to) < 1) return null;
-  const blockers = obstacles.filter(o => o.r === undefined || (gap(o, from) > 1 && gap(o, to) > 1));
-  let points, bowed = false;
-  // A small bow into the open part of the board keeps adjacent-point arrows
-  // legible instead of squeezing the whole arrow into the gap between rims.
-  const sameHalf = (from.y < 330) === (to.y < 330);
-  if (sameHalf) {
-    const via = { x: (from.x + to.x) / 2,
-      y: from.y < 330 ? Math.max(from.y, to.y) + 48 : Math.min(from.y, to.y) - 48 };
-    // Check a broad rounding as well as the legs, since rounding cuts inward.
-    // On longer transfers a gentle arc is easier to follow than a hard angle.
-    const roundClear = Array.from({ length: 21 }, (_, i) => {
-      const t = i / 20, u = 1 - t;
-      return { x: u*u*from.x + 2*u*t*via.x + t*t*to.x,
-        y: u*u*from.y + 2*u*t*via.y + t*t*to.y };
-    }).every((p,i,all) => !i || segmentClear(all[i-1],p,blockers));
-    if (roundClear && segmentClear(from, via, blockers) && segmentClear(via, to, blockers)) {
-      points = [from, via, to]; bowed = true;
-    }
+  const blockers = [];
+  for (const o of obstacles) {
+    if (o.r !== undefined && (gap(o, from) < 1 || gap(o, to) < 1)) continue;
+    const c =
+      o.r === undefined
+        ? {
+            x: o.x + o.width / 2,
+            y: o.y + o.height / 2,
+            r: Math.hypot(o.width, o.height) / 2 + 2,
+          }
+        : { ...o, r: Math.max(ARROW_CLEARANCE, o.r) };
+    if (!blockers.some((b) => gap(b, c) < EPS && Math.abs(b.r - c.r) < EPS))
+      blockers.push(c);
   }
-  points ||= segmentClear(from, to, blockers) ? [from, to] : search(from, to, blockers);
-  const routed = !!points;
-  // A mask in the renderer protects checker faces even in a sealed cluster
-  // where no continuous route fits. The arrow is never a new board hit target.
-  points ||= [from, to];
-  points = points.filter((p, i) => !i || gap(p, points[i - 1]) > 0.01);
-  points = trim(trim(points, 28).reverse(), 28).reverse();
-  if (points.length < 2) return null;
-  const n = v => Number(v.toFixed(2)), coord = p => `${n(p.x)} ${n(p.y)}`;
-  let d = `M${coord(points[0])}`;
-  for (let i = 1; i < points.length - 1; i++) {
-    const p = points[i], a = points[i - 1], b = points[i + 1];
-    let radius = Math.min(bowed ? 80 : 14, gap(a, p) / 2, gap(p, b) / 2);
-    const near = (other) => ({ x: p.x + (other.x - p.x) * radius / gap(other, p),
-      y: p.y + (other.y - p.y) * radius / gap(other, p) });
-    let before, after;
-    for (;;) {
-      before = near(a); after = near(b);
-      const samples = Array.from({ length: 17 }, (_, j) => {
-        const t = j / 16, u = 1 - t;
-        return { x: u*u*before.x + 2*u*t*p.x + t*t*after.x,
-          y: u*u*before.y + 2*u*t*p.y + t*t*after.y };
-      });
-      if (!routed || samples.every((q, j) => !j || segmentClear(samples[j-1], q, blockers))) break;
-      radius /= 2;
-      if (radius < 0.5) { before = p; after = p; break; }
-    }
-    d += ` L${coord(before)} Q${coord(p)} ${coord(after)}`;
+  const spans = route(from, to, blockers),
+    routed = !!spans;
+  const path = spans || [line(from, to)],
+    offsets = [0];
+  for (const s of path) offsets.push(offsets.at(-1) + s.length);
+  const length = offsets.at(-1);
+  const blends = [];
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1],
+      b = path[i],
+      w = Math.min(5, a.length / 3, b.length / 3);
+    if (w < EPS) continue;
+    const left = jet(a, a.length - w),
+      right = jet(b, w),
+      coeff = smoothJoin(left, right, w * 2);
+    // Keep transitions short: numerical clearance error stays subpixel while
+    // most of each bend remains an exact 44px-radius circular arc.
+    blends.push({ start: offsets[i] - w, end: offsets[i] + w, coeff });
   }
-  const tip = points.at(-1), prior = points.at(-2);
-  d += ` L${coord(tip)}`;
-  return { d, points, tip, angle: Math.atan2(tip.y - prior.y, tip.x - prior.x) * 180 / Math.PI, routed };
+  function sample(s) {
+    const blend = blends.find((b) => s >= b.start && s <= b.end);
+    if (blend) {
+      const t = (s - blend.start) / (blend.end - blend.start);
+      return { x: poly(blend.coeff[0], t), y: poly(blend.coeff[1], t) };
+    }
+    let i = path.findIndex((_, i) => s <= offsets[i + 1]);
+    if (i < 0) i = path.length - 1;
+    return jet(path[i], Math.max(0, s - offsets[i]))[0];
+  }
+  let start = 0,
+    end = length;
+  while (start < length && gap(sample(start), from) < 28) start += 0.25;
+  while (end > start && gap(sample(end), to) < 28) end -= 0.25;
+  if (end <= start) return null;
+  // Hermite cubic sampling of the smooth analytic path (<=2 board pixels per
+  // segment). This preserves tangents without visible polyline facets.
+  const points = [],
+    n = Math.ceil((end - start) / 2),
+    format = (p) => `${p.x.toFixed(3)} ${p.y.toFixed(3)}`;
+  let d = "";
+  const tangent = (s) => {
+    const a = sample(Math.max(0, s - 0.001)),
+      b = sample(Math.min(length, s + 0.001));
+    return { x: (b.x - a.x) / 0.002, y: (b.y - a.y) / 0.002 };
+  };
+  for (let i = 0; i <= n; i++) {
+    const s = start + ((end - start) * i) / n,
+      p = sample(s);
+    points.push(p);
+    if (!i) {
+      d = `M${format(p)}`;
+      continue;
+    }
+    const prev = points[i - 1],
+      h = (end - start) / n,
+      t0 = tangent(s - h),
+      t1 = tangent(s);
+    d += ` C${format({ x: prev.x + (t0.x * h) / 3, y: prev.y + (t0.y * h) / 3 })} ${format({ x: p.x - (t1.x * h) / 3, y: p.y - (t1.y * h) / 3 })} ${format(p)}`;
+  }
+  const tip = points.at(-1),
+    dir = tangent(end);
+  return {
+    d,
+    points,
+    tip,
+    angle: (Math.atan2(dir.y, dir.x) * 180) / Math.PI,
+    routed,
+  };
 }

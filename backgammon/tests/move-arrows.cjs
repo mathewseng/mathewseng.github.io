@@ -31,6 +31,9 @@ module.exports = async function moveArrows(browser, base, out, name) {
       await page.goto(base+'/backgammon/play/#resume='+id);
       await page.locator('#roll').waitFor();
       assert.ok(await page.locator('#board .last-move-arrow').count()>0);
+      const rings=await page.locator('#board circle[stroke-dasharray]').evaluateAll(ns=>ns.map(n=>({length:Number(n.getAttribute('pathLength')), dash:n.getAttribute('stroke-dasharray').split(' ').map(Number),cap:n.getAttribute('stroke-linecap')})));
+      assert.ok(rings.length);
+      for(const ring of rings) {assert.equal(ring.length % (ring.dash[0]+ring.dash[1]),0);assert.equal(ring.cap,'round');}
       const saved=await readGame();
       for(const [width,height] of [[390,844],[844,390],[1366,768]]) {
         await page.setViewportSize({width,height});
@@ -71,6 +74,22 @@ module.exports = async function moveArrows(browser, base, out, name) {
       await page.keyboard.press('Escape');
       assert.equal(await readGame(),saved);
     }
+    // The reported two-transfer layout: one cross-board move and one move
+    // around the occupied six-point stack, in both orientations.
+    await page.goto(base+'/backgammon/');
+    await page.evaluate(async()=>{
+      const r=await import('/backgammon/core/rules.mjs'),{moveTrace}=await import('/backgammon/core/move-trace.mjs');
+      const {Board}=await import('/backgammon/ui/board.mjs');
+      const source=r.initialState({phase:'move',turn:1,dice:[3,6]});
+      const steps=[{from:11,to:14,die:3},{from:0,to:6,die:6}];
+      const state=steps.reduce((s,step)=>r.applyStep(s,step),source),trace=moveTrace(state,1,steps,source.dice);
+      document.body.replaceChildren();const slot=document.createElement('div');slot.style.cssText='width:min(100%,1100px);margin:auto';document.body.append(slot);
+      new Board(slot).render(state,{interactive:false,numbers:true,orientation:0,lastMove:trace});
+    });
+    await page.setViewportSize({width:1440,height:1000});
+    const file=`${name}-move-arrows-reported-stack.png`;
+    await page.screenshot({path:path.join(out,file),animations:'disabled'});screenshots.push(file);
+    assert.equal(await page.locator('.last-move-arrow').count(),2);
     assert.deepEqual(errors,[]);
     return {browser:name,screenshots,isolated:true,pointerTransparent:true};
   }finally{await context.close();}

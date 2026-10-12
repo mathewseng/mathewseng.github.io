@@ -3,7 +3,11 @@ import { el, button, select, field } from "../ui/shell.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
 import { startUpdates } from "../ui/updates.mjs";
 import { EngineClient } from "../engine/client.mjs";
-startUpdates();
+
+// Let the document finish loading while the service-worker gate runs.
+// Only start the tool after the gate has finished or allowed offline use.
+async function boot() {
+await startUpdates();
 const $ = (id) => document.getElementById(id);
 const time = (n) =>
   n < 1000 ? `${n.toFixed(n < 10 ? 2 : 0)} ms` : `${(n / 1000).toFixed(2)} s`;
@@ -351,3 +355,7 @@ $("device-controls").append(
   run,
 );
 addEventListener("pagehide", () => client?.destroy());
+
+document.documentElement.dataset.appReady = "true";
+}
+boot();
