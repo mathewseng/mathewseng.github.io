@@ -175,8 +175,8 @@ export class EngineClient {
       tryBook,
     ]);
     const key = keyFor(sharedChecker ? null : submittedKey || submitted);
-    // Reuse scored finalists. Auto reuse additionally requires a stop reason
-    // allowed for actual-move grading (never its hint-only clear-lead stop).
+    // Reuse completed finalists at their chosen depth. A clear-lead stop can
+    // grade that leader, but other submissions still require a full search.
     const reuseHintKey = kind === "checker" && !rollout && !tryBook &&
       (preset === "auto" || PRESETS[preset]?.plies > 2) && submittedKey ? keyFor(null) : null;
     if (this.cache.has(key)) {
@@ -235,15 +235,20 @@ export class EngineClient {
     this.pump();
     return forCaller(job.promise);
   }
-  reuseGrade(key, preset, submittedKey) {
+  gradeBasis(key, preset, submittedKey) {
     if (!key) return null;
     const hint = this.cache.get(key);
     if (hint?.status !== "complete" || hint.type !== "checker" ||
         (preset === "auto"
           ? !(hint.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies &&
-              ["predicted-cost", "maximum-depth"].includes(hint.budget?.reason))
-          : hint.settings?.plies !== PRESETS[preset]?.plies) ||
-        !hint.candidates?.some(c => c.key === submittedKey)) return null;
+              (["predicted-cost", "maximum-depth"].includes(hint.budget?.reason) ||
+                (hint.budget?.reason === 'clear-lead' && hint.candidates?.[0]?.key === submittedKey)))
+          : hint.settings?.plies !== PRESETS[preset]?.plies)) return null;
+    return hint;
+  }
+  reuseGrade(key, preset, submittedKey) {
+    const hint=this.gradeBasis(key,preset,submittedKey);
+    if (!hint?.candidates?.some(c=>c.key===submittedKey)) return null;
     this.cache.delete(key); this.cache.set(key, hint);
     const result = structuredClone(hint);
     const actual = result.candidates.find(c => c.key === submittedKey);
@@ -297,6 +302,9 @@ export class EngineClient {
         kind: job.kind,
         submitted: job.submitted,
         rollout: job.rollout,
+        // An unlisted actual move needs one same-depth score, not another
+        // adaptive search of alternatives already completed at that depth.
+        prepared: this.gradeBasis(job.reuseHintKey, job.preset, job.submittedKey),
       });
       this.jobTimeout = setTimeout(
         () =>

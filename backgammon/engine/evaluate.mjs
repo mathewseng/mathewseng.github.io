@@ -60,6 +60,34 @@ export function createEvaluator(module) {
   }
   return {
     capabilities: CAPABILITIES,
+    gradePrepared(s, prepared, submitted) {
+      assertState(s);
+      if (prepared?.engine!==ENGINE_VERSION || prepared.type!=='checker' ||
+          prepared.status!=='complete' || prepared.positionKey!==positionKey(s) ||
+          ![2,3,4].includes(prepared.settings?.plies) || !prepared.candidates?.length)
+        throw new Error('Prepared analysis does not match this decision.');
+      const start=performance.now(), after=commitTurn(s,submitted), key=boardKey(after);
+      const result=structuredClone(prepared);
+      let actual=result.candidates.find(c=>c.key===key);
+      if (!actual) {
+        const scored=call(score,[toXGID(s),toXGID({...after,phase:'roll',dice:[]}),
+          prepared.settings.plies,Number(rulesOf(s).immediateRedoubles>0)]);
+        actual={...scored,key,steps:structuredClone(submitted),notation:notation(submitted,s.turn)};
+        result.candidates.push(actual);
+        result.candidates.sort((a,b)=>b.equity-a.equity);
+        // Adding an arbitrary move changes the comparison set. The original
+        // root's gap/forecast cannot describe this expanded ranking.
+        if (result.budget) result.budget={...result.budget,lead:null,forecast:null};
+        if(result.screening){
+          result.screening.finalists=result.candidates.length;
+          result.screening.excluded=result.screening.excluded?.filter(c=>c.key!==key);
+        }
+      }
+      return {...result,actual,error:Math.max(0,result.candidates[0].equity-actual.equity),
+        elapsedMs:performance.now()-start,
+        preparation:{plies:prepared.settings.plies,requestId:prepared.requestId,
+          reason:prepared.budget?.reason||'fixed-depth',submittedKey:key}};
+    },
     rolloutBatch(s, turn, trials, seed) {
       const result = call(roll, [
         toXGID(s),

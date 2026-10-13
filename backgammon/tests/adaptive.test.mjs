@@ -6,7 +6,7 @@ import { createEvaluator } from "../engine/evaluate.mjs";
 import { initialState, legalTurns, legalPaths, boardKey } from "../core/rules.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 
-test("adaptive search completes affordable deeper stages even after a second has elapsed", () => {
+test("Auto cube completes three plies but does not extrapolate warm-cache timings into four", () => {
   let clock = 0;
   const seen = [];
   const result = runAdaptive({ analyze(state, preset, kind, submitted) {
@@ -14,10 +14,10 @@ test("adaptive search completes affordable deeper stages even after a second has
     clock += [20, 80, 300, 800, 1400][PRESETS[preset].plies];
     return { type:"cube", settings: PRESETS[preset], actual: { equity: 1 }, status: "complete" };
   } }, initialState({phase:"roll"}), "cube", "actual", r => seen.push(r), () => clock);
-  assert.deepEqual(seen.map(r => r.settings.plies), [0, 1, 2, 3, 4]);
-  assert.deepEqual(seen.map(r => r.budget.levels.length), [1, 2, 3, 4, 5]);
-  assert.equal(result.budget.reason, "maximum-depth");
-  assert.equal(result.elapsedMs, 2600);
+  assert.deepEqual(seen.map(r => r.settings.plies), [0, 1, 2, 3]);
+  assert.deepEqual(seen.map(r => r.budget.levels.length), [1, 2, 3, 4]);
+  assert.equal(result.budget.reason, "cube-depth-limit");
+  assert.equal(result.elapsedMs, 1200);
   assert.equal(result.status, "complete");
 });
 
@@ -185,4 +185,15 @@ test("an analysis-send failure rejects the active job and permits retry", async 
     workers[1].reply({id:client.active.id,type:"result",result:completed(4)});
     assert.equal((await retry).settings.plies,4);
   } finally {client.destroy();}
+});
+
+test('Auto checker still reaches an affordable four-ply search after a slow initial stage',()=>{
+  let clock=0;const levels=[];
+  const result=runAdaptive({analyze(s,preset){
+    const plies=PRESETS[preset].plies;clock += [1200,10,10,10,20][plies];
+    return{type:'checker',status:'complete',settings:PRESETS[preset],
+      candidates:[{key:'a',equity:.2},{key:'b',equity:.199}]};
+  }},initialState({phase:'move',dice:[3,1]}),'checker',null,r=>levels.push(r.settings.plies),()=>clock);
+  assert.deepEqual(levels,[0,1,2,3,4]);
+  assert.equal(result.budget.reason,'maximum-depth');assert.equal(result.elapsedMs,1250);
 });

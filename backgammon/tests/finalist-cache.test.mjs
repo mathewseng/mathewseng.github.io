@@ -96,3 +96,47 @@ test('shutdown releases caches and another evaluator never inherits them',()=>{
   // worker is destroyed and creates a new evaluator before subsequent work.
   a.engine.analyze(a.state,'research');assert.ok(count(a,4)>before);
 });
+
+test('prepared Auto grading evaluates only an unlisted actual move at the completed depth',()=>{
+  const f=fixture(),hint=f.engine.analyze(f.state,'expert','checker',null,{automatic:true});
+  hint.budget={reason:'predicted-cost'};
+  const turn=f.turns.find(t=>!hint.candidates.some(c=>c.key===t.key));
+  const before=f.calls.length,snapshot=structuredClone(hint);
+  const grade=f.engine.gradePrepared(f.state,hint,turn.steps);
+  assert.equal(f.calls.length-before,1);
+  assert.equal(f.calls.at(-1).depth,3);
+  assert.equal(grade.actual.key,turn.key);
+  assert.deepEqual(hint,snapshot,'grading never mutates the prepared result');
+  for(const candidate of hint.candidates)
+    assert.deepEqual(grade.candidates.find(c=>c.key===candidate.key),candidate);
+  assert.equal(grade.error,Math.max(0,grade.candidates[0].equity-grade.actual.equity));
+  assert.equal(grade.budget.lead,null);assert.equal(grade.budget.forecast,null);
+  const reference=f.engine.analyze(f.state,'expert','checker',turn.steps,{automatic:true});
+  assert.deepEqual(grade.actual,reference.actual);
+  grade.candidates[0].probabilities[0]=99;
+  assert.deepEqual(hint,snapshot);
+});
+
+test('prepared grading rejects mismatched context and incomplete paths before native work',()=>{
+  const f=fixture(),hint=f.engine.analyze(f.state,'expert'),n=f.calls.length;
+  for(const state of [{...f.state,dice:[3,1]},{...f.state,cube:{value:2,owner:0}},
+    {...f.state,rules:{...f.state.rules,immediateRedoubles:2}},
+    {...f.state,matchLength:7,scores:[2,4]}])
+    assert.throws(()=>f.engine.gradePrepared(state,hint,f.turns[0].steps),/does not match/);
+  for(const change of [{engine:'other'},{status:'partial'},{type:'cube'},{settings:{plies:1}}])
+    assert.throws(()=>f.engine.gradePrepared(f.state,{...hint,...change},f.turns[0].steps),/does not match/);
+  assert.throws(()=>f.engine.gradePrepared(f.state,hint,f.turns[0].steps.slice(0,1)),/complete|legal/i);
+  assert.equal(f.calls.length,n);
+});
+
+test('prepared grading supports an improved actual move and retries a failed score',()=>{
+  const f=fixture(),hint=f.engine.analyze(f.state,'expert');
+  const winner=hint.candidates[0];
+  hint.candidates=hint.candidates.slice(1);
+  const snapshot=structuredClone(hint);
+  f.fail();assert.throws(()=>f.engine.gradePrepared(f.state,hint,winner.steps),/temporary failure/);
+  assert.deepEqual(hint,snapshot);
+  const grade=f.engine.gradePrepared(f.state,hint,winner.steps);
+  assert.equal(grade.candidates[0].key,winner.key);assert.equal(grade.error,0);
+  assert.equal(grade.actual.equity,winner.equity);
+});

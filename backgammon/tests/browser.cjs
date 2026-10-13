@@ -517,6 +517,12 @@ const server = http.createServer((req, res) => {
         (report.engineReuse ||= []).push(
           {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
         );
+        (report.preparedGrading ||= []).push(
+          {browser: browserName, ...await require("./prepared-grading.cjs")(browser, base)},
+        );
+        (report.futureReuse ||= []).push(
+          {browser: browserName, ...await require("./prethink-future.cjs")(browser, base)},
+        );
         (report.researchScreen ||= []).push(
           {browser: browserName, cases: await require("./research-screen.cjs")(browser, base, out, browserName)},
         );

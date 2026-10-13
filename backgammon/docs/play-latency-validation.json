@@ -1,0 +1,131 @@
+{
+  "recordedAt": "2026-10-13T21:38:52.490Z",
+  "reports": [
+    {
+      "browser": "chromium",
+      "grading": {
+        "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+        "rows": [
+          {
+            "name": "money-beavers",
+            "plies": 3,
+            "gradeMs": 165.79999999701977,
+            "candidates": 5,
+            "legal": 14,
+            "maxDifference": 0
+          },
+          {
+            "name": "match-opposite-player",
+            "plies": 3,
+            "gradeMs": 191.79999999701977,
+            "candidates": 2,
+            "legal": 16,
+            "maxDifference": 0
+          },
+          {
+            "name": "fixed-four-bearoff",
+            "plies": 4,
+            "gradeMs": 0.6000000089406967,
+            "candidates": 4,
+            "legal": 8,
+            "maxDifference": 0
+          }
+        ]
+      },
+      "future": {
+        "dice": [
+          2,
+          1
+        ],
+        "plies": 3,
+        "cached": true,
+        "sameAnswer": true,
+        "preparedBeforePlay": true
+      }
+    },
+    {
+      "browser": "firefox",
+      "grading": {
+        "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+        "rows": [
+          {
+            "name": "money-beavers",
+            "plies": 3,
+            "gradeMs": 1993,
+            "candidates": 5,
+            "legal": 14,
+            "maxDifference": 0
+          },
+          {
+            "name": "match-opposite-player",
+            "plies": 3,
+            "gradeMs": 2199,
+            "candidates": 2,
+            "legal": 16,
+            "maxDifference": 0
+          },
+          {
+            "name": "fixed-four-bearoff",
+            "plies": 4,
+            "gradeMs": 2,
+            "candidates": 4,
+            "legal": 8,
+            "maxDifference": 0
+          }
+        ]
+      },
+      "future": {
+        "dice": [
+          2,
+          1
+        ],
+        "plies": 3,
+        "cached": true,
+        "sameAnswer": true,
+        "preparedBeforePlay": true
+      }
+    },
+    {
+      "browser": "webkit",
+      "grading": {
+        "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+        "rows": [
+          {
+            "name": "money-beavers",
+            "plies": 3,
+            "gradeMs": 188,
+            "candidates": 5,
+            "legal": 14,
+            "maxDifference": 0
+          },
+          {
+            "name": "match-opposite-player",
+            "plies": 3,
+            "gradeMs": 193,
+            "candidates": 2,
+            "legal": 16,
+            "maxDifference": 0
+          },
+          {
+            "name": "fixed-four-bearoff",
+            "plies": 4,
+            "gradeMs": 1,
+            "candidates": 4,
+            "legal": 8,
+            "maxDifference": 0
+          }
+        ]
+      },
+      "future": {
+        "dice": [
+          2,
+          1
+        ],
+        "plies": 3,
+        "cached": true,
+        "sameAnswer": true,
+        "preparedBeforePlay": true
+      }
+    }
+  ]
+}

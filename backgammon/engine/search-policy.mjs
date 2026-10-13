@@ -2,8 +2,8 @@
 import { SEARCH_MODEL } from './search-model.mjs';
 import { PRESETS } from './metadata.mjs';
 
-export const SEARCH_POLICY_VERSION = 'minimum-two-v2';
-export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 2, maxNextStageMs: 5000 });
+export const SEARCH_POLICY_VERSION = 'minimum-two-v3';
+export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 2, maxNextStageMs: 5000, maximumCubePlies: 3 });
 
 export function leadInfo(current, previous) {
   const a = current?.candidates, b = previous?.candidates;
@@ -45,7 +45,7 @@ export function forecastNext(state, evaluations) {
   const depth = current?.settings.plies, model = SEARCH_MODEL.depths[depth];
   // Cube searches do not enumerate root checker candidates. Extrapolate their
   // observed stage growth instead; this is a rough estimate, not a trained ETA.
-  if (current?.type === 'cube' && [2, 3].includes(depth) &&
+  if (current?.type === 'cube' && depth === 2 &&
       Number.isFinite(current.stageMs) && Number.isFinite(previous?.stageMs)) {
     const cost = Math.max(.25, current.stageMs);
     return { nextPlies: depth + 1, estimateMs: cost * Math.max(1, cost / Math.max(.25, previous.stageMs)),
@@ -59,15 +59,26 @@ export function forecastNext(state, evaluations) {
   const exponent = model.method === 'regression'
     ? x.reduce((sum, value, i) => sum + value * model.coefficients[i], 0)
     : model.coefficients[0];
-  const estimateMs = model.method === 'ratio'
+  const modelEstimateMs = model.method === 'ratio'
     ? Math.max(.25, current.stageMs) * Math.exp(exponent)
     : base * Math.exp(Math.max(-6, Math.min(8, exponent)));
+  // The historical regression was trained on capped timings and can badly
+  // underestimate 4 ply (live 4-1: ~0.8 s at 3 ply, ~13.5 s at 4). At that
+  // optional stage use both its upper residual and observed per-candidate
+  // growth. Keep the 2→3 policy unchanged; never skip the 2-ply minimum.
+  const observedGrowthMs = Math.max(.25, current.stageMs) * count / current.candidates.length *
+    Math.max(1, (Math.max(.25,current.stageMs)/current.candidates.length) /
+      (Math.max(.25,previous.stageMs)/previous.candidates.length));
+  const estimateMs = depth === 3
+    ? Math.max(modelEstimateMs * Math.exp(model.residualP90), observedGrowthMs)
+    : modelEstimateMs;
   return {
     nextPlies: depth + 1, candidates: count, estimateMs,
+    modelEstimateMs, ...(depth === 3 ? { observedGrowthMs, safety: 'four-ply-upper-growth' } : {}),
     // Empirical residual spread, not a calibrated confidence interval and not
     // a promise across browsers/devices. Users can cancel an underestimated job.
-    lowMs: estimateMs * Math.exp(model.residualP10),
-    highMs: estimateMs * Math.exp(model.residualP90),
+    lowMs: modelEstimateMs * Math.exp(model.residualP10),
+    highMs: Math.max(estimateMs, modelEstimateMs * Math.exp(model.residualP90)),
     model: SEARCH_MODEL.version,
   };
 }
@@ -76,6 +87,11 @@ export function chooseSearchDecision(state, evaluations, submitted = null) {
   const current = evaluations.at(-1), previous = evaluations.at(-2);
   if (!['checker', 'cube'].includes(current?.type) || ![2, 3].includes(current.settings.plies))
     return { reason: 'searching', lead: null, forecast: null };
+  // Cube 0–3 ply can be almost entirely warm from the previous checker search,
+  // while 4 ply still takes several seconds. That ratio is not a safe forecast.
+  // Auto caps cube decisions at 3; explicit Fixed 4 remains available.
+  if (current.type === 'cube' && current.settings.plies >= SEARCH_LIMITS.maximumCubePlies)
+    return { reason: 'cube-depth-limit', lead: null, forecast: null };
   const lead = leadInfo(current, previous), forecast = forecastNext(state, evaluations);
   // Match equity and actual-move grading need more than a stable top ranking.
   // Cubeful money gets a larger margin than the historical cubeless sample.

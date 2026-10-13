@@ -2479,6 +2479,7 @@ async function computerTurn() {
           result: gradeCube(s, result, action.type),
         };
     }
+    if (s.phase === 'move' && action.type === 'move') prethink.prepareAfter(s,action);
     if (!reducedMotion()) {
       await new Promise(resolve => setTimeout(resolve, s.phase === "move" ? 650 : 300));
       while (ui.board.playbackTimer && token === epoch) await new Promise(resolve => setTimeout(resolve, 80));

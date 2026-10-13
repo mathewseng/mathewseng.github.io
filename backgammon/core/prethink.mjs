@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { positionKey, transition, decisionPlayer, canDouble } from './rules.mjs';
+import { positionKey, transition, decisionPlayer, canDouble, boardKey, commitTurn } from './rules.mjs';
 import { forcedTurn } from './table.mjs';
 
 export const PRETHINK = Object.freeze({ nodes: 24, milliseconds: 20000, turns: 2, branches: 3, margin: 0.020 });
@@ -51,6 +51,17 @@ export class Prethink {
     this.scope = null; this.timer = null; this.job = null;
   }
   get busy() { return !!this.job; }
+  // The bot has already chosen its real action. Use its animation hold to
+  // prepare the next decision; committed dice are still drawn only by Play.
+  prepareAfter(state, action) {
+    const view=this.view();
+    if (!view?.enabled || view.game?.config.mode !== 'computer') return;
+    const next=transition(state,action,decisionPlayer(state));
+    if (!['roll','double','move'].includes(next.phase) || (next.phase==='roll'&&!canDouble(next))) return;
+    const preset=decisionPlayer(next)===view.game.config.humanSide
+      ? view.game.config.reviewStrength||'auto' : view.game.config.strength||'auto';
+    this.engine.analyze(next,{preset,priority:-20}).catch(()=>{});
+  }
   pause() {
     clearTimeout(this.timer); this.timer = null;
     this.scope = null; this.job = null;
@@ -71,6 +82,15 @@ export class Prethink {
       this.scope = {key, state:structuredClone(model.state), root:null, done:new Set(), queue:[], seen:new Set(), nodes:0, spent:0};
       this.job = null;
     }
+    // A completed real draft takes precedence immediately. Do not wait for a
+    // speculative future roll to finish before preparing the Confirm action.
+    if (view.idle && this.job?.priority === -20 && view.submitted) {
+      const draftKey = boardKey(commitTurn(model.state, view.submitted));
+      if (!this.scope.done.has(draftKey)) {
+        this.engine.cancelWhere(job => job.priority === -20);
+        this.job = null;
+      }
+    }
     if (view.idle && !this.job) this.timer = setTimeout(() => this.run(), 120);
   }
   async run() {
@@ -81,7 +101,7 @@ export class Prethink {
     const presetFor = state => decisionPlayer(state) === model.config.humanSide
       ? model.config.reviewStrength || 'auto' : model.config.strength || 'auto';
     const submitted = scope.state.phase === 'move' ? view.submitted : null;
-    const draftKey = submitted ? JSON.stringify(submitted) : null;
+    const draftKey = submitted ? boardKey(commitTurn(scope.state,submitted)) : null;
     let node, preset, priority, jobKey;
     if (!scope.root) {
       node = {state:scope.state,turns:0,weight:1}; preset=presetFor(node.state); priority=-5; jobKey='root';
@@ -100,15 +120,24 @@ export class Prethink {
       const result = forced || cubeUnavailable ? {skipped:true} : await this.engine.analyze(node.state, {
         preset, priority, submitted:priority === -4 ? submitted : null,
       });
-      if (this.scope !== scope) return;
+      if (this.scope !== scope || this.job !== job) return;
       if (jobKey === 'root') scope.root=result;
       scope.done.add(jobKey);
       if (priority === -20) scope.nodes++;
-      // Actual-draft feedback never changes the recommendation tree or dice.
-      if (priority !== -4) {
-        for (const next of continuations(node,result)) {
+      // Favor the actual completed draft over hypothetical best moves. Keep
+      // its next cube decision and all random rolls in the same exact-context
+      // cache that foreground play uses; never reserve or mutate live dice.
+      {
+        const actual = priority === -4 && result?.actual;
+        const plan = actual ? {...result,candidates:[actual]} : result;
+        for (const next of continuations(actual ? {...node,weight:4} : node,plan)) {
           const key=analysisKey(next.state);
-          if (next.state.phase === 'over' || next.turns >= this.limits.turns || scope.seen.has(key)) continue;
+          if (next.state.phase === 'over' || next.turns >= this.limits.turns) continue;
+          if (scope.seen.has(key)) {
+            const queued=scope.queue.find(n=>analysisKey(n.state)===key);
+            if (queued && actual) queued.weight=Math.max(queued.weight,next.weight);
+            continue;
+          }
           scope.seen.add(key); scope.queue.push(next);
         }
         scope.queue.sort((a,b) => b.weight-a.weight || a.turns-b.turns);

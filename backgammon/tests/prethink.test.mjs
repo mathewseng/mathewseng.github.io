@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initialState, legalTurns, transition, assertState, positionKey } from '../core/rules.mjs';
+import { initialState, legalTurns, transition, assertState, positionKey, boardKey, commitTurn } from '../core/rules.mjs';
 import { localConfig } from '../core/play-session.mjs';
 import { Prethink, PRETHINK, chanceRolls, continuations } from '../core/prethink.mjs';
 
@@ -50,7 +50,9 @@ function harness({mode='computer',limits={...PRETHINK,nodes:2},deferred=false}={
   const engine={cancelWhere:predicate=>cancelled.push(predicate),analyze:async(state,options)=>{
     calls.push({state:structuredClone(state),...options});
     if(deferred) await new Promise(r=>settle=r);
-    return evaluate(state);
+    const result=evaluate(state);
+    if(options.submitted)result.actual={...legalTurns(state).find(t=>t.key===boardKey(commitTurn(state,options.submitted))),equity:.25};
+    return result;
   }};
   const p=new Prethink({engine,view:()=>view,limits});
   const tick=async()=>{p.update();clearTimeout(p.timer);await p.run();clearTimeout(p.timer);};
@@ -68,6 +70,31 @@ test('prepare current decision, then actual draft before bounded future work at 
     assert.ok(h.calls.every(c=>c.preset==='auto'));
     assert.equal(h.view.game.events,undefined,'no game mutation / speculative event history');
   } finally {h.p.pause();}
+});
+
+test('completed actual draft prepares its own next decision ahead of hypothetical best lines',async()=>{
+  const h=harness();
+  try {
+    await h.tick();
+    const source=structuredClone(h.view.game.state);
+    h.view.submitted=legalTurns(source).at(-1).steps;
+    await h.tick();await h.tick();
+    assert.equal(h.calls[2].priority,-20);
+    assert.deepEqual(h.calls[2].state,transition(source,{type:'move',steps:h.view.submitted}));
+    assert.deepEqual(h.view.game.state,source,'forecast never moves real pieces or draws real dice');
+  }finally{h.p.pause();}
+});
+
+test('a chosen bot move prepares the next cube decision during animation and respects opt-out',async()=>{
+  const h=harness();
+  try {
+    const source=structuredClone(h.view.game.state),action={type:'move',steps:legalTurns(source)[0].steps};
+    h.view.idle=false;h.p.prepareAfter(source,action);await Promise.resolve();
+    assert.equal(h.calls.length,1);assert.equal(h.calls[0].priority,-20);
+    assert.deepEqual(h.calls[0].state,transition(source,action));
+    assert.deepEqual(h.view.game.state,source);
+    h.view.enabled=false;h.p.prepareAfter(source,action);assert.equal(h.calls.length,1);
+  }finally{h.p.pause();}
 });
 test('opt-out, hidden/inactive views, human games and foreground work do not start speculation',async()=>{
   for(const mode of ['local','online']) {
@@ -89,4 +116,27 @@ test('stale completions cannot seed another game; pause cancels background only,
     assert.equal(cancel({priority:-20}),true);assert.equal(cancel({priority:-5}),true);
     assert.equal(cancel({priority:20}),false);assert.equal(cancel({priority:-10}),false);
   } finally {h.p.pause();}
+});
+
+test('completing a real draft preempts a speculative job before Confirm is clicked',async()=>{
+  const h=harness();let finish;
+  try {
+    await h.tick();
+    const analyze=h.p.engine.analyze;
+    h.p.engine.analyze=(state,options)=>options.priority===-20
+      ? new Promise(resolve=>{finish=()=>resolve(evaluate(state));}) : analyze(state,options);
+    const future=h.p.run();await Promise.resolve();
+    assert.equal(h.p.job.priority,-20);
+    h.view.submitted=legalTurns(h.view.game.state).at(-1).steps;
+    h.p.update();clearTimeout(h.p.timer);
+    const cancels=h.cancelled.at(-1);
+    assert.equal(cancels({priority:-20}),true);
+    assert.equal(cancels({priority:20}),false,'never cancel a promoted foreground action');
+    assert.equal(h.p.job,null);
+    await h.p.run();clearTimeout(h.p.timer);
+    assert.equal(h.calls.at(-1).priority,-4);
+    const queue=structuredClone(h.p.scope.queue);
+    finish();await future;clearTimeout(h.p.timer);
+    assert.deepEqual(h.p.scope.queue,queue,'late cancelled work cannot expand the plan');
+  }finally{h.p.pause();}
 });

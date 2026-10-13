@@ -102,6 +102,8 @@ self.onmessage = async ({ data }) => {
           request.submitted,
           (checkpoint) => postMessage({ id, type: "progress", checkpoint }),
         )
+      : request.prepared
+        ? evaluator.gradePrepared(request.state, request.prepared, request.submitted)
       : request.preset === "auto"
         ? runAdaptive(evaluator, request.state, request.kind, request.submitted,
             result => postMessage({ id, type: "evaluation", result: { ...result, backend: activeBackend, requestId: id } }))

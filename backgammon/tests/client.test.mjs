@@ -416,6 +416,19 @@ test('Auto grading does not reuse an Auto hint that stopped on a clear lead',asy
   }finally{client.destroy();}
 });
 
+test('playing the clear Auto leader reuses its completed evaluation without a second search',async()=>{
+  const s=initialState({phase:'move',dice:[3,1]}),worker=new WorkerMock();
+  const client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  try {
+    const pending=client.analyze(s,{preset:'auto'});await wait();
+    const r={...screenedFixture(s,3),budget:{reason:'clear-lead'}};
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:r});await pending;
+    const grade=await client.analyze(s,{preset:'auto',submitted:r.candidates[0].steps});
+    assert.equal(grade.error,0);assert.equal(grade.reusedHint,true);assert.equal(grade.settings.plies,3);
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
+  } finally {client.destroy();}
+});
+
 test('book and cube cache hits are isolated from edits to returned outcomes',async()=>{
   const source={type:'checker',status:'complete',settings:{plies:3},candidates:[{equity:.12,probabilities:[.5,.1,0,.1,0]}]};
   const book=new EngineClient({openingBook:{lookup:async()=>structuredClone(source)},workerFactory:()=>{throw Error('Unexpected native worker');}});
@@ -463,4 +476,22 @@ test('completed Auto forecasts/max-depth can grade evaluated finalists without r
       assert.ok(Math.abs(result.error-.01)<1e-8);
     } finally {client.destroy();}
   }
+});
+
+test('queued unlisted Auto grade sends the completed root basis without restarting its search',async()=>{
+  const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  const s=initialState({phase:'move',dice:[4,1]}),turns=legalTurns(s);
+  try {
+    const candidates=turns.slice(0,2).map((c,i)=>({...c,equity:.3-i*.01}));
+    const hint=client.analyze(s,{preset:'auto',priority:-5});await wait();
+    const grade=client.analyze(s,{preset:'auto',submitted:turns.at(-1).steps,priority:20});
+    const result={type:'checker',status:'complete',settings:{plies:3},budget:{reason:'predicted-cost'},candidates};
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result});await hint;await wait();
+    const request=worker.messages.at(-1);
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,2);
+    assert.deepEqual(request.prepared,result);
+    assert.deepEqual(request.submitted,turns.at(-1).steps);
+    worker.reply({id:request.id,type:'result',result:{...result,actual:{key:turns.at(-1).key,equity:.2},error:.1}});
+    assert.equal((await grade).actual.key,turns.at(-1).key);
+  } finally {client.destroy();}
 });
