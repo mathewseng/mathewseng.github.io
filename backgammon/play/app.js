@@ -1409,7 +1409,7 @@ function renderActions() {
   } else if (s.phase === "roll") {
     const previous = m.events.at(-1);
     $("message").textContent =
-      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll · tap the board or the cube to double.`;
+      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll · tap the board to roll${canDouble(s) ? ", or the cube to double" : ""}.`;
     a.append(
       button("Double", () => submitCube({ type: "double" }), "", {
         id: "double-cube",
