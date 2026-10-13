@@ -954,6 +954,8 @@ export class Board {
       // The outer SVG transform fixes the die's location. Animate the face inside
       // it, preserving focus/hit targets and displaying only the committed value.
       const face = die.querySelector(".board-die-face");
+      // Land at the selected die's raised resting pose, without a final snap.
+      const restingTransform = getComputedStyle(face).transform;
       const sign = i % 2 ? 1 : -1;
       const animation = face.animate(
         [
@@ -966,7 +968,7 @@ export class Board {
             opacity: 1,
             offset: 0.68,
           },
-          { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1 },
+          { transform: restingTransform, opacity: 1 },
         ],
         {
           duration: 440,

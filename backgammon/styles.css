@@ -1618,14 +1618,14 @@ button.die {
   min-height: 44px;
   padding: 7px;
   flex-shrink: 0;
+  transition: transform 220ms cubic-bezier(.2, .75, .3, 1), box-shadow 220ms ease;
 }
 button.die:hover {
   background: var(--board-die0, #eeeade);
-  border-color: var(--board-selection, #b6eee0);
 }
 button.die.preferred {
-  outline: 2px solid var(--board-selection, #b6eee0);
-  outline-offset: 2px;
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 5px 8px #0005, 0 1px 2px #0004;
 }
 .die-reveal {
   animation: die-arrive 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -2119,7 +2119,28 @@ button.teal-die:hover {
 .board-die.consumed {
   opacity: 0.42;
 }
-.board-die.preferred .board-die-face > rect:first-child,
+/* Selection lifts the whole die, preserving its own theme colors. */
+.board-die-face {
+  transition: transform 220ms cubic-bezier(.2, .75, .3, 1), filter 220ms ease;
+}
+.board-die.preferred .board-die-face {
+  transform: translateY(-4px) scale(1.08);
+  filter: drop-shadow(0 5px 4px #0006) drop-shadow(0 1px 1px #0004);
+}
+@media (hover: hover) and (pointer: fine) {
+  .board-die[role="button"]:not(.preferred):hover .board-die-face {
+    transform: translateY(-2px) scale(1.035);
+    filter: drop-shadow(0 3px 3px #0004);
+  }
+  button.die:not(.preferred):not(:disabled):hover {
+    transform: translateY(-1px) scale(1.035);
+    box-shadow: 0 3px 5px #0004;
+  }
+}
+.board-die[role="button"]:active .board-die-face {
+  transform: translateY(-1px) scale(1.02);
+  filter: drop-shadow(0 2px 2px #0004);
+}
 html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
   stroke: var(--board-focus);
   stroke-width: 4;
@@ -3746,7 +3767,6 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .board-die.blocked .board-die-face > :not(.die-status-mark),
 .board-die.consumed .board-die-face > :not(.die-status-mark) { opacity: .38; }
 .board-die.consumed { opacity: 1; }
-.board-die.preferred .board-die-face > rect:first-child { stroke: var(--board-selection); stroke-width: 4; filter: drop-shadow(0 0 3px var(--board-selection)); }
 .board-die.forced .die-status-mark { stroke: #efb365; }
 .board-die.blocked .die-status-mark { stroke: #ff8f92; }
 .point-shortcut { opacity: .85; font-family: ui-monospace, monospace; }
@@ -3788,8 +3808,6 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .play-page .board-workspace > .board-slot { flex: 1; max-width: calc(100cqh * 876 / 660 + 40px); min-width: 0; }
 .board-actions { flex: 0 0 104px; }
 .board-actions #confirm kbd { align-self: center; width: auto; }
-.board-die.preferred .board-die-face > rect:first-child { filter: none; }
-html[data-focus-navigation="true"] .board-die.preferred:focus-visible .board-die-face > rect:first-child { stroke: var(--board-focus); }
 @media (max-width: 700px) and (min-height: 501px) {
   .board-workspace { position: relative; container-type: normal; display: block; aspect-ratio: auto; height: calc((100vw - 40px) * 660 / 876 + 64px); }
   .play-page .board-workspace > .board-slot { width: 100%; max-width: none; height: calc(100% - 64px); }
