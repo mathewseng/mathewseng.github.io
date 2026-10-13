@@ -10,6 +10,19 @@ import {
 } from "../core/shortcuts.mjs";
 import { settings, saveSettings } from "../core/storage.mjs";
 import { el, button, field, toast } from "./shell.mjs";
+export function decorateShortcuts(root) {
+  const prefs = settings();
+  const actions = { "confirm": "confirm", "roll": "roll", "double-cube": "double",
+    "drop-cube": "drop", "take-cube": "take", "immediate-redouble": "redouble",
+    "hint": "hint", "undo": "undo", "reset-draft": "reset", "start-match": "confirm" };
+  for (const [id, action] of Object.entries(actions)) {
+    const control = root.querySelector(`#${id}`);
+    if (!control) continue;
+    control.querySelectorAll("kbd").forEach(node => node.remove());
+    const key = prefs.keyboardEnabled && prefs.shortcuts[action]?.[0];
+    if (key) control.append(el("kbd", { "aria-hidden": "true" }, key === "Space" ? "Space" : key.toUpperCase()));
+  }
+}
 export function shortcutControls() {
   const root = el("div", { class: "stack" }),
     inputs = new Map(),
@@ -24,7 +37,7 @@ export function shortcutControls() {
     el(
       "p",
       { class: "muted small" },
-      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C doubles or immediately redoubles; D drops. B selects the bar first, otherwise bears off. Enter or Space rolls. Z only undoes an unconfirmed checker step. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
+      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C confirms a completed draft, doubles before rolling, or immediately redoubles; D drops. B selects the bar first, otherwise bears off. Enter or Space rolls. S switches dice, or undoes a draft step in advanced mode. Z only undoes an unconfirmed checker step. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
     ),
   );
   for (const [label, defs] of [
@@ -109,7 +122,7 @@ export function installPlayShortcuts({ phase, point, run }) {
     if (!action) return;
     if (
       ["Space", "Enter"].includes(key) &&
-      e.target.closest?.("button,a,input")
+      e.target.closest?.('button,a,input,[role="button"]:not([aria-disabled="true"])')
     )
       return;
     let handled;

@@ -8,7 +8,7 @@ export function ruleGuide(s) {
     ["Objective and direction", "Each player has 15 checkers. Move toward your own home board, then bear all 15 off to win. Point numbers follow the chosen board orientation; flipping the board does not change play."],
     ["Opening roll", "Each player rolls one die. Ties are rerolled. The higher die starts, and that player uses both opening dice."],
     ["Opening stakes", money && r.cube && r.automaticDoubles
-      ? `A tied opening roll doubles the centered cube. ${r.automaticDoubles === 10 ? "Every tie counts: 1 → 2 → 4 → 8, up to the cube limit of 1024." : `This session allows at most ${r.automaticDoubles} opening double${r.automaticDoubles === 1 ? "" : "s"}.`} Neither player owns the cube afterward. Doubles rolled during normal play do not raise the stakes.`
+      ? `A tied opening roll doubles the centered cube. ${r.automaticDoubles === -1 ? "Every tie counts: 1 → 2 → 4 → 8, with no game-rule limit." : `This session allows at most ${r.automaticDoubles} opening double${r.automaticDoubles === 1 ? "" : "s"}.`} Neither player owns the cube afterward. Doubles rolled during normal play do not raise the stakes.`
       : "Opening ties do not raise the stakes in this game. Doubles during normal play do not raise the stakes either."],
     ["Using the dice", "Each die is a separate move, in either order. The same checker may use both dice if each landing is legal. Doubles give four moves of that number. Use both dice (or as many of the four as possible); if only one of two different dice can be played, use the higher one. A win ends the roll immediately."],
     ["Blocked points and hits", "You may land on an empty point, your own checkers, or one opposing checker. Two or more opposing checkers block a point. Landing on a lone opposing checker hits it to the bar; each intermediate landing must also be legal."],
@@ -19,7 +19,7 @@ export function ruleGuide(s) {
       ? "Unlimited points session: points accumulate without a target score. Each new game starts with a centered cube at 1 before any opening ties."
       : `First to ${s.matchLength} points wins the match. A new game starts with a centered cube at 1. Scores stop at the match target.`],
     ["Doubling cube", r.cube
-      ? "Before rolling, the player on turn may offer twice the stakes if the cube is centered or theirs. Taking accepts the new value and gives the taker cube ownership; dropping loses the previous cube value. The owner can redouble on a later turn. The cube is limited to 1024. No offer is allowed in Crawford or when the current stake already reaches the offerer’s match target."
+      ? "Before rolling, the player on turn may offer twice the stakes if the cube is centered or theirs. Taking accepts the new value and gives the taker cube ownership; dropping loses the previous cube value. The owner can redouble on a later turn. The engine’s numeric safety limit is 2²⁹. No offer is allowed in Crawford or when the current stake already reaches the offerer’s match target."
       : "Disabled. Players cannot offer doubles, beavers or raccoons."],
     ["Jacoby", money && r.jacoby
       ? "On: gammons and backgammons count only after a double is accepted. Automatic opening doubles leave the cube centered and do not activate those bonuses."

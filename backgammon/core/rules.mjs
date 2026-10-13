@@ -6,6 +6,8 @@ export const sign = (player) => (player === 0 ? 1 : -1);
 export const distance = (point, player) =>
   player === 0 ? point + 1 : 24 - point;
 export const playerName = (p) => (p === 0 ? "Ivory" : "Teal");
+// GNUbg cubeinfo uses a signed 32-bit cube; retain room for a doubled offer.
+export const MAX_CUBE = 2 ** 29;
 export const STANDARD_RULES = Object.freeze({
   cube: true,
   jacoby: false,
@@ -28,7 +30,7 @@ export function canImmediateRedouble(s) {
     s.phase === "double" &&
     !s.matchLength &&
     offerDepth(s) < rulesOf(s).immediateRedoubles &&
-    s.cube.value * 4 <= 1024
+    s.cube.value * 4 <= MAX_CUBE
   );
 }
 export function ruleSummary(s) {
@@ -41,7 +43,7 @@ export function ruleSummary(s) {
         ? "Jacoby"
         : "Gammons always count",
     !s.matchLength && r.automaticDoubles
-      ? r.automaticDoubles === 10
+      ? r.automaticDoubles === -1
         ? "Every opening tie doubles"
         : `Opening doubles · limit ${r.automaticDoubles}`
       : null,
@@ -109,7 +111,7 @@ export function errors(s) {
     if (
       !Array.isArray(s[field]) ||
       s[field].length !== 2 ||
-      s[field].some((n) => !whole(n, 0, field === "scores" ? 100000 : 15))
+      s[field].some((n) => !whole(n, 0, field === "scores" ? (s.matchLength ? 100000 : Number.MAX_SAFE_INTEGER - MAX_CUBE * 3) : 15))
     )
       e.push(`${field} must contain two non-negative integer counts.`);
   if (e.length) return e;
@@ -144,11 +146,11 @@ export function errors(s) {
   if (
     !s.cube ||
     ![null, 0, 1].includes(s.cube.owner) ||
-    !whole(s.cube.value, 1, 1024) ||
+    !whole(s.cube.value, 1, MAX_CUBE) ||
     !Number.isInteger(Math.log2(s.cube.value))
   )
     e.push(
-      "Cube must be a power of two, from 1 to 1024, with a valid owner.",
+      `Cube must be a power of two, from 1 to ${MAX_CUBE}, with a valid owner.`,
     );
   else if (s.cube.value === 1 && s.cube.owner !== null)
     e.push("The initial cube must be centered.");
@@ -162,12 +164,12 @@ export function errors(s) {
     !s.rules ||
     typeof s.rules.cube !== "boolean" ||
     typeof s.rules.jacoby !== "boolean" ||
-    !whole(s.rules.automaticDoubles ?? 0, 0, 10) ||
+    !whole(s.rules.automaticDoubles ?? 0, -1, 10) ||
     !whole(s.rules.immediateRedoubles ?? 0, 0, 2) ||
     Object.keys(s.rules).some((k) => !Object.hasOwn(STANDARD_RULES, k))
   )
     e.push(
-      "Invalid rules: opening doubles must be 0–10 and immediate redoubles 0–2.",
+      "Invalid rules: opening doubles must be -1 (no limit) or 0–10 and immediate redoubles 0–2.",
     );
   else if (
     (s.matchLength || !s.rules.cube) &&
@@ -223,7 +225,7 @@ export function errors(s) {
           s.cube?.value < 2 ** offerDepth(s))) ||
       !s.rules?.cube ||
       s.crawford ||
-      s.cube?.value >= 1024)
+      s.cube?.value >= MAX_CUBE)
   )
     e.push("A cube response needs its original offer.");
   if (
@@ -380,7 +382,7 @@ export function canDouble(s) {
     s.phase === "roll" &&
     s.rules.cube &&
     !s.crawford &&
-    s.cube.value < 1024 &&
+    s.cube.value < MAX_CUBE &&
     (s.cube.owner === null || s.cube.owner === s.turn) &&
     (!s.matchLength || s.scores[s.turn] + s.cube.value < s.matchLength)
   );
@@ -426,9 +428,11 @@ export function transition(source, action, actor = source.turn) {
         a === b &&
         !s.matchLength &&
         s.rules.cube &&
-        s.cube.value < 2 ** rulesOf(s).automaticDoubles
-      )
+        (rulesOf(s).automaticDoubles === -1 || s.cube.value < 2 ** rulesOf(s).automaticDoubles)
+      ) {
+        if (s.cube.value >= MAX_CUBE) throw new Error("The engine’s numeric cube limit has been reached. Start a new session to continue.");
         s.cube.value *= 2;
+      }
       if (a !== b) {
         s.turn = a > b ? 0 : 1;
         s.dice = [a, b];

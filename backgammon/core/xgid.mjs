@@ -18,6 +18,13 @@ export function toXGID(s, { engine = false } = {}) {
     throw new Error(
       "Use a full position link or Library JSON to preserve the opening-double limit and raccoon setting.",
     );
+  if (!engine && s.cube.value > 1024) throw new Error("Use a full position link or JSON for cube values above 1024.");
+  if (engine && !s.matchLength) {
+    // Money equities are in current-cube units. The native parser caps cube
+    // values at 4096; scale large cubes to 2 while retaining ownership/Jacoby.
+    // Session totals never enter money-game evaluation and may exceed C ints.
+    s = { ...s, scores: [0, 0], cube: { ...s.cube, value: s.cube.value > 4096 ? 2 : s.cube.value } };
+  }
   const letter = (n) =>
     n === 0 ? "-" : String.fromCharCode((n > 0 ? 64 : 96) + Math.abs(n));
   const board = [-s.bar[1], ...s.points, s.bar[0]].map(letter).join("");

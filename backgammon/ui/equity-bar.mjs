@@ -77,7 +77,7 @@ export class EquityBar {
     const width = Math.min(r.width, (r.height * 876) / 660),
       height = (width * 660) / 876;
     Object.assign(this.node.style, {
-      left: `${r.left - c.left + (r.width - width) / 2 - 38}px`,
+      left: `${r.left - c.left + (r.width - width) / 2 - this.node.offsetWidth - 4}px`,
       top: `${r.top - c.top + (r.height - height) / 2}px`,
       height: `${height}px`,
     });

@@ -74,7 +74,7 @@ import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
-import { PRESETS } from "../engine/metadata.mjs";
+import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls, ruleReference } from "../ui/rules.mjs";
 import { OpeningRoll } from "../ui/opening-roll.mjs";
@@ -84,7 +84,8 @@ import {
   replacePracticeRoll,
   returnToDecision,
 } from "../core/practice.mjs";
-import { installPlayShortcuts } from "../ui/shortcuts.mjs";
+import { installPlayShortcuts, decorateShortcuts } from "../ui/shortcuts.mjs";
+import { reducedMotion } from "../ui/motion.mjs";
 import { preferences } from "../ui/shell.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
@@ -101,10 +102,10 @@ let config = {
     mode: "computer",
     humanSide: 0,
     matchLength: 0,
-    strength: "quick",
-    reviewStrength: "deep",
+    strength: "auto",
+    reviewStrength: "auto",
     tutor: settings().moveFeedback === true,
-    warning: false,
+    warning: true,
     name: "You",
     opponent: "Friend",
   },
@@ -124,6 +125,11 @@ let config = {
   assistanceJob = null,
   lastUndoNotice = null,
   epoch = 0;
+const boardWorkspace = el("div", { class: "board-workspace" });
+const boardActions = el("div", { class: "board-actions", "aria-label": "Turn confirmation" });
+ui.board.container.before(boardWorkspace);
+boardWorkspace.append(ui.board.container, boardActions);
+let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 const analysis = new AnalysisPanel();
 const autoReview = new AutoReview({
   engine: analysis.engine,
@@ -214,7 +220,7 @@ function placeReview() {
 }
 desktopTable.addEventListener("change", placeReview);
 
-document.querySelector(".action-area").setAttribute("tabindex", "0");
+
 document
   .querySelector(".action-area")
   .setAttribute("aria-label", "Turn controls and decision history");
@@ -223,11 +229,15 @@ const helpActions = el("div", {
   id: "help-actions",
   "aria-label": "Help and practice controls",
   role: "group",
-  tabindex: "0",
 });
 const allControls = button("All controls", () => {
   if (document.querySelector(".practice-controls-dialog")) return;
-  const d = dialog("Help & practice", helpActions, [], { sheet: true });
+  const menu = el("div", {class:"stack"}, helpActions,
+    button("Settings · playing style, board & shortcuts", () => { d.close(); preferences(); }),
+    el("nav", {class:"controls-nav", "aria-label":"Backgammon navigation"},
+      ...[["/backgammon/","Hub"],["/backgammon/trainer/","Trainer"],["/backgammon/solver/","Solver"],["/backgammon/library/","Library"]]
+        .map(([href,label]) => el("a", {href, onclick: label === "Solver" ? (event) => { event.preventDefault(); d.close(); openSolver(); } : undefined}, label))));
+  const d = dialog("Help & practice", menu, [], { sheet: true });
   d.classList.add("practice-controls-dialog");
   const closeOnAction = (event) => {
     if (event.target.closest("button:not(:disabled)")) d.close();
@@ -246,9 +256,22 @@ const draft = new DraftBoard(ui.board, (change) => {
   persist();
   autoDraft(change?.kind === "move");
 });
+draft.shortcutsEnabled = true;
 const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
   render();
+});
+ui.board.onRoll = () => {
+  const control = $("roll");
+  if (state().phase !== "roll" || opening.active || !control || control.disabled || ui.board.playbackTimer) return false;
+  control.click(); return true;
+};
+ui.board.onCube = () => {
+  const control = $("double-cube");
+  if (control && !control.disabled && !opening.active && !ui.board.playbackTimer) control.click();
+};
+ui.board.container.addEventListener("click", e => {
+  if (e.target === ui.board.container) ui.board.onRoll();
 });
 const online = new Online({
   onChange: () => {
@@ -334,9 +357,7 @@ installPlayShortcuts({
       draft.hint = "Selection cleared.";
       draft.render();
     } else if (action === "swap") {
-      const dice = draft.candidates().map((s) => s.die);
-      if (!dice.length) return false;
-      draft.preferDie(dice.find((d) => d !== draft.preferred) || dice[0]);
+      draft.switchDice();
     } else return false;
     return true;
   },
@@ -356,7 +377,8 @@ const playersButton = button(
         { class: "stack" },
         playerControls(() => d.close(), "dialog-"),
         ...(config.mode === "computer"
-          ? [feedbackToggle(), reviewStrengthControl()]
+          ? [computerStrengthControl(), feedbackToggle(), reviewStrengthControl(), warningControl(),
+            el("p", {class:"muted small"}, SEARCH_DESCRIPTION)]
           : []),
       ),
     );
@@ -401,7 +423,7 @@ addEventListener("visibilitychange", () => {
   if (document.hidden) {
     autoReview.pause();
     if (analysis.engine.active?.priority === -10) analysis.engine.cancelActive();
-  } else autoReview.update();
+  } else { advanceOpening(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -615,7 +637,7 @@ function render() {
       before.turn === event.actor &&
       checkerKey(before) !== checkerKey(s)
     )
-      ui.board.playTurn(before, event.action.steps);
+      ui.board.playTurn(before, event.action.steps, { automatic: !!event.automatic });
     else if (
       before &&
       renderedGameId === m?.id &&
@@ -628,6 +650,7 @@ function render() {
       ui.board.playTurn(
         transition(before, roll.action, roll.actor),
         event.action.steps,
+        { automatic: true },
       );
     }
     if (freshEvent) {
@@ -655,12 +678,27 @@ function render() {
   $("panel-toggle").textContent = m?.started ? "Details" : "Setup";
   actions();
   panel();
-  if (!autoPlay()) {
+  advanceOpening();
+  if (!opening.active && !autoPlay()) {
     autoDraft();
     if (m?.started && config.mode === "computer") computerTurn();
   }
   renderReviewStatus();
   autoReview.update();
+}
+function advanceOpening() {
+  const m = model();
+  if (!m?.started || !opening.active || opening.busy || committing || document.hidden) return;
+  const key = `${m.id}:${m.events.length}:${opening.key}`;
+  if (openingSchedule === key) return;
+  clearTimeout(openingTimer);
+  openingSchedule = key;
+  openingTimer = setTimeout(() => {
+    openingSchedule = "";
+    if (model()?.id !== m.id || model().events.length !== m.events.length || !opening.active || committing || document.hidden) return;
+    if (opening.dice && !opening.tie) opening.dismiss();
+    else if (myTurn(state())) commit({ type: "opening" }).catch(showError);
+  }, reducedMotion() ? 80 : opening.dice ? 700 : 300);
 }
 function autoDraft(advance = false) {
   if (!ui.board.container.isConnected) return;
@@ -712,10 +750,7 @@ function autoPlay() {
     forced = m?.started && forcedTurn(s);
   if (!forced || committing || assistanceJob || m.undoRequest || opening.busy)
     return false;
-  if (opening.active) {
-    opening.dismiss();
-    return true;
-  }
+  if (opening.active) return false;
   const key = positionKey(s),
     id = m.id;
   if (config.mode === "online") {
@@ -730,8 +765,10 @@ function autoPlay() {
         )
           online.send({ type: "auto" });
       });
-  } else
-    queueMicrotask(() => {
+  } else if (forcedSchedule !== `${id}:${key}`) {
+    forcedSchedule = `${id}:${key}`;
+    setTimeout(() => {
+      forcedSchedule = "";
       if (
         game?.id === id &&
         positionKey(state()) === key &&
@@ -739,7 +776,8 @@ function autoPlay() {
         !game.undoRequest
       )
         commit({ type: "move", steps: forced.steps }).catch(showError);
-    });
+    }, reducedMotion() ? 0 : 650);
+  }
   return true;
 }
 function setupFields() {
@@ -793,15 +831,12 @@ function setupFields() {
       field(
         "Computer strength",
         select(
-          [
-            ["quick", "Quick · 0 ply"],
-            ["standard", "Standard · 1 ply"],
-            ["deep", "Deep · 2 ply"],
-          ],
+          SEARCH_OPTIONS,
           config.strength,
           (v) => (config.strength = v),
         ),
       ),
+      el("p", { class: "muted small search-description" }, SEARCH_DESCRIPTION),
       el(
         "details",
         {
@@ -1004,15 +1039,25 @@ function actions() {
     );
   } finally {
     arrangeActions();
+    decorateShortcuts(document.querySelector(".stage"));
+    ui.board.cubeEnabled = !!$("double-cube") && !$("double-cube").disabled;
+    const cube = ui.board.svg.querySelector(".board-cube");
+    if (cube) {
+      cube.setAttribute("role", ui.board.cubeEnabled ? "button" : "img");
+      cube.setAttribute("tabindex", ui.board.cubeEnabled ? "0" : "-1");
+      cube.setAttribute("aria-label", `Cube ${state().cube.value}${ui.board.cubeEnabled ? ". Offer double" : ""}`);
+    }
+    ui.board.container.classList.toggle("roll-ready", !!$("roll") && !$("roll").disabled && state().phase === "roll");
   }
 }
 function arrangeActions() {
   allControls.hidden = !model()?.started;
   helpActions.replaceChildren();
-  for (const id of ["undo-turn", "hint", "undo", "reset-draft"]) {
+  for (const id of ["undo-turn", "hint", "undo", "reset-draft", "roll", "double-cube"]) {
     const b = $(id);
     if (b) helpActions.append(b);
   }
+  if ($("confirm")) boardActions.append($("confirm"));
   if (!model()?.started || config.mode === "online") return;
   const human =
     config.mode === "computer" ? config.humanSide : state().turn;
@@ -1210,6 +1255,7 @@ async function respondTakeback(type, request) {
   }
 }
 function renderActions() {
+  boardActions.replaceChildren();
   helpActions.replaceChildren();
   const s = state(),
     m = model(),
@@ -1297,7 +1343,7 @@ function renderActions() {
   const mine = myTurn(s) && !botBusy && !committing && !assistanceJob;
   if (assistanceJob?.kind === "submit") {
     $("message").textContent =
-      `Checking your decision · ${PRESETS[config.reviewStrength || "deep"].name}…`;
+      `Checking your decision · ${searchName(config.reviewStrength || "auto")}…`;
     a.append(
       button(
         "Cancel evaluation",
@@ -1313,42 +1359,8 @@ function renderActions() {
     return;
   }
   if (opening.active) {
-    $("message").textContent = opening.busy
-      ? "One die each…"
-      : opening.dice
-        ? opening.tie
-          ? "Same roll. Neither player starts yet."
-          : "The winner plays both opening dice."
-        : "The higher opening die goes first.";
-    a.append(
-      button(
-        opening.busy
-          ? "Rolling…"
-          : !opening.dice
-            ? "Roll opening dice"
-            : opening.tie
-              ? "Roll again"
-              : "Begin turn",
-        () =>
-          opening.dice && !opening.tie
-            ? opening.dismiss()
-            : commit({ type: "opening" }),
-        "primary",
-        {
-          id: opening.dice && !opening.tie ? "begin-turn" : "roll",
-          disabled:
-            opening.busy ||
-            committing ||
-            ((!opening.dice || opening.tie) && !mine),
-        },
-      ),
-    );
-    if (opening.busy)
-      a.append(
-        button("Show dice", () => opening.finish(), "ghost", {
-          id: "show-opening",
-        }),
-      );
+    $("message").textContent = opening.busy ? "Opening roll · one die each…"
+      : opening.tie ? "Opening tie · rolling again…" : opening.dice ? "Beginning the first turn…" : "Rolling opening dice…";
     return;
   }
   if (forcedTurn(s)) {
@@ -1397,7 +1409,7 @@ function renderActions() {
   } else if (s.phase === "roll") {
     const previous = m.events.at(-1);
     $("message").textContent =
-      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll`;
+      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll · tap the board or the cube to double.`;
     a.append(
       button("Double", () => submitCube({ type: "double" }), "", {
         id: "double-cube",
@@ -1619,7 +1631,8 @@ function panel() {
         config.mode === "computer" ? "Computer table" : "Same-device table",
       ),
       ...(config.mode === "computer"
-        ? [feedbackToggle(), reviewStrengthControl()]
+        ? [computerStrengthControl(), feedbackToggle(), reviewStrengthControl(), warningControl(),
+            el("p", {class:"muted small"}, SEARCH_DESCRIPTION)]
         : []),
       el(
         "p",
@@ -1835,15 +1848,24 @@ async function commit(action, evaluation = null) {
     render();
   }
 }
+function computerStrengthControl() {
+  return field("Computer strength", select(SEARCH_OPTIONS, config.strength, value => {
+    stopComputer(); config.strength = value;
+    if (game) { game.config.strength = value; persist(); }
+    botPaused = false; boardKey = ""; render();
+  }));
+}
+function warningControl() {
+  return el("label", { class: "check" }, el("input", {type:"checkbox", checked: config.warning,
+    onChange: e => { config.warning = e.target.checked; if (game) { game.config.warning = config.warning; persist(); } }
+  }), "Warn before confirming a costly move");
+}
 function reviewStrengthControl() {
   return field(
     "Hint & review strength",
     select(
-      Object.entries(PRESETS).map(([key, p]) => [
-        key,
-        `${p.name} · ${p.plies} ply`,
-      ]),
-      config.reviewStrength || "deep",
+      SEARCH_OPTIONS,
+      config.reviewStrength || "auto",
       (value) => {
         config.reviewStrength = value;
         if (game) {
@@ -2232,11 +2254,11 @@ function showHint() {
     job.done = false;
     review.loading(
       analysis.status,
-      PRESETS[config.reviewStrength || "deep"].name,
+      searchName(config.reviewStrength || "auto"),
     );
     try {
       const result = await analysis.run(job.source, {
-        preset: config.reviewStrength || "deep",
+        preset: config.reviewStrength || "auto",
         priority: 20,
       });
       if (!activeAssistance(job)) return;
@@ -2315,7 +2337,7 @@ async function evaluateDecision(action) {
   try {
     let result = await analysis.run(job.source, {
       submitted: steps,
-      preset: config.reviewStrength || "deep",
+      preset: config.reviewStrength || "auto",
       priority: 20,
     });
     if (!activeAssistance(job)) return;
@@ -2425,6 +2447,10 @@ async function computerTurn() {
           source: clone(s),
           result: gradeCube(s, result, action.type),
         };
+    }
+    if (!reducedMotion()) {
+      await new Promise(resolve => setTimeout(resolve, s.phase === "move" ? 650 : 300));
+      while (ui.board.playbackTimer && token === epoch) await new Promise(resolve => setTimeout(resolve, 80));
     }
     if (token !== epoch || key !== positionKey(state())) return;
     botBusy = false;

@@ -15,8 +15,11 @@ function verifyBookInputs(root, expected = recipe) {
 function resolveBookInputs() {
   // Planning and canonical board construction still use these current modules.
   // Refuse a future rules/encoding change until its book compatibility is checked.
+  // The 2026-10-13 extensions change high money cubes/opening limits only.
+  // book-inputs.test.cjs compares current legal turns and encoding to the
+  // immutable bg5 snapshot. Compatible hashes do not change book provenance.
   for (const file of ['core/rules.mjs', 'core/xgid.mjs'])
-    if (digest(fs.readFileSync(path.join(family, file))) !== recipe.assets[file])
+    if (digest(fs.readFileSync(path.join(family, file))) !== (recipe.compatibleApplicationModules?.[file] || recipe.assets[file]))
       throw Error('Book rules changed; review the pinned recipe before generation: ' + file);
   if (process.env.BG_BOOK_INPUT_ROOT) return verifyBookInputs(path.resolve(process.env.BG_BOOK_INPUT_ROOT));
   const parent = path.join(family, 'test-results/book-inputs');

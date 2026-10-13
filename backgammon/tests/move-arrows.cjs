@@ -29,7 +29,7 @@ module.exports = async function moveArrows(browser, base, out, name) {
       await page.goto(base+'/backgammon/');
       await page.evaluate(async preset=>(await import('/backgammon/core/storage.mjs')).saveSettings({boardTheme:{preset}}),preset);
       await page.goto(base+'/backgammon/play/#resume='+id);
-      await page.locator('#roll').waitFor();
+      await page.locator('#board.roll-ready').waitFor();
       assert.ok(await page.locator('#board .last-move-arrow').count()>0);
       const rings=await page.locator('#board circle[stroke-dasharray]').evaluateAll(ns=>ns.map(n=>({length:Number(n.getAttribute('pathLength')), dash:n.getAttribute('stroke-dasharray').split(' ').map(Number),cap:n.getAttribute('stroke-linecap')})));
       assert.ok(rings.length);

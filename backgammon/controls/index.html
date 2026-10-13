@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=d4663d71e929fc9f" />
-    <link rel="stylesheet" href="./controls.css?bgv=d4663d71e929fc9f" />
-    <script type="module" src="../ui/update-page.mjs?bgv=d4663d71e929fc9f"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=884d806daaede6af" />
+    <link rel="stylesheet" href="./controls.css?bgv=884d806daaede6af" />
+    <script type="module" src="../ui/update-page.mjs?bgv=884d806daaede6af"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -32,13 +32,31 @@
       <a class="guide-back" href="/backgammon/">← Backgammon hub</a>
       <h1>Clicks &amp; highlights</h1>
       <nav class="guide-sections" aria-label="Guide sections">
+        <a href="#advanced">Advanced · selected die ↓</a>
         <a href="#clicks">Clicks &amp; taps ↓</a>
         <a href="#highlights">Checker &amp; point highlights ↓</a>
         <a href="#cases">Every interaction case ↓</a>
       </nav>
+      <section id="advanced" aria-labelledby="advanced-heading">
+        <h2 id="advanced-heading" class="guide-heading">Advanced · the default</h2>
+        <p class="guide-lead">One click plays one die. Settings → Display lets you switch to Beginner.</p>
+        <ol class="click-flow" aria-label="Advanced click flowchart">
+          <li><div class="flow-question"><span class="flow-number" aria-hidden="true">1</span><h2>Is it your turn to roll?</h2></div>
+            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Tap the board to roll, or the cube to offer a legal double. Opening rolls happen automatically.</p></div>
+            <div class="flow-next">Dice rolled · continue ↓</div></li>
+          <li><div class="flow-question"><span class="flow-number" aria-hidden="true">2</span><h2>Which die is selected?</h2></div>
+            <div class="flow-answer"><p>The solid outline marks it. Tap a die or press <kbd>S</kbd> to switch. After playing, <kbd>S</kbd> undoes one editable draft step. An unusable die shows a red ×; an automatically played die shows an orange check.</p></div></li>
+          <li><div class="flow-question"><span class="flow-number" aria-hidden="true">3</span><h2>Did you tap your checker?</h2></div>
+            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play that checker with the selected die. If it has no legal forward move with either die and has a legal draft return, move it back. Otherwise do nothing.</p></div>
+            <div class="flow-next">Open point area · continue ↓</div></li>
+          <li><div class="flow-question"><span class="flow-number" aria-hidden="true">4</span><h2>Can a checker land here using that die?</h2></div>
+            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Move the nearest legal checker there. All actions still obey bar priority, maximum dice use and complete-turn legality. An unavailable location does nothing.</p></div></li>
+        </ol>
+        <p class="muted">Advanced hides source rings and destination hints. Ghosts and arrows describe past moves, not legal options. Dragging and the legal-step selector in Details remain available. Press <kbd>C</kbd> or use the large Confirm control to submit; <kbd>Z</kbd> undoes a draft step and <kbd>X</kbd> resets the editable draft.</p>
+      </section>
       <section id="clicks" aria-labelledby="click-heading">
         <h2 id="click-heading" class="guide-heading">
-          What happens when I click?
+          Beginner · what happens when I click?
         </h2>
         <p class="guide-lead">
           Tap a disc to select it. Tap the open point area to play there.

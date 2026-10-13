@@ -19,5 +19,9 @@
   "sharedData": {
     "file": "engine/vendor/gnubg-core-module.data",
     "sha256": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49"
+  },
+  "compatibleApplicationModules": {
+    "core/rules.mjs": "5f62531405ad649dae309493ed340757f3bf78a8df9e5a88d6414557f840913d",
+    "core/xgid.mjs": "dbece95af56ab80ad6db24f31003b8a236bee4bf152f762d5bc26864bf69b622"
   }
 }

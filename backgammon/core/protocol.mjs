@@ -21,7 +21,7 @@ function hash(text) {
 export function session(players, options = {}, id = "local") {
   const defaults = defaultPlayRules(options.matchLength ?? 5);
   if (options.rules?.cube === false)
-    Object.assign(defaults, { jacoby: false, automaticDoubles: 0 });
+    Object.assign(defaults, { jacoby: false, automaticDoubles: 0, immediateRedoubles: 0 });
   const initial = initialState({
     ...options,
     rules: { ...defaults, ...options.rules },

@@ -53,11 +53,11 @@ export const SHORTCUTS = [
   {
     id: "confirm",
     label: "Confirm / begin / next game",
-    keys: ["Enter"],
+    keys: ["c", "Enter"],
     phases: ["setup", "move", "over"],
   },
   { id: "hint", label: "Hint", keys: ["h"], phases: ["move"] },
-  { id: "swap", label: "Prefer other die", keys: ["s"], phases: ["move"] },
+  { id: "swap", label: "Switch die / undo draft step", keys: ["s"], phases: ["move"] },
   { id: "flip", label: "Flip board", keys: ["f"], phases: all },
   {
     id: "cancel",
@@ -110,6 +110,8 @@ export function shortcutErrors(bindings) {
   return errors;
 }
 export function normalizeShortcuts(value) {
+  if (value && SHORTCUTS.every(d => JSON.stringify(value[d.id]) ===
+      JSON.stringify(d.id === "confirm" ? ["Enter"] : d.keys))) value = null;
   if (
     value &&
     SHORTCUTS.every(

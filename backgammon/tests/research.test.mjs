@@ -70,13 +70,13 @@ test("historical external reference decoder and all 300 sampled moves are legal"
     );
   }
 });
-test("review strength is independent, defaults Deep, and survives normalization", () => {
-  assert.equal(localConfig({ strength: "quick" }).reviewStrength, "deep");
+test("review strength is independent, defaults Auto, and survives normalization", () => {
+  assert.equal(localConfig({ strength: "quick" }).reviewStrength, "auto");
   assert.equal(
     localConfig({ strength: "quick", reviewStrength: "research" }).strength,
     "quick",
   );
-  assert.equal(localConfig({ reviewStrength: "bad" }).reviewStrength, "deep");
+  assert.equal(localConfig({ reviewStrength: "bad" }).reviewStrength, "auto");
 });
 test("comparison highlights ranking reversals and conservative rollout overlap", () => {
   const previous = { settings: { name: "Quick" }, candidates: [{ key: "a" }] };

@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { initialState, positionKey } from "../core/rules.mjs";
 import { equityFraction, equityReading } from "../core/equity-bar.mjs";
 import { settingsDefaults } from "../core/storage.mjs";
-test("equity bar is opt-in; its symmetric nonlinear scale is not a probability", () => {
-  assert.equal(settingsDefaults.equityBar, false);
+test("equity bar is enabled by default; its symmetric nonlinear scale is not a probability", () => {
+  assert.equal(settingsDefaults.equityBar, true);
   assert.equal(equityFraction(0), 0.5);
   for (const e of [0.1, 1, 3, 20]) {
     assert.ok(equityFraction(e) > 0.5 && equityFraction(e) < 1);

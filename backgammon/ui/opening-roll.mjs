@@ -95,9 +95,9 @@ export class OpeningRoll {
     this.container.append(this.node);
     if (this.dice) {
       if (this.busy) {
-        this.timers.push(setTimeout(() => this.reveal(0), 120));
-        this.timers.push(setTimeout(() => this.reveal(1), 470));
-        this.timers.push(setTimeout(() => this.finish(), 720));
+        this.timers.push(setTimeout(() => this.reveal(0), 220));
+        this.timers.push(setTimeout(() => this.reveal(1), 800));
+        this.timers.push(setTimeout(() => this.finish(), 1250));
       } else this.finish(false);
     }
   }

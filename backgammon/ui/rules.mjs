@@ -11,15 +11,15 @@ export function ruleControls(matchLength, initial, change = () => {}) {
   const automatic = select(
     [
       [0, "Off"],
-      [10, "Every opening tie · up to cube 1024"],
-      ...Array.from({ length: 9 }, (_, i) => [i + 1,
+      [-1, "Every opening tie · no limit"],
+      ...Array.from({ length: 10 }, (_, i) => [i + 1,
         `At most ${i + 1} opening double${i ? "s" : ""}`]),
     ],
     rules.automaticDoubles,
   );
   const immediate = select(
     [
-      [0, "Off · usual setting"],
+      [0, "Off"],
       [1, "Beavers"],
       [2, "Beavers and raccoons"],
     ],

@@ -16,6 +16,7 @@ module.exports = async function clickGuide(browser, base, out, name) {
       .click();
     await page.waitForURL("**/backgammon/controls/");
     await page.reload();
+    assert.equal(await page.locator("#advanced .click-flow > li").count(), 4);
     assert.equal(await page.locator("#clicks .click-flow > li").count(), 5);
     assert.equal(await page.locator("#highlights .click-flow > li").count(), 5);
     assert.equal(await page.locator("#cases tbody tr").count(), 31);

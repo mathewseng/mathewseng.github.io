@@ -206,7 +206,7 @@ test("checker flight contacts every route waypoint, ends exactly, and stays boun
   for (let n = 2; n <= 5; n++) {
     const route = points.slice(0, n),
       path = checkerFlight(route);
-    assert.ok(path.duration >= 200 && path.duration <= 640);
+    assert.ok(path.duration >= 200 && path.duration <= 820);
     assert.equal(path.landings.length, route.length - 1);
     assert.equal(path.frames[0].offset, 0);
     assert.equal(path.frames.at(-1).offset, 1);

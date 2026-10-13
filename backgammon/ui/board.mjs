@@ -334,12 +334,15 @@ export class Board {
       },
       listen,
     );
+    // Prevent mouse focus/selection rectangles without hiding keyboard focus.
+    this.svg.addEventListener("mousedown", e => e.preventDefault());
+    this.svg.addEventListener("dragstart", e => e.preventDefault());
     this.svg.addEventListener("click", (e) => {
-      if (
-        performance.now() < (this.suppressClickUntil || 0) ||
-        !this.options?.interactive
-      )
-        return;
+      if (performance.now() < (this.suppressClickUntil || 0) || this.playbackTimer) return;
+      if (e.target.closest(".board-cube")) { this.onCube?.(); return; }
+      if (this.onRoll?.()) return;
+      if (!this.options?.interactive) return;
+      if (e.target.closest(".dice-switch")) { this.onSwitchDice?.(); return; }
       const die = e.target.closest("[data-die]");
       if (die && die.getAttribute("role") === "button") {
         this.renderOptions.chooseDie?.(Number(die.dataset.die));
@@ -470,15 +473,21 @@ export class Board {
           .forEach((n) => n.setAttribute("tabindex", n === p ? "0" : "-1"));
     });
     this.svg.addEventListener("keydown", (e) => {
+      if (e.repeat && ["Enter", " "].includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
       if (e.key === "Escape") {
         this.endDrag();
         this.onCancel?.();
         return;
       }
+      if (["Enter", " "].includes(e.key) && e.target.closest(".board-cube[role=button]")) {
+        e.preventDefault(); this.onCube?.(); return;
+      }
       if (!this.options?.interactive) return;
-      if (e.repeat && ["Enter", " "].includes(e.key)) {
-        e.preventDefault();
-        return;
+      if (["Enter", " "].includes(e.key) && e.target.closest(".dice-switch")) {
+        e.preventDefault(); this.onSwitchDice?.(); return;
       }
       const die = e.target.closest("[data-die]");
       if (
@@ -538,7 +547,7 @@ export class Board {
       hideDice,
       interactive,
       preview,
-      historical = false,
+      historical = false, forcedDice = [], playableDice = null, advanced = false, shortcuts = null,
     },
   ) {
     const group = svg("g", {
@@ -556,7 +565,7 @@ export class Board {
       !historical && s.dice[0] === s.dice[1]
         ? Array(4).fill(s.dice[0])
         : s.dice;
-    const used = [...usedDice],
+    const used = [...usedDice], forced = [...forcedDice],
       center = s.turn === orientation ? 610 : 204;
     const pips = {
       1: [4],
@@ -569,15 +578,20 @@ export class Board {
     values.forEach((value, i) => {
       const consumed = used.includes(value);
       if (consumed) used.splice(used.indexOf(value), 1);
-      const clickable =
-        interactive && chooseDie && !consumed && values.length === 2;
-      const x = center + (i - (values.length - 1) / 2) * 72;
+      const isForced = consumed && forced.includes(value);
+      if (isForced) forced.splice(forced.indexOf(value), 1);
+      const blocked = !consumed && playableDice !== null && !playableDice.includes(value);
+      const active = !consumed && !blocked && preferredDie === value &&
+        !values.slice(0, i).some((v, j) => v === value && j >= usedDice.filter(d => d === value).length);
+      const clickable = interactive && chooseDie && !consumed && !blocked;
+      const x = center + (i - (values.length - 1) / 2) * (values.length === 2 ? 106 : 72);
       const die = svg("g", {
         transform: `translate(${x} 330)`,
         "data-die": value,
-        class: `board-die${consumed ? " consumed" : ""}${preferredDie === value && clickable ? " preferred" : ""}`,
+        class: `board-die${consumed ? " consumed" : ""}${isForced ? " forced" : ""}${blocked ? " blocked" : ""}${active && clickable ? " preferred" : ""}`,
+        "data-status": isForced ? "forced" : consumed ? "used" : blocked ? "blocked" : active ? "selected" : "available",
         role: clickable ? "button" : "img",
-        "aria-label": `${clickable ? "Prefer die " : "Die "}${value}${historical ? ", previous roll" : consumed ? ", used" : ", available"}`,
+        "aria-label": `${clickable ? "Use die " : "Die "}${value}${historical ? ", previous roll" : isForced ? ", forced move" : consumed ? ", used" : blocked ? ", no legal move" : active ? ", selected" : ", available"}`,
         ...(clickable
           ? { tabindex: 0, "aria-pressed": preferredDie === value }
           : {}),
@@ -608,16 +622,30 @@ export class Board {
         body.append(
           svg("path", {
             d: "M21 28l6 6 13-17",
-            stroke: boardColor("selection"),
+            stroke: isForced ? "var(--forced-die, #efb365)" : boardColor("selection"),
             fill: "none",
-            "stroke-width": 6,
+            class: "die-status-mark",
+            "stroke-width": 5,
             "stroke-linecap": "round",
             "pointer-events": "none",
           }),
         );
+      if (blocked) body.append(svg("path", { d: "M-13 -13L13 13 M13 -13L-13 13",
+        class: "die-status-mark", stroke: "var(--loss-red, #ff8f92)", "stroke-width": 5,
+        "stroke-linecap": "round", fill: "none", "pointer-events": "none" }));
       die.append(body);
       group.append(die);
     });
+    if (interactive && chooseDie && advanced && !historical) {
+      const swap = svg("g", { class: "dice-switch", role: "button", tabindex: 0,
+        "aria-label": usedDice.length ? "Undo draft step" : "Switch selected die", transform: `translate(${center} ${values.length === 2 ? 330 : 375})` });
+      swap.append(svg("rect", { x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }),
+        svg("path", {d:"M-10 -5H10l-4 -4M10 5H-10l4 4", fill:"none", stroke:"var(--text)", "stroke-width":2, "stroke-linecap":"round", "stroke-linejoin":"round"}));
+      const key = shortcuts?.swap?.[0];
+      if (key) swap.append(svg("rect", {x:-9,y:25,width:18,height:17,rx:3,fill:"var(--panel)",stroke:"var(--line)"}));
+      if (key) swap.append(svg("text", {x:0, y:38, "text-anchor":"middle", "font-size":12, fill:boardColor("caption")}, key.toUpperCase()));
+      group.append(swap);
+    }
     return group;
   }
   coordinates(x, y) {
@@ -661,7 +689,7 @@ export class Board {
     clearTimeout(this.playbackTimer);
     this.cancelAnimations();
   }
-  playTurn(before, steps) {
+  playTurn(before, steps, { automatic = false } = {}) {
     if (!steps.length) return;
     if (reducedMotion() || document.hidden) {
       const after = steps.reduce((s, step) => applyStep(s, step), before);
@@ -697,11 +725,13 @@ export class Board {
         destinations: [],
         moves: [],
         lastMove: null,
+        usedDice: steps.slice(0, index).map(st => st.die),
+        forcedDice: automatic ? steps.slice(0, index).map(st => st.die) : options.forcedDice,
         playback: true,
       });
       const duration = this.animateMove(current, after, step);
       current = after;
-      this.playbackTimer = setTimeout(advance, duration + 25);
+      this.playbackTimer = setTimeout(advance, duration + 160);
     };
     advance();
   }
@@ -996,6 +1026,7 @@ export class Board {
       editor = false,
       playback = false,
       usedDice = [],
+      forcedDice = [], playableDice = null, advanced = false, boardShortcuts: shortcuts = null,
       chooseDie = null,
       preferredDie = null,
       hideDice = false,
@@ -1028,6 +1059,7 @@ export class Board {
       preview,
       editor,
       usedDice,
+      forcedDice, playableDice, advanced, boardShortcuts: shortcuts,
       chooseDie,
       preferredDie,
       hideDice,
@@ -1269,6 +1301,16 @@ export class Board {
         halo.setAttribute("class", "ring-halo");
         ring.before(halo);
       }
+      if (numbers && shortcuts) {
+        const visible = orientation ? 23 - p : p;
+        const id = visible >= 12 ? `top${visible - 12}` : `bottom${11 - visible}`;
+        const key = shortcuts[id]?.[0];
+        if (key) g.append(svg("text", { x: x + 30, y: top ? 28 : 657,
+          "text-anchor": "middle", "font-size": compact ? 12 : 8.5, fill: boardColor("caption"),
+          class: "point-shortcut", "pointer-events": "none" }, key.toUpperCase()));
+        const label = g.querySelector("text");
+        if (label) { label.setAttribute("y", top ? 19 : 645); label.setAttribute("font-size", compact ? "24" : "16"); }
+      }
       children.push(g);
     }
     for (const p of [0, 1]) {
@@ -1442,7 +1484,8 @@ export class Board {
             : 306;
       const cube = svg("g", {
         class: "board-cube",
-        "aria-label": `Doubling cube ${s.cube.value}`,
+        "aria-label": `Doubling cube ${s.cube.value}${this.cubeEnabled ? ", offer double" : ""}`,
+        ...(this.cubeEnabled ? { role: "button", tabindex: 0 } : {}),
       });
       cube.append(
         svg("rect", {
@@ -1511,7 +1554,9 @@ export class Board {
           : s,
         {
           orientation,
-          usedDice,
+          usedDice: historicalDice && lastMove.automatic ? lastMove.steps.map(st => st.die) : usedDice,
+          forcedDice: historicalDice && lastMove.automatic ? lastMove.steps.map(st => st.die) : forcedDice,
+          playableDice: historicalDice && lastMove.automatic ? [] : playableDice, advanced, shortcuts,
           chooseDie,
           preferredDie,
           hideDice,
@@ -1523,7 +1568,22 @@ export class Board {
     );
     if (lastMove?.checkers?.length)
       children.push(moveArrowLayer(s, lastMove, orientation, children, this.arrowMaskId));
+    const arrowKey = JSON.stringify([lastMove?.player, lastMove?.checkers, lastMove?.dice]);
+    const newArrows = this.arrowKey !== arrowKey;
+    this.arrowKey = arrowKey;
     this.svg.replaceChildren(...children);
+    if (newArrows && lastMove?.checkers?.length && !reducedMotion()) {
+      for (const path of this.svg.querySelectorAll(".last-move-arrow > path:not(:last-child)")) {
+        path.setAttribute("pathLength", "1000");
+        const animation = path.animate([{strokeDasharray: "1000", strokeDashoffset: 1000, opacity: 0},
+          {strokeDasharray: "1000", strokeDashoffset: 0, opacity: 1}], {duration: 600, easing: "ease-in-out"});
+        this.animations.push(animation);
+      }
+      for (const tip of this.svg.querySelectorAll(".last-move-arrow > path:last-child")) {
+        const animation = tip.animate([{opacity:0}, {opacity:1}], {duration:200, delay:400, fill:"backwards"});
+        this.animations.push(animation);
+      }
+    }
     if (
       selected !== null &&
       previousSelected !== selected &&

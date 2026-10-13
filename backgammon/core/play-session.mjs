@@ -13,7 +13,8 @@ export function defaultPlayRules(matchLength) {
   return {
     ...STANDARD_RULES,
     jacoby: matchLength === 0,
-    automaticDoubles: matchLength === 0 ? 10 : 0,
+    automaticDoubles: matchLength === 0 ? -1 : 0,
+    immediateRedoubles: matchLength === 0 ? 2 : 0,
   };
 }
 export function localConfig(value = {}) {
@@ -21,10 +22,11 @@ export function localConfig(value = {}) {
     ...clone(value),
     mode: value.mode === "local" ? "local" : "computer",
     humanSide: value.humanSide === 1 ? 1 : 0,
-    strength: ["quick", "standard", "deep"].includes(value.strength)
+    strength: ["auto", "quick", "standard", "deep", "expert", "research"].includes(value.strength)
       ? value.strength
-      : "quick",
+      : "auto",
     reviewStrength: [
+      "auto",
       "quick",
       "standard",
       "deep",
@@ -32,7 +34,9 @@ export function localConfig(value = {}) {
       "research",
     ].includes(value.reviewStrength)
       ? value.reviewStrength
-      : "deep",
+      : "auto",
+    tutor: value.tutor !== false,
+    warning: value.warning !== false,
     name: typeof value.name === "string" ? value.name.slice(0, 24) : "You",
     opponent:
       typeof value.opponent === "string"
@@ -124,7 +128,7 @@ export function lastMove(game) {
         break;
       }
     }
-    return moveTrace(game.state, event.actor, event.action.steps, dice);
+    return { ...moveTrace(game.state, event.actor, event.action.steps, dice), automatic: !!event.automatic };
   }
   return null;
 }

@@ -60,3 +60,12 @@ export const CAPABILITIES = {
   threads: 1,
   maximumPlies: 4,
 };
+
+// Shared labels keep Play, hints and Solver explicit about fixed vs adaptive work.
+export const SEARCH_OPTIONS = Object.freeze([
+  ["auto", "Auto · adaptive, 2–4 ply"],
+  ...Object.entries(PRESETS).map(([key, value]) => [key,
+    `Fixed ${value.plies} ply · ${value.name}`]),
+]);
+export const searchName = key => key === "auto" ? "Auto · adaptive" : PRESETS[key]?.name || "Auto";
+export const SEARCH_DESCRIPTION = "Auto completes at least 2 ply, usually 3, and may reach 4. It stops deeper work when the next stage is estimated above 5 seconds or the lead is substantial and stable. Fixed depths do not adapt. Compatible book positions use stored 3-ply answers (except Fixed 4).";

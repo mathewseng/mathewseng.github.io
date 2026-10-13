@@ -10,7 +10,7 @@ export function reducedMotion() {
 // canonical position is already committed: this path is presentation only.
 export function checkerFlight(points) {
   const legs = points.length - 1;
-  const duration = Math.min(640, 240 + Math.max(0, legs - 1) * 130);
+  const duration = Math.min(820, 360 + Math.max(0, legs - 1) * 160);
   const frames = [
     {
       transform: `translate(${points[0].x}px, ${points[0].y}px) scale(1)`,

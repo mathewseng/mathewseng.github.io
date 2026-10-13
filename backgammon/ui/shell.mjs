@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
 import {
   settings,
@@ -316,6 +317,14 @@ export async function preferences() {
     checked: s.numbers,
     onChange: (e) => saveSettings({ numbers: e.target.checked }),
   });
+  const interaction = select([
+    ["advanced", "Advanced · one click per die"],
+    ["beginner", "Beginner · select, then choose destination"],
+  ], s.interactionMode, value => {
+    saveSettings({ interactionMode: value });
+    dispatchEvent(new Event("bg-settings"));
+  });
+  interaction.id = "interaction-mode";
   const moveHints = el("input", {
     id: "move-hints",
     type: "checkbox",
@@ -368,11 +377,17 @@ export async function preferences() {
   const display = el(
     "div",
     { class: "stack settings-display" },
+    field("Playing style", interaction),
+    el("p", { class: "muted small" }, "Advanced: click a checker or destination to play the selected die. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
-    el("label", { class: "check" }, moveHints, "Show legal-move hints"),
+    el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
     el("p", { class: "muted small" },
       "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),
+    el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.equityBar,
+      onChange: e => { saveSettings({equityBar:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Show equity bar against the computer"),
+    el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.moveFeedback,
+      onChange: e => saveSettings({moveFeedback:e.target.checked})}), "Show move feedback by default in new computer games"),
     field("Motion", motion),
     el(
       "div",
@@ -404,7 +419,7 @@ export async function preferences() {
   const keys = shortcutControls();
   keys.hidden = true;
   const colors = appearanceControls();
-  display.hidden = true;
+  colors.hidden = true;
   const tabs = el("div", {
     class: "segmented settings-tabs",
     "aria-label": "Settings sections",
@@ -425,7 +440,7 @@ export async function preferences() {
         d.querySelector(".dialog-body").scrollTop = 0;
       },
       "",
-      { "aria-pressed": section === colors, "aria-label": label },
+      { "aria-pressed": section === display, "aria-label": label },
     );
     tab.replaceChildren(
       el("span", { class: "settings-tab-wide", "aria-hidden": true }, label),
@@ -477,7 +492,7 @@ export function about() {
         {},
         "Quick: 0 ply. Standard: 1 ply. Deep: 2 ply. Cubeful when the cube is enabled, deterministic, pruning enabled, no noise. Live Quick, Standard and Deep searches evaluate every legal resulting position at the selected depth.",
       ),
-      el("p", {}, "Default Jacoby money games use a precomputed bg5 3-ply book: all 15 opening rolls, all replies to 34 near-best openings, and all rolls at 1,298 third-turn positions after evaluated replies within 0.040 equity of best. Replies use a documented candidate filter; 32 fourth-turn positions have partial coverage. Book entries retain their original engine provenance and override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
+      el("p", {}, "Jacoby money games with beavers/raccoons disabled use a precomputed bg5 3-ply book: all 15 opening rolls, all replies to 34 near-best openings, and all rolls at 1,298 third-turn positions after evaluated replies within 0.040 equity of best. Replies use a documented candidate filter; 32 fourth-turn positions have partial coverage. Book entries retain their original engine provenance and override Quick through Expert and Auto; Research and rollouts remain live. Other rules, match scores and unlisted moves use live analysis."),
       el(
         "p",
         {},
@@ -486,7 +501,7 @@ export function about() {
       el(
         "p",
         {},
-        "Solver Auto completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
+        "Auto (the default for computer play, hints and reviews) completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",
@@ -613,6 +628,7 @@ export class DraftBoard {
       });
     board.onPoint = (p, options) => this.point(p, options);
     board.onBackground = () => this.clearSelection();
+    board.onSwitchDice = () => this.switchDice();
     const outsideBackground = (target) =>
       board.container.isConnected && !board.svg.contains(target) &&
       !target.closest?.(
@@ -664,7 +680,7 @@ export class DraftBoard {
     this.preferred = null;
     this.enabled = enabled;
     this.preview = null;
-    if (enabled && s.bar[s.turn] && this.candidates().length)
+    if (enabled && !this.advanced && s.bar[s.turn] && this.candidates().length)
       this.selected = "bar";
     this.render();
   }
@@ -741,8 +757,28 @@ export class DraftBoard {
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
-  point(raw, options = {}) {
+  get advanced() { return settings().interactionMode === "advanced"; }
+  activeDie() { return selectedDie(this.candidates(), this.preferred, this.state.dice); }
+  switchDice() {
     if (!this.enabled || this.preview) return;
+    if (this.advanced && this.draft.length > this.minDraft) return this.undo();
+    const current = this.activeDie();
+    const next = this.candidates().find(step => step.die !== current)?.die;
+    if (next) this.preferDie(next);
+  }
+  point(raw, options = {}) {
+    if (!this.enabled || this.preview || this.board.playbackTimer) return;
+    if (this.advanced && options.activation !== false) {
+      const point = this.normalize(raw);
+      if (point === null) return this.clearSelection();
+      const checker = options.checkerTap || (!options.quick && this.sources().includes(point));
+      const action = advancedAction({ point, checker, candidates: this.candidates(),
+        returns: this.reverseMoves(), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
+      if (action?.type === "move") this.move(action.step);
+      else if (action?.type === "undo") this.moveRoute(action.route);
+      else this.clearSelection();
+      return action?.type || "unavailable";
+    }
     const result = this.resolvePoint(raw, options);
     if (result === "unavailable" && options.activation !== false)
       this.clearSelection();
@@ -969,8 +1005,8 @@ export class DraftBoard {
   }
   preferDie(die) {
     sound.play("select");
-    this.preferred = this.preferred === die ? null : die;
-    this.hint = this.preferred
+    this.preferred = this.advanced ? die : this.preferred === die ? null : die;
+    this.hint = this.advanced ? `Die ${die} selected.` : this.preferred
       ? `Die ${die} preferred when either die can reach a destination.`
       : "Die preference cleared.";
     this.render();
@@ -1004,7 +1040,7 @@ export class DraftBoard {
     // entries. The remaining legal paths still enforce priority for the bar.
     const entered = !route.undo && route.steps.some((step) => step.from === "bar");
     this.selected =
-      entered
+      this.advanced ? null : entered
         ? null
         : route.switchDie && !this.current().bar[this.state.turn]
           ? route.to
@@ -1044,6 +1080,7 @@ export class DraftBoard {
       step = this.draft.at(-1);
     this.preview = null;
     this.draft.pop();
+    if (this.advanced) this.preferred = step.die;
     this.selected = null;
     this.hint = "Move undone. Try another checker or destination.";
     this.render();
@@ -1067,9 +1104,10 @@ export class DraftBoard {
     if (!this.state) return;
     const s = this.preview || this.current();
     const display = settings();
+    display.moveHints = display.moveHints && !this.advanced;
     const moves = this.enabled && !this.preview ? this.routes() : [];
     this.touchMoves?.update({
-      enabled: this.enabled && !this.preview && this.state.phase === "move",
+      enabled: this.enabled && !this.preview && !this.advanced && this.state.phase === "move",
       hints: display.moveHints,
       selected: this.selected,
       sources: this.enabled && !this.preview ? this.sources() : [],
@@ -1109,9 +1147,13 @@ export class DraftBoard {
       interactive: this.enabled && !this.preview,
       preview: !!this.preview,
       usedDice: this.draft.map((st) => st.die),
+      forcedDice: this.draft.filter((st, index) => index < this.minDraft || nextSteps(this.paths, this.draft.slice(0, index)).length === 1).map(st => st.die),
+      playableDice: this.enabled && !this.preview ? this.candidates().map(st => st.die) : null,
+      boardShortcuts: this.shortcutsEnabled && display.keyboardEnabled ? display.shortcuts : null,
+      advanced: this.advanced,
       chooseDie:
         this.enabled && !this.preview ? (die) => this.preferDie(die) : null,
-      preferredDie: this.preferred,
+      preferredDie: this.advanced ? this.activeDie() : this.preferred,
       hideDice: !!this.hideDice,
       lastMove: this.preview
         ? this.previewTrace?.state === this.preview ? this.previewTrace.trace : null
@@ -1128,7 +1170,9 @@ export class DraftBoard {
             ? "Tap ↔ to revise this checker’s entry. ↶ returns to the bar."
             : "Tap ↔ to revise this checker’s dice. ↶ returns to the starting point."
           : this.enabled && this.state.phase === "move"
-            ? this.complete()
+            ? this.advanced && !this.complete()
+              ? `Click a checker or destination · using die ${this.activeDie() ?? "–"}.`
+              : this.complete()
               ? this.draft.length
                 ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
                 : "All entries are blocked. Confirm to pass your turn."

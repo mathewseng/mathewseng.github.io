@@ -68,6 +68,17 @@ const server = http.createServer((req, res) => {
         version: browser.version(),
       });
       try {
+        // Focused suites share the assembled-site server and browser teardown.
+        // No engine mocking is added by this runner.
+        if (process.env.BG_MODULES) {
+          for (const moduleName of process.env.BG_MODULES.split(",")) {
+            if (!/^[a-z][a-z0-9-]*$/.test(moduleName)) throw new Error("Invalid test module name");
+            const result = await require(`./${moduleName}.cjs`)(browser, base, out, browserName);
+            fs.writeFileSync(path.join(out, `${browserName}-${moduleName}-report.json`), JSON.stringify(result, null, 2));
+            console.log(`PASS ${browserName}: ${moduleName}`);
+          }
+          continue;
+        }
         const context = await browser.newContext({
           viewport: { width: 1366, height: 768 },
           serviceWorkers: "block",
@@ -88,11 +99,7 @@ const server = http.createServer((req, res) => {
           .selectOption("5");
         await shot("setup");
         await page.locator("#start-match").click();
-        do {
-          await page.locator("#roll").click();
-          await page.waitForTimeout(25);
-        } while (await page.locator("#roll").count());
-        await page.locator("#begin-turn").click();
+        await page.locator("#confirm").waitFor({ timeout: 30000 });
         const steps = async () => {
           while (await page.locator("#confirm").isDisabled())
             await page
@@ -109,9 +116,7 @@ const server = http.createServer((req, res) => {
         await steps();
         await shot("active-draft");
         await page.locator("#confirm").click();
-        await page
-          .getByRole("button", { name: "Double", exact: true })
-          .click();
+        await page.locator(".board-cube").click();
         await shot("cube-decision");
         await page
           .getByRole("button", { name: "Take 2", exact: true })

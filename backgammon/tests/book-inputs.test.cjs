@@ -23,3 +23,20 @@ test('pinned recipe rejects corrupted or substituted transitive modules', t => {
   fs.appendFileSync(file, '\n// edited runtime\n');
   assert.throws(() => verifyBookInputs(root), /Pinned book input mismatch/);
 });
+test('current rule extensions preserve historical book boards, legal turns and XGID encoding', async () => {
+  const { pathToFileURL } = require('node:url');
+  const root=resolveBookInputs();
+  const oldRules=await import(pathToFileURL(path.join(root,'backgammon/core/rules.mjs')));
+  const oldXgid=await import(pathToFileURL(path.join(root,'backgammon/core/xgid.mjs')));
+  const rules=await import('../core/rules.mjs'), xgid=await import('../core/xgid.mjs');
+  let s=rules.initialState({phase:'move',dice:[3,1],matchLength:0,rules:{cube:true,jacoby:true}});
+  for(let n=0;n<32;n++) {
+    assert.equal(xgid.toXGID(s,{engine:true}),oldXgid.toXGID(s,{engine:true}));
+    const a=rules.legalTurns(s),b=oldRules.legalTurns(s);
+    assert.deepEqual(a.map(t=>t.key).sort(),b.map(t=>t.key).sort());
+    const chosen=a[(n*17)%a.length];
+    s=rules.commitTurn(s,chosen.steps);
+    if(s.phase==='over') break;
+    s={...s,phase:'move',dice:[n%6+1,(n*3+2)%6+1]};
+  }
+});

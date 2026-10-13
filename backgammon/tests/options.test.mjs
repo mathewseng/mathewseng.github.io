@@ -126,11 +126,11 @@ test("cube options enforce actor, rule, chain depth and maximum stake", () => {
   assert.throws(() => act(s, "raccoon"));
   assert.throws(() => act(s, "double"));
   s = act(
-    money({ cube: { value: 512, owner: 0 }, rules: { immediateRedoubles: 2 } }),
+    money({ cube: { value: 2 ** 28, owner: 0 }, rules: { immediateRedoubles: 2 } }),
     "double",
   );
   assert.equal(canImmediateRedouble(s), false);
-  assert.equal(act(s, "take").cube.value, 1024);
+  assert.equal(act(s, "take").cube.value, 2 ** 29);
   assert.throws(
     () => money({ rules: { cube: false, jacoby: true } }),
     /cube enabled/,

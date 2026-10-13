@@ -31,7 +31,7 @@ export class AutoReview {
     try {
       const { row, snapshot } = job;
       const result = await this.engine.analyze(row.source, {
-        preset: snapshot.config.reviewStrength || "deep",
+        preset: snapshot.config.reviewStrength || "auto",
         submitted: row.action.type === "move" ? row.action.steps : null,
         priority: -10,
       });
