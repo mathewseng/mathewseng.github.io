@@ -60,6 +60,13 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
     await tap(8,true);assert.equal((await snapshot()).draft.length,1,'exhausted moved checker goes back');
     assert.equal(await page.locator('#board .no-move-hints').count(),1);
     assert.equal(await page.locator('.point-shortcut').count(),24);
+    for (const turn of [0,1]) {
+      await page.evaluate(turn=>{const{d,r}=advancedTest;const points=Array(24).fill(0);points[7]=2;points[23]=-15;const s=r.initialState({phase:'move',dice:[4,3],turn,points:turn?points.reverse().map(n=>-n):points,off:turn?[0,13]:[13,0]});d.set(s,r.legalPaths(s));},turn);
+      await tap(turn ? 23 : 0);
+      assert.equal((await snapshot()).draft.length,2,'point-space click plays both dice');
+      assert.equal(await page.locator('dialog[open]').count(),0,'equivalent quiet routes need no modal');
+    }
+    report.cases.push('both-dice destination clicks, both players, without route prompt');
     await page.evaluate(()=>{const {d,st,r}=advancedTest;st.saveSettings({interactionMode:'beginner'});d.set(r.initialState({phase:'move',dice:[4,1]}),r.legalPaths(r.initialState({phase:'move',dice:[4,1]})));});
     await tap(12,true);assert.equal((await snapshot()).selected,12);assert.equal((await snapshot()).draft.length,0);
     await tap(8);assert.equal((await snapshot()).draft.length,1);

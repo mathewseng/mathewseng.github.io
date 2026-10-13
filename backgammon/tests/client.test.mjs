@@ -62,11 +62,14 @@ test("worker deduplicates requests, rejects cancellation and ignores terminated 
     state = initialState({ phase: "move", dice: [3, 1] });
   const a = client.analyze(state),
     b = client.analyze(state);
-  assert.equal(a, b);
+  // Each caller gets its own context-tagged copy of the shared computation.
   await wait();
+  assert.equal(workers[0].messages.filter(m=>m.type === "analyze").length,1);
   const id = workers[0].messages.at(-1).id;
   const rejected = assert.rejects(a, { name: "AbortError" });
+  const rejectedB = assert.rejects(b, { name: "AbortError" });
   client.cancel();
+  await rejectedB;
   await rejected;
   assert.equal(workers[0].terminated, true);
   const c = client.analyze(state);
@@ -236,11 +239,11 @@ test("a foreground request promotes an already queued background search", async 
     const busy=client.analyze(state,{priority:0}); await wait();
     const queued=client.analyze({...state,turn:1},{priority:-10});
     const rejected=assert.rejects(busy,{name:"AbortError"});
-    assert.equal(client.analyze({...state,turn:1},{priority:10}),queued);
+    const foreground=client.analyze({...state,turn:1},{priority:10});
     await rejected; await wait();
     assert.equal(workers.length,2); assert.ok(workers[0].terminated);
     workers[1].reply({id:workers[1].messages.at(-1).id,type:"result",result:{valid:true}});
-    assert.equal((await queued).valid,true);
+    assert.equal((await queued).valid,true);assert.equal((await foreground).valid,true);
   } finally {client.destroy();}
 });
 
@@ -313,13 +316,13 @@ test("deduplicated rollouts deliver completed progress to every subscriber", asy
   try {
     const a = client.analyze(state,{rollout:{trials:64,seed:1},onProgress:c=>seen[0].push(c)});
     const b = client.analyze(state,{rollout:{trials:64,seed:1},onProgress:c=>seen[1].push(c)});
-    assert.equal(a,b);
     await wait();
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
     const id=worker.messages.at(-1).id;
     worker.reply({id,type:"progress",checkpoint:{trials:32}});
     assert.deepEqual(seen,[[{trials:32}],[{trials:32}]]);
     worker.reply({id,type:"result",result:{valid:true}});
-    await a;
+    await Promise.all([a,b]);
   } finally { client.destroy(); }
 });
 
@@ -372,7 +375,7 @@ test('queued screened grades reuse a completed hint and promote it without cance
     const hint=client.analyze(s,{preset:'expert',priority:-10});await wait();
     const a=client.analyze(s,{preset:'expert',submitted:result.candidates[1].steps,priority:-10});
     const b=client.analyze(s,{preset:'expert',submitted:result.candidates[1].steps,priority:10});
-    assert.equal(a,b);assert.equal(client.active.priority,10);assert.equal(worker.terminated,false);
+    assert.equal(client.queue.length,1);assert.equal(client.active.priority,10);assert.equal(worker.terminated,false);
     worker.reply({id:worker.messages.at(-1).id,type:'result',result});await hint;
     assert.equal((await a).reusedHint,true);assert.equal((await b).actual.key,result.candidates[1].key);
     assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
@@ -430,4 +433,34 @@ test('book and cube cache hits are isolated from edits to returned outcomes',asy
     (await pending).outcomes[0]=99;
     assert.equal((await client.analyze(s)).outcomes[0],.2);
   }finally{client.destroy();}
+});
+
+test('opposite dice orders share one evaluation with exact caller metadata and independent results',async()=>{
+  const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  const {positionKey}=await import('../core/rules.mjs');
+  try {
+    const a=initialState({phase:'move',dice:[1,4]}),b={...a,dice:[4,1]};
+    const first=client.analyze(a,{preset:'deep'});await wait();
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:{type:'checker',positionKey:positionKey(b),settings:{plies:2},candidates:[]}});
+    const one=await first,two=await client.analyze(b,{preset:'deep'});
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
+    assert.equal(one.positionKey,positionKey(a));assert.equal(two.positionKey,positionKey(b));assert.equal(two.cached,true);
+    one.candidates.push({bad:true});assert.deepEqual(two.candidates,[]);
+  } finally {client.destroy();}
+});
+test('completed Auto forecasts/max-depth can grade evaluated finalists without rerunning; other stops cannot',async()=>{
+  for(const reason of ['predicted-cost','maximum-depth']) {
+    const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+    const s=initialState({phase:'move',dice:[4,1]});
+    try {
+      const candidates=legalTurns(s).slice(0,2).map((c,i)=>({...c,equity:.3-i*.01}));
+      const first=client.analyze(s,{preset:'auto',priority:-5});await wait();
+      const grade=client.analyze(s,{preset:'auto',submitted:candidates[1].steps,priority:20});
+      worker.reply({id:worker.messages.at(-1).id,type:'result',result:{type:'checker',status:'complete',settings:{plies:3},budget:{reason},candidates}});
+      await first;const result=await grade;
+      assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
+      assert.equal(result.reusedHint,true);assert.equal(result.actual.key,candidates[1].key);
+      assert.ok(Math.abs(result.error-.01)<1e-8);
+    } finally {client.destroy();}
+  }
 });

@@ -32,27 +32,27 @@ export const SHORTCUTS = [
   { id: "reset", label: "Reset draft", keys: ["x"], phases: ["move"] },
   {
     id: "double",
-    label: "Offer double",
-    keys: ["c"],
+    label: "Double / use cube",
+    keys: ["d"],
     phases: ["roll"],
   },
-  { id: "drop", label: "Drop cube offer", keys: ["d"], phases: ["double"] },
+  { id: "drop", label: "Pass / drop cube offer", keys: ["p"], phases: ["double"] },
   { id: "take", label: "Take cube offer", keys: ["t"], phases: ["double"] },
   {
     id: "redouble",
     label: "Beaver / raccoon",
-    keys: ["c"],
+    keys: ["d"],
     phases: ["double"],
   },
   {
     id: "roll",
     label: "Roll dice",
-    keys: ["Space", "Enter"],
+    keys: ["c", "Space", "Enter"],
     phases: ["roll", "opening"],
   },
   {
     id: "confirm",
-    label: "Confirm / begin / next game",
+    label: "Continue / confirm / next game",
     keys: ["c", "Enter"],
     phases: ["setup", "move", "over"],
   },
@@ -110,25 +110,16 @@ export function shortcutErrors(bindings) {
   return errors;
 }
 export function normalizeShortcuts(value) {
-  if (value && SHORTCUTS.every(d => JSON.stringify(value[d.id]) ===
-      JSON.stringify(d.id === "confirm" ? ["Enter"] : d.keys))) value = null;
-  if (
-    value &&
-    SHORTCUTS.every(
-      (d) =>
-        JSON.stringify(value[d.id]) ===
-        JSON.stringify(
-          d.id === "double"
-            ? ["c", "d"]
-            : d.id === "redouble"
-              ? ["v"]
-              : d.id === "roll"
-                ? ["Space"]
-                : d.keys,
-        ),
-    )
-  )
-    value = null;
+  // Migrate complete untouched historical maps only. Explicit custom bindings
+  // retain their meaning; the Keyboard screen offers Restore defaults.
+  const older = [
+    { double: ["c"], redouble: ["c"], drop: ["d"], roll: ["Space", "Enter"] },
+    { double: ["c"], redouble: ["c"], drop: ["d"], roll: ["Space", "Enter"], confirm: ["Enter"] },
+    { double: ["c", "d"], redouble: ["v"], drop: ["d"], roll: ["Space"], confirm: ["Enter"] },
+    { double: ["c", "d"], redouble: ["v"], drop: ["d"], roll: ["Space"] },
+  ];
+  if (value && older.some(old => SHORTCUTS.every(d =>
+      JSON.stringify(value[d.id]) === JSON.stringify(old[d.id] || d.keys)))) value = null;
   const bindings = Object.fromEntries(
     SHORTCUTS.map((d) => [
       d.id,

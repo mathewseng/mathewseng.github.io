@@ -23,7 +23,7 @@ module.exports = async function barEntry(browser, base, out, name) {
       const set = (turn, orientation, count = 1, dice = [4,1], hints = true) =>
         page.evaluate(({turn,orientation,count,dice,hints}) => {
           const {rules:r,storage:st,draft:d} = entryTest;
-          st.saveSettings({orientation,moveHints:hints,motion:"reduce"});
+          st.saveSettings({orientation,moveHints:hints,motion:"reduce",interactionMode:"beginner"});
           const s = r.initialState({phase:"move",dice});
           s.points[23] -= count; s.bar[0] = count;
           if (turn) {

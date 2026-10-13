@@ -378,7 +378,7 @@ export async function preferences() {
     "div",
     { class: "stack settings-display" },
     field("Playing style", interaction),
-    el("p", { class: "muted small" }, "Advanced: click a checker or destination to play the selected die. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
+    el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
     el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
@@ -388,6 +388,9 @@ export async function preferences() {
       onChange: e => { saveSettings({equityBar:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Show equity bar against the computer"),
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.moveFeedback,
       onChange: e => saveSettings({moveFeedback:e.target.checked})}), "Show move feedback by default in new computer games"),
+    el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.analysisAhead,
+      onChange: e => { saveSettings({analysisAhead:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Analyze ahead in computer games"),
+    el("p", {class:"muted small"}, "Prepare feedback while you choose, then explore likely replies using spare engine time. Future work is limited to 24 positions or 20 seconds between decisions and pauses when this tab is hidden. Uses more battery; never predicts or changes your actual dice."),
     field("Motion", motion),
     el(
       "div",
@@ -773,9 +776,10 @@ export class DraftBoard {
       if (point === null) return this.clearSelection();
       const checker = options.checkerTap || (!options.quick && this.sources().includes(point));
       const action = advancedAction({ point, checker, candidates: this.candidates(),
-        returns: this.reverseMoves(), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
+        returns: this.reverseMoves(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
       if (action?.type === "move") this.move(action.step);
       else if (action?.type === "undo") this.moveRoute(action.route);
+      else if (action?.type === "routes") this.chooseRoutes(action.routes);
       else this.clearSelection();
       return action?.type || "unavailable";
     }
@@ -890,6 +894,16 @@ export class DraftBoard {
         }
       }
     }
+    if (this.chooseRoutes(routes, sourceTap)) return;
+    if (!selectable) return "unavailable";
+    this.selected = p;
+    this.hint = "";
+    sound.play("select");
+    this.render();
+    return "selected";
+  }
+  chooseRoutes(routes, sourceTap = false) {
+    const current = this.current();
     // Equivalent paths with the same resulting position and consumed dice need
     // no extra confirmation. Combined shortcuts prefer hits; distinct hitting
     // outcomes and different die use remain choices.
@@ -965,14 +979,9 @@ export class DraftBoard {
           ),
         );
       }
-      return;
+      return true;
     }
-    if (!selectable) return "unavailable";
-    this.selected = p;
-    this.hint = "";
-    sound.play("select");
-    this.render();
-    return "selected";
+    return false;
   }
   normalize(raw) {
     if (raw === null) return null;

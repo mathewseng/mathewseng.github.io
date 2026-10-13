@@ -150,16 +150,19 @@ export class EngineClient {
         return Promise.reject(error);
       }
     }
-    const forCaller = (promise) => !(sharedChecker && submittedKey) ? promise : promise.then(source => {
-      const result = structuredClone(source);
+    const callerKey = positionKey(state);
+    // Dice order changes presentation, not the decision. Share both orders of
+    // each of the 21 rolls, but tag every result with its caller's exact state.
+    if (kind === "checker" && !rollout) state = { ...state, dice: [...state.dice].sort((a, b) => b - a) };
+    const evaluationListener = onEvaluation;
+    onEvaluation = result => evaluationListener({ ...structuredClone(result), positionKey: callerKey });
+    const forCaller = promise => promise.then(source => {
+      const result = { ...structuredClone(source), positionKey: callerKey };
+      if (!(sharedChecker && submittedKey)) return result;
       const actual = result.candidates.find(c => c.key === submittedKey);
-      if (!actual)
-        throw new Error("Submitted result missing from complete legal move set.");
-      return {
-        ...result,
-        actual,
-        error: Math.max(0, result.candidates[0].equity - actual.equity),
-      };
+      if (!actual) throw new Error("Submitted result missing from complete legal move set.");
+      return { ...result, actual,
+        error: Math.max(0, result.candidates[0].equity - actual.equity) };
     });
     const keyFor = actual => JSON.stringify([
       ENGINE_VERSION,
@@ -172,11 +175,10 @@ export class EngineClient {
       tryBook,
     ]);
     const key = keyFor(sharedChecker ? null : submittedKey || submitted);
-    // A fixed-depth screened hint has already evaluated its listed candidates
-    // at the requested depth. Grade one of those directly. Auto cannot use this
-    // shortcut: actual-move grading disables its clear-lead stopping rule.
+    // Reuse scored finalists. Auto reuse additionally requires a stop reason
+    // allowed for actual-move grading (never its hint-only clear-lead stop).
     const reuseHintKey = kind === "checker" && !rollout && !tryBook &&
-      PRESETS[preset]?.plies > 2 && submittedKey ? keyFor(null) : null;
+      (preset === "auto" || PRESETS[preset]?.plies > 2) && submittedKey ? keyFor(null) : null;
     if (this.cache.has(key)) {
       const result = this.cache.get(key);
       this.cache.delete(key);
@@ -184,7 +186,7 @@ export class EngineClient {
       return forCaller(Promise.resolve({ ...structuredClone(result), cached: true }));
     }
     const reused = this.reuseGrade(reuseHintKey, preset, submittedKey);
-    if (reused) return Promise.resolve(reused);
+    if (reused) return forCaller(Promise.resolve(reused));
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
     if (existing) {
       existing.progressListeners.add(onProgress);
@@ -237,7 +239,10 @@ export class EngineClient {
     if (!key) return null;
     const hint = this.cache.get(key);
     if (hint?.status !== "complete" || hint.type !== "checker" ||
-        hint.settings?.plies !== PRESETS[preset]?.plies ||
+        (preset === "auto"
+          ? !(hint.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies &&
+              ["predicted-cost", "maximum-depth"].includes(hint.budget?.reason))
+          : hint.settings?.plies !== PRESETS[preset]?.plies) ||
         !hint.candidates?.some(c => c.key === submittedKey)) return null;
     this.cache.delete(key); this.cache.set(key, hint);
     const result = structuredClone(hint);
@@ -326,6 +331,13 @@ export class EngineClient {
     this.initReject = null;
     this.initializing = null;
     this.onStatus("idle", message);
+  }
+  cancelWhere(predicate) {
+    const rejected = this.queue.filter(predicate);
+    this.queue = this.queue.filter(job => !predicate(job));
+    for (const job of rejected) job.reject(new DOMException("Background analysis superseded.", "AbortError"));
+    if (this.active && predicate(this.active)) this.cancelActive();
+    this.pump();
   }
   cancel() {
     for (const j of this.queue.splice(0))

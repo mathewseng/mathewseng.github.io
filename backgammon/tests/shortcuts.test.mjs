@@ -17,8 +17,8 @@ test("default keys cover visible points and context-dependent cube actions witho
       shortcutAction(DEFAULT_SHORTCUTS, key, "move"),
       `bottom${i}`,
     );
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "roll"), null);
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "double"), "drop");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "roll"), "double");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "p", "double"), "drop");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "t", "double"), "take");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "t", "move"), "bottom4");
   for (const orientation of [0, 1])
@@ -61,7 +61,7 @@ test("shifted point keys retain quick-play mapping and preserve help, named keys
 
 test("revised defaults migrate untouched bindings and retain user customizations", () => {
   assert.equal(
-    shortcutAction(DEFAULT_SHORTCUTS, "c", "double"),
+    shortcutAction(DEFAULT_SHORTCUTS, "d", "double"),
     "redouble",
   );
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "Enter", "roll"), "roll");
@@ -74,6 +74,7 @@ test("revised defaults migrate untouched bindings and retain user customizations
     double: ["c", "d"],
     redouble: ["v"],
     roll: ["Space"],
+    drop: ["d"],
   };
   assert.deepEqual(normalizeShortcuts(old), DEFAULT_SHORTCUTS);
   old.top0 = ["j"];
@@ -86,5 +87,20 @@ test("undo shortcut is draft-only, including remapped keys", () => {
     assert.equal(shortcutAction(bindings,key,"move"),"undo");
     for (const phase of ["roll","over","double","opening","setup"])
       assert.notEqual(shortcutAction(bindings,key,phase),"undo");
+  }
+});
+
+
+test("C never touches the cube; D never drops; previous untouched defaults migrate", () => {
+  for(const phase of ["setup","opening","roll","move","over"])
+    assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"c",phase),["opening","roll"].includes(phase)?"roll":"confirm");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"c","double"),null);
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"d","roll"),"double");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"d","double"),"redouble");
+  for(const confirm of [["c","Enter"],["Enter"]]) {
+    const old={...structuredClone(DEFAULT_SHORTCUTS),double:["c"],redouble:["c"],drop:["d"],roll:["Space","Enter"],confirm};
+    assert.deepEqual(normalizeShortcuts(old),DEFAULT_SHORTCUTS);
+    old.hint=["j"];
+    assert.deepEqual(normalizeShortcuts(old),old);
   }
 });

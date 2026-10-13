@@ -6,7 +6,7 @@ export function selectedDie(candidates, preferred, dice = []) {
   return [preferred, ...dice].find(die => available.has(die)) ?? null;
 }
 
-export function advancedAction({ point, checker, candidates, returns, preferred, dice, turn }) {
+export function advancedAction({ point, checker, candidates, returns, routes = [], preferred, dice, turn }) {
   const die = selectedDie(candidates, preferred, dice);
   const forward = candidates.filter(step => step.die === die);
   if (checker) {
@@ -21,7 +21,13 @@ export function advancedAction({ point, checker, candidates, returns, preferred,
     return null;
   }
   const distance = from => from === "bar" ? 25 : turn ? 24 - from : from + 1;
-  const step = forward.filter(step => step.to === point)
-    .sort((a, b) => distance(a.from) - distance(b.from))[0];
-  return step ? { type: "move", step } : null;
+  // Point-space input requests a destination. Prefer the selected die, then
+  // another direct arrival, before spending several dice on one checker.
+  const step = candidates.filter(step => step.to === point)
+    .sort((a, b) => Number(b.die === die) - Number(a.die === die) || distance(a.from) - distance(b.from))[0];
+  if (step) return { type: "move", step };
+  const combined = routes.filter(route => route.to === point && !route.undo && !route.switchDie && route.steps.length > 1);
+  const nearest = Math.min(...combined.map(route => distance(route.from)));
+  const choices = combined.filter(route => distance(route.from) === nearest);
+  return choices.length ? { type: "routes", routes: choices } : null;
 }

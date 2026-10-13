@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initialState, legalPaths, nextSteps, matchingPaths, transition, assertState, MAX_CUBE } from '../core/rules.mjs';
 import { advancedAction, selectedDie } from '../core/advanced-input.mjs';
-import { originalReturnRoutes } from '../core/draft.mjs';
+import { originalReturnRoutes, availableRoutes } from '../core/draft.mjs';
 import { defaultPlayRules, localConfig } from '../core/play-session.mjs';
 import { settings, saveSettings, settingsDefaults } from '../core/storage.mjs';
 import { toXGID } from '../core/xgid.mjs';
@@ -17,12 +17,13 @@ test('advanced selected-die clicks are complete-turn legal across both players, 
       const draft = path.steps.slice(0,i), candidates = nextSteps(paths,draft);
       const returns = originalReturnRoutes(source, paths, draft, 0);
       for (const preferred of [a,b]) for (const point of [...Array(24).keys(), 'bar','off']) for (const checker of [false,true]) {
-        const action = advancedAction({ point, checker, candidates, returns, preferred, dice:source.dice, turn });
+        const action = advancedAction({ point, checker, candidates, returns, routes:availableRoutes(paths,draft), preferred, dice:source.dice, turn });
         if (!action) continue;
-        const next = action.type === 'move' ? [...draft,action.step] : action.route.remaining;
+        const next = action.type === 'move' ? [...draft,action.step] : action.type === 'routes' ? [...draft,...action.routes[0].steps] : action.route.remaining;
+        if (action.type === 'routes') for (const route of action.routes) assert.ok(matchingPaths(paths,[...draft,...route.steps]).length);
         assert.ok(matchingPaths(paths,next).length);
-        if (action.type === 'move') assert.equal(action.step.die, selectedDie(candidates,preferred,source.dice));
-        else assert.ok(!candidates.some(s=>s.from===point));
+        if (action.type === 'move' && checker) assert.equal(action.step.die, selectedDie(candidates,preferred,source.dice));
+        else if (action.type === "undo") assert.ok(!candidates.some(s=>s.from===point));
         checked++;
       }
     }
@@ -49,8 +50,8 @@ test('new tables default to adaptive bot and reviews, visible feedback, warnings
     assert.equal(settings().interactionMode,'beginner'); assert.equal(settings().equityBar,false); assert.equal(settings().moveFeedback,false);
   } finally { globalThis.localStorage=previous; }
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'c','move'),'confirm');
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'c','roll'),'double');
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'c','double'),'redouble');
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'c','roll'),'roll');
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'d','double'),'redouble');
 });
 test('unlimited opening doubles exceed old ten-tie limit, finite limits and match rules stay explicit', () => {
   const rules=defaultPlayRules(0); assert.equal(rules.automaticDoubles,-1); assert.equal(rules.immediateRedoubles,2);
@@ -67,4 +68,20 @@ test('unlimited opening doubles exceed old ten-tie limit, finite limits and matc
   }
   const match=defaultPlayRules(5); assert.equal(match.automaticDoubles,0); assert.equal(match.immediateRedoubles,0);
   assert.throws(()=>transition(initialState({matchLength:0,rules,cube:{value:MAX_CUBE,owner:null}}),{type:'opening',dice:[1,1]}),/numeric cube limit/);
+});
+
+test('destination hierarchy: direct selected die, direct other die, then combined; a disc never spends both dice',()=>{
+  const s=initialState({phase:'move',dice:[4,3]});
+  const paths=legalPaths(s),candidates=nextSteps(paths,[]),routes=availableRoutes(paths,[]);
+  const choose=(point,checker=false)=>advancedAction({point,checker,candidates,routes,returns:[],preferred:4,dice:s.dice,turn:0});
+  // 13/6 is available, but 8/6 is not: this arrival genuinely needs both dice.
+  const combined=choose(5); // 13/9/6, no direct arrival from the opening board.
+  assert.equal(combined.type,'routes');assert.ok(combined.routes.every(r=>r.steps.length===2 && r.from===12));
+  assert.equal(choose(4).type,'move');assert.equal(choose(4).step.die,3,'direct 8/5 takes precedence over a multi-die route');
+  assert.equal(choose(7,true).type,'move');assert.equal(choose(7,true).step.die,4);
+});
+
+test('a combined destination shortcut cannot silently rewrite already-spent dice',()=>{
+  const route={from:5,to:10,steps:[{from:12,to:9,die:3},{from:9,to:5,die:4}],remaining:[],switchDie:true};
+  assert.equal(advancedAction({point:10,checker:false,candidates:[],returns:[],routes:[route],preferred:4,dice:[4,3],turn:0}),null);
 });

@@ -23,7 +23,7 @@ module.exports = async function highlightActions(browser, base, out, name) {
       });
       const set = (fixture, turn, orientation, selected = null) => page.evaluate(({fixture, turn, orientation, selected}) => {
         const { r, storage, fixtures, d } = highlightTest;
-        storage.saveSettings({orientation});
+        storage.saveSettings({orientation,interactionMode:"beginner"});
         const p = n => turn ? 23 - n : n;
         const key = `${fixture}:${turn}`;
         if (!fixtures.has(key)) {

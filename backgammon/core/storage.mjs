@@ -19,6 +19,7 @@ export const settingsDefaults = {
   preset: "quick",
   moveFeedback: true,
   equityBar: true,
+  analysisAhead: true,
   boardTheme: DEFAULT_BOARD_THEME,
   sound: DEFAULT_SOUND,
 };
@@ -32,6 +33,7 @@ export function settings() {
       shortcuts: normalizeShortcuts(saved?.shortcuts),
       keyboardEnabled: saved?.keyboardEnabled !== false,
       equityBar: saved?.equityBar !== false,
+      analysisAhead: saved?.analysisAhead !== false,
       moveFeedback: saved?.moveFeedback !== false,
       interactionMode: saved?.interactionMode === "beginner" ? "beginner" : "advanced",
       moveHints: saved?.moveHints !== false,

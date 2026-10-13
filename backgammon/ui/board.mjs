@@ -1515,6 +1515,16 @@ export class Board {
         patternOverlay(cube.firstChild, "cube"),
         cube.lastChild,
       );
+      const cubeKey = shortcuts?.double?.[0];
+      if (cubeKey) {
+        const badge = svg("g", {class:"cube-key", "aria-hidden":"true",
+          display:this.cubeEnabled ? "inline" : "none"});
+        badge.append(svg("rect", {x:834,y:cy+22,width:18,height:16,rx:4,
+          fill:boardColor("cube"),stroke:boardColor("cubeBorder")}),
+          svg("text", {x:843,y:cy+34,"text-anchor":"middle","font-size":12,
+            "font-weight":600,fill:boardColor("cubeText")},cubeKey.toUpperCase()));
+        cube.append(badge);
+      }
       children.push(cube);
     }
     const historicalDice =

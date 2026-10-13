@@ -3734,7 +3734,7 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
 .play-page .board-workspace > .board-slot { height: 100%; width: 100%; max-height: none; aspect-ratio: auto; }
 .board-actions { display: flex; align-items: center; justify-content: center; min-width: 0; }
 .board-actions #confirm { width: 100%; min-height: 144px; display: flex; flex-direction: column; justify-content: center; gap: 14px; font-size: 17px; line-height: 1.3; white-space: normal; padding: 12px 8px; border-radius: 12px; }
-button kbd { display: inline-grid; place-items: center; min-width: 22px; padding: 1px 5px; margin-left: 8px; border: 1px solid currentColor; border-radius: 5px; font: 500 12px/18px ui-monospace, monospace; opacity: .75; vertical-align: middle; }
+button kbd, .play-page #message kbd { display: inline-grid; place-items: center; min-width: 22px; padding: 1px 5px; margin-left: 8px; border: 1px solid currentColor; border-radius: 5px; font: 500 12px/18px ui-monospace, monospace; opacity: .75; vertical-align: middle; }
 .board-actions kbd { margin-left: 0; }
 .action-help :is(#roll, #double-cube) { display: none; }
 .practice-controls-dialog .action-help :is(#roll, #double-cube) { display: inline-block; }

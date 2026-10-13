@@ -72,6 +72,7 @@ import { sessionReview } from "../ui/session-review.mjs";
 import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
+import { Prethink } from "../core/prethink.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback } from "../core/decision-feedback.mjs";
 import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
@@ -255,8 +256,18 @@ const draft = new DraftBoard(ui.board, (change) => {
   detailDraft();
   persist();
   autoDraft(change?.kind === "move");
+  prethink.update();
 });
 draft.shortcutsEnabled = true;
+const prethink = new Prethink({
+  engine: analysis.engine,
+  view: () => ({ game,
+    enabled: config.mode === "computer" && settings().analysisAhead && !document.hidden && !leaving,
+    idle: !committing && !botBusy && !assistanceJob,
+    submitted: draft.state === game?.state && draft.complete() && draft.draft.length ? clone(draft.draft) : null,
+  }),
+});
+addEventListener("bg-settings", () => prethink.update());
 const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
   render();
@@ -416,14 +427,16 @@ addEventListener("beforeunload", (e) => {
 });
 addEventListener("pagehide", () => {
   autoReview.pause();
+  prethink.pause();
   stopComputer();
   persist();
 });
 addEventListener("visibilitychange", () => {
   if (document.hidden) {
     autoReview.pause();
-    if (analysis.engine.active?.priority === -10) analysis.engine.cancelActive();
-  } else { advanceOpening(); autoReview.update(); }
+    prethink.pause();
+    analysis.engine.cancelWhere(job => job.priority < 0);
+  } else { advanceOpening(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -545,6 +558,7 @@ function restore(recovery) {
   }
 }
 function stopComputer() {
+  prethink.pause();
   epoch++;
   releaseAssistance();
   analysis.cancel();
@@ -684,6 +698,7 @@ function render() {
     if (m?.started && config.mode === "computer") computerTurn();
   }
   renderReviewStatus();
+  prethink.update();
   autoReview.update();
 }
 function advanceOpening() {
@@ -1043,6 +1058,7 @@ function actions() {
     ui.board.cubeEnabled = !!$("double-cube") && !$("double-cube").disabled;
     const cube = ui.board.svg.querySelector(".board-cube");
     if (cube) {
+      cube.querySelector(".cube-key")?.setAttribute("display", ui.board.cubeEnabled ? "inline" : "none");
       cube.setAttribute("role", ui.board.cubeEnabled ? "button" : "img");
       cube.setAttribute("tabindex", ui.board.cubeEnabled ? "0" : "-1");
       cube.setAttribute("aria-label", `Cube ${state().cube.value}${ui.board.cubeEnabled ? ". Offer double" : ""}`);
@@ -1408,8 +1424,13 @@ function renderActions() {
     );
   } else if (s.phase === "roll") {
     const previous = m.events.at(-1);
-    $("message").textContent =
-      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} to roll · tap the board to roll${canDouble(s) ? ", or the cube to double" : ""}.`;
+    const prefs = settings();
+    const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
+      ? el("kbd", {"aria-hidden":"true"}, prefs.shortcuts[action][0].toUpperCase()) : "";
+    $("message").replaceChildren(
+      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · Tap board to roll`, keycap("roll"),
+      ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),
+    );
     a.append(
       button("Double", () => submitCube({ type: "double" }), "", {
         id: "double-cube",
@@ -2188,6 +2209,7 @@ function unlockDraft() {
   draft.render();
   actions();
   detailDraft();
+  prethink.update();
   autoReview.update();
 }
 function assistance(kind) {
@@ -2400,6 +2422,11 @@ async function computerTurn() {
     myTurn(s)
   )
     return;
+  if (s.phase === "roll" && !s.pending && !canDouble(s)) {
+    // Exact rule shortcut, not a heuristic recommendation.
+    await commit({type:"roll"});
+    return;
+  }
   const token = epoch,
     key = positionKey(s);
   botBusy = true;

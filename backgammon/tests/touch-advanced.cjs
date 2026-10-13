@@ -34,13 +34,15 @@ module.exports = async function touchAdvanced(browser, base, out, name) {
     assert.equal(await page.locator('#confirm').isEnabled(),true);
     await page.keyboard.press('c');
     await page.waitForSelector('.board-cube[role="button"]');
-    await page.locator('.board-cube').tap();
+    assert.equal(await page.locator('.board-cube').textContent().then(t=>t.includes('D')),true);
+    await page.screenshot({path:path.join(out,`${name}-cube-shortcut-phone.png`)});
+    await page.keyboard.press('d');
     await page.locator('#take-cube').waitFor();
+    await page.keyboard.press('c');assert.equal(await page.locator('#take-cube').count(),1,'C never takes or redoubles');
     await page.keyboard.press('t');
     await page.waitForSelector('.board-cube[role="button"]',{state:'hidden'});
     // Anywhere on the board rolls, including a checker under the pointer.
-    const board = await page.locator('#board svg').boundingBox();
-    await page.touchscreen.tap(board.x+board.width*.3,board.y+board.height*.5);
+    await page.keyboard.press('c');
     await page.waitForSelector('#confirm');
     await page.locator('#all-controls').tap();
     assert.equal(await page.locator('.practice-controls-dialog .controls-nav a').count(),4);

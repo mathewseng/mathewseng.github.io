@@ -1,0 +1,233 @@
+{
+  "date": "2026-10-13",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "memoryGiB": 48,
+    "macOS": "26.5.1",
+    "node": "20.18.3",
+    "browsers": {
+      "chromium": "145.0.7632.6",
+      "webkit": "26.0",
+      "firefox": "146.0.1"
+    }
+  },
+  "method": "One integration sample per browser on assembled local HTTP. Fresh worker; browser compilation/HTTP caches may be warm. Repository tests ran concurrently. Not a calibrated benchmark or phone test. rootMs includes initialization and analysis; confirmationMs ends when the analysis result is observed, not when animation finishes.",
+  "position": "Starting board, Ivory on turn, dice 4-1; unlimited money, cube/Jacoby on, beavers/raccoons on; Auto review, Quick bot, opening book ineligible.",
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+  "samples": {
+    "chromium": {
+      "rootMs": 16090.299999998882,
+      "plies": 4,
+      "reason": "maximum-depth",
+      "gradeMs": 0.30000000074505806,
+      "gradeReused": true,
+      "confirmationMs": 37.350124999997206,
+      "engineRetrievalMs": 0.30000000074505806,
+      "trace": [
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": -5,
+          "preset": "auto",
+          "ms": 16090.299999998882,
+          "plies": 4
+        },
+        {
+          "phase": "roll",
+          "turn": 1,
+          "priority": -20,
+          "preset": "quick",
+          "ms": 1.400000000372529,
+          "plies": 0
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": 20,
+          "preset": "auto",
+          "ms": 0.09999999962747097,
+          "cached": true,
+          "plies": 4
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": -4,
+          "preset": "auto",
+          "ms": 0.30000000074505806,
+          "cached": true,
+          "plies": 4
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": 20,
+          "preset": "auto",
+          "ms": 0.30000000074505806,
+          "cached": true,
+          "plies": 4
+        },
+        {
+          "phase": "roll",
+          "turn": 1,
+          "preset": "quick",
+          "ms": 0.40000000037252903,
+          "cached": true,
+          "plies": 0
+        },
+        {
+          "phase": "move",
+          "turn": 1,
+          "preset": "quick",
+          "ms": 4.400000000372529,
+          "plies": 0
+        }
+      ]
+    },
+    "webkit": {
+      "rootMs": 15382,
+      "plies": 4,
+      "reason": "maximum-depth",
+      "gradeMs": 0,
+      "gradeReused": true,
+      "confirmationMs": 22.572541999994428,
+      "engineRetrievalMs": 0,
+      "trace": [
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": -5,
+          "preset": "auto",
+          "ms": 15382,
+          "plies": 4
+        },
+        {
+          "phase": "roll",
+          "turn": 1,
+          "priority": -20,
+          "preset": "quick",
+          "ms": 1.000000000001819,
+          "plies": 0
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": 20,
+          "preset": "auto",
+          "ms": 0,
+          "cached": true,
+          "plies": 4
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": -4,
+          "preset": "auto",
+          "ms": 0,
+          "cached": true,
+          "plies": 4
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": 20,
+          "preset": "auto",
+          "ms": 0,
+          "cached": true,
+          "plies": 4
+        },
+        {
+          "phase": "roll",
+          "turn": 1,
+          "preset": "quick",
+          "ms": 0,
+          "cached": true,
+          "plies": 0
+        },
+        {
+          "phase": "move",
+          "turn": 1,
+          "preset": "quick",
+          "ms": 8.000000000001819,
+          "plies": 0
+        }
+      ]
+    },
+    "firefox": {
+      "rootMs": 10976,
+      "plies": 3,
+      "reason": "predicted-cost",
+      "gradeMs": 0,
+      "gradeReused": true,
+      "confirmationMs": 44.79866600000241,
+      "engineRetrievalMs": 0,
+      "trace": [
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": -5,
+          "preset": "auto",
+          "ms": 10976,
+          "plies": 3
+        },
+        {
+          "phase": "roll",
+          "turn": 1,
+          "priority": -20,
+          "preset": "quick",
+          "ms": 1,
+          "plies": 0
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": 20,
+          "preset": "auto",
+          "ms": 0,
+          "cached": true,
+          "plies": 3
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": -4,
+          "preset": "auto",
+          "ms": 0,
+          "cached": true,
+          "plies": 3
+        },
+        {
+          "phase": "move",
+          "turn": 0,
+          "priority": 20,
+          "preset": "auto",
+          "ms": 0,
+          "cached": true,
+          "plies": 3
+        },
+        {
+          "phase": "roll",
+          "turn": 1,
+          "preset": "quick",
+          "ms": 1,
+          "cached": true,
+          "plies": 0
+        },
+        {
+          "phase": "move",
+          "turn": 1,
+          "preset": "quick",
+          "ms": 7,
+          "plies": 0
+        },
+        {
+          "phase": "roll",
+          "turn": 0,
+          "priority": -5,
+          "preset": "auto",
+          "error": "AbortError"
+        }
+      ]
+    }
+  }
+}
