@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const http = require("node:http");
 
-module.exports = async function updatesUX(browser, out, browserName) {
+module.exports = async function updatesUX(browser, _base, out, browserName) {
   const root = path.resolve("_site");
   let release = "one",
     failAsset = false,
@@ -293,26 +293,21 @@ module.exports = async function updatesUX(browser, out, browserName) {
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(base + "/backgammon/play/");
-    await page
-      .getByRole("button", { name: "Same device", exact: true })
-      .click();
-    await page.locator("#start-match").click();
-    do {
-      await page.locator("#roll").click();
-      await page.waitForFunction(
-        () => !document.querySelector("#roll")?.disabled,
-      );
-    } while (await page.locator("#roll").count());
-    await page.locator("#begin-turn").click();
-    await page.locator("#draft-controls select").selectOption({ index: 1 });
-    await page.waitForFunction(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        )?.draft?.length > 0,
-    );
+    await page.waitForFunction(() => document.documentElement.dataset.appReady === "true");
+    await page.evaluate(async () => {
+      const {put, saveSettings} = await import("/backgammon/core/storage.mjs");
+      const {initialState} = await import("/backgammon/core/rules.mjs");
+      const {localConfig} = await import("/backgammon/core/play-session.mjs");
+      const state = initialState({phase:"move", dice:[4,1]});
+      saveSettings({interactionMode:"advanced", motion:"reduce"});
+      await put("work", {id:"play", game:{id:"update-test", initial:state, state, events:[],
+        started:true, names:["You","Friend"], config:localConfig({mode:"local"})}, draft:[]});
+    });
+    await page.reload();
+    await page.locator("#resume-match").click();
+    await page.keyboard.press("1");
+    await page.waitForFunction(async () =>
+      (await (await import("/backgammon/core/storage.mjs")).get("work","play"))?.draft?.length === 1);
     const game = await saved(page),
       gameLoads = loads;
     release = "four";
@@ -390,7 +385,7 @@ module.exports = async function updatesUX(browser, out, browserName) {
     assert.deepEqual(await saved(page), game);
     await shot(page, "failed-download");
     failAsset = false;
-    await page.getByRole("button", { name: "Retry update" }).click();
+    // Restore the network: the bounded automatic retry must recover on its own.
     await atRelease(page, "five");
     assert.deepEqual(await saved(page), game);
     assert.deepEqual(errors, []);
@@ -453,11 +448,40 @@ module.exports = async function updatesUX(browser, out, browserName) {
     assert.equal(await page.locator("#board").count(), 0);
     await shot(page, "other-tab");
     await other.close();
-    await page.getByRole("button", { name: "Retry update" }).click();
     await atRelease(page, "eight");
     report.cases.push(
       "another window pauses activation without losing its state",
     );
+    // Simulate stale HTML surviving activation, with a real current worker.
+    // Start a fresh gate module on that document; worker/cache APIs are untouched.
+    const beforeRace = loads;
+    await page.evaluate(async () => {
+      const entry = document.querySelector('[src*="?bgv="], [href*="?bgv="]');
+      const attribute = entry.hasAttribute("src") ? "src" : "href";
+      entry.setAttribute(attribute, entry.getAttribute(attribute).replace(/bgv=[a-z0-9]+/, "bgv=stale"));
+      const {startUpdates} = await import("/backgammon/ui/updates.mjs?race=activated");
+      startUpdates();
+    });
+    await page.waitForEvent("framenavigated", {predicate: frame => frame === page.mainFrame(), timeout:15000});
+    await atRelease(page, "eight");
+    assert.equal(loads, beforeRace + 1, "stale document catches up to active worker in exactly one reload");
+    assert.deepEqual((await saved(page)).work, game.work);
+    report.cases.push("already-active release repairs stale HTML without waiting for another installation");
+
+    // Exhaust automatic retries; manual Retry must still work without navigation.
+    release = "nine";
+    failAsset = true;
+    await page.reload();
+    await page.waitForFunction(() => {
+      const retry = document.querySelector(".app-update-dialog button");
+      return retry && !retry.hidden && !document.querySelector(".update-message").textContent.includes("Retrying automatically");
+    }, null, {timeout:60000});
+    assert.deepEqual((await saved(page)).work, game.work);
+    failAsset = false;
+    await page.getByRole("button", {name:"Retry update"}).click();
+    await atRelease(page, "nine");
+    assert.deepEqual((await saved(page)).work, game.work);
+    report.cases.push("persistent download failure stops automatic retries; explicit Retry still recovers with game intact");
     assert.deepEqual(errors, []);
   } finally {
     await context.close();

@@ -630,7 +630,7 @@ const server = http.createServer((req, res) => {
         (report.pageProgress ||= []).push(await require("./page-progress.cjs")(browser, base));
         report.updatesUX ||= [];
         report.updatesUX.push(
-          await require("./updates.cjs")(browser, out, browserName),
+          await require("./updates.cjs")(browser, base, out, browserName),
         );
         // Offline shell and coherent engine cache, scoped exclusively to this family.
         const offline = await browser.newContext(),

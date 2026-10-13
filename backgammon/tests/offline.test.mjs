@@ -308,3 +308,14 @@ test('install progress reports completed files and never waits for a window to e
   await pending;
   assert.equal(stalled.saved.size,2,'WebKit client-enumeration delay cannot stall shell installation');
 });
+
+test('worker release probe is read-only, scoped and available after activation', () => {
+  const h=harness();let reply;
+  const probe=url=>h.handlers.message({data:{type:'BACKGAMMON_VERSION'},source:{id:'page',url},ports:[{postMessage:m=>reply=m}]});
+  probe('https://other.example/backgammon/');assert.equal(reply,undefined);
+  probe('https://site.example/poker/');assert.equal(reply,undefined);
+  h.self.registration.waiting=null;
+  probe('https://site.example/backgammon/play/');
+  assert.equal(reply.version,'test');assert.equal(reply.type,'BACKGAMMON_VERSION');
+  assert.equal(h.activated(),0);assert.equal(h.fetches(),0);assert.deepEqual(h.deleted,[]);
+});

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
 // Release URL is generated with the manifest; keep the registration URL stable.
-importScripts("./offline-manifest.js?v=9bc6039f2c315966");
+importScripts("./offline-manifest.js?v=c55cf88413bb88a9");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
 async function cacheShell() {
@@ -73,6 +73,12 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(removeOldCaches());
 });
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "BACKGAMMON_VERSION" && event.ports?.[0]) {
+    const sourceURL = event.source?.url && new URL(event.source.url);
+    if (sourceURL?.origin === location.origin && sourceURL.pathname.startsWith("/backgammon/"))
+      event.ports[0].postMessage({type:"BACKGAMMON_VERSION", version:self.BG_CACHE_VERSION});
+    return;
+  }
   const automatic = event.data?.type === "BACKGAMMON_UPDATE";
   if (
     (!automatic && event.data?.type !== "BACKGAMMON_REFRESH") ||
