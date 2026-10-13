@@ -8,6 +8,7 @@ import {
   keyForEvent,
   visiblePoint,
 } from "../core/shortcuts.mjs";
+import { keycap } from "./keycap.mjs";
 import { settings, saveSettings } from "../core/storage.mjs";
 import { el, button, field, toast } from "./shell.mjs";
 export function decorateShortcuts(root) {
@@ -20,7 +21,7 @@ export function decorateShortcuts(root) {
     if (!control) continue;
     control.querySelectorAll("kbd").forEach(node => node.remove());
     const key = prefs.keyboardEnabled && prefs.shortcuts[action]?.[0];
-    if (key) control.append(el("kbd", { "aria-hidden": "true" }, key === "Space" ? "Space" : key.toUpperCase()));
+    if (key) control.append(keycap(key));
   }
 }
 export function shortcutControls() {

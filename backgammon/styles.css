@@ -126,8 +126,8 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [role="button"]:focus-visible {
-  outline: 3px solid #d3f1ac;
-  outline-offset: 3px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 p {
   line-height: 1.55;
@@ -530,7 +530,7 @@ h3 {
 .point:focus-visible {
   outline: none;
 }
-.point:focus-visible .point-hit {
+html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   stroke: var(--board-focus, #e1fba7);
   stroke-width: 3;
 }
@@ -1625,13 +1625,13 @@ button.die:hover {
 }
 button.die.preferred {
   outline: 2px solid var(--board-selection, #b6eee0);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .die-reveal {
-  animation: die-arrive 230ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: die-arrive 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .turn-ready {
-  animation: turn-ready 250ms ease-out;
+  animation: turn-ready 320ms ease-out;
 }
 .draft-line {
   line-height: 1.45;
@@ -1646,7 +1646,7 @@ button.die.preferred {
   background: #132024fa;
   text-align: center;
   box-shadow: 0 8px 28px #0004;
-  animation: roll-panel-in 180ms ease-out;
+  animation: roll-panel-in 240ms ease-out;
 }
 .opening-roll h2 {
   font-size: 22px;
@@ -1714,7 +1714,7 @@ button.die.preferred {
 .opening-player.revealed .die {
   opacity: 1;
   transform: none;
-  animation: opening-land 310ms cubic-bezier(0.2, 0.75, 0.3, 1);
+  animation: opening-land 420ms cubic-bezier(0.2, 0.75, 0.3, 1);
 }
 @keyframes opening-land {
   0% {
@@ -1963,7 +1963,7 @@ button.teal-die:hover {
   color: var(--text);
 }
 .color-group summary:focus-visible {
-  outline: 3px solid #d3f1ac;
+  outline: 2px solid var(--accent);
   outline-offset: -3px;
 }
 .color-fields {
@@ -2120,7 +2120,7 @@ button.teal-die:hover {
   opacity: 0.42;
 }
 .board-die.preferred .board-die-face > rect:first-child,
-.board-die:focus-visible .board-die-face > rect:first-child {
+html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
   stroke: var(--board-focus);
   stroke-width: 4;
   vector-effect: non-scaling-stroke;
@@ -2148,7 +2148,7 @@ button.teal-die:hover {
   fill: transparent;
   stroke-dasharray: none;
 }
-.point.return-destination:focus-visible .point-hit {
+html[data-focus-navigation="true"] .point.return-destination:focus-visible .point-hit {
   stroke: var(--board-focus);
   stroke-width: 3;
 }
@@ -2449,7 +2449,7 @@ button.teal-die:hover {
 .point .landing-ring {
   stroke-width: 2;
 }
-.point:focus-visible .point-hit {
+html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   stroke: var(--board-focus);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
@@ -3223,7 +3223,7 @@ button.teal-die:hover {
   fill: transparent;
   stroke: none;
 }
-.bg-board.no-move-hints .point:focus-visible .point-hit {
+html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible .point-hit {
   stroke: var(--board-focus);
   stroke-width: 2;
 }
@@ -3686,7 +3686,7 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
     border-inline: 0;
     border-bottom: 0;
     padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-    animation: bg-sheet-enter 160ms ease-out;
+    animation: bg-sheet-enter 220ms ease-out;
   }
   .dialog.drawer .dialog-header { margin-bottom: 12px; padding-bottom: 12px; }
   .dialog.drawer .dialog-header h2 { font-size: 18px; }
@@ -3742,7 +3742,7 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .bg-board, .bg-board *, .player-strip, .action-area { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .bg-board:not(:has(.point.movable)) { touch-action: manipulation; }
 .bg-board .board-cube[role="button"], .dice-switch, .roll-ready .bg-board { cursor: pointer; }
-.board-cube:focus-visible, .dice-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.board-cube:focus-visible, .dice-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .board-die.blocked .board-die-face > :not(.die-status-mark),
 .board-die.consumed .board-die-face > :not(.die-status-mark) { opacity: .38; }
 .board-die.consumed { opacity: 1; }
@@ -3789,7 +3789,7 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .board-actions { flex: 0 0 104px; }
 .board-actions #confirm kbd { align-self: center; width: auto; }
 .board-die.preferred .board-die-face > rect:first-child { filter: none; }
-.board-die.preferred:focus-visible .board-die-face > rect:first-child { stroke: var(--board-focus); }
+html[data-focus-navigation="true"] .board-die.preferred:focus-visible .board-die-face > rect:first-child { stroke: var(--board-focus); }
 @media (max-width: 700px) and (min-height: 501px) {
   .board-workspace { position: relative; container-type: normal; display: block; aspect-ratio: auto; height: calc((100vw - 40px) * 660 / 876 + 64px); }
   .play-page .board-workspace > .board-slot { width: 100%; max-width: none; height: calc(100% - 64px); }
@@ -3825,3 +3825,51 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
   .play-page.live-table .action-message { display: none; }
   .play-page.live-table #actions:not(:empty) ~ .help-cluster { margin-top: 0; }
 }
+
+/* A quiet, shared keycap drawing at any size: controls, points, dice and cube. */
+:root {
+  --keycap-fill: color-mix(in srgb, currentColor 7%, transparent);
+  --keycap-stroke: color-mix(in srgb, currentColor 27%, transparent);
+}
+.keycap-art { color: inherit; }
+.keycap-face { fill: var(--keycap-fill); stroke: var(--keycap-stroke); stroke-width: 1; }
+.keycap-edge { fill: none; stroke: var(--keycap-stroke); stroke-width: 1; stroke-linecap: round; }
+.keycap-label { fill: currentColor; font: 600 13px ui-sans-serif, system-ui, sans-serif; }
+button kbd.keycap, .play-page #message kbd.keycap {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 20px;
+  padding: 0; border: 0; margin-left: 8px; border-radius: 0; opacity: 1; line-height: 1;
+}
+.keycap > svg { display: block; height: 20px; }
+.bg-board .keycap-art { color: var(--board-caption); --keycap-fill: var(--board-frame); }
+.bg-board .cube-key .keycap-art { --keycap-fill: var(--board-cube); color: var(--board-cube-text); }
+.point-shortcut { opacity: 1; }
+.board-actions #confirm kbd.keycap { margin: 0; }
+
+/* Undo belongs to the draft, beside the board, separately from a turn takeback. */
+.board-undo { display: flex; flex: 0 0 80px; min-width: 0; flex-direction: column; align-self: center; gap: 8px; }
+.board-undo button { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 8px; font-size: 14px; }
+.board-undo button kbd.keycap { margin: 0; }
+@media (max-width: 700px) and (min-height: 501px) {
+  .board-workspace { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) 64px; gap: 0 8px; }
+  .play-page .board-workspace > .board-slot { grid-column: 1 / -1; grid-row: 1; height: 100%; }
+  .board-undo { grid-column: 1; grid-row: 2; flex-direction: row; align-self: end; padding-top: 6px; gap: 6px; }
+  .board-undo button { min-height: 52px; padding: 8px; font-size: 14px; gap: 5px; flex-direction: row; flex-wrap: nowrap; }
+  .board-actions { grid-column: 2; grid-row: 2; }
+  .board-actions #confirm { width: 116px; }
+  .play-page.live-table .action-help button kbd.keycap { min-width: 20px; padding: 0; font-size: inherit; }
+}
+@media (max-height: 500px) and (min-width: 650px) {
+  .board-undo { flex-basis: 62px; gap: 6px; }
+  .board-undo button { min-height: 68px; padding: 8px 4px; font-size: 13px; }
+}
+@media (max-width: 360px) and (min-height: 501px) {
+  .board-actions #confirm { width: 104px; }
+  .board-undo button { padding-inline: 6px; }
+}
+
+/* No native selection/callout on game UI. Editing names, notes and imported
+   positions retains caret/selection. Pointer/shortcut focus is never painted;
+   only explicit Tab/arrow navigation gets the app's subtle focus cue. */
+body, body * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+input, textarea, [contenteditable="true"], [contenteditable="true"] * { -webkit-user-select: text; user-select: text; }
+html:not([data-focus-navigation="true"]) :focus { outline: none !important; }

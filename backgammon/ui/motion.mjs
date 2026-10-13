@@ -6,44 +6,29 @@ export function reducedMotion() {
   );
 }
 
-// An arc per legal step, with a brief contact at intermediate points. The
-// canonical position is already committed: this path is presentation only.
+// Each legal step follows one continuous eased arc: no mid-flight keyframe
+// stop. Sample minimum-jerk progress at <=20 ms intervals; the next input can
+// still cancel immediately. The canonical position is presentation-independent.
 export function checkerFlight(points) {
   const legs = points.length - 1;
-  const duration = Math.min(820, 360 + Math.max(0, legs - 1) * 160);
-  const frames = [
-    {
-      transform: `translate(${points[0].x}px, ${points[0].y}px) scale(1)`,
-      offset: 0,
-      easing: "ease-in-out",
-    },
-  ];
+  const duration = Math.min(1080, 460 + Math.max(0, legs - 1) * 200);
+  const frames = [{ transform: `translate(${points[0].x}px, ${points[0].y}px) scale(1)`, offset: 0 }];
   const landings = [];
+  const samples = Math.max(16, Math.ceil(duration / legs / 16));
   for (let i = 0; i < legs; i++) {
-    const a = points[i],
-      b = points[i + 1];
-    const lift = Math.min(
-      28,
-      Math.max(10, Math.hypot(b.x - a.x, b.y - a.y) * 0.07),
-    );
-    frames.push(
-      {
-        transform: `translate(${a.x + (b.x - a.x) * 0.48}px, ${a.y + (b.y - a.y) * 0.48 - lift}px) scale(1.07)`,
-        offset: (i + 0.44) / legs,
-        easing: "cubic-bezier(.25,.6,.35,1)",
-      },
-      {
-        transform: `translate(${b.x}px, ${b.y}px) scale(1.025,.975)`,
-        offset: (i + 0.88) / legs,
-        easing: "ease-out",
-      },
-      {
-        transform: `translate(${b.x}px, ${b.y}px) scale(1)`,
-        offset: (i + 1) / legs,
-        easing: "ease-in-out",
-      },
-    );
-    landings.push((duration * (i + 0.88)) / legs);
+    const a = points[i], b = points[i + 1];
+    const lift = Math.min(24, Math.max(8, Math.hypot(b.x - a.x, b.y - a.y) * .06));
+    for (let j = 1; j <= samples; j++) {
+      const t = j / samples;
+      const u = t * t * t * (10 + t * (-15 + 6 * t));
+      const arc = 16 * u * u * (1 - u) * (1 - u);
+      frames.push({
+        transform: j === samples ? `translate(${b.x}px, ${b.y}px) scale(1)` :
+          `translate(${a.x + (b.x - a.x) * u}px, ${a.y + (b.y - a.y) * u - lift * arc}px) scale(${1 + .045 * arc})`,
+        offset: (i + t) / legs,
+      });
+    }
+    landings.push(duration * (i + 1) / legs);
   }
   return { frames, duration, landings };
 }

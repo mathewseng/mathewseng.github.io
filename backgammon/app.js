@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { installInputBehavior } from "./ui/input-behavior.mjs";
 import { Board } from "./ui/board.mjs";
 import { initialState } from "./core/rules.mjs";
 import { get, all, settings } from "./core/storage.mjs";
@@ -8,6 +9,7 @@ import { startUpdates } from "./ui/updates.mjs";
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
 async function boot() {
+installInputBehavior();
 await startUpdates({
   hub: true,
   onStatus: ({ state, message }) => {

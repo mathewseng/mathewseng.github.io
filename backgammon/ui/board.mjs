@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { keycapGraphic } from "./keycap.mjs";
 import { playerName, distance, applyStep } from "../core/rules.mjs";
 import { reducedMotion, checkerFlight } from "./motion.mjs";
 import { sound } from "./sound.mjs";
@@ -642,8 +643,7 @@ export class Board {
       swap.append(svg("rect", { x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }),
         svg("path", {d:"M-10 -5H10l-4 -4M10 5H-10l4 4", fill:"none", stroke:"var(--text)", "stroke-width":2, "stroke-linecap":"round", "stroke-linejoin":"round"}));
       const key = shortcuts?.swap?.[0];
-      if (key) swap.append(svg("rect", {x:-9,y:25,width:18,height:17,rx:3,fill:"var(--panel)",stroke:"var(--line)"}));
-      if (key) swap.append(svg("text", {x:0, y:38, "text-anchor":"middle", "font-size":12, fill:boardColor("caption")}, key.toUpperCase()));
+      if (key) swap.append(keycapGraphic(key, { x: 0, y: 25, height: 18, maxWidth: 44 }));
       group.append(swap);
     }
     return group;
@@ -731,7 +731,7 @@ export class Board {
       });
       const duration = this.animateMove(current, after, step);
       current = after;
-      this.playbackTimer = setTimeout(advance, duration + 160);
+      this.playbackTimer = setTimeout(advance, duration + 200);
     };
     advance();
   }
@@ -791,40 +791,36 @@ export class Board {
         current = next;
       });
     }
+    let completedAt = flight.duration;
+    const animateHit = (origin, destination, target, delay) => {
+      const hit = this.flyChecker(origin, destination, 1 - p, target, { delay });
+      completedAt = Math.max(completedAt, delay + hit.duration);
+    };
     if (!reverse && route.length > 1) {
       let current = before;
       for (const [index, st] of route.entries()) {
         const next = applyStep(current, st);
         if (next.bar[1 - p] > current.bar[1 - p])
-          this.flyChecker(
-            checkerPosition(
-              current,
-              st.to,
-              1 - p,
-              this.options.orientation,
-            ),
+          animateHit(
+            checkerPosition(current, st.to, 1 - p, this.options.orientation),
             checkerPosition(next, "bar", 1 - p, this.options.orientation),
-            1 - p,
-            "bar",
-            { delay: Math.max(0, flight.landings[index] - 35) },
+            "bar", Math.max(0, flight.landings[index] - 35),
           );
         current = next;
       }
     } else if (before.bar[1 - p] !== after.bar[1 - p]) {
       const source = reverse ? "bar" : step.to,
         dest = reverse ? step.to : "bar";
-      this.flyChecker(
+      animateHit(
         checkerPosition(before, source, 1 - p, this.options.orientation),
         checkerPosition(after, dest, 1 - p, this.options.orientation),
-        1 - p,
-        dest,
-        { delay: reverse ? 0 : Math.max(0, flight.landings[0] - 35) },
+        dest, reverse ? 0 : Math.max(0, flight.landings[0] - 35),
       );
     }
-    return (
-      flight.duration + (after.bar[1 - p] > before.bar[1 - p] ? 210 : 0)
-    );
+    // Opponent playback waits for every hit checker to reach the bar as well.
+    return completedAt;
   }
+
   flyChecker(
     origin,
     destination,
@@ -887,7 +883,7 @@ export class Board {
     });
     this.svg.append(ring);
     const animation = ring.animate([{ opacity: 0.65 }, { opacity: 0 }], {
-      duration: 170,
+      duration: 220,
       easing: "ease-out",
     });
     this.animations.push(animation);
@@ -973,7 +969,7 @@ export class Board {
           { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1 },
         ],
         {
-          duration: 340,
+          duration: 440,
           delay: i * 30,
           easing: "cubic-bezier(.2,.75,.3,1)",
           fill: "backwards",
@@ -1004,7 +1000,7 @@ export class Board {
         },
         { transform: "translateY(0) scale(1)", opacity: 1 },
       ],
-      { duration: 280, easing: "cubic-bezier(.2,.7,.25,1)" },
+      { duration: 360, easing: "cubic-bezier(.2,.7,.25,1)" },
     );
     this.animations.push(animation);
   }
@@ -1305,11 +1301,10 @@ export class Board {
         const visible = orientation ? 23 - p : p;
         const id = visible >= 12 ? `top${visible - 12}` : `bottom${11 - visible}`;
         const key = shortcuts[id]?.[0];
-        if (key) g.append(svg("text", { x: x + 30, y: top ? 28 : 657,
-          "text-anchor": "middle", "font-size": compact ? 12 : 8.5, fill: boardColor("caption"),
-          class: "point-shortcut", "pointer-events": "none" }, key.toUpperCase()));
-        const label = g.querySelector("text");
-        if (label) { label.setAttribute("y", top ? 19 : 645); label.setAttribute("font-size", compact ? "24" : "16"); }
+        if (key) g.append(keycapGraphic(key, { x: x + 30, y: top ? 18.5 : 645,
+          height: 13.5, maxWidth: 52, className: "point-shortcut" }));
+        const label = g.querySelector(":scope > text");
+        if (label) { label.setAttribute("y", top ? 16 : 641); label.setAttribute("font-size", compact ? "20" : "16"); }
       }
       children.push(g);
     }
@@ -1519,10 +1514,7 @@ export class Board {
       if (cubeKey) {
         const badge = svg("g", {class:"cube-key", "aria-hidden":"true",
           display:this.cubeEnabled ? "inline" : "none"});
-        badge.append(svg("rect", {x:834,y:cy+22,width:18,height:16,rx:4,
-          fill:boardColor("cube"),stroke:boardColor("cubeBorder")}),
-          svg("text", {x:843,y:cy+34,"text-anchor":"middle","font-size":12,
-            "font-weight":600,fill:boardColor("cubeText")},cubeKey.toUpperCase()));
+        badge.append(keycapGraphic(cubeKey, { x: 843, y: cy + 22, height: 18, maxWidth: 40 }));
         cube.append(badge);
       }
       children.push(cube);
@@ -1586,11 +1578,11 @@ export class Board {
       for (const path of this.svg.querySelectorAll(".last-move-arrow > path:not(:last-child)")) {
         path.setAttribute("pathLength", "1000");
         const animation = path.animate([{strokeDasharray: "1000", strokeDashoffset: 1000, opacity: 0},
-          {strokeDasharray: "1000", strokeDashoffset: 0, opacity: 1}], {duration: 600, easing: "ease-in-out"});
+          {strokeDasharray: "1000", strokeDashoffset: 0, opacity: 1}], {duration: 760, easing: "cubic-bezier(.4,0,.2,1)"});
         this.animations.push(animation);
       }
       for (const tip of this.svg.querySelectorAll(".last-move-arrow > path:last-child")) {
-        const animation = tip.animate([{opacity:0}, {opacity:1}], {duration:200, delay:400, fill:"backwards"});
+        const animation = tip.animate([{opacity:0}, {opacity:1}], {duration:240, delay:520, fill:"backwards"});
         this.animations.push(animation);
       }
     }
@@ -1604,7 +1596,7 @@ export class Board {
         ".selected .source-ring,.destination .landing-ring",
       )) {
         const animation = node.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: 130,
+          duration: 170,
           easing: "ease-out",
         });
         this.animations.push(animation);

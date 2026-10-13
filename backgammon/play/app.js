@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import {
@@ -127,9 +128,10 @@ let config = {
   lastUndoNotice = null,
   epoch = 0;
 const boardWorkspace = el("div", { class: "board-workspace" });
+const boardUndo = el("div", { class: "board-undo", role: "group", "aria-label": "Draft controls" });
 const boardActions = el("div", { class: "board-actions", "aria-label": "Turn confirmation" });
 ui.board.container.before(boardWorkspace);
-boardWorkspace.append(ui.board.container, boardActions);
+boardWorkspace.append(boardUndo, ui.board.container, boardActions);
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 const analysis = new AnalysisPanel();
 const autoReview = new AutoReview({
@@ -1036,9 +1038,6 @@ function actions() {
       forcedTurn(state()) ||
       m?.undoRequest ||
       (config.mode === "online" && (!online.ready || online.pending));
-    if (!unavailable)
-      for (const id of ["undo", "reset-draft"])
-        if ($(id)) $(id).hidden = true;
     $("actions").prepend(
       button("Undo last turn", requestTakeback, "", {
         id: "undo-turn",
@@ -1069,9 +1068,13 @@ function actions() {
 function arrangeActions() {
   allControls.hidden = !model()?.started;
   helpActions.replaceChildren();
-  for (const id of ["undo-turn", "hint", "undo", "reset-draft", "roll", "double-cube"]) {
+  for (const id of ["undo-turn", "hint", "roll", "double-cube"]) {
     const b = $(id);
     if (b) helpActions.append(b);
+  }
+  for (const [id, label] of [["undo", "Undo"], ["reset-draft", "Reset"]]) {
+    // Keep both controls in place through roll, bot and cube phases.
+    boardUndo.append($(id) || button(label, () => {}, "", { id, disabled: true }));
   }
   if ($("confirm")) boardActions.append($("confirm"));
   if (!model()?.started || config.mode === "online") return;
@@ -1271,6 +1274,7 @@ async function respondTakeback(type, request) {
   }
 }
 function renderActions() {
+  boardUndo.replaceChildren();
   boardActions.replaceChildren();
   helpActions.replaceChildren();
   const s = state(),
@@ -1426,7 +1430,7 @@ function renderActions() {
     const previous = m.events.at(-1);
     const prefs = settings();
     const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
-      ? el("kbd", {"aria-hidden":"true"}, prefs.shortcuts[action][0].toUpperCase()) : "";
+      ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     $("message").replaceChildren(
       `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · Tap board to roll`, keycap("roll"),
       ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),

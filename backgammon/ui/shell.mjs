@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { installInputBehavior } from "./input-behavior.mjs";
 import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
 import {
@@ -203,6 +204,7 @@ function changeSound(value) {
 }
 let activeBoard, activeEquity;
 export function shell(page, title, subtitle = "") {
+  installInputBehavior();
   activeEquity?.destroy();
   activeEquity = null;
   activeBoard?.destroy();

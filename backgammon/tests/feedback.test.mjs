@@ -206,7 +206,7 @@ test("checker flight contacts every route waypoint, ends exactly, and stays boun
   for (let n = 2; n <= 5; n++) {
     const route = points.slice(0, n),
       path = checkerFlight(route);
-    assert.ok(path.duration >= 200 && path.duration <= 820);
+    assert.ok(path.duration >= 460 && path.duration <= 1080);
     assert.equal(path.landings.length, route.length - 1);
     assert.equal(path.frames[0].offset, 0);
     assert.equal(path.frames.at(-1).offset, 1);
@@ -225,4 +225,18 @@ test("checker flight contacts every route waypoint, ends exactly, and stays boun
         ),
       );
   }
+});
+
+
+test("checker flight has continuous progress through the middle and gentle departure/arrival", () => {
+  const flight = checkerFlight([{x:0,y:100},{x:300,y:100}]);
+  const positions = flight.frames.map(f => Number(f.transform.match(/translate\(([^p]+)px/)[1]));
+  const speeds = positions.slice(1).map((x,i) => x-positions[i]);
+  assert.ok(flight.frames.length >= 24, "enough samples for a smooth sub-20ms cadence");
+  assert.ok(speeds.every(v => v > 0), "never stop/reverse midway");
+  const peak = Math.max(...speeds);
+  assert.ok(speeds[0] < peak*.05 && speeds.at(-1) < peak*.05, "gentle endpoints");
+  const middle = Math.floor(speeds.length/2);
+  assert.ok(speeds[middle] > peak*.95, "no artificial stop at the apex");
+  assert.equal(flight.landings[0],flight.duration,"sound and contact align with visual landing");
 });
