@@ -2536,7 +2536,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 }
 
 /* Reachable points stay visible before selection; amber marks draft returns. */
-.point.reachable .point-shape {
+.point.reachable .point-glow {
   stroke: var(--board-destination);
   stroke-width: 1;
   stroke-opacity: 1;
@@ -2546,7 +2546,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   vector-effect: non-scaling-stroke;
 }
 
-.point.reachable[data-point^="off"] .point-hit {
+.point.reachable[data-point^="off"] .point-accent {
   stroke: var(--board-destination);
   stroke-width: 1;
   stroke-opacity: 1;
@@ -2611,7 +2611,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 }
 
 /* The full point wash makes tap shortcuts visible without covering checker faces. */
-.point.reachable .point-shape {
+.point.reachable .point-glow {
   stroke-width: 2;
 }
 .point.reachable .point-wash {
@@ -2620,7 +2620,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 .point.destination .point-wash {
   fill: color-mix(in srgb, var(--board-destination) 38%, transparent);
 }
-.point.return-destination .point-shape {
+.point.return-destination .point-glow {
   stroke: none;
   filter: none;
 }
@@ -2638,7 +2638,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 .point.return-destination .destination-die {
   fill: var(--board-undo-text, #21180e);
 }
-.point.return-destination[data-point^="bar"] .point-hit {
+.point.return-destination[data-point^="bar"] .point-accent {
   stroke: var(--board-undo);
   fill: color-mix(in srgb, var(--board-undo) 20%, transparent);
 }
@@ -3235,7 +3235,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 }
 
 /* Hide assistance without removing legal hit regions or changing input rules. */
-.bg-board.no-move-hints .point :is(.point-wash, .landing-ring, .ring-halo,
+.bg-board.no-move-hints .point :is(.point-glow, .point-accent, .point-wash, .landing-ring, .ring-halo,
   .destination-badge, .destination-die),
 .bg-board.no-move-hints .point:not(.selected) .source-ring {
   display: none;

@@ -62,7 +62,8 @@ module.exports = async function originReturns(browser, base, out, name) {
             from: p(m.from),
             to: p(m.to),
           }));
-          st.saveSettings({ orientation, numbers: true, motion: "reduce", boardTheme: { version: 1, preset: "plum", colors: {} } });
+          st.saveSettings({ orientation, numbers: true, motion: "reduce", interactionMode: "beginner", moveHints: true,
+            boardTheme: { version: 1, preset: "plum", colors: {} } });
           const id = crypto.randomUUID();
           await st.put("work", {
             id: "play",

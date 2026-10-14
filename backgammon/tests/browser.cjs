@@ -517,6 +517,9 @@ const server = http.createServer((req, res) => {
         (report.diceSwitchMotion ||= []).push(
           await require("./dice-switch-motion.cjs")(browser, base, out, browserName),
         );
+        (report.highlightMotion ||= []).push(
+          await require("./highlight-motion.cjs")(browser, base, out, browserName),
+        );
         (report.engineReuse ||= []).push(
           {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
         );

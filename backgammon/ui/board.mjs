@@ -5,6 +5,7 @@ import { reducedMotion, checkerFlight } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 import { routeArrow } from "./move-arrow-route.mjs";
+import { captureHighlights, animateHighlights, clearHighlightExits } from "./highlight-motion.mjs";
 const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
@@ -691,6 +692,7 @@ export class Board {
     this.feedbackTimers = [];
     this.animations?.forEach((a) => a.cancel());
     this.animations = [];
+    clearHighlightExits(this.svg);
     this.svg
       .querySelectorAll(".moving-checker,.landing-contact")
       .forEach((n) => n.remove());
@@ -1124,6 +1126,9 @@ export class Board {
     } = {},
   ) {
     const dicePoses = this.dicePoses();
+    const highlightMotion = !reducedMotion() && !document.hidden;
+    const highlights = highlightMotion && this.options?.orientation === orientation
+      ? captureHighlights(this.svg) : [];
     if (!playback) {
       clearTimeout(this.playbackTimer);
       this.playbackTimer = null;
@@ -1132,7 +1137,6 @@ export class Board {
     this.cancelAnimations();
     if (this.options?.orientation !== orientation || !interactive)
       this.endDrag();
-    const previousSelected = this.renderOptions?.selected;
     this.state = s;
     this.options = { orientation, interactive };
     this.renderOptions = {
@@ -1261,6 +1265,12 @@ export class Board {
         }),
       );
       g.append(patternOverlay(g.lastChild, p % 2 ? "pointB" : "pointA"));
+      if (reachable.includes(p)) {
+        const glow = g.querySelector('.point-shape').cloneNode(false);
+        glow.setAttribute('class', 'point-glow');
+        glow.setAttribute('fill', 'none');
+        g.append(glow);
+      }
       if (
         destinations.includes(p) ||
         reachable.includes(p) ||
@@ -1428,6 +1438,12 @@ export class Board {
           class: "point-hit",
         }),
       );
+      if (returnToBar) {
+        const accent = g.firstChild.cloneNode(false);
+        accent.setAttribute('class', 'point-accent');
+        accent.setAttribute('pointer-events', 'none');
+        g.append(accent);
+      }
       if (lastMove?.player === p && lastMove.origins?.bar) {
         g.setAttribute(
           "aria-label",
@@ -1523,6 +1539,13 @@ export class Board {
         }),
       );
       off.append(patternOverlay(off.firstChild, "tray"));
+      if (reachable.includes('off') && s.turn === p) {
+        const accent = off.firstChild.cloneNode(false);
+        accent.setAttribute('class', 'point-accent');
+        accent.setAttribute('fill', 'none');
+        accent.setAttribute('pointer-events', 'none');
+        off.append(accent);
+      }
       off.append(
         svg(
           "text",
@@ -1670,6 +1693,7 @@ export class Board {
     this.arrowKey = arrowKey;
     this.svg.replaceChildren(...children);
     this.animateDiceSelection(dicePoses);
+    animateHighlights(this.svg, highlights, this.animations, highlightMotion);
     if (newArrows && lastMove?.checkers?.length && !reducedMotion()) {
       for (const path of this.svg.querySelectorAll(".last-move-arrow > path:not(:last-child)")) {
         path.setAttribute("pathLength", "1000");
@@ -1679,22 +1703,6 @@ export class Board {
       }
       for (const tip of this.svg.querySelectorAll(".last-move-arrow > path:last-child")) {
         const animation = tip.animate([{opacity:0}, {opacity:1}], {duration:240, delay:520, fill:"backwards"});
-        this.animations.push(animation);
-      }
-    }
-    if (
-      selected !== null &&
-      previousSelected !== selected &&
-      !reducedMotion() &&
-      !document.hidden
-    ) {
-      for (const node of this.svg.querySelectorAll(
-        ".selected .source-ring,.destination .landing-ring",
-      )) {
-        const animation = node.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: 170,
-          easing: "ease-out",
-        });
         this.animations.push(animation);
       }
     }
