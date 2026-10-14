@@ -432,6 +432,9 @@ const server = http.createServer((req, res) => {
         (report.reviewSelection ||= []).push(
           await require("./review-selection.cjs")(browser, base, out, browserName),
         );
+        (report.reviewMotion ||= []).push(
+          await require("./review-motion.cjs")(browser, base, out, browserName),
+        );
         (report.lastMoveUX ||= []).push(
           await require("./last-move.cjs")(browser, base, out, browserName),
         );

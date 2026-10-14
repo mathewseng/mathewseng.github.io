@@ -188,20 +188,19 @@ export function decisionReview(
     const rank = previewResult?.candidates.indexOf(candidate) ?? -1;
     show(candidate?.steps || [], candidate
       ? rank === 0 ? bestPreviewLabel : rank > 0 ? `Move ${rank + 1}` : opponent ? "Opponent’s move" : "Your move"
-      : "Position", !!candidate);
+      : "Position");
   }, { container: previewControls, playedLabel: opponent ? "Opponent’s move" : "Your move" });
   strip.bestPlayedLabel = opponent ? "Best/their move" : "Best/your move";
   strip.node.classList.add("review-preview-strip");
-  const show = (steps, label, animate = false) => {
+  const show = (steps, label) => {
     const after = steps.reduce((s, step) => applyStep(s, step), source);
-    board.render(after, {
+    board.showPreview(after, {
       ...settings(),
       interactive: false,
       preview: true,
       usedDice: steps.map((s) => s.die),
       lastMove: label === "Position" ? null : moveTrace(after, source.turn, steps, source.dice),
     });
-    if (animate) board.playTurn(source, steps);
     selectPreview(steps, label);
     strip.set(previewResult, label === "Position" ? null : after);
     caption.textContent = `${label} · ${steps.length ? notation(steps, source.turn) : label === "Position" ? "original roll" : "Pass"}`;
@@ -369,7 +368,7 @@ export function decisionReview(
         ]);
       controls.replaceChildren(
         ...choices.map(([label, c]) =>
-          button(label, () => show(c?.steps || [], label, !!c), "", {
+          button(label, () => show(c?.steps || [], label), "", {
             "aria-pressed": false,
             "data-preview": c ? "move" : "position",
             ...(c ? { "data-position-key": boardKey(c.steps.reduce((s, step) => applyStep(s, step), source)) } : {}),
@@ -496,7 +495,7 @@ export function decisionReview(
               "",
               () => {
                 selected = rank;
-                show(c.steps, rank === 0 ? bestPreviewLabel : `Move ${rank + 1}`, true);
+                show(c.steps, rank === 0 ? bestPreviewLabel : `Move ${rank + 1}`);
                 redraw();
                 if (narrow.matches || innerHeight < 500) {
                   setView("board");
@@ -621,7 +620,7 @@ export function decisionReview(
       };
       paginateNotes();
       redraw();
-      show(best.steps, bestPreviewLabel, true);
+      show(best.steps, bestPreviewLabel);
       // Older saved reviews retained only one candidate. Re-evaluate the entire
       // comparison together; never mix old equities with new candidate scores.
       const preset = Object.keys(PRESETS).find(

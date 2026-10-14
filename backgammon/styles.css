@@ -3579,7 +3579,7 @@ input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-sele
   .decision-dialog .review-preview-strip:not([hidden]) { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
   .decision-dialog .study-preview-controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; }
   .decision-dialog .study-preview-controls button { min-height: 44px; padding: 8px; font-size: 20px; }
-  .decision-dialog .study-preview-controls select { min-height: 44px; font-size: 16px; min-width: 0; }
+  .decision-dialog .study-preview-controls select { min-height: 44px; font-size: 16px; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .decision-dialog .study-strip-heading { color: var(--muted); font-size: 13px; }
   .decision-dialog .study-preview-value { min-height: 36px; font-size: 14px; line-height: 1.3; color: var(--accent); font-variant-numeric: tabular-nums; }
   .decision-position:has(.review-preview-strip:not([hidden])) > .decision-choices,

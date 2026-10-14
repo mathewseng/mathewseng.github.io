@@ -7,6 +7,7 @@ import { boardColor } from "../core/appearance.mjs";
 import { routeArrow } from "./move-arrow-route.mjs";
 import { captureHighlights, animateHighlights, clearHighlightExits } from "./highlight-motion.mjs";
 import { LAST_MOVE_ENTRY_TIMING, captureLastMoveEntry, animateLastMoveEntry, captureLastMoveExit, animateLastMoveExit, clearLastMoveExits } from "./last-move-motion.mjs";
+import { capturePreview, animatePreview, clearPreview } from "./preview-motion.mjs";
 const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
@@ -225,6 +226,7 @@ function patternOverlay(node, role) {
 function checker(x, y, p, count = 1, compact = false, moved = false) {
   const g = svg("g", {
     class: "checker",
+    "data-player": p,
     "aria-hidden": "true",
     "pointer-events": "none",
   });
@@ -697,6 +699,7 @@ export class Board {
     this.animations = [];
     clearHighlightExits(this.svg);
     clearLastMoveExits(this.svg);
+    clearPreview(this.svg);
     this.svg
       .querySelectorAll(".moving-checker,.landing-contact")
       .forEach((n) => n.remove());
@@ -710,6 +713,15 @@ export class Board {
     this.endDrag();
     clearTimeout(this.playbackTimer);
     this.cancelAnimations();
+  }
+  showPreview(state, options) {
+    const key = JSON.stringify([boardKey(state), options.orientation, options.usedDice, options.lastMove]);
+    if (this.previewKey === key) return;
+    this.previewKey = key;
+    const snapshot = this.state && this.options.orientation === options.orientation &&
+      !reducedMotion() && !document.hidden ? capturePreview(this.svg) : null;
+    this.render(state, { ...options, interactive: false, preview: true });
+    if (snapshot) animatePreview(this.svg, snapshot, this.animations);
   }
   playTurn(before, steps, { automatic = false } = {}) {
     if (!steps.length) return;
