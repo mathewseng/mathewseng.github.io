@@ -1,9 +1,35 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Keep only decorative ink during a roll. Legal targets and checker faces are
-// always the new board's; no old controls, labels or game state are retained.
+// Coordinate decorative previous-move ink. Legal targets and checker faces
+// always describe the current board, independently of these transitions.
 const NS = 'http://www.w3.org/2000/svg';
+export const LAST_MOVE_ENTRY_TIMING = { duration: 760, easing: 'cubic-bezier(.4,0,.2,1)' };
 const timing = { duration: 320, easing: 'cubic-bezier(.2,.75,.3,1)',
   fill: 'forwards', id: 'last-move-exit' };
+
+const markers = board => [...board.querySelectorAll('.last-move-ghost,.last-move-ring,.off-checker.last-moved-checker')]
+  .filter(node => !node.closest('[data-last-move-exit]'));
+
+export function captureLastMoveEntry(board) {
+  return markers(board).map(node => {
+    const a = node.getAnimations().find(a => a.id === 'last-move-entry' && a.playState !== 'finished');
+    return a ? { time: a.currentTime, frames: a.effect.getKeyframes() } : null;
+  });
+}
+
+export function animateLastMoveEntry(board, previous, animations, fresh) {
+  markers(board).forEach((node, index) => {
+    const pose = fresh ? null : previous[index];
+    if (!fresh && !pose) return;
+    // Off-tray strips are real checkers, so fade only their outline. Ghosts
+    // and separate checker rings can fade as a whole, retaining their opacity.
+    const property = node.matches('.off-checker') ? 'strokeOpacity' : 'opacity';
+    const target = getComputedStyle(node)[property];
+    const animation = node.animate(pose?.frames || [{ [property]: 0 }, { [property]: target }],
+      { ...LAST_MOVE_ENTRY_TIMING, id: 'last-move-entry' });
+    if (pose) animation.currentTime = pose.time;
+    animations.push(animation);
+  });
+}
 
 export function clearLastMoveExits(board) {
   board.querySelectorAll('[data-last-move-exit]').forEach(node => node.remove());
@@ -21,7 +47,7 @@ export function captureLastMoveExit(board, starting) {
     const originals = [source, ...source.querySelectorAll('*')];
     [ink, ...ink.querySelectorAll('*')].forEach((part, index) => {
       const style = getComputedStyle(originals[index]);
-      for (const property of ['opacity', 'stroke-dasharray', 'stroke-dashoffset'])
+      for (const property of ['opacity', 'stroke-opacity', 'stroke-dasharray', 'stroke-dashoffset'])
         part.style.setProperty(property, style.getPropertyValue(property));
     });
     if (source.matches('.off-checker')) ink.setAttribute('fill', 'none');

@@ -523,6 +523,9 @@ const server = http.createServer((req, res) => {
         (report.lastMoveMotion ||= []).push(
           await require("./last-move-motion.cjs")(browser, base, out, browserName),
         );
+        (report.lastMoveEntry ||= []).push(
+          await require("./last-move-entry.cjs")(browser, base, out, browserName),
+        );
         (report.engineReuse ||= []).push(
           {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
         );

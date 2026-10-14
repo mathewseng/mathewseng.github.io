@@ -6,7 +6,7 @@ import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 import { routeArrow } from "./move-arrow-route.mjs";
 import { captureHighlights, animateHighlights, clearHighlightExits } from "./highlight-motion.mjs";
-import { captureLastMoveExit, animateLastMoveExit, clearLastMoveExits } from "./last-move-motion.mjs";
+import { LAST_MOVE_ENTRY_TIMING, captureLastMoveEntry, animateLastMoveEntry, captureLastMoveExit, animateLastMoveExit, clearLastMoveExits } from "./last-move-motion.mjs";
 const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
@@ -1131,6 +1131,7 @@ export class Board {
   ) {
     const dicePoses = this.dicePoses();
     const highlightMotion = !reducedMotion() && !document.hidden;
+    const lastMoveEntry = highlightMotion ? captureLastMoveEntry(this.svg) : [];
     const arrowPoses = highlightMotion ? [...this.svg.querySelectorAll('.last-move-arrow > path')].map(path => {
       const a = path.getAnimations().find(a => a.id === 'move-arrow-entry' && a.playState !== 'finished');
       return a ? { time: a.currentTime, frames: a.effect.getKeyframes(), timing: a.effect.getTiming() } : null;
@@ -1712,6 +1713,7 @@ export class Board {
     this.animateDiceSelection(dicePoses);
     animateHighlights(this.svg, highlights, this.animations, highlightMotion);
     if (lastMove?.checkers?.length && highlightMotion) {
+      animateLastMoveEntry(this.svg, lastMoveEntry, this.animations, newArrows);
       [...this.svg.querySelectorAll('.last-move-arrow > path')].forEach((path, index) => {
         const pose = newArrows ? null : arrowPoses[index];
         if (!newArrows && !pose) return;
@@ -1719,9 +1721,9 @@ export class Board {
         if (!tip) path.setAttribute('pathLength', '1000');
         const frames = pose?.frames || (tip ? [{ opacity: 0 }, { opacity: 1 }]
           : [{ strokeDasharray: '1000', strokeDashoffset: 1000, opacity: 0 },
-            { strokeDasharray: '1000', strokeDashoffset: 0, opacity: 1 }]);
+            { strokeDasharray: '1000', strokeDashoffset: 0, opacity: getComputedStyle(path).opacity }]);
         const timing = pose?.timing || (tip ? { duration: 240, delay: 520, fill: 'backwards' }
-          : { duration: 760, easing: 'cubic-bezier(.4,0,.2,1)' });
+          : LAST_MOVE_ENTRY_TIMING);
         const animation = path.animate(frames, { ...timing, id: 'move-arrow-entry' });
         // Disabling controls while committing the roll also redraws the board.
         // Preserve the entrance until the rolled state starts the exit fade.

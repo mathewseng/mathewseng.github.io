@@ -8,7 +8,7 @@
     "precompute:merge": "node ofc/fantasyland-ev/scripts/merge-precomputed-shards.cjs",
     "precompute:build": "node ofc/fantasyland-ev/scripts/build-precomputed.cjs",
     "test:backgammon:browser": "node backgammon/tests/browser.cjs",
-    "test:backgammon:play": "BG_MODULES=control-polish,advanced-ui,touch-advanced,dice-switch-motion,highlight-motion,last-move-motion,adaptive-play,prethink-ui,prethink-future node backgammon/tests/browser.cjs",
+    "test:backgammon:play": "BG_MODULES=control-polish,advanced-ui,touch-advanced,dice-switch-motion,highlight-motion,last-move-motion,last-move-entry,adaptive-play,prethink-ui,prethink-future node backgammon/tests/browser.cjs",
     "test:backgammon:latency": "BG_MODULES=play-latency node backgammon/tests/browser.cjs",
     "test:backgammon:updates": "BG_MODULES=updates BG_BROWSERS=chromium,firefox,webkit node backgammon/tests/browser.cjs",
     "test:backgammon:live": "node backgammon/tests/live-network.cjs"
