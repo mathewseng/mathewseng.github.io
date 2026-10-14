@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { keycapGraphic } from "./keycap.mjs";
-import { playerName, distance, applyStep } from "../core/rules.mjs";
+import { playerName, distance, applyStep, boardKey } from "../core/rules.mjs";
 import { reducedMotion, checkerFlight } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 import { routeArrow } from "./move-arrow-route.mjs";
 import { captureHighlights, animateHighlights, clearHighlightExits } from "./highlight-motion.mjs";
+import { captureLastMoveExit, animateLastMoveExit, clearLastMoveExits } from "./last-move-motion.mjs";
 const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
@@ -272,6 +273,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
         r: CHECKER_RADIUS + 2,
         fill: "none",
         stroke: boardColor("surface"),
+        class: "last-move-ring",
         "stroke-width": 4,
         opacity: 0.7,
       }),
@@ -283,6 +285,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
         r: CHECKER_RADIUS + 2,
         fill: "none",
         stroke: boardColor("selection"),
+        class: "last-move-ring",
         "stroke-width": 2.5,
         pathLength: 120,
         "stroke-dasharray": "4 6",
@@ -693,6 +696,7 @@ export class Board {
     this.animations?.forEach((a) => a.cancel());
     this.animations = [];
     clearHighlightExits(this.svg);
+    clearLastMoveExits(this.svg);
     this.svg
       .querySelectorAll(".moving-checker,.landing-contact")
       .forEach((n) => n.remove());
@@ -1127,8 +1131,20 @@ export class Board {
   ) {
     const dicePoses = this.dicePoses();
     const highlightMotion = !reducedMotion() && !document.hidden;
+    const arrowPoses = highlightMotion ? [...this.svg.querySelectorAll('.last-move-arrow > path')].map(path => {
+      const a = path.getAnimations().find(a => a.id === 'move-arrow-entry' && a.playState !== 'finished');
+      return a ? { time: a.currentTime, frames: a.effect.getKeyframes(), timing: a.effect.getTiming() } : null;
+    }) : [];
     const highlights = highlightMotion && this.options?.orientation === orientation
       ? captureHighlights(this.svg) : [];
+    const before = this.state;
+    const sameTurn = before && before.turn === s.turn && before.gameNumber === s.gameNumber;
+    const rolling = sameTurn && before.phase === "roll" && s.sequence === before.sequence + 1
+      && this.renderOptions?.lastMove && boardKey(before) === boardKey(s);
+    const lastMoveExit = highlightMotion && this.options?.orientation === orientation
+      && !preview && !editor && !playback && !lastMove && s.phase === "move"
+      && sameTurn && (rolling || before.sequence === s.sequence)
+      ? captureLastMoveExit(this.svg, rolling) : [];
     if (!playback) {
       clearTimeout(this.playbackTimer);
       this.playbackTimer = null;
@@ -1692,19 +1708,26 @@ export class Board {
     const newArrows = this.arrowKey !== arrowKey;
     this.arrowKey = arrowKey;
     this.svg.replaceChildren(...children);
+    animateLastMoveExit(this.svg, lastMoveExit, this.animations);
     this.animateDiceSelection(dicePoses);
     animateHighlights(this.svg, highlights, this.animations, highlightMotion);
-    if (newArrows && lastMove?.checkers?.length && !reducedMotion()) {
-      for (const path of this.svg.querySelectorAll(".last-move-arrow > path:not(:last-child)")) {
-        path.setAttribute("pathLength", "1000");
-        const animation = path.animate([{strokeDasharray: "1000", strokeDashoffset: 1000, opacity: 0},
-          {strokeDasharray: "1000", strokeDashoffset: 0, opacity: 1}], {duration: 760, easing: "cubic-bezier(.4,0,.2,1)"});
+    if (lastMove?.checkers?.length && highlightMotion) {
+      [...this.svg.querySelectorAll('.last-move-arrow > path')].forEach((path, index) => {
+        const pose = newArrows ? null : arrowPoses[index];
+        if (!newArrows && !pose) return;
+        const tip = path.matches(':last-child');
+        if (!tip) path.setAttribute('pathLength', '1000');
+        const frames = pose?.frames || (tip ? [{ opacity: 0 }, { opacity: 1 }]
+          : [{ strokeDasharray: '1000', strokeDashoffset: 1000, opacity: 0 },
+            { strokeDasharray: '1000', strokeDashoffset: 0, opacity: 1 }]);
+        const timing = pose?.timing || (tip ? { duration: 240, delay: 520, fill: 'backwards' }
+          : { duration: 760, easing: 'cubic-bezier(.4,0,.2,1)' });
+        const animation = path.animate(frames, { ...timing, id: 'move-arrow-entry' });
+        // Disabling controls while committing the roll also redraws the board.
+        // Preserve the entrance until the rolled state starts the exit fade.
+        if (pose) animation.currentTime = pose.time;
         this.animations.push(animation);
-      }
-      for (const tip of this.svg.querySelectorAll(".last-move-arrow > path:last-child")) {
-        const animation = tip.animate([{opacity:0}, {opacity:1}], {duration:240, delay:520, fill:"backwards"});
-        this.animations.push(animation);
-      }
+      });
     }
     this.svg.classList.toggle("is-preview", preview);
     this.svg.classList.toggle("is-editor", editor && interactive);

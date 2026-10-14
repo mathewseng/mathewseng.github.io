@@ -4,6 +4,7 @@ module.exports = async function lastMoveUX(browser, base, out, browserName) {
   const context = await browser.newContext({
     viewport: { width: 1366, height: 768 },
     serviceWorkers: "block",
+    reducedMotion: "reduce",
   });
   const page = await context.newPage(),
     screenshots = [],

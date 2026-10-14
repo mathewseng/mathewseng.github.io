@@ -520,6 +520,9 @@ const server = http.createServer((req, res) => {
         (report.highlightMotion ||= []).push(
           await require("./highlight-motion.cjs")(browser, base, out, browserName),
         );
+        (report.lastMoveMotion ||= []).push(
+          await require("./last-move-motion.cjs")(browser, base, out, browserName),
+        );
         (report.engineReuse ||= []).push(
           {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
         );
