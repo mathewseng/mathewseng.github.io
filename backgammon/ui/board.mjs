@@ -553,6 +553,7 @@ export class Board {
   ) {
     const group = svg("g", {
       class: `board-dice${historical ? " last-roll" : ""}`,
+      "data-player": s.turn,
       "aria-label": historical
         ? `${playerName(s.turn)} last roll: ${s.dice.join(" and ")}`
         : "Rolled dice",
@@ -982,29 +983,46 @@ export class Board {
   }
   dicePoses() {
     // Snapshot before render cancels animations/removes SVG children. This also
-    // captures an interrupted lift, so repeated S presses reverse without a jump.
+    // captures interrupted lifts/fades, so switching and undo never jump.
     if (reducedMotion() || document.hidden) return [];
     return [...this.svg.querySelectorAll('.board-die')].map(die => {
-      if (die.getAttribute('role') !== 'button') return null;
       const face = die.querySelector('.board-die-face');
+      const group = die.closest('.board-dice');
       const style = getComputedStyle(face);
       return { value: die.dataset.die, location: die.getAttribute('transform'),
-        transform: style.transform, filter: style.filter };
+        player: group.dataset.player, historical: group.classList.contains('last-roll'),
+        transform: style.transform, filter: style.filter,
+        opacities: [...face.children].filter(n => !n.classList.contains('die-status-mark'))
+          .map(n => getComputedStyle(n).opacity) };
     });
   }
   animateDiceSelection(poses) {
     if (!poses.length || reducedMotion() || document.hidden) return;
     this.svg.querySelectorAll('.board-die').forEach((die, index) => {
       const before = poses[index];
-      if (!before || die.getAttribute('role') !== 'button' ||
+      const group = die.closest('.board-dice');
+      // A used die changes from a button to an image but keeps its visual slot.
+      // Match the roll's player and layout, never a previous player's last roll.
+      if (!before || before.player !== group.dataset.player ||
+          before.historical !== group.classList.contains('last-roll') ||
           before.value !== die.dataset.die || before.location !== die.getAttribute('transform')) return;
       const face = die.querySelector('.board-die-face'), style = getComputedStyle(face);
       const after = { transform: style.transform, filter: style.filter };
-      if (before.transform === after.transform && before.filter === after.filter) return;
-      const animation = face.animate([
-        { transform: before.transform, filter: before.filter }, after,
-      ], { id: 'dice-selection', duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' });
-      this.animations.push(animation);
+      const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' };
+      if (before.transform !== after.transform || before.filter !== after.filter) {
+        this.animations.push(face.animate([
+          { transform: before.transform, filter: before.filter }, after,
+        ], { ...timing, id: 'dice-selection' }));
+      }
+      // Dim the face, pattern and pips together; keep used/forced/blocked marks
+      // legible. Capture each part so undo can reverse an in-progress fade.
+      [...face.children].filter(n => !n.classList.contains('die-status-mark')).forEach((part, i) => {
+        const opacity = getComputedStyle(part).opacity;
+        if (before.opacities[i] === undefined || before.opacities[i] === opacity) return;
+        this.animations.push(part.animate([
+          { opacity: before.opacities[i] }, { opacity },
+        ], { ...timing, id: 'dice-opacity' }));
+      });
     });
   }
   animateCube(before) {
