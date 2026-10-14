@@ -514,6 +514,9 @@ const server = http.createServer((req, res) => {
         (report.backgroundFocus ||= []).push(
           await require("./background-focus.cjs")(browser, base, out, browserName),
         );
+        (report.diceSwitchMotion ||= []).push(
+          await require("./dice-switch-motion.cjs")(browser, base, out, browserName),
+        );
         (report.engineReuse ||= []).push(
           {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
         );

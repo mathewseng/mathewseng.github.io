@@ -42,6 +42,13 @@ module.exports = async function touchAdvanced(browser, base, out, name) {
     await page.keyboard.press('t');
     await page.waitForSelector('.board-cube[role="button"]',{state:'hidden'});
     // Anywhere on the board rolls, including a checker under the pointer.
+    // Keep a choiceful roll: a random forced turn can finish before #confirm is
+    // observable, which does not indicate a failed roll or broken touch input.
+    await page.evaluate(() => {
+      const random = crypto.getRandomValues.bind(crypto), dice = [3, 0];
+      crypto.getRandomValues = a => a instanceof Uint8Array && a.length === 1 && dice.length
+        ? ((a[0] = dice.shift()), a) : random(a);
+    });
     await page.keyboard.press('c');
     await page.waitForSelector('#confirm');
     await page.locator('#all-controls').tap();

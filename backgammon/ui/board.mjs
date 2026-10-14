@@ -980,6 +980,33 @@ export class Board {
       this.animations.push(animation);
     });
   }
+  dicePoses() {
+    // Snapshot before render cancels animations/removes SVG children. This also
+    // captures an interrupted lift, so repeated S presses reverse without a jump.
+    if (reducedMotion() || document.hidden) return [];
+    return [...this.svg.querySelectorAll('.board-die')].map(die => {
+      if (die.getAttribute('role') !== 'button') return null;
+      const face = die.querySelector('.board-die-face');
+      const style = getComputedStyle(face);
+      return { value: die.dataset.die, location: die.getAttribute('transform'),
+        transform: style.transform, filter: style.filter };
+    });
+  }
+  animateDiceSelection(poses) {
+    if (!poses.length || reducedMotion() || document.hidden) return;
+    this.svg.querySelectorAll('.board-die').forEach((die, index) => {
+      const before = poses[index];
+      if (!before || die.getAttribute('role') !== 'button' ||
+          before.value !== die.dataset.die || before.location !== die.getAttribute('transform')) return;
+      const face = die.querySelector('.board-die-face'), style = getComputedStyle(face);
+      const after = { transform: style.transform, filter: style.filter };
+      if (before.transform === after.transform && before.filter === after.filter) return;
+      const animation = face.animate([
+        { transform: before.transform, filter: before.filter }, after,
+      ], { id: 'dice-selection', duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' });
+      this.animations.push(animation);
+    });
+  }
   animateCube(before) {
     sound.play("cube");
     if (reducedMotion() || document.hidden) return;
@@ -1031,6 +1058,7 @@ export class Board {
       lastMove = null,
     } = {},
   ) {
+    const dicePoses = this.dicePoses();
     if (!playback) {
       clearTimeout(this.playbackTimer);
       this.playbackTimer = null;
@@ -1576,6 +1604,7 @@ export class Board {
     const newArrows = this.arrowKey !== arrowKey;
     this.arrowKey = arrowKey;
     this.svg.replaceChildren(...children);
+    this.animateDiceSelection(dicePoses);
     if (newArrows && lastMove?.checkers?.length && !reducedMotion()) {
       for (const path of this.svg.querySelectorAll(".last-move-arrow > path:not(:last-child)")) {
         path.setAttribute("pathLength", "1000");
