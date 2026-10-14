@@ -1604,10 +1604,14 @@ details .stack {
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
-.board-die-face,
 .board-cube {
   transform-box: fill-box;
   transform-origin: center;
+}
+.board-die-face {
+  /* Status marks extend beyond the face; never let them shift its lift origin. */
+  transform-box: view-box;
+  transform-origin: 0 0;
 }
 .dice[hidden] {
   display: none;
@@ -3767,8 +3771,27 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .board-die.blocked .board-die-face > :not(.die-status-mark),
 .board-die.consumed .board-die-face > :not(.die-status-mark) { opacity: .38; }
 .board-die.consumed { opacity: 1; }
-.board-die.forced .die-status-mark { stroke: #efb365; }
-.board-die.blocked .die-status-mark { stroke: #ff8f92; }
+.board-die.forced .die-check { stroke: var(--forced-die, #efb365); }
+.dice-switch-surface { transition: fill 160ms ease, stroke 160ms ease; }
+.board-cube[role="button"] { transition: filter 180ms ease; }
+:is(.board-undo, .board-actions, .action-help) button {
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+:is(.board-undo, .board-actions, .action-help) button kbd.keycap {
+  transition: transform 140ms cubic-bezier(.2, .75, .3, 1), opacity 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dice-switch:hover .dice-switch-surface { fill: var(--surface); stroke: var(--accent); }
+  .board-cube[role="button"]:hover { filter: drop-shadow(0 3px 3px #0005); }
+}
+.dice-switch:active .dice-switch-surface { fill: var(--line); stroke: var(--accent); }
+.board-cube[role="button"]:active { filter: drop-shadow(0 1px 1px #0005); }
+:is(.board-undo, .board-actions, .action-help) button:active:not(:disabled) {
+  box-shadow: inset 0 2px 4px #0003;
+}
+:is(.board-undo, .board-actions, .action-help) button:active:not(:disabled) kbd.keycap {
+  transform: translateY(1px); opacity: 1;
+}
 .point-shortcut { opacity: .85; font-family: ui-monospace, monospace; }
 .play-page.live-table .action-main:has(#actions:empty) #actions { display: none; }
 .play-page.live-table .help-cluster { flex: 1; }

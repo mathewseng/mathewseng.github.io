@@ -608,7 +608,11 @@ export class Board {
         stroke: boardColor(`dieBorder${s.turn}`),
         "stroke-width": 2,
       });
-      const body = svg("g", { class: "board-die-face" });
+      // Keep the touch target still while the visual face lifts/settles, within
+      // the center lane so its padding never steals a point-space tap.
+      die.append(svg("rect", { class: "board-die-hit", x: -34, y: -36,
+        width: 68, height: 72, fill: "transparent", "aria-hidden": "true" }));
+      const body = svg("g", { class: "board-die-face", "pointer-events": "none" });
       body.append(face, patternOverlay(face, `die${s.turn}`));
       for (const pip of pips[value])
         body.append(
@@ -620,20 +624,26 @@ export class Board {
             "pointer-events": "none",
           }),
         );
-      if (consumed)
-        body.append(
+      // Both marks remain in the SVG so reversing a draft can fade them away
+      // instead of removing them mid-animation. Hidden marks never intercept input.
+      body.append(
           svg("path", {
             d: "M21 28l6 6 13-17",
             stroke: isForced ? "var(--forced-die, #efb365)" : boardColor("selection"),
             fill: "none",
-            class: "die-status-mark",
+            class: "die-status-mark die-check",
+            "data-die-mark": "check", "aria-hidden": "true",
+            opacity: consumed ? 1 : 0, pathLength: 100,
+            "stroke-dasharray": 100, "stroke-dashoffset": consumed ? 0 : 100,
             "stroke-width": 5,
             "stroke-linecap": "round",
+            "stroke-linejoin": "round",
             "pointer-events": "none",
           }),
         );
-      if (blocked) body.append(svg("path", { d: "M-13 -13L13 13 M13 -13L-13 13",
-        class: "die-status-mark", stroke: "var(--loss-red, #ff8f92)", "stroke-width": 5,
+      body.append(svg("path", { d: "M-13 -13L13 13 M13 -13L-13 13",
+        class: "die-status-mark die-blocked", "data-die-mark": "blocked", "aria-hidden": "true",
+        opacity: blocked ? 1 : 0, stroke: "var(--loss-red, #ff8f92)", "stroke-width": 5,
         "stroke-linecap": "round", fill: "none", "pointer-events": "none" }));
       die.append(body);
       group.append(die);
@@ -641,8 +651,13 @@ export class Board {
     if (interactive && chooseDie && advanced && !historical) {
       const swap = svg("g", { class: "dice-switch", role: "button", tabindex: 0,
         "aria-label": usedDice.length ? "Undo draft step" : "Switch selected die", transform: `translate(${center} ${values.length === 2 ? 330 : 375})` });
-      swap.append(svg("rect", { x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }),
-        svg("path", {d:"M-10 -5H10l-4 -4M10 5H-10l4 4", fill:"none", stroke:"var(--text)", "stroke-width":2, "stroke-linecap":"round", "stroke-linejoin":"round"}));
+      swap.append(svg("rect", { class: "dice-switch-surface", x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }));
+      for (const [icon, d, visible] of [
+        ["swap", "M-10 -5H10l-4 -4M10 5H-10l4 4", !usedDice.length],
+        ["undo", "M-10 -3H2a7 7 0 0 1 0 14H-4M-4 -9l-6 6 6 6", !!usedDice.length],
+      ]) swap.append(svg("path", { "data-dice-icon": icon, d, opacity: visible ? 1 : 0,
+        fill: "none", stroke: "var(--text)", "stroke-width": 2,
+        "stroke-linecap": "round", "stroke-linejoin": "round", "pointer-events": "none", "aria-hidden": "true" }));
       const key = shortcuts?.swap?.[0];
       if (key) swap.append(keycapGraphic(key, { x: 0, y: 25, height: 18, maxWidth: 44 }));
       group.append(swap);
@@ -984,22 +999,31 @@ export class Board {
   dicePoses() {
     // Snapshot before render cancels animations/removes SVG children. This also
     // captures interrupted lifts/fades, so switching and undo never jump.
-    if (reducedMotion() || document.hidden) return [];
-    return [...this.svg.querySelectorAll('.board-die')].map(die => {
+    if (reducedMotion() || document.hidden) return null;
+    const dice = [...this.svg.querySelectorAll('.board-die')].map(die => {
       const face = die.querySelector('.board-die-face');
       const group = die.closest('.board-dice');
       const style = getComputedStyle(face);
       return { value: die.dataset.die, location: die.getAttribute('transform'),
         player: group.dataset.player, historical: group.classList.contains('last-roll'),
         transform: style.transform, filter: style.filter,
+        marks: Object.fromEntries([...face.querySelectorAll('[data-die-mark]')].map(mark => {
+          const style = getComputedStyle(mark);
+          return [mark.dataset.dieMark, { opacity: style.opacity, strokeDashoffset: style.strokeDashoffset, stroke: style.stroke }];
+        })),
         opacities: [...face.children].filter(n => !n.classList.contains('die-status-mark'))
           .map(n => getComputedStyle(n).opacity) };
     });
+    const control = this.svg.querySelector('.dice-switch');
+    return { dice, control: control && { location: control.getAttribute('transform'),
+      player: control.closest('.board-dice').dataset.player,
+      opacities: [...control.querySelectorAll('[data-dice-icon]')].map(n => getComputedStyle(n).opacity) } };
   }
   animateDiceSelection(poses) {
-    if (!poses.length || reducedMotion() || document.hidden) return;
+    if (!poses?.dice.length || reducedMotion() || document.hidden) return;
+    const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' };
     this.svg.querySelectorAll('.board-die').forEach((die, index) => {
-      const before = poses[index];
+      const before = poses.dice[index];
       const group = die.closest('.board-dice');
       // A used die changes from a button to an image but keeps its visual slot.
       // Match the roll's player and layout, never a previous player's last roll.
@@ -1008,7 +1032,6 @@ export class Board {
           before.value !== die.dataset.die || before.location !== die.getAttribute('transform')) return;
       const face = die.querySelector('.board-die-face'), style = getComputedStyle(face);
       const after = { transform: style.transform, filter: style.filter };
-      const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' };
       if (before.transform !== after.transform || before.filter !== after.filter) {
         this.animations.push(face.animate([
           { transform: before.transform, filter: before.filter }, after,
@@ -1023,7 +1046,31 @@ export class Board {
           { opacity: before.opacities[i] }, { opacity },
         ], { ...timing, id: 'dice-opacity' }));
       });
+      face.querySelectorAll('[data-die-mark]').forEach(mark => {
+        const previous = before.marks[mark.dataset.dieMark], style = getComputedStyle(mark);
+        if (!previous) return;
+        // An invisible mark has no visible color to preserve: a forced check
+        // should draw orange from its very first visible frame.
+        const from = { ...previous, stroke: previous.opacity === '0' ? style.stroke : previous.stroke };
+        // Draw on use; on undo fade the current stroke without erasing it backwards.
+        // Capturing the visible dash/opacity also makes rapid undo/redo continuous.
+        const to = { opacity: style.opacity,
+          strokeDashoffset: style.opacity === '0' ? from.strokeDashoffset : style.strokeDashoffset,
+          stroke: style.opacity === '0' ? from.stroke : style.stroke };
+        if (from.opacity === to.opacity && from.strokeDashoffset === to.strokeDashoffset && from.stroke === to.stroke) return;
+        this.animations.push(mark.animate([from, to], { ...timing, id: 'dice-mark' }));
+      });
     });
+    const control = this.svg.querySelector('.dice-switch'), before = poses.control;
+    if (control && before && before.location === control.getAttribute('transform') &&
+        before.player === control.closest('.board-dice').dataset.player) {
+      control.querySelectorAll('[data-dice-icon]').forEach((icon, i) => {
+        const opacity = getComputedStyle(icon).opacity;
+        if (before.opacities[i] === opacity) return;
+        this.animations.push(icon.animate([{ opacity: before.opacities[i] }, { opacity }],
+          { ...timing, id: 'dice-control' }));
+      });
+    }
   }
   animateCube(before) {
     sound.play("cube");

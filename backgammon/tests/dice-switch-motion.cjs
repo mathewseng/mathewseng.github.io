@@ -20,16 +20,29 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         opacities: parts.map(n => Number(getComputedStyle(n).opacity)),
         fade: fade ? { duration: fade.effect.getTiming().duration,
           frames: fade.effect.getKeyframes().map(f => Number(f.opacity)) } : null,
+        marks: Object.fromEntries([...face.querySelectorAll('[data-die-mark]')].map(mark => {
+          const style = getComputedStyle(mark), animation = mark.getAnimations().find(a => a.id === "dice-mark");
+          return [mark.dataset.dieMark, { opacity: Number(style.opacity), offset: parseFloat(style.strokeDashoffset),
+            stroke: style.stroke, motion: animation ? animation.effect.getKeyframes().map(f => ({
+              opacity: Number(f.opacity), offset: parseFloat(f.strokeDashoffset) })) : null }];
+        })),
         selected: face.parentElement.classList.contains("preferred"),
         motion: motion ? { duration: motion.effect.getTiming().duration,
           frames: motion.effect.getKeyframes().map(f => ({ transform: f.transform, filter: f.filter })) } : null };
     }));
     const seek = time => page.evaluate(time => {
-      document.getAnimations().filter(a => ["dice-selection", "dice-opacity"].includes(a.id)).forEach(a => { a.currentTime = time; });
+      document.getAnimations().filter(a => ["dice-selection", "dice-opacity", "dice-mark", "dice-control"].includes(a.id)).forEach(a => { a.currentTime = time; });
     }, time);
     const finish = () => page.evaluate(() => {
-      document.getAnimations().filter(a => ["dice-selection", "dice-opacity"].includes(a.id)).forEach(a => a.finish());
+      document.getAnimations().filter(a => ["dice-selection", "dice-opacity", "dice-mark", "dice-control"].includes(a.id)).forEach(a => a.finish());
     });
+    const control = () => page.locator("#board .dice-switch").evaluate(node => ({
+      label: node.getAttribute("aria-label"),
+      icons: Object.fromEntries([...node.querySelectorAll('[data-dice-icon]')].map(n => [n.dataset.diceIcon, Number(getComputedStyle(n).opacity)])),
+    }));
+    const hitAreas = () => page.locator("#board .board-die-hit").evaluateAll(nodes => nodes.map(n => {
+      const r = n.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
+    }));
     const activate = async selector => touch ? page.locator(selector).tap() : page.locator(selector).click();
     const loadRoll = async dice => {
       await page.evaluate(async dice => {
@@ -44,18 +57,21 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       await page.reload(); await ready(); await activate("#resume-match");
     };
     try {
-      // Pause only the real selection animation for deterministic frame checks.
+      // Pause only the real dice animations for deterministic frame checks.
       // Keyboard, touch/click handlers, board rendering and WAAPI are unmodified.
       await page.addInitScript(() => {
         const animate = Element.prototype.animate;
         Element.prototype.animate = function(frames, options) {
           const result = animate.call(this, frames, options);
-          if (["dice-selection", "dice-opacity"].includes(options?.id)) { result.pause(); result.currentTime = 0; }
+          if (["dice-selection", "dice-opacity", "dice-mark", "dice-control"].includes(options?.id)) { result.pause(); result.currentTime = 0; }
           return result;
         };
       });
       await page.goto(base + "/backgammon/play/"); await ready();
       await loadRoll([4, 1]);
+      const originalHits = await hitAreas();
+      assert.equal((await control()).label, "Switch selected die");
+      assert.ok((await snapshot()).every(d => d.marks.check.opacity === 0 && d.marks.blocked.opacity === 0));
       assert.deepEqual((await snapshot()).map(d => d.motion), [null, null], "initial dice do not replay a selection transition");
       await page.keyboard.press("s");
       let dice = await snapshot();
@@ -90,6 +106,11 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       assert.equal(dice[0].fade.duration, 280, "fade and lift have the same duration");
       await seek(100);
       const using = await snapshot();
+      assert.deepEqual(await hitAreas(), originalHits, "lift/consume do not move the tap targets");
+      assert.equal((await control()).label, "Undo draft step");
+      assert.ok((await control()).icons.undo > 0 && (await control()).icons.undo < 1, "control crossfades to its undo action");
+      assert.ok(using[0].marks.check.opacity > 0 && using[0].marks.check.opacity < 1, "check fades in");
+      assert.ok(using[0].marks.check.offset > 0 && using[0].marks.check.offset < 100, "check draws along the stroke");
       assert.ok(using[0].scale > 1 && using[0].scale < 1.08);
       assert.ok(using[1].scale > 1 && using[1].scale < 1.08);
       assert.ok(using[0].opacities.every(o => o > .38 && o < 1), "face, pattern and pips fade together");
@@ -100,21 +121,33 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       dice = await snapshot();
       assert.deepEqual(dice.map(d => d.motion.frames[0].transform), using.map(d => d.transform), "undo reverses the interrupted lift");
       assert.ok(Math.abs(dice[0].fade.frames[0] - using[0].opacities[0]) < 1e-6, "undo reverses the interrupted fade");
+      assert.ok(Math.abs(dice[0].marks.check.motion[0].opacity - using[0].marks.check.opacity) < 1e-6, "undo keeps the visible check opacity");
+      assert.ok(Math.abs(dice[0].marks.check.motion[0].offset - using[0].marks.check.offset) < 1e-3, "undo keeps the visible stroke");
+      assert.equal(dice[0].marks.check.motion[1].offset, dice[0].marks.check.motion[0].offset, "undo fades, rather than undrawing the check");
       await finish();
+      assert.equal((await snapshot())[0].marks.check.opacity, 0);
+      assert.deepEqual((await control()).icons, { swap: 1, undo: 0 });
       assert.ok((await snapshot()).every(d => d.opacities.every(o => o === 1)));
       await page.keyboard.press("1"); await finish();
       await activate("#undo");
       assert.deepEqual((await snapshot())[0].fade.frames, [.38, 1], "Undo button restores the dimmed die");
       await seek(100);
       await page.screenshot({ path: path.join(out, `${name}-dice-undo-mid-${touch ? "phone" : "desktop"}.png`) });
+      const undoing = (await snapshot())[0].marks.check;
+      assert.ok(undoing.opacity > 0 && undoing.opacity < 1, "completed check fades away during undo");
+      assert.equal(undoing.offset, 0, "completed stroke remains intact while fading");
+      await page.keyboard.press("1");
+      const replaying = (await snapshot())[0].marks.check;
+      assert.ok(Math.abs(replaying.motion[0].opacity - undoing.opacity) < 1e-6, "rapid replay resumes at the visible faded mark");
       await finish();
-      await page.keyboard.press("1"); await finish();
+      assert.equal((await snapshot())[0].marks.check.opacity, 1);
       await page.keyboard.press("u"); // Remaining 1: 6/5 (13/12 is blocked).
       assert.equal(await page.locator(".board-die.consumed").count(), 2);
       assert.deepEqual((await snapshot())[1].fade.frames, [1, .38], "last die fades even without a next die");
       await finish();
       await activate("#reset-draft");
       assert.ok((await snapshot()).every(d => d.fade?.frames[0] === .38 && d.fade.frames[1] === 1), "Reset restores both dice together");
+      assert.ok((await snapshot()).every(d => d.marks.check.motion?.[1].opacity === 0), "Reset fades both check marks");
       await finish();
       await loadRoll([3, 3]);
       for (let i = 0; i < 4; i++) {
@@ -123,6 +156,7 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         assert.equal(await page.locator(".board-die.consumed").count(), i + 1);
         assert.deepEqual(dice[i].fade.frames, [1, .38], `doubles slot ${i} fades`);
         assert.equal(dice[i].motion?.duration, 280, `doubles slot ${i} lowers`);
+        assert.deepEqual(dice[i].marks.check.motion, [{ opacity: 0, offset: 100 }, { opacity: 1, offset: 0 }], `doubles slot ${i} draws its check`);
         if (i < 3) assert.equal(dice[i + 1].motion?.duration, 280, "next doubles slot lifts");
         await finish();
       }
@@ -131,13 +165,48 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       await finish();
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.keyboard.press("1");
-      assert.ok((await snapshot()).every(d => !d.motion && !d.fade), "reduced motion consumes immediately");
+      assert.ok((await snapshot()).every(d => !d.motion && !d.fade && !d.marks.check.motion && !d.marks.blocked.motion), "reduced motion consumes immediately");
       await page.keyboard.press("z");
-      assert.ok((await snapshot()).every(d => !d.motion && !d.fade), "reduced motion undoes immediately");
+      assert.ok((await snapshot()).every(d => !d.motion && !d.fade && !d.marks.check.motion && !d.marks.blocked.motion), "reduced motion undoes immediately");
+      assert.equal((await snapshot())[3].marks.check.opacity, 0, "reduced-motion undo hides the mark immediately");
       assert.equal(await page.evaluate(() => visualViewport.scale), 1);
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      // Status-only renderer coverage supplements the real Play interactions above.
+      const statuses = await page.evaluate(async () => {
+        const { Board } = await import('/backgammon/ui/board.mjs');
+        const { initialState } = await import('/backgammon/core/rules.mjs');
+        const host = document.createElement('div'); document.body.append(host);
+        const board = new Board(host), state = initialState({ phase: 'move', dice: [6, 1] });
+        const options = { chooseDie() {}, advanced: true, preferredDie: 6 };
+        const read = selector => {
+          const mark = host.querySelector(selector), style = getComputedStyle(mark);
+          return { opacity: Number(style.opacity), stroke: style.stroke,
+            animated: mark.getAnimations().some(a => a.id === 'dice-mark') };
+        };
+        board.render(state, options);
+        board.render(state, { ...options, usedDice: [6], forcedDice: [6], playableDice: [] });
+        board.animations.forEach(a => { a.currentTime = 100; });
+        const forced = read('.die-check'), blocked = read('.board-die.blocked .die-blocked');
+        board.animations.forEach(a => a.finish());
+        board.render(state, options);
+        board.animations.forEach(a => { a.currentTime = 100; });
+        const restoring = [...host.querySelectorAll('.die-status-mark')].map(n => Number(getComputedStyle(n).opacity));
+        // A newly enabled reduced-motion preference settles every active mark.
+        document.documentElement.dataset.motion = 'reduce'; dispatchEvent(new Event('bg-motion'));
+        const settled = [...host.querySelectorAll('.die-status-mark')].every(n => getComputedStyle(n).opacity === '0');
+        const animations = board.animations.length;
+        board.destroy(); host.remove(); document.documentElement.dataset.motion = 'system';
+        return { forced, blocked, restoring, settled, animations };
+      });
+      assert.ok(statuses.forced.animated && statuses.forced.opacity > 0 && statuses.forced.opacity < 1);
+      assert.equal(statuses.forced.stroke, 'rgb(239, 179, 101)', 'forced check retains its orange meaning');
+      assert.ok(statuses.blocked.animated && statuses.blocked.opacity > 0 && statuses.blocked.opacity < 1, 'blocked X fades in');
+      assert.equal(statuses.blocked.stroke, 'rgb(255, 143, 146)', 'blocked X stays red');
+      assert.ok(statuses.restoring.filter(o => o > 0 && o < 1).length === 2, 'check and blocked mark fade away together');
+      assert.ok(statuses.settled && statuses.animations === 0, 'motion preference changes cancel animations and settle the current state');
       assert.deepEqual(errors, []);
       report.push({ touch, simultaneous: true, interruption: true, directDie: true, switchControl: true,
-        use: true, undo: true, reset: true, doubles: true, reducedMotion: true });
+        use: true, undo: true, reset: true, doubles: true, checkDrawing: true, markReversal: true, switchIcon: true, stableTargets: true, reducedMotion: true });
     } finally { await context.close(); }
   }
   return report;
