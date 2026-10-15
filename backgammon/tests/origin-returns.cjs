@@ -167,7 +167,8 @@ module.exports = async function originReturns(browser, base, out, name) {
           await page.reload();
           await page.locator("#confirm").waitFor();
           await wait(revised);
-          await page.locator("#reset-draft").click();
+          await page.evaluate(() => document.activeElement?.blur());
+          await page.keyboard.press("x");
           await wait([]);
           await load(turn, orientation);
           await tap(p(7), true); // Select the actual moved checker at 8.
@@ -191,7 +192,8 @@ module.exports = async function originReturns(browser, base, out, name) {
           await load(turn, orientation);
           await tap(p(10));
           await wait(original.slice(0, 1)); // Intermediate stop is a teal dice revision.
-          await page.locator("#undo").click();
+          await page.evaluate(() => document.activeElement?.blur());
+          await page.keyboard.press("z");
           await wait([]); // Stepwise Undo is still available.
           if (!touch) {
             await load(turn, orientation);

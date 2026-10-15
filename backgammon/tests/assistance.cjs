@@ -122,9 +122,11 @@ module.exports = async function assistanceUX(
     await waitSaved((s) => s?.draft.length === 2);
     assert.deepEqual((await saved()).game, partial.game);
     assert.ok(await page.locator("#confirm").isEnabled());
-    await page.locator("#undo").click();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("z");
     assert.equal((await saved()).draft.length, 1);
-    await page.locator("#reset-draft").click();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("x");
     await waitSaved((s) => s?.draft.length === 0);
     cases.push(
       "use best move is reversible draft, never an automatic submission",
@@ -544,7 +546,8 @@ module.exports = async function assistanceUX(
         await edge.locator("#use-hint").waitFor({ timeout: 60000 });
         await edge.locator("#use-hint").click();
         if (scenario === "warning") {
-          await edge.locator("#reset-draft").click();
+          await edge.evaluate(() => document.activeElement?.blur());
+          await edge.keyboard.press("x");
           await edge.locator("#panel-toggle").click();
           for (
             let i = 0;

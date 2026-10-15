@@ -3775,10 +3775,10 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .board-die.forced .die-check { stroke: var(--forced-die, #efb365); }
 .dice-switch-surface { transition: fill 160ms ease, stroke 160ms ease; }
 .board-cube[role="button"] { transition: filter 180ms ease; }
-:is(.board-undo, .board-actions, .action-help) button {
+:is(.board-actions, .action-help) button {
   transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
-:is(.board-undo, .board-actions, .action-help) button kbd.keycap {
+:is(.board-actions, .action-help) button kbd.keycap {
   transition: transform 140ms cubic-bezier(.2, .75, .3, 1), opacity 140ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -3787,10 +3787,10 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 }
 .dice-switch:active .dice-switch-surface { fill: var(--line); stroke: var(--accent); }
 .board-cube[role="button"]:active { filter: drop-shadow(0 1px 1px #0005); }
-:is(.board-undo, .board-actions, .action-help) button:active:not(:disabled) {
+:is(.board-actions, .action-help) button:active:not(:disabled) {
   box-shadow: inset 0 2px 4px #0003;
 }
-:is(.board-undo, .board-actions, .action-help) button:active:not(:disabled) kbd.keycap {
+:is(.board-actions, .action-help) button:active:not(:disabled) kbd.keycap {
   transform: translateY(1px); opacity: 1;
 }
 .point-shortcut { opacity: .85; font-family: ui-monospace, monospace; }
@@ -3893,26 +3893,50 @@ button kbd.keycap, .play-page #message kbd.keycap {
   button kbd.keycap, .play-page #message kbd.keycap, .bg-board .keycap-art { display: none; }
 }
 
-/* Undo belongs to the draft, beside the board, separately from a turn takeback. */
-.board-undo { display: flex; flex: 0 0 80px; min-width: 0; flex-direction: column; align-self: center; gap: 8px; }
-.board-undo button { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 8px; font-size: 14px; }
-.board-undo button kbd.keycap { margin: 0; }
+/* Dice are draft controls; keyboard reminders are labels, never buttons. */
+.draft-shortcuts { display: flex; align-items: center; gap: 16px; margin-inline: auto 12px; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.draft-shortcuts:empty { display: none; }
+.draft-shortcuts > span { display: inline-flex; align-items: center; gap: 6px; }
+.draft-shortcuts kbd { display: inline-flex; padding: 0; border: 0; margin: 0; }
+.board-actions { flex-basis: 144px; }
+.board-actions #confirm { min-height: 120px; padding: 16px 12px; gap: 12px; border: 1px solid transparent; border-radius: 12px; }
+.confirm-content, .confirm-copy { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.confirm-content { gap: 10px; }
+.confirm-copy strong { font-size: 17px; line-height: 1.2; font-weight: 650; }
+.confirm-status { font-size: 12px; line-height: 1.3; font-weight: 450; white-space: nowrap; }
+.confirm-check { display: grid; place-items: center; width: 30px; height: 30px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 21px; line-height: 1; }
+.board-actions #confirm:disabled { opacity: 1; background: var(--panel); border-color: var(--line); color: var(--muted); box-shadow: none; }
+.board-actions #confirm:disabled .confirm-check { opacity: .45; }
+@media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  .draft-shortcuts { display: none; }
+}
 @media (max-width: 700px) and (min-height: 501px) {
-  .board-workspace { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) 64px; gap: 0 8px; }
-  .play-page .board-workspace > .board-slot { grid-column: 1 / -1; grid-row: 1; height: 100%; }
-  .board-undo { grid-column: 1; grid-row: 2; flex-direction: row; align-self: end; padding-top: 6px; gap: 6px; }
-  .board-undo button { min-height: 52px; padding: 8px; font-size: 14px; gap: 5px; flex-direction: row; flex-wrap: nowrap; }
-  .board-actions { grid-column: 2; grid-row: 2; }
-  .board-actions #confirm { width: 116px; }
-  .play-page.live-table .action-help button kbd.keycap { min-width: 20px; padding: 0; font-size: inherit; }
+  .play-page.live-table { padding-inline: max(4px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-right)); }
+  .play-page.live-table .stage { grid-template-rows: 26px max-content 26px 60px minmax(130px, 1fr); }
+  .play-page.live-table .board-workspace { display: contents; }
+  .play-page.live-table #opponent { grid-row: 1; }
+  .play-page.live-table .board-workspace > .board-slot { grid-row: 2; width: 100%; height: auto; aspect-ratio: 876 / 660; max-width: none; }
+  .play-page.live-table #player { grid-row: 3; }
+  .play-page.live-table .board-actions { grid-row: 4; width: 100%; height: 60px; padding-block: 4px; }
+  .play-page.live-table .action-area { grid-row: 5; }
+  .board-actions #confirm { width: 100%; min-height: 52px; flex-direction: row; justify-content: center; padding: 8px 16px; }
+  .confirm-content { flex-direction: row; gap: 12px; }
+  .confirm-copy { align-items: flex-start; gap: 2px; }
+  .confirm-copy strong { font-size: 16px; }
+  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 18px); margin-left: 18px; }
+  .play-page.live-table .equity-bar { width: 14px; }
+  .play-page.live-table .equity-meter { width: 10px; }
 }
 @media (max-height: 500px) and (min-width: 650px) {
-  .board-undo { flex-basis: 62px; gap: 6px; }
-  .board-undo button { min-height: 68px; padding: 8px 4px; font-size: 13px; }
-}
-@media (max-width: 360px) and (min-height: 501px) {
-  .board-actions #confirm { width: 104px; }
-  .board-undo button { padding-inline: 6px; }
+  /* Put confirmation in the existing side dock, not another board rail. */
+  .play-page.live-table .board-workspace { position: relative; }
+  .play-page.live-table .board-actions { position: absolute; left: calc(100% + 8px); top: 140px; width: 164px; height: 60px; padding: 0; }
+  .board-actions #confirm { width: 100%; min-height: 60px; padding: 8px; flex-direction: row; gap: 6px; }
+  .confirm-content { flex-direction: row; gap: 8px; }
+  .confirm-copy { align-items: flex-start; }
+  .confirm-copy strong { font-size: 16px; }
+  .play-page.live-table .action-area { max-height: calc(100% - 206px); height: calc(100% - 206px); }
+  .draft-shortcuts { display: none; }
 }
 
 /* No native selection/callout on game UI. Editing names, notes and imported

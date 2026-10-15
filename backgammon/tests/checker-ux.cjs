@@ -629,7 +629,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       );
       assert.equal(await touch.evaluate(() => scrollY), 0);
       assert.equal(await touch.locator(".drag-checker").count(), 0);
-      await touch.locator("#undo").tap();
+      await touch.keyboard.press("z");
 
       await touch.evaluate(async () => {
         const { shell, DraftBoard } = await import("/backgammon/ui/shell.mjs");

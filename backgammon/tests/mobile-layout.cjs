@@ -11,6 +11,8 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       crypto.getRandomValues = a => a instanceof Uint8Array && a.length === 1 && bytes.length ? ((a[0] = bytes.shift()),a) : random(a);
     });
     await page.goto(base + "/backgammon/play/");
+    await page.evaluate(async () => (await import('/backgammon/core/storage.mjs')).saveSettings({interactionMode:'beginner', moveHints:true, equityBar:false, motion:'reduce'}));
+    await page.reload();
     await page.setViewportSize({width:390,height:844});
     await page.getByRole("button", {name:"Computer",exact:true}).waitFor();
     assert.equal(await page.getByRole("button", {name:"Computer",exact:true}).getAttribute("aria-pressed"), "true", "setup communicates the chosen mode");
@@ -33,8 +35,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
     await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
     await page.locator("#start-match").click();
     await page.waitForFunction(() => scrollY === 0);
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await page.locator("#confirm").waitFor();
     for (const [width,height] of sizes) {
       await page.setViewportSize({width,height});
       await page.evaluate(() => scrollTo(0,0));
@@ -51,7 +52,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
           assert.ok(gap >= -1 && gap < 3, "player strips hug the board without overlap");
         assert.ok(metrics.confirm.height >= 48, "large primary touch target");
         const help = await page.locator(".help-cluster").boundingBox();
-        assert.ok(metrics.confirm.top >= help.y + help.height, "primary action follows help controls at the bottom");
+        assert.ok(metrics.confirm.bottom <= help.y + 1, "confirmation stays directly below the board, before secondary controls");
       }
       if (width <= 700 || height <= 500)
         assert.ok(await page.locator(".touch-moves").isVisible(), "large move controls work in portrait and landscape");
@@ -102,12 +103,13 @@ module.exports = async function mobileLayout(browser, base, out, name) {
     const before = await page.locator("#board").boundingBox();
     await page.locator('#board [data-point="12"] .checker > circle').first().tap();
     await page.locator('#board [data-point="6"] .point-number-hit').tap();
-    for (const id of ["undo-turn", "undo", "reset-draft", "all-controls"]) {
+    for (const id of ["undo-turn", "all-controls"]) {
       const box = await page.locator(`#${id}`).boundingBox();
       assert.ok(box && box.x >=0 && box.x+box.width<=390 && box.height>=44, `${id} needs no horizontal scrolling`);
     }
     await page.locator("#all-controls").tap();
-    await page.locator(".practice-controls-dialog #undo").tap();
+    await page.locator(".practice-controls-dialog .close").tap();
+    await page.locator("#board .board-die.consumed").first().tap();
     await page.locator(".practice-controls-dialog").waitFor({state:"detached"});
     assert.deepEqual(await page.locator("#board").boundingBox(), before);
     await page.locator("#panel-toggle").tap();
@@ -119,7 +121,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       await page.getByLabel("Accessible move selection", {exact:true}).selectOption({index:1});
     await page.locator("#details-dialog").getByRole("button",{name:"Close",exact:true}).tap();
     await page.locator("#confirm").tap();
-    await page.locator("#double-cube").tap();
+    await page.locator("#board .board-cube").tap();
     await page.locator("#take-cube").waitFor();
     await shot("cube");
     for (const action of ["#drop-cube", "#take-cube"]) {

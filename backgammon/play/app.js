@@ -128,10 +128,10 @@ let config = {
   lastUndoNotice = null,
   epoch = 0;
 const boardWorkspace = el("div", { class: "board-workspace" });
-const boardUndo = el("div", { class: "board-undo", role: "group", "aria-label": "Draft controls" });
+const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
 const boardActions = el("div", { class: "board-actions", "aria-label": "Turn confirmation" });
 ui.board.container.before(boardWorkspace);
-boardWorkspace.append(boardUndo, ui.board.container, boardActions);
+boardWorkspace.append(ui.board.container, boardActions);
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 const analysis = new AnalysisPanel();
 const autoReview = new AutoReview({
@@ -253,6 +253,7 @@ const allControls = button("All controls", () => {
 }, "ghost", { id: "all-controls", hidden: true, "aria-haspopup": "dialog" });
 const helpCluster = el("div", { class: "help-cluster" }, helpActions, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
+helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, (change) => {
   actions();
   detailDraft();
@@ -327,8 +328,6 @@ installPlayShortcuts({
     const selectors = {
       roll: "#roll,#begin-turn",
       confirm: "#confirm,#begin-turn,#start-match,#next-game",
-      undo: "#undo",
-      reset: "#reset-draft",
       double: "#double-cube",
       drop: "#drop-cube",
       take: "#take-cube",
@@ -358,7 +357,9 @@ installPlayShortcuts({
       return true;
     }
     if (!draft.enabled || draft.preview) return false;
-    if (action === "bar") {
+    if (action === "undo") draft.undo();
+    else if (action === "reset") draft.reset();
+    else if (action === "bar") {
       const current = draft.current();
       if (current.bar[current.turn])
         draft.point(`bar${current.turn}`, { checkerTap: true });
@@ -1072,10 +1073,9 @@ function arrangeActions() {
     const b = $(id);
     if (b) helpActions.append(b);
   }
-  for (const [id, label] of [["undo", "Undo"], ["reset-draft", "Reset"]]) {
-    // Keep both controls in place through roll, bot and cube phases.
-    boardUndo.append($(id) || button(label, () => {}, "", { id, disabled: true }));
-  }
+  const prefs = settings();
+  draftKeys.replaceChildren(...(prefs.keyboardEnabled ? [["undo", "Undo"], ["reset", "Reset"]].filter(([action]) => prefs.shortcuts[action]?.[0]).map(([action, label]) =>
+    el("span", {}, shortcutBadge(prefs.shortcuts[action][0]), label)) : []));
   if ($("confirm")) boardActions.append($("confirm"));
   if (!model()?.started || config.mode === "online") return;
   const human =
@@ -1274,7 +1274,6 @@ async function respondTakeback(type, request) {
   }
 }
 function renderActions() {
-  boardUndo.replaceChildren();
   boardActions.replaceChildren();
   helpActions.replaceChildren();
   const s = state(),
@@ -1459,19 +1458,15 @@ function renderActions() {
     if (config.mode === "computer" && myTurn(s))
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     a.append(
-      button("Undo", () => draft.undo(), "", {
-        disabled: !mine || draft.draft.length <= draft.minDraft,
-        id: "undo",
-      }),
-      button("Reset", () => draft.reset(), "", {
-        disabled: !mine || draft.draft.length <= draft.minDraft,
-        id: "reset-draft",
-      }),
       button(
-        "Confirm turn",
+        el("span", {class:"confirm-content"},
+          el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
+          el("span", {class:"confirm-copy"},
+            el("strong", {}, "Confirm"),
+            el("span", {class:"confirm-status"}, !mine ? "Opponent’s turn" : draft.complete() ? "Ready to play" : "Finish your moves"))),
         submit,
         `primary${draft.complete() && mine ? " turn-ready" : ""}`,
-        { disabled: !mine || !draft.complete(), id: "confirm" },
+        { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn" },
       ),
     );
   } else if (s.phase === "double") {

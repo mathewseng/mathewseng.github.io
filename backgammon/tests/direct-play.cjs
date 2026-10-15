@@ -356,8 +356,8 @@ module.exports = async function directPlay(browser, base, out, name) {
           () =>
             document.querySelectorAll(".board-die.consumed").length === 1,
         );
-        assert.equal(await page.locator("#undo").isDisabled(), true);
-        assert.equal(await page.locator("#reset-draft").isDisabled(), true);
+        assert.equal(await page.locator("#undo").count(), 0);
+        assert.equal(await page.locator("#reset-draft").count(), 0);
         await page.reload();
         await page.waitForFunction(
           () =>

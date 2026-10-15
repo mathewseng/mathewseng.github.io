@@ -32,6 +32,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     assert.match(await page.locator(".draft-progress-status").textContent(), /1 move left|Ready to confirm/);
     assert.deepEqual(await page.locator("#board").boundingBox(),board,"draft status never resizes the board");
     await shot("draft");
+    await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("z");
     await page.locator(".draft-progress").waitFor({state:"detached"});
     assert.match(await page.locator("#message").textContent(), /Use all playable dice|Enter from the bar/);
@@ -54,7 +55,8 @@ module.exports = async function mobileHistory(browser, base, out, name) {
       await shot(`ready-${width}`);
     }
     await page.setViewportSize({width:390,height:844});
-    await page.locator("#reset-draft").tap();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("x");
     await page.locator(".draft-progress").waitFor({state:"detached"});
     // Real GNUbg results, including both players' checker and cube decisions.
     await page.waitForFunction(()=>document.querySelectorAll(".feedback-review").length===5,null,{timeout:60000});

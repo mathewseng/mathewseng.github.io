@@ -38,7 +38,7 @@ export function shortcutControls() {
     el(
       "p",
       { class: "muted small" },
-      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C continues, rolls or confirms. D uses the cube: double, beaver or raccoon. P passes/drops; T takes. B selects the bar first, otherwise bears off. Enter or Space rolls. S switches dice, or undoes a draft step in advanced mode. Z only undoes an unconfirmed checker step. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
+      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C continues, rolls or confirms. D uses the cube: double, beaver or raccoon. P passes/drops; T takes. B selects the bar first, otherwise bears off. Enter or Space rolls. S switches dice before moving, or undoes the latest editable draft step. Z undoes one unconfirmed step; X clears the editable draft. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
     ),
   );
   for (const [label, defs] of [

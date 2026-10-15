@@ -134,7 +134,8 @@ module.exports = async function decisionUX(
       [[12, 9, 3]],
     );
     assert.ok(await page.locator(".point.reachable").count());
-    await page.locator("#undo").click();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("z");
     await page.locator('[data-point="8"]').focus();
     await page.keyboard.press("Shift+Enter");
     quick = await page.evaluate(
@@ -149,7 +150,8 @@ module.exports = async function decisionUX(
       quick.map((s) => [s.from, s.to, s.die]),
       [[12, 8, 4]],
     );
-    await page.locator("#undo").click();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("z");
     const touchTip = await page
       .locator('[data-point="9"] .point-hit')
       .boundingBox();

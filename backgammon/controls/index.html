@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=7c1f5de2c4b200e8" />
-    <link rel="stylesheet" href="./controls.css?bgv=7c1f5de2c4b200e8" />
-    <script type="module" src="../ui/update-page.mjs?bgv=7c1f5de2c4b200e8"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=262a297cc5978c64" />
+    <link rel="stylesheet" href="./controls.css?bgv=262a297cc5978c64" />
+    <script type="module" src="../ui/update-page.mjs?bgv=262a297cc5978c64"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -45,7 +45,7 @@
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. D also beavers/raccoons, P passes and T takes. Opening rolls happen automatically.</p></div>
             <div class="flow-next">Dice rolled · continue ↓</div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">2</span><h2>Which die is selected?</h2></div>
-            <div class="flow-answer"><p>The solid outline marks it. Tap a die or press <kbd>S</kbd> to switch. After playing, <kbd>S</kbd> undoes one editable draft step. An unusable die shows a red ×; an automatically played die shows an orange check.</p></div></li>
+            <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo from that step; tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange check.</p></div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">3</span><h2>Did you tap your checker?</h2></div>
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play that checker with the selected die. If it has no legal forward move with either die and has a legal draft return, move it back. Otherwise do nothing.</p></div>
             <div class="flow-next">Open point area · continue ↓</div></li>
@@ -128,7 +128,7 @@
               <span class="flow-yes">Yes →</span>
               <p>
                 <strong>Return the nearest eligible checker.</strong><br />
-                Return it to its pre-roll origin and restore its dice, even if that point holds checkers. Intermediate stops are not orange targets; use Undo for a single step. A checker whose journey includes a forced prefix cannot return past it.
+                Return it to its pre-roll origin and restore its dice, even if that point holds checkers. Intermediate stops are not orange targets; tap the dice or press <kbd>Z</kbd> for a single step. A checker whose journey includes a forced prefix cannot return past it.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -450,10 +450,10 @@
               <td role="cell" data-label="Click point / tray space">Same destination action as open point space. Number lanes also accept legal drops; visual overlays never consume the click.</td>
             </tr>
             <tr role="row" id="case-dice">
-              <th role="rowheader" scope="row" data-label="Situation">Remaining die / preferred-die outline</th>
-              <td role="cell" data-label="What is highlighted">Available two-die rolls can show a preference outline; consumed dice are marked used.</td>
+              <th role="rowheader" scope="row" data-label="Situation">Selected, remaining or used die</th>
+              <td role="cell" data-label="What is highlighted">The selected die is larger and tinted across its face. Used dice are dimmed with a check; forced steps have an orange check.</td>
               <td role="cell" data-label="Click the checker">Not a checker.</td>
-              <td role="cell" data-label="Click point / tray space">Click an available die to prefer it for an ambiguous single step; click again to clear preference. Used/historical dice cannot move checkers.</td>
+              <td role="cell" data-label="Click point / tray space">With no editable draft, choose a die or tap the selected die to switch. With a draft, tap a used die to undo that step and all later steps; tap an unused die or the lane to undo the last step. Forced steps stay locked and historical dice do nothing.</td>
             </tr>
             <tr role="row" id="case-drag">
               <th role="rowheader" scope="row" data-label="Situation">Drag an actual movable checker (including reversible OFF)</th>

@@ -165,8 +165,8 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       assert.deepEqual((await control()).icons, { swap: 1, undo: 0 });
       assert.ok((await snapshot()).every(d => d.opacities.every(o => o === 1)));
       await page.keyboard.press("1"); await finish();
-      await activate("#undo");
-      assert.deepEqual((await snapshot())[0].fade.frames, [.38, 1], "Undo button restores the dimmed die");
+      await page.keyboard.press("z");
+      assert.deepEqual((await snapshot())[0].fade.frames, [.38, 1], "Z restores the dimmed die");
       await seek(100);
       await page.screenshot({ path: path.join(out, `${name}-dice-undo-mid-${touch ? "phone" : "desktop"}.png`) });
       const undoing = (await snapshot())[0].marks.check;
@@ -181,14 +181,14 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       assert.equal(await page.locator(".board-die.consumed").count(), 2);
       assert.deepEqual((await snapshot())[1].fade.frames, [1, .38], "last die fades even without a next die");
       await finish();
-      await activate("#reset-draft");
+      await page.keyboard.press("x");
       assert.ok((await snapshot()).every(d => d.fade?.frames[0] === .38 && d.fade.frames[1] === 1), "Reset restores both dice together");
       assert.ok((await snapshot()).every(d => d.marks.check.motion?.[1].opacity === 0), "Reset fades both check marks");
       await finish();
       // Shortcuts disappear in both mobile orientations, not point numbers.
       for (const viewport of touch ? [{width:390,height:844}, {width:844,height:390}] : [{width:1366,height:768}]) {
         await page.setViewportSize(viewport);
-        assert.equal(await page.locator('#undo kbd.keycap').isVisible(), !touch);
+        assert.equal(await page.locator('.draft-shortcuts kbd.keycap').first().isVisible(), !touch);
         assert.equal(await page.locator('#board .point-shortcut').first().isVisible(), !touch);
         assert.equal(await page.locator('#board .dice-switch .keycap-art').isVisible(), !touch);
         assert.equal(await page.locator('#board .point-number-hit + text').count(), 24);
@@ -261,9 +261,9 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       else await page.locator('#board [data-point="12"] .checker').last().click();
       await activate('#board [data-point="8"] .point-hit');
       assert.equal(await page.locator('.board-die.consumed').count(), 1);
-      assert.equal((await control()).label, 'Switch selected die', 'beginner mode keeps switching instead of draft undo');
+      assert.equal((await control()).label, 'Undo draft step', 'dice undo in both playing styles');
       await tapLane();
-      assert.equal(await page.locator('.board-die.consumed').count(), 1, 'beginner lane never silently undoes a move');
+      assert.equal(await page.locator('.board-die.consumed').count(), 0, 'beginner lane undoes the draft');
       assert.deepEqual(errors, []);
       report.push({ touch, simultaneous: true, interruption: true, directDie: true, switchControl: true,
         use: true, undo: true, reset: true, doubles: true, checkDrawing: true, markReversal: true, switchIcon: true, stableTargets: true, centeredScale: true, coloredRim: true, nearDiceTaps: true, mobileShortcutsHidden: touch, reducedMotion: true });

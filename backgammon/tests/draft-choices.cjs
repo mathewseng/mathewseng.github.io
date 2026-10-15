@@ -95,8 +95,8 @@ module.exports = async function draftChoices(browser, base, out, name) {
             let w = await read();
             assert.deepEqual(w.draft, data.auto.steps);
             assert.equal(w.game.events.length, 0);
-            assert.ok(await page.locator("#undo").isDisabled());
-            assert.ok(await page.locator("#reset-draft").isDisabled());
+            assert.equal(await page.locator("#undo").count(), 0);
+            assert.equal(await page.locator("#reset-draft").count(), 0);
             assert.ok(await page.locator("#confirm").isDisabled());
             await page.reload();
             await page.locator("#confirm").waitFor();
@@ -168,7 +168,8 @@ module.exports = async function draftChoices(browser, base, out, name) {
                 w.draft.slice(0, data.auto.steps.length),
                 data.auto.steps,
               );
-              await page.locator("#reset-draft").click();
+              await page.evaluate(() => document.activeElement?.blur());
+              await page.keyboard.press("x");
               assert.deepEqual((await read()).draft, data.auto.steps);
             }
             if (fixture === "forced-seven") {
@@ -194,7 +195,8 @@ module.exports = async function draftChoices(browser, base, out, name) {
               assert.equal(w.draft.length, 2);
               assert.deepEqual(w.draft[0], data.auto.steps[0]);
               assert.ok(await page.locator("#confirm").isEnabled());
-              await page.locator("#reset-draft").click();
+              await page.evaluate(() => document.activeElement?.blur());
+              await page.keyboard.press("x");
               assert.deepEqual((await read()).draft, data.auto.steps);
             }
             cases.push({

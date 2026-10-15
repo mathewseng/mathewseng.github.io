@@ -543,6 +543,10 @@ export class Board {
   }
   activateDie(die) {
     if (!die) return false;
+    if (this.onDieTap) {
+      this.onDieTap(die.hasAttribute("data-draft-index") ? Number(die.dataset.draftIndex) : null, Number(die.dataset.die));
+      return true;
+    }
     // The selected/used face shares the surrounding lane's switch/undo action.
     // An unselected face explicitly chooses that die, also in beginner mode.
     if (die.classList.contains("preferred") ||
@@ -563,7 +567,7 @@ export class Board {
       hideDice,
       interactive,
       preview,
-      historical = false, forcedDice = [], playableDice = null, advanced = false, shortcuts = null,
+      historical = false, forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, shortcuts = null,
     },
   ) {
     const group = svg("g", {
@@ -582,11 +586,11 @@ export class Board {
       !historical && s.dice[0] === s.dice[1]
         ? Array(4).fill(s.dice[0])
         : s.dice;
-    const used = [...usedDice], forced = [...forcedDice],
+    const used = usedDice.map((value, index) => ({ value, index })), forced = [...forcedDice],
       center = s.turn === orientation ? 610 : 204;
-    const undoAction = advanced && usedDice.length > 0;
+    const undoAction = usedDice.length > lockedDice;
     if (interactive && chooseDie && !historical) {
-      const width = (values.length - 1) * (values.length === 2 ? 106 : 72) + 96;
+      const width = (values.length - 1) * (values.length === 2 ? 120 : 72) + 96;
       // Only the center lane: the point hit regions end at 294/start at 366.
       // Cover gaps and side padding without stealing a checker/point/cube tap.
       group.append(svg("rect", { class: "dice-switch-hit", x: center - width / 2,
@@ -602,25 +606,29 @@ export class Board {
       6: [0, 2, 3, 5, 6, 8],
     };
     values.forEach((value, i) => {
-      const consumed = used.includes(value);
-      if (consumed) used.splice(used.indexOf(value), 1);
+      const usedIndex = used.findIndex(step => step.value === value);
+      const consumed = usedIndex >= 0;
+      const draftIndex = consumed ? used.splice(usedIndex, 1)[0].index : null;
       const isForced = consumed && forced.includes(value);
       if (isForced) forced.splice(forced.indexOf(value), 1);
       const blocked = !consumed && playableDice !== null && !playableDice.includes(value);
       const active = !consumed && !blocked && preferredDie === value &&
         !values.slice(0, i).some((v, j) => v === value && j >= usedDice.filter(d => d === value).length);
-      const clickable = interactive && chooseDie && !consumed && !blocked;
-      const actionLabel = active ? undoAction ? "Undo draft step, die " : "Switch selected die, die " : "Use die ";
-      const x = center + (i - (values.length - 1) / 2) * (values.length === 2 ? 106 : 72);
+      const clickable = interactive && chooseDie && (undoAction
+        ? draftIndex === null || draftIndex >= lockedDice : !consumed && !blocked);
+      const actionLabel = undoAction ? consumed ? "Undo from die " : "Undo last move, die "
+        : active ? "Switch selected die, die " : "Use die ";
+      const x = center + (i - (values.length - 1) / 2) * (values.length === 2 ? 120 : 72);
       const die = svg("g", {
         transform: `translate(${x} 330)`,
         "data-die": value,
+        ...(consumed ? { "data-draft-index": draftIndex } : {}),
         class: `board-die${consumed ? " consumed" : ""}${isForced ? " forced" : ""}${blocked ? " blocked" : ""}${active && clickable ? " preferred" : ""}`,
         "data-status": isForced ? "forced" : consumed ? "used" : blocked ? "blocked" : active ? "selected" : "available",
         role: clickable ? "button" : "img",
         "aria-label": `${clickable ? actionLabel : "Die "}${value}${historical ? ", previous roll" : isForced ? ", forced move" : consumed ? ", used" : blocked ? ", no legal move" : active ? ", selected" : ", available"}`,
         ...(clickable
-          ? { tabindex: 0, "aria-pressed": preferredDie === value }
+          ? { tabindex: 0, "aria-pressed": active }
           : {}),
       });
       const face = svg("rect", {
@@ -643,7 +651,7 @@ export class Board {
       // switching, using and undoing can reverse its fade from the visible frame.
       body.append(svg("rect", { class: "die-status-mark die-selection-accent",
         "data-die-mark": "selected", x: -31, y: -31, width: 62, height: 62, rx: 11,
-        fill: "color-mix(in srgb, var(--board-selection) 8%, transparent)",
+        fill: "color-mix(in srgb, var(--board-selection) 35%, transparent)",
         stroke: boardColor("selection"), "stroke-width": 2.4,
         opacity: active && clickable ? 1 : 0, "aria-hidden": "true" }));
       for (const pip of pips[value])
@@ -680,9 +688,9 @@ export class Board {
       die.append(body);
       group.append(die);
     });
-    if (interactive && chooseDie && !historical) {
+    if (interactive && chooseDie && !historical && (values.length === 2 || undoAction)) {
       const swap = svg("g", { class: "dice-switch", role: "button", tabindex: 0,
-        "aria-label": undoAction ? "Undo draft step" : "Switch selected die", transform: `translate(${center} ${values.length === 2 ? 330 : 375})` });
+        "aria-label": undoAction ? "Undo draft step" : "Switch selected die", transform: `translate(${center + (values.length === 2 ? 0 : 165)} 330)` });
       swap.append(svg("rect", { class: "dice-switch-surface", x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }));
       for (const [icon, d, visible] of [
         ["swap", "M-10 -5H10l-4 -4M10 5H-10l4 4", !undoAction],
@@ -1160,7 +1168,7 @@ export class Board {
       editor = false,
       playback = false,
       usedDice = [],
-      forcedDice = [], playableDice = null, advanced = false, boardShortcuts: shortcuts = null,
+      forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, boardShortcuts: shortcuts = null,
       chooseDie = null,
       preferredDie = null,
       hideDice = false,
@@ -1209,7 +1217,7 @@ export class Board {
       preview,
       editor,
       usedDice,
-      forcedDice, playableDice, advanced, boardShortcuts: shortcuts,
+      forcedDice, lockedDice, playableDice, advanced, boardShortcuts: shortcuts,
       chooseDie,
       preferredDie,
       hideDice,
@@ -1731,6 +1739,7 @@ export class Board {
           orientation,
           usedDice: historicalDice && lastMove.automatic ? lastMove.steps.map(st => st.die) : usedDice,
           forcedDice: historicalDice && lastMove.automatic ? lastMove.steps.map(st => st.die) : forcedDice,
+          lockedDice,
           playableDice: historicalDice && lastMove.automatic ? [] : playableDice, advanced, shortcuts,
           chooseDie,
           preferredDie,

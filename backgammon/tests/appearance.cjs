@@ -292,7 +292,8 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     await close();
     assert.equal(await frame(), "rgb(39, 60, 74)");
     assert.deepEqual(await work(), before);
-    await page.locator("#undo").click(); // no live draft before changing pages
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("z"); // no live draft before changing pages
     for (const route of ["trainer/", "solver/", "library/", ""]) {
       await page.goto(base + "/backgammon/" + route);
       await page.waitForFunction(

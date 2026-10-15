@@ -16,23 +16,23 @@ module.exports = async function controlPolish(browser, base, out, name) {
       await put('work',{id:'play',game:{id:'control-polish',initial:s,state:s,events:[],started:true,names:['You','Friend'],config:localConfig({mode:'local'})},draft:[]});
     });
     await page.reload();await ready();await page.locator('#resume-match').click();
-    assert.equal(await page.locator('.board-undo #undo').count(),1);
-    assert.equal(await page.locator('.board-undo #reset-draft').count(),1);
+    assert.equal(await page.locator('#undo').count(),0);
+    assert.equal(await page.locator('#reset-draft').count(),0);
     assert.equal(await page.locator('.action-help #undo').count(),0);
     assert.equal(await page.locator('#board .point-shortcut .keycap-face').count(),24);
     assert.equal(await page.locator('#board .point-shortcut .keycap-label').count(),24);
-    assert.equal(await page.locator('#undo .keycap-art').count(),1);
+    assert.equal(await page.locator('.draft-shortcuts .keycap-art').count(),2);
     // An ordinary game shortcut should never leave the browser focus halo.
     await page.keyboard.press('1');
     report.motion = await page.locator('.moving-checker').evaluateAll(nodes=>nodes.flatMap(n=>n.getAnimations().map(a=>({duration:a.effect.getTiming().duration,frames:a.effect.getKeyframes().length}))));
     assert.ok(report.motion.some(m=>m.duration===460&&m.frames>=24),'slower sampled checker animation is running');
-    await page.evaluate(()=>document.querySelector('#undo').focus());
-    assert.equal(await page.locator('#undo').evaluate(n=>getComputedStyle(n).outlineStyle),'none');
-    await page.locator('#undo').click();
+    await page.evaluate(()=>document.querySelector('#hint,#all-controls').focus());
+    assert.equal(await page.locator('#all-controls').evaluate(n=>getComputedStyle(n).outlineStyle),'none');
+    await page.keyboard.press("z");
     assert.equal(await page.locator('.board-die.consumed').count(),0,'undo interrupts animation safely');
-    await page.keyboard.press('1');await page.keyboard.press('1');
-    assert.equal(await page.locator('#reset-draft').isEnabled(),true);
-    await page.locator('#reset-draft').click();
+    await page.keyboard.press('1');await page.keyboard.press('u');
+    assert.equal(await page.locator('.board-die.consumed').count(),2);
+    await page.keyboard.press("x");
     assert.equal(await page.locator('.board-die.consumed').count(),0);
     // Explicit keyboard navigation still exposes a focus location.
     await page.locator('#preferences').focus();
@@ -52,20 +52,14 @@ module.exports = async function controlPolish(browser, base, out, name) {
       await page.waitForTimeout(70);
       const layout=await page.evaluate(()=>{
         const rect=s=>document.querySelector(s).getBoundingClientRect().toJSON();
-        return {board:rect('#board > svg'),undo:rect('#undo'),reset:rect('#reset-draft'),confirm:rect('#confirm'),overflow:document.documentElement.scrollWidth>innerWidth+1};
+        return {board:rect('#board > svg'),confirm:rect('#confirm'),overflow:document.documentElement.scrollWidth>innerWidth+1};
       });
       assert.equal(layout.overflow,false,`horizontal overflow ${width}x${height}`);
-      for(const key of ['undo','reset','confirm']){
+      for(const key of ['confirm']){
         assert.ok(layout[key].width>=44&&layout[key].height>=44,`touch target ${key} ${width}`);
         assert.ok(layout[key].bottom<=height+2,`visible ${key} ${width}: ${JSON.stringify(layout)}`);
       }
-      if(width>700 || height<501){
-        assert.ok(layout.undo.right<=layout.board.left,'undo on left of board');
-        assert.ok(layout.reset.right<=layout.board.left,'reset on left of board');
-      } else {
-        assert.ok(layout.undo.top>=layout.board.bottom-2,'portrait controls below full-width board');
-        assert.ok(layout.reset.right<layout.confirm.left,'undo/reset to the left of confirm');
-      }
+      if(width<=700 && height>500) assert.ok(layout.confirm.top>=layout.board.bottom-2,'portrait confirmation follows full-width board');
       report.layouts.push({width,height,...layout});
       await page.screenshot({path:path.join(out,`${name}-controls-${width}x${height}.png`)});
     }

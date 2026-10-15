@@ -634,6 +634,7 @@ export class DraftBoard {
     board.onPoint = (p, options) => this.point(p, options);
     board.onBackground = () => this.clearSelection();
     board.onSwitchDice = () => this.switchDice();
+    board.onDieTap = (index, value) => this.tapDie(index, value);
     const outsideBackground = (target) =>
       board.container.isConnected && !board.svg.contains(target) &&
       !target.closest?.(
@@ -766,10 +767,18 @@ export class DraftBoard {
   activeDie() { return selectedDie(this.candidates(), this.preferred, this.state.dice); }
   switchDice() {
     if (!this.enabled || this.preview) return;
-    if (this.advanced && this.draft.length > this.minDraft) return this.undo();
+    if (this.draft.length > this.minDraft) return this.undo();
     const current = this.activeDie();
     const next = this.candidates().find(step => step.die !== current)?.die;
     if (next) this.preferDie(next);
+  }
+  tapDie(index, value) {
+    if (!this.enabled || this.preview || this.board.playbackTimer) return;
+    if (this.draft.length > this.minDraft) return this.undoTo(index ?? this.draft.length - 1);
+    // Forced steps cannot be undone. With no editable draft, retain die choice.
+    if (index !== null) return;
+    if (value !== (this.advanced ? this.activeDie() : this.preferred)) this.preferDie(value);
+    else this.switchDice();
   }
   point(raw, options = {}) {
     if (!this.enabled || this.preview || this.board.playbackTimer) return;
@@ -1086,16 +1095,21 @@ export class DraftBoard {
     });
   }
   undo() {
-    if (this.draft.length <= this.minDraft) return;
+    return this.undoTo(this.draft.length - 1);
+  }
+  undoTo(index) {
+    if (!this.enabled || this.preview || !Number.isInteger(index) ||
+        index < this.minDraft || index >= this.draft.length) return;
     const before = this.current(),
-      step = this.draft.at(-1);
+      step = this.draft[index], count = this.draft.length - index;
     this.preview = null;
-    this.draft.pop();
+    this.draft = this.draft.slice(0, index);
     if (this.advanced) this.preferred = step.die;
     this.selected = null;
-    this.hint = "Move undone. Try another checker or destination.";
+    this.hint = count === 1 ? "Move undone." : `${count} moves undone.`;
     this.render();
-    if (step) this.board.animateMove(before, this.current(), step, true);
+    if (count === 1) this.board.animateMove(before, this.current(), step, true);
+    else this.board.animateRestore(before, this.current(), "undo");
     this.onChange({ kind: "undo" });
   }
   reset() {
@@ -1158,6 +1172,7 @@ export class DraftBoard {
       interactive: this.enabled && !this.preview,
       preview: !!this.preview,
       usedDice: this.draft.map((st) => st.die),
+      lockedDice: this.minDraft,
       forcedDice: this.draft.filter((st, index) => index < this.minDraft || nextSteps(this.paths, this.draft.slice(0, index)).length === 1).map(st => st.die),
       playableDice: this.enabled && !this.preview ? this.candidates().map(st => st.die) : null,
       boardShortcuts: this.shortcutsEnabled && display.keyboardEnabled ? display.shortcuts : null,
@@ -1185,7 +1200,7 @@ export class DraftBoard {
               ? `Click a checker or destination · using die ${this.activeDie() ?? "–"}.`
               : this.complete()
               ? this.draft.length
-                ? "Ready to confirm. Move a checker back, Undo, or Reset to revise."
+                ? "Ready to confirm. Tap a used die to undo from that step."
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? display.moveHints

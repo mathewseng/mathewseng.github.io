@@ -107,11 +107,13 @@ const server = http.createServer((req, res) => {
               .selectOption({ index: 1 });
         };
         await steps();
-        await page.locator("#reset-draft").click();
+        await page.evaluate(() => document.activeElement?.blur());
+        await page.keyboard.press("x");
         assert.equal(await page.locator(".board-die.consumed").count(), 0);
         assert.ok(await page.locator("#confirm").isDisabled());
         await steps();
-        await page.locator("#undo").click();
+        await page.evaluate(() => document.activeElement?.blur());
+        await page.keyboard.press("z");
         assert.ok(await page.locator("#confirm").isDisabled());
         await steps();
         await shot("active-draft");
@@ -516,6 +518,9 @@ const server = http.createServer((req, res) => {
         );
         (report.backgroundFocus ||= []).push(
           await require("./background-focus.cjs")(browser, base, out, browserName),
+        );
+        (report.diceUndo ||= []).push(
+          await require("./dice-undo.cjs")(browser, base, out, browserName),
         );
         (report.diceSwitchMotion ||= []).push(
           await require("./dice-switch-motion.cjs")(browser, base, out, browserName),

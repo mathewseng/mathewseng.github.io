@@ -134,7 +134,9 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       "return restores bot and unfinished draft",
     );
 
-    await page.locator("#reset-draft").click();
+    await page.evaluate(() => document.activeElement?.blur());
+
+    await page.keyboard.press("x");
     await page
       .getByRole("button", { name: "Open in Solver", exact: true })
       .click();

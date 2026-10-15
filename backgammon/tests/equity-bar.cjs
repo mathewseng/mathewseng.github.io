@@ -139,7 +139,8 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       await page.locator("#equity-bar").getAttribute("title"),
       /Your choice/,
     );
-    await page.locator("#reset-draft").click();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press("x");
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
     await clickTool(page, "#equity-toggle");
     await page.waitForTimeout(50);

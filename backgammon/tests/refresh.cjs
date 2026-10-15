@@ -242,8 +242,8 @@ module.exports = async function refreshUX(browser, out, browserName) {
     await recovery.locator("#resume-match").click();
     if (await recovery.locator("#begin-turn").count())
       await recovery.locator("#begin-turn").click();
-    await recovery.locator("#undo").waitFor();
-    assert.ok(await recovery.locator("#undo").isEnabled());
+    await recovery.locator("#board .board-die.consumed[role=button]").first().waitFor();
+    assert.ok(await recovery.locator("#board .board-die.consumed[role=button]").count());
     const resumed = await readSaved(recovery);
     assert.deepEqual(
       resumed.work.game.state,

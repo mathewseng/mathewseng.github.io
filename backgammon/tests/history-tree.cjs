@@ -59,7 +59,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       b = t.playAction(b, { type: "move", steps: turns.at(-1).steps });
       const tree = h.historyTree(b),
         old = tree.nodes.find((n) => n.depth === 2 && !n.active);
-      st.saveSettings({ motion: "reduce", orientation: 0 });
+      st.saveSettings({ motion: "reduce", orientation: 0, interactionMode: "beginner" });
       await st.put("work", {
         id: "play",
         game: b,
@@ -75,7 +75,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       };
     });
     await page.goto(base + "/backgammon/play/#resume=" + fixture.id);
-    await page.locator("#roll").waitFor();
+    await page.locator("#roll").waitFor({state:"attached"});
     assert.ok(await page.locator("#undo-turn").isEnabled());
     const initial = JSON.stringify((await read()).game);
     await page.keyboard.press("z");

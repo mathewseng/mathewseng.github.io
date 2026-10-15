@@ -35,11 +35,11 @@ const assert = require("node:assert/strict");
     await p.locator(`g[data-point="${step.from}"]`).tap();
     assert.ok(await p.locator(".destination").count());
     await p.locator(`g[data-point="${step.to}"]`).tap();
-    assert.ok(await p.locator("#undo").isEnabled());
+    assert.ok(await p.locator("#board .board-die.consumed[role=button]").count());
     await p.screenshot({
       path: "backgammon/test-results/touch-active-390.png",
     });
-    await p.locator("#undo").tap();
+    await p.keyboard.press("z");
     const response = await p.evaluate(async (from) => {
       const samples = [];
       for (let i = 0; i < 30; i++) {
