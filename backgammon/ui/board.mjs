@@ -370,17 +370,23 @@ export class Board {
     this.svg.addEventListener("mousedown", e => e.preventDefault());
     this.svg.addEventListener("dragstart", e => e.preventDefault());
     this.svg.addEventListener("click", (e) => {
+      // Mobile tap correction can retarget the empty lane to an adjacent point
+      // (or a bar tap to the lane). Use the real touch position for this dense,
+      // non-overlapping board geometry; keep keyboard activation target-based.
+      const pointer = e.detail && this.touchTap ? this.touchTap : e;
+      const target = pointer === e ? e.target : document.elementFromPoint(pointer.clientX, pointer.clientY);
+      this.touchTap = null;
       if (performance.now() < (this.suppressClickUntil || 0) || this.playbackTimer) return;
-      if (e.target.closest(".board-cube")) { this.onCube?.(); return; }
+      if (target?.closest(".board-cube")) { this.onCube?.(); return; }
       if (this.onRoll?.()) return;
       if (!this.options?.interactive) return;
-      if (e.target.closest(".dice-switch, .dice-switch-hit")) { this.onSwitchDice?.(); return; }
-      const die = e.target.closest("[data-die]");
+      if (target?.closest(".dice-switch, .dice-switch-hit")) { this.onSwitchDice?.(); return; }
+      const die = target?.closest("[data-die]");
       if (this.activateDie(die)) return;
-      const p = e.target.closest("[data-point]");
+      const p = target?.closest("[data-point]");
       if (p) {
         const raw = this.decode(p.dataset.point);
-        const pos = this.coordinates(e.clientX, e.clientY);
+        const pos = this.coordinates(pointer.clientX, pointer.clientY);
         const own =
           typeof raw === "number"
             ? Math.sign(this.state.points[raw]) ===
@@ -406,6 +412,8 @@ export class Board {
     });
     this.svg.addEventListener("pointerdown", (e) => {
       this.suppressClickUntil = 0;
+      this.touchTap = e.isPrimary && e.pointerType === "touch"
+        ? { pointerId: e.pointerId, clientX: e.clientX, clientY: e.clientY } : null;
       if (e.button !== 0 || !e.isPrimary || !this.options?.interactive)
         return;
       const p = e.target.closest("[data-point]");
@@ -477,6 +485,8 @@ export class Board {
         e.preventDefault();
     }, { passive:false });
     this.svg.addEventListener("pointerup", (e) => {
+      if (this.touchTap?.pointerId === e.pointerId)
+        this.touchTap = { clientX: e.clientX, clientY: e.clientY };
       const p = this.pointer;
       if (!p || p.id !== e.pointerId) return;
       if (p.dragging) {
@@ -492,6 +502,7 @@ export class Board {
     });
     for (const event of ["pointercancel", "lostpointercapture"])
       this.svg.addEventListener(event, () => {
+        if (event === "pointercancel") this.touchTap = null;
         const dragging = this.pointer?.dragging;
         this.endDrag();
         if (dragging) this.onCancel?.();
@@ -617,12 +628,13 @@ export class Board {
       center = s.turn === orientation ? 610 : 204;
     const undoAction = usedDice.length > lockedDice;
     if (interactive && chooseDie && !historical) {
-      const width = (values.length - 1) * (values.length === 2 ? 120 : 72) + 96;
-      // Only the center lane: the point hit regions end at 294/start at 366.
-      // Cover gaps and side padding without stealing a checker/point/cube tap.
-      group.append(svg("rect", { class: "dice-switch-hit", x: center - width / 2,
-        y: 294, width, height: 72, fill: "transparent", role: "button", tabindex: -1,
-        "aria-label": undoAction ? "Undo draft step" : "Switch selected die" }));
+      // The whole empty middle lane on the active dice's half, from the inner
+      // frame to the bar. Point targets end at 294/start at 366; the bar and
+      // cube stay outside. Faces above this layer retain their individual undo.
+      // The visible switch button provides keyboard/accessibility semantics.
+      // This transparent padding is not a second focusable control.
+      group.append(svg("rect", { class: "dice-switch-hit", x: s.turn === orientation ? 428 : 18,
+        y: 294, width: 370, height: 72, fill: "transparent", "aria-hidden": "true" }));
     }
     const pips = {
       1: [4],

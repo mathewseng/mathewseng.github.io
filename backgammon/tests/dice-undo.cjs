@@ -11,19 +11,27 @@ module.exports = async function diceUndo(browser, base, out, name) {
     const tap = async locator => touch ? locator.tap() : locator.click();
     const read = () => page.evaluate(async () => (await import('/backgammon/core/storage.mjs')).get('work','play'));
     const used = () => page.locator('#board .board-die.consumed').count();
-    const load = async (dice, mode = 'advanced', state = null) => {
-      await page.evaluate(async ({dice, mode, state}) => {
+    const load = async (dice, mode = 'advanced', state = null, {turn = 0, orientation = 0} = {}) => {
+      await page.evaluate(async ({dice, mode, state, turn, orientation}) => {
         const {put,saveSettings} = await import('/backgammon/core/storage.mjs');
         const {initialState} = await import('/backgammon/core/rules.mjs');
         const {localConfig} = await import('/backgammon/core/play-session.mjs');
         const points = Array(24).fill(0); points[12] = 1; points[5] = 14; points[23] = -15;
-        const s = state || initialState({phase:'move', dice, points, matchLength:0});
-        saveSettings({interactionMode:mode, motion:'reduce'});
+        const s = state || initialState({phase:'move', dice, turn, points:turn ? points.reverse().map(n=>-n) : points, matchLength:0});
+        saveSettings({interactionMode:mode, motion:'reduce', orientation});
         await put('work', {id:'play', game:{id:'die-undo', initial:s,state:s,events:[],started:true,names:['You','Friend'],config:localConfig({mode:'local'})},draft:[]});
-      }, {dice,mode,state});
+      }, {dice,mode,state,turn,orientation});
       await page.reload(); await ready(); await tap(page.locator('#resume-match'));
     };
     const count = async n => page.waitForFunction(async n => (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length === n, n);
+    const tapBoard = async (x,y) => {
+      const p = await page.locator('#board svg').evaluate((svg,{x,y}) => {
+        const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM()); return {x:p.x,y:p.y,hit:document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,300)};
+      }, {x,y});
+      if (touch) await page.touchscreen.tap(p.x,p.y);
+      else await page.mouse.click(p.x,p.y);
+      return p;
+    };
     try {
       await page.goto(base+'/backgammon/play/'); await ready();
       // Every doubles slot reverses that step and its dependent continuation.
@@ -31,6 +39,10 @@ module.exports = async function diceUndo(browser, base, out, name) {
         await load([3,3]);
         for (const point of [12,9,6,3]) await tap(page.locator(`#board [data-point="${point}"] .checker`).last());
         await count(4);
+        if (slot === 3) {
+          await tapBoard(430,330); await count(3);
+          await tap(page.locator('#board [data-point="3"] .checker').last()); await count(4);
+        }
         const before = await read();
         if (slot === 3) {
           const clear = await page.evaluate(() => {
@@ -61,6 +73,44 @@ module.exports = async function diceUndo(browser, base, out, name) {
         await tap(page.locator('#board .board-die:not(.consumed)').first());
         await count(0);
       }
+      // The entire empty middle lane, including both far edges, switches before
+      // a move and undoes only the editable draft afterward. Exercise the real
+      // saved Play session with mouse/touch, both players and both orientations.
+      for (const mode of ['advanced','beginner']) for (const turn of [0,1]) for (const orientation of [0,1]) {
+        await load([4,1],mode,null,{turn,orientation});
+        const right = turn === orientation, edge = right ? 430 : 20;
+        const xs = right ? [430,490,610,730,796] : [20,80,204,324,386];
+        const selectedDie = () => page.locator('#board .board-die.preferred').getAttribute('data-die');
+        await tap(page.locator('#board .board-die[data-die="4"]'));
+        for (const x of xs) for (const y of [296,364]) {
+          const before = await selectedDie();
+          await tapBoard(x,y);
+          assert.notEqual(await selectedDie(),before,`empty dice half switches at ${x},${y}, turn ${turn}, orientation ${orientation}, ${mode}`);
+          await count(0);
+        }
+        const preferred = await selectedDie();
+        for (const x of [right ? 204 : 610,408]) {
+          const hit = await tapBoard(x,330);
+          assert.equal(await selectedDie(),preferred,`opposite half/bar does not switch: ${JSON.stringify({touch,mode,turn,orientation,x,hit})}`);
+        }
+        await tap(page.locator('#board .board-die[data-die="4"]'));
+        // Selecting the active face toggles; explicitly select 4 if necessary.
+        if (await selectedDie() !== '4') await tapBoard(edge,330);
+        const source = turn ? 11 : 12, destination = turn ? 15 : 8;
+        await tap(page.locator(`#board [data-point="${source}"] .checker`).last());
+        if (mode === 'beginner') await tap(page.locator(`#board [data-point="${destination}"] .point-hit`));
+        await count(1);
+        const committed = (await read()).game;
+        await tapBoard(edge,330); await count(0);
+        assert.deepEqual((await read()).game,committed,'empty-lane undo preserves committed dice, events and game');
+        const boundaries = await page.locator('#board svg').evaluate((svg,xs) => xs.flatMap(x => [290,370].map(y => {
+          const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM());
+          const hit = document.elementFromPoint(p.x,p.y);
+          return {point:!!hit?.closest('[data-point]'),x,y,hit:hit?.outerHTML.slice(0,300)};
+        })), right ? [450,610,780] : [40,200,370]);
+        assert.ok(boundaries.every(p=>p.point),`full-width lane does not cover adjacent point targets: ${JSON.stringify({touch,mode,turn,orientation,boundaries})}`);
+        results.push({touch,mode,turn,orientation,fullDiceLane:true});
+      }
       // Match visual slots to chronological dice use, even when rolled in the other order.
       await load([4,1]);
       await page.keyboard.press('s');
@@ -79,6 +129,8 @@ module.exports = async function diceUndo(browser, base, out, name) {
       const forced = JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/forced-seven.json'))).state;
       await load(forced.dice,'advanced',forced); await count(1);
       await tap(page.locator('#board .board-die.consumed').first()); await count(1);
+      await tapBoard(430,330); await count(1);
+      assert.equal((await read()).game.events.length,0,'empty-lane tap cannot undo a forced step or committed turn');
       await page.keyboard.press('x'); await count(1);
       await load([4,1]);
       for (const viewport of touch ? [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:430,height:932},{width:844,height:390}] : [{width:1366,height:768},{width:1440,height:900}]) {
