@@ -281,7 +281,8 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       assert.deepEqual((await info()).draft, [move]); // native click must not duplicate the drop
       await page.evaluate(() => checkerTest.draft.undo());
       await drag(move.from, move.to, { outside: true });
-      assert.equal((await info()).draft.length, 0);
+      assert.ok((await info()).draft.length > 0);
+      await page.evaluate(() => checkerTest.draft.reset());
       await drag(move.from, move.to, { cancel: true });
       assert.equal((await info()).draft.length, 0);
       assert.equal(await page.locator(".drag-checker").count(), 0);
@@ -306,7 +307,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     report.cases.push(
       "pointer cancellation",
       "mouse drag in both orientations",
-      "outside drop cancels",
+      "outside drop snaps to a legal destination",
       "Escape cancels drag",
       "no duplicate synthetic click",
     );

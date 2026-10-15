@@ -1009,7 +1009,7 @@ export class DraftBoard {
     this.selected = source;
     sound.play("select");
     this.hint =
-      "Release on a highlighted point. Release elsewhere to cancel.";
+      "Release to place the checker; nearby misses snap to its closest legal destination.";
     this.render();
     return true;
   }
@@ -1161,6 +1161,11 @@ export class DraftBoard {
             ).map((r) => r.to)
           : [],
       sources: this.enabled && !this.preview ? this.sources() : [],
+      // Match the actual checker-disc action, not merely the existence of a
+      // reversible journey. A checker able to play either die still moves.
+      undoSources: this.enabled && !this.preview && this.advanced
+        ? this.reverseMoves().filter(route => !this.candidates().some(step => step.from === route.from)).map(route => route.from)
+        : [],
       revisionTargets:
         this.enabled && !this.preview
           ? (this.selected === null

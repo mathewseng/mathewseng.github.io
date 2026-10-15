@@ -7,7 +7,7 @@ import {
   DEFAULT_SOUND,
 } from "../core/sound.mjs";
 import { SoundPlayer } from "../ui/sound.mjs";
-import { checkerFlight } from "../ui/motion.mjs";
+import { checkerFlight, checkerDrop } from "../ui/motion.mjs";
 
 test("sound preferences migrate safely and bound volume without accepting truthy strings", () => {
   for (const value of [
@@ -239,4 +239,19 @@ test("checker flight has continuous progress through the middle and gentle depar
   const middle = Math.floor(speeds.length/2);
   assert.ok(speeds[middle] > peak*.95, "no artificial stop at the apex");
   assert.equal(flight.landings[0],flight.duration,"sound and contact align with visual landing");
+});
+
+
+test("drag release lowers smoothly from the exact held pose without a second hop", () => {
+  const origin={x:100,y:200,scale:1.1},dest={x:250,y:400};
+  const flight=checkerDrop(origin,dest);
+  assert.ok(flight.duration>=150 && flight.duration<=300);
+  assert.equal(flight.frames[0].transform,'translate(100px, 200px) scale(1.1)');
+  assert.equal(flight.frames.at(-1).transform,'translate(250px, 400px) scale(1)');
+  const values=flight.frames.map(f=>f.transform.match(/[-\d.]+/g).map(Number));
+  for(let i=1;i<values.length;i++) {
+    assert.ok(values[i][0]>=values[i-1][0]); assert.ok(values[i][1]>=values[i-1][1]);
+    assert.ok(values[i][2]<=values[i-1][2]);
+    assert.ok(Math.abs((values[i][0]-100)/150-(values[i][1]-200)/200)<1e-10);
+  }
 });

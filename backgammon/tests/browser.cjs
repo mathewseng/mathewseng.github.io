@@ -428,6 +428,9 @@ const server = http.createServer((req, res) => {
         fs.mkdirSync(researchOutput, { recursive: true });
         await require("./research.cjs")(browser, base, researchOutput);
         report.adaptive = await require("./adaptive.cjs")(browser, base, out, browserName);
+        (report.dragFeedback ||= []).push(
+          await require("./drag-feedback.cjs")(browser, base, out, browserName),
+        );
         (report.moveArrows ||= []).push(
           await require("./move-arrows.cjs")(browser, base, out, browserName),
         );

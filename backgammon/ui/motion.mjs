@@ -32,3 +32,15 @@ export function checkerFlight(points) {
   }
   return { frames, duration, landings };
 }
+
+// A held checker settles directly from its current lifted pose. Unlike a tap
+// move, it has already travelled with the user's finger and needs no new hop.
+export function checkerDrop(origin, destination) {
+  const duration = Math.min(300, 150 + Math.hypot(destination.x - origin.x, destination.y - origin.y) * .18);
+  const samples = Math.ceil(duration / 16), frames = [];
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples, u = t * t * t * (10 + t * (-15 + 6 * t));
+    frames.push({ offset:t, transform:`translate(${origin.x + (destination.x - origin.x) * u}px, ${origin.y + (destination.y - origin.y) * u}px) scale(${(origin.scale || 1) + (1 - (origin.scale || 1)) * u})` });
+  }
+  return {frames, duration, landings:[duration]};
+}

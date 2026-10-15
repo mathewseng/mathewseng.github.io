@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { keycapGraphic } from "./keycap.mjs";
 import { playerName, distance, applyStep, boardKey } from "../core/rules.mjs";
-import { reducedMotion, checkerFlight } from "./motion.mjs";
+import { reducedMotion, checkerFlight, checkerDrop } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 import { routeArrow } from "./move-arrow-route.mjs";
@@ -60,6 +60,34 @@ export function pointAt(x, y, orientation = 0) {
   }
   return null;
 }
+// A release in a legal region wins. Otherwise use its nearest edge, then its
+// center to break ties. Targets come only from the dragged checker's legal
+// routes; presentation never invents a move or chooses a different checker.
+export function closestLegalPoint(x, y, targets, player, orientation = 0) {
+  const raw = [...new Set(targets)].map(p => typeof p === "number" ? p : `${p}${player}`);
+  const hit = pointAt(x, y, orientation);
+  if (raw.includes(hit)) return hit;
+  let best = null, bestDistance = Infinity, bestCenter = Infinity;
+  for (const p of raw) {
+    let left, top, width, height;
+    if (typeof p === "number") {
+      const g = pointGeometry(p, orientation);
+      [left, top, width, height] = [g.x, g.top ? 0 : 366, 60, 294];
+    } else {
+      const upper = player !== orientation, bar = p.startsWith("bar");
+      [left, top, width, height] = bar
+        ? [385, upper ? 32 : 387, 46, upper ? 262 : 245]
+        : [820, upper ? 35 : 386, 46, 239];
+    }
+    const distance = Math.hypot(Math.max(left - x, 0, x - left - width),
+      Math.max(top - y, 0, y - top - height));
+    const center = Math.hypot(x - left - width / 2, y - top - height / 2);
+    if (distance < bestDistance || (distance === bestDistance && center < bestCenter)) {
+      best = p; bestDistance = distance; bestCenter = center;
+    }
+  }
+  return best;
+}
 export function checkerPosition(s, point, player, orientation = 0) {
   if (point === "bar")
     return { x: 408, y: player !== orientation ? 100 : 506 };
@@ -102,8 +130,8 @@ export function lastMoveGhosts(lastMove, orientation = 0) {
   return ghosts;
 }
 // Arrows connect display identities, not legal paths. Route around the final
-// stacks and dice, then mask checker faces as a fallback in very dense positions.
-export function lastMoveArrows(state, trace, orientation = 0, obstacles = []) {
+// actual checker stacks, then mask faces as a fallback in very dense positions.
+export function lastMoveArrows(state, trace, orientation = 0) {
   if (!trace?.checkers?.length) return [];
   const position = (point, index) => {
     if (point === "bar") return { x: 408, y: trace.player !== orientation ? 100 : 506 };
@@ -111,9 +139,7 @@ export function lastMoveArrows(state, trace, orientation = 0, obstacles = []) {
     const g = pointGeometry(point, orientation);
     return { x: g.x + 30, y: stackY(g.top, Math.min(index, STACK_LIMIT - 1)) };
   };
-  const blockers = [...obstacles];
-  for (const ghost of lastMoveGhosts(trace, orientation))
-    blockers.push({ x: ghost.x, y: ghost.y, r: 28 });
+  const blockers = []; // Ghost origins are empty space, not obstacles.
   for (let p = 0; p < 24; p++) {
     const g = pointGeometry(p, orientation);
     for (let i = 0; i < Math.min(Math.abs(state.points[p]), STACK_LIMIT); i++)
@@ -145,28 +171,13 @@ export function lastMoveArrows(state, trace, orientation = 0, obstacles = []) {
 }
 function moveArrowLayer(state, trace, orientation, children, id) {
   const faces = children.flatMap(n => [...n.querySelectorAll(".checker > circle:first-child")]);
-  const obstacles = [];
-  for (const group of children) {
-    for (const die of group.querySelectorAll(".board-die")) {
-      if (group.getAttribute("display") === "none") continue;
-      const x = Number(die.getAttribute("transform").match(/translate\(([-\d.]+)/)[1]);
-      obstacles.push({ x: x - 40, y: 290, width: 80, height: 84 });
-    }
-    if (group.classList.contains("board-cube")) {
-      const r = group.firstChild;
-      obstacles.push({ x: 817, y: Number(r.getAttribute("y")) - 8, width: 52, height: 52 });
-    }
-  }
-  const arrows = lastMoveArrows(state, trace, orientation, obstacles);
+  const arrows = lastMoveArrows(state, trace, orientation);
   const layer = svg("g", { class: "last-move-arrows", "pointer-events": "none", "aria-hidden": "true" });
   if (!arrows.length) return layer;
   const mask = svg("mask", { id, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 876, height: 660 });
   mask.append(svg("rect", { width: 876, height: 660, fill: "white" }));
   for (const face of faces)
     mask.append(svg("circle", { cx: face.getAttribute("cx"), cy: face.getAttribute("cy"), r: 25, fill: "black" }));
-  // Protect dice even if no clear route exists. Padding also keeps arrowheads
-  // away from the pips and consumed-die marks.
-  for (const obstacle of obstacles) mask.append(svg("rect", { ...obstacle, fill: "black", rx: 6 }));
   const defs = svg("defs"); defs.append(mask); layer.append(defs);
   const ink = svg("g", { mask: `url(#${id})`, fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" });
   for (const arrow of arrows) {
@@ -223,7 +234,7 @@ function patternOverlay(node, role) {
   overlay.setAttribute("data-pattern", role);
   return overlay;
 }
-function checker(x, y, p, count = 1, compact = false, moved = false) {
+function checker(x, y, p, count = 1, compact = false, moved = false, undoable = false) {
   const g = svg("g", {
     class: "checker",
     "data-player": p,
@@ -241,6 +252,12 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
     }),
   );
   g.append(patternOverlay(g.firstChild, `checker${p}`));
+  if (undoable) {
+    g.classList.add("draft-undo-checker");
+    g.append(svg("circle", { cx:x, cy:y, r:CHECKER_RADIUS,
+      class:"draft-undo-tint", fill:boardColor("undo"), opacity:0.7,
+      stroke:boardColor("undo"), "stroke-width":2 }));
+  }
   g.append(
     svg("circle", {
       cx: x,
@@ -251,6 +268,10 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
       "stroke-width": 1.5,
     }),
   );
+  if (undoable && count === 1)
+    g.append(svg("path", { class:"draft-undo-mark", d:`M${x+8} ${y+7}v-7a8 8 0 0 0-16 0v2m-4-4 4 4 4-4`,
+      fill:"none", stroke:boardColor("undoText"), "stroke-width":2,
+      "stroke-linecap":"round", "stroke-linejoin":"round" }));
   if (count > 1)
     g.append(
       svg(
@@ -259,7 +280,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false) {
           x,
           y: y + 7,
           "text-anchor": "middle",
-          fill: boardColor(`count${p}`),
+          fill: boardColor(undoable ? "undoText" : `count${p}`),
           "font-size": compact ? 30 : 22,
           "font-weight": 700,
         },
@@ -386,6 +407,8 @@ export class Board {
       const p = e.target.closest("[data-point]");
       if (!p?.classList.contains("movable")) return;
       const pos = this.coordinates(e.clientX, e.clientY);
+      const faces = [...p.querySelectorAll(".checker > circle:first-child")];
+      const pickIndex = faces.findIndex(c => Math.hypot(pos.x - +c.getAttribute("cx"), pos.y - +c.getAttribute("cy")) <= CHECKER_RADIUS + 1);
       if (
         !p.dataset.point.startsWith("off") &&
         ![...p.querySelectorAll(".checker > circle:first-child")].some(
@@ -404,8 +427,19 @@ export class Board {
         x: e.clientX,
         y: e.clientY,
         touch: e.pointerType === "touch",
+        pickIndex: Math.max(0, pickIndex),
         dragging: false,
       };
+      if (e.pointerType === "touch") {
+        this.touchTarget = e.target;
+        this.touchMoveGuard = event => {
+          if (this.pointer?.dragging && event.touches.length === 1 && event.cancelable)
+            event.preventDefault();
+        };
+        // Touch events stay addressed to the original circle even after the
+        // selection redraw replaces it. Keep the guard on that exact node.
+        this.touchTarget.addEventListener("touchmove", this.touchMoveGuard, {passive:false});
+      }
     });
     this.svg.addEventListener("pointermove", (e) => {
       const p = this.pointer;
@@ -414,54 +448,43 @@ export class Board {
         return;
       if (!p.dragging) {
         if (!this.onDragStart?.(p.raw)) {
-          this.pointer = null;
+          this.endDrag();
           return;
         }
         p.dragging = true;
         this.svg.setPointerCapture(e.pointerId);
         this.svg.classList.add("is-dragging");
-        this.dragGhost = checker(0, 0, this.state.turn);
-        this.dragGhost.classList.add("drag-checker");
-        this.svg.append(this.dragGhost);
-        this.svg
-          .querySelector(`[data-point="${p.raw}"] .checker:last-of-type`)
-          ?.classList.add("drag-origin");
+        this.pickUpChecker(true);
+        this.dragKeyDown = event => {
+          if (event.key !== "Escape") return;
+          event.preventDefault(); event.stopPropagation();
+          this.endDrag(); this.onCancel?.();
+        };
+        document.addEventListener("keydown", this.dragKeyDown, true);
       }
       e.preventDefault();
-      const position = this.coordinates(e.clientX, e.clientY);
-      const scale = this.svg.getScreenCTM().a;
-      this.dragPosition = {
-        x: position.x,
-        y: position.y - (p.touch ? 28 / scale : 0),
-      };
-      this.dragGhost.setAttribute(
-        "transform",
-        `translate(${this.dragPosition.x} ${this.dragPosition.y})`,
-      );
-      this.svg
-        .querySelectorAll(".drop-hover")
-        .forEach((node) => node.classList.remove("drop-hover"));
-      const target = pointAt(
-        position.x,
-        position.y,
-        this.options.orientation,
-      );
-      this.svg
-        .querySelector(`[data-point="${target}"]`)
-        ?.classList.add("drop-hover");
+      this.followDrag(e.clientX, e.clientY);
     });
+    // Some mobile engines resolve SVG touch-action at the outer SVG, and a
+    // redraw replaces the initially hit circle. Cancel only single-finger drag
+    // scrolling; ordinary board swipes and two-finger zoom retain native input.
+    this.svg.addEventListener("touchmove", e => {
+      if (this.pointer?.dragging && e.touches.length === 1 && e.cancelable)
+        e.preventDefault();
+    }, { passive:false });
     this.svg.addEventListener("pointerup", (e) => {
       const p = this.pointer;
       if (!p || p.id !== e.pointerId) return;
       if (p.dragging) {
         const pos = this.coordinates(e.clientX, e.clientY),
-          target = pointAt(pos.x, pos.y, this.options.orientation);
+          target = this.dropTarget(pos);
+        this.followDrag(e.clientX, e.clientY);
         const origin = this.dragPosition;
         this.endDrag();
         this.dropOrigin = origin;
         this.onDrop?.(p.raw, target);
         this.dropOrigin = null;
-      } else this.pointer = null;
+      } else this.endDrag();
     });
     for (const event of ["pointercancel", "lostpointercapture"])
       this.svg.addEventListener(event, () => {
@@ -709,18 +732,77 @@ export class Board {
       this.svg.getScreenCTM().inverse(),
     );
   }
+  dropTarget(position) {
+    return closestLegalPoint(position.x, position.y,
+      this.renderOptions.moves.map(move => move.to), this.state.turn, this.options.orientation);
+  }
+  pickUpChecker(animate = false) {
+    const p = this.pointer, group = this.svg.querySelector(`[data-point="${p.raw}"]`);
+    if (!group) return;
+    const pieces = [...group.querySelectorAll(":scope > .checker")];
+    const top = pieces[p.pickIndex] || pieces.at(-1);
+    if (!top) return;
+    const face = top.firstChild, x = +face.getAttribute("cx"), y = +face.getAttribute("cy");
+    // Counts represent hidden checkers: show one fewer, not a translucent copy.
+    const point = typeof p.raw === "number" ? p.raw : p.raw.slice(0, -1);
+    const count = typeof point === "number" ? Math.abs(this.state.points[point]) : this.state[point][this.state.turn];
+    top.classList.add("drag-origin");
+    group.classList.add("drag-source");
+    if ((typeof point === "number" && count > STACK_LIMIT) || (typeof point === "string" && count > 1)) {
+      const remainder = checker(x, y, this.state.turn,
+        typeof point === "number" && (count === STACK_LIMIT + 1 || p.pickIndex < STACK_LIMIT - 1) ? 1 : count - 1, this.container.clientWidth < 600);
+      remainder.classList.add("drag-remainder"); group.append(remainder);
+      if (typeof point === "number" && p.pickIndex < STACK_LIMIT - 1) {
+        const cap = pieces.at(-1); cap.classList.add("drag-origin");
+        const replacement = checker(+cap.firstChild.getAttribute("cx"), +cap.firstChild.getAttribute("cy"), this.state.turn,
+          count === STACK_LIMIT + 1 ? 1 : count - 1, this.container.clientWidth < 600);
+        replacement.classList.add("drag-remainder"); group.append(replacement);
+      }
+    }
+    if (point === "off") [...group.querySelectorAll(".off-checker")].at(-1)?.classList.add("drag-origin");
+    this.dragGhost = svg("g", { class:"drag-checker", "pointer-events":"none", "aria-hidden":"true" });
+    this.dragFace = checker(0, 0, this.state.turn);
+    this.dragFace.classList.add("drag-face"); this.dragGhost.append(this.dragFace);
+    this.svg.append(this.dragGhost);
+    if (animate && !reducedMotion()) {
+      const down = this.coordinates(p.x, p.y);
+      this.dragLift = this.dragFace.animate([
+        { transform: `translate(${x - down.x}px, ${y - down.y}px) scale(1)` },
+        { transform: `translateY(${p.touch ? -24 / this.svg.getScreenCTM().a : 0}px) scale(1.1)` },
+      ], { duration:160, easing:"cubic-bezier(.2,.75,.3,1)", fill:"forwards" });
+    } else this.dragFace.style.transform = `translateY(${p.touch && !reducedMotion() ? -24 / this.svg.getScreenCTM().a : 0}px) scale(${reducedMotion() ? 1 : 1.1})`;
+  }
+  followDrag(clientX, clientY) {
+    const p = this.pointer;
+    p.clientX = clientX; p.clientY = clientY;
+    const position = this.coordinates(clientX, clientY);
+    // Immediate translation: no easing/animation queue between pointer and piece.
+    this.dragGhost.setAttribute("transform", `translate(${position.x} ${position.y})`);
+    const pose = new DOMMatrix(getComputedStyle(this.dragFace).transform);
+    this.dragPosition = { x:position.x + pose.e, y:position.y + pose.f, scale:pose.a };
+    this.svg.querySelectorAll(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
+    const target = this.dropTarget(position);
+    this.svg.querySelector(`[data-point="${target}"]`)?.classList.add("drop-hover");
+  }
   endDrag() {
     const p = this.pointer;
     this.pointer = null;
+    this.touchTarget?.removeEventListener("touchmove", this.touchMoveGuard);
+    this.touchTarget = null;
+    document.removeEventListener("keydown", this.dragKeyDown, true);
     if (p?.dragging) this.suppressClickUntil = performance.now() + 400;
     if (p && this.svg.hasPointerCapture(p.id))
       this.svg.releasePointerCapture(p.id);
+    this.dragLift?.cancel();
+    this.dragLift = null;
     this.dragGhost?.remove();
     this.dragGhost = null;
     this.dragPosition = null;
     this.svg
       .querySelectorAll(".drag-origin")
       .forEach((n) => n.classList.remove("drag-origin"));
+    this.svg.querySelectorAll(".drag-remainder").forEach(n => n.remove());
+    this.svg.querySelectorAll(".drag-source").forEach(n => n.classList.remove("drag-source"));
     this.svg.classList.remove("is-dragging");
     this.svg
       .querySelectorAll(".drop-hover")
@@ -832,12 +914,12 @@ export class Board {
           })
         : [];
     const flight = this.flyChecker(
-      (!reverse && this.dropOrigin) ||
+      this.dropOrigin ||
         checkerPosition(before, from, p, this.options.orientation),
       checkerPosition(after, to, p, this.options.orientation),
       p,
       to,
-      { via },
+      { via: this.dropOrigin ? [] : via, drop: !!this.dropOrigin },
     );
     if (reverse)
       this.feedbackTimers.push(
@@ -854,7 +936,7 @@ export class Board {
               ? "off"
               : "move";
         this.feedbackTimers.push(
-          setTimeout(() => sound.play(name), flight.landings[i]),
+          setTimeout(() => sound.play(name), flight.landings[i] ?? flight.duration),
         );
         current = next;
       });
@@ -872,7 +954,7 @@ export class Board {
           animateHit(
             checkerPosition(current, st.to, 1 - p, this.options.orientation),
             checkerPosition(next, "bar", 1 - p, this.options.orientation),
-            "bar", Math.max(0, flight.landings[index] - 35),
+            "bar", Math.max(0, (flight.landings[index] ?? flight.duration) - 35),
           );
         current = next;
       }
@@ -894,7 +976,7 @@ export class Board {
     destination,
     player,
     target,
-    { via = [], delay = 0 } = {},
+    { via = [], delay = 0, drop = false } = {},
   ) {
     const piece = checker(0, 0, player);
     piece.classList.add("moving-checker");
@@ -913,7 +995,7 @@ export class Board {
       landed.dataset.arriving = Number(landed.dataset.arriving || 0) + 1;
     }
     this.svg.append(piece);
-    const flight = checkerFlight([origin, ...via, destination]);
+    const flight = drop ? checkerDrop(origin, destination) : checkerFlight([origin, ...via, destination]);
     if (target === "off") {
       flight.frames[0].opacity = 1;
       flight.frames.at(-1).opacity = 0;
@@ -997,7 +1079,11 @@ export class Board {
             Math.hypot(b.x - dest.x, b.y - dest.y),
         );
         const origin = origins.shift();
-        if (origin) this.flyChecker(origin, dest, player, dest.point);
+        if (origin) {
+          const held = player === before.turn && this.dropOrigin && !this.dropOrigin.used;
+          this.flyChecker(held ? this.dropOrigin : origin, dest, player, dest.point, {drop:!!held});
+          if (held) this.dropOrigin.used = true;
+        }
       }
     }
   }
@@ -1160,6 +1246,7 @@ export class Board {
       destinations = [],
       reachable = [],
       reverseTargets = [],
+      undoSources = [],
       revisionTargets = [],
       sources = [],
       moves = [],
@@ -1210,6 +1297,7 @@ export class Board {
       destinations,
       reachable,
       reverseTargets,
+      undoSources,
       revisionTargets,
       sources,
       moves,
@@ -1282,7 +1370,7 @@ export class Board {
           n && (v > 0 ? 0 : 1) === lastMove?.player
             ? Math.min(n, lastMove.points[p] || 0)
             : 0;
-      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${reachable.includes(p) ? revisionTargets.includes(p) ? ", dice-revision destination: tap point space to revise the draft" : ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
+      const label = `Point ${distance(p, orientation)}, ${n ? `${n} ${playerName(v > 0 ? 0 : 1)} checkers` : "empty"}${sources.includes(p) ? ", movable" : ""}${undoSources.includes(p) ? ", tap checker to undo its draft move" : ""}${reachable.includes(p) ? revisionTargets.includes(p) ? ", dice-revision destination: tap point space to revise the draft" : ", reachable: tap the point or press Shift+Enter to move nearest checker" : ""}${
         destinations.includes(p)
           ? ", legal destination, dice " +
             moves
@@ -1384,6 +1472,7 @@ export class Board {
             i === STACK_LIMIT - 1 && n > STACK_LIMIT ? n : 1,
             compact,
             moved > 0 && (i === STACK_LIMIT - 1 || i >= n - moved),
+            interactive && undoSources.includes(p) && i === Math.min(n, STACK_LIMIT) - 1,
           ),
         );
       if (destinations.includes(p))
@@ -1584,7 +1673,7 @@ export class Board {
         role: "button",
         "aria-disabled": !interactive,
         "aria-pressed": selected === "off" && s.turn === p,
-        "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${(destinations.includes("off") || reachable.includes("off")) && s.turn === p ? ", legal bearoff destination" : ""}${sources.includes("off") && s.turn === p ? ", draft return available: select a borne-off checker" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
+        "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${(destinations.includes("off") || reachable.includes("off")) && s.turn === p ? ", legal bearoff destination" : ""}${undoSources.includes("off") && s.turn === p ? ", tap checker to undo its draft bearoff" : sources.includes("off") && s.turn === p ? ", draft return available: select a borne-off checker" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
         class: `point${reachable.includes("off") && s.turn === p ? " reachable" : ""}${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
       });
       const movedOff =
@@ -1641,7 +1730,7 @@ export class Board {
         off.append(
           // A full checker-sized count target is easier to select on phones
           // than the thin storage strips. It stays clear of all 15 strips.
-          checker(843, top ? 250 : 410, p, s.off[p], compact),
+          checker(843, top ? 250 : 410, p, s.off[p], compact, false, interactive && s.turn === p && undoSources.includes("off")),
         );
       if (sources.includes("off") && s.turn === p &&
           (selected === null || selected === "off"))
@@ -1750,8 +1839,15 @@ export class Board {
         },
       ),
     );
-    if (lastMove?.checkers?.length)
-      children.push(moveArrowLayer(s, lastMove, orientation, children, this.arrowMaskId));
+    if (lastMove?.checkers?.length) {
+      const arrows = moveArrowLayer(s, lastMove, orientation, children, this.arrowMaskId);
+      // Dice/cube paint over an uninterrupted route, without creating detours
+      // or padded holes in it. Only real checker faces belong to the mask.
+      const dice = children.pop();
+      const cubeIndex = children.findIndex(n => n.classList.contains("board-cube"));
+      const cube = cubeIndex < 0 ? [] : children.splice(cubeIndex, 1);
+      children.push(arrows, ...cube, dice);
+    }
     const arrowKey = JSON.stringify([lastMove?.player, lastMove?.checkers, lastMove?.dice]);
     const newArrows = this.arrowKey !== arrowKey;
     this.arrowKey = arrowKey;
@@ -1777,6 +1873,11 @@ export class Board {
         if (pose) animation.currentTime = pose.time;
         this.animations.push(animation);
       });
+    }
+    if (this.pointer?.dragging) {
+      this.dragLift?.cancel();
+      this.pickUpChecker();
+      this.followDrag(this.pointer.clientX, this.pointer.clientY);
     }
     this.svg.classList.toggle("is-preview", preview);
     this.svg.classList.toggle("is-editor", editor && interactive);

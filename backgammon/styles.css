@@ -1594,6 +1594,10 @@ details .stack {
   filter: drop-shadow(0 6px 4px #0007);
   pointer-events: none;
 }
+.drag-face { transform-origin: 0 0; }
+.bg-board.has-moves .point.movable .checker > circle:first-child {
+  pointer-events: all;
+}
 .moving-checker {
   pointer-events: none;
   filter: drop-shadow(0 4px 3px #0005);
@@ -1822,8 +1826,8 @@ button.teal-die:hover {
   stroke-dasharray: none;
   stroke-width: 5;
 }
-.checker.drag-origin {
-  opacity: 0.25;
+.drag-origin, .drag-source .source-ring {
+  visibility: hidden;
 }
 
 /* Appearance stays local to Backgammon. Color controls never resize the game. */
@@ -3248,6 +3252,16 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 .bg-board.no-move-hints .point .point-hit {
   fill: transparent;
   stroke: none;
+}
+/* A single release preview also serves advanced play with legal hints off. */
+.bg-board.is-dragging .point.drop-hover .point-hit {
+  fill: color-mix(in srgb, var(--board-destination) 20%, transparent);
+  stroke: var(--board-destination);
+  stroke-width: 2;
+}
+.bg-board.is-dragging .point.return-destination.drop-hover .point-hit {
+  fill: color-mix(in srgb, var(--board-undo) 20%, transparent);
+  stroke: var(--board-undo);
 }
 html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible .point-hit {
   stroke: var(--board-focus);

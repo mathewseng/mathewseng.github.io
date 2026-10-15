@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { initialState, legalPaths, applyStep } from "../core/rules.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
-import { lastMoveArrows, lastMoveGhosts } from "../ui/board.mjs";
+import { lastMoveArrows, lastMoveGhosts, closestLegalPoint, pointGeometry } from "../ui/board.mjs";
 import { routeArrow, segmentClear } from "../ui/move-arrow-route.mjs";
 
 const after = (s, steps) =>
@@ -117,7 +117,7 @@ test("bar entry, hits, bearing off, tall stacks and passes produce honest displa
   assert.equal(moveTrace(s, 0, []).checkers.length, 0);
   assert.deepEqual(lastMoveArrows(s, moveTrace(s, 0, [])), []);
 });
-test("arrow routing clears intervening checker and dice obstacles with finite, deterministic rounded paths", () => {
+test("arrow routing clears real checkers with deterministic broad curves and ignores dice rectangles", () => {
   const a = { x: 54, y: 54 },
     b = { x: 354, y: 54 };
   const obstacles = [
@@ -127,17 +127,19 @@ test("arrow routing clears intervening checker and dice obstacles with finite, d
   ];
   const route = routeArrow(a, b, obstacles);
   assert.ok(route.routed);
-  assert.match(route.d, /C/);
+  assert.equal(route.kind, "bow");
+  assert.match(route.d, /Q/);
   assert.deepEqual(route, routeArrow(a, b, obstacles));
   for (let i = 1; i < route.points.length; i++)
     assert.ok(segmentClear(route.points[i - 1], route.points[i], obstacles));
   assert.equal(routeArrow(a, a, []), null);
   assert.match(
     routeArrow(a, { x: 114, y: 54 }, []).d,
-    /C/,
+    /Q/,
     "adjacent transfers stay finite",
   );
-  const sealed = routeArrow(a, b, [{ x: 100, y: 0, width: 200, height: 660 }]);
+  assert.deepEqual(route, routeArrow(a, b, obstacles.filter(o => o.r)), "UI rectangles never influence geometry");
+  const sealed = routeArrow(a, b, Array.from({length:8}, (_, i) => ({x:200,y:i*90,r:85})));
   assert.equal(
     sealed.routed,
     false,
@@ -146,7 +148,7 @@ test("arrow routing clears intervening checker and dice obstacles with finite, d
   assert.ok(!/NaN|Infinity/.test(sealed.d));
 });
 
-test("two-radius clearance wraps smoothly around a checker and a touching stack", () => {
+test("broad bows keep two-radius checker clearance with one continuous direction of curvature", () => {
   for (const stack of [1, 2, 5]) {
     const obstacles = Array.from({ length: stack }, (_, i) => ({
       x: 300,
@@ -155,6 +157,8 @@ test("two-radius clearance wraps smoothly around a checker and a touching stack"
     }));
     const route = routeArrow({ x: 100, y: 200 }, { x: 500, y: 200 }, obstacles);
     assert.ok(route.routed);
+    assert.equal(route.kind, "bow");
+    const turns = [];
     for (const point of route.points)
       for (const obstacle of obstacles)
         assert.ok(
@@ -165,17 +169,17 @@ test("two-radius clearance wraps smoothly around a checker and a touching stack"
       const a = route.points[i - 2],
         b = route.points[i - 1],
         c = route.points[i];
-      const turn = Math.abs(
-        Math.atan2(
+      const turn = Math.atan2(
           (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x),
           (b.x - a.x) * (c.x - b.x) + (b.y - a.y) * (c.y - b.y),
-        ),
-      );
+        );
+      turns.push(turn);
       assert.ok(
-        turn < 0.07,
-        "no visible corner between straight, blended and circular spans",
+        Math.abs(turn) < 0.07,
+        "no sharp turn within a broad curve",
       );
     }
+    assert.ok(turns.every(t => t < 1e-8) || turns.every(t => t > -1e-8), "no S-bend around a checker cluster");
   }
 });
 
@@ -208,4 +212,39 @@ test("transition polynomial matches position and first three derivatives at both
         }, 0);
         assert.ok(Math.abs(value - (t ? right : left)[d][k]) < 1e-9);
       }
+});
+
+
+test("reported two departures stay straight through empty ghosts and the dice lane", () => {
+  const points = Array(24).fill(0);
+  for (const [p,n] of [[13,3],[8,4],[6,5],[24,2],[11,1],[12,-5],[17,-2],[19,-4],[22,-2],[1,-2]]) points[p-1]=n;
+  const source = initialState({phase:"move",turn:1,dice:[4,3],points});
+  const steps = [{from:11,to:15,die:4},{from:11,to:14,die:3}];
+  assert.ok(legalPaths(source).some(p => JSON.stringify(p.steps) === JSON.stringify(steps)));
+  const end = after(source,steps), trace = moveTrace(end,1,steps,source.dice);
+  for (const orientation of [0,1]) {
+    const arrows=lastMoveArrows(end,trace,orientation);
+    assert.equal(arrows.length,2);
+    assert.ok(arrows.every(a=>a.kind === "straight"));
+    for (const a of arrows) for (const p of a.points)
+      assert.ok(Math.abs((p.x-a.from.x)*(a.to.y-a.from.y)-(p.y-a.from.y)*(a.to.x-a.from.x)) < 1e-7);
+  }
+});
+
+
+test("drag snaps only to this checker's legal regions, including rotated bar/off and outside releases", () => {
+  for (const player of [0, 1]) for (const orientation of [0, 1]) {
+    for (const p of [0, 5, 12, 23]) {
+      const g = pointGeometry(p, orientation);
+      assert.equal(closestLegalPoint(g.x + 30, g.top ? 100 : 500, [p, "off"], player, orientation), p);
+      assert.equal(closestLegalPoint(g.x - 1, g.top ? 100 : 500, [p], player, orientation), p);
+    }
+    const top = player !== orientation;
+    assert.equal(closestLegalPoint(843, top ? 100 : 500, [5, "off"], player, orientation), `off${player}`);
+    assert.equal(closestLegalPoint(408, top ? 100 : 500, [5, "bar"], player, orientation), `bar${player}`);
+    assert.equal(closestLegalPoint(-2000, -2000, [12], player, orientation), 12);
+    assert.equal(closestLegalPoint(1, 1, [], player, orientation), null);
+    for (let x = -100; x <= 1000; x += 41) for (let y = -100; y <= 760; y += 43)
+      assert.ok([3, 9, `off${player}`].includes(closestLegalPoint(x, y, [3, 9, "off"], player, orientation)));
+  }
 });

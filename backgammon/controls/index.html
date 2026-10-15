@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=262a297cc5978c64" />
-    <link rel="stylesheet" href="./controls.css?bgv=262a297cc5978c64" />
-    <script type="module" src="../ui/update-page.mjs?bgv=262a297cc5978c64"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=234220201cf7cff7" />
+    <link rel="stylesheet" href="./controls.css?bgv=234220201cf7cff7" />
+    <script type="module" src="../ui/update-page.mjs?bgv=234220201cf7cff7"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -457,9 +457,9 @@
             </tr>
             <tr role="row" id="case-drag">
               <th role="rowheader" scope="row" data-label="Situation">Drag an actual movable checker (including reversible OFF)</th>
-              <td role="cell" data-label="What is highlighted">Its source and legal destinations become selected; drop target feedback follows the pointer.</td>
+              <td role="cell" data-label="What is highlighted">The checker lifts off its stack. One drop cue shows where release will place it, even with legal hints hidden.</td>
               <td role="cell" data-label="Click the checker">Begin explicit source-to-destination movement.</td>
-              <td role="cell" data-label="Click point / tray space">A valid drop uses that source only. Invalid/outside drops cancel without playing another checker or following a ghost. Vertical swipes in open board space scroll.</td>
+              <td role="cell" data-label="Click point / tray space">A valid drop uses that source only. An off-target release snaps to its nearest legal destination, including a legal draft return. Escape or an interrupted touch cancels. Vertical swipes in open board space scroll.</td>
             </tr>
             <tr role="row" id="case-editor">
               <th role="rowheader" scope="row" data-label="Situation">Solver position editor</th>
@@ -500,9 +500,11 @@
           <h2>Bar, undo &amp; dragging</h2>
           <p>
             Enter from the bar first. Legal routes respect all dice and
-            bearing-off rules. Drag to a highlighted destination; an invalid
-            drop cancels. Select a moved checker and its dashed return
-            target, or use Undo/Reset.
+            bearing-off rules. Drag a checker to a destination; an off-target
+            release snaps to its closest legal destination. Escape cancels.
+            In Advanced mode, an amber checker with a return symbol can be
+            clicked to undo: it has no forward move and its draft is editable.
+            Used dice also undo; desktop Z undoes and X resets the editable draft.
           </p>
         </div>
         <div>

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Display geometry only. Tangents and circular arcs follow the union of checker
-// clearance discs (22px checker + 22px breathing room). Short C3 Hermite blends
-// join straight/circular spans; the SVG approximation is subpixel, not a claim
-// that a curved path or an animated checker has literally zero jerk.
+// Display geometry only. Prefer a straight line, then one broad quadratic bow:
+// a single smooth bend instead of contour-following around individual checkers.
+// Clearance discs retain 22px of breathing room around a 22px checker. Only
+// crowded routes use the tangent graph with C3 blends as a fallback. Geometric
+// smoothness is not a claim of zero physical jerk during an animated move.
 export const ARROW_CLEARANCE = 44;
 const TAU = Math.PI * 2,
   EPS = 1e-6;
@@ -22,24 +23,7 @@ export function segmentClear(a, b, obstacles) {
       );
       return Math.hypot(a.x + t * dx - o.x, a.y + t * dy - o.y) >= o.r - EPS;
     }
-    let low = 0,
-      high = 1;
-    for (const [s, d, min, max] of [
-      [a.x, dx, o.x, o.x + o.width],
-      [a.y, dy, o.y, o.y + o.height],
-    ]) {
-      if (Math.abs(d) < EPS) {
-        if (s < min || s > max) return true;
-      } else {
-        let t0 = (min - s) / d,
-          t1 = (max - s) / d;
-        if (t0 > t1) [t0, t1] = [t1, t0];
-        low = Math.max(low, t0);
-        high = Math.min(high, t1);
-        if (low > high) return true;
-      }
-    }
-    return false;
+    return true; // Dice, cube and other rectangular UI are not checkers.
   });
 }
 function line(a, b) {
@@ -226,22 +210,105 @@ function poly(c, t, derivative = 0) {
     return sum + v * k * t ** (i - derivative);
   }, 0);
 }
+const dot = (a, b) => a.x * b.x + a.y * b.y;
+function quadraticRoots(a, b, c) {
+  if (Math.abs(a) < EPS) return Math.abs(b) < EPS ? [] : [-c / b];
+  const d = b * b - 4 * a * c;
+  return d < 0 ? [] : [(-b - Math.sqrt(d)) / (2 * a), (-b + Math.sqrt(d)) / (2 * a)];
+}
+function bowCurve(from, to, height) {
+  const length = gap(from, to), dx = to.x - from.x, dy = to.y - from.y;
+  const normal = { x: -dy / length, y: dx / length };
+  const a = { x: -4 * height * normal.x, y: -4 * height * normal.y };
+  const b = { x: dx - a.x, y: dy - a.y };
+  return {
+    a, b, from, to, length, height,
+    at: t => ({ x: from.x + b.x * t + a.x * t * t, y: from.y + b.y * t + a.y * t * t }),
+    tangent: t => ({ x: b.x + 2 * a.x * t, y: b.y + 2 * a.y * t }),
+  };
+}
+function bowClear(curve, blockers) {
+  const { a, b, from } = curve;
+  // Exact coordinate extrema keep the entire curve inside the board.
+  const extrema = [0, 1, ...["x", "y"].map(k => -b[k] / (2 * a[k])).filter(t => t > 0 && t < 1)];
+  if (extrema.some(t => !within(curve.at(t)))) return false;
+  return blockers.every(o => {
+    const c = { x: from.x - o.x, y: from.y - o.y };
+    // The squared distance's derivative is cubic. Split it at its extrema,
+    // then find every root on monotone intervals; no sparse collision samples.
+    const coeff = [dot(b, c), dot(b, b) + 2 * dot(a, c), 3 * dot(a, b), 2 * dot(a, a)];
+    const cuts = [0, ...quadraticRoots(3 * coeff[3], 2 * coeff[2], coeff[1]).filter(t => t > 0 && t < 1).sort((x, y) => x - y), 1];
+    const candidates = [...cuts];
+    for (let i = 1; i < cuts.length; i++) {
+      let low = cuts[i - 1], high = cuts[i], sign = poly(coeff, low);
+      if (sign * poly(coeff, high) >= 0) continue;
+      for (let j = 0; j < 32; j++) {
+        const mid = (low + high) / 2;
+        if (sign * poly(coeff, mid) <= 0) high = mid;
+        else low = mid;
+      }
+      candidates.push((low + high) / 2);
+    }
+    return candidates.every(t => gap(curve.at(t), o) >= o.r - EPS);
+  });
+}
+function bowRoute(from, to, height) {
+  const curve = bowCurve(from, to, height);
+  if (gap(curve.at(0.5), from) <= 28) return null;
+  let low = 0, high = 0.5;
+  for (let i = 0; i < 32; i++) {
+    const mid = (low + high) / 2;
+    if (gap(curve.at(mid), from) < 28) low = mid;
+    else high = mid;
+  }
+  const start = high, end = 1 - high, first = curve.at(start), tip = curve.at(end);
+  const tangent = curve.tangent(start);
+  const control = { x: first.x + tangent.x * (end - start) / 2, y: first.y + tangent.y * (end - start) / 2 };
+  const format = p => `${p.x.toFixed(3)} ${p.y.toFixed(3)}`;
+  const n = Math.ceil((curve.length + 4 * Math.abs(height)) * (end - start) / 2);
+  const direction = curve.tangent(end);
+  return {
+    d: `M${format(first)} Q${format(control)} ${format(tip)}`,
+    points: Array.from({ length: n + 1 }, (_, i) => curve.at(start + (end - start) * i / n)),
+    tip, angle: Math.atan2(direction.y, direction.x) * 180 / Math.PI,
+    routed: true, kind: height ? "bow" : "straight",
+  };
+}
+function broadBow(from, to, blockers) {
+  // For this symmetric quadratic family, less deflection also means less
+  // total turning. Search both sides and refine the first clear interval.
+  // A single bow has no inflections or straight/arc junctions to visibly kink.
+  for (let height = 4; height <= 660; height += 4) {
+    const options = [];
+    for (const sign of [1, -1]) {
+      if (!bowClear(bowCurve(from, to, height * sign), blockers)) continue;
+      let low = height - 4, high = height;
+      for (let i = 0; i < 12; i++) {
+        const mid = (low + high) / 2;
+        if (bowClear(bowCurve(from, to, mid * sign), blockers)) high = mid;
+        else low = mid;
+      }
+      options.push({ height: high, sign });
+    }
+    if (options.length) {
+      const best = options.sort((a, b) => a.height - b.height)[0];
+      return bowRoute(from, to, best.height * best.sign);
+    }
+  }
+  return null;
+}
 export function routeArrow(from, to, obstacles) {
   if (gap(from, to) < 1) return null;
   const blockers = [];
   for (const o of obstacles) {
-    if (o.r !== undefined && (gap(o, from) < 1 || gap(o, to) < 1)) continue;
-    const c =
-      o.r === undefined
-        ? {
-            x: o.x + o.width / 2,
-            y: o.y + o.height / 2,
-            r: Math.hypot(o.width, o.height) / 2 + 2,
-          }
-        : { ...o, r: Math.max(ARROW_CLEARANCE, o.r) };
+    if (!Number.isFinite(o.r) || gap(o, from) < 1 || gap(o, to) < 1) continue;
+    const c = { ...o, r: Math.max(ARROW_CLEARANCE, o.r) };
     if (!blockers.some((b) => gap(b, c) < EPS && Math.abs(b.r - c.r) < EPS))
       blockers.push(c);
   }
+  if (segmentClear(from, to, blockers)) return bowRoute(from, to, 0);
+  const bow = broadBow(from, to, blockers);
+  if (bow) return bow;
   const spans = route(from, to, blockers),
     routed = !!spans;
   const path = spans || [line(from, to)],

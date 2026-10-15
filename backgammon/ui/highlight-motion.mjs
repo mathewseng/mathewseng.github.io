@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Decorative SVG fragments only. The live point classes/hit regions always
 // describe the current legal actions, even while an old highlight fades away.
-const fragments = '.point-glow,.point-accent,.point-wash,.source-ring,.landing-ring,.ring-halo,.destination-badge,.destination-die';
+const fragments = '.draft-undo-tint,.draft-undo-mark,.point-glow,.point-accent,.point-wash,.source-ring,.landing-ring,.ring-halo,.destination-badge,.destination-die';
 const paint = ['display', 'fill', 'fill-opacity', 'stroke', 'stroke-width',
   'stroke-opacity', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap',
   'stroke-linejoin', 'filter', 'vector-effect', 'font-family', 'font-size',

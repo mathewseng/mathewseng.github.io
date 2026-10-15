@@ -90,6 +90,41 @@ module.exports = async function moveArrows(browser, base, out, name) {
     const file=`${name}-move-arrows-reported-stack.png`;
     await page.screenshot({path:path.join(out,file),animations:'disabled'});screenshots.push(file);
     assert.equal(await page.locator('.last-move-arrow').count(),2);
+
+    // October 15: both lines are direct. Neither empty ghost slots nor the
+    // large historical dice may introduce the reported S-shaped detour.
+    for (const orientation of [0,1]) {
+      await page.evaluate(async orientation=>{
+        const r=await import('/backgammon/core/rules.mjs'),{moveTrace}=await import('/backgammon/core/move-trace.mjs');
+        const {Board,lastMoveArrows}=await import('/backgammon/ui/board.mjs');
+        (await import('/backgammon/core/appearance.mjs')).applyBoardTheme({preset:'plum'});
+        const points=Array(24).fill(0);
+        for(const [p,n] of [[13,3],[8,4],[6,5],[24,2],[11,1],[12,-5],[17,-2],[19,-4],[22,-2],[1,-2]])points[p-1]=n;
+        const source=r.initialState({phase:'move',turn:1,dice:[4,3],points});
+        const steps=[{from:11,to:15,die:4},{from:11,to:14,die:3}];
+        const end=steps.reduce((s,st)=>r.applyStep(s,st),source),trace=moveTrace(end,1,steps,source.dice);
+        const state={...end,dice:[],phase:'roll',turn:0};
+        document.body.replaceChildren(); const slot=document.createElement('div');
+        slot.style.cssText='width:min(100%,1100px);margin:auto';document.body.append(slot);
+        const board=new Board(slot);board.render(state,{orientation,interactive:false,lastMove:trace});
+        window.arrowFixture={board,state,trace,orientation,kinds:lastMoveArrows(state,trace,orientation).map(a=>a.kind)};
+      },orientation);
+      assert.deepEqual(await page.evaluate(()=>arrowFixture.kinds),['straight','straight']);
+      const paths=await page.locator('.move-arrow-line').evaluateAll(ns=>ns.map(n=>n.getAttribute('d')));
+      assert.equal(await page.locator('.last-move-arrows mask rect').count(),1,'mask has no dice/cube holes');
+      assert.ok(await page.evaluate(()=>{
+        const arrow=document.querySelector('.last-move-arrows'),dice=document.querySelector('.board-dice');
+        return !!(arrow.compareDocumentPosition(dice)&Node.DOCUMENT_POSITION_FOLLOWING);
+      }));
+      for(const [width,height] of [[390,844],[844,390],[1440,1000]]) {
+        await page.setViewportSize({width,height});
+        const file=`${name}-move-arrows-direct-${orientation}-${width}.png`;
+        await page.screenshot({path:path.join(out,file),animations:'disabled'});screenshots.push(file);
+      }
+      await page.evaluate(()=>{const f=arrowFixture;f.board.render({...f.state,cube:{...f.state.cube,value:8,owner:1}},
+        {orientation:f.orientation,interactive:false,lastMove:f.trace,hideDice:true});});
+      assert.deepEqual(await page.locator('.move-arrow-line').evaluateAll(ns=>ns.map(n=>n.getAttribute('d'))),paths);
+    }
     assert.deepEqual(errors,[]);
     return {browser:name,screenshots,isolated:true,pointerTransparent:true};
   }finally{await context.close();}
