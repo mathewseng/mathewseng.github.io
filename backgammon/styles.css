@@ -1595,11 +1595,11 @@ details .stack {
   pointer-events: none;
 }
 .drag-face { transform-origin: 0 0; }
-.drag-landing-ghost {
+.drag-landing-ghost, .drop-landing-ghost {
   --landing-color: var(--board-destination);
   pointer-events: none;
 }
-.drag-landing-ghost.is-undo { --landing-color: var(--board-undo); }
+.drag-landing-ghost.is-undo, .drop-landing-ghost.is-undo { --landing-color: var(--board-undo); }
 .drag-landing-face { fill-opacity: .42; }
 .drag-landing-inner { stroke: var(--landing-color); stroke-width: 1.4; opacity: .65; }
 .drag-landing-edge {

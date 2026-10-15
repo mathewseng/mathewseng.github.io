@@ -47,6 +47,16 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     assert.deepEqual(actual,{x:landing.x,y:landing.y},'ghost previews the actual resulting checker slot');
   };
   const shot=async(label)=>{const file=`${name}-${label}.png`;await page.screenshot({path:path.join(out,file)});shots.push(file);};
+  // Freeze on the actual release, after the legal draft dispatch, so frame
+  // assertions do not depend on how fast this computer runs the browser.
+  const holdDrop=async(p=page)=>p.evaluate(()=>{
+    const board=document.querySelector('.bg-board');
+    board.addEventListener('pointerup',()=>{
+      const ghost=board.querySelector('.drop-landing-ghost'),piece=ghost?.nextElementSibling;
+      window.dropProbe=ghost ? {ghost,piece,ga:ghost.getAnimations()[0],pa:piece.getAnimations()[0]} : null;
+      if(dropProbe) for(const a of [dropProbe.ga,dropProbe.pa]) {a.pause();a.currentTime=0;}
+    },{once:true});
+  });
   try {
     await page.goto(base+'/backgammon/');
     await page.evaluate(async()=>{
@@ -151,6 +161,66 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     assert.equal(await page.evaluate(()=>dragTest.d.board.dragLanding.getAnimations().length),0);
     await page.keyboard.press('Escape');await page.mouse.up();
     assert.equal(await page.locator('.drag-landing-ghost').count(),0);
+    // Both sprites settle together for forward, combined, hit, undo, revised
+    // and bearoff moves. The game updates immediately; animation is decoration.
+    for(const kind of ['opening','combined','undo','hit','revision','off']) {
+      await fixture({kind:['combined','undo'].includes(kind)?'opening':kind,motion:'full'});
+      let from=12,to=kind==='combined'?7:8;
+      if(kind==='undo') {await page.evaluate(()=>dragTest.d.move({from:12,to:8,die:4}));from=8;to=12;}
+      if(kind==='revision') {
+        await page.evaluate(()=>{dragTest.d.move({from:'bar',to:20,die:4});dragTest.d.move({from:20,to:19,die:1});});from=19;to=23;
+      }
+      if(kind==='off') {await page.evaluate(()=>{dragTest.d.preferred=1;dragTest.d.render();});from=0;to='off0';}
+      await page.waitForTimeout(600);await lift(from,to);await page.waitForTimeout(210);
+      const initialOpacity=await page.locator('.drag-landing-ghost').evaluate(n=>Number(getComputedStyle(n).opacity));
+      await holdDrop();await page.mouse.up();
+      const frames=await page.evaluate(()=>{
+        if(!dropProbe) return null;
+        const {ga,pa,ghost}=dropProbe;
+        const at=f=>{ga.currentTime=f*ga.effect.getTiming().duration;pa.currentTime=f*pa.effect.getTiming().duration;return Number(getComputedStyle(ghost).opacity);};
+        return {duration:ga.effect.getTiming().duration,checkerDuration:pa.effect.getTiming().duration,
+          opacity:[at(0),at(.3),at(.65),at(.95)],
+          ghostEnd:ga.effect.getKeyframes().at(-1).transform,checkerEnd:pa.effect.getKeyframes().at(-1).transform,
+          pointerEvents:getComputedStyle(ghost).pointerEvents,hidden:ghost.getAttribute('aria-hidden')};
+      });
+      assert.ok(frames,`${kind}: ghost survives release`);
+      assert.equal(frames.duration,frames.checkerDuration,'ghost fades on the checker landing clock');
+      assert.equal(frames.ghostEnd,frames.checkerEnd,'both converge on the same landing position');
+      assert.ok(Math.abs(frames.opacity[0]-initialOpacity)<.01,'no opacity jump at release');
+      assert.ok(Math.abs(frames.opacity[0]-frames.opacity[1])<.001,'ghost stays visible during approach');
+      assert.ok(frames.opacity[2]>0 && frames.opacity[2]<frames.opacity[1]);
+      assert.ok(frames.opacity[3]<.02,'ghost vanishes as the checker settles');
+      assert.equal(frames.pointerEvents,'none');assert.equal(frames.hidden,'true');
+      assert.equal(await page.evaluate(()=>{
+        const {ga,pa,ghost,piece}=dropProbe;
+        const time=ga.currentTime;dragTest.d.render();
+        return ghost.isConnected && piece.isConnected && ga.currentTime===time &&
+          ghost.getAnimations()[0]===ga && piece.getAnimations()[0]===pa;
+      }),true,'unchanged redraw retains the landing and fade clocks');
+      if(kind==='opening' || kind==='undo') {
+        await page.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.currentTime=a.effect.getTiming().duration*.6;});
+        await shot(`drop-settling-${kind}`);
+      }
+      await page.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.play();});
+      await page.waitForFunction(()=>!document.querySelector('.drop-landing-ghost,.moving-checker'));
+      assert.equal(await page.locator('[data-arriving]').count(),0);
+      assert.equal(await page.evaluate(()=>JSON.stringify(dragTest.d.state)===sourceJSON),true,'settling does not commit the draft');
+    }
+    await fixture({motion:'full'});await lift(12,8);await page.waitForTimeout(210);
+    const across=await coord(7);await page.mouse.move(across.x,across.y);
+    const beforeDrop=await page.evaluate(()=>{const b=dragTest.d.board;b.dragLandingMove.pause();b.dragLandingMove.currentTime=50;return getComputedStyle(b.dragLanding).transform;});
+    await holdDrop();await page.mouse.up();
+    assert.ok(await page.evaluate(before=>{
+      const a=new DOMMatrix(before),b=new DOMMatrix(getComputedStyle(dropProbe.ghost).transform);
+      return Math.hypot(a.e-b.e,a.f-b.f)<.01;
+    },beforeDrop),'release continues an interrupted glide');
+    await page.evaluate(()=>{document.documentElement.dataset.motion='reduce';dispatchEvent(new Event('bg-motion'));});
+    assert.equal(await page.locator('.drop-landing-ghost,.moving-checker,[data-arriving]').count(),0);
+    await fixture({motion:'reduce'});await lift(12,8);await release();
+    assert.equal(await page.locator('.drop-landing-ghost,.moving-checker').count(),0);
+    await fixture({motion:'full'});await lift(12,8);await holdDrop();await page.mouse.up();
+    await page.evaluate(()=>dragTest.d.set(dragTest.d.state,dragTest.d.paths));
+    assert.equal(await page.locator('.drop-landing-ghost,.moving-checker,[data-arriving]').count(),0,'new state clears interrupted release');
     await fixture({mode:'beginner'});await page.evaluate(()=>{dragTest.d.move({from:12,to:8,die:4});dragTest.d.move({from:5,to:4,die:1});});
     assert.equal(await page.locator('.draft-undo-checker').count(),0,'beginner clicks still select');
     await fixture({motion:'full'});
@@ -191,7 +261,13 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...coords.b,id:1}]});
       await t.waitForTimeout(180);
       const file=`${name}-actual-touch-pickup.png`;await t.screenshot({path:path.join(out,file)});shots.push(file);
+      await holdDrop(t);
       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      assert.equal(await t.locator('.drop-landing-ghost').count(),1,'touch release retains the ghost');
+      await t.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.currentTime=a.effect.getTiming().duration*.6;});
+      const settling=`${name}-touch-drop-settling.png`;await t.screenshot({path:path.join(out,settling)});shots.push(settling);
+      await t.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.play();});
+      await t.waitForFunction(()=>!document.querySelector('.drop-landing-ghost,.moving-checker'));
       assert.equal(await t.evaluate(()=>touchDraft.draft.length),1);
       assert.equal(await t.evaluate(()=>scrollY),0);
       assert.equal(await t.locator('.drag-checker,.drag-origin,.drag-landing-ghost').count(),0);
@@ -219,8 +295,14 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       const a=await coord(12,true),b=await coord(8);
       await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:6});
       assert.equal(await page.locator('.drag-checker').count(),1);await shot(`live-drag-${width}`);
+      await holdDrop();
       await page.mouse.up();
+      assert.equal(await page.locator('.drop-landing-ghost').count(),1);
       await page.waitForFunction(async()=>{const v=await(await import('/backgammon/core/storage.mjs')).get('work','play');return v.draft.length===1;});
+      await page.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.currentTime=a.effect.getTiming().duration*.6;});
+      await shot(`live-drop-settling-${width}`);
+      await page.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.play();});
+      await page.waitForFunction(()=>!document.querySelector('.drop-landing-ghost,.moving-checker'));
       const q=await coord(5,true);await page.mouse.click(q.x,q.y);
       await page.waitForFunction(async()=>{const v=await(await import('/backgammon/core/storage.mjs')).get('work','play');return v.draft.length===2;});
       await page.waitForTimeout(600);await shot(`live-amber-${width}`);
@@ -229,6 +311,6 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       assert.equal(stored.game.events.length,0);assert.deepEqual(stored.game.state.dice,[4,1]);
     }
     assert.deepEqual(errors,[]);
-    return {screenshots:shots,checks:['amber matches click-to-undo','forced/preview/beginner exclusions','actual source hidden','nearest legal release','ghost matches final landing slot','hits and compressed destination counts','multi-die journeys and dice revisions','interrupted ghost glide and mid-drag redraw','reduced motion settles ghost','blocked/outside drops','Escape cancellation','both modes/orientations/players','compressed/bar/off stacks','desktop and mobile layout',...(name==='chromium'?['Chromium native touch and retargeting']:[])]};
+    return {screenshots:shots,checks:['amber matches click-to-undo','forced/preview/beginner exclusions','actual source hidden','nearest legal release','ghost matches final landing slot','hits and compressed destination counts','multi-die journeys and dice revisions','interrupted ghost glide and mid-drag redraw','ghost retained through release and fades on landing','settle clocks survive unchanged redraws','real Play and touch settle without committing turn','reduced motion settles ghost','blocked/outside drops','Escape cancellation','both modes/orientations/players','compressed/bar/off stacks','desktop and mobile layout',...(name==='chromium'?['Chromium native touch and retargeting']:[])]};
   } finally {await ctx.close();}
 };

@@ -483,11 +483,11 @@ export class Board {
         const pos = this.coordinates(e.clientX, e.clientY),
           target = this.dropTarget(pos);
         this.followDrag(e.clientX, e.clientY);
-        const origin = this.dragPosition;
+        const origin = { ...this.dragPosition, landing: this.captureDragLanding() };
         this.endDrag();
         this.dropOrigin = origin;
-        this.onDrop?.(p.raw, target);
-        this.dropOrigin = null;
+        try { this.onDrop?.(p.raw, target); }
+        finally { this.dropOrigin = null; }
       } else this.endDrag();
     });
     for (const event of ["pointercancel", "lostpointercapture"])
@@ -788,6 +788,31 @@ export class Board {
     this.dragLandingTarget = null;
     this.dragLandingContext = null;
   }
+  captureDragLanding() {
+    if (!this.dragLanding || reducedMotion() || document.hidden) return null;
+    const style = getComputedStyle(this.dragLanding);
+    return { node: this.dragLanding.cloneNode(true), transform: style.transform,
+      opacity: Number(style.opacity), target: this.dragLanding.dataset.target };
+  }
+  settleDropGhost(snapshot, destination, flight, checkerAnimation) {
+    if (!snapshot) return;
+    const node = snapshot.node, pose = new DOMMatrix(snapshot.transform);
+    node.classList.replace("drag-landing-ghost", "drop-landing-ghost");
+    // Retain the visible frame even if release interrupts a destination glide.
+    // The ghost and held checker converge on the same slot, on the same clock.
+    const frames = checkerDrop({ x: pose.e, y: pose.f }, destination).frames.map(frame => {
+      const t = Math.max(0, (frame.offset - .35) / .65);
+      const fade = t * t * t * (10 + t * (-15 + 6 * t));
+      return { ...frame, opacity: snapshot.opacity * (1 - fade) };
+    });
+    this.svg.insertBefore(node, checkerAnimation.effect.target);
+    const animation = node.animate(frames, {
+      duration: flight.duration, fill: "both", easing: "linear", id: "drop-landing-settle",
+    });
+    if (checkerAnimation.startTime !== null) animation.startTime = checkerAnimation.startTime;
+    this.animations.push(animation);
+    animation.finished.then(() => { node.remove(); animation.cancel(); }).catch(() => node.remove());
+  }
   pickUpChecker(animate = false) {
     const p = this.pointer, group = this.svg.querySelector(`[data-point="${p.raw}"]`);
     if (!group) return;
@@ -862,17 +887,19 @@ export class Board {
       .querySelectorAll(".drop-hover")
       .forEach((n) => n.classList.remove("drop-hover"));
   }
-  cancelAnimations() {
-    this.feedbackTimers.forEach(clearTimeout);
-    this.feedbackTimers = [];
-    this.animations?.forEach((a) => a.cancel());
-    this.animations = [];
+  cancelAnimations(keep = []) {
+    if (!keep.length) {
+      this.feedbackTimers.forEach(clearTimeout);
+      this.feedbackTimers = [];
+    }
+    this.animations?.filter(a => !keep.includes(a.effect?.target)).forEach(a => a.cancel());
+    this.animations = this.animations?.filter(a => keep.includes(a.effect?.target)) || [];
     clearHighlightExits(this.svg);
     clearLastMoveExits(this.svg);
     clearPreview(this.svg);
     this.svg
-      .querySelectorAll(".moving-checker,.landing-contact")
-      .forEach((n) => n.remove());
+      .querySelectorAll(".moving-checker,.landing-contact,.drop-landing-ghost")
+      .forEach((n) => { if (!keep.includes(n)) n.remove(); });
     this.svg.querySelectorAll("[data-arriving]").forEach((n) => {
       n.style.opacity = "";
       n.removeAttribute("data-arriving");
@@ -1046,6 +1073,8 @@ export class Board {
           Number(node.firstChild.getAttribute("cx")) === destination.x &&
           Number(node.firstChild.getAttribute("cy")) === destination.y,
       ) || candidates.at(-1);
+    piece.arrival = landed;
+    piece.arrivalTarget = { raw, destination };
     if (landed) {
       landed.style.opacity = "0";
       landed.dataset.arriving = Number(landed.dataset.arriving || 0) + 1;
@@ -1063,10 +1092,13 @@ export class Board {
       easing: "linear",
     });
     this.animations.push(animation);
+    if (drop && origin.landing?.target === String(raw))
+      this.settleDropGhost(origin.landing, destination, flight, animation);
     animation.finished
       .then(() => {
         piece.remove();
         animation.cancel();
+        const landed = piece.arrival;
         if (landed && Number(landed.dataset.arriving) <= 1) {
           landed.style.opacity = "";
           landed.removeAttribute("data-arriving");
@@ -1136,7 +1168,9 @@ export class Board {
         );
         const origin = origins.shift();
         if (origin) {
-          const held = player === before.turn && this.dropOrigin && !this.dropOrigin.used;
+          const raw = typeof dest.point === "number" ? String(dest.point) : `${dest.point}${player}`;
+          const held = player === before.turn && this.dropOrigin && !this.dropOrigin.used &&
+            (!this.dropOrigin.landing || this.dropOrigin.landing.target === raw);
           this.flyChecker(held ? this.dropOrigin : origin, dest, player, dest.point, {drop:!!held});
           if (held) this.dropOrigin.used = true;
         }
@@ -1330,6 +1364,13 @@ export class Board {
       ? captureHighlights(this.svg) : [];
     const before = this.state;
     const sameTurn = before && before.turn === s.turn && before.gameNumber === s.gameNumber;
+    // Analysis/status redraws must not cut a release short. Keep its live
+    // sprites and clocks only while the actual position/context is unchanged.
+    const settling = highlightMotion && interactive && !preview && !editor && !playback &&
+      sameTurn && before.phase === s.phase && before.sequence === s.sequence &&
+      this.options?.orientation === orientation && boardKey(before) === boardKey(s) &&
+      this.svg.querySelector('.drop-landing-ghost')
+      ? [...this.svg.querySelectorAll('.drop-landing-ghost,.moving-checker')] : [];
     const rolling = sameTurn && before.phase === "roll" && s.sequence === before.sequence + 1
       && this.renderOptions?.lastMove && boardKey(before) === boardKey(s);
     const lastMoveExit = highlightMotion && this.options?.orientation === orientation
@@ -1341,7 +1382,7 @@ export class Board {
       this.playbackTimer = null;
       this.playbackFinal = null;
     }
-    this.cancelAnimations();
+    this.cancelAnimations(settling);
     if (this.options?.orientation !== orientation || !interactive)
       this.endDrag();
     this.state = s;
@@ -1931,6 +1972,20 @@ export class Board {
         if (pose) animation.currentTime = pose.time;
         this.animations.push(animation);
       });
+    }
+    for (const node of settling) {
+      this.svg.append(node);
+      if (node.arrivalTarget) {
+        const { raw, destination } = node.arrivalTarget;
+        const faces = [...this.svg.querySelectorAll(`[data-point="${raw}"] .checker`)];
+        const landed = faces.find(n => +n.firstChild.getAttribute('cx') === destination.x &&
+          +n.firstChild.getAttribute('cy') === destination.y) || faces.at(-1);
+        node.arrival = landed;
+        if (landed) {
+          landed.style.opacity = '0';
+          landed.dataset.arriving = Number(landed.dataset.arriving || 0) + 1;
+        }
+      }
     }
     if (this.pointer?.dragging) {
       if (this.dragLanding) this.svg.append(this.dragLanding);
