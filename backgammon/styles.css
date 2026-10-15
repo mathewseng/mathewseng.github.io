@@ -1609,7 +1609,7 @@ details .stack {
   transform-origin: center;
 }
 .board-die-face {
-  /* Status marks extend beyond the face; never let them shift its lift origin. */
+  /* Face center is local (0, 0); status marks must not shift the scale origin. */
   transform-box: view-box;
   transform-origin: 0 0;
 }
@@ -1628,7 +1628,8 @@ button.die:hover {
   background: var(--board-die0, #eeeade);
 }
 button.die.preferred {
-  transform: translateY(-3px) scale(1.08);
+  transform: scale(1.12);
+  border-color: var(--board-selection);
   box-shadow: 0 5px 8px #0005, 0 1px 2px #0004;
 }
 .die-reveal {
@@ -2123,26 +2124,26 @@ button.teal-die:hover {
 .board-die.consumed {
   opacity: 0.42;
 }
-/* Selection lifts the whole die, preserving its own theme colors. */
+/* Centered enlargement and a colored rim distinguish the selected die. */
 .board-die-face {
   transition: transform 220ms cubic-bezier(.2, .75, .3, 1), filter 220ms ease;
 }
 .board-die.preferred .board-die-face {
-  transform: translateY(-4px) scale(1.08);
+  transform: scale(1.12);
   filter: drop-shadow(0 5px 4px #0006) drop-shadow(0 1px 1px #0004);
 }
 @media (hover: hover) and (pointer: fine) {
   .board-die[role="button"]:not(.preferred):hover .board-die-face {
-    transform: translateY(-2px) scale(1.035);
+    transform: scale(1.035);
     filter: drop-shadow(0 3px 3px #0004);
   }
   button.die:not(.preferred):not(:disabled):hover {
-    transform: translateY(-1px) scale(1.035);
+    transform: scale(1.035);
     box-shadow: 0 3px 5px #0004;
   }
 }
 .board-die[role="button"]:active .board-die-face {
-  transform: translateY(-1px) scale(1.02);
+  transform: scale(1.02);
   filter: drop-shadow(0 2px 2px #0004);
 }
 html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
@@ -3766,7 +3767,7 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .board-slot:focus, .board-workspace:focus, .action-area:focus, .action-help:focus { outline: none; }
 .bg-board, .bg-board *, .player-strip, .action-area { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .bg-board:not(:has(.point.movable)) { touch-action: manipulation; }
-.bg-board .board-cube[role="button"], .dice-switch, .roll-ready .bg-board { cursor: pointer; }
+.bg-board .board-cube[role="button"], .dice-switch, .dice-switch-hit, .roll-ready .bg-board { cursor: pointer; }
 .board-cube:focus-visible, .dice-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .board-die.blocked .board-die-face > :not(.die-status-mark),
 .board-die.consumed .board-die-face > :not(.die-status-mark) { opacity: .38; }
@@ -3885,6 +3886,12 @@ button kbd.keycap, .play-page #message kbd.keycap {
 .bg-board .cube-key .keycap-art { --keycap-fill: var(--board-cube); color: var(--board-cube-text); }
 .point-shortcut { opacity: 1; }
 .board-actions #confirm kbd.keycap { margin: 0; }
+/* Keep point numbers and touch controls; keyboard badges add noise on phones.
+   Coarse/no-hover also covers landscape phones and tablets. Narrow desktop
+   windows use the same compact presentation without disabling key bindings. */
+@media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  button kbd.keycap, .play-page #message kbd.keycap, .bg-board .keycap-art { display: none; }
+}
 
 /* Undo belongs to the draft, beside the board, separately from a turn takeback. */
 .board-undo { display: flex; flex: 0 0 80px; min-width: 0; flex-direction: column; align-self: center; gap: 8px; }

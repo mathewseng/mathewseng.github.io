@@ -349,12 +349,9 @@ export class Board {
       if (e.target.closest(".board-cube")) { this.onCube?.(); return; }
       if (this.onRoll?.()) return;
       if (!this.options?.interactive) return;
-      if (e.target.closest(".dice-switch")) { this.onSwitchDice?.(); return; }
+      if (e.target.closest(".dice-switch, .dice-switch-hit")) { this.onSwitchDice?.(); return; }
       const die = e.target.closest("[data-die]");
-      if (die && die.getAttribute("role") === "button") {
-        this.renderOptions.chooseDie?.(Number(die.dataset.die));
-        return;
-      }
+      if (this.activateDie(die)) return;
       const p = e.target.closest("[data-point]");
       if (p) {
         const raw = this.decode(p.dataset.point);
@@ -493,7 +490,7 @@ export class Board {
         e.preventDefault(); this.onCube?.(); return;
       }
       if (!this.options?.interactive) return;
-      if (["Enter", " "].includes(e.key) && e.target.closest(".dice-switch")) {
+      if (["Enter", " "].includes(e.key) && e.target.closest(".dice-switch, .dice-switch-hit")) {
         e.preventDefault(); this.onSwitchDice?.(); return;
       }
       const die = e.target.closest("[data-die]");
@@ -503,7 +500,7 @@ export class Board {
         die.getAttribute("role") === "button"
       ) {
         e.preventDefault();
-        this.renderOptions.chooseDie?.(Number(die.dataset.die));
+        this.activateDie(die);
         return;
       }
       const point = e.target.closest("[data-point]");
@@ -544,6 +541,18 @@ export class Board {
   decode(p) {
     return /^\d+$/.test(p) ? Number(p) : p;
   }
+  activateDie(die) {
+    if (!die) return false;
+    // The selected/used face shares the surrounding lane's switch/undo action.
+    // An unselected face explicitly chooses that die, also in beginner mode.
+    if (die.classList.contains("preferred") ||
+        (this.renderOptions.advanced && die.classList.contains("consumed"))) {
+      this.onSwitchDice?.();
+    } else if (die.getAttribute("role") === "button") {
+      this.renderOptions.chooseDie?.(Number(die.dataset.die));
+    } else return false;
+    return true;
+  }
   dice(
     s,
     {
@@ -575,6 +584,15 @@ export class Board {
         : s.dice;
     const used = [...usedDice], forced = [...forcedDice],
       center = s.turn === orientation ? 610 : 204;
+    const undoAction = advanced && usedDice.length > 0;
+    if (interactive && chooseDie && !historical) {
+      const width = (values.length - 1) * (values.length === 2 ? 106 : 72) + 96;
+      // Only the center lane: the point hit regions end at 294/start at 366.
+      // Cover gaps and side padding without stealing a checker/point/cube tap.
+      group.append(svg("rect", { class: "dice-switch-hit", x: center - width / 2,
+        y: 294, width, height: 72, fill: "transparent", role: "button", tabindex: -1,
+        "aria-label": undoAction ? "Undo draft step" : "Switch selected die" }));
+    }
     const pips = {
       1: [4],
       2: [0, 8],
@@ -592,6 +610,7 @@ export class Board {
       const active = !consumed && !blocked && preferredDie === value &&
         !values.slice(0, i).some((v, j) => v === value && j >= usedDice.filter(d => d === value).length);
       const clickable = interactive && chooseDie && !consumed && !blocked;
+      const actionLabel = active ? undoAction ? "Undo draft step, die " : "Switch selected die, die " : "Use die ";
       const x = center + (i - (values.length - 1) / 2) * (values.length === 2 ? 106 : 72);
       const die = svg("g", {
         transform: `translate(${x} 330)`,
@@ -599,7 +618,7 @@ export class Board {
         class: `board-die${consumed ? " consumed" : ""}${isForced ? " forced" : ""}${blocked ? " blocked" : ""}${active && clickable ? " preferred" : ""}`,
         "data-status": isForced ? "forced" : consumed ? "used" : blocked ? "blocked" : active ? "selected" : "available",
         role: clickable ? "button" : "img",
-        "aria-label": `${clickable ? "Use die " : "Die "}${value}${historical ? ", previous roll" : isForced ? ", forced move" : consumed ? ", used" : blocked ? ", no legal move" : active ? ", selected" : ", available"}`,
+        "aria-label": `${clickable ? actionLabel : "Die "}${value}${historical ? ", previous roll" : isForced ? ", forced move" : consumed ? ", used" : blocked ? ", no legal move" : active ? ", selected" : ", available"}`,
         ...(clickable
           ? { tabindex: 0, "aria-pressed": preferredDie === value }
           : {}),
@@ -614,12 +633,19 @@ export class Board {
         stroke: boardColor(`dieBorder${s.turn}`),
         "stroke-width": 2,
       });
-      // Keep the touch target still while the visual face lifts/settles, within
+      // Keep the touch target still while the visual face grows/settles, within
       // the center lane so its padding never steals a point-space tap.
       die.append(svg("rect", { class: "board-die-hit", x: -34, y: -36,
         width: 68, height: 72, fill: "transparent", "aria-hidden": "true" }));
       const body = svg("g", { class: "board-die-face", "pointer-events": "none" });
       body.append(face, patternOverlay(face, `die${s.turn}`));
+      // A restrained colored rim reinforces size/shadow. Keep it mounted so
+      // switching, using and undoing can reverse its fade from the visible frame.
+      body.append(svg("rect", { class: "die-status-mark die-selection-accent",
+        "data-die-mark": "selected", x: -31, y: -31, width: 62, height: 62, rx: 11,
+        fill: "color-mix(in srgb, var(--board-selection) 8%, transparent)",
+        stroke: boardColor("selection"), "stroke-width": 2.4,
+        opacity: active && clickable ? 1 : 0, "aria-hidden": "true" }));
       for (const pip of pips[value])
         body.append(
           svg("circle", {
@@ -654,13 +680,13 @@ export class Board {
       die.append(body);
       group.append(die);
     });
-    if (interactive && chooseDie && advanced && !historical) {
+    if (interactive && chooseDie && !historical) {
       const swap = svg("g", { class: "dice-switch", role: "button", tabindex: 0,
-        "aria-label": usedDice.length ? "Undo draft step" : "Switch selected die", transform: `translate(${center} ${values.length === 2 ? 330 : 375})` });
+        "aria-label": undoAction ? "Undo draft step" : "Switch selected die", transform: `translate(${center} ${values.length === 2 ? 330 : 375})` });
       swap.append(svg("rect", { class: "dice-switch-surface", x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }));
       for (const [icon, d, visible] of [
-        ["swap", "M-10 -5H10l-4 -4M10 5H-10l4 4", !usedDice.length],
-        ["undo", "M-10 -3H2a7 7 0 0 1 0 14H-4M-4 -9l-6 6 6 6", !!usedDice.length],
+        ["swap", "M-10 -5H10l-4 -4M10 5H-10l4 4", !undoAction],
+        ["undo", "M-10 -3H2a7 7 0 0 1 0 14H-4M-4 -9l-6 6 6 6", undoAction],
       ]) swap.append(svg("path", { "data-dice-icon": icon, d, opacity: visible ? 1 : 0,
         fill: "none", stroke: "var(--text)", "stroke-width": 2,
         "stroke-linecap": "round", "stroke-linejoin": "round", "pointer-events": "none", "aria-hidden": "true" }));
