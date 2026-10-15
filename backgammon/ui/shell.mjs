@@ -913,13 +913,13 @@ export class DraftBoard {
     this.render();
     return "selected";
   }
-  chooseRoutes(routes, sourceTap = false) {
+  routeChoices(routes) {
     const current = this.current();
     // Equivalent paths with the same resulting position and consumed dice need
     // no extra confirmation. Combined shortcuts prefer hits; distinct hitting
     // outcomes and different die use remain choices.
     const distinct = new Map();
-    for (const route of routes.sort(
+    for (const route of [...routes].sort(
       (a, b) =>
         Number(b.steps[0].die === this.preferred) -
         Number(a.steps[0].die === this.preferred),
@@ -941,17 +941,30 @@ export class DraftBoard {
           .join();
       if (!distinct.has(key)) distinct.set(key, route);
     }
-    const choices = preferHittingRoutes(current, [...distinct.values()]);
+    return preferHittingRoutes(current, [...distinct.values()]);
+  }
+  preferredRoute(choices) {
+    const preferred = choices.filter(st => !st.undo && !st.switchDie &&
+      st.steps.length === 1 && st.steps[0].die === this.preferred);
+    return preferred.length === 1 ? preferred[0] : choices.length === 1 ? choices[0] : null;
+  }
+  dropPreview(raw) {
+    const point = this.normalize(raw);
+    const choices = this.routeChoices(this.routes().filter(route => route.to === point));
+    const route = this.preferredRoute(choices) || choices[0];
+    if (!route) return null;
+    // Revisions/returns replay the replacement draft, never reverse-apply a
+    // forward step. All paths for this dragged checker share its landing point.
+    const steps = route.undo || route.switchDie ? route.remaining : [...this.draft, ...route.steps];
+    const after = steps.reduce((s, step) => applyStep(s, step), this.state);
+    return { point, count: typeof point === "number" ? Math.abs(after.points[point]) : after[point][after.turn], undo: !!route.undo };
+  }
+  chooseRoutes(routes, sourceTap = false) {
+    const choices = this.routeChoices(routes);
     if (choices.length && (!sourceTap || choices.length === 1)) {
-      const preferred = choices.filter(
-        (st) =>
-          !st.undo &&
-          !st.switchDie &&
-          st.steps.length === 1 &&
-          st.steps[0].die === this.preferred,
-      );
-      if (choices.length === 1 || preferred.length === 1)
-        this.moveRoute(preferred[0] || choices[0]);
+      const preferred = this.preferredRoute(choices);
+      if (preferred)
+        this.moveRoute(preferred);
       else {
         const state = this.state,
           signature = JSON.stringify(this.draft);
@@ -1174,6 +1187,7 @@ export class DraftBoard {
             ).map((r) => r.to)
           : [],
       moves,
+      dropPreview: (point) => this.dropPreview(point),
       interactive: this.enabled && !this.preview,
       preview: !!this.preview,
       usedDice: this.draft.map((st) => st.die),

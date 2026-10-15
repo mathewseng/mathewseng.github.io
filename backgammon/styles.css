@@ -1595,6 +1595,20 @@ details .stack {
   pointer-events: none;
 }
 .drag-face { transform-origin: 0 0; }
+.drag-landing-ghost {
+  --landing-color: var(--board-destination);
+  pointer-events: none;
+}
+.drag-landing-ghost.is-undo { --landing-color: var(--board-undo); }
+.drag-landing-face { fill-opacity: .42; }
+.drag-landing-inner { stroke: var(--landing-color); stroke-width: 1.4; opacity: .65; }
+.drag-landing-edge {
+  stroke: var(--landing-color);
+  stroke-width: 2.4;
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+}
+.drag-landing-count { font-size: 16px; font-weight: 700; }
 .bg-board.has-moves .point.movable .checker > circle:first-child {
   pointer-events: all;
 }

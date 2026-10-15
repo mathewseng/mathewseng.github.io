@@ -13,6 +13,11 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     if(options.kind==='stack') {const points=Array(24).fill(0);points[12]=8;points[5]=7;points[23]=-15;s=r.initialState({points,phase:'move',dice:[4,1]});}
     if(options.kind==='bar') {const points=Array(24).fill(0);points[5]=13;points[11]=-15;s=r.initialState({points,bar:[2,0],phase:'move',dice:[4,1]});}
     if(options.kind==='off') {const points=Array(24).fill(0);points[0]=2;points[23]=-15;s=r.initialState({points,off:[13,0],phase:'move',dice:[1,2]});}
+    if(['hit','landing-stack','doubles'].includes(options.kind)) {const points=Array(24).fill(0);points[12]=15;points[23]=-15;
+      if(options.kind==='hit') {points[8]=-1;points[23]=-14;}
+      if(options.kind==='landing-stack') {points[12]=7;points[8]=8;}
+      s=r.initialState({points,phase:'move',dice:options.kind==='doubles'?[2,2]:[4,1]});}
+    if(options.kind==='revision') {const points=Array(24).fill(0);points[5]=14;points[11]=-15;s=r.initialState({points,bar:[1,0],phase:'move',dice:[4,1]});}
     if(options.turn) s={...s,turn:1,points:s.points.toReversed().map(n=>-n),bar:s.bar.toReversed(),off:s.off.toReversed()};
     d.set(s,r.legalPaths(s)); window.sourceJSON=JSON.stringify(s);
   },{mode,turn,orientation,kind,motion});
@@ -29,10 +34,18 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     assert.ok(await page.locator('.drag-origin').count()>0);
     assert.ok(await page.locator('.drag-origin').evaluateAll(ns=>ns.every(n=>getComputedStyle(n).visibility==='hidden')),'no faded original checker');
     assert.equal(await page.locator('.drop-hover').count(),1);
+    assert.equal(await page.locator('.drag-landing-ghost').count(),1);
+    assert.equal(await page.locator('.drag-landing-ghost').getAttribute('data-target'),await page.locator('.drop-hover').getAttribute('data-point'));
     assert.equal(await page.evaluate(()=>JSON.stringify(dragTest.d.state)===sourceJSON),true,'pickup never mutates game');
     return await page.locator('.drop-hover').getAttribute('data-point');
   };
-  const release=async()=>{await page.mouse.up();assert.equal(await page.locator('.drag-checker,.drag-origin,.drag-remainder,.drop-hover').count(),0);};
+  const release=async()=>{
+    const landing=await page.locator('.drag-landing-ghost').evaluate(n=>{const m=new DOMMatrix(n.style.transform);return {target:n.dataset.target,x:m.e,y:m.f};});
+    await page.mouse.up();
+    assert.equal(await page.locator('.drag-checker,.drag-origin,.drag-remainder,.drop-hover,.drag-landing-ghost').count(),0);
+    const actual=await page.locator(`[data-point="${landing.target}"] > .checker > circle:first-child`).last().evaluate(c=>({x:+c.getAttribute('cx'),y:+c.getAttribute('cy')}));
+    assert.deepEqual(actual,{x:landing.x,y:landing.y},'ghost previews the actual resulting checker slot');
+  };
   const shot=async(label)=>{const file=`${name}-${label}.png`;await page.screenshot({path:path.join(out,file)});shots.push(file);};
   try {
     await page.goto(base+'/backgammon/');
@@ -87,6 +100,57 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     await page.evaluate(()=>{dragTest.d.move({from:0,to:'off',die:1});});
     assert.equal(await page.locator('[data-point="off0"] .draft-undo-checker').count(),1);
     await lift('off0',0);await release();assert.equal((await snapshot()).state.off[0],13);
+    // Landing slots are based on the resulting legal draft: occupied stacks,
+    // hits, multi-die journeys, original returns and replacement-die routes.
+    for(const turn of [0,1]) for(const orientation of [0,1]) {
+      const map=p=>turn?23-p:p;
+      for(const kind of ['hit','landing-stack','doubles']) {
+        await fixture({kind,turn,orientation});
+        await lift(map(12),map(kind==='doubles'?4:8));
+        if(kind==='landing-stack') assert.equal(await page.locator('.drag-landing-count').textContent(),'9');
+        if(kind==='landing-stack' && !turn && !orientation) await shot('landing-compressed-stack');
+        await release();
+        assert.equal((await snapshot()).draft.length,kind==='doubles'?4:1);
+        if(kind==='hit') assert.equal((await snapshot()).state.bar[1-turn],1);
+        await lift(map(kind==='doubles'?4:8),map(12));
+        assert.equal(await page.locator('.drag-landing-ghost.is-undo').count(),1);
+        if(kind==='hit' && !turn && !orientation) await shot('landing-undo');
+        await release();assert.equal((await snapshot()).draft.length,0);
+      }
+      await fixture({kind:'off',turn,orientation});
+      await page.evaluate(()=>{dragTest.d.preferred=1;dragTest.d.render();});
+      await lift(map(0),`off${turn}`);await release();
+      assert.equal((await snapshot()).state.off[turn],14);
+      await fixture({kind:'revision',turn,orientation});
+      await page.evaluate(({a,b})=>{dragTest.d.move({from:'bar',to:a,die:4});dragTest.d.move({from:a,to:b,die:1});},{a:map(20),b:map(19)});
+      await lift(map(19),map(23));await release();
+      assert.deepEqual((await snapshot()).draft,[{from:'bar',to:map(23),die:1}]);
+      await lift(map(23),`bar${turn}`);await release();assert.equal((await snapshot()).state.bar[turn],1);
+    }
+    // Real pointer movement retargets one ghost from its currently visible pose.
+    await fixture({motion:'full'});await lift(12,8);await page.waitForTimeout(210);
+    const target=await coord(7);await page.mouse.move(target.x,target.y);
+    const motionCheck=await page.evaluate(()=>{
+      const b=dragTest.d.board,n=b.dragLanding,a=b.dragLandingMove;
+      a.pause();a.currentTime=60;
+      const read=()=>{const m=new DOMMatrix(getComputedStyle(n).transform);return{x:m.e,y:m.f};};
+      const middle=read();b.followDrag(b.pointer.clientX,b.pointer.clientY);
+      const unchanged=a===b.dragLandingMove;
+      dragTest.d.render();const redraw=a===b.dragLandingMove && n===b.dragLanding;
+      const prior=read(),m=b.svg.getScreenCTM(),q=new DOMPoint(234,460).matrixTransform(m);
+      b.followDrag(q.x,q.y);b.dragLandingMove.pause();b.dragLandingMove.currentTime=0;
+      const resumed=read();
+      return{middle,unchanged,redraw,prior,resumed};
+    });
+    assert.ok(motionCheck.middle.x>234 && motionCheck.middle.x<294,'ghost glides between points');
+    assert.ok(motionCheck.middle.y<606 && motionCheck.middle.y>474,'ghost glides to occupied stack slot');
+    assert.equal(motionCheck.unchanged,true,'movement within one region does not restart the glide');
+    assert.equal(motionCheck.redraw,true,'unrelated redraw retains node and in-flight animation');
+    assert.ok(Math.hypot(motionCheck.prior.x-motionCheck.resumed.x,motionCheck.prior.y-motionCheck.resumed.y)<.1,'rapid reversal starts at visible position');
+    await page.evaluate(()=>{document.documentElement.dataset.motion='reduce';dispatchEvent(new Event('bg-motion'));});
+    assert.equal(await page.evaluate(()=>dragTest.d.board.dragLanding.getAnimations().length),0);
+    await page.keyboard.press('Escape');await page.mouse.up();
+    assert.equal(await page.locator('.drag-landing-ghost').count(),0);
     await fixture({mode:'beginner'});await page.evaluate(()=>{dragTest.d.move({from:12,to:8,die:4});dragTest.d.move({from:5,to:4,die:1});});
     assert.equal(await page.locator('.draft-undo-checker').count(),0,'beginner clicks still select');
     await fixture({motion:'full'});
@@ -119,19 +183,25 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coords.a,id:1}]});
       for(let i=1;i<=10;i++) await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:coords.a.x+(coords.b.x-coords.a.x)*i/10,y:coords.a.y+(coords.b.y-coords.a.y)*i/10,id:1}]});
       assert.equal(await t.locator('.drag-checker').count(),1);
+      assert.equal(await t.locator('.drag-landing-ghost[data-target="8"]').count(),1);
+      const occupied=await t.evaluate(()=>{const p=new DOMPoint(294,460).matrixTransform(touchDraft.board.svg.getScreenCTM());return{x:p.x,y:p.y};});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...occupied,id:1}]});
+      assert.equal(await t.locator('.drag-landing-ghost[data-target="7"]').count(),1);
+      assert.equal(await t.evaluate(()=>touchDraft.draft.length),0,'touch preview never plays a move');
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...coords.b,id:1}]});
       await t.waitForTimeout(180);
       const file=`${name}-actual-touch-pickup.png`;await t.screenshot({path:path.join(out,file)});shots.push(file);
       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
       assert.equal(await t.evaluate(()=>touchDraft.draft.length),1);
       assert.equal(await t.evaluate(()=>scrollY),0);
-      assert.equal(await t.locator('.drag-checker,.drag-origin').count(),0);
+      assert.equal(await t.locator('.drag-checker,.drag-origin,.drag-landing-ghost').count(),0);
       await t.evaluate(()=>touchDraft.set(touchDraft.state,touchDraft.paths));
       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coords.a,id:2}]});
       await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...coords.b,id:2}]});
       assert.equal(await t.locator('.drag-checker').count(),1);
       await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
       assert.equal(await t.evaluate(()=>touchDraft.draft.length),0,'interrupted touch cancels');
-      assert.equal(await t.locator('.drag-checker,.drag-origin').count(),0);
+      assert.equal(await t.locator('.drag-checker,.drag-origin,.drag-landing-ghost').count(),0);
       await touchContext.close();
     }
     // Real Play persists only the draft. It does not confirm or reroll on drop.
@@ -159,6 +229,6 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       assert.equal(stored.game.events.length,0);assert.deepEqual(stored.game.state.dice,[4,1]);
     }
     assert.deepEqual(errors,[]);
-    return {screenshots:shots,checks:['amber matches click-to-undo','forced/preview/beginner exclusions','actual source hidden','nearest legal release','blocked/outside drops','Escape cancellation','both modes/orientations/players','compressed/bar/off stacks','mid-drag redraw','desktop and mobile layout',...(name==='chromium'?['Chromium native touch']:[])]};
+    return {screenshots:shots,checks:['amber matches click-to-undo','forced/preview/beginner exclusions','actual source hidden','nearest legal release','ghost matches final landing slot','hits and compressed destination counts','multi-die journeys and dice revisions','interrupted ghost glide and mid-drag redraw','reduced motion settles ghost','blocked/outside drops','Escape cancellation','both modes/orientations/players','compressed/bar/off stacks','desktop and mobile layout',...(name==='chromium'?['Chromium native touch and retargeting']:[])]};
   } finally {await ctx.close();}
 };

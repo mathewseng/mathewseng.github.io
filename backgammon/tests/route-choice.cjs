@@ -15,6 +15,9 @@ module.exports = async function routeChoice(browser, base, out, name) {
       const { shell, DraftBoard } =
         await import("/backgammon/ui/shell.mjs");
       const r = await import("/backgammon/core/rules.mjs");
+      // This suite exercises select-then-destination; Advanced is now the
+      // product default and would play the first die on the source keypress.
+      (await import("/backgammon/core/storage.mjs")).saveSettings({ interactionMode: "beginner" });
       window.routeTest = {
         d: new DraftBoard(shell("trainer", "Combined move").board),
         r,

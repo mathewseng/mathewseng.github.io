@@ -340,6 +340,10 @@ export class Board {
         const { state, options } = this.playbackFinal;
         this.render(state, options);
       } else this.cancelAnimations();
+      if (this.pointer?.dragging) {
+        this.dragLandingContext = null;
+        this.showDragLanding(this.dragLandingTarget);
+      }
     };
     addEventListener(
       "bg-motion",
@@ -736,6 +740,54 @@ export class Board {
     return closestLegalPoint(position.x, position.y,
       this.renderOptions.moves.map(move => move.to), this.state.turn, this.options.orientation);
   }
+  showDragLanding(target) {
+    if (this.dragLandingTarget === target && this.dragLandingContext === this.renderOptions) return;
+    const preview = target === null ? null : this.renderOptions.dropPreview?.(target);
+    this.dragLandingTarget = target;
+    this.dragLandingContext = this.renderOptions;
+    if (!preview) { this.clearDragLanding(); return; }
+    const { point, count, undo } = preview, top = this.state.turn !== this.options.orientation;
+    const g = typeof point === "number" ? pointGeometry(point, this.options.orientation) : null;
+    const position = g ? { x: g.x + 30, y: stackY(g.top, Math.min(count, STACK_LIMIT) - 1) }
+      : { x: point === "bar" ? 408 : 843, y: point === "bar" ? (top ? 100 : 506) : (top ? 250 : 410) };
+    const fresh = !this.dragLanding;
+    if (fresh) {
+      this.dragLanding = svg("g", { class: "drag-landing-ghost", "pointer-events": "none", "aria-hidden": "true" });
+      this.dragLanding.append(
+        svg("circle", { class: "drag-landing-face", r: CHECKER_RADIUS, fill: boardColor(`checker${this.state.turn}`) }),
+        svg("circle", { class: "drag-landing-inner", r: 16, fill: "none" }),
+        svg("circle", { class: "drag-landing-edge", r: CHECKER_RADIUS + 2, fill: "none", pathLength: 120 }),
+        svg("circle", { class: "drag-landing-count-bg", r: 12, fill: boardColor(`checker${this.state.turn}`) }),
+        svg("text", { class: "drag-landing-count", y: 1, fill: boardColor(`count${this.state.turn}`), "text-anchor": "middle", "dominant-baseline": "middle" }),
+      );
+      this.svg.insertBefore(this.dragLanding, this.dragGhost);
+    }
+    const node = this.dragLanding, motion = !reducedMotion() && !document.hidden;
+    // Read the visible pose before cancelling. Rapid crossings reverse in place;
+    // pointer motion within the same destination never restarts the transition.
+    const style = getComputedStyle(node), from = style.transform, opacity = style.opacity;
+    node.dataset.target = target;
+    node.classList.toggle("is-undo", undo);
+    const showCount = count > (g ? STACK_LIMIT : 1);
+    node.querySelector("text").textContent = showCount ? count : "";
+    node.querySelector(".drag-landing-count-bg").style.display = showCount ? "" : "none";
+    const transform = `translate(${position.x}px, ${position.y}px)`;
+    if (!fresh && node.style.transform === transform && motion) return;
+    this.dragLandingMove?.cancel();
+    node.style.transform = transform;
+    this.dragLandingMove = motion ? node.animate([
+      { transform: fresh ? transform : from, opacity: fresh ? 0 : opacity },
+      { transform, opacity: 1 },
+    ], { duration: fresh ? 140 : 180, easing: "cubic-bezier(.2,.75,.3,1)" }) : null;
+  }
+  clearDragLanding() {
+    this.dragLandingMove?.cancel();
+    this.dragLandingMove = null;
+    this.dragLanding?.remove();
+    this.dragLanding = null;
+    this.dragLandingTarget = null;
+    this.dragLandingContext = null;
+  }
   pickUpChecker(animate = false) {
     const p = this.pointer, group = this.svg.querySelector(`[data-point="${p.raw}"]`);
     if (!group) return;
@@ -783,6 +835,7 @@ export class Board {
     this.svg.querySelectorAll(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
     const target = this.dropTarget(position);
     this.svg.querySelector(`[data-point="${target}"]`)?.classList.add("drop-hover");
+    this.showDragLanding(target);
   }
   endDrag() {
     const p = this.pointer;
@@ -798,6 +851,7 @@ export class Board {
     this.dragGhost?.remove();
     this.dragGhost = null;
     this.dragPosition = null;
+    this.clearDragLanding();
     this.svg
       .querySelectorAll(".drag-origin")
       .forEach((n) => n.classList.remove("drag-origin"));
@@ -978,6 +1032,8 @@ export class Board {
     target,
     { via = [], delay = 0, drop = false } = {},
   ) {
+    // Bearoff drops settle on the displayed tray marker, matching the ghost.
+    if (drop && target === "off") destination = { x: 843, y: player !== this.options.orientation ? 250 : 410 };
     const piece = checker(0, 0, player);
     piece.classList.add("moving-checker");
     const raw = typeof target === "number" ? target : `${target}${player}`;
@@ -1250,6 +1306,7 @@ export class Board {
       revisionTargets = [],
       sources = [],
       moves = [],
+      dropPreview = null,
       interactive = true,
       preview = false,
       editor = false,
@@ -1301,6 +1358,7 @@ export class Board {
       revisionTargets,
       sources,
       moves,
+      dropPreview,
       interactive,
       preview,
       editor,
@@ -1875,6 +1933,7 @@ export class Board {
       });
     }
     if (this.pointer?.dragging) {
+      if (this.dragLanding) this.svg.append(this.dragLanding);
       this.dragLift?.cancel();
       this.pickUpChecker();
       this.followDrag(this.pointer.clientX, this.pointer.clientY);
