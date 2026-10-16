@@ -50,7 +50,7 @@ module.exports = async function highlightMotion(browser, base, out, name) {
           const group = document.querySelector(`#board [data-point="${point}"]`);
           const n=group.querySelector(disc?'.checker > circle':'.point-hit');
           const p=new DOMPoint(+n.getAttribute(disc?'cx':'x')+(disc?0:25),
-            +n.getAttribute(disc?'cy':'y')+(disc?0:130)).matrixTransform(document.querySelector('#board svg').getScreenCTM());
+            +n.getAttribute(disc?'cy':'y')+(disc?0:+n.getAttribute('height')/2)).matrixTransform(document.querySelector('#board svg').getScreenCTM());
           return {x:p.x,y:p.y};
         },{point,disc});
         if(touch) await page.touchscreen.tap(pos.x,pos.y); else await page.mouse.click(pos.x,pos.y);

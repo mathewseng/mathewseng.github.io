@@ -105,7 +105,9 @@ test('book refuses incompatible contexts, unsupported searches and unlisted subm
     if(entry.rows.length===entry.total)continue;
     const v=board.split(',').map(Number),t=initialState({...state([6,6]),points:v.slice(0,24),bar:v.slice(24,26),off:v.slice(26)});
     const listed=new Set(bookResult(t,entry,index,'auto').candidates.map(c=>c.key));const other=legalTurns(t).find(t=>!listed.has(t.key));
-    assert.equal(await book.lookup(t,{...options,submitted:other.steps}),null);checked=true;break;
+    let pending=0;
+    assert.equal(await book.lookup(t,{...options,submitted:other.steps,onUnlisted:()=>pending++}),null);
+    assert.equal(pending,1,'validated unlisted book move notifies before live evaluation');checked=true;break;
   }
   assert.ok(checked);
 });

@@ -105,7 +105,7 @@ test("bar entry, hits, bearing off, tall stacks and passes produce honest displa
   for (const o of [0, 1])
     for (const a of lastMoveArrows(borne, bt, o)) {
       assert.equal(a.to.x, 843);
-      assert.equal(a.to.y, o ? 250 : 410);
+      assert.equal(a.to.y, o ? 66 : 594);
     }
   s.points = Array(24).fill(0);
   s.points[12] = 15;

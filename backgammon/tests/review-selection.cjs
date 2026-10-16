@@ -66,6 +66,7 @@ module.exports = async function reviewSelection(browser, base, out, name) {
       await page.screenshot({path:path.join(out,`${name}-review-selection-${width}.png`)});
     }
     await page.keyboard.press("Escape");
+    await page.locator(".decision-dialog").waitFor({state:"detached"});
     for(const [opponent,same,label] of [[true,false,"Opponent’s move"],[false,true,"Best/your move"],[true,true,"Best/their move"]]) {
       await page.evaluate(([opponent,same])=>window.openReview(opponent,same),[opponent,same]);
       if(!same) await page.getByRole("button",{name:label,exact:true}).click();
@@ -73,6 +74,7 @@ module.exports = async function reviewSelection(browser, base, out, name) {
       assert.equal(await active.count(),1);
       assert.equal(await page.locator('.decision-choices button').count(),same?2:3);
       await page.keyboard.press("Escape");
+    await page.locator(".decision-dialog").waitFor({state:"detached"});
     }
     assert.deepEqual(errors,[]);
     return {browser:name,realEngine:true,viewports:9,buttons:true,rankedRows:true,mobilePicker:true,sharedBest:true};

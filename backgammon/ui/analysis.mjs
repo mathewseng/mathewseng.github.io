@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { presentAnalysis, presentMove } from "../core/move-presentation.mjs";
 import { el, button, select, field, showError } from "./shell.mjs";
 import { comparisonSummary, moveFeatures } from "../core/analysis-insight.mjs";
 import { EngineClient } from "../engine/client.mjs";
@@ -125,7 +126,8 @@ export function resultView(
   } else {
     const list = el("div", { class: "list" });
     const rows = (count) =>
-      result.candidates.slice(0, count).map((c, i) => {
+      result.candidates.slice(0, count).map((candidate, i) => {
+        const c = source ? { ...candidate, ...presentMove(source, candidate.steps) } : candidate;
         const b = button("", () => onPreview(c), "list-row");
         b.append(
           el(
@@ -302,12 +304,13 @@ export class AnalysisPanel {
   async run(state, options = {}) {
     const token = ++this.token,
       key = positionKey(state);
-    const result = await this.engine.analyze(state, {
+    const raw = await this.engine.analyze(state, {
       preset: this.preset,
       ...options,
     });
     if (token !== this.token || key !== positionKey(state))
       throw new DOMException("Stale analysis.", "AbortError");
+    const result = presentAnalysis(state, raw);
     this.result = result;
     this.onResult(result);
     return result;

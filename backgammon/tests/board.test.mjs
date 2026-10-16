@@ -31,7 +31,7 @@ test("bar, off, outside drops and the center gap have distinct hit regions", () 
       for (const y of player !== orientation ? [255, 282, 293] : [390, 417, 427])
         assert.equal(pointAt(408, y, orientation), `bar${player}`);
       assert.equal(
-        pointAt(843, player !== orientation ? 100 : 446, orientation),
+        pointAt(843, player !== orientation ? 66 : 594, orientation),
         `off${player}`,
       );
     }

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { presentAnalysis } from "../core/move-presentation.mjs";
 import { startUpdates, resumedAfterUpdate } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
@@ -148,7 +149,7 @@ if (pageProgress?.source) {
   source = pageProgress.source;
   sourceContext = pageProgress.sourceContext;
   editing = pageProgress.editing;
-  result = pageProgress.result;
+  result = presentAnalysis(source, pageProgress.result);
   review = pageProgress.review;
   index = pageProgress.index;
   openedPosition = true;
@@ -891,7 +892,7 @@ function seek(i) {
   source = clone(replay(review.initial, review.events)[i]);
   checkpoint = null;
   previousResult = null;
-  result = reviewResults.get(i) || null;
+  result = presentAnalysis(source, reviewResults.get(i) || null);
   preview = null;
   busy = false;
   render();

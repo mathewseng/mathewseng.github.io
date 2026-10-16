@@ -81,8 +81,8 @@ export function pointAt(x, y, orientation = 0) {
     if (
       x >= 820 &&
       x < 866 &&
-      y >= (top ? 35 : 386) &&
-      y < (top ? 274 : 625)
+      y >= (top ? 35 : 557) &&
+      y < (top ? 103 : 625)
     )
       return `off${p}`;
   }
@@ -105,7 +105,7 @@ export function closestLegalPoint(x, y, targets, player, orientation = 0) {
       const upper = player !== orientation, bar = p.startsWith("bar");
       [left, top, width, height] = bar
         ? [385, upper ? 32 : 387, 46, upper ? 262 : 245]
-        : [820, upper ? 35 : 386, 46, 239];
+        : [820, upper ? 35 : 557, 46, 68];
     }
     const distance = Math.hypot(Math.max(left - x, 0, x - left - width),
       Math.max(top - y, 0, y - top - height));
@@ -120,7 +120,7 @@ export function checkerPosition(s, point, player, orientation = 0) {
   if (point === "bar")
     return { x: 408, y: player !== orientation ? 100 : 506 };
   if (point === "off")
-    return { x: 843, y: player !== orientation ? 84 : 582 };
+    return { x: 843, y: player !== orientation ? 66 : 594 };
   const g = pointGeometry(point, orientation),
     n = Math.max(1, Math.abs(s.points[point]));
   return {
@@ -163,7 +163,7 @@ export function lastMoveArrows(state, trace, orientation = 0) {
   if (!trace?.checkers?.length) return [];
   const position = (point, index) => {
     if (point === "bar") return { x: 408, y: trace.player !== orientation ? 100 : 506 };
-    if (point === "off") return { x: 843, y: trace.player !== orientation ? 250 : 410 };
+    if (point === "off") return { x: 843, y: trace.player !== orientation ? 66 : 594 };
     const g = pointGeometry(point, orientation);
     return { x: g.x + 30, y: stackY(g.top, Math.min(index, STACK_LIMIT - 1)) };
   };
@@ -175,7 +175,7 @@ export function lastMoveArrows(state, trace, orientation = 0) {
   }
   for (const p of [0, 1]) {
     if (state.bar[p]) blockers.push({ x: 408, y: p !== orientation ? 100 : 506, r: 28 });
-    if (state.off[p]) blockers.push({ x: 843, y: p !== orientation ? 250 : 410, r: 28 });
+    if (state.off[p]) blockers.push({ x: 843, y: p !== orientation ? 66 : 594, r: 28 });
   }
   // Repeated transfers share one arrow between the exposed tops of the stacks.
   // Four crisscrossing lines for a double obscure both the ghosts and the move.
@@ -262,7 +262,12 @@ function patternOverlay(node, role) {
   overlay.setAttribute("data-pattern", role);
   return overlay;
 }
-function checker(x, y, p, count = 1, compact = false, moved = false, undoable = false) {
+function returnIcon(x, y) {
+  return svg("path", { class: "destination-die", d: `M${x+8} ${y+10}v-12a8 8 0 0 0-16 0v3m-5-5 5 5 5-5`,
+    fill: "none", stroke: boardColor("undoText"), "stroke-width": 3,
+    "stroke-linecap": "round", "stroke-linejoin": "round", "pointer-events": "none" });
+}
+function checker(x, y, p, count = 1, compact = false, moved = false, undoable = false, showCount = false) {
   const g = svg("g", {
     class: "checker",
     "data-player": p,
@@ -298,9 +303,9 @@ function checker(x, y, p, count = 1, compact = false, moved = false, undoable = 
   );
   if (undoable && count === 1)
     g.append(svg("path", { class:"draft-undo-mark", d:`M${x+8} ${y+7}v-7a8 8 0 0 0-16 0v2m-4-4 4 4 4-4`,
-      fill:"none", stroke:boardColor("undoText"), "stroke-width":2,
+      fill:"none", stroke:boardColor("undoText"), "stroke-width":3,
       "stroke-linecap":"round", "stroke-linejoin":"round" }));
-  if (count > 1)
+  if (count > 1 || showCount)
     g.append(
       svg(
         "text",
@@ -775,7 +780,7 @@ export class Board {
     const { point, count, undo } = preview, top = this.state.turn !== this.options.orientation;
     const g = typeof point === "number" ? pointGeometry(point, this.options.orientation) : null;
     const position = g ? { x: g.x + 30, y: stackY(g.top, Math.min(count, STACK_LIMIT) - 1) }
-      : { x: point === "bar" ? 408 : 843, y: point === "bar" ? (top ? 100 : 506) : (top ? 250 : 410) };
+      : { x: point === "bar" ? 408 : 843, y: point === "bar" ? (top ? 100 : 506) : (top ? 66 : 594) };
     const fresh = !this.dragLanding;
     if (fresh) {
       this.dragLanding = svg("g", { class: "drag-landing-ghost", "pointer-events": "none", "aria-hidden": "true" });
@@ -1087,7 +1092,7 @@ export class Board {
     { via = [], delay = 0, drop = false, residentCount = 0 } = {},
   ) {
     // Bearoff drops settle on the displayed tray marker, matching the ghost.
-    if (drop && target === "off") destination = { x: 843, y: player !== this.options.orientation ? 250 : 410 };
+    if (drop && target === "off") destination = { x: 843, y: player !== this.options.orientation ? 66 : 594 };
     const piece = checker(0, 0, player);
     piece.classList.add("moving-checker");
     const raw = typeof target === "number" ? target : `${target}${player}`;
@@ -1595,10 +1600,11 @@ export class Board {
       if (moved) g.setAttribute("data-last-moved", moved);
       g.append(
         svg("rect", {
-          x,
-          y: top ? 28 : 366,
-          width: 60,
-          height: 266,
+          x: x + 2,
+          y: top ? 30 : 368,
+          width: 56,
+          height: 262,
+          rx: 6,
           fill: "transparent",
           class: "point-hit",
         }),
@@ -1648,10 +1654,11 @@ export class Board {
             "text",
             {
               x: x + 30,
-              y: top ? 21 : 650,
+              y: top ? 15 : 646,
+              "dominant-baseline": "central",
               "text-anchor": "middle",
               fill: boardColor("numbers"),
-              "font-size": compact ? 28 : 16,
+              "font-size": compact ? 20 : 16,
               "font-weight": 500,
               "pointer-events": "none",
             },
@@ -1748,19 +1755,21 @@ export class Board {
           }),
         );
       }
+      const returnLabel = [...g.querySelectorAll("text.destination-die")].find(n => n.textContent === "↶");
+      if (returnLabel) returnLabel.replaceWith(returnIcon(x + 30, top ? 274 : 386));
       for (const ring of g.querySelectorAll(".source-ring,.landing-ring")) {
         const halo = ring.cloneNode(false);
         halo.setAttribute("class", "ring-halo");
         ring.before(halo);
       }
-      if (numbers && shortcuts) {
+      if (numbers && shortcuts && !matchMedia("(pointer: coarse), (max-width: 700px)").matches) {
         const visible = orientation ? 23 - p : p;
         const id = visible >= 12 ? `top${visible - 12}` : `bottom${11 - visible}`;
         const key = shortcuts[id]?.[0];
-        if (key) g.append(keycapGraphic(key, { x: x + 30, y: top ? 18.5 : 645,
-          height: 13.5, maxWidth: 52, className: "point-shortcut" }));
+        if (key) g.append(keycapGraphic(key, { x: x + 30, y: top ? 18 : 648,
+          height: 10, maxWidth: 52, className: "point-shortcut" }));
         const label = g.querySelector(":scope > text");
-        if (label) { label.setAttribute("y", top ? 16 : 641); label.setAttribute("font-size", compact ? "20" : "16"); }
+        if (label) { label.setAttribute("y", top ? 10 : 640); label.setAttribute("font-size", "14"); }
       }
       children.push(g);
     }
@@ -1806,20 +1815,6 @@ export class Board {
       if (s.bar[p]) g.append(
         svg('rect', {x:385,y:y-29,width:46,height:58,rx:8,fill:'transparent',class:'checker-hit'}),
         checker(408, y, p, s.bar[p], compact));
-      else
-        g.append(
-          svg(
-            "text",
-            {
-              x: 408,
-              y: top ? 68 : 608,
-              "text-anchor": "middle",
-              fill: boardColor("barLabel"),
-              "font-size": compact ? 19 : 13,
-            },
-            "BAR",
-          ),
-        );
       if (
         sources.includes("bar") &&
         s.turn === p &&
@@ -1862,6 +1857,8 @@ export class Board {
           ),
         );
       }
+      const returnLabel = [...g.querySelectorAll("text.destination-die")].find(n => n.textContent === "↶");
+      if (returnLabel) returnLabel.replaceWith(returnIcon(408, top ? 274 : 409));
       for (const ring of g.querySelectorAll(".source-ring")) {
         const halo = ring.cloneNode(false);
         halo.setAttribute("class", "ring-halo");
@@ -1883,9 +1880,9 @@ export class Board {
       off.append(
         svg("rect", {
           x: 820,
-          y: top ? 35 : 386,
+          y: top ? 35 : 557,
           width: 46,
-          height: 239,
+          height: 68,
           rx: 5,
           fill: boardColor("tray"),
           class: "point-hit",
@@ -1899,45 +1896,15 @@ export class Board {
         accent.setAttribute('pointer-events', 'none');
         off.append(accent);
       }
-      off.append(
-        svg(
-          "text",
-          {
-            x: 843,
-            y: top ? 60 : 620,
-            "text-anchor": "middle",
-            fill: boardColor("trayLabel"),
-            "font-size": compact ? 22 : 14,
-          },
-          "OFF",
-        ),
-      );
-      for (let i = 0; i < s.off[p]; i++)
-        off.append(
-          svg("rect", {
-            x: 827,
-            y: top ? 76 + i * 10 : 590 - i * 10,
-            width: 32,
-            height: 7,
-            rx: 3,
-            fill: boardColor(`checker${p}`),
-            stroke: boardColor("selection"),
-            "stroke-width": i >= s.off[p] - movedOff ? 3 : 0,
-            class: `off-checker${i >= s.off[p] - movedOff ? " last-moved-checker" : ""}`,
-            "pointer-events": "none",
-          }),
-        );
       if (s.off[p])
         off.append(
-          svg('rect', {x:820,y:(top ? 250 : 410)-29,width:46,height:58,rx:8,fill:'transparent',class:'checker-hit'}),
-          // A full checker-sized count target is easier to select on phones
-          // than the thin storage strips. It stays clear of all 15 strips.
-          checker(843, top ? 250 : 410, p, s.off[p], compact, false, interactive && s.turn === p && undoSources.includes("off")),
+          svg('rect', {x:820,y:(top ? 66 : 594)-29,width:46,height:58,rx:8,fill:'transparent',class:'checker-hit'}),
+          checker(843, top ? 66 : 594, p, s.off[p], compact, movedOff > 0, interactive && s.turn === p && undoSources.includes("off"), true),
         );
       if (sources.includes("off") && s.turn === p &&
           (selected === null || selected === "off"))
         off.append(svg("rect", {
-          x: 821, y: top ? 36 : 387, width: 44, height: 237, rx: 5,
+          x: 821, y: top ? 36 : 558, width: 44, height: 66, rx: 5,
           class: "source-ring", "pointer-events": "none",
         }));
       children.push(off);
@@ -1947,8 +1914,8 @@ export class Board {
         s.cube.owner === null
           ? 330
           : s.cube.owner === orientation
-            ? 354
-            : 306;
+            ? 500
+            : 160;
       const cube = svg("g", {
         class: "board-cube",
         "aria-label": `Doubling cube ${s.cube.value}${this.cubeEnabled ? ", offer double" : ""}`,
@@ -1973,7 +1940,7 @@ export class Board {
             y: cy + 1,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-size": Math.min(25, 44 / (String(s.cube.value === 1 ? 64 : s.cube.value).length * .62)),
+            "font-size": Math.min(36, 44 / (String(s.cube.value === 1 ? 64 : s.cube.value).length * .62)),
             fill: boardColor("cubeText"),
             "font-weight": 700,
           },
@@ -1986,7 +1953,7 @@ export class Board {
       );
       // The whole free lane is a tap target, without entering either off tray
       // or the neighboring point. Ownership still moves the visible cube.
-      cube.prepend(svg('rect', {class:'cube-hit',x:800,y:280,width:74,height:100,
+      cube.prepend(svg('rect', {class:'cube-hit',x:800,y:cy-50,width:74,height:100,
         rx:10,fill:'transparent'}));
       const cubeKey = shortcuts?.double?.[0];
       if (cubeKey) {

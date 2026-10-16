@@ -154,8 +154,10 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
         results.push({ kind, orientation, drawnPreserved: JSON.stringify(paths()) === JSON.stringify(drawn), redrawPreserved,
           exits: exits().length, masks: host.querySelectorAll('mask').length,
           barPoint: kind !== 'bar' || !!host.querySelector('[data-point="bar0"] [data-last-move-exit="ghost"]'),
-          offOutline: kind !== 'off' || [...host.querySelectorAll('[data-last-move-exit="ring"] .off-checker')]
-            .every(n => n.getAttribute('fill') === 'none') });
+          offOutline: kind !== 'off' || (() => {
+            const rings = [...host.querySelectorAll('[data-point="off0"] [data-last-move-exit="ring"] .last-move-ring')];
+            return rings.length > 0 && rings.every(n => n.getAttribute('fill') === 'none');
+          })() });
         board.render(rolled, { orientation: 1 - orientation });
         results.push({ clearedOnFlip: exits().length === 0 });
       }

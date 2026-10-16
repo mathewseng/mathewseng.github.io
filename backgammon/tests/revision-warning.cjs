@@ -44,6 +44,50 @@ module.exports=async function revisionWarning(browser,base){
       assert.equal(await page.locator('dialog[open]').count(),0);
       cases.push({loss,warned:loss>.002,committedOnlyOnConfirmation:true});
     }
+    // An unlisted candidate opens immediately, before its exact grade exists.
+    for(const response of ['revise','confirm','complete','fail']) {
+      await page.evaluate(async()=>{
+        const r=await import('/backgammon/core/rules.mjs'),st=await import('/backgammon/core/storage.mjs');
+        const {localConfig}=await import('/backgammon/core/play-session.mjs');
+        const state=r.initialState({phase:'move',dice:[4,1],matchLength:0});
+        await st.put('work',{id:'play',game:{id:'pending-warning',initial:state,state,events:[],started:true,names:['You','GNUbg'],config:localConfig({tutor:true,warning:true})},positionKey:r.positionKey(state),draft:r.legalTurns(state)[0].steps});
+      });
+      await page.reload();await ready();
+      await page.evaluate(async()=>{
+        const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
+        EngineClient.prototype.analyze=()=>new Promise(()=>{});
+        AnalysisPanel.prototype.run=function(s,options){
+          options.onUnlisted();
+          return new Promise((resolve,reject)=>{window.finishPending=async(fail=false)=>{
+            if(fail){reject(new Error('Test worker failure'));return;}
+            const r=await import('/backgammon/core/rules.mjs');
+            const candidate=(steps,equity)=>({steps,equity,notation:r.notation(steps,s.turn),probabilities:[.5,.1,.01,.1,.01]});
+            resolve({type:'checker',status:'complete',engine:'Test',positionKey:r.positionKey(s),settings:{name:'Test 2 ply',plies:2},units:'current-cube-points',perspective:s.turn,candidates:[candidate(r.legalTurns(s)[1].steps,.1)],actual:candidate(options.submitted,.08),error:.02});
+          };});
+        };
+      });
+      await page.locator('#resume-match').click();await page.locator('#confirm').click();
+      await page.locator('#pending-move-loss').waitFor();
+      assert.match(await page.locator('#pending-move-loss').textContent(),/Still calculating EV/);
+      assert.equal((await read()).game.events.length,0);
+      if(response==='revise') {
+        await page.getByRole('button',{name:'Revise',exact:true}).click();
+        await page.evaluate(()=>window.finishPending());await page.waitForTimeout(80);
+        assert.equal((await read()).game.events.length,0,'cancelled completion cannot commit');
+        assert.ok(await page.locator('#confirm').isEnabled());
+      } else {
+        if(response==='complete'||response==='fail') {
+          await page.evaluate(fail=>window.finishPending(fail),response==='fail');
+          await page.waitForFunction(()=>!document.querySelector('#pending-move-loss').textContent.includes('Still calculating'));
+          assert.equal((await read()).game.events.length,0,'completion alone cannot commit');
+          assert.match(await page.locator('#pending-move-loss').textContent(),response==='fail'?/EV unavailable/:/0.020/);
+        }
+        await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
+        await page.waitForTimeout(150);
+        assert.equal((await read()).game.events[0]?.action.type,'move');
+      }
+      cases.push({unlisted:response});
+    }
   }finally{await ctx.close();}
   return cases;
 };

@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=0af4e8703ff617f0" />
-    <link rel="stylesheet" href="./controls.css?bgv=0af4e8703ff617f0" />
-    <script type="module" src="../ui/update-page.mjs?bgv=0af4e8703ff617f0"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=9de8850628244d4d" />
+    <link rel="stylesheet" href="./controls.css?bgv=9de8850628244d4d" />
+    <script type="module" src="../ui/update-page.mjs?bgv=9de8850628244d4d"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -50,7 +50,7 @@
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play that checker with the selected die, or use the other die if the selected one cannot move it. If it has no legal forward move with either die and its latest step can be undone, move it back one step. Earlier steps and other checkers stay put; forced steps cannot be undone. Otherwise do nothing.</p></div>
             <div class="flow-next">Open point area · continue ↓</div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">4</span><h2>Can a checker land here?</h2></div>
-            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>If this is a moved checker’s original point, return that checker first. Otherwise prefer a single step with the selected die, then a single step with the other die. Otherwise move the nearest checker using a legal chain of remaining dice (including doubles). Routes cannot jump blocked points. If different routes hit different checkers, choose the route.</p></div>
+            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>If this is a moved checker’s original point, return that checker first. Otherwise prefer a single step with the selected die, then a single step with the other die. Otherwise move the nearest checker using a legal chain of remaining dice (including doubles). Routes cannot jump blocked points. Prefer a route that hits a checker; if several do, use the selected die first. No route dialog opens.</p></div>
             <div class="flow-next">No arrival or return · continue ↓</div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">5</span><h2>Can the checker already here move?</h2></div>
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play it with the selected die, or the other die if needed. The open point area and its number act like an extended checker target when nothing can land or return there. If no checker can move, do nothing.</p></div></li>

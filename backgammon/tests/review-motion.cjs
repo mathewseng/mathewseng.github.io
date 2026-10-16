@@ -166,7 +166,7 @@ module.exports = async function reviewMotion(browser, base, out, name) {
         if (kind === 'bearoff') {
           const counter = arriving.find(n => n.previewSprite.key === 'off0:count');
           checks.push({ offCountStaysPut: !!counter && counter.getAnimations()[0].effect.getKeyframes()
-            .every(frame => frame.transform === `translate(843px, ${orientation ? 250 : 410}px)`) });
+            .every(frame => frame.transform === `translate(843px, ${orientation ? 66 : 594}px)`) });
         }
         checks.push({ kind, orientation, hasMotion: arriving.length > 0,
           immutable: JSON.stringify(source) === original,

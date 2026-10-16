@@ -180,7 +180,7 @@ module.exports = async function research(browser, base, output) {
       .selectOption("quick");
     assert.equal(
       await page.getByLabel("Hint & review strength").inputValue(),
-      "deep",
+      "auto",
     );
     await page.getByLabel("Hint & review strength").selectOption("standard");
     assert.equal(

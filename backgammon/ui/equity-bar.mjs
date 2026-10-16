@@ -21,7 +21,8 @@ export class EquityBar {
     this.meter = element("span", "equity-meter");
     this.fill = element("span", "equity-fill");
     this.meter.append(this.fill);
-    this.label = element("span", "equity-number");
+    this.label = element("span", "equity-number equity-bottom-number");
+    this.topLabel = element("span", "equity-number equity-top-number");
     this.retry = element("button", "equity-retry");
     this.retry.type = "button";
     this.retry.textContent = "Retry";
@@ -29,7 +30,7 @@ export class EquityBar {
       this.key = null;
       this.refresh();
     };
-    this.node.append(this.label, this.meter, this.retry);
+    this.node.append(this.topLabel, this.meter, this.label, this.retry);
     board.container.append(this.node);
     this.enabled = settings().equityBar === true;
     this.life = new AbortController();
@@ -99,9 +100,13 @@ export class EquityBar {
       const equity = orientation ? -reading.ivory : reading.ivory;
       this.fill.style.height = `${equityFraction(equity) * 100}%`;
       this.label.textContent = (equity >= 0 ? "+" : "") + equity.toFixed(2);
+      this.topLabel.textContent = (-equity >= 0 ? "+" : "") + (-equity).toFixed(2);
+      this.topLabel.setAttribute("aria-label", `${playerName(1 - orientation)} equity ${this.topLabel.textContent}`);
+      this.label.setAttribute("aria-label", `${playerName(orientation)} equity ${this.label.textContent}`);
       this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${this.label.textContent} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;
     } else {
       this.label.textContent = status === "loading" ? "…" : "—";
+      this.topLabel.textContent = this.label.textContent;
       this.node.title = reason;
     }
     this.node.setAttribute("aria-label", this.node.title);

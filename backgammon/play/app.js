@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { presentMove } from "../core/move-presentation.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
@@ -133,6 +134,7 @@ const boardActions = el("div", { class: "board-actions", "aria-label": "Turn con
 ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
+let acceptedCubeTimer = null, acceptedCubeKey = "";
 const analysis = new AnalysisPanel();
 const autoReview = new AutoReview({
   engine: analysis.engine,
@@ -257,7 +259,7 @@ helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, (change) => {
   actions();
   detailDraft();
-  persist();
+  persist(false);
   autoDraft(change?.kind === "move");
   prethink.update();
 });
@@ -439,7 +441,7 @@ addEventListener("visibilitychange", () => {
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
-  } else { advanceOpening(); prethink.update(); autoReview.update(); }
+  } else { advanceOpening(); advanceAcceptedCube(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -697,13 +699,29 @@ function render() {
   actions();
   panel();
   advanceOpening();
-  if (!opening.active && !autoPlay()) {
+  if (!opening.active && !advanceAcceptedCube() && !autoPlay()) {
     autoDraft();
     if (m?.started && config.mode === "computer") computerTurn();
   }
   renderReviewStatus();
   prethink.update();
   autoReview.update();
+}
+function advanceAcceptedCube() {
+  const m = model(), s = state();
+  if (!m?.started || m.reviewingTurn || s.phase !== "roll" || m.events.at(-1)?.action.type !== "take" ||
+      !myTurn(s) || committing || assistanceJob || botBusy || document.hidden) return false;
+  const key = `${m.id}:${m.events.length}:${positionKey(s)}`;
+  if (acceptedCubeKey === key) return true;
+  clearTimeout(acceptedCubeTimer);
+  acceptedCubeKey = key;
+  acceptedCubeTimer = setTimeout(() => {
+    acceptedCubeKey = "";
+    if (model()?.id !== m.id || model().events.length !== m.events.length || state().phase !== "roll" ||
+        !myTurn(state()) || committing || assistanceJob || document.hidden) return;
+    commit({ type: "roll" }).catch(showError);
+  }, reducedMotion() ? 80 : 420);
+  return true;
 }
 function advanceOpening() {
   const m = model();
@@ -1469,7 +1487,7 @@ function renderActions() {
     $("message").replaceChildren(mine ? draft.progressMessage(instruction) : instruction);
     if (config.mode === "computer" && myTurn(s))
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
-    a.append(
+    if (myTurn(s)) a.append(
       button(
         el("span", {class:"confirm-content"},
           el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
@@ -1818,7 +1836,7 @@ function detailDraft() {
       ),
     );
 }
-async function persist() {
+async function persist(history = true) {
   if (game) {
     if (config.mode !== "online") ensureLocalRolls(game);
     const current = game;
@@ -1833,7 +1851,7 @@ async function persist() {
       const snapshot = clone(saved);
       await put("work", snapshot);
       persistedWork = JSON.stringify(snapshot);
-      await saveMatchHistory(current, current.names, current.config.mode);
+      if (history) await saveMatchHistory(current, current.names, current.config.mode);
     } catch (e) {
       showError(e);
     }
@@ -2108,7 +2126,7 @@ function renderFeedback() {
           el("span", { class: "history-played" }, row.label),
           ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
             el("span", { class: "history-best-label" }, "Best "),
-            f.best.notation,
+            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : f.best.notation,
           )] : []),
         ),
         decisionValues(f, true, { opponent: side === "opponent" }),
@@ -2356,15 +2374,33 @@ async function evaluateDecision(action) {
     unlockDraft();
     ($("confirm") || $("roll"))?.focus();
   };
+  let warningCopy = null, completedResult = null;
+  const showPendingWarning = () => {
+    if (!checker || !config.warning || !activeAssistance(job) || job.dialog) return;
+    warningCopy = el("p", { role: "status", id: "pending-move-loss" },
+      "Still calculating EV. This move is outside the evaluated alternatives; its loss is not known yet.");
+    job.dialog = dialog("Review before confirming?", warningCopy, [
+      button("Revise", () => job.dialog.close()),
+      button("Confirm anyway", () => finish(completedResult), "primary"),
+    ]);
+    job.dialog.addEventListener("close", onClose, { once: true });
+  };
   try {
     let result = await analysis.run(job.source, {
       submitted: steps,
       preset: config.reviewStrength || "auto",
       priority: 20,
+      onUnlisted: showPendingWarning,
     });
     if (!activeAssistance(job)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
     job.done = true;
+    completedResult = result;
+    if (warningCopy) {
+      const f = decisionFeedback(result, job.source);
+      warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`;
+      return; // Keep the player's review open; never confirm behind the dialog.
+    }
     if (config.warning && needsRevisionWarning(result.error)) {
       const f = decisionFeedback(result, job.source);
       job.dialog = dialog(
@@ -2386,6 +2422,10 @@ async function evaluateDecision(action) {
     job.done = true;
     if (error.name === "AbortError") {
       onClose();
+      return;
+    }
+    if (warningCopy) {
+      warningCopy.textContent = `EV unavailable: ${error.message}. Revise or confirm without feedback.`;
       return;
     }
     job.dialog = dialog(

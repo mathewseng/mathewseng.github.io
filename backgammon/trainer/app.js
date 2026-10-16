@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { presentAnalysis } from "../core/move-presentation.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
@@ -105,7 +106,7 @@ try {
     exercise = pool.find((i) => i.id === saved.exerciseId);
     revealed = !!saved.revealed;
     hinted = !!saved.hinted;
-    result = saved.result;
+    result = presentAnalysis(exercise.state, saved.result);
     answer = saved.answer;
     if (result?.type === "cube" && answer)
       result = gradeCube(exercise.state, result, answer);

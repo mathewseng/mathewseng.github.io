@@ -693,16 +693,23 @@ export class DraftBoard {
       this.selected = "bar";
     this.render();
   }
+  cached(name, calculate) {
+    const key = JSON.stringify([this.draft, this.minDraft]);
+    if (this.memo?.state !== this.state || this.memo.paths !== this.paths || this.memo.key !== key)
+      this.memo = { state: this.state, paths: this.paths, key, values: new Map() };
+    if (!this.memo.values.has(name)) this.memo.values.set(name, calculate());
+    return this.memo.values.get(name);
+  }
   current() {
-    return this.draft.reduce((s, step) => applyStep(s, step), this.state);
+    return this.cached("current", () => this.draft.reduce((s, step) => applyStep(s, step), this.state));
   }
   candidates() {
-    return nextSteps(this.paths, this.draft);
+    return this.cached("candidates", () => nextSteps(this.paths, this.draft));
   }
   complete() {
-    return matchingPaths(this.paths, this.draft).some(
+    return this.cached("complete", () => matchingPaths(this.paths, this.draft).some(
       (p) => p.steps.length === this.draft.length,
-    );
+    ));
   }
   progressMessage(idle, ready = "Ready to confirm") {
     if (!this.draft.length) return document.createTextNode(idle);
@@ -719,14 +726,14 @@ export class DraftBoard {
     );
   }
   reverseMoves() {
-    return originalReturnRoutes(
+    return this.cached("reverseMoves", () => originalReturnRoutes(
       this.state, this.paths, this.draft, this.minDraft,
-    );
+    ));
   }
   checkerUndos() {
-    return checkerUndoRoutes(
+    return this.cached("checkerUndos", () => checkerUndoRoutes(
       this.state, this.paths, this.draft, this.minDraft,
-    );
+    ));
   }
   entrySwitches() {
     const key = JSON.stringify([this.draft, this.minDraft]);
@@ -935,8 +942,8 @@ export class DraftBoard {
     const distinct = new Map();
     for (const route of [...routes].sort(
       (a, b) =>
-        Number(b.steps[0].die === this.preferred) -
-        Number(a.steps[0].die === this.preferred),
+        Number(b.steps[0].die === selectedDie(this.candidates(), this.preferred, this.state.dice)) -
+        Number(a.steps[0].die === selectedDie(this.candidates(), this.preferred, this.state.dice)),
     )) {
       const next =
         route.undo || route.switchDie
@@ -958,10 +965,10 @@ export class DraftBoard {
     return preferHittingRoutes(current, [...distinct.values()]);
   }
   preferredRoute(choices) {
-    const preferred = choices.filter(st => !st.undo && !st.switchDie &&
-      st.steps.length === 1 && st.steps[0].die === this.preferred);
-    return preferred.length === 1 ? preferred[0] : choices.length === 1 ? choices[0] : null;
+    return choices.find(route => !route.undo && !route.switchDie &&
+      route.steps[0].die === selectedDie(this.candidates(), this.preferred, this.state.dice)) || choices[0] || null;
   }
+
   dropPreview(raw) {
     const point = this.normalize(raw);
     if (point === this.selected) {
@@ -980,47 +987,7 @@ export class DraftBoard {
   chooseRoutes(routes, sourceTap = false) {
     const choices = this.routeChoices(routes);
     if (choices.length && (!sourceTap || choices.length === 1)) {
-      const preferred = this.preferredRoute(choices);
-      if (preferred)
-        this.moveRoute(preferred);
-      else {
-        const state = this.state,
-          signature = JSON.stringify(this.draft);
-        const single = choices.every(
-          (st) => !st.undo && !st.switchDie && st.steps.length === 1,
-        );
-        let d;
-        d = dialog(
-          single ? "Choose a die" : "Choose a route",
-          el(
-            "p",
-            {},
-            single
-              ? "Both dice reach this destination. Choose which die to use."
-              : "These legal paths use different dice or hit different checkers.",
-          ),
-          choices.map((route) =>
-            button(
-              route.switchDie
-                ? `Revise checker · ${notation(route.steps, this.state.turn)}`
-                : route.undo
-                  ? `Move back · restore ${route.steps.map((st) => st.die).join(" + ")}`
-                  : single
-                    ? `Use ${route.steps[0].die}`
-                    : `${route.steps.map((st) => st.die).join(" → ")} · ${notation(route.steps, this.state.turn)}`,
-              () => {
-                d.close();
-                if (
-                  this.state === state &&
-                  JSON.stringify(this.draft) === signature
-                )
-                  this.moveRoute(route);
-              },
-              "primary",
-            ),
-          ),
-        );
-      }
+      this.moveRoute(this.preferredRoute(choices));
       return true;
     }
     return false;

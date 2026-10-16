@@ -481,15 +481,17 @@ test('completed Auto forecasts/max-depth can grade evaluated finalists without r
 test('queued unlisted Auto grade sends the completed root basis without restarting its search',async()=>{
   const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
   const s=initialState({phase:'move',dice:[4,1]}),turns=legalTurns(s);
+  let unlisted=0;
   try {
     const candidates=turns.slice(0,2).map((c,i)=>({...c,equity:.3-i*.01}));
     const hint=client.analyze(s,{preset:'auto',priority:-5});await wait();
-    const grade=client.analyze(s,{preset:'auto',submitted:turns.at(-1).steps,priority:20});
+    const grade=client.analyze(s,{preset:'auto',submitted:turns.at(-1).steps,priority:20,onUnlisted:()=>unlisted++});
     const result={type:'checker',status:'complete',settings:{plies:3},budget:{reason:'predicted-cost'},candidates};
     worker.reply({id:worker.messages.at(-1).id,type:'result',result});await hint;await wait();
     const request=worker.messages.at(-1);
     assert.equal(worker.messages.filter(m=>m.type==='analyze').length,2);
     assert.deepEqual(request.prepared,result);
+    assert.equal(unlisted,1,"unlisted notification arrives before its score");
     assert.deepEqual(request.submitted,turns.at(-1).steps);
     worker.reply({id:request.id,type:'result',result:{...result,actual:{key:turns.at(-1).key,equity:.2},error:.1}});
     assert.equal((await grade).actual.key,turns.at(-1).key);

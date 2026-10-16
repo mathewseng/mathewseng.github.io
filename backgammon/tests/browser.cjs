@@ -74,7 +74,7 @@ const server = http.createServer((req, res) => {
           for (const moduleName of process.env.BG_MODULES.split(",")) {
             if (!/^[a-z][a-z0-9-]*$/.test(moduleName)) throw new Error("Invalid test module name");
             const result = await require(`./${moduleName}.cjs`)(browser, base, out, browserName);
-            fs.writeFileSync(path.join(out, `${browserName}-${moduleName}-report.json`), JSON.stringify(result, null, 2));
+            fs.writeFileSync(path.join(out, `${browserName}-${moduleName}-report.json`), JSON.stringify(result ?? { passed: true }, null, 2));
             console.log(`PASS ${browserName}: ${moduleName}`);
           }
           continue;
@@ -371,7 +371,9 @@ const server = http.createServer((req, res) => {
                   layout.boardBottom <= layout.playerTop + 1,
                   `board overlaps player strip ${route} ${w}x${h}`,
                 );
-              if (route && w > 320) {
+              // Play intentionally scrolls to analysis; its setup form also reflows.
+              // Live board/action fit is checked by control-polish at these sizes.
+              if (route && route !== "play/" && w > 320) {
                 assert.ok(
                   layout.height <= h + 1,
                   `document scroll ${route} ${w}: ${layout.height}`,
@@ -424,6 +426,9 @@ const server = http.createServer((req, res) => {
           await failureContext.close();
         }
         await context.close();
+        (report.solutionPolish ||= []).push(
+          await require("./solution-polish.cjs")(browser, base, out, browserName),
+        );
         const researchOutput = path.join(out, `research-${browserName}`);
         fs.mkdirSync(researchOutput, { recursive: true });
         await require("./research.cjs")(browser, base, researchOutput);

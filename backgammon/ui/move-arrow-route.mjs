@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Display geometry only. Prefer a straight line, then one broad quadratic bow:
-// a single smooth bend instead of contour-following around individual checkers.
+// Display geometry only. Prefer the shortest clear route, with a small length
+// allowance for a single smooth bow instead of several obstacle tangencies.
 // Clearance discs retain 22px of breathing room around a 22px checker. Only
 // crowded routes use the tangent graph with C3 blends as a fallback. Geometric
 // smoothness is not a claim of zero physical jerk during an animated move.
@@ -179,6 +179,26 @@ function route(from, to, blockers) {
   }
   return null;
 }
+// Start with the circles intersecting the direct line, then add only obstacles
+// encountered by that shortest detour. A path clear of every circle is also
+// globally shortest: adding irrelevant constraints cannot improve its length.
+function shortestRoute(from, to, blockers) {
+  let relevant = blockers.filter(o => !segmentClear(from, to, [o]));
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (attempt === 4) relevant = blockers;
+    const path = route(from, to, relevant);
+    if (!path) return null;
+    const added = blockers.filter(o => !relevant.includes(o) && path.some(span => {
+      if (span.kind === "line") return !segmentClear(span.a, span.b, [o]);
+      const count = Math.ceil(span.length / 3);
+      for (let i = 0; i <= count; i++) if (gap(jet(span, span.length * i / count)[0], o) < o.r - EPS) return true;
+      return false;
+    }));
+    if (!added.length) return path;
+    relevant = [...relevant, ...added];
+  }
+  return null;
+}
 // Degree-seven Hermite interpolation matches position, tangent, curvature and
 // third derivative at both ends. Coefficients use normalized t in [0,1].
 export function smoothJoin(left, right, length) {
@@ -274,11 +294,11 @@ function bowRoute(from, to, height) {
     routed: true, kind: height ? "bow" : "straight",
   };
 }
-function broadBow(from, to, blockers) {
+function broadBow(from, to, blockers, maxHeight = 660) {
   // For this symmetric quadratic family, less deflection also means less
   // total turning. Search both sides and refine the first clear interval.
   // A single bow has no inflections or straight/arc junctions to visibly kink.
-  for (let height = 4; height <= 660; height += 4) {
+  for (let height = 4; height <= maxHeight; height += 4) {
     const options = [];
     for (const sign of [1, -1]) {
       if (!bowClear(bowCurve(from, to, height * sign), blockers)) continue;
@@ -297,7 +317,16 @@ function broadBow(from, to, blockers) {
   }
   return null;
 }
+const routeCache = new Map();
 export function routeArrow(from, to, obstacles) {
+  const key = JSON.stringify([from, to, obstacles]);
+  if (routeCache.has(key)) return routeCache.get(key);
+  const result = calculateRoute(from, to, obstacles);
+  if (routeCache.size >= 64) routeCache.delete(routeCache.keys().next().value);
+  routeCache.set(key, result);
+  return result;
+}
+function calculateRoute(from, to, obstacles) {
   if (gap(from, to) < 1) return null;
   const blockers = [];
   for (const o of obstacles) {
@@ -307,10 +336,17 @@ export function routeArrow(from, to, obstacles) {
       blockers.push(c);
   }
   if (segmentClear(from, to, blockers)) return bowRoute(from, to, 0);
-  const bow = broadBow(from, to, blockers);
-  if (bow) return bow;
-  const spans = route(from, to, blockers),
-    routed = !!spans;
+  const spans = shortestRoute(from, to, blockers), routed = !!spans;
+  const shortest = spans?.reduce((n, span) => n + span.length, 0);
+  // Length is primary. A single bend wins only when it costs at most 3% more
+  // than the shortest clear route; otherwise retain the smooth tangent path.
+  // A bow's apex alone imposes this lower bound on its total length.
+  const limit = shortest ? Math.sqrt(Math.max(0, (shortest * 1.03 / 2) ** 2 - (gap(from, to) / 2) ** 2)) : 660;
+  const bow = broadBow(from, to, blockers, Math.min(660, limit + 4));
+  if (bow) {
+    const length = bow.points.reduce((n, p, i) => n + (i ? gap(p, bow.points[i - 1]) : 0), 56);
+    if (!shortest || length <= shortest * 1.03) return bow;
+  }
   const path = spans || [line(from, to)],
     offsets = [0];
   for (const s of path) offsets.push(offsets.at(-1) + s.length);

@@ -31,16 +31,15 @@ flowchart TD
   K -- No --> J{Your movable checker is on this point?}
   J -- Yes --> D
   J -- No --> M[Clear selection without a move or message]
-  R --> N{One distinct route or one preferred single die?}
-  N -- Yes --> O[Apply move or draft revision]
-  N -- No --> P[Ask which die or route]
+  R --> N[Prefer a hit, then the selected die]
+  N --> O[Apply move or draft revision immediately]
 ```
 
 A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly clears the selection. With no selection, it brings the nearest legal checker. With no selection and no forward arrival, a legal dice-revision landing revises the draft. Otherwise an amber return target brings back the nearest eligible checker before falling back to resident selection or deselection.
 
 Bar-entry priority and complete-turn legality constrain every route. Selecting another checker cannot bypass the bar. A selected legal route may be a forward move, draft return or dice-revision entry. A checker without a legal forward move, dice revision or draft return cannot be selected; clicking it clears the existing selection unless its location advertises a legal destination. Dragging remains explicit source → destination input; an invalid drop cancels.
 
-Route resolution deduplicates equivalent outcomes and consumed dice. For combined shortcuts with the same dice, a hitting route beats a quiet one; distinct hitting outcomes remain explicit choices. Different die use may also need a choice. Manual intermediate moves can still avoid a hit. Board returns restore the checker’s entire journey to its pre-roll origin, never an intermediate stop. In a stack, the latest arrival is the checker continued by the next move. Journeys containing a forced prefix cannot return; Z or a die tap can still remove individual chosen steps. Alternate-die revisions can restart a completed chain with the other die while preserving unrelated steps and complete-turn legality.
+Route resolution deduplicates equivalent outcomes and consumed dice. For combined shortcuts with the same dice, a hitting route beats a quiet one; multiple hitting routes use the selected die first. Different die use also follows the selected legal die; no route dialog opens. Manual intermediate moves can still avoid a hit. Board returns restore the checker’s entire journey to its pre-roll origin, never an intermediate stop. In a stack, the latest arrival is the checker continued by the next move. Journeys containing a forced prefix cannot return; Z or a die tap can still remove individual chosen steps. Alternate-die revisions can restart a completed chain with the other die while preserving unrelated steps and complete-turn legality.
 
 ## Keyboard input
 

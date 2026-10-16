@@ -65,23 +65,13 @@ module.exports = async function routeChoice(browser, base, out, name) {
       await reset([7, 10], turn);
       await tap(from);
       await tap(to);
-      await page.getByRole("dialog", { name: "Choose a route" }).waitFor();
-      assert.equal((await read()).draft.length, 0);
-      if (!turn) {
-        await page.screenshot({
-          path: path.join(out, `${name}-route-genuine-choice.png`),
-        });
-        await page.setViewportSize({ width: 390, height: 844 });
-        await page.screenshot({
-          path: path.join(out, `${name}-route-genuine-choice-phone.png`),
-        });
-        await page.setViewportSize({ width: 1366, height: 768 });
-      }
-      await page
-        .getByRole("dialog")
-        .locator("footer button")
-        .first()
-        .click();
+      assert.equal(await page.getByRole("dialog").count(), 0);
+      assert.equal((await read()).draft.length, 2);
+      assert.equal((await read()).draft[0].die, 5, "both hits use the selected die first");
+      await reset([7, 10], turn);
+      await page.evaluate(() => routeTest.d.preferred = 2);
+      await tap(from); await tap(to);
+      assert.equal((await read()).draft[0].die, 2);
       assert.equal((await read()).state.bar[1 - turn], 1);
     }
     // The preference does not remove a deliberate non-hitting intermediate step.
@@ -122,7 +112,7 @@ module.exports = async function routeChoice(browser, base, out, name) {
       browser: name,
       cases: [
         "quiet and single-hit routes play immediately in both directions",
-        "different hits prompt; identical final hit does not",
+        "different hits use selected die; no route dialogs",
         "manual non-hit path remains available; drag and keyboard share preference",
       ],
     };

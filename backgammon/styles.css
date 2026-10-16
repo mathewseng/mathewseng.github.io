@@ -3091,7 +3091,10 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   display: none;
 }
 .equity-number {
-  font-size: 12px;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  width: 100%;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -3832,8 +3835,9 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
   .play-page.live-table .action-area { align-content: end; }
   .play-page.live-table .action-main { gap: 4px; }
   .play-page.live-table .action-help button kbd { font-size: 10px; min-width: 16px; margin-left: 4px; padding-inline: 2px; }
-  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 24px); margin-left: 24px; }
-  .play-page.live-table .equity-bar { width: 18px; }
+  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 32px); margin-left: 32px; }
+  .play-page.live-table .equity-bar { width: 28px; }
+  .play-page.live-table .equity-number { font-size: 9px; letter-spacing: -.15px; }
 }
 @media (max-height: 500px) and (min-width: 650px) {
   .play-page.live-table { min-height: 340px; height: 100dvh; grid-template-rows: 44px 0 minmax(0, 1fr); }
@@ -3852,8 +3856,9 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
   .play-page.live-table .action-help button { font-size: 13px; padding: 7px; }
   .board-workspace { grid-template-columns: minmax(0, 1fr) 62px; gap: 6px; }
   .board-actions #confirm { min-height: 116px; padding: 8px 4px; font-size: 14px; }
-  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 24px); margin-left: 24px; }
-  .play-page.live-table .equity-bar { width: 18px; }
+  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 32px); margin-left: 32px; }
+  .play-page.live-table .equity-bar { width: 28px; }
+  .play-page.live-table .equity-number { font-size: 9px; letter-spacing: -.15px; }
 }
 /* Center the actual board and confirmation together, including letterboxing. */
 .board-workspace { display: flex; justify-content: center; container-type: size; }
@@ -3951,8 +3956,9 @@ button kbd.keycap, .play-page #message kbd.keycap {
   .confirm-content { flex-direction: row; gap: 12px; }
   .confirm-copy { align-items: flex-start; gap: 2px; }
   .confirm-copy strong { font-size: 16px; }
-  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 18px); margin-left: 18px; }
-  .play-page.live-table .equity-bar { width: 14px; }
+  .play-page.live-table .board-slot.has-equity-bar > .bg-board { width: calc(100% - 32px); margin-left: 32px; }
+  .play-page.live-table .equity-bar { width: 28px; }
+  .play-page.live-table .equity-number { font-size: 9px; letter-spacing: -.15px; }
   .play-page.live-table .equity-meter { width: 10px; }
 }
 @media (max-height: 500px) and (min-width: 650px) {

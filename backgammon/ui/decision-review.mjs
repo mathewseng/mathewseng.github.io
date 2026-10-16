@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { el, button, dialog } from "./shell.mjs";
+import { presentAnalysis, compactNotation } from "../core/move-presentation.mjs";
+import { el, button, dialog, saveDialog } from "./shell.mjs";
 import { Board } from "./board.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
 import { settings } from "../core/storage.mjs";
 import {
   applyStep,
-  notation,
   playerName,
   transition,
   decisionPlayer,
@@ -49,6 +49,7 @@ export function decisionReview(
   );
   d.classList.add("decision-dialog");
   const appendReturn = () => {
+    d.querySelector("footer").append(button("Save position", () => saveDialog(source), "", { id: "save-review-position", title: "Save this decision with its original dice and rules" }));
     if (!onReturn) return;
     const back = button(
       "Return to this position",
@@ -203,7 +204,7 @@ export function decisionReview(
     });
     selectPreview(steps, label);
     strip.set(previewResult, label === "Position" ? null : after);
-    caption.textContent = `${label} · ${steps.length ? notation(steps, source.turn) : label === "Position" ? "original roll" : "Pass"}`;
+    caption.textContent = `${label} · ${steps.length ? compactNotation(source, steps).notation : label === "Position" ? "original roll" : "Pass"}`;
     controls.querySelectorAll("button").forEach((b) =>
       b.setAttribute("aria-pressed", label === "Position"
         ? b.dataset.preview === "position"
@@ -256,6 +257,7 @@ export function decisionReview(
       );
     },
     result(result, expandSaved = true, freshReview = false) {
+      result = presentAnalysis(source, result);
       moveListResize = () => {};
       revealSelectedMove = () => {};
       selectPreview = () => {};

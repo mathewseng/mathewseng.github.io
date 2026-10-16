@@ -19,6 +19,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     const fixture = await page.evaluate(async () => {
       const r = await import("/backgammon/core/rules.mjs"),
         st = await import("/backgammon/core/storage.mjs");
+      st.saveSettings({ equityBar: false, analysisAhead: false, interactionMode: "beginner" });
       const initial = r.initialState({
         phase: "move",
         dice: [3, 1],
@@ -114,7 +115,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
         });
     }
     const initialValue = Number(
-      await page.locator(".equity-number").innerText(),
+      await page.locator(".equity-bottom-number").innerText(),
     );
     await page.evaluate(async () => {
       const st = await import("/backgammon/core/storage.mjs");
@@ -122,7 +123,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       dispatchEvent(new Event("bg-settings"));
     });
     assert.equal(
-      Number(await page.locator(".equity-number").innerText()),
+      Number(await page.locator(".equity-bottom-number").innerText()),
       -initialValue,
     );
     await page.evaluate(async () => {
@@ -221,7 +222,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
         .waitFor({ timeout: 60000 });
       assert.ok(
         Number.isFinite(
-          Number(await page.locator(".equity-number").innerText()),
+          Number(await page.locator(".equity-bottom-number").innerText()),
         ),
       );
       assert.match(

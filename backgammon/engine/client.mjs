@@ -132,6 +132,7 @@ export class EngineClient {
       useBook = true,
       onProgress = () => {},
       onEvaluation = () => {},
+      onUnlisted = () => {},
     } = {},
   ) {
     // Unscreened checker analysis scores every legal result at one depth.
@@ -185,12 +186,16 @@ export class EngineClient {
       this.cache.set(key, result);
       return forCaller(Promise.resolve({ ...structuredClone(result), cached: true }));
     }
+    const hint = this.cache.get(keyFor(null));
+    if (submittedKey && hint?.status === "complete" && hint.type === "checker" &&
+        !hint.candidates.some(c => c.key === submittedKey)) onUnlisted();
     const reused = this.reuseGrade(reuseHintKey, preset, submittedKey);
     if (reused) return forCaller(Promise.resolve(reused));
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
     if (existing) {
       existing.progressListeners.add(onProgress);
       existing.evaluationListeners.add(onEvaluation);
+      existing.unlistedListeners.add(onUnlisted);
       existing.priority = Math.max(existing.priority, priority);
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
       if (this.active && existing !== this.active && existing.priority > this.active.priority) {
@@ -213,9 +218,11 @@ export class EngineClient {
       rollout: structuredClone(rollout),
       tryBook,
       reuseHintKey,
+      hintKey: keyFor(null),
       submittedKey,
       progressListeners: new Set([onProgress]),
       evaluationListeners: new Set([onEvaluation]),
+      unlistedListeners: new Set([onUnlisted]),
     };
     job.promise = new Promise((resolve, reject) =>
       Object.assign(job, { resolve, reject }),
@@ -261,6 +268,10 @@ export class EngineClient {
     let generation = this.generation;
     try {
       const pending = this.queue[0];
+      const hint = this.cache.get(pending.hintKey);
+      if (pending.submittedKey && hint?.status === "complete" && hint.type === "checker" &&
+          !hint.candidates.some(c => c.key === pending.submittedKey))
+        for (const listener of pending.unlistedListeners) listener();
       // A matching hint may have completed while this grade was queued. Check
       // before starting or messaging a worker, including concurrent callers.
       const reused = this.reuseGrade(pending.reuseHintKey, pending.preset, pending.submittedKey);
@@ -271,7 +282,9 @@ export class EngineClient {
       }
       if (pending.tryBook) {
         this.queue.shift(); this.active = pending;
-        const result = await this.book.lookup(pending.state, pending);
+        const result = await this.book.lookup(pending.state, { ...pending, onUnlisted: () => {
+          if (this.active === pending) for (const listener of pending.unlistedListeners) listener();
+        } });
         if (this.active !== pending) return;
         generation = this.generation;
         if (result) {

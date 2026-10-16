@@ -138,6 +138,8 @@ export class OpeningBook {
     if (!found?.entry) return null;
     try {
       const result = bookResult(state, found.entry, found.index, options.preset, options.submitted);
+      if (!result && options.submitted)
+        options.onUnlisted?.();
       return result ? { ...result, elapsedMs: performance.now() - started } : null;
     } catch { return null; }
   }
