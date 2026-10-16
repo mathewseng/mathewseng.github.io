@@ -71,10 +71,10 @@ export function reverseRoutes(state, paths, draft) {
   return [...results.values()];
 }
 
-// Board returns go to a checker's pre-roll origin, never an intermediate stop.
 // Checkers are indistinguishable in canonical state. For draft interaction the
 // most recent arrival is the top checker, so continuing that stack continues
-// its journey. Undo still removes an individual step separately.
+// its journey. Point-space returns undo that journey; checker taps undo only
+// its latest editable step, including when an earlier step was forced.
 function draftCheckers(state, draft) {
   const stacks = new Map();
   const add = (point, count) =>
@@ -92,6 +92,21 @@ function draftCheckers(state, draft) {
     stacks.get(step.to).push(checker);
   }
   return stacks;
+}
+export function checkerUndoRoutes(state, paths, draft, minDraft = 0) {
+  const routes = [];
+  for (const [from, checkers] of draftCheckers(state, draft)) {
+    const index = checkers.at(-1)?.indices.at(-1);
+    if (index === undefined || index < minDraft) continue;
+    const step = draft[index];
+    const remaining = draft.filter((_, i) => i !== index);
+    // An entry or a move into the home board may enable later moves. Never
+    // remove it if retaining those moves would make the draft illegal.
+    if (!matchingPaths(paths, remaining).length) continue;
+    routes.push({ from, to: step.from, undo: true, remaining,
+      steps: [step], die: step.die });
+  }
+  return routes;
 }
 export function originalReturnRoutes(state, paths, draft, minDraft = 0) {
   const stacks = draftCheckers(state, draft);

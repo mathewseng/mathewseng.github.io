@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initialState, legalPaths, nextSteps, matchingPaths, transition, assertState, MAX_CUBE } from '../core/rules.mjs';
 import { advancedAction, selectedDie } from '../core/advanced-input.mjs';
-import { originalReturnRoutes, availableRoutes } from '../core/draft.mjs';
+import { originalReturnRoutes, checkerUndoRoutes, availableRoutes } from '../core/draft.mjs';
 import { defaultPlayRules, localConfig } from '../core/play-session.mjs';
 import { settings, saveSettings, settingsDefaults } from '../core/storage.mjs';
 import { toXGID } from '../core/xgid.mjs';
@@ -16,8 +16,9 @@ test('advanced selected-die clicks are complete-turn legal across both players, 
     for (const path of paths.slice(0, 8)) for (let i=0; i<=path.steps.length; i++) {
       const draft = path.steps.slice(0,i), candidates = nextSteps(paths,draft);
       const returns = originalReturnRoutes(source, paths, draft, 0);
+      const checkerReturns = checkerUndoRoutes(source, paths, draft, 0);
       for (const preferred of [a,b]) for (const point of [...Array(24).keys(), 'bar','off']) for (const checker of [false,true]) {
-        const action = advancedAction({ point, checker, candidates, returns, routes:availableRoutes(paths,draft), preferred, dice:source.dice, turn });
+        const action = advancedAction({ point, checker, candidates, returns, checkerReturns, routes:availableRoutes(paths,draft), preferred, dice:source.dice, turn });
         if (!action) continue;
         const next = action.type === 'move' ? [...draft,action.step] : action.type === 'routes' ? [...draft,...action.routes[0].steps] : action.route.remaining;
         if (action.type === 'routes') for (const route of action.routes) assert.ok(matchingPaths(paths,[...draft,...route.steps]).length);
@@ -27,7 +28,10 @@ test('advanced selected-die clicks are complete-turn legal across both players, 
           if(candidates.some(s=>s.from===point&&s.die===selected))assert.equal(action.step.die,selected);
           else assert.ok(candidates.some(s=>s.from===point&&s.die===action.step.die));
         }
-        else if (action.type === "undo" && checker) assert.ok(!candidates.some(s=>s.from===point));
+        else if (action.type === "undo" && checker) {
+          assert.ok(!candidates.some(s=>s.from===point));
+          assert.equal(next.length,draft.length-1,'checker undo removes only one step');
+        }
         checked++;
       }
     }
@@ -39,7 +43,7 @@ test('a checker uses the other die when the selected die cannot move it, before 
   const returns = [{from:5,to:9,remaining:[]}];
   assert.deepEqual(advancedAction({point:5,checker:true,candidates,returns,preferred:4,dice:[4,1],turn:0}),{type:'move',step:candidates[1]});
   assert.equal(selectedDie(candidates.slice(1),4,[4,1]),1);
-  assert.equal(advancedAction({point:5,checker:true,candidates:[],returns,preferred:4,dice:[4,1],turn:0}).type,'undo');
+  assert.equal(advancedAction({point:5,checker:true,candidates:[],returns,checkerReturns:returns,preferred:4,dice:[4,1],turn:0}).type,'undo');
 });
 test('new tables default to adaptive bot and reviews, visible feedback, warnings and advanced input; explicit preferences survive', () => {
   assert.equal(localConfig().strength,'auto'); assert.equal(localConfig().reviewStrength,'auto');
@@ -95,5 +99,38 @@ test('point-space at an original draft location returns that checker while disc 
   const options={point:12,checker:false,candidates,returns,preferred:2,dice:s.dice,turn:0};
   assert.deepEqual(advancedAction(options).route.remaining,[]);
   assert.equal(advancedAction({...options,checker:true}).type,'move');
-  assert.equal(advancedAction({...options,returns:originalReturnRoutes(s,paths,draft,1)}),null,'forced origin cannot undo');
+  assert.deepEqual(advancedAction({...options,returns:originalReturnRoutes(s,paths,draft,1)}),
+    {type:'move',step:{from:12,to:10,die:2}},'forced origin cannot undo, but its resident can still play forward');
+});
+
+test('otherwise inactive point space plays its resident with the same die as a checker tap',()=>{
+  for(const turn of [0,1]) for(const dice of [[4,1],[3,3]]) {
+    const s=initialState({phase:'move',dice,turn}),paths=legalPaths(s);
+    const point=turn ? 11 : 12;
+    const options={point,checker:false,candidates:nextSteps(paths,[]),returns:[],routes:availableRoutes(paths,[]),preferred:dice[0],dice,turn};
+    const action=advancedAction(options);
+    assert.equal(action.type,'move');assert.equal(action.step.from,point);assert.equal(action.step.die,dice[0]);
+    assert.deepEqual(action,advancedAction({...options,checker:true}));
+    assert.ok(matchingPaths(paths,[action.step]).length);
+  }
+  const points=Array(24).fill(0);points[12]=2;points[5]=13;points[8]=-2;points[23]=-13;
+  const s=initialState({phase:'move',dice:[4,1],points}),paths=legalPaths(s);
+  const options={point:12,checker:false,candidates:nextSteps(paths,[]),returns:[],routes:availableRoutes(paths,[]),preferred:4,dice:s.dice,turn:0};
+  assert.equal(selectedDie(options.candidates,4,s.dice),4,'four is usable elsewhere');
+  assert.deepEqual(advancedAction(options),{type:'move',step:{from:12,to:11,die:1}},'fallback uses other die when necessary');
+});
+
+test('point fallback preserves destination priority and cannot bypass bar priority or spend unavailable dice',()=>{
+  const points=Array(24).fill(0);points[12]=2;points[5]=13;points[23]=-15;
+  const s=initialState({phase:'move',dice:[4,3],points}),paths=legalPaths(s);
+  const options={point:5,checker:false,candidates:nextSteps(paths,[]),returns:[],routes:availableRoutes(paths,[]),preferred:4,dice:s.dice,turn:0};
+  assert.equal(advancedAction(options).type,'routes','combined arrival wins over moving the resident');
+  assert.equal(advancedAction({...options,checker:true}).step.from,5,'disc still plays the resident');
+  points[12]=14;points[5]=0;points[23]=-2;points[19]=-13;
+  const blocked=initialState({phase:'move',dice:[4,1],points,bar:[1,0]}),barPaths=legalPaths(blocked);
+  const barOptions={...options,point:12,dice:blocked.dice,candidates:nextSteps(barPaths,[]),routes:availableRoutes(barPaths,[])};
+  assert.equal(advancedAction(barOptions),null,'bar must enter before a resident can move');
+  assert.deepEqual(advancedAction({...barOptions,point:'bar'}),{type:'move',step:{from:'bar',to:20,die:4}});
+  for(const point of [12,23,7,'bar','off'])
+    assert.equal(advancedAction({...options,point,candidates:[],routes:[]}),null,'no remaining move stays a quiet no-op');
 });

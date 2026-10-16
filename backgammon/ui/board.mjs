@@ -306,8 +306,9 @@ function checker(x, y, p, count = 1, compact = false, moved = false, undoable = 
         "text",
         {
           x,
-          y: y + 7,
+          y,
           "text-anchor": "middle",
+          "dominant-baseline": "central",
           fill: boardColor(undoable ? "undoText" : `count${p}`),
           "font-size": compact ? 30 : 22,
           "font-weight": 700,

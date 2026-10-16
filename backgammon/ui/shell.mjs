@@ -25,6 +25,7 @@ import {
   availableRoutes,
   nearestRoutes,
   originalReturnRoutes,
+  checkerUndoRoutes,
   dieSwitchRoutes,
   preferHittingRoutes,
 } from "../core/draft.mjs";
@@ -722,6 +723,11 @@ export class DraftBoard {
       this.state, this.paths, this.draft, this.minDraft,
     );
   }
+  checkerUndos() {
+    return checkerUndoRoutes(
+      this.state, this.paths, this.draft, this.minDraft,
+    );
+  }
   entrySwitches() {
     const key = JSON.stringify([this.draft, this.minDraft]);
     if (
@@ -789,7 +795,7 @@ export class DraftBoard {
       if (point === null) return this.clearSelection();
       const checker = options.checkerTap || (!options.quick && this.sources().includes(point));
       const action = advancedAction({ point, checker, candidates: this.candidates(),
-        returns: this.reverseMoves(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
+        returns: this.reverseMoves(), checkerReturns: this.checkerUndos(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
       if (action?.type === "move") this.move(action.step);
       else if (action?.type === "undo") this.moveRoute(action.route);
       else if (action?.type === "routes") this.chooseRoutes(action.routes);
@@ -1195,7 +1201,7 @@ export class DraftBoard {
       // Match the actual checker-disc action, not merely the existence of a
       // reversible journey. A checker able to play either die still moves.
       undoSources: this.enabled && !this.preview && this.advanced
-        ? this.reverseMoves().filter(route => !this.candidates().some(step => step.from === route.from)).map(route => route.from)
+        ? this.checkerUndos().filter(route => !this.candidates().some(step => step.from === route.from)).map(route => route.from)
         : [],
       revisionTargets:
         this.enabled && !this.preview
