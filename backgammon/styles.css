@@ -3800,7 +3800,6 @@ button kbd, .play-page #message kbd { display: inline-grid; place-items: center;
 .board-die.blocked .board-die-face > :not(.die-status-mark),
 .board-die.consumed .board-die-face > :not(.die-status-mark) { opacity: .38; }
 .board-die.consumed { opacity: 1; }
-.board-die.forced .die-check { stroke: var(--forced-die, #efb365); }
 .dice-switch-surface { transition: fill 160ms ease, stroke 160ms ease; }
 .board-cube[role="button"] { transition: filter 180ms ease; }
 :is(.board-actions, .action-help) button {

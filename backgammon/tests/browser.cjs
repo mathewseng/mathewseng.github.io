@@ -525,6 +525,9 @@ const server = http.createServer((req, res) => {
         (report.diceUndo ||= []).push(
           await require("./dice-undo.cjs")(browser, base, out, browserName),
         );
+        (report.blockedPass ||= []).push(
+          await require("./blocked-pass.cjs")(browser, base, out, browserName),
+        );
         (report.diceSwitchMotion ||= []).push(
           await require("./dice-switch-motion.cjs")(browser, base, out, browserName),
         );

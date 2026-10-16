@@ -6,7 +6,7 @@ import {
   positionKey,
   clone,
 } from "./rules.mjs";
-import { forcedTurn } from "./table.mjs";
+import { forcedTurn, blockedBarRoll } from "./table.mjs";
 import { decisionFeedback } from "./decision-feedback.mjs";
 import { CUBE_LABELS, gradeCube } from "../engine/cube-grade.mjs";
 export function compactEvaluation(source, result) {
@@ -41,6 +41,7 @@ export function decisionHistory(model) {
       a.type === "move" ||
       (source.phase === "roll" &&
         ["roll", "double"].includes(a.type) &&
+        !(a.type === "roll" && blockedBarRoll(source)) &&
         canDouble(source)) ||
       (source.phase === "double" &&
         ["take", "pass", "beaver", "raccoon"].includes(a.type));

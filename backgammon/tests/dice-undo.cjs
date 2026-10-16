@@ -128,6 +128,13 @@ module.exports = async function diceUndo(browser, base, out, name) {
       // Forced dice are kept when a user taps a locked step or uses reset.
       const forced = JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/forced-seven.json'))).state;
       await load(forced.dice,'advanced',forced); await count(1);
+      const mark = await page.locator('#board .board-die.forced').evaluate(die=>({
+        arrow:getComputedStyle(die.querySelector('.die-forced')).opacity,
+        check:getComputedStyle(die.querySelector('.die-check')).opacity,
+        color:getComputedStyle(die.querySelector('.die-forced')).stroke,
+      }));
+      assert.deepEqual(mark,{arrow:'1',check:'0',color:'rgb(239, 179, 101)'});
+      await page.screenshot({path:path.join(out,`${name}-forced-arrow-${touch?'phone':'desktop'}.png`)});
       await tap(page.locator('#board .board-die.consumed').first()); await count(1);
       await tapBoard(430,330); await count(1);
       assert.equal((await read()).game.events.length,0,'empty-lane tap cannot undo a forced step or committed turn');

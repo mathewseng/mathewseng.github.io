@@ -16,6 +16,14 @@ import {
 
 const forcedCache = new WeakMap(),
   undoCache = new WeakMap();
+// Table convenience: when every entry is closed, roll and pass without a
+// prompt. Still commit real dice for replay/recovery. This intentionally also
+// skips the optional pre-roll double; pending cube/resignation replies never skip.
+export function blockedBarRoll(state) {
+  if (state.phase !== "roll" || state.pending || !state.bar[state.turn]) return false;
+  const start = state.turn ? 0 : 18, opponent = state.turn ? 1 : -1;
+  return state.points.slice(start, start + 6).every(n => n * opponent >= 2);
+}
 // Play state objects are immutable. Equivalent legal paths count as one choice.
 export function forcedTurn(state) {
   if (state.phase !== "move") return null;
@@ -196,7 +204,8 @@ export function playAction(
     table,
     action,
     actor,
-    action.type === "move" && !!forcedTurn(source.state),
+    (action.type === "move" && !!forcedTurn(source.state)) ||
+      (action.type === "roll" && blockedBarRoll(source.state)),
   );
   table.undoReply = null;
   return settleForced(table);

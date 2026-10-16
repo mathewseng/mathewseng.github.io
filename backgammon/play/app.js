@@ -30,6 +30,7 @@ import {
 } from "../core/storage.mjs";
 import {
   forcedTurn,
+  blockedBarRoll,
   draftAutomation,
   playAction,
   tableDice,
@@ -765,8 +766,9 @@ function autoDraft(advance = false) {
 function autoPlay() {
   const m = model(),
     s = state(),
+    blocked = m?.started && blockedBarRoll(s),
     forced = m?.started && forcedTurn(s);
-  if (!forced || committing || assistanceJob || m.undoRequest || opening.busy)
+  if ((!forced && !blocked) || committing || assistanceJob || m.undoRequest || opening.busy)
     return false;
   if (opening.active) return false;
   const key = positionKey(s),
@@ -793,7 +795,7 @@ function autoPlay() {
         !committing &&
         !game.undoRequest
       )
-        commit({ type: "move", steps: forced.steps }).catch(showError);
+        commit(blocked ? { type: "roll" } : { type: "move", steps: forced.steps }).catch(showError);
     }, reducedMotion() ? 0 : 650);
   }
   return true;
@@ -1382,8 +1384,10 @@ function renderActions() {
       : opening.tie ? "Opening tie · rolling again…" : opening.dice ? "Beginning the first turn…" : "Rolling opening dice…";
     return;
   }
-  if (forcedTurn(s)) {
-    $("message").textContent = "Forced turn · playing automatically";
+  if (blockedBarRoll(s) || forcedTurn(s)) {
+    $("message").textContent = blockedBarRoll(s)
+      ? "All six entries blocked · passing automatically"
+      : "Forced turn · playing automatically";
     return;
   }
   if (botPaused && config.mode === "computer" && !myTurn(s)) {

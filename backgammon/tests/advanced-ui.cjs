@@ -78,7 +78,7 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
     assert.equal(await page.locator('.board-die.forced').count(),1);
     const count=(await snapshot()).draft.length;await page.evaluate(()=>advancedTest.d.switchDice());assert.equal((await snapshot()).draft.length,count);
     await page.screenshot({path:path.join(out,`${name}-forced-blocked-dice.png`)});
-    report.cases.push('red X for unusable die, orange forced check, locked forced step');
+    report.cases.push('red X for unusable die, orange forced arrow, locked forced step');
     // A seeded saved local position gives stable layouts across rotations.
     await page.evaluate(async()=>{const {put}=await import('/backgammon/core/storage.mjs');const {localConfig,defaultPlayRules}=await import('/backgammon/core/play-session.mjs');const {initialState}=await import('/backgammon/core/rules.mjs');const s=initialState({matchLength:0,rules:defaultPlayRules(0),phase:'move',dice:[4,1]});await put('work',{id:'play',game:{id:'responsive-test',state:s,initial:s,events:[],started:true,names:['You','Friend'],config:localConfig({mode:'local'})},draft:[]});});
     await page.goto(base+'/backgammon/play/');await ready();await page.locator('#resume-match').click();

@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=b4c3fce90852543a" />
-    <link rel="stylesheet" href="./controls.css?bgv=b4c3fce90852543a" />
-    <script type="module" src="../ui/update-page.mjs?bgv=b4c3fce90852543a"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=4a14ecc7fda57947" />
+    <link rel="stylesheet" href="./controls.css?bgv=4a14ecc7fda57947" />
+    <script type="module" src="../ui/update-page.mjs?bgv=4a14ecc7fda57947"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -45,7 +45,7 @@
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. D also beavers/raccoons, P passes and T takes. Opening rolls happen automatically.</p></div>
             <div class="flow-next">Dice rolled · continue ↓</div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">2</span><h2>Which die is selected?</h2></div>
-            <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo from that step; tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange check.</p></div></li>
+            <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo from that step; tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange forward arrow. Regular moves show a green check.</p></div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">3</span><h2>Did you tap your checker?</h2></div>
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play that checker with the selected die. If it has no legal forward move with either die and has a legal draft return, move it back. Otherwise do nothing.</p></div>
             <div class="flow-next">Open point area · continue ↓</div></li>
@@ -451,7 +451,7 @@
             </tr>
             <tr role="row" id="case-dice">
               <th role="rowheader" scope="row" data-label="Situation">Selected, remaining or used die</th>
-              <td role="cell" data-label="What is highlighted">The selected die is larger and tinted across its face. Used dice are dimmed with a check; forced steps have an orange check.</td>
+              <td role="cell" data-label="What is highlighted">The selected die is larger and tinted across its face. Used dice are dimmed. Chosen moves have a green check; forced steps have an orange forward arrow.</td>
               <td role="cell" data-label="Click the checker">Not a checker.</td>
               <td role="cell" data-label="Click point / tray space">With no editable draft, choose a die or tap the selected die to switch. With a draft, tap a used die to undo that step and all later steps; tap an unused die or the lane to undo the last step. Forced steps stay locked and historical dice do nothing.</td>
             </tr>

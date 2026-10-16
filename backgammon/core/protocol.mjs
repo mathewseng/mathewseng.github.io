@@ -4,6 +4,7 @@ import { defaultPlayRules } from "./play-session.mjs";
 import {
   playAction,
   settleForced,
+  blockedBarRoll,
   tableDice,
   takebackTarget,
   undoTurn,
@@ -200,7 +201,13 @@ export function accept(
       if (clientId !== hostId || !s.started)
         throw new Error("Only the host can advance a forced turn.");
       const before = s.events.length;
-      settleForced(s);
+      if (blockedBarRoll(s.state)) {
+        const actor = s.state.turn;
+        // Include the host's actual roll in the recovery hash even though every
+        // roll passes to the same board. Never use dice supplied by the command.
+        action.dice = tableDice(s, actor, dice);
+        s = playAction(s, { type: "roll", dice: action.dice }, actor);
+      } else settleForced(s);
       if (s.events.length === before)
         throw new Error("This turn has a choice.");
     } else if (action.type === "start") {

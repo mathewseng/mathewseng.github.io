@@ -703,23 +703,21 @@ export class Board {
             "pointer-events": "none",
           }),
         );
-      // Both marks remain in the SVG so reversing a draft can fade them away
+      // Marks remain in the SVG so reversing a draft can fade them away
       // instead of removing them mid-animation. Hidden marks never intercept input.
-      body.append(
-          svg("path", {
-            d: "M21 28l6 6 13-17",
-            stroke: isForced ? "var(--forced-die, #efb365)" : boardColor("selection"),
-            fill: "none",
-            class: "die-status-mark die-check",
-            "data-die-mark": "check", "aria-hidden": "true",
-            opacity: consumed ? 1 : 0, pathLength: 100,
-            "stroke-dasharray": 100, "stroke-dashoffset": consumed ? 0 : 100,
-            "stroke-width": 5,
-            "stroke-linecap": "round",
-            "stroke-linejoin": "round",
-            "pointer-events": "none",
-          }),
-        );
+      // Different shapes and semantic colors distinguish automatic steps from
+      // chosen steps, independently of the board theme's selection color.
+      for (const [mark, d, stroke, visible] of [
+        ["check", "M21 28l6 6 13-17", "var(--played-die, #8ddbad)", consumed && !isForced],
+        ["forced", "M20 27H40M32 19l8 8-8 8", "var(--forced-die, #efb365)", isForced],
+      ]) body.append(svg("path", {
+        d, stroke, fill: "none", class: `die-status-mark die-${mark}`,
+        "data-die-mark": mark, "aria-hidden": "true",
+        opacity: visible ? 1 : 0, pathLength: 100,
+        "stroke-dasharray": 100, "stroke-dashoffset": visible ? 0 : 100,
+        "stroke-width": 5, "stroke-linecap": "round", "stroke-linejoin": "round",
+        "pointer-events": "none",
+      }));
       body.append(svg("path", { d: "M-13 -13L13 13 M13 -13L-13 13",
         class: "die-status-mark die-blocked", "data-die-mark": "blocked", "aria-hidden": "true",
         opacity: blocked ? 1 : 0, stroke: "var(--loss-red, #ff8f92)", "stroke-width": 5,
@@ -1289,7 +1287,7 @@ export class Board {
       face.querySelectorAll('[data-die-mark]').forEach(mark => {
         const previous = before.marks[mark.dataset.dieMark], style = getComputedStyle(mark);
         if (!previous) return;
-        // An invisible mark has no visible color to preserve: a forced check
+        // An invisible mark has no visible color to preserve: a forced arrow
         // should draw orange from its very first visible frame.
         const from = { ...previous, stroke: previous.opacity === '0' ? style.stroke : previous.stroke };
         // Draw on use; on undo fade the current stroke without erasing it backwards.

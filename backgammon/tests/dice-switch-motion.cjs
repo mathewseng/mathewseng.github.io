@@ -177,6 +177,8 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       assert.ok(Math.abs(replaying.motion[0].opacity - undoing.opacity) < 1e-6, "rapid replay resumes at the visible faded mark");
       await finish();
       assert.equal((await snapshot())[0].marks.check.opacity, 1);
+      assert.equal((await snapshot())[0].marks.check.stroke, 'rgb(141, 219, 173)', 'chosen moves use a green check');
+      assert.equal((await snapshot())[0].marks.forced.opacity, 0, 'chosen moves never show a forced arrow');
       await page.keyboard.press("u"); // Remaining 1: 6/5 (13/12 is blocked).
       assert.equal(await page.locator(".board-die.consumed").count(), 2);
       assert.deepEqual((await snapshot())[1].fade.frames, [1, .38], "last die fades even without a next die");
@@ -223,18 +225,26 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         const { Board } = await import('/backgammon/ui/board.mjs');
         const { initialState } = await import('/backgammon/core/rules.mjs');
         const host = document.createElement('div'); document.body.append(host);
+        host.style.setProperty('--board-selection', '#bb77ff');
         const board = new Board(host), state = initialState({ phase: 'move', dice: [6, 1] });
         const options = { chooseDie() {}, advanced: true, preferredDie: 6 };
         const read = selector => {
           const mark = host.querySelector(selector), style = getComputedStyle(mark);
-          return { opacity: Number(style.opacity), stroke: style.stroke,
+          return { opacity: Number(style.opacity), stroke: style.stroke, path: mark.getAttribute('d'),
             animated: mark.getAnimations().some(a => a.id === 'dice-mark') };
         };
         board.render(state, options);
         board.render(state, { ...options, usedDice: [6], forcedDice: [6], playableDice: [] });
         board.animations.forEach(a => { a.currentTime = 100; });
-        const forced = read('.die-check'), blocked = read('.board-die.blocked .die-blocked');
+        const forced = read('.die-forced'), hiddenCheck = read('.die-check'), blocked = read('.board-die.blocked .die-blocked');
         board.animations.forEach(a => a.finish());
+        // A changed classification crossfades the two separate glyphs instead
+        // of swapping a visible path in place or briefly showing an orange check.
+        board.render(state, { ...options, usedDice: [6], playableDice: [] });
+        board.animations.forEach(a => { a.currentTime = 100; });
+        const crossfade = [read('.die-forced'), read('.die-check')];
+        board.animations.forEach(a => a.finish());
+        const regular = read('.die-check'), hiddenArrow = read('.die-forced');
         board.render(state, options);
         board.animations.forEach(a => { a.currentTime = 100; });
         const restoring = [...host.querySelectorAll('.die-status-mark:not(.die-selection-accent)')].map(n => Number(getComputedStyle(n).opacity));
@@ -242,11 +252,25 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         document.documentElement.dataset.motion = 'reduce'; dispatchEvent(new Event('bg-motion'));
         const settled = [...host.querySelectorAll('.die-status-mark:not(.die-selection-accent)')].every(n => getComputedStyle(n).opacity === '0');
         const animations = board.animations.length;
+        const doubles = initialState({phase:'move',dice:[3,3]});
+        board.render(doubles, {...options, usedDice:[3,3], forcedDice:[3], lockedDice:1});
+        const mixed = [...host.querySelectorAll('.board-die')].map(die => ({
+          check:Number(getComputedStyle(die.querySelector('.die-check')).opacity),
+          arrow:Number(getComputedStyle(die.querySelector('.die-forced')).opacity),
+          label:die.getAttribute('aria-label'),
+        }));
         board.destroy(); host.remove(); document.documentElement.dataset.motion = 'system';
-        return { forced, blocked, restoring, settled, animations };
+        return { forced, hiddenCheck, blocked, crossfade, regular, hiddenArrow, mixed, restoring, settled, animations };
       });
       assert.ok(statuses.forced.animated && statuses.forced.opacity > 0 && statuses.forced.opacity < 1);
-      assert.equal(statuses.forced.stroke, 'rgb(239, 179, 101)', 'forced check retains its orange meaning');
+      assert.equal(statuses.forced.stroke, 'rgb(239, 179, 101)', 'forced arrow is orange');
+      assert.equal(statuses.hiddenCheck.opacity, 0, 'forced move hides the regular check');
+      assert.notEqual(statuses.forced.path,statuses.regular.path,'forced and regular moves use distinct glyphs');
+      assert.ok(statuses.crossfade.every(m=>m.animated && m.opacity>0 && m.opacity<1),'classification changes crossfade both glyphs');
+      assert.equal(statuses.regular.stroke,'rgb(141, 219, 173)','regular check stays green with a purple selection theme');
+      assert.equal(statuses.hiddenArrow.opacity,0,'completed regular mark has no forced arrow');
+      assert.deepEqual(statuses.mixed.map(m=>[m.arrow,m.check]),[[1,0],[0,1],[0,0],[0,0]],'mixed doubles distinguish the forced and chosen steps');
+      assert.match(statuses.mixed[0].label,/forced move/);
       assert.ok(statuses.blocked.animated && statuses.blocked.opacity > 0 && statuses.blocked.opacity < 1, 'blocked X fades in');
       assert.equal(statuses.blocked.stroke, 'rgb(255, 143, 146)', 'blocked X stays red');
       assert.ok(statuses.restoring.filter(o => o > 0 && o < 1).length === 2, 'check and blocked mark fade away together');
