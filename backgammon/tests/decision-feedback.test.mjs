@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decisionFeedback } from "../core/decision-feedback.mjs";
+import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
+
+test('revision warnings use a strict 0.002 equity threshold for checker and cube losses',()=>{
+  for(const loss of [0,0.0019,0.002,NaN,undefined]) assert.equal(needsRevisionWarning(loss),false);
+  for(const loss of [0.00201,0.003,0.04]) assert.equal(needsRevisionWarning(loss),true);
+});
 
 const result = (units, best, actual) => ({
   type: "checker",

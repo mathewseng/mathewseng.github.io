@@ -22,18 +22,22 @@ test('advanced selected-die clicks are complete-turn legal across both players, 
         const next = action.type === 'move' ? [...draft,action.step] : action.type === 'routes' ? [...draft,...action.routes[0].steps] : action.route.remaining;
         if (action.type === 'routes') for (const route of action.routes) assert.ok(matchingPaths(paths,[...draft,...route.steps]).length);
         assert.ok(matchingPaths(paths,next).length);
-        if (action.type === 'move' && checker) assert.equal(action.step.die, selectedDie(candidates,preferred,source.dice));
-        else if (action.type === "undo") assert.ok(!candidates.some(s=>s.from===point));
+        if (action.type === 'move' && checker) {
+          const selected=selectedDie(candidates,preferred,source.dice);
+          if(candidates.some(s=>s.from===point&&s.die===selected))assert.equal(action.step.die,selected);
+          else assert.ok(candidates.some(s=>s.from===point&&s.die===action.step.die));
+        }
+        else if (action.type === "undo" && checker) assert.ok(!candidates.some(s=>s.from===point));
         checked++;
       }
     }
   }
   assert.ok(checked>1000);
 });
-test('blocked preferred die falls back globally; a playable other die on a checker prevents accidental undo', () => {
+test('a checker uses the other die when the selected die cannot move it, before considering undo', () => {
   const candidates = [{from:7,to:3,die:4},{from:5,to:4,die:1}];
   const returns = [{from:5,to:9,remaining:[]}];
-  assert.equal(advancedAction({point:5,checker:true,candidates,returns,preferred:4,dice:[4,1],turn:0}),null);
+  assert.deepEqual(advancedAction({point:5,checker:true,candidates,returns,preferred:4,dice:[4,1],turn:0}),{type:'move',step:candidates[1]});
   assert.equal(selectedDie(candidates.slice(1),4,[4,1]),1);
   assert.equal(advancedAction({point:5,checker:true,candidates:[],returns,preferred:4,dice:[4,1],turn:0}).type,'undo');
 });
@@ -84,4 +88,12 @@ test('destination hierarchy: direct selected die, direct other die, then combine
 test('a combined destination shortcut cannot silently rewrite already-spent dice',()=>{
   const route={from:5,to:10,steps:[{from:12,to:9,die:3},{from:9,to:5,die:4}],remaining:[],switchDie:true};
   assert.equal(advancedAction({point:10,checker:false,candidates:[],returns:[],routes:[route],preferred:4,dice:[4,3],turn:0}),null);
+});
+test('point-space at an original draft location returns that checker while disc input keeps its normal meaning',()=>{
+  const s=initialState({phase:'move',dice:[4,2]}),paths=legalPaths(s),draft=[{from:12,to:8,die:4}];
+  const candidates=nextSteps(paths,draft),returns=originalReturnRoutes(s,paths,draft);
+  const options={point:12,checker:false,candidates,returns,preferred:2,dice:s.dice,turn:0};
+  assert.deepEqual(advancedAction(options).route.remaining,[]);
+  assert.equal(advancedAction({...options,checker:true}).type,'move');
+  assert.equal(advancedAction({...options,returns:originalReturnRoutes(s,paths,draft,1)}),null,'forced origin cannot undo');
 });

@@ -19,7 +19,7 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       s=r.initialState({points,phase:'move',dice:options.kind==='doubles'?[2,2]:[4,1]});}
     if(options.kind==='revision') {const points=Array(24).fill(0);points[5]=14;points[11]=-15;s=r.initialState({points,bar:[1,0],phase:'move',dice:[4,1]});}
     if(options.turn) s={...s,turn:1,points:s.points.toReversed().map(n=>-n),bar:s.bar.toReversed(),off:s.off.toReversed()};
-    d.set(s,r.legalPaths(s)); window.sourceJSON=JSON.stringify(s);
+    d.set(s,r.legalPaths(s)); d.board.suppressClickUntil=0; window.sourceJSON=JSON.stringify(s);
   },{mode,turn,orientation,kind,motion});
   const coord=async(point,disc=false,index=-1)=>page.evaluate(({point,disc,index})=>{
     const node=document.querySelector(`[data-point="${point}"]`);
@@ -86,10 +86,23 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       await lift(12,8);await release();assert.deepEqual((await snapshot()).draft,[{from:12,to:8,die:4}]);
       await fixture({mode,orientation});
       const target=await lift(12,8,{outside:true});await release();
-      assert.equal((await snapshot()).draft.at(-1).to,Number(target),'outside drop matches its preview');
+      assert.equal((await snapshot()).draft.at(-1)?.to ?? 12,Number(target),'outside drop matches its preview, including staying at origin');
       await fixture({mode,orientation});await lift(12,11); // opponent's blocked point
       assert.notEqual(await page.locator('.drop-hover').getAttribute('data-point'),'11');
-      await release();assert.ok((await snapshot()).draft.length>0);
+      await release(); // A miss may now settle back at the original point.
+      await fixture({mode,orientation});await lift(12,8);
+      const origin=await coord(12);await page.mouse.move(origin.x,origin.y);
+      assert.equal(await page.locator('.drag-landing-ghost').getAttribute('data-target'),'12');
+      await release();assert.equal((await snapshot()).draft.length,0,'release at origin cancels the drag');
+      await fixture({mode,orientation});
+      await page.evaluate(()=>dragTest.d.move({from:12,to:8,die:4}));
+      const previous=await page.evaluate(()=>{
+        const n=document.querySelector('[data-point="12"] .point-hit');
+        const y=+n.getAttribute('y'),h=+n.getAttribute('height');
+        const q=new DOMPoint(+n.getAttribute('x')+30,y+(y<300?h-15:15)).matrixTransform(n.getScreenCTM());
+        return{x:q.x,y:q.y};
+      });await page.mouse.click(previous.x,previous.y);
+      assert.equal((await snapshot()).draft.length,0,'tap original point space restores checker');
       await fixture({mode,orientation});await lift(12,8);await page.keyboard.press('Escape');await page.mouse.up();
       assert.equal((await snapshot()).draft.length,0,'Escape cancels without a move');
       assert.equal(await page.locator('.drag-checker,.drag-origin').count(),0);
@@ -248,11 +261,12 @@ module.exports = async function dragFeedback(browser, base, out, name) {
         st.saveSettings({interactionMode:'advanced',motion:'full',equityBar:false,boardTheme:{preset:'plum'}});
         const d=new DraftBoard(shell('trainer','Touch drag').board),s=r.initialState({phase:'move',dice:[4,1]});d.set(s,r.legalPaths(s));window.touchDraft=d;
       });
-      const coords=await t.evaluate(()=>{const b=touchDraft.board,cv=(x,y)=>{const p=new DOMPoint(x,y).matrixTransform(b.svg.getScreenCTM());return{x:p.x,y:p.y};};return{a:cv(54,230),b:cv(234,460)};});
+      const coords=await t.evaluate(()=>{const b=touchDraft.board,cv=(x,y)=>{const p=new DOMPoint(x,y).matrixTransform(b.svg.getScreenCTM());return{x:p.x,y:p.y};};return{a:cv(81,242),b:cv(234,460)};});
       const cdp=await touchContext.newCDPSession(t);
       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coords.a,id:1}]});
       for(let i=1;i<=10;i++) await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:coords.a.x+(coords.b.x-coords.a.x)*i/10,y:coords.a.y+(coords.b.y-coords.a.y)*i/10,id:1}]});
-      assert.equal(await t.locator('.drag-checker').count(),1);
+      assert.equal(await t.locator('.drag-checker').count(),1,'touch pickup works outside the visible disc');
+      assert.equal(await t.locator('.bg-board.no-move-hints').count(),0,'touch drag exposes all legal targets');
       assert.equal(await t.locator('.drag-landing-ghost[data-target="8"]').count(),1);
       const occupied=await t.evaluate(()=>{const p=new DOMPoint(294,460).matrixTransform(touchDraft.board.svg.getScreenCTM());return{x:p.x,y:p.y};});
       await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...occupied,id:1}]});

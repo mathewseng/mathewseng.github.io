@@ -188,7 +188,7 @@ test("equivalent dice orders count as one outcome, including doubles and a winni
     assert.equal(t.state.phase, "over");
     assert.equal(t.state.off[0], 15);
     assert.equal(t.events.at(-1).automatic, true);
-    assert.equal(takebackTarget(t), null);
+    assert.equal(takebackTarget(t), 1, 'finished forced turn remains available for explicit undo');
   }
   const s = passPosition();
   s.phase = "move";
@@ -423,4 +423,54 @@ test("automatic suffixes preserve complete-turn legality across seeded games and
     }
     s = transition(s, { type: "move", steps: picked.steps });
   }
+});
+
+test('finished checker turns can be restored, including forced wins, without awarding points twice', () => {
+  for (const matchLength of [0,3]) for (const turn of [0,1]) {
+    const points=Array(24).fill(0);points[turn?23:0]=turn?-1:1;points[turn?0:23]=turn?15:-15;
+    const initial=initialState({phase:'move',dice:[1,2],turn,points,off:turn?[0,14]:[14,0],matchLength,
+      scores:matchLength?[2,2]:[5,7],cube:{value:2,owner:turn,turned:true}});
+    const original=table(initial), won=move(original);
+    assert.equal(won.state.phase,'over');
+    assert.ok(won.events.at(-1).automatic,'winning roll is forced');
+    const undone=undoTurn(won,takebackTarget(won,turn),turn,1-turn);
+    assert.deepEqual(undone.state,initial);
+    assert.equal(undone.reviewingTurn,true);
+    assert.deepEqual(undone.undoLog[0].events,won.events);
+    validateTakebacks(undone,true);
+    const again=move(undone);
+    assert.deepEqual(again.state,won.state,'replaying awards the original score once');
+    assert.equal(again.reviewingTurn,undefined);
+    if(!won.state.result.matchOver)assert.equal(takebackTarget(playAction(won,{type:'next'}),turn),null);
+  }
+});
+
+test('online finished-game undo still requires the opponent and never auto-confirms the restored turn', () => {
+  const points=Array(24).fill(0);points[0]=1;points[23]=-15;
+  const initial=initialState({phase:'move',dice:[1,2],points,off:[14,0]});
+  let s={...session(players,{matchLength:0},'ended'),...table(initial)};
+  const send=(who,action)=>{s=accept(s,who,envelope(s,who,action,crypto.randomUUID()),options);};
+  send('host',{type:'move',steps:legalTurns(initial)[0].steps});
+  const finished=clone(s.state);
+  send('host',{type:'undo-request'});
+  assert.deepEqual(s.state,finished,'request leaves the score intact');
+  assert.throws(()=>send('host',{type:'undo-accept',requestId:s.undoRequest.id}));
+  send('guest',{type:'undo-accept',requestId:s.undoRequest.id});
+  assert.deepEqual(s.state,initial);
+  assert.equal(s.reviewingTurn,true);
+  assert.throws(()=>send('host',{type:'auto'}),/Confirm the restored/);
+  send('host',{type:'move',steps:legalTurns(s.state)[0].steps});
+  assert.deepEqual(s.state,finished);
+});
+
+test('undo after the opponent finishes restores the requesting player and preserves the opponent roll',()=>{
+  const points=Array(24).fill(0);points[5]=1;points[23]=-1;
+  const initial=initialState({phase:'move',dice:[1,2],points,off:[14,14],matchLength:0,scores:[2,3]});
+  let t=move(table(initial));
+  t=playAction(t,{type:'roll',dice:[1,2]});
+  assert.equal(t.state.result.winner,1);
+  const restored=undoTurn(t,takebackTarget(t,0),0);
+  assert.deepEqual(restored.state,initial);
+  assert.deepEqual(restored.replayDice,[{actor:1,dice:[1,2]}]);
+  assert.equal(restored.reviewingTurn,true);
 });

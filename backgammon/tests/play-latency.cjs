@@ -19,11 +19,6 @@ module.exports = async function playLatency(browser, base, out, name) {
   const warning=()=>page.locator('dialog[open]').getByRole('button',{name:'Confirm anyway',exact:true});
   const rows=[];
   try {
-    await page.addInitScript(()=>{
-      const random=crypto.getRandomValues.bind(crypto), dice=[2,0,3,1,4,0,2,1,5,0,1,3,4,2,0,5,1,2];
-      crypto.getRandomValues=a=>a instanceof Uint8Array && a.length===1 && dice.length
-        ? ((a[0]=dice.shift()),a) : random(a);
-    });
     await page.goto(base+'/backgammon/play/'); await ready();
     await page.evaluate(async()=>{
       const {put,saveSettings}=await import('/backgammon/core/storage.mjs');
@@ -31,7 +26,7 @@ module.exports = async function playLatency(browser, base, out, name) {
       const {localConfig,defaultPlayRules}=await import('/backgammon/core/play-session.mjs');
       saveSettings({equityBar:false,analysisAhead:true,motion:'full'});
       const s=initialState({phase:'move',dice:[4,1],matchLength:0,rules:defaultPlayRules(0)});
-      await put('work',{id:'play',game:{id:'latency-game',started:true,state:s,initial:s,events:[],names:['You','GNUbg'],config:localConfig()},draft:[]});
+      await put('work',{id:'play',game:{id:'latency-game',started:true,state:s,initial:s,events:[],names:['You','GNUbg'],config:localConfig(),localRolls:{version:1,seed:'1b'.padStart(64,'0'),cursor:0}},draft:[]});
     });
     await page.reload(); await ready();
     await page.evaluate(async()=>{
@@ -88,7 +83,7 @@ module.exports = async function playLatency(browser, base, out, name) {
     assert.ok(trace.calls.filter(c=>c.plies!==undefined).every(c=>c.plies>=2),'every completed Auto result reaches at least two plies');
     const engine=await page.evaluate(async()=>({version:(await import('/backgammon/engine/metadata.mjs')).ENGINE_VERSION,policy:(await import('/backgammon/engine/search-policy.mjs')).SEARCH_POLICY_VERSION}));
     return {recordedAt:new Date().toISOString(),environment:{cpu:os.cpus()[0].model,os:`${os.platform()} ${os.release()} ${os.arch()}`,browser:`${name} ${browser.version()}`},
-      engine,thinkMs,method:'Assembled site, real WASM, Auto for both sides, default Jacoby/beavers/raccoons, thinkMs pause plus 250ms per checker step, real animations, fixed test dice. No fake engine or preloaded recommendations. Accessible move selector picks first legal step; costly-move warning is accepted. Local HTTP, desktop, not a phone benchmark. Timing includes UI and persistence; trace separates engine requests.',rows,trace,events:game.events.length,replayVerified:verified};
+      engine,thinkMs,method:'Assembled site, real WASM, Auto for both sides, default Jacoby/beavers/raccoons, thinkMs pause plus 250ms per checker step, real animations, fixed test seed, indexed HMAC-SHA256 rolls. No fake engine or preloaded recommendations. Accessible move selector picks first legal step; costly-move warning is accepted. Local HTTP, desktop, not a phone benchmark. Timing includes UI and persistence; trace separates engine requests.',rows,trace,events:game.events.length,replayVerified:verified};
   } finally {
     require('node:fs').writeFileSync(path.join(out,`${name}-play-latency-partial.json`),JSON.stringify({rows,trace:await page.evaluate(()=>window.latency).catch(()=>null)},null,2));
     await context.close();

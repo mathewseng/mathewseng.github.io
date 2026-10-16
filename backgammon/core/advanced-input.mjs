@@ -10,10 +10,10 @@ export function advancedAction({ point, checker, candidates, returns, routes = [
   const die = selectedDie(candidates, preferred, dice);
   const forward = candidates.filter(step => step.die === die);
   if (checker) {
-    const step = forward.find(step => step.from === point);
+    const step = forward.find(step => step.from === point) || candidates.find(step => step.from === point);
     if (step) return { type: "move", step };
-    // An unplayable selected die must not undo a checker which can still use
-    // the other die. Only an exhausted moved checker has the undo shortcut.
+    // Prefer the selected die, but use the other one when needed. Only an
+    // exhausted moved checker has the undo shortcut.
     if (!candidates.some(step => step.from === point)) {
       const route = returns.find(route => route.from === point);
       if (route) return { type: "undo", route };
@@ -21,6 +21,11 @@ export function advancedAction({ point, checker, candidates, returns, routes = [
     return null;
   }
   const distance = from => from === "bar" ? 25 : turn ? 24 - from : from + 1;
+  // Original draft point space returns its checker, even if it could continue.
+  // Disc taps on that point still play forward.
+  const returning = returns.filter(route => route.to === point)
+    .sort((a, b) => a.die - b.die)[0];
+  if (returning) return { type: 'undo', route: returning };
   // Point-space input requests a destination. Prefer the selected die, then
   // another direct arrival, before spending several dice on one checker.
   const step = candidates.filter(step => step.to === point)

@@ -19,6 +19,8 @@ module.exports = async function directPlay(browser, base, out, name) {
       const { shell, DraftBoard } =
         await import("/backgammon/ui/shell.mjs");
       const r = await import("/backgammon/core/rules.mjs");
+      const { saveSettings } = await import("/backgammon/core/storage.mjs");
+      saveSettings({interactionMode: "beginner", moveHints: true});
       const ui = shell("trainer", "Direct checker actions");
       const d = new DraftBoard(ui.board);
       const s = r.initialState({ phase: "move", dice: [4, 3] });
@@ -38,7 +40,8 @@ module.exports = async function directPlay(browser, base, out, name) {
           } else {
             const hit = g.querySelector(".point-hit");
             x = +hit.getAttribute("x") + 5;
-            y = +hit.getAttribute("y") + 120;
+            // Point space, outside even the enlarged five-checker pickup area.
+            y = +hit.getAttribute("y") < 330 ? 285 : 375;
           }
           const v = new DOMPoint(x, y).matrixTransform(svg.getScreenCTM());
           return { x: v.x, y: v.y };
@@ -48,7 +51,7 @@ module.exports = async function directPlay(browser, base, out, name) {
       await page.mouse.click(pos.x, pos.y);
     };
     const draft = () => page.evaluate(() => direct.d.draft);
-    // Entire empty point surface, well away from the old tip shortcut.
+    // Open point space requests a destination in Beginner mode too.
     await click(8, false);
     assert.deepEqual(
       (await draft()).map((s) => [s.from, s.to, s.die]),
@@ -215,8 +218,8 @@ module.exports = async function directPlay(browser, base, out, name) {
       .evaluateAll((ns) => ns.map((n) => n.getAttribute("r")));
     assert.equal(new Set(radii).size, 1);
     assert.equal(
-      await page.locator(".board-cube rect").first().getAttribute("x"),
-      "825",
+      await page.locator(".board-cube .cube-face").getAttribute("x"),
+      "817",
     );
     await shot("board");
     await page.evaluate(() => {
@@ -380,7 +383,7 @@ module.exports = async function directPlay(browser, base, out, name) {
         assert.equal(pending.game.events.length, 0);
         assert.equal(pending.draft.length, 2);
         await page.locator("#confirm").click();
-        await page.locator("#roll").waitFor();
+        await page.locator(".roll-ready").waitFor();
         const game = await page.evaluate(
           async () =>
             (
@@ -407,8 +410,8 @@ module.exports = async function directPlay(browser, base, out, name) {
             .querySelector("#board")
             .getBoundingClientRect()
             .toJSON(),
-          actions: document
-            .querySelector("#actions")
+          controls: document
+            .querySelector(".help-cluster")
             .getBoundingClientRect()
             .toJSON(),
           review: document
@@ -418,8 +421,9 @@ module.exports = async function directPlay(browser, base, out, name) {
         }));
         assert.ok(layout.board.height > 600);
         assert.ok(
-          layout.actions.bottom > layout.height - 30 &&
-            layout.actions.bottom <= layout.height,
+          layout.controls.bottom > layout.height - 30 &&
+            layout.controls.bottom <= layout.height,
+          `footer controls stay at the screen edge: ${JSON.stringify(layout)}`,
         );
         assert.ok(layout.review >= layout.height);
         await shot("desktop-table");

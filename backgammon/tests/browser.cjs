@@ -528,6 +528,18 @@ const server = http.createServer((req, res) => {
         (report.blockedPass ||= []).push(
           await require("./blocked-pass.cjs")(browser, base, out, browserName),
         );
+        (report.diceCountMotion ||= []).push(
+          await require("./dice-count-motion.cjs")(browser, base, out, browserName),
+        );
+        (report.checkerTargets ||= []).push(
+          await require("./checker-targets.cjs")(browser, base, out, browserName),
+        );
+        (report.revisionWarning ||= []).push(
+          await require("./revision-warning.cjs")(browser, base, out, browserName),
+        );
+        (report.endedUndo ||= []).push(
+          await require("./ended-undo.cjs")(browser, base, out, browserName),
+        );
         (report.diceSwitchMotion ||= []).push(
           await require("./dice-switch-motion.cjs")(browser, base, out, browserName),
         );

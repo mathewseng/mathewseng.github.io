@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { initialState, legalTurns, transition, assertState, positionKey, boardKey, commitTurn } from '../core/rules.mjs';
 import { localConfig } from '../core/play-session.mjs';
 import { Prethink, PRETHINK, chanceRolls, continuations } from '../core/prethink.mjs';
+import { futureLocalRoll } from '../core/local-rolls.mjs';
 
 const evaluate = state => state.phase === 'move' ? {
   candidates:legalTurns(state).slice(0,5).map((c,i)=>({...c,equity:0.3-i*.01})),
@@ -14,6 +15,19 @@ test('chance expansion covers all 36 unbiased outcomes in 21 order-independent r
   assert.equal(new Set(rolls.map(r=>r.dice.join())).size,21);
   assert.ok(Math.abs(rolls.reduce((s,r)=>s+r.weight,0)-1)<1e-12);
   assert.equal(rolls.filter(r=>r.weight===1/36).length,6);
+});
+test('seeded preparation explores the actual future roll on every near-best branch without advancing it',async()=>{
+  const h=harness({limits:{...PRETHINK,nodes:24}});
+  h.view.game.localRolls={version:1,seed:'b7'.repeat(32),cursor:5};
+  try {
+    const expected=await futureLocalRoll(h.view.game),original=structuredClone(h.view.game);
+    for(let i=0;i<12;i++)await h.tick();
+    const next=h.calls.filter(c=>c.state.phase==='move' && c.state.turn===1);
+    assert.ok(next.length>=2,'prepares several near-best continuations');
+    assert.ok(next.every(c=>JSON.stringify(c.state.dice)===JSON.stringify(expected)));
+    assert.ok(h.calls.every(c=>!('localRolls' in c.state)&&!('seed' in c)),'engine never sees the seed');
+    assert.deepEqual(h.view.game,original);
+  } finally {h.p.pause();}
 });
 test('near-best branches preserve full context and legal states without mutating or drawing dice',()=>{
   const state=source(), original=structuredClone(state);

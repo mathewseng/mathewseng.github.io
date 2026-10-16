@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Compare one decision at identical settings and in the ORIGINAL cube units.
+export const REVISION_WARNING_LOSS = 0.002;
+export const needsRevisionWarning = loss => Number.isFinite(loss) && loss > REVISION_WARNING_LOSS + 1e-10;
 export function lossTone(loss) {
   if (!Number.isFinite(loss) || loss < 0)
     throw new Error("Invalid decision loss.");

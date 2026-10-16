@@ -1,0 +1,1647 @@
+{
+  "recordedAt": "2026-10-16T03:01:34.126Z",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "os": "darwin 25.5.0 arm64",
+    "browser": "chromium 145.0.7632.6"
+  },
+  "engine": {
+    "version": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6",
+    "policy": "minimum-two-v3"
+  },
+  "thinkMs": 2000,
+  "method": "Assembled site, real WASM, Auto for both sides, default Jacoby/beavers/raccoons, thinkMs pause plus 250ms per checker step, real animations, fixed test seed, indexed HMAC-SHA256 rolls. No fake engine or preloaded recommendations. Accessible move selector picks first legal step; costly-move warning is accepted. Local HTTP, desktop, not a phone benchmark. Timing includes UI and persistence; trace separates engine requests.",
+  "rows": [
+    {
+      "turn": 0,
+      "action": "confirm",
+      "waitMs": 95,
+      "withBotReplyMs": 2065,
+      "state": {
+        "version": 1,
+        "points": [
+          -1,
+          0,
+          0,
+          -1,
+          1,
+          3,
+          0,
+          3,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          -5,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        "bar": [
+          1,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [],
+        "phase": "roll",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": true,
+          "automaticDoubles": -1,
+          "immediateRedoubles": 2
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 3,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "turn": 1,
+      "action": "roll",
+      "waitMs": 39
+    },
+    {
+      "turn": 1,
+      "action": "confirm",
+      "waitMs": 45,
+      "withBotReplyMs": 2377,
+      "state": {
+        "version": 1,
+        "points": [
+          0,
+          0,
+          0,
+          -2,
+          0,
+          3,
+          0,
+          3,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          -5,
+          0,
+          1,
+          0,
+          0,
+          2
+        ],
+        "bar": [
+          1,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [],
+        "phase": "roll",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": true,
+          "automaticDoubles": -1,
+          "immediateRedoubles": 2
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 7,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "turn": 2,
+      "action": "roll",
+      "waitMs": 66
+    },
+    {
+      "turn": 2,
+      "action": "confirm",
+      "waitMs": 82,
+      "withBotReplyMs": 1576,
+      "state": {
+        "version": 1,
+        "points": [
+          0,
+          1,
+          0,
+          -2,
+          0,
+          3,
+          0,
+          2,
+          0,
+          0,
+          0,
+          -5,
+          5,
+          0,
+          0,
+          0,
+          -1,
+          0,
+          -3,
+          -2,
+          1,
+          -2,
+          0,
+          3
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "dice": [],
+        "phase": "roll",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": true,
+          "automaticDoubles": -1,
+          "immediateRedoubles": 2
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 11,
+        "result": null,
+        "pending": null
+      }
+    },
+    {
+      "turn": 3,
+      "action": "roll",
+      "waitMs": 90
+    },
+    {
+      "turn": 3,
+      "action": "confirm",
+      "waitMs": 316,
+      "withBotReplyMs": 777,
+      "state": {
+        "version": 1,
+        "points": [
+          1,
+          3,
+          0,
+          -2,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -5,
+          4,
+          0,
+          0,
+          0,
+          -1,
+          0,
+          -3,
+          -2,
+          1,
+          -2,
+          0,
+          3
+        ],
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ],
+        "turn": 1,
+        "dice": [],
+        "phase": "double",
+        "cube": {
+          "value": 1,
+          "owner": null
+        },
+        "scores": [
+          0,
+          0
+        ],
+        "matchLength": 0,
+        "rules": {
+          "cube": true,
+          "jacoby": true,
+          "automaticDoubles": -1,
+          "immediateRedoubles": 2
+        },
+        "crawford": false,
+        "crawfordPlayed": false,
+        "gameNumber": 1,
+        "sequence": 14,
+        "result": null,
+        "pending": {
+          "type": "double",
+          "by": 1
+        }
+      }
+    }
+  ],
+  "trace": {
+    "calls": [
+      {
+        "at": 323.90000000596046,
+        "sequence": 0,
+        "phase": "move",
+        "turn": 0,
+        "priority": -5,
+        "submitted": false,
+        "ms": 1071.5999999940395,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 2.4000000059604645
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 10.600000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 109.70000000298023
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 909.1000000089407
+          }
+        ]
+      },
+      {
+        "at": 1517.7000000029802,
+        "sequence": 1,
+        "phase": "roll",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 155.5,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.800000011920929
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.7999999970197678
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 7.200000002980232
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 146.29999999701977
+          }
+        ]
+      },
+      {
+        "at": 1798.7000000029802,
+        "sequence": 2,
+        "phase": "move",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 727.9000000059605,
+        "error": "AbortError"
+      },
+      {
+        "at": 2647.5,
+        "sequence": 0,
+        "phase": "move",
+        "turn": 0,
+        "priority": -4,
+        "submitted": true,
+        "ms": 222.20000000298023,
+        "cached": false,
+        "reusedHint": false,
+        "preparation": {
+          "plies": 3,
+          "requestId": 1,
+          "reason": "predicted-cost",
+          "submittedKey": "-2,1,0,0,1,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+        },
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 2.4000000059604645
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 10.600000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 109.70000000298023
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 909.1000000089407
+          }
+        ]
+      },
+      {
+        "at": 2807.6000000089407,
+        "sequence": 0,
+        "phase": "move",
+        "turn": 0,
+        "priority": 20,
+        "submitted": true,
+        "ms": 62.099999994039536,
+        "cached": false,
+        "reusedHint": false,
+        "preparation": {
+          "plies": 3,
+          "requestId": 1,
+          "reason": "predicted-cost",
+          "submittedKey": "-2,1,0,0,1,3,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+        },
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 2.4000000059604645
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 10.600000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 109.70000000298023
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 909.1000000089407
+          }
+        ]
+      },
+      {
+        "at": 2931,
+        "sequence": 1,
+        "phase": "roll",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 43.6000000089407,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.7999999970197678
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5999999940395355
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 5.600000008940697
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 35.70000000298023
+          }
+        ]
+      },
+      {
+        "at": 3299.1000000089407,
+        "sequence": 2,
+        "phase": "move",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 869.2999999970198,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.5
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 8.300000011920929
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 113
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 746
+          }
+        ]
+      },
+      {
+        "at": 4168.79999999702,
+        "sequence": 3,
+        "phase": "roll",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 103.1000000089407,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 6.0999999940395355
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 95.79999999701977
+          }
+        ]
+      },
+      {
+        "at": 4859.4000000059605,
+        "sequence": 3,
+        "phase": "roll",
+        "turn": 0,
+        "priority": 20,
+        "submitted": false,
+        "ms": 0,
+        "cached": true,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 6.0999999940395355
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 95.79999999701977
+          }
+        ]
+      },
+      {
+        "at": 5002,
+        "sequence": 4,
+        "phase": "move",
+        "turn": 0,
+        "priority": -5,
+        "submitted": false,
+        "ms": 1536.7000000029802,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.29999999701976776
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 5.100000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 77
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 1453.7000000029802
+          }
+        ]
+      },
+      {
+        "at": 6660.79999999702,
+        "sequence": 5,
+        "phase": "roll",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 172,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.30000001192092896
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.8999999910593033
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 10.200000002980232
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 160.5
+          }
+        ]
+      },
+      {
+        "at": 7028.600000008941,
+        "sequence": 6,
+        "phase": "move",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 141.59999999403954,
+        "error": "AbortError"
+      },
+      {
+        "at": 7291.20000000298,
+        "sequence": 4,
+        "phase": "move",
+        "turn": 0,
+        "priority": -4,
+        "submitted": true,
+        "ms": 0.20000000298023224,
+        "cached": true,
+        "reusedHint": true,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.29999999701976776
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 5.100000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 77
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 1453.7000000029802
+          }
+        ]
+      },
+      {
+        "at": 7412.5,
+        "sequence": 5,
+        "phase": "roll",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 264.5,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 2.3999999910593033
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 2.2000000029802322
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 14.5
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 211.09999999403954
+          }
+        ]
+      },
+      {
+        "at": 7455.9000000059605,
+        "sequence": 4,
+        "phase": "move",
+        "turn": 0,
+        "priority": 20,
+        "submitted": true,
+        "ms": 0.20000000298023224,
+        "cached": true,
+        "reusedHint": true,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.29999999701976776
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 5.100000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 77
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 1453.7000000029802
+          }
+        ]
+      },
+      {
+        "at": 7517.29999999702,
+        "sequence": 5,
+        "phase": "roll",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 159.70000000298023,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 2.3999999910593033
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 2.2000000029802322
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 14.5
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 211.09999999403954
+          }
+        ]
+      },
+      {
+        "at": 7996.29999999702,
+        "sequence": 6,
+        "phase": "move",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 1115.300000011921,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 1
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 8.299999997019768
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 113
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 991
+          }
+        ]
+      },
+      {
+        "at": 9112.10000000894,
+        "sequence": 7,
+        "phase": "roll",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 138.09999999403954,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.09999999403953552
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 5.899999991059303
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 131.09999999403954
+          }
+        ]
+      },
+      {
+        "at": 9814.20000000298,
+        "sequence": 7,
+        "phase": "roll",
+        "turn": 0,
+        "priority": 20,
+        "submitted": false,
+        "ms": 0.09999999403953552,
+        "cached": true,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.09999999403953552
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 5.899999991059303
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 131.09999999403954
+          }
+        ]
+      },
+      {
+        "at": 9958.20000000298,
+        "sequence": 8,
+        "phase": "move",
+        "turn": 0,
+        "priority": -5,
+        "submitted": false,
+        "ms": 526,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.10000000894069672
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 2
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 21.799999997019768
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 501.79999999701977
+          }
+        ]
+      },
+      {
+        "at": 10605.40000000596,
+        "sequence": 9,
+        "phase": "roll",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 33,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.29999999701976776
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.7000000029802322
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 4.200000002980232
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 27.5
+          }
+        ]
+      },
+      {
+        "at": 10762.60000000894,
+        "sequence": 10,
+        "phase": "move",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 412.09999999403954,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "clear-lead",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 4
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 8.5
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 114.6000000089407
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 283.8999999910593
+          }
+        ]
+      },
+      {
+        "at": 11298.90000000596,
+        "sequence": 11,
+        "phase": "roll",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 18.799999997019768,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.7000000029802322
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 3.8999999910593033
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 13.700000002980232
+          }
+        ]
+      },
+      {
+        "at": 11443.60000000894,
+        "sequence": 12,
+        "phase": "move",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 130.8999999910593,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 2,
+        "reason": "clear-lead",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 3.300000011920929
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 10.599999994039536
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 116.1000000089407
+          }
+        ]
+      },
+      {
+        "at": 11699.79999999702,
+        "sequence": 9,
+        "phase": "roll",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 133,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.699999988079071
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 5.9000000059604645
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 125.90000000596046
+          }
+        ]
+      },
+      {
+        "at": 12014.40000000596,
+        "sequence": 8,
+        "phase": "move",
+        "turn": 0,
+        "priority": -4,
+        "submitted": true,
+        "ms": 180.5,
+        "cached": false,
+        "reusedHint": false,
+        "preparation": {
+          "plies": 3,
+          "requestId": 14,
+          "reason": "predicted-cost",
+          "submittedKey": "0,1,0,-2,0,3,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,3,0,0,0,0"
+        },
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.10000000894069672
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 2
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 21.799999997019768
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 501.79999999701977
+          }
+        ]
+      },
+      {
+        "at": 12179,
+        "sequence": 8,
+        "phase": "move",
+        "turn": 0,
+        "priority": 20,
+        "submitted": true,
+        "ms": 15.900000005960464,
+        "cached": false,
+        "reusedHint": false,
+        "preparation": {
+          "plies": 3,
+          "requestId": 14,
+          "reason": "predicted-cost",
+          "submittedKey": "0,1,0,-2,0,3,0,2,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,3,0,0,0,0"
+        },
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.10000000894069672
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 2
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 21.799999997019768
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 501.79999999701977
+          }
+        ]
+      },
+      {
+        "at": 12265.90000000596,
+        "sequence": 9,
+        "phase": "roll",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 9.899999991059303,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.6000000089406967
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 3.5
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 4
+          }
+        ]
+      },
+      {
+        "at": 12606.20000000298,
+        "sequence": 10,
+        "phase": "move",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 439,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 3.699999988079071
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 11.200000002980232
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 125.70000000298023
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 294.90000000596046
+          }
+        ]
+      },
+      {
+        "at": 13047.79999999702,
+        "sequence": 11,
+        "phase": "roll",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 24.30000001192093,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5999999940395355
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 3.7999999970197678
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 19.5
+          }
+        ]
+      },
+      {
+        "at": 13789.79999999702,
+        "sequence": 11,
+        "phase": "roll",
+        "turn": 0,
+        "priority": 20,
+        "submitted": false,
+        "ms": 0.10000000894069672,
+        "cached": true,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.5999999940395355
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 3.7999999970197678
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 19.5
+          }
+        ]
+      },
+      {
+        "at": 13965.29999999702,
+        "sequence": 12,
+        "phase": "move",
+        "turn": 0,
+        "priority": -5,
+        "submitted": false,
+        "ms": 98.90000000596046,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 2,
+        "reason": "clear-lead",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 2.2000000029802322
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 9.900000005960464
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 86
+          }
+        ]
+      },
+      {
+        "at": 14187.90000000596,
+        "sequence": 13,
+        "phase": "roll",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 135.79999999701977,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.19999998807907104
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.6000000089406967
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 2.7999999970197678
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 131.90000000596046
+          }
+        ]
+      },
+      {
+        "at": 14445,
+        "sequence": 14,
+        "phase": "move",
+        "turn": 1,
+        "priority": -20,
+        "submitted": false,
+        "ms": 107.40000000596046,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 2,
+        "reason": "clear-lead",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.29999999701976776
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 11.5
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 95.20000000298023
+          }
+        ]
+      },
+      {
+        "at": 14674.40000000596,
+        "sequence": 15,
+        "phase": "roll",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 215.3999999910593,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.20000000298023224
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.7000000029802322
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 2
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 212.20000000298023
+          }
+        ]
+      },
+      {
+        "at": 15011.20000000298,
+        "sequence": 16,
+        "phase": "move",
+        "turn": 0,
+        "priority": -20,
+        "submitted": false,
+        "ms": 95,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 2,
+        "reason": "clear-lead",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.7000000029802322
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 10.100000008940697
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 83.69999998807907
+          }
+        ]
+      },
+      {
+        "at": 16829.5,
+        "sequence": 12,
+        "phase": "move",
+        "turn": 0,
+        "priority": -4,
+        "submitted": true,
+        "ms": 424.90000000596046,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 5.300000011920929
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 7.5999999940395355
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 27.599999994039536
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 381.90000000596046
+          }
+        ]
+      },
+      {
+        "at": 17005.20000000298,
+        "sequence": 12,
+        "phase": "move",
+        "turn": 0,
+        "priority": 20,
+        "submitted": true,
+        "ms": 249.20000000298023,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "predicted-cost",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 5.300000011920929
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 7.5999999940395355
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 27.599999994039536
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 381.90000000596046
+          }
+        ]
+      },
+      {
+        "at": 17367.90000000596,
+        "sequence": 13,
+        "phase": "roll",
+        "turn": 1,
+        "priority": 10,
+        "submitted": false,
+        "ms": 34,
+        "cached": false,
+        "reusedHint": false,
+        "plies": 3,
+        "reason": "cube-depth-limit",
+        "levels": [
+          {
+            "preset": "quick",
+            "plies": 0,
+            "elapsedMs": 0.10000000894069672
+          },
+          {
+            "preset": "standard",
+            "plies": 1,
+            "elapsedMs": 0.7000000029802322
+          },
+          {
+            "preset": "deep",
+            "plies": 2,
+            "elapsedMs": 2.3999999910593033
+          },
+          {
+            "preset": "expert",
+            "plies": 3,
+            "elapsedMs": 20.200000002980232
+          }
+        ]
+      }
+    ],
+    "starts": [
+      324.1000000089407,
+      2647.7000000029802,
+      7412.600000008941
+    ],
+    "cancels": [
+      {
+        "at": 184.79999999701977
+      },
+      {
+        "at": 2526.2999999970198,
+        "priority": -20,
+        "phase": "move"
+      },
+      {
+        "at": 7169.9000000059605,
+        "priority": -20,
+        "phase": "move"
+      }
+    ]
+  },
+  "events": 14,
+  "replayVerified": true
+}

@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { positionKey, transition, decisionPlayer, canDouble, boardKey, commitTurn } from './rules.mjs';
 import { forcedTurn } from './table.mjs';
+import { futureLocalRoll } from './local-rolls.mjs';
 
-export const PRETHINK = Object.freeze({ nodes: 24, milliseconds: 20000, turns: 2, branches: 3, margin: 0.020 });
+export const PRETHINK = Object.freeze({ nodes: 24, milliseconds: 20000, turns: 3, branches: 3, margin: 0.020 });
 export const analysisKey = state => positionKey({ ...state, dice: [...state.dice].sort((a,b) => b-a) });
-const contextKey = model => JSON.stringify([model.id, analysisKey(model.state), model.config.humanSide, model.config.strength, model.config.reviewStrength]);
+const nodeKey = node => `${analysisKey(node.state)}:${node.rolls || 0}`;
+const contextKey = model => JSON.stringify([model.id, analysisKey(model.state), model.config.humanSide, model.config.strength, model.config.reviewStrength, model.localRolls, model.replayDice]);
 export const chanceRolls = () => Array.from({length:6}, (_, i) =>
   Array.from({length:i+1}, (_, j) => ({ dice:[i+1,j+1], weight:i === j ? 1/36 : 2/36 })))
   .flat().sort((a,b) => b.weight-a.weight);
 
-// Only real legal transitions. We enumerate chance outcomes, never draw or
-// reserve future dice. Priority weights rank work; they are NOT win chances.
-export function continuations(node, result) {
+// Only real legal transitions. Local seeded games supply one known roll;
+// callers without a private sequence enumerate chance outcomes. Never pass
+// future dice to GNUbg itself. Weights rank work; they are NOT win chances.
+export function continuations(node, result, rolls = chanceRolls()) {
   const s = node.state;
   if (node.turns >= PRETHINK.turns || s.phase === 'over') return [];
   if (s.phase === 'roll' && !canDouble(s)) {
-    return chanceRolls().map(({dice,weight}) => ({
+    return rolls.map(({dice,weight}) => ({
       state:transition(s,{type:'roll',dice}), turns:node.turns, weight:node.weight*weight,
+      rolls:(node.rolls || 0)+1,
     }));
   }
   let choices;
@@ -33,12 +37,13 @@ export function continuations(node, result) {
   const close = sorted.filter(c => sorted[0].equity-c.equity <= PRETHINK.margin + 1e-10).slice(0,PRETHINK.branches);
   return close.flatMap((choice,i) => {
     // No-double has dice as its children. Other cube actions preserve context.
-    if (choice.action === 'roll') return chanceRolls().map(({dice,weight}) => ({
+    if (choice.action === 'roll') return rolls.map(({dice,weight}) => ({
       state:transition(s,{type:'roll',dice}), turns:node.turns, weight:node.weight*weight/(i+1),
+      rolls:(node.rolls || 0)+1,
     }));
     return [{state:transition(s, s.phase === 'move'
       ? {type:'move',steps:choice.steps} : {type:choice.action}, decisionPlayer(s)),
-      turns:node.turns + Number(s.phase === 'move'), weight:node.weight/(i+1)}];
+      turns:node.turns + Number(s.phase === 'move'), rolls:node.rolls || 0, weight:node.weight/(i+1)}];
   });
 }
 
@@ -52,7 +57,7 @@ export class Prethink {
   }
   get busy() { return !!this.job; }
   // The bot has already chosen its real action. Use its animation hold to
-  // prepare the next decision; committed dice are still drawn only by Play.
+  // prepare the next decision. Seeded dice are still consumed only by Play.
   prepareAfter(state, action) {
     const view=this.view();
     if (!view?.enabled || view.game?.config.mode !== 'computer') return;
@@ -125,16 +130,20 @@ export class Prethink {
       scope.done.add(jobKey);
       if (priority === -20) scope.nodes++;
       // Favor the actual completed draft over hypothetical best moves. Keep
-      // its next cube decision and all random rolls in the same exact-context
-      // cache that foreground play uses; never reserve or mutate live dice.
+      // its next cube decision and predetermined roll in the same exact-context
+      // cache that foreground play uses. Peeking never consumes a roll.
       {
         const actual = priority === -4 && result?.actual;
         const plan = actual ? {...result,candidates:[actual]} : result;
-        for (const next of continuations(actual ? {...node,weight:4} : node,plan)) {
-          const key=analysisKey(next.state);
+        const dice = node.state.phase === 'roll'
+          ? await futureLocalRoll(model, node.rolls || 0, node.state.turn) : null;
+        if (this.scope !== scope || this.job !== job) return;
+        for (const next of continuations(actual ? {...node,weight:4} : node,plan,
+          dice ? [{dice,weight:1}] : chanceRolls())) {
+          const key=nodeKey(next);
           if (next.state.phase === 'over' || next.turns >= this.limits.turns) continue;
           if (scope.seen.has(key)) {
-            const queued=scope.queue.find(n=>analysisKey(n.state)===key);
+            const queued=scope.queue.find(n=>nodeKey(n)===key);
             if (queued && actual) queued.weight=Math.max(queued.weight,next.weight);
             continue;
           }

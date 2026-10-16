@@ -167,6 +167,7 @@ function append(table, action, actor, automatic = false) {
   });
 }
 export function settleForced(table) {
+  if (table.reviewingTurn) return table;
   const forced = forcedTurn(table.state);
   if (forced)
     append(
@@ -191,6 +192,7 @@ export function playAction(
   actor = decisionPlayer(source.state),
 ) {
   const table = clone(source);
+  delete table.reviewingTurn;
   if (action.type === "roll" && table.replayDice?.length) {
     const known = table.replayDice.shift();
     if (
@@ -227,7 +229,7 @@ export function takebackTarget(table, actor = null) {
     if (event.action.type !== "move") continue;
     // Do not trust an imported/missing automatic marker to authorize a rewind.
     states ||= replay(table.initial, table.events);
-    if (event.automatic || forcedTurn(states[i])) break;
+    if (table.state.phase !== "over" && (event.automatic || forcedTurn(states[i]))) break;
     if (actor === null || event.actor === actor) {
       target = i;
       break;
@@ -239,7 +241,7 @@ export function takebackTarget(table, actor = null) {
 export function undoTurn(source, target, by, acceptedBy = null) {
   if (!Number.isInteger(target) || takebackTarget(source, by) !== target)
     throw new Error(
-      "That turn cannot be undone. Forced turns and cube/game boundaries cannot be crossed.",
+      "That turn cannot be undone. During play, forced turns and cube/game boundaries cannot be crossed.",
     );
   const table = clone(source),
     removed = table.events.slice(target),
@@ -260,6 +262,7 @@ export function undoTurn(source, target, by, acceptedBy = null) {
   ];
   table.events = table.events.slice(0, target);
   table.state = restored;
+  if (source.state.phase === 'over') table.reviewingTurn = true;
   table.undoRequest = null;
   return table;
 }

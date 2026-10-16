@@ -15,6 +15,34 @@ const STACK_LIMIT = 5,
 // Five touching discs fit between the frame and the destination-label lane.
 const stackY = (top, slot) =>
   top ? 54 + slot * CHECKER_RADIUS * 2 : 606 - slot * CHECKER_RADIUS * 2;
+// Fill the corners around each visible disc, within its own point lane.
+// One shared test keeps a near-edge tap and a drag pickup identical. The open
+// point tip stays destination space; neighboring point targets never overlap.
+function checkerHit(group, position) {
+  const hit = group.querySelector('.checker-hit');
+  if (!hit) return -1;
+  const x = +hit.getAttribute('x'), y = +hit.getAttribute('y');
+  if (position.x < x || position.x > x + +hit.getAttribute('width') ||
+      position.y < y || position.y > y + +hit.getAttribute('height')) return -1;
+  const faces = [...group.querySelectorAll(':scope > .checker > circle:first-child')];
+  let closest = -1, distance = Infinity;
+  faces.forEach((face, i) => {
+    const d = Math.hypot(position.x - +face.getAttribute('cx'), position.y - +face.getAttribute('cy'));
+    if (d < distance) { closest = i; distance = d; }
+  });
+  return closest;
+}
+function checkerHitArea(group, x, top, count, width = 58) {
+  if (!count) return;
+  const low = Math.min(stackY(top, 0), stackY(top, Math.min(count, STACK_LIMIT) - 1));
+  const high = Math.max(stackY(top, 0), stackY(top, Math.min(count, STACK_LIMIT) - 1));
+  const y = Math.max(28, low - 29), end = Math.min(632, high + 29);
+  group.append(svg('rect', {x:x-width/2,y,width,height:end-y,rx:8,fill:'transparent',class:'checker-hit'}));
+}
+const diceTransform = die => {
+  const [, x, y] = die.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/);
+  return `matrix(1,0,0,1,${x},${y})`;
+};
 function svg(tag, attrs = {}, text) {
   const n = document.createElementNS(NS, tag);
   if (tag === "circle" && attrs.class === "source-ring") attrs = {...attrs, pathLength: 120};
@@ -394,14 +422,7 @@ export class Board {
             : raw === `bar${this.state.turn}` || raw === `off${this.state.turn}`;
         const checkerTap =
           own &&
-          ([...p.querySelectorAll(".checker > circle:first-child")].some(
-            (c) =>
-              Math.hypot(
-                pos.x - Number(c.getAttribute("cx")),
-                pos.y - Number(c.getAttribute("cy")),
-              ) <=
-              CHECKER_RADIUS + 1,
-          ) || [...p.querySelectorAll(".off-checker")].some((r) =>
+          (checkerHit(p, pos) >= 0 || [...p.querySelectorAll(".off-checker")].some((r) =>
             pos.x >= +r.getAttribute("x") &&
             pos.x <= +r.getAttribute("x") + +r.getAttribute("width") &&
             pos.y >= +r.getAttribute("y") &&
@@ -419,18 +440,10 @@ export class Board {
       const p = e.target.closest("[data-point]");
       if (!p?.classList.contains("movable")) return;
       const pos = this.coordinates(e.clientX, e.clientY);
-      const faces = [...p.querySelectorAll(".checker > circle:first-child")];
-      const pickIndex = faces.findIndex(c => Math.hypot(pos.x - +c.getAttribute("cx"), pos.y - +c.getAttribute("cy")) <= CHECKER_RADIUS + 1);
+      const pickIndex = checkerHit(p, pos);
       if (
         !p.dataset.point.startsWith("off") &&
-        ![...p.querySelectorAll(".checker > circle:first-child")].some(
-          (c) =>
-            Math.hypot(
-              pos.x - Number(c.getAttribute("cx")),
-              pos.y - Number(c.getAttribute("cy")),
-            ) <=
-            CHECKER_RADIUS + 1,
-        )
+        pickIndex < 0
       )
         return;
       this.pointer = {
@@ -748,7 +761,9 @@ export class Board {
   }
   dropTarget(position) {
     return closestLegalPoint(position.x, position.y,
-      this.renderOptions.moves.map(move => move.to), this.state.turn, this.options.orientation);
+      [...this.renderOptions.moves.map(move => move.to), ...(this.pointer ?
+        [typeof this.pointer.raw === 'string' ? this.pointer.raw.replace(/[01]$/, '') : this.pointer.raw] : [])],
+      this.state.turn, this.options.orientation);
   }
   showDragLanding(target) {
     if (this.dragLandingTarget === target && this.dragLandingContext === this.renderOptions) return;
@@ -908,7 +923,7 @@ export class Board {
     clearLastMoveExits(this.svg);
     clearPreview(this.svg);
     this.svg
-      .querySelectorAll(".moving-checker,.landing-contact,.drop-landing-ghost")
+      .querySelectorAll(".moving-checker,.landing-contact,.drop-landing-ghost,.arrival-resident")
       .forEach((n) => { if (!keep.includes(n)) n.remove(); });
     this.svg.querySelectorAll("[data-arriving]").forEach((n) => {
       n.style.opacity = "";
@@ -1010,7 +1025,8 @@ export class Board {
       checkerPosition(after, to, p, this.options.orientation),
       p,
       to,
-      { via: this.dropOrigin ? [] : via, drop: !!this.dropOrigin },
+      { via: this.dropOrigin ? [] : via, drop: !!this.dropOrigin,
+        residentCount: typeof to === 'number' ? Math.max(0, before.points[to] * (p ? -1 : 1)) : 0 },
     );
     if (reverse)
       this.feedbackTimers.push(
@@ -1067,7 +1083,7 @@ export class Board {
     destination,
     player,
     target,
-    { via = [], delay = 0, drop = false } = {},
+    { via = [], delay = 0, drop = false, residentCount = 0 } = {},
   ) {
     // Bearoff drops settle on the displayed tray marker, matching the ghost.
     if (drop && target === "off") destination = { x: 843, y: player !== this.options.orientation ? 250 : 410 };
@@ -1085,6 +1101,16 @@ export class Board {
       ) || candidates.at(-1);
     piece.arrival = landed;
     piece.arrivalTarget = { raw, destination };
+    // The stack cap represents existing checkers too. Keep its previous face
+    // and count visible until this arriving checker covers it at touchdown.
+    if (landed && typeof target === 'number' && residentCount >= STACK_LIMIT) {
+      piece.resident = checker(destination.x, destination.y, player,
+        residentCount > STACK_LIMIT ? residentCount : 0);
+      piece.resident.classList.add('arrival-resident');
+      piece.resident.setAttribute('aria-hidden','true');
+      piece.resident.style.pointerEvents = 'none';
+      landed.parentElement.insertBefore(piece.resident, landed);
+    }
     if (landed) {
       landed.style.opacity = "0";
       landed.dataset.arriving = Number(landed.dataset.arriving || 0) + 1;
@@ -1107,6 +1133,7 @@ export class Board {
     animation.finished
       .then(() => {
         piece.remove();
+        piece.resident?.remove();
         animation.cancel();
         const landed = piece.arrival;
         if (landed && Number(landed.dataset.arriving) <= 1) {
@@ -1181,7 +1208,8 @@ export class Board {
           const raw = typeof dest.point === "number" ? String(dest.point) : `${dest.point}${player}`;
           const held = player === before.turn && this.dropOrigin && !this.dropOrigin.used &&
             (!this.dropOrigin.landing || this.dropOrigin.landing.target === raw);
-          this.flyChecker(held ? this.dropOrigin : origin, dest, player, dest.point, {drop:!!held});
+          this.flyChecker(held ? this.dropOrigin : origin, dest, player, dest.point,
+            {drop:!!held, residentCount: typeof dest.point === 'number' ? count(before,dest.point) : 0});
           if (held) this.dropOrigin.used = true;
         }
       }
@@ -1199,6 +1227,7 @@ export class Board {
       ),
       this.state.turn,
       point,
+      { drop: true },
     );
   }
   animateDice() {
@@ -1243,6 +1272,9 @@ export class Board {
       const group = die.closest('.board-dice');
       const style = getComputedStyle(face);
       return { value: die.dataset.die, location: die.getAttribute('transform'),
+        layout: getComputedStyle(die).transform === 'none' ? diceTransform(die) : getComputedStyle(die).transform,
+        opacity: getComputedStyle(die).opacity,
+        copy: die.cloneNode(true),
         player: group.dataset.player, historical: group.classList.contains('last-roll'),
         transform: style.transform, filter: style.filter,
         marks: Object.fromEntries([...face.querySelectorAll('[data-die-mark]')].map(mark => {
@@ -1253,9 +1285,65 @@ export class Board {
           .map(n => getComputedStyle(n).opacity) };
     });
     const control = this.svg.querySelector('.dice-switch');
-    return { dice, control: control && { location: control.getAttribute('transform'),
+    const retiring = [...this.svg.querySelectorAll('.dice-layout-retiring')].map(node => {
+      const animation = node.getAnimations()[0];
+      return { node, time: animation?.currentTime, frames: animation?.effect.getKeyframes(), timing: animation?.effect.getTiming() };
+    });
+    return { dice, retiring, control: control && { location: control.getAttribute('transform'),
       player: control.closest('.board-dice').dataset.player,
       opacities: [...control.querySelectorAll('[data-dice-icon]')].map(n => getComputedStyle(n).opacity) } };
+  }
+  animateDiceLayout(poses) {
+    if (reducedMotion() || document.hidden) return;
+    const dice = [...this.svg.querySelectorAll('.board-die')];
+    if (!dice.length) return;
+    const group = dice[0].closest('.board-dice');
+    const old = poses?.dice || [], samePlayer = old[0]?.player === group.dataset.player;
+    const expanding = dice.length === 4 && old.length !== 4;
+    const collapsing = dice.length === 2 && old.length === 4 && samePlayer;
+    const timing = {duration: 420, easing: 'cubic-bezier(.22,.7,.25,1)', id: 'dice-layout'};
+    const animate = (node, from, to, opts = timing) => {
+      if (from.transform === to.transform && from.opacity === to.opacity) return;
+      this.animations.push(node.animate([from, to], opts));
+    };
+    dice.forEach((die, i) => {
+      // WebKit can report `none` for an SVG transform attribute. Give WAAPI
+      // an explicit CSS destination so the dice cannot fly toward (0,0).
+      const target = diceTransform(die);
+      die.style.transform = target;
+      let before = samePlayer ? old[collapsing ? i * 3 : expanding ? (i < 2 ? 0 : 1) : i] : null;
+      // Doubles open into two pairs, with the extra faces fading in as they
+      // spread. On a new player's roll start within that player's own lane.
+      const center = Number(die.getAttribute('transform').match(/translate\(([-\d.]+)/)[1]);
+      const pairX = expanding ? center + [48, -24, 24, -48][i] : center;
+      const transform = before?.layout || `matrix(1,0,0,1,${pairX},330)`;
+      const opacity = expanding && (i === 1 || i === 2) ? '0' : before?.opacity || '1';
+      animate(die, {transform, opacity}, {transform:target, opacity:'1'});
+    });
+    if (collapsing) {
+      for (const i of [1, 2]) {
+        const before = old[i], ghost = before.copy;
+        ghost.classList.remove('board-die'); ghost.classList.add('dice-layout-retiring');
+        ghost.removeAttribute('data-die'); ghost.removeAttribute('tabindex'); ghost.removeAttribute('role');
+        ghost.setAttribute('aria-hidden', 'true'); ghost.style.pointerEvents = 'none';
+        ghost.querySelectorAll('[tabindex]').forEach(n => n.removeAttribute('tabindex'));
+        group.append(ghost);
+        const target = dice[i - 1].getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/);
+        const targetTransform = `matrix(1,0,0,1,${target[1]},${target[2]})`;
+        const animation = ghost.animate([{transform:before.layout, opacity:before.opacity},
+          {transform:targetTransform, opacity:0}], {...timing, id:'dice-layout-exit', fill:'forwards'});
+        animation.onfinish = () => ghost.remove(); this.animations.push(animation);
+      }
+    } else if (samePlayer) {
+      // Analysis/status redraws must not cut the two retiring faces short.
+      for (const item of poses?.retiring || []) {
+        if (!item.frames || item.time >= item.timing.duration) continue;
+        group.append(item.node);
+        const animation = item.node.animate(item.frames, {...item.timing, id:'dice-layout-exit'});
+        animation.currentTime = item.time;
+        animation.onfinish = () => item.node.remove(); this.animations.push(animation);
+      }
+    }
   }
   animateDiceSelection(poses) {
     if (!poses?.dice.length || reducedMotion() || document.hidden) return;
@@ -1572,6 +1660,7 @@ export class Board {
       }
       for (const ghost of ghosts.filter((ghost) => ghost.point === p))
         g.append(originGhost(ghost, lastMove.player));
+      checkerHitArea(g, x + 30, top, n);
       for (let i = 0; i < Math.min(n, STACK_LIMIT); i++)
         g.append(
           checker(
@@ -1713,7 +1802,9 @@ export class Board {
         for (const ghost of ghosts.filter((ghost) => ghost.point === "bar"))
           g.append(originGhost(ghost, p));
       }
-      if (s.bar[p]) g.append(checker(408, y, p, s.bar[p], compact));
+      if (s.bar[p]) g.append(
+        svg('rect', {x:385,y:y-29,width:46,height:58,rx:8,fill:'transparent',class:'checker-hit'}),
+        checker(408, y, p, s.bar[p], compact));
       else
         g.append(
           svg(
@@ -1837,6 +1928,7 @@ export class Board {
         );
       if (s.off[p])
         off.append(
+          svg('rect', {x:820,y:(top ? 250 : 410)-29,width:46,height:58,rx:8,fill:'transparent',class:'checker-hit'}),
           // A full checker-sized count target is easier to select on phones
           // than the thin storage strips. It stays clear of all 15 strips.
           checker(843, top ? 250 : 410, p, s.off[p], compact, false, interactive && s.turn === p && undoSources.includes("off")),
@@ -1863,11 +1955,12 @@ export class Board {
       });
       cube.append(
         svg("rect", {
-          x: 825,
-          y: cy - 18,
-          width: 36,
-          height: 36,
-          rx: 6,
+          class: 'cube-face',
+          x: 817,
+          y: cy - 26,
+          width: 52,
+          height: 52,
+          rx: 8,
           fill: boardColor("cube"),
           stroke: boardColor("cubeBorder"),
           "stroke-width": 1,
@@ -1876,9 +1969,10 @@ export class Board {
           "text",
           {
             x: 843,
-            y: cy + 7,
+            y: cy + 1,
             "text-anchor": "middle",
-            "font-size": 19,
+            "dominant-baseline": "middle",
+            "font-size": Math.min(25, 44 / (String(s.cube.value === 1 ? 64 : s.cube.value).length * .62)),
             fill: boardColor("cubeText"),
             "font-weight": 700,
           },
@@ -1889,11 +1983,15 @@ export class Board {
         patternOverlay(cube.firstChild, "cube"),
         cube.lastChild,
       );
+      // The whole free lane is a tap target, without entering either off tray
+      // or the neighboring point. Ownership still moves the visible cube.
+      cube.prepend(svg('rect', {class:'cube-hit',x:800,y:280,width:74,height:100,
+        rx:10,fill:'transparent'}));
       const cubeKey = shortcuts?.double?.[0];
       if (cubeKey) {
         const badge = svg("g", {class:"cube-key", "aria-hidden":"true",
           display:this.cubeEnabled ? "inline" : "none"});
-        badge.append(keycapGraphic(cubeKey, { x: 843, y: cy + 22, height: 18, maxWidth: 40 }));
+        badge.append(keycapGraphic(cubeKey, { x: 843, y: cy > 330 ? cy - 48 : cy + 30, height: 18, maxWidth: 40 }));
         cube.append(badge);
       }
       children.push(cube);
@@ -1962,6 +2060,7 @@ export class Board {
     this.arrowKey = arrowKey;
     this.svg.replaceChildren(...children);
     animateLastMoveExit(this.svg, lastMoveExit, this.animations);
+    this.animateDiceLayout(dicePoses);
     this.animateDiceSelection(dicePoses);
     animateHighlights(this.svg, highlights, this.animations, highlightMotion);
     if (lastMove?.checkers?.length && highlightMotion) {
@@ -1992,6 +2091,7 @@ export class Board {
           +n.firstChild.getAttribute('cy') === destination.y) || faces.at(-1);
         node.arrival = landed;
         if (landed) {
+          if (node.resident) landed.before(node.resident);
           landed.style.opacity = '0';
           landed.dataset.arriving = Number(landed.dataset.arriving || 0) + 1;
         }

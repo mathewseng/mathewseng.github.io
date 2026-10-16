@@ -32,8 +32,6 @@ import {
   forcedTurn,
   blockedBarRoll,
   draftAutomation,
-  playAction,
-  tableDice,
   takebackTarget,
   undoTurn,
 } from "../core/table.mjs";
@@ -75,8 +73,9 @@ import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
+import { ensureLocalRolls, localPlayAction } from "../core/local-rolls.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
-import { decisionFeedback } from "../core/decision-feedback.mjs";
+import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
 import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls, ruleReference } from "../ui/rules.mjs";
@@ -605,6 +604,7 @@ function myTurn(s) {
   return humanControls(config, s);
 }
 function render() {
+  if (game && config.mode !== "online") ensureLocalRolls(game);
   placeReview();
   const m = model(),
     s = state();
@@ -637,7 +637,7 @@ function render() {
     !assistanceJob &&
     !opening.active &&
     s.phase === "move" &&
-    !forcedTurn(s);
+    (m.reviewingTurn || !forcedTurn(s));
   if (key !== boardKey) {
     const before = ui.board.state,
       event = m?.events?.at(-1);
@@ -732,8 +732,10 @@ function autoDraft(advance = false) {
   )
     return;
   const source = state();
-  const forced = draftAutomation(source, draft.draft, draft.paths, advance);
-  draft.minDraft = forced.minDraft;
+  const forced = draftAutomation(source, draft.draft, draft.paths,
+    advance || (!!model()?.reviewingTurn && !draft.draft.length));
+  draft.minDraft = model()?.reviewingTurn && forcedTurn(source)
+    ? draft.paths[0].steps.length : forced.minDraft;
   if (!forced.steps.length && !forced.replacement) return;
   const signature = JSON.stringify(draft.draft),
     id = model()?.id;
@@ -768,7 +770,7 @@ function autoPlay() {
     s = state(),
     blocked = m?.started && blockedBarRoll(s),
     forced = m?.started && forcedTurn(s);
-  if ((!forced && !blocked) || committing || assistanceJob || m.undoRequest || opening.busy)
+  if ((!forced && !blocked) || committing || assistanceJob || m.undoRequest || m.reviewingTurn || opening.busy)
     return false;
   if (opening.active) return false;
   const key = positionKey(s),
@@ -781,7 +783,7 @@ function autoPlay() {
           positionKey(state()) === key &&
           online.ready &&
           !online.pending &&
-          !model().undoRequest
+          !model().undoRequest && !model().reviewingTurn
         )
           online.send({ type: "auto" });
       });
@@ -793,7 +795,7 @@ function autoPlay() {
         game?.id === id &&
         positionKey(state()) === key &&
         !committing &&
-        !game.undoRequest
+        !game.undoRequest && !game.reviewingTurn
       )
         commit(blocked ? { type: "roll" } : { type: "move", steps: forced.steps }).catch(showError);
     }, reducedMotion() ? 0 : 650);
@@ -872,7 +874,7 @@ function setupFields() {
             el("input", {
               type: "checkbox", checked: config.warning,
               onChange: e => { config.warning = e.target.checked; },
-            }), "Warn before confirming a costly move")] : []),
+            }), "Warn before confirming a costly move", el("span", {class:"muted small"}, "Over 0.002 equity loss"))] : []),
         ),
       ),
     );
@@ -956,6 +958,7 @@ function setupFields() {
         () => {
           stopComputer();
           restore(saved);
+          persist();
           window.scrollTo({ top: 0, behavior: "instant" });
         },
         "",
@@ -1232,6 +1235,7 @@ async function requestTakeback() {
       };
     } else {
       game = undoTurn(game, target, config.humanSide);
+      if (game.reviewingTurn) botPaused = true;
       feedback = null;
       boardKey = "";
       sound.play("undo");
@@ -1281,6 +1285,10 @@ function renderActions() {
   const s = state(),
     m = model(),
     a = $("actions");
+  $("message").classList.toggle("routine-status", !!m?.started &&
+    ["roll", "move"].includes(s.phase) && !botBusy && !assistanceJob &&
+    !m.undoRequest &&
+    !(config.mode === "online" && (!online.ready || m.recovery)));
   const controls = $("table-player-controls");
   if (controls && m?.started && config.mode !== "online")
     controls.replaceChildren(playerControls());
@@ -1384,7 +1392,7 @@ function renderActions() {
       : opening.tie ? "Opening tie · rolling again…" : opening.dice ? "Beginning the first turn…" : "Rolling opening dice…";
     return;
   }
-  if (blockedBarRoll(s) || forcedTurn(s)) {
+  if (!m.reviewingTurn && (blockedBarRoll(s) || forcedTurn(s))) {
     $("message").textContent = blockedBarRoll(s)
       ? "All six entries blocked · passing automatically"
       : "Forced turn · playing automatically";
@@ -1466,8 +1474,7 @@ function renderActions() {
         el("span", {class:"confirm-content"},
           el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
           el("span", {class:"confirm-copy"},
-            el("strong", {}, "Confirm"),
-            el("span", {class:"confirm-status"}, !mine ? "Opponent’s turn" : draft.complete() ? "Ready to play" : "Finish your moves"))),
+            el("strong", {}, "Confirm"))),
         submit,
         `primary${draft.complete() && mine ? " turn-ready" : ""}`,
         { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn" },
@@ -1813,6 +1820,7 @@ function detailDraft() {
 }
 async function persist() {
   if (game) {
+    if (config.mode !== "online") ensureLocalRolls(game);
     const current = game;
     saved = {
       id: "play",
@@ -1843,19 +1851,8 @@ async function commit(action, evaluation = null) {
   draft.render();
   actions();
   try {
-    const s = game.state,
-      actor = decisionPlayer(s);
-    const committed = ["opening", "roll"].includes(action.type)
-      ? {
-          ...action,
-          dice:
-            action.type === "roll"
-              ? tableDice(game, actor, cryptoDice)
-              : cryptoDice(),
-        }
-      : action;
     const eventIndex = game.events.length;
-    game = playAction(game, committed, actor);
+    game = await localPlayAction(game, action);
     if (evaluation) {
       game.events[eventIndex].evaluation = compactEvaluation(
         evaluation.source,
@@ -1882,7 +1879,7 @@ function computerStrengthControl() {
 function warningControl() {
   return el("label", { class: "check" }, el("input", {type:"checkbox", checked: config.warning,
     onChange: e => { config.warning = e.target.checked; if (game) { game.config.warning = config.warning; persist(); } }
-  }), "Warn before confirming a costly move");
+  }), "Warn before confirming a costly move", el("span", {class:"muted small"}, "Over 0.002 equity loss"));
 }
 function reviewStrengthControl() {
   return field(
@@ -2368,14 +2365,14 @@ async function evaluateDecision(action) {
     if (!activeAssistance(job)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
     job.done = true;
-    if (config.warning && result.error > 0.04) {
+    if (config.warning && needsRevisionWarning(result.error)) {
       const f = decisionFeedback(result, job.source);
       job.dialog = dialog(
         "Review before confirming?",
         el(
           "p",
           {},
-          `${f.label} ${f.value} ${f.units} at ${result.settings.name}. This is an estimate. Revise your decision or confirm it.`,
+          `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate. Revise your decision or confirm it.`,
         ),
         [
           button("Revise", () => job.dialog.close()),

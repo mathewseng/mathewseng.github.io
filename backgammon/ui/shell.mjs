@@ -669,6 +669,7 @@ export class DraftBoard {
     board.onDragStart = (p) => this.beginDrag(p);
     board.onDrop = (_, p) => this.drop(p);
     board.onCancel = () => {
+      this.dragging = false;
       this.selected = null;
       this.hint = "Selection cleared. Choose a ringed checker.";
       this.render();
@@ -677,6 +678,7 @@ export class DraftBoard {
   }
   set(s, paths, enabled = true) {
     this.board.endDrag();
+    this.dragging = false;
     this.state = s;
     this.paths = paths;
     this.draft = [];
@@ -830,6 +832,12 @@ export class DraftBoard {
     };
     const selectedRoutes = this.routes().filter((st) => st.to === p);
     const returning = this.reverseMoves().filter((r) => r.to === p);
+    if (destinationTap && returning.length &&
+        (this.selected === null || returning.some(r => r.from === this.selected))) {
+      this.chooseRoutes((this.selected === null ? returning : returning.filter(r => r.from === this.selected))
+        .sort((a,b) => a.die - b.die).slice(0,1));
+      return 'undo';
+    }
     const incoming = destinationTap || checkerTap
       ? this.arrivals(p)
       : [];
@@ -950,6 +958,10 @@ export class DraftBoard {
   }
   dropPreview(raw) {
     const point = this.normalize(raw);
+    if (point === this.selected) {
+      const state = this.current();
+      return { point, count: typeof point === 'number' ? Math.abs(state.points[point]) : state[point][state.turn], undo: false };
+    }
     const choices = this.routeChoices(this.routes().filter(route => route.to === point));
     const route = this.preferredRoute(choices) || choices[0];
     if (!route) return null;
@@ -1019,6 +1031,7 @@ export class DraftBoard {
     if (!this.enabled || this.preview) return false;
     const source = this.normalize(raw);
     if (!this.sources().includes(source)) return false;
+    this.dragging = true;
     this.selected = source;
     sound.play("select");
     this.hint =
@@ -1027,11 +1040,14 @@ export class DraftBoard {
     return true;
   }
   drop(raw) {
+    this.dragging = false;
     const dest = this.normalize(raw);
-    if (!this.routes().some((st) => st.to === dest)) {
+    if (dest === this.selected || !this.routes().some((st) => st.to === dest)) {
       this.hint = "";
+      const source = this.selected;
+      this.selected = null;
       this.render();
-      this.board.returnDragged(this.selected);
+      this.board.returnDragged(source);
       return;
     }
     this.point(raw, { activation: false });
@@ -1142,7 +1158,9 @@ export class DraftBoard {
     if (!this.state) return;
     const s = this.preview || this.current();
     const display = settings();
-    display.moveHints = display.moveHints && !this.advanced;
+    // While holding a checker, show all its legal landing/return targets in
+    // either input mode. Releasing restores the user's normal hint preference.
+    display.moveHints = this.dragging || (display.moveHints && !this.advanced);
     const moves = this.enabled && !this.preview ? this.routes() : [];
     this.touchMoves?.update({
       enabled: this.enabled && !this.preview && !this.advanced && this.state.phase === "move",

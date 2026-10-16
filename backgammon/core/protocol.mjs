@@ -47,6 +47,8 @@ export function session(players, options = {}, id = "local") {
   };
 }
 export function validateSession(s) {
+  if (s?.localRolls !== undefined)
+    throw new Error("Private local dice are not permitted in online rooms.");
   if (
     !s ||
     s.version !== 1 ||
@@ -198,6 +200,7 @@ export function accept(
         throw new Error("There is no turn available to request again.");
       s.undoRequest = { by: seat, target, id: command.actionId };
     } else if (action.type === "auto") {
+      if (s.reviewingTurn) throw new Error("Confirm the restored turn when ready.");
       if (clientId !== hostId || !s.started)
         throw new Error("Only the host can advance a forced turn.");
       const before = s.events.length;

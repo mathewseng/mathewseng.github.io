@@ -24,6 +24,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
         if(kind==='cube')s=transition(s,{type:'double'},turn);
         saveSettings({motion:'reduce',orientation:turn});
         await put('work',{id:'play',game:{id:'blocked-bar',initial:s,state:s,events:[],started:true,names:['You','Friend'],
+          ...(mode==='computer'?{localRolls:{version:1,seed:'39'.padStart(64,'0'),cursor:0}}:{}),
           config:localConfig({mode,humanSide:1-turn,strength:'quick',reviewStrength:'quick',tutor:false,warning:false})},draft:[]});
       },{turn,mode,kind});
       await page.reload();await ready();await activate(page.locator('#resume-match'));
@@ -49,7 +50,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
         assert.deepEqual(game.events.map(e=>[e.actor,e.action.type,e.automatic]),[[turn,'roll',true],[turn,'move',true]]);
         assert.deepEqual(game.events[0].action.dice,[4,6]);
         assert.deepEqual(game.events[1].action.steps,[]);
-        assert.equal(await page.evaluate(()=>window.rollBytes),2,'one recorded roll, never retries RNG');
+        assert.equal(await page.evaluate(()=>window.rollBytes),mode==='computer'?0:2,'one recorded roll, never retries RNG');
         assert.equal(await page.locator('#confirm').count(),0,'no pass confirmation');
         assert.equal(await page.locator('#undo-turn').isEnabled(),false);
         if(mode==='local'){

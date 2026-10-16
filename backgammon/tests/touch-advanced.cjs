@@ -36,8 +36,20 @@ module.exports = async function touchAdvanced(browser, base, out, name) {
     await page.waitForSelector('.board-cube[role="button"]');
     assert.equal(await page.locator('.board-cube').textContent().then(t=>t.includes('D')),true);
     await page.screenshot({path:path.join(out,`${name}-cube-shortcut-phone.png`)});
-    await page.keyboard.press('d');
+    // Tap outside the larger face but inside its free-lane target. This must
+    // offer the cube, not trigger the adjacent board's roll action.
+    const cubeTap=await page.evaluate(()=>{const p=new DOMPoint(805,330).matrixTransform(document.querySelector('#board svg').getScreenCTM());return{x:p.x,y:p.y};});
+    assert.equal(await page.locator('.cube-face').getAttribute('width'),'52');
+    await page.touchscreen.tap(cubeTap.x,cubeTap.y);
     await page.locator('#take-cube').waitFor();
+    const cubeOverlap=await page.evaluate(()=>{
+      const a=document.querySelector('.cube-hit').getBBox();
+      // Include the generous pickup target around a populated tray's checker.
+      const trays=[...document.querySelectorAll('[data-point^="off"] .point-hit')].map(n=>n.getBBox());
+      trays.push({x:820,y:221,width:46,height:58},{x:820,y:381,width:46,height:58});
+      return trays.some(b=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y);
+    });
+    assert.equal(cubeOverlap,false,'cube hitbox does not steal off-tray taps');
     await page.keyboard.press('c');assert.equal(await page.locator('#take-cube').count(),1,'C never takes or redoubles');
     await page.keyboard.press('t');
     await page.waitForSelector('.board-cube[role="button"]',{state:'hidden'});
