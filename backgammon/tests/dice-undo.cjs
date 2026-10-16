@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -23,12 +24,13 @@ module.exports = async function diceUndo(browser, base, out, name) {
       }, {dice,mode,state,turn,orientation});
       await page.reload(); await ready(); await tap(page.locator('#resume-match'));
     };
-    const count = async n => page.waitForFunction(async n => (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length === n, n);
+    const count = async n => waitForAsync(page,async n => (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length === n && document.querySelectorAll('#board .board-die.consumed').length === n, n);
     const tapBoard = async (x,y) => {
       const p = await page.locator('#board svg').evaluate((svg,{x,y}) => {
         const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM()); return {x:p.x,y:p.y,hit:document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,300)};
       }, {x,y});
-      if (touch) await page.touchscreen.tap(p.x,p.y);
+      // WebKit truncates fractional touch coordinates; round to the intended pixel.
+      if (touch) await page.touchscreen.tap(Math.round(p.x),Math.round(p.y));
       else await page.mouse.click(p.x,p.y);
       return p;
     };
@@ -40,7 +42,9 @@ module.exports = async function diceUndo(browser, base, out, name) {
         for (const point of [12,9,6,3]) await tap(page.locator(`#board [data-point="${point}"] .checker`).last());
         await count(4);
         if (slot === 3) {
-          await tapBoard(430,330); await count(3);
+          // Keep inside the lane after mobile browsers round touch coordinates.
+          await tapBoard(450,330); await count(3);
+          assert.equal(await page.locator('#board [data-point="3"] .checker').count(), 1, `last step returns to point 4: ${JSON.stringify((await read()).draft)}`);
           await tap(page.locator('#board [data-point="3"] .checker').last()); await count(4);
         }
         const before = await read();
@@ -107,7 +111,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
           const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM());
           const hit = document.elementFromPoint(p.x,p.y);
           return {point:!!hit?.closest('[data-point]'),x,y,hit:hit?.outerHTML.slice(0,300)};
-        })), right ? [450,610,780] : [40,200,370]);
+        })), right ? [450,630,780] : [40,200,370]);
         assert.ok(boundaries.every(p=>p.point),`full-width lane does not cover adjacent point targets: ${JSON.stringify({touch,mode,turn,orientation,boundaries})}`);
         results.push({touch,mode,turn,orientation,fullDiceLane:true});
       }
@@ -136,12 +140,14 @@ module.exports = async function diceUndo(browser, base, out, name) {
       assert.deepEqual(mark,{arrow:'1',check:'0',color:'rgb(239, 179, 101)'});
       await page.screenshot({path:path.join(out,`${name}-forced-arrow-${touch?'phone':'desktop'}.png`)});
       await tap(page.locator('#board .board-die.consumed').first()); await count(1);
-      await tapBoard(430,330); await count(1);
+      await tapBoard(450,330); await count(1);
       assert.equal((await read()).game.events.length,0,'empty-lane tap cannot undo a forced step or committed turn');
       await page.keyboard.press('x'); await count(1);
       await load([4,1]);
       for (const viewport of touch ? [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:430,height:932},{width:844,height:390}] : [{width:1366,height:768},{width:1440,height:900}]) {
         await page.setViewportSize(viewport);
+        // The board fits after the viewport resize observer and its next frame.
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         const geometry = await page.evaluate(() => {
           const rect = s => document.querySelector(s).getBoundingClientRect().toJSON();
           const dice = [...document.querySelectorAll('#board .board-die-face > rect:first-child')].map(n=>n.getBoundingClientRect().toJSON());
@@ -151,12 +157,17 @@ module.exports = async function diceUndo(browser, base, out, name) {
         assert.ok(geometry.confirm.width>=44&&geometry.confirm.height>=44);
         assert.ok(geometry.confirm.bottom<=viewport.height+2,`reachable confirm ${JSON.stringify({viewport,geometry})}`);
         for(const die of geometry.dice) assert.ok(die.right<geometry.swap.left||die.left>geometry.swap.right,'switch never covers enlarged dice');
-        if(touch&&viewport.width<viewport.height) assert.ok(geometry.board.width>=viewport.width-36,'portrait board uses the available width');
+        // Eight pixels of page gutters plus the 32px equity rail.
+        if(touch&&viewport.width<viewport.height) assert.ok(geometry.board.width>=viewport.width-40-1,`portrait board uses the available width: ${JSON.stringify({viewport,geometry})}`);
         if(touch&&viewport.width>viewport.height) assert.ok(geometry.board.height>=viewport.height*.93,'landscape board uses almost full height');
         await page.screenshot({path:path.join(out,`${name}-dice-undo-${viewport.width}x${viewport.height}.png`)});
         results.push({touch,viewport,geometry});
       }
       assert.deepEqual(errors,[]);
+    } catch (error) {
+      await page.screenshot({path:path.join(out,`${name}-dice-undo-failure-${touch?'touch':'mouse'}.png`)});
+      console.error('Dice undo state', JSON.stringify({touch, draft:(await read())?.draft}));
+      throw error;
     } finally {await context.close();}
   }
   return results;

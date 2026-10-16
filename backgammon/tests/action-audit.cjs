@@ -20,7 +20,7 @@ module.exports = async function actionAudit(browser, base, out, name) {
       });
       const set = async (kind, turn, orientation, selected = null) => page.evaluate(({kind,turn,orientation,selected}) => {
         const {r,st,d} = audit, p = n => turn ? 23-n : n, sg=r.sign(turn);
-        st.saveSettings({orientation, numbers:true});
+        st.saveSettings({orientation, numbers:true,interactionMode:"beginner"});
         const s=r.initialState({phase:"move",dice:kind==="self"?[6,5]:[4,3],turn});
         let draft=[];
         if (["revision","forced"].includes(kind)) draft=[{from:p(12),to:p(8),die:4}];
@@ -64,7 +64,7 @@ module.exports = async function actionAudit(browser, base, out, name) {
             const h=g.querySelector(region==="number"?".point-number-hit":".point-hit");
             x=+h.getAttribute("x") + +h.getAttribute("width")/2;
             y=region==="number"?+h.getAttribute("y")+14:
-              point.startsWith("off") ? +h.getAttribute("y")+120:
+              point.startsWith("off") ? +h.getAttribute("y")+(+h.getAttribute("y")<300?+h.getAttribute("height")-4:4):
               +h.getAttribute("y")<100?280:380;
             if(point.startsWith("bar")&&y===380)y=405;
           }
@@ -72,7 +72,7 @@ module.exports = async function actionAudit(browser, base, out, name) {
           return {x:pos.x,y:pos.y};
         },{point:String(point),region});
         clicks++;
-        if(touch)await page.touchscreen.tap(pos.x,pos.y);
+        if(touch)await page.touchscreen.tap(Math.round(pos.x),Math.round(pos.y));
         else await page.mouse.click(pos.x,pos.y);
       };
       for(const turn of [0,1])for(const orientation of [0,1]){
@@ -91,7 +91,7 @@ module.exports = async function actionAudit(browser, base, out, name) {
           const before=await read();
           if(target==="frame") {
             const pos=await page.evaluate(()=>{const p=new DOMPoint(10,330).matrixTransform(document.querySelector(".bg-board").getScreenCTM());return {x:p.x,y:p.y};});
-            if(touch)await page.touchscreen.tap(pos.x,pos.y);else await page.mouse.click(pos.x,pos.y);
+            if(touch)await page.touchscreen.tap(Math.round(pos.x),Math.round(pos.y));else await page.mouse.click(pos.x,pos.y);
           } else {
             const selector=target==="page"?"#player":target==="button"?"#preferences":'.board-die[role="button"]';
             if(touch)await page.locator(selector).first().tap();else await page.locator(selector).first().click();
@@ -134,12 +134,11 @@ module.exports = async function actionAudit(browser, base, out, name) {
         await tap(p(12));
         assert.deepEqual((await read()).draft,[{from:p(12),to:p(8),die:4}],"locked prefix cannot be undone by point input");
         await set("mixed",turn,orientation);
-        assert.equal(await page.locator(`[data-point="${p(8)}"].reachable:not(.return-destination)`).count(),1);
+        assert.equal(await page.locator(`[data-point="${p(8)}"].return-destination`).count(),1);
         await tap(p(8));
-        assert.deepEqual((await read()).draft.at(-1),{from:p(9),to:p(8),die:1},"forward wash wins without selection");
+        assert.deepEqual((await read()).draft,[],"previous origin returns the moved checker before playing another arrival");
         await tap(p(8));
-        assert.equal((await read()).draft.length,2,"surplus repeat cannot activate the overlapping return");
-        assert.equal((await read()).selected,null,"completed draft keeps its landing selected; another click deselects at any speed");
+        assert.deepEqual((await read()).draft,[{from:p(9),to:p(8),die:1}],"after returning, a point tap can play the nearest legal arrival");
         await set("mixed",turn,orientation,6);
         assert.equal(await page.locator(`[data-point="${p(8)}"].return-destination`).count(),1);
         await tap(p(8));

@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 // Native Play regression for compulsory moves independent of dice order.
 const assert = require("node:assert/strict"),
   fs = require("node:fs"),
@@ -50,7 +51,7 @@ module.exports = async function draftChoices(browser, base, out, name) {
                 const paths = r.legalPaths(source),
                   auto = t.draftAutomation(source, [], paths),
                   id = crypto.randomUUID();
-                st.saveSettings({
+                st.saveSettings({interactionMode:"beginner",
                   orientation,
                   motion: "reduce",
                   moveHints: true,
@@ -83,7 +84,7 @@ module.exports = async function draftChoices(browser, base, out, name) {
             );
             await page.goto(base + "/backgammon/play/#resume=" + data.id);
             await page.locator("#confirm").waitFor();
-            await page.waitForFunction(
+            await waitForAsync(page,
               async (n) =>
                 (
                   await (
@@ -149,12 +150,13 @@ module.exports = async function draftChoices(browser, base, out, name) {
                     `[data-point="${dest}"] ${step.to === "off" ? ".point-hit" : ".point-number-hit"}`,
                   )
                   .boundingBox();
-                const x = step.to === "off" ? box.x + 3 : box.x + box.width / 2,
-                  y =
-                    step.to === "off"
-                      ? box.y + box.height - 3
-                      : box.y + box.height / 2;
-                if (touch) await page.touchscreen.tap(x, y);
+                const target = step.to === "off" ? await page.locator(`[data-point="${dest}"] .point-hit`).evaluate(n => {
+                  const y=+n.getAttribute('y'),h=+n.getAttribute('height');
+                  const p=new DOMPoint(+n.getAttribute('x') + +n.getAttribute('width')/2,y<100?y+h-4:y+4).matrixTransform(n.getScreenCTM());
+                  return {x:p.x,y:p.y};
+                }) : {x:box.x+box.width/2,y:box.y+box.height/2};
+                const {x,y}=target;
+                if (touch) await page.touchscreen.tap(Math.round(x), Math.round(y));
                 else await page.mouse.click(x, y);
                 await page.waitForTimeout(50);
               }
@@ -163,6 +165,7 @@ module.exports = async function draftChoices(browser, base, out, name) {
               assert.equal(
                 w.draft.length,
                 source.dice[0] === source.dice[1] ? 4 : 2,
+                JSON.stringify({fixture,turn,orientation,touch,suffix,draft:w.draft,auto:data.auto}),
               );
               assert.deepEqual(
                 w.draft.slice(0, data.auto.steps.length),

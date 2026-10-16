@@ -30,7 +30,8 @@ module.exports = async function reviewRanked(browser, base, out, name) {
           onReplay: () => {},
           onReturn: () => {},
         }).result({ ...result, actual: result.candidates.at(-1) });
-        return result.candidates
+        const {presentAnalysis} = await import("/backgammon/core/move-presentation.mjs");
+        return presentAnalysis(source, result).candidates
           .slice(0, 10)
           .map((c) => ({ notation: c.notation, equity: c.equity }));
       } finally {

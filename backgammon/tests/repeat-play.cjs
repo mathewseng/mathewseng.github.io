@@ -16,6 +16,7 @@ module.exports = async function repeatPlay(browser, base, out, name) {
     try {
       await page.goto(base + "/backgammon/");
       await page.evaluate(async () => {
+        (await import("/backgammon/core/storage.mjs")).saveSettings({interactionMode:"beginner"});
         const { shell, DraftBoard } =
           await import("/backgammon/ui/shell.mjs");
         const r = await import("/backgammon/core/rules.mjs");

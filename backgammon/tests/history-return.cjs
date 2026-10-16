@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict");
 const path = require("node:path");
 module.exports = async function historyReturn(browser, base, out, name) {
@@ -84,7 +85,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
       return { id: game.id, sources, events: game.events };
     });
     await page.goto(base + "/backgammon/play/#resume=" + fixture.id);
-    await page.locator("#roll").waitFor();
+    await page.locator("#board.roll-ready").waitFor();
     for (const side of ["self", "opponent"])
       assert.ok(
         await page
@@ -99,7 +100,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
         const board = document.querySelector(".bg-board").getBoundingClientRect();
         const app = document.querySelector(".app").getBoundingClientRect();
         const review = document.querySelector(".play-review").getBoundingClientRect();
-        const action = document.querySelector("#roll").getBoundingClientRect();
+        const action = document.querySelector("#board").getBoundingClientRect();
         return {boardHeight:board.height, boardBottom:board.bottom, appBottom:app.bottom, reviewTop:review.top, actionBottom:action.bottom, overflow:document.documentElement.scrollWidth>innerWidth+1, home:document.querySelector("#move-feedback").parentElement.className};
       });
       const density = await page.locator("#move-feedback .feedback-review").evaluateAll(rows => rows.map(row => ({
@@ -327,22 +328,45 @@ module.exports = async function historyReturn(browser, base, out, name) {
         return {x:p.x,y:p.y};
       },{x,y});
       const open = await at(70,330);
-      const draftBefore=await page.locator("#draft-line").innerText();
+      const draftBefore=await require("./play-helpers.cjs").work(page);
       await swipe(open,{x:open.x,y:Math.max(30,open.y-220)});
       assert.ok(await page.evaluate(()=>window.scrollY>60),"native touch swipe on open board scrolls history");
-      assert.equal(await page.locator("#draft-line").innerText(),draftBefore,"scroll gesture does not move a checker");
-      await page.evaluate(()=>window.scrollTo(0,0));
+      const afterSwipe=await require("./play-helpers.cjs").work(page);
+      assert.deepEqual(afterSwipe.draft,draftBefore.draft,"scroll gesture does not move a checker");
+      assert.deepEqual(afterSwipe.game.state,draftBefore.game.state,"scroll preserves the position");
+      // End the native fling before measuring the next gesture's coordinates.
+      await page.evaluate(() => new Promise((resolve, reject) => {
+        let previous = scrollY, stable = 0, frame;
+        const timeout = setTimeout(() => {
+          cancelAnimationFrame(frame);
+          reject(new Error("Native scroll did not settle before checker drag"));
+        }, 5000);
+        const settle = () => {
+          stable = scrollY === previous ? stable + 1 : 0;
+          previous = scrollY;
+          if (stable >= 8) {
+            clearTimeout(timeout);
+            window.scrollTo({top:0,behavior:'instant'});
+            requestAnimationFrame(resolve);
+          } else frame = requestAnimationFrame(settle);
+        };
+        frame = requestAnimationFrame(settle);
+      }));
       const source=await page.locator('[data-point="12"] .checker > circle').first().evaluate(c=>{
         const p=new DOMPoint(+c.getAttribute("cx"),+c.getAttribute("cy")).matrixTransform(c.getScreenCTM());
         return {x:p.x,y:p.y};
       });
       const target=await page.locator('[data-point="6"] .point-hit').evaluate(c=>{
-        const p=new DOMPoint(+c.getAttribute("x")+30,570).matrixTransform(c.getScreenCTM());
-        return {x:p.x,y:p.y};
+        // Returning to the opponent's decision can rotate the board. Use the
+        // actual point region instead of assuming point 7 is on the bottom.
+        const p=new DOMPoint(+c.getAttribute("x") + +c.getAttribute("width")/2,
+          +c.getAttribute("y") + +c.getAttribute("height")/2).matrixTransform(c.getScreenCTM());
+        return {x:p.x,y:p.y,point:document.elementFromPoint(p.x,p.y)?.closest('[data-point]')?.dataset.point};
       });
+      assert.equal(target.point,"6","drag lands in point 7 in the restored orientation");
       await swipe(source,target);
       assert.equal(await page.evaluate(()=>window.scrollY),0,"dragging a checker does not scroll the page");
-      await page.waitForFunction(async()=>{
+      await waitForAsync(page,async()=>{
         const w=await(await import("/backgammon/core/storage.mjs")).get("work","play");
         return w.draft.some(s=>s.from===12&&s.to===6);
       });

@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 /* Browser integration uses the assembled _site and real bundled WASM. Run after assemble-site.sh. */
 const { chromium, firefox, webkit } = require("playwright");
@@ -68,28 +69,59 @@ const server = http.createServer((req, res) => {
         version: browser.version(),
       });
       try {
+        const run = async (moduleName, ...args) => {
+          console.log(`RUN ${browserName}: ${moduleName}`);
+          const contexts = new Set(browser.contexts());
+          try {
+            const result = await require(`./${moduleName}.cjs`)(...args);
+            console.log(`PASS ${browserName}: ${moduleName}`);
+            return result;
+          } catch (error) {
+            if (!process.env.BG_KEEP_GOING) throw error;
+            console.error(`FAIL ${browserName}: ${moduleName}`, error);
+            process.exitCode = 1;
+            return {failed: true, error: String(error)};
+          } finally {
+            await Promise.all(browser.contexts().filter(c => !contexts.has(c)).map(c => c.close()));
+          }
+        };
         // Focused suites share the assembled-site server and browser teardown.
         // No engine mocking is added by this runner.
         if (process.env.BG_MODULES) {
           for (const moduleName of process.env.BG_MODULES.split(",")) {
             if (!/^[a-z][a-z0-9-]*$/.test(moduleName)) throw new Error("Invalid test module name");
-            const result = await require(`./${moduleName}.cjs`)(browser, base, out, browserName);
-            fs.writeFileSync(path.join(out, `${browserName}-${moduleName}-report.json`), JSON.stringify(result ?? { passed: true }, null, 2));
-            console.log(`PASS ${browserName}: ${moduleName}`);
+            const args = moduleName === "refresh" ? [browser, out, browserName]
+              : moduleName === "native-backends" ? [browser, base, {corpus: browserName === "chromium"}]
+              : [browser, base, out, browserName];
+            const result = await run(moduleName, ...args);
+            fs.writeFileSync(path.join(out, `${browserName}-${moduleName}-report.json`), JSON.stringify(result ?? {passed: true}, null, 2));
           }
           continue;
         }
+        console.log(`RUN ${browserName}: integration`);
         const context = await browser.newContext({
           viewport: { width: 1366, height: 768 },
           serviceWorkers: "block",
         });
         const page = await context.newPage();
         page.on("pageerror", (e) => errors.push(e.stack));
+        // Exercise the async wait helper in a real browser: false promises must
+        // keep polling, and a permanently false condition must fail the test.
+        assert.equal(await waitForAsync(page, async () => {
+          await Promise.resolve();
+          window.asyncWaitAttempts = (window.asyncWaitAttempts || 0) + 1;
+          return window.asyncWaitAttempts >= 3 ? window.asyncWaitAttempts : false;
+        }), 3);
+        await assert.rejects(
+          waitForAsync(page, async () => false, null, {timeout:100}),
+          /Async browser condition did not become true/,
+        );
         const shot = async (name) => {
           const file = path.join(out, `${browserName}-${name}.png`);
           await page.screenshot({ path: file, fullPage: true });
           report.screenshots.push(path.basename(file));
         };
+        await require("./play-helpers.cjs").seedOpening(page, [6, 1]);
         await page.goto(base + "/backgammon/play/");
         await page
           .getByRole("button", { name: "Same device", exact: true })
@@ -123,6 +155,7 @@ const server = http.createServer((req, res) => {
         await page
           .getByRole("button", { name: "Take 2", exact: true })
           .click();
+        await require("./play-helpers.cjs").waitWork(page, w => w?.game.state.phase === "move");
         const saved = await page.evaluate(async () => {
           const { get } = await import("/backgammon/core/storage.mjs");
           return (await get("work", "play")).game.state;
@@ -426,31 +459,32 @@ const server = http.createServer((req, res) => {
           await failureContext.close();
         }
         await context.close();
+        console.log(`PASS ${browserName}: integration`);
         (report.solutionPolish ||= []).push(
-          await require("./solution-polish.cjs")(browser, base, out, browserName),
+          await run("solution-polish", browser, base, out, browserName),
         );
         const researchOutput = path.join(out, `research-${browserName}`);
         fs.mkdirSync(researchOutput, { recursive: true });
-        await require("./research.cjs")(browser, base, researchOutput);
-        report.adaptive = await require("./adaptive.cjs")(browser, base, out, browserName);
+        await run("research", browser, base, researchOutput);
+        report.adaptive = await run("adaptive", browser, base, out, browserName);
         (report.dragFeedback ||= []).push(
-          await require("./drag-feedback.cjs")(browser, base, out, browserName),
+          await run("drag-feedback", browser, base, out, browserName),
         );
         (report.moveArrows ||= []).push(
-          await require("./move-arrows.cjs")(browser, base, out, browserName),
+          await run("move-arrows", browser, base, out, browserName),
         );
         (report.reviewSelection ||= []).push(
-          await require("./review-selection.cjs")(browser, base, out, browserName),
+          await run("review-selection", browser, base, out, browserName),
         );
         (report.reviewMotion ||= []).push(
-          await require("./review-motion.cjs")(browser, base, out, browserName),
+          await run("review-motion", browser, base, out, browserName),
         );
         (report.lastMoveUX ||= []).push(
-          await require("./last-move.cjs")(browser, base, out, browserName),
+          await run("last-move", browser, base, out, browserName),
         );
         report.checkerUX ||= [];
         report.checkerUX.push(
-          await require("./checker-ux.cjs")(
+          await run("checker-ux",
             browser,
             base,
             out,
@@ -459,11 +493,11 @@ const server = http.createServer((req, res) => {
         );
         report.feedbackUX ||= [];
         report.feedbackUX.push(
-          await require("./feedback.cjs")(browser, base, out, browserName),
+          await run("feedback", browser, base, out, browserName),
         );
         report.appearanceUX ||= [];
         report.appearanceUX.push(
-          await require("./appearance.cjs")(
+          await run("appearance",
             browser,
             base,
             out,
@@ -472,7 +506,7 @@ const server = http.createServer((req, res) => {
         );
         report.optionsUX ||= [];
         report.optionsUX.push(
-          await require("./options-ui.cjs")(
+          await run("options-ui",
             browser,
             base,
             out,
@@ -481,7 +515,7 @@ const server = http.createServer((req, res) => {
         );
         report.refreshUX ||= [];
         (report.tableControls ||= []).push(
-          await require("./table-controls.cjs")(
+          await run("table-controls",
             browser,
             base,
             out,
@@ -489,7 +523,7 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.routeChoice ||= []).push(
-          await require("./route-choice.cjs")(
+          await run("route-choice",
             browser,
             base,
             out,
@@ -497,7 +531,7 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.repeatPlay ||= []).push(
-          await require("./repeat-play.cjs")(
+          await run("repeat-play",
             browser,
             base,
             out,
@@ -505,7 +539,7 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.directPlay ||= []).push(
-          await require("./direct-play.cjs")(
+          await run("direct-play",
             browser,
             base,
             out,
@@ -513,130 +547,130 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.highlightActions ||= []).push(
-          await require("./highlight-actions.cjs")(browser, base, out, browserName),
+          await run("highlight-actions", browser, base, out, browserName),
         );
         (report.checkerRevisions ||= []).push(
-          await require("./checker-revisions.cjs")(browser, base, out, browserName),
+          await run("checker-revisions", browser, base, out, browserName),
         );
         (report.originReturns ||= []).push(
-          await require("./origin-returns.cjs")(browser, base, out, browserName),
+          await run("origin-returns", browser, base, out, browserName),
         );
         (report.draftChoices ||= []).push(
-          await require("./draft-choices.cjs")(browser, base, out, browserName),
+          await run("draft-choices", browser, base, out, browserName),
         );
         (report.backgroundFocus ||= []).push(
-          await require("./background-focus.cjs")(browser, base, out, browserName),
+          await run("background-focus", browser, base, out, browserName),
         );
         (report.diceUndo ||= []).push(
-          await require("./dice-undo.cjs")(browser, base, out, browserName),
+          await run("dice-undo", browser, base, out, browserName),
         );
         (report.blockedPass ||= []).push(
-          await require("./blocked-pass.cjs")(browser, base, out, browserName),
+          await run("blocked-pass", browser, base, out, browserName),
         );
         (report.diceCountMotion ||= []).push(
-          await require("./dice-count-motion.cjs")(browser, base, out, browserName),
+          await run("dice-count-motion", browser, base, out, browserName),
         );
         (report.checkerTargets ||= []).push(
-          await require("./checker-targets.cjs")(browser, base, out, browserName),
+          await run("checker-targets", browser, base, out, browserName),
         );
         (report.revisionWarning ||= []).push(
-          await require("./revision-warning.cjs")(browser, base, out, browserName),
+          await run("revision-warning", browser, base, out, browserName),
         );
         (report.endedUndo ||= []).push(
-          await require("./ended-undo.cjs")(browser, base, out, browserName),
+          await run("ended-undo", browser, base, out, browserName),
         );
         (report.diceSwitchMotion ||= []).push(
-          await require("./dice-switch-motion.cjs")(browser, base, out, browserName),
+          await run("dice-switch-motion", browser, base, out, browserName),
         );
         (report.highlightMotion ||= []).push(
-          await require("./highlight-motion.cjs")(browser, base, out, browserName),
+          await run("highlight-motion", browser, base, out, browserName),
         );
         (report.lastMoveMotion ||= []).push(
-          await require("./last-move-motion.cjs")(browser, base, out, browserName),
+          await run("last-move-motion", browser, base, out, browserName),
         );
         (report.lastMoveEntry ||= []).push(
-          await require("./last-move-entry.cjs")(browser, base, out, browserName),
+          await run("last-move-entry", browser, base, out, browserName),
         );
         (report.engineReuse ||= []).push(
-          {browser: browserName, ...await require("./engine-reuse.cjs")(browser, base)},
+          {browser: browserName, ...await run("engine-reuse", browser, base)},
         );
         (report.preparedGrading ||= []).push(
-          {browser: browserName, ...await require("./prepared-grading.cjs")(browser, base)},
+          {browser: browserName, ...await run("prepared-grading", browser, base)},
         );
         (report.futureReuse ||= []).push(
-          {browser: browserName, ...await require("./prethink-future.cjs")(browser, base)},
+          {browser: browserName, ...await run("prethink-future", browser, base)},
         );
         (report.researchScreen ||= []).push(
-          {browser: browserName, cases: await require("./research-screen.cjs")(browser, base, out, browserName)},
+          {browser: browserName, cases: await run("research-screen", browser, base, out, browserName)},
         );
         (report.engineCacheContext ||= []).push(
-          {browser: browserName, cases: await require("./engine-cache-context.cjs")(browser, base)},
+          {browser: browserName, cases: await run("engine-cache-context", browser, base)},
         );
         (report.backendLoading ||= []).push({browser: browserName,
-          cases: await require("./backend-loading.cjs")(browser, base),
+          cases: await run("backend-loading", browser, base),
         });
         (report.nativeBackends ||= []).push({browser: browserName,
-          ...(await require("./native-backends.cjs")(browser, base, {corpus: browserName === "chromium"})),
+          ...(await run("native-backends", browser, base, {corpus: browserName === "chromium"})),
         });
         (report.openingHints ||= []).push(
-          await require("./opening-hints.cjs")(browser, base, out, browserName),
+          await run("opening-hints", browser, base, out, browserName),
         );
         (report.actionAudit ||= []).push(
-          await require("./action-audit.cjs")(browser, base, out, browserName),
+          await run("action-audit", browser, base, out, browserName),
         );
         (report.responsiveParity ||= []).push(
-          await require("./responsive-parity.cjs")(browser, base, out, browserName),
+          await run("responsive-parity", browser, base, out, browserName),
         );
         (report.mobileLayout ||= []).push(
-          await require("./mobile-layout.cjs")(browser, base, out, browserName),
+          await run("mobile-layout", browser, base, out, browserName),
         );
         (report.mobileStudy ||= []).push(
-          await require("./mobile-study.cjs")(browser, base, out, browserName),
+          await run("mobile-study", browser, base, out, browserName),
         );
         (report.mobileLibrary ||= []).push(
-          await require("./mobile-library.cjs")(browser, base, out, browserName),
+          await run("mobile-library", browser, base, out, browserName),
         );
         (report.mobileFlow ||= []).push(
-          await require("./mobile-flow.cjs")(browser, base, out, browserName),
+          await run("mobile-flow", browser, base, out, browserName),
         );
         (report.mobileHistory ||= []).push(
-          await require("./mobile-history.cjs")(browser, base, out, browserName),
+          await run("mobile-history", browser, base, out, browserName),
         );
         (report.mobileSettings ||= []).push(
-          await require("./mobile-settings.cjs")(browser, base, out, browserName),
+          await run("mobile-settings", browser, base, out, browserName),
         );
         (report.barEntry ||= []).push(
-          await require("./bar-entry.cjs")(browser, base, out, browserName),
+          await run("bar-entry", browser, base, out, browserName),
         );
         (report.touchMoves ||= []).push(
-          await require("./touch-moves.cjs")(browser, base, out, browserName),
+          await run("touch-moves", browser, base, out, browserName),
         );
         (report.mobileQuick ||= []).push(
-          await require("./mobile-quick.cjs")(browser, base, out, browserName),
+          await run("mobile-quick", browser, base, out, browserName),
         );
         (report.mobileSheets ||= []).push(
-          await require("./mobile-sheets.cjs")(browser, base, out, browserName),
+          await run("mobile-sheets", browser, base, out, browserName),
         );
         (report.clickGuide ||= []).push(
-          await require("./click-guide.cjs")(browser, base, out, browserName),
+          await run("click-guide", browser, base, out, browserName),
         );
         (report.rankedReview ||= []).push(
-          await require("./review-ranked.cjs")(browser, base, out, browserName),
+          await run("review-ranked", browser, base, out, browserName),
         );
         (report.cubeOptions ||= []).push(
-          await require("./cube-options.cjs")(browser, base, out, browserName),
+          await run("cube-options", browser, base, out, browserName),
         );
         (report.equityBar ||= []).push(
-          await require("./equity-bar.cjs")(browser, base, out, browserName),
+          await run("equity-bar", browser, base, out, browserName),
         );
         (report.historyTree ||= []).push(
-          await require("./history-tree.cjs")(browser, base, out, browserName),
+          await run("history-tree", browser, base, out, browserName),
         );
         (report.autoReview ||= []).push(
-          await require("./auto-review.cjs")(browser, base, out, browserName),
+          await run("auto-review", browser, base, out, browserName),
         );
         (report.historyReturn ||= []).push(
-          await require("./history-return.cjs")(
+          await run("history-return",
             browser,
             base,
             out,
@@ -644,13 +678,13 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.practiceUX ||= []).push(
-          await require("./practice.cjs")(browser, base, out, browserName),
+          await run("practice", browser, base, out, browserName),
         );
         (report.keyboardUX ||= []).push(
-          await require("./keyboard.cjs")(browser, base, out, browserName),
+          await run("keyboard", browser, base, out, browserName),
         );
         (report.decisionUX ||= []).push(
-          await require("./decision-ux.cjs")(
+          await run("decision-ux",
             browser,
             base,
             out,
@@ -658,7 +692,7 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.assistanceUX ||= []).push(
-          await require("./assistance.cjs")(
+          await run("assistance",
             browser,
             base,
             out,
@@ -666,7 +700,7 @@ const server = http.createServer((req, res) => {
           ),
         );
         (report.turnPolicy ||= []).push(
-          await require("./turn-policy.cjs")(
+          await run("turn-policy",
             browser,
             base,
             out,
@@ -674,12 +708,17 @@ const server = http.createServer((req, res) => {
           ),
         );
         report.refreshUX.push(
-          await require("./refresh.cjs")(browser, out, browserName),
+          await run("refresh", browser, out, browserName),
         );
-        (report.pageProgress ||= []).push(await require("./page-progress.cjs")(browser, base));
+        // The focused Play command is also part of the full regression run.
+        for (const moduleName of ["control-polish", "advanced-ui", "touch-advanced", "adaptive-play", "prethink-ui"]) {
+          (report.playControls ||= []).push({module: moduleName, browser: browserName,
+            result: await run(moduleName, browser, base, out, browserName)});
+        }
+        (report.pageProgress ||= []).push(await run("page-progress", browser, base));
         report.updatesUX ||= [];
         report.updatesUX.push(
-          await require("./updates.cjs")(browser, base, out, browserName),
+          await run("updates", browser, base, out, browserName),
         );
         // Offline shell and coherent engine cache, scoped exclusively to this family.
         const offline = await browser.newContext(),
@@ -695,7 +734,7 @@ const server = http.createServer((req, res) => {
         await op
           .getByText("Evaluated moves", { exact: true })
           .waitFor({ timeout: 45000 });
-        await op.waitForFunction(async () => {
+        await waitForAsync(op,async () => {
           const cache = await caches.open(
             "backgammon-assets-" +
               (

@@ -4,10 +4,10 @@ module.exports=async function adaptivePlay(browser,base,out,name){
  const context=await browser.newContext({viewport:{width:1366,height:768},reducedMotion:'reduce',serviceWorkers:'block'});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  try{
-  await page.addInitScript(()=>{const random=crypto.getRandomValues.bind(crypto),dice=[5,0,2,0,3,1,1,0];crypto.getRandomValues=a=>a instanceof Uint8Array&&a.length===1&&dice.length?((a[0]=dice.shift()),a):random(a);});
+  await require("./play-helpers.cjs").seedOpening(page,[6,1]);
   await page.goto(base+'/backgammon/play/');await page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
   await page.evaluate(async()=>{const {EngineClient}=await import('/backgammon/engine/client.mjs');const original=EngineClient.prototype.analyze;window.engineTrace=[];EngineClient.prototype.analyze=function(state,options={}){return original.call(this,state,options).then(result=>{engineTrace.push({turn:state.turn,phase:state.phase,preset:options.preset||'quick',submitted:!!options.submitted,plies:result.settings?.plies,budget:result.budget?.reason,error:result.error});return result;});};});
-  await page.locator('#start-match').click();await page.locator('#hint').waitFor({timeout:15000});
+  await page.locator('#start-match').click();await require('./play-helpers.cjs').openingComplete(page);
   const started=Date.now();await page.locator('#hint').click();await page.locator('[data-best-move]').waitFor({timeout:120000});
   const hintMs=Date.now()-started;
   assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='auto'&&r.plies>=2));
@@ -35,7 +35,7 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   await page.getByLabel('Computer strength',{exact:true}).selectOption('quick');
   await page.getByLabel('Hint & review strength',{exact:true}).selectOption('standard');
   await page.locator('dialog .close').click();
-  await page.locator('#roll').evaluate(b=>b.click());
+  await require('./play-helpers.cjs').roll(page);
   await page.locator('#hint').waitFor();await page.locator('#hint').click();
   await page.locator('[data-best-move]').waitFor({timeout:120000});
   assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='standard'&&r.plies===1),'fixed hint stays at exactly 1 ply');

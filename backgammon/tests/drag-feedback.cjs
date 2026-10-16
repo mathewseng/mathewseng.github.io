@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict'), path = require('node:path');
 module.exports = async function dragFeedback(browser, base, out, name) {
   const ctx = await browser.newContext({ viewport:{width:1366,height:900}, serviceWorkers:'block' });
@@ -292,6 +293,26 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
       assert.equal(await t.evaluate(()=>touchDraft.draft.length),0,'interrupted touch cancels');
       assert.equal(await t.locator('.drag-checker,.drag-origin,.drag-landing-ghost').count(),0);
+      // Reduced-motion redraws replace the touched disc synchronously. Drag
+      // the outside disc of a stack as well as its innermost checker above.
+      await t.evaluate(async()=>{
+        (await import('/backgammon/core/storage.mjs')).saveSettings({motion:'reduce'});
+        document.documentElement.dataset.motion='reduce';
+        touchDraft.set(touchDraft.state,touchDraft.paths);
+      });
+      const reduced=await t.locator('[data-point="12"] .checker > circle').first().evaluate(c=>{
+        const p=new DOMPoint(+c.getAttribute('cx'),+c.getAttribute('cy')).matrixTransform(c.getScreenCTM());
+        return {x:p.x,y:p.y};
+      });
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...reduced,id:3}]});
+      for(let i=1;i<=10;i++) {
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:reduced.x+(coords.b.x-reduced.x)*i/10,y:reduced.y+(coords.b.y-reduced.y)*i/10,id:3}]});
+        await t.waitForTimeout(20);
+      }
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      await t.waitForFunction(()=>touchDraft.draft.length===1);
+      assert.deepEqual(await t.evaluate(()=>touchDraft.draft),[{from:12,to:8,die:4}]);
+      assert.equal(await t.evaluate(()=>scrollY),0,'reduced-motion touch drag retains its pointer');
       await touchContext.close();
     }
     // Real Play persists only the draft. It does not confirm or reroll on drop.
@@ -312,13 +333,13 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       await holdDrop();
       await page.mouse.up();
       assert.equal(await page.locator('.drop-landing-ghost').count(),1);
-      await page.waitForFunction(async()=>{const v=await(await import('/backgammon/core/storage.mjs')).get('work','play');return v.draft.length===1;});
+      await waitForAsync(page,async()=>{const v=await(await import('/backgammon/core/storage.mjs')).get('work','play');return v.draft.length===1;});
       await page.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.currentTime=a.effect.getTiming().duration*.6;});
       await shot(`live-drop-settling-${width}`);
       await page.evaluate(()=>{for(const a of [dropProbe.ga,dropProbe.pa])a.play();});
       await page.waitForFunction(()=>!document.querySelector('.drop-landing-ghost,.moving-checker'));
       const q=await coord(5,true);await page.mouse.click(q.x,q.y);
-      await page.waitForFunction(async()=>{const v=await(await import('/backgammon/core/storage.mjs')).get('work','play');return v.draft.length===2;});
+      await waitForAsync(page,async()=>{const v=await(await import('/backgammon/core/storage.mjs')).get('work','play');return v.draft.length===2;});
       await page.waitForTimeout(600);await shot(`live-amber-${width}`);
       assert.equal(await page.locator('.draft-undo-checker').count(),2);
       const stored=await page.evaluate(async()=>await(await import('/backgammon/core/storage.mjs')).get('work','play'));

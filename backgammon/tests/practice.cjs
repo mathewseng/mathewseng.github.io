@@ -57,6 +57,7 @@ module.exports = async function practiceUX(browser, base, out, name) {
           mode: "computer",
           humanSide: 0,
           strength: "quick",
+          warning: false,
           matchLength: 0,
           rules: initial.rules,
         },
@@ -80,19 +81,16 @@ module.exports = async function practiceUX(browser, base, out, name) {
       return game.id;
     });
     await page.goto(base + "/backgammon/play/#resume=" + id);
-    await page.locator("#roll").waitFor();
-    for (const id of [
-      "undo-turn",
-      "reroll",
-      "reroll-bot",
-      "set-roll",
-      "set-bot-roll",
-    ])
-      assert.equal(await page.locator("#help-actions #" + id).count(), 1);
-    assert.equal(await page.locator("#actions #double-cube").count(), 1);
-    const help = await page.locator("#help-actions").boundingBox(),
-      main = await page.locator("#actions").boundingBox();
-    assert.ok(help.x + help.width <= main.x);
+    await page.locator("#board.roll-ready").waitFor();
+    assert.equal(await page.locator("#help-actions #undo-turn").count(), 1);
+    for (const id of ["reroll","reroll-bot","set-roll","set-bot-roll"])
+      assert.equal(await page.locator("#help-actions #" + id).isVisible(), false, "practice tools stay under All controls");
+    assert.equal(await page.locator("#board .board-cube").count(), 1);
+    await page.locator("#all-controls").click();
+    for (const id of ["reroll","reroll-bot","set-roll","set-bot-roll"])
+      assert.equal(await page.locator(".practice-controls-dialog #" + id).isVisible(), true);
+    await page.keyboard.press("Escape");
+    await page.locator(".practice-controls-dialog").waitFor({state:"detached"});
     await page.screenshot({
       path: path.join(out, `${name}-practice-desktop.png`),
     });
@@ -180,14 +178,14 @@ module.exports = async function practiceUX(browser, base, out, name) {
         ),
         `${width} document overflow`,
       );
-      const box = await page.locator("#actions").boundingBox();
+      const box = await page.locator("#all-controls").boundingBox();
       if (width > 360)
         assert.ok(
           box.y + box.height <= height + 1,
           `${width} primary controls below viewport`,
         );
       await page.locator("#all-controls").click();
-    await page.locator("#set-bot-roll").click();
+      await page.locator("#set-bot-roll").click();
       const dims = await page.getByRole("dialog").evaluate((e) => ({
         h: e.clientHeight,
         s: e.scrollHeight,

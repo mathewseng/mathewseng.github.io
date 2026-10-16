@@ -1,3 +1,4 @@
+const { waitForAsync, roll, openingComplete, seedOpening } = require("./play-helpers.cjs");
 // Real UI checks against the assembled site. Appearance never changes game state.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -28,6 +29,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
   const open = async () => {
     await page.locator("#preferences").click();
     await page.locator(".settings-dialog").waitFor();
+    await page.getByRole("button", {name:"Board colors",exact:true}).click();
   };
   const close = async () => {
     await page
@@ -72,8 +74,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
       .getByRole("button", { name: "Same device", exact: true })
       .click();
     await page.locator("#start-match").click();
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await openingComplete(page);
     await page.locator("#draft-controls select").selectOption({ index: 1 });
     const work = () =>
       page.evaluate(async () => {
@@ -82,7 +83,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
         ).get("work", "play");
         return { game: record.game, draft: record.draft };
       });
-    await page.waitForFunction(
+    await waitForAsync(page,
       async () =>
         (
           await (
@@ -305,6 +306,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     const second = await context.newPage();
     await second.goto(base + "/backgammon/solver/");
     await second.locator("#preferences").click();
+    await second.getByRole("button",{name:"Board colors",exact:true}).click();
     await second.locator('[data-preset="linen"]').click();
     await page.waitForFunction(
       () =>

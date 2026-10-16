@@ -15,6 +15,9 @@ module.exports = async function mobileFlow(browser, base, out, name) {
   try {
     await page.goto(base+"/backgammon/trainer/");
     await page.locator("#submit-decision").waitFor();
+    await page.evaluate(async()=>(await import("/backgammon/core/storage.mjs")).saveSettings({interactionMode:"beginner"}));
+    await page.reload();
+    await page.locator("#submit-decision").waitFor();
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932],[667,375],[844,390],[932,430]]) {
       await page.setViewportSize({width,height});
       await page.evaluate(()=>scrollTo(0,0));

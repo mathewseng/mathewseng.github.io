@@ -9,6 +9,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.goto(base + "/backgammon/play/");
     const fixture = await page.evaluate(async () => {
       const r = await import("/backgammon/core/rules.mjs"), t = await import("/backgammon/core/table.mjs"), s = await import("/backgammon/core/storage.mjs");
+      s.saveSettings({interactionMode:"beginner"});
       const initial = r.initialState({phase:"roll",matchLength:0});
       let game = {id:"mobile-history",started:true,names:["You","GNUbg"],initial,state:initial,events:[],
         config:{mode:"computer",humanSide:0,matchLength:0,rules:initial.rules,strength:"quick",reviewStrength:"quick",tutor:true,warning:false}};
@@ -28,7 +29,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     if (!await sourcePicker.inputValue()) await sourcePicker.selectOption({index:1});
     await page.getByLabel("Move selected checker",{exact:true}).selectOption({index:1});
     await page.locator(".draft-progress").waitFor();
-    assert.match(await page.locator(".draft-progress-moves").textContent(), /Draft: (\d+|bar)\//);
+    assert.match(await page.locator(".draft-progress-moves").textContent(), /(\d+|bar)\//);
     assert.match(await page.locator(".draft-progress-status").textContent(), /1 move left|Ready to confirm/);
     assert.deepEqual(await page.locator("#board").boundingBox(),board,"draft status never resizes the board");
     await shot("draft");

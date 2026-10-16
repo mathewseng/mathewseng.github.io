@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict"),
   fs = require("node:fs"),
   path = require("node:path");
@@ -27,7 +28,7 @@ module.exports = async function originReturns(browser, base, out, name) {
           ).get("work", "play"),
       );
     const wait = async (draft) => {
-      await page.waitForFunction(
+      await waitForAsync(page,
         async (n) =>
           (
             await (

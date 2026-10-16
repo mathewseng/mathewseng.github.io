@@ -213,7 +213,7 @@ module.exports = async function parity(browser, base, out, name) {
       return game.id;
     });
     await page.goto(base + "/backgammon/play/#resume=" + id);
-    await page.locator("#roll").waitFor();
+    await page.locator("#board.roll-ready").waitFor();
     const expected = await page
       .locator("#help-actions button")
       .evaluateAll((ns) => ns.map((n) => [n.id, n.disabled]));

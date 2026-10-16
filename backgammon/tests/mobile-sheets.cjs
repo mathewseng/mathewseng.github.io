@@ -16,6 +16,7 @@ module.exports = async function mobileSheets(browser, base, out, name) {
     await page.goto(base+"/backgammon/play/");
     const id = await page.evaluate(async () => {
       const r=await import("/backgammon/core/rules.mjs"), st=await import("/backgammon/core/storage.mjs");
+      st.saveSettings({interactionMode:"beginner"});
       const initial=r.initialState({phase:"move",dice:[4,1],matchLength:5}), id=crypto.randomUUID();
       await st.put("work",{id:"play",game:{id,initial,state:initial,events:[],started:true,
         names:["Alexandria with a very long name","Opponent with a very long name"],
@@ -35,10 +36,10 @@ module.exports = async function mobileSheets(browser, base, out, name) {
       const strip=await page.locator("#player").evaluate(row=>{
         const name=row.querySelector("strong").getBoundingClientRect(), badge=row.querySelector(".player-status").getBoundingClientRect(), stats=row.querySelector(".player-stats").getBoundingClientRect();
         return {text:row.querySelector(".player-status").textContent, badgeVisible:badge.width>0,
-          noOverlap:name.right<=badge.left && badge.right<=stats.left, right:stats.right,width:innerWidth};
+          noOverlap:name.right<=badge.left && (!stats.width || badge.right<=stats.left), right:Math.max(badge.right,stats.right),width:innerWidth};
       });
       assert.equal(strip.text,"To move");
-      assert.ok(strip.badgeVisible && strip.noOverlap && strip.right<=strip.width, "long names never cover turn status or score");
+      assert.ok(strip.badgeVisible && strip.noOverlap && strip.right<=strip.width, `long names never cover turn status or score: ${width}x${height} ${JSON.stringify(strip)}`);
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       await page.locator("#all-controls").click();
       const d=page.locator(".practice-controls-dialog");

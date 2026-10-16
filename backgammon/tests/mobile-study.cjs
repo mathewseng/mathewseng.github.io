@@ -14,7 +14,8 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     await page.locator("#analyze").waitFor();
     await page.evaluate(async () => {
       const {initialState} = await import("/backgammon/core/rules.mjs");
-      const {put} = await import("/backgammon/core/storage.mjs");
+      const {put,saveSettings} = await import("/backgammon/core/storage.mjs");
+      saveSettings({equityBar:false});
       await put("work",{id:"solver",state:initialState({phase:"move",dice:[3,1],matchLength:0}),context:null});
     });
     await page.reload();

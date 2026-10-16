@@ -1,8 +1,9 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert=require("node:assert/strict"),path=require("node:path");
 module.exports=async function openingHints(browser,base,out,name){
   const cases=[];
   for(const touch of [false,true]){
-    const context=await browser.newContext({viewport:touch?{width:390,height:844}:{width:1366,height:768},hasTouch:touch,reducedMotion:"reduce",serviceWorkers:"block"});
+    const context=await browser.newContext({viewport:touch?{width:390,height:844}:{width:1366,height:768},hasTouch:touch,reducedMotion:"no-preference",serviceWorkers:"block"});
     const page=await context.newPage(),errors=[];
     page.on("pageerror",e=>errors.push(e.message));
     const click=async locator=>touch?locator.tap():locator.click();
@@ -14,25 +15,32 @@ module.exports=async function openingHints(browser,base,out,name){
       });
       await page.goto(base+"/backgammon/play/");
       await click(page.getByRole("button",{name:"Same device",exact:true}));
+      await page.clock.install(); await page.clock.pauseAt(new Date());
       await click(page.locator("#start-match"));
+      await page.clock.runFor(310);
+      await page.locator(".opening-die .die[aria-label='3']").first().waitFor();
       for(const value of [2,4]){
-        await click(page.locator("#roll"));
-        await page.waitForFunction(async value=>(await(await import("/backgammon/core/storage.mjs")).get("work","play"))?.game.state.cube.value===value,value);
+        await page.clock.runFor(1650);
+        await waitForAsync(page,async value=>(await(await import("/backgammon/core/storage.mjs")).get("work","play"))?.game.state.cube.value===value,value);
         // Persistence completes before the opening animation refreshes its copy.
         await page.waitForFunction(value=>document.querySelector(".opening-roll")?.textContent.includes(`Stakes are now ${value}`),value);
         assert.match(await page.locator(".opening-roll").innerText(),new RegExp(`Stakes are now ${value}`));
+        await page.clock.runFor(700);
+        await page.locator(".opening-die .die[aria-hidden='true']").first().waitFor();
       }
-      await click(page.locator("#roll"));
-      await page.locator("#begin-turn").waitFor();
+      await page.clock.runFor(1650);
       const ratios=await page.locator(".opening-die .die").evaluateAll(dice=>dice.map(d=>{
         const b=d.getBoundingClientRect(),p=d.querySelector("i").getBoundingClientRect();
         return {ratio:p.width/b.width,round:Math.abs(p.width-p.height)<.1};
       }));
       assert.ok(ratios.every(r=>r.ratio>.19&&r.ratio<.21&&r.round),JSON.stringify(ratios));
       await page.screenshot({path:path.join(out,`${name}-opening-pips-${touch?"phone":"desktop"}.png`)});
-      await click(page.locator("#begin-turn"));
+      await page.clock.resume();
+      await page.locator("#confirm").waitFor();
+      await page.emulateMedia({reducedMotion:"reduce"});
       await click(page.locator("#preferences"));
       await click(page.getByRole("button",{name:"Display & controls",exact:true}));
+      await page.getByLabel("Playing style",{exact:true}).selectOption("beginner");
       await page.locator("#move-hints").uncheck();
       await click(page.locator(".settings-dialog").getByRole("button",{name:"Close",exact:true}));
       await page.locator("#board .bg-board.no-move-hints").waitFor();
@@ -55,7 +63,7 @@ module.exports=async function openingHints(browser,base,out,name){
       assert.equal(highlights,0);
       await page.screenshot({path:path.join(out,`${name}-no-hints-${touch?"phone":"desktop"}.png`)});
       await click(page.locator(`#board [data-point="${step.to}"] .point-number-hit`));
-      await page.waitForFunction(async()=>(await(await import("/backgammon/core/storage.mjs")).get("work","play"))?.draft.length>0);
+      await waitForAsync(page,async()=>(await(await import("/backgammon/core/storage.mjs")).get("work","play"))?.draft.length>0);
       assert.equal((await read()).draft[0].from,step.from);
       await page.goto(base+"/backgammon/play/#resume="+(await read()).game.id);
       await page.locator("#confirm").waitFor();

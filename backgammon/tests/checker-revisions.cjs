@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/bar-revision.json')));
 module.exports = async function checkerRevisions(browser, base, out, name) {
@@ -14,7 +15,7 @@ module.exports = async function checkerRevisions(browser, base, out, name) {
     },{point,disc});
     const tap=async(point,disc=false)=>{const p=await coords(point,disc);if(touch)await page.touchscreen.tap(p.x,p.y);else await page.mouse.click(p.x,p.y);};
     const wait=async(draft)=>{
-      await page.waitForFunction(async draft=>JSON.stringify((await (await import('/backgammon/core/storage.mjs')).get('work','play'))?.draft)===JSON.stringify(draft),draft);
+      await waitForAsync(page,async draft=>JSON.stringify((await (await import('/backgammon/core/storage.mjs')).get('work','play'))?.draft)===JSON.stringify(draft),draft);
       await page.waitForTimeout(100);
       const w=await read();assert.deepEqual(w.draft,draft);assert.equal(w.game.events.length,0,'never commits a revision');
     };
@@ -25,7 +26,7 @@ module.exports = async function checkerRevisions(browser, base, out, name) {
         const s=r.clone(fixture.state),p=n=>typeof n==='number'&&turn?23-n:n;
         if(turn){s.turn=1;s.points=s.points.reverse().map(n=>-n);s.bar.reverse();s.off.reverse();}
         const draft=fixture.drafts[order].map(m=>({...m,from:p(m.from),to:p(m.to)}));
-        st.saveSettings({orientation,numbers:true,motion:'reduce',moveHints:hints,boardTheme:{version:1,preset:'plum',colors:{}}});
+        st.saveSettings({interactionMode:"beginner",orientation,numbers:true,motion:'reduce',moveHints:hints,boardTheme:{version:1,preset:'plum',colors:{}}});
         const id=crypto.randomUUID();
         await st.put('work',{id:'play',game:{id,initial:s,state:s,events:[],started:true,names:['You','Opponent'],config:{mode:'local',humanSide:turn,matchLength:0,rules:s.rules}},draft,positionKey:r.positionKey(s)});
         return id;

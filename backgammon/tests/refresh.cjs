@@ -240,8 +240,6 @@ module.exports = async function refreshUX(browser, out, browserName) {
     await recovery.setViewportSize({ width: 375, height: 667 });
     await recovery.locator("#continue").click();
     await recovery.locator("#resume-match").click();
-    if (await recovery.locator("#begin-turn").count())
-      await recovery.locator("#begin-turn").click();
     await recovery.locator("#board .board-die.consumed[role=button]").first().waitFor();
     assert.ok(await recovery.locator("#board .board-die.consumed[role=button]").count());
     const resumed = await readSaved(recovery);
@@ -252,6 +250,7 @@ module.exports = async function refreshUX(browser, out, browserName) {
     );
     assert.deepEqual(resumed.work.draft, saved.work.draft);
     await recovery.locator("#preferences").click();
+    await recovery.getByRole("button", { name: "Board colors", exact: true }).click();
     await recovery.locator('[data-preset="midnight"]').waitFor();
     assert.equal(
       await recovery

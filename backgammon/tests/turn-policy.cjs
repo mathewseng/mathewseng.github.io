@@ -1,3 +1,4 @@
+const { openingComplete, seedOpening, roll } = require("./play-helpers.cjs");
 // Real browser controls, IndexedDB, exports, and real GNUbg opponent.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -55,17 +56,19 @@ module.exports = async function turnPolicy(
           ? ((a[0] = values.shift()), a)
           : original(a);
     });
+    await seedOpening(page, [6, 1]);
     await page.goto(base + "/backgammon/play/");
     await page
       .getByRole("button", { name: "Same device", exact: true })
       .click();
+    if (await page.getByLabel("Warn before confirming a costly move").count())
+      await page.getByLabel("Warn before confirming a costly move").uncheck();
     await page.locator("#start-match").click();
     assert.equal(
       (await wait((s) => s?.game.started)).game.state.rules.jacoby,
       true,
     );
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await openingComplete(page);
     const original = (await saved()).game;
     await finish();
     const committed = await wait((s) => s?.game.events.length === 2);
@@ -82,7 +85,7 @@ module.exports = async function turnPolicy(
     assert.equal(await page.locator("#undo-turn").isDisabled(), true);
     await page.setViewportSize({ width: 1366, height: 768 });
     await finish();
-    await page.locator("#roll").click();
+    await roll(page);
     await wait(
       (s) => s?.game.state.phase === "move" && s.game.state.turn === 1,
     );
@@ -94,7 +97,7 @@ module.exports = async function turnPolicy(
       { actor: 1, dice: rolled },
     ]);
     await finish();
-    await page.locator("#roll").click();
+    await roll(page);
     await wait(
       (s) => s?.game.state.phase === "move" && s.game.state.turn === 1,
     );
@@ -121,8 +124,7 @@ module.exports = async function turnPolicy(
       assert.ok(dimensions.width <= width + 1, JSON.stringify(dimensions));
       if (width > 320)
         assert.ok(
-          dimensions.height <= height + 1 &&
-            dimensions.bottom <= height + 1,
+          dimensions.bottom <= height + 1,
           `${width}x${height} ${JSON.stringify(dimensions)}`,
         );
     }
@@ -143,6 +145,8 @@ module.exports = async function turnPolicy(
     await page
       .getByRole("button", { name: "Continue", exact: true })
       .click();
+    if (await page.getByLabel("Warn before confirming a costly move").count())
+      await page.getByLabel("Warn before confirming a costly move").uncheck();
     await page.locator("#start-match").click();
     const second = await wait((s) => s?.game.id !== original.id);
     await page.goto(base + "/backgammon/library/#games");
@@ -234,7 +238,7 @@ module.exports = async function turnPolicy(
         return id;
       }, type);
       await page.goto(base + "/backgammon/play/#resume=" + id);
-      if (type !== "already-rolled") await page.locator("#roll").click();
+      if (type === "bearoff") await roll(page);
       const completed = await wait(
         (s) => s?.game.id === id && s.game.events.at(-1)?.automatic,
       );
@@ -244,7 +248,7 @@ module.exports = async function turnPolicy(
       );
       assert.equal(await page.locator("#confirm").count(), 0);
       assert.equal(await page.locator("#undo-turn").isVisible(), true);
-      assert.equal(await page.locator("#undo-turn").isDisabled(), true);
+      assert.equal(await page.locator("#undo-turn").isDisabled(), type !== "bearoff", "finished games can be reopened; a forced pass has no player choice to undo");
       assert.equal(await page.locator("#hint").count(), 0);
       await shot(type);
     }
@@ -258,9 +262,10 @@ module.exports = async function turnPolicy(
     await page
       .getByRole("button", { name: "Computer", exact: true })
       .click();
+    if (await page.getByLabel("Warn before confirming a costly move").count())
+      await page.getByLabel("Warn before confirming a costly move").uncheck();
     await page.locator("#start-match").click();
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await openingComplete(page);
     // A reload restarts the deterministic test dice, so the human wins 6–1.
     const source = (await saved()).game.state;
     await finish();

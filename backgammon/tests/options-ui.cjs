@@ -59,13 +59,13 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       await page
         .getByLabel("Automatic opening doubles", { exact: true })
         .inputValue(),
-      "10",
+      "-1",
     );
     assert.equal(
       await page
         .getByLabel("Immediate redoubles", { exact: true })
         .inputValue(),
-      "0",
+      "2",
     );
     await page
       .getByLabel("Automatic opening doubles", { exact: true })
@@ -75,7 +75,6 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       .selectOption("2");
     await shot("rules");
     await page.locator("#start-match").click();
-    await page.locator("#roll").click();
     await page.locator(".opening-roll h2").filter({ hasText: "tie" }).waitFor();
     assert.equal((await state()).cube.value, 2);
     assert.match(
@@ -83,12 +82,12 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       /Stakes are now 2/,
     );
     await shot("automatic-double");
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await page.locator("#confirm").waitFor();
     while (await page.locator("#confirm").isDisabled())
       await page.locator("#draft-controls select").selectOption({ index: 1 });
     await page.locator("#confirm").click();
-    await page.getByRole("button", { name: "Double", exact: true }).click();
+    await page.locator('#board.roll-ready').waitFor();
+    await page.keyboard.press('d');
     await page
       .getByRole("button", { name: "Beaver to 8", exact: true })
       .click();

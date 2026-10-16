@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 // Actual service workers and the assembled app; no mocked registration/cache APIs.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -306,13 +307,13 @@ module.exports = async function updatesUX(browser, _base, out, browserName) {
     await page.reload();
     await page.locator("#resume-match").click();
     await page.keyboard.press("1");
-    await page.waitForFunction(async () =>
+    await waitForAsync(page,async () =>
       (await (await import("/backgammon/core/storage.mjs")).get("work","play"))?.draft?.length === 1);
     const game = await saved(page),
       gameLoads = loads;
     release = "four";
     await reconnect(page);
-    await page.waitForFunction(
+    await waitForAsync(page,
       async () =>
         (await navigator.serviceWorker.getRegistration("/backgammon/"))?.waiting
           ?.state === "installed",
@@ -472,9 +473,17 @@ module.exports = async function updatesUX(browser, _base, out, browserName) {
     release = "nine";
     failAsset = true;
     await page.reload();
-    await page.waitForFunction(() => {
+    await page.bringToFront();
+    await waitForAsync(page,async () => {
       const retry = document.querySelector(".app-update-dialog button");
-      return retry && !retry.hidden && !document.querySelector(".update-message").textContent.includes("Retrying automatically");
+      const progress = document.querySelector(".app-update-dialog progress");
+      const registration = await navigator.serviceWorker.getRegistration("/backgammon/");
+      // A late download message can replace the error text while a worker is
+      // still installing. Text alone does not establish exhausted retries.
+      return retry?.isConnected && !retry.hidden && progress?.hidden &&
+        !registration?.installing && !registration?.waiting &&
+        !document.hidden &&
+        !document.querySelector(".update-message").textContent.includes("Retrying automatically");
     }, null, {timeout:60000});
     assert.deepEqual((await saved(page)).work, game.work);
     failAsset = false;

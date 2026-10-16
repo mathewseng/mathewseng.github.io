@@ -119,7 +119,7 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         await finish();
       }
       const lane = await page.locator('#board .dice-switch-hit').evaluate(n => {
-        const x = Number(n.getAttribute('x')) + Number(n.getAttribute('width')) / 2;
+        const x = Number(n.getAttribute('x')) + 30; // Point center, not the gap between points.
         return [290, 370].map(y => {
           const p = new DOMPoint(x, y).matrixTransform(n.getScreenCTM());
           return !!document.elementFromPoint(p.x, p.y)?.closest('[data-point]');

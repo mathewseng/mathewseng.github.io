@@ -15,7 +15,7 @@ module.exports = async function touchMoves(browser, base, out, name) {
     const destination = page.getByLabel("Move selected checker",{exact:true});
     const set = (kind, turn=0, orientation=0) => page.evaluate(({kind,turn,orientation})=>{
       const {rules:r,storage:st,draft:d}=touchTest;
-      st.saveSettings({orientation,moveHints:true});
+      st.saveSettings({interactionMode:"beginner",orientation,moveHints:true});
       let s=r.initialState({phase:"move",dice:kind==="doubles"?[3,3]:[4,1]});
       let steps=[];
       if(kind==="bar") {
@@ -70,11 +70,8 @@ module.exports = async function touchMoves(browser, base, out, name) {
     await set("off");
     await source.selectOption({value:"2"});
     await destination.selectOption({value:"off"});
-    await page.getByRole("dialog",{name:"Choose a die"}).waitFor();
-    await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).tap();
-    await destination.selectOption({value:"off"});
-    await page.getByRole("button",{name:"Use 4",exact:true}).tap();
-    assert.equal((await read()).draft[0].die,4,"ambiguous bearoff preserves explicit die choice");
+    assert.equal(await page.getByRole("dialog").count(),0,"bearoff uses the selected die without a chooser");
+    assert.equal((await read()).draft[0].die,3,"selected die is used first");
     await set("start");
     await page.locator('#board [data-point="12"] .checker > circle').first().tap();
     assert.equal(await source.inputValue(),"12","board selection synchronizes the picker");

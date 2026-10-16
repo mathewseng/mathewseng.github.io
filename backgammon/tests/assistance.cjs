@@ -1,3 +1,4 @@
+const { roll, openingComplete, seedOpening } = require("./play-helpers.cjs");
 const { clickTool } = require("./tool-access.cjs");
 // Hints and turn feedback against real GNUbg, served from the assembled site.
 const assert = require("node:assert/strict");
@@ -66,11 +67,12 @@ module.exports = async function assistanceUX(
           ? ((a[0] = dice.shift()), a)
           : original(a);
     });
+    await seedOpening(page, [6, 1]);
     await page.goto(base + "/backgammon/play/");
+    await page.getByLabel("Warn before confirming a costly move").uncheck();
     await page.locator("#start-match").click();
     assert.equal(await page.locator("#hint").count(), 0);
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await openingComplete(page);
     await page
       .getByLabel("Accessible move selection", { exact: true })
       .selectOption({ index: 1 });
@@ -132,6 +134,7 @@ module.exports = async function assistanceUX(
       "use best move is reversible draft, never an automatic submission",
     );
 
+    await page.getByLabel("Show move feedback", { exact: true }).uncheck();
     await page.getByLabel("Show move feedback", { exact: true }).check();
     await waitSaved((s) => s?.game.config.tutor === true);
     assert.ok(
@@ -292,7 +295,7 @@ module.exports = async function assistanceUX(
           ? ((array[0] = dice.shift()), array)
           : original(array);
     });
-    await page.locator("#roll").click();
+    await roll(page);
     await page.locator("#confirm").waitFor();
     for (const [width, height] of [
       [375, 667],

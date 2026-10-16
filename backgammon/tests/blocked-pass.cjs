@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
@@ -22,7 +23,10 @@ module.exports = async function blockedPass(browser, base, out, name) {
         let s=initialState({phase:kind==='rolled'?'move':'roll',dice:kind==='rolled'?[4,6]:[],matchLength:0,turn,
           points:turn?points.toReversed().map(n=>-n):points,bar:turn?[0,1]:[1,0]});
         if(kind==='cube')s=transition(s,{type:'double'},turn);
-        saveSettings({motion:'reduce',orientation:turn});
+        // This rules-only fixture deliberately disables analysis. Otherwise
+        // the new default feedback/equity settings start a worker immediately
+        // before the recovery reload and WebKit reports its cancelled imports.
+        saveSettings({motion:'reduce',orientation:turn,moveFeedback:false,analysisAhead:false,equityBar:false});
         await put('work',{id:'play',game:{id:'blocked-bar',initial:s,state:s,events:[],started:true,names:['You','Friend'],
           ...(mode==='computer'?{localRolls:{version:1,seed:'39'.padStart(64,'0'),cursor:0}}:{}),
           config:localConfig({mode,humanSide:1-turn,strength:'quick',reviewStrength:'quick',tutor:false,warning:false})},draft:[]});
@@ -40,7 +44,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
       await page.goto(base+'/backgammon/play/');await ready();
       for(const mode of ['local','computer'])for(const turn of [0,1]){
         await load({turn,mode});
-        await page.waitForFunction(async()=>{
+        await waitForAsync(page,async()=>{
           const t=(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game;
           return t.events.length===2;
         });
@@ -62,7 +66,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
         report.push({touch,mode,turn,automaticRollAndPass:true});
       }
       await load({kind:'rolled'});
-      await page.waitForFunction(async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game.events.length===1);
+      await waitForAsync(page,async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game.events.length===1);
       assert.equal((await read()).game.state.turn,1);
       assert.equal(await page.evaluate(()=>window.rollBytes),0,'already rolled blocked turn keeps its original dice');
       for(const kind of ['open','cube']){

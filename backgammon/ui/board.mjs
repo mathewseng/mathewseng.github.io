@@ -1587,7 +1587,7 @@ export class Board {
               )
               .join(" or ")
           : ""
-      }${reverseTargets.includes(p) && !reachable.includes(p) && !destinations.includes(p) ? ", draft return: tap point space to restore a checker and its dice" : ""}${moved ? `, ${moved} moved last turn` : ""}${lastMove?.origins?.[p] ? `, previous location of ${lastMove.origins[p].count} ${playerName(lastMove.player)} checkers, shown as ghosts` : ""}`;
+      }${reverseTargets.includes(p) ? ", draft return: tap point space to restore a checker and its dice" : ""}${moved ? `, ${moved} moved last turn` : ""}${lastMove?.origins?.[p] ? `, previous location of ${lastMove.origins[p].count} ${playerName(lastMove.player)} checkers, shown as ghosts` : ""}`;
       const g = svg("g", {
         "data-point": p,
         role: "button",
@@ -1595,7 +1595,7 @@ export class Board {
         "aria-label": label,
         "aria-disabled": !interactive,
         "aria-pressed": selected === p,
-        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${(reverseTargets.includes(p) && !reachable.includes(p)) || moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${revisionTargets.includes(p) || moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
+        class: `point${reachable.includes(p) ? " reachable" : ""}${sources.includes(p) ? " movable" : ""}${selected === p ? " selected" : ""}${destinations.includes(p) ? " destination" : ""}${reverseTargets.includes(p) || moves.some((m) => m.to === p && m.undo) ? " return-destination" : ""}${revisionTargets.includes(p) || moves.some((m) => m.to === p && m.switchDie) ? " entry-switch-destination" : ""}`,
       });
       if (moved) g.setAttribute("data-last-moved", moved);
       g.append(

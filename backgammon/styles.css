@@ -2867,7 +2867,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   align-self: center;
 }
 .review-note {
-  min-height: 140px;
+  min-height: clamp(0px, calc(100dvh - 310px), 140px);
   overflow-wrap: anywhere;
 }
 @media (max-width: 700px) {

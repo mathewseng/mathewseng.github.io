@@ -52,6 +52,7 @@ module.exports = async function keyboardUX(
   try {
     await page.goto(base + "/backgammon/");
     const id = await page.evaluate(async () => {
+        (await import("/backgammon/core/storage.mjs")).saveSettings({interactionMode:"beginner"});
       const r = await import("/backgammon/core/rules.mjs"),
         st = await import("/backgammon/core/storage.mjs");
       const s = r.initialState({
@@ -128,18 +129,14 @@ module.exports = async function keyboardUX(
       (s) => s.game.state.phase === "roll" && s.game.state.turn === 1,
     );
     await ready("#double-cube");
-    await page.keyboard.press("c");
+    await page.keyboard.press("d");
     await wait((s) => s.game.state.phase === "double");
     await ready("#take-cube");
     await page.keyboard.press("t");
-    await wait(
-      (s) => s.game.state.phase === "roll" && s.game.state.cube.value === 2,
-    );
-    await ready("#roll");
+    await wait(s => s.game.events.some(e => e.action.type === "roll") && s.game.state.cube.value === 2);
+    await page.locator("#confirm").waitFor();
     await page.keyboard.press("d");
-    assert.equal((await saved()).game.state.phase, "roll");
-    await page.keyboard.press("Enter");
-    await wait((s) => s.game.events.some((e) => e.action.type === "roll"));
+    assert.equal((await saved()).game.state.phase, "move", "D cannot roll or confirm");
     // Remapping, conflicting keys, native dialog typing, disabled shortcuts and persistence.
     await page.keyboard.press("?");
     await page.getByLabel("Top 1", { exact: true }).waitFor();
@@ -178,7 +175,7 @@ module.exports = async function keyboardUX(
       ),
       "j",
     );
-    // D only drops while answering an offer.
+    // P drops; D is reserved for cube offers / immediate redoubles.
     await page.goto(base + "/backgammon/");
     const pendingId = await page.evaluate(async () => {
       const r = await import("/backgammon/core/rules.mjs"),
@@ -211,11 +208,9 @@ module.exports = async function keyboardUX(
     });
     await page.goto(base + "/backgammon/play/#resume=" + pendingId);
     await page.locator("#drop-cube").waitFor();
-    await page.keyboard.press("d");
+    await page.keyboard.press("p");
     await wait((s) => s.game.state.phase === "over");
     await page.locator("#next-game").waitFor();
-    await page.keyboard.press("Enter");
-    await wait((s) => s.game.state.phase === "opening");
     await page.evaluate(() => {
       const original = crypto.getRandomValues.bind(crypto),
         dice = [5, 0];
@@ -224,9 +219,8 @@ module.exports = async function keyboardUX(
           ? ((a[0] = dice.shift()), a)
           : original(a);
     });
-    await page.keyboard.press("Space");
-    await page.locator("#begin-turn").waitFor();
     await page.keyboard.press("Enter");
+    await page.locator("#confirm").waitFor();
     assert.equal(await page.locator("#begin-turn").count(), 0);
     await page.keyboard.press("j");
     assert.equal(
@@ -330,7 +324,7 @@ module.exports = async function keyboardUX(
       browser: browserName,
       cases: [
         "keyboard-only checker turns, undo/reset, orientation and confirmation",
-        "Space rolls; C doubles; T takes; D drops; Enter starts next game and acknowledges opening",
+        "C/Enter confirms; D doubles; T takes and auto-rolls; P drops; Enter starts next game with automatic opening",
         "editable bindings, collisions, form isolation and reload persistence",
       ],
       screenshots: [`${browserName}-keyboard-settings.png`],

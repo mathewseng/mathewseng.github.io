@@ -1,3 +1,4 @@
+const { seedOpening, openingComplete, roll } = require("./play-helpers.cjs");
 const { clickTool } = require("./tool-access.cjs");
 // Local table handoffs, opponent markers and automatic Solver work: real WASM.
 const assert = require("node:assert/strict");
@@ -61,31 +62,21 @@ module.exports = async function tableControls(browser, base, out, browserName) {
           ? ((a[0] = bytes.shift()), a)
           : random(a);
     });
+    await seedOpening(page, [3, 3, 6, 1]);
+    await page.emulateMedia({reducedMotion:"no-preference"});
     await page.goto(base + "/backgammon/play/");
     assert.equal(
       await page.getByLabel("Match length", { exact: true }).inputValue(),
       "0",
     );
+    await page.getByLabel("Warn before confirming a costly move").uncheck();
     await page.locator("#start-match").click();
-    await assign("switch-sides");
-    assert.ok(
-      await page.locator("#roll").isEnabled(),
-      "the human playing Teal can start the opening roll",
-    );
-    await assign("switch-sides");
-    await page.locator("#roll").click();
     await page.locator(".opening-roll h2").filter({ hasText: "tie" }).waitFor();
-    assert.deepEqual((await saved()).game.state.cube, {
-      value: 2,
-      owner: null,
-    });
-    assert.match(
-      await page.locator(".opening-roll").innerText(),
-      /Stakes are now 2/,
-    );
+    assert.deepEqual((await saved()).game.state.cube, {value:2, owner:null});
+    assert.match(await page.locator(".opening-roll").innerText(), /Stakes are now 2/);
     await shot("opening-double-default");
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await openingComplete(page);
+    await page.emulateMedia({reducedMotion:"reduce"});
     await page
       .getByLabel("Accessible move selection", { exact: true })
       .selectOption({ index: 1 });
@@ -218,7 +209,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       if (width !== 320)
         assert.ok(
           await page
-            .locator("#roll")
+            .locator("#board")
             .evaluate(
               (n) => n.getBoundingClientRect().bottom <= innerHeight + 1,
             ),
@@ -229,7 +220,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       await page.keyboard.press("Escape");
     }
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.locator("#roll").click();
+    await roll(page);
     await page.locator("#confirm").waitFor();
     assert.equal(await page.locator("[data-last-moved]").count(), 0);
     assert.equal(await page.locator(".last-move-ghost,.last-roll").count(), 0);
@@ -237,6 +228,10 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       await page.locator("#draft-line").innerText(),
       /Last move/,
     );
+    // A compulsory prefix is still a draft and deliberately locks side changes.
+    if ((await saved()).draft.length) {
+      await finishDraft(); await page.locator("#confirm").click(); await waitState(0,"roll");
+    }
     const beforeSwitch = await saved();
     await assign("switch-sides");
     await waitState(1, "roll");
@@ -244,7 +239,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     assert.equal(current.game.config.humanSide, 1);
     assert.equal(
       current.game.state.sequence,
-      beforeSwitch.game.state.sequence + 1,
+      beforeSwitch.game.state.sequence + (beforeSwitch.game.state.phase === "roll" ? 2 : 1),
     );
     assert.equal(current.game.events.at(-1).actor, 0);
     assert.deepEqual(current.game.names, ["GNUbg", "You"]);
@@ -272,7 +267,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
 
     // Hold a real worker's load to exercise cancellation during initialization.
     await assign("play-both");
-    await page.locator("#roll").click();
+    await roll(page);
     const untouched = await saved();
     let release, started;
     const gate = new Promise((r) => {

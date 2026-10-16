@@ -1,3 +1,4 @@
+const { waitForAsync, seedOpening, openingComplete, waitWork, roll } = require("./play-helpers.cjs");
 // Browser-level interaction acceptance. No mocked engine or app-only test hooks.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -19,62 +20,36 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     });
     report.screenshots.push(file);
   };
-  const seed = async (p, dice) =>
-    p.addInitScript((values) => {
-      const random = crypto.getRandomValues.bind(crypto),
-        bytes = values.map((n) => n - 1);
-      crypto.getRandomValues = (a) =>
-        a instanceof Uint8Array && a.length === 1 && bytes.length
-          ? ((a[0] = bytes.shift()), a)
-          : random(a);
-    }, dice);
   try {
-    await seed(page, [3, 3, 6, 1]);
-    await page.clock.install();
+    await seedOpening(page, [3, 3, 6, 1]);
     await page.goto(base + "/backgammon/play/");
-    await page
-      .getByRole("button", { name: "Same device", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Same device", exact: true }).click();
     await page.getByLabel("Match length", { exact: true }).selectOption("5");
+    await page.clock.install();
+    await page.clock.pauseAt(new Date());
     await page.locator("#start-match").click();
-    await page.clock.runFor(200);
     await shot("opening-ready");
-    await page.locator("#roll").click();
-    await page
-      .locator('.opening-die .die[aria-hidden="true"]')
-      .first()
-      .waitFor();
-    await page.clock.runFor(160);
+    await page.clock.runFor(310);
+    await page.locator('.opening-die .die[aria-hidden="true"]').first().waitFor();
+    await page.clock.runFor(300);
     assert.equal(await page.locator(".opening-player.revealed").count(), 1);
-    assert.equal(
-      await page
-        .locator('.opening-player[data-player="1"] .die')
-        .getAttribute("aria-hidden"),
-      "true",
-    );
+    assert.equal(await page.locator('.opening-player[data-player="1"] .die').getAttribute("aria-hidden"), "true");
     await shot("first-die");
-    await page.clock.runFor(650);
+    await page.clock.runFor(1400);
     assert.match(await page.locator(".opening-roll h2").innerText(), /tie/);
     assert.equal(await page.locator(".opening-die .die").count(), 2);
     await shot("opening-tie");
-    await page.locator("#roll").click();
+    await page.clock.runFor(700);
     await page.locator('.opening-die .die[aria-label="6"]').waitFor();
-    await page.clock.runFor(800);
-    await page.clock.resume();
-    const saved = () =>
-      page.evaluate(
-        async () =>
-          (
-            await (
-              await import("/backgammon/core/storage.mjs")
-            ).get("work", "play")
-          ).game,
-      );
+    await page.clock.runFor(1650);
+    const saved = async () => (await require("./play-helpers.cjs").work(page)).game;
     const openingGame = await saved();
     assert.deepEqual(openingGame.state.dice, [6, 1]);
     assert.equal(openingGame.events.length, 2);
+    assert.equal(openingGame.state.cube.value, 1, "match opening ties do not double stakes");
     assert.equal(await page.locator(".movable").count(), 0);
     assert.equal(await page.locator("#dice").isVisible(), false);
+    assert.equal(await page.locator("#begin-turn,#roll").count(), 0);
     await shot("opening-winner");
     if (browserName === "chromium") {
       for (const [width, height] of [
@@ -98,30 +73,17 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
           ),
           `opening layout overflow ${width}x${height}: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll("body *")].filter(n=>n.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(n=>({tag:n.tagName,id:n.id,class:n.getAttribute("class"),right:n.getBoundingClientRect().right}))))}`,
         );
-        if (width > 320)
-          assert.ok(
-            await page
-              .locator("#begin-turn")
-              .evaluate((n) => n.getBoundingClientRect().bottom <= innerHeight),
-          );
         if (fontStress) await fontStress.evaluate(n=>n.remove());
       }
       await page.setViewportSize({ width: 1366, height: 768 });
     }
+    // Reload during the winner reveal: no new opening dice may be committed.
+    await page.clock.resume();
     await page.reload();
     await page.locator("#resume-match").click();
-    if (await page.locator("#show-opening").count())
-      await page.locator("#show-opening").click();
+    await openingComplete(page);
     assert.deepEqual((await saved()).events, openingGame.events);
-    await page.locator("#begin-turn").click();
-    assert.ok(await page.locator(".movable").count());
-    await page.clock.resume();
-    report.cases.push(
-      "separate opening dice",
-      "ties reroll without doubles",
-      "opening acknowledged before moves",
-      "refresh preserves committed dice",
-    );
+    report.cases.push("separate opening dice", "automatic tie reroll", "automatic first turn", "refresh preserves committed dice");
 
     // Mount the same production shell/board with deterministic valid positions.
     await page.evaluate(async () => {
@@ -137,7 +99,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       page.evaluate(
         ({ kind, orientation }) => {
           const { draft: d, rules: r, store } = window.checkerTest;
-          store.saveSettings({ orientation, motion: "system" });
+          store.saveSettings({ orientation, motion: "system", interactionMode: "beginner" });
           let s = r.initialState({
             matchLength: 0,
             phase: "move",
@@ -210,7 +172,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
             p =
               point === "bar"
                 ? { x: 408, y: d.state.turn !== orientation ? 100 : 446 }
-                : { x: 843, y: d.state.turn !== orientation ? 140 : 460 };
+                : { x: 823, y: d.state.turn !== orientation ? 38 : 560 };
           const client = new DOMPoint(p.x, p.y).matrixTransform(
             d.board.svg.getScreenCTM(),
           );
@@ -220,7 +182,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       );
     const drag = async (from, to, { cancel = false, outside = false } = {}) => {
       const a = await pos(from, true),
-        b = outside ? { x: 2, y: 2 } : await pos(to);
+        b = outside ? { x: a.x + 9, y: a.y + 9 } : await pos(to);
       await page.mouse.move(a.x, a.y);
       await page.mouse.down();
       await page.mouse.move(b.x, b.y, { steps: 10 });
@@ -281,7 +243,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       assert.deepEqual((await info()).draft, [move]); // native click must not duplicate the drop
       await page.evaluate(() => checkerTest.draft.undo());
       await drag(move.from, move.to, { outside: true });
-      assert.ok((await info()).draft.length > 0);
+      assert.equal((await info()).draft.length, 0, "drop nearest its source returns the picked-up checker");
       await page.evaluate(() => checkerTest.draft.reset());
       await drag(move.from, move.to, { cancel: true });
       assert.equal((await info()).draft.length, 0);
@@ -307,7 +269,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     report.cases.push(
       "pointer cancellation",
       "mouse drag in both orientations",
-      "outside drop snaps to a legal destination",
+      "drop nearest source cancels pickup",
       "Escape cancels drag",
       "no duplicate synthetic click",
     );
@@ -327,17 +289,12 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       assert.equal((await info()).selected, null, "entry shows the full move overview");
       await page.locator('[data-point="23"] .checker > circle').first().click();
       assert.equal((await info()).selected, 23);
-      assert.equal(
-        await page
-          .locator('[data-point="bar0"] .destination-die')
-          .textContent(),
-        "↶",
-      );
+      assert.equal(await page.locator('[data-point="bar0"] path.destination-die').count(), 1, "return uses a stroked arrow icon");
       const alternate = page.locator(
         '[data-point="22"].entry-switch-destination',
       );
       assert.equal(
-        await alternate.locator(".destination-die").textContent(),
+        await alternate.locator(".destination-die:not([data-highlight-exit])").textContent(),
         "↔2",
       );
       assert.match(
@@ -424,25 +381,20 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     );
     await load("bearoff");
     await page.locator('[data-point="0"]').click();
-    await page.locator('[data-point="off0"] .point-hit').click({position:{x:3,y:120}});
-    await page.getByRole("dialog", { name: "Choose a die" }).waitFor();
-    await page.keyboard.press("Escape");
-    assert.equal((await info()).draft.length, 0);
+    { const p = await pos("off"); await page.mouse.click(p.x,p.y); }
+    assert.equal(await page.locator('dialog[open]').count(), 0, "equivalent dice never interrupt with a chooser");
+    assert.equal((await info()).draft.length, 1);
+    await page.evaluate(() => checkerTest.draft.undo());
+    await page.evaluate(() => checkerTest.draft.preferDie(1));
     await drag(0, "off");
-    await page.getByRole("button", { name: "Use 1", exact: true }).click();
     assert.equal((await info()).draft[0].die, 1);
-    // Empty tray space bears off; its reversible checker strips now select OFF.
-    await page.locator('[data-point="off0"] .point-hit').click({position:{x:3,y:120}});
-    assert.equal((await info()).state.off[0], 15);
+    await page.locator('[data-point="0"] .checker > circle').first().click();
+    { const p = await pos("off"); await page.mouse.click(p.x,p.y); }
+    assert.equal((await info()).state.off[0], 15, JSON.stringify(await info()));
     assert.equal((await info()).complete, true);
     await page.evaluate(() => checkerTest.draft.undo());
     assert.equal((await info()).state.off[0], 14);
-    report.cases.push(
-      "bar priority and hit",
-      "hit undo restores both players",
-      "bearoff die choice and cancellation",
-      "finish and undo bearoff",
-    );
+    report.cases.push("bar priority and hit", "hit undo restores both players", "bearoff honors selected die without chooser", "finish and undo bearoff");
     await load("blocked");
     assert.equal((await info()).complete, true);
     assert.equal(await page.locator(".movable,.destination").count(), 0);
@@ -577,11 +529,11 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
           serviceWorkers: "block",
         }),
         touch = await touchContext.newPage();
-      await seed(touch, [3, 1]);
+      await seedOpening(touch, [3, 1]);
       await touch.goto(base + "/backgammon/play/");
+      await touch.getByRole("button", {name:"Same device",exact:true}).tap();
       await touch.locator("#start-match").tap();
-      await touch.locator("#roll").tap();
-      await touch.locator("#begin-turn").tap();
+      await openingComplete(touch);
       const coords = await touch.evaluate(async () => {
         const { get } = await import("/backgammon/core/storage.mjs"),
           r = await import("/backgammon/core/rules.mjs"),
@@ -620,7 +572,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         type: "touchEnd",
         touchPoints: [],
       });
-      await touch.waitForFunction(
+      await waitForAsync(touch,
         async () =>
           (
             await (
@@ -635,6 +587,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       await touch.evaluate(async () => {
         const { shell, DraftBoard } = await import("/backgammon/ui/shell.mjs");
         const r = await import("/backgammon/core/rules.mjs");
+        (await import("/backgammon/core/storage.mjs")).saveSettings({interactionMode:"beginner"});
         const ui = shell("play", "Touch entry");
         const d = new DraftBoard(ui.board),
           points = Array(24).fill(0);
@@ -705,20 +658,15 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         serviceWorkers: "block",
       }),
       bot = await botContext.newPage();
-    await seed(bot, [1, 6]);
-    let engineRequests = 0;
-    bot.on("request", (r) => {
-      if (/gnubg-core-module\.(wasm|data)$/.test(r.url())) engineRequests++;
-    });
+    await seedOpening(bot, [1, 6]);
     await bot.goto(base + "/backgammon/play/");
     await bot.locator("#start-match").click();
-    await bot.locator("#roll").click();
-    await bot.waitForTimeout(850);
+    await bot.locator(".opening-roll h2").filter({hasText:"GNUbg starts"}).waitFor();
     assert.equal(
       await bot.locator(".opening-roll h2").innerText(),
       "GNUbg starts",
     );
-    assert.equal(engineRequests, 0);
+    // Eager engine loading is allowed; the bot cannot commit before the reveal ends.
     assert.equal(
       await bot.evaluate(
         async () =>
@@ -734,23 +682,14 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       path: path.join(out, `${browserName}-ux-computer-opening.png`),
       animations: "disabled",
     });
-    await bot.locator("#begin-turn").click();
-    await bot.waitForFunction(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        ).game.events.some((e) => e.action.type === "move"),
-      {},
-      { timeout: 45000 },
-    );
-    await bot.locator("#roll").waitFor();
+    await waitWork(bot, w => w?.game.events.some(e => e.action.type === "move"));
+    await bot.locator("#board.roll-ready").waitFor();
     // User actions can interrupt presentation; the committed position remains authoritative.
-    await bot.locator("#roll").click();
-    await bot.waitForTimeout(1100);
+    await roll(bot);
+    await bot.locator("#confirm").waitFor();
+    await bot.waitForFunction(() => !document.querySelector(".moving-checker,.drag-checker"));
     assert.equal(await bot.locator(".moving-checker,.drag-checker").count(), 0);
-    assert.ok(await bot.locator(".movable").count());
+    assert.ok(await bot.locator("#confirm").count());
     const displayed = await bot.evaluate(() =>
       Array.from({ length: 24 }, (_, i) => {
         const label = document
@@ -796,11 +735,10 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
           `opening layout overflow ${width}x${height}: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll("body *")].filter(n=>n.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(n=>({tag:n.tagName,id:n.id,class:n.getAttribute("class"),right:n.getBoundingClientRect().right}))))}`,
         );
         assert.ok(
-          await bot.evaluate(
-            () =>
-              document.querySelector("#board").getBoundingClientRect().bottom <=
-              document.querySelector("#player").getBoundingClientRect().top + 1,
-          ),
+          await bot.evaluate(() => {
+            const b=document.querySelector("#board").getBoundingClientRect(),p=document.querySelector("#player").getBoundingClientRect();
+            return b.bottom <= p.top+1 || b.right <= p.left+1 || b.left >= p.right-1;
+          }),
           `board must not overlap player strip at ${width}×${height}: ${JSON.stringify(await bot.evaluate(() => Object.fromEntries(["#board", "#player", ".stage", ".action-area"].map(s => [s, document.querySelector(s).getBoundingClientRect().toJSON()]))))}`,
         );
         if (width > 320)
@@ -812,7 +750,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
       }
     await botContext.close();
     report.cases.push(
-      "computer opening waits for acknowledgement",
+      "computer opening advances after paced reveal",
       "opponent playback interrupted by next roll",
     );
     assert.deepEqual(errors, []);

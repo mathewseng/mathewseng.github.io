@@ -1,3 +1,4 @@
+const { waitForAsync } = require("./play-helpers.cjs");
 // Real Web Audio, WAAPI, controls and state invariants on the assembled site.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -76,30 +77,27 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
     await page
       .getByRole("button", { name: "Same device", exact: true })
       .click();
-    await page.waitForFunction(
+    await waitForAsync(page,
       async () =>
         (await import("/backgammon/ui/sound.mjs")).sound.context?.state ===
         "running",
     );
     await page.locator("#start-match").click();
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").waitFor();
-    await page.waitForFunction(
-      () => !document.querySelector("#begin-turn")?.disabled,
-    );
+    await page.locator(".opening-roll h2").filter({hasText:/start/}).waitFor();
     assert.deepEqual(await cues(), ["die", "die"]);
     await shot("opening");
-    await page.locator("#begin-turn").click();
+    await page.locator("#confirm").waitFor();
     while (await page.locator("#confirm").isDisabled())
       await page.locator("#draft-controls select").selectOption({ index: 1 });
     await settled();
     await page.locator("#confirm").click();
-    await page.getByRole("button", { name: "Double", exact: true }).click();
+    await page.locator("#board.roll-ready").waitFor();
+    await page.keyboard.press('d');
     await page.getByRole("button", { name: "Take 2", exact: true }).click();
     await page.evaluate(() => {
       window.holdRollFrame = true;
     });
-    await page.locator("#roll").click();
+    // Accepting the cube automatically rolls after its paced transition.
     await page.waitForFunction(() =>
       [
         ...document.querySelectorAll(
@@ -359,6 +357,7 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
       state.points[18] = -15;
       state.off = [14, 0];
       rules.assertState(state);
+      store.saveSettings({interactionMode:"beginner"});
       draft.set(state, rules.legalPaths(state));
       window.feedbackBoard = { draft, state, rules, store };
     });

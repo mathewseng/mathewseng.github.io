@@ -13,9 +13,9 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../styles.css?bgv=9de8850628244d4d" />
-    <link rel="stylesheet" href="./controls.css?bgv=9de8850628244d4d" />
-    <script type="module" src="../ui/update-page.mjs?bgv=9de8850628244d4d"></script>
+    <link rel="stylesheet" href="../styles.css?bgv=8e54cb798a96e78a" />
+    <link rel="stylesheet" href="./controls.css?bgv=8e54cb798a96e78a" />
+    <script type="module" src="../ui/update-page.mjs?bgv=8e54cb798a96e78a"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -110,6 +110,20 @@
           <li>
             <div class="flow-question">
               <span class="flow-number" aria-hidden="true">3</span>
+              <h2>Is this a legal draft-return target?</h2>
+            </div>
+            <div class="flow-answer">
+              <span class="flow-yes">Yes →</span>
+              <p>
+                <strong>Return the nearest eligible checker.</strong><br />
+                Return it to its pre-roll origin and restore its dice, even if that point holds checkers. Intermediate stops are not orange targets; tap the dice or press <kbd>Z</kbd> for a single step. A checker whose journey includes a forced prefix cannot return past it.
+              </p>
+            </div>
+            <div class="flow-next">No · continue ↓</div>
+          </li>
+          <li>
+            <div class="flow-question">
+              <span class="flow-number" aria-hidden="true">4</span>
               <h2>Can a checker move or change dice to land here?</h2>
             </div>
             <div class="flow-answer">
@@ -118,20 +132,6 @@
                 <strong>Play the nearest legal checker.</strong
                 ><br />Repeated clicks in the open point area can build a
                 point or use doubles. If no forward move lands here, use a legal dice revision—even after both dice were used. An active selection limits this to its own routes.
-              </p>
-            </div>
-            <div class="flow-next">No · continue ↓</div>
-          </li>
-          <li>
-            <div class="flow-question">
-              <span class="flow-number" aria-hidden="true">4</span>
-              <h2>Is this a legal draft-return target?</h2>
-            </div>
-            <div class="flow-answer">
-              <span class="flow-yes">Yes →</span>
-              <p>
-                <strong>Return the nearest eligible checker.</strong><br />
-                Return it to its pre-roll origin and restore its dice, even if that point holds checkers. Intermediate stops are not orange targets; tap the dice or press <kbd>Z</kbd> for a single step. A checker whose journey includes a forced prefix cannot return past it.
               </p>
             </div>
             <div class="flow-next">No · continue ↓</div>
@@ -231,7 +231,7 @@
                 ><br />With a selection, show the dice used and a landing
                 ring where space permits. A sum means one checker uses
                 multiple dice; <strong>↔</strong> revises its journey using its own dice and any unused dice. Both bar/24/20 and bar/21/20 with 1–4 offer 21 and 24. Other checkers’ moves and compulsory steps stay fixed. Legal revisions glow before selection too.
-                Legal bearoff destinations light the OFF tray.
+                Legal bearoff destinations light the bearoff tray.
               </p>
             </div>
             <div class="flow-next">Also check for a return ↓</div>
@@ -246,9 +246,7 @@
               <p>
                 <strong>Use the undo color and one clean outline.</strong
                 ><br />Amber in the default theme; <strong>↶</strong> when
-                selected. A selected return takes visual priority over a
-                forward route. Without selection, the forward highlight wins
-                if both are possible. Only the checker’s pre-roll origin is a return target; intermediate and forced stops are excluded.
+                selected. Return targets take visual priority over forward landings, matching what a point-space tap does. Only the checker’s pre-roll origin is a return target; intermediate and forced stops are excluded.
               </p>
             </div>
             <div class="flow-end">
@@ -382,9 +380,9 @@
             </tr>
             <tr role="row" id="case-mixed">
               <th role="rowheader" scope="row" data-label="Situation">Same point is both a forward landing and a draft return</th>
-              <td role="cell" data-label="What is highlighted">With no selection, forward wash wins. Select the moved checker to expose its amber return.</td>
+              <td role="cell" data-label="What is highlighted">With no selection, the amber return outline takes priority. Select a different checker to show its forward destinations.</td>
               <td role="cell" data-label="Click the checker">Movable resident selects; otherwise follow the displayed destination.</td>
-              <td role="cell" data-label="Click point / tray space">Follow the displayed route: forward without selection, explicit selected return when amber.</td>
+              <td role="cell" data-label="Click point / tray space">Return the moved checker when amber. After returning it, a later tap can play the nearest legal arrival.</td>
             </tr>
             <tr role="row" id="case-switch">
               <th role="rowheader" scope="row" data-label="Situation">Revise a moved checker’s placement</th>

@@ -37,7 +37,7 @@ module.exports = async function mobileQuick(browser, base, out, name) {
     });
     const set = (kind="start", turn=0, orientation=0) => page.evaluate(({kind,turn,orientation}) => {
       const {rules:r,storage:st,draft:d}=quickTest;
-      st.saveSettings({orientation,moveHints:true});
+      st.saveSettings({interactionMode:"beginner",orientation,moveHints:true});
       let state=r.initialState({phase:"move",dice:kind==="doubles"?[3,3]:[4,1]}), steps=[];
       if(kind==="bar") {
         state.points[23]--; state.bar[0]=1;
@@ -87,9 +87,8 @@ module.exports = async function mobileQuick(browser, base, out, name) {
     await set("doubles");await select(12);await tap(3);
     assert.equal((await read()).draft.length,3,"doubles permit combined destinations");
     await set("off");await select(2);await tap("off");
-    await page.getByRole("dialog",{name:"Choose a die",exact:true}).waitFor();
-    await page.getByRole("button",{name:"Use 4",exact:true}).tap();
-    assert.equal((await read()).draft[0].die,4,"bearoff keeps genuine die choices");
+    assert.equal(await page.getByRole("dialog").count(),0,"bearoff uses the selected die without a prompt");
+    assert.equal((await read()).draft[0].die,3,"bearoff uses the selected die first");
     await set();await select(12);
     await page.locator('.touch-destinations [data-destination="8"]').focus();
     await page.keyboard.press("Enter");
@@ -116,7 +115,7 @@ module.exports = async function mobileQuick(browser, base, out, name) {
 
     const id=await page.evaluate(async()=>{
       const {rules:r,storage:st}=quickTest;
-      st.saveSettings({moveHints:true,orientation:0});
+      st.saveSettings({interactionMode:"beginner",moveHints:true,orientation:0});
       const initial=r.initialState({phase:"move",dice:[4,1],matchLength:0}), id=crypto.randomUUID();
       await st.put("work",{id:"play",game:{id,initial,state:initial,events:[],started:true,
         names:["You","Friend"],config:{mode:"local",humanSide:0,strength:"quick",matchLength:0,rules:initial.rules}},

@@ -59,12 +59,12 @@ module.exports = async function highlightActions(browser, base, out, name) {
           const x = circle ? +circle.getAttribute("cx") : +hit.getAttribute("x") + +hit.getAttribute("width") / 2;
           const y = circle ? +circle.getAttribute("cy") : point.startsWith("bar")
             ? (+hit.getAttribute("y") < 100 ? 282 : 406)
-            : point.startsWith("off") ? +hit.getAttribute("y") + 120
+            : point.startsWith("off") ? +hit.getAttribute("y") + (+hit.getAttribute("y")<300 ? +hit.getAttribute("height")-4 : 4)
             : +hit.getAttribute("y") < 100 ? 280 : 380;
           const pos = new DOMPoint(x,y).matrixTransform(document.querySelector(".bg-board").getScreenCTM());
           return {x:pos.x,y:pos.y};
         }, {point:String(point),disc});
-        if (touch) await page.touchscreen.tap(pos.x,pos.y);
+        if (touch) await page.touchscreen.tap(Math.round(pos.x),Math.round(pos.y));
         else await page.mouse.click(pos.x,pos.y);
       };
       await set("opening", 0, 0);

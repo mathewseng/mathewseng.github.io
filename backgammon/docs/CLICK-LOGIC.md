@@ -2,7 +2,7 @@
 
 [Read the illustrated guide on the website](https://mathewseng.github.io/backgammon/controls/).
 
-The shared `DraftBoard` follows this flow in Play and Trainer. Solver uses the same board for noninteractive previews and its separate position editor. The [31-case audit matrix](https://mathewseng.github.io/backgammon/controls/#cases) lists all behavioral categories, with source notes in `INTERACTION-AUDIT.md`. The board tests the pointer against the visible discs, independently of point hit regions. Point numbers and the open area above a stack count as point-space input.
+In Beginner mode, the shared `DraftBoard` follows this flow in Play and Trainer. Solver uses the same board for noninteractive previews and its separate position editor. The [31-case audit matrix](https://mathewseng.github.io/backgammon/controls/#cases) lists all behavioral categories, with source notes in `INTERACTION-AUDIT.md`. The board tests the pointer against the visible discs, independently of point hit regions. Point numbers and the open area above a stack count as point-space input.
 
 ```mermaid
 flowchart TD
@@ -20,22 +20,22 @@ flowchart TD
   G -- Yes --> R[Resolve that checker's routes]
   G -- No --> S{Is a checker selected?}
   S -- Yes --> J
-  S -- No --> H{Any checker can legally land here?}
+  S -- No --> K{Legal draft return to this location?}
+  K -- Yes --> L[Use nearest return route]
+  L --> R
+  K -- No --> H{Any checker can legally land here?}
   H -- Yes --> I[Use nearest legal incoming checker]
   I --> R
   H -- No --> AD{Legal dice-revision landing here?}
   AD -- Yes --> AE[Revise checker route and restore unused dice]
-  AD -- No --> K{Legal draft return to this location?}
-  K -- Yes --> L[Use nearest return route]
-  L --> R
-  K -- No --> J{Your movable checker is on this point?}
+  AD -- No --> J{Your movable checker is on this point?}
   J -- Yes --> D
   J -- No --> M[Clear selection without a move or message]
   R --> N[Prefer a hit, then the selected die]
   N --> O[Apply move or draft revision immediately]
 ```
 
-A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly clears the selection. With no selection, it brings the nearest legal checker. With no selection and no forward arrival, a legal dice-revision landing revises the draft. Otherwise an amber return target brings back the nearest eligible checker before falling back to resident selection or deselection.
+A movable disc click is selection input even if a different selected checker could legally land there. It never auto-plays or auto-undoes that disc. An immovable resident disc does not swallow a highlighted destination: that location still plays the advertised route. Clicking that selected disc again deselects it. Click the point area above a stack to move **onto** it. A point-area click uses an explicitly selected checker when it has a legal route. Otherwise it changes to a movable resident or quietly clears the selection. With no selection, an amber origin returns the nearest eligible moved checker first. Otherwise it brings the nearest legal checker, then tries a legal dice revision before falling back to resident selection or deselection.
 
 Bar-entry priority and complete-turn legality constrain every route. Selecting another checker cannot bypass the bar. A selected legal route may be a forward move, draft return or dice-revision entry. A checker without a legal forward move, dice revision or draft return cannot be selected; clicking it clears the existing selection unless its location advertises a legal destination. Dragging remains explicit source → destination input; an invalid drop cancels.
 
@@ -61,7 +61,7 @@ The [website highlight flowchart](https://mathewseng.github.io/backgammon/contro
 - With a selection, only that checker’s ring and routes are emphasized. Its ring is solid. Routes include forward, draft-return and checker-journey revisions.
 - Reversible off checkers have a source outline around their tray. Their strips and checker-sized count markers are disc-selection targets; open tray space is destination input.
 - Reachable points have a wash/outline. Selected destinations add die/sum or dice-revision labels and a landing ring when stack space permits; OFF is highlighted when reachable.
-- Undo targets use the undo palette and a single solid outline at the pre-roll origin. An explicit selected undo route has priority; without selection, forward reachability has priority when both exist. Forced prefixes cannot be undone.
+- Undo targets use the undo palette and a single solid outline at the pre-roll origin. Return outlines take priority when a point is also a forward landing, matching the return action of an open-point tap. Forced prefixes cannot be undone.
 - Hover feedback is limited to actionable live points (or the position editor); unavailable points do not acquire a playable-looking glow.
 - Last-turn checkers/ghosts and keyboard focus are independent historical/focus indicators, not legal destinations or recommendations.
 

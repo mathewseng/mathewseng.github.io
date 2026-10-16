@@ -1,3 +1,4 @@
+const { roll } = require("./play-helpers.cjs");
 // Real engine, persisted sessions, production board and layout regressions.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -33,7 +34,7 @@ module.exports = async function decisionUX(
         matchLength: 0,
       });
       const id = crypto.randomUUID();
-      st.saveSettings({ boardTheme: { preset: "plum" }, motion: "reduce" });
+      st.saveSettings({ interactionMode:"beginner", boardTheme: { preset: "plum" }, motion: "reduce" });
       await st.put("work", {
         id: "play",
         game: {
@@ -399,7 +400,7 @@ module.exports = async function decisionUX(
           ? ((a[0] = dice.shift()), a)
           : original(a);
     });
-    await page.locator("#roll").click();
+    await roll(page);
     await page.locator("#hint").waitFor({ timeout: 60000 });
     await page.locator("#hint").click();
     await page.locator("#undo-play-best").waitFor({ timeout: 60000 });

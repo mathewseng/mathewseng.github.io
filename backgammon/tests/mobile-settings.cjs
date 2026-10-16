@@ -1,3 +1,4 @@
+const { waitForAsync, openingComplete, seedOpening } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict"), path = require("node:path");
 
 module.exports = async function mobileSettings(browser, base, out, name) {
@@ -31,10 +32,9 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await page.goto(base + "/backgammon/play/");
     await section("Same device").click();
     await page.locator("#start-match").click();
-    await page.locator("#roll").click();
-    await page.locator("#begin-turn").click();
+    await openingComplete(page);
     await page.locator("#draft-controls select").selectOption({index:1});
-    await page.waitForFunction(async () => (await (await import("/backgammon/core/storage.mjs")).get("work","play")).draft.length === 1);
+    await waitForAsync(page,async () => (await (await import("/backgammon/core/storage.mjs")).get("work","play")).draft.length === 1);
     const before = await storedWork();
     await page.locator("#preferences").focus();
     await page.keyboard.press("Enter");
@@ -58,6 +58,7 @@ module.exports = async function mobileSettings(browser, base, out, name) {
       await reachable(section("Display & controls"));
       await section("Display & controls").tap();
       assert.equal(await dialog.locator(".dialog-body").evaluate(n => n.scrollTop), 0, "changing sections starts at the first control");
+      await page.getByLabel("Board orientation", {exact:true}).scrollIntoViewIfNeeded();
       await reachable(page.getByLabel("Board orientation", {exact:true}));
       await section("Keyboard").tap();
       assert.ok(await page.getByLabel("Enable game shortcuts", {exact:true}).isVisible());
@@ -67,7 +68,7 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await page.locator('[data-preset="amber"]').tap();
     await reachable(section("Display & controls")); // tabs remain pinned at the end of 24 presets
     await section("Display & controls").tap();
-    await page.getByLabel("Show legal-move hints", {exact:true}).uncheck();
+    await page.getByLabel("Show legal-move hints in beginner mode", {exact:true}).uncheck();
     await page.getByLabel("Motion", {exact:true}).selectOption("reduce");
     await page.locator(".settings-updates summary").tap();
     await page.getByRole("button",{name:"Check for updates",exact:true}).waitFor();
