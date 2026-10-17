@@ -62,7 +62,8 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   busy = false,
   analysisEpoch = 0,
   sourceContext = null,
-  openedPosition = false;
+  openedPosition = false,
+  previewIndex = -1;
 const analysis = new AnalysisPanel(),
   draft = new DraftBoard(ui.board, () => {});
 const study = new StudyStrip(previewCandidate, {dropdown:false});
@@ -74,7 +75,43 @@ editor.onContext = contextDialog;
 const editorContext = button("Dice & rules", contextDialog, "", {id:"editor-context"});
 editor.node.append(editorContext);
 study.node.after(editor.node);
+// Dice, cube and score stay visible under the board (wide layouts; phones
+// keep the same summary in the subtitle and on the board itself).
+const contextStrip = el("section", { class: "solver-context", "aria-label": "Position context" });
+editor.node.before(contextStrip);
+// One progress component for analysis: indeterminate while GNUbg searches,
+// determinate for rollouts and match review. The text stays in #message and
+// the inspector's engine status (the page's polite regions).
+const progressBar = el("div", { class: "bar bar--indeterminate", role: "progressbar", "aria-label": "Analysis progress" });
+const progress = el("div", { class: "progress solver-progress", hidden: true }, progressBar);
+$("message").after(progress);
+function setProgress(value = null) {
+  progress.hidden = !busy;
+  progressBar.classList.toggle("bar--indeterminate", value === null);
+  progressBar.style.setProperty("--value", value === null ? 0 : Math.min(1, value));
+  if (value === null) progressBar.removeAttribute("aria-valuenow");
+  else {
+    progressBar.setAttribute("aria-valuemin", "0");
+    progressBar.setAttribute("aria-valuemax", "100");
+    progressBar.setAttribute("aria-valuenow", String(Math.round(Math.min(1, value) * 100)));
+  }
+}
+function renderContext() {
+  const s = source, names = ["White", "Black"];
+  const item = (label, value) =>
+    el("span", { class: "solver-context-item" }, el("span", { class: "solver-context-label" }, label), el("strong", {}, value));
+  contextStrip.replaceChildren(
+    item("On roll", names[s.turn] ?? "—"),
+    item(s.phase === "double" ? "Offer" : "Dice", s.phase === "double" ? `${offerName(s)} to ${s.cube.value * 2}` : s.dice.length ? s.dice.join("–") : "Before roll"),
+    item("Cube", `${s.cube.value} · ${s.cube.owner === null ? "centred" : names[s.cube.owner]}`),
+    item(s.matchLength ? `Score · ${s.matchLength} pt` : "Score", s.matchLength ? `${s.scores[0]}–${s.scores[1]}${s.crawford ? " · Crawford" : ""}` : "Unlimited"),
+    ...(review ? [] : [button("Edit context", contextDialog, "ghost solver-context-edit")]),
+  );
+}
 function previewCandidate(candidate) {
+  previewIndex = candidate && result?.candidates
+    ? result.candidates.findIndex((c) => JSON.stringify(c.steps) === JSON.stringify(candidate.steps))
+    : -1;
   preview = candidate ? candidate.steps.reduce((s, st) => applyStep(s, st), source) : null;
   draft.previewTrace = candidate ? { state: preview, trace: moveTrace(preview, source.turn, candidate.steps, source.dice) } : null;
   render();
@@ -106,6 +143,7 @@ const analyzeControl = button(
 );
 const sourceControl = button("Source", () => {
   preview = null;
+  previewIndex = -1;
   render();
 }, "source-preview-control");
 analysis.preset = "auto";
@@ -251,6 +289,9 @@ function render() {
   draft.render();
   editor.sync(source, editing);
   document.querySelector(".app").classList.toggle("editing-position", editing);
+  if (!preview) previewIndex = -1;
+  renderContext();
+  if (!busy || progress.hidden) setProgress();
   $("subtitle").textContent = review
     ? `${review.title} · event ${index}/${review.events.length}`
     : preview
@@ -315,7 +356,31 @@ function panel(problems) {
       }),
     ),
   );
+  // The inspector reads as three groups (Position · Analysis · Save); the
+  // section buttons jump between them and every control stays mounted.
+  const group = (id, title) =>
+    el("section", { class: "solver-group", id: `solver-${id}`, "aria-labelledby": `solver-${id}-title` },
+      el("h3", { class: "solver-group-title", id: `solver-${id}-title` }, title));
+  const positionGroup = group("position", "Position"),
+    analysisGroup = group("analysis", "Analysis"),
+    saveGroup = group("save", "Save");
   p.append(
+    el(
+      "nav",
+      { class: "solver-sections", "aria-label": "Inspector sections" },
+      el("span", { class: "solver-sections-label", "aria-hidden": "true" }, "Jump to"),
+      ...[[positionGroup, "Position"], [analysisGroup, "Analysis"], [saveGroup, "Save"]].map(([node, label]) =>
+        button(label, () => node.scrollIntoView({ block: "start", behavior: "instant" }), "ghost", {
+          "aria-label": `${label} section`, "aria-controls": node.id,
+        })),
+    ),
+    positionGroup,
+    analysisGroup,
+    saveGroup,
+  );
+  let into = positionGroup;
+  const add = (...nodes) => into.append(...nodes);
+  add(
     el(
       "p",
       { class: "muted small", id: "position-rules" },
@@ -325,7 +390,7 @@ function panel(problems) {
   if (review) {
     const timeline = el("input", {type:"range", min:0, max:review.events.length, value:index,
       "aria-label":"Match event", onInput:e => seek(Number(e.target.value))});
-    p.append(
+    add(
       field("Timeline", timeline),
       el(
         "div",
@@ -350,8 +415,7 @@ function panel(problems) {
     );
   }
   if (editing) {
-    p.append(
-      el("h2", {}, "Position setup"),
+    add(
       button("Dice, cube & match context", contextDialog),
       el(
         "div",
@@ -387,8 +451,21 @@ function panel(problems) {
       ),
     );
   } else if (!review)
-    p.append(button("Dice, cube & match context", contextDialog));
-  p.append(
+    add(button("Dice, cube & match context", contextDialog));
+  if (!review) add(button("Import / export XGID", xgidDialog));
+  if (!problems.length && ["move", "roll", "double"].includes(source.phase))
+    add(
+      button("Play from this position", async () => {
+        await put("work", {
+          id: "study",
+          state: clone(source),
+          context: sourceContext,
+        });
+        location.href = "/backgammon/play/#study=1";
+      }),
+    );
+  into = analysisGroup;
+  add(
     el(
       "details",
       {},
@@ -418,21 +495,16 @@ function panel(problems) {
     analysis.status,
   );
   if (result)
-    p.append(
+    add(
       resultView(result, {
         source,
         previous: previousResult,
         onPreview: previewCandidate,
+        selected: previewIndex,
       }),
-      button("Save as exercise", () =>
-        saveDialog(source, "position", {
-          analysis: result,
-          tags: ["exercise"],
-        }),
-      ),
     );
   if (!editing)
-    p.append(
+    add(
       el(
         "details",
         { id: "rollout-controls" },
@@ -489,12 +561,30 @@ function panel(problems) {
       ),
     );
   if (result?.actual || result?.actualDecision)
-    p.append(
+    add(
       el(
         "div",
         { class: "notice" },
         `Played move loss: ${equity(result.error)} normalized equity.`,
       ),
+    );
+  into = saveGroup;
+  add(
+    button("Save position to Library", () =>
+      saveDialog(source, "position", { analysis: result }),
+    ),
+  );
+  if (result)
+    add(
+      button("Save as exercise", () =>
+        saveDialog(source, "position", {
+          analysis: result,
+          tags: ["exercise"],
+        }),
+      ),
+    );
+  if (result?.actual || result?.actualDecision)
+    add(
       button("Save this mistake", () =>
         saveDialog(source, "mistake", {
           analysis: result,
@@ -504,18 +594,6 @@ function panel(problems) {
           tags: ["mistake"],
         }),
       ),
-    );
-  if (!review) p.append(button("Import / export XGID", xgidDialog));
-  if (!problems.length && ["move", "roll", "double"].includes(source.phase))
-    p.append(
-      button("Play from this position", async () => {
-        await put("work", {
-          id: "study",
-          state: clone(source),
-          context: sourceContext,
-        });
-        location.href = "/backgammon/play/#study=1";
-      }),
     );
 }
 function diceChoices(value) {
@@ -782,6 +860,7 @@ async function rollOut() {
       onProgress: (cp) => {
         if (token !== analysisEpoch || key !== positionKey(source)) return;
         checkpoint = cp;
+        setProgress(cp.completed / Math.max(rolloutTrials, cp.completed || 1));
         analysis.status.textContent = `${cp.completed} / ${Math.max(rolloutTrials, cp.completed)} trials per alternative completed · ${(cp.elapsedMs / 1000).toFixed(1)} s`;
         put("work", { id: "solver-rollout", checkpoint: cp }).catch(showError);
       },
@@ -904,6 +983,7 @@ async function progressive() {
       if (answer.type === "cube" && answer.available !== false)
         Object.assign(answer, gradeCube(states[i], answer, event.action.type));
       reviewResults.set(i, answer);
+      setProgress((i + 1 - index) / Math.max(1, review.events.length - index));
       analysis.status.textContent = `Completed ${reviewResults.size} decisions · event ${i + 1}/${review.events.length}`;
       if (!busy) break;
     }

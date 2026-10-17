@@ -48,7 +48,7 @@ export function probabilityView(c, player) {
 }
 export function resultView(
   result,
-  { onPreview = () => {}, limit = 5, source = null, previous = null } = {},
+  { onPreview = () => {}, limit = 5, source = null, previous = null, selected } = {},
 ) {
   const node = el("div", { class: "stack" });
   const insight = comparisonSummary(result, previous);
@@ -128,7 +128,9 @@ export function resultView(
     const rows = (count) =>
       result.candidates.slice(0, count).map((candidate, i) => {
         const c = source ? { ...candidate, ...presentMove(source, candidate.steps) } : candidate;
-        const b = button("", () => onPreview(c), "list-row");
+        // Rows show which evaluated move the board previews (-1: the source).
+        const b = button("", () => onPreview(c), "list-row",
+          Number.isInteger(selected) ? { "aria-pressed": String(i === selected) } : {});
         b.append(
           el(
             "div",

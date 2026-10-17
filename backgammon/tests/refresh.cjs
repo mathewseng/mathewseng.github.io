@@ -250,7 +250,7 @@ module.exports = async function refreshUX(browser, out, browserName) {
     );
     assert.deepEqual(resumed.work.draft, saved.work.draft);
     await recovery.locator("#preferences").click();
-    await recovery.getByRole("button", { name: "Board colors", exact: true }).click();
+    await recovery.getByRole("tab", { name: "Board colors", exact: true }).click();
     await recovery.locator('[data-preset="midnight"]').waitFor();
     assert.equal(
       await recovery

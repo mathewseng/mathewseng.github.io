@@ -66,7 +66,7 @@ module.exports = async function controlPolish(browser, base, out, name) {
     // Form inputs remain editable despite blocking native selection on the UI.
     await page.setViewportSize({width:1366,height:768});
     await page.locator('#preferences').click();
-    await page.getByRole('button',{name:'Keyboard',exact:true}).click();
+    await page.getByRole('tab',{name:'Keyboard',exact:true}).click();
     // Use the first shortcut field: labels describe the visible row, not canonical point IDs.
     const field=page.locator('.shortcut-points input').first();
     await field.fill('a');await field.selectText();

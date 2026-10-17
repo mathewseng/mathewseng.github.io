@@ -39,9 +39,9 @@ module.exports = async function reviewSelection(browser, base, out, name) {
     assert.notEqual(colors.find(c=>c.active==="true").bg,colors.find(c=>c.active==="false").bg,"active preview has an unmistakable filled surface");
     for(const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768],[1440,900]]) {
       await page.setViewportSize({width,height});
-      await page.getByRole("button",{name:"Comparison",exact:true}).click();
+      await page.getByRole("tab",{name:"Comparison",exact:true}).click();
       if([390,1366].includes(width)) await page.screenshot({path:path.join(out,`${name}-review-selection-comparison-${width}.png`)});
-      await page.getByRole("button",{name:"Board",exact:true}).click();
+      await page.getByRole("tab",{name:"Board",exact:true}).click();
       await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
       const picker=page.getByLabel("Preview evaluated move",{exact:true});
       if(await picker.isVisible()) {

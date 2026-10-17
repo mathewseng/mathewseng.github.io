@@ -55,6 +55,7 @@ import {
   DraftBoard,
   dialog,
   confirmDialog,
+  hideCardButton,
   saveDialog,
   toast,
   showError,
@@ -131,9 +132,38 @@ let config = {
   epoch = 0;
 const boardWorkspace = el("div", { class: "board-workspace" });
 const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
-const boardActions = el("div", { class: "board-actions", "aria-label": "Turn confirmation" });
+// The confirm stage: a full-width row under the board on stacked layouts and
+// the landscape dock; on wide tables #confirm sits bottom-right in the action
+// row instead (arrangeActions), so the primary action has one home per layout.
+const boardActions = el("div", { class: "board-actions action-stage bg-action-stage", "aria-label": "Turn confirmation" });
 ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
+// Game result card: an overlay in the board slot (like the opening roll)
+// naming the result level, the score change and the cube.
+const resultCard = el("section", { class: "bg-result-card game-over-card", hidden: true, "aria-label": "Game result" });
+ui.board.container.append(resultCard);
+let hiddenResult = "";
+function renderResultCard(s) {
+  const r = s?.phase === "over" ? s.result : null;
+  const key = r ? `${s.gameNumber}:${s.scores.join("-")}` : "";
+  resultCard.hidden = !r || key === hiddenResult;
+  if (resultCard.hidden) return;
+  const winner = names()[r.winner];
+  const level = { 1: "single game", 2: "gammon", 3: "backgammon" }[r.level] || "game";
+  const stat = (label, value, extra) => el("div", { class: "stat" },
+    el("span", { class: "stat-label" }, label),
+    el("strong", { class: "stat-value" }, value, ...(extra ? [el("small", {}, extra)] : [])));
+  resultCard.replaceChildren(
+    hideCardButton(resultCard, "Hide the result to see the board", () => { hiddenResult = key; }),
+    el("p", { class: "eyebrow eyebrow--plain" }, r.matchOver ? "Match complete" : `Game ${s.gameNumber} over`),
+    el("h2", {}, `${winner} ${winner === "You" ? "win" : "wins"} a ${level}`),
+    el("div", { class: "stat-strip game-over-stats" },
+      stat("Points", `+${r.points}`, winner),
+      stat("Score", `${s.scores[0]}–${s.scores[1]}`, s.matchLength ? `of ${s.matchLength}` : "unlimited"),
+      stat("Cube", String(s.cube.value), s.cube.owner === null ? "centred" : names()[s.cube.owner]),
+    ),
+  );
+}
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 let acceptedCubeTimer = null, acceptedCubeKey = "";
 let draftSaveFrame = null, draftSaveTimer = null;
@@ -225,7 +255,20 @@ function placeReview() {
   if ($("inspector").parentElement !== inspectorHome)
     inspectorHome.append($("inspector"));
 }
-desktopTable.addEventListener("change", placeReview);
+desktopTable.addEventListener("change", () => {
+  placeReview();
+  placeConfirm();
+});
+// One home for #confirm per layout: the end of the action row on wide tables,
+// the full-width stage under the board when the table stacks (and in the
+// landscape dock). Only #confirm moves: the help buttons may be inside the
+// open practice sheet when the layout changes.
+function placeConfirm() {
+  const confirm = $("confirm");
+  if (!confirm) return;
+  const home = desktopTable.matches ? $("actions") : boardActions;
+  if (confirm.parentElement !== home) home.append(confirm);
+}
 
 
 document
@@ -396,7 +439,7 @@ const playersButton = button(
         playerControls(() => d.close(), "dialog-"),
         ...(config.mode === "computer"
           ? [computerStrengthControl(), feedbackToggle(), reviewStrengthControl(), warningControl(),
-            el("p", {class:"muted small"}, SEARCH_DESCRIPTION)]
+            engineNotes()]
           : []),
       ),
     );
@@ -411,7 +454,9 @@ $("toolbar").prepend(
     () =>
       confirmDialog(
         "Start another match?",
-        "Your current local match stays recoverable in this browser.",
+        config.mode === "online" && online.room
+          ? `You leave room ${online.room.roomCode} and the other player is paused until you reconnect. The match stays in this browser’s game history.`
+          : "Your current local match stays recoverable in this browser.",
         () => {
           stopComputer();
           online.model && online.leave();
@@ -422,6 +467,7 @@ $("toolbar").prepend(
           resumeIntent(null);
           render();
         },
+        config.mode === "online" && online.room ? { verb: "Leave", danger: true } : {},
       ),
     "ghost",
   ),
@@ -487,6 +533,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
           leaving = true;
           location.href = a.href;
         },
+        { verb: "Leave", danger: Boolean(online.room?.connected) },
       );
     }
   }),
@@ -846,11 +893,17 @@ function setupFields() {
       ),
     ),
   );
+  const modeNote = {
+    computer: "GNUbg plays the other side with hints, feedback and automatic analysis.",
+    local: "Two players on this device, taking turns. No engine assistance.",
+    online: "Two players in a private room. No engine assistance.",
+  }[config.mode];
   const fields = el(
     "div",
-    { class: "stack" },
+    { class: "stack setup-panel" },
     el("h2", {}, "Set up your table"),
     modes,
+    el("p", { class: "muted small setup-mode-note" }, modeNote),
     field(
       "Match length",
       select(
@@ -882,7 +935,7 @@ function setupFields() {
           (v) => (config.strength = v),
         ),
       ),
-      el("p", { class: "muted small search-description" }, SEARCH_DESCRIPTION),
+      engineNotes(),
       el(
         "details",
         {
@@ -959,7 +1012,7 @@ function setupFields() {
       el(
         "p",
         { class: "muted small" },
-        "Two players. No engine assistance. Undo requests need the opponent's approval. Keep this page open; some networks block peer connections.",
+        "Undo requests need the opponent's approval. Keep this page open; some networks block peer connections.",
       ),
     );
   } else
@@ -1108,7 +1161,7 @@ function arrangeActions() {
   const prefs = settings();
   draftKeys.replaceChildren(...(prefs.keyboardEnabled ? [["undo", "Undo"], ["reset", "Reset"]].filter(([action]) => prefs.shortcuts[action]?.[0]).map(([action, label]) =>
     el("span", {}, shortcutBadge(prefs.shortcuts[action][0]), label)) : []));
-  if ($("confirm")) boardActions.append($("confirm"));
+  placeConfirm();
   if (!model()?.started || config.mode === "online") return;
   const human =
     config.mode === "computer" ? config.humanSide : state().turn;
@@ -1312,6 +1365,7 @@ function renderActions() {
   const s = state(),
     m = model(),
     a = $("actions");
+  renderResultCard(m?.started ? s : null);
   $("message").classList.toggle("routine-status", !!m?.started &&
     ["roll", "move"].includes(s.phase) && !botBusy && !assistanceJob &&
     !m.undoRequest &&
@@ -1334,18 +1388,24 @@ function renderActions() {
     return;
   }
   if (config.mode === "online" && !m.started) {
+    const host = online.room.isHost;
     $("message").textContent =
-      `Room ${online.room.roomCode} · ${m.players.length}/2 players`;
+      `Room ${online.room.roomCode} · ${m.players.length}/2 players · ${
+        host
+          ? online.ready ? "Ready when you are" : "Share the invite; Start match unlocks when the second player joins"
+          : "Waiting for the host to start"}`;
     a.append(
       button("Copy invite", () =>
         copy(
           `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
         ),
       ),
-      button("Start match", () => online.send({ type: "start" }), "primary", {
-        disabled: !online.ready || !online.room.isHost,
-        id: "start-room",
-      }),
+      ...(host
+        ? [button("Start match", () => online.send({ type: "start" }), "primary", {
+            disabled: !online.ready,
+            id: "start-room",
+          })]
+        : []),
     );
     return;
   }
@@ -1544,7 +1604,7 @@ function renderActions() {
     );
   } else if (s.phase === "over") {
     $("message").textContent =
-      `${names()[s.result.winner]} ${names()[s.result.winner] === "You" ? "win" : "wins"} ${s.result.points} points${s.result.matchOver ? " · match complete" : ""}${s.result.reason === "certain bearoff" ? " · certain result" : ""}.`;
+      `${names()[s.result.winner]} ${names()[s.result.winner] === "You" ? "win" : "wins"} ${s.result.points} point${s.result.points === 1 ? "" : "s"} · ${{ 1: "single game", 2: "gammon", 3: "backgammon" }[s.result.level] || "game"}${s.result.matchOver ? " · match complete" : ""}${s.result.reason === "certain bearoff" ? " · certain result" : ""}.`;
     a.append(
       button(
         s.result.matchOver ? "Rematch" : "Next game",
@@ -1560,7 +1620,7 @@ function renderActions() {
       button("Game review", showSessionReview, "", { id: "game-review" }),
       el(
         "a",
-        { href: "/backgammon/library/#games", class: "button ghost" },
+        { href: "/backgammon/library/#games", class: "btn btn--ghost button ghost" },
         "Session Library",
       ),
     );
@@ -1671,12 +1731,13 @@ function panel() {
         () =>
           confirmDialog(
             "Leave room?",
-            "The other player will be paused. Save the match before leaving.",
+            "The other player is paused until you reconnect with the saved room. The match stays in this browser’s game history.",
             () => {
               online.leave();
               history.replaceState(null, "", location.pathname);
               render();
             },
+            { verb: "Leave", danger: true },
           ),
         "danger",
       ),
@@ -1690,7 +1751,7 @@ function panel() {
       ),
       ...(config.mode === "computer"
         ? [computerStrengthControl(), feedbackToggle(), reviewStrengthControl(), warningControl(),
-            el("p", {class:"muted small"}, SEARCH_DESCRIPTION)]
+            engineNotes()]
         : []),
       el(
         "p",
@@ -1723,22 +1784,36 @@ function panel() {
         d = dialog(
           "Offer resignation",
           el(
-            "p",
-            {},
-            "The other player must accept. Choose the number of points at the current cube.",
-          ),
-          [1, 2, 3]
-            .filter(
-              (level) =>
-                level === 1 ||
-                (!s.off[s.turn] && !(s.rules.jacoby && s.cube.owner === null)),
-            )
-            .map((level) =>
-              button(`${level * s.cube.value} points`, () => {
-                d.close();
-                commit({ type: "resign", level });
-              }),
+            "div",
+            { class: "stack" },
+            el(
+              "p",
+              {},
+              `The other player must accept. Choose the level to concede at the current cube (${s.cube.value}).`,
             ),
+            el(
+              "div",
+              { class: "list resign-options", role: "group", "aria-label": "Resignation level" },
+              ...[[1, "Single game"], [2, "Gammon"], [3, "Backgammon"]]
+                .filter(
+                  ([level]) =>
+                    level === 1 ||
+                    (!s.off[s.turn] && !(s.rules.jacoby && s.cube.owner === null)),
+                )
+                .map(([level, label]) => {
+                  const points = level * s.cube.value;
+                  const row = button("", () => {
+                    d.close();
+                    commit({ type: "resign", level });
+                  }, "list-row", { "aria-label": `${label} · ${points} point${points === 1 ? "" : "s"}` });
+                  row.append(
+                    el("span", { class: "list-row-label" }, label),
+                    el("span", { class: "list-row-value" }, `${points} point${points === 1 ? "" : "s"}`),
+                  );
+                  return row;
+                }),
+            ),
+          ),
         );
       }),
     );
@@ -1906,6 +1981,16 @@ async function commit(action, evaluation = null) {
   // Capture/save the exact committed snapshot now, without locking interaction
   // until the library transaction completes.
   await persist();
+}
+// The engine-strength explanation lives behind a disclosure, never above
+// the primary action.
+function engineNotes() {
+  return el(
+    "details",
+    { class: "setup-engine" },
+    el("summary", {}, "About engine strength"),
+    el("p", { class: "muted small search-description" }, SEARCH_DESCRIPTION),
+  );
 }
 function computerStrengthControl() {
   return field("Computer strength", select(SEARCH_OPTIONS, config.strength, value => {

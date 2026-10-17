@@ -45,7 +45,7 @@ module.exports = async function reviewMotion(browser, base, out, name) {
         };
         await window.finishReview();
       });
-      await page.getByRole('button', { name: 'Board', exact: true }).click();
+      await page.getByRole('tab', { name: 'Board', exact: true }).click();
       const choose = async label => {
         const button = page.getByRole('button', { name: label, exact: true });
         if (await button.isVisible()) { if (width === 1366) await button.click(); else await button.tap(); }

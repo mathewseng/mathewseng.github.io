@@ -64,16 +64,23 @@ export function startUpdates({ onStatus = () => {} } = {}) {
     function screen(message, completed, total) {
       if (!notice) {
         notice = document.createElement("dialog");
-        notice.className = "app-update-dialog";
+        notice.className = "dialog app-update-dialog";
         notice.setAttribute("aria-labelledby", "update-title");
+        // The failed state is not a dead end: Retry stays first (tests select
+        // the dialog's first button), then "Continue with the installed
+        // version" releases the gate, and the refresh page is one link away.
         notice.innerHTML =
-          '<h2 id="update-title">Updating Backgammon</h2><p class="update-message" role="status"></p><progress aria-label="App files downloaded"></progress><p class="update-count"></p><p class="update-note">Your game, draft and saved study stay in this browser.</p><button type="button" hidden>Retry update</button>';
+          '<div class="dialog-body"><h2 id="update-title">Updating Backgammon</h2><p class="update-message" role="status"></p><progress aria-label="App files downloaded"></progress><p class="update-count"></p><p class="update-note">Your game, draft and saved study stay in this browser.</p><div class="update-actions" hidden><button type="button" class="btn btn--primary">Retry update</button><button type="button" class="btn update-continue">Continue with the installed version</button><a class="update-refresh-link" href="/backgammon/refresh/">Reinstall the app</a></div></div>';
         notice.addEventListener("cancel", (e) => e.preventDefault());
         notice.querySelector("button").onclick = () => {
           retries = 0;
           try { sessionStorage.removeItem(attemptKey); } catch {}
           notice.querySelector("button").hidden = true;
           check(true);
+        };
+        notice.querySelector(".update-continue").onclick = () => {
+          status("offline", "Running the installed version. The update is retried on the next visit.");
+          finish();
         };
         document.body.append(notice);
         notice.showModal();
@@ -113,6 +120,7 @@ export function startUpdates({ onStatus = () => {} } = {}) {
         screen(message + (retryTimer ? " Retrying automatically…" : ""));
         notice.querySelector("progress").hidden = true;
         notice.querySelector("button").hidden = false;
+        notice.querySelector(".update-actions").hidden = false;
       }
     }
     async function reloadIfInstalled(version) {
@@ -233,7 +241,10 @@ export function startUpdates({ onStatus = () => {} } = {}) {
       clearTimeout(retryTimer);
       retryTimer = null;
       clearTimeout(stallTimer);
-      if (notice) notice.querySelector("button").hidden = true;
+      if (notice) {
+        notice.querySelector("button").hidden = true;
+        notice.querySelector(".update-actions").hidden = true;
+      }
       status("checking", "Checking for app updates…");
       try {
         if (!registration) {

@@ -38,10 +38,11 @@ import {
   showError,
   dialog,
   confirmDialog,
+  hideCardButton,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
-import { decisionFeedback } from "../core/decision-feedback.mjs";
+import { decisionFeedback, lossTone } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "../ui/decision-values.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 
@@ -64,7 +65,16 @@ let catalog = [],
   result = null,
   answer = null,
   busy = false,
-  preview = null;
+  preview = null,
+  previewIndex = -1;
+// Per-decision results of this visit, for the progress stepper and the
+// session summary (in memory only: the stored practice record is unchanged).
+let sessionLog = [];
+const LOSS_THRESHOLD = 0.02;
+const steps = el("ol", { class: "trainer-steps", "aria-label": "Session progress" });
+$("subtitle").after(steps);
+const summaryCard = el("section", { class: "bg-result-card trainer-summary", hidden: true, "aria-label": "Session summary" });
+ui.board.container.append(summaryCard);
 const draft = new DraftBoard(ui.board, () => {
   actions();
   draftControls();
@@ -74,6 +84,9 @@ const study = new StudyStrip(previewCandidate);
 const practiceHelp = el("div", { class: "trainer-help", role: "group", hidden: true, "aria-label": "Practice help" });
 document.querySelector(".action-main").prepend(practiceHelp);
 function previewCandidate(candidate) {
+  previewIndex = candidate && result?.candidates
+    ? result.candidates.findIndex((c) => JSON.stringify(c.steps) === JSON.stringify(candidate.steps))
+    : -1;
   preview = candidate
     ? candidate.steps.reduce((s, st) => applyStep(s, st), exercise.state)
     : clone(exercise.state);
@@ -137,6 +150,8 @@ keepPageProgress(() =>
 async function begin() {
   analysis.cancel();
   count = 0;
+  sessionLog = [];
+  summaryCard.hidden = true;
   const mistakes = (await all())
     .filter((i) => i.kind === "mistake" || i.tags.includes("exercise"))
     .map((i) => ({ ...i, topic: "mistakes" }));
@@ -165,10 +180,12 @@ async function next() {
   analysis.cancel();
   result = null;
   preview = null;
+  previewIndex = -1;
   revealed = false;
   hinted = false;
   answer = null;
   busy = false;
+  summaryCard.hidden = true;
   exercise = pool[count % pool.length];
   draft.set(exercise.state, legalPaths(exercise.state), true);
   render();
@@ -190,6 +207,7 @@ function render() {
     draft.enabled = false;
     draft.render();
     $("subtitle").textContent = "Saved practice";
+    steps.replaceChildren();
     $("message").textContent = "No saved exercises in this collection yet.";
     $("actions").replaceChildren(
       button(
@@ -209,6 +227,7 @@ function render() {
   draft.render();
   $("subtitle").textContent =
     `${count + 1} of ${length} · ${exercise.state.matchLength ? exercise.state.matchLength + "-point match" : "Unlimited points"}`;
+  renderSteps();
   actions();
   panel();
   savePractice();
@@ -300,8 +319,10 @@ function actions() {
 }
 function panel() {
   const p = $("panel");
+  const resultSlot = el("div", { class: "trainer-result-slot" });
   p.replaceChildren(
     el("h2", {}, revealed ? "Decision review" : "Practice"),
+    resultSlot,
     field(
       "Practice set",
       select(
@@ -336,6 +357,7 @@ function panel() {
     ),
   );
   if (!exercise) {
+    resultSlot.remove();
     p.append(
       el(
         "p",
@@ -364,31 +386,60 @@ function panel() {
     draftControls();
   }
   p.append(analysis.status);
+  if (!(result && revealed)) resultSlot.remove();
   if (result && revealed) {
     const f = decisionFeedback(result, exercise.state);
-    p.append(
+    const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
+    const row = (label, name, value, extra = null) =>
       el(
-        "p",
-        { class: "decision-loss", "data-loss-tone": f.tone },
-        `${f.label} ${f.value} · ${f.quality}`,
-      ),
-      decisionValues(f, true),
+        "div",
+        { class: "list-row" },
+        el("span", { class: "list-row-label" }, label),
+        el("span", { class: "list-row-value" }, value),
+        el("span", { class: "list-row-sub" }, name),
+        ...(extra ? [extra] : []),
+      );
+    // The result card: best, yours and the loss, then the full comparison.
+    resultSlot.replaceWith(
       el(
-        "details",
-        { class: "trainer-equity-details" },
-        el("summary", {}, "Equity & EV details"),
-        decisionValues(f),
-        lossLegend(),
+        "section",
+        { class: "trainer-result", "aria-label": "Your result" },
+        el(
+          "p",
+          { class: "decision-loss", "data-loss-tone": f.tone },
+          `${f.label} ${f.value} · ${f.quality}`,
+        ),
+        el(
+          "div",
+          { class: "list trainer-result-rows", "data-loss-tone": f.tone },
+          row("Best", f.best.notation || "", equity(f.best.equity)),
+          row(
+            "Yours",
+            bestPlayed ? "Same as the best evaluated decision" : f.actual.notation || "",
+            equity(f.actual.equity),
+          ),
+          row("Loss", hinted ? `${f.quality} · studied with a hint` : f.quality, f.value),
+        ),
+        el(
+          "details",
+          { class: "trainer-equity-details" },
+          el("summary", {}, "Equity & EV details"),
+          decisionValues(f, true),
+          decisionValues(f),
+          lossLegend(),
+        ),
       ),
     );
     p.append(
       resultView(result, {
         onPreview: previewCandidate,
+        selected: previewIndex,
       }),
       button(
         "Original position",
         () => {
           preview = clone(exercise.state);
+          previewIndex = -1;
           render();
         },
         "ghost",
@@ -446,7 +497,9 @@ async function submit(decision) {
       error: result.error,
       hint: hinted,
     });
-    if (!hinted && result.error > 0.04)
+    const savedMistake = !hinted && result.error > 0.04;
+    sessionLog[count] = { topic: exercise.topic, error: result.error, hinted, saved: savedMistake };
+    if (savedMistake)
       await put(
         "items",
         itemRecord("mistake", {
@@ -468,6 +521,7 @@ async function submit(decision) {
 async function skip() {
   if (busy || revealed || !exercise) return;
   await recordPractice(exercise.id, { skip: true, hint: hinted });
+  sessionLog[count] = { topic: exercise.topic, skipped: true, hinted };
   count++;
   count >= length ? finish() : next();
 }
@@ -509,14 +563,92 @@ function finish() {
   $("message").textContent =
     `Session complete · ${count} decisions studied.`;
   $("actions").replaceChildren(button("Practice again", begin, "primary"));
+  renderSteps(true);
+  const s = sessionSummary();
+  const stat = (label, value) =>
+    el("div", { class: "stat" }, el("span", { class: "stat-label" }, label), el("strong", { class: "stat-value" }, value));
+  const stats = () =>
+    el(
+      "div",
+      { class: "stat-strip trainer-summary-stats" },
+      stat("Average loss", s.answered ? s.average.toFixed(3) : "—"),
+      stat(`Within ${LOSS_THRESHOLD.toFixed(3)}`, `${s.within} of ${s.answered}`),
+      stat("Hints", String(s.hints)),
+      stat("Skips", String(s.skips)),
+      stat("Mistakes saved", String(s.saved)),
+    );
+  summaryCard.replaceChildren(
+    hideCardButton(summaryCard, "Hide the summary to see the board"),
+    el("p", { class: "eyebrow eyebrow--plain" }, "Session complete"),
+    el("h2", {}, `${count} decision${count === 1 ? "" : "s"} studied`),
+    stats(),
+    ...(s.recorded < count
+      ? [el("p", { class: "muted small" }, `${count - s.recorded} earlier decision${count - s.recorded === 1 ? " was" : "s were"} answered before this page loaded and ${count - s.recorded === 1 ? "is" : "are"} not in this summary.`)]
+      : []),
+  );
+  summaryCard.hidden = false;
   $("panel").replaceChildren(
     el("h2", {}, "Session complete"),
+    stats(),
+    el(
+      "div",
+      { class: "list trainer-summary-rows", "aria-label": "Decisions this session" },
+      ...sessionLog.flatMap((entry, i) =>
+        entry
+          ? [el(
+              "div",
+              { class: "list-row", "data-loss-tone": entry.skipped ? "skipped" : lossTone(entry.error).tone },
+              el("span", { class: "list-row-label" }, `${i + 1} · ${TOPICS[entry.topic] || entry.topic || "Decision"}`),
+              el("span", { class: "list-row-value" }, entry.skipped ? "Skipped" : entry.error.toFixed(3)),
+              el("span", { class: "list-row-sub" }, entry.skipped ? (entry.hinted ? "After a hint" : "No answer") : `${lossTone(entry.error).label}${entry.hinted ? " · hint" : ""}${entry.saved ? " · saved to Library" : ""}`),
+            )]
+          : [],
+      ),
+    ),
     el(
       "p",
-      {},
+      { class: "muted small" },
       "Your actual attempts, hints, and skips are saved locally. Review due items in your next session.",
     ),
     button("Open Library", () => (location.href = "/backgammon/library/")),
+  );
+}
+const TOPICS = {
+  opening: "Opening", contact: "Contact", cube: "Cube", race: "Race",
+  bearoff: "Bearoff", mistakes: "Saved decision",
+};
+function sessionSummary() {
+  const entries = sessionLog.filter(Boolean),
+    answered = entries.filter((e) => !e.skipped);
+  return {
+    recorded: entries.length,
+    answered: answered.length,
+    average: answered.reduce((n, e) => n + e.error, 0) / (answered.length || 1),
+    within: answered.filter((e) => e.error < LOSS_THRESHOLD).length,
+    hints: entries.filter((e) => e.hinted).length,
+    skips: entries.filter((e) => e.skipped).length,
+    saved: entries.filter((e) => e.saved).length,
+  };
+}
+// The progress stepper in the tool head: one step per decision, toned by
+// the recorded result (with a text label, never colour alone).
+function renderSteps(done = false) {
+  steps.replaceChildren(
+    ...Array.from({ length }, (_, i) => {
+      const entry = sessionLog[i],
+        current = !done && i === count,
+        state = entry
+          ? entry.skipped ? "skipped" : lossTone(entry.error).tone
+          : i < count || done ? "done" : current ? "current" : "upcoming";
+      const label = entry
+        ? entry.skipped ? "skipped" : `${lossTone(entry.error).label.toLowerCase()}, ${entry.error.toFixed(3)} lost`
+        : i < count ? "answered" : current ? "current decision" : "not started";
+      return el(
+        "li",
+        { "data-step": state, ...(current ? { "aria-current": "step" } : {}) },
+        el("span", { class: "sr-only" }, `Decision ${i + 1}: ${label}`),
+      );
+    }),
   );
 }
 
@@ -556,6 +688,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
           await savePractice();
           location.href = a.href;
         },
+        { verb: "Leave" },
       );
     }
   }),

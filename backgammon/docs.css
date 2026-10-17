@@ -1,0 +1,868 @@
+/* Backgammon documents: Clicks & highlights (controls/) and the Engine report
+ * (reports/). Loaded after shared/tokens.css, shared/app.css and the family
+ * stylesheet (styles.css supplies field(), select() and button() styling and
+ * the update gate); this file is the reading layout only.
+ *
+ * Sections: page and header, reading type, contents, flowcharts, callout,
+ * case table, notes, report tables, measured-on lines, device card, settings
+ * list, footer, breakpoints. Colours are tokens only (css-literals.test.cjs).
+ *
+ * Pinned by backgammon/tests/click-guide.cjs: .click-flow > li, .flow-question,
+ * .flow-answer, .guide-notes, .case-table th/td (no clipped text from 320px to
+ * 1440px), #cases tbody tr/td counts. research.cjs and adaptive.cjs read the
+ * report tables, captions and field labels that reports/app.js renders.
+ */
+
+/* ---------- Page and header ---------- */
+
+.docs-page {
+  line-height: var(--lh-body);
+}
+
+.docs-shell {
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-left: env(safe-area-inset-left);
+}
+
+.docs-topbar {
+  border-bottom: 1px solid var(--line);
+}
+
+.docs-topbar .crumbs .brand {
+  font-weight: 600;
+}
+
+.docs-topbar .tool-nav {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* The report is a Docs page too, though the Docs link opens the guide. */
+.tool-nav a[aria-current="true"] {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.docs-head {
+  align-items: flex-end;
+  padding: 28px 0 16px;
+}
+
+.docs-head .eyebrow {
+  margin-bottom: 10px;
+}
+
+.docs-head h1 {
+  font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.25rem);
+}
+
+.docs-head .lede {
+  font-size: var(--t-lg);
+}
+
+.docs-release {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.docs-release code,
+.docs-meta code {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  overflow-wrap: anywhere;
+}
+
+.docs-switch {
+  flex: none;
+}
+
+/* ---------- Reading type ---------- */
+
+.docs-body {
+  min-width: 0;
+}
+
+.docs-section {
+  padding: 32px 0;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 24px;
+}
+
+.docs-body > .docs-section:first-child {
+  padding-top: 16px;
+  border-top: 0;
+}
+
+.docs-section h2 {
+  margin-bottom: 12px;
+  font-size: var(--t-xl);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.docs-section h3 {
+  margin: 28px 0 10px;
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+
+.docs-section p {
+  max-width: 72ch;
+  margin-bottom: 12px;
+  font-size: var(--t-md);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.docs-section p:last-child {
+  margin-bottom: 0;
+}
+
+.docs-section a {
+  color: var(--accent);
+}
+
+.docs-section strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.docs-section .guide-lead {
+  margin-bottom: 8px;
+  font-size: var(--t-lg);
+  font-weight: 500;
+}
+
+.docs-body kbd:not(.keycap) {
+  min-width: 24px;
+  margin: 0 1px;
+  padding: 0 6px;
+  border-color: var(--control-border);
+  border-bottom-width: 2px;
+  color: var(--ink);
+  opacity: 1;
+}
+
+/* ---------- Contents ----------
+   The guide's jump links wrap as pills; the report's .docs-toc--sticky is a
+   sticky column on wide screens and a sticky scrolling strip below that. */
+.docs-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.docs-toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--d-fast),
+    border-color var(--d-fast),
+    background-color var(--d-fast);
+}
+
+.docs-toc a:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.docs-toc a[aria-current] {
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.docs-toc-title {
+  display: none;
+}
+
+.docs-toc--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex-wrap: nowrap;
+  margin: 0 0 8px;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--page);
+  scroll-snap-type: x proximity;
+  mask-image: linear-gradient(to right, var(--page) calc(100% - 32px), transparent);
+}
+
+.docs-toc--sticky::-webkit-scrollbar {
+  display: none;
+}
+
+.docs-toc--sticky a {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.docs-page--report .docs-section {
+  scroll-margin-top: 76px;
+}
+
+/* ---------- Flowcharts ----------
+   figure.docs-flow > figcaption + ol.click-flow. Each step: the question card,
+   the answer beside it, and a connector (or the end state) under the card. */
+.docs-flow {
+  margin: 24px 0 20px;
+}
+
+.docs-flow-caption {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.click-flow {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.click-flow > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  column-gap: 32px;
+}
+
+@media (min-width: 701px) {
+  .click-flow > li {
+    grid-template-rows: auto 1fr;
+  }
+
+  .flow-answer {
+    grid-row: 1 / 3;
+    grid-column: 2;
+  }
+}
+
+.click-flow > li:not(:has(.flow-next, .flow-end)) {
+  margin-bottom: 16px;
+}
+
+.click-flow > li:last-child {
+  margin-bottom: 0;
+}
+
+.flow-question {
+  display: flex;
+  align-items: center;
+  align-self: start;
+  gap: 14px;
+  min-height: 76px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: linear-gradient(170deg, var(--surface-2), var(--surface) 70%);
+}
+
+.flow-number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.flow-question h3 {
+  margin: 0;
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: var(--lh-data);
+}
+
+.flow-answer {
+  display: flex;
+  align-self: start;
+  gap: 14px;
+  padding: 14px 0;
+}
+
+.flow-answer p {
+  margin-bottom: 8px;
+}
+
+.flow-yes {
+  flex: none;
+  min-width: 3.25em;
+  padding-top: 2px;
+  color: var(--accent);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.flow-next,
+.flow-end {
+  grid-column: 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+  text-align: center;
+}
+
+.docs-section .flow-next,
+.docs-section .flow-end {
+  max-width: none;
+  margin: 0;
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+/* The connector runs from the card down to the next step: a short line, the
+   label, then a line that fills whatever height the answer column takes. */
+.flow-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: 0 12px;
+}
+
+.flow-next::before,
+.flow-next::after {
+  content: "";
+  flex: none;
+  width: 1px;
+  height: 12px;
+  background: var(--line-strong);
+}
+
+.flow-next::after {
+  flex: 1 0 12px;
+}
+
+.flow-end {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--ink);
+}
+
+.docs-section .flow-end {
+  margin-top: 12px;
+}
+
+/* ---------- Callout ---------- */
+
+.docs-callout {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--info);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.docs-callout p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ---------- Case table ----------
+   A wrapping reference table with a sticky head; rows become cards on phones
+   (each cell names its column through data-label). */
+.case-frame {
+  margin: 24px 0 8px;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: clip;
+}
+
+.case-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
+.case-table th,
+.case-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-opaque);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.case-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 701px) {
+  .case-table thead th:first-child {
+    width: 24%;
+  }
+}
+
+.case-table tbody th {
+  font-weight: 600;
+}
+
+.case-table tbody tr {
+  scroll-margin-top: 48px;
+}
+
+.case-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.case-table tbody tr:target > * {
+  background: var(--accent-soft);
+}
+
+.case-table tbody tr:target > :first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ---------- Notes ---------- */
+
+.guide-notes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.guide-notes > div {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.docs-section .guide-notes h3 {
+  margin: 0 0 8px;
+  font-size: var(--t-md);
+}
+
+.docs-section .guide-notes p {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+
+.guide-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 8px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Report tables ----------
+   figure.docs-table: a visible caption line, then the kit .table-wrap with a
+   sticky first column (scroll shadows mark more columns). */
+.docs-table {
+  max-width: 50rem;
+  margin: 16px 0 20px;
+}
+
+.docs-section .docs-table-caption {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.docs-table .table-wrap:focus-visible {
+  outline-offset: 2px;
+}
+
+.report-table th[scope="row"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ---------- Measured-on lines, links and controls ---------- */
+
+.docs-section .docs-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.docs-meta code {
+  min-width: 0;
+  color: var(--muted);
+}
+
+.docs-section .docs-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+}
+
+.docs-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.docs-section label.field {
+  max-width: 18rem;
+  margin: 12px 0 4px;
+}
+
+.docs-controls {
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.docs-section .docs-controls label.field {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+.docs-controls > .btn {
+  flex: none;
+}
+
+/* ---------- Device card ---------- */
+
+.docs-card {
+  margin-top: 16px;
+}
+
+.docs-card > .panel-body {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  overflow: visible;
+}
+
+.docs-card[data-state="running"] {
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+
+.docs-section .docs-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.docs-status[data-error="true"] {
+  color: var(--bad);
+}
+
+#device-result:empty {
+  display: none;
+}
+
+.docs-card .docs-table {
+  margin: 0 0 10px;
+}
+
+/* ---------- Settings list ---------- */
+
+.report-methods {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  margin: 8px 0 16px;
+  border-top: 1px solid var(--line-opaque);
+}
+
+.report-methods dt,
+.report-methods dd {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-opaque);
+  line-height: 1.6;
+}
+
+.report-methods dt {
+  padding-right: 16px;
+  font-weight: 600;
+}
+
+.report-methods dd {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Footer ---------- */
+
+.docs-shell > .foot {
+  margin-top: 40px;
+  font-size: var(--t-xs);
+}
+
+.docs-shell > .foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+}
+
+.docs-shell .foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.docs-shell > .foot .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+/* ---------- Breakpoints ---------- */
+
+/* The kit collapses the tool head on short desktop windows for app shells;
+   a document keeps its title and lede. */
+@media (min-width: 881px) and (max-height: 820px) {
+  .docs-head {
+    align-items: flex-end;
+    padding: 28px 0 16px;
+  }
+
+  .docs-head h1 {
+    font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.25rem);
+  }
+
+  .docs-head .lede {
+    display: block;
+  }
+}
+
+/* Wide screens: the report's contents become a sticky column. */
+@media (min-width: 64rem) {
+  .docs-page--report .docs-layout {
+    display: grid;
+    grid-template-columns: 12rem minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+  }
+
+  .docs-toc--sticky {
+    top: 16px;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 16px 0 0;
+    overflow: visible;
+    border: 0;
+    background: none;
+    mask-image: none;
+  }
+
+  .docs-toc--sticky .docs-toc-title {
+    display: block;
+    margin: 0 0 6px 14px;
+    color: var(--muted);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .docs-toc--sticky a {
+    border: 0;
+    border-radius: var(--r-sm);
+    white-space: normal;
+  }
+
+  .docs-toc--sticky a[aria-current] {
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .docs-page--report .docs-section {
+    scroll-margin-top: 24px;
+  }
+}
+
+@media (max-width: 900px) {
+  .guide-notes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .click-flow > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-question {
+    min-height: 64px;
+    padding: 12px 14px;
+  }
+
+  .flow-answer {
+    gap: 10px;
+    margin-left: 28px;
+    padding: 12px 0 12px 16px;
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .flow-next {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 0 0 0 28px;
+    text-align: left;
+  }
+
+  .flow-end {
+    text-align: left;
+  }
+
+  .case-frame {
+    border: 0;
+    background: none;
+    overflow: visible;
+  }
+
+  .case-table,
+  .case-table tbody {
+    display: block;
+  }
+
+  .case-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .case-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--line-opaque);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+
+  .case-table th,
+  .case-table td {
+    display: block;
+    padding: 6px 0;
+    border: 0;
+  }
+
+  .case-table tbody th {
+    font-size: var(--t-md);
+  }
+
+  .case-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .case-table tbody tr:target {
+    border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+    background: var(--accent-soft);
+  }
+
+  .case-table tbody tr:target > * {
+    background: none;
+  }
+
+  .case-table tbody tr:target > :first-child {
+    box-shadow: none;
+  }
+
+  .guide-notes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-methods {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-methods dt {
+    padding-bottom: 2px;
+    border-bottom: 0;
+  }
+
+  .report-methods dd {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .docs-topbar .tool-nav {
+    order: 2;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .docs-head {
+    padding-top: 20px;
+  }
+
+  .docs-switch {
+    width: 100%;
+  }
+
+  .docs-section {
+    padding: 24px 0;
+  }
+
+  .docs-section h2 {
+    font-size: var(--t-lg);
+  }
+
+  .docs-section h3 {
+    font-size: var(--t-md);
+  }
+
+  .docs-section .guide-lead,
+  .docs-head .lede {
+    font-size: var(--t-md);
+  }
+}

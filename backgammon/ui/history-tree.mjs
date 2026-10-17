@@ -2,7 +2,7 @@
 import { historyTree, historyPath } from "../core/history-tree.mjs";
 import { clone, notation, decisionPlayer } from "../core/rules.mjs";
 import { settings } from "../core/storage.mjs";
-import { el, button, dialog } from "./shell.mjs";
+import { el, button, dialog, tabBar } from "./shell.mjs";
 import { Board } from "./board.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
 
@@ -102,11 +102,13 @@ export function historyExplorer(model, { onReturn } = {}) {
   d.classList.add("history-dialog");
   const board = new Board(slot);
   const tabs = el("div", { class: "row history-tree-tabs" });
-  const treeTab = button("Tree", () => setView("tree")),
-    boardTab = button("Board", () => setView("board"));
+  const treeTab = button("Tree", () => setView("tree"), "", { role: "tab" }),
+    boardTab = button("Board", () => setView("board"), "", { role: "tab" });
+  // Tree and Board are the tabs; Current position is an action beside them.
+  const views = el("div", { class: "history-tree-tablist" }, treeTab, boardTab);
+  const selectView = tabBar(views, "History view", layout);
   tabs.append(
-    treeTab,
-    boardTab,
+    views,
     button(
       "Current position",
       () => {
@@ -150,8 +152,7 @@ export function historyExplorer(model, { onReturn } = {}) {
   function setView(v) {
     view = v;
     d.dataset.historyView = v;
-    treeTab.setAttribute("aria-pressed", v === "tree");
-    boardTab.setAttribute("aria-pressed", v === "board");
+    selectView(v === "board" ? boardTab : treeTab);
     queueMicrotask(fit);
   }
   function flattened() {

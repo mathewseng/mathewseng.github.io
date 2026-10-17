@@ -15,6 +15,7 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     return {game:work.game, draft:work.draft};
   });
   const section = label => page.getByRole("button", {name:label, exact:true});
+  const tab = label => page.getByRole("tab", {name:label, exact:true});
   const reachable = async locator => {
     const result = await locator.evaluate(n => {
       const r = n.getBoundingClientRect(), target = document.elementFromPoint(r.x+r.width/2, r.y+r.height/2);
@@ -42,10 +43,10 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await dialog.waitFor();
     for (const [width,height] of sizes) {
       await page.setViewportSize({width,height});
-      await section("Board colors").tap();
-      await reachable(section("Board colors"));
-      await reachable(section("Display & controls"));
-      await reachable(section("Keyboard"));
+      await tab("Board colors").tap();
+      await reachable(tab("Board colors"));
+      await reachable(tab("Display & controls"));
+      await reachable(tab("Keyboard"));
       await reachable(dialog.locator(".close"));
       const metrics = await dialog.evaluate(d => {
         const body = d.querySelector(".dialog-body"), r = d.getBoundingClientRect();
@@ -55,25 +56,25 @@ module.exports = async function mobileSettings(browser, base, out, name) {
       assert.ok(metrics.top >= 0 && metrics.bottom <= metrics.viewport + 1, "settings fit the dynamic viewport");
       await page.screenshot({path:path.join(out, name + "-settings-" + width + ".png")});
       await dialog.locator(".dialog-body").evaluate(n => n.scrollTop = n.scrollHeight);
-      await reachable(section("Display & controls"));
-      await section("Display & controls").tap();
+      await reachable(tab("Display & controls"));
+      await tab("Display & controls").tap();
       assert.equal(await dialog.locator(".dialog-body").evaluate(n => n.scrollTop), 0, "changing sections starts at the first control");
       await page.getByLabel("Board orientation", {exact:true}).scrollIntoViewIfNeeded();
       await reachable(page.getByLabel("Board orientation", {exact:true}));
-      await section("Keyboard").tap();
+      await tab("Keyboard").tap();
       assert.ok(await page.getByLabel("Enable game shortcuts", {exact:true}).isVisible());
     }
     await page.setViewportSize({width:320,height:568});
-    await section("Board colors").tap();
+    await tab("Board colors").tap();
     await page.locator('[data-preset="amber"]').tap();
-    await reachable(section("Display & controls")); // tabs remain pinned at the end of 24 presets
-    await section("Display & controls").tap();
+    await reachable(tab("Display & controls")); // tabs remain pinned at the end of 24 presets
+    await tab("Display & controls").tap();
     await page.getByLabel("Show legal-move hints in beginner mode", {exact:true}).uncheck();
     await page.getByLabel("Motion", {exact:true}).selectOption("reduce");
     await page.locator(".settings-updates summary").tap();
     await page.getByRole("button",{name:"Check for updates",exact:true}).waitFor();
     assert.ok(await page.locator(".release-status").isVisible());
-    await section("Board colors").tap();
+    await tab("Board colors").tap();
     await section("Colors").tap();
     await page.locator(".color-group summary").filter({hasText:"Board surfaces"}).tap();
     const hex = page.getByLabel("Frame hex", {exact:true});
@@ -86,11 +87,11 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await hex.fill("#badhex");
     assert.equal(await hex.getAttribute("aria-invalid"), "true");
     await hex.fill("#274C50");
-    await reachable(section("Display & controls"));
+    await reachable(tab("Display & controls"));
     await reachable(dialog.locator(".close"));
     await page.screenshot({path:path.join(out,name+"-settings-keyboard.png")});
     await page.setViewportSize({width:390,height:844});
-    await section("Display & controls").tap();
+    await tab("Display & controls").tap();
     await page.screenshot({path:path.join(out,name+"-settings-display.png")});
     await dialog.locator(".close").tap();
     await dialog.waitFor({state:"detached"});

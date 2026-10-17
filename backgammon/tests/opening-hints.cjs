@@ -39,7 +39,7 @@ module.exports=async function openingHints(browser,base,out,name){
       await page.locator("#confirm").waitFor();
       await page.emulateMedia({reducedMotion:"reduce"});
       await click(page.locator("#preferences"));
-      await click(page.getByRole("button",{name:"Display & controls",exact:true}));
+      await click(page.getByRole("tab",{name:"Display & controls",exact:true}));
       await page.getByLabel("Playing style",{exact:true}).selectOption("beginner");
       await page.locator("#move-hints").uncheck();
       await click(page.locator(".settings-dialog").getByRole("button",{name:"Close",exact:true}));
@@ -75,7 +75,7 @@ module.exports=async function openingHints(browser,base,out,name){
       await page.screenshot({path:path.join(out,`${name}-all-rules-${touch?"phone":"desktop"}.png`)});
       await page.keyboard.press("Escape");
       await click(page.locator("#preferences"));
-      await click(page.getByRole("button",{name:"Display & controls",exact:true}));
+      await click(page.getByRole("tab",{name:"Display & controls",exact:true}));
       assert.equal(await page.locator("#move-hints").isChecked(),false);
       await page.locator("#move-hints").check();
       await click(page.locator(".settings-dialog").getByRole("button",{name:"Close",exact:true}));

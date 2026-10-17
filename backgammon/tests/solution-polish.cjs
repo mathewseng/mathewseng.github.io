@@ -29,7 +29,7 @@ module.exports=async(browser,base,out,name)=>{
   assert.match(await page.locator('[data-best-move]').textContent(),/11\/2 10\/7/);
   assert.equal(await page.locator('.bg-board text').filter({hasText:/^(BAR|OFF)$/}).count(),0);
   for(const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768],[1440,900]]) {
-   await page.setViewportSize({width,height});await page.getByRole('button',{name:'Board',exact:true}).click();
+   await page.setViewportSize({width,height});await page.getByRole('tab',{name:'Board',exact:true}).click();
    await page.waitForTimeout(35);
    const fit=await page.locator('.decision-dialog').evaluate(d=>({x:d.scrollWidth<=d.clientWidth+1,y:d.scrollHeight<=d.clientHeight+1,save:d.querySelector('#save-review-position').getBoundingClientRect().bottom<=innerHeight+1}));
    assert.deepEqual(fit,{x:true,y:true,save:true},`${width}x${height}`);
@@ -43,7 +43,7 @@ module.exports=async(browser,base,out,name)=>{
   await page.keyboard.press('Escape');
   await page.evaluate(()=>window.showSolution({onUse:()=>{},onReplay:()=>{}}));
   for(const [width,height] of [[320,568],[390,844],[844,390]]) {
-    await page.setViewportSize({width,height});await page.getByRole('button',{name:'Board',exact:true}).click();
+    await page.setViewportSize({width,height});await page.getByRole('tab',{name:'Board',exact:true}).click();
     assert.equal(await page.locator('.decision-dialog').evaluate(d=>d.scrollHeight<=d.clientHeight+1 && [...d.querySelectorAll('footer button')].every(b=>{const r=b.getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight;})),true,'hint actions fit with Save');
   }
   await page.keyboard.press('Escape');
