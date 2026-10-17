@@ -57,6 +57,13 @@
     size: "m", felt: "green", motion: true, evals: true,
     tab: "play", side: !isCompact(), viewMode: "hands",
   }, load(STORE.prefs, {}));
+  // Five side tabs; Tools and Log open as a sheet (#paneDialog) from the topbar and the More menu.
+  // A saved "tools" or "log" tab from before the redesign falls back to Play.
+  const SIDE_TABS = ["play", "deck", "seats", "scores", "rules"];
+  const SHEET_PANES = { tools: "Tools", log: "Log and chat" };
+  if (!SIDE_TABS.includes(prefs.tab)) prefs.tab = "play";
+  let sheetPane = null;
+  const paneShows = (tab) => prefs.tab === tab || sheetPane === tab;
   function savePrefs() { store(STORE.prefs, prefs); applyPrefs(); if (view) renderDock(); }
   function applyPrefs() {
     document.body.dataset.size = prefs.size;
@@ -64,6 +71,7 @@
     document.body.dataset.motion = prefs.motion ? "1" : "0";
     document.body.dataset.contrast = prefs.contrast ? "1" : "0";
     document.body.classList.toggle("side-collapsed", !prefs.side);
+    document.getElementById("sideToggle")?.setAttribute("aria-pressed", String(Boolean(prefs.side)));
   }
 
   // ---------------------------------------------------------------- state
@@ -253,7 +261,7 @@
     const myName = mySeat(source)?.name;
     for (const entry of log.slice(i + 1).slice(-6)) {
       if (entry.kind === "warn") toast(entry.text, "warn");
-      else if (entry.kind === "chat" && net.mode !== "local" && entry.who !== myName && prefs.tab !== "log") toast(`${entry.who}: ${entry.text}`);
+      else if (entry.kind === "chat" && net.mode !== "local" && entry.who !== myName && sheetPane !== "log") toast(`${entry.who}: ${entry.text}`);
       else if (entry.kind === "round" && /Game over/.test(entry.text)) toast(entry.text, "good");
     }
   }
@@ -699,7 +707,6 @@
     $("#undoBtn").disabled = net.mode !== "client" && !history.length;
     $("#redoBtn").disabled = net.mode !== "client" && !future.length;
     $("#reactBtn").hidden = net.mode === "local";
-    $("#logBtn").hidden = net.mode === "local";
     renderRoomBadge();
     renderGuestChrome();
   }
@@ -726,23 +733,28 @@
   }
 
   // Host-only controls, by data-act, disabled for guests with a "host only" hint.
-  const HOST_ONLY = new Set(["bot-turn", "bots-pause", "simulate", "bot-games", "rec-start", "rec-stop", "replay", "rewind", "save-table", "load-save", "play-again", "dev-load", "collect", "reveal-all", "rebuild-deck", "enable-chips", "reset-stacks", "reset-scores", "pull-cards", "add-card", "seed-apply", "seed-clear"]);
+  // HOST_ONLY never works for a guest (the guest's screen would only toast a refusal);
+  // HOST_DESIGN works for guests only in a co-design room (the host rejects it otherwise).
+  const HOST_ONLY = new Set(["bot-turn", "bots-pause", "simulate", "bot-games", "rec-start", "rec-stop", "replay", "rewind", "save-table", "load-save", "play-again", "dev-load", "seed-apply", "seed-clear"]);
+  const HOST_DESIGN = new Set(["collect", "rebuild-deck", "enable-chips", "reset-stacks", "reset-scores", "pull-cards", "add-card", "add-player", "new-macro", "new-trigger", "new-scheme"]);
   const isGuest = () => net.mode === "client";
+  const guestLocked = (act) => isGuest() && (HOST_ONLY.has(act) || (view?.guestMode !== "full" && HOST_DESIGN.has(act)));
 
   function renderGuestChrome() {
     const guest = isGuest();
     const newBtn = $("#newBtn");
     newBtn.disabled = guest;
     newBtn.title = guest ? "Host only: only the host can start a new game" : "Start a new game (N)";
-    $("#addSeatBtn").disabled = guest;
-    $("#addSeatBtn").title = guest ? "Host only" : "";
+    const addSeat = $("#addSeatBtn");
+    addSeat.disabled = guestLocked("add-player");
+    addSeat.title = addSeat.disabled ? "Host only" : "";
   }
 
   /** Disable host-only actions inside a rendered pane and say why, once, at the top. */
   function applyGuestState(container) {
     if (!isGuest()) return;
     for (const el of container.querySelectorAll("[data-act]")) {
-      if (!HOST_ONLY.has(el.dataset.act)) continue;
+      if (!guestLocked(el.dataset.act)) continue;
       el.disabled = true;
       el.setAttribute("aria-disabled", "true");
       el.title = "Host only";
@@ -911,6 +923,10 @@
     view = computeView();
     const before = captureLayout();
     const backsBefore = new Map($$(".card[data-card-id]").map((el) => [el.dataset.cardId, el.classList.contains("back")]));
+    // Re-rendering the felt must not drop keyboard focus: find the same card or control again.
+    const focused = document.activeElement;
+    const focusHost = focused && focused !== document.body ? focused.closest("#table, #turnStrip, #stage") : null;
+    const focusKey = focusHost ? focusSignature(focused) : null;
     renderTop();
     renderTable();
     if (prefs.motion && backsBefore.size) {
@@ -931,6 +947,7 @@
       if (body) { const scroll = body.scrollTop; openScoreboard(); dialog().querySelector(".scoreboard").scrollTop = scroll; }
     } else scoreboardOpen = false;
     renderPane();
+    if (focusKey && (document.activeElement === document.body || !document.activeElement?.isConnected)) focusHost.querySelector(focusKey)?.focus({ preventScroll: true });
     playLayout(before);
     scheduleBots();
     const pass = $("#passScreen");
@@ -1134,8 +1151,11 @@
     if (!cards.length) return;
     const at = cards.indexOf(kbdFocus);
     kbdFocus = cards[at < 0 ? (step > 0 ? 0 : cards.length - 1) : (at + step + cards.length) % cards.length];
+    const cardHadFocus = Boolean(document.activeElement?.closest?.("#table .card[data-card-id]"));
     render();
-    document.querySelector(`.card[data-card-id="${CSS.escape(kbdFocus)}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const el = document.querySelector(`#table .card[data-card-id="${CSS.escape(kbdFocus)}"]`);
+    if (cardHadFocus) el?.focus({ preventScroll: true });
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   function orderedSelection() {
@@ -1294,23 +1314,60 @@
   }
 
   // ============================================================ PANES
-  function renderPane() {
-    const pane = $("#pane");
+  /** A selector that finds "the same" control after a re-render: its data-fk, else its data-* attributes, else its id. */
+  function focusSignature(el) {
+    if (el.dataset.fk) return `[data-fk="${CSS.escape(el.dataset.fk)}"]`;
+    if (el.dataset.cardId) return `.card[data-card-id="${CSS.escape(el.dataset.cardId)}"]`;
+    const data = [...el.attributes].filter((attr) => attr.name.startsWith("data-")).map((attr) => `[${attr.name}="${CSS.escape(attr.value)}"]`).join("");
+    if (data) return el.tagName.toLowerCase() + data;
+    return el.id ? "#" + CSS.escape(el.id) : null;
+  }
+
+  /** Renders one pane into its host, keeping scroll, the focused control and the caret. */
+  function renderPaneInto(host, renderer) {
     const active = document.activeElement;
-    const focusKey = active && pane.contains(active) ? active.dataset.fk : null;
-    const selStart = focusKey && "selectionStart" in active ? active.selectionStart : null;
-    const scroll = pane.scrollTop;
-    $$("#tabs button").forEach((button) => button.classList.toggle("on", button.dataset.tab === prefs.tab));
-    const renderer = PANES[prefs.tab] || PANES.play;
-    pane.innerHTML = renderer();
-    pane.scrollTop = scroll;
-    if (focusKey) {
-      const el = pane.querySelector(`[data-fk="${CSS.escape(focusKey)}"]`);
+    const signature = active && active !== host && host.contains(active) ? focusSignature(active) : null;
+    const selStart = signature && "selectionStart" in active ? active.selectionStart : null;
+    const scroll = host.scrollTop;
+    host.innerHTML = renderer();
+    applyGuestState(host);
+    host.scrollTop = scroll;
+    if (signature) {
+      const el = host.querySelector(signature);
       if (el) {
-        el.focus();
+        el.focus({ preventScroll: true });
         try { if (selStart !== null) el.setSelectionRange(selStart, selStart); } catch (error) { /* number inputs */ }
       }
     }
+  }
+
+  function renderPane() {
+    const pane = $("#pane");
+    $$("#tabs [role=tab]").forEach((button) => {
+      const on = button.dataset.tab === prefs.tab;
+      button.classList.toggle("on", on);
+      button.setAttribute("aria-selected", String(on));
+      button.tabIndex = on ? 0 : -1;
+      if (on) pane.setAttribute("aria-labelledby", button.id);
+    });
+    renderPaneInto(pane, PANES[prefs.tab] || PANES.play);
+    const sheet = $("#paneDialog");
+    if (sheetPane && sheet?.open) renderPaneInto($("#paneDialogBody"), PANES[sheetPane]);
+  }
+
+  /** Tools and Log: the same panes, in a sheet over the table. */
+  function openPaneSheet(tab) {
+    const sheet = $("#paneDialog");
+    if (!sheet || !PANES[tab]) return;
+    sheetPane = tab;
+    $("#paneDialogTitle").textContent = SHEET_PANES[tab] || tab;
+    $("#paneDialogBody").scrollTop = 0;
+    if (!sheet.open) {
+      const onClose = () => { sheetPane = null; };
+      if (window.Sheet) window.Sheet.open(sheet, { dismissible: true, onClose });
+      else { sheet.showModal(); sheet.addEventListener("close", onClose, { once: true }); }
+    }
+    renderPaneInto($("#paneDialogBody"), PANES[tab]);
   }
 
   function block(title, body, actions = "") {
@@ -1642,7 +1699,11 @@
     tools() {
       const v = view;
       const roll = v.lastRoll;
-      const dice = roll?.rolls ? roll.rolls.map((value) => `<span class="die">${value}</span>`).join("") + (roll.rolls.length > 1 ? `<strong style="font-size:18px;margin-left:6px">= ${roll.total}</strong>` : "") : roll?.coin ? `<span class="die" style="width:auto;padding:0 10px;border-radius:999px">${roll.coin}</span>` : `<span class="muted small">Roll something!</span>`;
+      // The one dice face (.die): pips for a d6, the numeral for any other die.
+      const die = (value) => (roll.sides === 6 && value >= 1 && value <= 6
+        ? `<span class="die" data-pips="${value}" role="img" aria-label="${value}">${"<i></i>".repeat(value)}</span>`
+        : `<span class="die">${value}</span>`);
+      const dice = roll?.rolls ? roll.rolls.map(die).join("") + (roll.rolls.length > 1 ? `<strong class="dice-total">= ${roll.total}</strong>` : "") : roll?.coin ? `<span class="die coin">${roll.coin}</span>` : `<span class="muted small">Roll something!</span>`;
       const diceBlock = `<div class="dice-out" data-roll="${roll?.t || 0}">${dice}</div>
         <div class="row tight"><input id="diceCount" type="number" min="1" max="20" value="${diceCfg.count}" style="width:60px"><span class="muted">×</span>
           ${[4, 6, 8, 10, 12, 20, 100].map((sides) => `<button class="btn btn--sm" aria-pressed="${diceCfg.sides === sides}" data-act="roll" data-sides="${sides}">d${sides}</button>`).join("")}</div>
@@ -1771,8 +1832,14 @@
   const dialog = () => $("#dialog");
   function openDialog(html, { wide = false, onSubmit = null, bind = null } = {}) {
     const dlg = dialog();
-    dlg.className = wide ? "wide" : "";
+    // The kit dialog (shared/app.css), a bottom sheet on phones; "wide" stays as the page's hook.
+    dlg.className = "dialog dialog--sheet" + (wide ? " dialog--wide wide" : "");
     dlg.innerHTML = `<form method="dialog" class="dlg">${html}</form>`;
+    const heading = dlg.querySelector(".dlg-head h2");
+    if (heading) {
+      heading.id = "dialogTitle";
+      dlg.setAttribute("aria-labelledby", "dialogTitle");
+    } else dlg.removeAttribute("aria-labelledby");
     const form = dlg.querySelector("form");
     form.addEventListener("submit", (event) => {
       const submitter = event.submitter;
@@ -1784,7 +1851,9 @@
     });
     if (bind) bind(form);
     if (!dlg.open) {
-      dlg.showModal();
+      // shared/sheet.js: modal, keyboard-viewport fitting on phones, page scroll lock, focus return.
+      if (window.Sheet) window.Sheet.open(dlg);
+      else dlg.showModal();
       // Start focus on the dialog itself rather than ringing the close button.
       if (document.activeElement?.matches(".dlg-head .btn")) {
         form.tabIndex = -1;
@@ -1794,7 +1863,7 @@
     return form;
   }
   function closeDialog() { if (dialog().open) dialog().close(); }
-  const head = (title) => `<div class="dlg-head"><h2>${esc(title)}</h2><button class="btn btn--icon btn--ghost" value="cancel" aria-label="Close">✕</button></div>`;
+  const head = (title) => `<div class="dlg-head"><h2>${esc(title)}</h2><button class="btn btn--icon btn--ghost" value="cancel" aria-label="Close">${ICON("close")}</button></div>`;
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
@@ -2261,6 +2330,7 @@
     if (typeof window.PeerRoom !== "function") { toast("Online play library failed to load.", "error"); return; }
     const room = new window.PeerRoom({ namespace: "mscards-workshop", maxPlayers: 12, storageKey: "ctw.room.session.v1" });
     net.room = room;
+    net.status = null;
     room.onAction = (clientId, action) => hostHandle(clientId, action);
     room.onState = (next) => {
       if (net.mode !== "client") return;
@@ -2277,7 +2347,12 @@
       if (net.mode === "host") seatNewcomers();
       render();
     };
-    room.onStatus = (status, message) => toast(message, status === "connected" ? "good" : "");
+    // The topbar badge carries the connection state for as long as it lasts; the toast only announces the change.
+    room.onStatus = (status, message) => {
+      net.status = status;
+      toast(message, status === "connected" ? "good" : "");
+      renderRoomBadge();
+    };
     room.onEvent = (from, event) => handleRoomEvent(from, event);
     room.onError = (error) => toast(error.message, "error");
     room.onBecomeHost = (full) => {
@@ -2429,6 +2504,7 @@
     const wasHost = net.mode === "host";
     net.room = null;
     net.mode = "local";
+    net.status = null;
     net.roster = [];
     if (wasHost) {
       state.players.forEach((player) => { player.clientId = null; });
@@ -2454,7 +2530,7 @@
       if (timer.autoNext) { dispatch({ type: "nextTurn" }); resetTimer(true); }
     }
     renderTop();
-    if (prefs.tab === "tools") {
+    if (paneShows("tools")) {
       const el = $(".timer");
       if (el) { el.textContent = fmtTime(timer.left); el.classList.toggle("low", timer.left <= 10); }
     }
@@ -2940,7 +3016,9 @@
       if (boardId) usedBoard.forEach((i) => $(`.card[data-zone="${boardId}"][data-index="${i}"]`)?.classList.add("used"));
     });
 
-    $("#pane").addEventListener("click", (event) => {
+    // The side pane and the Tools/Log sheet share one set of handlers.
+    const onPanes = (type, handler) => ["#pane", "#paneDialogBody"].forEach((selector) => $(selector)?.addEventListener(type, handler));
+    onPanes("click", (event) => {
       const act = event.target.closest("[data-act]");
       if (act) return handleAct(act, event);
       const addZone = event.target.closest("[data-add-zone]");
@@ -2962,7 +3040,7 @@
       if (hs) { const s = hs.dataset.hyperSuit; hyper.suits = hyper.suits.includes(s) ? hyper.suits.filter((x) => x !== s) : hyper.suits.concat(s); renderPane(); }
     });
 
-    $("#pane").addEventListener("change", (event) => {
+    onPanes("change", (event) => {
       const el = event.target;
       const d = el.dataset;
       if (d.round && d.player) return dispatch({ type: "setRoundScore", round: d.round, player: d.player, value: el.value });
@@ -3009,7 +3087,7 @@
       if (el.id === "qdFace") quickDeal.face = el.value;
     });
 
-    $("#pane").addEventListener("keydown", (event) => {
+    onPanes("keydown", (event) => {
       const el = event.target;
       if (event.key !== "Enter") return;
       if (el.dataset.scoreCustom) {
@@ -3044,6 +3122,24 @@
       savePrefs();
       renderPane();
     });
+    // A real tablist: arrow keys, Home and End move between the side tabs.
+    $("#tabs").addEventListener("keydown", (event) => {
+      const tabs = $$("#tabs [role=tab]");
+      const at = tabs.indexOf(document.activeElement);
+      if (at < 0) return;
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      const target = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : step ? (at + step + tabs.length) % tabs.length : -1;
+      if (target < 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      prefs.tab = tabs[target].dataset.tab;
+      if (prefs.tab === "deck") deckDraft = null;
+      savePrefs();
+      renderPane();
+      tabs[target].focus();
+    });
+    $("#logBtn").addEventListener("click", () => openPaneSheet("log"));
+    $("#paneDialogClose").addEventListener("click", () => $("#paneDialog").close());
     $(".sheet-handle").addEventListener("click", () => { prefs.side = false; savePrefs(); });
     // Phones: swipe the sheet's handle or tab bar down to put it away.
     const sheetTop = $(".side > div");
@@ -3106,18 +3202,22 @@
         ...[...select.options].map((option) => ({ label: `${option.value === select.value ? "✓ " : "   "}${option.textContent}`, run: () => { select.value = option.value; select.dispatchEvent(new Event("change")); } })),
         "-",
       ] : [];
+      const lock = (act) => (guestLocked(act) ? { disabled: true, hint: "Host only" } : {});
       showMenu(event.currentTarget, [
         ...views,
+        { label: "Tools: bots, simulator, dice, timer…", run: () => openPaneSheet("tools") },
+        { label: "Log, chat and replay", run: () => openPaneSheet("log") },
         { label: "How it works & shortcuts", run: openHelp },
-        { label: "Collect all & shuffle", run: () => dispatch({ type: "collect", shuffle: true }) },
+        "-",
+        { label: "Collect all & shuffle", run: () => dispatch({ type: "collect", shuffle: true }), ...lock("collect") },
         { label: "Reveal every hand", run: () => dispatch({ type: "revealAll" }) },
         "-",
-        { label: "Save table snapshot", run: () => handleAct({ dataset: { act: "save-table" } }) },
+        { label: "Save table snapshot", run: () => handleAct({ dataset: { act: "save-table" } }), ...lock("save-table") },
         { label: "Export table file", run: () => handleAct({ dataset: { act: "export-table" } }) },
         { label: "Export game design", run: () => handleAct({ dataset: { act: "export-preset" } }) },
         { label: "Import file…", run: importFile },
         "-",
-        { label: "Reset this game (same setup)", danger: true, run: () => {
+        { label: "Reset this game (same setup)", danger: true, ...(isGuest() ? { disabled: true, hint: "Host only" } : {}), run: () => {
           if (net.mode === "client" || !confirm("Restart with the same setup, players and actions? Scores and cards reset.")) return;
           const preset = E.toPreset(state);
           const next = E.createTable(preset, { players: state.players.map((p) => ({ name: p.name, color: p.color, clientId: p.clientId })) });
@@ -3154,10 +3254,11 @@
       wasWide = wide;
     });
     if (typeof ResizeObserver === "function") new ResizeObserver(() => fitRows()).observe($("#table"));
+    bindStage();
     $("#table").addEventListener("scroll", closeMenu);
 
     document.addEventListener("keydown", (event) => {
-      const typing = event.target.closest("input, textarea, select") || dialog().open;
+      const typing = event.target.closest("input, textarea, select") || dialog().open || $("#paneDialog")?.open;
       const mod = event.ctrlKey || event.metaKey;
       if (mod && event.key.toLowerCase() === "z" && !typing) { event.preventDefault(); if (event.shiftKey) redo(); else undo(); return; }
       if (mod && event.key.toLowerCase() === "y" && !typing) { event.preventDefault(); redo(); return; }
@@ -3182,6 +3283,12 @@
         return;
       }
       if (key === "Escape") { closeMenu(); if (selection.size) { selection.clear(); render(); } return; }
+      // Cards are buttons with a roving tabindex: the focused card is the keyboard card, Space
+      // toggles it and Enter plays the selection as before. Any other focused control keeps
+      // its own Space and Enter.
+      const focusedCard = event.target.closest(".card[data-card-id]");
+      if (focusedCard && focusedCard.closest("#table")) kbdFocus = focusedCard.dataset.cardId;
+      else if ((key === " " || key === "Enter") && event.target.closest("button, a[href], summary, [role=menuitem], [role=tab]")) return;
       if (/^[1-9]$/.test(key)) { const macro = view.macros[Number(key) - 1]; if (macro) dispatch({ type: "runMacro", id: macro.id }); return; }
       switch (key.toLowerCase()) {
         case "t": dispatch({ type: "nextTurn", back: event.shiftKey }); break;
@@ -3871,7 +3978,7 @@
       }
       sim.progress = done / trials;
       if (done < trials && sim.running) {
-        if (prefs.tab === "tools") renderPane();
+        if (paneShows("tools")) renderPane();
         setTimeout(chunk, 0);
         return;
       }
@@ -4080,6 +4187,8 @@
   }
 
   function openTab(tab) {
+    if (SHEET_PANES[tab]) { openPaneSheet(tab); return; }
+    if (!SIDE_TABS.includes(tab)) tab = "play";
     prefs.tab = tab;
     prefs.side = true;
     savePrefs();
@@ -4535,7 +4644,7 @@
     const started = performance.now();
     const progress = (offset, share) => (fraction) => {
       botGames.progress = offset + fraction * share;
-      if (prefs.tab === "tools") renderPane();
+      if (paneShows("tools")) renderPane();
     };
     const mine = await playBatch(base, deal.id, games, progress(0, other ? 0.5 : 1));
     const theirs = other && botGames.running ? await playBatch(other.table, other.deal.id, games, progress(0.5, 0.5)) : null;
