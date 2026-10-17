@@ -54,3 +54,11 @@ Each is the smallest change that fixes the listed finding; everything else (puzz
 - The landscape-phone (844×390) layout keeps the action stage as the sticky bottom row rather than a right-side column; `main` scrolls and nothing overflows, and the prompt lists the side column as a refinement, not a requirement.
 - The archived split-middle variants (BadugiJack, Double Blackjack) keep their render paths and a minimal token-only style block; they cannot be selected (`ACTIVE_VARIANT_ORDER` excludes archived variants and saved states with them are rejected), so they were not redesigned.
 - The hub tile still says "Fantasyland Trainer" (title case) while the tool nav and crumb say "Fantasyland trainer"; the hub is not in this slice's files.
+
+## Verification
+
+- `node scripts/run-tests.mjs`: 451/451 (the eight trainer engine tests included; the colour-literal lint logs the trainer's drop to 0).
+- `SHELL_PAGES=/ofc/fantasyland-trainer/ node scripts/shell-browser.cjs`: no overflow, no text under 12px, no target under 44px on the phone viewports, focus rings present, skip link and `main#main` at 1440×900, 375×812 and 844×390; the same with `SHELL_ROOT_FONT=24`.
+- `node scripts/screenshots.cjs --compare --only /ofc/fantasyland-trainer/`: both pictures reviewed (landing state) and copied over the baselines. A scratch Playwright script rendered the partial, filled, setup, confirm-discard, rules, confirmed, report, solution and set-complete states at all three viewports and at a 24px root font, and a second one exercised the shared pointer drag (bank → row → row → bank), the 1/2/3/C hotkeys and the dialog guard; no console errors.
+- `node ofc/play/tests/browser.cjs` (against the assembled site): passes.
+- `node ofc/fantasyland-trainer/tests/extended-ev-browser.cjs` (targets `/ofc/fantasyland-ev/`): fails at its "Show repeat details for 13 cards and 2 jokers" click (the row resolves but Chromium reports it not visible) **both with this slice's `app.js` and with the pre-slice `app.js` served in its place**, and the EV page's own files are untouched on this branch, so the failure is inherited and belongs to the EV sub-step. Every assertion before that click (matrix rows, charts, samples, precomputed EV values, no NaN, no overflow) passes with the new library file.
