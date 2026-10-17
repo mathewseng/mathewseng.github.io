@@ -2,12 +2,23 @@
   "use strict";
 
   const Core = window.OFCFantasylandCore;
-  const TrainerCore = window.OFCSolverCore;
   const STORAGE_KEY = "ofcFantasylandEv.v16";
   const CACHE_SCHEMA_VERSION = 3;
   const SETTINGS_KEY = "ofcFantasylandEv.settings.v3";
   const SECTION_KEY = "ofcFantasylandEv.section";
-  const SECTION_IDS = ["ev", "repeat", "foul", "matrix", "rules"];
+  const SECTION_IDS = ["overview", "repeat", "matrix", "rules"];
+  // Hashes and saved sections from before the Royalty EV, Repeat and Foul tabs
+  // merged into the overview: they still deep-link to the overview with the
+  // matching metric selected.
+  const LEGACY_SECTIONS = {
+    ev: { section: "overview", metric: "immediate" },
+    foul: { section: "overview", metric: "foul" },
+  };
+  const METRICS = {
+    immediate: { title: "Royalty EV by hand", note: "Expected immediate royalties from the best legal board · higher is better" },
+    repeat: { title: "Repeat chance by hand", note: "Chance that at least one legal board returns to Fantasyland" },
+    foul: { title: "Foul chance by hand", note: "Chance that no legal board exists · lower is better" },
+  };
   const DECK_JOKER_COUNTS = [1, 2];
   const ROYALTY_DISTRIBUTION_SIZE = 128;
   const REPEAT_SOURCE_ORDER = [1, 2, 4, 3, 5, 6, 7];
@@ -23,13 +34,6 @@
   const PRECOMPUTED_REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
   const JACKS_PLUS_REPEAT_VARIANTS = new Set(["low", "badeucey", "cribbage"]);
   const PRECOMPUTED_SOLVER_ID = "trainer-exactdist-20260907b+trainer-exact-jjjplus-20260907b";
-  const DEFAULT_SERIAL_MS = {
-    high: 360,
-    low: 240,
-    badeucey: 340,
-    bdp: 180,
-    cribbage: 190,
-  };
   const DEFINITIONS = {
     immediate: {
       title: "Royalty EV",
@@ -61,48 +65,50 @@
   const savedSettings = loadSettings();
   const state = {
     variant: "high",
-    running: false,
-    abort: false,
     results: cached.results,
     topRepeatJacksPlusResults: cached.topRepeatJacksPlusResults,
     settings: savedSettings,
-    cancelRun: null,
     precomputedSamples: 0,
     repeatDetailScenario: "13-0",
-    section: "ev",
+    section: "overview",
+    metric: "immediate",
   };
 
   const els = {};
+  let sectionTabs = null;
+  let rulesTabs = null;
 
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
-    if (!Core || !TrainerCore) {
-      document.body.innerHTML = '<p style="padding:24px;color:#fff">Fantasyland calculation engines did not load.</p>';
+    cacheElements();
+    if (!Core) {
+      announce("The Fantasyland engine did not load, so the charts cannot be drawn. Reload the page to try again.");
       return;
     }
-    cacheElements();
     bindEvents();
     state.precomputedSamples = applyPrecomputedResults(window.OFCFantasylandPrecomputed);
-    activateSection(restoreSection(), false);
+    renderDatasetMeta(window.OFCFantasylandPrecomputed);
+    applyLegacySection();
+    buildRulesTabs();
+    bindSectionTabs();
+    setMetric(state.metric);
     renderVariant();
   }
 
   function cacheElements() {
     Object.assign(els, {
+      alerts: document.querySelector("#alerts"),
+      datasetSamples: document.querySelector("#dataset-samples"),
+      datasetDate: document.querySelector("#dataset-date"),
       variantSummary: document.querySelector("#variant-summary"),
       topRepeatRule: document.querySelector("#top-repeat-rule"),
       topRepeatJacksPlus: document.querySelector("#top-repeat-jacks-plus"),
-      sampleCount: document.querySelector("#sample-count"),
-      sample100k: document.querySelector("#sample-100k"),
-      sampleTotal: document.querySelector("#sample-total"),
-      estimateTime: document.querySelector("#estimate-time"),
-      estimateDetail: document.querySelector("#estimate-detail"),
-      run: document.querySelector("#run-calculator"),
-      stop: document.querySelector("#stop-calculator"),
-      runStatus: document.querySelector("#run-status"),
-      runDetail: document.querySelector("#run-detail"),
-      runProgress: document.querySelector("#run-progress"),
+      hypotheticalLegend: document.querySelector("#hypothetical-legend"),
+      summaryGrid: document.querySelector("#summary-grid"),
+      insightList: document.querySelector("#insight-list"),
+      metricTitle: document.querySelector("#metric-title"),
+      metricNote: document.querySelector("#metric-note"),
       matrixBody: document.querySelector("#matrix-body"),
       matrixTitle: document.querySelector("#matrix-title"),
       matrixMeta: document.querySelector("#matrix-meta"),
@@ -113,15 +119,13 @@
       foulChart: document.querySelector("#foul-chart"),
       distributionChart: document.querySelector("#distribution-chart"),
       repeatSourcePanel: document.querySelector("#repeat-source-panel"),
+      repeatSourceEmpty: document.querySelector("#repeat-source-empty"),
       repeatSourceNote: document.querySelector("#repeat-source-note"),
       repeatSourceChart: document.querySelector("#repeat-source-chart"),
       repeatSourceDetail: document.querySelector("#repeat-source-detail"),
       jokerProbabilityBody: document.querySelector("#joker-probability-body"),
       definitionTitle: document.querySelector("#definition-title"),
       definitionCopy: document.querySelector("#definition-copy"),
-      rulesOpen: document.querySelector("#rules-open"),
-      rulesDialog: document.querySelector("#rules-dialog"),
-      rulesClose: document.querySelector("#rules-close"),
       rulesTabs: document.querySelector("#rules-tabs"),
       rulesContent: document.querySelector("#rules-content"),
       sectionTabs: document.querySelector("#section-tabs"),
@@ -131,117 +135,90 @@
   function bindEvents() {
     document.querySelectorAll('input[name="variant"]').forEach((input) => {
       input.addEventListener("change", () => {
-        state.abort = state.running;
-        if (state.cancelRun) state.cancelRun();
         state.variant = Core.normalizeVariant(input.value);
         renderVariant();
-        updateEstimate();
       });
     });
+    document.querySelectorAll('input[name="metric"]').forEach((input) => {
+      input.addEventListener("change", () => setMetric(input.value));
+    });
     els.topRepeatJacksPlus.addEventListener("change", () => {
-      state.abort = state.running;
-      if (state.cancelRun) state.cancelRun();
       state.settings.topRepeatJacksPlus = els.topRepeatJacksPlus.checked;
       saveSettings();
       renderVariant();
-      updateEstimate();
     });
-    if (els.run) {
-      els.run.addEventListener("click", runCalculator);
-      els.stop.addEventListener("click", () => {
-        state.abort = true;
-        els.runStatus.textContent = "Stopping calculation";
-        if (state.cancelRun) state.cancelRun();
-      });
-      els.sampleCount.addEventListener("input", () => {
-        state.settings.sampleCount = els.sampleCount.value;
-        saveSettings();
-        updateEstimate();
-      });
-      els.sample100k.addEventListener("click", () => {
-        els.sampleCount.value = "100000";
-        els.sampleCount.dispatchEvent(new Event("input", { bubbles: true }));
-        els.sampleCount.focus();
-      });
-    }
     document.querySelectorAll(".definition-link").forEach((button) => {
       button.addEventListener("click", () => showDefinition(button.dataset.definition));
     });
-    els.rulesOpen?.addEventListener("click", () => openRules(state.variant));
-    els.rulesClose?.addEventListener("click", closeRules);
-    els.rulesDialog?.addEventListener("click", (event) => {
-      if (event.target === els.rulesDialog) closeRules();
-    });
-    bindSectionTabs();
     window.addEventListener("resize", () => {
       fitRepeatSourceLabels();
       centerDistributionModes();
     });
   }
 
-  function bindSectionTabs() {
-    if (!els.sectionTabs) return;
-    const buttons = Array.from(els.sectionTabs.querySelectorAll("[data-section]"));
-    buttons.forEach((button) => {
-      button.addEventListener("click", () => activateSection(button.dataset.section, true));
-    });
-    els.sectionTabs.addEventListener("keydown", (event) => {
-      const index = buttons.indexOf(document.activeElement);
-      if (index < 0) return;
-      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-      const target = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : step ? (index + step + buttons.length) % buttons.length : -1;
-      if (target < 0) return;
-      event.preventDefault();
-      buttons[target].focus();
-      activateSection(buttons[target].dataset.section, true);
-    });
-    window.addEventListener("hashchange", () => {
-      const section = sectionFromHash();
-      if (section && section !== state.section) activateSection(section, false);
-    });
-  }
-
-  function sectionFromHash() {
-    const value = decodeURIComponent(window.location.hash.replace(/^#/, ""));
-    return SECTION_IDS.includes(value) ? value : null;
-  }
-
-  function restoreSection() {
-    const fromHash = sectionFromHash();
-    if (fromHash) return fromHash;
+  // Map a pre-merge hash or saved section onto the overview and its metric
+  // before the shared tab helper reads them.
+  function applyLegacySection() {
+    const hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    let saved = null;
     try {
-      const saved = localStorage.getItem(SECTION_KEY);
-      if (SECTION_IDS.includes(saved)) return saved;
+      saved = localStorage.getItem(SECTION_KEY);
     } catch (error) {
-      // localStorage unavailable; fall back to the default section.
+      // localStorage unavailable; the hash alone decides.
     }
-    return SECTION_IDS[0];
-  }
-
-  function activateSection(section, persist) {
-    if (!SECTION_IDS.includes(section)) section = SECTION_IDS[0];
-    state.section = section;
-    els.sectionTabs?.querySelectorAll("[data-section]").forEach((button) => {
-      const active = button.dataset.section === section;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-selected", String(active));
-      button.tabIndex = active ? 0 : -1;
-    });
-    document.querySelectorAll("[data-section-panel]").forEach((panel) => {
-      panel.hidden = panel.dataset.sectionPanel !== section;
-    });
-    if (section === "rules" && els.rulesContent) renderRules(state.variant);
-    if (persist) {
-      if (window.history?.replaceState) window.history.replaceState(null, "", `#${section}`);
-      else window.location.hash = section;
+    const legacy = LEGACY_SECTIONS[hash] || (!SECTION_IDS.includes(hash) && LEGACY_SECTIONS[saved]) || null;
+    if (!legacy) return;
+    state.metric = legacy.metric;
+    if (LEGACY_SECTIONS[hash] && window.history?.replaceState) window.history.replaceState(null, "", `#${legacy.section}`);
+    if (LEGACY_SECTIONS[saved]) {
       try {
-        localStorage.setItem(SECTION_KEY, section);
+        localStorage.setItem(SECTION_KEY, legacy.section);
       } catch (error) {
-        // Ignore storage failures; the hash still carries the section.
+        // Ignore storage failures; the hash carries the section.
       }
     }
-    fitRepeatSourceLabels();
-    centerDistributionModes();
+  }
+
+  function bindSectionTabs() {
+    if (!els.sectionTabs || !window.Tabs) return;
+    sectionTabs = window.Tabs.init(els.sectionTabs, {
+      hash: true,
+      storageKey: SECTION_KEY,
+      onChange: (id) => {
+        state.section = id;
+        fitRepeatSourceLabels();
+        centerDistributionModes();
+      },
+    });
+  }
+
+  function setMetric(metric) {
+    if (!METRICS[metric]) metric = "immediate";
+    state.metric = metric;
+    const input = document.querySelector(`input[name="metric"][value="${metric}"]`);
+    if (input && !input.checked) input.checked = true;
+    [els.evChart, els.repeatChart, els.foulChart].forEach((chart) => {
+      if (chart) chart.hidden = chart.dataset.metric !== metric;
+    });
+    if (els.metricTitle) els.metricTitle.textContent = METRICS[metric].title;
+    if (els.metricNote) els.metricNote.textContent = METRICS[metric].note;
+  }
+
+  function renderDatasetMeta(dataset) {
+    if (!els.datasetSamples) return;
+    if (!state.precomputedSamples) {
+      els.datasetSamples.textContent = "No precomputed dataset loaded";
+      els.datasetSamples.classList.remove("badge--accent");
+      if (els.datasetDate) els.datasetDate.textContent = "";
+      return;
+    }
+    els.datasetSamples.textContent = `${formatInteger(state.precomputedSamples)} samples per configuration`;
+    const generated = new Date(dataset?.generatedAt || "");
+    if (els.datasetDate) {
+      els.datasetDate.textContent = Number.isNaN(generated.getTime())
+        ? "Exact trainer solver"
+        : `Exact trainer solver · generated ${generated.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+    }
   }
 
   function renderVariant() {
@@ -252,8 +229,11 @@
     const includesHypotheticals = cardCounts.some((cards) => !Core.supportsVariantCardCount(state.variant, cards));
     els.topRepeatRule.hidden = !JACKS_PLUS_REPEAT_VARIANTS.has(state.variant);
     els.topRepeatJacksPlus.checked = jacksPlus;
-    els.variantSummary.textContent = `${meta.short}${jacksPlus ? " Top-row repeats require JJJ or better." : ""}${includesHypotheticals ? " Off-rule card counts are modeled as hypotheticals below." : ""}`;
+    if (els.hypotheticalLegend) els.hypotheticalLegend.hidden = !includesHypotheticals;
+    els.variantSummary.textContent = `${meta.short}${jacksPlus ? " Top-row repeats require JJJ or better." : ""}${includesHypotheticals ? " Off-rule card counts are modeled as hypotheticals." : ""}`;
     const data = getVariantResults();
+    renderSummary(data, scenarios);
+    renderInsights(data, scenarios);
     renderMatrix(data, scenarios);
     renderDeckMatrix(data);
     renderCharts(data, scenarios);
@@ -264,15 +244,132 @@
     els.matrixTitle.textContent = `${cardCounts[0]}–${cardCounts[cardCounts.length - 1]} card ${meta.label} matrix`;
     const ruleLabel = jacksPlus ? " · JJJ+ top repeats" : "";
     els.matrixMeta.textContent = complete ? `${meta.label}${ruleLabel} · exact trainer solver · ${sampleSummary}` : "No samples yet";
-    if (!state.running && els.runStatus) {
-      els.runStatus.textContent = complete ? `${meta.label}${ruleLabel} results loaded` : "Ready to calculate";
-      els.runDetail.textContent = complete
-        ? `${sampleSummary}; trainer-matched solver; ${state.precomputedSamples ? "shared baseline loaded" : "new runs add samples"}`
-        : `${scenarios.length} configurations - completed samples save locally`;
-      els.runProgress.style.width = complete === scenarios.length ? "100%" : "0%";
-    }
-    if (state.section === "rules" && els.rulesContent) renderRules(state.variant);
+    renderRules(state.variant);
   }
+
+  // ---------- Overview: highlights and takeaways ----------
+
+  function supportedEntries(data, scenarios) {
+    const entries = scenarios
+      .map((scenario) => ({ scenario, result: data[scenarioKey(scenario)] }))
+      .filter((entry) => entry.result);
+    const supported = entries.filter(({ scenario }) => Core.supportsVariantCardCount(state.variant, scenario.cards));
+    return supported.length ? supported : entries;
+  }
+
+  function maxBy(items, valueFor) {
+    return items.reduce((best, item) => (best === null || valueFor(item) > valueFor(best) ? item : best), null);
+  }
+
+  function configLabel(scenario) {
+    return `${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}`;
+  }
+
+  function renderSummary(data, scenarios) {
+    if (!els.summaryGrid) return;
+    const pool = supportedEntries(data, scenarios);
+    if (!pool.length) {
+      els.summaryGrid.replaceChildren();
+      els.summaryGrid.hidden = true;
+      return;
+    }
+    els.summaryGrid.hidden = false;
+    const cardCounts = [...new Set(pool.map(({ scenario }) => scenario.cards))].sort((a, b) => a - b);
+    const maxCards = cardCounts[cardCounts.length - 1];
+    const top = maxBy(pool, ({ result }) => result.immediate);
+    const noJoker = maxBy(pool.filter(({ scenario }) => scenario.jokers === 0), ({ result }) => result.immediate);
+    const deck = aggregateDeckResults(data, maxCards, 2);
+    const lift = maxBy(
+      cardCounts
+        .map((cards) => {
+          const zero = data[scenarioKey({ cards, jokers: 0 })];
+          const two = data[scenarioKey({ cards, jokers: 2 })];
+          return zero && two ? { cards, lift: finiteNumber(two.immediate) - finiteNumber(zero.immediate) } : null;
+        })
+        .filter(Boolean),
+      (item) => item.lift
+    );
+    const stats = [
+      ["Top royalty EV", formatPoints(top.result.immediate), configLabel(top.scenario)],
+      noJoker ? ["Best without jokers", formatPoints(noJoker.result.immediate), configLabel(noJoker.scenario)] : null,
+      deck ? [`${maxCards}-card EV, 2-joker deck`, formatPoints(deck.immediate), `${formatPct(deck.repeatRate)} repeat · weighted before the deal`] : null,
+      lift ? ["Largest joker lift", `+${formatPoints(lift.lift)}`, `${lift.cards} cards: 0 to 2 jokers`] : null,
+    ].filter(Boolean);
+    els.summaryGrid.replaceChildren(
+      ...stats.map(([label, value, note]) => {
+        const stat = document.createElement("div");
+        stat.className = "stat";
+        stat.innerHTML = `<span class="stat-label">${label}</span><strong class="stat-value">${value}</strong><span class="stat-delta">${note}</span>`;
+        return stat;
+      })
+    );
+  }
+
+  function renderInsights(data, scenarios) {
+    if (!els.insightList) return;
+    const pool = supportedEntries(data, scenarios);
+    if (!pool.length) {
+      els.insightList.replaceChildren();
+      return;
+    }
+    const cardCounts = [...new Set(pool.map(({ scenario }) => scenario.cards))].sort((a, b) => a - b);
+    const minCards = cardCounts[0];
+    const maxCards = cardCounts[cardCounts.length - 1];
+    const find = (cards, jokers) => data[scenarioKey({ cards, jokers })];
+    const twoJoker = pool.filter(({ scenario }) => scenario.jokers === 2);
+    const best = maxBy(pool, ({ result }) => result.immediate);
+    const insights = [];
+
+    if (twoJoker.length) {
+      const rates = twoJoker.map(({ result }) => finiteNumber(result.repeatRate));
+      insights.push([
+        "Jokers drive repeat equity",
+        `Two-joker hands repeat in ${formatPct(Math.min(...rates))} to ${formatPct(Math.max(...rates))} of deals across ${minCards}–${maxCards} cards.`,
+      ]);
+    }
+    if (minCards !== maxCards && find(minCards, 0) && find(maxCards, 0) && find(minCards, 2) && find(maxCards, 2)) {
+      insights.push([
+        "Card count still matters",
+        `Going from ${minCards} to ${maxCards} cards adds ${formatPoints(find(maxCards, 0).immediate - find(minCards, 0).immediate)} royalty EV with no jokers and ${formatPoints(find(maxCards, 2).immediate - find(minCards, 2).immediate)} with two jokers.`,
+      ]);
+    }
+    if (best) {
+      insights.push([
+        "Best configuration",
+        `${configLabel(best.scenario)} leads at ${formatPoints(best.result.immediate)} immediate EV and ${formatPct(best.result.repeatRate)} repeat chance.`,
+      ]);
+    }
+    const deckMax = aggregateDeckResults(data, maxCards, 2);
+    const deckMin = aggregateDeckResults(data, minCards, 2);
+    if (deckMax && deckMin && minCards !== maxCards) {
+      insights.push([
+        "Real-deck joker mix",
+        `A random ${maxCards}-card hand from a two-joker deck holds both jokers ${formatPct(Core.hypergeometricJokers(maxCards, 2, 2))} of the time; weighted before the deal it is worth ${formatPoints(deckMax.immediate)} against ${formatPoints(deckMin.immediate)} for ${minCards} cards.`,
+      ]);
+    }
+    const fouls = pool.map(({ result }) => resultFoulRate(result));
+    const maxFoul = Math.max(...fouls);
+    if (maxFoul > 0) {
+      const worst = maxBy(pool, ({ result }) => resultFoulRate(result));
+      insights.push([
+        "Foul risk",
+        `Fouls reach ${formatPct(maxFoul)} at ${configLabel(worst.scenario)}; a fouled deal scores zero royalties and counts against the EV above.`,
+      ]);
+    } else {
+      insights.push(["No fouls", `Every ${Core.VARIANTS[state.variant].label} deal has a legal board, so the royalty EV carries no foul discount.`]);
+    }
+
+    els.insightList.replaceChildren(
+      ...insights.map(([title, body]) => {
+        const card = document.createElement("article");
+        card.className = "insight-card";
+        card.innerHTML = `<strong>${title}</strong><p>${body}</p>`;
+        return card;
+      })
+    );
+  }
+
+  // ---------- Repeat sources ----------
 
   function renderRepeatSourceLegend() {
     const capped = state.variant === "bdp";
@@ -287,6 +384,8 @@
     });
   }
 
+  // ---------- Matrix tables ----------
+
   function renderMatrix(data = getVariantResults(), scenarios = scenariosForVariant()) {
     if (!els.matrixBody) return;
     const fragment = document.createDocumentFragment();
@@ -297,13 +396,13 @@
       row.dataset.config = scenarioKey(scenario);
       row.classList.toggle("is-hypothetical", hypothetical);
       row.innerHTML = `
-        <td><span class="hand-label"><i class="joker-dot j${scenario.jokers}"></i><span>${scenario.cards} cards / ${scenario.jokers}J</span>${hypothetical ? '<small>hypothetical</small>' : ""}</span></td>
-        <td data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="repeatLine">${result && result.repeatLine !== null ? formatPoints(result.repeatLine) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="recursive">${result ? formatRecursive(recursiveValueForScenario(data, scenario)) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="foul">${result ? formatPct(resultFoulRate(result)) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="samples">${result ? formatInteger(result.samples) : '<span class="cell-muted">0</span>'}</td>
+        <td><span class="hand-label"><i class="joker-dot j${scenario.jokers}" aria-hidden="true"></i><span>${scenario.cards} cards / ${scenario.jokers}J</span>${hypothetical ? '<small class="hypothetical-tag">hypothetical</small>' : ""}</span></td>
+        <td class="num" data-label="Royalty EV" data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-label="Repeat FL" data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-label="Repeat-line EV" data-value="repeatLine">${result && result.repeatLine !== null ? formatPoints(result.repeatLine) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-label="Recursive EV" data-value="recursive">${result ? formatRecursive(recursiveValueForScenario(data, scenario)) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-label="Foul" data-value="foul">${result ? formatPct(resultFoulRate(result)) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-label="Samples" data-value="samples">${result ? formatInteger(result.samples) : '<span class="cell-muted">0</span>'}</td>
       `;
       if (result) row.querySelector('[data-value="immediate"]').title = `Standard error +/-${formatPoints(result.standardError)}`;
       fragment.appendChild(row);
@@ -326,9 +425,9 @@
       row.dataset.deckConfig = `${cards}-${deckJokers}`;
       row.innerHTML = `
         <td><span class="hand-label deck-label"><i class="deck-count">${deckJokers}J</i><span>${cards} cards</span></span></td>
-        <td data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
-        <td data-value="foul">${result ? formatPct(result.foulRate) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-value="immediate">${result ? formatPoints(result.immediate) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-value="repeat">${result ? formatPct(result.repeatRate) : '<span class="cell-muted">--</span>'}</td>
+        <td class="num" data-value="foul">${result ? formatPct(result.foulRate) : '<span class="cell-muted">--</span>'}</td>
       `;
       fragment.appendChild(row);
     }));
@@ -379,6 +478,8 @@
     return samples ? (repeatCount + 0.5) / (samples + 1) : 0;
   }
 
+  // ---------- Charts ----------
+
   function renderCharts(data, scenarios = scenariosForVariant()) {
     const results = scenarios.map((scenario) => ({ scenario, result: data[scenarioKey(scenario)] })).filter((entry) => entry.result);
     if (!results.length) {
@@ -391,6 +492,7 @@
       els.distributionChart.className = "distribution-chart empty-chart";
       els.distributionChart.textContent = "Royalty outcomes will appear here.";
       els.repeatSourcePanel.hidden = true;
+      if (els.repeatSourceEmpty) els.repeatSourceEmpty.hidden = false;
       els.repeatSourceDetail?.replaceChildren();
       return;
     }
@@ -407,6 +509,7 @@
       && entries.length > 0
       && entries.every(({ result }) => hasCompleteRepeatSourceData(result) && hasCompleteRepeatDetailData(result, state.variant, currentTopRepeatMinRank()));
     els.repeatSourcePanel.hidden = !complete;
+    if (els.repeatSourceEmpty) els.repeatSourceEmpty.hidden = complete;
     if (!complete) {
       els.repeatSourceChart.replaceChildren();
       els.repeatSourceDetail?.replaceChildren();
@@ -430,8 +533,9 @@
       row.setAttribute("aria-pressed", String(key === state.repeatDetailScenario));
       row.setAttribute("aria-label", `Show repeat details for ${scenario.cards} cards and ${scenario.jokers} jokers`);
       const label = document.createElement("span");
+      label.className = "repeat-source-label";
       label.textContent = `${scenario.cards}C / ${scenario.jokers}J`;
-      const track = document.createElement("div");
+      const track = document.createElement("span");
       track.className = "repeat-source-track";
       const ariaParts = [];
       REPEAT_SOURCE_ORDER.forEach((mask) => {
@@ -456,7 +560,7 @@
         ariaParts.push(`${meta.label} ${formatDetailPct(allHandsRate)}`);
       });
       track.setAttribute("aria-label", ariaParts.join(", "));
-      const values = document.createElement("div");
+      const values = document.createElement("span");
       values.className = "repeat-source-values";
       const multiRowLabel = state.variant === "bdp" ? "multi" : "SF";
       values.innerHTML = `<strong>${formatPct(sourceTotal / samples)}</strong><small>${formatPct(superTotal / samples)} ${multiRowLabel}</small>`;
@@ -465,6 +569,7 @@
       row.addEventListener("click", () => {
         state.repeatDetailScenario = key;
         renderRepeatSourceChart(entries);
+        els.repeatSourceChart.querySelector(".repeat-source-row.is-selected")?.focus({ preventScroll: true });
       });
       fragment.appendChild(row);
     });
@@ -480,7 +585,7 @@
     REPEAT_SOURCE_ORDER.forEach((mask) => {
       const meta = REPEAT_SOURCE_META[mask];
       const item = document.createElement("span");
-      item.innerHTML = `<i class="${meta.className}"></i><b>${meta.label}</b><strong>${formatDetailPct(finiteNumber(counts[mask]) / samples)}</strong>`;
+      item.innerHTML = `<i class="${meta.className}" aria-hidden="true"></i><b>${meta.label}</b><strong>${formatDetailPct(finiteNumber(counts[mask]) / samples)}</strong>`;
       breakdown.appendChild(item);
     });
     return breakdown;
@@ -552,7 +657,7 @@
 
     const heading = document.createElement("header");
     heading.className = "repeat-detail-heading";
-    heading.innerHTML = `<div><p class="eyebrow">Selected hand</p><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} sampled hands</span>`;
+    heading.innerHTML = `<div><p class="eyebrow eyebrow--plain">Selected hand</p><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} sampled hands</span>`;
 
     const groups = document.createElement("div");
     groups.className = "repeat-detail-groups";
@@ -690,12 +795,14 @@
     const fragment = document.createDocumentFragment();
     entries.forEach(({ scenario, result }) => {
       const value = valueFor(result);
+      const hypothetical = !Core.supportsVariantCardCount(state.variant, scenario.cards);
       const row = document.createElement("div");
       row.className = "chart-row";
+      row.classList.toggle("is-hypothetical", hypothetical);
       row.dataset.jokers = String(scenario.jokers);
       row.innerHTML = `
         <span>${scenario.cards}C / ${scenario.jokers}J</span>
-        <div class="bar-track"><i style="width:${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(2)}%"></i></div>
+        <div class="bar-track" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(2)}%"></i></div>
         <strong>${formatter(value)}</strong>
       `;
       fragment.appendChild(row);
@@ -716,23 +823,55 @@
       row.className = "distribution-row";
       row.dataset.jokers = String(scenario.jokers);
       const header = document.createElement("header");
-      header.innerHTML = `<strong>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</strong><span>Mode <b>${mode.points} royalties</b> · ${formatDetailPct(mode.rate)}</span>`;
+      const title = document.createElement("strong");
+      title.textContent = `${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}`;
+      const readout = document.createElement("span");
+      readout.className = "distribution-readout";
+      header.append(title, readout);
       const viewport = document.createElement("div");
       viewport.className = "distribution-viewport";
       viewport.dataset.modeIndex = String(mode.points);
       const plot = document.createElement("div");
       plot.className = "distribution-plot";
+      plot.tabIndex = 0;
+      plot.setAttribute("role", "group");
       plot.style.gridTemplateColumns = `repeat(${bins.length}, minmax(30px, 1fr))`;
       plot.style.minWidth = `${bins.length * 34}px`;
-      plot.setAttribute("aria-label", bins.map(({ points, rate }) => `${points} royalties ${formatDetailPct(rate)}`).join(", "));
+      plot.setAttribute("aria-label", `${title.textContent}: ${bins.map(({ points, rate }) => `${points} royalties ${formatDetailPct(rate)}`).join(", ")}`);
       bins.forEach(({ points, rate }) => {
         const bin = document.createElement("div");
         bin.className = "distribution-bin";
         bin.classList.toggle("is-mode", points === mode.points);
-        bin.innerHTML = `<div><i style="height:${Math.max(2, (rate / mode.rate) * 100).toFixed(2)}%"></i></div><strong>${points}</strong><small>${formatDetailPct(rate)}</small>`;
+        bin.dataset.points = String(points);
+        bin.innerHTML = `<div><i style="height:${Math.max(2, (rate / mode.rate) * 100).toFixed(2)}%"></i></div><strong>${points}</strong>`;
         bin.title = `${points} royalties: ${formatDetailPct(rate)}`;
         plot.appendChild(bin);
       });
+      const describe = (points, isMode) => {
+        const bin = bins[points];
+        readout.innerHTML = `${isMode ? "Mode " : ""}<b>${bin.points} royalties</b> · ${formatDetailPct(bin.rate)}`;
+      };
+      const activate = (points, { scroll = false } = {}) => {
+        const target = plot.children[points];
+        if (!target) return;
+        plot.querySelector(".is-active")?.classList.remove("is-active");
+        target.classList.add("is-active");
+        plot.dataset.active = String(points);
+        describe(points, points === mode.points);
+        if (scroll) target.scrollIntoView({ block: "nearest", inline: "nearest" });
+      };
+      plot.addEventListener("click", (event) => {
+        const bin = event.target.closest(".distribution-bin");
+        if (bin) activate(Number(bin.dataset.points));
+      });
+      plot.addEventListener("keydown", (event) => {
+        const current = Number(plot.dataset.active ?? mode.points);
+        const next = event.key === "ArrowRight" ? current + 1 : event.key === "ArrowLeft" ? current - 1 : event.key === "Home" ? 0 : event.key === "End" ? bins.length - 1 : null;
+        if (next === null || next < 0 || next >= bins.length) return;
+        event.preventDefault();
+        activate(next, { scroll: true });
+      });
+      describe(mode.points, true);
       viewport.appendChild(plot);
       row.append(header, viewport);
       fragment.appendChild(row);
@@ -754,396 +893,14 @@
     });
   }
 
-  async function runCalculator() {
-    if (state.running) return;
-    const samples = parseSampleCount();
-    if (!samples) {
-      updateEstimate();
-      els.sampleCount.focus();
-      return;
-    }
-    const variant = state.variant;
-    const topRepeatMinRank = currentTopRepeatMinRank();
-    const resultStore = resultsStoreFor(topRepeatMinRank);
-    resultStore[variant] = resultStore[variant] || {};
-    const scenarios = scenariosForVariant(variant);
-    const total = samples * scenarios.length;
-    const runSeed = Core.hashSeed(`${Date.now()}-${Math.random()}-${variant}`).toString(16).padStart(8, "0").toUpperCase();
-    const started = performance.now();
-    const aggregates = new Map(scenarios.map((scenario) => [scenarioKey(scenario), aggregateFromResult(resultStore[variant][scenarioKey(scenario)])]));
-    let completed = 0;
-    let lastRender = 0;
-    let lastSave = 0;
-    let workersUsed = 1;
-    state.running = true;
-    state.abort = false;
-    setRunningUi(true);
-    els.runStatus.textContent = "Starting calculation";
-    els.runDetail.textContent = `${formatInteger(total)} new hands across ${scenarios.length} configurations`;
-    els.runProgress.style.width = "0%";
-
-    const renderProgress = (force = false) => {
-      const now = performance.now();
-      if (!force && now - lastRender < 180) return;
-      if (state.variant !== variant || currentTopRepeatMinRank() !== topRepeatMinRank) return;
-      const data = resultStore[variant];
-      renderMatrix(data, scenarios);
-      renderDeckMatrix(data);
-      renderCharts(data, scenarios);
-      lastRender = now;
-    };
-
-    const handleProgress = (scenario, chunk) => {
-      if (!chunk || !chunk.samples) return;
-      const key = scenarioKey(scenario);
-      const cumulative = aggregates.get(key) || createAggregate();
-      mergeAggregate(cumulative, chunk);
-      aggregates.set(key, cumulative);
-      resultStore[variant][key] = finalizeAggregate(cumulative);
-      completed += chunk.samples;
-
-      const elapsed = performance.now() - started;
-      const remainingMs = completed ? (elapsed / completed) * Math.max(0, total - completed) : estimateRunMs(samples, variant);
-      els.runStatus.textContent = `Calculating ${Core.VARIANTS[variant].label}`;
-      els.runDetail.textContent = `${formatInteger(completed)} / ${formatInteger(total)} hands - ${formatDuration(remainingMs)} left`;
-      els.runProgress.style.width = `${Math.min(100, (completed / total) * 100).toFixed(2)}%`;
-      els.estimateTime.textContent = formatDuration(remainingMs);
-      els.estimateDetail.textContent = `${formatInteger(completed)} hands completed`;
-      renderProgress();
-      if (performance.now() - lastSave >= 1000) {
-        saveCache();
-        lastSave = performance.now();
-      }
-    };
-
-    let outcome;
-    try {
-      if (typeof Worker === "function") {
-        outcome = await runWorkerPool({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress: handleProgress });
-        workersUsed = outcome.workersUsed;
-      } else {
-        outcome = await runMainThread({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress: handleProgress });
-      }
-    } catch (error) {
-      outcome = { stopped: true, error };
-    }
-
-    const elapsedSeconds = (performance.now() - started) / 1000;
-    state.running = false;
-    state.cancelRun = null;
-    setRunningUi(false);
-    renderProgress(true);
-    saveCache();
-    if (completed >= Math.min(12, total)) saveBenchmark(variant, (elapsedSeconds * 1000 * workersUsed) / completed);
-    if (state.variant !== variant || currentTopRepeatMinRank() !== topRepeatMinRank) {
-      state.abort = false;
-      renderVariant();
-      return;
-    }
-    if (outcome.error) {
-      els.runStatus.textContent = "Calculation interrupted";
-      els.runDetail.textContent = `${formatInteger(completed)} new hands saved - ${outcome.error.message || "worker error"}`;
-    } else if (state.abort || outcome.stopped) {
-      els.runStatus.textContent = "Calculation stopped";
-      els.runDetail.textContent = `${formatInteger(completed)} / ${formatInteger(total)} new hands saved`;
-    } else {
-      els.runStatus.textContent = "Calculation complete";
-      els.runDetail.textContent = `${formatInteger(completed)} new hands in ${formatDuration(elapsedSeconds * 1000)} using ${workersUsed} worker${workersUsed === 1 ? "" : "s"}; trainer-matched solver`;
-      els.matrixMeta.textContent = `${Core.VARIANTS[variant].label}${topRepeatMinRank === 11 ? " · JJJ+ top repeats" : ""} - ${resultSampleSummary(resultStore[variant], scenarios)}`;
-      els.runProgress.style.width = "100%";
-    }
-    state.abort = false;
-    updateEstimate();
-  }
-
-  function runWorkerPool({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress }) {
-    const workerCount = availableWorkerCount();
-    const chunkSize = sampleChunkSize(samples);
-    return new Promise((resolve, reject) => {
-      const workers = [];
-      let queueIndex = 0;
-      let completedTasks = 0;
-      let settled = false;
-
-      const finish = (result) => {
-        if (settled) return;
-        settled = true;
-        workers.forEach((worker) => worker.terminate());
-        resolve({ workersUsed: workerCount, ...result });
-      };
-
-      state.cancelRun = () => finish({ stopped: true });
-
-      const assign = (worker) => {
-        if (settled) return;
-        if (queueIndex >= scenarios.length) {
-          if (completedTasks >= scenarios.length) finish({ stopped: false });
-          return;
-        }
-        const scenario = scenarios[queueIndex];
-        const taskId = queueIndex;
-        queueIndex += 1;
-        worker.postMessage({ type: "run", taskId, variant, scenario, samples, runSeed, chunkSize, topRepeatMinRank });
-      };
-
-      for (let index = 0; index < workerCount; index += 1) {
-        let worker;
-        try {
-          worker = new Worker("./worker.js?v=20260925b");
-        } catch (error) {
-          workers.forEach((item) => item.terminate());
-          reject(error);
-          return;
-        }
-        workers.push(worker);
-        worker.onmessage = (event) => {
-          const message = event.data || {};
-          if (message.type === "progress") onProgress(message.scenario, message.aggregate);
-          if (message.type === "complete") {
-            completedTasks += 1;
-            assign(worker);
-          }
-        };
-        worker.onerror = (event) => {
-          if (settled) return;
-          settled = true;
-          workers.forEach((item) => item.terminate());
-          reject(new Error(event.message || "Calculation worker failed"));
-        };
-        assign(worker);
-      }
-    });
-  }
-
-  async function runMainThread({ variant, scenarios, samples, runSeed, topRepeatMinRank, onProgress }) {
-    state.cancelRun = () => { state.abort = true; };
-    for (const scenario of scenarios) {
-      for (let sample = 0; sample < samples; sample += 1) {
-        if (state.abort || state.variant !== variant) return { stopped: true, workersUsed: 1 };
-        await yieldFrame();
-        const seedText = `EV-${runSeed}-${variant}-${scenario.cards}C-${scenario.jokers}J-${sample}`;
-        const ids = Core.dealSeeded(scenario.cards, scenario.jokers, Core.hashSeed(seedText).toString(16));
-        const chunk = createAggregate();
-        addSample(chunk, solveSample(ids, variant, topRepeatMinRank), variant);
-        onProgress(scenario, chunk);
-      }
-    }
-    return { stopped: false, workersUsed: 1 };
-  }
-
-  function createAggregate() {
-    return {
-      samples: 0,
-      immediateSum: 0,
-      immediateSquared: 0,
-      strategySum: 0,
-      repeatCount: 0,
-      repeatPointSum: 0,
-      repeatSources: Array(8).fill(0),
-      repeatDetails: createRepeatDetails(),
-      qualifyCount: 0,
-      distribution: Array(ROYALTY_DISTRIBUTION_SIZE).fill(0),
-    };
-  }
-
-  function mergeAggregate(target, source) {
-    target.samples += finiteNumber(source.samples);
-    target.immediateSum += finiteNumber(source.immediateSum);
-    target.immediateSquared += finiteNumber(source.immediateSquared);
-    target.strategySum += finiteNumber(source.strategySum);
-    target.repeatCount += finiteNumber(source.repeatCount);
-    target.repeatPointSum += finiteNumber(source.repeatPointSum);
-    target.repeatSources = target.repeatSources.map((value, index) => value + finiteNumber(source.repeatSources?.[index]));
-    mergeRepeatDetails(target.repeatDetails, source.repeatDetails);
-    target.qualifyCount += finiteNumber(source.qualifyCount);
-    target.distribution = target.distribution.map((value, index) => value + finiteNumber(source.distribution?.[index]));
-    return target;
-  }
-
-  function aggregateFromResult(result) {
-    if (!result || !finiteNumber(result.samples)) return createAggregate();
-    if (result.totals && finiteNumber(result.totals.samples) === finiteNumber(result.samples)) {
-      return {
-        samples: finiteNumber(result.totals.samples),
-        immediateSum: finiteNumber(result.totals.immediateSum),
-        immediateSquared: finiteNumber(result.totals.immediateSquared),
-        strategySum: finiteNumber(result.totals.strategySum),
-        repeatCount: finiteNumber(result.totals.repeatCount),
-        repeatPointSum: finiteNumber(result.totals.repeatPointSum),
-        repeatSources: Array.from({ length: 8 }, (_, index) => finiteNumber(result.totals.repeatSources?.[index])),
-        repeatDetails: copyRepeatDetails(result.totals.repeatDetails),
-        qualifyCount: finiteNumber(result.totals.qualifyCount),
-        distribution: Array.from({ length: ROYALTY_DISTRIBUTION_SIZE }, (_, index) => finiteNumber(result.totals.distribution?.[index])),
-      };
-    }
-
-    const samples = Math.max(0, Math.round(finiteNumber(result.samples)));
-    const immediate = finiteNumber(result.immediate);
-    const variance = Math.pow(finiteNumber(result.standardError), 2) * samples;
-    const rawDistribution = Array.from({ length: ROYALTY_DISTRIBUTION_SIZE }, (_, index) => finiteNumber(result.distribution?.[index]) * samples);
-    const distribution = rawDistribution.map(Math.floor);
-    let remainder = samples - distribution.reduce((sum, value) => sum + value, 0);
-    const fractionalOrder = rawDistribution.map((value, index) => ({ index, fraction: value - Math.floor(value) })).sort((left, right) => right.fraction - left.fraction);
-    for (let index = 0; remainder > 0; index = (index + 1) % fractionalOrder.length) {
-      distribution[fractionalOrder[index].index] += 1;
-      remainder -= 1;
-    }
-    while (remainder < 0) {
-      const largest = distribution.indexOf(Math.max(...distribution));
-      distribution[largest] -= 1;
-      remainder += 1;
-    }
-    const repeatCount = Math.round(finiteNumber(result.repeatRate) * samples);
-    return {
-      samples,
-      immediateSum: immediate * samples,
-      immediateSquared: (variance + immediate * immediate) * samples,
-      strategySum: finiteNumber(result.strategy) * samples,
-      repeatCount,
-      repeatPointSum: finiteNumber(result.repeatLine) * repeatCount,
-      repeatSources: Array(8).fill(0),
-      repeatDetails: createRepeatDetails(),
-      qualifyCount: Math.round((1 - resultFoulRate(result)) * samples),
-      distribution,
-    };
-  }
-
-  function solveSample(ids, variant, topRepeatMinRank = null) {
-    const solved = TrainerCore.solveVariantHand(ids, variant, {
-      allowUnsupportedCardCount: true,
-      ...(topRepeatMinRank === null ? {} : { topRepeatMinRank }),
-    });
-    if (variant === "high" && !solved.best) throw new Error("High Fantasyland must always have a legal board.");
-    return solved;
-  }
-
-  function addSample(aggregate, solved, variant) {
-    const immediate = solved.bestRoyalty ? finiteNumber(solved.bestRoyalty.points) : 0;
-    const strategy = solved.best ? finiteNumber(solved.best.points) : 0;
-    aggregate.samples += 1;
-    aggregate.immediateSum += immediate;
-    aggregate.immediateSquared += immediate * immediate;
-    aggregate.strategySum += strategy;
-    aggregate.distribution[Math.max(0, Math.min(ROYALTY_DISTRIBUTION_SIZE - 1, Math.trunc(immediate)))] += 1;
-    if (solved.best) aggregate.qualifyCount += 1;
-    if (solved.bestRepeat) {
-      aggregate.repeatCount += 1;
-      aggregate.repeatPointSum += finiteNumber(solved.bestRepeat.points);
-      const repeatMask = Math.trunc(finiteNumber(solved.bestRepeat.repeatMask));
-      if (repeatMask >= 1 && repeatMask <= 7) aggregate.repeatSources[repeatMask] += 1;
-      const repeatDetail = TrainerCore.repeatDetailForSolution(solved.bestRepeat);
-      if (repeatDetail.topBdpWheel) aggregate.repeatDetails.topBdpWheel += 1;
-      if (repeatDetail.topTripsRank >= 2 && repeatDetail.topTripsRank <= 14) {
-        aggregate.repeatDetails.topTripsByRank[repeatDetail.topTripsRank] += 1;
-      }
-      if (repeatDetail.bottomKind === "quads" && repeatDetail.bottomQuadsRank >= 2 && repeatDetail.bottomQuadsRank <= 14) {
-        aggregate.repeatDetails.bottomQuadsByRank[repeatDetail.bottomQuadsRank] += 1;
-      } else if (repeatDetail.bottomKind === "straight-flush" || repeatDetail.bottomKind === "royal-flush") {
-        if (repeatDetail.bottomKind === "royal-flush") aggregate.repeatDetails.bottomRoyalFlush += 1;
-        else aggregate.repeatDetails.bottomStraightFlush += 1;
-        if (repeatDetail.bottomStraightFlushRank >= 5 && repeatDetail.bottomStraightFlushRank <= 14) {
-          aggregate.repeatDetails.bottomStraightFlushByRank[repeatDetail.bottomStraightFlushRank] += 1;
-        }
-      }
-    }
-    if (variant === "cribbage" && solved.best) {
-      const score = TrainerCore.repeatDetailForSolution(solved.best).middleCribbagePoints;
-      if (!Number.isInteger(score) || score < 0 || score >= aggregate.repeatDetails.cribbageMiddleByScore.length) {
-        throw new Error(`Unexpected Cribbage middle score: ${score}`);
-      }
-      aggregate.repeatDetails.cribbageMiddleByScore[score] += 1;
-    }
-  }
-
-  function createRepeatDetails() {
-    return {
-      topTripsByRank: Array(15).fill(0),
-      topBdpWheel: 0,
-      bottomQuadsByRank: Array(15).fill(0),
-      bottomStraightFlushByRank: Array(15).fill(0),
-      bottomStraightFlush: 0,
-      bottomRoyalFlush: 0,
-      cribbageMiddleByScore: Array(30).fill(0),
-    };
-  }
-
-  function copyRepeatDetails(value) {
-    return {
-      topTripsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.topTripsByRank?.[index])),
-      topBdpWheel: finiteNumber(value?.topBdpWheel),
-      bottomQuadsByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomQuadsByRank?.[index])),
-      bottomStraightFlushByRank: Array.from({ length: 15 }, (_, index) => finiteNumber(value?.bottomStraightFlushByRank?.[index])),
-      bottomStraightFlush: finiteNumber(value?.bottomStraightFlush),
-      bottomRoyalFlush: finiteNumber(value?.bottomRoyalFlush),
-      cribbageMiddleByScore: Array.from({ length: 30 }, (_, index) => finiteNumber(value?.cribbageMiddleByScore?.[index])),
-    };
-  }
-
-  function mergeRepeatDetails(target, source) {
-    const incoming = copyRepeatDetails(source);
-    target.topTripsByRank = target.topTripsByRank.map((value, index) => value + incoming.topTripsByRank[index]);
-    target.topBdpWheel += incoming.topBdpWheel;
-    target.bottomQuadsByRank = target.bottomQuadsByRank.map((value, index) => value + incoming.bottomQuadsByRank[index]);
-    target.bottomStraightFlushByRank = target.bottomStraightFlushByRank.map((value, index) => value + incoming.bottomStraightFlushByRank[index]);
-    target.bottomStraightFlush += incoming.bottomStraightFlush;
-    target.bottomRoyalFlush += incoming.bottomRoyalFlush;
-    target.cribbageMiddleByScore = target.cribbageMiddleByScore.map((value, index) => value + incoming.cribbageMiddleByScore[index]);
-    return target;
-  }
-
-  function finalizeAggregate(aggregate) {
-    const n = aggregate.samples;
-    const immediate = aggregate.immediateSum / n;
-    const strategy = aggregate.strategySum / n;
-    const repeatRate = aggregate.repeatCount / n;
-    const recursiveRepeatRate = (aggregate.repeatCount + 0.5) / (n + 1);
-    const variance = Math.max(0, aggregate.immediateSquared / n - immediate * immediate);
-    return {
-      samples: n,
-      immediate,
-      strategy,
-      repeatRate,
-      recursiveRepeatRate,
-      repeatLine: aggregate.repeatCount ? aggregate.repeatPointSum / aggregate.repeatCount : null,
-      recursive: strategy / (1 - recursiveRepeatRate),
-      qualifyRate: aggregate.qualifyCount / n,
-      foulRate: 1 - aggregate.qualifyCount / n,
-      standardError: Math.sqrt(variance / n),
-      distribution: aggregate.distribution.map((count) => count / n),
-      repeatSources: aggregate.repeatSources.map((count) => count / n),
-      repeatDetails: copyRepeatDetails(aggregate.repeatDetails),
-      totals: {
-        samples: n,
-        immediateSum: aggregate.immediateSum,
-        immediateSquared: aggregate.immediateSquared,
-        strategySum: aggregate.strategySum,
-        repeatCount: aggregate.repeatCount,
-        repeatPointSum: aggregate.repeatPointSum,
-        repeatSources: aggregate.repeatSources.slice(),
-        repeatDetails: copyRepeatDetails(aggregate.repeatDetails),
-        qualifyCount: aggregate.qualifyCount,
-        distribution: aggregate.distribution.slice(),
-      },
-    };
-  }
-
-  function setRunningUi(running) {
-    document.querySelector(".run-bar")?.classList.toggle("is-running", running);
-    els.run.disabled = running;
-    els.stop.hidden = !running;
-    els.sampleCount.disabled = running;
-    els.sample100k.disabled = running;
-    els.topRepeatJacksPlus.disabled = running;
-  }
-
   function renderJokerProbabilities() {
     const fragment = document.createDocumentFragment();
     Core.analysisCardCounts(state.variant).forEach((cards) => DECK_JOKER_COUNTS.forEach((deckJokers) => {
       const probabilities = [0, 1, 2].map((jokers) => (jokers <= deckJokers ? hypergeometricJokers(cards, jokers, deckJokers) : null));
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td><strong>${cards} cards</strong><small>${deckJokers}J deck</small></td>
-        ${probabilities.map((value) => `<td>${value === null ? '<span class="cell-muted">--</span>' : formatPct(value)}</td>`).join("")}
+        <td><span class="hand-label deck-label"><i class="deck-count">${deckJokers}J</i><span>${cards} cards</span></span></td>
+        ${probabilities.map((value) => `<td class="num">${value === null ? '<span class="cell-muted">--</span>' : formatPct(value)}</td>`).join("")}
       `;
       fragment.appendChild(row);
     }));
@@ -1151,15 +908,7 @@
   }
 
   function hypergeometricJokers(cards, jokers, deckJokers = 2) {
-    return (choose(deckJokers, jokers) * choose(52, cards - jokers)) / choose(52 + deckJokers, cards);
-  }
-
-  function choose(n, k) {
-    if (k < 0 || k > n) return 0;
-    const size = Math.min(k, n - k);
-    let value = 1;
-    for (let index = 1; index <= size; index += 1) value = (value * (n - size + index)) / index;
-    return value;
+    return Core.hypergeometricJokers(cards, jokers, deckJokers);
   }
 
   function showDefinition(key) {
@@ -1168,44 +917,49 @@
     els.definitionCopy.textContent = definition.copy;
   }
 
-  function openRules(variant) {
-    renderRules(variant);
-    if (!els.rulesDialog) {
-      activateSection("rules", true);
-      return;
-    }
-    if (typeof els.rulesDialog.showModal === "function") els.rulesDialog.showModal();
-    else els.rulesDialog.setAttribute("open", "");
-  }
+  // ---------- Rules ----------
 
-  function closeRules() {
-    if (!els.rulesDialog) return;
-    if (typeof els.rulesDialog.close === "function" && els.rulesDialog.open) els.rulesDialog.close();
-    else els.rulesDialog.removeAttribute("open");
-  }
-
-  function renderRules(value) {
-    const active = Core.normalizeVariant(value);
-    const tabFragment = document.createDocumentFragment();
+  function buildRulesTabs() {
+    if (!els.rulesTabs) return;
+    const fragment = document.createDocumentFragment();
     Core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.role = "tab";
-      button.className = variant === active ? "active" : "";
-      button.setAttribute("aria-selected", String(variant === active));
+      button.id = `rules-tab-${variant}`;
+      button.setAttribute("role", "tab");
+      button.dataset.tab = variant;
+      button.className = variant === state.variant ? "active" : "";
+      button.setAttribute("aria-selected", String(variant === state.variant));
+      button.tabIndex = variant === state.variant ? 0 : -1;
       button.textContent = Core.VARIANTS[variant].compactLabel || Core.VARIANTS[variant].label;
-      button.addEventListener("click", () => {
-        const input = document.querySelector(`input[name="variant"][value="${variant}"]`);
-        if (input && !input.checked) {
-          input.checked = true;
-          input.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-        renderRules(variant);
-      });
-      tabFragment.appendChild(button);
+      if (!window.Tabs) button.addEventListener("click", () => renderRules(variant));
+      fragment.appendChild(button);
     });
-    els.rulesTabs.replaceChildren(tabFragment);
+    els.rulesTabs.replaceChildren(fragment);
+    rulesTabs = window.Tabs ? window.Tabs.init(els.rulesTabs, { onChange: (id) => renderRulesArticle(id) }) : null;
+  }
 
+  // The rules tabs only change the article shown; the variant picker above
+  // the tabs is the one place the page's variant changes.
+  function renderRules(value) {
+    const active = Core.normalizeVariant(value);
+    if (rulesTabs) {
+      if (rulesTabs.current === active) renderRulesArticle(active);
+      else rulesTabs.activate(active);
+      return;
+    }
+    els.rulesTabs?.querySelectorAll('[role="tab"]').forEach((button) => {
+      const on = button.dataset.tab === active;
+      button.classList.toggle("active", on);
+      button.setAttribute("aria-selected", String(on));
+      button.tabIndex = on ? 0 : -1;
+    });
+    renderRulesArticle(active);
+  }
+
+  function renderRulesArticle(value) {
+    if (!els.rulesContent) return;
+    const active = Core.normalizeVariant(value);
     const rules = Core.RULE_SECTIONS.find((section) => section.id === active);
     const article = document.createElement("article");
     article.className = "rules-article";
@@ -1386,6 +1140,8 @@
     item.appendChild(detail);
   }
 
+  // ---------- State helpers ----------
+
   function usesJacksPlusTopRepeat(variant = state.variant) {
     return JACKS_PLUS_REPEAT_VARIANTS.has(variant) && Boolean(state.settings.topRepeatJacksPlus);
   }
@@ -1403,67 +1159,11 @@
   }
 
   function scenarioKey(scenario) {
-    return `${scenario.cards}-${scenario.jokers}`;
+    return Core.scenarioKey(scenario);
   }
 
   function scenariosForVariant(variant = state.variant) {
     return Core.analysisScenarios(variant);
-  }
-
-  function parseSampleCount() {
-    const value = Number(els.sampleCount?.value);
-    if (!Number.isFinite(value) || value < 1 || !Number.isSafeInteger(value) || value > Math.floor(Number.MAX_SAFE_INTEGER / scenariosForVariant().length)) return null;
-    return value;
-  }
-
-  function updateEstimate() {
-    if (!els.sampleCount || !els.estimateTime) return;
-    const samples = parseSampleCount();
-    const valid = Boolean(samples);
-    els.sampleCount.setCustomValidity(valid ? "" : "Enter a whole number of at least 1.");
-    if (!state.running) els.run.disabled = !valid;
-    if (!valid) {
-      els.sampleTotal.textContent = "Enter a whole number of at least 1";
-      els.estimateTime.textContent = "--";
-      els.estimateDetail.textContent = "Waiting for a valid sample count";
-      return;
-    }
-    const total = samples * scenariosForVariant().length;
-    const workers = availableWorkerCount();
-    const calibrated = finiteNumber(state.settings.benchmarks?.[state.variant]?.serialMsPerDeal) > 0;
-    els.sampleTotal.textContent = `${formatInteger(total)} hands total`;
-    els.estimateTime.textContent = `~${formatDuration(estimateRunMs(samples, state.variant))}`;
-    els.estimateDetail.textContent = `${workers} worker${workers === 1 ? "" : "s"}; ${calibrated ? "calibrated" : "initial estimate"}`;
-  }
-
-  function estimateRunMs(samples, variant = state.variant) {
-    const saved = finiteNumber(state.settings.benchmarks?.[variant]?.serialMsPerDeal);
-    const serialMs = saved > 0 ? saved : DEFAULT_SERIAL_MS[variant] || 220;
-    return (samples * scenariosForVariant(variant).length * serialMs) / availableWorkerCount();
-  }
-
-  function saveBenchmark(variant, serialMsPerDeal) {
-    if (!Number.isFinite(serialMsPerDeal) || serialMsPerDeal <= 0) return;
-    state.settings.benchmarks = state.settings.benchmarks || {};
-    const previous = finiteNumber(state.settings.benchmarks[variant]?.serialMsPerDeal);
-    state.settings.benchmarks[variant] = {
-      serialMsPerDeal: previous > 0 ? previous * 0.65 + serialMsPerDeal * 0.35 : serialMsPerDeal,
-      updatedAt: new Date().toISOString(),
-    };
-    saveSettings();
-  }
-
-  function availableWorkerCount() {
-    const hardware = typeof navigator !== "undefined" ? finiteNumber(navigator.hardwareConcurrency) : 1;
-    return Math.min(scenariosForVariant().length, 8, Math.max(1, Math.floor(hardware || 2) - 1));
-  }
-
-  function sampleChunkSize(samples) {
-    if (samples <= 24) return 1;
-    if (samples <= 240) return 2;
-    if (samples <= 2400) return 5;
-    if (samples <= 24000) return 10;
-    return 25;
   }
 
   function resultSampleSummary(data, scenarios = scenariosForVariant()) {
@@ -1557,20 +1257,20 @@
     return Math.max(0, Math.round(finiteNumber(value))).toLocaleString("en-US");
   }
 
-  function formatDuration(milliseconds) {
-    const seconds = Math.max(0, Math.ceil(finiteNumber(milliseconds) / 1000));
-    if (seconds < 1) return "<1s";
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ${String(seconds % 60).padStart(2, "0")}s`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ${String(minutes % 60).padStart(2, "0")}m`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ${String(hours % 24).padStart(2, "0")}h`;
-  }
-
-  function yieldFrame() {
-    return new Promise((resolve) => window.setTimeout(resolve, 0));
+  // The page's one assertive region: a dismissible alert toast.
+  function announce(message) {
+    if (!els.alerts) return;
+    const toast = document.createElement("div");
+    toast.className = "toast toast--alert";
+    const text = document.createElement("span");
+    text.textContent = message;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "btn btn--ghost btn--sm";
+    close.textContent = "Dismiss";
+    close.addEventListener("click", () => toast.remove());
+    toast.append(text, close);
+    els.alerts.appendChild(toast);
   }
 
   function loadCache() {
@@ -1621,7 +1321,7 @@
         topRepeatJacksPlusResults: state.topRepeatJacksPlusResults,
       }));
     } catch (error) {
-      // Storage is optional; calculations still work without it.
+      // Storage is optional; the precomputed dataset still renders without it.
     }
   }
 
@@ -1629,23 +1329,17 @@
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
     } catch (error) {
-      // Device calibration is optional.
+      // The JJJ+ preference is optional.
     }
   }
 
   window.OFCFantasylandEV = {
     aggregateDeckResults,
-    aggregateFromResult,
     applyPrecomputedResults,
-    finalizeAggregate,
-    formatDuration,
     hypergeometricJokers,
-    mergeAggregate,
     parseResultsCache,
     recursiveValueForScenario,
-    sampleChunkSize,
     scenariosForVariant,
-    solveSample,
     definitions: DEFINITIONS,
   };
 })();

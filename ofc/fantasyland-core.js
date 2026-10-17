@@ -335,6 +335,26 @@
     return variantCardCounts(value).includes(Number(cards));
   }
 
+  // The EV page's configuration key ("14-2" for 14 cards with two jokers) and
+  // the hypergeometric chance of drawing exactly `jokers` jokers in `cards`
+  // from a 52-card deck with `deckJokers` jokers added. Shared here so the EV
+  // page needs no solver script (ofc/fantasyland-ev/app.js).
+  function scenarioKey(scenario) {
+    return `${scenario.cards}-${scenario.jokers}`;
+  }
+
+  function choose(n, k) {
+    if (k < 0 || k > n) return 0;
+    const size = Math.min(k, n - k);
+    let value = 1;
+    for (let index = 1; index <= size; index += 1) value = (value * (n - size + index)) / index;
+    return value;
+  }
+
+  function hypergeometricJokers(cards, jokers, deckJokers = 2) {
+    return (choose(deckJokers, jokers) * choose(52, cards - jokers)) / choose(52 + deckJokers, cards);
+  }
+
   function assertVariantCardCount(value, cards) {
     const variant = VARIANTS[normalizeVariant(value)];
     const supported = variantCardCounts(variant.id);
@@ -2813,6 +2833,9 @@
     analysisCardCounts,
     analysisScenarios,
     supportsVariantCardCount,
+    scenarioKey,
+    choose,
+    hypergeometricJokers,
     makeCard,
     evaluateHighFive,
     evaluateHighFiveFast,
