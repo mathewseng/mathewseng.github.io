@@ -1285,6 +1285,9 @@ const online = {
   token: 0,
   log: [],
 };
+// #on-error lives in the lobby; while a room is open renderOnline() moves it
+// under the room's summary strip, so in-room errors show in the room.
+const onErrorLobby = document.getElementById("on-error").parentElement;
 function onError(message) {
   const node = $("on-error");
   node.textContent = message || "";
@@ -1496,6 +1499,10 @@ function renderOnline() {
   const connected = room?.connected || room?.isHost;
   $("online-lobby").hidden = Boolean(room && (connected || room.roomCode));
   $("online-room").hidden = !(room && (connected || room.roomCode));
+  const errorNode = $("on-error");
+  if (!$("online-room").hidden) {
+    if (errorNode.parentElement === onErrorLobby) $("online-room").querySelector(".summary").after(errorNode);
+  } else if (errorNode.parentElement !== onErrorLobby) onErrorLobby.append(errorNode);
   $("on-resume").hidden = !(!room && localStorage.getItem("dodge.room.session.v1"));
   if (!room) return;
   $("on-room-code").textContent = room.roomCode || "—";
@@ -1988,6 +1995,8 @@ function renderTableReport(root, r) {
    ==================================================================== */
 document.addEventListener("keydown", (e) => {
   if (e.target.matches("input, select, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+  // The view tablist (shared/tabs.js) owns the arrow keys while a tab has focus.
+  if (e.defaultPrevented || e.target.closest('[role="tablist"]')) return;
   if (activeTab === "sim") {
     if (e.key === "ArrowLeft") stepBack();
     else if (e.key === "ArrowRight") stepForward();

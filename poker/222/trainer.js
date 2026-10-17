@@ -347,6 +347,10 @@ export function initTrainer({ pool }) {
       actionButtons.push(button("New hand", "primary", newHand));
     }
     replaceActions(actions, actionButtons);
+    // One primary per view: once a hand is live the action row carries it, so
+    // the toolbar's New hand steps down to a ghost button.
+    $("tr-new").classList.toggle("btn--primary", tr.phase === "idle");
+    $("tr-new").classList.toggle("btn--ghost", tr.phase !== "idle");
     // The shared result card above the seats once the hand is over.
     if (tr.phase === "over" && live && tr.result) {
       const r = tr.result.settle;

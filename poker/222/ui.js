@@ -190,7 +190,7 @@ export function renderSeats(container, { hands, board, stats, names, btn, highli
       const isSelected = selected && selected.seat === i && selected.card === c;
       const node = cardEl(c, `${onCardClick ? "clickable" : ""} ${isSelected ? "selected" : ""}`);
       if (onCardClick) {
-        node.setAttribute("aria-label", `${cardName(c)}${isSelected ? ", selected" : ""}: select to swap`);
+        node.setAttribute("aria-label", `${cardLabel(c)}${isSelected ? ", selected" : ""}: select to swap`);
         node.addEventListener("click", () => onCardClick({ seat: i, card: c }));
       }
       return node;
@@ -282,6 +282,8 @@ export function renderResultCard(container, { names, result, cube, me = null }) 
   else if (winners.length === 1) title.textContent = `${names[winners[0]]} wins ${nets[winners[0]]} point${nets[winners[0]] === 1 ? "" : "s"}`;
   else title.textContent = "Hand over";
   head.append(title);
+  // The frame follows the viewer's outcome (good / bad), never the accent.
+  if (mine) card.classList.add(mine > 0 ? "result-card--good" : "result-card--bad");
   const why = result.reason === "showdown" ? `Showdown at cube ${cube.level}` : result.reason;
   head.append(el("p", "muted small", why[0].toUpperCase() + why.slice(1)));
   card.append(head);
@@ -296,7 +298,7 @@ export function renderResultCard(container, { names, result, cube, me = null }) 
     const tbody = el("tbody");
     names.forEach((n, i) => {
       const row = el("tr", i === me ? "is-selected" : "");
-      row.append(el("td", "", n + (i === me ? " (you)" : "")));
+      row.append(el("td", "", n + (i === me && !/^you$/i.test(n) ? " (you)" : "")));
       result.perHand[i].forEach((x) => row.append(el("td", `num${x > 0 ? " is-good" : x < 0 ? " is-bad" : ""}`, signed(x, 0))));
       const sc = result.scoop?.[i] ?? 0;
       row.append(el("td", `num${sc > 0 ? " is-good" : sc < 0 ? " is-bad" : ""}`, signed(sc, 0)));

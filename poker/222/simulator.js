@@ -101,6 +101,8 @@ export function initSimulator({ pool }) {
   const deckHome = deckPanel.parentElement;
   const deckDialog = $("sim-deck-dialog");
   let swapped = false;
+  let swappedIn = null; // the card a sheet swap put in the selected card's place
+  let focusCard = null; // data-card of the card the next render should focus
   function placeDeck() {
     const target = phone.matches ? $("sim-deck-dialog-body") : deckHome;
     if (deckPanel.parentElement !== target) target.append(deckPanel);
@@ -109,18 +111,21 @@ export function initSimulator({ pool }) {
     if (!phone.matches || deckDialog.open) return;
     placeDeck();
     swapped = false;
+    swappedIn = null;
     const card = sim.selected?.card;
     Sheet.open(deckDialog, {
       dismissible: true,
       returnFocus: false,
       onClose: () => {
         // Closing the sheet without swapping cancels the selection; focus goes
-        // back to the card that was selected.
+        // back to the card that was selected, or after a swap to the card that
+        // took its place.
         if (!swapped && sim.selected) {
           sim.selected = null;
           render();
         }
-        const back = card != null ? document.querySelector(`#view-sim button.playing-card[data-card="${card}"]`) : null;
+        const target = swapped ? swappedIn : card;
+        const back = target != null ? document.querySelector(`#view-sim button.playing-card[data-card="${target}"]`) : null;
         (back || $("sim-board-cards").querySelector("button") || $("main")).focus({ preventScroll: true });
       },
     });
@@ -193,6 +198,7 @@ export function initSimulator({ pool }) {
     if (where) setAt(where, sel.card);
     sim.selected = null;
     swapped = true;
+    focusCard = swappedIn = String(card);
     if (deckDialog.open) deckDialog.close();
     recompute();
   }
@@ -220,6 +226,11 @@ export function initSimulator({ pool }) {
     meta.replaceChildren(bar);
   }
   function render() {
+    // Re-rendering rebuilds every card button: keep keyboard focus on the same
+    // card (or on the card just swapped in, which takes the old one's place).
+    const active = document.activeElement;
+    const keepFocus = focusCard ?? (active?.matches?.("#view-sim button.playing-card") ? active.dataset.card : null);
+    focusCard = null;
     const board = visibleBoard();
     const view = sim.view;
     const steps = $("sim-streets");
@@ -301,6 +312,9 @@ export function initSimulator({ pool }) {
       pending: !view,
     });
     renderDeck();
+    if (keepFocus != null && !deckDialog.open) {
+      document.querySelector(`#view-sim button.playing-card[data-card="${keepFocus}"]`)?.focus({ preventScroll: true });
+    }
   }
   function spanb(label, value) {
     const s = el("span");
@@ -320,7 +334,15 @@ export function initSimulator({ pool }) {
     $("sim-deck-help").textContent = sim.selected
       ? `Pick a card to swap in for ${cardLabel(sim.selected.card)}.`
       : "Select a card in a hand or on the board, then pick a deck card to swap it in. Numbers mark the seat holding a card, B the board; undealt board cards are dimmed.";
-    for (const id of PlayingCards.deckMatrix()) {
+    PlayingCards.deckMatrix().forEach((id, i) => {
+      // Each suit row opens with its suit mark: the desktop deck's cards are
+      // too small for shared/cards.css to draw one (hidden on phones).
+      if (i % 13 === 0) {
+        const suit = PlayingCards.normalize(id).suit;
+        const mark = el("span", "deck-suit", PlayingCards.SUIT_SYMBOL[suit]);
+        mark.setAttribute("aria-hidden", "true");
+        grid.append(mark);
+      }
       const c = cardIndex(id);
       const who = held.get(c);
       const b = el("button", `deck-card${who ? " held" : ""}${who?.undealt ? " undealt" : ""}`);
@@ -333,7 +355,7 @@ export function initSimulator({ pool }) {
       b.disabled = !sim.selected || (who != null && c === sim.selected.card);
       b.addEventListener("click", () => swapIn(c));
       grid.append(b);
-    }
+    });
   }
   newDeal();
   return {

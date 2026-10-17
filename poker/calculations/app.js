@@ -60,6 +60,12 @@ function setView(view) {
   const workspace = document.querySelector("#workspace");
   if (!workspace || !view) return;
   workspace.dataset.view = view;
+  // data-view picks the phone section in CSS and the desktop grid shows every
+  // panel, so undo the hidden attribute shared/tabs.js sets on the panels of
+  // the single-panel tabs (aria-controls stays for assistive technology).
+  workspace.querySelectorAll('[role="tabpanel"]').forEach((panel) => {
+    panel.hidden = false;
+  });
   document.querySelectorAll(".view-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
   workspace.scrollTop = 0;
 }

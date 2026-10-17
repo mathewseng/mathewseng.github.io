@@ -26,6 +26,7 @@ body.app-shell > .topbar {
   flex: none;
   width: 100%;
   max-width: 1840px;
+  justify-content: flex-start; /* the tool nav sits beside the crumbs, with or without topbar actions */
   margin: 0 auto;
   padding-inline: 12px;
 }

@@ -376,10 +376,10 @@
   bottom: 2px;
   padding: 0 4px;
   border-radius: 3px;
-  background: color-mix(in oklab, black 70%, transparent);
+  background: color-mix(in oklab, var(--page) 70%, transparent);
   color: var(--ink);
   font-size: var(--t-xs);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
 }
 
@@ -446,8 +446,8 @@
   background: linear-gradient(145deg, var(--ink), color-mix(in oklab, var(--ink) 72%, var(--muted)));
   color: var(--page);
   box-shadow:
-    0 4px 10px color-mix(in oklab, black 50%, transparent),
-    inset 0 1px 0 color-mix(in oklab, white 50%, transparent);
+    0 4px 10px color-mix(in oklab, var(--page) 70%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--ink) 50%, transparent);
 }
 
 .cube-face.small {
@@ -457,7 +457,7 @@
 
 .cube-value {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -1154,4 +1154,9 @@
   .heatmap > span {
     border-radius: 2px;
   }
+}
+
+/* In-room errors: renderOnline() moves #on-error under the room summary. */
+#online-room > #on-error {
+  margin: 10px 2px 0;
 }

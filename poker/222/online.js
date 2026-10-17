@@ -4,11 +4,11 @@
 import { VARIANTS, variantOf, scoringOf, actorOn, dealTable, settle, cardName, STREETS } from "./engine.mjs";
 import { offerRaise, reraise, canReraise, optionLabel, reraiseName } from "./cube-rules.mjs";
 import { $, el, button, badge, cardEl, emptySlot, renderSeats, renderOptionTable, renderResultCard, replaceActions, cubeFace, signed, STREET_CARDS, streetName, toast } from "./ui.js";
+import { fillVariantSelect, fillDropSelect, fillScoringSelect } from "./cube-view.js";
+import { computeView, actionState, gradeHidden, cubeKey } from "./table-view.js";
 
 // Auto-deal delays the host uses; clients count down from the same numbers.
 const AUTO_DELAY = { preflop: 2500, street: 3500, over: 6000 };
-import { fillVariantSelect, fillDropSelect, fillScoringSelect } from "./cube-view.js";
-import { computeView, actionState, gradeHidden, cubeKey } from "./table-view.js";
 
 const NAME_KEY = "222.player-name";
 const hostKey = (code) => `222.host.${code}`;
@@ -361,8 +361,8 @@ export function initOnline({ pool }) {
     clearTimeout(st.timer);
     if (!room.isHost || !st.model?.hand || !st.model.settings.auto) return;
     const h = st.model.hand;
-    if (h.phase === "street") st.timer = setTimeout(() => safeAct(() => advance()), h.street === 0 ? 2500 : 3500);
-    else if (h.phase === "over") st.timer = setTimeout(() => safeAct(() => startHand()), 6000);
+    if (h.phase === "street") st.timer = setTimeout(() => safeAct(() => advance()), h.street === 0 ? AUTO_DELAY.preflop : AUTO_DELAY.street);
+    else if (h.phase === "over") st.timer = setTimeout(() => safeAct(() => startHand()), AUTO_DELAY.over);
   }
   function safeAct(fn) {
     try {

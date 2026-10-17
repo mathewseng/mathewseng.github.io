@@ -276,8 +276,10 @@ code {
   font-size: var(--t-xs);
 }
 
+/* 44px is the smallest size at which shared/cards.css keeps the suit mark:
+   flush labels make suits load-bearing, so seat cards never go rank-only. */
 .cards {
-  --card-width: 36px;
+  --card-width: 44px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -460,15 +462,29 @@ code {
   line-height: var(--lh-data);
 }
 
+/* The desktop deck is too narrow for 44px cards, so its cards are rank-only:
+   each suit row starts with its suit mark (the matrix rows are suits). */
 .deck-grid {
+  grid-template-columns: max-content repeat(13, minmax(0, 1fr));
   gap: 4px;
+}
+
+.deck-suit {
+  display: grid;
+  place-items: center;
+  min-width: 1.1em;
+  padding-bottom: calc(var(--t-xs) * 1.3 + 2px);
+  color: var(--muted);
+  font-size: var(--t-md);
+  line-height: 1;
 }
 
 .deck-card {
   position: relative;
   display: flex;
   justify-content: center;
-  padding: 0;
+  align-items: flex-start;
+  padding: 0 0 calc(var(--t-xs) * 1.3 + 2px);
   border: 0;
   border-radius: 4px;
   background: none;
@@ -498,21 +514,19 @@ code {
   cursor: default;
 }
 
-.deck-card:disabled:not(.held) .playing-card {
-  opacity: 0.4;
-}
-
+/* Free cards keep full strength while the deck waits for a selection, so the
+   held and undealt cards are the only dimmed ones. The holder's mark sits
+   under the card, clear of the rank. */
 .deck-card .owner {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
-  padding: 0 4px;
-  border-radius: 3px;
-  background: color-mix(in oklab, black 70%, transparent);
+  right: 0;
+  bottom: 0;
+  left: 0;
   color: var(--ink);
   font-size: var(--t-xs);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
+  text-align: center;
 }
 
 #sim-deck-dialog .deck-panel {
@@ -587,8 +601,8 @@ code {
   background: linear-gradient(145deg, var(--ink), color-mix(in oklab, var(--ink) 72%, var(--muted)));
   color: var(--page);
   box-shadow:
-    0 4px 10px color-mix(in oklab, black 50%, transparent),
-    inset 0 1px 0 color-mix(in oklab, white 50%, transparent);
+    0 4px 10px color-mix(in oklab, var(--page) 70%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--ink) 50%, transparent);
 }
 
 .cube-face.small {
@@ -598,7 +612,7 @@ code {
 
 .cube-value {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -677,7 +691,15 @@ code {
   flex-direction: column;
   gap: 10px;
   padding: 12px 14px;
-  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  border-color: var(--line-strong);
+}
+
+.result-card--good {
+  border-color: color-mix(in oklab, var(--good) 45%, transparent);
+}
+
+.result-card--bad {
+  border-color: color-mix(in oklab, var(--bad) 45%, transparent);
 }
 
 .result-head {
@@ -1287,6 +1309,17 @@ code {
     overflow: visible;
   }
 
+  /* Solve (and the two fill buttons) stay on screen while the stacked form
+     scrolls; the stage stops at the form's end, so it never covers results. */
+  .spot-form .panel-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+    background: var(--surface);
+  }
+
   .seats {
     grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   }
@@ -1369,7 +1402,8 @@ code {
     --card-width: 44px;
   }
 
-  /* 13 columns do not fit a phone at 44px: the deck scrolls sideways. */
+  /* 13 columns do not fit a phone at 44px: the deck scrolls sideways. The
+     cards carry their suit mark at this size, so the row marks go. */
   .deck-grid {
     grid-template-columns: repeat(13, 44px);
     gap: 6px;
@@ -1378,10 +1412,8 @@ code {
     overscroll-behavior-x: contain;
   }
 
-  .deck-card .owner {
-    right: 1px;
-    bottom: 1px;
-    padding: 0 3px;
+  .deck-suit {
+    display: none;
   }
 
   .action-row {
