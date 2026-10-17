@@ -340,7 +340,7 @@ export default function AppShell({ children }: PropsWithChildren) {
                     className="tab-bar-item"
                   >
                     <Icon size={19} strokeWidth={2.2} aria-hidden="true" />
-                    {item.label}
+                    <span className="tab-bar-label">{item.label}</span>
                   </NavLink>
                 );
               })}
