@@ -111,6 +111,7 @@ class EdgeTheDealerController {
         const startJoinBtn = document.getElementById('start-join-btn');
         const roomCodeInput = document.getElementById('room-code-input');
         startJoinBtn.addEventListener('click', () => this.startOrJoinGame());
+        document.getElementById('connect-cancel-btn').addEventListener('click', () => this.cancelConnect());
         roomCodeInput.addEventListener('input', () => this.updateStartJoinButton());
         roomCodeInput.addEventListener('keypress', e => {
             if (e.key === 'Enter') this.startOrJoinGame();
@@ -209,7 +210,8 @@ class EdgeTheDealerController {
                 this.switchTab(btn.dataset.tab);
             });
         });
-        if (window.Tabs) Tabs.init(document.getElementById('log-chat-tabs'));
+        // onChange keeps .active in step when the arrow keys / Home / End switch tabs.
+        if (window.Tabs) Tabs.init(document.getElementById('log-chat-tabs'), { onChange: (id) => this.switchTab(id) });
 
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-chat-btn');
@@ -340,6 +342,7 @@ class EdgeTheDealerController {
     }
 
     startOrJoinGame() {
+        if (this.connecting) return;
         const roomCode = document.getElementById('room-code-input').value.trim();
         if (roomCode) this.joinRoom();
         else this.createRoom();
@@ -357,15 +360,56 @@ class EdgeTheDealerController {
         }
     }
 
+    /**
+     * Connecting state: the Start/Join button is busy and a Cancel sits
+     * under it. Each attempt has an id; cancelling bumps it, so a promise
+     * that settles later is ignored instead of opening the lobby.
+     */
+    beginConnect(statusText) {
+        this.connectAttempt = (this.connectAttempt || 0) + 1;
+        this.connecting = true;
+        this.setButtonLoading(document.getElementById('start-join-btn'), true);
+        this.setConnectingUi(statusText);
+        return this.connectAttempt;
+    }
+
+    endConnect(attempt) {
+        if (attempt !== this.connectAttempt) return;
+        this.connecting = false;
+        this.setButtonLoading(document.getElementById('start-join-btn'), false);
+        this.setConnectingUi(null);
+    }
+
+    setConnectingUi(statusText) {
+        const status = document.getElementById('connect-status');
+        const cancel = document.getElementById('connect-cancel-btn');
+        if (status) {
+            status.textContent = statusText || '';
+            status.hidden = !statusText;
+        }
+        if (cancel) cancel.hidden = !statusText;
+    }
+
+    cancelConnect() {
+        if (!this.connecting) return;
+        this.connectAttempt += 1;
+        this.connecting = false;
+        try { this.multiplayer.leave(); } catch (err) { console.error('Leave error:', err); }
+        this.setButtonLoading(document.getElementById('start-join-btn'), false);
+        this.setConnectingUi(null);
+        this.showToast('Connection cancelled', 'info');
+        document.getElementById('start-join-btn').focus();
+    }
+
     async createRoom() {
         const name = document.getElementById('player-name').value.trim() || 'Host';
         this.multiplayer.myName = name;
 
-        const btn = document.getElementById('start-join-btn');
-        this.setButtonLoading(btn, true);
+        const attempt = this.beginConnect('Creating the room…');
 
         try {
             const result = await this.multiplayer.initPeer(true);
+            if (attempt !== this.connectAttempt) return;
             this.myPlayerId = result.peerId;
 
             document.getElementById('room-code').textContent = this.multiplayer.roomCode;
@@ -378,9 +422,10 @@ class EdgeTheDealerController {
             this.showScreen('lobby');
             this.showToast(`Room created: ${this.multiplayer.roomCode}`, 'success');
         } catch (err) {
+            if (attempt !== this.connectAttempt) return;
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(btn, false);
+            this.endConnect(attempt);
         }
     }
 
@@ -394,13 +439,14 @@ class EdgeTheDealerController {
 
         this.multiplayer.myName = name;
 
-        const btn = document.getElementById('start-join-btn');
-        this.setButtonLoading(btn, true);
+        const attempt = this.beginConnect(`Connecting to room ${roomCode}…`);
 
         try {
             await this.multiplayer.initPeer(false, roomCode);
+            if (attempt !== this.connectAttempt) return;
             this.myPlayerId = this.multiplayer.myId;
             await this.multiplayer.connectToRoom();
+            if (attempt !== this.connectAttempt) return;
 
             document.getElementById('room-code').textContent = roomCode;
             document.getElementById('your-name').textContent = name;
@@ -410,9 +456,10 @@ class EdgeTheDealerController {
 
             this.showScreen('lobby');
         } catch (err) {
+            if (attempt !== this.connectAttempt) return;
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(btn, false);
+            this.endConnect(attempt);
         }
     }
 
@@ -539,11 +586,14 @@ class EdgeTheDealerController {
 
     async quitGame() {
         const isHost = this.multiplayer.isHost;
+        const othersSeated = (this.multiplayer.players?.size || 0) > 1;
         const text = isHost
-            ? 'Quitting closes the room for everyone at the table and clears your saved session.'
+            ? (othersSeated
+                ? 'You leave the table and your saved session is cleared. The other players keep playing: one of them becomes the host.'
+                : 'You leave the table and your saved session is cleared. Nobody else is seated, so the room ends.')
             : 'Your seat is given up and your saved session is cleared. You can rejoin with the room code.';
         const shouldQuit = window.Sheet
-            ? await Sheet.confirm({ title: isHost ? 'Close the table?' : 'Quit the game?', text, verb: isHost ? 'Close table' : 'Quit', danger: true, sheet: true })
+            ? await Sheet.confirm({ title: 'Quit the game?', text, verb: 'Quit', danger: true, sheet: true })
             : window.confirm(text);
         if (!shouldQuit) return;
 
@@ -884,7 +934,7 @@ class EdgeTheDealerController {
             this.updateStreakDisplay();
         } else {
             // Queued late joiner: empty slots and a persistent explanation
-            this.updateHoleCards([], false);
+            this.updateHoleCards([], false, { queued: true });
         }
         const queuedNotice = document.getElementById('queued-notice');
         if (queuedNotice) queuedNotice.hidden = !!myPlayer || !this.gameStarted;
@@ -1125,7 +1175,7 @@ class EdgeTheDealerController {
 
     // ============ HOLE CARDS ============
 
-    updateHoleCards(cards, canSelect) {
+    updateHoleCards(cards, canSelect, { queued = false } = {}) {
         const container = document.getElementById('hole-cards');
         const slots = container.querySelectorAll('.card-slot');
         const displayCards = this.sortCardsForDisplay(cards || []);
@@ -1174,7 +1224,10 @@ class EdgeTheDealerController {
         });
 
         const help = document.getElementById('discard-help');
-        if (this.currentState?.phase === 'draw') {
+        if (queued) {
+            // Not dealt in yet: #queued-notice explains; no discard count to report.
+            help.textContent = '';
+        } else if (this.currentState?.phase === 'draw') {
             help.textContent = canSelect
                 ? `Select the cards to replace. Selected: ${this.selectedDiscards.size} of 5`
                 : `Confirmed ${this.selectedDiscards.size} discard${this.selectedDiscards.size === 1 ? '' : 's'}. Waiting for the other players.`;
@@ -1326,7 +1379,7 @@ class EdgeTheDealerController {
 
         confirmBtn.textContent = canAct
             ? `Confirm${this.selectedDiscards.size > 0 ? ` (${this.selectedDiscards.size})` : ''}`
-            : 'Confirmed';
+            : (myPlayer ? 'Confirmed' : 'Confirm');
 
         waitingDraw.classList.toggle('hidden', !myPlayer || !myPlayer.hasConfirmed);
     }

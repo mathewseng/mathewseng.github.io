@@ -117,6 +117,7 @@ class GameController {
         const roomCodeInput = document.getElementById('room-code-input');
 
         startJoinBtn.addEventListener('click', () => this.startOrJoinGame());
+        document.getElementById('connect-cancel-btn').addEventListener('click', () => this.cancelConnect());
 
         // Update button text based on room code input
         roomCodeInput.addEventListener('input', () => this.updateStartJoinButton());
@@ -166,11 +167,14 @@ class GameController {
      */
     async quitGame() {
         const isHost = this.multiplayer.isHost;
+        const othersSeated = (this.multiplayer.players?.size || 0) > 1;
         const text = isHost
-            ? 'Leaving closes the room for everyone at the table and clears your saved session.'
+            ? (othersSeated
+                ? 'You leave the table and your saved session is cleared. The other players keep playing: one of them becomes the host.'
+                : 'You leave the table and your saved session is cleared. Nobody else is seated, so the room ends.')
             : 'Your seat is given up and your saved session is cleared. You can rejoin with the room code.';
         const ok = window.Sheet
-            ? await Sheet.confirm({ title: isHost ? 'Close the table?' : 'Leave the table?', text, verb: isHost ? 'Close table' : 'Leave', danger: true, sheet: true })
+            ? await Sheet.confirm({ title: 'Leave the table?', text, verb: 'Leave', danger: true, sheet: true })
             : window.confirm(text);
         if (!ok) return;
 
@@ -187,6 +191,7 @@ class GameController {
     }
 
     startOrJoinGame() {
+        if (this.connecting) return;
         const roomCode = document.getElementById('room-code-input').value.trim();
         if (roomCode) {
             this.joinRoom();
@@ -274,7 +279,8 @@ class GameController {
                 this.switchTab(tabId);
             });
         });
-        if (window.Tabs) Tabs.init(document.getElementById('log-chat-tabs'));
+        // onChange keeps .active in step when the arrow keys / Home / End switch tabs.
+        if (window.Tabs) Tabs.init(document.getElementById('log-chat-tabs'), { onChange: (id) => this.switchTab(id) });
 
         // Chat input
         const chatInput = document.getElementById('chat-input');
@@ -624,17 +630,58 @@ class GameController {
         }
     }
 
+    /**
+     * Connecting state: the Start/Join button is busy and a Cancel sits
+     * under it. Each attempt has an id; cancelling bumps it, so a promise
+     * that settles later is ignored instead of opening the lobby.
+     */
+    beginConnect(statusText) {
+        this.connectAttempt = (this.connectAttempt || 0) + 1;
+        this.connecting = true;
+        this.setButtonLoading(document.getElementById('start-join-btn'), true);
+        this.setConnectingUi(statusText);
+        return this.connectAttempt;
+    }
+
+    endConnect(attempt) {
+        if (attempt !== this.connectAttempt) return;
+        this.connecting = false;
+        this.setButtonLoading(document.getElementById('start-join-btn'), false);
+        this.setConnectingUi(null);
+    }
+
+    setConnectingUi(statusText) {
+        const status = document.getElementById('connect-status');
+        const cancel = document.getElementById('connect-cancel-btn');
+        if (status) {
+            status.textContent = statusText || '';
+            status.hidden = !statusText;
+        }
+        if (cancel) cancel.hidden = !statusText;
+    }
+
+    cancelConnect() {
+        if (!this.connecting) return;
+        this.connectAttempt += 1;
+        this.connecting = false;
+        try { this.multiplayer.leave(); } catch (err) { console.error('Leave error:', err); }
+        this.setButtonLoading(document.getElementById('start-join-btn'), false);
+        this.setConnectingUi(null);
+        this.showToast('Connection cancelled', 'info');
+        document.getElementById('start-join-btn').focus();
+    }
+
     // ============ MENU ACTIONS ============
 
     async createRoom() {
         const name = document.getElementById('player-name').value.trim() || 'Host';
         this.multiplayer.myName = name;
 
-        const btn = document.getElementById('start-join-btn');
-        this.setButtonLoading(btn, true);
+        const attempt = this.beginConnect('Creating the room…');
 
         try {
             const result = await this.multiplayer.initPeer(true);
+            if (attempt !== this.connectAttempt) return;
             this.myPlayerId = result.peerId;
 
             document.getElementById('room-code').textContent = this.multiplayer.roomCode;
@@ -647,9 +694,10 @@ class GameController {
             this.showScreen('lobby');
             this.showToast(`Room created: ${this.multiplayer.roomCode}`, 'success');
         } catch (err) {
+            if (attempt !== this.connectAttempt) return;
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(btn, false);
+            this.endConnect(attempt);
         }
     }
 
@@ -664,14 +712,15 @@ class GameController {
 
         this.multiplayer.myName = name;
 
-        const btn = document.getElementById('start-join-btn');
-        this.setButtonLoading(btn, true);
+        const attempt = this.beginConnect(`Connecting to room ${roomCode}…`);
 
         try {
             await this.multiplayer.initPeer(false, roomCode);
+            if (attempt !== this.connectAttempt) return;
             this.myPlayerId = this.multiplayer.myId;
 
             await this.multiplayer.connectToRoom();
+            if (attempt !== this.connectAttempt) return;
 
             document.getElementById('room-code').textContent = roomCode;
             document.getElementById('your-name').textContent = name;
@@ -681,9 +730,10 @@ class GameController {
 
             this.showScreen('lobby');
         } catch (err) {
+            if (attempt !== this.connectAttempt) return;
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(btn, false);
+            this.endConnect(attempt);
         }
     }
 
@@ -1201,7 +1251,10 @@ class GameController {
             `${label ? `<span class="hand-chip-label">${label}</span>` : ''}` +
             `<strong>${this.escapeHtml(hand.name)}</strong>` +
             `<span class="badge badge--warn mult">${hand.multiplier}×</span>` +
-            `<span class="sr-only">${hand.qualifies ? 'qualifies' : 'fouls'}</span>` +
+            // Never colour-only: a failing board says "Foul" in visible text.
+            (hand.qualifies
+                ? `<span class="sr-only">qualifies</span>`
+                : `<span class="board-result-state">Foul</span>`) +
             `</span>`;
     }
 
