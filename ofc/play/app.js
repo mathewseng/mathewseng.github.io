@@ -208,10 +208,7 @@
       if (message) showToast(message);
       renderConnectionBanner();
     };
-    room.onError = (error) => {
-      showError(error.message);
-      showToast(error.message, "alert");
-    };
+    room.onError = (error) => showError(error.message);
     room.onRoster = (roster) => {
       latestRoster = roster;
       if (room.isHost && model?.kind === "lobby" && !publishingRoster) {
@@ -228,10 +225,7 @@
     };
     room.onAction = handleHostAction;
     room.onEvent = (_clientId, event) => {
-      if (event?.kind === "error" && (!event.target || event.target === room.clientId)) {
-        showError(event.message);
-        showToast(event.message, "alert");
-      }
+      if (event?.kind === "error" && (!event.target || event.target === room.clientId)) showError(event.message);
     };
     room.onBecomeHost = (recoveredState) => {
       model = recoveredState || loadHostState(room.roomCode);
@@ -393,7 +387,6 @@
     } catch (error) {
       if (clientId === room.clientId) {
         showError(error.message);
-        showToast(error.message, "alert");
       } else {
         room.broadcastEvent({ kind: "error", target: clientId, message: error.message });
       }
@@ -928,7 +921,7 @@
       settings.buttonRule === "move" ? "Moving BTN" : "BTN holds in FL",
       settings.fantasyMode === "stack" ? "FL stacking" : settings.fantasyMode === "none" ? "No multiple FLs" : "Super FL",
     ];
-    if (settings.progressive) values.push(settings.ultimate ? "Progressive · ultimate" : "Progressive");
+    if (settings.progressive) values.push(settings.ultimate ? "Ultimate repeat" : "Repeats from 14");
     if (settings.topRepeatJacksPlus) values.push("JJJ+ top repeat");
     if (settings.variant === "badeucey") values.push(settings.badeuceyFantasyCards + "-card FL");
     if (settings.variant === "dealerschoice") values.push("Choices: " + settings.dealerChoices.map((id) => Game.VARIANT_LABELS[id]).join(", "));
@@ -1075,11 +1068,13 @@
     else renderSetupMode();
   }
 
-  // Errors render where the user is looking: the open view, never a hidden one.
+  // Errors render where the user is looking (the open view, never a hidden
+  // one) and are announced once through the page's assertive region.
   function showError(message) {
     if (!els.tableView.hidden) els.tableError.textContent = message;
     else if (!els.roomView.hidden) els.roomError.textContent = message;
     else els.setupError.textContent = message;
+    showToast(message, "alert");
   }
 
   function clearErrors() {

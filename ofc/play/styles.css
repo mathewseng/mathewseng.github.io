@@ -685,8 +685,10 @@ body:has(#turn-actions:not([hidden])) .toast-stack--alerts {
     --card-width: 26px;
   }
 
+  /* Five cards plus their 9% gaps (5.4 widths) must fit beside the label
+     column after the shell, panel, felt and row chrome (104px). */
   .player-area {
-    --card-w-board: min(56px, calc((100vw - 110px) / 5));
+    --card-w-board: clamp(36px, calc((100vw - 108px) / 5.4), 56px);
     --ofc-label-w: 52px;
   }
 
@@ -695,7 +697,7 @@ body:has(#turn-actions:not([hidden])) .toast-stack--alerts {
   }
 
   .player-area .ofc-row {
-    grid-template-columns: var(--ofc-label-w) minmax(0, 1fr);
+    grid-template-columns: var(--ofc-label-w, 96px) minmax(0, 1fr);
     gap: 2px 4px;
     padding: 2px 4px;
   }
@@ -771,7 +773,7 @@ body:has(#turn-actions:not([hidden])) .toast-stack--alerts {
 
 @media (max-width: 390px) {
   .player-area {
-    --card-w-board: clamp(39px, 11.9vw, 48px);
+    --card-w-board: clamp(36px, calc((100vw - 104px) / 5.4), 48px);
     --ofc-label-w: 48px;
   }
 }

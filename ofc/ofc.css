@@ -16,6 +16,7 @@
 .ofc-shell {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr); /* never let a row's min-content widen the shell */
   width: min(1320px, 100%);
   height: 100vh;
   height: 100dvh;
@@ -30,6 +31,7 @@ body:has(> .ofc-shell) {
 }
 
 .ofc-shell > main {
+  min-width: 0;
   min-height: 0;
   padding: 6px 0 calc(12px + env(safe-area-inset-bottom));
   overflow: auto;
@@ -75,12 +77,12 @@ body:has(> .ofc-shell) {
        <div class="ofc-row-summary"><span class="hand-chip">…</span></div>
      </div>
    </div>
-   Sizes via --card-width (set --card-w-board on the page); .target,
-   [aria-checked="true"] on the head and .drag-over are the states. */
+   Sizes via --card-width (set --card-w-board on the page); the label and
+   summary columns read --ofc-label-w / --ofc-summary-w from any ancestor so a
+   page can narrow them per breakpoint; .target, [aria-checked="true"] on the
+   head and .drag-over are the states. */
 .ofc-board {
   --card-width: var(--card-w-board, 56px);
-  --ofc-label-w: 96px;
-  --ofc-summary-w: 150px;
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -88,7 +90,7 @@ body:has(> .ofc-shell) {
 
 .ofc-row {
   display: grid;
-  grid-template-columns: var(--ofc-label-w) minmax(0, 1fr) var(--ofc-summary-w);
+  grid-template-columns: var(--ofc-label-w, 96px) minmax(0, 1fr) var(--ofc-summary-w, 150px);
   align-items: center;
   gap: 6px 10px;
   min-height: calc(var(--card-width) * 1.4 + 12px);
