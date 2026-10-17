@@ -6,6 +6,9 @@ import { EngineClient } from "../engine/client.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
+let readerMoved = false;
+for (const type of ["wheel", "touchmove", "keydown", "pointerdown"])
+  addEventListener(type, () => (readerMoved = true), { once: true, passive: true });
 async function boot() {
 await startUpdates();
 const $ = (id) => document.getElementById(id);
@@ -13,28 +16,41 @@ const time = (n) =>
   n < 1000 ? `${n.toFixed(n < 10 ? 2 : 0)} ms` : `${(n / 1000).toFixed(2)} s`;
 const label = (p) => PRESETS[p]?.name || `Rollout · ${p.slice(7)} trials`;
 const link = (text, href) => el("a", { href }, text);
+// Report tables: a visible caption above a scrolling .table-wrap with a sticky
+// first column; the <caption> stays in the table for assistive technology.
 function table(headers, rows, caption) {
+  const num = (i) => (i ? { class: "num" } : {});
   return el(
-    "div",
-    { class: "report-table-wrap", tabindex: "0", "aria-label": caption },
+    "figure",
+    { class: "docs-table" },
+    el("p", { class: "docs-table-caption", "aria-hidden": "true" }, caption),
     el(
-      "table",
-      { class: "report-table" },
-      el("caption", {}, caption),
+      "div",
+      {
+        class: "table-wrap table-wrap--sticky-col report-table-wrap",
+        tabindex: "0",
+        role: "region",
+        "aria-label": caption,
+      },
       el(
-        "thead",
-        {},
-        el("tr", {}, ...headers.map((h) => el("th", { scope: "col" }, h))),
-      ),
-      el(
-        "tbody",
-        {},
-        ...rows.map((row) =>
-          el(
-            "tr",
-            {},
-            ...row.map((cell, i) =>
-              el(i ? "td" : "th", i ? {} : { scope: "row" }, cell),
+        "table",
+        { class: "data-table report-table" },
+        el("caption", { class: "sr-only" }, caption),
+        el(
+          "thead",
+          {},
+          el("tr", {}, ...headers.map((h, i) => el("th", { scope: "col", ...num(i) }, h))),
+        ),
+        el(
+          "tbody",
+          {},
+          ...rows.map((row) =>
+            el(
+              "tr",
+              {},
+              ...row.map((cell, i) =>
+                el(i ? "td" : "th", i ? num(i) : { scope: "row" }, cell),
+              ),
             ),
           ),
         ),
@@ -42,6 +58,20 @@ function table(headers, rows, caption) {
     ),
   );
 }
+// "Measured on" line shared by every recorded dataset.
+const measured = (engine, recordedAt, note = "") =>
+  el(
+    "p",
+    { class: "docs-meta" },
+    el("span", { class: "chip" }, `Measured ${new Date(recordedAt).toLocaleString()}`),
+    el("code", {}, engine),
+    note ? el("span", {}, note) : null,
+  );
+// Errors stay in their section and are announced once.
+const failed = (target, e) => {
+  target.append(el("p", { class: "error" }, e.message));
+  $("report-alert").textContent = e.message;
+};
 async function json(path) {
   const r = await fetch(path);
   if (!r.ok)
@@ -51,6 +81,7 @@ async function json(path) {
   return r.json();
 }
 $("release").textContent = ENGINE_VERSION;
+const downloads = (...links) => el("p", { class: "docs-links" }, ...links);
 try {
   const [report, accuracy] = await Promise.all([json("../data/adaptive-benchmark.json"), json("../data/adaptive-accuracy.json")]);
   let browserName = report.results[0].browser;
@@ -63,16 +94,16 @@ try {
     }), `${browser.browser} ${browser.version} · five fresh-worker samples per position; search time excludes loading.`));
   };
   $("automatic-content").append(
-    el("p", {class:"muted"}, `${report.results[0].engine} · measured ${new Date(report.recordedAt).toLocaleString()}`),
+    measured(report.results[0].engine, report.recordedAt),
     field("Automatic search browser", select(report.results.map(b=>[b.browser,b.browser]), browserName, value=>{browserName=value;draw();})),
     target,
     el("p", {}, `The automatic root filter retained the exhaustive two-ply best move in ${accuracy.summary.identicalBest} of ${accuracy.summary.positions} tested positions. ${accuracy.summary.arbitraryMoveChecks} submitted moves outside the filtered list were also graded against exhaustive analysis. This is same-engine agreement, not proof of perfect play or an Elo improvement.`),
     el("p", {class:"muted"}, `${report.environment.cpu} · ${report.environment.os}. ${report.method}`),
     el("p", {}, "Auto first evaluates every move at zero ply, then retains the top 16, up to 24 within 0.160 equity, and the played move. Three- and four-ply searches narrow the list further. Filtering can miss a better move; fixed Standard and Deep retain all legal results. Every displayed comparison uses one completed depth."),
-    el("p", {}, link("Download automatic timings", "../data/adaptive-benchmark.json"), " · ", link("Download filter validation", "../data/adaptive-accuracy.json")),
+    downloads(link("Download automatic timings", "../data/adaptive-benchmark.json"), link("Download filter validation", "../data/adaptive-accuracy.json")),
   );
   draw();
-} catch (e) { $("automatic-content").append(el("p", {class:"error"}, e.message)); }
+} catch (e) { failed($("automatic-content"), e); }
 try {
   const report = await json("../data/native-benchmark.json");
   let browserName = report.results[0].browser, preset = "deep", condition = "cold";
@@ -90,8 +121,8 @@ try {
     ));
   };
   $("acceleration-content").append(
-    el("p", {class:"muted"}, `${report.engine} · measured ${new Date(report.recordedAt).toLocaleString()}`),
-    el("div", {class:"row"},
+    measured(report.engine, report.recordedAt),
+    el("div", {class:"row docs-controls"},
       field("Browser", select(report.results.map(b => [b.browser, b.browser]), browserName, value => {browserName = value; draw();})),
       field("Analysis setting", select([["standard","Standard"],["deep","Deep"]], preset, value => {preset = value; draw();})),
       field("Cache condition", select([["cold","Fresh worker"],["warm","Repeated search"]], condition, value => {condition = value; draw();})),
@@ -99,11 +130,11 @@ try {
     target,
     el("p", {class:"muted"}, `${report.environment.cpu} · ${report.environment.os}. ${report.environment.conditions}`),
     el("p", {}, "Negative time saved means the accelerated build was slower in that measurement. Percentages are omitted below 10 ms; small differences and zero readings can be timer noise or rounding. Startup, transfer, compilation, raw samples and ranges are recorded separately in the download."),
-    link("Download paired engine measurements", "../data/native-benchmark.json"),
+    downloads(link("Download paired engine measurements", "../data/native-benchmark.json")),
   );
   draw();
 } catch (e) {
-  $("acceleration-content").append(el("p", {class:"error"}, e.message));
+  failed($("acceleration-content"), e);
 }
 try {
   const speed = await json("../data/speed-report.json");
@@ -132,7 +163,7 @@ try {
     );
   }
   $("speed-content").append(
-    el("p", {class:"muted"}, `${speed.engine} · measured ${new Date(speed.recordedAt).toLocaleString()}. Historical results below retain their original engine version.`),
+    measured(speed.engine, speed.recordedAt, "Historical results below retain their original engine version."),
     field(
       "Position type",
       select(
@@ -158,7 +189,7 @@ try {
       {},
       `Engine download size: ${(speed.bytes / 1024 / 1024).toFixed(2)} MiB. Median local transfer ${time(speed.startup.transferMs.median)}, compilation ${time(speed.startup.compileMs.median)}, initialization ${time(speed.startup.initializeMs.median)}. Internet and real-phone speeds are unmeasured.`,
     ),
-    link("Download all samples (JSON)", "../data/speed-report.json"),
+    downloads(link("Download all samples (JSON)", "../data/speed-report.json")),
   );
   draw();
   if (speed.auto) {
@@ -178,17 +209,13 @@ try {
     );
   }
 } catch (e) {
-  $("speed-content").append(el("p", { class: "error" }, e.message));
+  failed($("speed-content"), e);
 }
 try {
   const report = await json("../data/accuracy-report.json");
   $("accuracy-content").append(
     el("p", {}, report.description),
-    el(
-      "p",
-      { class: "muted" },
-      `Measured ${new Date(report.recordedAt).toLocaleString()} · ${report.engine}`,
-    ),
+    measured(report.engine, report.recordedAt),
     table(
       [
         "Position class / setting",
@@ -216,11 +243,12 @@ try {
       {},
       "Expert, Research and new rollouts have timing and integration checks below. This 300-position quality comparison measures 0–2 ply only; it does not establish that every deeper result is better.",
     ),
-    link("Download per-position results", "../data/accuracy-report.json"),
-    el("span", {}, " · "),
-    link(
-      "Download reference positions & provenance",
-      "../data/accuracy-reference.json",
+    downloads(
+      link("Download per-position results", "../data/accuracy-report.json"),
+      link(
+        "Download reference positions & provenance",
+        "../data/accuracy-reference.json",
+      ),
     ),
   );
   const native = await json("../data/native-validation.json");
@@ -232,13 +260,15 @@ try {
       {},
       `${native.cases.length} comparisons · maximum absolute difference ${native.maxDifference.toFixed(8)} · tolerance ${native.tolerance}. ${native.reference}`,
     ),
-    link(
-      "Download desktop comparison results",
-      "../data/native-validation.json",
+    downloads(
+      link(
+        "Download desktop comparison results",
+        "../data/native-validation.json",
+      ),
     ),
   );
 } catch (e) {
-  $("accuracy-content").append(el("p", { class: "error" }, e.message));
+  failed($("accuracy-content"), e);
 }
 $("method-content").append(
   el(
@@ -276,62 +306,107 @@ $("method-content").append(
     ].flatMap(([a, b]) => [el("dt", {}, a), el("dd", {}, b)]),
   ),
 );
+// The sections fill in after the browser has already jumped to a #section
+// link; jump again once their tables exist unless the reader has moved.
+if (!readerMoved) document.getElementById(location.hash.slice(1))?.scrollIntoView();
 let devicePreset = "deep",
   deviceTopic = "contact",
   client = null;
-const run = button("Run measurement", async () => {
-  if (client) {
-    client.destroy();
-    client = null;
-    run.textContent = "Run measurement";
-    return;
+// The device card shows one progress bar while a measurement runs:
+// indeterminate for searches, determinate for rollouts.
+function deviceState(state, progress) {
+  $("device-card").dataset.state = state;
+  $("device-progress").hidden = state !== "running";
+  $("device-status").dataset.error = String(state === "error");
+  const bar = $("device-bar");
+  bar.classList.toggle("bar--indeterminate", !progress);
+  if (progress) {
+    const done = Math.min(progress.done, progress.total);
+    bar.style.setProperty("--value", String(done / progress.total));
+    bar.setAttribute("aria-valuemin", "0");
+    bar.setAttribute("aria-valuemax", String(progress.total));
+    bar.setAttribute("aria-valuenow", String(done));
+    $("device-progress-value").textContent = `${done} / ${progress.total} trials`;
+  } else {
+    bar.style.removeProperty("--value");
+    for (const name of ["aria-valuemin", "aria-valuemax", "aria-valuenow"]) bar.removeAttribute(name);
+    $("device-progress-value").textContent = "";
   }
-  const measuredPreset = devicePreset,
-    measuredTopic = deviceTopic;
-  const own = new EngineClient({
-    onStatus: (_, text) => ($("device-status").textContent = text),
-  });
-  client = own;
-  run.textContent = "Cancel";
-  try {
-    const fixture = (await json("../data/exercises.json")).items.find(
-      (f) => f.topic === measuredTopic,
-    );
-    const options = measuredPreset.startsWith("rollout")
-      ? {
-          rollout: { trials: Number(measuredPreset.slice(7)), seed: 20261006 },
-          onProgress: (cp) =>
-            ($("device-status").textContent =
-              `${cp.completed} completed trials per alternative`),
-        }
-      : { preset: measuredPreset };
-    const started = performance.now(),
-      answer = await own.analyze(fixture.state, options);
-    if (client !== own) return;
-    $("device-result").replaceChildren(
-      table(
-        ["Setting / position", "Compute", "Including startup"],
-        [
-          [
-            `${label(measuredPreset)} / ${measuredTopic}`,
-            time(answer.elapsedMs),
-            time(performance.now() - started),
-          ],
-        ],
-        `One on-device sample · ${new Date().toLocaleString()}`,
-      ),
-      el("p", { class: "muted" }, navigator.userAgent),
-    );
-  } catch (e) {
-    if (e.name !== "AbortError") $("device-status").textContent = e.message;
-  } finally {
-    own.destroy();
-    if (client === own) {
+}
+const run = button(
+  "Run measurement",
+  async () => {
+    if (client) {
+      const cancelled = client;
       client = null;
+      cancelled.destroy();
       run.textContent = "Run measurement";
+      deviceState("idle");
+      $("device-status").textContent = "Measurement cancelled.";
+      return;
     }
-  }
-});
+    const measuredPreset = devicePreset,
+      measuredTopic = deviceTopic;
+    let settled = false;
+    // Engine status while it runs; the line written when the measurement ends
+    // must not be replaced by the worker's own teardown status.
+    const own = new EngineClient({
+      onStatus: (_, text) => {
+        if (!settled && client === own) $("device-status").textContent = text;
+      },
+    });
+    client = own;
+    run.textContent = "Cancel";
+    deviceState("running");
+    $("device-status").textContent = "Starting the engine…";
+    try {
+      const fixture = (await json("../data/exercises.json")).items.find(
+        (f) => f.topic === measuredTopic,
+      );
+      const options = measuredPreset.startsWith("rollout")
+        ? {
+            rollout: { trials: Number(measuredPreset.slice(7)), seed: 20261006 },
+            onProgress: (cp) => {
+              $("device-status").textContent = `${cp.completed} completed trials per alternative`;
+              deviceState("running", { done: cp.completed, total: Number(measuredPreset.slice(7)) });
+            },
+          }
+        : { preset: measuredPreset };
+      const started = performance.now(),
+        answer = await own.analyze(fixture.state, options);
+      if (client !== own) return;
+      $("device-result").replaceChildren(
+        table(
+          ["Setting / position", "Compute", "Including startup"],
+          [
+            [
+              `${label(measuredPreset)} / ${measuredTopic}`,
+              time(answer.elapsedMs),
+              time(performance.now() - started),
+            ],
+          ],
+          `One on-device sample · ${new Date().toLocaleString()}`,
+        ),
+        el("p", { class: "docs-meta" }, el("code", {}, navigator.userAgent)),
+      );
+      deviceState("done");
+      $("device-status").textContent = "Measurement complete.";
+    } catch (e) {
+      if (e.name !== "AbortError" && client === own) {
+        deviceState("error");
+        $("device-status").textContent = e.message;
+      }
+    } finally {
+      settled = true;
+      own.destroy();
+      if (client === own) {
+        client = null;
+        run.textContent = "Run measurement";
+      }
+    }
+  },
+  "primary",
+);
 $("device-controls").append(
   field(
     "Setting",
@@ -358,4 +433,28 @@ addEventListener("pagehide", () => client?.destroy());
 
 document.documentElement.dataset.appReady = "true";
 }
+// Section TOC: mark the section being read. Presentation only; the links are
+// plain anchors and work without this.
+function trackSections() {
+  const links = [...document.querySelectorAll(".docs-toc a[href^='#']")];
+  const sections = links.map((a) => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  if (!sections.length || !("IntersectionObserver" in window)) return;
+  const visible = new Set();
+  const mark = () => {
+    const current = sections.find((s) => visible.has(s)) || null;
+    for (const a of links) {
+      if (current && a.hash === "#" + current.id) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    }
+  };
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) entry.isIntersecting ? visible.add(entry.target) : visible.delete(entry.target);
+      mark();
+    },
+    { rootMargin: "-20% 0px -55% 0px" },
+  );
+  sections.forEach((s) => observer.observe(s));
+}
+trackSections();
 boot();
