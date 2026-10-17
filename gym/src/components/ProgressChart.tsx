@@ -11,7 +11,10 @@ import {
   YAxis,
 } from "recharts";
 
-import { Surface } from "./ui";
+import { prefersReducedMotion, Surface } from "./ui";
+
+// Recharts animates in JS, so the CSS reduced-motion rule cannot reach it.
+const ANIMATION_MS = 400;
 
 export interface ChartPoint {
   label: string;
@@ -37,8 +40,8 @@ function ChartTooltip({
   const primary = payload.find((item) => item.dataKey === "value");
   const secondary = payload.find((item) => item.dataKey === "secondary");
   return (
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-3 shadow-xl">
-      <p className="text-xs font-extrabold">{label}</p>
+    <div className="rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-3 shadow-xl">
+      <p className="text-xs font-bold">{label}</p>
       <p className="mt-1 text-xs text-[var(--muted)]">
         {primary?.value ?? "Unknown"} {primary?.value !== undefined ? valueSuffix : ""}
       </p>
@@ -48,7 +51,7 @@ function ChartTooltip({
         </p>
       ) : null}
       {primary?.payload?.context ? (
-        <p className="mt-1 max-w-44 text-[0.66rem] text-[var(--orange)]">
+        <p className="mt-1 max-w-44 text-xs text-[var(--warn)]">
           {primary.payload.context}
         </p>
       ) : null}
@@ -74,6 +77,7 @@ export default function ProgressChart({
   height?: number;
 }) {
   const gradientId = useId().replaceAll(":", "");
+  const animate = !prefersReducedMotion();
   const hasSecondary = data.some((point) => point.secondary !== undefined);
   const common = {
     data,
@@ -82,7 +86,7 @@ export default function ProgressChart({
 
   return (
     <Surface className="min-w-0 overflow-hidden p-4 sm:p-5">
-      <h3 className="text-sm font-extrabold">{title}</h3>
+      <h3 className="text-sm font-bold">{title}</h3>
       {description ? (
         <p className="mt-1 text-xs leading-5 text-[var(--muted)]">{description}</p>
       ) : null}
@@ -96,7 +100,7 @@ export default function ProgressChart({
             {valueSuffix || "Primary value"}
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 border-t-2 border-dashed border-[var(--orange)]" />
+            <span className="h-0.5 w-4 border-t-2 border-dashed border-[var(--cat-3)]" />
             {secondaryLabel ?? "Secondary value"}
           </span>
         </div>
@@ -107,8 +111,8 @@ export default function ProgressChart({
             <AreaChart {...common}>
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--acid)" stopOpacity={0.48} />
-                  <stop offset="100%" stopColor="var(--acid)" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.48} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
@@ -116,14 +120,14 @@ export default function ProgressChart({
                 dataKey="label"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "var(--muted)", fontSize: 10 }}
+                tick={{ fill: "var(--muted)", fontSize: 12 }}
               />
               <YAxis
                 yAxisId="primary"
                 axisLine={false}
                 tickLine={false}
                 width={46}
-                tick={{ fill: "var(--muted)", fontSize: 10 }}
+                tick={{ fill: "var(--muted)", fontSize: 12 }}
               />
               <Tooltip
                 content={
@@ -141,6 +145,8 @@ export default function ProgressChart({
                 strokeWidth={2.4}
                 fill={`url(#${gradientId})`}
                 connectNulls={false}
+                isAnimationActive={animate}
+                animationDuration={ANIMATION_MS}
                 activeDot={{ r: 5, fill: "var(--accent)" }}
               />
             </AreaChart>
@@ -151,14 +157,14 @@ export default function ProgressChart({
                 dataKey="label"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "var(--muted)", fontSize: 10 }}
+                tick={{ fill: "var(--muted)", fontSize: 12 }}
               />
               <YAxis
                 yAxisId="primary"
                 axisLine={false}
                 tickLine={false}
                 width={46}
-                tick={{ fill: "var(--muted)", fontSize: 10 }}
+                tick={{ fill: "var(--muted)", fontSize: 12 }}
               />
               {hasSecondary ? (
                 <YAxis
@@ -167,7 +173,7 @@ export default function ProgressChart({
                   axisLine={false}
                   tickLine={false}
                   width={42}
-                  tick={{ fill: "var(--orange)", fontSize: 9 }}
+                  tick={{ fill: "var(--cat-3)", fontSize: 12 }}
                 />
               ) : null}
               <Tooltip
@@ -185,7 +191,9 @@ export default function ProgressChart({
                 stroke="var(--accent)"
                 strokeWidth={2.4}
                 connectNulls={false}
-                dot={{ r: 4, fill: "var(--surface-raised)", strokeWidth: 2 }}
+                isAnimationActive={animate}
+                animationDuration={ANIMATION_MS}
+                dot={{ r: 4, fill: "var(--surface-2)", strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: "var(--accent)" }}
               />
               {hasSecondary ? (
@@ -193,11 +201,13 @@ export default function ProgressChart({
                   type="monotone"
                   dataKey="secondary"
                   yAxisId="secondary"
-                  stroke="var(--orange)"
+                  stroke="var(--cat-3)"
                   strokeWidth={1.8}
                   strokeDasharray="5 5"
                   connectNulls={false}
-                  dot={{ r: 3, fill: "var(--surface-raised)", strokeWidth: 2 }}
+                  isAnimationActive={animate}
+                  animationDuration={ANIMATION_MS}
+                  dot={{ r: 3, fill: "var(--surface-2)", strokeWidth: 2 }}
                 />
               ) : null}
             </LineChart>

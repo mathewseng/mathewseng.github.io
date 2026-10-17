@@ -30,6 +30,7 @@ interface AppStateValue {
   isLocalWorkout: (id: string) => boolean;
   isLocalNutritionEntry: (id: string) => boolean;
   getLocalWorkout: (id: string) => Workout | undefined;
+  getLocalNutritionEntry: (id: string) => NutritionEntry | undefined;
   saveWorkout: (workout: Workout) => void;
   deleteWorkout: (id: string) => void;
   saveNutritionEntry: (entry: NutritionEntry) => void;
@@ -86,6 +87,8 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       isLocalNutritionEntry: (id) =>
         localData.nutritionEntries.some((item) => item.id === id),
       getLocalWorkout: (id) => localData.workouts.find((item) => item.id === id),
+      getLocalNutritionEntry: (id) =>
+        localData.nutritionEntries.find((item) => item.id === id),
       saveWorkout: (workout) => {
         const exists = localData.workouts.some((item) => item.id === workout.id);
         persist({

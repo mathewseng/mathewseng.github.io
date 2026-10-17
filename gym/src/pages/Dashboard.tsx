@@ -1,710 +1,436 @@
 import {
   ArrowRight,
-  BarChart3,
+  CalendarDays,
   ChevronRight,
   CircleAlert,
   Dumbbell,
   Flame,
-  Gauge,
   HeartPulse,
   Plus,
   Scale,
   Sparkles,
   Trophy,
-  TrendingUp,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
-import ProgressChart from "../components/ProgressChart";
+import ProgressChart, { type ChartPoint } from "../components/ProgressChart";
 import WorkoutCalendar from "../components/WorkoutCalendar";
-import { Badge, MetricCard, PageHeader, SectionHeading, Surface } from "../components/ui";
-import { benchGoal } from "../data/goals";
+import {
+  ActionBar,
+  Badge,
+  ButtonLink,
+  MetricCard,
+  PageHeader,
+  ProgressBar,
+  SectionHeading,
+  Surface,
+} from "../components/ui";
+import { goals } from "../data/goals";
 import { profile } from "../data/profile";
-import { compareWorkoutsNewestFirst, workouts as seedWorkouts } from "../data/workouts";
-import type { Workout } from "../lib/types";
-import { Link } from "../router";
+import { compareWorkoutsNewestFirst } from "../data/workouts";
+import { getWeeklyTrainingFrequency } from "../lib/calculations";
+import { localToday } from "../lib/formUtils";
+import { getBestTrainingWeek, getExercisePersonalRecords } from "../lib/personalRecords";
+import { suggestionToSearch } from "../lib/planHandoff";
+import { getExerciseProgression } from "../lib/progression";
+import type { Goal, Workout } from "../lib/types";
+import { DEFAULT_READINESS_SCORES, suggestWorkout } from "../lib/workoutSuggestions";
 import { useAppState } from "../state/AppState";
 
-const benchProgress = [
-  { label: "Jul 14", value: 19, secondary: 1805 },
-  { label: "Jul 16", value: 20, secondary: 1900 },
-  {
-    label: "Jul 27",
-    value: 5,
-    secondary: 475,
-    context: "Single 95 lb ramp-up set during mild illness; not a matched test.",
-  },
-  {
-    label: "Aug 3",
-    value: 21,
-    secondary: 1995,
-    context: "7/7/7 completed; the attempted eighth rep of the final set failed.",
-  },
-  {
-    label: "Aug 12",
-    value: 23,
-    secondary: 2185,
-    context: "8/7/8 completed with no failed attempt reported.",
-  },
-  {
-    label: "Aug 31",
-    value: 23,
-    secondary: 2185,
-    context:
-      "7/7/9 completed after returning from two weeks of work travel; tied best session volume and set a new recent 95 lb top-set best.",
-  },
-  {
-    label: "Sep 7",
-    value: 25,
-    secondary: 2375,
-    context:
-      "8/8/9 completed for a new 95 lb session-volume best and completion of the 8/8/8 milestone.",
-  },
-];
+const SMITH = { machineId: "primary-smith-machine" };
+const DAY_MS = 86_400_000;
 
-const inclineProgress = [
-  { label: "Early", value: 7 },
-  { label: "Jul 14", value: 8 },
-  { label: "Jul 16", value: 11 },
-  {
-    label: "Jul 27",
-    value: 10,
-    context: "65 lb top set after travel; best recorded incline top set.",
-  },
-  {
-    label: "Aug 3",
-    value: 8,
-    context: "Three full working sets were completed at 65 lb: 8/8/8.",
-  },
-  {
-    label: "Aug 12",
-    value: 9,
-    context: "Best set was 55 lb × 9; the load was lower than August 3.",
-  },
-  {
-    label: "Aug 31",
-    value: 9,
-    context: "65 lb × 8/8/9; best full three-set result at this load.",
-  },
-  {
-    label: "Sep 7",
-    value: 7,
-    context: "75 lb × 7/7/6; heaviest recorded Smith-incline load.",
-  },
-  {
-    label: "Sep 14",
-    value: 4,
-    context:
-      "75 lb × 4 followed by a failed fifth rep after the first full 105 lb flat-bench session; one fatigue-affected set, not a matched test.",
-  },
-  {
-    label: "Sep 28",
-    value: 6,
-    context: "75 lb × 6/6/6 after flat bench; three completed sets.",
-  },
-  {
-    label: "Oct 4",
-    value: 5,
-    context: "75 lb × 5/5/5 after flat bench; three completed sets.",
-  },
-];
+const shortDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const longDate = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+});
 
-const benchEstimateProgress = [
-  { label: "Jul 14", value: 117.2, secondary: 95 },
-  { label: "Jul 16", value: 117.2, secondary: 95 },
-  {
-    label: "Jul 27",
-    value: 110.8,
-    secondary: 95,
-    context: "Estimated from a single ramp-up top set during mild illness.",
-  },
-  {
-    label: "Aug 3",
-    value: 117.2,
-    secondary: 95,
-    context: "Estimated from a completed seven-repetition set; not a max test.",
-  },
-  {
-    label: "Aug 12",
-    value: 120.3,
-    secondary: 95,
-    context: "Estimated from a completed eight-repetition set; not a max test.",
-  },
-  {
-    label: "Aug 31",
-    value: 123.5,
-    secondary: 95,
-    context:
-      "Estimated from the completed nine-repetition final set after travel; not a max test.",
-  },
-  {
-    label: "Sep 7",
-    value: 123.5,
-    secondary: 95,
-    context:
-      "Estimated from the completed nine-repetition final set; session volume improved, but the estimate remains unchanged and is not a max test.",
-  },
-  {
-    label: "Sep 14",
-    value: 126,
-    secondary: 105,
-    context:
-      "Estimated from a completed six-repetition set at 105 lb; not a confirmed maximum or a max-test recommendation.",
-  },
-  {
-    label: "Sep 28",
-    value: 126,
-    secondary: 105,
-    context:
-      "The final six-repetition set at 105 lb was a hard grind at 0 RIR. The estimate is about 126 lb, but this is not a confirmed maximum.",
-  },
-  {
-    label: "Oct 4",
-    value: 126,
-    secondary: 105,
-    context:
-      "Estimated from a completed six-rep set. The final set had five completed reps plus an incomplete sixth attempt, which is excluded.",
-  },
-];
-
-const pullUpProgress = [
-  {
-    label: "Baseline",
-    value: 5,
-    secondary: 13,
-    context: "Exact date was not recorded.",
-  },
-  {
-    label: "Sep 1",
-    value: 5,
-    secondary: 12,
-    context:
-      "5/4/3 the night after returning from two weeks of work travel; strict form was not explicitly confirmed.",
-  },
-  {
-    label: "Sep 8",
-    value: 5,
-    secondary: 8,
-    context:
-      "5/3 across only two sets in a 40-minute session; not a matched comparison with longer sessions. Strict form was not explicitly confirmed.",
-  },
-  {
-    label: "Sep 22",
-    value: 5,
-    secondary: 14,
-    context: "5/4/5 across three sets; strict form was not explicitly confirmed.",
-  },
-  {
-    label: "Sep 29",
-    value: 5,
-    secondary: 12,
-    context:
-      "5/4/3 across three sets the night after push; strict form was not explicitly confirmed.",
-  },
-  {
-    label: "Oct 6",
-    value: 6,
-    secondary: 16,
-    context:
-      "6/4/3/3 across four sets. Strict form unconfirmed; session totals span different set counts.",
-  },
-];
-
-const pushdownProgress = [
-  {
-    label: "Travel return",
-    value: 23,
-    secondary: 690,
-    context: "Exact date was not recorded.",
-  },
-  { label: "Jul 27", value: 30, secondary: 900 },
-  { label: "Aug 3", value: 40, secondary: 1200 },
-  { label: "Aug 10", value: 24, secondary: 720 },
-  { label: "Aug 12", value: 26, secondary: 780 },
-  {
-    label: "Aug 31",
-    value: 26,
-    secondary: 780,
-    context: "8/10/8 across three sets after returning from work travel.",
-  },
-  { label: "Sep 7", value: 28, secondary: 840, context: "8/10/10 across three sets." },
-  { label: "Sep 14", value: 22, secondary: 660, context: "10/6/6 across three sets." },
-  { label: "Sep 21", value: 30, secondary: 900, context: "10/10/10 across three sets." },
-  { label: "Sep 28", value: 30, secondary: 900, context: "10/10/10 across three sets." },
-];
-
-function recentTrainingWeeks(workouts: Workout[]) {
-  const dated = workouts
-    .filter((workout): workout is Workout & { date: string } => Boolean(workout.date))
-    .sort((left, right) => left.date.localeCompare(right.date));
-  const anchor = dated.length
-    ? new Date(`${dated[dated.length - 1]?.date ?? "2026-07-28"}T12:00:00`)
-    : new Date("2026-07-28T12:00:00");
-  const anchorMonday = new Date(anchor);
-  const anchorDay = anchorMonday.getDay();
-  anchorMonday.setDate(anchorMonday.getDate() - (anchorDay === 0 ? 6 : anchorDay - 1));
-
-  return Array.from({ length: 6 }, (_, index) => {
-    const start = new Date(anchorMonday);
-    start.setDate(start.getDate() - (5 - index) * 7);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    const count = dated.filter((workout) => {
-      const workoutDate = new Date(`${workout.date}T12:00:00`);
-      return workoutDate >= start && workoutDate < end;
-    }).length;
-    return {
-      label: new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-      }).format(start),
-      count,
-    };
-  });
+function noonOf(iso: string): Date {
+  return new Date(`${iso}T12:00:00`);
 }
 
-function GoalMiniCard({
-  title,
-  current,
-  target,
-  unit,
-  detail,
-}: {
-  title: string;
-  current: number;
-  target: number;
-  unit: string;
-  detail: string;
-}) {
+function capitalise(value: string): string {
+  return `${value[0]?.toUpperCase() ?? ""}${value.slice(1)}`;
+}
+
+function pointLabel(workout: { date?: string; chronologyIndex: number }): string {
+  return workout.date
+    ? shortDate.format(noonOf(workout.date))
+    : `#${workout.chronologyIndex}`;
+}
+
+/** Dated sessions in the four Monday-start weeks ending with the latest log's week. */
+function recentSessionCount(workouts: Workout[], latestDate: string | undefined) {
+  if (!latestDate) return 0;
+  const weeks = getWeeklyTrainingFrequency(workouts);
+  const latestWeek = weeks.at(-1)?.weekStart;
+  if (!latestWeek) return 0;
+  const cutoff = new Date(`${latestWeek}T00:00:00Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate() - 21);
+  const from = cutoff.toISOString().slice(0, 10);
+  return weeks
+    .filter((week) => week.weekStart >= from)
+    .reduce((total, week) => total + week.workoutCount, 0);
+}
+
+function nextMilestone(goal: Goal): string | undefined {
+  return goal.milestones?.find((milestone) => !milestone.achieved)?.label;
+}
+
+function GoalRow({ goal }: { goal: Goal }) {
+  const current = goal.currentValue ?? 0;
+  const target = goal.targetValue ?? 1;
   const percent = Math.min(100, Math.round((current / target) * 100));
+  const next = nextMilestone(goal);
   return (
-    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+    <div className="rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-extrabold">{title}</p>
-          <p className="mt-1 text-xs text-[var(--muted)]">{detail}</p>
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold">{goal.title}</h3>
+          {next ? <p className="mt-1 text-xs text-[var(--muted)]">Next: {next}</p> : null}
         </div>
-        <span className="text-sm font-black">{percent}%</span>
+        <span className="text-sm font-bold">{percent}%</span>
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-        <div
-          className="h-full rounded-full bg-[var(--accent)]"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <div className="mt-2 flex justify-between text-[0.67rem] font-bold text-[var(--muted)]">
-        <span>
-          {current} {unit}
-        </span>
-        <span>
-          {target} {unit}
-        </span>
-      </div>
+      <ProgressBar
+        className="mt-3"
+        value={current}
+        max={target}
+        label={`${goal.title} progress`}
+        start={`${current} ${goal.unit ?? ""}`.trim()}
+        end={`${target} ${goal.unit ?? ""}`.trim()}
+      />
     </div>
   );
 }
 
 export default function Dashboard() {
   const { workouts, nutritionEntries } = useAppState();
-  const latestWorkout =
-    workouts.filter((workout) => workout.date).sort(compareWorkoutsNewestFirst)[0] ??
-    seedWorkouts[seedWorkouts.length - 1];
-  const trainingWeeks = recentTrainingWeeks(workouts);
-  const latestDateLabel = latestWorkout?.date
-    ? new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      }).format(new Date(`${latestWorkout.date}T12:00:00`))
-    : "Undated training history";
-  const benchCurrent = benchGoal.currentValue ?? 115;
-  const benchTarget = benchGoal.targetValue ?? 145;
-  const benchPercent = Math.min(100, Math.round((benchCurrent / benchTarget) * 100));
-  const benchRemaining = Math.max(0, benchTarget - benchCurrent);
+  // Read once per visit: the suggestion depends on the days since the last log.
+  const [today] = useState(localToday);
+
+  const data = useMemo(() => {
+    const dated = workouts
+      .filter((workout) => workout.date)
+      .sort(compareWorkoutsNewestFirst);
+    const latest = dated[0];
+    const daysSinceLatest = latest?.date
+      ? Math.max(
+          0,
+          Math.round((noonOf(today).getTime() - noonOf(latest.date).getTime()) / DAY_MS),
+        )
+      : undefined;
+
+    const suggestion = suggestWorkout(
+      {
+        ...DEFAULT_READINESS_SCORES,
+        lastWorkoutType: latest?.type,
+        daysSinceLastWorkout: daysSinceLatest,
+      },
+      { desiredDurationMinutes: 45 },
+    );
+
+    const [bench] = getExercisePersonalRecords(workouts, "smith-flat-bench", SMITH);
+    const [pullUps] = getExercisePersonalRecords(workouts, "strict-pull-up");
+    const benchPoints = getExerciseProgression(workouts, "smith-flat-bench", SMITH);
+    const pullUpPoints = getExerciseProgression(workouts, "strict-pull-up");
+
+    const benchChart: ChartPoint[] = benchPoints
+      .filter((point) => point.estimatedOneRepMaxLb !== undefined)
+      .map((point) => ({
+        label: pointLabel(point),
+        value: point.estimatedOneRepMaxLb,
+        secondary: point.bestWeightLb,
+        context: point.failedAttempts
+          ? `${point.failedAttempts} failed attempt${point.failedAttempts === 1 ? "" : "s"} excluded.`
+          : undefined,
+      }));
+    const pullUpChart: ChartPoint[] = pullUpPoints.map((point) => ({
+      label: pointLabel(point),
+      value: point.bestSetReps,
+      secondary: point.completedReps,
+      context: point.date ? undefined : "Exact date was not recorded.",
+    }));
+
+    const latestWeight = [...nutritionEntries]
+      .filter((entry) => entry.bodyWeightLb !== undefined)
+      .sort((left, right) => right.date.localeCompare(left.date))[0];
+
+    return {
+      latest,
+      daysSinceLatest,
+      suggestion,
+      bench,
+      pullUps,
+      benchChart,
+      pullUpChart,
+      latestWeight,
+      recentSessions: recentSessionCount(workouts, latest?.date),
+      bestWeek: getBestTrainingWeek(workouts),
+      undatedCount: workouts.length - dated.length,
+    };
+  }, [nutritionEntries, today, workouts]);
+
+  const {
+    latest,
+    daysSinceLatest,
+    suggestion,
+    bench,
+    pullUps,
+    benchChart,
+    pullUpChart,
+    latestWeight,
+    recentSessions,
+    bestWeek,
+    undatedCount,
+  } = data;
+
+  const numericGoals = goals.filter(
+    (goal) => goal.currentValue !== undefined && goal.targetValue !== undefined,
+  );
+  const benchSet = bench?.bestSuccessfulSet;
+  const pullUpSet = pullUps?.bestSuccessfulSet;
+  const planned = suggestion.exercises.filter((exercise) => !exercise.optional);
+  const rirLow = Math.min(...planned.map((exercise) => exercise.rirRange[0]));
+  const rirHigh = Math.max(...planned.map((exercise) => exercise.rirRange[1]));
+  const keyReason =
+    suggestion.reasons.find((reason) => reason.includes("gap")) ?? suggestion.reasons[0];
+  const plannedType = suggestion.workoutType;
 
   return (
     <>
       <PageHeader
-        eyebrow={`${latestDateLabel} · Latest log`}
-        title="Build the next rep."
-        description="Your dashboard keeps performance and context together, so one hard day never gets mistaken for a trend."
+        eyebrow={
+          latest?.date
+            ? `${longDate.format(noonOf(latest.date))} · Latest log`
+            : "Undated training history"
+        }
+        title="Dashboard"
         actions={
           <>
-            <Link to="/suggested" className="button-secondary">
-              <Sparkles size={16} /> Build next session
-            </Link>
-            <Link to="/add" className="button-primary">
-              <Plus size={16} /> Log workout
-            </Link>
+            <ButtonLink to="/suggested" className="hidden lg:inline-flex">
+              <Sparkles size={16} aria-hidden="true" /> Build next session
+            </ButtonLink>
+            <ButtonLink to="/add" variant="primary" className="hidden lg:inline-flex">
+              <Plus size={16} aria-hidden="true" /> Log workout
+            </ButtonLink>
           </>
         }
       />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.7fr)]">
-        <Surface
-          raised
-          className="surface-feature relative min-h-[20rem] overflow-hidden p-5 sm:min-h-[22rem] sm:p-7"
-        >
-          <div
-            className="absolute inset-y-0 right-0 w-1/2 opacity-70 dot-grid [mask-image:linear-gradient(to_left,#000,transparent)]"
-            aria-hidden="true"
-          />
-          <div className="relative flex h-full flex-col">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.75fr)]">
+        <Surface raised className="surface-feature relative overflow-hidden p-5 sm:p-7">
+          <div className="flex h-full flex-col">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="accent">
-                <HeartPulse size={12} /> Recovery-aware
+                <HeartPulse size={12} aria-hidden="true" /> Recovery-aware
               </Badge>
-              <Badge tone="accent">Pull → Legs next</Badge>
+              {latest && plannedType ? (
+                <Badge tone="accent">
+                  {capitalise(latest.type)} → {capitalise(plannedType)} next
+                </Badge>
+              ) : null}
             </div>
-            <div className="mt-8 max-w-xl sm:mt-10">
+            <div className="mt-6 max-w-xl">
               <p className="eyebrow-accent">Suggested next session</p>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
-                Legs, build carefully.
+              <h2 className="mt-3 text-2xl font-extrabold tracking-[-0.03em] sm:text-3xl">
+                {suggestion.title}
               </h2>
-              <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
-                After the October 6 pull session, return to Legs when recovered. Your
-                September 30 squat reached 135 lb for 10 / 10. Record effort and back
-                symptoms before increasing the load.
+              <p className="mt-3 max-w-lg text-sm leading-6 text-[var(--muted)]">
+                {latest
+                  ? `Last logged: ${latest.title}${
+                      daysSinceLatest !== undefined
+                        ? `, ${daysSinceLatest === 0 ? "today" : `${daysSinceLatest} day${daysSinceLatest === 1 ? "" : "s"} ago`}`
+                        : ""
+                    }. `
+                  : ""}
+                {keyReason}
               </p>
             </div>
-            <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
-              <div className="flex items-center gap-5">
+            <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-6">
+              <div className="flex items-center gap-4 sm:gap-5">
                 <div>
-                  <p className="text-2xl font-black">45–60</p>
-                  <p className="text-[0.66rem] font-bold uppercase tracking-wide text-[var(--muted)]">
-                    minutes
+                  <p className="text-2xl font-extrabold">
+                    {suggestion.desiredDurationMinutes}
                   </p>
+                  <p className="eyebrow">minutes</p>
                 </div>
-                <div className="h-9 w-px bg-[var(--line-strong)]" />
+                <div className="h-9 w-px bg-[var(--line-strong)]" aria-hidden="true" />
                 <div>
-                  <p className="text-2xl font-black">2–3</p>
-                  <p className="text-[0.66rem] font-bold uppercase tracking-wide text-[var(--muted)]">
-                    target RIR
-                  </p>
+                  <p className="text-2xl font-extrabold">{suggestion.exercises.length}</p>
+                  <p className="eyebrow">exercises</p>
                 </div>
+                {planned.length ? (
+                  <>
+                    <div
+                      className="h-9 w-px bg-[var(--line-strong)]"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-2xl font-extrabold">
+                        {rirLow}–{rirHigh}
+                      </p>
+                      <p className="eyebrow">target RIR</p>
+                    </div>
+                  </>
+                ) : null}
               </div>
-              <Link to="/suggested" className="button-primary">
-                Tune readiness <ArrowRight size={16} />
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <ButtonLink
+                  to="/suggested"
+                  variant="ghost"
+                  className="hidden lg:inline-flex"
+                >
+                  Tune readiness
+                </ButtonLink>
+                {suggestion.exercises.length ? (
+                  <ButtonLink to={`/add${suggestionToSearch(suggestion)}`}>
+                    Start with this plan <ArrowRight size={16} aria-hidden="true" />
+                  </ButtonLink>
+                ) : null}
+              </div>
             </div>
           </div>
         </Surface>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-          <Surface className="p-5">
+        <section aria-labelledby="dashboard-goals">
+          <Surface className="flex h-full flex-col gap-3 p-4">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="eyebrow">Bench trajectory</p>
-                <h2 className="mt-1 text-lg font-black">
-                  {benchCurrent} → {benchTarget} lb
-                </h2>
-              </div>
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--acid-soft)]">
-                <Trophy size={18} />
-              </span>
+              <h2 id="dashboard-goals" className="text-lg font-bold tracking-[-0.02em]">
+                Nearest milestones
+              </h2>
+              <Trophy size={17} className="text-[var(--warn)]" aria-hidden="true" />
             </div>
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-              <div
-                className="h-full rounded-full bg-[var(--accent)]"
-                style={{ width: `${benchPercent}%` }}
-              />
-            </div>
-            <div className="mt-3 flex items-start justify-between gap-3 text-xs">
-              <span className="text-[var(--muted)]">Confirmed single</span>
-              <strong>{benchRemaining} lb to goal</strong>
-            </div>
-            <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
-              <p className="text-xs font-extrabold">Next controlled checkpoint</p>
-              <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                October 4 logged 6 / 6 / 5 at 105 lb plus an incomplete sixth attempt.
-                September 28 remains your 6 / 6 / 6 best. Keep 105 lb and build repeatable
-                controlled sets with some reserve before adding load.
-              </p>
-            </div>
+            {numericGoals.map((goal) => (
+              <GoalRow key={goal.id} goal={goal} />
+            ))}
+            <ButtonLink
+              to="/goals"
+              variant="ghost"
+              block
+              className="mt-auto justify-between"
+            >
+              View every goal <ChevronRight size={15} aria-hidden="true" />
+            </ButtonLink>
           </Surface>
-
-          <Surface className="p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="eyebrow">October 6 context</p>
-                <h2 className="mt-1 text-lg font-black">Pull in 50 minutes</h2>
-              </div>
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
-                <Gauge size={18} />
-              </span>
-            </div>
-            <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-              At 10:30 PM, you logged pull-ups for 6 / 4 / 3 / 3, face pulls at 70 lb, and
-              lat pushdowns, standing rows, and cable curls at 30 / 35 / 40 lb. Incline
-              and spider curls followed, then a separate 15-minute sauna. Strict pull-up
-              form and readiness scores were not supplied.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">16 pull-ups · 4 sets</Badge>
-              <Badge tone="quality">15 min sauna</Badge>
-              <Badge tone="neutral">10:30 PM · 50 min</Badge>
-            </div>
-          </Surface>
-        </div>
+        </section>
       </section>
 
-      <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section
+        aria-label="Key numbers"
+        className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4"
+      >
         <MetricCard
-          label="Bench single"
-          value="115 lb"
-          detail="Confirmed · Smith machine"
-          icon={Trophy}
-          accent="var(--acid-soft)"
+          label="Best bench set"
+          value={
+            benchSet?.weightLb !== undefined
+              ? `${benchSet.weightLb} × ${benchSet.reps}`
+              : "—"
+          }
+          detail={
+            benchSet?.date
+              ? `Smith machine · ${shortDate.format(noonOf(benchSet.date))}`
+              : "Smith machine"
+          }
+          icon={Dumbbell}
+          accent="var(--accent-soft)"
         />
         <MetricCard
-          label="Pull-up best"
-          value="5 reps"
-          detail="13 strict reps in best session"
+          label="Pull-up best set"
+          value={pullUpSet ? `${pullUpSet.reps} reps` : "—"}
+          detail={
+            pullUps?.bestSessionCompletedReps
+              ? `${pullUps.bestSessionCompletedReps.value} in the best session`
+              : undefined
+          }
           icon={Flame}
         />
         <MetricCard
-          label="Incline top set"
-          value="75 × 7"
-          detail="Heaviest recorded load"
-          icon={TrendingUp}
+          label="Last 4 weeks"
+          value={`${recentSessions} session${recentSessions === 1 ? "" : "s"}`}
+          detail={
+            bestWeek
+              ? `Best week: ${bestWeek.workoutCount} (from ${shortDate.format(noonOf(bestWeek.weekStart))})`
+              : undefined
+          }
+          icon={CalendarDays}
         />
         <MetricCard
           label="Body weight"
-          value={`${profile.bodyWeightLb} lb`}
-          detail="Reported Sep 2 · post-travel"
+          value={`${latestWeight?.bodyWeightLb ?? profile.bodyWeightLb} lb`}
+          detail={
+            latestWeight
+              ? `Logged ${shortDate.format(noonOf(latestWeight.date))}`
+              : "From the training profile"
+          }
           icon={Scale}
         />
       </section>
-      <section className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <MetricCard
-          label="Best bench set"
-          value="105 × 6"
-          detail="Heaviest multi-rep working set"
-          icon={Dumbbell}
-        />
-        <MetricCard
-          label="Last full bench 3-set"
-          value="6 / 6 / 6"
-          detail="105 lb · Sep 28 milestone"
-          icon={BarChart3}
-        />
-        <MetricCard
-          label="Smith squat"
-          value="135 × 8"
-          detail="Heaviest recorded set"
-          icon={TrendingUp}
-        />
-        <MetricCard
-          label="Leg press"
-          value="140 × 10"
-          detail="Three completed sets"
-          icon={Flame}
-        />
-      </section>
 
-      <section className="mt-8">
-        <SectionHeading
-          title="Training calendar"
-          description="Dated sessions land on the calendar; five undated sessions stay visible without invented dates."
-          action={
-            <Link
-              to="/workouts"
-              className="hidden items-center gap-1 text-xs font-extrabold text-[var(--muted)] hover:text-[var(--ink)] sm:flex"
-            >
-              Full history <ChevronRight size={14} />
-            </Link>
-          }
-        />
-        <WorkoutCalendar
-          workouts={workouts}
-          nutritionEntries={nutritionEntries}
-          compact
-        />
-        <Surface className="mt-4 p-4 sm:p-5">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="eyebrow">Weekly training frequency</p>
-              <h3 className="mt-1 text-lg font-black tracking-[-0.025em]">
-                Rhythm, not perfection
-              </h3>
-              <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                Only dated sessions are counted; undated history is excluded.
-              </p>
-            </div>
-            <div
-              className="grid h-28 min-w-0 flex-1 grid-cols-6 items-end gap-2 sm:max-w-xl"
-              role="img"
-              aria-label={`Weekly workout counts: ${trainingWeeks
-                .map((week) => `${week.label}, ${week.count}`)
-                .join("; ")}`}
-            >
-              {trainingWeeks.map((week) => (
-                <div key={week.label} className="flex h-full flex-col justify-end">
-                  <span className="mb-1 text-center text-xs font-black">
-                    {week.count || "—"}
-                  </span>
-                  <span
-                    className="min-h-1 rounded-t-lg bg-[var(--accent)]"
-                    style={{
-                      height: `${Math.max(6, Math.min(100, (week.count / 5) * 100))}%`,
-                      opacity: week.count ? 1 : 0.18,
-                    }}
-                  />
-                  <span className="mt-2 truncate text-center text-[0.58rem] font-bold text-[var(--faint)]">
-                    {week.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Surface>
-      </section>
-
-      <section className="mt-8">
-        <SectionHeading
-          title="Progress, with the footnotes"
-          description="Unknown values stay blank; context appears where comparisons are not like-for-like."
-        />
-        <div className="grid gap-4 xl:grid-cols-2">
-          <ProgressChart
-            title="Bench completed reps at 95 lb"
-            description="The dashed series is known completed volume, not an estimate."
-            data={benchProgress}
-            valueSuffix="reps"
-            secondaryLabel="Known volume (lb)"
-          />
-          <ProgressChart
-            title="Smith incline best set"
-            description="Highest completed reps in each documented session."
-            data={inclineProgress}
-            valueSuffix="reps"
-            variant="area"
-          />
-        </div>
-      </section>
-
-      <section className="mt-4 grid gap-4 xl:grid-cols-3">
-        <ProgressChart
-          title="Bench estimated 1RM"
-          description="Epley estimate only—not a confirmed record or a test recommendation."
-          data={benchEstimateProgress}
-          valueSuffix="lb estimated"
-          secondaryLabel="Top-set load"
-          height={190}
-        />
-        <ProgressChart
-          title="Pull-up history"
-          description="Best set and session total; only the undated baseline was explicitly confirmed strict."
-          data={pullUpProgress}
-          valueSuffix="best-set reps"
-          secondaryLabel="Session total"
-          height={190}
-        />
-        <ProgressChart
-          title="Triceps pushdown at 30 lb"
-          description="Session totals at the same load; set-count differences remain in the workout details."
-          data={pushdownProgress}
-          valueSuffix="reps"
-          secondaryLabel="Known volume"
-          height={190}
-        />
-      </section>
-
-      <section className="mt-8 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(19rem,0.75fr)]">
-        <div>
+      <section className="mt-8 grid gap-4 xl:grid-cols-2">
+        <div className="min-w-0">
           <SectionHeading
-            title="Improvement ledger"
-            description="Matched comparisons that show real, specific progress."
+            title="Training calendar"
+            description={
+              undatedCount
+                ? `${undatedCount} undated sessions stay in the history without invented dates.`
+                : undefined
+            }
           />
-          <Surface className="overflow-hidden">
-            <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
-              <div className="bg-[var(--surface)] p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+6 reps</Badge>
-                  <BarChart3 size={18} className="text-[var(--muted)]" />
-                </div>
-                <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
-                  Bench at 95 lb
-                </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Sep 7</p>
-                <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
-                  <span>7 / 7 / 5</span>
-                  <ArrowRight size={15} className="text-[var(--faint)]" />
-                  <span>8 / 8 / 9</span>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-                  19 → 25 reps · 1,805 → 2,375 lb known volume
-                </p>
-              </div>
-              <div className="bg-[var(--surface)] p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+17 reps</Badge>
-                  <Dumbbell size={18} className="text-[var(--muted)]" />
-                </div>
-                <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
-                  Pushdown at 30 lb
-                </h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">Travel return → Aug 3</p>
-                <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
-                  <span>10 / 8 / 5</span>
-                  <ArrowRight size={15} className="text-[var(--faint)]" />
-                  <span>10 / 10 / 10 / 10</span>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-                  23 → 40 reps · 690 → 1,200 lb known volume
-                </p>
-              </div>
-            </div>
-          </Surface>
+          <WorkoutCalendar
+            workouts={workouts}
+            nutritionEntries={nutritionEntries}
+            compact
+          />
         </div>
-
-        <div>
-          <SectionHeading title="Nearest milestones" description="What to earn next." />
-          <Surface className="space-y-3 p-4">
-            <GoalMiniCard
-              title="Smith-machine bench"
-              current={benchCurrent}
-              target={benchTarget}
-              unit="lb"
-              detail="Smith machine · confirmed"
+        <div className="min-w-0">
+          <SectionHeading
+            title="Progress"
+            description="Unknown values stay blank; hover or focus a point for its context."
+            action={
+              <ButtonLink to="/exercises" variant="ghost" className="shrink-0">
+                All exercises <ChevronRight size={14} aria-hidden="true" />
+              </ButtonLink>
+            }
+          />
+          <div className="grid gap-4">
+            <ProgressChart
+              title="Smith bench estimated 1RM"
+              description="Epley estimate from the best completed set; not a tested maximum."
+              data={benchChart}
+              valueSuffix="lb estimated"
+              secondaryLabel="Top-set load (lb)"
+              height={190}
             />
-            <GoalMiniCard
-              title="10 strict pull-ups"
-              current={5}
-              target={10}
-              unit="reps"
-              detail="Full range · no partials"
+            <ProgressChart
+              title="Strict pull-ups"
+              description="Best set and session total; set counts differ between sessions."
+              data={pullUpChart}
+              valueSuffix="best-set reps"
+              secondaryLabel="Session total"
+              height={190}
             />
-            <Link
-              to="/goals"
-              className="button-ghost w-full justify-between !px-2 text-xs"
-            >
-              View every goal <ChevronRight size={15} />
-            </Link>
-          </Surface>
+          </div>
         </div>
       </section>
 
-      <Surface className="mt-8 flex flex-col gap-4 border-dashed p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--surface-soft)]">
-            <CircleAlert size={18} />
-          </span>
-          <div>
-            <p className="text-sm font-extrabold">Data stays in this browser</p>
-            <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-              Local entries do not sync automatically. Export a backup before changing
-              devices or clearing browser data.
-            </p>
-          </div>
-        </div>
-        <Link to="/settings" className="button-secondary shrink-0 text-xs">
-          Review backup options
-        </Link>
-      </Surface>
+      <p className="mt-8 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-[var(--muted)]">
+        <CircleAlert size={14} aria-hidden="true" />
+        Data stays in this browser and does not sync.
+        <ButtonLink to="/settings" variant="ghost" size="sm">
+          Back up your entries
+        </ButtonLink>
+      </p>
 
-      <span className="sr-only">
-        Latest workout: {latestWorkout?.title ?? "No workout recorded"}.
-      </span>
+      <ActionBar className="lg:hidden" label="Primary actions">
+        <ButtonLink to="/suggested" variant="ghost">
+          <Sparkles size={16} aria-hidden="true" /> Plan session
+        </ButtonLink>
+        <ButtonLink to="/add" variant="primary">
+          <Plus size={16} aria-hidden="true" /> Log workout
+        </ButtonLink>
+      </ActionBar>
     </>
   );
 }

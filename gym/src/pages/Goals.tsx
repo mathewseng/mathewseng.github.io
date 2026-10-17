@@ -11,9 +11,8 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { Badge, PageHeader, Surface } from "../components/ui";
+import { Badge, ButtonLink, PageHeader, ProgressBar, Surface } from "../components/ui";
 import { goals } from "../data/goals";
-import { Link } from "../router";
 
 const goalIcons = {
   "bench-body-weight": Trophy,
@@ -28,13 +27,13 @@ export default function Goals() {
   return (
     <>
       <PageHeader
-        eyebrow="Direction over noise"
+        eyebrow="Goals"
         title="Goals & milestones"
         description="Each goal has a definition of success, a visible next step, and enough context to keep progress honest."
         actions={
-          <Link to="/suggested" className="button-primary">
-            <HeartPulse size={16} /> Plan next session
-          </Link>
+          <ButtonLink to="/suggested" variant="primary">
+            <HeartPulse size={16} aria-hidden="true" /> Plan next session
+          </ButtonLink>
         }
       />
 
@@ -50,21 +49,24 @@ export default function Goals() {
             : undefined;
 
           return (
-            <Surface key={goal.id} as="article" className="overflow-hidden">
-              <div className="p-5 sm:p-6">
+            <Surface key={goal.id} as="article" className="flex flex-col overflow-hidden">
+              <div className="flex-1 p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap gap-2">
                       <Badge tone="accent">{goal.category}</Badge>
-                      <Badge tone={goal.status === "limited" ? "warm" : "neutral"}>
+                      <Badge tone={goal.status === "limited" ? "warn" : "neutral"}>
                         {goal.status.replaceAll("-", " ")}
                       </Badge>
                     </div>
-                    <h2 className="mt-4 text-xl font-black tracking-[-0.035em]">
+                    <h2 className="mt-4 text-xl font-bold tracking-[-0.02em]">
                       {goal.title}
                     </h2>
                   </div>
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--surface-soft)]">
+                  <span
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-[var(--surface-3)]"
+                    aria-hidden="true"
+                  >
                     <Icon size={19} />
                   </span>
                 </div>
@@ -72,23 +74,22 @@ export default function Goals() {
                 {hasNumericProgress ? (
                   <div className="mt-6">
                     <div className="flex items-end justify-between gap-4">
-                      <p className="text-3xl font-black tracking-[-0.05em]">
+                      <p className="text-3xl font-extrabold tracking-[-0.04em]">
                         {goal.currentValue}
                         <span className="ml-1 text-sm text-[var(--muted)]">
                           {goal.unit}
                         </span>
                       </p>
-                      <p className="text-sm font-black">{percent}%</p>
+                      <p className="text-sm font-bold">{percent}%</p>
                     </div>
-                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-                      <div
-                        className="h-full rounded-full bg-[var(--accent)]"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                    <p className="mt-2 text-right text-[0.66rem] font-bold text-[var(--muted)]">
-                      Target: {goal.targetValue} {goal.unit}
-                    </p>
+                    <ProgressBar
+                      className="mt-3"
+                      size="lg"
+                      value={goal.currentValue ?? 0}
+                      max={goal.targetValue ?? 1}
+                      label={`${goal.title} progress`}
+                      end={`Target: ${goal.targetValue} ${goal.unit}`}
+                    />
                   </div>
                 ) : (
                   <p className="mt-5 text-sm leading-6 text-[var(--muted)]">
@@ -103,25 +104,34 @@ export default function Goals() {
                       {goal.milestones.slice(0, 5).map((milestone, index) => (
                         <li
                           key={milestone.id}
-                          className="flex items-center gap-3 rounded-xl bg-[var(--surface-soft)] px-3 py-2.5"
+                          className="well flex items-center gap-3 px-3 py-2.5"
                         >
                           {milestone.achieved ? (
-                            <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-ink)]">
+                            <span
+                              className="grid h-6 w-6 place-items-center rounded-full bg-[var(--accent)] text-[var(--on-accent)]"
+                              aria-hidden="true"
+                            >
                               <Check size={13} />
                             </span>
                           ) : (
-                            <span className="grid h-6 w-6 place-items-center rounded-full border border-[var(--line-strong)] text-[0.62rem] font-black text-[var(--muted)]">
+                            <span
+                              className="grid h-6 w-6 place-items-center rounded-full border border-[var(--line-strong)] text-xs font-bold text-[var(--muted)]"
+                              aria-hidden="true"
+                            >
                               {index + 1}
                             </span>
                           )}
-                          <span className="text-xs font-extrabold">
+                          <span className="text-xs font-bold">
+                            {milestone.achieved ? (
+                              <span className="sr-only">Achieved: </span>
+                            ) : null}
                             {milestone.label}
                           </span>
                         </li>
                       ))}
                     </ol>
                     {goal.milestones.length > 5 ? (
-                      <p className="mt-2 text-[0.68rem] font-semibold text-[var(--muted)]">
+                      <p className="mt-2 text-xs font-semibold text-[var(--muted)]">
                         +{goal.milestones.length - 5} later milestones
                       </p>
                     ) : null}
@@ -129,11 +139,12 @@ export default function Goals() {
                 ) : null}
               </div>
 
-              <div className="border-t border-[var(--line)] bg-[var(--surface-soft)] p-4 sm:px-6">
+              <div className="border-t border-[var(--line)] bg-[var(--surface-3)] p-4 sm:px-6">
                 <div className="flex items-start gap-3">
                   <Circle
                     size={14}
-                    className="mt-0.5 shrink-0 fill-[var(--acid)] text-[var(--acid)]"
+                    className="mt-0.5 shrink-0 fill-[var(--accent)] text-[var(--accent)]"
+                    aria-hidden="true"
                   />
                   <div className="min-w-0">
                     <p className="eyebrow">Next action</p>
@@ -153,15 +164,15 @@ export default function Goals() {
 
       <Surface className="mt-5 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-extrabold">A goal is not a daily grade.</p>
+          <p className="text-sm font-bold">A goal is not a daily grade.</p>
           <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
             Travel, illness, back symptoms, and recovery sessions are part of the
             timeline—not failed milestones.
           </p>
         </div>
-        <Link to="/suggested" className="button-secondary shrink-0 text-xs">
-          Turn a goal into a session <ArrowRight size={15} />
-        </Link>
+        <ButtonLink to="/suggested" className="shrink-0">
+          Turn a goal into a session <ArrowRight size={15} aria-hidden="true" />
+        </ButtonLink>
       </Surface>
     </>
   );

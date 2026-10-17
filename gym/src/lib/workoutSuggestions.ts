@@ -47,6 +47,32 @@ export interface WorkoutSuggestion {
 
 const NEUTRAL_RATING: Scale0To6 = 3;
 
+export type ReadinessScores = Required<
+  Pick<
+    ReadinessInput,
+    | "energy"
+    | "sleepQuality"
+    | "soreness"
+    | "appetite"
+    | "illness"
+    | "travelImpact"
+    | "backPain"
+    | "generalPain"
+  >
+>;
+
+/** The session builder's starting scores, also used for the dashboard preview. */
+export const DEFAULT_READINESS_SCORES: ReadinessScores = {
+  energy: 3,
+  sleepQuality: 3,
+  soreness: 2,
+  appetite: 3,
+  illness: 0,
+  travelImpact: 2,
+  backPain: 0,
+  generalPain: 0,
+};
+
 function rating(input: ReadinessInput, key: keyof ReadinessInput): Scale0To6 {
   const value = input[key];
   return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 6

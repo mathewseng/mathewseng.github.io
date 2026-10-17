@@ -4,6 +4,7 @@ import {
   Beaker,
   CircleAlert,
   Droplets,
+  Pencil,
   Plus,
   Scale,
   Trash2,
@@ -11,8 +12,11 @@ import {
 } from "lucide-react";
 
 import ProgressChart from "../components/ProgressChart";
+import { useConfirm } from "../components/confirm";
 import {
   Badge,
+  Button,
+  ButtonLink,
   EmptyState,
   MetricCard,
   PageHeader,
@@ -20,7 +24,6 @@ import {
   Surface,
 } from "../components/ui";
 import { creatineNotice, nutritionObservations } from "../data/nutrition";
-import { Link } from "../router";
 import { useAppState } from "../state/AppState";
 
 const dateLabel = (date: string) =>
@@ -37,6 +40,7 @@ function average(values: Array<number | undefined>): number | undefined {
 
 export default function Nutrition() {
   const { nutritionEntries, isLocalNutritionEntry, deleteNutritionEntry } = useAppState();
+  const confirm = useConfirm();
   const sorted = [...nutritionEntries].sort((a, b) => a.date.localeCompare(b.date));
   const recent = sorted.slice(-7);
   const latest = sorted[sorted.length - 1];
@@ -45,16 +49,26 @@ export default function Nutrition() {
   const avgCalories = average(recent.map((entry) => entry.calories));
   const avgWater = average(recent.map((entry) => entry.waterOz));
 
+  async function removeEntry(id: string, label: string) {
+    const confirmed = await confirm({
+      title: `Delete the ${label} nutrition entry?`,
+      description: "The entry is removed from this browser.",
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
+    if (confirmed) deleteNutritionEntry(id);
+  }
+
   return (
     <>
       <PageHeader
-        eyebrow="Fuel & recovery"
-        title="Nutrition, without the guilt."
-        description="Track what you know, leave unknowns blank, and view supplement observations as context—not prescriptions."
+        eyebrow="Nutrition"
+        title="Nutrition & recovery"
+        description="Track what is known, leave unknowns blank, and read supplement observations as context, not prescriptions."
         actions={
-          <Link to="/add-nutrition" className="button-primary">
-            <Plus size={16} /> Add nutrition
-          </Link>
+          <ButtonLink to="/add-nutrition" variant="primary">
+            <Plus size={16} aria-hidden="true" /> Add nutrition
+          </ButtonLink>
         }
       />
 
@@ -140,19 +154,22 @@ export default function Nutrition() {
         </div>
 
         <div className="space-y-4">
-          <Surface className="overflow-hidden border-[color-mix(in_srgb,var(--orange)_35%,var(--line))]">
-            <div className="bg-orange-500/10 p-5">
+          <Surface className="surface-warn overflow-hidden">
+            <div className="bg-[var(--warn-soft)] p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Badge tone="warm">review notice</Badge>
-                  <h2 className="mt-3 text-xl font-black tracking-[-0.03em]">
+                  <Badge tone="warn">review notice</Badge>
+                  <h2 className="mt-3 text-xl font-bold tracking-[-0.02em]">
                     {creatineNotice.reportedDose}
                   </h2>
                   <p className="mt-1 text-xs font-bold text-[var(--muted)]">
                     Reported intake · start date unknown
                   </p>
                 </div>
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/15 text-[var(--orange)]">
+                <span
+                  className="grid h-10 w-10 place-items-center rounded-md bg-[var(--warn-soft)] text-[var(--warn)]"
+                  aria-hidden="true"
+                >
                   <Beaker size={18} />
                 </span>
               </div>
@@ -161,12 +178,13 @@ export default function Nutrition() {
               <p className="text-xs leading-6 text-[var(--muted)]">
                 {creatineNotice.message}
               </p>
-              <div className="mt-4 flex items-start gap-2 rounded-xl bg-[var(--surface-soft)] p-3">
+              <div className="well mt-4 flex items-start gap-2 p-3">
                 <AlertTriangle
                   size={15}
-                  className="mt-0.5 shrink-0 text-[var(--orange)]"
+                  className="mt-0.5 shrink-0 text-[var(--warn)]"
+                  aria-hidden="true"
                 />
-                <p className="text-[0.7rem] leading-5 text-[var(--muted)]">
+                <p className="text-xs leading-5 text-[var(--muted)]">
                   {creatineNotice.safety}
                 </p>
               </div>
@@ -175,7 +193,7 @@ export default function Nutrition() {
 
           <Surface className="p-5">
             <p className="eyebrow">Known travel gap</p>
-            <h3 className="mt-2 text-lg font-black">~10 days paused</h3>
+            <h3 className="mt-2 text-lg font-bold">~10 days paused</h3>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
               No creatine was reported during travel. Exact dates are unknown, so the
               calendar does not fabricate ten missed entries.
@@ -195,7 +213,7 @@ export default function Nutrition() {
                     key={item.id}
                     className="flex items-start gap-2 text-xs leading-5 text-[var(--muted)]"
                   >
-                    <CircleAlert size={13} className="mt-1 shrink-0" />
+                    <CircleAlert size={13} className="mt-1 shrink-0" aria-hidden="true" />
                     {item.title} not yet recorded
                   </div>
                 ))}
@@ -221,7 +239,7 @@ export default function Nutrition() {
                   >
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-extrabold">
+                        <p className="text-sm font-bold">
                           {new Intl.DateTimeFormat("en-US", {
                             weekday: "short",
                             month: "short",
@@ -248,21 +266,17 @@ export default function Nutrition() {
                       </p>
                     </div>
                     {isLocalNutritionEntry(entry.id) ? (
-                      <button
-                        type="button"
-                        className="button-danger self-start text-xs sm:self-auto"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              "Delete this nutrition entry from this browser?",
-                            )
-                          ) {
-                            deleteNutritionEntry(entry.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
+                      <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+                        <ButtonLink to={`/add-nutrition?edit=${entry.id}`}>
+                          <Pencil size={14} aria-hidden="true" /> Edit
+                        </ButtonLink>
+                        <Button
+                          variant="danger"
+                          onClick={() => void removeEntry(entry.id, entry.date)}
+                        >
+                          <Trash2 size={14} aria-hidden="true" /> Delete
+                        </Button>
+                      </div>
                     ) : null}
                   </div>
                 ))}
@@ -275,9 +289,9 @@ export default function Nutrition() {
               title="No dated nutrition entries yet"
               description="The known body weight and creatine observations are undated, so they stay out of trend charts."
               action={
-                <Link to="/add-nutrition" className="button-primary text-xs">
+                <ButtonLink to="/add-nutrition" variant="primary">
                   Add the first day
-                </Link>
+                </ButtonLink>
               }
             />
           </Surface>

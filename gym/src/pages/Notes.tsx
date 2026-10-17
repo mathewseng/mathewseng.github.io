@@ -26,7 +26,7 @@ const tones = {
   equipment: "neutral",
   "exercise-standard": "accent",
   programming: "accent",
-  recovery: "warm",
+  recovery: "warn",
   "data-quality": "quality",
   safety: "danger",
 } as const;
@@ -35,18 +35,18 @@ export default function Notes() {
   return (
     <>
       <PageHeader
-        eyebrow="Source-of-truth notes"
-        title="Standards, context, and caveats"
-        description="The details that make a number comparable—or tell you when it should not be compared at all."
+        eyebrow="Notes"
+        title="Training notes"
+        description="The standards, context and caveats that make a number comparable, or say when it should not be compared at all."
       />
 
       <Surface raised className="surface-feature mb-5 overflow-hidden p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-3xl">
             <Badge tone="accent">
-              <NotebookText size={12} /> Living reference
+              <NotebookText size={12} aria-hidden="true" /> Living reference
             </Badge>
-            <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">
+            <h2 className="mt-4 text-2xl font-bold tracking-[-0.03em]">
               Good tracking remembers the setup.
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
@@ -55,7 +55,10 @@ export default function Notes() {
               conditions around the work.
             </p>
           </div>
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[var(--accent)]">
+          <span
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)]"
+            aria-hidden="true"
+          >
             <Dumbbell size={24} />
           </span>
         </div>
@@ -70,20 +73,24 @@ export default function Notes() {
                 <Badge tone={tones[note.category]}>
                   {note.category.replaceAll("-", " ")}
                 </Badge>
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--surface-soft)]">
+                <span
+                  className="grid h-9 w-9 place-items-center rounded-sm bg-[var(--surface-3)]"
+                  aria-hidden="true"
+                >
                   <Icon size={16} />
                 </span>
               </div>
-              <h2 className="mt-5 text-lg font-black tracking-[-0.025em]">
-                {note.title}
-              </h2>
+              <h2 className="mt-5 text-lg font-bold tracking-[-0.02em]">{note.title}</h2>
               <ul className="mt-4 space-y-3">
                 {note.points.map((point) => (
                   <li
                     key={point}
                     className="flex items-start gap-2.5 text-xs leading-5 text-[var(--muted)]"
                   >
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
+                    <span
+                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]"
+                      aria-hidden="true"
+                    />
                     {point}
                   </li>
                 ))}
@@ -94,7 +101,11 @@ export default function Notes() {
       </div>
 
       <Surface className="mt-5 flex items-start gap-3 border-dashed p-5">
-        <Activity size={17} className="mt-0.5 shrink-0 text-[var(--orange)]" />
+        <Activity
+          size={17}
+          className="mt-0.5 shrink-0 text-[var(--warn)]"
+          aria-hidden="true"
+        />
         <p className="text-xs leading-5 text-[var(--muted)]">
           Stop an exercise for sharp pain. Seek qualified medical care for persistent or
           worsening back pain, radiating pain, numbness, weakness, loss of coordination,
