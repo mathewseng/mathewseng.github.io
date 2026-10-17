@@ -727,7 +727,9 @@
       else if (net.mode === "host") { state = "host"; text = `Hosting · ${code}`; title = `You are hosting room ${code}`; }
       else { state = "client"; text = `Guest · ${code}`; title = `Connected to room ${code} as a guest`; }
     }
-    label.textContent = text;
+    // The state word folds away on phones (CSS); the code and the coloured dot stay.
+    const [word, rest] = text.includes(" · ") ? text.split(" · ") : [text, ""];
+    label.innerHTML = rest ? `<span class="room-word">${esc(word)} · </span>${esc(rest)}` : esc(word);
     label.dataset.state = state;
     button.dataset.state = state;
     button.title = title;
@@ -750,13 +752,19 @@
     const addSeat = $("#addSeatBtn");
     addSeat.disabled = guestLocked("add-player");
     addSeat.title = addSeat.disabled ? "Host only" : "";
+    // New groups are design changes: host only unless the room is co-design.
+    const designLocked = guest && view?.guestMode !== "full";
+    for (const button of $$("#table [data-add-zone]")) {
+      button.disabled = designLocked;
+      button.title = designLocked ? "Host only" : button.dataset.addZone === "seats" ? "Add a group to every seat" : "Add a shared group to the table";
+    }
   }
 
   /** Disable host-only actions inside a rendered pane and say why, once, at the top. */
   function applyGuestState(container) {
     if (!isGuest()) return;
-    for (const el of container.querySelectorAll("[data-act]")) {
-      if (!guestLocked(el.dataset.act)) continue;
+    for (const el of container.querySelectorAll("[data-act], [data-add-zone]")) {
+      if (!(el.dataset.act ? guestLocked(el.dataset.act) : view?.guestMode !== "full")) continue;
       el.disabled = true;
       el.setAttribute("aria-disabled", "true");
       el.title = "Host only";
@@ -931,6 +939,7 @@
     const focusKey = focusHost ? focusSignature(focused) : null;
     renderTop();
     renderTable();
+    renderGuestChrome();
     if (prefs.motion && backsBefore.size) {
       // Hidden cards carry placeholder ids, so a card that just turned up face-up is new here too.
       $$(".card[data-card-id]").forEach((el) => {
@@ -1619,7 +1628,7 @@
           <label class="field"><span>Decks</span><input type="number" min="1" max="8" value="${draft.decks}" data-deck="decks"></label>
           <label class="field"><span>Jokers</span><input type="number" min="0" max="8" value="${draft.jokers}" data-deck="jokers"></label>
         </div>
-        <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span style="color:${suit === "h" || suit === "d" ? "#ff7b8e" : "inherit"};font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
+        <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span class="${suit === "h" || suit === "d" ? "suit-red" : ""}" style="font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
         <div class="field"><span>Ranks <button class="btn btn--sm btn--ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn btn--sm" aria-pressed="${ranks.includes(rank)}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
         <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
@@ -3202,6 +3211,7 @@
       const select = $("#viewSelect");
       const views = compact ? [
         { label: net.mode === "local" ? "Play online…" : `Online room ${net.code || ""}…`, run: () => $("#roomBtn").click() },
+        ...(net.mode === "local" ? [] : [{ label: "React…", run: () => showMenu($("#menuBtn"), REACTIONS.map((emoji) => ({ label: emoji, run: () => emit({ kind: "react", emoji }) }))) }]),
         { heading: "View as" },
         ...[...select.options].map((option) => ({ label: `${option.value === select.value ? "✓ " : "   "}${option.textContent}`, run: () => { select.value = option.value; select.dispatchEvent(new Event("change")); } })),
         "-",

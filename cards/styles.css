@@ -1543,6 +1543,16 @@ input[type="range"] {
   font-size: var(--t-sm);
 }
 
+/* A row of checks (deck suits): each box sits next to its own label. */
+.row > .check {
+  gap: 6px;
+  margin-right: 10px;
+}
+
+.suit-red {
+  color: var(--bad);
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -3191,7 +3201,8 @@ input[type="range"] {
 
 details.custom-cards summary {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 4px;
   min-height: 36px;
   align-items: center;
   list-style: none;
@@ -3854,8 +3865,20 @@ table.compare th {
 
   .top-actions .view-field,
   .top-actions #sideToggle,
+  .top-actions #reactBtn,
+  .top-actions #logBtn,
   .top-actions #roomBtn[data-state="local"] {
     display: none;
+  }
+
+  /* The badge keeps its dot and the room code; "Hosting" / "Guest" is read out, not shown. */
+  .room-badge .room-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .top-actions .btn .lbl {
