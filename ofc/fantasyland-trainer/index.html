@@ -1,231 +1,318 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="ofc">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0d10" />
-    <meta
-      name="description"
-      content="Open-face Chinese poker Fantasyland trainer with daily and random puzzles."
-    />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Open-face Chinese poker Fantasyland trainer with daily and random puzzles." />
     <title>OFC Fantasyland Trainer</title>
-    <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="./styles.css?v=20261003b" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%238fd9b6'%3E♣%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../ofc.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body>
-    <div class="app-shell">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="ofc-shell app-shell trainer-panel">
       <header class="topbar">
-        <div class="brand-block">
-          <a class="home-link" href="/" aria-label="Home">MS</a>
-          <div>
-            <p class="eyebrow">Open-face Chinese poker</p>
-            <h1>OFC Fantasyland Trainer</h1>
-          </div>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a href="/ofc/">OFC</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Fantasyland trainer</span>
+        </nav>
+        <nav class="tool-nav" aria-label="OFC tools">
+          <a href="/ofc/play/">Play</a>
+          <a href="/ofc/fantasyland-trainer/" aria-current="page">Fantasyland trainer</a>
+          <a href="/ofc/fantasyland-ev/">Fantasyland EV</a>
+        </nav>
+        <div class="topbar-actions">
+          <button id="trainer-setup-open" class="btn btn--ghost" type="button" aria-haspopup="dialog">
+            <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-settings" /></svg>
+            <span>Setup</span>
+          </button>
+          <button id="trainer-rules-open" class="btn btn--ghost btn--icon rules-button" type="button" aria-haspopup="dialog" aria-label="Open variant rules" title="Rules">
+            <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg>
+          </button>
         </div>
       </header>
 
-      <section class="surface trainer-panel" aria-labelledby="trainer-title">
-        <div class="panel-heading trainer-heading">
-          <div class="trainer-heading-copy">
-            <p class="eyebrow">Fantasyland trainer</p>
-            <h2 id="trainer-title">Daily puzzle</h2>
-            <span id="trainer-config" class="trainer-config">14 cards / 0 jokers</span>
+      <main id="main" tabindex="-1" data-view="puzzle">
+        <div class="tool-head trainer-head">
+          <div>
+            <p class="eyebrow">OFC · Fantasyland trainer</p>
+            <h1 id="trainer-title">Daily puzzle</h1>
+            <p id="trainer-config" class="trainer-config">14 cards / 0 jokers</p>
           </div>
-          <div class="trainer-status">
-            <div class="timer-pill">
-              <span>Time</span>
-              <strong id="trainer-time">0:00</strong>
+          <div class="stat-strip trainer-status" aria-label="Puzzle status">
+            <div class="stat">
+              <span class="stat-label">Time</span>
+              <strong class="stat-value" id="trainer-time">0:00</strong>
             </div>
-            <div class="timer-pill">
-              <span>Points</span>
-              <strong id="trainer-current-points">0</strong>
+            <div class="stat">
+              <span class="stat-label">Points</span>
+              <strong class="stat-value" id="trainer-current-points">0</strong>
             </div>
-            <div id="trainer-progress-pill" class="timer-pill" hidden>
-              <span>Puzzle</span>
-              <strong id="trainer-progress">1/1</strong>
+            <div class="stat" id="trainer-progress-pill" hidden>
+              <span class="stat-label">Puzzle</span>
+              <strong class="stat-value" id="trainer-progress">1/1</strong>
             </div>
           </div>
         </div>
 
-        <div class="trainer-controls">
-          <div class="control-field">
-            <span>Mode</span>
-            <div class="segmented two-up" role="radiogroup" aria-label="Trainer mode">
+        <div class="trainer-game">
+          <section class="panel panel--flush trainer-board" aria-label="Your set">
+            <div class="panel-body">
+              <div class="ofc-felt">
+                <div id="trainer-rows" class="ofc-board trainer-rows" role="radiogroup" aria-label="Target row"></div>
+                <p id="trainer-message" class="inline-message" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel panel--quiet trainer-left" aria-label="Puzzle cards">
+            <div class="trainer-bank-head">
+              <strong id="trainer-bank-label">Cards</strong>
+              <div class="segmented sort-actions" role="group" aria-label="Sort bank">
+                <button id="trainer-sort-rank" class="sort-button active" type="button" aria-pressed="true">Rank</button>
+                <button id="trainer-sort-suit" class="sort-button" type="button" aria-pressed="false">Suit</button>
+              </div>
+            </div>
+            <div id="trainer-tray" class="ofc-tray trainer-tray" aria-label="Available cards"></div>
+          </section>
+        </div>
+
+        <section id="trainer-complete" class="panel trainer-complete" hidden aria-labelledby="trainer-complete-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow eyebrow--plain">Set complete</p>
+              <h2 id="trainer-complete-title">Daily set complete</h2>
+            </div>
+            <span class="badge badge--accent" id="trainer-complete-badge">High · 12 puzzles</span>
+          </div>
+          <div class="panel-body">
+            <div class="trainer-grade">
+              <strong id="trainer-complete-grade" class="trainer-grade-letter">A</strong>
+              <div>
+                <span class="trainer-grade-label">Grade</span>
+                <p id="trainer-complete-summary" class="trainer-grade-summary"></p>
+              </div>
+            </div>
+            <div class="stat-strip trainer-complete-stats">
+              <div class="stat">
+                <span class="stat-label">Score</span>
+                <strong class="stat-value" id="trainer-complete-score">0/0</strong>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Time</span>
+                <strong class="stat-value" id="trainer-complete-time">0:00</strong>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Max boards</span>
+                <strong class="stat-value" id="trainer-complete-max">0</strong>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Missed FL</span>
+                <strong class="stat-value" id="trainer-complete-missed">0</strong>
+              </div>
+            </div>
+            <div class="list" id="trainer-complete-rows" aria-label="Puzzle results"></div>
+          </div>
+          <div class="panel-foot trainer-complete-actions">
+            <button id="trainer-complete-copy" class="btn btn--primary" type="button">Copy report</button>
+            <button id="trainer-complete-report" class="btn" type="button">Report</button>
+            <button id="trainer-complete-random" class="btn" type="button">New random set</button>
+            <button id="trainer-complete-back" class="btn btn--ghost" type="button">Back to the board</button>
+          </div>
+        </section>
+      </main>
+
+      <div class="action-stage trainer-actions" id="trainer-actions">
+        <button id="trainer-clear" class="btn" type="button">Clear set</button>
+        <button id="trainer-fill" class="btn" type="button" disabled>Fill rest</button>
+        <button id="trainer-confirm" class="btn btn--primary" type="button" disabled>Confirm</button>
+        <button id="trainer-report-open" class="btn" type="button" hidden>Report</button>
+        <button id="trainer-solution-open" class="btn" type="button" hidden>Solution</button>
+        <button id="trainer-next" class="btn btn--primary" type="button" hidden>Next</button>
+        <button id="trainer-finish" class="btn btn--primary" type="button" hidden>Finish set</button>
+      </div>
+    </div>
+
+    <dialog id="trainer-setup" class="dialog dialog--sheet trainer-setup" aria-labelledby="trainer-setup-title">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Setup</p>
+          <h2 id="trainer-setup-title">Puzzle setup</h2>
+        </div>
+        <button id="trainer-setup-close" class="btn btn--ghost btn--icon" type="button" aria-label="Close setup">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body trainer-setup-body">
+        <div class="dialog-error" id="trainer-setup-error"></div>
+        <div class="setup-grid">
+          <fieldset class="setup-block control-field">
+            <legend class="field-label">Mode</legend>
+            <div class="segmented segmented--block two-up" role="radiogroup" aria-label="Trainer mode">
               <label><input type="radio" name="trainer-mode" value="daily" checked /><span>Daily</span></label>
               <label><input type="radio" name="trainer-mode" value="random" /><span>Random</span></label>
             </div>
-          </div>
-          <div class="control-field">
-            <span>Set</span>
-            <div class="segmented two-up" role="radiogroup" aria-label="Trainer set">
+          </fieldset>
+          <fieldset class="setup-block control-field">
+            <legend class="field-label">Set</legend>
+            <div class="segmented segmented--block two-up" role="radiogroup" aria-label="Trainer set">
               <label><input type="radio" name="trainer-scope" value="single" /><span>Single</span></label>
               <label><input type="radio" name="trainer-scope" value="all" checked /><span id="trainer-all-label">All 12</span></label>
             </div>
-          </div>
-          <div class="control-field trainer-single-control">
-            <span>Cards</span>
-            <div id="trainer-card-count-options" class="segmented four-up" role="radiogroup" aria-label="Trainer card count">
+          </fieldset>
+          <fieldset class="setup-block control-field trainer-single-control">
+            <legend class="field-label">Cards</legend>
+            <div id="trainer-card-count-options" class="segmented segmented--block four-up" role="radiogroup" aria-label="Trainer card count">
               <label><input type="radio" name="trainer-card-count" value="14" checked /><span>14</span></label>
               <label><input type="radio" name="trainer-card-count" value="15" /><span>15</span></label>
               <label><input type="radio" name="trainer-card-count" value="16" /><span>16</span></label>
               <label><input type="radio" name="trainer-card-count" value="17" /><span>17</span></label>
             </div>
-          </div>
-          <div class="control-field trainer-single-control">
-            <span>Jokers</span>
-            <div class="segmented three-up" role="radiogroup" aria-label="Trainer joker count">
+          </fieldset>
+          <fieldset class="setup-block control-field trainer-single-control">
+            <legend class="field-label">Jokers</legend>
+            <div class="segmented segmented--block three-up" role="radiogroup" aria-label="Trainer joker count">
               <label><input type="radio" name="trainer-joker-count" value="0" checked /><span>0</span></label>
               <label><input type="radio" name="trainer-joker-count" value="1" /><span>1</span></label>
               <label><input type="radio" name="trainer-joker-count" value="2" /><span>2</span></label>
             </div>
+          </fieldset>
+          <div class="setup-block control-field trainer-current-config-control setup-block--wide" hidden>
+            <span class="field-label">Current puzzle</span>
+            <strong id="trainer-current-config" class="trainer-current-config">14 cards, 0 jokers</strong>
           </div>
-          <div class="control-field trainer-current-config-control" hidden>
-            <span>Config</span>
-            <strong id="trainer-current-config">14 cards, 0 jokers</strong>
-          </div>
-          <div class="control-field trainer-variant-control">
-            <div class="control-label-line">
-              <span>Variant</span>
-              <button id="trainer-rules-open" class="rules-button" type="button" aria-haspopup="dialog">
-                <span class="info-mark" aria-hidden="true">i</span>
-                Rules
-              </button>
-            </div>
-            <div class="segmented variant-pills" role="radiogroup" aria-label="Fantasyland variant">
+          <fieldset class="setup-block control-field trainer-variant-control setup-block--wide">
+            <legend class="field-label">Variant</legend>
+            <div class="segmented segmented--wrap variant-pills" role="radiogroup" aria-label="Fantasyland variant">
               <label><input type="radio" name="trainer-variant" value="high" checked /><span>High</span></label>
               <label><input type="radio" name="trainer-variant" value="low" /><span>Low</span></label>
               <label><input type="radio" name="trainer-variant" value="badeucey" /><span>Badeucey</span></label>
               <label><input type="radio" name="trainer-variant" value="bdp" /><span>BDP</span></label>
               <label><input type="radio" name="trainer-variant" value="cribbage" /><span>Cribbage</span></label>
             </div>
-            <p id="trainer-variant-summary" class="variant-summary">Natural Pineapple OFC with standard 3-5-5 high-poker rankings.</p>
-          </div>
+            <p id="trainer-variant-summary" class="field-hint variant-summary">Natural Pineapple OFC with standard 3-5-5 high-poker rankings.</p>
+          </fieldset>
         </div>
-
-        <div class="trainer-game">
-          <section class="trainer-left" aria-label="Puzzle cards">
-            <div class="hand-row">
-              <div id="trainer-tray" class="trainer-tray" aria-label="Available cards"></div>
-              <div class="hand-side-controls">
-                <div class="bank-toolbar">
-                  <div class="sort-actions" aria-label="Sort bank">
-                    <button id="trainer-sort-rank" class="sort-button active" type="button" aria-pressed="true">Rank <kbd>R</kbd></button>
-                    <button id="trainer-sort-suit" class="sort-button" type="button" aria-pressed="false">Suit <kbd>S</kbd></button>
-                  </div>
-                </div>
-                <div class="trainer-actions">
-                  <button id="trainer-clear" class="secondary-button" type="button">Clear set <kbd>C</kbd></button>
-                  <button id="trainer-confirm" class="primary-button" type="button" disabled>Confirm <kbd>Space</kbd></button>
-                  <button id="trainer-report-open" class="secondary-button" type="button" hidden>Report</button>
-                  <button id="trainer-next" class="primary-button" type="button" hidden>Next <kbd>Space</kbd></button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="trainer-board" aria-label="Your set">
-            <div id="trainer-rows" class="trainer-rows"></div>
-            <div id="trainer-message" class="inline-message" role="status" aria-live="polite"></div>
-          </section>
-
-          <section class="trainer-report" aria-label="Share report">
-            <div class="report-head">
-              <div>
-                <span>Report</span>
-                <strong>Share result</strong>
-              </div>
-              <button id="trainer-report-close" class="report-close" type="button">Close <kbd>Space</kbd></button>
-            </div>
-            <div class="score-grid trainer-score-grid">
-              <div class="score-tile">
-                <span>Your royalties</span>
-                <strong id="trainer-your-points">--</strong>
-              </div>
-              <div class="score-tile">
-                <span>Max royalties</span>
-                <strong id="trainer-max-points">--</strong>
-              </div>
-              <div class="score-tile">
-                <span>Result</span>
-                <strong id="trainer-result">--</strong>
-              </div>
-            </div>
-            <label class="control-field share-field">
-              <span>Share</span>
-              <textarea id="trainer-share" rows="7" readonly spellcheck="false" wrap="off"></textarea>
-            </label>
-            <button id="trainer-copy" class="secondary-button" type="button" disabled>Copy report <kbd>C</kbd></button>
-          </section>
-        </div>
-      </section>
-
-      <details id="solution-drawer" class="solver-drawer" hidden>
-        <summary>
-          <span>Solution</span>
-          <strong>Current hand and best board</strong>
-        </summary>
-
-        <main class="workspace">
-          <section class="surface hand-panel" aria-labelledby="hand-title">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Current puzzle</p>
-                <h2 id="hand-title">Fantasyland hand</h2>
-              </div>
-              <span id="selected-count" class="solver-hand-meta">--</span>
-            </div>
-
-            <div id="selected-cards" class="selected-cards solver-current-cards" aria-label="Current hand cards"></div>
-            <div id="hand-message" class="inline-message solver-message" role="status" aria-live="polite"></div>
-          </section>
-
-          <section class="surface result-panel" aria-labelledby="result-title">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Optimal set</p>
-                <h2 id="result-title">Best board</h2>
-              </div>
-              <div id="repeat-badge" class="repeat-badge">--</div>
-            </div>
-
-            <div class="score-grid">
-              <div class="score-tile">
-                <span>Royalty points</span>
-                <strong id="best-points">--</strong>
-              </div>
-              <div class="score-tile">
-                <span>Best repeat line</span>
-                <strong id="repeat-points">--</strong>
-              </div>
-              <div class="score-tile">
-                <span>Legal boards</span>
-                <strong id="legal-boards">--</strong>
-              </div>
-            </div>
-
-            <div class="board-stack" id="board-stack">
-              <div class="empty-state">Loading optimal solution.</div>
-            </div>
-          </section>
-        </main>
-      </details>
-    </div>
-
-    <dialog id="variant-rules-dialog" class="rules-dialog" aria-labelledby="variant-rules-title">
-      <div class="rules-dialog-head">
-        <div>
-          <p class="eyebrow">Fantasyland variants</p>
-          <h2 id="variant-rules-title">Scoring and qualification</h2>
-        </div>
-        <button id="variant-rules-close" class="dialog-close" type="button" aria-label="Close rules">Close</button>
+        <p class="field-hint trainer-setup-note">Changing the setup starts a new set. Daily sets are the same for everyone on the day; a random set reshuffles with the button below.</p>
       </div>
-      <div id="variant-rules-tabs" class="rules-tabs" role="tablist" aria-label="Variant rules"></div>
-      <div id="variant-rules-content" class="rules-content"></div>
+      <div class="dialog-foot">
+        <button id="trainer-new-random" class="btn" type="button">New random set</button>
+        <button id="trainer-setup-done" class="btn btn--primary" type="button">Done</button>
+      </div>
     </dialog>
 
-    <script src="../fantasyland-core.js?v=20260907b"></script>
-    <script src="../../shared/cards.js?v=20261003b"></script>
-    <script src="./app.js?v=20261003b"></script>
+    <dialog id="trainer-report" class="dialog dialog--sheet trainer-report" aria-labelledby="trainer-report-title">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Report</p>
+          <h2 id="trainer-report-title">Share result</h2>
+        </div>
+        <button id="trainer-report-close" class="btn btn--ghost btn--icon report-close" type="button" aria-label="Close report">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="stat-strip trainer-score-grid">
+          <div class="stat score-tile">
+            <span class="stat-label">Your royalties</span>
+            <strong class="stat-value" id="trainer-your-points">--</strong>
+          </div>
+          <div class="stat score-tile">
+            <span class="stat-label">Max royalties</span>
+            <strong class="stat-value" id="trainer-max-points">--</strong>
+          </div>
+          <div class="stat score-tile">
+            <span class="stat-label">Result</span>
+            <strong class="stat-value" id="trainer-result">--</strong>
+          </div>
+        </div>
+        <div class="field share-field">
+          <label for="trainer-share">Share text</label>
+          <textarea id="trainer-share" rows="7" readonly spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button id="trainer-copy" class="btn btn--primary" type="button" disabled><span class="btn-label">Copy report</span></button>
+      </div>
+    </dialog>
+
+    <dialog id="solution-drawer" class="dialog dialog--wide dialog--sheet solver-drawer" aria-labelledby="solution-title" hidden>
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Solution</p>
+          <h2 id="solution-title">Current hand and best board</h2>
+        </div>
+        <button id="solution-close" class="btn btn--ghost btn--icon" type="button" aria-label="Close solution">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body solution-body">
+        <section class="solution-section hand-panel" aria-labelledby="hand-title">
+          <div class="solution-section-head">
+            <h3 id="hand-title">Fantasyland hand</h3>
+            <span id="selected-count" class="chip solver-hand-meta">--</span>
+          </div>
+          <div id="selected-cards" class="selected-cards solver-current-cards" aria-label="Current hand cards"></div>
+          <p id="hand-message" class="inline-message solver-message"></p>
+        </section>
+
+        <section class="solution-section result-panel" aria-labelledby="result-title">
+          <div class="solution-section-head">
+            <h3 id="result-title">Best board</h3>
+            <span id="repeat-badge" class="badge badge--plain repeat-badge">--</span>
+          </div>
+          <div class="stat-strip solution-stats">
+            <div class="stat score-tile">
+              <span class="stat-label">Royalty points</span>
+              <strong class="stat-value" id="best-points">--</strong>
+            </div>
+            <div class="stat score-tile">
+              <span class="stat-label">Best repeat line</span>
+              <strong class="stat-value" id="repeat-points">--</strong>
+            </div>
+            <div class="stat score-tile">
+              <span class="stat-label">Legal boards</span>
+              <strong class="stat-value" id="legal-boards">--</strong>
+            </div>
+          </div>
+          <div class="ofc-board board-stack" id="board-stack">
+            <div class="empty-state">Loading optimal solution.</div>
+          </div>
+        </section>
+      </div>
+    </dialog>
+
+    <dialog id="variant-rules-dialog" class="dialog dialog--wide dialog--sheet rules-dialog" aria-labelledby="variant-rules-title">
+      <div class="dialog-head rules-dialog-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Fantasyland variants</p>
+          <h2 id="variant-rules-title">Scoring and qualification</h2>
+        </div>
+        <button id="variant-rules-close" class="btn btn--ghost btn--icon dialog-close" type="button" aria-label="Close rules">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
+        </button>
+      </div>
+      <div id="variant-rules-tabs" class="tabs rules-tabs" role="tablist" aria-label="Variant rules"></div>
+      <div id="variant-rules-content" class="dialog-body rules-content" role="tabpanel" aria-labelledby="variant-rules-title"></div>
+    </dialog>
+
+    <div class="toast-stack toast-stack--alerts" id="trainer-alerts" role="alert" aria-live="assertive"></div>
+
+    <script src="../fantasyland-core.js?v=20261016"></script>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/tabs.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script src="../../shared/keycap.js?v=20261016"></script>
+    <script src="../../shared/card-drag.js?v=20261016"></script>
+    <script src="./app.js?v=20261016"></script>
   </body>
 </html>

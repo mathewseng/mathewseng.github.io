@@ -1,3399 +1,759 @@
-:root {
-  color-scheme: dark;
-  --bg: #05070b;
-  --bg-2: #071015;
-  --surface: #0b1118;
-  --surface-2: #111a24;
-  --surface-3: #182431;
-  --line: rgba(193, 207, 224, 0.14);
-  --line-strong: rgba(205, 220, 238, 0.28);
-  --text: #eef5ff;
-  --muted: #93a3b8;
-  --soft: #64748b;
-  --felt: #12372f;
-  --felt-2: #0b241f;
-  --accent: #37d99e;
-  --cyan: #55a7ff;
-  --amber: #f2b84b;
-  --rose: #ff6384;
-  --red: #f05d72;
-  --trainer-action-width: clamp(132px, 9vw, 156px);
-  /* Card faces come from shared/cards.css; pages only size them through --card-width. */
-  --card-width: clamp(42px, calc((100vw - 285px) / 17), 82px);
-  --trainer-card-height: calc(var(--card-width) * 1.4);
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
-  --radius: 8px;
-  --shadow: none;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-* {
-  box-sizing: border-box;
-}
+/* OFC Fantasyland trainer. Loads after shared/tokens.css, shared/app.css,
+ * shared/cards.css and ofc/ofc.css; everything here is page layout on top of
+ * the kit and the OFC board component. No palette, no literals: tokens only.
+ *
+ * Sections: card sizes, the toolbar (tool head + stat strip), the game grid
+ * (felt stage + card bank), board rows and their score chips, the bank, the
+ * action stage, the set-complete screen, dialogs (setup, report, solution,
+ * rules), then the phone pass and the short-desktop pass.
+ */
 
-html {
-  min-height: 100%;
-  scroll-behavior: smooth;
-}
-
-body {
-  min-height: 100vh;
-  min-height: 100dvh;
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-}
-
-body.trainer-dragging {
-  cursor: grabbing;
-  user-select: none;
-}
-
-button,
-select,
-textarea,
-input {
-  font: inherit;
-}
-
-button,
-select {
-  color: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-[hidden] {
-  display: none !important;
-}
-
-a {
-  color: inherit;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
-
-h1 {
-  font-size: clamp(1.15rem, 2vw, 1.9rem);
-  line-height: 1.05;
-  letter-spacing: 0;
-}
-
-h2 {
-  font-size: 1.08rem;
-  line-height: 1.15;
-  letter-spacing: 0;
-}
-
-h3 {
-  font-size: 0.9rem;
-  letter-spacing: 0;
-}
-
-.app-shell {
-  width: min(1540px, 100%);
-  margin: 0 auto;
-  padding: 10px;
-}
-
-.topbar {
-  position: sticky;
-  top: 8px;
-  z-index: 10;
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.brand-block,
-.status-cluster,
-.panel-heading,
-.action-row,
-.selected-head,
-.row-head,
-.row-meta,
-.score-grid,
-.sim-controls {
-  display: flex;
-  align-items: center;
-}
-
-.brand-block {
-  min-width: 0;
-  gap: 10px;
-}
-
-.home-link {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 auto;
-  border: 1px solid rgba(66, 230, 164, 0.46);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--accent);
-  font-weight: 900;
-  text-decoration: none;
-}
-
-.eyebrow {
-  margin-bottom: 4px;
-  color: var(--accent);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.status-cluster {
-  justify-content: flex-end;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.metric-pill,
-.score-tile {
-  min-width: 102px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-}
-
-.metric-pill span,
-.score-tile span,
-.control-field > span,
-.selected-head span,
-.inline-message {
-  display: block;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 750;
-}
-
-.metric-pill strong,
-.score-tile strong {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.98rem;
-  line-height: 1.1;
-}
-
-.workspace {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.72fr) minmax(520px, 1.28fr);
-  grid-template-areas: "hand result";
-  gap: 8px;
-  margin-top: 8px;
-  align-items: start;
-}
-
+/* ---------- Card sizes ----------
+   One width for the board and the bank so a card keeps its size while it
+   moves. The bank must hold 17 cards in one row on desktop, and the three
+   board rows plus the bank must fit a 720px-tall window, so the width is the
+   smaller of the two constraints. --tray-columns comes from the hand-cols-N
+   class the script sets (phones wrap the bank into two rows). */
 .trainer-panel {
-  margin-top: 8px;
+  --trainer-card-w: min(clamp(40px, calc((min(100vw, 1320px) - 150px) / var(--tray-count, 17)), 72px), clamp(40px, calc((100vh - 420px) / 5.6), 72px));
+  --tray-columns: 9;
 }
 
-.surface {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: none;
+.trainer-panel.hand-cols-7 {
+  --tray-columns: 7;
 }
 
-.hand-panel {
-  grid-area: hand;
+.trainer-panel.hand-cols-8 {
+  --tray-columns: 8;
 }
 
-.result-panel {
-  grid-area: result;
+.trainer-panel.hand-cols-9 {
+  --tray-columns: 9;
 }
 
-.deck-panel {
-  grid-area: deck;
-}
+/* ---------- Toolbar: title, config line, Time / Points / Puzzle ---------- */
 
-.sim-panel {
-  grid-area: sim;
-  overflow-x: auto;
-}
-
-.assumptions-panel {
-  grid-area: rules;
-}
-
-.solver-hand-meta {
-  display: inline-flex;
+.trainer-head {
   align-items: center;
-  min-height: 28px;
-  padding: 0 9px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 850;
+  padding: 8px 0 10px;
+}
+
+.trainer-head h1 {
+  overflow: hidden;
   white-space: nowrap;
-}
-
-.panel-heading {
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.trainer-heading-copy {
-  min-width: 0;
+  text-overflow: ellipsis;
 }
 
 .trainer-config {
-  display: block;
   margin-top: 2px;
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 850;
-  line-height: 1;
-  white-space: nowrap;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: var(--lh-data);
 }
 
+/* Two or three stats (the Puzzle stat hides for single-puzzle sets): columns follow the content. */
 .trainer-status {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(92px, auto);
+  flex: none;
 }
 
-.timer-pill {
-  min-width: 94px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
+.trainer-status .stat {
+  padding: 6px 14px;
 }
 
-.timer-pill span {
-  display: block;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 800;
+.trainer-status .stat-value {
+  min-width: 5ch;
 }
 
-.timer-pill strong {
-  display: block;
-  margin-top: 2px;
-  font-size: 1rem;
-}
-
-.trainer-controls {
-  display: grid;
-  grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(220px, 1.1fr) minmax(150px, 0.7fr);
-  gap: 10px;
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
-  align-items: end;
-}
-
-.trainer-current-config-control {
-  grid-column: span 2;
-}
-
-.trainer-current-config-control strong {
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  padding: 0 11px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #090f19;
-  color: var(--text);
-  font-size: 0.88rem;
-  font-weight: 850;
-  white-space: nowrap;
-}
+/* ---------- Game grid: the felt stage above the card bank ---------- */
 
 .trainer-game {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  grid-template-areas:
-    "bank bank"
-    "board report";
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
-  padding: 12px;
-}
-
-.trainer-left,
-.trainer-board,
-.trainer-report {
+  align-content: start;
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-2);
 }
 
-.trainer-left {
-  grid-area: bank;
-  padding: 10px;
+main[data-view="complete"] .trainer-game {
+  display: none;
 }
 
 .trainer-board {
-  grid-area: board;
-  padding: 10px;
+  --card-w-board: var(--trainer-card-w);
 }
 
-.trainer-report {
-  grid-area: report;
+.trainer-board > .panel-body {
+  border-radius: inherit;
+}
+
+.trainer-board .ofc-felt {
   display: grid;
-  align-content: start;
-  gap: 12px;
-  overflow: hidden;
-  padding: 0;
-}
-
-.report-head {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
-  background: #0d1721;
-}
-
-.report-head span {
-  display: block;
-  margin-bottom: 2px;
-  color: var(--accent);
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.report-head strong {
-  display: block;
-  font-size: 1rem;
-  line-height: 1.1;
-}
-
-.report-close {
-  min-height: 34px;
-  flex: 0 0 auto;
-  padding: 0 11px;
-  border: 1px solid var(--line-strong);
-  border-radius: 7px;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 0.76rem;
-  font-weight: 850;
-}
-
-.report-close:hover,
-.report-close:focus-visible {
-  border-color: rgba(88, 183, 217, 0.56);
-  background: #1b2a40;
-  outline: none;
-}
-
-.trainer-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.bank-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0;
-}
-
-.bank-toolbar > span {
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.sort-actions {
-  width: 100%;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #090f19;
-}
-
-.sort-button {
-  min-width: 0;
-  min-height: 28px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  padding: 0 6px;
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.sort-button.active {
-  background: var(--surface-3);
-  color: var(--text);
-}
-
-.two-up {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.trainer-tray {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: var(--card-width);
-  grid-template-columns: none;
-  gap: 5px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 1px 1px 6px;
-  scrollbar-width: thin;
-}
-
-.trainer-card {
-  width: 100%;
-  min-height: auto;
-  touch-action: none;
-}
-
-.trainer-bank-slot {
-  width: 100%;
-  min-height: auto;
+  gap: 8px;
+  padding: 10px 12px 8px;
 }
 
 .trainer-rows {
-  display: grid;
   gap: 8px;
 }
 
+.trainer-board .inline-message {
+  min-height: 20px;
+  color: color-mix(in oklab, var(--ink) 82%, transparent);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: var(--lh-data);
+  text-align: center;
+}
+
+.trainer-board .inline-message:empty {
+  display: none;
+}
+
+/* ---------- Board rows ----------
+   .trainer-row is an .ofc-row; the head is the radio, the slots are the cards
+   column, the summary holds the live hand chips. Only the placed cards are
+   draggable; the confirmed board shows its cards dimmed, not disabled grey. */
 .trainer-row {
-  display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: #0a121f;
-}
-
-.trainer-row.active {
-  border-color: rgba(66, 230, 164, 0.68);
-  box-shadow: none;
-}
-
-.trainer-row:not(.active) {
   cursor: pointer;
+}
+
+.trainer-panel.is-confirmed .trainer-row {
+  cursor: default;
 }
 
 .trainer-row-head {
-  grid-column: 1;
-  grid-row: 1 / 3;
-  width: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
   justify-content: center;
-  gap: 10px;
-  border: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.024);
-  color: var(--text);
-  padding: 10px 12px;
-  text-align: left;
+  min-height: calc(var(--card-width) * 1.4);
+  font-size: var(--t-md);
 }
 
-.trainer-row-head strong,
-.sort-button,
-.trainer-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.trainer-row-head strong {
+  font-weight: 700;
 }
 
 .trainer-slots {
-  grid-column: 2;
-  grid-row: 1;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(48px, 76px));
-  justify-content: start;
-  gap: 8px;
-  padding: 10px;
-}
-
-.trainer-slots.top-row {
-  grid-template-columns: repeat(3, minmax(48px, 76px));
-}
-
-.trainer-row-summary {
-  grid-column: 2;
-  grid-row: 2;
-  min-height: 24px;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 4px 10px 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 750;
-  line-height: 1.25;
-  text-align: center;
-  white-space: normal;
-}
-
-.trainer-row-summary strong,
-.score-points {
-  color: var(--text);
-}
-
-.trainer-row-summary.is-split-score {
-  flex-wrap: wrap;
-  gap: 3px 7px;
-}
-
-.trainer-score-component,
-.solution-score-component {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.score-description {
-  color: rgba(238, 245, 255, 0.5);
-}
-
-.score-separator {
-  color: rgba(238, 245, 255, 0.34);
-  font-weight: 800;
-}
-
-.score-equals {
-  margin-left: 2px;
-}
-
-.score-total {
-  white-space: nowrap;
-}
-
-.trainer-score-component.is-danger .score-description,
-.solution-score-component.is-danger .score-description {
-  color: var(--red);
-  opacity: 1;
-}
-
-.trainer-row-summary.is-dense {
-  font-size: 0.65rem;
-}
-
-.trainer-row-summary.is-very-dense {
-  font-size: 0.58rem;
-}
-
-.solution-score-component {
-  color: var(--muted);
-}
-
-.split-score-meta {
-  column-gap: 12px;
-}
-
-.trainer-row-summary.is-empty {
-  min-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-top-color: transparent;
+  min-height: calc(var(--card-width) * 1.4);
+  padding: 2px 0;
 }
 
 .trainer-slot {
+  width: var(--card-width);
+  flex: none;
   aspect-ratio: 5 / 7;
-  min-height: auto;
-  display: grid;
-  place-items: stretch;
-  border-radius: 10% / 7.1429%;
 }
 
-.trainer-slot.drag-over,
-.trainer-row.drag-over,
-.trainer-tray.drag-over {
-  background: rgba(66, 230, 164, 0.08);
+.trainer-slot.filled {
+  position: relative;
 }
 
-.trainer-row.drag-over {
-  border-color: rgba(66, 230, 164, 0.62);
-}
-
-.trainer-slot.drag-over {
-  outline: 2px solid rgba(66, 230, 164, 0.62);
-  outline-offset: -1px;
-}
-
-.trainer-tray.drag-over {
-  outline: 1px solid rgba(66, 230, 164, 0.56);
-  outline-offset: 3px;
-  border-radius: var(--radius);
-}
-
-.trainer-card,
-.trainer-placed-card {
+.trainer-slot > .playing-card {
+  display: block;
   width: 100%;
-  min-height: auto;
-  touch-action: none;
+  height: 100%;
 }
 
-.trainer-card:disabled {
-  opacity: 0.42;
+.trainer-panel.is-confirmed .trainer-placed-card:disabled,
+.trainer-panel.is-confirmed .trainer-card:disabled {
+  opacity: 0.92;
 }
 
-.trainer-slot.filled .trainer-placed-card {
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.28));
-  transition:
-    filter 180ms ease,
-    transform 180ms ease;
+/* Score chips: one hand chip per row, or one per scoring component with
+   quiet separators for the split-score variants (Badeucey, BDP, cribbage). */
+.trainer-row-summary {
+  gap: 4px 6px;
+  font-size: var(--t-xs);
 }
 
-.drag-source-hidden {
-  opacity: 0 !important;
+.trainer-row-summary .score-separator {
+  color: color-mix(in oklab, var(--ink) 60%, transparent);
+  font-weight: 700;
 }
 
-.trainer-drag-ghost {
-  position: fixed;
-  z-index: 2147483647;
-  box-sizing: border-box;
-  display: block !important;
-  opacity: 1 !important;
-  overflow: hidden;
-  visibility: visible !important;
-  pointer-events: none;
-  touch-action: none;
-  transform: translate(-50%, -50%) scale(1);
-  transform-origin: center;
-  will-change: left, top, width, height, transform;
-  transition:
-    transform 250ms ease-in-out,
-    box-shadow 250ms ease-in-out;
+.trainer-score-component.is-danger {
+  border-color: color-mix(in oklab, var(--bad) 55%, transparent);
+  background: color-mix(in oklab, var(--bad) 18%, var(--felt-dark));
+  color: var(--bad);
 }
 
-.trainer-drag-ghost.is-drop-animating {
-  transition:
-    left 250ms ease-in-out,
-    top 250ms ease-in-out,
-    width 250ms ease-in-out,
-    height 250ms ease-in-out,
-    transform 250ms ease-in-out,
-    box-shadow 250ms ease-in-out;
+.trainer-score-component.is-danger .hand-chip-pts {
+  color: var(--bad);
 }
 
-.trainer-drag-ghost.is-lifted {
-  transform: translate(-50%, -50%) scale(1.5);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.48);
+.trainer-row-summary .score-total {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  background: color-mix(in oklab, var(--accent) 16%, var(--felt-dark));
+  color: var(--accent);
 }
 
-.trainer-drag-ghost.is-dropping {
-  transform: translate(-50%, -50%) scale(1);
-  box-shadow: none;
+.trainer-row-summary .score-total .hand-chip-pts {
+  color: var(--accent);
 }
 
-.trainer-actions {
-  min-width: 0;
-  display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin: 0;
-}
-
-.trainer-actions:has(#trainer-next:not([hidden])) {
-  grid-template-rows: repeat(3, minmax(0, 1fr));
-}
-
-.trainer-actions .primary-button,
-.trainer-actions .secondary-button {
-  width: 100%;
-  min-height: 0;
-  padding: 0 8px;
-}
-
-.trainer-score-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+/* Split-middle variants (archived, kept for saved states): two labelled zones in the middle row. */
+.split-middle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
-  padding: 0 12px;
-}
-
-.share-field {
-  padding: 0 12px;
-}
-
-.share-field textarea {
-  min-height: 148px;
-  border-color: rgba(205, 220, 238, 0.22);
-  background: #070d13;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  overflow-x: auto;
-}
-
-#trainer-copy {
-  width: calc(100% - 24px);
-  justify-self: center;
-  margin: 0 0 12px;
-}
-
-.control-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 12px 12px 0;
-}
-
-.control-field {
-  display: grid;
-  gap: 7px;
   min-width: 0;
 }
 
-.control-field.compact {
-  min-width: 0;
-  flex: 1 1 150px;
-}
-
-.control-field.stacked {
-  padding: 12px 12px 0;
-}
-
-.segmented {
+.split-middle-zone {
   display: grid;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #090f19;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
+  border-radius: var(--r-sm);
 }
 
-.four-up {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.split-middle-zone.active,
+.split-middle-zone.drag-over {
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
 }
 
-.three-up {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.segmented label {
-  min-width: 0;
-}
-
-.segmented input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.segmented span {
-  display: grid;
-  place-items: center;
-  min-height: 34px;
-  padding: 0 8px;
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 800;
+.split-middle-zone-label {
+  color: color-mix(in oklab, var(--ink) 72%, transparent);
+  font-size: var(--t-xs);
+  font-weight: 700;
   text-align: center;
-  transition:
-    background 140ms ease,
-    color 140ms ease;
 }
 
-.segmented input:checked + span {
-  background: var(--accent);
-  color: #061018;
-}
+/* ---------- Card bank ---------- */
 
-.trainer-controls .control-field:first-child .segmented {
-  background: transparent;
-  border: 0;
-  padding: 0;
-}
-
-.trainer-controls .control-field:first-child .segmented span {
-  min-height: 36px;
-  border: 1px solid var(--line-strong);
-  background: #0b1220;
-}
-
-.trainer-controls .control-field:first-child .segmented label:first-child input:checked + span {
-  border-color: rgba(74, 144, 226, 0.95);
-  background: #2f6fd0;
-  color: #ffffff;
-}
-
-.trainer-controls .control-field:first-child .segmented label:nth-child(2) input:checked + span {
-  border-color: rgba(151, 92, 255, 0.95);
-  background: #7c3aed;
-  color: #ffffff;
-}
-
-textarea,
-select {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #090f19;
-  color: var(--text);
-}
-
-textarea {
-  min-height: 86px;
-  padding: 10px;
-  resize: vertical;
-  line-height: 1.35;
-}
-
-select {
-  min-height: 38px;
-  padding: 0 10px;
-}
-
-.selected-head {
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 12px 0;
-}
-
-.selected-cards {
+.trainer-left {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
   gap: 6px;
-  min-height: 62px;
   padding: 10px 12px 12px;
 }
 
-.solver-current-cards {
-  grid-template-columns: repeat(auto-fit, minmax(46px, 64px));
-  align-content: start;
-  justify-content: start;
-  min-height: 0;
-}
-
-.solver-message {
-  min-height: 0;
-  padding-top: 0;
-}
-
-.card-button,
-.mini-card {
-  min-height: auto;
-}
-
-.card-button.trainer-drag-ghost {
-  position: fixed;
-}
-
-/* Cards that sit in grid cells fill their cell; the face scales with the card width. */
-.selected-cards .playing-card,
-.row-cards .playing-card,
-.deck-grid .playing-card {
-  width: 100%;
-}
-
-.mini-card > button {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: #090f19;
-  color: var(--text);
-  font-size: 0.72rem;
-  line-height: 1;
-}
-
-.inline-message {
-  min-height: 28px;
-  padding: 0 12px 12px;
-  line-height: 1.35;
-}
-
-.primary-button,
-.secondary-button,
-.icon-button {
-  min-height: 38px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--text);
-  font-weight: 850;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease;
-}
-
-.primary-button {
-  padding: 0 14px;
-  border-color: rgba(66, 230, 164, 0.5);
-  background: #123327;
-}
-
-.secondary-button {
-  padding: 0 12px;
-}
-
-.icon-button {
-  width: 38px;
-  padding: 0;
-}
-
-.primary-button:hover,
-.secondary-button:hover,
-.icon-button:hover {
-  transform: translateY(-1px);
-  border-color: rgba(88, 183, 217, 0.56);
-  background: #1b2a40;
-}
-
-#trainer-confirm:not(:disabled) {
-  border-color: rgba(55, 217, 158, 0.95);
-  background: #22c783;
-  color: #061018;
-  box-shadow: 0 0 0 2px rgba(55, 217, 158, 0.22);
-}
-
-kbd {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.55em;
-  height: 1.45em;
-  margin-left: 0.35em;
-  padding: 0 0.42em;
-  border: 1px solid rgba(205, 220, 238, 0.28);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  font: 800 0.72em/1 Inter, ui-sans-serif, system-ui, sans-serif;
-}
-
-.action-row {
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.action-row.tight {
-  flex-wrap: nowrap;
-}
-
-.repeat-badge {
-  min-width: 84px;
-  padding: 7px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #090f19;
-  color: var(--muted);
-  font-size: 0.77rem;
-  font-weight: 900;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.repeat-badge.yes {
-  border-color: rgba(66, 230, 164, 0.5);
-  color: var(--accent);
-}
-
-.repeat-badge.no {
-  border-color: rgba(221, 107, 124, 0.44);
-  color: var(--rose);
-}
-
-.repeat-badge.source-detail {
-  display: grid;
-  gap: 2px;
-  text-transform: none;
-}
-
-.repeat-badge.source-detail span {
-  text-transform: uppercase;
-}
-
-.repeat-badge.source-detail small {
-  color: var(--text);
-  font-size: 0.68rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.score-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px;
-}
-
-.board-stack {
-  display: grid;
-  gap: 8px;
-  padding: 0 12px 12px;
-}
-
-.empty-state {
-  min-height: 190px;
-  display: grid;
-  place-items: center;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius);
-  color: var(--muted);
-  text-align: center;
-}
-
-.board-row {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #0a121f;
-  overflow: hidden;
-}
-
-.row-head {
+.trainer-bank-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.024);
+  min-height: 36px;
 }
 
-.row-head strong {
-  font-size: 0.94rem;
-}
-
-.row-meta {
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.trainer-bank-head strong {
   color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
-.row-cards {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(58px, 1fr));
-  gap: 7px;
-  padding: 10px;
-}
-
-.row-cards.top-row {
-  grid-template-columns: repeat(3, minmax(58px, 1fr));
-}
-
-.row-cards.discard-row {
-  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
-}
-
-.row-note {
-  padding: 0 10px 10px;
-  color: var(--muted);
-  font-size: 0.78rem;
+.trainer-bank-head strong b {
+  color: var(--ink);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.deck-grid {
-  display: grid;
-  grid-template-columns: repeat(13, minmax(38px, 1fr));
-  gap: 5px;
-  padding: 12px;
+@media (pointer: coarse), (max-width: 640px) {
+  .sort-actions .keycap {
+    display: none;
+  }
 }
 
-
-.deck-grid .joker-zone {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(70px, 110px));
+.trainer-tray {
+  --card-width: var(--trainer-card-w);
   gap: 6px;
-  padding-top: 4px;
+  padding: 2px 0;
 }
 
-.sim-controls {
-  gap: 8px;
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
-  flex-wrap: wrap;
+.trainer-tray > .playing-card,
+.trainer-tray > .empty-slot {
+  width: var(--card-width);
+  flex: none;
 }
 
-.progress-shell {
-  height: 6px;
-  margin: 0 12px 10px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #0f1215;
+.trainer-tray .trainer-bank-slot {
+  opacity: 0.55;
 }
 
-.progress-bar {
-  width: 0%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width 120ms ease;
+/* ---------- Action stage (the shell's bottom row): Clear | Fill rest | Confirm ---------- */
+
+.trainer-actions > #trainer-clear {
+  margin-right: auto;
 }
 
-.sim-table {
-  width: calc(100% - 24px);
-  margin: 0 12px 10px;
-  border-collapse: collapse;
-  font-size: 0.82rem;
+.trainer-actions > .btn--primary {
+  flex: 0 1 220px;
 }
 
-.sim-table th,
-.sim-table td {
-  padding: 8px 7px;
-  border-bottom: 1px solid var(--line);
-  text-align: right;
-  white-space: nowrap;
-}
-
-.sim-table th:first-child,
-.sim-table td:first-child,
-.sim-table th:nth-child(2),
-.sim-table td:nth-child(2) {
-  text-align: left;
-}
-
-.sim-table th {
-  color: var(--muted);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-}
-
-.sim-table td.pending {
-  color: var(--soft);
-}
-
-.rules-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px;
-}
-
-.rules-grid > div {
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-}
-
-.rules-grid p {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.35;
-}
-
-.solver-drawer {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.solver-drawer > summary {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 14px;
-  cursor: pointer;
-  list-style: none;
-}
-
-.solver-drawer > summary::-webkit-details-marker {
+.trainer-actions:not(:has(> .btn:not([hidden]))) {
   display: none;
 }
 
-.solver-drawer > summary span {
+/* ---------- Set complete ---------- */
+
+.trainer-complete .panel-body {
+  display: grid;
+  gap: 14px;
+}
+
+.trainer-grade {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trainer-grade-letter {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, transparent);
+  border-radius: var(--r-lg);
+  background: var(--accent-soft);
   color: var(--accent);
-  font-size: 0.74rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.solver-drawer > summary strong {
-  color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 2.75rem;
   font-weight: 800;
-}
-
-.solver-drawer > summary::after {
-  content: "+";
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--text);
-  font-weight: 900;
-}
-
-.solver-drawer[open] > summary {
-  border-bottom: 1px solid var(--line);
-}
-
-.solver-drawer[open] > summary::after {
-  content: "-";
-}
-
-.solver-drawer .workspace {
-  margin-top: 0;
-  padding: 8px;
-}
-
-.solver-drawer .result-panel .row-cards {
-  grid-template-columns: repeat(5, minmax(46px, 64px));
-  justify-content: start;
-}
-
-.solver-drawer .result-panel .row-cards.top-row {
-  grid-template-columns: repeat(3, minmax(46px, 64px));
-}
-
-.solver-drawer .result-panel .row-cards.discard-row {
-  grid-template-columns: repeat(auto-fit, minmax(46px, 64px));
-}
-
-.solver-drawer .board-row {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  grid-template-rows: auto;
-  background: #08141b;
-}
-
-.solver-drawer .board-row > .row-head {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 12px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 0;
-  background: rgba(255, 255, 255, 0.026);
-}
-
-.solver-drawer .board-row > .row-cards,
-.solver-drawer .board-row > .solution-badugijack-split {
-  grid-column: 2;
-}
-
-.solver-drawer .solution-split-row > .solution-badugijack-split {
-  grid-row: 1;
-}
-
-.solver-drawer .solution-split-row > .solution-row-summary {
-  grid-column: 2;
-  grid-row: 2;
-  min-height: 30px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 0;
-  padding: 5px 10px 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.14);
-}
-
-.solver-drawer .board-row .row-meta {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 3px;
-  margin-top: 5px;
-}
-
-.solver-drawer .board-row > .row-cards {
-  justify-content: center;
-  padding: 12px;
-}
-
-@media (max-width: 1380px) {
-  .trainer-game {
-    grid-template-columns: minmax(0, 1fr) minmax(270px, 330px);
-    grid-template-areas:
-      "bank bank"
-      "board report";
-  }
-
-  .workspace {
-    grid-template-columns: minmax(280px, 0.75fr) minmax(440px, 1.25fr);
-    grid-template-areas: "hand result";
-  }
-
-  .rules-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 980px) {
-  .trainer-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .trainer-game {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "bank"
-      "board"
-      "report";
-  }
-
-  .trainer-report {
-    grid-column: auto;
-  }
-}
-
-@media (max-width: 760px) {
-  .app-shell {
-    padding: 6px;
-  }
-
-  .topbar {
-    position: static;
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .status-cluster {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .trainer-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .trainer-status {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .trainer-controls,
-  .trainer-game {
-    padding: 8px;
-  }
-
-  .trainer-controls,
-  .trainer-score-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .trainer-current-config-control {
-    grid-column: auto;
-  }
-
-  .trainer-row {
-    grid-template-columns: 1fr;
-  }
-
-  .trainer-row-head {
-    min-height: 38px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .trainer-slots {
-    grid-template-columns: repeat(5, minmax(44px, 1fr));
-  }
-
-  .trainer-slots.top-row {
-    grid-template-columns: repeat(3, minmax(44px, 1fr));
-  }
-
-  .trainer-tray {
-    grid-auto-columns: 48px;
-  }
-
-  .metric-pill {
-    min-width: 0;
-  }
-
-  .workspace {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "hand"
-      "result";
-  }
-
-  .control-grid,
-  .score-grid,
-  .rules-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .deck-grid {
-    grid-template-columns: repeat(7, minmax(36px, 1fr));
-  }
-
-  .row-cards,
-  .row-cards.top-row {
-    grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
-  }
-
-  .sim-table {
-    font-size: 0.75rem;
-  }
-
-  .sim-table th,
-  .sim-table td {
-    padding: 7px 4px;
-  }
-}
-
-/* Final trainer-first overrides. Kept last so the game surface wins over the older dashboard rules. */
-@media (min-width: 981px) {
-  body {
-    overflow: hidden;
-  }
-
-  body:has(.solver-drawer[open]) {
-    overflow: auto;
-  }
-
-  .app-shell {
-    width: min(1680px, 100%);
-    height: 100dvh;
-    display: grid;
-    grid-template-rows: 52px minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 8px;
-    overflow: hidden;
-  }
-
-  /* With the solution open the page scrolls, so the game keeps its natural height instead of being squeezed. */
-  .app-shell:has(.solver-drawer[open]) {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: 52px auto auto;
-    overflow: visible;
-  }
-
-  .topbar {
-    position: static;
-    min-height: 52px;
-    padding: 6px 10px;
-  }
-
-  .home-link {
-    width: 36px;
-    height: 36px;
-  }
-
-  .trainer-panel {
-    min-height: 0;
-    margin-top: 0;
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    overflow: hidden;
-    background: #06100e;
-  }
-
-  .trainer-heading {
-    min-height: 48px;
-    padding: 7px 12px;
-    background: #09131a;
-  }
-
-  .trainer-controls {
-    grid-template-columns: minmax(170px, 0.8fr) minmax(150px, 0.65fr) minmax(250px, 1.2fr) minmax(160px, 0.75fr);
-    gap: 8px;
-    padding: 8px 10px;
-    background: #070d13;
-  }
-
-  .trainer-controls .control-field {
-    gap: 4px;
-  }
-
-  .segmented span {
-    min-height: 30px;
-    font-size: 0.82rem;
-  }
-
-  .primary-button,
-  .secondary-button,
-  .icon-button {
-    min-height: 34px;
-  }
-
-  .trainer-game {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "board"
-      "bank";
-    gap: 10px;
-    padding: 10px;
-  }
-
-  .trainer-board {
-    grid-area: board;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    padding: 14px;
-    border-color: rgba(76, 164, 131, 0.28);
-    background: var(--felt-2);
-  }
-
-  .trainer-rows {
-    min-height: 0;
-    height: 100%;
-    align-self: stretch;
-    align-content: space-evenly;
-    display: grid;
-    grid-template-rows: repeat(3, minmax(calc(var(--trainer-card-height) + 38px), auto));
-    gap: 8px;
-  }
-
-  .trainer-row {
-    min-height: 0;
-    position: relative;
-    display: grid;
-    grid-template-columns: 92px minmax(0, 1fr);
-    grid-template-rows: minmax(calc(var(--trainer-card-height) + 12px), auto) minmax(26px, auto);
-    border-color: rgba(205, 220, 238, 0.15);
-    background: rgba(4, 14, 12, 0.58);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-  }
-
-  .trainer-row.active {
-    border-color: rgba(55, 217, 158, 0.78);
-    background: rgba(7, 27, 22, 0.78);
-  }
-
-  .trainer-row.active::before {
-    content: "";
-    position: absolute;
-    inset: 8px auto 8px 0;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--accent);
-  }
-
-  .trainer-row-head {
-    min-height: 0;
-    align-items: center;
-    padding: 10px 8px;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 0;
-    background: rgba(255, 255, 255, 0.028);
-    text-align: center;
-  }
-
-  .trainer-row.active .trainer-row-head {
-    color: var(--accent);
-  }
-
-  .trainer-row-head strong {
-    font-size: 0.92rem;
-  }
-
-  .trainer-slots,
-  .trainer-slots.top-row {
-    height: auto;
-    min-height: calc(var(--trainer-card-height) + 12px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 6px 12px;
-  }
-
-  .trainer-slot {
-    width: var(--card-width);
-    height: var(--trainer-card-height);
-    flex: 0 0 var(--card-width);
-    max-height: none;
-    aspect-ratio: 5 / 7;
-    min-width: 0;
-  }
-
-  .trainer-row-summary {
-    min-height: 26px;
-    padding: 4px 10px 5px;
-    background: rgba(0, 0, 0, 0.16);
-  }
-
-  .trainer-board .inline-message {
-    min-height: 22px;
-    padding: 6px 4px 0;
-    text-align: center;
-  }
-
-  .trainer-report {
-    grid-area: report;
-    display: none;
-  }
-
-  .trainer-panel.is-report-open .trainer-report {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    z-index: 5;
-    width: min(520px, calc(100vw - 36px));
-    max-height: min(680px, calc(100dvh - 72px));
-    display: grid;
-    align-content: start;
-    gap: 12px;
-    overflow: auto;
-    padding: 0;
-    border-color: rgba(205, 220, 238, 0.26);
-    background: #080e14;
-    box-shadow: 0 18px 56px rgba(0, 0, 0, 0.5);
-    transform: translate(-50%, -50%);
-  }
-
-  .trainer-score-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 0 12px;
-  }
-
-  .trainer-score-grid .score-tile {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .share-field {
-    padding: 0 12px;
-  }
-
-  .share-field textarea {
-    min-height: 94px;
-    max-height: 116px;
-    resize: none;
-  }
-
-  #trainer-copy {
-    width: calc(100% - 24px);
-    justify-self: center;
-    margin: 0 0 12px;
-  }
-
-  .trainer-left {
-    grid-area: bank;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "hand";
-    padding: 9px 10px 10px;
-    background: #060a0f;
-  }
-
-  .hand-row {
-    grid-area: hand;
-    min-width: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--trainer-action-width);
-    gap: 10px;
-    align-items: stretch;
-  }
-
-  .hand-side-controls {
-    min-width: 0;
-    min-height: max(var(--trainer-card-height), 146px);
-    display: grid;
-    grid-template-rows: 44px repeat(2, minmax(46px, 1fr));
-    gap: 6px;
-  }
-
-  .bank-toolbar {
-    min-width: 0;
-    align-self: stretch;
-    justify-content: flex-end;
-    margin: 0;
-  }
-
-  .bank-toolbar > span {
-    display: none;
-  }
-
-  .trainer-tray {
-    grid-auto-columns: var(--card-width);
-    gap: 5px;
-    align-content: center;
-    overflow-x: hidden;
-    padding: 0 1px;
-  }
-
-  .trainer-actions {
-    grid-row: 2 / 4;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(2, minmax(46px, 1fr));
-    gap: 6px;
-    margin-top: 0;
-  }
-
-  .trainer-actions .primary-button,
-  .trainer-actions .secondary-button {
-    min-height: 46px;
-    font-size: 0.84rem;
-  }
-
-  .hand-side-controls .sort-actions,
-  .hand-side-controls .sort-button {
-    min-height: 44px;
-  }
-
-}
-
-@media (max-width: 980px) {
-  :root {
-    --trainer-action-width: clamp(96px, 14vw, 132px);
-    --card-width: clamp(30px, calc((100vw - 240px) / 17), 52px);
-  }
-
-  body {
-    overflow: hidden;
-  }
-
-  body:has(.solver-drawer[open]) {
-    overflow: auto;
-  }
-
-  .app-shell {
-    width: 100%;
-    height: 100dvh;
-    min-height: 100svh;
-    display: grid;
-    grid-template-rows: 44px minmax(0, 1fr) auto;
-    gap: 4px;
-    padding:
-      max(4px, var(--safe-top))
-      max(4px, var(--safe-right))
-      max(4px, var(--safe-bottom))
-      max(4px, var(--safe-left));
-    overflow: hidden;
-  }
-
-  .app-shell:has(.solver-drawer[open]) {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: 44px auto auto;
-    overflow: visible;
-  }
-
-  .topbar {
-    position: static;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    padding: 5px 8px;
-  }
-
-  .home-link {
-    width: 32px;
-    height: 32px;
-    font-size: 0.8rem;
-  }
-
-  .brand-block {
-    gap: 8px;
-  }
-
-  .topbar .eyebrow,
-  .status-cluster {
-    display: none;
-  }
-
-  h1 {
-    max-width: 100%;
-    overflow: hidden;
-    font-size: 1rem;
-    line-height: 1.05;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .trainer-panel {
-    min-height: 0;
-    display: grid;
-    grid-template-rows: 50px 42px minmax(0, 1fr);
-    margin-top: 0;
-    overflow: hidden;
-    background: #06100e;
-  }
-
-  .trainer-heading {
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-direction: row;
-    gap: 8px;
-    padding: 5px 8px;
-    background: #09131a;
-  }
-
-  .trainer-heading > div:first-child {
-    min-width: 0;
-  }
-
-  .trainer-heading .eyebrow {
-    display: none;
-  }
-
-  .trainer-heading h2 {
-    overflow: hidden;
-    font-size: 0.92rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .trainer-config {
-    margin-top: 3px;
-    overflow: hidden;
-    font-size: 0.62rem;
-    text-overflow: ellipsis;
-  }
-
-  .trainer-status {
-    flex: 0 0 auto;
-    display: flex;
-    gap: 4px;
-  }
-
-  .timer-pill {
-    min-width: 58px;
-    padding: 4px 5px;
-  }
-
-  .timer-pill span {
-    font-size: 0.58rem;
-  }
-
-  .timer-pill strong {
-    margin-top: 0;
-    font-size: 0.86rem;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  .trainer-controls {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    padding: 5px 8px;
-    align-items: center;
-    background: #070d13;
-  }
-
-  .trainer-controls .control-field {
-    gap: 0;
-  }
-
-  .trainer-current-config-control {
-    grid-column: span 2;
-  }
-
-  .trainer-current-config-control strong {
-    min-height: 30px;
-    justify-content: center;
-    padding: 0 6px;
-    font-size: 0.68rem;
-  }
-
-  .trainer-controls .control-field > span {
-    display: none;
-  }
-
-  .segmented {
-    gap: 2px;
-    padding: 2px;
-  }
-
-  .segmented span {
-    min-height: 28px;
-    padding: 0 5px;
-    font-size: 0.72rem;
-    border-radius: 5px;
-  }
-
-  .primary-button,
-  .secondary-button,
-  .icon-button {
-    min-height: 30px;
-    border-radius: 7px;
-    font-size: 0.78rem;
-  }
-
-  .solver-drawer {
-    min-height: 0;
-    margin-top: 0;
-    overflow: hidden;
-  }
-
-  .solver-drawer[open] {
-    overflow: visible;
-  }
-
-  .solver-drawer > summary {
-    min-height: 32px;
-    padding: 0 8px;
-  }
-
-  .solver-drawer > summary span {
-    font-size: 0.64rem;
-  }
-
-  .solver-drawer > summary strong {
-    display: none;
-  }
-
-  .solver-drawer > summary::after {
-    width: 22px;
-    height: 22px;
-  }
-
-  .trainer-game {
-    min-height: 0;
-    height: 100%;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "board"
-      "bank";
-    gap: 5px;
-    padding: 6px;
-    position: relative;
-  }
-
-  .trainer-left {
-    grid-area: bank;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "hand";
-    padding: 6px 8px 7px;
-    background: #060a0f;
-  }
-
-  .trainer-board {
-    grid-area: board;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    padding: 8px;
-    background: var(--felt-2);
-  }
-
-  .trainer-report {
-    grid-area: report;
-    display: none;
-  }
-
-  .trainer-panel.is-report-open .trainer-report {
-    position: fixed;
-    top: 50%;
-    right: 8px;
-    left: 8px;
-    bottom: auto;
-    z-index: 5;
-    max-height: calc(100dvh - 64px);
-    display: grid;
-    align-content: start;
-    gap: 10px;
-    overflow: auto;
-    padding: 0;
-    border-color: rgba(205, 220, 238, 0.26);
-    background: #080e14;
-    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
-    transform: translateY(-50%);
-  }
-
-  .trainer-score-grid {
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-    padding: 0 10px;
-  }
-
-  .trainer-score-grid .score-tile {
-    min-width: 0;
-    padding: 7px;
-  }
-
-  .share-field {
-    padding: 0 10px;
-  }
-
-  .share-field textarea {
-    min-height: 96px;
-    resize: none;
-  }
-
-  #trainer-copy {
-    width: calc(100% - 20px);
-    justify-self: center;
-    margin: 0 0 10px;
-  }
-
-  .hand-row {
-    grid-area: hand;
-    min-width: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--trainer-action-width);
-    gap: 6px;
-    align-items: stretch;
-  }
-
-  .hand-side-controls {
-    min-width: 0;
-    min-height: max(var(--trainer-card-height), 134px);
-    display: grid;
-    grid-template-rows: 42px repeat(2, minmax(44px, 1fr));
-    gap: 4px;
-  }
-
-  .bank-toolbar {
-    min-width: 0;
-    align-self: stretch;
-    justify-content: flex-end;
-    margin: 0;
-  }
-
-  .bank-toolbar > span {
-    display: none;
-  }
-
-  .sort-actions {
-    gap: 2px;
-    padding: 2px;
-  }
-
-  .sort-button {
-    min-height: 38px;
-    padding: 0 8px;
-    font-size: 0.7rem;
-  }
-
-  .trainer-tray {
-    grid-auto-flow: column;
-    grid-auto-columns: var(--card-width);
-    gap: 5px;
-    min-height: var(--trainer-card-height);
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0 1px 2px;
-  }
-
-  .trainer-card {
-    width: 100%;
-  }
-
-  .trainer-rows {
-    min-height: 0;
-    height: 100%;
-    align-self: stretch;
-    align-content: space-evenly;
-    display: grid;
-    grid-template-rows: repeat(3, minmax(calc(var(--trainer-card-height) + 30px), auto));
-    gap: 5px;
-  }
-
-  .trainer-row {
-    min-height: 0;
-    position: relative;
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    grid-template-rows: minmax(calc(var(--trainer-card-height) + 10px), auto) minmax(20px, auto);
-    border-color: rgba(205, 220, 238, 0.14);
-    background: rgba(4, 14, 12, 0.58);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-  }
-
-  .trainer-row.active {
-    border-color: rgba(55, 217, 158, 0.88);
-    background: rgba(7, 27, 22, 0.78);
-  }
-
-  .trainer-row.active::before {
-    content: "";
-    position: absolute;
-    inset: 5px auto 5px 0;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--accent);
-  }
-
-  .trainer-row-head {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 7px 6px;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 0;
-    background: rgba(255, 255, 255, 0.028);
-    text-align: center;
-  }
-
-  .trainer-row.active .trainer-row-head {
-    color: var(--accent);
-  }
-
-  .trainer-row-head strong {
-    font-size: 0.76rem;
-  }
-
-  .trainer-slots,
-  .trainer-slots.top-row {
-    height: auto;
-    min-height: calc(var(--trainer-card-height) + 10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 5px 6px;
-  }
-
-  .trainer-row-summary {
-    min-height: 16px;
-    gap: 6px;
-    padding: 1px 6px 2px;
-    background: rgba(0, 0, 0, 0.16);
-    font-size: 0.62rem;
-    letter-spacing: 0;
-  }
-
-  .trainer-row-summary.is-split-score {
-    gap: 10px;
-  }
-
-  .trainer-score-component {
-    gap: 3px;
-  }
-
-  .trainer-slot {
-    width: var(--card-width);
-    height: var(--trainer-card-height);
-    flex: 0 0 var(--card-width);
-    max-height: none;
-    aspect-ratio: 5 / 7;
-    min-height: 0;
-  }
-
-  .trainer-actions {
-    grid-row: 2 / 4;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(2, minmax(44px, 1fr));
-    gap: 4px;
-    margin-top: 0;
-  }
-
-  .trainer-actions .primary-button,
-  .trainer-actions .secondary-button {
-    padding: 0 8px;
-    min-height: 44px;
-    font-size: 0.72rem;
-  }
-
-  .trainer-board .inline-message {
-    min-height: 18px;
-    padding: 4px 0 0;
-    font-size: 0.68rem;
-    text-align: center;
-  }
-
-  .workspace {
-    overflow: visible;
-  }
-}
-
-@media (max-width: 760px) {
-  .ios-notch-device .app-shell {
-    padding-top: max(16px, var(--safe-top));
-  }
-
-  .trainer-panel.hand-cols-7 {
-    --trainer-hand-columns: 7;
-    --trainer-hand-card-width: clamp(32px, calc((100vw - 85px - var(--safe-left) - var(--safe-right)) / 7), 64px);
-    --card-width: var(--trainer-hand-card-width);
-    --trainer-card-height: calc(var(--card-width) * 1.4);
-  }
-
-  .trainer-panel.hand-cols-8 {
-    --trainer-hand-columns: 8;
-    --trainer-hand-card-width: clamp(28px, calc((100vw - 93px - var(--safe-left) - var(--safe-right)) / 8), 64px);
-    --card-width: var(--trainer-hand-card-width);
-    --trainer-card-height: calc(var(--card-width) * 1.4);
-  }
-
-  .trainer-panel.hand-cols-9 {
-    --trainer-hand-columns: 9;
-    --trainer-hand-card-width: clamp(24px, calc((100vw - 101px - var(--safe-left) - var(--safe-right)) / 9), 64px);
-    --card-width: var(--trainer-hand-card-width);
-    --trainer-card-height: calc(var(--card-width) * 1.4);
-  }
-
-  .trainer-controls {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    padding: 4px;
-  }
-
-  .trainer-controls .segmented span {
-    min-height: 28px;
-    padding: 0 2px;
-    font-size: 0.62rem;
-  }
-
-  .trainer-left {
-    padding: 6px;
-    overflow: hidden;
-  }
-
-  .hand-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-
-  .trainer-tray {
-    grid-auto-flow: row;
-    grid-auto-columns: unset;
-    grid-auto-rows: var(--trainer-card-height);
-    grid-template-columns: repeat(var(--trainer-hand-columns, 9), var(--card-width));
-    grid-template-rows: repeat(2, var(--trainer-card-height));
-    justify-content: center;
-    align-content: center;
-    gap: 5px;
-    min-height: calc((var(--trainer-card-height) * 2) + 5px);
-    overflow: hidden;
-    padding: 0;
-  }
-
-  .hand-side-controls {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(118px, 1.2fr) minmax(0, 1.7fr);
-    grid-template-rows: 44px;
-    gap: 5px;
-  }
-
-  .bank-toolbar {
-    min-height: 44px;
-  }
-
-  .trainer-actions {
-    grid-row: auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 44px;
-    gap: 5px;
-  }
-
-  .trainer-actions:has(#trainer-next:not([hidden])) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 44px;
-  }
-
-  .sort-actions,
-  .sort-button,
-  .trainer-actions .primary-button,
-  .trainer-actions .secondary-button {
-    min-height: 0;
-  }
-
-  .sort-button,
-  .trainer-actions .primary-button,
-  .trainer-actions .secondary-button {
-    padding: 0 5px;
-    font-size: 0.68rem;
-    min-height: 44px;
-  }
-
-  .trainer-panel kbd {
-    display: none;
-  }
-}
-
-@media (max-width: 360px) {
-  .trainer-panel {
-    grid-template-rows: 50px 76px minmax(0, 1fr);
-  }
-
-  .trainer-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    padding: 4px;
-  }
-
-  .trainer-controls .segmented span {
-    min-height: 30px;
-    padding: 0 3px;
-    font-size: 0.64rem;
-  }
-
-  .timer-pill {
-    min-width: 64px;
-    padding: 3px 5px;
-  }
-
-  .trainer-game {
-    gap: 4px;
-    padding: 5px;
-  }
-
-  .trainer-left,
-  .trainer-board {
-    padding: 5px;
-  }
-}
-
-.trainer-game {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    "board"
-    "bank";
-}
-
-.trainer-report {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 1001;
-  width: min(1200px, calc(100vw - 32px));
-  height: calc(100dvh - 32px);
-  max-height: calc(100dvh - 32px);
-  display: none;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 12px;
-  align-content: stretch;
-  overflow: auto;
-  padding: 0;
-  border-color: rgba(205, 220, 238, 0.28);
-  background: #080e14;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.54);
-  transform: translate(-50%, -50%);
-}
-
-.trainer-panel.is-report-open::before {
-  content: none;
-}
-
-.trainer-panel.is-report-open .trainer-report {
-  display: grid;
-  top: 50%;
-  right: auto;
-  bottom: auto;
-  left: 50%;
-  z-index: 1001;
-  width: min(1200px, calc(100vw - 32px));
-  height: calc(100dvh - 32px);
-  max-height: calc(100dvh - 32px);
-  align-content: stretch;
-  transform: translate(-50%, -50%);
-}
-
-.trainer-report .trainer-score-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 0 12px;
-}
-
-.trainer-report .score-tile {
-  min-width: 0;
-  min-height: 64px;
-  padding: 9px;
-}
-
-.trainer-report .score-tile span {
-  font-size: 0.64rem;
-}
-
-.trainer-report .share-field {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.trainer-report .share-field textarea {
-  align-self: stretch;
-  height: auto;
-  min-height: 0;
-  max-height: none;
-  resize: none;
-}
-
-@media (max-width: 760px) {
-  .trainer-report {
-    width: calc(100vw - 12px);
-    height: calc(100dvh - 12px);
-    max-height: calc(100dvh - 12px);
-    gap: 10px;
-  }
-
-  .trainer-report .report-head {
-    padding: 10px;
-  }
-
-  .trainer-report .trainer-score-grid {
-    gap: 6px;
-    padding: 0 10px;
-  }
-
-  .trainer-report .score-tile {
-    min-height: 58px;
-    padding: 7px 6px;
-  }
-
-  .trainer-report .score-tile span {
-    font-size: 0.56rem;
-  }
-
-  .trainer-report .score-tile strong {
-    font-size: 0.92rem;
-  }
-
-  .trainer-report .share-field {
-    padding: 0 10px;
-  }
-
-  .trainer-report .share-field textarea {
-    min-height: 200px;
-    font-size: 0.74rem;
-  }
-
-  #trainer-copy {
-    width: calc(100% - 20px);
-    margin: 0 10px 10px;
-  }
-}
-
-body.ev-page {
-  overflow: auto;
-}
-
-.ev-page .app-shell {
-  height: auto;
-  min-height: 100dvh;
-  overflow: visible;
-}
-
-.ev-page .trainer-panel,
-.ev-page .hand-panel,
-.ev-page .result-panel,
-.ev-page .deck-panel,
-.ev-page .assumptions-panel {
-  display: none;
-}
-
-.ev-page .solver-drawer {
-  margin-top: 8px;
-}
-
-.ev-page .solver-drawer > summary {
-  display: none;
-}
-
-.ev-page .solver-drawer .workspace {
-  display: block;
-  padding: 8px;
-}
-
-.ev-page .sim-panel {
-  display: block;
-  overflow-x: auto;
-}
-
-.ev-page .sim-controls {
-  align-items: end;
-}
-
-.ev-page .sim-table {
-  min-width: 760px;
-}
-
-.ev-page .topbar {
-  position: static;
-}
-
-.ev-page .status-cluster {
-  display: none;
-}
-
-/* Variant controls and rule reference */
-.trainer-variant-control {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: auto minmax(620px, 1.55fr) minmax(260px, 0.7fr);
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.control-label-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 850;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.rules-button {
-  min-height: 30px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 9px;
-  border: 1px solid var(--line-strong);
-  border-radius: 7px;
-  background: #0b1220;
-  color: var(--text);
-  font: inherit;
-  text-transform: none;
-}
-
-.rules-button:hover,
-.rules-button:focus-visible {
-  border-color: rgba(66, 230, 164, 0.66);
-  outline: none;
-}
-
-.info-mark {
-  width: 16px;
-  height: 16px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-size: 0.66rem;
-  font-weight: 900;
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
-.variant-pills {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  min-width: 0;
+.trainer-grade-letter.is-warn {
+  border-color: color-mix(in oklab, var(--warn) 45%, transparent);
+  background: var(--warn-soft);
+  color: var(--warn);
 }
 
-.variant-pills span {
-  min-height: 32px;
-  padding: 0 7px;
-  font-size: 0.78rem;
+.trainer-grade-letter.is-bad {
+  border-color: color-mix(in oklab, var(--bad) 45%, transparent);
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.trainer-grade-label {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trainer-grade-summary {
+  margin-top: 2px;
+  font-size: var(--t-md);
+  line-height: var(--lh-body);
+}
+
+.trainer-complete-stats {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.trainer-complete-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.trainer-complete-row .list-row-sub {
+  grid-column: 1;
+}
+
+.trainer-complete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trainer-complete-actions > .btn--ghost {
+  margin-left: auto;
+}
+
+/* ---------- Setup dialog ---------- */
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.setup-block {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.setup-block > legend,
+.setup-block > .field-label {
+  display: block;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.setup-block--wide {
+  grid-column: 1 / -1;
+}
+
+.trainer-current-config {
+  display: block;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: var(--lh-data);
 }
 
 .variant-summary {
-  min-width: 0;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.35;
+  margin-top: 8px;
 }
 
-.badugijack-split {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 12px;
-  padding: 5px 10px;
+.trainer-setup-note {
+  margin-top: 16px;
 }
 
-.badugijack-zone {
-  min-width: 0;
+/* ---------- Report dialog ---------- */
+
+.trainer-score-grid,
+.solution-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trainer-score-grid {
+  margin-bottom: 14px;
+}
+
+.share-field textarea {
+  min-height: 150px;
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  resize: vertical;
+}
+
+/* ---------- Solution dialog ---------- */
+
+.solution-body {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  align-items: center;
-  padding: 3px 6px 5px;
-  border: 1px solid rgba(205, 220, 238, 0.12);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.018);
+  gap: 18px;
 }
 
-.badugijack-zone.active {
-  border-color: rgba(66, 230, 164, 0.64);
-  background: rgba(66, 230, 164, 0.06);
-}
-
-.badugijack-zone-label {
-  display: block;
-  padding-bottom: 2px;
-  color: var(--muted);
-  font-size: 0.62rem;
-  font-weight: 850;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.badugijack-zone .trainer-slots {
-  grid-column: auto;
-  grid-row: auto;
-  height: 100%;
-  justify-content: center;
-  gap: 6px;
-  padding: 0;
-}
-
-.solution-badugijack-split {
+.solution-section {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 10px;
-  padding: 12px;
 }
 
-.solution-split-group {
-  min-width: 0;
+.solution-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.solution-split-group > span {
-  display: block;
-  margin-bottom: 6px;
+.solution-section-head h3 {
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.selected-cards {
+  --card-width: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.solver-message {
   color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 850;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
 }
 
-.rules-dialog {
-  width: min(960px, calc(100vw - 24px));
-  max-height: min(820px, calc(100dvh - 24px));
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid rgba(205, 220, 238, 0.28);
-  border-radius: 8px;
-  background: #080e14;
-  color: var(--text);
-  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.56);
-}
-
-.rules-dialog:not([open]) {
+.solver-message:empty {
   display: none;
 }
 
-.rules-dialog[open] {
-  height: min(820px, calc(100dvh - 24px));
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+.repeat-badge.yes {
+  background: var(--good-soft);
+  color: var(--good);
 }
 
-.rules-dialog::backdrop {
-  background: rgba(3, 6, 10, 0.42);
+.repeat-badge.no {
+  background: var(--bad-soft);
+  color: var(--bad);
 }
 
-.rules-dialog-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--line);
-  background: #0d1721;
-}
-
-.rules-dialog-head h2 {
-  margin: 2px 0 0;
-  font-size: 1.08rem;
-}
-
-.dialog-close {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 7px;
-  background: var(--surface-2);
-  color: var(--text);
-  font-weight: 850;
-}
-
-.rules-tabs {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
-  background: #070d13;
-}
-
-.rules-tabs button {
-  min-width: 0;
-  min-height: 34px;
-  padding: 0 6px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
+.repeat-badge small {
   color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 850;
+  font-size: var(--t-xs);
+  font-weight: 600;
 }
 
-.rules-tabs button.active {
-  border-color: rgba(66, 230, 164, 0.42);
-  background: rgba(66, 230, 164, 0.11);
-  color: var(--accent);
-}
-
-.rules-content {
-  min-height: 0;
-  max-height: none;
-  overflow: auto;
-  padding: 18px;
-}
-
-.rules-article-heading {
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-}
-
-.rules-article-heading h3 {
-  margin: 0 0 4px;
-  font-size: 1.2rem;
-}
-
-.rules-article-heading p,
-.rules-seed-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.5;
-}
-
-.rules-article section {
-  display: grid;
-  grid-template-columns: 138px minmax(0, 1fr);
-  gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.rules-article h4 {
-  margin: 0;
-  color: var(--accent);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-}
-
-.rules-article ul {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rules-article li {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  color: var(--text);
-  font-size: 0.86rem;
-  line-height: 1.45;
-}
-
-.royalty-groups {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-items: start;
-  gap: 18px 20px;
-}
-
-.royalty-group {
-  min-width: 0;
-  padding-left: 12px;
-  border-left: 2px solid rgba(55, 217, 158, 0.34);
-}
-
-.royalty-group h5 {
-  margin: 0 0 6px;
-  color: var(--text);
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.rules-article .royalty-list {
-  gap: 0;
-}
-
-.rules-article .royalty-list li {
-  min-height: 28px;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(205, 220, 238, 0.08);
-}
-
-.rules-article .royalty-list li:last-child {
-  border-bottom: 0;
-}
-
-.royalty-list .rule-term {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: rgba(238, 245, 255, 0.76);
-  font-weight: 700;
-  overflow-wrap: break-word;
-}
-
-.royalty-list .rule-detail {
-  flex: 0 0 auto;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.rule-term {
-  flex: 0 0 auto;
-  color: var(--accent);
-  font-weight: 850;
-}
-
-.rule-detail {
-  color: rgba(238, 245, 255, 0.76);
-}
-
-.rule-number {
-  padding: 0 2px;
-  border-radius: 3px;
-  background: rgba(85, 167, 255, 0.12);
-  color: #9bc9ff;
-  font: inherit;
-  font-weight: 850;
-}
-
-.rule-keyword {
-  color: #dce9f8;
-  font-style: normal;
-  font-weight: 800;
-}
-
-.rule-keyword.danger {
-  color: var(--red);
-}
-
-.rules-seed-note {
-  margin-top: 14px;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface-2);
-}
-
-.cribbage-hand-reference-body {
-  min-width: 0;
-}
-
-.cribbage-hand-reference-body > header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 10px;
-}
-
-.cribbage-hand-reference-body h5 {
-  margin: 0 0 3px;
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 850;
-}
-
-.cribbage-hand-reference-body > header p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-
-.cribbage-score-group {
-  border-top: 1px solid var(--line);
-}
-
-.cribbage-score-heading {
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 0;
-}
-
-.cribbage-score-heading > strong {
-  color: var(--text);
-  font-size: 0.76rem;
-  font-weight: 850;
-}
-
-.cribbage-score-heading mark {
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: rgba(66, 230, 164, 0.12);
-  color: var(--accent);
-  font: inherit;
-}
-
-.cribbage-score-heading > span {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 750;
-  text-align: right;
-}
-
-.cribbage-hand-list {
-  border-top: 1px solid rgba(205, 220, 238, 0.08);
-}
-
-.cribbage-hand-row {
-  min-width: 0;
-  min-height: 34px;
-  display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(205, 220, 238, 0.08);
-}
-
-.cribbage-hand-pattern {
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.84rem;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.cribbage-hand-pattern small {
-  color: #f0b867;
-  font: inherit;
-  font-size: 0.66rem;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-.cribbage-hand-explanation {
-  min-width: 0;
-  display: grid;
+/* The solved board: label and hand on the left, cards in the middle. */
+.board-stack {
+  --card-width: 44px;
+  --ofc-label-w: 120px;
+  --ofc-summary-w: 0px;
   gap: 2px;
 }
 
-.cribbage-hand-breakdown {
-  color: rgba(238, 245, 255, 0.56);
-  font-size: 0.7rem;
-  line-height: 1.4;
+.board-stack .board-row {
+  grid-template-columns: var(--ofc-label-w) minmax(0, 1fr) auto;
+  grid-template-areas: "label cards meta";
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-opaque);
+  border-radius: 0;
 }
 
-.cribbage-hand-breakdown strong {
-  color: var(--text);
-  font-weight: 850;
+.board-stack .board-row:last-child {
+  border-bottom: 0;
 }
 
-.cribbage-score-gap-note {
-  margin: 9px 0 0;
+/* The head's label and meta sit in their own grid areas either side of the cards. */
+.board-stack .row-head {
+  display: contents;
+  font-size: var(--t-sm);
+}
+
+.board-stack .row-head > strong {
+  grid-area: label;
+  min-width: 0;
+  font-size: var(--t-sm);
+}
+
+.board-stack .row-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px 6px;
+  min-width: 0;
   color: var(--muted);
-  font-size: 0.68rem;
-  line-height: 1.45;
+  font-size: var(--t-xs);
+  font-weight: 600;
 }
 
-@media (max-width: 980px) {
-  .trainer-panel {
-    grid-template-rows: 50px auto minmax(0, 1fr);
+.board-stack .row-cards {
+  grid-area: cards;
+}
+
+.board-stack .row-meta .hand-chip {
+  background: var(--surface-2);
+}
+
+.board-stack .row-cards {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.board-stack .solution-split-row {
+  grid-template-areas: "label cards" "meta meta";
+  grid-template-columns: var(--ofc-label-w) minmax(0, 1fr);
+}
+
+.board-stack .solution-split-row .solution-split-middle {
+  grid-area: cards;
+}
+
+.board-stack .discard-row {
+  opacity: 0.8;
+}
+
+.board-stack .empty-state {
+  padding: 18px 8px;
+}
+
+.solution-split-middle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.solution-split-group {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+/* ---------- Rules dialog ---------- */
+
+.rules-tabs {
+  flex: none;
+  padding: 0 8px;
+}
+
+.rules-content {
+  padding-top: 8px;
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 640px) {
+  .trainer-head {
+    padding: 6px 0 8px;
   }
 
-  .trainer-variant-control {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 4px;
-  }
-
-  .variant-summary,
-  .control-label-line > span {
+  .trainer-head .eyebrow {
     display: none;
   }
 
-  .rules-button {
-    width: 30px;
-    padding: 0;
+  .trainer-status {
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .trainer-status .stat {
+    padding: 5px 10px;
+  }
+
+  .trainer-status .stat-value {
+    font-size: var(--t-md);
+  }
+
+  .trainer-game {
+    gap: 8px;
+  }
+
+  /* Five cards plus their 9% gaps (5.4 widths) fit beside the label column after the shell, panel, felt and row chrome. */
+  .trainer-board {
+    --ofc-label-w: 3.4rem; /* grows with the text size so "Bottom" never spills into the cards */
+    --card-w-board: clamp(36px, calc((100vw - 56px - var(--ofc-label-w)) / 5.4), 56px);
+  }
+
+  .trainer-board .ofc-felt {
+    gap: 6px;
+    padding: 6px 6px 8px;
+  }
+
+  .trainer-rows {
+    gap: 4px;
+  }
+
+  .trainer-row {
+    grid-template-columns: var(--ofc-label-w, 96px) minmax(0, 1fr);
+    gap: 2px 4px;
+    padding: 2px 4px;
+  }
+
+  .trainer-row-head {
+    min-height: 44px;
+    padding: 4px;
+    font-size: var(--t-sm);
+  }
+
+  .trainer-row-summary {
+    grid-column: 2;
     justify-content: center;
-    font-size: 0;
-  }
-
-  .rules-button .info-mark {
-    font-size: 0.66rem;
-  }
-
-  .variant-pills span {
-    min-height: 28px;
-    padding: 0 4px;
-    font-size: 0.58rem;
-    line-height: 1.05;
-  }
-}
-
-@media (max-width: 760px) {
-  .variant-pills span {
-    padding: 0 2px;
-    font-size: 0.54rem;
-  }
-
-  .trainer-panel.is-badugijack:not(.is-double-blackjack) {
-    --card-width: min(
-      var(--trainer-hand-card-width, 56px),
-      clamp(34px, calc((100vw - 84px - var(--safe-left) - var(--safe-right)) / 7), 56px)
-    );
-    --trainer-card-height: calc(var(--card-width) * 1.4);
-  }
-
-  .trainer-variant-control {
-    grid-column: 1 / -1;
-  }
-
-  .badugijack-middle-row {
-    position: relative;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .trainer-panel.is-badugijack .trainer-rows {
-    grid-template-rows:
-      minmax(calc(var(--trainer-card-height) + 30px), auto)
-      minmax(calc(var(--trainer-card-height) + 46px), auto)
-      minmax(calc(var(--trainer-card-height) + 30px), auto);
-  }
-
-  .badugijack-middle-row .trainer-row-head {
-    position: absolute;
-    top: 3px;
-    left: 4px;
-    z-index: 1;
-    width: auto;
-    min-height: 20px;
-    padding: 2px 5px;
-    border: 0;
-    border-radius: 5px;
-    background: rgba(3, 10, 9, 0.74);
-  }
-
-  .badugijack-middle-row .badugijack-split,
-  .badugijack-middle-row .trainer-row-summary {
-    grid-column: 1;
-  }
-
-  .badugijack-split {
-    max-width: 100%;
-    gap: 5px;
-    padding: 5px 6px;
-  }
-
-  .badugijack-zone {
-    max-width: 100%;
-    padding: 5px;
-    border-color: rgba(205, 220, 238, 0.12);
-    background: rgba(255, 255, 255, 0.018);
-  }
-
-  .badugijack-zone .trainer-slots {
-    gap: 3px;
-    padding: 0;
-  }
-
-  .badugijack-zone-label {
-    font-size: 0.52rem;
-  }
-
-  .rules-dialog {
-    width: calc(100vw - 10px - var(--safe-left) - var(--safe-right));
-    max-height: calc(100dvh - 10px - var(--safe-top) - var(--safe-bottom));
-  }
-
-  .rules-dialog-head {
-    padding: 12px;
-  }
-
-  .rules-tabs {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    overflow: visible;
-    padding: 8px;
-  }
-
-  .rules-tabs button {
-    padding: 0 2px;
-    font-size: 0.62rem;
-  }
-
-  .rules-content {
     min-height: 0;
-    max-height: none;
-    overflow-y: auto;
-    padding: 14px 14px max(14px, var(--safe-bottom));
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
   }
 
-  .rules-article section {
-    grid-template-columns: 1fr;
-    gap: 7px;
+  .trainer-left {
+    gap: 4px;
+    padding: 6px;
   }
 
-  .rules-article li {
-    display: block;
+  .trainer-bank-head {
+    padding-inline: 4px;
   }
 
-  .royalty-groups {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .rules-article .royalty-list li {
-    display: flex;
-  }
-
-  .rule-term,
-  .rule-detail {
-    display: block;
-  }
-
-  .rule-term {
-    margin-bottom: 2px;
-  }
-
-  .cribbage-hand-reference-body > header {
+  /* The bank wraps into two rows of --tray-columns cards at ≥ 36px, scrolling sideways only when even that cannot fit. */
+  .trainer-tray {
+    --card-width: max(36px, min(56px, calc((100vw - 36px - (var(--tray-columns) - 1) * 3px) / var(--tray-columns))));
     display: grid;
-    gap: 5px;
+    grid-template-columns: repeat(var(--tray-columns), var(--card-width));
+    justify-content: safe center;
+    gap: 3px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
   }
 
-  .cribbage-hand-row {
-    grid-template-columns: 104px minmax(0, 1fr);
-    gap: 7px;
+  .trainer-actions > .btn {
+    flex: 1 1 auto;
   }
 
-  .solution-badugijack-split {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .solver-drawer {
-    --solution-card-width: clamp(36px, calc((100vw - 128px) / 5), 58px);
+  .trainer-actions > #trainer-clear {
+    flex: 0 1 auto;
   }
 
-  .solver-drawer .board-row {
-    grid-template-columns: 80px minmax(0, 1fr);
+  .trainer-grade-letter {
+    width: 64px;
+    height: 64px;
+    font-size: 2.1rem;
   }
 
-  .trainer-panel.is-report-open .trainer-report {
-    inset:
-      max(6px, var(--safe-top))
-      max(6px, var(--safe-right))
-      max(6px, var(--safe-bottom))
-      max(6px, var(--safe-left));
-    width: auto;
-    height: auto;
-    max-height: none;
-    transform: none;
+  .trainer-complete-actions > .btn {
+    flex: 1 1 45%;
   }
 
-  .rules-dialog[open] {
-    inset:
-      max(6px, var(--safe-top))
-      max(6px, var(--safe-right))
-      max(6px, var(--safe-bottom))
-      max(6px, var(--safe-left));
-    width: auto;
-    height: auto;
-    max-width: none;
-    max-height: none;
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    margin: 0;
-    overflow: hidden;
+  .trainer-complete-actions > .btn--ghost {
+    flex-basis: 100%;
+    margin-left: 0;
   }
 
-  .row-meta.split-score-meta {
-    justify-content: flex-start;
+  .setup-grid {
+    gap: 12px;
   }
 
-  .board-stack > .board-row > .row-cards {
-    grid-template-columns: repeat(5, var(--solution-card-width));
+  .board-stack {
+    --card-width: min(44px, calc((100vw - 72px) / 5));
+    --ofc-label-w: auto;
+  }
+
+  .board-stack .board-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "label meta"
+      "cards cards";
+    gap: 4px 8px;
+    padding-inline: 0;
+  }
+
+  .board-stack .row-cards {
     justify-content: center;
-    gap: 5px;
-    padding: 8px;
   }
 
-  .board-stack > .board-row > .row-cards.top-row {
-    grid-template-columns: repeat(3, var(--solution-card-width));
-  }
-
-  .board-stack > .board-row > .row-cards.discard-row {
-    grid-template-columns: repeat(auto-fit, var(--solution-card-width));
-  }
-
-  .solver-drawer .solution-split-group .row-cards {
-    grid-template-columns: repeat(auto-fit, var(--solution-card-width));
-    justify-content: start;
-    gap: 5px;
-    padding: 8px;
+  .selected-cards {
+    --card-width: 36px;
   }
 }
 
 @media (max-width: 390px) {
-  .topbar h1 {
-    font-size: 0.92rem;
-  }
-
-  .variant-pills {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .variant-pills label,
-  .variant-pills label:nth-child(n + 4) {
-    grid-column: auto;
-  }
-
-  .trainer-row-summary.is-split-score {
-    gap: 7px;
-    font-size: 0.58rem;
-  }
-
-  .cribbage-hand-row {
-    grid-template-columns: 98px minmax(0, 1fr);
+  .trainer-board {
+    --ofc-label-w: 3.1rem;
+    --card-w-board: clamp(36px, calc((100vw - 52px - var(--ofc-label-w)) / 5.4), 48px);
   }
 }
 
-@media (max-width: 360px) {
-  .trainer-panel {
-    grid-template-rows: 50px auto minmax(0, 1fr);
+/* ---------- Short desktop windows: one 40px toolbar row ---------- */
+
+@media (min-width: 881px) and (max-height: 820px) {
+  .trainer-head {
+    padding: 4px 0 6px;
   }
 
-  .variant-pills span {
-    min-height: 28px;
-    padding: 0 2px;
-    font-size: 0.56rem;
+  .trainer-head .eyebrow {
+    display: none;
   }
 
-  .trainer-heading h2 {
-    font-size: 0.86rem;
+  .trainer-head > div:first-child {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
   }
 
   .trainer-config {
-    font-size: 0.54rem;
+    margin-top: 0;
   }
 
-  .timer-pill {
-    min-width: 58px;
-    padding: 3px 4px;
+  .trainer-status .stat {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 12px;
   }
 
-  .timer-pill strong {
-    font-size: 0.78rem;
-  }
-
-  .rules-tabs button {
-    font-size: 0.55rem;
-  }
-}
-
-@media (max-width: 390px) and (max-height: 700px) {
-  body,
-  body:has(.solver-drawer[open]) {
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  .app-shell,
-  .app-shell:has(.solver-drawer[open]) {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: 40px auto auto;
-    overflow: visible;
-  }
-
-  .topbar {
-    min-height: 40px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-  }
-
-  .home-link {
-    width: 28px;
-    height: 28px;
-  }
-
-  .trainer-panel {
-    min-height: 530px;
-    overflow: visible;
-  }
-
-  .trainer-game {
-    height: auto;
-    grid-template-rows: auto auto;
-  }
-
-  .trainer-board {
-    min-height: 218px;
-  }
-
-  .trainer-rows {
-    height: auto;
-    min-height: 198px;
-    grid-template-rows: repeat(3, minmax(62px, auto));
-    gap: 3px;
-  }
-
-  .trainer-row {
-    min-height: 62px;
+  .trainer-status .stat-value {
+    font-size: var(--t-md);
   }
 }

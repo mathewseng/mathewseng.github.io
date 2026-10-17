@@ -28,6 +28,9 @@ fs.mkdirSync(output, { recursive: true });
         assert.match(await page.locator("#matrix-meta").innerText(), /10,000 samples\/config/);
         assert.ok(!/NaN|Infinity|undefined/.test(await page.locator("main").innerText()));
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no page-wide horizontal overflow");
+        // The page is tabbed (Overview / Repeat sources / Matrix / Rules): open the
+        // tab that holds each panel before measuring or clicking inside it.
+        await page.locator("#section-tab-matrix").click();
         if (width < 680) {
           const heading = await page.locator("#matrix-title").boundingBox();
           const metadata = await page.locator("#matrix-meta").boundingBox();
@@ -40,9 +43,11 @@ fs.mkdirSync(output, { recursive: true });
           const expectedEv = await page.evaluate(({ variant, cards, jokers }) => window.OFCFantasylandPrecomputed.results[variant][`${cards}-${jokers}`].immediate, { variant, cards, jokers });
           assert.equal(Number(await row.locator('[data-value="immediate"]').innerText()), Number(expectedEv.toFixed(2)));
         }
+        await page.locator("#section-tab-repeat").click();
         await page.locator('button[aria-label="Show repeat details for 13 cards and 2 jokers"]').click();
         assert.match(await page.locator("#repeat-source-detail").innerText(), /13 cards \/ 2 jokers/);
         await page.locator("#repeat-source-panel").screenshot({ path: `${output}/${variant}-${width}-repeats.png` });
+        await page.locator("#section-tab-matrix").click();
         await page.locator('section[aria-labelledby="matrix-title"]').screenshot({ path: `${output}/${variant}-${width}-matrix.png` });
         if (["low", "badeucey", "cribbage"].includes(variant)) {
           await page.locator('label:has(#top-repeat-jacks-plus)').click();

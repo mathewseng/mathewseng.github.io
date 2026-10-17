@@ -55,20 +55,6 @@
     QUADS: 7,
     STRAIGHT_FLUSH: 8,
   };
-  const SCENARIOS = [
-    { cards: 14, jokers: 0 },
-    { cards: 15, jokers: 0 },
-    { cards: 16, jokers: 0 },
-    { cards: 17, jokers: 0 },
-    { cards: 14, jokers: 1 },
-    { cards: 15, jokers: 1 },
-    { cards: 16, jokers: 1 },
-    { cards: 17, jokers: 1 },
-    { cards: 14, jokers: 2 },
-    { cards: 15, jokers: 2 },
-    { cards: 16, jokers: 2 },
-    { cards: 17, jokers: 2 },
-  ];
   const TRAINER_ROWS = [
     { key: "top", label: "Top", size: 3 },
     { key: "middle", label: "Middle", size: 5 },
@@ -76,7 +62,6 @@
   ];
   const TRAINER_ROW_CYCLE = ["bottom", "middle", "top"];
   const TRAINER_SHARE_URL = "https://mathewseng.github.io/ofc/fantasyland-trainer/";
-  const TRAINER_DROP_ANIMATION_MS = 250;
   const TRAINER_STORAGE_KEY = "ofcFantasylandTrainerState.v1";
   const REPEAT_SOURCE_VARIANTS = new Set(["high", "low", "badeucey", "bdp", "cribbage"]);
 
@@ -91,8 +76,6 @@
     repeatRule: "pineapple",
     fiveKindRule: "none",
     selected: [],
-    simAbort: false,
-    suppressInput: false,
     trainer: {
       mode: "daily",
       scope: "all",
@@ -109,22 +92,23 @@
       timerId: 0,
       confirmed: false,
       reportOpen: false,
+      complete: false,
       randomBase: "",
       sortMode: "rank",
-      drag: null,
-      dragClickBlock: null,
-      dropAnimating: false,
     },
   };
 
   const els = {};
+  let dragController = null;
+  let rulesTabs = null;
 
+  // The EV page loads this file as a solver library: nothing below runs there.
   if (typeof document !== "undefined") {
     document.addEventListener("DOMContentLoaded", () => {
       if (!document.querySelector("#trainer-rows")) return;
-      applyMobilePlatformClasses();
       cacheElements();
       bindEvents();
+      initTrainerChrome();
       if (!restoreTrainerState()) startTrainerSet();
       window.addEventListener("beforeunload", saveTrainerState);
       window.addEventListener("pagehide", () => {
@@ -137,231 +121,269 @@
     });
   }
 
-  function applyMobilePlatformClasses() {
-    const appleTouchDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const longEdge = Math.max(window.screen.width || 0, window.screen.height || 0);
-    document.documentElement.classList.toggle("ios-notch-device", appleTouchDevice && longEdge >= 812);
-  }
-
   function cacheElements() {
+    const byId = (id) => document.getElementById(id);
     Object.assign(els, {
-      metricPoints: document.querySelector("#metric-points"),
-      metricRepeat: document.querySelector("#metric-repeat"),
-      metricSpeed: document.querySelector("#metric-speed"),
-      selectedCount: document.querySelector("#selected-count"),
-      selectedCards: document.querySelector("#selected-cards"),
-      deckGrid: document.querySelector("#deck-grid"),
-      cardInput: document.querySelector("#card-input"),
-      handMessage: document.querySelector("#hand-message"),
-      solveHand: document.querySelector("#solve-hand"),
-      randomHand: document.querySelector("#random-hand"),
-      clearHand: document.querySelector("#clear-hand"),
-      repeatRule: document.querySelector("#repeat-rule"),
-      fiveKindRule: document.querySelector("#five-kind-rule"),
-      repeatBadge: document.querySelector("#repeat-badge"),
-      bestPoints: document.querySelector("#best-points"),
-      repeatPoints: document.querySelector("#repeat-points"),
-      legalBoards: document.querySelector("#legal-boards"),
-      boardStack: document.querySelector("#board-stack"),
-      solutionDrawer: document.querySelector("#solution-drawer"),
-      solverMode: document.querySelector("#solver-mode"),
-      sampleCount: document.querySelector("#sample-count"),
-      runSim: document.querySelector("#run-sim"),
-      stopSim: document.querySelector("#stop-sim"),
-      simBody: document.querySelector("#sim-body"),
-      simStatus: document.querySelector("#sim-status"),
-      simProgress: document.querySelector("#sim-progress"),
-      trainerTitle: document.querySelector("#trainer-title"),
-      trainerConfig: document.querySelector("#trainer-config"),
-      trainerAllLabel: document.querySelector("#trainer-all-label"),
-      trainerCardCountOptions: document.querySelector("#trainer-card-count-options"),
-      trainerCurrentConfig: document.querySelector("#trainer-current-config"),
+      selectedCount: byId("selected-count"),
+      selectedCards: byId("selected-cards"),
+      handMessage: byId("hand-message"),
+      repeatBadge: byId("repeat-badge"),
+      bestPoints: byId("best-points"),
+      repeatPoints: byId("repeat-points"),
+      legalBoards: byId("legal-boards"),
+      boardStack: byId("board-stack"),
+      solutionDrawer: byId("solution-drawer"),
+      solutionClose: byId("solution-close"),
+      solutionOpen: byId("trainer-solution-open"),
+      trainerTitle: byId("trainer-title"),
+      trainerConfig: byId("trainer-config"),
+      trainerAllLabel: byId("trainer-all-label"),
+      trainerCardCountOptions: byId("trainer-card-count-options"),
+      trainerCurrentConfig: byId("trainer-current-config"),
       trainerCurrentConfigControl: document.querySelector(".trainer-current-config-control"),
       trainerPanel: document.querySelector(".trainer-panel"),
-      trainerTime: document.querySelector("#trainer-time"),
-      trainerCurrentPoints: document.querySelector("#trainer-current-points"),
-      trainerProgressPill: document.querySelector("#trainer-progress-pill"),
-      trainerProgress: document.querySelector("#trainer-progress"),
-      trainerSortRank: document.querySelector("#trainer-sort-rank"),
-      trainerSortSuit: document.querySelector("#trainer-sort-suit"),
-      trainerTray: document.querySelector("#trainer-tray"),
-      trainerRows: document.querySelector("#trainer-rows"),
-      trainerClear: document.querySelector("#trainer-clear"),
-      trainerConfirm: document.querySelector("#trainer-confirm"),
-      trainerReportOpen: document.querySelector("#trainer-report-open"),
-      trainerReportClose: document.querySelector("#trainer-report-close"),
-      trainerNext: document.querySelector("#trainer-next"),
-      trainerMessage: document.querySelector("#trainer-message"),
-      trainerYourPoints: document.querySelector("#trainer-your-points"),
-      trainerMaxPoints: document.querySelector("#trainer-max-points"),
-      trainerResult: document.querySelector("#trainer-result"),
-      trainerShare: document.querySelector("#trainer-share"),
-      trainerCopy: document.querySelector("#trainer-copy"),
-      trainerVariantSummary: document.querySelector("#trainer-variant-summary"),
-      trainerRulesOpen: document.querySelector("#trainer-rules-open"),
-      variantRulesDialog: document.querySelector("#variant-rules-dialog"),
-      variantRulesClose: document.querySelector("#variant-rules-close"),
-      variantRulesTabs: document.querySelector("#variant-rules-tabs"),
-      variantRulesContent: document.querySelector("#variant-rules-content"),
+      trainerMain: byId("main"),
+      trainerTime: byId("trainer-time"),
+      trainerCurrentPoints: byId("trainer-current-points"),
+      trainerProgressPill: byId("trainer-progress-pill"),
+      trainerProgress: byId("trainer-progress"),
+      trainerSortRank: byId("trainer-sort-rank"),
+      trainerSortSuit: byId("trainer-sort-suit"),
+      trainerBankLabel: byId("trainer-bank-label"),
+      trainerTray: byId("trainer-tray"),
+      trainerRows: byId("trainer-rows"),
+      trainerActions: byId("trainer-actions"),
+      trainerClear: byId("trainer-clear"),
+      trainerFill: byId("trainer-fill"),
+      trainerConfirm: byId("trainer-confirm"),
+      trainerReportOpen: byId("trainer-report-open"),
+      trainerReport: byId("trainer-report"),
+      trainerReportClose: byId("trainer-report-close"),
+      trainerNext: byId("trainer-next"),
+      trainerFinish: byId("trainer-finish"),
+      trainerMessage: byId("trainer-message"),
+      trainerYourPoints: byId("trainer-your-points"),
+      trainerMaxPoints: byId("trainer-max-points"),
+      trainerResult: byId("trainer-result"),
+      trainerShare: byId("trainer-share"),
+      trainerCopy: byId("trainer-copy"),
+      trainerVariantSummary: byId("trainer-variant-summary"),
+      trainerRulesOpen: byId("trainer-rules-open"),
+      trainerSetup: byId("trainer-setup"),
+      trainerSetupOpen: byId("trainer-setup-open"),
+      trainerSetupClose: byId("trainer-setup-close"),
+      trainerSetupDone: byId("trainer-setup-done"),
+      trainerSetupError: byId("trainer-setup-error"),
+      trainerNewRandom: byId("trainer-new-random"),
+      trainerComplete: byId("trainer-complete"),
+      trainerCompleteTitle: byId("trainer-complete-title"),
+      trainerCompleteBadge: byId("trainer-complete-badge"),
+      trainerCompleteGrade: byId("trainer-complete-grade"),
+      trainerCompleteSummary: byId("trainer-complete-summary"),
+      trainerCompleteScore: byId("trainer-complete-score"),
+      trainerCompleteTime: byId("trainer-complete-time"),
+      trainerCompleteMax: byId("trainer-complete-max"),
+      trainerCompleteMissed: byId("trainer-complete-missed"),
+      trainerCompleteRows: byId("trainer-complete-rows"),
+      trainerCompleteCopy: byId("trainer-complete-copy"),
+      trainerCompleteReport: byId("trainer-complete-report"),
+      trainerCompleteRandom: byId("trainer-complete-random"),
+      trainerCompleteBack: byId("trainer-complete-back"),
+      trainerAlerts: byId("trainer-alerts"),
+      variantRulesDialog: byId("variant-rules-dialog"),
+      variantRulesClose: byId("variant-rules-close"),
+      variantRulesTabs: byId("variant-rules-tabs"),
+      variantRulesContent: byId("variant-rules-content"),
     });
   }
 
   function bindEvents() {
-    document.querySelectorAll('input[name="card-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.cardCount = Number(input.value);
-        if (state.selected.length > state.cardCount) {
-          state.selected = state.selected.slice(0, state.cardCount);
-        }
-        renderSelected();
+    // Setup radios apply on change, as before, but a change that would wipe
+    // results or a board in progress asks first (notes.md 3.14).
+    const setupRadios = (name, restarts, apply) => {
+      document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+        input.addEventListener("change", () => {
+          if (!input.checked) return;
+          guardSetupChange(restarts(input.value), () => apply(input.value));
+        });
       });
+    };
+    setupRadios("trainer-mode", (value) => value !== state.trainer.mode, (value) => {
+      if (state.trainer.mode === value) return;
+      state.trainer.mode = value;
+      startTrainerSet();
+    });
+    setupRadios("trainer-scope", () => true, (value) => {
+      state.trainer.scope = value;
+      updateTrainerConfigControls();
+      startTrainerSet();
+    });
+    setupRadios("trainer-card-count", () => state.trainer.scope === "single", (value) => {
+      state.trainer.cardCount = Number(value);
+      if (state.trainer.scope === "single") startTrainerSet();
+    });
+    setupRadios("trainer-joker-count", () => state.trainer.scope === "single", (value) => {
+      state.trainer.jokerCount = Number(value);
+      if (state.trainer.scope === "single") startTrainerSet();
+    });
+    setupRadios("trainer-variant", () => true, (value) => {
+      state.trainer.variant = normalizeTrainerVariant(value);
+      startTrainerSet();
     });
 
-    document.querySelectorAll('input[name="joker-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.jokerCount = Number(input.value);
-        trimUnavailableJokers();
-        renderDeck();
-        renderSelected();
-      });
-    });
-
-    if (els.repeatRule) {
-      els.repeatRule.addEventListener("change", () => {
-        state.repeatRule = els.repeatRule.value;
-        solveCurrentHand();
-      });
-    }
-
-    if (els.fiveKindRule) {
-      els.fiveKindRule.addEventListener("change", () => {
-        state.fiveKindRule = els.fiveKindRule.value;
-        solveCurrentHand();
-      });
-    }
-
-    if (els.solveHand) els.solveHand.addEventListener("click", solveCurrentHand);
-    if (els.randomHand) {
-      els.randomHand.addEventListener("click", () => {
-        dealRandomHand();
-        solveCurrentHand();
-      });
-    }
-    if (els.clearHand) {
-      els.clearHand.addEventListener("click", () => {
-        state.selected = [];
-        renderSelected();
-        clearSolution("Deal or paste a Fantasyland hand to solve it.");
-      });
-    }
-
-    let inputTimer = 0;
-    if (els.cardInput) {
-      els.cardInput.addEventListener("input", () => {
-        if (state.suppressInput) return;
-        window.clearTimeout(inputTimer);
-        inputTimer = window.setTimeout(parseInputCards, 260);
-      });
-    }
-
-    if (els.runSim) els.runSim.addEventListener("click", runSimulationMatrix);
-    if (els.stopSim) {
-      els.stopSim.addEventListener("click", () => {
-        state.simAbort = true;
-        if (els.simStatus) els.simStatus.textContent = "Stopping after the current sample.";
-      });
-    }
-
-    document.querySelectorAll('input[name="trainer-mode"]').forEach((input) => {
-      input.addEventListener("click", () => {
-        if (input.value === "random" && input.checked && state.trainer.mode === "random") {
-          startTrainerSet();
-        }
-      });
-      input.addEventListener("change", () => {
-        if (state.trainer.mode === input.value) return;
-        state.trainer.mode = input.value;
-        startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-scope"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.scope = input.value;
-        updateTrainerConfigControls();
-        startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-card-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.cardCount = Number(input.value);
-        if (state.trainer.scope === "single") startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-joker-count"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.jokerCount = Number(input.value);
-        if (state.trainer.scope === "single") startTrainerSet();
-      });
-    });
-
-    document.querySelectorAll('input[name="trainer-variant"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.trainer.variant = normalizeTrainerVariant(input.value);
-        startTrainerSet();
-      });
-    });
-
-    if (els.trainerRulesOpen) {
-      els.trainerRulesOpen.addEventListener("click", () => openVariantRules(state.trainer.variant));
-    }
-    if (els.variantRulesClose) els.variantRulesClose.addEventListener("click", closeVariantRules);
-    if (els.variantRulesDialog) {
-      els.variantRulesDialog.addEventListener("click", (event) => {
-        if (event.target === els.variantRulesDialog) closeVariantRules();
-      });
-    }
-
+    els.trainerRulesOpen.addEventListener("click", () => openVariantRules(state.trainer.variant));
+    els.variantRulesClose.addEventListener("click", closeVariantRules);
+    els.trainerSetupOpen.addEventListener("click", openTrainerSetup);
+    els.trainerSetupClose.addEventListener("click", () => closeDialog(els.trainerSetup));
+    els.trainerSetupDone.addEventListener("click", () => closeDialog(els.trainerSetup));
+    els.trainerNewRandom.addEventListener("click", startNewRandomSet);
     els.trainerClear.addEventListener("click", clearTrainerSet);
+    els.trainerFill.addEventListener("click", fillTrainerRest);
     els.trainerConfirm.addEventListener("click", confirmTrainerSet);
     els.trainerReportOpen.addEventListener("click", openTrainerReport);
     els.trainerReportClose.addEventListener("click", closeTrainerReport);
+    els.trainerReport.addEventListener("close", () => {
+      state.trainer.reportOpen = false;
+      updateTrainerControls();
+      saveTrainerState();
+    });
+    // The report's own shortcut: C copies while the dialog is open (page hotkeys are suppressed under any dialog).
+    els.trainerReport.addEventListener("keydown", (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || event.key.toLowerCase() !== "c") return;
+      if (event.target.closest("textarea, input")) return;
+      event.preventDefault();
+      copyTrainerReport();
+    });
+    els.solutionOpen.addEventListener("click", openTrainerSolution);
+    els.solutionClose.addEventListener("click", () => closeDialog(els.solutionDrawer));
     els.trainerNext.addEventListener("click", loadNextTrainerPuzzle);
+    els.trainerFinish.addEventListener("click", finishTrainerSet);
     els.trainerCopy.addEventListener("click", copyTrainerReport);
+    els.trainerCompleteCopy.addEventListener("click", copyTrainerReport);
+    els.trainerCompleteReport.addEventListener("click", openTrainerReport);
+    els.trainerCompleteRandom.addEventListener("click", startNewRandomSet);
+    els.trainerCompleteBack.addEventListener("click", () => {
+      state.trainer.complete = false;
+      renderTrainer();
+      saveTrainerState();
+      els.trainerMain.focus({ preventScroll: true });
+    });
     els.trainerSortRank.addEventListener("click", () => setTrainerSortMode("rank"));
     els.trainerSortSuit.addEventListener("click", () => setTrainerSortMode("suit"));
-    els.trainerTray.addEventListener("dragover", allowTrainerDrop);
-    els.trainerTray.addEventListener("dragleave", clearTrainerDragOver);
-    els.trainerTray.addEventListener("drop", dropTrainerCardToBank);
     document.addEventListener("keydown", handleTrainerHotkeys);
   }
 
-  function trimUnavailableJokers() {
-    const allowed = new Set(buildDeckIds(state.jokerCount));
-    state.selected = state.selected.filter((id) => allowed.has(id));
+  // Keycaps, the shared drag controller and the rules tablist: built once.
+  function initTrainerChrome() {
+    if (window.Keycap) {
+      els.trainerClear.append(window.Keycap.keycap("c"));
+      els.trainerFill.append(window.Keycap.keycap("f"));
+      els.trainerConfirm.append(window.Keycap.keycap("Space"));
+      els.trainerNext.append(window.Keycap.keycap("Space"));
+      els.trainerFinish.append(window.Keycap.keycap("Space"));
+      els.trainerCopy.append(window.Keycap.keycap("c"));
+      els.trainerSortRank.append(window.Keycap.keycap("r"));
+      els.trainerSortSuit.append(window.Keycap.keycap("s"));
+    }
+    if (window.CardDrag) {
+      dragController = new window.CardDrag(els.trainerMain, {
+        canDrag: canDragTrainerCard,
+        resolve: resolveTrainerDrop,
+        drop: dropTrainerCard,
+        targets: "[data-drop-row], .trainer-row, #trainer-tray",
+      });
+    }
+    renderVariantRulesTabs();
   }
 
-  function dealRandomHand() {
-    state.selected = dealIds(state.cardCount, state.jokerCount);
-    renderSelected();
+  function trainerDragging() {
+    return Boolean(dragController && dragController.drag);
   }
 
-  function parseInputCards() {
-    const parsed = parseCardList(els.cardInput.value, state.jokerCount);
-    if (parsed.ids.length) {
-      state.selected = parsed.ids.slice(0, state.cardCount);
-      renderSelected({ keepInput: true });
-    } else {
-      state.selected = [];
-      renderSelected({ keepInput: true });
+  function openDialog(dialog, options = {}) {
+    if (!dialog) return;
+    if (window.Sheet) window.Sheet.open(dialog, Object.assign({ dismissible: true }, options));
+    else if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+
+  function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
+    else dialog.removeAttribute("open");
+  }
+
+  function showTrainerAlert(message) {
+    if (!els.trainerAlerts) return;
+    const toast = document.createElement("div");
+    toast.className = "toast toast--alert";
+    const text = document.createElement("span");
+    text.textContent = message;
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.className = "btn btn--ghost btn--icon btn--sm";
+    dismiss.setAttribute("aria-label", "Dismiss");
+    dismiss.textContent = "✕";
+    toast.append(text, dismiss);
+    const remove = () => {
+      window.clearTimeout(timer);
+      toast.remove();
+    };
+    let timer = window.setTimeout(remove, 6000);
+    dismiss.addEventListener("click", remove);
+    toast.addEventListener("mouseenter", () => window.clearTimeout(timer));
+    toast.addEventListener("focusin", () => window.clearTimeout(timer));
+    toast.addEventListener("mouseleave", () => {
+      timer = window.setTimeout(remove, 6000);
+    });
+    els.trainerAlerts.append(toast);
+  }
+
+  // Setup changes that restart the set ask first while a board is in
+  // progress or results exist; a cancelled change puts the radios back.
+  function guardSetupChange(restarts, apply) {
+    if (!restarts || !trainerHasProgress()) {
+      apply();
+      return;
     }
-    if (parsed.errors.length) {
-      setMessage(parsed.errors.slice(0, 2).join(" "));
-    } else {
-      setMessage("");
+    confirmDiscardSet().then((confirmed) => {
+      if (confirmed) apply();
+      else syncTrainerInputsFromState();
+    });
+  }
+
+  function trainerHasProgress() {
+    const trainer = state.trainer;
+    if (trainer.complete) return false;
+    return trainer.results.some(Boolean) || getPlacedTrainerIds().length > 0;
+  }
+
+  function confirmDiscardSet() {
+    const text = "The results and timer for this set will be lost.";
+    if (window.Sheet && typeof window.Sheet.confirm === "function") {
+      return window.Sheet.confirm({ title: "Start a new set?", text, verb: "Start new set", danger: true, sheet: true });
     }
+    return Promise.resolve(window.confirm(`Start a new set? ${text}`));
+  }
+
+  function startNewRandomSet() {
+    guardSetupChange(true, () => {
+      state.trainer.mode = "random";
+      setCheckedValue("trainer-mode", "random");
+      startTrainerSet();
+      closeDialog(els.trainerSetup);
+    });
+  }
+
+  function openTrainerSetup() {
+    updateTrainerConfigControls();
+    openDialog(els.trainerSetup);
+  }
+
+  function openTrainerSolution() {
+    if (!state.trainer.confirmed) return;
+    els.solutionDrawer.hidden = false;
+    openDialog(els.solutionDrawer);
   }
 
   function solveCurrentHand() {
@@ -397,56 +419,8 @@
     }
   }
 
-  function renderDeck() {
-    if (!els.deckGrid) return;
-    const selected = new Set(state.selected);
-    const frag = document.createDocumentFragment();
-
-    SUITS.forEach((suit) => {
-      RANKS_DESC.forEach((rank) => {
-        const id = `${rank}${suit}`;
-        frag.appendChild(createCardButton(id, selected.has(id)));
-      });
-    });
-
-    const jokerZone = document.createElement("div");
-    jokerZone.className = "joker-zone";
-    ["JK1", "JK2"].forEach((id, index) => {
-      const button = createCardButton(id, selected.has(id));
-      button.disabled = index >= state.jokerCount;
-      jokerZone.appendChild(button);
-    });
-    frag.appendChild(jokerZone);
-
-    els.deckGrid.replaceChildren(frag);
-  }
-
-  function createCardButton(id, isSelected) {
-    const button = cardElement(cardFromId(id), {
-      tag: "button",
-      className: "card-button",
-      selected: isSelected,
-      interactive: true,
-      attrs: { "data-card-id": id },
-    });
-    button.addEventListener("click", () => toggleCard(id));
-    return button;
-  }
-
-  function toggleCard(id) {
-    const existing = state.selected.indexOf(id);
-    if (existing >= 0) {
-      state.selected.splice(existing, 1);
-    } else if (state.selected.length < state.cardCount) {
-      state.selected.push(id);
-    } else {
-      setMessage(`Already at ${state.cardCount} cards.`);
-    }
-    renderDeck();
-    renderSelected();
-  }
-
-  function renderSelected(options = {}) {
+  // The solution dialog's "current hand": the puzzle's cards, sorted by rank.
+  function renderSelected() {
     const target = state.cardCount;
     if (els.selectedCount) {
       const jokerLabel = state.jokerCount === 1 ? "joker" : "jokers";
@@ -455,34 +429,12 @@
           ? `${target} cards / ${state.jokerCount} ${jokerLabel}`
           : `${state.selected.length} / ${target} selected`;
     }
-
     const frag = document.createDocumentFragment();
-    const readOnly = options.readOnly || !els.solveHand;
-    const displayIds = state.selected.slice().sort((left, right) => compareTrainerCards(left, right, "rank"));
-    displayIds.forEach((id) => {
-      const item = cardElement(cardFromId(id), { className: "mini-card" });
-      if (!readOnly) {
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.textContent = "×";
-        remove.setAttribute("aria-label", `Remove ${id}`);
-        remove.addEventListener("click", () => {
-          state.selected = state.selected.filter((cardId) => cardId !== id);
-          renderDeck();
-          renderSelected();
-        });
-        item.appendChild(remove);
-      }
-      frag.appendChild(item);
-    });
+    state.selected
+      .slice()
+      .sort((left, right) => compareTrainerCards(left, right, "rank"))
+      .forEach((id) => frag.appendChild(cardElement(cardFromId(id), { className: "mini-card" })));
     if (els.selectedCards) els.selectedCards.replaceChildren(frag);
-    renderDeck();
-
-    if (!options.keepInput && els.cardInput) {
-      state.suppressInput = true;
-      els.cardInput.value = state.selected.join(" ");
-      state.suppressInput = false;
-    }
   }
 
   function renderSolution(result) {
@@ -492,9 +444,6 @@
     }
     const best = result.best;
     const bestRepeat = result.bestRepeat;
-    setOptionalText(els.metricPoints, best ? String(best.points) : "--");
-    setOptionalText(els.metricRepeat, bestRepeat ? "Yes" : "No");
-    setOptionalText(els.metricSpeed, `${result.elapsedMs.toFixed(0)} ms`);
     els.bestPoints.textContent = best ? String(best.points) : "--";
     els.legalBoards.textContent = formatInteger(result.legalBoards);
     els.repeatPoints.textContent = bestRepeat
@@ -525,10 +474,10 @@
       result.cards.filter((card, index) => (best.usedMask & (1 << index)) === 0)
     );
     const discardRow = document.createElement("div");
-    discardRow.className = "board-row";
+    discardRow.className = "board-row ofc-row";
     discardRow.innerHTML = `<div class="row-head"><strong>Discards</strong><div class="row-meta"><span>${discards.length}</span></div></div>`;
     const discardCards = document.createElement("div");
-    discardCards.className = "row-cards discard-row";
+    discardCards.className = "row-cards ofc-row-cards discard-row";
     discards.forEach((card) => discardCards.appendChild(renderMiniCard(card, null)));
     discardRow.appendChild(discardCards);
     frag.appendChild(discardRow);
@@ -539,9 +488,6 @@
   function renderVariantSolution(result) {
     const best = result.best;
     const bestRepeat = result.bestRepeat;
-    setOptionalText(els.metricPoints, best ? String(best.points) : "--");
-    setOptionalText(els.metricRepeat, bestRepeat ? "Yes" : "No");
-    setOptionalText(els.metricSpeed, `${result.elapsedMs.toFixed(0)} ms`);
     setOptionalText(els.bestPoints, best ? String(best.points) : "--");
     setOptionalText(els.legalBoards, formatInteger(result.legalBoards));
     setOptionalText(els.repeatPoints, bestRepeat ? String(bestRepeat.points) : "--");
@@ -565,10 +511,10 @@
       .filter((card, index) => (best.usedMask & (1 << index)) === 0)
       .sort((left, right) => compareVariantSolutionCards(left, right, best.assignments));
     const discardRow = document.createElement("div");
-    discardRow.className = "board-row";
+    discardRow.className = "board-row ofc-row";
     discardRow.innerHTML = `<div class="row-head"><strong>Discards</strong><div class="row-meta"><span>${discards.length}</span></div></div>`;
     const cards = document.createElement("div");
-    cards.className = "row-cards discard-row";
+    cards.className = "row-cards ofc-row-cards discard-row";
     discards.forEach((card) => cards.appendChild(renderVariantMiniCard(card, best.assignments)));
     discardRow.appendChild(cards);
     frag.appendChild(discardRow);
@@ -576,7 +522,7 @@
   }
 
   function renderSolutionRepeatBadge(solution, variant) {
-    els.repeatBadge.className = `repeat-badge ${solution ? "yes" : "no"}`;
+    els.repeatBadge.className = `badge badge--plain repeat-badge ${solution ? "yes" : "no"}`;
     els.repeatBadge.replaceChildren();
     if (!solution) {
       els.repeatBadge.textContent = "No repeat";
@@ -605,7 +551,7 @@
 
   function renderVariantBoardRow(label, candidate, cardById, assignments) {
     const wrapper = document.createElement("div");
-    wrapper.className = "board-row";
+    wrapper.className = "board-row ofc-row";
     const head = document.createElement("div");
     head.className = "row-head";
     const title = document.createElement("strong");
@@ -616,7 +562,7 @@
     head.append(title, meta);
     wrapper.appendChild(head);
     const cards = document.createElement("div");
-    cards.className = `row-cards ${label === "Top" ? "top-row" : ""}`;
+    cards.className = `row-cards ofc-row-cards ${label === "Top" ? "top-row" : ""}`;
     candidate.ids
       .map((id) => cardById.get(id))
       .filter(Boolean)
@@ -628,7 +574,7 @@
 
   function renderSplitMiddleSolutionRow(variant, candidate, cardById, assignments) {
     const wrapper = document.createElement("div");
-    wrapper.className = "board-row solution-split-row";
+    wrapper.className = "board-row ofc-row solution-split-row";
     const head = document.createElement("div");
     head.className = "row-head";
     const title = document.createElement("strong");
@@ -645,7 +591,7 @@
       group.className = "solution-split-group";
       group.innerHTML = `<span>${label}</span>`;
       const cards = document.createElement("div");
-      cards.className = "row-cards";
+      cards.className = "row-cards ofc-row-cards";
       ids
         .map((id) => cardById.get(id))
         .filter(Boolean)
@@ -679,11 +625,28 @@
       appendScoreComponents(container, components, { className: "solution-score-component" });
       return;
     }
-    const name = document.createElement("span");
-    name.textContent = evaluation?.name || "";
-    const points = document.createElement("span");
-    points.textContent = formatPointUnit(totalPoints);
-    container.append(name, points);
+    container.appendChild(handChip(evaluation?.name || "", finiteNumber(totalPoints)));
+  }
+
+  // The one score summary: hand name | points, toned good when it scores.
+  function handChip(name, points, options = {}) {
+    const chip = document.createElement("span");
+    chip.className = `hand-chip ${options.className || ""} ${options.tone ? `hand-chip--${options.tone}` : points > 0 ? "hand-chip--good" : ""}`.trim().replace(/\s+/g, " ");
+    const label = document.createElement("span");
+    label.className = "hand-chip-name score-description";
+    label.textContent = name;
+    chip.appendChild(label);
+    if (options.showPoints !== false) {
+      const value = document.createElement("b");
+      value.className = "hand-chip-pts score-points";
+      value.textContent = options.pointsText || formatPointUnit(points);
+      chip.appendChild(value);
+    }
+    return chip;
+  }
+
+  function handChipHtml(name, points) {
+    return handChip(name, finiteNumber(points)).outerHTML;
   }
 
   function renderVariantMiniCard(card, assignments) {
@@ -699,20 +662,17 @@
 
   function renderBoardRow(cards, row) {
     const wrapper = document.createElement("div");
-    wrapper.className = "board-row";
+    wrapper.className = "board-row ofc-row";
     const royalty = row.role === "top" ? row.candidate.royalty : row.candidate[row.role === "middle" ? "middleRoyalty" : "backRoyalty"];
     wrapper.innerHTML = `
       <div class="row-head">
         <strong>${row.label}</strong>
-        <div class="row-meta">
-          <span>${row.candidate.eval.name}</span>
-          <span>${royalty} pts</span>
-        </div>
+        <div class="row-meta">${handChipHtml(row.candidate.eval.name, royalty)}</div>
       </div>
     `;
 
     const cardGrid = document.createElement("div");
-    cardGrid.className = `row-cards ${row.className}`;
+    cardGrid.className = `row-cards ofc-row-cards ${row.className}`;
     const rowCards = sortSolutionCards(
       cardsForMask(cards, row.candidate.mask),
       row.candidate.eval.assignments
@@ -752,14 +712,11 @@
   }
 
   function clearSolution(message) {
-    setOptionalText(els.metricPoints, "--");
-    setOptionalText(els.metricRepeat, "--");
-    setOptionalText(els.metricSpeed, "--");
     setOptionalText(els.bestPoints, "--");
     setOptionalText(els.repeatPoints, "--");
     setOptionalText(els.legalBoards, "--");
     if (els.repeatBadge) {
-      els.repeatBadge.className = "repeat-badge";
+      els.repeatBadge.className = "badge badge--plain repeat-badge";
       els.repeatBadge.textContent = "--";
     }
     if (els.boardStack) els.boardStack.innerHTML = `<div class="empty-state">${message}</div>`;
@@ -814,6 +771,7 @@
       };
     });
     trainer.results = [];
+    trainer.complete = false;
     loadTrainerPuzzle(0);
   }
 
@@ -868,6 +826,7 @@
       })),
       confirmed: trainer.confirmed,
       reportOpen: trainer.reportOpen,
+      complete: trainer.complete,
       elapsedMs: finiteNumber(currentTrainerElapsedMs()),
       sortMode: trainer.sortMode,
     };
@@ -912,12 +871,11 @@
     const migratedBadugiJack = Number(snapshot.version) < 3 && trainer.variant === "badugijack";
     trainer.results = migratedBadugiJack ? [] : Array.isArray(snapshot.results) ? snapshot.results.map((result) => (result ? clonePlainObject(result) : null)) : [];
     trainer.confirmed = migratedBadugiJack ? false : Boolean(snapshot.confirmed);
-    trainer.reportOpen = migratedBadugiJack ? false : Boolean(snapshot.reportOpen);
+    // The report is opt-in: a saved page never reopens it on load.
+    trainer.reportOpen = false;
+    trainer.complete = !migratedBadugiJack && trainer.confirmed && Boolean(snapshot.complete);
     trainer.elapsedMs = finiteNumber(snapshot.elapsedMs);
     trainer.sortMode = snapshot.sortMode === "suit" ? "suit" : "rank";
-    trainer.drag = null;
-    trainer.dragClickBlock = null;
-    trainer.dropAnimating = false;
 
     syncTrainerInputsFromState();
     if (trainer.confirmed) {
@@ -1013,7 +971,7 @@
     const puzzle = getTrainerPuzzle();
     if (!puzzle) return;
     els.trainerTitle.textContent = trainer.mode === "daily" ? "Daily puzzle" : "Random puzzle";
-    if (els.trainerConfig) els.trainerConfig.textContent = configShareLabel(puzzle);
+    if (els.trainerConfig) els.trainerConfig.textContent = `${configShareLabel(puzzle)} · ${trainerVariantLabel(puzzle.variant)}`;
     if (els.trainerVariantSummary) els.trainerVariantSummary.textContent = VariantCore.VARIANTS[normalizeTrainerVariant(puzzle.variant)].short;
     if (els.trainerCurrentPoints) els.trainerCurrentPoints.textContent = String(getTrainerCurrentPoints(puzzle));
     if (els.trainerProgress) els.trainerProgress.textContent = `${trainer.puzzleIndex + 1}/${trainer.puzzles.length}`;
@@ -1054,7 +1012,7 @@
     state.cardCount = puzzle.cards;
     state.jokerCount = puzzle.jokers;
     state.selected = puzzle.ids.slice();
-    renderSelected({ keepInput: true, readOnly: true });
+    renderSelected();
     if (state.trainer.confirmed) solveCurrentHand();
   }
 
@@ -1066,9 +1024,12 @@
     const ordered = getTrainerOrderedIds(puzzle);
     ordered.forEach((id) => {
       if (placed.has(id)) {
+        // The placeholder keeps the card's slot; it carries data-bank-id, not
+        // data-card-id, so the drag controller never picks it up.
         const slot = emptySlotElement({ className: "trainer-bank-slot empty" });
-        slot.dataset.cardId = id;
+        slot.dataset.bankId = id;
         slot.removeAttribute("aria-hidden");
+        slot.setAttribute("role", "img");
         slot.setAttribute("aria-label", `${id} is set`);
         frag.appendChild(slot);
         return;
@@ -1079,17 +1040,16 @@
         className: "card-button trainer-card",
         disabled: state.trainer.confirmed,
         interactive: !state.trainer.confirmed,
-        attrs: { "data-card-id": id, draggable: "false" },
+        attrs: { "data-card-id": id, "data-origin": "hand", draggable: "false" },
       });
-      button.addEventListener("click", (event) => {
-        if (consumeTrainerDragClick(event, id)) return;
-        addTrainerCard(id);
-      });
-      button.addEventListener("pointerdown", (event) => startTrainerPointerDrag(event, id, button));
-      button.addEventListener("dragstart", (event) => event.preventDefault());
+      button.addEventListener("click", () => addTrainerCard(id));
       frag.appendChild(button);
     });
     els.trainerTray.replaceChildren(frag);
+    if (els.trainerBankLabel) {
+      const remaining = ordered.length - placed.size;
+      els.trainerBankLabel.replaceChildren("Cards · ", Object.assign(document.createElement("b"), { textContent: String(remaining) }), ` of ${ordered.length}`);
+    }
     updateTrainerSortButtons();
   }
 
@@ -1104,20 +1064,32 @@
         ? state.trainer.activeRow.startsWith("middle")
         : state.trainer.activeRow === rowDef.key;
       const row = document.createElement("section");
-      row.className = `trainer-row ${rowActive ? "active" : ""} ${splitMiddle ? "badugijack-middle-row split-middle-row" : ""}`;
+      row.className = `trainer-row ofc-row ${rowActive ? "active target" : ""} ${splitMiddle ? "badugijack-middle-row split-middle-row" : ""}`.replace(/\s+/g, " ").trim();
       row.dataset.row = splitMiddle ? getSplitMiddleTarget(puzzle) : rowDef.key;
+      row.setAttribute("aria-label", `${rowDef.label} row${rowActive ? ", selected" : ""}`);
       row.addEventListener("click", (event) => {
         if (state.trainer.confirmed || event.target.closest(".trainer-placed-card")) return;
         const splitTarget = event.target.closest("[data-drop-row]");
         setTrainerActiveRow(splitTarget ? splitTarget.dataset.dropRow : rowDef.key);
       });
 
+      // The head is the row's one target: a radio in the board's radiogroup.
       const head = document.createElement("button");
       head.type = "button";
-      head.className = "trainer-row-head";
+      head.className = "trainer-row-head ofc-row-head";
       head.disabled = state.trainer.confirmed;
+      head.setAttribute("role", "radio");
+      head.setAttribute("aria-checked", String(rowActive));
+      head.tabIndex = rowActive || (state.trainer.confirmed && rowDef.key === "bottom") ? 0 : -1;
       head.setAttribute("aria-label", `${rowDef.label} row`);
-      head.innerHTML = `<strong>${rowDef.label} <kbd>${trainerRowHotkey(rowDef.key)}</kbd></strong>`;
+      const headLabel = document.createElement("strong");
+      headLabel.textContent = rowDef.label;
+      head.appendChild(headLabel);
+      if (window.Keycap) {
+        const key = window.Keycap.keycap(trainerRowHotkey(rowDef.key));
+        key.classList.add("ofc-row-key");
+        head.appendChild(key);
+      }
       head.addEventListener("click", () => setTrainerActiveRow(rowDef.key));
       row.appendChild(head);
 
@@ -1129,7 +1101,7 @@
 
       const summary = document.createElement("div");
       const rowSummary = getTrainerRowSummary(rowDef.key, puzzle, displayEvaluation);
-      summary.className = `trainer-row-summary ${rowSummary.visible ? "" : "is-empty"}`;
+      summary.className = `trainer-row-summary ofc-row-summary ${rowSummary.visible ? "" : "is-empty"}`.trim();
       if (rowSummary.visible) {
         if (rowSummary.scoreComponents?.length) {
           summary.classList.add("is-split-score");
@@ -1140,13 +1112,7 @@
           });
           applyScoreDensity(summary);
         } else {
-          const label = document.createElement("span");
-          label.className = "score-description";
-          label.textContent = rowSummary.label;
-          const points = document.createElement("strong");
-          points.className = "score-points";
-          points.textContent = formatPointUnit(rowSummary.points);
-          summary.append(label, points);
+          summary.appendChild(handChip(rowSummary.label, rowSummary.points));
         }
       } else {
         summary.setAttribute("aria-hidden", "true");
@@ -1154,7 +1120,9 @@
       row.appendChild(summary);
       frag.appendChild(row);
     });
+    const hadFocus = Boolean(document.activeElement && document.activeElement.closest("#trainer-rows"));
     els.trainerRows.replaceChildren(frag);
+    if (hadFocus) els.trainerRows.querySelector('.trainer-row-head[aria-checked="true"]')?.focus({ preventScroll: true });
     updateTrainerHeader();
   }
 
@@ -1190,40 +1158,35 @@
         separator.textContent = "+";
         container.appendChild(separator);
       }
-      const item = document.createElement("span");
-      item.className = `${options.className || "trainer-score-component"} ${component.status === "foul" || component.status === "bust" ? "is-danger" : ""}`.trim();
-      const label = document.createElement("span");
-      label.className = "score-description";
-      label.textContent = component.label;
-      item.appendChild(label);
-      if (Number.isFinite(Number(component.points)) && Number(component.points) > 0) {
-        const points = document.createElement("strong");
-        points.className = "score-points";
-        points.textContent = formatPointUnit(component.points);
-        item.appendChild(points);
-      }
-      container.appendChild(item);
+      const danger = component.status === "foul" || component.status === "bust";
+      const points = Number(component.points);
+      const scores = Number.isFinite(points) && points > 0;
+      container.appendChild(
+        handChip(component.label, scores ? points : 0, {
+          className: `${options.className || "trainer-score-component"} ${danger ? "is-danger" : ""}`.trim(),
+          tone: danger ? "bad" : scores ? "good" : "",
+          showPoints: scores,
+        })
+      );
     });
 
     if (Number.isFinite(Number(options.total)) && Number(options.total) > 0) {
       const equals = document.createElement("span");
       equals.className = "score-separator score-equals";
       equals.textContent = "=";
-      const total = document.createElement("strong");
-      total.className = "score-total score-points";
-      total.textContent = formatPointUnit(options.total);
-      container.append(equals, total);
+      container.appendChild(equals);
+      container.appendChild(handChip("Total", Number(options.total), { className: "score-total", tone: "good" }));
     }
 
     if (Number.isFinite(Number(options.royalty)) && Number(options.royalty) > 0) {
       const separator = document.createElement("span");
       separator.className = "score-separator score-royalty-separator";
       separator.textContent = "·";
-      const royalty = document.createElement("strong");
-      royalty.className = "score-total score-points score-royalty";
+      container.appendChild(separator);
       const points = Number(options.royalty);
-      royalty.textContent = `${wholeNumberText(points)} ${points === 1 ? "royalty" : "royalties"}`;
-      container.append(separator, royalty);
+      container.appendChild(
+        handChip(points === 1 ? "royalty" : "royalties", points, { className: "score-total score-royalty", tone: "good", pointsText: wholeNumberText(points) })
+      );
     }
   }
 
@@ -1240,16 +1203,13 @@
 
   function renderTrainerSlots(rowKey, size, displayEvaluation, extraClass = "") {
     const slots = document.createElement("div");
-    slots.className = `trainer-slots ${extraClass}`.trim();
+    slots.className = `trainer-slots ofc-row-cards ${extraClass}`.trim();
     for (let index = 0; index < size; index += 1) {
       const id = state.trainer.rows[rowKey][index];
       const slot = id ? document.createElement("div") : emptySlotElement({ className: "trainer-slot" });
       if (id) slot.className = "trainer-slot filled";
       slot.dataset.row = rowKey;
       slot.dataset.index = String(index);
-      slot.addEventListener("dragover", allowTrainerDrop);
-      slot.addEventListener("dragleave", clearTrainerDragOver);
-      slot.addEventListener("drop", (event) => dropTrainerCardToSlot(event, rowKey, index));
       if (id) {
         const card = cardFromId(id);
         const assignedCard = getTrainerAssignedCard(card, displayEvaluation);
@@ -1259,14 +1219,9 @@
           corner: assignedCard ? "JK" : "",
           disabled: state.trainer.confirmed,
           interactive: !state.trainer.confirmed,
-          attrs: { "data-card-id": id, draggable: "false" },
+          attrs: { "data-card-id": id, "data-origin": "board", draggable: "false" },
         });
-        button.addEventListener("click", (event) => {
-          if (consumeTrainerDragClick(event, id)) return;
-          removeTrainerCard(rowKey, id);
-        });
-        button.addEventListener("pointerdown", (event) => startTrainerPointerDrag(event, id, button));
-        button.addEventListener("dragstart", (event) => event.preventDefault());
+        button.addEventListener("click", () => removeTrainerCard(rowKey, id));
         slot.appendChild(button);
       }
       slots.appendChild(slot);
@@ -1276,7 +1231,7 @@
 
   function addTrainerCard(id) {
     const trainer = state.trainer;
-    if (trainer.confirmed || trainer.dropAnimating || getPlacedTrainerIds().includes(id)) return;
+    if (trainer.confirmed || trainerDragging() || getPlacedTrainerIds().includes(id)) return;
     if (getPlacedTrainerIds().length >= trainerBoardTargetCount(getTrainerPuzzle())) {
       els.trainerMessage.textContent = trainerPlacementLimitMessage();
       return;
@@ -1303,7 +1258,7 @@
 
   function removeTrainerCard(rowKey, id) {
     const trainer = state.trainer;
-    if (trainer.confirmed || trainer.dropAnimating) return;
+    if (trainer.confirmed || trainerDragging()) return;
     trainer.rows[rowKey] = trainer.rows[rowKey].filter((cardId) => cardId !== id);
     setTrainerActiveRow(rowKey, { render: false });
     els.trainerMessage.textContent = "";
@@ -1314,7 +1269,7 @@
   }
 
   function clearTrainerSet() {
-    if (state.trainer.confirmed || state.trainer.dropAnimating) return;
+    if (state.trainer.confirmed || trainerDragging()) return;
     state.trainer.rows = createEmptyTrainerRows();
     setTrainerActiveRow("bottom", { render: false });
     els.trainerMessage.textContent = "";
@@ -1327,19 +1282,14 @@
   function confirmTrainerSet() {
     const trainer = state.trainer;
     const puzzle = getTrainerPuzzle();
-    if (!puzzle || trainer.confirmed || trainer.dropAnimating) return;
+    if (!puzzle || trainer.confirmed || trainerDragging()) return;
     if (!getPlacedTrainerIds().length) {
       els.trainerMessage.textContent = "Set at least one card first.";
       updateTrainerControls();
       return;
     }
     if (!trainerReady()) {
-      fillTrainerSetFromBankOrder(puzzle);
-    }
-    if (!trainerReady()) {
-      els.trainerMessage.textContent = "Not enough cards to fill the set.";
-      renderTrainerBoard();
-      renderTrainerTray();
+      els.trainerMessage.textContent = "Fill the rest of the board first.";
       updateTrainerControls();
       return;
     }
@@ -1361,7 +1311,7 @@
     trainer.elapsedMs = currentTrainerElapsedMs();
     stopTrainerTimer();
     trainer.confirmed = true;
-    trainer.reportOpen = true;
+    trainer.reportOpen = false;
 
     const result = {
       mode: trainer.mode,
@@ -1398,7 +1348,8 @@
     els.trainerYourPoints.textContent = wholeNumberText(result.points);
     els.trainerMaxPoints.textContent = wholeNumberText(result.maxPoints);
     els.trainerResult.textContent = trainerResultLabel(result);
-    els.trainerMessage.textContent = `${trainerResultMessage(result)} in ${formatTime(result.timeMs)}.`;
+    els.trainerResult.className = `stat-value ${!result.legal ? "is-bad" : result.correct ? "is-good" : "is-warn"}`;
+    els.trainerMessage.textContent = `${trainerResultMessage(result)} in ${formatTime(result.timeMs)} · ${wholeNumberText(result.points)} of ${wholeNumberText(result.maxPoints)} royalties.`;
     els.trainerShare.value = buildTrainerShare();
     els.trainerCopy.disabled = !els.trainerShare.value;
     updateTrainerTimer();
@@ -1421,32 +1372,124 @@
 
   function clearTrainerResult() {
     state.trainer.reportOpen = false;
+    closeDialog(els.trainerReport);
+    closeDialog(els.solutionDrawer);
     els.trainerYourPoints.textContent = "--";
     els.trainerMaxPoints.textContent = "--";
     els.trainerResult.textContent = "--";
+    els.trainerResult.className = "stat-value";
     els.trainerMessage.textContent = "";
     els.trainerShare.value = "";
     els.trainerCopy.disabled = true;
     els.trainerNext.hidden = true;
+    els.trainerFinish.hidden = true;
   }
 
   function updateTrainerControls() {
     const trainer = state.trainer;
-    const hasPlacedCards = getPlacedTrainerIds().length > 0;
-    const pendingEvaluation = hasPlacedCards && !trainer.confirmed ? getTrainerPendingEvaluation() : null;
-    const willFoul = Boolean(pendingEvaluation && !pendingEvaluation.legal);
+    const placedCount = getPlacedTrainerIds().length;
+    const ready = placedCount > 0 && trainerReady();
+    const evaluation = ready && !trainer.confirmed ? getTrainerBoardEvaluation() : null;
+    const willFoul = Boolean(evaluation && !evaluation.legal);
+    const lastPuzzle = trainer.puzzleIndex >= trainer.puzzles.length - 1;
     els.trainerPanel.classList.toggle("is-confirmed", trainer.confirmed);
     els.trainerPanel.classList.toggle("is-report-open", trainer.confirmed && trainer.reportOpen);
-    els.trainerConfirm.disabled = trainer.confirmed || !hasPlacedCards || willFoul;
-    els.trainerClear.disabled = trainer.confirmed;
+    els.trainerMain.dataset.view = trainer.complete ? "complete" : "puzzle";
+    els.trainerComplete.hidden = !trainer.complete;
+    els.trainerActions.hidden = trainer.complete;
+    els.trainerConfirm.disabled = trainer.confirmed || !ready || willFoul;
+    els.trainerFill.disabled = trainer.confirmed || placedCount === 0 || ready;
+    els.trainerClear.disabled = trainer.confirmed || placedCount === 0;
     els.trainerConfirm.hidden = trainer.confirmed;
+    els.trainerFill.hidden = trainer.confirmed;
     els.trainerClear.hidden = trainer.confirmed;
-    els.trainerReportOpen.hidden = !trainer.confirmed || trainer.reportOpen;
-    els.trainerNext.hidden = !trainer.confirmed || trainer.reportOpen || trainer.puzzleIndex >= trainer.puzzles.length - 1;
+    els.trainerReportOpen.hidden = !trainer.confirmed;
+    els.solutionOpen.hidden = !trainer.confirmed;
+    els.trainerNext.hidden = !trainer.confirmed || lastPuzzle;
+    els.trainerFinish.hidden = !trainer.confirmed || !lastPuzzle;
+    if (willFoul && !trainer.confirmed) els.trainerMessage.textContent = "Foul board. Move a card before confirming.";
+    else if (els.trainerMessage.textContent === "Foul board. Move a card before confirming.") els.trainerMessage.textContent = "";
     if (els.solutionDrawer) {
       els.solutionDrawer.hidden = !trainer.confirmed;
-      if (!trainer.confirmed) els.solutionDrawer.open = false;
+      if (!trainer.confirmed) closeDialog(els.solutionDrawer);
     }
+    if (trainer.complete) renderTrainerComplete();
+  }
+
+  // The staged fill: the rest of the board from the bank in its sort order,
+  // shown before anything is scored so the player can still move cards.
+  function fillTrainerRest() {
+    const trainer = state.trainer;
+    const puzzle = getTrainerPuzzle();
+    if (!puzzle || trainer.confirmed || trainerDragging()) return;
+    if (!getPlacedTrainerIds().length) {
+      els.trainerMessage.textContent = "Set at least one card first.";
+      return;
+    }
+    const before = getPlacedTrainerIds().length;
+    fillTrainerSetFromBankOrder(puzzle);
+    const added = getPlacedTrainerIds().length - before;
+    renderTrainerBoard();
+    renderTrainerTray();
+    updateTrainerControls();
+    if (!trainerReady()) {
+      els.trainerMessage.textContent = "Not enough cards to fill the set.";
+    } else if (!els.trainerMessage.textContent) {
+      els.trainerMessage.textContent = `Filled ${added} card${added === 1 ? "" : "s"} from the bank. Check the rows, then confirm.`;
+    }
+    saveTrainerState();
+    els.trainerConfirm.focus({ preventScroll: true });
+  }
+
+  function finishTrainerSet() {
+    const trainer = state.trainer;
+    if (!trainer.confirmed || trainer.puzzleIndex < trainer.puzzles.length - 1) return;
+    trainer.complete = true;
+    closeDialog(els.trainerReport);
+    closeDialog(els.solutionDrawer);
+    updateTrainerControls();
+    saveTrainerState();
+    els.trainerComplete.querySelector("h2").setAttribute("tabindex", "-1");
+    els.trainerComplete.querySelector("h2").focus({ preventScroll: true });
+  }
+
+  function renderTrainerComplete() {
+    const trainer = state.trainer;
+    const results = trainer.results.filter(Boolean);
+    if (!results.length) return;
+    const aggregate = trainerShareAggregate(results);
+    const variant = trainerVariantLabel(trainer.variant);
+    const maxCount = results.filter((result) => result.correct).length;
+    els.trainerCompleteTitle.textContent = `${trainer.mode === "daily" ? "Daily" : "Random"} set complete`;
+    els.trainerCompleteBadge.textContent = `${variant} · ${results.length} puzzle${results.length === 1 ? "" : "s"}`;
+    els.trainerCompleteGrade.textContent = aggregate.grade;
+    els.trainerCompleteGrade.className = `trainer-grade-letter ${/^[SA]/.test(aggregate.grade) ? "" : /^[BC]/.test(aggregate.grade) ? "is-warn" : "is-bad"}`.trim();
+    els.trainerCompleteSummary.textContent = `${wholeNumberText(aggregate.points)} of ${wholeNumberText(aggregate.maxPoints)} royalties in ${formatTime(aggregate.timeMs)}${aggregate.missedFLs ? ` with ${aggregate.missedFLs} missed Fantasyland${aggregate.missedFLs === 1 ? "" : "s"}` : ""}.`;
+    els.trainerCompleteScore.textContent = `${wholeNumberText(aggregate.points)}/${wholeNumberText(aggregate.maxPoints)}`;
+    els.trainerCompleteTime.textContent = formatTime(aggregate.timeMs);
+    els.trainerCompleteMax.textContent = `${maxCount}/${results.length}`;
+    els.trainerCompleteMissed.textContent = String(aggregate.missedFLs);
+    const frag = document.createDocumentFragment();
+    results.forEach((result, index) => {
+      const row = document.createElement("div");
+      row.className = "list-row trainer-complete-row";
+      const label = document.createElement("span");
+      label.className = "list-row-label";
+      label.textContent = `${index + 1}. ${configShareLabel(result)}`;
+      const sub = document.createElement("span");
+      sub.className = `list-row-sub ${!result.legal ? "is-bad" : result.correct ? "is-good" : ""}`.trim();
+      sub.textContent = trainerResultLabel(result);
+      const value = document.createElement("strong");
+      value.className = `list-row-value ${result.correct ? "is-good" : ""}`.trim();
+      value.textContent = `${wholeNumberText(result.points)}/${wholeNumberText(result.maxPoints)}`;
+      const delta = document.createElement("span");
+      delta.className = "list-row-delta";
+      delta.textContent = formatTime(result.timeMs);
+      row.append(label, sub, value, delta);
+      frag.appendChild(row);
+    });
+    els.trainerCompleteRows.replaceChildren(frag);
+    els.trainerCompleteCopy.disabled = !els.trainerShare.value;
   }
 
   function openTrainerReport() {
@@ -1454,10 +1497,12 @@
     state.trainer.reportOpen = true;
     updateTrainerControls();
     saveTrainerState();
+    openDialog(els.trainerReport, { initialFocus: els.trainerCopy.disabled ? null : els.trainerCopy });
   }
 
   function closeTrainerReport() {
     state.trainer.reportOpen = false;
+    closeDialog(els.trainerReport);
     updateTrainerControls();
     saveTrainerState();
   }
@@ -1469,25 +1514,13 @@
     els.trainerPanel.classList.toggle("is-double-blackjack", normalizeTrainerVariant(puzzle.variant) === "doubleblackjack");
     const columns = Math.min(9, Math.max(7, Math.ceil(puzzle.cards / 2)));
     els.trainerPanel.classList.add(`hand-cols-${columns}`);
+    els.trainerPanel.style.setProperty("--tray-count", String(puzzle.cards));
   }
 
   function handleTrainerHotkeys(event) {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
-    const key = event.key.toLowerCase();
-    if (state.trainer.confirmed && state.trainer.reportOpen) {
-      if (key === "c") {
-        event.preventDefault();
-        copyTrainerReport();
-        return;
-      }
-      if (event.code === "Space") {
-        event.preventDefault();
-        closeTrainerReport();
-        return;
-      }
-    }
-
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
     if (shouldIgnoreTrainerHotkey(event)) return;
+    const key = event.key.toLowerCase();
     if (key === "1") {
       event.preventDefault();
       setTrainerActiveRow("top");
@@ -1506,19 +1539,29 @@
     } else if (key === "c") {
       event.preventDefault();
       clearTrainerSet();
+    } else if (key === "f" && !els.trainerFill.hidden && !els.trainerFill.disabled) {
+      event.preventDefault();
+      fillTrainerRest();
+    } else if (event.code === "Space" && state.trainer.confirmed && !els.trainerFinish.hidden) {
+      event.preventDefault();
+      finishTrainerSet();
     } else if (event.code === "Space" && state.trainer.confirmed && !els.trainerNext.hidden) {
       event.preventDefault();
       loadNextTrainerPuzzle();
-    } else if (event.code === "Space" && !els.trainerConfirm.disabled) {
+    } else if (event.code === "Space" && !els.trainerConfirm.hidden && !els.trainerConfirm.disabled) {
       event.preventDefault();
       confirmTrainerSet();
     }
   }
 
+  // No page hotkey fires while a dialog is open (the dialog owns the keyboard),
+  // while a card is being dragged, or from a text control.
   function shouldIgnoreTrainerHotkey(event) {
+    if (state.trainer.complete || trainerDragging()) return true;
+    if (document.querySelector("dialog[open]")) return true;
     const target = event.target;
-    if (!target) return false;
-    return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+    if (!target || typeof target.closest !== "function") return false;
+    return Boolean(target.closest("input, textarea, select, [contenteditable='true'], dialog"));
   }
 
   function trainerRowHotkey(key) {
@@ -1610,185 +1653,36 @@
     });
   }
 
-  function startTrainerDrag(event, id) {
-    if (state.trainer.confirmed || state.trainer.dropAnimating || !event.dataTransfer) return;
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", id);
+  // shared/card-drag.js owns the ghost, the lift/drop animation and the click
+  // suppression after a drop; the page only says what may move and where.
+  function canDragTrainerCard(id) {
+    const puzzle = getTrainerPuzzle();
+    return Boolean(puzzle && !state.trainer.confirmed && puzzle.ids.includes(id));
   }
 
-  function startTrainerPointerDrag(event, id, sourceEl) {
-    if (state.trainer.confirmed || state.trainer.dropAnimating || (event.pointerType === "mouse" && event.button !== 0)) return;
-    const point = getTrainerPointerViewportPoint(event);
-    state.trainer.drag = {
-      id,
-      sourceEl,
-      pointerId: event.pointerId,
-      startX: point.x,
-      startY: point.y,
-      currentX: point.x,
-      currentY: point.y,
-      active: false,
-      ghost: null,
-      overEl: null,
-    };
-    if (sourceEl.setPointerCapture) {
-      try {
-        sourceEl.setPointerCapture(event.pointerId);
-      } catch (error) {
-        // Some browsers release capture during fast touch gestures; document listeners still handle the drag.
-      }
+  function resolveTrainerDrop(target, id) {
+    if (!target || !canDragTrainerCard(id)) return null;
+    if (target.closest("#trainer-tray")) {
+      if (!findTrainerCardLocation(id)) return null;
+      return { target: { kind: "bank" }, rect: getTrainerBankDropRect(id) };
     }
-    document.addEventListener("pointermove", moveTrainerPointerDrag);
-    document.addEventListener("pointerup", finishTrainerPointerDrag);
-    document.addEventListener("pointercancel", cancelTrainerPointerDrag);
+    const slot = resolveTrainerDropSlot(target, id);
+    if (!slot) return null;
+    return { target: { kind: "slot", rowKey: slot.dataset.row, index: Number(slot.dataset.index) }, rect: slot.getBoundingClientRect() };
   }
 
-  function moveTrainerPointerDrag(event) {
-    const drag = state.trainer.drag;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-
-    const point = getTrainerPointerViewportPoint(event);
-    const dx = point.x - drag.startX;
-    const dy = point.y - drag.startY;
-    if (!drag.active && Math.hypot(dx, dy) < 5) return;
-
-    drag.currentX = point.x;
-    drag.currentY = point.y;
-    if (!drag.active) activateTrainerPointerDrag(point);
-    updateTrainerDragGhost(point);
-    updateTrainerDragTarget(point);
-    event.preventDefault();
-  }
-
-  function activateTrainerPointerDrag(point) {
-    const drag = state.trainer.drag;
-    if (!drag || drag.active) return;
-    const ghost = createTrainerDragGhost(drag.id, drag.sourceEl, point);
-    document.body.appendChild(ghost);
-    drag.sourceEl.classList.add("drag-source-hidden");
-    drag.active = true;
-    drag.ghost = ghost;
-    document.body.classList.add("trainer-dragging");
-    updateTrainerDragGhost(point);
-    window.requestAnimationFrame(() => {
-      if (ghost.isConnected && !ghost.classList.contains("is-dropping")) {
-        ghost.classList.add("is-lifted");
-      }
-    });
-  }
-
-  function createTrainerDragGhost(id, sourceEl, point) {
-    const rect = sourceEl.getBoundingClientRect();
-    const ghost = cardElement(cardFromId(id), {
-      className: "card-button trainer-card trainer-drag-ghost",
-      attrs: { "data-card-id": id, "aria-hidden": "true" },
-    });
-    // The shared face scales with the card's own width, so the ghost just carries the source size.
-    ghost.style.setProperty("--card-width", `${rect.width}px`);
-    ghost.style.width = `${rect.width}px`;
-    ghost.style.height = `${rect.height}px`;
-    ghost.style.left = `${point.x}px`;
-    ghost.style.top = `${point.y}px`;
-    return ghost;
-  }
-
-  function updateTrainerDragGhost(point) {
-    const drag = state.trainer.drag;
-    if (!drag || !drag.ghost) return;
-    drag.currentX = point.x;
-    drag.currentY = point.y;
-    drag.ghost.style.left = `${point.x}px`;
-    drag.ghost.style.top = `${point.y}px`;
-  }
-
-  function updateTrainerDragTarget(point) {
-    const drag = state.trainer.drag;
-    if (!drag || !drag.active) return;
-    const target = document.elementFromPoint(point.x, point.y);
-    const slot = resolveTrainerDropSlot(target, drag.id);
-    const bank = target ? target.closest("#trainer-tray") : null;
-    const row = slot && !target.closest(".trainer-slot") ? slot.closest(".trainer-row") : null;
-    const overEl = bank || row || slot;
-    if (drag.overEl === overEl) return;
-    clearTrainerPointerDragTarget();
-    drag.overEl = overEl;
-    if (overEl) overEl.classList.add("drag-over");
-  }
-
-  function clearTrainerPointerDragTarget() {
-    const drag = state.trainer.drag;
-    if (drag && drag.overEl) {
-      drag.overEl.classList.remove("drag-over");
-      drag.overEl = null;
-    }
-  }
-
-  function finishTrainerPointerDrag(event) {
-    const drag = state.trainer.drag;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-
-    const wasActive = drag.active;
-    if (wasActive) {
-      const point = getTrainerPointerViewportPoint(event);
-      const target = document.elementFromPoint(point.x, point.y);
-      const slot = resolveTrainerDropSlot(target, drag.id);
-      const bank = target ? target.closest("#trainer-tray") : null;
-      const willMoveToSlot = !!(slot && slot.dataset.row && slot.dataset.index);
-      const willMoveToBank = !!(bank && findTrainerCardLocation(drag.id));
-      const ghost = drag.ghost;
-      const sourceEl = drag.sourceEl;
-      const sourceRect = sourceEl.getBoundingClientRect();
-      let dropRect = sourceRect;
-      let afterDrop = () => restoreTrainerDragSource(sourceEl, 0);
-      let restoreTarget = () => {};
-
-      if (willMoveToSlot) {
-        const rowKey = slot.dataset.row;
-        const index = Number(slot.dataset.index);
-        const origin = findTrainerCardLocation(drag.id);
-        const sameSlot = !!origin && origin.rowKey === rowKey && origin.index === index;
-        dropRect = slot.getBoundingClientRect();
-        restoreTarget = hideTrainerDropTargetCard(slot, sourceEl);
-        afterDrop = () => {
-          restoreTarget();
-          if (sameSlot) {
-            restoreTrainerDragSource(sourceEl, 0);
-          } else {
-            placeTrainerCardInSlot(drag.id, rowKey, index);
-          }
-        };
-      } else if (willMoveToBank) {
-        dropRect = getTrainerBankDropRect(drag.id, sourceRect);
-        afterDrop = () => {
-          removeTrainerCardFromRows(drag.id);
-          els.trainerMessage.textContent = "";
-          renderTrainerBoard();
-          renderTrainerTray();
-          updateTrainerControls();
-          saveTrainerState();
-        };
-      }
-
-      cleanupTrainerPointerDrag({
-        suppressClick: true,
-        restoreSource: false,
-        releaseGhost: false,
-      });
-      animateTrainerDropGhost(ghost, dropRect, afterDrop);
-      event.preventDefault();
+  function dropTrainerCard(id, target) {
+    if (!target || state.trainer.confirmed) return;
+    if (target.kind === "bank") {
+      removeTrainerCardFromRows(id);
+      els.trainerMessage.textContent = "";
+      renderTrainerBoard();
+      renderTrainerTray();
+      updateTrainerControls();
+      saveTrainerState();
       return;
     }
-
-    cleanupTrainerPointerDrag({ suppressClick: false, restoreSource: true });
-  }
-
-  function getTrainerPointerViewportPoint(event) {
-    const pageX = Number.isFinite(event.pageX) ? event.pageX : event.clientX + window.scrollX;
-    const pageY = Number.isFinite(event.pageY) ? event.pageY : event.clientY + window.scrollY;
-    return {
-      x: pageX - window.scrollX,
-      y: pageY - window.scrollY,
-    };
+    placeTrainerCardInSlot(id, target.rowKey, target.index);
   }
 
   function resolveTrainerDropSlot(target, id) {
@@ -1817,159 +1711,9 @@
     return rowCards.length;
   }
 
-  function getTrainerBankDropRect(id, fallbackRect) {
-    const bankTarget = Array.from(els.trainerTray.children).find((child) => child.dataset.cardId === id);
-    if (bankTarget) return bankTarget.getBoundingClientRect();
-
-    const trayRect = els.trainerTray.getBoundingClientRect();
-    return {
-      left: trayRect.left + (trayRect.width - fallbackRect.width) / 2,
-      top: trayRect.top + (trayRect.height - fallbackRect.height) / 2,
-      width: fallbackRect.width,
-      height: fallbackRect.height,
-    };
-  }
-
-  function hideTrainerDropTargetCard(slot, sourceEl) {
-    const targetCard = slot.querySelector(".trainer-placed-card");
-    if (!targetCard || targetCard === sourceEl) return () => {};
-    const wasHidden = targetCard.classList.contains("drag-source-hidden");
-    targetCard.classList.add("drag-source-hidden");
-    return () => {
-      if (!wasHidden && targetCard.isConnected) targetCard.classList.remove("drag-source-hidden");
-    };
-  }
-
-  function animateTrainerDropGhost(ghost, rect, afterDrop) {
-    if (!ghost || !rect) {
-      afterDrop();
-      return;
-    }
-
-    state.trainer.dropAnimating = true;
-    const targetX = rect.left + rect.width / 2;
-    const targetY = rect.top + rect.height / 2;
-    let finished = false;
-
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      ghost.removeEventListener("transitionend", handleEnd);
-      state.trainer.dropAnimating = false;
-      try {
-        afterDrop();
-      } finally {
-        ghost.remove();
-      }
-    };
-
-    const handleEnd = (transitionEvent) => {
-      if (transitionEvent.target !== ghost) return;
-      if (!["left", "top"].includes(transitionEvent.propertyName)) return;
-      finish();
-    };
-
-    ghost.addEventListener("transitionend", handleEnd);
-    ghost.classList.add("is-drop-animating");
-    ghost.getBoundingClientRect();
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        ghost.classList.add("is-dropping");
-        ghost.classList.remove("is-lifted");
-        ghost.style.width = `${rect.width}px`;
-        ghost.style.height = `${rect.height}px`;
-        ghost.style.left = `${targetX}px`;
-        ghost.style.top = `${targetY}px`;
-      });
-    });
-    window.setTimeout(finish, TRAINER_DROP_ANIMATION_MS + 120);
-  }
-
-  function cancelTrainerPointerDrag() {
-    cleanupTrainerPointerDrag({ suppressClick: false, restoreSource: true });
-  }
-
-  function cleanupTrainerPointerDrag(options = {}) {
-    const drag = state.trainer.drag;
-    if (!drag) return;
-    clearTrainerPointerDragTarget();
-    if (drag.sourceEl && drag.sourceEl.releasePointerCapture) {
-      try {
-        drag.sourceEl.releasePointerCapture(drag.pointerId);
-      } catch (error) {
-        // Capture may already be released after pointercancel.
-      }
-    }
-    if (drag.sourceEl && (!drag.ghost || options.restoreSource !== false)) {
-      restoreTrainerDragSource(drag.sourceEl, drag.ghost ? 250 : 0);
-    }
-    if (drag.ghost && options.releaseGhost !== false) releaseTrainerDragGhost(drag.ghost);
-    document.body.classList.remove("trainer-dragging");
-    if (options.suppressClick) {
-      state.trainer.dragClickBlock = { id: drag.id, until: now() + 450 };
-    }
-    document.removeEventListener("pointermove", moveTrainerPointerDrag);
-    document.removeEventListener("pointerup", finishTrainerPointerDrag);
-    document.removeEventListener("pointercancel", cancelTrainerPointerDrag);
-    state.trainer.drag = null;
-  }
-
-  function releaseTrainerDragGhost(ghost) {
-    ghost.classList.add("is-dropping");
-    ghost.classList.remove("is-lifted");
-    window.setTimeout(() => ghost.remove(), 260);
-  }
-
-  function restoreTrainerDragSource(sourceEl, delay) {
-    window.setTimeout(() => {
-      if (sourceEl.isConnected) sourceEl.classList.remove("drag-source-hidden");
-    }, delay);
-  }
-
-  function consumeTrainerDragClick(event, id) {
-    const block = state.trainer.dragClickBlock;
-    if (!block || block.id !== id || now() > block.until) return false;
-    state.trainer.dragClickBlock = null;
-    event.preventDefault();
-    event.stopPropagation();
-    return true;
-  }
-
-  function allowTrainerDrop(event) {
-    if (state.trainer.confirmed) return;
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-    event.currentTarget.classList.add("drag-over");
-  }
-
-  function clearTrainerDragOver(event) {
-    event.currentTarget.classList.remove("drag-over");
-  }
-
-  function dropTrainerCardToBank(event) {
-    event.preventDefault();
-    clearTrainerDragOver(event);
-    const id = getTrainerDragCardId(event);
-    if (!id || state.trainer.confirmed) return;
-    removeTrainerCardFromRows(id);
-    els.trainerMessage.textContent = "";
-    renderTrainerBoard();
-    renderTrainerTray();
-    updateTrainerControls();
-    saveTrainerState();
-  }
-
-  function dropTrainerCardToSlot(event, rowKey, index) {
-    event.preventDefault();
-    clearTrainerDragOver(event);
-    const id = getTrainerDragCardId(event);
-    if (!id) return;
-    const resolvedIndex = getTrainerResolvedRowDropIndex(rowKey, id);
-    placeTrainerCardInSlot(id, rowKey, resolvedIndex >= 0 ? resolvedIndex : index);
-  }
-
-  function getTrainerDragCardId(event) {
-    return event.dataTransfer ? event.dataTransfer.getData("text/plain") : "";
+  function getTrainerBankDropRect(id) {
+    const bankTarget = Array.from(els.trainerTray.children).find((child) => child.dataset.bankId === id);
+    return (bankTarget || els.trainerTray).getBoundingClientRect();
   }
 
   function placeTrainerCardInSlot(id, rowKey, index) {
@@ -2754,24 +2498,32 @@
     return Boolean(result.maxRepeat && !result.repeat && !result.correct);
   }
 
-  async function copyTrainerReport() {
+  async function copyTrainerReport(event) {
     const text = els.trainerShare.value;
     if (!text) return;
+    const button = (event && event.currentTarget && event.currentTarget.closest("button")) || els.trainerCopy;
     try {
       await navigator.clipboard.writeText(text);
-      showTrainerCopySuccess();
+      showTrainerCopySuccess(button);
     } catch (error) {
+      if (!els.trainerReport.open) {
+        showTrainerAlert("Copy failed. Open the report and copy the text by hand.");
+        return;
+      }
       els.trainerShare.focus();
       els.trainerShare.select();
-      document.execCommand("copy");
-      showTrainerCopySuccess();
+      const copied = document.execCommand("copy");
+      if (copied) showTrainerCopySuccess(button);
+      else showTrainerAlert("Copy failed. Select the report text and copy it by hand.");
     }
   }
 
-  function showTrainerCopySuccess() {
-    els.trainerCopy.textContent = "Copied";
+  function showTrainerCopySuccess(button) {
+    const label = button.querySelector(".btn-label") || button;
+    const original = label.textContent;
+    label.textContent = "Copied";
     window.setTimeout(() => {
-      els.trainerCopy.innerHTML = "Copy report <kbd>C</kbd>";
+      label.textContent = original === "Copied" ? "Copy report" : original;
     }, 1200);
   }
 
@@ -3044,223 +2796,43 @@
 
   function openVariantRules(variant = state.trainer.variant) {
     if (!els.variantRulesDialog) return;
-    renderVariantRules(variant);
-    if (typeof els.variantRulesDialog.showModal === "function") {
-      els.variantRulesDialog.showModal();
-    } else {
-      els.variantRulesDialog.setAttribute("open", "");
-    }
+    const active = normalizeTrainerVariant(variant);
+    if (rulesTabs) rulesTabs.activate(active);
+    else renderVariantRulesArticle(active);
+    openDialog(els.variantRulesDialog);
   }
 
   function closeVariantRules() {
-    if (!els.variantRulesDialog) return;
-    if (typeof els.variantRulesDialog.close === "function" && els.variantRulesDialog.open) {
-      els.variantRulesDialog.close();
-    } else {
-      els.variantRulesDialog.removeAttribute("open");
-    }
+    closeDialog(els.variantRulesDialog);
   }
 
-  function renderVariantRules(activeValue) {
-    if (!els.variantRulesTabs || !els.variantRulesContent || !VariantCore) return;
-    const active = normalizeTrainerVariant(activeValue);
+  // The rules tabs only change the article; they never touch the puzzle setup.
+  function renderVariantRulesTabs() {
+    if (!els.variantRulesTabs || !VariantCore) return;
     const tabs = document.createDocumentFragment();
     VariantCore.ACTIVE_VARIANT_ORDER.forEach((variant) => {
       const meta = VariantCore.VARIANTS[variant];
       const button = document.createElement("button");
       button.type = "button";
-      button.role = "tab";
-      button.className = variant === active ? "active" : "";
-      button.setAttribute("aria-selected", String(variant === active));
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", "false");
+      button.dataset.tab = variant;
       button.textContent = meta.compactLabel || meta.label;
-      button.addEventListener("click", () => {
-        const input = document.querySelector(`input[name="trainer-variant"][value="${variant}"]`);
-        if (input && !input.checked) {
-          input.checked = true;
-          input.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-        renderVariantRules(variant);
-      });
       tabs.appendChild(button);
     });
     els.variantRulesTabs.replaceChildren(tabs);
+    rulesTabs = window.Tabs ? window.Tabs.init(els.variantRulesTabs, { onChange: (id) => renderVariantRulesArticle(id) }) : null;
+    if (!rulesTabs) renderVariantRulesArticle(state.trainer.variant);
+  }
 
-    const rules = VariantCore.RULE_SECTIONS.find((section) => section.id === active);
-    const article = document.createElement("article");
-    article.className = "rules-article";
-    const heading = document.createElement("div");
-    heading.className = "rules-article-heading";
-    const title = document.createElement("h3");
-    title.textContent = rules.title;
-    const short = document.createElement("p");
-    short.textContent = VariantCore.VARIANTS[active].short;
-    heading.append(title, short);
-    article.appendChild(heading);
-    const sections = [];
-    if (rules.natural) sections.push(["Natural OFC", rules.natural]);
-    sections.push(["Fantasyland board", [rules.qualification]], ["Royalties", rules.scoring]);
-    if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
-    sections.push(["Repeat Fantasyland", [rules.repeat]]);
-    if (rules.stacking) sections.push(["Stacking / Super FL", [rules.stacking]]);
-    if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
-    sections.forEach(([label, lines]) => {
-      const section = document.createElement("section");
-      const sectionTitle = document.createElement("h4");
-      sectionTitle.textContent = label;
-      section.appendChild(sectionTitle);
-      if (label === "Royalties") {
-        section.classList.add("royalties-section");
-        section.appendChild(renderRoyaltyGroups(lines));
-      } else {
-        const list = document.createElement("ul");
-        lines.forEach((line) => {
-          const item = document.createElement("li");
-          appendRuleLine(item, line);
-          list.appendChild(item);
-        });
-        section.appendChild(list);
-      }
-      article.appendChild(section);
+  function renderVariantRulesArticle(activeValue) {
+    if (!els.variantRulesContent || !VariantCore) return;
+    const active = normalizeTrainerVariant(activeValue);
+    const article = VariantCore.createRulesArticle(document, active, {
+      note: `Daily seed: YYYY-MM-DD-{14/15/16/17}C-{0/1/2}J-${VariantCore.VARIANTS[active].seedLabel}-{number}. The number starts at 0 and advances only when the hand cannot qualify.`,
     });
-    if (active === "cribbage") article.appendChild(renderCribbage24PlusHands());
-    const seedNote = document.createElement("p");
-    seedNote.className = "rules-seed-note";
-    seedNote.textContent = `Daily seed: YYYY-MM-DD-{14/15/16/17}C-{0/1/2}J-${VariantCore.VARIANTS[active].seedLabel}-{number}. The number starts at 0 and advances only when the hand cannot qualify.`;
-    article.appendChild(seedNote);
     els.variantRulesContent.replaceChildren(article);
     els.variantRulesContent.scrollTop = 0;
-  }
-
-  function renderRoyaltyGroups(groups) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "royalty-groups";
-    groups.forEach((group) => {
-      const block = document.createElement("div");
-      block.className = "royalty-group";
-      const title = document.createElement("h5");
-      title.textContent = group.label;
-      const list = document.createElement("ul");
-      list.className = "royalty-list";
-      group.items.forEach((line) => {
-        const item = document.createElement("li");
-        appendRuleLine(item, line);
-        list.appendChild(item);
-      });
-      block.append(title, list);
-      wrapper.appendChild(block);
-    });
-    return wrapper;
-  }
-
-  function renderCribbage24PlusHands() {
-    const section = document.createElement("section");
-    section.className = "cribbage-hand-reference";
-    const sectionTitle = document.createElement("h4");
-    sectionTitle.textContent = "24+ hands";
-
-    const reference = document.createElement("div");
-    reference.className = "cribbage-hand-reference-body";
-    const intro = document.createElement("header");
-    intro.innerHTML = `
-      <div>
-        <h5>Complete rank-combination list</h5>
-        <p>Five-card patterns after joker substitution. Suits are ignored.</p>
-      </div>
-    `;
-    reference.appendChild(intro);
-
-    VariantCore.CRIBBAGE_24_PLUS_HANDS.forEach((scoreGroup) => {
-      const group = document.createElement("div");
-      group.className = "cribbage-score-group";
-      const heading = document.createElement("div");
-      heading.className = "cribbage-score-heading";
-      heading.innerHTML = `
-        <strong><mark>${scoreGroup.score}</mark> points</strong>
-        <span>${scoreGroup.royalties} royalties</span>
-      `;
-      group.appendChild(heading);
-
-      const hands = document.createElement("div");
-      hands.className = "cribbage-hand-list";
-      scoreGroup.patterns.forEach((pattern) => {
-        const row = document.createElement("div");
-        row.className = "cribbage-hand-row";
-        const cards = document.createElement("strong");
-        cards.className = "cribbage-hand-pattern";
-        cards.textContent = pattern.label;
-        cards.setAttribute("aria-label", `${pattern.label.split("").join(" ")}${pattern.note ? `, ${pattern.note}` : ""}`);
-        if (pattern.note) {
-          const note = document.createElement("small");
-          note.textContent = ` (${pattern.note})`;
-          cards.appendChild(note);
-        }
-
-        const explanation = document.createElement("div");
-        explanation.className = "cribbage-hand-explanation";
-        const breakdown = document.createElement("span");
-        breakdown.className = "cribbage-hand-breakdown";
-        const visibleComponents = pattern.note
-          ? pattern.components.filter(([label]) => !/nobs?/i.test(label))
-          : pattern.components;
-        visibleComponents.forEach(([label, points], index) => {
-          if (index) breakdown.appendChild(document.createTextNode(" + "));
-          const term = document.createElement("span");
-          term.textContent = `${label} `;
-          const value = document.createElement("strong");
-          value.textContent = `${points}pt${points === 1 ? "" : "s"}`;
-          term.appendChild(value);
-          breakdown.appendChild(term);
-        });
-        explanation.appendChild(breakdown);
-        row.append(cards, explanation);
-        hands.appendChild(row);
-      });
-      group.appendChild(hands);
-      reference.appendChild(group);
-    });
-
-    const gapNote = document.createElement("p");
-    gapNote.className = "cribbage-score-gap-note";
-    gapNote.textContent = "No five-card hand scores 25, 26, or 27 points under these rules.";
-    reference.appendChild(gapNote);
-    section.append(sectionTitle, reference);
-    return section;
-  }
-
-  function appendRuleLine(item, line) {
-    const separator = line.indexOf(":");
-    if (separator > 0) {
-      const term = document.createElement("strong");
-      term.className = "rule-term";
-      term.textContent = line.slice(0, separator);
-      item.appendChild(term);
-      appendRuleDetail(item, line.slice(separator + 1));
-      return;
-    }
-    appendRuleDetail(item, line);
-  }
-
-  function appendRuleDetail(item, text) {
-    const detail = document.createElement("span");
-    detail.className = "rule-detail";
-    const tokens = String(text).split(/(\b\d+(?:[-–]\d+)?(?:pts?)?\+?\b|\b(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)\b)/gi);
-    tokens.forEach((token) => {
-      if (!token) return;
-      if (/^\d/.test(token)) {
-        const value = document.createElement("mark");
-        value.className = "rule-number";
-        value.textContent = token;
-        detail.appendChild(value);
-      } else if (/^(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)$/i.test(token)) {
-        const keyword = document.createElement("em");
-        keyword.className = /^(?:foul|bust)$/i.test(token) ? "rule-keyword danger" : "rule-keyword";
-        keyword.textContent = token;
-        detail.appendChild(keyword);
-      } else {
-        detail.appendChild(document.createTextNode(token));
-      }
-    });
-    item.appendChild(detail);
   }
 
   function dealIdsSeeded(count, jokers, seed) {
@@ -3335,111 +2907,6 @@
     const suit = id[1].toLowerCase();
     const suits = { s: "♠️", h: "♥️", d: "♦️", c: "♣️" };
     return `${rank}${suits[suit]}`;
-  }
-
-  async function runSimulationMatrix() {
-    if (!els.runSim || !els.stopSim || !els.simProgress || !els.simBody) return;
-    state.simAbort = false;
-    els.runSim.disabled = true;
-    els.stopSim.disabled = false;
-    els.simProgress.style.width = "0%";
-    renderSimulationRows();
-
-    const samples = Number(els.sampleCount.value);
-    const options = {
-      repeatRule: els.repeatRule ? els.repeatRule.value : state.repeatRule,
-      fiveKindRule: els.fiveKindRule ? els.fiveKindRule.value : state.fiveKindRule,
-    };
-    const solver = els.solverMode.value === "exact" ? solveHand : solveHandFast;
-    const modeLabel = els.solverMode.value === "exact" ? "exact" : "fast";
-    const totalsByKey = new Map();
-    const totalWork = SCENARIOS.length * samples;
-    let completed = 0;
-    const started = now();
-
-    try {
-      for (const scenario of SCENARIOS) {
-        const key = scenarioKey(scenario);
-        const totals = { points: 0, repeats: 0, repeatPoints: 0, samples: 0 };
-        totalsByKey.set(key, totals);
-
-        for (let i = 0; i < samples; i += 1) {
-          if (state.simAbort) {
-            els.simStatus.textContent = "Stopped.";
-            return;
-          }
-
-          const ids = dealIds(scenario.cards, scenario.jokers);
-          const result = solver(ids, options);
-          totals.samples += 1;
-          totals.points += result.best ? result.best.points : 0;
-          if (result.bestRepeat) {
-            totals.repeats += 1;
-            totals.repeatPoints += result.bestRepeat.points;
-          }
-
-          completed += 1;
-          if (i === samples - 1 || i % 2 === 1) {
-            updateSimulationRow(scenario, totals);
-            els.simProgress.style.width = `${Math.round((completed / totalWork) * 100)}%`;
-            els.simStatus.textContent = `${completed} / ${totalWork} ${modeLabel} samples`;
-            await yieldFrame();
-          }
-        }
-      }
-
-      const elapsed = ((now() - started) / 1000).toFixed(1);
-      els.simProgress.style.width = "100%";
-      els.simStatus.textContent = `Finished ${totalWork} ${modeLabel} samples in ${elapsed}s.`;
-    } finally {
-      els.runSim.disabled = false;
-      els.stopSim.disabled = true;
-      state.simAbort = false;
-    }
-  }
-
-  function renderSimulationRows() {
-    if (!els.simBody) return;
-    const frag = document.createDocumentFragment();
-    SCENARIOS.forEach((scenario) => {
-      const jokerLabel =
-        scenario.jokers === 0
-          ? "No jokers"
-          : `${scenario.jokers} ${scenario.jokers === 1 ? "joker" : "jokers"}`;
-      const tr = document.createElement("tr");
-      tr.dataset.scenario = scenarioKey(scenario);
-      tr.innerHTML = `
-        <td>${scenario.cards}</td>
-        <td>${jokerLabel}</td>
-        <td class="pending">--</td>
-        <td class="pending">--</td>
-        <td class="pending">--</td>
-        <td class="pending">--</td>
-        <td class="pending">0</td>
-      `;
-      frag.appendChild(tr);
-    });
-    els.simBody.replaceChildren(frag);
-  }
-
-  function updateSimulationRow(scenario, totals) {
-    if (!els.simBody) return;
-    const row = els.simBody.querySelector(`[data-scenario="${scenarioKey(scenario)}"]`);
-    if (!row) return;
-    const avg = totals.samples ? totals.points / totals.samples : 0;
-    const repeatPct = totals.samples ? totals.repeats / totals.samples : 0;
-    const repeatAvg = totals.repeats ? totals.repeatPoints / totals.repeats : 0;
-    const recursive = repeatPct >= 0.999999 ? Infinity : avg / (1 - repeatPct);
-    row.children[2].textContent = avg.toFixed(2);
-    row.children[3].textContent = formatPct(repeatPct);
-    row.children[4].textContent = Number.isFinite(recursive) ? recursive.toFixed(2) : "∞";
-    row.children[5].textContent = totals.repeats ? repeatAvg.toFixed(2) : "--";
-    row.children[6].textContent = String(totals.samples);
-    Array.from(row.children).forEach((cell) => cell.classList.remove("pending"));
-  }
-
-  function scenarioKey(scenario) {
-    return `${scenario.cards}-${scenario.jokers}`;
   }
 
   function solveHand(cardIds, options = {}) {
@@ -4126,16 +3593,6 @@
     return ids;
   }
 
-  function dealIds(count, jokers) {
-    const naturals = buildDeckIds(0);
-    shuffle(naturals);
-    const hand = naturals.slice(0, Math.max(0, count - jokers));
-    for (let index = 1; index <= jokers; index += 1) {
-      hand.push(`JK${index}`);
-    }
-    shuffle(hand);
-    return hand.slice(0, count);
-  }
 
   function buildVirtualDeck() {
     const deck = [];
@@ -4196,20 +3653,9 @@
     return b - a;
   }
 
-  function shuffle(items) {
-    for (let index = items.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
-    }
-    return items;
-  }
 
   function formatInteger(value) {
     return new Intl.NumberFormat("en-US").format(value);
-  }
-
-  function formatPct(value) {
-    return `${(value * 100).toFixed(1)}%`;
   }
 
   function repeatDetailForSolution(solution) {
@@ -4238,10 +3684,6 @@
         ? Math.trunc(finiteNumber(bottomEval?.mainRank))
         : 0,
     };
-  }
-
-  function yieldFrame() {
-    return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
   function now() {
