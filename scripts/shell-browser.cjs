@@ -25,7 +25,12 @@ const { serveSite, listPages, settle } = require("./site-pages.cjs");
 
 // Pages whose families have migrated onto tokens.css + app.css. Add each
 // family's pages as its rollout step lands.
-const MIGRATED = new Set([]);
+const MIGRATED = new Set([
+  // Step 1: landing page and hubs
+  "/", "/ofc/", "/poker/", "/blackjack/", "/dice/",
+  // Step 2: poker tools
+  "/poker/dodge/", "/poker/dodge/simulator/", "/poker/222/", "/poker/calculations/",
+]);
 
 const VIEWPORTS = [
   { width: 1440, height: 900, phone: false },
