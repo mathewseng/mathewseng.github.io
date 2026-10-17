@@ -1434,6 +1434,28 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   width: 100%;
 }
 
+/* placeConfirm() rehomes #confirm from desktopTable's matchMedia "change"
+   listener, which runs at the next rendering update, while these media
+   queries apply as soon as the viewport changes. A layout read in between
+   (a resize, then a measurement in the same task) found #confirm still in
+   the other layout's home: on a 375x667 phone it sat in #actions as an
+   extra 48px row and the reserved 60px stage row stayed empty, so the shell
+   grew by 33.5px. The home a layout does not use takes no space there, so
+   that unpainted moment has the target layout's exact size. The queries are
+   desktopTable's media query and its complement (play/app.js). */
+@media (max-width: 1024px), (max-height: 500px) {
+  .play-page #actions > #confirm,
+  .play-page #actions:has(> #confirm:only-child) {
+    display: none;
+  }
+}
+
+@media (min-width: 1025px) and (min-height: 501px) {
+  .play-page .board-actions {
+    display: none;
+  }
+}
+
 #confirm kbd.keycap {
   align-self: center;
   width: auto;
