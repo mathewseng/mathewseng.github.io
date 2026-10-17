@@ -245,6 +245,17 @@
   column-gap: 32px;
 }
 
+@media (min-width: 701px) {
+  .click-flow > li {
+    grid-template-rows: auto 1fr;
+  }
+
+  .flow-answer {
+    grid-row: 1 / 3;
+    grid-column: 2;
+  }
+}
+
 .click-flow > li:not(:has(.flow-next, .flow-end)) {
   margin-bottom: 16px;
 }
@@ -323,11 +334,14 @@
   line-height: var(--lh-data);
 }
 
+/* The connector runs from the card down to the next step: a short line, the
+   label, then a line that fills whatever height the answer column takes. */
 .flow-next {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-height: 72px;
   padding: 0 12px;
 }
 
@@ -340,11 +354,11 @@
   background: var(--line-strong);
 }
 
+.flow-next::after {
+  flex: 1 0 12px;
+}
+
 .flow-end {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
   margin-top: 12px;
   padding: 10px 14px;
   border: 1px dashed var(--line-strong);
@@ -716,12 +730,12 @@
 
   .flow-next {
     align-items: flex-start;
+    min-height: 0;
     padding: 0 0 0 28px;
     text-align: left;
   }
 
   .flow-end {
-    justify-content: flex-start;
     text-align: left;
   }
 

@@ -13,12 +13,12 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=963ad3311adf9d3f" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=963ad3311adf9d3f" />
-    <link rel="stylesheet" href="../styles.css?bgv=963ad3311adf9d3f" />
-    <link rel="stylesheet" href="../docs.css?bgv=963ad3311adf9d3f" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=0aadb8f33d3fd814" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=0aadb8f33d3fd814" />
+    <link rel="stylesheet" href="../styles.css?bgv=0aadb8f33d3fd814" />
+    <link rel="stylesheet" href="../docs.css?bgv=0aadb8f33d3fd814" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="../ui/update-page.mjs?bgv=963ad3311adf9d3f"></script>
+    <script type="module" src="../ui/update-page.mjs?bgv=0aadb8f33d3fd814"></script>
   </head>
   <body class="docs-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -67,15 +67,15 @@
               <ol class="click-flow">
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">1</span><h3>Is it your turn to roll?</h3></div>
                 <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. D also beavers/raccoons, P passes and T takes. Opening rolls happen automatically.</p></div>
-                <p class="flow-next">Dice rolled · continue <span aria-hidden="true">↓</span></p></li>
+                <p class="flow-next"><span class="flow-next-label">Dice rolled · continue <span aria-hidden="true">↓</span></span></p></li>
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">2</span><h3>Which die is selected?</h3></div>
                 <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo its move (and any continuation that depends on it); tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange forward arrow. Regular moves show a green check.</p></div></li>
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">3</span><h3>Did you tap your checker?</h3></div>
                 <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>Play that checker with the selected die, or use the other die if the selected one cannot move it. If it has no legal forward move and shows the amber return cue, tap it to return to its original location and restore all dice used by that checker. Other checkers stay put. Forced steps stay locked, so a checker moved after a forced step returns only to that locked location. Otherwise do nothing.</p></div>
-                <p class="flow-next">Open point area · continue <span aria-hidden="true">↓</span></p></li>
+                <p class="flow-next"><span class="flow-next-label">Open point area · continue <span aria-hidden="true">↓</span></span></p></li>
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">4</span><h3>Can a checker land here?</h3></div>
                 <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>If this is a moved checker’s original point, return that checker first. Otherwise prefer a single step with the selected die, then a single step with the other die. Otherwise move the nearest checker using a legal chain of remaining dice (including doubles). Routes cannot jump blocked points. Prefer a route that hits a checker; if several do, use the selected die first. No route dialog opens.</p></div>
-                <p class="flow-next">No arrival or return · continue <span aria-hidden="true">↓</span></p></li>
+                <p class="flow-next"><span class="flow-next-label">No arrival or return · continue <span aria-hidden="true">↓</span></span></p></li>
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">5</span><h3>Can the checker already here move?</h3></div>
                 <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>Play it with the selected die, or the other die if needed. The open point area and its number act like an extended checker target when nothing can land or return there. If no checker can move, do nothing.</p></div></li>
             </ol>
@@ -116,7 +116,7 @@
                     </p>
                   </div>
                 </div>
-                <p class="flow-next">No selectable disc · continue <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">No selectable disc · continue <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -131,8 +131,8 @@
                     dice-revision target revises the draft.
                   </p>
                 </div>
-                <p class="flow-next">No · if selected, switch to a movable resident or clear selection.
-                  With no selection, continue <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">No · if selected, switch to a movable resident or clear selection.
+                  With no selection, continue <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -146,7 +146,7 @@
                     Return it to its pre-roll origin and restore its dice, even if that point holds checkers. Intermediate stops are not orange targets; tap the dice or press <kbd>Z</kbd> for a single step. A checker whose journey includes a forced prefix cannot return past it.
                   </p>
                 </div>
-                <p class="flow-next">No · continue <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">No · continue <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -161,7 +161,7 @@
                     point or use doubles. If no forward move lands here, use a legal dice revision—even after both dice were used. An active selection limits this to its own routes.
                   </p>
                 </div>
-                <p class="flow-next">No · continue <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">No · continue <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -212,7 +212,7 @@
                     separate meanings.
                   </p>
                 </div>
-                <p class="flow-next">Yes · continue <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">Yes · continue <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -228,7 +228,7 @@
                     dice-revision landings and draft returns below.
                   </p>
                 </div>
-                <p class="flow-next">No · use all eligible checkers <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">No · use all eligible checkers <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -244,7 +244,7 @@
                     is a forward source while entry is required.
                   </p>
                 </div>
-                <p class="flow-next">For each destination · continue <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">For each destination · continue <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
@@ -261,7 +261,7 @@
                     Legal bearoff destinations light the bearoff tray.
                   </p>
                 </div>
-                <p class="flow-next">Also check for a return <span aria-hidden="true">↓</span></p>
+                <p class="flow-next"><span class="flow-next-label">Also check for a return <span aria-hidden="true">↓</span></span></p>
               </li>
               <li>
                 <div class="flow-question">
