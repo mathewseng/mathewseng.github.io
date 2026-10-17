@@ -705,6 +705,10 @@ body:has(> .ofc-shell) {
   font-weight: 600;
 }
 
+.cribbage-hand-pattern small {
+  font-size: var(--t-xs);
+}
+
 .cribbage-hand-explanation,
 .cribbage-hand-breakdown,
 .cribbage-score-gap-note {

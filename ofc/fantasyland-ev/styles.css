@@ -823,7 +823,7 @@
 
 /* Column headers that swap the definition panel's copy. */
 .definition-link {
-  min-height: 24px;
+  min-height: 36px;
   padding: 0;
   border: 0;
   border-radius: 4px;
@@ -1035,7 +1035,8 @@
 /* ---------- Coarse pointers: 44px rows ---------- */
 
 @media (pointer: coarse), (max-width: 640px) {
-  .repeat-source-row {
+  .repeat-source-row,
+  .definition-link {
     min-height: 44px;
   }
 
