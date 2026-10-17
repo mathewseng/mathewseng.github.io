@@ -60,9 +60,20 @@ const pct = (x, digits = 1) => (x == null || Number.isNaN(x) ? "—" : `${(x * 1
 const signed = (x, digits = 3) => (x == null ? "—" : `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(digits)}`);
 const fmtInt = (x) => Math.round(x).toLocaleString("en-US");
 const seatLabel = (i) => `Seat ${i + 1}`;
-// 0 = red, 0.5 = amber, 1 = green.
-const scaleColor = (t) => `hsl(${4 + 146 * clamp01(t)} 66% 58%)`;
-const heatColor = (t) => `hsl(${4 + 146 * clamp01(t)} 70% ${62 - 12 * clamp01(t)}%)`;
+// 0 = bad, 0.5 = warn, 1 = good: a two-segment mix of the semantic tokens, so
+// the scale, the legend gradient in styles.css and the badges share colours.
+const scaleColor = (t) => {
+  const v = clamp01(t);
+  return v < 0.5
+    ? `color-mix(in oklab, var(--warn) ${Math.round(v * 200)}%, var(--bad))`
+    : `color-mix(in oklab, var(--good) ${Math.round((v - 0.5) * 200)}%, var(--warn))`;
+};
+const heatColor = scaleColor;
+const Tabs = window.Tabs;
+const Sheet = window.Sheet;
+// Kit classes for the buttons app.js builds: "" / primary / quiet / danger.
+const BUTTON_CLASS = { "": "btn", primary: "btn btn--primary", quiet: "btn btn--ghost", danger: "btn btn--danger" };
+const BADGE_TONE = { turn: "badge--accent", bust: "badge--bad", win: "badge--warn", first: "badge--plain" };
 const equityT = (eq, n) => (eq <= 1 / n ? (eq / (1 / n)) * 0.5 : 0.5 + ((eq - 1 / n) / (1 - 1 / n)) * 0.5);
 const drawsT = (x) => (x - 1) / 11;
 const eqUnitsT = (eq, stake = 1) => (eq / stake + 1) / 2;
@@ -74,7 +85,8 @@ function el(tag, className, text) {
   return node;
 }
 function button(label, className, onClick, disabled = false) {
-  const b = el("button", className, label);
+  const [tone = "", ...extra] = className.split(" ").filter(Boolean);
+  const b = el("button", [BUTTON_CLASS[tone] ?? `btn ${tone}`, tone, ...extra].filter(Boolean).join(" "), label);
   b.type = "button";
   b.disabled = disabled;
   b.addEventListener("click", onClick);
@@ -83,6 +95,19 @@ function button(label, className, onClick, disabled = false) {
 const PlayingCards = window.PlayingCards;
 function cardEl(c, extra = "") {
   return PlayingCards.element(cardName(c), { className: extra, title: cardName(c) });
+}
+function badge(kind, text) {
+  return el("span", `badge ${BADGE_TONE[kind] ?? ""} ${kind}`.replace(/\s+/g, " ").trim(), text);
+}
+// Rebuilds a row of action buttons without dropping keyboard focus: when the
+// focused button is replaced, focus moves to the new button with the same
+// label, else the first button in the row.
+function replaceActions(row, buttons) {
+  const focused = row.contains(document.activeElement) ? document.activeElement.textContent : null;
+  row.replaceChildren(...buttons);
+  if (focused == null) return;
+  const next = buttons.find((b) => b.textContent === focused && !b.disabled) || buttons.find((b) => !b.disabled);
+  if (next) next.focus({ preventScroll: true });
 }
 function metric(label, value, { big = false, pending: isPending = false, note, t } = {}) {
   const m = el("div", `metric${big ? " big" : ""}`);
@@ -197,18 +222,18 @@ function renderSeats(container, view) {
     const head = el("div", "seat-head");
     const name = el("div", "seat-name", view.names ? view.names[i] : seatLabel(i));
     const badges = el("div", "badges");
-    if (onTurn) badges.append(el("span", "badge turn", view.cube?.offered ? "Doubling" : "Draws next"));
-    if (view.first === i && cards.length) badges.append(el("span", "badge first", "Lowest card"));
-    if (category >= 0) badges.append(el("span", "badge bust", `Bust · ${CATEGORIES[category]}`));
-    if (status.over && status.winner === i) badges.append(el("span", "badge win", "Winner"));
-    if (status.over && status.split && alive[i]) badges.append(el("span", "badge win", "Split"));
-    if (view.cubeOn && view.cube.owner === i) badges.append(el("span", "badge", `Owns cube ${view.cube.value}`));
+    if (onTurn) badges.append(badge("turn", view.cube?.offered ? "Doubling" : "Draws next"));
+    if (view.first === i && cards.length) badges.append(badge("first", "Lowest card"));
+    if (category >= 0) badges.append(badge("bust", `Bust · ${CATEGORIES[category]}`));
+    if (status.over && status.winner === i) badges.append(badge("win", "Winner"));
+    if (status.over && status.split && alive[i]) badges.append(badge("win", "Split"));
+    if (view.cubeOn && view.cube.owner === i) badges.append(badge("", `Owns cube ${view.cube.value}`));
     name.append(badges);
     head.append(name);
     const tools = el("div", "seat-tools");
     if (view.scores) tools.append(el("span", "seat-score", `${view.scores[i]} pt${view.scores[i] === 1 ? "" : "s"}`));
-    if (view.onEdit) tools.append(button(view.editing === i ? "Done" : "Edit", "quiet", () => view.onEdit(i)));
-    if (view.onSetTurn && !status.over && alive[i] && i !== view.turn) tools.append(button("Draws next", "quiet", () => view.onSetTurn(i)));
+    if (view.onEdit) tools.append(button(view.editing === i ? "Done" : "Edit", "quiet btn--sm", () => view.onEdit(i)));
+    if (view.onSetTurn && !status.over && alive[i] && i !== view.turn) tools.append(button("Draws next", "quiet btn--sm", () => view.onSetTurn(i)));
     head.append(tools);
     seat.append(head);
 
@@ -252,18 +277,22 @@ function renderSeats(container, view) {
    ==================================================================== */
 const TABS = ["sim", "trainer", "online", "reports"];
 let activeTab = "sim";
-function showTab(tab) {
+// The hash is read before the tablist initialises, because activating a tab
+// rewrites it (#sim, #trainer, …) unless it carries a spot or a room code.
+const bootHash = location.hash;
+// shared/tabs.js owns aria-selected, the .active class and the panels' hidden
+// state; applyTab mirrors the view into the hash and lazy-loads the reports.
+function applyTab(tab) {
   activeTab = tab;
-  document.querySelectorAll(".tabs > button").forEach((x) => {
-    x.classList.toggle("active", x.dataset.tab === tab);
-    x.toggleAttribute("aria-current", x.dataset.tab === tab);
-  });
-  TABS.forEach((t) => ($(`view-${t}`).hidden = t !== tab));
   if (!location.hash.startsWith("#room=") && !(tab === "sim" && location.hash.startsWith("#spot="))) history.replaceState(null, "", `#${tab}`);
   if (tab === "reports") loadReports();
 }
-document.querySelectorAll(".tabs > button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
-$("rules-button").addEventListener("click", () => $("rules-dialog").showModal());
+const tabs = Tabs.init($("view-tabs"), { onChange: applyTab });
+function showTab(tab) {
+  if (tabs.current !== tab) tabs.activate(tab);
+  else applyTab(tab);
+}
+$("rules-button").addEventListener("click", () => Sheet.open($("rules-dialog"), { dismissible: true }));
 document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => $(b.dataset.close).close()));
 
 /* ====================================================================
@@ -295,7 +324,14 @@ function simLoad(snapshot) {
   const s = JSON.parse(snapshot);
   Object.assign(sim, s);
   sim.editing = null;
-  document.querySelectorAll("#player-count > button").forEach((b) => b.classList.toggle("active", Number(b.dataset.n) === sim.n));
+  setSegment("player-count", sim.n);
+}
+function setSegment(id, n) {
+  document.querySelectorAll(`#${id} > button`).forEach((b) => {
+    const on = Number(b.dataset.n) === n;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
 }
 function simStatus() {
   const alive = aliveSeats();
@@ -408,7 +444,7 @@ function setPlayers(n, { silent = false } = {}) {
   }
   resetCube();
   sim.editing = null;
-  document.querySelectorAll("#player-count > button").forEach((b) => b.classList.toggle("active", Number(b.dataset.n) === n));
+  setSegment("player-count", n);
   if (!silent) recompute();
 }
 function deckClick(card) {
@@ -575,13 +611,14 @@ function renderCubePanel(status, alive) {
   $("cube-value").textContent = String(sim.cube.value);
   $("cube-owner").textContent = sim.cube.owner === "center" ? "centered" : `${seatLabel(sim.cube.owner)} owns`;
   const actions = $("cube-actions");
-  actions.replaceChildren();
+  const cubeButtons = [];
   const table = $("cube-table");
   table.replaceChildren();
   table.classList.add("cube-options");
   if (status.over || !alive[0] || !alive[1]) {
     $("cube-title").textContent = "Game over";
     $("cube-subtitle").textContent = status.text;
+    replaceActions(actions, cubeButtons);
     return;
   }
   const seat = sim.turn,
@@ -589,16 +626,17 @@ function renderCubePanel(status, alive) {
   if (sim.cube.offered) {
     $("cube-title").textContent = `${seatLabel(seat)} doubles to ${sim.cube.value * 2}`;
     $("cube-subtitle").textContent = `${seatLabel(other)} must take or pass.`;
-    actions.append(button("Take", "primary", simTake), button("Pass", "danger", simPass));
+    cubeButtons.push(button("Take", "primary", simTake), button("Pass", "danger", simPass));
   } else if (canDoubleSim(seat)) {
     $("cube-title").textContent = `${seatLabel(seat)} to act`;
     $("cube-subtitle").textContent = `Double before drawing, or draw with the cube ${sim.cube.owner === "center" ? "centered" : "in hand"}.`;
-    actions.append(button("Double", "primary", simDouble), button("Draw · no double", "", () => drawCard() && recompute()));
+    cubeButtons.push(button("Double", "primary", simDouble), button("Draw · no double", "", () => drawCard() && recompute()));
   } else {
     $("cube-title").textContent = `${seatLabel(seat)} to draw`;
     $("cube-subtitle").textContent = `${seatLabel(other)} owns the cube, so ${seatLabel(seat)} cannot double.`;
-    actions.append(button("Draw", "primary", () => drawCard() && recompute()));
+    cubeButtons.push(button("Draw", "primary", () => drawCard() && recompute()));
   }
+  replaceActions(actions, cubeButtons);
   const a = sim.cubeAnalysis;
   if (!a) {
     table.append(el("div", "muted", "Solving…"));
@@ -614,9 +652,12 @@ function renderCubePanel(status, alive) {
     const current = Array.from(seatsBox.querySelectorAll("input")).map((i) => i.value);
     seatsBox.replaceChildren();
     for (let i = 0; i < sim.n; i++) {
-      const field = el("label", "field");
-      field.append(el("span", "label", seatLabel(i)));
+      const field = el("div", "field");
+      const label = el("label", "", seatLabel(i));
+      label.htmlFor = `spot-seat-${i}`;
+      field.append(label);
       const input = el("input");
+      input.id = `spot-seat-${i}`;
       input.placeholder = i === 0 ? "e.g. As Kh 7d" : "e.g. 2c 9s";
       input.value = current[i] ?? sim.hands[i]?.map(cardName).join(" ") ?? "";
       input.dataset.seat = String(i);
@@ -721,12 +762,14 @@ function renderCubePanel(status, alive) {
   $("spot-toggle").addEventListener("click", () => {
     const box = $("spot-panel");
     box.hidden = !box.hidden;
+    $("spot-toggle").setAttribute("aria-expanded", String(!box.hidden));
     if (!box.hidden) renderSpotInputs();
   });
   document.querySelectorAll("#player-count > button").forEach((b) => b.addEventListener("click", renderSpotInputs));
   renderSpotInputs();
   if (location.hash.startsWith("#spot=")) {
     $("spot-panel").hidden = false;
+    $("spot-toggle").setAttribute("aria-expanded", "true");
     applySpotHash(decodeURIComponent(location.hash.slice(6)));
   }
 })();
@@ -1052,10 +1095,10 @@ function trRender() {
     const head = el("div", "seat-head");
     const name = el("div", "seat-name", trName(i));
     const badges = el("div", "badges");
-    if (onTurn) badges.append(el("span", "badge turn", phase === "response" ? "Doubling" : "On turn"));
-    if (phase !== "idle" && tr.first === i) badges.append(el("span", "badge first", "Lowest card"));
-    if (category >= 0) badges.append(el("span", "badge bust", `Bust · ${CATEGORIES[category]}`));
-    if (cube.owner === i) badges.append(el("span", "badge", `Owns cube ${cube.value}`));
+    if (onTurn) badges.append(badge("turn", phase === "response" ? "Doubling" : "On turn"));
+    if (phase !== "idle" && tr.first === i) badges.append(badge("first", "Lowest card"));
+    if (category >= 0) badges.append(badge("bust", `Bust · ${CATEGORIES[category]}`));
+    if (cube.owner === i) badges.append(badge("", `Owns cube ${cube.value}`));
     name.append(badges);
     head.append(name, el("span", "pts", `${hands[i].length} card${hands[i].length === 1 ? "" : "s"}`));
     seat.append(head);
@@ -1068,33 +1111,34 @@ function trRender() {
 
   const prompt = $("tr-prompt");
   const actions = $("tr-actions");
-  actions.replaceChildren();
+  const actionButtons = [];
   prompt.classList.remove("alert");
   if (!live) {
     prompt.textContent = `Reviewing step ${tr.review + 1} of ${tr.timeline.length}: ${snap.note}`;
     prompt.classList.add("alert");
-    actions.append(button("◀ Back", "", trStepBack, tr.review === 0), button("Forward ▶", "", trStepForward), button("Resume live", "primary", trResume));
+    actionButtons.push(button("◀ Back", "", trStepBack, tr.review === 0), button("Forward ▶", "", trStepForward), button("Resume live", "primary", trResume));
   } else if (tr.phase === "idle") prompt.textContent = "Press New game to deal.";
   else if (tr.phase === "over") {
     prompt.textContent = `Game over. ${tr.log[0]?.text ?? ""}`;
-    actions.append(button("New game", "primary", trNewGame), button("◀ Review game", "", trStepBack));
+    actionButtons.push(button("New game", "primary", trNewGame), button("◀ Review game", "", trStepBack));
   } else if (tr.phase === "cubeDecision") {
     if (tr.turn === YOU) {
       prompt.textContent = `Your turn. Double to ${tr.cube.value * 2} before drawing, or just draw?`;
-      actions.append(button(`Double to ${tr.cube.value * 2}`, "primary", youDouble), button("No double · draw", "", youNoDouble));
+      actionButtons.push(button(`Double to ${tr.cube.value * 2}`, "primary", youDouble), button("No double · draw", "", youNoDouble));
     } else prompt.textContent = "Bot is thinking about the cube…";
   } else if (tr.phase === "response") {
     if (tr.turn === BOT) {
       prompt.textContent = `Bot doubles to ${tr.cube.value * 2}. Take or pass?`;
       prompt.classList.add("alert");
-      actions.append(button("Take", "primary", youTake), button("Pass", "danger", youPass));
+      actionButtons.push(button("Take", "primary", youTake), button("Pass", "danger", youPass));
     } else prompt.textContent = `You doubled to ${tr.cube.value * 2}. Bot is deciding…`;
   } else if (tr.phase === "draw") {
     if (tr.turn === YOU) {
       prompt.textContent = trCanDouble(YOU) ? "Draw a card." : "Bot owns the cube. Draw a card.";
-      actions.append(button("Draw", "primary", youDraw));
+      actionButtons.push(button("Draw", "primary", youDraw));
     } else prompt.textContent = "Bot is drawing…";
   }
+  replaceActions(actions, actionButtons);
 
   renderTrainerAnalysis(live ? (tr.shown?.preview ? tr.shown : tr.shownYou) : snap.shown, snap, live ? tr.shownBot : null);
 
@@ -1454,10 +1498,11 @@ function renderOnline() {
   [...(m?.log ?? []), ...online.log].slice(0, 40).forEach((text) => log.append(el("li", "", text)));
   const prompt = $("on-prompt");
   const actions = $("on-actions");
-  actions.replaceChildren();
+  const actionButtons = [];
   prompt.classList.remove("alert");
   $("on-games").textContent = String(m?.games ?? 0);
   if (!m || !m.game) {
+    replaceActions(actions, actionButtons);
     $("on-status").textContent = m ? `Lobby · ${m.players.length} of ${m.settings.seats} seats` : "Connecting…";
     $("on-deck").textContent = "—";
     $("on-deckout").textContent = "—";
@@ -1517,15 +1562,16 @@ function renderOnline() {
     if (meSeat === 1 - g.turn) {
       prompt.textContent = `${names[g.turn]} doubles to ${g.cube.value * 2}. Take or pass?`;
       prompt.classList.add("alert");
-      actions.append(button("Take", "primary", () => room.sendAction({ type: "take" })), button("Pass", "danger", () => room.sendAction({ type: "pass" })));
+      actionButtons.push(button("Take", "primary", () => room.sendAction({ type: "take" })), button("Pass", "danger", () => room.sendAction({ type: "pass" })));
     } else prompt.textContent = `Waiting for ${names[1 - g.turn]} to take or pass.`;
   } else if (meSeat === g.turn) {
     const canDouble = cubeOn && (g.cube.owner === "center" || g.cube.owner === meSeat);
     prompt.textContent = canDouble ? `Your turn. Double to ${g.cube.value * 2} or draw.` : "Your turn. Draw a card.";
     prompt.classList.add("alert");
-    if (canDouble) actions.append(button(`Double to ${g.cube.value * 2}`, "primary", () => room.sendAction({ type: "double" })));
-    actions.append(button(canDouble ? "Draw · no double" : "Draw", canDouble ? "" : "primary", () => room.sendAction({ type: "draw" })));
+    if (canDouble) actionButtons.push(button(`Double to ${g.cube.value * 2}`, "primary", () => room.sendAction({ type: "double" })));
+    actionButtons.push(button(canDouble ? "Draw · no double" : "Draw", canDouble ? "" : "primary", () => room.sendAction({ type: "draw" })));
   } else prompt.textContent = meSeat < 0 ? `Spectating. ${status.text}` : `Waiting for ${names[g.turn]}.`;
+  replaceActions(actions, actionButtons);
   // cube panel
   $("on-cube-panel").hidden = !cubeOn;
   if (cubeOn) {
@@ -1608,14 +1654,14 @@ $("on-name").value = localStorage.getItem("dodge.player.name") || "";
 document.querySelectorAll("#on-seat-count > button").forEach((b) =>
   b.addEventListener("click", () => {
     online.seats = Number(b.dataset.n);
-    document.querySelectorAll("#on-seat-count > button").forEach((x) => x.classList.toggle("active", x === b));
+    setSegment("on-seat-count", online.seats);
     if (online.seats !== 2) $("on-cube").checked = false;
   }),
 );
 $("on-cube").addEventListener("change", () => {
   if ($("on-cube").checked && online.seats !== 2) {
     online.seats = 2;
-    document.querySelectorAll("#on-seat-count > button").forEach((x) => x.classList.toggle("active", x.dataset.n === "2"));
+    setSegment("on-seat-count", 2);
   }
 });
 $("on-create").addEventListener("click", createRoom);
@@ -1664,29 +1710,36 @@ function tile(label, value, note, t) {
   const v = el("span", `stat-value${t != null ? " scaled" : ""}`, value);
   if (t != null) v.style.setProperty("--scale", scaleColor(t));
   s.append(v);
-  if (note) s.append(el("span", "stat-note", note));
+  if (note) s.append(el("span", "stat-delta stat-note", note));
   return s;
 }
 function card(title, text, { wide = false } = {}) {
-  const c = el("div", `report-card${wide ? " wide" : ""}`);
+  const c = el("div", `report-card panel${wide ? " wide" : ""}`);
   c.append(el("h2", "", title));
   if (text) c.append(el("p", "", text));
   return c;
 }
 function bars(rows, { format = (v) => pct(v), max = null, alt = false } = {}) {
-  const wrap = el("div", "bars");
+  const wrap = el("ul", "bar-list bars");
   const top = max ?? Math.max(...rows.map((r) => r.value), 1e-9);
   rows.forEach((r) => {
-    wrap.append(el("span", "bar-label", r.label));
+    const row = el("li", "bar-row");
+    row.append(el("span", "bar-row-label bar-label", r.label));
     const bar = el("span", "bar");
-    const fill = el("i", alt ? "alt" : "");
-    fill.style.width = `${Math.max(0, Math.min(100, (r.value / top) * 100))}%`;
-    if (r.t != null) fill.style.background = scaleColor(r.t);
-    bar.append(fill);
-    wrap.append(bar);
-    wrap.append(el("span", "bar-value", format(r.value)));
+    bar.style.setProperty("--value", String(Math.max(0, Math.min(1, r.value / top))));
+    bar.style.setProperty("--bar-color", r.t != null ? scaleColor(r.t) : alt ? "var(--info)" : "var(--good)");
+    row.append(bar);
+    row.append(el("span", "bar-row-value bar-value", format(r.value)));
+    wrap.append(row);
   });
   return wrap;
+}
+// Every report table scrolls horizontally inside the kit's wrapper.
+function miniTable() {
+  const wrap = el("div", "table-wrap");
+  const table = el("table", "data-table mini-table");
+  wrap.append(table);
+  return { wrap, table };
 }
 function histRows(arr, { from = 0, label = (i) => String(i), total = null, collapseBelow = 0.002 } = {}) {
   const sum = total ?? arr.reduce((a, b) => a + (b ?? 0), 0);
@@ -1723,7 +1776,7 @@ function section(root, title, text) {
 function renderCubeReport(root, r) {
   const g = r.games;
   section(root, "Doubling cube under optimal play", `${fmtInt(g)} two-player money games with both sides following the solver (${r.policy}). First drawer is the player holding the lower card.`);
-  const tiles = el("div", "tiles-row");
+  const tiles = el("div", "tiles-row stat-strip");
   const firstPts = r.firstPoints / g;
   const gamesWithDouble = r.firstDoubleAt.reduce((a, b) => a + (b ?? 0), 0);
   tiles.append(
@@ -1745,7 +1798,7 @@ function renderCubeReport(root, r) {
   grid.style.marginTop = "14px";
 
   const strategy = card("Doubling window", "How often the solver doubles as a function of the doubler's cubeless win chance, over every decision where doubling was allowed.");
-  const stratTable = el("table", "mini-table");
+  const { wrap: stratWrap, table: stratTable } = miniTable();
   const head = el("tr");
   ["Win chance", "Decisions", "Doubles", "Double rate", "Taken", "Passed"].forEach((h) => head.append(el("th", "", h)));
   stratTable.append(head);
@@ -1769,7 +1822,7 @@ function renderCubeReport(root, r) {
     row.append(el("td", "", fmtInt(r.passP[rb] ?? 0)));
     stratTable.append(row);
   }
-  strategy.append(stratTable);
+  strategy.append(stratWrap);
   strategy.append(el("p", "", "Taken and Passed count the responder's answers in the matching bin (responder win chance = 1 − doubler win chance). The effective take point is where passes overtake takes."));
   grid.append(strategy);
 
@@ -1800,7 +1853,7 @@ function renderCubeReport(root, r) {
   grid.append(pointsCard);
 
   const levelCard = card("Doubles by cube level", "Offers, takes and passes at each cube value before the double.");
-  const levelTable = el("table", "mini-table");
+  const { wrap: levelWrap, table: levelTable } = miniTable();
   const lh = el("tr");
   ["Cube before", "Offered", "Taken", "Passed", "Take rate"].forEach((h) => lh.append(el("th", "", h)));
   levelTable.append(lh);
@@ -1816,7 +1869,7 @@ function renderCubeReport(root, r) {
       row.append(cell);
       levelTable.append(row);
     });
-  levelCard.append(levelTable);
+  levelCard.append(levelWrap);
   levelCard.append(el("p", "", `Of the doubles that were taken, the doubler went on to win ${pct(r.takenDoublesWonByDoubler / Math.max(1, r.takenDoubles))} of those games.`));
   grid.append(levelCard);
 
@@ -1826,7 +1879,7 @@ function renderCubeReport(root, r) {
   grid.append(whenCard);
 
   const handCard = card("Hand sizes at the double", "Cards held by the doubler and the responder when a double is offered.");
-  const sizeTable = el("table", "mini-table");
+  const { wrap: sizeWrap, table: sizeTable } = miniTable();
   const sh = el("tr");
   ["Cards", "Doubler", "Responder"].forEach((h) => sh.append(el("th", "", h)));
   sizeTable.append(sh);
@@ -1839,7 +1892,7 @@ function renderCubeReport(root, r) {
     row.append(el("td", "", String(i)), el("td", "", pct(d / r.doublesOffered)), el("td", "", pct(s / r.doublesOffered)));
     sizeTable.append(row);
   }
-  handCard.append(sizeTable);
+  handCard.append(sizeWrap);
   handCard.append(el("p", "", `Mean hand size: doubler ${meanOf(r.doublerHand).toFixed(2)}, responder ${meanOf(r.responderHand).toFixed(2)}.`));
   grid.append(handCard);
 
@@ -1861,7 +1914,7 @@ function renderCubeReport(root, r) {
 function renderTableReport(root, r) {
   const ranks = r.ranks;
   section(root, "Cubeless tables", `Monte Carlo games for two, three and four players, each dealt one card, lowest card first with ace high and clubs lowest. ${fmtInt(r.players[2].games)} games per player count.`);
-  const tiles = el("div", "tiles-row");
+  const tiles = el("div", "tiles-row stat-strip");
   [2, 3, 4].forEach((n) => {
     const s = r.players[n];
     tiles.append(tile(`${n} players · first drawer wins`, pct(s.byOrder[0] / s.games), `fair share ${pct(1 / n, 0)}`, equityT(s.byOrder[0] / s.games, n)));
@@ -1943,7 +1996,7 @@ window.addEventListener("hashchange", () => {
   const tab = location.hash.slice(1);
   if (TABS.includes(tab) && tab !== activeTab) showTab(tab);
 });
-const hash = location.hash;
+const hash = bootHash;
 if (hash.startsWith("#spot=")) showTab("sim");
 else if (hash.startsWith("#room=")) {
   showTab("online");

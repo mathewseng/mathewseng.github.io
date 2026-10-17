@@ -1,7 +1,6 @@
 import {
   RANKS,
   CATEGORIES,
-  COLORS,
   PAIRINGS,
   SUIT_LABELS,
   cardName,
@@ -24,9 +23,16 @@ import {
   lineChart,
   outcomes,
   legend,
-} from "./charts.mjs?v=20261003";
+  CAT_COLORS,
+} from "./charts.mjs?v=20261016";
 
 const PlayingCards = window.PlayingCards;
+const Tabs = window.Tabs;
+const Sheet = window.Sheet;
+const ICONS = "../../shared/icons.svg";
+const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="${ICONS}#${name}"/></svg>`;
+// Chart colours for the canvas scatter plot come from the stylesheet tokens.
+const cssColor = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
 const $ = (id) => document.getElementById(id);
 const count = (n) => n.toLocaleString("en-US");
 const compact = (n) =>
@@ -55,6 +61,7 @@ const state = {
   runout: [],
   reportsDirty: true,
 };
+let tabs = null;
 const columnDefs = [
   {
     key: "mean",
@@ -278,7 +285,7 @@ function syncResponsiveLayout() {
   }
   const exportHome = phone
     ? document.querySelector(".table-options")
-    : document.querySelector(".page-heading");
+    : document.querySelector(".tool-head");
   if (exportButton.parentElement !== exportHome)
     exportHome.append(exportButton);
   if (!state.columnsChosen) {
@@ -293,9 +300,13 @@ function syncResponsiveLayout() {
 function showHandReport() {
   if (!phoneLayout.matches) return;
   const dialog = $("hand-dialog");
-  if (!dialog.open) dialog.showModal();
-  dialog.scrollTop = 0;
+  // The close handler below returns focus to the originating row itself.
+  if (!dialog.open) Sheet.open(dialog, { sheet: true, dismissible: true, returnFocus: false });
+  $("hand-dialog-content").scrollTop = 0;
   dialog.querySelector("[data-close]").focus({ preventScroll: true });
+}
+function openDialog(id) {
+  Sheet.open($(id), { dismissible: true });
 }
 
 // Card faces come from the shared component (shared/cards.js); the page only
@@ -311,13 +322,24 @@ function spark(hist) {
   return `<span class="spark-hist" role="img" aria-label="Draw distribution">${hist.map((p, i) => `<i style="height:${max ? (p / max) * 100 : 0}%" title="Draw ${i + 1}: ${pct(p, 3)}"></i>`).join("")}</span>`;
 }
 function stack(values) {
-  return `<span class="mini-stack" role="img" aria-label="Bust rankings">${values.map((p, i) => `<i style="width:${p * 100}%;background:${COLORS[i]}" title="${CATEGORIES[i]}: ${pct(p, 3)}"></i>`).join("")}</span>`;
+  return `<span class="mini-stack" role="img" aria-label="Bust rankings">${values.map((p, i) => `<i style="width:${p * 100}%;--swatch:${CAT_COLORS[i]}" title="${CATEGORIES[i]}: ${pct(p, 3)}"></i>`).join("")}</span>`;
 }
+// One polite live region (#toast, the kit's .toast-stack) carries every notice.
 function toast(text) {
-  $("toast").textContent = text;
-  $("toast").hidden = false;
+  const stack = $("toast");
+  const node = document.createElement("div");
+  node.className = "toast";
+  node.innerHTML = `<span>${esc(text)}</span><button class="btn btn--ghost btn--icon btn--sm" type="button" aria-label="Dismiss">${icon("i-close")}</button>`;
+  node.querySelector("button").addEventListener("click", () => node.remove());
+  stack.replaceChildren(node);
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => ($("toast").hidden = true), 2800);
+  toast.timer = setTimeout(() => node.remove(), 2800);
+}
+function pinButton(id, label, { text = false } = {}) {
+  const pinned = state.pins.includes(id);
+  const classes = `btn btn--ghost btn--sm ${text ? "" : "btn--icon"} pin-button ${pinned ? "pinned" : ""}`;
+  const body = text ? (pinned ? "Pinned" : "Pin") : `<span aria-hidden="true">${pinned ? "●" : "○"}</span>`;
+  return `<button type="button" class="${classes}" data-pin="${id}" aria-label="${pinned ? "Unpin" : "Pin"} ${label}" aria-pressed="${pinned}">${body}</button>`;
 }
 function filterState() {
   return {
@@ -359,7 +381,7 @@ function applyFilters() {
   renderActive();
   const combos = state.stats?.combinations || 0;
   $("population-label").innerHTML =
-    `<strong>${count(state.filtered.length)}</strong> / 16,432 classes <span class="desktop-only">· ${count(combos)} deals </span>· ${pct(combos / 270725, 2)} of deals`;
+    `<strong>${count(state.filtered.length)}</strong> / 16,432 classes <span class="desk-only">· ${count(combos)} deals </span>· ${pct(combos / 270725, 2)} of deals`;
   $("scope-weight").textContent =
     weight() === "deals"
       ? "Weighted by actual deals."
@@ -372,7 +394,6 @@ function renderSummary() {
   const s = state.stats;
   const items = [
     [
-      "Mean draws to bust",
       "Mean draws",
       s ? num(s.mean, 3) : "—",
       "cards",
@@ -381,7 +402,6 @@ function renderSummary() {
         : "No matching hands",
     ],
     [
-      "Bust on the next draw",
       "Bust next",
       s ? pct(s.firstBust, 2) : "—",
       "",
@@ -390,14 +410,12 @@ function renderSummary() {
         : "Exact enumeration",
     ],
     [
-      "Survive five draws",
       "Survive 5",
       s ? pct(s.survive5, 2) : "—",
       "",
       s ? "Finish 5 draws safely · estimated P(T > 5)" : "Monte Carlo estimate",
     ],
     [
-      "Middle 80% of runouts",
       "Middle 80%",
       s ? `${s.p10}–${s.p90}` : "—",
       "draws",
@@ -408,8 +426,8 @@ function renderSummary() {
   ];
   $("summary").innerHTML = items
     .map(
-      ([label, shortLabel, value, unit, caption]) =>
-        `<div class="summary-item" title="${esc(caption)}"><p class="metric-label"><span class="desktop-only">${label}</span><span class="mobile-only">${shortLabel}</span></p><p class="metric-value">${value}<small>${unit}</small></p><p class="metric-caption">${caption}</p></div>`,
+      ([label, value, unit, caption]) =>
+        `<div class="stat" title="${esc(caption)}"><span class="stat-label">${label}</span><span class="stat-value">${value}${unit ? `<small>${unit}</small>` : ""}</span><span class="stat-delta">${caption}</span></div>`,
     )
     .join("");
 }
@@ -430,17 +448,15 @@ function renderActive() {
     renderReports();
   } else renderLab();
 }
-function changeTab(tab) {
+// The tablist (shared/tabs.js) owns aria-selected and the panels' hidden
+// state; this applies the view and re-renders it.
+function applyTab(tab) {
   state.tab = tab;
-  for (const name of ["explorer", "reports", "lab"])
-    $(`${name}-view`).hidden = name !== tab;
-  document.querySelectorAll("[data-tab]").forEach((b) => {
-    const on = b.dataset.tab === tab;
-    b.classList.toggle("active", on);
-    if (on) b.setAttribute("aria-current", "page");
-    else b.removeAttribute("aria-current");
-  });
   renderActive();
+}
+function changeTab(tab) {
+  if (tabs) tabs.activate(tab);
+  else applyTab(tab);
 }
 function renderTable() {
   const cols = state.columns.map((key) =>
@@ -461,13 +477,13 @@ function renderTable() {
       .map((c) => {
         let style = "";
         if (!agg && c.key === "mean")
-          style = ` style="background:rgba(62,159,118,${Math.max(0, (r.mean - 2) / 6) * 0.23})"`;
+          style = ` style="--tint:${(Math.max(0, (r.mean - 2) / 6) * 0.23).toFixed(3)}"`;
         return `<td class="metric-cell"${style}>${c.format(r)}</td>`;
       })
       .join("");
   let html = "";
   if (state.stats) {
-    html += `<tr class="aggregate-row"><td><span class="aggregate-label">FILTERED POPULATION<small>${count(state.filtered.length)}<span class="desktop-only"> hand classes</span> · ${weight() === "deals" ? "deal weighted" : "class weighted"}</small></span></td>${metricCells(state.stats, true)}</tr>`;
+    html += `<tr class="aggregate-row"><td><span class="aggregate-label">Filtered population<small>${count(state.filtered.length)} classes · ${weight() === "deals" ? "deal weighted" : "class weighted"}</small></span></td>${metricCells(state.stats, true)}</tr>`;
     if (state.filtered.length !== state.rows.length)
       html += `<tr class="baseline-row"><td><span class="aggregate-label">All starting hands<small>Unfiltered reference</small></span></td>${metricCells(state.allStats, true)}</tr>`;
   }
@@ -476,14 +492,14 @@ function renderTable() {
     .slice(start, start + state.pageSize)
     .map(
       (r) =>
-        `<tr data-row="${r.id}" class="${r.id === state.selected ? "selected" : ""}"><td><span class="hand-cell"><button class="pin-button ${state.pins.includes(r.id) ? "pinned" : ""}" data-pin="${r.id}" aria-label="${state.pins.includes(r.id) ? "Unpin" : "Pin"} ${r.name}" aria-pressed="${state.pins.includes(r.id)}">${state.pins.includes(r.id) ? "●" : "○"}</button><button class="hand-button" data-hand="${r.id}" aria-label="Inspect ${r.name}">${cards(r.cards)}</button></span></td>${metricCells(r)}</tr>`,
+        `<tr data-row="${r.id}" class="${r.id === state.selected ? "selected" : ""}"><td><span class="hand-cell">${pinButton(r.id, r.name)}<button type="button" class="hand-button" data-hand="${r.id}" aria-label="Inspect ${r.name}">${cards(r.cards)}</button></span></td>${metricCells(r)}</tr>`,
     )
     .join("");
   if (!state.sorted.length)
     html = `<tr><td colspan="${cols.length + 1}" class="empty-cell">No matching hands. Try fewer filters or a rank pattern such as AKQJ.</td></tr>`;
   $("hand-table").querySelector("tbody").innerHTML = html;
-  $("page-status").innerHTML = state.sorted.length
-    ? `${count(start + 1)}–${count(Math.min(start + state.pageSize, state.sorted.length))} of ${count(state.sorted.length)}<span class="desktop-only"> hands</span>`
+  $("page-status").textContent = state.sorted.length
+    ? `${count(start + 1)}–${count(Math.min(start + state.pageSize, state.sorted.length))} of ${count(state.sorted.length)} hands`
     : "0 hands";
   $("page-total").textContent = `of ${count(pages)}`;
   $("page-number").value = state.page;
@@ -532,15 +548,15 @@ function renderDetail() {
   if (!r) return;
   const inFilter = state.filtered.some((h) => h.id === r.id);
   $("hand-detail").innerHTML = `
-    <div class="detail-head"><div class="detail-eyebrow"><span>HAND INSPECTOR</span><span>${inFilter ? "IN CURRENT FILTER" : "OUTSIDE CURRENT FILTER"}</span></div>
-    <div class="detail-title">${cards(r.cards, true)}<button class="pin-button ${state.pins.includes(r.id) ? "pinned" : ""}" data-pin="${r.id}" aria-label="${state.pins.includes(r.id) ? "Unpin" : "Pin"} selected hand" aria-pressed="${state.pins.includes(r.id)}"><span class="desktop-only">${state.pins.includes(r.id) ? "●" : "○"}</span><span class="mobile-only">${state.pins.includes(r.id) ? "Pinned ●" : "Pin +"}</span></button></div>
+    <div class="detail-head"><div class="detail-eyebrow"><span>Hand inspector</span><span>${inFilter ? "In current filter" : "Outside current filter"}</span></div>
+    <div class="detail-title">${cards(r.cards, true)}${pinButton(r.id, "selected hand", { text: true })}</div>
     <p class="detail-subtitle">${r.pairing} · ${r.suitedness}<br>${r.combinations} combinations · ${pct(r.combinations / 270725, 4)} of all deals</p></div>
     <dl class="detail-metrics"><div><dt>MEAN DRAWS</dt><dd>${num(r.mean, 3)} <small>±${num(1.96 * r.meanSE, 3)}</small></dd></div><div><dt>EXACT NEXT BUST</dt><dd>${pct(r.firstBust, 2)}</dd></div><div><dt>10TH–90TH PERCENTILE</dt><dd>${r.p10}–${r.p90} <small>draws</small></dd></div><div><dt>STANDARD DEVIATION</dt><dd>${num(r.sd, 3)}</dd></div></dl>
     <div class="detail-histogram"><div class="detail-divider"></div><h3>Draws to bust</h3><div class="chart">${histogram(r, phoneLayout.matches ? chartOptions() : { small: true })}</div></div>
     <div class="detail-outcomes"><div class="detail-divider"></div><h3>Ranking at the first bust</h3><div class="outcome-list">${outcomes(r, true)}</div></div>
     <p class="detail-note">${count(r.trials)} simulated runouts. Mean ± approximate 95% MC interval. Outcome tooltips show 95% Wilson intervals; zero observations do not prove impossibility.</p>
-    <details class="detail-draw-table"><summary>All draw probabilities & conditional risk</summary><table class="detail-table"><thead><tr><th>Draw</th><th>Bust here</th><th>Survive</th><th>Risk if reached</th></tr></thead><tbody>${r.hist.map((p, i) => `<tr><td>${i + 1}</td><td>${pct(p, 3)}</td><td>${pct(r.survival[i + 1], 3)}</td><td>${pct(r.hazard[i], 2)}</td></tr>`).join("")}</tbody></table><p class="detail-note">Survive = P(T &gt; k). Risk if reached = P(T = k | T ≥ k). All values in this table are Monte Carlo estimates.</p></details>
-    <div class="detail-actions"><button class="primary" data-use-lab>Explore live outs ↗</button><button class="quiet" data-copy-hand>Copy hand link</button></div>`;
+    <details class="detail-draw-table"><summary>All draw probabilities & conditional risk</summary><table class="data-table detail-table"><thead><tr><th>Draw</th><th>Bust here</th><th>Survive</th><th>Risk if reached</th></tr></thead><tbody>${r.hist.map((p, i) => `<tr><td>${i + 1}</td><td>${pct(p, 3)}</td><td>${pct(r.survival[i + 1], 3)}</td><td>${pct(r.hazard[i], 2)}</td></tr>`).join("")}</tbody></table><p class="detail-note">Survive = P(T &gt; k). Risk if reached = P(T = k | T ≥ k). All values in this table are Monte Carlo estimates.</p></details>
+    <div class="detail-actions"><button type="button" class="btn btn--primary" data-use-lab>Explore live outs</button><button type="button" class="btn" data-copy-hand>${icon("i-link")}Copy hand link</button></div>`;
   $("reopen-hand-cards").innerHTML = cards(r.cards);
   $("reopen-hand").setAttribute(
     "aria-label",
@@ -554,7 +570,7 @@ function renderComparison() {
     `<h2>Pinned hand comparison</h2><p class="detail-note">Fixed hands across all filters. Estimates that differ by less than their uncertainty may be effectively tied.</p><div class="comparison-cards">${state.pins
       .map((id) => {
         const r = state.rows[id];
-        return `<article class="comparison-entry"><button class="hand-button" data-hand="${id}">${cards(r.cards)}</button><div class="compare-numbers"><span>Mean <strong>${num(r.mean, 3)}</strong></span><span>95% ±${num(1.96 * r.meanSE, 3)}</span></div><div class="chart">${histogram(r, { small: true })}</div><div class="compare-numbers"><span>Survive 5 <strong>${pct(r.survive5, 2)}</strong></span><span>Next <strong>${pct(r.firstBust, 2)}</strong></span></div></article>`;
+        return `<article class="comparison-entry"><button type="button" class="hand-button" data-hand="${id}" aria-label="Inspect ${r.name}">${cards(r.cards)}</button><div class="compare-numbers"><span>Mean <strong>${num(r.mean, 3)}</strong></span><span>95% ±${num(1.96 * r.meanSE, 3)}</span></div><div class="chart">${histogram(r, { small: true })}</div><div class="compare-numbers"><span>Survive 5 <strong>${pct(r.survive5, 2)}</strong></span><span>Next <strong>${pct(r.firstBust, 2)}</strong></span></div></article>`;
       })
       .join("")}</div>`;
 }
@@ -563,10 +579,10 @@ function renderReports() {
   $("survival-chart").innerHTML = s
     ? lineChart(
         [
-          { values: s.survival, color: "#55d7b1", label: "Filtered survival" },
+          { values: s.survival, color: "var(--cat-1)", label: "Filtered survival" },
           {
             values: state.allStats.survival,
-            color: "#6c7b88",
+            color: "var(--muted)",
             label: "All starting hands",
             dashed: true,
           },
@@ -579,7 +595,7 @@ function renderReports() {
         [
           {
             values: s.hazard,
-            color: "#eeac61",
+            color: "var(--warn)",
             label: "Conditional bust risk",
           },
         ],
@@ -593,7 +609,7 @@ function renderReports() {
       )
     : emptyChart();
   $("survival-chart").innerHTML +=
-    '<div class="legend"><span><i class="swatch" style="background:#55d7b1"></i>Filtered population</span><span><i class="swatch" style="background:#6c7b88"></i>All hands (dashed)</span><span>Monte Carlo estimates</span></div>';
+    '<div class="legend"><span><i class="swatch" style="--swatch:var(--cat-1)"></i>Filtered population</span><span><i class="swatch" style="--swatch:var(--muted)"></i>All hands (dashed)</span><span>Monte Carlo estimates</span></div>';
   $("joint-chart").innerHTML = histogram(s, {
     ...chartOptions("joint-chart", { tall: true }),
     stacked: true,
@@ -633,16 +649,17 @@ function renderTextures() {
       .map((e) => {
         const s = e.stats,
           share = s.weight / state.stats.weight;
-        return `<div class="texture-row"><button class="texture-name" data-group="${field}" data-group-value="${esc(e.label)}">${field === "connectivity" ? `${e.label} ranks in window` : field === "highCard" ? `${e.label}-high` : e.label}<small>${count(e.rows.length)} classes</small></button><span class="bar-track"><i class="bar-fill" style="width:${(s.mean / 8) * 100}%;background:#55bd99"></i></span><span class="texture-value" title="95% MC interval ±${num(s.meanSE * 1.96, 4)}">${num(s.mean, 3)}</span>${stack(s.categories)}<span class="texture-value">${pct(share, 1)}</span></div>`;
+        return `<div class="texture-row"><button type="button" class="texture-name" data-group="${field}" data-group-value="${esc(e.label)}">${field === "connectivity" ? `${e.label} ranks in window` : field === "highCard" ? `${e.label}-high` : e.label}<small>${count(e.rows.length)} classes</small></button><span class="bar" style="--value:${Math.min(1, s.mean / 8)};--bar-color:var(--good)"></span><span class="texture-value" title="95% MC interval ±${num(s.meanSE * 1.96, 4)}">${num(s.mean, 3)}</span>${stack(s.categories)}<span class="texture-value">${pct(share, 1)}</span></div>`;
       })
       .join("")}<div class="legend">${legend()}</div>`;
 }
+// Suit-pattern colours for the scatter plot, as chart tokens.
 const textureColors = {
-  4: "#de7797",
-  31: "#eeac61",
-  22: "#5b9fea",
-  211: "#a294ed",
-  1111: "#55d7b1",
+  4: "var(--cat-4)",
+  31: "var(--cat-3)",
+  22: "var(--cat-1)",
+  211: "var(--cat-5)",
+  1111: "var(--cat-2)",
 };
 let scatterPoints = [];
 function renderScatter() {
@@ -661,10 +678,13 @@ function renderScatter() {
     right = 12,
     top = 10,
     bottom = 35;
-  ctx.font = phoneLayout.matches ? "12px system-ui" : "9px system-ui";
+  const muted = cssColor("--muted"),
+    grid = cssColor("--chart-grid"),
+    tone = (key) => cssColor(textureColors[key].slice(4, -1));
+  ctx.font = `12px ${cssColor("--font-sans") || "system-ui"}`;
   ctx.lineWidth = 1;
-  ctx.fillStyle = "#9da7af";
-  ctx.strokeStyle = "#30363c";
+  ctx.fillStyle = muted;
+  ctx.strokeStyle = grid;
   for (let y = 0; y <= 3; y += 0.5) {
     const py = top + ((3 - y) / 3) * (h - top - bottom);
     ctx.beginPath();
@@ -690,9 +710,10 @@ function renderScatter() {
     x: left + ((r.mean - 1) / 7) * (w - left - right),
     y: top + ((3 - r.sd) / 3) * (h - top - bottom),
   }));
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = 0.45;
+  const tones = Object.fromEntries(Object.keys(textureColors).map((key) => [key, tone(key)]));
   scatterPoints.forEach((p) => {
-    ctx.fillStyle = textureColors[p.r.suitPattern];
+    ctx.fillStyle = tones[p.r.suitPattern];
     ctx.beginPath();
     ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
     ctx.fill();
@@ -700,13 +721,13 @@ function renderScatter() {
   ctx.globalAlpha = 1;
   if (!scatterPoints.length) {
     ctx.textAlign = "center";
-    ctx.fillStyle = "#9da7af";
+    ctx.fillStyle = muted;
     ctx.fillText("No matching hands", w / 2, h / 2);
   }
   $("scatter-legend").innerHTML = Object.entries(SUIT_LABELS)
     .map(
       ([key, label]) =>
-        `<span><i class="swatch" style="background:${textureColors[key]}"></i>${label}</span>`,
+        `<span><i class="swatch" style="--swatch:${textureColors[key]}"></i>${label}</span>`,
     )
     .join("");
 }
@@ -753,11 +774,7 @@ function renderHeatmap() {
       const c = cells[a * 13 + b],
         v = c.w ? c.sum / c.w : null,
         t = v === null ? 0 : (v - lo) / (hi - lo || 1);
-      const color =
-        v === null
-          ? "#20262b"
-          : `rgb(${Math.round(35 + t * 32)},${Math.round(54 + t * 132)},${Math.round(46 + t * 100)})`;
-      html += `<button class="heatmap-cell" style="background:${color}" data-ranks="${RANKS[a]}${RANKS[b]}" ${v === null ? "disabled" : ""} title="${RANKS[a]}${RANKS[b]}: ${v === null ? "no matching hands" : `${num(v, 3)} mean draws; ${count(c.n)} classes`}" aria-label="Filter hands containing ${RANKS[a]} and ${RANKS[b]}">${v === null ? "·" : num(v, 1)}</button>`;
+      html += `<button type="button" class="heatmap-cell" style="--t:${t.toFixed(3)}" data-ranks="${RANKS[a]}${RANKS[b]}" ${v === null ? "disabled" : ""} title="${RANKS[a]}${RANKS[b]}: ${v === null ? "no matching hands" : `${num(v, 3)} mean draws; ${count(c.n)} classes`}" aria-label="Filter hands containing ${RANKS[a]} and ${RANKS[b]}">${v === null ? "·" : num(v, 1)}</button>`;
     }
   }
   $("rank-heatmap").innerHTML = html;
@@ -782,21 +799,21 @@ function renderPayout() {
     payout = p > 0 ? (1 - edge) / p : null;
   const mult = (x) => (x === null ? "—" : `${num(x, x > 100 ? 1 : 3)}×`);
   $("payout-summary").innerHTML =
-    `<div class="payout-stat"><span>Win probability${target <= 2 ? " · exact" : " · estimated"}</span><strong>${pct(p, 3)}</strong></div><div class="payout-stat"><span>Fair return</span><strong>${mult(fair)}</strong></div><div class="payout-stat"><span>Return at ${pct(edge, 1)} edge</span><strong>${mult(payout)}</strong></div>`;
+    `<div class="stat"><span class="stat-label">Win probability${target <= 2 ? " · exact" : " · estimated"}</span><span class="stat-value">${pct(p, 3)}</span></div><div class="stat"><span class="stat-label">Fair return</span><span class="stat-value">${mult(fair)}</span></div><div class="stat"><span class="stat-label">Return at ${pct(edge, 1)} edge</span><span class="stat-value">${mult(payout)}</span></div>`;
   $("payout-chart").innerHTML = lineChart(
     [
       {
         values: Array.from({ length: 13 }, (_, k) =>
           k ? targetProbability(s, k) : 1,
         ),
-        color: "#55d7b1",
+        color: "var(--good)",
         label: "Chance of surviving target",
       },
     ],
     { ...chartOptions("payout-chart"), xLabel: "Target safe draws" },
   );
   $("payout-table").innerHTML =
-    `<table><thead><tr><th>Safe draws</th><th>Win chance</th><th>Fair return</th><th>At ${pct(edge, 1)} edge</th></tr></thead><tbody>${Array.from(
+    `<div class="table-wrap"><table class="data-table"><thead><tr><th>Safe draws</th><th>Win chance</th><th>Fair return</th><th>At ${pct(edge, 1)} edge</th></tr></thead><tbody>${Array.from(
       { length: 12 },
       (_, i) => {
         const k = i + 1,
@@ -805,7 +822,7 @@ function renderPayout() {
       },
     ).join(
       "",
-    )}</tbody></table><p class="detail-note">Targets 1–2 use exact enumeration; later targets use Monte Carlo. A displayed 0% may mean no observed wins. These fixed-target payouts assume random dealing from this population and commitment before drawing. Choosing starting hands or cashing out early changes the value.</p>`;
+    )}</tbody></table></div><p class="detail-note">Targets 1–2 use exact enumeration; later targets use Monte Carlo. A displayed 0% may mean no observed wins. These fixed-target payouts assume random dealing from this population and commitment before drawing. Choosing starting hands or cashing out early changes the value.</p>`;
 }
 function renderLive() {
   const r = selected(),
@@ -836,7 +853,7 @@ function renderLive() {
   $("outs-grid").innerHTML = deck
     .map(
       ({ card: c, held: used, category }) =>
-        `<button class="outs-card ${used ? "held" : category >= 0 ? "danger" : ""}" style="grid-column:${Math.floor(c / 4) + 1};grid-row:${(c % 4) + 1};${category >= 0 ? `--outcome:${COLORS[category]}` : ""}" data-draw="${c}" ${used || bust >= 0 ? "disabled" : ""} aria-label="Draw ${cardName(c)}: ${used ? "already held" : category >= 0 ? `bust, ${CATEGORIES[category]}` : "safe"}" title="${cardName(c)} · ${used ? "already held" : category >= 0 ? `bust: ${CATEGORIES[category]}` : "safe"}">${card(c)}</button>`,
+        `<button type="button" class="outs-card ${used ? "held" : category >= 0 ? "danger" : ""}" style="grid-column:${Math.floor(c / 4) + 1};grid-row:${(c % 4) + 1};${category >= 0 ? `--outcome:${CAT_COLORS[category]}` : ""}" data-draw="${c}" ${used || bust >= 0 ? "disabled" : ""} aria-label="Draw ${cardName(c)}: ${used ? "already held" : category >= 0 ? `bust, ${CATEGORIES[category]}` : "safe"}" title="${cardName(c)} · ${used ? "already held" : category >= 0 ? `bust: ${CATEGORIES[category]}` : "safe"}">${card(c)}</button>`,
     )
     .join("");
   const counts = Array(6).fill(0);
@@ -848,7 +865,7 @@ function renderLive() {
         counts
           .map((n, i) =>
             n
-              ? `<span><i class="swatch" style="background:${COLORS[i]}"></i>${CATEGORIES[i]}: ${n}</span>`
+              ? `<span><i class="swatch" style="--swatch:${CAT_COLORS[i]}"></i>${CATEGORIES[i]}: ${n}</span>`
               : "",
           )
           .join("");
@@ -879,7 +896,7 @@ function renderRules() {
   $("numeric-rules").innerHTML = state.numeric
     .map(
       (r) =>
-        `<div class="numeric-rule" data-rule="${r.id}"><select data-rule-field="metric" aria-label="Filter metric">${numericDefs.map((c) => `<option value="${c.key}" ${c.key === r.metric ? "selected" : ""}>${c.label}${c.key.startsWith("cat") || c.key.startsWith("survive") || ["firstBust", "bustBy2"].includes(c.key) ? " (%)" : ""}</option>`).join("")}</select><select data-rule-field="op" aria-label="Comparison"><option value="gte" ${r.op === "gte" ? "selected" : ""}>≥</option><option value="lte" ${r.op === "lte" ? "selected" : ""}>≤</option><option value="eq" ${r.op === "eq" ? "selected" : ""}>=</option></select><input data-rule-field="value" type="number" step="any" value="${esc(r.value)}" placeholder="Value" aria-label="Filter value"><button data-remove-rule="${r.id}" aria-label="Remove metric filter">×</button></div>`,
+        `<div class="numeric-rule" data-rule="${r.id}"><div class="field field--select"><select data-rule-field="metric" aria-label="Filter metric">${numericDefs.map((c) => `<option value="${c.key}" ${c.key === r.metric ? "selected" : ""}>${c.label}${c.key.startsWith("cat") || c.key.startsWith("survive") || ["firstBust", "bustBy2"].includes(c.key) ? " (%)" : ""}</option>`).join("")}</select></div><div class="field field--select"><select data-rule-field="op" aria-label="Comparison"><option value="gte" ${r.op === "gte" ? "selected" : ""}>≥</option><option value="lte" ${r.op === "lte" ? "selected" : ""}>≤</option><option value="eq" ${r.op === "eq" ? "selected" : ""}>=</option></select></div><div class="field"><input data-rule-field="value" type="number" step="any" value="${esc(r.value)}" placeholder="Value" aria-label="Filter value"></div><button type="button" class="btn btn--ghost btn--icon" data-remove-rule="${r.id}" aria-label="Remove metric filter">${icon("i-close")}</button></div>`,
     )
     .join("");
 }
@@ -887,7 +904,7 @@ function renderColumns() {
   $("column-choices").innerHTML = columnDefs
     .map(
       (c) =>
-        `<label><input type="checkbox" data-column="${c.key}" ${state.columns.includes(c.key) ? "checked" : ""}>${c.label}</label>`,
+        `<label class="check"><input type="checkbox" data-column="${c.key}" ${state.columns.includes(c.key) ? "checked" : ""}>${c.label}</label>`,
     )
     .join("");
 }
@@ -927,11 +944,6 @@ function wireEvents() {
       (hand || $("reopen-hand")).focus({ preventScroll: true });
     }
   });
-  document
-    .querySelectorAll("[data-tab]")
-    .forEach((b) =>
-      b.addEventListener("click", () => changeTab(b.dataset.tab)),
-    );
   for (const id of [
     "pairing",
     "suits",
@@ -1078,7 +1090,7 @@ function wireEvents() {
   });
   $("columns-button").addEventListener("click", () => {
     renderColumns();
-    $("columns-dialog").showModal();
+    openDialog("columns-dialog");
   });
   $("column-choices").addEventListener("change", (e) => {
     const key = e.target.dataset.column;
@@ -1089,22 +1101,7 @@ function wireEvents() {
     $("column-preset").value = "custom";
     renderTable();
   });
-  for (const id of ["method-button", "footer-method"])
-    $(id).addEventListener("click", () => $("method-dialog").showModal());
-  document.querySelectorAll("dialog").forEach((d) =>
-    d.addEventListener("click", (e) => {
-      if (e.target === d) {
-        const r = d.getBoundingClientRect();
-        if (
-          e.clientX < r.left ||
-          e.clientX > r.right ||
-          e.clientY < r.top ||
-          e.clientY > r.bottom
-        )
-          d.close();
-      }
-    }),
-  );
+  $("method-button").addEventListener("click", () => openDialog("method-dialog"));
   $("export-button").addEventListener("click", () => {
     const blob = new Blob([csvForRows(state.sorted)], {
         type: "text/csv;charset=utf-8;",
@@ -1212,6 +1209,7 @@ async function init() {
         : state.rows.find((r) => r.name === "As Kh 8d 3c").id;
     $("dataset-status").textContent =
       `${compact(state.data.totalTrials)} simulated runouts`;
+    $("dataset-status").classList.add("badge--good");
     $("footer-provenance").textContent =
       `${count(state.data.trialsPerHand)} runouts / class · ${count(state.data.classCount)} classes · ${count(state.data.dealCount)} deals · Seed ${state.data.seed}`;
     renderMethod();
@@ -1220,6 +1218,7 @@ async function init() {
     $("loading").hidden = true;
     $("app").hidden = false;
     applyFilters();
+    tabs = Tabs.init($("view-tabs"), { onChange: applyTab });
   } catch (error) {
     console.error(error);
     $("loading").hidden = true;
@@ -1227,6 +1226,7 @@ async function init() {
     $("load-error").textContent =
       `The simulation data could not be loaded. ${error.message} Serve this page over HTTP and reload.`;
     $("dataset-status").textContent = "Dataset unavailable";
+    $("dataset-status").classList.add("badge--bad");
   }
 }
 init();

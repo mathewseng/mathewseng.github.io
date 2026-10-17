@@ -1,4 +1,8 @@
-import { CATEGORIES, COLORS, wilson } from "./engine.mjs";
+import { CATEGORIES, wilson } from "./engine.mjs";
+// Bust-category colours are the --dodge-cat-* custom properties set by
+// styles.css on <body> (aliases of the site's --cat-* chart tokens), so no
+// colour literal lives in JavaScript. Charts pipe them inline as var().
+export const CAT_COLORS = CATEGORIES.map((_, i) => `var(--dodge-cat-${i})`);
 export const pct = (p, digits = 1) => {
   if (p == null || !Number.isFinite(p)) return "—";
   const unit = 10 ** -digits;
@@ -25,7 +29,7 @@ export const emptyChart = () =>
 export const legend = () =>
   CATEGORIES.map(
     (c, i) =>
-      `<span><i class="swatch" style="background:${COLORS[i]}"></i>${c}</span>`,
+      `<span><i class="swatch" style="--swatch:${CAT_COLORS[i]}"></i>${c}</span>`,
   ).join("");
 export function histogram(
   stat,
@@ -67,11 +71,11 @@ export function histogram(
       for (let c = 0; c < 6; c++) {
         const value = stat.joint[i * 6 + c],
           barh = (value / ymax) * ph;
-        marks += `<rect x="${x}" y="${base - barh}" width="${bw}" height="${barh}" fill="${COLORS[c]}"><title>${title}\n${CATEGORIES[c]}: ${pct(value, 4)} of all runouts</title></rect>`;
+        marks += `<rect x="${x}" y="${base - barh}" width="${bw}" height="${barh}" style="fill:${CAT_COLORS[c]}"><title>${title}\n${CATEGORIES[c]}: ${pct(value, 4)} of all runouts</title></rect>`;
         base -= barh;
       }
     } else {
-      marks += `<rect x="${x}" y="${y}" width="${bw}" height="${(p / ymax) * ph}" rx="2" fill="${i + 1 === stat.mode ? "#70e0bb" : "#3a9b7d"}"><title>${title}</title></rect>`;
+      marks += `<rect class="hist-bar${i + 1 === stat.mode ? " mode" : ""}" x="${x}" y="${y}" width="${bw}" height="${(p / ymax) * ph}" rx="2"><title>${title}</title></rect>`;
     }
     if (values && p >= 0.012)
       marks += `<text class="value-label" x="${x + bw / 2}" y="${y - 6}" text-anchor="middle">${pct(p, 1)}</text>`;
@@ -121,11 +125,11 @@ export function lineChart(
       pen = true;
     });
     if (series.length === 1 && s.values.every((p) => p != null))
-      marks += `<path d="${path} L${x(n - 1)},${y(0)} L${x(0)},${y(0)}Z" fill="${s.color}" opacity=".08"/>`;
-    marks += `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.3" ${s.dashed ? 'stroke-dasharray="5 4"' : ""}/>`;
+      marks += `<path d="${path} L${x(n - 1)},${y(0)} L${x(0)},${y(0)}Z" style="fill:${s.color}" opacity=".08"/>`;
+    marks += `<path d="${path}" fill="none" style="stroke:${s.color}" stroke-width="2.3" ${s.dashed ? 'stroke-dasharray="5 4"' : ""}/>`;
     s.values.forEach((p, i) => {
       if (p != null)
-        marks += `<circle cx="${x(i)}" cy="${y(p)}" r="3.2" fill="${s.color}"><title>${esc(s.label)} · ${i + start}: ${pct(p, 4)}</title></circle>`;
+        marks += `<circle cx="${x(i)}" cy="${y(p)}" r="3.2" style="fill:${s.color}"><title>${esc(s.label)} · ${i + start}: ${pct(p, 4)}</title></circle>`;
     });
   });
   marks += `<text class="axis-label" x="${width / 2}" y="${height - 3}" text-anchor="middle">${esc(xLabel)}</text>`;
@@ -139,7 +143,7 @@ export function outcomes(stat, confidence = false) {
       const title = interval
         ? `95% Wilson interval: ${pct(interval[0], 4)} – ${pct(interval[1], 4)}.${p === 0 ? " No occurrences observed; probability is not proven zero." : ""}`
         : `${CATEGORIES[i]}: ${pct(p, 5)}`;
-      return `<div class="outcome-row" title="${title}"><span class="outcome-label"><i class="swatch" style="background:${COLORS[i]}"></i>${CATEGORIES[i]}</span><span class="bar-track"><i class="bar-fill" style="width:${p * 100}%;background:${COLORS[i]}"></i></span><span class="outcome-number">${pct(p, p < 0.01 ? 3 : 1)}</span></div>`;
+      return `<div class="outcome-row" title="${title}"><span class="outcome-label"><i class="swatch" style="--swatch:${CAT_COLORS[i]}"></i>${CATEGORIES[i]}</span><span class="bar" style="--value:${p};--bar-color:${CAT_COLORS[i]}"></span><span class="outcome-number">${pct(p, p < 0.01 ? 3 : 1)}</span></div>`;
     })
     .join("");
 }
