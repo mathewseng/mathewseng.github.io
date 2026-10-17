@@ -4,61 +4,96 @@
   const {
     PokerRushGame,
     PokerRushMultiplayerGame,
-    RANKS,
-    SUITS,
     createDeck,
   } = window.PokerRushCore;
   const PlayingCards = window.PlayingCards;
+  const PeerRoom = window.PeerRoom;
+  const Sheet = window.Sheet;
 
+  const $ = (id) => document.getElementById(id);
   const els = {
-    lobby: document.querySelector("#lobby"),
-    gameView: document.querySelector("#gameView"),
-    optionsForm: document.querySelector("#optionsForm"),
-    dailyButton: document.querySelector("#dailyButton"),
-    randomButton: document.querySelector("#randomButton"),
-    multiplayerButton: document.querySelector("#multiplayerButton"),
-    matrixToggleButton: document.querySelector("#matrixToggleButton"),
-    newDailyButton: document.querySelector("#newDailyButton"),
-    newRandomButton: document.querySelector("#newRandomButton"),
-    instructionsButton: document.querySelector("#instructionsButton"),
-    instructionsDialog: document.querySelector("#instructionsDialog"),
-    scoreValue: document.querySelector("#scoreValue"),
-    timeValue: document.querySelector("#timeValue"),
-    seenValue: document.querySelector("#seenValue"),
-    discardValue: document.querySelector("#discardValue"),
-    deckValue: document.querySelector("#deckValue"),
-    uniqueSeenValue: document.querySelector("#uniqueSeenValue"),
-    scoreSummary: document.querySelector("#scoreSummary"),
-    scoreStrip: document.querySelector("#scoreStrip"),
-    playersPanel: document.querySelector("#playersPanel"),
-    scoredHands: document.querySelector("#scoredHands"),
-    scoreList: document.querySelector("#scoreList"),
-    pointsBreakdown: document.querySelector("#pointsBreakdown"),
-    hand: document.querySelector("#hand"),
-    cardMatrix: document.querySelector("#cardMatrix"),
-    statusLine: document.querySelector("#statusLine"),
-    seedBadge: document.querySelector("#seedBadge"),
-    modeBadge: document.querySelector("#modeBadge"),
+    lobby: $("lobby"),
+    roomView: $("roomView"),
+    gameView: $("gameView"),
+    optionsForm: $("optionsForm"),
+    optionsDialog: $("optionsDialog"),
+    optionsButton: $("optionsButton"),
+    optionsCloseButton: $("optionsCloseButton"),
+    optionsDoneButton: $("optionsDoneButton"),
+    optionsSummary: $("optionsSummary"),
+    roomOptionsButton: $("roomOptionsButton"),
+    roomOptions: $("roomOptions"),
+    dailyButton: $("dailyButton"),
+    randomButton: $("randomButton"),
+    multiplayerButton: $("multiplayerButton"),
+    dailySeedBadge: $("dailySeedBadge"),
+    dailyPlayedBadge: $("dailyPlayedBadge"),
+    bestScoreValue: $("bestScoreValue"),
+    todayScoreValue: $("todayScoreValue"),
+    matrixToggleButton: $("matrixToggleButton"),
+    newDailyButton: $("newDailyButton"),
+    newRandomButton: $("newRandomButton"),
+    instructionsButton: $("instructionsButton"),
+    instructionsDialog: $("instructionsDialog"),
+    scoreValue: $("scoreValue"),
+    timeValue: $("timeValue"),
+    seenValue: $("seenValue"),
+    discardValue: $("discardValue"),
+    deckValue: $("deckValue"),
+    uniqueSeenValue: $("uniqueSeenValue"),
+    scoreSummary: $("scoreSummary"),
+    scoreStrip: $("scoreStrip"),
+    playersPanel: $("playersPanel"),
+    scoredHands: $("scoredHands"),
+    scoreList: $("scoreList"),
+    pointsBreakdown: $("pointsBreakdown"),
+    hand: $("hand"),
+    cardMatrix: $("cardMatrix"),
+    statusLine: $("statusLine"),
+    seedBadge: $("seedBadge"),
+    modeBadge: $("modeBadge"),
     tableSurface: document.querySelector(".table-surface"),
-    matrixPanel: document.querySelector("#matrixPanel"),
-    soundButton: document.querySelector("#soundButton"),
-    endGameButton: document.querySelector("#endGameButton"),
-    gameOver: document.querySelector("#gameOver"),
-    gameOverTitle: document.querySelector("#gameOverTitle"),
-    gameOverSummary: document.querySelector("#gameOverSummary"),
-    againButton: document.querySelector("#againButton"),
-    backButton: document.querySelector("#backButton"),
-    multiplayerDialog: document.querySelector("#multiplayerDialog"),
-    playerNameInput: document.querySelector("#playerNameInput"),
-    hostGameButton: document.querySelector("#hostGameButton"),
-    inviteCode: document.querySelector("#inviteCode"),
-    answerCodeInput: document.querySelector("#answerCodeInput"),
-    acceptAnswerButton: document.querySelector("#acceptAnswerButton"),
-    joinGameButton: document.querySelector("#joinGameButton"),
-    joinInviteCode: document.querySelector("#joinInviteCode"),
-    joinAnswerCode: document.querySelector("#joinAnswerCode"),
-    connectionStatus: document.querySelector("#connectionStatus"),
+    matrixPanel: $("matrixPanel"),
+    soundButton: $("soundButton"),
+    endGameButton: $("endGameButton"),
+    gameBanner: $("gameBanner"),
+    gameOver: $("gameOver"),
+    gameOverKicker: $("gameOverKicker"),
+    gameOverTitle: $("gameOverTitle"),
+    gameOverSummary: $("gameOverSummary"),
+    gameOverStats: $("gameOverStats"),
+    gameOverWait: $("gameOverWait"),
+    againButton: $("againButton"),
+    backButton: $("backButton"),
+    multiplayerDialog: $("multiplayerDialog"),
+    multiplayerCloseButton: $("multiplayerCloseButton"),
+    multiplayerHint: $("multiplayerHint"),
+    playerNameInput: $("playerNameInput"),
+    hostGameButton: $("hostGameButton"),
+    joinGameButton: $("joinGameButton"),
+    joinFields: $("joinFields"),
+    joinInviteCode: $("joinInviteCode"),
+    connectButton: $("connectButton"),
+    connectionStatus: $("connectionStatus"),
+    connection: $("connection"),
+    inviteCode: $("inviteCode"),
+    copyCodeButton: $("copyCodeButton"),
+    copyInviteButton: $("copyInviteButton"),
+    roomTitle: $("roomTitle"),
+    roomLede: $("roomLede"),
+    roomBanner: $("roomBanner"),
+    roster: $("roster"),
+    rosterCount: $("rosterCount"),
+    startGameButton: $("startGameButton"),
+    roomWait: $("roomWait"),
+    roomError: $("roomError"),
+    leaveRoomButton: $("leaveRoomButton"),
+    alerts: $("alerts"),
   };
+
+  const ICONS = "../../shared/icons.svg";
+  const RECORDS_KEY = "poker.rush.records.v1";
+  const NAME_KEY = "poker.player.name";
 
   const discardModeLabels = {
     bottom: "Bottom discard",
@@ -85,18 +120,26 @@
   let matrixVisible = false;
   let renderedScoreIds = new Set();
   let isResolving = false;
+  // "single" (solo run), "host" or "peer" (a race in progress), "room" (in a
+  // room but not racing).
   let playMode = "single";
   let multiplayerGame = null;
-  let localPlayerId = "host";
-  let hostPeerConnection = null;
-  let joinPeerConnection = null;
-  let hostChannel = null;
-  let joinChannel = null;
-  let hostPeers = new Map();
-  let pendingHostChannel = null;
+  let localPlayerId = "solo";
   let hostActionQueue = [];
   let isProcessingHostActions = false;
-  let networkSeq = 0;
+  let setupMode = "create";
+  let latestRoster = [];
+  let remoteOptions = null;
+  let records = loadRecords();
+  let recordNote = "";
+
+  // The room is created once; create()/join() reset its runtime. A missing
+  // PeerRoom (the shared script failed to load) only disables multiplayer.
+  const room = PeerRoom
+    ? new PeerRoom({ namespace: "poker-rush", maxPlayers: 2, storageKey: "poker.rush.session.v1" })
+    : null;
+
+  /* ---------- Options ---------- */
 
   function selectedValue(name) {
     const checked = els.optionsForm.querySelector(`[name="${name}"]:checked`);
@@ -119,6 +162,43 @@
     };
   }
 
+  function optionFacts(options) {
+    return [
+      `${options.handSize} cards`,
+      `${options.jokers} joker${options.jokers === 1 ? "" : "s"}`,
+      options.timeLimit ? `${options.timeLimit}s` : "No time limit",
+      discardModeLabels[options.discardMode] || options.discardMode,
+      endModeLabels[options.endMode] || options.endMode,
+    ];
+  }
+
+  function renderChips(container, facts) {
+    container.replaceChildren(
+      ...facts.map((fact) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = fact;
+        return chip;
+      }),
+    );
+  }
+
+  function renderOptionsSummary() {
+    renderChips(els.optionsSummary, optionFacts(readOptions("")));
+  }
+
+  function openOptions(opener) {
+    if (Sheet) Sheet.open(els.optionsDialog, { dismissible: true, returnFocus: opener, onClose: onOptionsClosed });
+    else if (typeof els.optionsDialog.showModal === "function") els.optionsDialog.showModal();
+  }
+
+  function onOptionsClosed() {
+    renderOptionsSummary();
+    if (playMode === "room" && room && room.isHost) publishLobby();
+  }
+
+  /* ---------- Seeds and records ---------- */
+
   function dailySeed(date = new Date()) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -136,6 +216,52 @@
     }
     return `PR-${bytes[0].toString(36)}-${bytes[1].toString(36)}`;
   }
+
+  // Best solo score and today's daily result live in localStorage so a
+  // daily run leaves a "played today" marker behind.
+  function loadRecords() {
+    try {
+      const value = JSON.parse(localStorage.getItem(RECORDS_KEY) || "null");
+      return value && typeof value === "object" ? value : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function saveRecords() {
+    try {
+      localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+    } catch (error) {
+      // Storage may be unavailable; the run still ends normally.
+    }
+  }
+
+  function recordSoloResult(finished) {
+    recordNote = "";
+    const entry = { score: finished.score, hands: finished.scoredHands.length, seed: finished.seed, kind: lastStartKind, at: Date.now() };
+    if (lastStartKind === "daily" && finished.seed === dailySeed()) {
+      const previous = records.daily && records.daily.seed === entry.seed ? records.daily : null;
+      if (!previous || entry.score > previous.score) records.daily = entry;
+    }
+    if (entry.score > 0 && (!records.best || entry.score > records.best.score)) {
+      recordNote = records.best ? `New best score (was ${records.best.score}).` : "First score on the board.";
+      records.best = entry;
+    }
+    saveRecords();
+    renderRecords();
+  }
+
+  function renderRecords() {
+    const today = dailySeed();
+    const daily = records.daily && records.daily.seed === today ? records.daily : null;
+    els.bestScoreValue.textContent = records.best ? `${records.best.score} pts` : "–";
+    els.todayScoreValue.textContent = daily ? `${daily.score} pts` : "Not played";
+    els.dailySeedBadge.textContent = `Seed ${today}`;
+    els.dailyPlayedBadge.hidden = !daily;
+    els.dailyPlayedBadge.textContent = daily ? `Played today · ${daily.score} pt${daily.score === 1 ? "" : "s"}` : "Played today";
+  }
+
+  /* ---------- Sound ---------- */
 
   function ensureAudio() {
     if (!soundEnabled) return null;
@@ -201,6 +327,8 @@
     if (rank === "four_kind" || rank === "straight_flush" || rank === "royal_flush") noise(0.12, 0.018);
   }
 
+  /* ---------- View state helpers ---------- */
+
   function cardLabel(card) {
     return card.isJoker ? `Joker ${card.jokerIndex}` : `${card.rank}${card.suit}`;
   }
@@ -228,13 +356,31 @@
     if (matrixVisible && renderNow && game) renderMatrix({ force: true });
   }
 
+  // A view as plain data: the room clones state with structuredClone, so the
+  // engine view's methods and Maps are replaced by arrays and strings.
   function serializeView(view) {
     return {
-      ...view,
+      options: { ...view.options },
+      seed: view.seed,
+      hand: view.hand.slice(),
+      deckCount: view.deckCount === Infinity ? "Infinity" : view.deckCount,
+      discardPileCount: view.discardPileCount || 0,
+      scoredHands: view.scoredHands.slice(),
+      score: view.score,
+      userDiscardCount: view.userDiscardCount,
+      drawnCount: view.drawnCount,
+      uniqueSeenCount: view.uniqueSeenCount,
+      totalCards: view.totalCards,
+      status: view.status,
+      endReason: view.endReason,
+      startedAt: view.startedAt,
       seenCounts: Array.from(view.seenCounts || []),
       discardedCounts: Array.from(view.discardedCounts || []),
       scoredCounts: Array.from(view.scoredCounts || []),
-      deckCount: view.deckCount === Infinity ? "Infinity" : view.deckCount,
+      lastEvents: (view.lastEvents || []).slice(),
+      multiplayer: Boolean(view.multiplayer),
+      localPlayerId: view.localPlayerId,
+      players: (view.players || []).map((player) => ({ ...player })),
     };
   }
 
@@ -287,22 +433,28 @@
       });
   }
 
+  function showView(view) {
+    els.lobby.hidden = view !== "lobby";
+    els.roomView.hidden = view !== "room";
+    els.gameView.hidden = view !== "game";
+    if (view !== "game" && els.gameOver.open) els.gameOver.close();
+    const inRoom = Boolean(room && room.connected);
+    els.connection.hidden = !inRoom;
+    els.newDailyButton.hidden = inRoom;
+    els.newRandomButton.hidden = inRoom;
+  }
+
+  /* ---------- Solo runs ---------- */
+
   function startGame(kind) {
-    closeMultiplayerConnections();
+    if (room && room.connected) leaveRoom({ silent: true });
     playMode = "single";
     multiplayerGame = null;
     localPlayerId = "solo";
     lastStartKind = kind;
     lastSeed = kind === "daily" ? dailySeed() : randomSeed();
     game = new PokerRushGame(readOptions(lastSeed));
-    resetRenderState();
-    setMatrixVisible(false, { renderNow: false });
-    els.lobby.hidden = true;
-    els.gameView.hidden = false;
-    els.gameOver.hidden = true;
-    ensureAudio();
-    render({ animateHand: true, forceMatrix: true, forceScores: true });
-    startTimer();
+    beginRun({ animateHand: true, forceMatrix: true, forceScores: true });
     const scoreEvent = game.lastEvents.find((event) => event.type === "score");
     if (scoreEvent) {
       animateScore(scoreEvent.record.evaluation.key);
@@ -310,8 +462,45 @@
     }
   }
 
+  function beginRun(renderOptions) {
+    resetRenderState();
+    setMatrixVisible(false, { renderNow: false });
+    recordNote = "";
+    showView("game");
+    hideGameBanner();
+    ensureAudio();
+    render(renderOptions);
+    startTimer();
+    const firstCard = slotCard(els.hand.firstElementChild);
+    if (firstCard && !window.matchMedia("(pointer: coarse)").matches) firstCard.focus({ preventScroll: true });
+  }
+
   function restartGame() {
+    if (playMode === "host") {
+      startHostedMultiplayer();
+      return;
+    }
+    if (playMode === "peer") return;
     startGame(lastStartKind);
+  }
+
+  // Daily, Random and End during a run ask first; a run is lost otherwise.
+  async function confirmThen(action, { title, text, verb }) {
+    if (!game || game.status !== "playing") {
+      action();
+      return;
+    }
+    const ok = Sheet
+      ? await Sheet.confirm({ title, text, verb, danger: true, sheet: true })
+      : window.confirm(text);
+    if (ok) action();
+  }
+
+  function runSummaryText() {
+    if (!game) return "";
+    const remaining = game.remainingSeconds();
+    const clock = remaining === null ? "" : ` with ${remaining.toFixed(0)}s left`;
+    return `The current run (${game.score} pt${game.score === 1 ? "" : "s"}${clock}) is discarded and does not count toward your records.`;
   }
 
   function startTimer() {
@@ -331,6 +520,8 @@
       }
     }, 100);
   }
+
+  /* ---------- Rendering ---------- */
 
   function render(options = {}) {
     if (!game) return;
@@ -418,6 +609,8 @@
   function renderHand({ changedIndex = null, animateAll = false } = {}) {
     const size = game.options.handSize;
     ensureHandSlots(size);
+    const focused = document.activeElement && document.activeElement.closest(".hand-slot");
+    const focusedIndex = focused ? Number(focused.dataset.index) : -1;
     for (let index = 0; index < size; index += 1) {
       const card = game.hand[index] || null;
       const slot = els.hand.children[index];
@@ -430,6 +623,11 @@
       }
     }
     previousHandIds = Array.from({ length: size }, (_, index) => (game.hand[index] ? game.hand[index].id : ""));
+    // The discarded card's button is rebuilt; keep the keyboard on that slot.
+    if (focusedIndex >= 0 && !els.hand.contains(document.activeElement)) {
+      const next = slotCard(els.hand.children[focusedIndex]);
+      if (next) next.focus({ preventScroll: true });
+    }
   }
 
   function scoreCardsMarkup(record) {
@@ -477,8 +675,9 @@
     els.scoredHands.replaceChildren(stripFragment);
     els.scoredHands.dataset.signature = nextSignature;
 
+    // The full run, newest first, as a scrolling list.
     const listFragment = document.createDocumentFragment();
-    visibleHands.forEach((record) => {
+    hands.forEach((record) => {
       const row = document.createElement("div");
       row.className = "score-row";
       const title = document.createElement("strong");
@@ -493,13 +692,52 @@
       empty.className = "score-row";
       const title = document.createElement("strong");
       title.textContent = "No scores yet";
-      const body = document.createElement("span");
-      body.textContent = " ";
-      empty.append(title, body);
+      empty.append(title);
       listFragment.append(empty);
     }
     els.scoreList.replaceChildren(listFragment);
     renderedScoreIds = new Set(hands.map((record) => record.id));
+  }
+
+  function initials(name) {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    const text = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : String(name || "?").slice(0, 2);
+    return text.toUpperCase();
+  }
+
+  function seatMarkup(player, { meta = [], status = "", tone = "", me = false, host = false, disconnected = false, classes = "" } = {}) {
+    const seat = document.createElement("div");
+    seat.className = ["seat", "seat--lobby", classes, me ? "seat--me" : "", host ? "seat--host" : "", disconnected ? "seat--disconnected" : ""].filter(Boolean).join(" ");
+    const avatar = document.createElement("span");
+    avatar.className = "seat-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.textContent = initials(player.name);
+    const name = document.createElement("span");
+    name.className = "seat-name";
+    const nameText = document.createElement("strong");
+    nameText.textContent = player.name;
+    name.append(nameText);
+    if (me) {
+      const you = document.createElement("span");
+      you.className = "seat-badge";
+      you.textContent = "You";
+      name.append(you);
+    }
+    const metaRow = document.createElement("span");
+    metaRow.className = "seat-meta";
+    meta.forEach((text) => {
+      const item = document.createElement("span");
+      item.textContent = text;
+      metaRow.append(item);
+    });
+    if (status) {
+      const badge = document.createElement("small");
+      badge.className = `seat-badge${tone ? ` seat-badge--${tone}` : ""}`;
+      badge.textContent = status;
+      metaRow.append(badge);
+    }
+    seat.append(avatar, name, metaRow);
+    return seat;
   }
 
   function renderPlayers() {
@@ -511,17 +749,18 @@
     }
     const fragment = document.createDocumentFragment();
     players.forEach((player) => {
-      const chip = document.createElement("div");
-      chip.className = "player-chip";
-      if (player.isLocal) chip.classList.add("is-local");
-      const name = document.createElement("strong");
-      name.textContent = player.name;
-      const score = document.createElement("span");
-      score.textContent = `${player.score} pts`;
-      const meta = document.createElement("small");
-      meta.textContent = `${player.scoredHands} hands · ${player.discards} discards`;
-      chip.append(name, score, meta);
-      fragment.append(chip);
+      const record = latestRoster.find((entry) => entry.id === player.id);
+      const disconnected = Boolean(record && record.connected === false);
+      const seat = seatMarkup(player, {
+        meta: [`${player.score} pts`, `${player.scoredHands} hand${player.scoredHands === 1 ? "" : "s"}`, `${player.discards} discard${player.discards === 1 ? "" : "s"}`],
+        status: disconnected ? "Disconnected" : "",
+        tone: disconnected ? "bad" : "",
+        me: player.isLocal,
+        host: Boolean(record && record.host),
+        disconnected,
+        classes: `player-chip${player.isLocal ? " is-local" : ""}`,
+      });
+      fragment.append(seat);
     });
     els.playersPanel.replaceChildren(fragment);
   }
@@ -541,33 +780,25 @@
     baseDeck.forEach((card) => updateMatrixCell(card, activeIds));
   }
 
+  // The deck in PlayingCards.deckMatrix() order (spades, hearts, diamonds,
+  // clubs; A down to 2) inside the shared .deck-matrix grid; jokers follow in
+  // a row of their own.
   function buildMatrix(baseDeck) {
     const byId = new Map(baseDeck.map((card) => [card.baseId, card]));
     const fragment = document.createDocumentFragment();
     matrixCellsById = new Map();
 
-    SUITS.forEach((suit) => {
-      const row = document.createElement("div");
-      row.className = "matrix-row";
-      const label = document.createElement("div");
-      label.className = "matrix-label";
-      label.textContent = suit;
-      row.append(label);
-
-      RANKS.forEach((rank) => {
-        const card = byId.get(`${rank}${suit}`);
-        row.append(createMatrixCell(card));
-      });
-      fragment.append(row);
+    const grid = document.createElement("div");
+    grid.className = "deck-matrix";
+    PlayingCards.deckMatrix().forEach((code) => {
+      const card = byId.get(`${code[0]}${code[1].toUpperCase()}`);
+      if (card) grid.append(createMatrixCell(card));
     });
+    fragment.append(grid);
 
     if (game.options.jokers > 0) {
       const row = document.createElement("div");
-      row.className = "matrix-row jokers";
-      const label = document.createElement("div");
-      label.className = "matrix-label";
-      label.textContent = "J";
-      row.append(label);
+      row.className = "deck-matrix matrix-row jokers";
       for (let i = 1; i <= game.options.jokers; i += 1) {
         row.append(createMatrixCell(byId.get(`X${i}`)));
       }
@@ -623,7 +854,9 @@
       return;
     }
     if (scoreEvent) {
-      els.statusLine.innerHTML = `<strong>${scoreEvent.record.evaluation.label}</strong> scored for ${scoreEvent.record.points} pt${scoreEvent.record.points === 1 ? "" : "s"}`;
+      const label = document.createElement("strong");
+      label.textContent = scoreEvent.record.evaluation.label;
+      els.statusLine.replaceChildren(label, ` scored for ${scoreEvent.record.points} pt${scoreEvent.record.points === 1 ? "" : "s"}`);
       return;
     }
     if (reshuffleEvent) {
@@ -637,230 +870,428 @@
     els.statusLine.textContent = "";
   }
 
-  function multiplayerName() {
-    return (els.playerNameInput.value || "Player").trim().slice(0, 18) || "Player";
+  function showGameBanner(message, tone = "") {
+    els.gameBanner.className = `table-banner${tone ? ` table-banner--${tone}` : ""}`;
+    els.gameBanner.firstElementChild.textContent = message;
+    els.gameBanner.hidden = false;
   }
 
-  function setConnectionStatus(text) {
-    els.connectionStatus.textContent = text;
+  function hideGameBanner() {
+    els.gameBanner.hidden = true;
   }
 
-  function encodeSignal(value) {
-    return btoa(unescape(encodeURIComponent(JSON.stringify(value))));
+  /* ---------- Messages ---------- */
+
+  // One polite live region (#statusLine, on the felt) and one assertive stack
+  // (#alerts). Room feedback is written where the user is looking: the room
+  // panel's status line, or the open dialog's error slot.
+  function notify(message) {
+    if (!message) return;
+    if (!els.roomView.hidden) els.connectionStatus.textContent = message;
+    else if (!els.gameView.hidden && (!game || game.status !== "playing")) els.statusLine.textContent = message;
   }
 
-  function decodeSignal(value) {
-    return JSON.parse(decodeURIComponent(escape(atob(value.trim()))));
+  function showError(message) {
+    if (els.multiplayerDialog.open && Sheet) {
+      Sheet.setError(els.multiplayerDialog, message);
+      return;
+    }
+    if (!els.roomView.hidden) els.roomError.textContent = message;
+    else if (!els.gameView.hidden) showGameBanner(message, "bad");
+    showAlert(message);
   }
 
-  function createPeerConnection() {
-    return new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+  function showAlert(message) {
+    if (!els.alerts) return;
+    const toast = document.createElement("div");
+    toast.className = "toast toast--alert";
+    const text = document.createElement("span");
+    text.textContent = message;
+    const dismiss = document.createElement("button");
+    dismiss.className = "btn btn--ghost btn--icon btn--sm";
+    dismiss.type = "button";
+    dismiss.setAttribute("aria-label", "Dismiss");
+    dismiss.innerHTML = `<svg class="icon" aria-hidden="true"><use href="${ICONS}#i-close" /></svg>`;
+    toast.append(text, dismiss);
+    let timer = 0;
+    const remove = () => {
+      window.clearTimeout(timer);
+      toast.remove();
+    };
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(remove, 6000);
+    };
+    dismiss.addEventListener("click", remove);
+    toast.addEventListener("mouseenter", () => window.clearTimeout(timer));
+    toast.addEventListener("focusin", () => window.clearTimeout(timer));
+    toast.addEventListener("mouseleave", arm);
+    toast.addEventListener("focusout", arm);
+    while (els.alerts.children.length >= 3) els.alerts.firstElementChild.remove();
+    els.alerts.append(toast);
+    arm();
   }
 
-  function waitForIceGathering(peerConnection) {
-    if (peerConnection.iceGatheringState === "complete") return Promise.resolve();
-    return new Promise((resolve) => {
-      const timeout = window.setTimeout(resolve, 1800);
-      peerConnection.addEventListener("icegatheringstatechange", () => {
-        if (peerConnection.iceGatheringState === "complete") {
-          window.clearTimeout(timeout);
-          resolve();
-        }
-      });
-    });
+  /* ---------- Multiplayer: the room ---------- */
+
+  function cleanName(value) {
+    return String(value || "Player").trim().replace(/\s+/g, " ").slice(0, 18) || "Player";
   }
 
-  function sendChannel(channel, payload) {
-    if (channel && channel.readyState === "open") {
-      channel.send(JSON.stringify(payload));
+  function cleanCode(value) {
+    return String(value || "").toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 6);
+  }
+
+  function setSetupMode(mode) {
+    setupMode = mode;
+    els.hostGameButton.setAttribute("aria-pressed", String(mode === "create"));
+    els.joinGameButton.setAttribute("aria-pressed", String(mode === "join"));
+    els.joinFields.hidden = mode !== "join";
+    els.connectButton.textContent = mode === "create" ? "Create room" : "Join room";
+    els.multiplayerHint.textContent = mode === "create"
+      ? "Both players draw from the same shuffled deck on one clock. Discards go back into the deck at random."
+      : "Enter the six-character code from the host's invite. The host starts the race.";
+  }
+
+  function openMultiplayerDialog(opener) {
+    if (Sheet) Sheet.setError(els.multiplayerDialog, "");
+    if (!room) {
+      showAlert("Multiplayer is unavailable: the room script did not load.");
+      return;
+    }
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    if (Sheet) Sheet.open(els.multiplayerDialog, { dismissible: true, returnFocus: opener, initialFocus: coarse ? null : els.playerNameInput });
+    else if (typeof els.multiplayerDialog.showModal === "function") els.multiplayerDialog.showModal();
+  }
+
+  function setConnectBusy(busy) {
+    els.connectButton.disabled = busy;
+    els.connectButton.setAttribute("aria-busy", String(busy));
+    if (busy) els.connectButton.textContent = "Connecting…";
+    else setSetupMode(setupMode);
+  }
+
+  async function connect() {
+    if (!room) return;
+    const name = cleanName(els.playerNameInput.value);
+    try {
+      localStorage.setItem(NAME_KEY, name);
+    } catch (error) {
+      // Storage may be unavailable.
+    }
+    if (Sheet) Sheet.setError(els.multiplayerDialog, "");
+    setConnectBusy(true);
+    try {
+      if (setupMode === "create") {
+        await room.create(name);
+      } else {
+        const code = cleanCode(els.joinInviteCode.value);
+        if (!code) throw new Error("Enter the six-character room code.");
+        await room.join(code, name);
+      }
+      history.replaceState(null, "", `#${room.roomCode}`);
+      latestRoster = room.snapshot().players;
+      playMode = "room";
+      localPlayerId = room.clientId;
+      remoteOptions = null;
+      els.multiplayerDialog.close();
+      showRoom();
+      if (room.isHost) publishLobby();
+      els.roomTitle.focus({ preventScroll: true });
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      setConnectBusy(false);
     }
   }
 
-  function closeMultiplayerConnections() {
-    for (const channel of hostPeers.values()) channel.close();
-    hostPeers = new Map();
-    if (pendingHostChannel) pendingHostChannel.close();
-    if (hostChannel) hostChannel.close();
-    if (joinChannel) joinChannel.close();
-    if (hostPeerConnection) hostPeerConnection.close();
-    if (joinPeerConnection) joinPeerConnection.close();
-    hostPeerConnection = null;
-    joinPeerConnection = null;
-    hostChannel = null;
-    joinChannel = null;
-    pendingHostChannel = null;
+  function bindRoom() {
+    if (!room) return;
+    room.onStatus = (status, message) => {
+      const state = status === "connected" ? "connected" : status === "reconnecting" ? "reconnecting" : "offline";
+      els.connection.dataset.state = state;
+      const label = state === "connected" ? "Connected" : state === "reconnecting" ? "Recovering" : "Offline";
+      els.connection.firstElementChild.textContent = label;
+      els.connection.title = label;
+      els.connection.className = `badge connection ${state === "connected" ? "badge--good" : "badge--warn"}`;
+      if (state === "reconnecting") {
+        if (!els.gameView.hidden) showGameBanner("The host disconnected; recovering the room.", "");
+        else showRoomBanner("The host disconnected; recovering the room.");
+      }
+      notify(message);
+    };
+    room.onError = (error) => {
+      if (/closed this room/.test(error.message)) {
+        hostGone(error.message);
+        return;
+      }
+      showError(error.message);
+    };
+    room.onRoster = (roster) => {
+      latestRoster = roster;
+      if (playMode === "room") showRoom();
+      if (playMode === "host" || playMode === "peer") {
+        renderPlayers();
+        const gone = roster.filter((player) => player.connected === false);
+        if (gone.length && game && game.status === "playing") {
+          showGameBanner(`${gone.map((player) => player.name).join(", ")} disconnected. Their hand is frozen; keep racing or end the run.`, "");
+        } else if (!gone.length && !els.gameBanner.hidden) {
+          hideGameBanner();
+        }
+      }
+    };
+    room.onState = (state) => {
+      if (!state || typeof state !== "object") return;
+      if (state.kind === "rush-lobby") {
+        if (!room.isHost) remoteOptions = state.options;
+        // A lobby state while a race is still running is stale; once the
+        // race is over it means the host went back to the room.
+        if ((playMode === "host" || playMode === "peer") && game && game.status === "playing") return;
+        showRoom();
+        return;
+      }
+      if (state.kind === "rush" && state.view) {
+        playMode = room.isHost ? "host" : "peer";
+        localPlayerId = room.clientId;
+        applyRemoteState(state.view);
+      }
+    };
+    room.onAction = (clientId, action) => {
+      if (!action || !multiplayerGame) return;
+      if (action.type === "discard") enqueueHostAction(clientId, { action: "discard", index: action.index });
+      if (action.type === "end") enqueueHostAction(clientId, { action: "end" });
+    };
+    room.onBecomeHost = (recovered) => {
+      // The engine lives on the old host, so a run cannot continue here; the
+      // room does, with this player as its host.
+      multiplayerGame = null;
+      if (game && game.status === "playing" && playMode === "peer") {
+        game.status = "ended";
+        game.endReason = "The host left the room";
+        renderStatus();
+        showGameOver();
+      }
+      playMode = "host";
+      if (recovered && recovered.kind === "rush-lobby" && recovered.options) remoteOptions = recovered.options;
+      if (els.gameView.hidden) {
+        showRoom();
+        publishLobby();
+      }
+      showAlert("You are now the host of this room.");
+    };
+  }
+
+  function hostGone(message) {
+    if (game && game.status === "playing" && playMode === "peer") {
+      game.status = "ended";
+      game.endReason = "The host closed the room";
+      renderStatus();
+      showGameOver();
+    }
+    showAlert(message);
+    closeRoomQuietly();
+    multiplayerGame = null;
+    if (els.gameView.hidden) backToLobby();
+    else {
+      playMode = "single";
+      showView("game");
+    }
+  }
+
+  // leave() tells the host first; when the host is already gone that send
+  // throws, so fall back to resetting the room's runtime.
+  function closeRoomQuietly() {
+    if (!room) return;
+    try {
+      room.leave();
+    } catch (error) {
+      room.resetRuntime();
+    }
+  }
+
+  function publishLobby() {
+    if (!room || !room.isHost) return;
+    room.publishState({ kind: "rush-lobby", options: readOptions("", true) });
+  }
+
+  function currentRoomOptions() {
+    return room && room.isHost ? readOptions("", true) : remoteOptions;
+  }
+
+  function showRoomBanner(message) {
+    els.roomBanner.firstElementChild.textContent = message;
+    els.roomBanner.hidden = false;
+  }
+
+  function showRoom() {
+    if (!room) return;
+    playMode = "room";
+    multiplayerGame = null;
+    showView("room");
+    const roster = latestRoster.length ? latestRoster : room.snapshot().players;
+    const host = roster.find((player) => player.host);
+    const connected = roster.filter((player) => player.connected !== false);
+    const full = roster.length >= 2;
+    els.inviteCode.textContent = room.roomCode || "------";
+    els.roomTitle.textContent = full ? "Ready to race" : "Waiting for a player";
+    els.roomLede.textContent = room.isHost
+      ? "Share the code or the invite link. Start the race once your opponent is in."
+      : `${host ? host.name : "The host"} starts the race once both players are in. Keep this page open.`;
+    els.rosterCount.textContent = `${roster.length} of 2`;
+    const fragment = document.createDocumentFragment();
+    for (let seat = 0; seat < 2; seat += 1) {
+      const player = roster[seat];
+      if (!player) {
+        const empty = document.createElement("div");
+        empty.className = "seat seat--lobby seat--empty";
+        empty.innerHTML = '<span class="seat-avatar" aria-hidden="true"></span><span class="seat-name"><strong>Open seat</strong></span><span class="seat-meta"><small class="seat-badge">Waiting</small></span>';
+        empty.querySelector(".seat-avatar").textContent = String(seat + 1);
+        fragment.append(empty);
+        continue;
+      }
+      const disconnected = player.connected === false;
+      fragment.append(seatMarkup(player, {
+        status: player.host ? "Host" : disconnected ? "Reconnecting" : "Ready",
+        tone: disconnected ? "warn" : player.host ? "accent" : "good",
+        me: player.id === room.clientId,
+        host: Boolean(player.host),
+        disconnected,
+      }));
+    }
+    els.roster.replaceChildren(fragment);
+    const options = currentRoomOptions();
+    renderChips(els.roomOptions, options ? optionFacts(options) : ["Waiting for the host's options"]);
+    els.roomOptionsButton.hidden = !room.isHost;
+    els.startGameButton.hidden = !room.isHost;
+    els.startGameButton.disabled = connected.length < 2;
+    els.roomWait.hidden = room.isHost;
+    if (room.isHost) {
+      els.connectionStatus.textContent = connected.length >= 2 ? "Both players are connected." : "One more player to go.";
+    }
+    els.roomBanner.hidden = true;
+    els.roomError.textContent = "";
+  }
+
+  async function confirmLeaveRoom() {
+    if (!room) return;
+    const racing = game && game.status === "playing" && (playMode === "host" || playMode === "peer");
+    const text = room.isHost
+      ? `${racing ? "The race ends for both players. " : ""}The room closes and your opponent is disconnected.`
+      : `${racing ? "Your hand freezes and the host can finish alone. " : ""}You can rejoin with the room code while the host keeps the page open.`;
+    const ok = Sheet
+      ? await Sheet.confirm({ title: room.isHost ? "Close the room?" : "Leave the room?", text, verb: room.isHost ? "Close room" : "Leave", danger: true, sheet: true })
+      : window.confirm(text);
+    if (ok) {
+      leaveRoom();
+      backToLobby();
+    }
+  }
+
+  function leaveRoom({ silent = false } = {}) {
+    if (!room) return;
+    if (room.connected || room.peer) closeRoomQuietly();
+    history.replaceState(null, "", location.pathname);
+    multiplayerGame = null;
+    latestRoster = [];
+    remoteOptions = null;
     hostActionQueue = [];
     isProcessingHostActions = false;
+    playMode = "single";
+    localPlayerId = "solo";
+    if (!silent) els.connection.hidden = true;
   }
 
-  function openMultiplayerDialog() {
-    closeMultiplayerConnections();
-    playMode = "setup";
-    els.inviteCode.value = "";
-    els.answerCodeInput.value = "";
-    els.joinInviteCode.value = "";
-    els.joinAnswerCode.value = "";
-    setConnectionStatus("Idle");
-    if (typeof els.multiplayerDialog.showModal === "function") {
-      els.multiplayerDialog.showModal();
+  async function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("aria-hidden", "true");
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    if (!ok) throw new Error("Copy failed.");
+  }
+
+  async function copyWithFeedback(text, message) {
+    try {
+      await copyText(text);
+      notify(message);
+    } catch (error) {
+      showError("Copying failed. Select the room code and copy it by hand.");
     }
   }
 
-  async function createHostInvite() {
-    closeMultiplayerConnections();
-    setConnectionStatus("Creating invite");
-    localPlayerId = "host";
-    hostPeerConnection = createPeerConnection();
-    pendingHostChannel = hostPeerConnection.createDataChannel("poker-rush", { ordered: true });
-    setupHostChannel(pendingHostChannel);
-    const offer = await hostPeerConnection.createOffer();
-    await hostPeerConnection.setLocalDescription(offer);
-    await waitForIceGathering(hostPeerConnection);
-    els.inviteCode.value = encodeSignal(hostPeerConnection.localDescription);
-    setConnectionStatus("Invite ready");
-  }
+  /* ---------- Multiplayer: the race ---------- */
 
-  async function createJoinAnswer() {
-    closeMultiplayerConnections();
-    setConnectionStatus("Creating answer");
-    localPlayerId = `p${randomSeed().slice(3, 9)}`;
-    joinPeerConnection = createPeerConnection();
-    joinPeerConnection.addEventListener("datachannel", (event) => {
-      joinChannel = event.channel;
-      setupJoinChannel(joinChannel);
-    });
-    await joinPeerConnection.setRemoteDescription(decodeSignal(els.joinInviteCode.value));
-    const answer = await joinPeerConnection.createAnswer();
-    await joinPeerConnection.setLocalDescription(answer);
-    await waitForIceGathering(joinPeerConnection);
-    els.joinAnswerCode.value = encodeSignal(joinPeerConnection.localDescription);
-    setConnectionStatus("Answer ready");
-  }
-
-  async function acceptJoinAnswer() {
-    if (!hostPeerConnection) return;
-    setConnectionStatus("Connecting");
-    await hostPeerConnection.setRemoteDescription(decodeSignal(els.answerCodeInput.value));
-  }
-
-  function setupHostChannel(channel) {
-    channel.addEventListener("open", () => {
-      setConnectionStatus("Peer connected");
-    });
-    channel.addEventListener("close", () => {
-      setConnectionStatus("Peer disconnected");
-    });
-    channel.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "hello") {
-        const peerId = message.playerId || `p${hostPeers.size + 2}`;
-        channel.playerId = peerId;
-        hostPeers.set(peerId, channel);
-        sendChannel(channel, { type: "welcome", playerId: peerId });
-        startHostedMultiplayer(peerId, message.name || "Player 2");
-      } else if (message.type === "action") {
-        enqueueHostAction(channel.playerId, message);
-      }
-    });
-  }
-
-  function setupJoinChannel(channel) {
-    channel.addEventListener("open", () => {
-      setConnectionStatus("Connected");
-      sendChannel(channel, {
-        type: "hello",
-        playerId: localPlayerId,
-        name: multiplayerName(),
-      });
-    });
-    channel.addEventListener("close", () => {
-      setConnectionStatus("Disconnected");
-    });
-    channel.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "welcome") {
-        localPlayerId = message.playerId;
-      } else if (message.type === "state") {
-        playMode = "peer";
-        applyRemoteState(message.view);
-      }
-    });
-  }
-
-  function startHostedMultiplayer(peerId, peerName) {
-    if (multiplayerGame) {
-      broadcastMultiplayerState();
+  function startHostedMultiplayer() {
+    if (!room || !room.isHost) return;
+    const roster = latestRoster.length ? latestRoster : room.snapshot().players;
+    const players = roster.filter((player) => player.connected !== false).slice(0, 2);
+    if (players.length < 2) {
+      showError("Wait for your opponent to connect before starting.");
       return;
     }
     const seed = randomSeed();
-    const players = [
-      { id: "host", name: multiplayerName() || "Host" },
-      { id: peerId, name: peerName },
-    ];
-    multiplayerGame = new PokerRushMultiplayerGame(readOptions(seed, true), players);
+    multiplayerGame = new PokerRushMultiplayerGame(readOptions(seed, true), players.map((player) => ({ id: player.id, name: player.name })));
     playMode = "host";
-    localPlayerId = "host";
+    localPlayerId = room.clientId;
     lastSeed = seed;
     lastStartKind = "multiplayer";
     resetRenderState();
     setMatrixVisible(false, { renderNow: false });
-    els.lobby.hidden = true;
-    els.gameView.hidden = false;
-    els.gameOver.hidden = true;
-    if (els.multiplayerDialog.open) els.multiplayerDialog.close();
-    const hostView = multiplayerGame.viewForPlayer(localPlayerId);
-    setGameView(hostView, {
-      animateHand: true,
-      forceMatrix: true,
-      forceScores: true,
-    });
-    startTimer();
-    broadcastMultiplayerState();
+    broadcastMultiplayerState({ animateHand: true });
   }
+
+  let pendingRenderOptions = null;
 
   function applyRemoteState(view) {
-    if (playMode !== "peer" || !game) resetRenderState();
+    const fresh = !game || game.seed !== view.seed || els.gameView.hidden;
+    if (fresh) {
+      resetRenderState();
+      setMatrixVisible(false, { renderNow: false });
+      if (els.gameOver.open) els.gameOver.close();
+      hideGameBanner();
+    }
     isResolving = false;
-    els.lobby.hidden = true;
-    els.gameView.hidden = false;
-    els.gameOver.hidden = true;
-    if (els.multiplayerDialog.open) els.multiplayerDialog.close();
-    setGameView(view, { forceMatrix: true, forceScores: true });
+    const options = pendingRenderOptions || { animateHand: fresh };
+    pendingRenderOptions = null;
+    if (els.gameView.hidden) {
+      showView("game");
+      hideGameBanner();
+      ensureAudio();
+    }
+    setGameView(view, { ...options, forceMatrix: true, forceScores: true });
     playScoreEvents(game.lastEvents);
-    startTimer();
+    if (fresh) {
+      startTimer();
+      const firstCard = slotCard(els.hand.firstElementChild);
+      if (firstCard && !window.matchMedia("(pointer: coarse)").matches) firstCard.focus({ preventScroll: true });
+    }
   }
 
-  function broadcastMultiplayerState() {
-    if (!multiplayerGame) return;
-    const hostView = multiplayerGame.viewForPlayer(localPlayerId);
-    setGameView(hostView, {
-      forceMatrix: true,
-      forceScores: true,
-    });
-    playScoreEvents(hostView.lastEvents);
-    for (const [playerId, channel] of hostPeers.entries()) {
-      sendChannel(channel, {
-        type: "state",
-        view: serializeView(multiplayerGame.viewForPlayer(playerId)),
-      });
-    }
+  function broadcastMultiplayerState(renderOptions = null) {
+    if (!multiplayerGame || !room) return;
+    const views = {};
+    for (const player of multiplayerGame.players) views[player.id] = serializeView(multiplayerGame.viewForPlayer(player.id));
+    pendingRenderOptions = renderOptions;
+    room.publishState({ kind: "rush", views }, (state, clientId) => ({ kind: "rush", view: state.views[clientId] || null }));
   }
 
   function enqueueHostAction(playerId, message) {
     if (!playerId || !multiplayerGame) return;
-    hostActionQueue.push({
-      playerId,
-      message,
-      receivedAt: performance.now(),
-    });
+    hostActionQueue.push({ playerId, message, receivedAt: performance.now() });
     if (isProcessingHostActions) return;
     isProcessingHostActions = true;
     window.setTimeout(processHostActions, 0);
   }
 
   function processHostActions() {
+    if (!multiplayerGame) {
+      hostActionQueue = [];
+      isProcessingHostActions = false;
+      return;
+    }
     hostActionQueue.sort((a, b) => {
       const timeDiff = a.receivedAt - b.receivedAt;
       if (timeDiff) return timeDiff;
@@ -880,15 +1311,7 @@
     broadcastMultiplayerState();
   }
 
-  function sendPeerAction(action) {
-    sendChannel(joinChannel, {
-      type: "action",
-      action: action.action,
-      index: action.index,
-      seq: ++networkSeq,
-      sentAt: performance.now(),
-    });
-  }
+  /* ---------- Actions ---------- */
 
   function discardAt(index) {
     if (!game || game.status !== "playing" || isResolving) return;
@@ -897,16 +1320,14 @@
     isResolving = true;
     playDiscardSound();
     animateCardSlot(slot, "is-discarding");
-    if (playMode === "host") {
+    if (playMode === "host" || playMode === "peer") {
       window.setTimeout(() => {
-        enqueueHostAction(localPlayerId, { action: "discard", index, seq: ++networkSeq });
-        isResolving = false;
-      }, 120);
-      return;
-    }
-    if (playMode === "peer") {
-      window.setTimeout(() => {
-        sendPeerAction({ action: "discard", index });
+        try {
+          room.sendAction({ type: "discard", index });
+        } catch (error) {
+          isResolving = false;
+          showError(error.message);
+        }
       }, 120);
       return;
     }
@@ -926,12 +1347,12 @@
 
   function endCurrentGame() {
     if (!game || game.status !== "playing") return;
-    if (playMode === "host" && multiplayerGame) {
-      enqueueHostAction(localPlayerId, { action: "end", seq: ++networkSeq });
-      return;
-    }
-    if (playMode === "peer") {
-      sendPeerAction({ action: "end" });
+    if (playMode === "host" || playMode === "peer") {
+      try {
+        room.sendAction({ type: "end" });
+      } catch (error) {
+        showError(error.message);
+      }
       return;
     }
     game.endGame();
@@ -960,29 +1381,88 @@
     }
   }
 
+  /* ---------- Game over ---------- */
+
+  function statTile(label, value, extraClass = "") {
+    const stat = document.createElement("div");
+    stat.className = `stat${extraClass ? ` ${extraClass}` : ""}`;
+    const labelEl = document.createElement("span");
+    labelEl.className = "stat-label";
+    labelEl.textContent = label;
+    const valueEl = document.createElement("strong");
+    valueEl.className = "stat-value";
+    valueEl.textContent = value;
+    stat.append(labelEl, valueEl);
+    return stat;
+  }
+
   function showGameOver() {
     if (!game) return;
     if (timerId) window.clearInterval(timerId);
-    els.gameOver.hidden = false;
+    const multiplayer = Boolean(game.multiplayer && game.players && game.players.length);
+    if (!multiplayer && playMode === "single" && !game.recorded) {
+      game.recorded = true;
+      recordSoloResult(game);
+    }
+    const hands = game.scoredHands.length;
     els.gameOverTitle.textContent = game.endReason || "Game over";
-    els.gameOverSummary.textContent = `${game.score} point${game.score === 1 ? "" : "s"} · ${game.scoredHands.length} scored hand${game.scoredHands.length === 1 ? "" : "s"} · seed ${game.seed}`;
+    const stats = [];
+    if (multiplayer) {
+      const ranked = game.players.slice().sort((a, b) => b.score - a.score);
+      const [first, second] = ranked;
+      const tie = second && first.score === second.score;
+      els.gameOverKicker.textContent = "Race over";
+      els.gameOverSummary.textContent = tie
+        ? `It's a tie at ${first.score} point${first.score === 1 ? "" : "s"} each.`
+        : `${first.name} wins ${first.score}–${second ? second.score : 0}${first.isLocal ? ". That's you." : "."}`;
+      game.players.forEach((player) => stats.push(statTile(player.isLocal ? `${player.name} (you)` : player.name, `${player.score} pts`, !tie && player.id === first.id ? "is-good" : "")));
+      stats.push(statTile("Seed", game.seed));
+    } else {
+      els.gameOverKicker.textContent = "Run over";
+      els.gameOverSummary.textContent = `${game.score} point${game.score === 1 ? "" : "s"} from ${hands} scored hand${hands === 1 ? "" : "s"}.${recordNote ? ` ${recordNote}` : ""}`;
+      stats.push(statTile("Score", String(game.score), recordNote ? "is-good" : ""));
+      stats.push(statTile("Hands", String(hands)));
+      stats.push(statTile("Discards", String(game.userDiscardCount)));
+      stats.push(statTile("Seed", game.seed));
+    }
+    els.gameOverStats.replaceChildren(...stats);
+    const guest = playMode === "peer";
+    els.againButton.hidden = guest;
+    els.gameOverWait.hidden = !guest;
+    els.againButton.textContent = playMode === "host" ? "Race again" : "Play again";
+    els.backButton.textContent = playMode === "host" || playMode === "peer" ? "Back to room" : "Options";
+    if (els.gameOver.open) return;
+    if (Sheet) Sheet.open(els.gameOver, { dismissible: true, returnFocus: els.endGameButton, initialFocus: guest ? els.backButton : els.againButton });
+    else if (typeof els.gameOver.showModal === "function") els.gameOver.showModal();
   }
 
   function backToLobby() {
     if (timerId) window.clearInterval(timerId);
-    closeMultiplayerConnections();
-    multiplayerGame = null;
-    playMode = "single";
+    if (els.gameOver.open) els.gameOver.close();
+    if ((playMode === "host" || playMode === "peer") && room && room.connected) {
+      // Back to the room: the peer stays connected for another race.
+      multiplayerGame = null;
+      game = null;
+      setMatrixVisible(false, { renderNow: false });
+      playMode = "room";
+      showRoom();
+      if (room.isHost) publishLobby();
+      return;
+    }
+    leaveRoom({ silent: true });
     game = null;
     setMatrixVisible(false, { renderNow: false });
-    els.gameOver.hidden = true;
-    els.gameView.hidden = true;
-    els.lobby.hidden = false;
+    showView("lobby");
+    renderRecords();
+    renderOptionsSummary();
   }
+
+  /* ---------- Events ---------- */
 
   document.addEventListener("keydown", (event) => {
     if (!game || game.status !== "playing") return;
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+    if (document.querySelector("dialog[open]")) return;
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
     if (/^[1-7]$/.test(event.key)) {
       const index = Number(event.key) - 1;
       if (index < game.hand.length) {
@@ -999,32 +1479,93 @@
   });
   els.dailyButton.addEventListener("click", () => startGame("daily"));
   els.randomButton.addEventListener("click", () => startGame("random"));
-  els.multiplayerButton.addEventListener("click", openMultiplayerDialog);
-  els.newDailyButton.addEventListener("click", () => startGame("daily"));
-  els.newRandomButton.addEventListener("click", () => startGame("random"));
+  els.multiplayerButton.addEventListener("click", (event) => openMultiplayerDialog(event.currentTarget));
+  els.optionsButton.addEventListener("click", (event) => openOptions(event.currentTarget));
+  els.roomOptionsButton.addEventListener("click", (event) => openOptions(event.currentTarget));
+  els.optionsCloseButton.addEventListener("click", () => els.optionsDialog.close());
+  els.optionsDoneButton.addEventListener("click", () => els.optionsDialog.close());
+  els.optionsForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    els.optionsDialog.close();
+  });
+  els.newDailyButton.addEventListener("click", () =>
+    confirmThen(() => startGame("daily"), { title: "Start today's daily?", text: runSummaryText(), verb: "Restart" }),
+  );
+  els.newRandomButton.addEventListener("click", () =>
+    confirmThen(() => startGame("random"), { title: "Start a random run?", text: runSummaryText(), verb: "Restart" }),
+  );
+  els.endGameButton.addEventListener("click", () =>
+    confirmThen(endCurrentGame, {
+      title: playMode === "host" || playMode === "peer" ? "End the race?" : "End the run?",
+      text: playMode === "host" || playMode === "peer" ? "The race ends for both players and the scores stand as they are." : "The run ends now and the score stands as it is.",
+      verb: "End",
+    }),
+  );
   els.matrixToggleButton.addEventListener("click", () => setMatrixVisible(!matrixVisible));
-  els.endGameButton.addEventListener("click", endCurrentGame);
-  els.hostGameButton.addEventListener("click", () => {
-    createHostInvite().catch((error) => setConnectionStatus(error.message));
+  els.hostGameButton.addEventListener("click", () => setSetupMode("create"));
+  els.joinGameButton.addEventListener("click", () => setSetupMode("join"));
+  els.joinInviteCode.addEventListener("input", () => {
+    els.joinInviteCode.value = cleanCode(els.joinInviteCode.value);
   });
-  els.joinGameButton.addEventListener("click", () => {
-    createJoinAnswer().catch((error) => setConnectionStatus(error.message));
+  els.joinInviteCode.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      connect();
+    }
   });
-  els.acceptAnswerButton.addEventListener("click", () => {
-    acceptJoinAnswer().catch((error) => setConnectionStatus(error.message));
+  els.playerNameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      connect();
+    }
   });
-  els.againButton.addEventListener("click", restartGame);
+  els.connectButton.addEventListener("click", connect);
+  els.multiplayerCloseButton.addEventListener("click", () => els.multiplayerDialog.close());
+  els.startGameButton.addEventListener("click", startHostedMultiplayer);
+  els.leaveRoomButton.addEventListener("click", confirmLeaveRoom);
+  els.copyCodeButton.addEventListener("click", () => copyWithFeedback(room ? room.roomCode : "", "Room code copied."));
+  els.copyInviteButton.addEventListener("click", () => {
+    const url = `${location.origin}${location.pathname}#${room ? room.roomCode : ""}`;
+    copyWithFeedback(`Race me at Poker Rush: ${url}\nRoom code: ${room ? room.roomCode : ""}`, "Invite copied.");
+  });
+  els.againButton.addEventListener("click", () => {
+    els.gameOver.close();
+    restartGame();
+  });
   els.backButton.addEventListener("click", backToLobby);
   els.soundButton.addEventListener("click", () => {
     soundEnabled = !soundEnabled;
     els.soundButton.classList.toggle("is-muted", !soundEnabled);
-    els.soundButton.textContent = soundEnabled ? "SFX" : "Mute";
+    els.soundButton.setAttribute("aria-pressed", String(soundEnabled));
+    els.soundButton.title = soundEnabled ? "Sound effects" : "Sound effects (off)";
   });
-  els.instructionsButton.addEventListener("click", () => {
-    if (typeof els.instructionsDialog.showModal === "function") {
-      els.instructionsDialog.showModal();
-    } else {
-      window.alert("Score straights or better. Click or press 1-7 to discard.");
+  els.instructionsButton.addEventListener("click", (event) => {
+    if (Sheet) Sheet.open(els.instructionsDialog, { dismissible: true, returnFocus: event.currentTarget });
+    else if (typeof els.instructionsDialog.showModal === "function") els.instructionsDialog.showModal();
+    else window.alert("Score straights or better. Click or press 1-7 to discard.");
+  });
+  window.addEventListener("pagehide", () => {
+    if (room && room.connected) closeRoomQuietly();
+  });
+
+  /* ---------- Boot ---------- */
+
+  function initialize() {
+    bindRoom();
+    renderRecords();
+    renderOptionsSummary();
+    try {
+      els.playerNameInput.value = localStorage.getItem(NAME_KEY) || "";
+    } catch (error) {
+      // Storage may be unavailable.
     }
-  });
+    const code = cleanCode(location.hash.slice(1));
+    setSetupMode(code ? "join" : "create");
+    if (code) {
+      els.joinInviteCode.value = code;
+      openMultiplayerDialog(els.multiplayerButton);
+    }
+  }
+
+  initialize();
 })();
