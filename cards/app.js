@@ -1515,7 +1515,7 @@
             <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="-1">−1</button>
             <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="1">+1</button>
             <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="5">+5</button>
-            <input type="number" style="min-height:26px" placeholder="± custom, Enter" data-score-custom="${player.id}" data-fk="sc-${player.id}" title="Type a number and press Enter">
+            <input type="number" placeholder="± custom, Enter" data-score-custom="${player.id}" data-fk="sc-${player.id}" title="Type a number and press Enter">
           </div>
           <div class="total${leaders.has(player.id) && Object.values(totals).some(Boolean) ? " lead" : ""}" style="${leaders.has(player.id) && Object.values(totals).some(Boolean) ? "color:var(--gold)" : ""}">${E.fmt(totals[player.id])}</div>
         </div>`).join("");
@@ -1557,13 +1557,13 @@
         ${v.players.map((player) => `<div class="chip-row" style="--c:${esc(player.color)}">
           <div class="row tight"><span class="swatch"></span><span class="small" style="font-weight:700">${esc(player.name)}</span></div>
           <input type="number" value="${player.chips}" data-chips="${player.id}" data-fk="ch-${player.id}" title="Stack">
-          <div class="row tight"><input type="number" min="0" placeholder="bet" style="width:64px;min-height:26px" data-bet-input="${player.id}" data-fk="bet-${player.id}"><button class="btn btn--sm" data-act="bet" data-player="${player.id}">Bet</button></div>
+          <div class="row tight"><input type="number" min="0" placeholder="bet" style="width:64px" data-bet-input="${player.id}" data-fk="bet-${player.id}"><button class="btn btn--sm" data-act="bet" data-player="${player.id}">Bet</button></div>
         </div>`).join("")}
         <div class="row tight small"><span class="muted">Transfer</span>
           <select id="tfFrom" style="width:auto">${v.players.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select>→
           <select id="tfTo" style="width:auto">${v.players.map((player, i) => `<option value="${player.id}"${i === 1 ? " selected" : ""}>${esc(player.name)}</option>`).join("")}</select>
-          <input id="tfAmount" type="number" min="0" placeholder="amt" style="width:64px;min-height:26px"><button class="btn btn--sm" data-act="transfer">Pay</button></div>
-        <div class="row tight small"><span class="muted">Starting stack</span><input id="chipStart" type="number" min="0" value="${v.chipStart || 0}" style="width:80px;min-height:26px"><button class="btn btn--sm" data-act="reset-stacks">Reset all stacks</button></div>`;
+          <input id="tfAmount" type="number" min="0" placeholder="amt" style="width:64px"><button class="btn btn--sm" data-act="transfer">Pay</button></div>
+        <div class="row tight small"><span class="muted">Starting stack</span><input id="chipStart" type="number" min="0" value="${v.chipStart || 0}" style="width:80px"><button class="btn btn--sm" data-act="reset-stacks">Reset all stacks</button></div>`;
       const counters = `
         ${v.tableCounters.map((tracker) => `<div class="list-row"><span class="grow small" style="font-weight:700">${esc(tracker.name)}</span>
           <button class="btn btn--sm" data-act="counter" data-id="${tracker.id}" data-delta="-1">−</button><strong class="mono" style="min-width:34px;text-align:center">${E.fmt(tracker.value)}</strong><button class="btn btn--sm" data-act="counter" data-id="${tracker.id}" data-delta="1">+</button>
@@ -1629,7 +1629,7 @@
           <label class="field"><span>Jokers</span><input type="number" min="0" max="8" value="${draft.jokers}" data-deck="jokers"></label>
         </div>
         <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span class="${suit === "h" || suit === "d" ? "suit-red" : ""}" style="font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
-        <div class="field"><span>Ranks <button class="btn btn--sm btn--ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn btn--sm" aria-pressed="${ranks.includes(rank)}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
+        <div class="field"><span>Ranks <button class="btn btn--sm btn--ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn btn--sm ct-rank" aria-pressed="${ranks.includes(rank)}" data-deck-rank="${rank}">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
         <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
@@ -1754,7 +1754,7 @@
         + block("Display", display)
         + block("Developer", `<p class="hint">The whole table is one JSON object. Copy it for bug reports or version control, or paste a table or game design to load it.</p>
             <div class="row tight"><button class="btn btn--sm" data-act="dev-copy">Copy table JSON</button><span class="small dim">${Object.keys(v.cards).length} cards · ${Object.keys(v.zones).length} groups · ${JSON.stringify(v).length.toLocaleString()} bytes</span></div>
-            <textarea id="devJson" data-fk="dev" placeholder="Paste table or design JSON here" style="min-height:80px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px"></textarea>
+            <textarea id="devJson" class="ct-code" data-fk="dev" placeholder="Paste table or design JSON here" style="min-height:80px"></textarea>
             <div class="row"><button class="btn btn--sm" data-act="dev-load">Load pasted JSON</button></div>`);
     },
 
@@ -3271,6 +3271,14 @@
     bindStage();
     $("#table").addEventListener("scroll", closeMenu);
 
+    // Remember whether focus last arrived from a pointer press (render() re-focuses the same
+    // control after a click) or from the keyboard (Tab, arrows, Home, End).
+    let pointerInput = false;
+    let pointerFocused = null;
+    document.addEventListener("pointerdown", () => { pointerInput = true; }, true);
+    document.addEventListener("keydown", (event) => { if (/^(Tab|Arrow|Home$|End$)/.test(event.key)) pointerInput = false; }, true);
+    document.addEventListener("focusin", (event) => { pointerFocused = pointerInput ? event.target : null; }, true);
+
     document.addEventListener("keydown", (event) => {
       const typing = event.target.closest("input, textarea, select") || dialog().open || $("#paneDialog")?.open;
       const mod = event.ctrlKey || event.metaKey;
@@ -3297,12 +3305,15 @@
         return;
       }
       if (key === "Escape") { closeMenu(); if (selection.size) { selection.clear(); render(); } return; }
-      // Cards are buttons with a roving tabindex: the focused card is the keyboard card, Space
-      // toggles it and Enter plays the selection as before. Any other focused control keeps
-      // its own Space and Enter.
+      // Cards are buttons with a roving tabindex: the keyboard-focused card is the keyboard card,
+      // Space toggles it and Enter plays the selection as before. Any other keyboard-focused
+      // control (and any open menu's item) keeps its own Space and Enter. Focus left by a mouse
+      // or touch press claims nothing, so Space still slaps after clicking a card or a button.
+      // (:focus-visible cannot tell: Chromium turns it on for the focused element at keydown.)
+      const keyFocused = event.target !== pointerFocused;
       const focusedCard = event.target.closest(".card[data-card-id]");
-      if (focusedCard && focusedCard.closest("#table")) kbdFocus = focusedCard.dataset.cardId;
-      else if ((key === " " || key === "Enter") && event.target.closest("button, a[href], summary, [role=menuitem], [role=tab]")) return;
+      if (focusedCard && focusedCard.closest("#table")) { if (keyFocused) kbdFocus = focusedCard.dataset.cardId; }
+      else if ((key === " " || key === "Enter") && (event.target.closest("[role=menuitem]") || (keyFocused && event.target.closest("button, a[href], summary, [role=tab]")))) return;
       if (/^[1-9]$/.test(key)) { const macro = view.macros[Number(key) - 1]; if (macro) dispatch({ type: "runMacro", id: macro.id }); return; }
       switch (key.toLowerCase()) {
         case "t": dispatch({ type: "nextTurn", back: event.shiftKey }); break;
@@ -3624,7 +3635,7 @@
         : "The link holds the whole table, including every hidden card. Share it with co-designers, not opponents.";
       openDialog(head(title) + `<div class="dlg-body">
           <p class="hint">${note}</p>
-          <textarea readonly id="shareLinkText" style="min-height:90px;font-size:12px">${esc(link)}</textarea>
+          <textarea readonly id="shareLinkText" class="ct-code" style="min-height:90px">${esc(link)}</textarea>
           <div class="small dim">${link.length.toLocaleString()} characters</div>
         </div>
         <div class="dlg-foot"><button type="button" class="btn btn--primary" data-copy-link>Copy link</button><button class="btn" value="cancel">Done</button></div>`, {
@@ -4321,7 +4332,7 @@
   function openCustomImport() {
     openDialog(head("Import custom cards") + `<div class="dlg-body">
         <p class="hint">Paste rows from a spreadsheet (tab or comma separated). Columns in order: <code>name, copies, color, points, suit, rank, icon, text, image</code>, or give a header row naming them in any order. Colors can be hex (#d9434b) or names (red, blue…); image is an optional https link to card art.</p>
-        <textarea name="rows" style="min-height:200px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px" placeholder="name,copies,color,points,suit,rank,icon,text&#10;Skip,2,red,20,Red,Skip,⊘,The next player loses a turn&#10;7,2,blue,7,Blue,7"></textarea>
+        <textarea name="rows" class="ct-code" style="min-height:200px" placeholder="name,copies,color,points,suit,rank,icon,text&#10;Skip,2,red,20,Red,Skip,⊘,The next player loses a turn&#10;7,2,blue,7,Blue,7"></textarea>
         <label class="check"><input type="checkbox" name="replace"> Replace the existing custom cards</label>
         <label class="check"><input type="checkbox" name="none"> Custom cards only (drop the standard 52)</label>
       </div>

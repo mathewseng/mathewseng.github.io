@@ -1293,6 +1293,18 @@
   }
 
   function renderPulseSteps() {
+    // Same length: update the values and the playing step in place, so a focused stepper
+    // button keeps keyboard focus across presses and pulse ticks.
+    const steps = dom.pulseSteps.querySelectorAll(".pulse-step");
+    if (steps.length === state.pulsePattern.length && steps.length) {
+      steps.forEach((step, index) => {
+        step.classList.toggle("active", index === state.pulseStep && state.pulse);
+        const output = step.querySelector(".pulse-value");
+        const value = String(state.pulsePattern[index]);
+        if (output.textContent !== value) output.textContent = value;
+      });
+      return;
+    }
     dom.pulseSteps.innerHTML = state.pulsePattern
       .map((value, index) => {
         const playing = index === state.pulseStep && state.pulse;

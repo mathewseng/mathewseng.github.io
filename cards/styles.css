@@ -1515,6 +1515,12 @@ textarea {
   resize: vertical;
 }
 
+/* JSON, CSV and link fields. */
+.ct-code {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+}
+
 input[type="number"] {
   font-variant-numeric: tabular-nums;
 }
@@ -1714,6 +1720,10 @@ input[type="range"] {
 .macro:hover .edit,
 .macro:focus-within .edit {
   opacity: 1;
+}
+
+.ct-rank {
+  min-width: 30px;
 }
 
 .phase-chips {
@@ -3760,9 +3770,34 @@ table.compare th {
   input[type="search"],
   input[type="url"],
   select,
-  textarea {
+  textarea,
+  .ct-code {
     min-height: 44px;
     font-size: 1rem;
+  }
+
+  /* Panel fields and chips that are compact on fine pointers. */
+  .list-row .grow input,
+  .list-row select.bot-style,
+  .score-table td input,
+  .step-fields select,
+  .step-fields input,
+  .custom-row input[type="text"],
+  .custom-row input[type="number"],
+  .custom-row input[type="url"] {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .phase-chips .chip,
+  .tpl-chips .chip,
+  .eval-picker label,
+  details.custom-cards summary {
+    min-height: 44px;
+  }
+
+  .ct-rank {
+    min-width: 44px;
   }
 
   .zone-tools .btn {
