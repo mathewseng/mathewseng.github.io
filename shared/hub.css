@@ -123,14 +123,14 @@ html.is-ready .hero .facts {
   background: var(--glass);
   backdrop-filter: blur(10px);
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--t-sm);
   font-weight: 600;
 }
 
 .facts b {
   margin-right: 3px;
   color: var(--ink);
-  font-weight: 750;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -152,15 +152,15 @@ html.is-ready .hero .facts {
 
 .group-head h2 {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .group-head span {
-  color: var(--soft);
-  font-size: 0.76rem;
+  color: var(--muted);
+  font-size: var(--t-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -179,6 +179,20 @@ html.is-ready .hero .facts {
 
 .tiles > .wide {
   grid-column: 1 / -1;
+}
+
+/* The landing page's hub grid: four hubs in one row and Dice as a full-width
+   row tile beneath them (four plus one), two by two on tablets. */
+@media (min-width: 881px) {
+  .tiles--hubs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 641px) and (max-width: 880px) {
+  .tiles--hubs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .tile {
@@ -266,10 +280,20 @@ html.is-ready .hero .facts {
   transition-duration: 0.1s;
 }
 
-/* Touch gets a static accent edge instead of the pointer light. */
+/* Touch gets a static accent edge instead of the pointer light: a faint
+   accent top edge on every tile, the full edge while pressed. */
 @media (hover: none) {
+  .tile {
+    border-top-color: color-mix(in oklab, var(--accent) 35%, var(--line));
+  }
+
+  .tile::after {
+    background: linear-gradient(var(--accent), color-mix(in oklab, var(--accent) 40%, transparent));
+  }
+
   .tile:active {
     border-color: color-mix(in oklab, var(--accent) 50%, var(--line-strong));
+    background: linear-gradient(170deg, var(--surface-3), var(--surface) 60%);
   }
 
   .tile:active::after {
@@ -317,9 +341,9 @@ html.is-ready .hero .facts {
   display: -webkit-box;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.875rem;
   line-height: 1.45;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -344,7 +368,7 @@ html.is-ready .hero .facts {
   border-radius: var(--r-pill);
   background: color-mix(in oklab, var(--muted) 6%, transparent);
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -446,13 +470,113 @@ html.is-ready .hero .facts {
   min-height: 0;
 }
 
-.tile--row > div:not(.tile-foot) {
+.tile--row > div:not(.tile-foot, .tile-art) {
   flex: 1;
 }
 
 .tile--row .tile-foot {
   flex: none;
   margin: 0;
+}
+
+/* The row tile's art sits beside the copy at a fixed size. */
+.tile--row .tile-art {
+  flex: none;
+  width: 120px;
+  height: 64px;
+}
+
+/* ---------- Link list: references and secondary links, styled as links, not tiles ---------- */
+
+.hub-links {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hub-links li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.hub-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--accent);
+  font-size: var(--t-md);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--d-fast);
+}
+
+.hub-links a:hover {
+  text-decoration-color: currentColor;
+}
+
+.hub-links a:focus-visible {
+  border-radius: var(--r-sm);
+  outline-offset: 0;
+}
+
+.hub-links a .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+.hub-links li > span {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+/* ---------- Footer: one footer on every hub ---------- */
+
+.foot {
+  align-items: center;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+}
+
+.foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+.foot a:hover {
+  text-decoration-color: currentColor;
+}
+
+.foot a:focus-visible {
+  border-radius: var(--r-sm);
+  outline-offset: 0;
+}
+
+.foot .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 /* ---------- Landing page ---------- */
@@ -525,10 +649,6 @@ html.is-ready .hero .facts {
     height: 56px;
   }
 
-  .tile p {
-    -webkit-line-clamp: 1;
-  }
-
   .preview {
     min-height: 120px;
   }
@@ -589,7 +709,7 @@ html.is-ready .hero .facts {
 
   .facts li {
     padding: 4px 9px;
-    font-size: 0.72rem;
+    font-size: var(--t-xs);
   }
 
   .group {
@@ -620,13 +740,13 @@ html.is-ready .hero .facts {
 
   .tile p {
     margin-top: 2px;
-    font-size: 0.8rem;
+    font-size: var(--t-sm);
     line-height: 1.35;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
   }
 
   .tile--featured p {
-    font-size: 0.8rem;
+    font-size: var(--t-sm);
   }
 
   .tile-foot {
@@ -637,11 +757,18 @@ html.is-ready .hero .facts {
     display: none;
   }
 
-  .tile-art {
+  .tile-art,
+  .tile--row .tile-art {
     --card-width: 14px;
     width: 52px;
     height: 52px;
     border-radius: 9px;
+  }
+
+  .foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
   }
 
   .preview {

@@ -166,7 +166,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, black 35%, transparent);
   color: var(--ink);
-  font-size: 0.68rem;
+  font-size: var(--t-xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
@@ -187,7 +187,7 @@
     0 0 0 1px var(--line-strong),
     0 6px 12px -6px black;
   color: var(--muted);
-  font-size: 0.6rem;
+  font-size: var(--t-xs);
   font-weight: 800;
   translate: -50% -50%;
   animation: turn 9s var(--ease) infinite;
@@ -203,7 +203,7 @@
 
 .art-ofc-row {
   display: grid;
-  grid-template-columns: 52px repeat(5, var(--card-width)) auto;
+  grid-template-columns: 64px repeat(5, var(--card-width)) auto;
   align-items: center;
   gap: 4px;
 }
@@ -213,9 +213,14 @@
   justify-self: start;
 }
 
+/* The top row holds three cards, centred under the five-card rows. */
+.art-ofc-row .art-ofc-first {
+  grid-column-start: 3;
+}
+
 .art-ofc-row > b {
-  color: var(--soft);
-  font-size: 0.62rem;
+  color: var(--muted);
+  font-size: var(--t-xs);
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -246,14 +251,14 @@
   border-radius: 999px;
   background: color-mix(in oklab, var(--accent) 14%, transparent);
   color: var(--accent);
-  font-size: 0.66rem;
-  font-weight: 750;
+  font-size: var(--t-xs);
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .art-royalty.quiet {
   background: color-mix(in oklab, var(--muted) 8%, transparent);
-  color: var(--soft);
+  color: var(--muted);
 }
 
 /* Blackjack: a slice of the hard-total chart with one lookup highlighted. */
@@ -274,8 +279,8 @@
   display: grid;
   place-items: center;
   height: 15px;
-  color: var(--soft);
-  font-size: 0.58rem;
+  color: var(--muted);
+  font-size: var(--t-xs);
   font-weight: 700;
 }
 
@@ -333,7 +338,7 @@
   justify-content: space-between;
   gap: 8px;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
   font-weight: 600;
 }
 
@@ -356,7 +361,85 @@
   color: var(--ink);
 }
 
+/* ---------- Dice: faces drawn from the favicon's pip geometry ---------- */
+
+/* svg.hub-die outranks hub.css's generic .tile svg icon rule. */
+svg.hub-die {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  fill: none;
+  stroke: none;
+  filter: drop-shadow(0 10px 14px color-mix(in srgb, black 60%, transparent));
+}
+
+svg.hub-die rect {
+  fill: var(--surface-3);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+svg.hub-die circle {
+  fill: var(--accent);
+  stroke: none;
+}
+
+.art-dice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.art-dice .hub-die {
+  rotate: calc(var(--k, 0) * 9deg);
+  transition: rotate 0.5s var(--spring);
+}
+
+.tile:hover .art-dice .hub-die {
+  rotate: calc(var(--k, 0) * 14deg);
+}
+
+/* The dice hub's hero: three dice fanned like the card hero. */
+.fan--dice .hub-die {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  translate: calc(var(--k) * 72px) var(--y, 0px);
+  rotate: calc(var(--k) * 12deg);
+  transition:
+    translate 0.6s var(--spring),
+    rotate 0.6s var(--spring),
+    opacity 0.9s var(--ease) calc(var(--n, 0) * 90ms + 0.25s),
+    scale 0.9s var(--spring) calc(var(--n, 0) * 90ms + 0.25s);
+  animation: bob 6s ease-in-out infinite;
+  animation-delay: calc(var(--n, 0) * -1.1s);
+}
+
+.fan--dice .hub-die rect {
+  fill: var(--surface-2);
+}
+
+@starting-style {
+  html.is-ready .fan--dice .hub-die {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+.fan--dice:hover .hub-die {
+  translate: calc(var(--k) * 84px) calc(var(--y, 0px) - 6px);
+  rotate: calc(var(--k) * 16deg);
+}
+
 /* ---------- Landing tile art ---------- */
+
+/* An image illustration (the Backgammon icon) inside the tile art container. */
+.art-image {
+  width: auto;
+  height: 64%;
+  max-width: 108px;
+  object-fit: contain;
+}
 
 .tile-art .playing-card {
   box-shadow:
@@ -573,6 +656,12 @@
   .tile-art .art-fan {
     --card-width: 24px;
   }
+
+  .fan--dice .hub-die {
+    width: 64px;
+    height: 64px;
+    translate: calc(var(--k) * 56px) var(--y, 0px);
+  }
 }
 
 /* ---------- Tablets ---------- */
@@ -605,6 +694,16 @@
   .fan-chip--alt {
     width: 28px;
   }
+
+  .fan--dice .hub-die {
+    width: 60px;
+    height: 60px;
+    translate: calc(var(--k) * 52px) var(--y, 0px);
+  }
+
+  .fan--dice:hover .hub-die {
+    translate: calc(var(--k) * 58px) calc(var(--y, 0px) - 6px);
+  }
 }
 
 /* ---------- Phones ---------- */
@@ -633,6 +732,25 @@
   .fan-chip,
   .fan-chip--alt {
     display: none;
+  }
+
+  .fan--dice .hub-die {
+    width: 40px;
+    height: 40px;
+    translate: calc(var(--k) * 34px) var(--y, 0px);
+  }
+
+  .fan--dice:hover .hub-die {
+    translate: calc(var(--k) * 38px) calc(var(--y, 0px) - 4px);
+  }
+
+  svg.hub-die {
+    width: 24px;
+    height: 24px;
+  }
+
+  .art-dice {
+    gap: 3px;
   }
 
   .art-ofc {
