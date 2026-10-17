@@ -14,6 +14,34 @@
   const RANK_WORD = (rank) => ({ A: "Aces", J: "Jacks", Q: "Queens", K: "Kings" }[rank] || RANK_SHOW(rank) + "s");
   const MARK_COLORS = [["#ff5c66", "Red"], ["#f4c95d", "Gold"], ["#45d6ff", "Cyan"], ["#bdf46b", "Green"], ["#9f7dff", "Violet"]];
 
+  /** Icons: the shared sprite (shared/icons.svg) plus a few inline glyphs the sprite lacks, on the same 20px grid. */
+  const INLINE_ICONS = {
+    bot: '<rect x="4" y="7" width="12" height="9" rx="2"/><path d="M10 4v3M7.5 16v1.5M12.5 16v1.5"/><circle cx="7.75" cy="11.5" r=".9" fill="currentColor" stroke="none"/><circle cx="12.25" cy="11.5" r=".9" fill="currentColor" stroke="none"/>',
+    bulb: '<path d="M6.5 8.5a3.5 3.5 0 1 1 5.6 2.8c-.6.5-1 1.2-1.1 2H9c-.1-.8-.5-1.5-1.1-2A3.5 3.5 0 0 1 6.5 8.5z"/><path d="M8.5 15.5h3M9 17.5h2"/>',
+    eye: '<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z"/><circle cx="10" cy="10" r="2.2"/>',
+    lock: '<rect x="5" y="9" width="10" height="7.5" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/>',
+    grid: '<rect x="3.5" y="3.5" width="13" height="13" rx="1.5"/><path d="M3.5 8h13M3.5 12h13M8 3.5v13M12 3.5v13"/>',
+    trophy: '<path d="M6.5 4h7v3.5a3.5 3.5 0 0 1-7 0z"/><path d="M6.5 5.5H4.5a2 2 0 0 0 2 3M13.5 5.5h2a2 2 0 0 1-2 3M10 11v3M7.5 16.5h5"/>',
+    hand: '<path d="M7.5 10V5.5a1 1 0 0 1 2 0V10M9.5 9.5V4.5a1 1 0 0 1 2 0v5M11.5 9.5V6a1 1 0 0 1 2 0v6.5a4.5 4.5 0 0 1-9 0V8a1 1 0 0 1 2 0v2"/>',
+    crown: '<path d="M4 15h12M4 15 3 6.5l4 2.5 3-4.5 3 4.5 4-2.5L16 15"/>',
+    handshake: '<path d="M2.5 9.5 6 6l4 1.5L13.5 6l4 3.5M6 6v6.5l4 3 4-3V6"/><path d="M8 12.5l2 1.5 2-1.5"/>',
+    mark: '<circle cx="10" cy="10" r="5"/>',
+    shuffle: '<path d="M3 6h3l7 8h4M17 14l-2-2m2 2-2 2M3 14h3l2-2.3M13 6h4m0 0-2-2m2 2-2 2"/>',
+    pin: '<path d="M10 17.5s-5-5.3-5-9a5 5 0 0 1 10 0c0 3.7-5 9-5 9z"/><circle cx="10" cy="8.5" r="1.8"/>',
+    chat: '<path d="M3.5 5.5A1.5 1.5 0 0 1 5 4h10a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 15 14H8l-3.5 3v-3H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M7 8h6M7 10.5h4"/>',
+    tools: '<path d="M3 6h9M15 6h2M3 14h2M8 14h9"/><circle cx="13" cy="6" r="2"/><circle cx="6" cy="14" r="2"/>',
+  };
+  function ICON(name, cls = "") {
+    const inline = INLINE_ICONS[name];
+    if (inline) return `<svg class="icon ${cls}" aria-hidden="true" viewBox="0 0 20 20">${inline}</svg>`;
+    return `<svg class="icon ${cls}" aria-hidden="true"><use href="../shared/icons.svg#i-${name}"/></svg>`;
+  }
+
+  /** A token's resolved colour, for the few colours the script hands to peers, confetti and pings. */
+  const tokenColor = (name, fallback) => {
+    try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch (error) { return fallback; }
+  };
+
   /** Phone layout: narrow screens, or short touch screens (a phone held sideways). */
   const COMPACT = window.matchMedia ? window.matchMedia("(max-width: 820px), (max-height: 500px) and (pointer: coarse)") : { matches: window.innerWidth <= 820 };
   const isCompact = () => COMPACT.matches;
@@ -52,14 +80,33 @@
   let equityResult = null;
   let hyper = { ranks: [], suits: [], draws: 1 };
 
+  // Toasts land in the polite stack; errors in the assertive one. Each has a
+  // dismiss control and pauses while hovered or focused.
   function toast(message, kind = "") {
     const el = document.createElement("div");
-    el.className = "toast " + kind;
-    el.textContent = message;
-    const box = $("#toasts");
+    el.className = "toast" + (kind === "error" ? " toast--alert" : kind === "good" ? " toast--good" : kind === "warn" ? " toast--warn" : "");
+    const text = document.createElement("span");
+    text.textContent = message;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "btn btn--ghost btn--icon btn--sm toast-close";
+    close.setAttribute("aria-label", "Dismiss");
+    close.innerHTML = ICON("close");
+    close.addEventListener("click", () => el.remove());
+    el.append(text, close);
+    const box = $(kind === "error" ? "#alerts" : "#toasts") || $("#toasts");
     box.appendChild(el);
     while (box.children.length > 3) box.firstElementChild.remove();
-    setTimeout(() => el.remove(), kind === "error" ? 4200 : 2400);
+    let left = kind === "error" ? 4200 : 2400;
+    let timer = null;
+    let since = performance.now();
+    const start = () => { since = performance.now(); timer = setTimeout(() => el.remove(), left); };
+    const pause = () => { if (!timer) return; clearTimeout(timer); timer = null; left = Math.max(800, left - (performance.now() - since)); };
+    el.addEventListener("mouseenter", pause);
+    el.addEventListener("focusin", pause);
+    el.addEventListener("mouseleave", () => { if (!timer) start(); });
+    el.addEventListener("focusout", () => { if (!timer && !el.matches(":hover")) start(); });
+    start();
   }
 
   // ------------------------------------------------------------- viewer
@@ -206,7 +253,7 @@
     const myName = mySeat(source)?.name;
     for (const entry of log.slice(i + 1).slice(-6)) {
       if (entry.kind === "warn") toast(entry.text, "warn");
-      else if (entry.kind === "chat" && net.mode !== "local" && entry.who !== myName && prefs.tab !== "log") toast(`💬 ${entry.who}: ${entry.text}`);
+      else if (entry.kind === "chat" && net.mode !== "local" && entry.who !== myName && prefs.tab !== "log") toast(`${entry.who}: ${entry.text}`);
       else if (entry.kind === "round" && /Game over/.test(entry.text)) toast(entry.text, "good");
     }
   }
@@ -376,6 +423,13 @@
    * One card on the table. Standard cards, jokers and face-down cards are the shared
    * site component (shared/cards.js); custom cards draw their own face in the same box.
    */
+  /** The card that carries the one tab stop among the cards: the keyboard-focused card, else the first card of your hand. */
+  function rovingCardId() {
+    if (kbdFocus && view?.cards[kbdFocus]) return kbdFocus;
+    const zoneId = myHandZone();
+    return zoneId ? view.zones[zoneId]?.cards[0] || null : null;
+  }
+
   function cardHTML(card, zone, index, extra = "") {
     const visible = card.visible && (card.rank != null || card.custom);
     const cls = ["card"];
@@ -387,14 +441,19 @@
     const title = visible ? (card.custom ? card.label : E.cardName(card)) + (card.faceUp ? "" : " (hidden from others)") : "Face-down card";
     const spec = !visible ? "BACK" : card.rank === "JK" ? "JK" : { rank: card.rank, suit: card.suit };
     const standard = !visible || !card.custom;
+    // Cards are buttons with a roving tabindex: one tab stop, arrow keys walk the hand.
+    const onTable = zone.id !== "preview" && zone.id !== "print";
+    const tabindex = onTable ? (rovingCardId() === card.id ? "0" : "-1") : "-1";
     if (standard && Cards.normalize(spec)) {
       const style = [card.mark ? `--mark:${card.mark}` : "", extra].filter(Boolean).join(";");
       return Cards.html(spec, {
-        tag: "div",
+        tag: "button",
         className: cls.join(" "),
         selected,
+        pressed: selected,
         title,
-        attrs: { "data-card-id": card.id, "data-index": index, "data-zone": zone.id, "data-mark": Boolean(card.mark) },
+        label: title,
+        attrs: { "data-card-id": card.id, "data-index": index, "data-zone": zone.id, "data-mark": Boolean(card.mark), tabindex },
         style: style || undefined,
       });
     }
@@ -402,19 +461,19 @@
     if (selected) cls.push("selected");
     const face = card.custom ? card : { label: String(card.rank) + (SUIT_SYMBOL[card.suit] || ""), color: "#565e66" };
     const style = [`--cc:${face.color || "#9f7dff"}`, card.mark ? `--mark:${card.mark}` : "", extra].filter(Boolean).join(";");
-    return `<div class="${cls.join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${esc(zone.id)}" title="${esc(title)}" aria-label="${esc(title)}"${card.mark ? " data-mark" : ""} style="${esc(style)}">${customFace(face)}</div>`;
+    return `<button type="button" class="${cls.join(" ")}" data-card-id="${esc(card.id)}" data-index="${index}" data-zone="${esc(zone.id)}" title="${esc(title)}" aria-label="${esc(title)}" aria-pressed="${selected}" tabindex="${tabindex}"${card.mark ? " data-mark" : ""} style="${esc(style)}">${customFace(face)}</button>`;
   }
 
   function ruleIcon(zone) {
     const text = E.describeRule(zone.rule || {}, zone);
     if (!text) return "";
     const mode = view?.rulesMode || "warn";
-    return `<span class="zone-rule${mode === "off" ? " off" : ""}" title="${esc("Play rules (" + mode + "): " + text)}">§</span>`;
+    return `<span class="zone-rule${mode === "off" ? " off" : ""}" title="${esc("Play rules (" + mode + "): " + text)}" aria-label="${esc("Play rules (" + mode + "): " + text)}">§</span>`;
   }
 
   function visIcon(zone) {
-    if (zone.visibility === "owner") return `<span class="zone-vis" title="Private: only the owner sees face-down cards">🔒</span>`;
-    if (zone.visibility === "hidden") return `<span class="zone-vis" title="Hidden: nobody sees face-down cards">▦</span>`;
+    if (zone.visibility === "owner") return `<span class="zone-vis" title="Private: only the owner sees face-down cards">${ICON("lock")}<span class="sr-only">Private</span></span>`;
+    if (zone.visibility === "hidden") return `<span class="zone-vis" title="Hidden: nobody sees face-down cards">${ICON("grid")}<span class="sr-only">Hidden</span></span>`;
     return "";
   }
 
@@ -443,6 +502,12 @@
       el.classList.toggle("legal", Boolean(verdict?.ok));
       el.classList.toggle("illegal", Boolean(verdict && !verdict.ok));
       if (verdict && !verdict.ok) el.dataset.why = verdict.why; else delete el.dataset.why;
+      // The reason is real text, not a CSS-only attr() string.
+      let why = el.querySelector(":scope > .zone-why");
+      if (verdict && !verdict.ok) {
+        if (!why) { why = document.createElement("div"); why.className = "zone-why"; el.appendChild(why); }
+        why.textContent = verdict.why;
+      } else if (why) why.remove();
     });
   }
 
@@ -472,20 +537,20 @@
       body = cards.map((card, i) => cardHTML(card, zone, i)).join("");
     }
     const tools = [];
-    if (inSel) tools.push(`<button class="btn sm zone-here" data-act="here" title="Move selected cards here">⤵ Here</button>`);
+    if (inSel) tools.push(`<button type="button" class="btn btn--sm zone-here" data-act="here" title="Move selected cards here">${ICON("download")} Here</button>`);
     if (deckLike) {
-      tools.push(`<button class="btn sm" data-act="draw" title="Draw one to your hand (or the current player's)">Draw</button>`);
-      tools.push(`<button class="btn sm" data-act="deal" title="Deal from here">Deal</button>`);
-      tools.push(`<button class="btn sm icon" data-act="shuffle" title="Shuffle">⤮</button>`);
+      tools.push(`<button class="btn btn--sm" data-act="draw" title="Draw one to your hand (or the current player's)">Draw</button>`);
+      tools.push(`<button class="btn btn--sm" data-act="deal" title="Deal from here">Deal</button>`);
+      tools.push(`<button type="button" class="btn btn--sm btn--icon" data-act="shuffle" title="Shuffle" aria-label="Shuffle">${ICON("shuffle")}</button>`);
     } else if (cards.length && !zone.rule?.slap) {
-      tools.push(`<button class="btn sm icon" data-act="flip" title="Flip all">⟲</button>`);
+      tools.push(`<button type="button" class="btn btn--sm btn--icon" data-act="flip" title="Flip all" aria-label="Flip all">${ICON("refresh")}</button>`);
     }
-    if (zone.rule?.slap) tools.unshift(`<button class="btn sm slap-btn" data-act="slap" title="Slap the pile (Space)">👋 Slap</button>`);
-    if (zone.claim && zone.claim.by !== mySeatId()) tools.unshift(`<button class="btn sm slap-btn" data-act="call-bluff" title="Call the last claim: reveal it, and whoever is wrong takes the pile">🔍 Call!</button>`);
+    if (zone.rule?.slap) tools.unshift(`<button type="button" class="btn btn--sm slap-btn" data-act="slap" title="Slap the pile (Space)">${ICON("hand")} Slap</button>`);
+    if (zone.claim && zone.claim.by !== mySeatId()) tools.unshift(`<button type="button" class="btn btn--sm slap-btn" data-act="call-bluff" title="Call the last claim: reveal it, and whoever is wrong takes the pile">${ICON("search")} Call!</button>`);
     const challenged = zone.challenge ? view.players[view.turn.index] : null;
-    const challengeBar = zone.challenge ? `<div class="claim-bar">👑 <b>${esc(E.playerById(view, zone.challenge.by)?.name || "?")}</b> challenges: ${challenged ? `<b>${esc(challenged.name)}</b> has` : ""} <b>${zone.challenge.left}</b> flip${zone.challenge.left === 1 ? "" : "s"} to answer with a face card</div>` : "";
+    const challengeBar = zone.challenge ? `<div class="claim-bar">${ICON("crown")} <b>${esc(E.playerById(view, zone.challenge.by)?.name || "?")}</b> challenges: ${challenged ? `<b>${esc(challenged.name)}</b> has` : ""} <b>${zone.challenge.left}</b> flip${zone.challenge.left === 1 ? "" : "s"} to answer with a face card</div>` : "";
     const claimBar = challengeBar + (zone.rule?.claim ? `<div class="claim-bar">${zone.claim ? `<b>${esc(E.playerById(view, zone.claim.by)?.name || "?")}</b> claims <b>${zone.claim.count} × ${esc(RANK_WORD(zone.claim.rank))}</b>` : "No claim yet"} <span class="dim">· next: ${esc(RANK_WORD(E.nextClaimRank(zone)))}</span></div>` : "");
-    tools.push(`<button class="btn sm icon" data-act="menu" title="Group options">⋯</button>`);
+    tools.push(`<button type="button" class="btn btn--sm btn--icon" data-act="menu" title="Group options" aria-label="Group options" aria-haspopup="menu">${ICON("more")}</button>`);
     const evals = prefs.evals && cards.length ? evalsHTML(zone) : "";
     const manyClass = layout === "fan" ? (cards.length > 9 ? " many" : cards.length <= 3 ? " few" : "") : "";
     // Tilted outer cards swing past their slot; pad the fan so they stay inside the group.
@@ -502,6 +567,7 @@
       </header>
       ${zone.note ? `<div class="zone-note">${esc(zone.note)}</div>` : ""}${claimBar}
       <div class="cards layout-${layout}${manyClass}" data-drop="${zone.id}"${fanStyle}>${body}</div>
+      ${verdict && !verdict.ok ? `<div class="zone-why">${esc(verdict.why)}</div>` : ""}
       ${evals}
     </section>`;
   }
@@ -513,7 +579,7 @@
       const cls = ["eval", "tone-" + (r.tone || "neutral")];
       if (entry.best) cls.push("best");
       if (r.partial) cls.push("partial");
-      const place = entry.best ? "🏆" : entry.place ? "#" + entry.place : "";
+      const place = entry.best ? `${ICON("trophy")}<span class="sr-only">Best</span>` : entry.place ? "#" + entry.place : "";
       const kind = entry.def.short + (parseSpec(entry.spec).board ? " · " + (entry.boardZone?.name || "") : "");
       const breakdown = r.breakdown && r.breakdown.length > 1 ? `<div class="breakdown">${r.breakdown.map((b) => `<span>${esc(b.label)} ${b.points}</span>`).join("")}</div>` : "";
       const detail = r.detail && !breakdown ? `<div class="detail">${esc(r.detail)}</div>` : "";
@@ -535,13 +601,13 @@
     const me = mySeatId() === player.id;
     const total = E.totals(v)[player.id] || 0;
     const tags = [];
-    if (current) tags.push(`<span class="turn-tag">TURN</span>`);
+    if (current) tags.push(`<span class="turn-tag">Turn</span>`);
     if (v.scores.rounds.some((round) => player.id in round.scores) || v.scores.target) tags.push(`<span class="score-tag" title="${esc(v.scores.label)}">${E.fmt(total)} pts</span>`);
-    if (v.chipStart || player.chips) tags.push(`<span class="chip-tag" title="Chips">● ${E.fmt(player.chips)}</span>`);
+    if (v.chipStart || player.chips) tags.push(`<span class="chip-tag" title="Chips">${E.fmt(player.chips)} chips</span>`);
     for (const def of v.counterDefs) tags.push(`<span class="counter-tag" title="${esc(def.name)}">${esc(def.name)} ${E.fmt(player.counters[def.id] ?? 0)}</span>`);
     if (player.team) tags.unshift(`<span class="team-tag" title="Team">${esc(player.team)}</span>`);
-    if (player.bot) tags.unshift(`<span class="bot-tag" title="Bot: plays random legal cards on its turn">🤖</span>`);
-    const net = player.clientId ? ` <span class="dim small" title="Seat claimed by a connected player">📶</span>` : "";
+    if (player.bot) tags.unshift(`<span class="bot-tag" title="Bot: plays random legal cards on its turn">${ICON("bot")}<span class="sr-only">Bot</span></span>`);
+    const net = player.clientId ? ` <span class="seat-net" title="Seat claimed by a connected player">${ICON("online")}<span class="sr-only">Connected</span></span>` : "";
     return `<article class="seat${current ? " current" : ""}${me ? " me" : ""}${player.out ? " out" : ""}" style="--c:${esc(player.color)}" data-seat="${player.id}">
       <header class="seat-head">
         <span class="seat-dot"></span>
@@ -569,11 +635,11 @@
         <div class="ar-top">${top.map(seat).join("")}</div>
         <div class="ar-left">${left.map(seat).join("")}</div>
         <div class="ar-center"><div class="ar-felt">
-          <div class="area-label"><span>Table</span><button class="btn sm ghost" data-add-zone="table">+ Group</button><button class="btn sm ghost" data-act="add-player">+ Player</button></div>
+          <div class="area-label"><span>Table</span><button class="btn btn--sm btn--ghost" data-add-zone="table">+ Group</button><button class="btn btn--sm btn--ghost" data-act="add-player">+ Player</button></div>
           <div class="table-zones">${E.orderedZones(v, "table").map(zoneHTML).join("") || `<div class="muted small">No table groups yet.</div>`}</div>
         </div></div>
         <div class="ar-right">${right.map(seat).join("")}</div>
-        <div class="ar-bottom">${players.length ? seat(players[bottomIndex]) : `<button class="btn primary" data-act="add-player">+ Add player</button>`}</div>
+        <div class="ar-bottom">${players.length ? seat(players[bottomIndex]) : `<button class="btn btn--primary" data-act="add-player">+ Add player</button>`}</div>
       </div>`;
   }
 
@@ -594,7 +660,7 @@
     $("#tableZones").innerHTML = E.orderedZones(v, "table").map(zoneHTML).join("") || `<div class="muted small">No table groups yet.</div>`;
     const seats = $("#seats");
     seats.classList.toggle("wide-seats", v.seatTemplate.length > 2 || v.players.length <= 2);
-    seats.innerHTML = v.players.map(seatHTML).join("") || `<div class="empty-state"><div>No players yet.</div><button class="btn primary" data-act="add-player">+ Add player</button></div>`;
+    seats.innerHTML = v.players.map(seatHTML).join("") || `<div class="empty-state"><div>No players yet.</div><button class="btn btn--primary" data-act="add-player">+ Add player</button></div>`;
   }
 
   function renderTop() {
@@ -605,37 +671,86 @@
     const dealer = v.players[v.turn.dealer];
     const parts = [];
     if (current) parts.push(`<span class="pill" style="--c:${esc(current.color)}"><span class="dot"></span>${esc(current.name)}</span>`);
-    parts.push(`<button class="btn sm icon" data-act="prev-turn" title="Previous player">‹</button><button class="btn sm" data-act="next-turn" title="Next player (T)">Next ›</button>`);
+    parts.push(`<button type="button" class="btn btn--sm btn--icon" data-act="prev-turn" title="Previous player" aria-label="Previous player">${ICON("chevron-left")}</button><button type="button" class="btn btn--sm" data-act="next-turn" title="Next player (T)">Next ${ICON("chevron-right")}</button>`);
     if (v.turn.phase || v.phases.length) parts.push(`<button class="pill phase" data-act="next-phase" title="Advance phase">${esc(v.turn.phase || "Phase")}</button>`);
     parts.push(`<span class="pill round">Round ${v.turn.round}</span>`);
     if (dealer) parts.push(`<span class="pill round" title="Dealer"><span class="dealer-btn">D</span>${esc(dealer.name)}</span>`);
-    if (v.pot) parts.push(`<span class="pill" style="color:var(--gold)">Pot ${E.fmt(v.pot)}</span>`);
-    if (timer.running || timer.left !== timer.total) parts.push(`<span class="pill${timer.left <= 10 ? " phase" : ""}" data-act="timer-toggle" title="Turn timer">⏱ ${fmtTime(timer.left)}</span>`);
-    if (v.turn.dir < 0) parts.push(`<span class="pill round" title="Counter-clockwise">↺</span>`);
+    if (v.pot) parts.push(`<span class="pill pot">Pot ${E.fmt(v.pot)}</span>`);
+    if (timer.running || timer.left !== timer.total) parts.push(`<button type="button" class="pill${timer.left <= 10 ? " phase" : ""}" data-act="timer-toggle" title="Turn timer">${ICON("history")} ${fmtTime(timer.left)}</button>`);
+    if (v.turn.dir < 0) parts.push(`<span class="pill round" title="Counter-clockwise" aria-label="Counter-clockwise">↺</span>`);
     const hasRules = Object.values(v.zones).some((zone) => zone.rule && Object.keys(zone.rule).length);
     if (hasRules) parts.push(`<button class="pill rules-pill mode-${esc(v.rulesMode)}" data-act="cycle-rules" title="Rule checks: ${esc(v.rulesMode)} (click to change)">§ ${esc(E.RULES_MODES[v.rulesMode] || "Warn")}</button>`);
-    if (prefs.seed) parts.push(`<span class="pill round" title="Seeded shuffles: ${esc(prefs.seed)}">🌱</span>`);
-    if (recorder.on) parts.unshift(`<button class="pill rec" data-act="rec-stop" title="Stop and save as an action">● Rec ${recorder.steps.length} · Stop</button>`);
+    if (prefs.seed) parts.push(`<span class="pill round" title="Seeded shuffles: ${esc(prefs.seed)}">Seed ${esc(prefs.seed)}</span>`);
+    if (recorder.on) parts.unshift(`<button class="pill rec" data-act="rec-stop" title="Stop and save as an action">Recording ${recorder.steps.length} · Stop</button>`);
     $("#turnStrip").innerHTML = parts.join("");
 
     const select = $("#viewSelect");
     let options = [];
     if (net.mode === "local") {
-      options = [["hands", "👥 All hands"], ["xray", "🔍 X-ray"], ["pass", "🔁 Pass & play"], ...v.players.map((player) => ["seat:" + player.id, "👤 " + player.name])];
+      options = [["hands", "View: all hands"], ["xray", "View: X-ray"], ["pass", "View: pass & play"], ...v.players.map((player) => ["seat:" + player.id, "View as " + player.name])];
       select.innerHTML = options.map(([value, label]) => `<option value="${value}">${esc(label)}</option>`).join("");
       select.value = options.some(([value]) => value === prefs.viewMode) ? prefs.viewMode : "hands";
     } else {
       const mine = mySeatId();
-      options = [["spectate", "👁 Spectate"], ...v.players.map((player) => ["claim:" + player.id, (player.id === mine ? "👤 " : player.clientId ? "🔒 " : "🪑 ") + player.name])];
+      options = [["spectate", "Spectate"], ...v.players.map((player) => ["claim:" + player.id, player.name + (player.id === mine ? " (you)" : player.clientId ? " (taken)" : " (open seat)")])];
       select.innerHTML = options.map(([value, label]) => `<option value="${value}">${esc(label)}</option>`).join("");
       select.value = mine ? "claim:" + mine : "spectate";
     }
     $("#undoBtn").disabled = net.mode !== "client" && !history.length;
     $("#redoBtn").disabled = net.mode !== "client" && !future.length;
-    const roomBtn = $("#roomBtn");
-    roomBtn.classList.toggle("good", net.mode !== "local");
     $("#reactBtn").hidden = net.mode === "local";
-    $("#roomLabel").textContent = net.mode === "local" ? "Online" : net.code || "Room";
+    $("#logBtn").hidden = net.mode === "local";
+    renderRoomBadge();
+    renderGuestChrome();
+  }
+
+  /** The connection badge in the topbar: local, hosting, connected as a guest, reconnecting, or host gone. */
+  function renderRoomBadge() {
+    const label = $("#roomLabel");
+    const button = $("#roomBtn");
+    let state = "local";
+    let text = "Online";
+    let title = "Play online with friends";
+    if (net.mode !== "local") {
+      const code = net.code || "Room";
+      if (net.status === "reconnecting") { state = "reconnecting"; text = `Reconnecting · ${code}`; title = "The host disconnected; recovering the table"; }
+      else if (net.status === "offline") { state = "offline"; text = `Offline · ${code}`; title = "Connection lost"; }
+      else if (net.mode === "host") { state = "host"; text = `Hosting · ${code}`; title = `You are hosting room ${code}`; }
+      else { state = "client"; text = `Guest · ${code}`; title = `Connected to room ${code} as a guest`; }
+    }
+    label.textContent = text;
+    label.dataset.state = state;
+    button.dataset.state = state;
+    button.title = title;
+    button.setAttribute("aria-label", state === "local" ? "Play online" : `Online room: ${text}`);
+  }
+
+  // Host-only controls, by data-act, disabled for guests with a "host only" hint.
+  const HOST_ONLY = new Set(["bot-turn", "bots-pause", "simulate", "bot-games", "rec-start", "rec-stop", "replay", "rewind", "save-table", "load-save", "play-again", "dev-load", "collect", "reveal-all", "rebuild-deck", "enable-chips", "reset-stacks", "reset-scores", "pull-cards", "add-card", "seed-apply", "seed-clear"]);
+  const isGuest = () => net.mode === "client";
+
+  function renderGuestChrome() {
+    const guest = isGuest();
+    const newBtn = $("#newBtn");
+    newBtn.disabled = guest;
+    newBtn.title = guest ? "Host only: only the host can start a new game" : "Start a new game (N)";
+    $("#addSeatBtn").disabled = guest;
+    $("#addSeatBtn").title = guest ? "Host only" : "";
+  }
+
+  /** Disable host-only actions inside a rendered pane and say why, once, at the top. */
+  function applyGuestState(container) {
+    if (!isGuest()) return;
+    for (const el of container.querySelectorAll("[data-act]")) {
+      if (!HOST_ONLY.has(el.dataset.act)) continue;
+      el.disabled = true;
+      el.setAttribute("aria-disabled", "true");
+      el.title = "Host only";
+      if (!el.querySelector(".ct-host-only")) el.insertAdjacentHTML("beforeend", `<span class="ct-host-only">${ICON("lock")}<span class="sr-only">Host only</span></span>`);
+    }
+    if (!container.querySelector(".ct-guest-note")) {
+      container.insertAdjacentHTML("afterbegin", `<div class="ct-guest-note">${ICON("info")}<span>You are a guest in room <b>${esc(net.code || "")}</b>. Locked controls are host only${view?.guestMode === "full" ? "" : "; this room is play only, so groups, rules and actions are the host's to edit"}.</span></div>`);
+    }
   }
 
   function renderSelectionBar() {
@@ -648,19 +763,19 @@
     bar.hidden = false;
     bar.innerHTML = `
       <span class="count">${ids.length} selected</span>
-      <button class="btn sm" data-sel="flip" title="Flip (F)">Flip</button>
-      <button class="btn sm" data-sel="move" title="Move to…">Move to ▾</button>
-      <button class="btn sm" data-sel="group" title="Put these in a new group (G)">New group</button>
-      ${anyHidden && mySeatId() ? `<button class="btn sm" data-sel="peek" title="Look without revealing">Peek</button>` : ""}
-      <button class="btn sm" data-sel="sortsel" title="Order these cards by rank inside their group">Sort</button>
-      <button class="btn sm icon" data-sel="rotate" title="Rotate 90°">↻</button>
-      <button class="btn sm icon" data-sel="mark" title="Mark">●</button>
-      ${discardZone ? `<button class="btn sm" data-sel="discard" title="Move to ${esc(discardZone.name)} (Del)">${esc(discardZone.name)}</button>` : ""}
-      <button class="btn sm" data-sel="deck" title="Return to the deck">To deck</button>
-      ${tradeOwner(ids) ? `<button class="btn sm" data-sel="offer" title="Offer these cards to another player in a trade">🤝 Offer</button>` : ""}
-      <button class="btn sm icon ghost" data-sel="clear" title="Clear selection (Esc)">✕</button>`;
+      <button class="btn btn--sm" data-sel="flip" title="Flip (F)">Flip</button>
+      <button type="button" class="btn btn--sm" data-sel="move" title="Move to…" aria-haspopup="menu">Move to ${ICON("chevron-down")}</button>
+      <button class="btn btn--sm" data-sel="group" title="Put these in a new group (G)">New group</button>
+      ${anyHidden && mySeatId() ? `<button class="btn btn--sm" data-sel="peek" title="Look without revealing">Peek</button>` : ""}
+      <button class="btn btn--sm" data-sel="sortsel" title="Order these cards by rank inside their group">Sort</button>
+      <button type="button" class="btn btn--sm btn--icon" data-sel="rotate" title="Rotate 90°" aria-label="Rotate 90 degrees">${ICON("refresh")}</button>
+      <button type="button" class="btn btn--sm btn--icon" data-sel="mark" title="Mark" aria-label="Mark" aria-haspopup="menu">${ICON("mark")}</button>
+      ${discardZone ? `<button class="btn btn--sm" data-sel="discard" title="Move to ${esc(discardZone.name)} (Del)">${esc(discardZone.name)}</button>` : ""}
+      <button class="btn btn--sm" data-sel="deck" title="Return to the deck">To deck</button>
+      ${tradeOwner(ids) ? `<button class="btn btn--sm" data-sel="offer" title="Offer these cards to another player in a trade">${ICON("handshake")} Offer</button>` : ""}
+      <button type="button" class="btn btn--sm btn--icon btn--ghost" data-sel="clear" title="Clear selection (Esc)" aria-label="Clear selection">${ICON("close")}</button>`;
     const plays = [...legalMap.entries()].filter(([, verdict]) => verdict.ok).slice(0, 3);
-    bar.querySelector(".count").insertAdjacentHTML("afterend", plays.map(([zoneId], i) => `<button class="btn sm good" data-sel="play" data-to="${zoneId}" title="${i === 0 ? "Play (P or Enter)" : "Play"}">Play ▸ ${esc(v.zones[zoneId]?.name || "")}</button>`).join(""));
+    bar.querySelector(".count").insertAdjacentHTML("afterend", plays.map(([zoneId], i) => `<button class="btn btn--sm ct-btn-good" data-sel="play" data-to="${zoneId}" title="${i === 0 ? "Play (P or Enter)" : "Play"}">Play ${ICON("arrow-right")} ${esc(v.zones[zoneId]?.name || "")}</button>`).join(""));
   }
 
   /** The seat that owns every selected card, if this screen may trade for it. */
@@ -689,7 +804,7 @@
         </div>
         <p class="hint">They see your cards and choose whether to accept. Nothing moves until they do; you can withdraw any time.</p>
       </div>
-      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="send">Send offer</button></div>`, {
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="send">Send offer</button></div>`, {
       onSubmit(form) {
         dispatch({ type: "offerTrade", player: owner, to: form.to.value, cards: ids, want: Number(form.want.value) || 0, chips: Number(form.chips.value) || 0, note: form.note.value });
         selection.clear();
@@ -712,10 +827,10 @@
       const asks = [offer.want ? `${offer.want} card${offer.want === 1 ? "" : "s"}` : "", offer.chips < 0 ? `${E.fmt(-offer.chips)} chips` : ""].filter(Boolean).join(" + ") || "nothing";
       const canAnswer = net.mode === "local" || offer.to === me;
       const canWithdraw = net.mode === "local" || offer.from === me;
-      return `<div class="offer" data-offer="${esc(offer.id)}"><span class="grow">🤝 <b>${name(offer.from)}</b> offers <b>${name(offer.to)}</b> ${gives} for ${asks}${offer.note ? ` <span class="dim">“${esc(offer.note)}”</span>` : ""}${canAnswer && offer.want ? ` <span class="dim">· select ${offer.want} of ${name(offer.to)}'s cards, then accept</span>` : ""}</span>
-        ${canAnswer ? `<button class="btn sm good" data-offer-act="accept">Accept</button><button class="btn sm" data-offer-act="decline">Decline</button>` : ""}
-        ${canWithdraw && !canAnswer ? `<button class="btn sm" data-offer-act="withdraw">Withdraw</button>` : ""}
-        ${canWithdraw && net.mode === "local" ? `<button class="btn sm icon ghost" data-offer-act="withdraw" title="Withdraw">✕</button>` : ""}</div>`;
+      return `<div class="offer" data-offer="${esc(offer.id)}"><span class="grow">${ICON("handshake")} <b>${name(offer.from)}</b> offers <b>${name(offer.to)}</b> ${gives} for ${asks}${offer.note ? ` <span class="dim">“${esc(offer.note)}”</span>` : ""}${canAnswer && offer.want ? ` <span class="dim">· select ${offer.want} of ${name(offer.to)}'s cards, then accept</span>` : ""}</span>
+        ${canAnswer ? `<button class="btn btn--sm ct-btn-good" data-offer-act="accept">Accept</button><button class="btn btn--sm" data-offer-act="decline">Decline</button>` : ""}
+        ${canWithdraw && !canAnswer ? `<button class="btn btn--sm" data-offer-act="withdraw">Withdraw</button>` : ""}
+        ${canWithdraw && net.mode === "local" ? `<button class="btn btn--sm btn--icon btn--ghost" data-offer-act="withdraw" title="Withdraw" aria-label="Withdraw">${ICON("close")}</button>` : ""}</div>`;
     }).join("");
   }
 
@@ -829,20 +944,34 @@
 
   // ======================================================== MENUS
   let openMenu = null;
-  function closeMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } }
+  let menuOpener = null;
+  function closeMenu(restoreFocus = false) {
+    if (!openMenu) return;
+    const opener = menuOpener;
+    openMenu.remove();
+    openMenu = null;
+    menuOpener = null;
+    if (restoreFocus && opener && typeof opener.focus === "function" && opener.isConnected) opener.focus({ preventScroll: true });
+  }
 
-  /** items: {label, run, danger, sw} | "-" | {heading} */
+  /**
+   * A context menu with menu semantics: role="menu" of role="menuitem" buttons,
+   * focus moves in, arrow keys and Home/End move, Escape closes and returns focus.
+   * items: {label, run, danger, sw, disabled, hint} | "-" | {heading}
+   */
   function showMenu(anchor, items) {
     closeMenu();
     const menu = document.createElement("div");
     menu.className = "menu";
+    menu.setAttribute("role", "menu");
     menu.innerHTML = items.map((item, i) => {
-      if (item === "-") return "<hr>";
-      if (item.heading) return `<div class="menu-label">${esc(item.heading)}</div>`;
-      return `<button data-i="${i}" class="${item.danger ? "danger" : ""}">${item.sw ? `<span class="sw" style="--c:${esc(item.sw)}"></span>` : ""}${esc(item.label)}</button>`;
+      if (item === "-") return '<hr role="separator">';
+      if (item.heading) return `<div class="menu-label" role="presentation">${esc(item.heading)}</div>`;
+      return `<button type="button" role="menuitem" data-i="${i}" class="${item.danger ? "danger" : ""}" tabindex="-1"${item.disabled ? ` disabled title="${esc(item.hint || "Host only")}"` : ""}>${item.sw ? `<span class="sw" style="--c:${esc(item.sw)}"></span>` : ""}${esc(item.label)}${item.disabled ? `<span class="ct-host-only">${ICON("lock")}<span class="sr-only">${esc(item.hint || "Host only")}</span></span>` : ""}</button>`;
     }).join("");
     // A modal dialog sits in the top layer, so menus opened from one must live inside it.
-    (dialog().open ? dialog() : document.body).appendChild(menu);
+    const host = dialog().open ? dialog() : (document.getElementById("paneDialog")?.open ? document.getElementById("paneDialog") : document.body);
+    host.appendChild(menu);
     const rect = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { left: anchor.x, right: anchor.x, top: anchor.y, bottom: anchor.y };
     const mw = menu.offsetWidth;
     const mh = menu.offsetHeight;
@@ -853,12 +982,26 @@
     menu.style.top = top + "px";
     menu.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-i]");
-      if (!button) return;
+      if (!button || button.disabled) return;
       const item = items[Number(button.dataset.i)];
-      closeMenu();
+      closeMenu(true);
       item.run?.();
     });
+    const entries = () => Array.from(menu.querySelectorAll('[role="menuitem"]:not(:disabled)'));
+    menu.addEventListener("keydown", (event) => {
+      const list = entries();
+      const at = list.indexOf(document.activeElement);
+      const go = (index) => { list[(index + list.length) % list.length]?.focus(); event.preventDefault(); };
+      if (event.key === "ArrowDown") go(at + 1);
+      else if (event.key === "ArrowUp") go(at - 1);
+      else if (event.key === "Home") go(0);
+      else if (event.key === "End") go(list.length - 1);
+      else if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeMenu(true); }
+      else if (event.key === "Tab") closeMenu(true);
+    });
+    menuOpener = anchor instanceof Element ? anchor : document.activeElement;
     openMenu = menu;
+    entries()[0]?.focus({ preventScroll: true });
   }
 
   function zoneTargets(excludeIds = []) {
@@ -895,7 +1038,7 @@
     const items = [
       { label: "Edit group, rules & scoring…", run: () => openZoneDialog(zoneId) },
       { label: "Browse cards…", run: () => openBrowseDialog(zoneId) },
-      ...(net.mode !== "local" ? [{ label: "📍 Ping for everyone", run: () => emit({ kind: "ping", zone: zoneId }) }] : []),
+      ...(net.mode !== "local" ? [{ label: "Ping for everyone", run: () => emit({ kind: "ping", zone: zoneId }) }] : []),
       "-",
     ];
     if (has) {
@@ -939,7 +1082,7 @@
       const others = view.players.filter((player) => player.id !== mySeatId());
       if (others.length) items.push({ label: "Show to…", run: () => showMenu(point, [{ heading: "Show only to" }, ...others.map((player) => ({ label: player.name, sw: player.color, run: () => dispatch({ type: "showTo", cards: ids, player: player.id }) }))]) });
     }
-    if (net.mode !== "local") items.push({ label: "📍 Ping for everyone", run: () => emit({ kind: "ping", card: cardId, zone: E.zoneOf(view, cardId)?.id || null }) });
+    if (net.mode !== "local") items.push({ label: "Ping for everyone", run: () => emit({ kind: "ping", card: cardId, zone: E.zoneOf(view, cardId)?.id || null }) });
     items.push({ label: "Rotate 90°", run: () => dispatch({ type: "rotate", cards: ids }) });
     items.push({ heading: "Mark" });
     for (const [color, name] of MARK_COLORS) items.push({ label: name, sw: color, run: () => dispatch({ type: "mark", cards: ids, color }) });
@@ -959,7 +1102,7 @@
       { label: "Make them dealer", run: () => dispatch({ type: "setTurn", dealer: index }) },
       { label: "Rename…", run: () => { const name = prompt("Player name", player.name); if (name) dispatch({ type: "updatePlayer", player: playerId, patch: { name } }); } },
       { label: player.out ? "Bring back in" : "Sit out / eliminate", run: () => dispatch({ type: "updatePlayer", player: playerId, patch: { out: !player.out } }) },
-      { label: player.bot ? "Make human" : "🤖 Make a bot", run: () => dispatch({ type: "updatePlayer", player: playerId, patch: { bot: !player.bot } }) },
+      { label: player.bot ? "Make human" : "Make a bot", run: () => dispatch({ type: "updatePlayer", player: playerId, patch: { bot: !player.bot } }) },
       { label: "Set team…", run: () => { const team = prompt("Team name (blank for none)", player.team || ""); if (team !== null) dispatch({ type: "updatePlayer", player: playerId, patch: { team } }); } },
       { label: "Reveal their cards", run: () => E.orderedZones(v, playerId).forEach((zone) => dispatch({ type: "flipZone", zone: zone.id, face: "up" })) },
       { label: "Add group to this seat…", run: () => openZoneDialog(null, { area: playerId }) },
@@ -1223,9 +1366,9 @@
       const rows = group.rows.slice().sort((a, b) => (a.entry.place || 99) - (b.entry.place || 99));
       const winners = rows.filter((row) => row.entry.place === 1).map((row) => row.player.id);
       return `<div class="list">
-        <div class="row small muted"><span class="grow">${esc(group.label)}</span>${v.pot && winners.length ? `<button class="btn sm good" data-act="award-best" data-players="${winners.join(",")}">Award pot → ${winners.length > 1 ? "split" : esc(rows[0].player.name)}</button>` : ""}</div>
+        <div class="row small muted"><span class="grow">${esc(group.label)}</span>${v.pot && winners.length ? `<button class="btn btn--sm ct-btn-good" data-act="award-best" data-players="${winners.join(",")}">Award pot → ${winners.length > 1 ? "split" : esc(rows[0].player.name)}</button>` : ""}</div>
         ${rows.map(({ player, entry }) => `<div class="list-row" style="--c:${esc(player.color)}">
-          <span class="swatch"></span><span class="small" style="width:22px;font-weight:800">${entry.place === 1 && entry.best ? "🏆" : entry.place || "–"}</span>
+          <span class="swatch"></span><span class="small" style="width:22px;font-weight:800">${entry.place === 1 && entry.best ? ICON("trophy") : entry.place || "–"}</span>
           <span class="grow small" style="font-weight:700">${esc(player.name)}</span>
           <span class="small" style="text-align:right">${esc(entry.result.label)}${entry.result.partial ? ' <span class="dim">(partial)</span>' : ""}</span>
         </div>`).join("")}
@@ -1238,9 +1381,9 @@
     const speed = prefs.botSpeed || "normal";
     const style = prefs.botStyle || "random";
     return `<div class="row tight">
-        <button class="btn sm" data-act="bot-turn" title="Make a legal play for whoever's turn it is">🤖 Auto-play this turn</button>
-        <button class="btn sm" data-act="hint" title="What would the smart bot play? (H)">💡 Hint</button>
-        ${count ? `<button class="btn sm${bots.paused ? " primary" : ""}" data-act="bots-pause">${bots.paused ? "Resume bots" : "Pause bots"}</button>` : ""}
+        <button class="btn btn--sm" data-act="bot-turn" title="Make a legal play for whoever's turn it is">Auto-play this turn</button>
+        <button class="btn btn--sm" data-act="hint" title="What would the smart bot play? (H)">Hint</button>
+        ${count ? `<button class="btn btn--sm${bots.paused ? " btn--primary" : ""}" data-act="bots-pause">${bots.paused ? "Resume bots" : "Pause bots"}</button>` : ""}
       </div>
       <div class="grid-2">
         <label class="field"><span>If a bot can't play</span><select data-bot-fallback>${[["", "Pass the turn"], ...v.macros.map((macro) => [macro.id, macro.label])].map(([id, label]) => `<option value="${esc(id)}"${(v.botFallback || "") === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
@@ -1249,7 +1392,7 @@
         <label class="field"><span>Each turn a bot plays</span><select data-plays-per-turn><option value="1"${v.playsPerTurn !== 0 ? " selected" : ""}>One card</option><option value="0"${v.playsPerTurn === 0 ? " selected" : ""}>Until it's stuck</option></select></label>
         <label class="field"><span>Bots play</span><select data-bot-style>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${style === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
       </div>
-      <div class="field"><span>Speed</span><div class="seg">${["slow", "normal", "fast"].map((id) => `<button data-act="bot-speed" data-speed="${id}" class="${speed === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
+      <div class="field"><span>Speed</span><div class="seg" role="group">${["slow", "normal", "fast"].map((id) => `<button data-act="bot-speed" data-speed="${id}" class="${speed === id ? "on" : ""}" aria-pressed="${speed === id}">${id}</button>`).join("")}</div></div>
       <p class="hint">${count ? `${count} bot${count === 1 ? "" : "s"} at the table.` : "Make any seat a bot from the Players tab or its name menu."} Bots play legal cards from their hand to groups with play rules. Smart bots duck or win tricks, shed their most costly cards and build the best hand; give seats different styles in the Players tab and compare them with Tools → Bot games.</p>`;
   }
 
@@ -1262,18 +1405,18 @@
           ${current ? `<span class="pill" style="--c:${esc(current.color)};font-size:14px;min-height:32px"><span class="dot"></span>${esc(current.name)}'s turn</span>` : `<span class="muted">No players</span>`}
         </div>
         <div class="row tight">
-          <button class="btn sm" data-act="prev-turn">‹ Prev</button>
-          <button class="btn sm primary" data-act="next-turn">Next player › <kbd>T</kbd></button>
-          <button class="btn sm" data-act="pass-deal" title="Button/dealer moves one seat">Pass deal</button>
-          <button class="btn sm" data-act="reverse" title="Reverse play direction">⇄ Direction</button>
-          <button class="btn sm" data-act="next-round">Next round</button>
+          <button class="btn btn--sm" data-act="prev-turn">${ICON("chevron-left")} Prev</button>
+          <button class="btn btn--sm btn--primary" data-act="next-turn">Next player ${ICON("chevron-right")}<kbd class="sr-only">T</kbd></button>
+          <button class="btn btn--sm" data-act="pass-deal" title="Button/dealer moves one seat">Pass deal</button>
+          <button class="btn btn--sm" data-act="reverse" title="Reverse play direction">Reverse direction</button>
+          <button class="btn btn--sm" data-act="next-round">Next round</button>
         </div>
-        <div class="phase-chips">${v.phases.map((phase) => `<button data-act="set-phase" data-phase="${esc(phase)}" class="${phase === v.turn.phase ? "on" : ""}">${esc(phase)}</button>`).join("")}
-          <button data-act="edit-phases" title="Edit phases">✎ phases</button></div>`;
+        <div class="phase-chips">${v.phases.map((phase) => `<button type="button" class="chip${phase === v.turn.phase ? " on" : ""}" aria-pressed="${phase === v.turn.phase}" data-act="set-phase" data-phase="${esc(phase)}">${esc(phase)}</button>`).join("")}
+          <button type="button" class="chip" data-act="edit-phases" title="Edit phases">Edit phases</button></div>`;
       const macros = v.macros.map((macro, i) => `<button class="macro" data-act="macro" data-id="${macro.id}" title="${esc(macro.hint || macro.steps.map((step) => E.describeStep(step, v)).join(" → "))}">
           ${esc(macro.label)}${i < 9 ? `<kbd>${i + 1}</kbd>` : ""}
           <small>${esc(macro.hint || macro.steps.map((step) => E.describeStep(step, v)).join(" → "))}</small>
-          <span class="btn sm icon ghost edit" data-act="edit-macro" data-id="${macro.id}" title="Edit">✎</span>
+          <span class="btn btn--sm btn--icon btn--ghost edit" data-act="edit-macro" data-id="${macro.id}" title="Edit" aria-label="Edit">${ICON("edit")}</span>
         </button>`).join("");
       const quick = `
         <div class="grid-2">
@@ -1282,11 +1425,11 @@
           <label class="field"><span>Cards each</span><input id="qdCount" data-fk="qdCount" type="number" min="1" max="60" value="${quickDeal.count}"></label>
           <label class="field"><span>Face</span><select id="qdFace" data-fk="qdFace"><option value="">Group default</option><option value="down"${quickDeal.face === "down" ? " selected" : ""}>Face down</option><option value="up"${quickDeal.face === "up" ? " selected" : ""}>Face up</option></select></label>
         </div>
-        <div class="row"><button class="btn primary" data-act="quick-deal">Deal</button>
+        <div class="row"><button class="btn btn--primary" data-act="quick-deal">Deal</button>
           <button class="btn" data-act="collect">Collect all & shuffle</button>
           <button class="btn" data-act="reveal-all">Reveal hands</button></div>`;
       return block("Turn", turn)
-        + block("Actions", `<div class="macro-grid">${macros}</div>${v.macros.length ? "" : `<p class="hint">Actions are one-tap macros: shuffle, deal, flip, collect, pass turn… Build your game's flow here.</p>`}`, `<button class="btn sm" data-act="${recorder.on ? "rec-stop" : "rec-start"}" title="Record moves you make as a new action">${recorder.on ? "■ Stop" : "● Record"}</button><button class="btn sm" data-act="new-macro">+ New action</button>`)
+        + block("Actions", `<div class="macro-grid">${macros}</div>${v.macros.length ? "" : `<p class="hint">Actions are one-tap macros: shuffle, deal, flip, collect, pass turn… Build your game's flow here.</p>`}`, `<button class="btn btn--sm" data-act="${recorder.on ? "rec-stop" : "rec-start"}" title="Record moves you make as a new action">${recorder.on ? "Stop recording" : "Record"}</button><button class="btn btn--sm" data-act="new-macro">+ New action</button>`)
         + block("Deal", quick)
         + block("Bots", botsHTML(v))
         + block("Standings", standingsHTML());
@@ -1300,10 +1443,10 @@
       const quick = v.players.map((player) => `<div class="quick-score" style="--c:${esc(player.color)}">
           <div class="name"><span class="swatch"></span><span>${esc(player.name)}</span></div>
           <div class="btns">
-            <button class="btn sm" data-act="score" data-player="${player.id}" data-delta="-5">−5</button>
-            <button class="btn sm" data-act="score" data-player="${player.id}" data-delta="-1">−1</button>
-            <button class="btn sm" data-act="score" data-player="${player.id}" data-delta="1">+1</button>
-            <button class="btn sm" data-act="score" data-player="${player.id}" data-delta="5">+5</button>
+            <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="-5">−5</button>
+            <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="-1">−1</button>
+            <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="1">+1</button>
+            <button class="btn btn--sm" data-act="score" data-player="${player.id}" data-delta="5">+5</button>
             <input type="number" style="min-height:26px" placeholder="± custom, Enter" data-score-custom="${player.id}" data-fk="sc-${player.id}" title="Type a number and press Enter">
           </div>
           <div class="total${leaders.has(player.id) && Object.values(totals).some(Boolean) ? " lead" : ""}" style="${leaders.has(player.id) && Object.values(totals).some(Boolean) ? "color:var(--gold)" : ""}">${E.fmt(totals[player.id])}</div>
@@ -1319,7 +1462,7 @@
           return `<div class="peg-lane" style="--c:${esc(player.color)};--tick:calc(100% / ${Math.ceil(target / tick)})" title="${esc(player.name)}: ${E.fmt(value)} / ${target}">
             <div class="ticks"></div><div class="fill" style="width:${frac * 100}%"></div>
             ${v.pegTarget ? `<div class="peg back" style="left:${prevFrac * 100}%"></div>` : ""}<div class="peg" style="left:${frac * 100}%"></div>
-            <span class="label">${esc(player.name)}</span><span class="num">${E.fmt(value)}${value >= target ? " 🏁" : ""}</span></div>`;
+            <span class="label">${esc(player.name)}</span><span class="num">${E.fmt(value)}${value >= target ? " " + ICON("flag") : ""}</span></div>`;
         }).join("")}</div>`;
       }
       const sheet = `<div class="score-table-wrap"><table class="score-table">
@@ -1327,10 +1470,10 @@
         <tbody>${v.scores.rounds.map((round) => `<tr>
           <td class="round-label"><input type="text" value="${esc(round.label)}" data-round-label="${round.id}" data-fk="rl-${round.id}"></td>
           ${v.players.map((player) => `<td><input type="number" value="${round.scores[player.id] ?? ""}" data-round="${round.id}" data-player="${player.id}" data-fk="r-${round.id}-${player.id}"></td>`).join("")}
-          <td><button class="btn sm icon ghost" data-act="del-round" data-round="${round.id}" title="Delete round">✕</button></td></tr>`).join("")}</tbody>
+          <td><button class="btn btn--sm btn--icon btn--ghost" data-act="del-round" data-round="${round.id}" title="Delete round" aria-label="Delete round">${ICON("close")}</button></td></tr>`).join("")}</tbody>
         <tfoot><tr><td>Total</td>${v.players.map((player) => `<td class="${leaders.has(player.id) ? "lead" : ""}">${E.fmt(totals[player.id])}</td>`).join("")}<td></td></tr></tfoot>
       </table></div>
-      <div class="row"><button class="btn sm" data-act="add-round">+ Round</button><button class="btn sm" data-act="export-csv">Export CSV</button><button class="btn sm danger" data-act="reset-scores">Reset</button></div>`;
+      <div class="row"><button class="btn btn--sm" data-act="add-round">+ Round</button><button class="btn btn--sm" data-act="export-csv">Export CSV</button><button class="btn btn--sm btn--danger" data-act="reset-scores">Reset</button></div>`;
       const settings = `<div class="grid-2">
           <label class="field"><span>Label</span><input type="text" value="${esc(v.scores.label)}" data-cfg="label" data-fk="cfg-label"></label>
           <label class="field"><span>Winner</span><select data-cfg="lowWins" data-fk="cfg-low"><option value="0">Highest total</option><option value="1"${v.scores.lowWins ? " selected" : ""}>Lowest total</option></select></label>
@@ -1342,32 +1485,32 @@
       const chips = `
         <div class="pot"><div><div class="small muted">Pot</div><strong>${E.fmt(v.pot)}</strong></div>
           <div class="row tight"><select id="awardTo" data-fk="awardTo" style="width:auto">${v.players.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}<option value="__split">Split: all active</option></select>
-          <button class="btn sm good" data-act="award" ${v.pot ? "" : "disabled"}>Award</button></div></div>
+          <button class="btn btn--sm ct-btn-good" data-act="award" ${v.pot ? "" : "disabled"}>Award</button></div></div>
         ${v.players.map((player) => `<div class="chip-row" style="--c:${esc(player.color)}">
           <div class="row tight"><span class="swatch"></span><span class="small" style="font-weight:700">${esc(player.name)}</span></div>
           <input type="number" value="${player.chips}" data-chips="${player.id}" data-fk="ch-${player.id}" title="Stack">
-          <div class="row tight"><input type="number" min="0" placeholder="bet" style="width:64px;min-height:26px" data-bet-input="${player.id}" data-fk="bet-${player.id}"><button class="btn sm" data-act="bet" data-player="${player.id}">Bet</button></div>
+          <div class="row tight"><input type="number" min="0" placeholder="bet" style="width:64px;min-height:26px" data-bet-input="${player.id}" data-fk="bet-${player.id}"><button class="btn btn--sm" data-act="bet" data-player="${player.id}">Bet</button></div>
         </div>`).join("")}
         <div class="row tight small"><span class="muted">Transfer</span>
           <select id="tfFrom" style="width:auto">${v.players.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select>→
           <select id="tfTo" style="width:auto">${v.players.map((player, i) => `<option value="${player.id}"${i === 1 ? " selected" : ""}>${esc(player.name)}</option>`).join("")}</select>
-          <input id="tfAmount" type="number" min="0" placeholder="amt" style="width:64px;min-height:26px"><button class="btn sm" data-act="transfer">Pay</button></div>
-        <div class="row tight small"><span class="muted">Starting stack</span><input id="chipStart" type="number" min="0" value="${v.chipStart || 0}" style="width:80px;min-height:26px"><button class="btn sm" data-act="reset-stacks">Reset all stacks</button></div>`;
+          <input id="tfAmount" type="number" min="0" placeholder="amt" style="width:64px;min-height:26px"><button class="btn btn--sm" data-act="transfer">Pay</button></div>
+        <div class="row tight small"><span class="muted">Starting stack</span><input id="chipStart" type="number" min="0" value="${v.chipStart || 0}" style="width:80px;min-height:26px"><button class="btn btn--sm" data-act="reset-stacks">Reset all stacks</button></div>`;
       const counters = `
         ${v.tableCounters.map((tracker) => `<div class="list-row"><span class="grow small" style="font-weight:700">${esc(tracker.name)}</span>
-          <button class="btn sm" data-act="counter" data-id="${tracker.id}" data-delta="-1">−</button><strong class="mono" style="min-width:34px;text-align:center">${E.fmt(tracker.value)}</strong><button class="btn sm" data-act="counter" data-id="${tracker.id}" data-delta="1">+</button>
-          <button class="btn sm icon ghost" data-act="del-counter" data-id="${tracker.id}">✕</button></div>`).join("")}
-        ${v.counterDefs.length ? `<div class="score-table-wrap"><table class="score-table"><thead><tr><th>Player</th>${v.counterDefs.map((def) => `<th>${esc(def.name)} <button class="btn sm icon ghost" data-act="del-counter" data-id="${def.id}" title="Remove">✕</button></th>`).join("")}</tr></thead><tbody>
-          ${v.players.map((player) => `<tr><td><span class="swatch" style="--c:${esc(player.color)};display:inline-block;width:8px;height:8px"></span> ${esc(player.name)}</td>${v.counterDefs.map((def) => `<td><div class="row tight" style="justify-content:center;flex-wrap:nowrap"><button class="btn sm icon" data-act="counter" data-player="${player.id}" data-id="${def.id}" data-delta="-1">−</button><span class="mono" style="min-width:24px">${E.fmt(player.counters[def.id] ?? 0)}</span><button class="btn sm icon" data-act="counter" data-player="${player.id}" data-id="${def.id}" data-delta="1">+</button></div></td>`).join("")}</tr>`).join("")}
+          <button class="btn btn--sm" data-act="counter" data-id="${tracker.id}" data-delta="-1">−</button><strong class="mono" style="min-width:34px;text-align:center">${E.fmt(tracker.value)}</strong><button class="btn btn--sm" data-act="counter" data-id="${tracker.id}" data-delta="1">+</button>
+          <button class="btn btn--sm btn--icon btn--ghost" data-act="del-counter" data-id="${tracker.id}" aria-label="Remove counter">${ICON("close")}</button></div>`).join("")}
+        ${v.counterDefs.length ? `<div class="score-table-wrap"><table class="score-table"><thead><tr><th>Player</th>${v.counterDefs.map((def) => `<th>${esc(def.name)} <button class="btn btn--sm btn--icon btn--ghost" data-act="del-counter" data-id="${def.id}" title="Remove" aria-label="Remove">${ICON("close")}</button></th>`).join("")}</tr></thead><tbody>
+          ${v.players.map((player) => `<tr><td><span class="swatch" style="--c:${esc(player.color)};display:inline-block;width:8px;height:8px"></span> ${esc(player.name)}</td>${v.counterDefs.map((def) => `<td><div class="row tight" style="justify-content:center;flex-wrap:nowrap"><button class="btn btn--sm btn--icon" data-act="counter" data-player="${player.id}" data-id="${def.id}" data-delta="-1">−</button><span class="mono" style="min-width:24px">${E.fmt(player.counters[def.id] ?? 0)}</span><button class="btn btn--sm btn--icon" data-act="counter" data-player="${player.id}" data-id="${def.id}" data-delta="1">+</button></div></td>`).join("")}</tr>`).join("")}
         </tbody></table></div>` : ""}
-        <div class="row tight"><input id="counterName" type="text" placeholder="Counter name (Bid, Tricks, Lives…)" class="grow" style="width:auto;flex:1"><select id="counterScope" style="width:auto"><option value="player">Per player</option><option value="table">Table</option></select><button class="btn sm" data-act="add-counter">Add</button></div>`;
-      const custom = `<div class="list">${v.schemes.map((scheme) => `<div class="list-row"><span class="grow small"><b>${esc(scheme.name)}</b><br><span class="muted">${esc(E.describeScheme(scheme))}</span></span><button class="btn sm" data-act="edit-scheme" data-id="${scheme.id}">Edit</button></div>`).join("") || `<p class="hint">Define card values, suit bonuses, specific cards (Q♠ = 13), and set, run and flush bonuses. Attach them to groups as badges, and add them up with the “Score groups” action step.</p>`}</div>
-        <div class="row"><button class="btn sm" data-act="new-scheme">+ New scoring rule</button></div>`;
+        <div class="row tight"><input id="counterName" type="text" placeholder="Counter name (Bid, Tricks, Lives…)" class="grow" style="width:auto;flex:1"><select id="counterScope" style="width:auto"><option value="player">Per player</option><option value="table">Table</option></select><button class="btn btn--sm" data-act="add-counter">Add</button></div>`;
+      const custom = `<div class="list">${v.schemes.map((scheme) => `<div class="list-row"><span class="grow small"><b>${esc(scheme.name)}</b><br><span class="muted">${esc(E.describeScheme(scheme))}</span></span><button class="btn btn--sm" data-act="edit-scheme" data-id="${scheme.id}">Edit</button></div>`).join("") || `<p class="hint">Define card values, suit bonuses, specific cards (Q♠ = 13), and set, run and flush bonuses. Attach them to groups as badges, and add them up with the “Score groups” action step.</p>`}</div>
+        <div class="row"><button class="btn btn--sm" data-act="new-scheme">+ New scoring rule</button></div>`;
       const teamNames = Array.from(new Set(v.players.map((player) => player.team).filter(Boolean)));
       const teamTotals = teamNames.map((team) => [team, v.players.filter((player) => player.team === team).reduce((sum, player) => sum + (totals[player.id] || 0), 0), v.players.filter((player) => player.team === team)]);
       const bestTeam = teamTotals.length ? (v.scores.lowWins ? Math.min : Math.max)(...teamTotals.map(([, total]) => total)) : null;
       const teams = teamTotals.map(([team, total, members]) => `<div class="list-row"><span class="grow small"><b>${esc(team)}</b> <span class="muted">${members.map((member) => esc(member.name)).join(" & ")}</span></span><strong class="mono" style="${total === bestTeam ? "color:var(--gold)" : ""}">${E.fmt(total)}</strong></div>`).join("");
-      return block("Quick score", quick + race, `<button class="btn sm" data-act="scoreboard" title="Big scoreboard for the table">⛶ Scoreboard</button>`)
+      return block("Quick score", quick + race, `<button class="btn btn--sm" data-act="scoreboard" title="Big scoreboard for the table">Scoreboard</button>`)
         + (teams ? block("Teams", `<div class="list">${teams}</div><p class="hint">Team totals add up each member's score. Set teams in the Players tab.</p>`) : "")
         + tableTalkHTML(v)
         + block("Score sheet", scoreChartHTML(v) + sheet)
@@ -1375,7 +1518,7 @@
         + block("Custom scoring", custom)
         + block("Playtest results", resultsHTML(v))
         + block("Chips & pot", v.chipStart || v.pot || v.players.some((player) => player.chips) ? chips : `<p class="hint">No chips in this game. Give everyone a stack to track bets, antes and pots.</p>
-          <div class="row tight"><input id="chipStart" type="number" min="1" value="100" style="width:90px"><button class="btn sm primary" data-act="enable-chips">Enable chips</button></div>`)
+          <div class="row tight"><input id="chipStart" type="number" min="1" value="100" style="width:90px"><button class="btn btn--sm btn--primary" data-act="enable-chips">Enable chips</button></div>`)
         + block("Counters & trackers", counters);
     },
 
@@ -1385,23 +1528,23 @@
           <input type="color" value="${esc(player.color)}" data-player-color="${player.id}" title="Color">
           <div class="grow player-fields"><input type="text" value="${esc(player.name)}" data-player-name="${player.id}" data-fk="pn-${player.id}" aria-label="Name"><input type="text" value="${esc(player.team || "")}" data-player-team="${player.id}" data-fk="pt-${player.id}" placeholder="team" title="Team" aria-label="Team" maxlength="16"></div>
           <div class="player-controls">
-          <button class="btn sm icon${i === v.turn.dealer ? " primary" : ""}" data-act="set-dealer" data-index="${i}" title="Dealer">D</button>
-          <button class="btn sm icon${i === v.turn.index ? " primary" : ""}" data-act="set-turn" data-index="${i}" title="Current turn">▶</button>
-          <button class="btn sm icon" data-act="player-up" data-player="${player.id}" title="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
-          <button class="btn sm icon${player.out ? " danger" : ""}" data-act="player-out" data-player="${player.id}" title="${player.out ? "Sitting out" : "Sit out"}">⏸</button>
-          <button class="btn sm icon${player.bot ? " primary" : ""}" data-act="toggle-bot" data-player="${player.id}" title="${player.bot ? "Bot (click for human)" : "Make a bot"}">🤖</button>
+          <button class="btn btn--sm btn--icon" aria-pressed="${i === v.turn.dealer}" data-act="set-dealer" data-index="${i}" title="Dealer" aria-label="Dealer">D</button>
+          <button class="btn btn--sm btn--icon" aria-pressed="${i === v.turn.index}" data-act="set-turn" data-index="${i}" title="Current turn" aria-label="Current turn">${ICON("play")}</button>
+          <button class="btn btn--sm btn--icon" data-act="player-up" data-player="${player.id}" title="Move up" aria-label="Move up" ${i === 0 ? "disabled" : ""}>${ICON("chevron-up")}</button>
+          <button class="btn btn--sm btn--icon" aria-pressed="${Boolean(player.out)}" data-act="player-out" data-player="${player.id}" title="${player.out ? "Sitting out" : "Sit out"}" aria-label="${player.out ? "Sitting out" : "Sit out"}">${ICON("pause")}</button>
+          <button class="btn btn--sm btn--icon" aria-pressed="${Boolean(player.bot)}" data-act="toggle-bot" data-player="${player.id}" title="${player.bot ? "Bot (click for human)" : "Make a bot"}" aria-label="Bot">${ICON("bot")}</button>
           ${player.bot ? `<select class="bot-style" data-bot-seat="${player.id}" title="How this bot plays"><option value="">Table default</option>${Object.entries(E.BOT_STYLES).map(([id, label]) => `<option value="${id}"${player.botStyle === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>` : ""}
-          <button class="btn sm icon ghost" data-act="remove-player" data-player="${player.id}" title="Remove">✕</button>
+          <button class="btn btn--sm btn--icon btn--ghost" data-act="remove-player" data-player="${player.id}" title="Remove" aria-label="Remove">${ICON("close")}</button>
           </div>
         </div>`).join("");
       const tpl = v.seatTemplate.map((entry) => `<div class="list-row">
           <span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">· ${esc(entry.layout)} · ${esc(entry.visibility)}${entry.evals?.length ? " · " + entry.evals.map((spec) => evalDef(parseSpec(spec).id, v)?.short || spec).join(", ") : ""}</span></span>
-          <button class="btn sm" data-act="edit-template" data-key="${esc(entry.key)}">Edit</button>
+          <button class="btn btn--sm" data-act="edit-template" data-key="${esc(entry.key)}">Edit</button>
         </div>`).join("") || `<p class="hint">No per-seat groups. Add a Hand so every player gets one.</p>`;
       return block("Players", `<div class="list">${rows}</div>
-          <div class="row"><input id="newPlayerName" type="text" placeholder="Name" class="grow" style="width:auto;flex:1" data-fk="npn"><button class="btn primary" data-act="add-player">+ Add player</button></div>
-          <div class="row tight"><button class="btn sm" data-act="random-player">🎲 Random first player</button><button class="btn sm" data-act="shuffle-seats">Shuffle seating</button></div>`)
-        + block("Every seat gets", `<div class="list">${tpl}</div><div class="row"><button class="btn sm" data-add-zone="seats">+ Group per seat</button></div>
+          <div class="row"><input id="newPlayerName" type="text" placeholder="Name" class="grow" style="width:auto;flex:1" data-fk="npn"><button class="btn btn--primary" data-act="add-player">+ Add player</button></div>
+          <div class="row tight"><button class="btn btn--sm" data-act="random-player">Random first player</button><button class="btn btn--sm" data-act="shuffle-seats">Shuffle seating</button></div>`)
+        + block("Every seat gets", `<div class="list">${tpl}</div><div class="row"><button class="btn btn--sm" data-add-zone="seats">+ Group per seat</button></div>
           <p class="hint">Seat groups share a key, so actions like <code>Deal 2 → hand</code> reach every player's copy, and <code>hand@current</code> targets the current player.</p>`);
     },
 
@@ -1418,7 +1561,7 @@
           <label class="field"><span>Jokers</span><input type="number" min="0" max="8" value="${draft.jokers}" data-deck="jokers"></label>
         </div>
         <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span style="color:${suit === "h" || suit === "d" ? "#ff7b8e" : "inherit"};font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
-        <div class="field"><span>Ranks <button class="btn sm ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn sm${ranks.includes(rank) ? " primary" : ""}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
+        <div class="field"><span>Ranks <button class="btn btn--sm btn--ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn btn--sm" aria-pressed="${ranks.includes(rank)}" data-deck-rank="${rank}" style="min-width:30px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
         <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
@@ -1428,7 +1571,7 @@
               <input type="text" value="${esc(item.label)}" placeholder="Name" class="grow" data-custom="${i}" data-k="label" title="Printed name">
               <input type="text" value="${esc(item.icon || "")}" placeholder="Icon" maxlength="4" style="width:54px" data-custom="${i}" data-k="icon" title="Emoji or symbol shown large">
               <input type="number" min="1" max="20" value="${item.count}" style="width:54px" data-custom="${i}" data-k="count" title="Copies">
-              <button class="btn sm icon ghost" data-act="custom-del" data-i="${i}" title="Remove">✕</button>
+              <button class="btn btn--sm btn--icon btn--ghost" data-act="custom-del" data-i="${i}" title="Remove" aria-label="Remove">${ICON("close")}</button>
               <input type="text" value="${esc(item.suit || "")}" placeholder="Suit / color" style="width:100px" data-custom="${i}" data-k="suit" title="Suit, used by rules">
               <input type="text" value="${esc(item.rank || "")}" placeholder="Rank" style="width:70px" data-custom="${i}" data-k="rank" title="Rank, used by rules (numbers can be ordered)">
               <input type="number" value="${item.value}" placeholder="pts" style="width:62px" data-custom="${i}" data-k="value" title="Points">
@@ -1436,9 +1579,9 @@
               <input type="url" value="${esc(item.image || "")}" placeholder="Art image https://… (optional)" style="flex:1 1 30%" data-custom="${i}" data-k="image" title="An https link to card art">
               <input type="text" value="${esc(item.home || "")}" list="homeGroups" placeholder="Starts in (deck)" style="width:120px" data-custom="${i}" data-k="home" title="A table group these cards start in, e.g. a market pile">
             </div>`).join("")}</div>
-          <div class="row tight"><button class="btn sm" data-act="custom-add">+ Custom card</button><button class="btn sm" data-act="custom-import">Import from spreadsheet…</button>${draft.custom.length ? `<button class="btn sm" data-act="custom-export">Export CSV</button>` : ""}</div>
+          <div class="row tight"><button class="btn btn--sm" data-act="custom-add">+ Custom card</button><button class="btn btn--sm" data-act="custom-import">Import from spreadsheet…</button>${draft.custom.length ? `<button class="btn btn--sm" data-act="custom-export">Export CSV</button>` : ""}</div>
         </details>
-        <div class="row"><span class="grow muted">${size} cards</span><button class="btn primary" data-act="rebuild-deck">Rebuild & shuffle</button></div>
+        <div class="row"><span class="grow muted">${size} cards</span><button class="btn btn--primary" data-act="rebuild-deck">Rebuild & shuffle</button></div>
         <p class="hint">Rebuilding collects every card from the table.</p>`;
       const unseen = unseenCards(v);
       const suits = spec.suits;
@@ -1455,8 +1598,8 @@
       const anyTarget = hyper.ranks.length || hyper.suits.length;
       const n = Math.max(1, Math.min(N, hyper.draws));
       const calc = `
-        <div class="field"><span>Target ranks</span><div class="row tight">${rankList.map((rank) => `<button class="btn sm${hyper.ranks.includes(rank) ? " primary" : ""}" data-hyper-rank="${rank}" style="min-width:28px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
-        <div class="field"><span>Target suits</span><div class="row tight">${suits.map((suit) => `<button class="btn sm${hyper.suits.includes(suit) ? " primary" : ""}" data-hyper-suit="${suit}">${SUIT_SYMBOL[suit]}</button>`).join("")}</div></div>
+        <div class="field"><span>Target ranks</span><div class="row tight">${rankList.map((rank) => `<button class="btn btn--sm" aria-pressed="${hyper.ranks.includes(rank)}" data-hyper-rank="${rank}" style="min-width:28px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
+        <div class="field"><span>Target suits</span><div class="row tight">${suits.map((suit) => `<button class="btn btn--sm" aria-pressed="${hyper.suits.includes(suit)}" data-hyper-suit="${suit}">${SUIT_SYMBOL[suit]}</button>`).join("")}</div></div>
         <label class="field"><span>Cards drawn</span><input type="number" min="1" max="60" value="${hyper.draws}" data-hyper-draws data-fk="hyd"></label>
         ${anyTarget && N ? `<div class="list">
           <div class="small muted">${K} outs in ${N} unseen cards</div>
@@ -1466,13 +1609,13 @@
           <select id="acRank" style="width:auto">${[...E.STD_RANKS, "JK"].map((rank) => `<option value="${rank}">${rank === "JK" ? "Joker" : RANK_SHOW(rank)}</option>`).join("")}</select>
           <select id="acSuit" style="width:auto">${["s", "h", "d", "c"].map((suit) => `<option value="${suit}">${SUIT_SYMBOL[suit]}</option>`).join("")}</select>
           <select id="acTo" style="width:auto;max-width:150px">${zoneOptions(E.findDeckZone(v)?.id)}</select>
-          <button class="btn sm" data-act="add-card">Add card</button></div>`;
+          <button class="btn btn--sm" data-act="add-card">Add card</button></div>`;
       const scenario = `<div class="row tight"><input id="pullSpecs" type="text" placeholder="As Kd 10h, or custom card names" class="grow" style="flex:1;width:auto" data-fk="pull"></div>
         <div class="row tight"><select id="pullTo" style="width:auto;max-width:160px">${zoneOptions(E.orderedZones(v, "table").find((zone) => zone.kind === "board")?.id || "")}</select>
           <select id="pullFace" style="width:auto"><option value="">Group default</option><option value="up">Face up</option><option value="down">Face down</option></select>
-          <button class="btn sm primary" data-act="pull-cards">Put them there</button></div>
+          <button class="btn btn--sm btn--primary" data-act="pull-cards">Put them there</button></div>
         <p class="hint">Pulls those exact cards from the deck (or wherever they are), so you can test a specific situation.</p>`;
-      const printBlock = `<div class="row tight"><button class="btn sm" data-act="print-cards">${spec.custom.length ? "Print custom cards & rules" : "Print deck & rules"}</button>${spec.custom.length ? `<button class="btn sm" data-act="print-all">Include standard cards</button>` : ""}</div>
+      const printBlock = `<div class="row tight"><button class="btn btn--sm" data-act="print-cards">${spec.custom.length ? "Print custom cards & rules" : "Print deck & rules"}</button>${spec.custom.length ? `<button class="btn btn--sm" data-act="print-all">Include standard cards</button>` : ""}</div>
         <p class="hint">Opens a printable sheet at poker size (63 × 88 mm), with the rules document on its own page, for paper playtests.</p>`;
       const customUnseen = new Map();
       const typeKey = (label, suit) => `${label}|${suit && suit !== "x" ? suit : ""}`;
@@ -1502,10 +1645,10 @@
       const dice = roll?.rolls ? roll.rolls.map((value) => `<span class="die">${value}</span>`).join("") + (roll.rolls.length > 1 ? `<strong style="font-size:18px;margin-left:6px">= ${roll.total}</strong>` : "") : roll?.coin ? `<span class="die" style="width:auto;padding:0 10px;border-radius:999px">${roll.coin}</span>` : `<span class="muted small">Roll something!</span>`;
       const diceBlock = `<div class="dice-out" data-roll="${roll?.t || 0}">${dice}</div>
         <div class="row tight"><input id="diceCount" type="number" min="1" max="20" value="${diceCfg.count}" style="width:60px"><span class="muted">×</span>
-          ${[4, 6, 8, 10, 12, 20, 100].map((sides) => `<button class="btn sm${diceCfg.sides === sides ? " primary" : ""}" data-act="roll" data-sides="${sides}">d${sides}</button>`).join("")}</div>
-        <div class="row tight"><button class="btn sm" data-act="coin">Flip coin</button><button class="btn sm" data-act="random-player">Random player</button></div>`;
+          ${[4, 6, 8, 10, 12, 20, 100].map((sides) => `<button class="btn btn--sm" aria-pressed="${diceCfg.sides === sides}" data-act="roll" data-sides="${sides}">d${sides}</button>`).join("")}</div>
+        <div class="row tight"><button class="btn btn--sm" data-act="coin">Flip coin</button><button class="btn btn--sm" data-act="random-player">Random player</button></div>`;
       const timerBlock = `<div class="row"><div class="timer${timer.left <= 10 && timer.running ? " low" : ""}">${fmtTime(timer.left)}</div>
-          <div class="row tight"><button class="btn sm${timer.running ? "" : " primary"}" data-act="timer-toggle">${timer.running ? "Pause" : "Start"}</button><button class="btn sm" data-act="timer-reset">Reset</button></div></div>
+          <div class="row tight"><button class="btn btn--sm${timer.running ? "" : " btn--primary"}" data-act="timer-toggle">${timer.running ? "Pause" : "Start"}</button><button class="btn btn--sm" data-act="timer-reset">Reset</button></div></div>
         <div class="row tight"><label class="field" style="width:110px"><span>Seconds</span><input id="timerSecs" type="number" min="5" max="3600" value="${timer.total}"></label>
           <label class="check"><input type="checkbox" id="timerAuto"${timer.autoNext ? " checked" : ""}> Next turn when time runs out</label></div>`;
       const evalChoices = ["poker-high", "poker-omaha", "low-a5", "low-27", "badugi"];
@@ -1517,17 +1660,17 @@
           <label class="field"><span>Board</span><select id="eqBoard"><option value="">(none)</option>${E.orderedZones(v, "table").map((zone) => `<option value="${zone.id}"${equityCfg.board === zone.id || (!equityCfg.board && zone.key === "board") ? " selected" : ""}>${esc(zone.name)}</option>`).join("")}</select></label>
           <label class="field"><span>Board size</span><input id="eqSize" type="number" min="0" max="10" value="${equityCfg.size}"></label>
         </div>
-        <div class="row"><button class="btn primary" data-act="equity">Run equity</button><span class="muted small">Monte Carlo over the cards you can't see. Hands must be visible to you.</span></div>
+        <div class="row"><button class="btn btn--primary" data-act="equity">Run equity</button><span class="muted small">Monte Carlo over the cards you can't see. Hands must be visible to you.</span></div>
         ${eq ? `<div class="list">${eq.rows.map((row) => `<div class="equity-row" style="--c:${esc(row.color)}"><span class="nm"><span class="swatch"></span>${esc(row.name)}</span><div class="prob-bar"><span style="width:${row.share * 100}%;background:linear-gradient(90deg, color-mix(in srgb, ${row.color} 40%, transparent), ${row.color})"></span></div><strong class="small mono">${pct(row.share)}</strong></div>`).join("")}<div class="small dim">${eq.iterations} runs${eq.skipped ? ` · ${eq.skipped} hidden hand(s) skipped` : ""}</div></div>` : ""}`;
       const display = `
-        <div class="field"><span>Card size</span><div class="seg">${[["s", "S"], ["m", "M"], ["l", "L"], ["xl", "XL"]].map(([id, label]) => `<button data-pref="size" data-val="${id}" class="${prefs.size === id ? "on" : ""}">${label}</button>`).join("")}</div></div>
-        <div class="field"><span>Felt</span><div class="seg">${["green", "blue", "wine", "slate", "sand"].map((id) => `<button data-pref="felt" data-val="${id}" class="${prefs.felt === id ? "on" : ""}">${id}</button>`).join("")}</div></div>
+        <div class="field"><span>Card size</span><div class="seg" role="group">${[["s", "S"], ["m", "M"], ["l", "L"], ["xl", "XL"]].map(([id, label]) => `<button data-pref="size" data-val="${id}" class="${prefs.size === id ? "on" : ""}" aria-pressed="${prefs.size === id}">${label}</button>`).join("")}</div></div>
+        <div class="field"><span>Felt</span><div class="seg" role="group">${["green", "blue", "wine", "slate", "sand"].map((id) => `<button data-pref="felt" data-val="${id}" class="${prefs.felt === id ? "on" : ""}" aria-pressed="${prefs.felt === id}">${id}</button>`).join("")}</div></div>
         <label class="check"><input type="checkbox" data-pref-bool="evals"${prefs.evals ? " checked" : ""}> Show scoring badges under groups</label>
         <label class="check"><input type="checkbox" data-pref-bool="motion"${prefs.motion ? " checked" : ""}> Animations</label>
         <label class="check"><input type="checkbox" data-pref-bool="sound"${prefs.sound ? " checked" : ""}> Sound effects</label>
         <label class="check"><input type="checkbox" data-pref-bool="contrast"${prefs.contrast ? " checked" : ""}> High contrast</label>
-        <div class="field"><span>Seats</span><div class="seg">${[["grid", "Grid"], ["around", "Around the table"]].map(([id, label]) => `<button data-pref="layout" data-val="${id}" class="${(prefs.layout || "grid") === id ? "on" : ""}">${label}</button>`).join("")}</div></div>`;
-      const seedBlock = `<div class="row tight"><input id="seedInput" type="text" value="${esc(prefs.seed || "")}" placeholder="any word or number" class="grow" style="flex:1;width:auto" data-fk="seed"><button class="btn sm primary" data-act="seed-apply">Use seed</button>${prefs.seed ? `<button class="btn sm" data-act="seed-clear">Random</button>` : ""}</div>
+        <div class="field"><span>Seats</span><div class="seg" role="group">${[["grid", "Grid"], ["around", "Around the table"]].map(([id, label]) => `<button data-pref="layout" data-val="${id}" class="${(prefs.layout || "grid") === id ? "on" : ""}" aria-pressed="${(prefs.layout || "grid") === id}">${label}</button>`).join("")}</div></div>`;
+      const seedBlock = `<div class="row tight"><input id="seedInput" type="text" value="${esc(prefs.seed || "")}" placeholder="any word or number" class="grow" style="flex:1;width:auto" data-fk="seed"><button class="btn btn--sm btn--primary" data-act="seed-apply">Use seed</button>${prefs.seed ? `<button class="btn btn--sm" data-act="seed-clear">Random</button>` : ""}</div>
         <p class="hint">${prefs.seed ? `Shuffles follow seed <b>${esc(prefs.seed)}</b>. The same actions in the same order give the same deals, so a tricky situation can be replayed.` : "Set a seed to make shuffles repeatable, so a deal can be replayed exactly."}</p>`;
       return block("Deal simulator", simulatorHTML(v))
         + block("Bot games", botGamesHTML(v))
@@ -1538,9 +1681,9 @@
         + block("Equity calculator", equityBlock)
         + block("Display", display)
         + block("Developer", `<p class="hint">The whole table is one JSON object. Copy it for bug reports or version control, or paste a table or game design to load it.</p>
-            <div class="row tight"><button class="btn sm" data-act="dev-copy">Copy table JSON</button><span class="small dim">${Object.keys(v.cards).length} cards · ${Object.keys(v.zones).length} groups · ${JSON.stringify(v).length.toLocaleString()} bytes</span></div>
+            <div class="row tight"><button class="btn btn--sm" data-act="dev-copy">Copy table JSON</button><span class="small dim">${Object.keys(v.cards).length} cards · ${Object.keys(v.zones).length} groups · ${JSON.stringify(v).length.toLocaleString()} bytes</span></div>
             <textarea id="devJson" data-fk="dev" placeholder="Paste table or design JSON here" style="min-height:80px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px"></textarea>
-            <div class="row"><button class="btn sm" data-act="dev-load">Load pasted JSON</button></div>`);
+            <div class="row"><button class="btn btn--sm" data-act="dev-load">Load pasted JSON</button></div>`);
     },
 
     log() {
@@ -1554,12 +1697,12 @@
       const rewind = net.mode !== "client" && history.length ? history.slice(-12).map((snap, i, list) => {
         const steps = list.length - i;
         const last = snap.log[snap.log.length - 1];
-        return `<div class="list-row"><span class="grow small">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : "Start"}</span><button class="btn sm" data-act="rewind" data-steps="${steps}" title="Undo ${steps} step${steps === 1 ? "" : "s"}">↶ ${steps}</button></div>`;
+        return `<div class="list-row"><span class="grow small">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : "Start"}</span><button class="btn btn--sm" data-act="rewind" data-steps="${steps}" title="Undo ${steps} step${steps === 1 ? "" : "s"}">Undo ${steps}</button></div>`;
       }).reverse().join("") : "";
-      return block("Table chat", `<div class="row tight"><input id="chatInput" type="text" placeholder="Say something or note a ruling…" class="grow" style="flex:1;width:auto" data-fk="chat"><button class="btn sm primary" data-act="chat">Send</button></div>`)
-        + (rewind ? block("Rewind & replay", `<div class="row tight"><button class="btn sm primary" data-act="replay">⏵ Replay the last ${history.length} step${history.length === 1 ? "" : "s"}</button></div><details><summary class="small muted" style="cursor:pointer">Or jump straight back to a moment</summary><div class="list" style="margin-top:8px">${rewind}</div></details>`) : "")
-        + block("Playtest feedback", `<div class="row tight"><input id="feedbackInput" type="text" placeholder="What felt slow, confusing or fun?" class="grow" style="flex:1;width:auto" data-fk="feedback"><button class="btn sm" data-act="feedback">Add</button></div><p class="hint">Feedback notes go in the log for everyone, and export with it.</p>`)
-        + `<div class="row tight"><div class="phase-chips">${filters.map(([id, label]) => `<button data-act="log-filter" data-filter="${id}" class="${logFilter === id ? "on" : ""}">${label}</button>`).join("")}</div><span class="grow"></span><button class="btn sm" data-act="export-log">Export</button></div>
+      return block("Table chat", `<div class="row tight"><input id="chatInput" type="text" placeholder="Say something or note a ruling…" class="grow" style="flex:1;width:auto" data-fk="chat"><button class="btn btn--sm btn--primary" data-act="chat">Send</button></div>`)
+        + (rewind ? block("Rewind & replay", `<div class="row tight"><button class="btn btn--sm btn--primary" data-act="replay">Replay the last ${history.length} step${history.length === 1 ? "" : "s"}</button></div><details><summary class="small muted" style="cursor:pointer">Or jump straight back to a moment</summary><div class="list" style="margin-top:8px">${rewind}</div></details>`) : "")
+        + block("Playtest feedback", `<div class="row tight"><input id="feedbackInput" type="text" placeholder="What felt slow, confusing or fun?" class="grow" style="flex:1;width:auto" data-fk="feedback"><button class="btn btn--sm" data-act="feedback">Add</button></div><p class="hint">Feedback notes go in the log for everyone, and export with it.</p>`)
+        + `<div class="row tight"><div class="phase-chips">${filters.map(([id, label]) => `<button type="button" class="chip${logFilter === id ? " on" : ""}" aria-pressed="${logFilter === id}" data-act="log-filter" data-filter="${id}">${label}</button>`).join("")}</div><span class="grow"></span><button class="btn btn--sm" data-act="export-log">Export</button></div>
           <div class="log">${items || `<p class="hint">Nothing here yet.</p>`}</div>`;
     },
 
@@ -1571,25 +1714,25 @@
       const mode = v.rulesMode || "warn";
       const preview = prefs.rulesView === "preview";
       const doc = `<div class="row tight">
-          <div class="seg"><button data-act="rules-view" data-view="edit" class="${preview ? "" : "on"}">Edit</button><button data-act="rules-view" data-view="preview" class="${preview ? "on" : ""}">Preview</button></div>
+          <div class="seg" role="group"><button data-act="rules-view" data-view="edit" class="${preview ? "" : "on"}">Edit</button><button data-act="rules-view" data-view="preview" class="${preview ? "on" : ""}" aria-pressed="${preview}">Preview</button></div>
           <span class="grow"></span>
-          <button class="btn sm" data-act="rules-template" title="Insert an outline for a rules document">Template</button>
-          <button class="btn sm" data-act="rules-generate" title="Write the rules from this table's setup">Generate from table</button>
-          <button class="btn sm icon" data-act="rules-copy" title="Copy the rules document">⧉</button>
-          <button class="btn sm icon" data-act="rules-download" title="Download as Markdown">⤓</button>
+          <button class="btn btn--sm" data-act="rules-template" title="Insert an outline for a rules document">Template</button>
+          <button class="btn btn--sm" data-act="rules-generate" title="Write the rules from this table's setup">Generate from table</button>
+          <button class="btn btn--sm btn--icon" data-act="rules-copy" title="Copy the rules document" aria-label="Copy the rules document">${ICON("copy")}</button>
+          <button class="btn btn--sm btn--icon" data-act="rules-download" title="Download as Markdown" aria-label="Download as Markdown">${ICON("download")}</button>
         </div>
         ${preview ? `<div class="rules-preview">${renderMarkdown(v.notes)}</div>` : `<textarea class="rules-area" id="rulesText" data-fk="rules" placeholder="Write the rules of the game you're designing. Markdown works: # headings, - lists, **bold**.">${esc(v.notes)}</textarea>`}
         <p class="hint">Shared with everyone at the table and saved with the design. Saved when you click away.</p>`;
       const ruled = [...E.orderedZones(v, "table"), ...v.seatTemplate.map((tpl) => ({ ...tpl, seat: true }))].filter((zone) => E.describeRule(zone.rule || {}, zone));
-      const checks = `<div class="seg">${Object.entries(E.RULES_MODES).map(([id, label]) => `<button data-act="rules-mode" data-mode="${id}" class="${mode === id ? "on" : ""}">${label}</button>`).join("")}</div>
+      const checks = `<div class="seg" role="group">${Object.entries(E.RULES_MODES).map(([id, label]) => `<button data-act="rules-mode" data-mode="${id}" class="${mode === id ? "on" : ""}" aria-pressed="${mode === id}">${label}</button>`).join("")}</div>
         <p class="hint">${{ off: "Rules are ignored: move anything anywhere.", warn: "Illegal plays go through but are flagged, which is ideal for playtesting.", enforce: "Illegal plays are refused." }[mode]} X-ray view is referee mode and skips checks.</p>
-        <div class="list">${ruled.map((zone) => `<div class="list-row"><span class="grow small"><b>${esc(zone.name)}</b>${zone.seat ? ' <span class="dim">(every seat)</span>' : ""}<br><span class="muted">${esc(E.describeRule(zone.rule, zone))}</span></span><button class="btn sm" data-act="edit-zone-rules" data-zone="${esc(zone.seat ? "seat:" + zone.key : zone.id)}">Edit</button></div>`).join("") || `<p class="hint">No group has play rules yet. Open a group's ⋯ → Edit group, rules & scoring to add them: whose turn, follow suit, match suit or rank, build up or down, wild cards…</p>`}</div>`;
+        <div class="list">${ruled.map((zone) => `<div class="list-row"><span class="grow small"><b>${esc(zone.name)}</b>${zone.seat ? ' <span class="dim">(every seat)</span>' : ""}<br><span class="muted">${esc(E.describeRule(zone.rule, zone))}</span></span><button class="btn btn--sm" data-act="edit-zone-rules" data-zone="${esc(zone.seat ? "seat:" + zone.key : zone.id)}">Edit</button></div>`).join("") || `<p class="hint">No group has play rules yet. Open a group's ⋯ → Edit group, rules & scoring to add them: whose turn, follow suit, match suit or rank, build up or down, wild cards…</p>`}</div>`;
       const triggers = `<div class="list">${v.triggers.map((trigger) => `<div class="list-row${trigger.off ? " is-off" : ""}">
           <input type="checkbox" data-trigger-toggle="${trigger.id}"${trigger.off ? "" : " checked"} title="Enabled" aria-label="Enabled">
           <span class="grow small">${esc(trigger.label || E.describeTrigger(trigger, v))} <span class="muted">→ ${esc(E.findMacro(v, trigger.macro)?.label || "missing action")}</span></span>
-          <button class="btn sm" data-act="edit-trigger" data-id="${trigger.id}">Edit</button>
+          <button class="btn btn--sm" data-act="edit-trigger" data-id="${trigger.id}">Edit</button>
         </div>`).join("") || `<p class="hint">Triggers run an action on their own: take the trick when everyone has played, reshuffle when the deck runs out, score when a hand empties.</p>`}</div>
-        <div class="row"><button class="btn sm" data-act="new-trigger">+ New trigger</button></div>`;
+        <div class="row"><button class="btn btn--sm" data-act="new-trigger">+ New trigger</button></div>`;
       const meta = v.meta || {};
       const info = `<div class="grid-2">
           <label class="field"><span>Family</span><input type="text" data-meta="family" data-fk="meta-family" value="${esc(meta.family || "")}" maxlength="24" placeholder="e.g. Trick-taking"></label>
@@ -1600,12 +1743,12 @@
         <label class="field"><span>Description</span><textarea data-meta="description" data-fk="meta-desc" style="min-height:64px" maxlength="400">${esc(meta.description || "")}</textarea></label>`;
       const design = `<p class="hint">${linked ? `This table is <b>${esc(linked.name)}</b> from My games${linked.versions?.length ? `, with ${linked.versions.length} earlier version${linked.versions.length === 1 ? "" : "s"}` : ""}.` : "Save everything (groups, rules, actions, triggers, scoring, deck and the rules document) as a reusable game."}</p>
         <div class="row">
-          <button class="btn primary" data-act="save-preset">${linked ? "Save changes" : "Save to My games"}</button>
+          <button class="btn btn--primary" data-act="save-preset">${linked ? "Save changes" : "Save to My games"}</button>
           ${linked ? `<button class="btn" data-act="save-preset-new">Save as new</button><button class="btn" data-act="design-diff">What changed?</button>` : ""}
           <button class="btn" data-act="open-library">My games (${library.length})</button>
         </div>
-        <div class="row tight"><button class="btn sm" data-act="share-design">Share link</button><button class="btn sm" data-act="export-preset">Export file</button><button class="btn sm" data-act="import">Import…</button></div>`;
-      const snapshots = `<div class="list">${saves.map((entry, i) => `<div class="list-row"><span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">${new Date(entry.t).toLocaleString()}</span></span><button class="btn sm" data-act="load-save" data-i="${i}">Load</button><button class="btn sm icon ghost" data-act="del-save" data-i="${i}">✕</button></div>`).join("") || `<p class="hint">Snapshots of the whole table (cards in place, scores and all).</p>`}</div>
+        <div class="row tight"><button class="btn btn--sm" data-act="share-design">Share link</button><button class="btn btn--sm" data-act="export-preset">Export file</button><button class="btn btn--sm" data-act="import">Import…</button></div>`;
+      const snapshots = `<div class="list">${saves.map((entry, i) => `<div class="list-row"><span class="grow small"><b>${esc(entry.name)}</b> <span class="dim">${new Date(entry.t).toLocaleString()}</span></span><button class="btn btn--sm" data-act="load-save" data-i="${i}">Load</button><button class="btn btn--sm btn--icon btn--ghost" data-act="del-save" data-i="${i}" aria-label="Delete snapshot">${ICON("close")}</button></div>`).join("") || `<p class="hint">Snapshots of the whole table (cards in place, scores and all).</p>`}</div>
           <div class="row"><button class="btn" data-act="save-table">Save snapshot</button><button class="btn" data-act="export-table">Export file</button><button class="btn" data-act="share-table" title="A link holding the whole table, hidden cards included">Share link</button></div>`;
       return block("Design check", designCheckHTML(v))
         + block("Rules document", doc)
@@ -1651,7 +1794,7 @@
     return form;
   }
   function closeDialog() { if (dialog().open) dialog().close(); }
-  const head = (title) => `<div class="dlg-head"><h2>${esc(title)}</h2><button class="btn icon ghost" value="cancel" aria-label="Close">✕</button></div>`;
+  const head = (title) => `<div class="dlg-head"><h2>${esc(title)}</h2><button class="btn btn--icon btn--ghost" value="cancel" aria-label="Close">✕</button></div>`;
 
   // ----------------------------------------------------------- new game
   function presetCard(preset, selectedId) {
@@ -1661,7 +1804,7 @@
       <h3>${esc(preset.name)}</h3>
       <p>${esc(preset.tagline || preset.description)}</p>
       <div class="mini">${minis.map((m) => (m === "b" ? Cards.html("BACK") : m === "★" ? Cards.html("JK") : Cards.normalize(m) ? Cards.html(m) : `<span class="mini-custom">${esc(m)}</span>`)).join("")}</div>
-      ${preset.custom ? `<span class="btn sm ghost danger del" data-del-preset="${esc(preset.id)}">Delete</span>` : ""}
+      ${preset.custom ? `<span class="btn btn--sm btn--ghost btn--danger del" data-del-preset="${esc(preset.id)}">Delete</span>` : ""}
     </button>`;
   }
 
@@ -1689,9 +1832,9 @@
             <label class="check small"><input type="checkbox" name="keepNames" ${state?.players.length ? "checked" : ""}> Keep names</label>
           </div>
           <div class="ng-buttons">
-            <button type="button" class="btn" data-wizard>✨ Design your own…</button>
+            <button type="button" class="btn" data-wizard>Design your own…</button>
             <button class="btn desktop-only" value="cancel">Cancel</button>
-            <button class="btn primary" value="start">Start ${esc(preset.name)}</button>
+            <button class="btn btn--primary" value="start">Start ${esc(preset.name)}</button>
           </div>
         </div>`;
     };
@@ -1840,9 +1983,9 @@
         ${seatZone ? `<label class="check"><input type="checkbox" name="allSeats" checked> Apply to this group at every seat</label>` : ""}
       </div>
       <div class="dlg-foot">
-        ${!creating ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete group</button>` : ""}
+        ${!creating ? `<button class="btn btn--danger" value="delete" style="margin-right:auto">Delete group</button>` : ""}
         <button class="btn" value="cancel">Cancel</button>
-        <button class="btn primary" value="save">${creating ? "Create" : "Save"}</button>
+        <button class="btn btn--primary" value="save">${creating ? "Create" : "Save"}</button>
       </div>`;
     openDialog(html, {
       wide: true,
@@ -1907,7 +2050,7 @@
         </div>
         <p class="hint">Dealing to “Each …” goes one card at a time around the table starting left of the dealer.</p>
       </div>
-      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="deal">Deal</button></div>`;
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="deal">Deal</button></div>`;
     openDialog(html, {
       onSubmit(form) {
         quickDeal.count = Number(form.count.value) || 1;
@@ -1970,18 +2113,18 @@
               ${E.MACRO_OPS[step.op].fields.map((field) => fieldHTML(step, i, field)).join("")}
               ${step.op === "deal" || step.op === "clear" || step.op === "refill" ? `<label class="check small" title="Each player moves from their own group to their own group"><input type="checkbox" data-step="${i}" data-f="perSeat"${step.perSeat ? " checked" : ""}> per seat</label>` : ""}
             </div>
-            <div class="row tight"><button type="button" class="btn sm icon" data-step-up="${i}" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="btn sm icon ghost" data-step-del="${i}">✕</button></div>
+            <div class="row tight"><button type="button" class="btn btn--sm btn--icon" data-step-up="${i}" aria-label="Move step up" ${i === 0 ? "disabled" : ""}>${ICON("chevron-up")}</button><button type="button" class="btn btn--sm btn--icon btn--ghost" data-step-del="${i}" aria-label="Remove step">${ICON("close")}</button></div>
           </div>`).join("")}</div>
-        <div class="row"><button type="button" class="btn sm" data-step-add>+ Step</button></div>
+        <div class="row"><button type="button" class="btn btn--sm" data-step-add>+ Step</button></div>
         <p class="hint">Targets use group keys: <code>deck</code>, <code>board</code>, <code>hand</code> (every seat, left of dealer first), <code>hand@current</code>, <code>hand@after</code> (the next player), <code>hand@dealer</code>, <code>hand@me</code>, <code>hand@next</code> (left of dealer), <code>hand@winner</code> (set by Find winner), <code>hand@subject</code> (the player a trigger fired for), <code>hand@others</code>.</p>
         ${draft.steps.some((step) => /Formula$/.test(step.op)) ? `<p class="hint">Formulas can use ${Object.keys(v.players.length ? E.formulaVars(v, v.players[0].id) : { score: 0, round: 0 }).map((name) => `<code>${esc(name)}</code>`).join(" ")}, numbers, <code>+ - * / %</code>, comparisons, <code>&amp;&amp; || !</code>, <code>a ? b : c</code> and <code>min max abs floor ceil round</code>.</p>` : ""}
         <p class="hint">Announcements can say <code>{winner}</code>, <code>{current}</code>, <code>{next}</code>, <code>{dealer}</code>, <code>{subject}</code>, <code>{round}</code>, <code>{phase}</code> and <code>{pot}</code>. “Stop if” ends the action early; “Run another action” reuses one you've built.</p>
       </div>
       <div class="dlg-foot">
-        ${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button><button type="button" class="btn sm icon" data-macro-move="-1" title="Earlier">←</button><button type="button" class="btn sm icon" data-macro-move="1" title="Later">→</button>` : ""}
+        ${existing ? `<button class="btn btn--danger" value="delete" style="margin-right:auto">Delete</button><button type="button" class="btn btn--sm btn--icon" data-macro-move="-1" title="Earlier" aria-label="Earlier">${ICON("arrow-left")}</button><button type="button" class="btn btn--sm btn--icon" data-macro-move="1" title="Later" aria-label="Later">${ICON("arrow-right")}</button>` : ""}
         <button type="button" class="btn" data-test-run>Test run</button>
         <button class="btn" value="cancel">Cancel</button>
-        <button class="btn primary" value="save">Save</button>
+        <button class="btn btn--primary" value="save">Save</button>
       </div>`;
     const sync = (form) => {
       draft.label = form.label.value;
@@ -2042,7 +2185,7 @@
           <div class="list">${net.roster.map((member) => {
             const seat = view.players.find((p) => p.clientId === member.id);
             const canFree = net.mode === "host" && seat && member.id !== net.room?.clientId;
-            return `<div class="list-row"><span class="swatch" style="--c:${esc(seat?.color || "#555")}"></span><span class="grow small"><b>${esc(member.name)}</b>${member.host ? " · host" : ""}${member.connected ? "" : " · reconnecting"}</span><span class="small muted">${seat ? esc(seat.name) : "spectating"}</span>${canFree ? `<button type="button" class="btn sm ghost" data-free-seat="${esc(member.id)}" title="Free this seat for someone else">Free seat</button>` : ""}</div>`;
+            return `<div class="list-row"><span class="swatch" style="--c:${esc(seat?.color || "#555")}"></span><span class="grow small"><b>${esc(member.name)}</b>${member.host ? " · host" : ""}${member.connected ? "" : " · reconnecting"}</span><span class="small muted">${seat ? esc(seat.name) : "spectating"}</span>${canFree ? `<button type="button" class="btn btn--sm btn--ghost" data-free-seat="${esc(member.id)}" title="Free this seat for someone else">Free seat</button>` : ""}</div>`;
           }).join("")}</div>
           <p class="hint">You are ${net.mode === "host" ? "hosting — the table lives in your browser. If you leave, another player takes over" : "connected as a guest"}. Choose your seat with the view menu at the top.</p>
           ${net.mode === "host" ? `<label class="field"><span>Guests can</span><select name="guestMode">
@@ -2052,7 +2195,7 @@
           <p class="hint">Hands stay private in the app: nobody can take, flip or peek at another player's private cards. Alt-click a card or group (or use its menu) to ping it for everyone, and 😀 in the top bar to react.</p>
           <p class="hint">So a game survives the host leaving, every browser in the room keeps a backup copy of the whole table, which someone could read with developer tools. Rooms are for friendly playtests, not stakes.</p>
         </div>
-        <div class="dlg-foot"><button class="btn danger" value="leave" style="margin-right:auto">Leave room</button><button class="btn primary" value="cancel">Done</button></div>`;
+        <div class="dlg-foot"><button class="btn btn--danger" value="leave" style="margin-right:auto">Leave room</button><button class="btn btn--primary" value="cancel">Done</button></div>`;
       openDialog(html, {
         bind(form) {
           showQr(form.querySelector("#roomQr"), link);
@@ -2076,7 +2219,7 @@
         <p class="hint">Peer-to-peer: the host's browser keeps the table and everyone sees only what they're allowed to — your hand stays private. No accounts.</p>
         <label class="field"><span>Your name</span><input type="text" name="name" maxlength="24" value="${esc(name)}" placeholder="Name" required></label>
         <div class="grid-2">
-          <div class="card-block"><h3 style="margin:0;font-size:14px">Host this table</h3><p class="hint">Friends join your current table with its setup, cards and scores.</p><button class="btn primary" value="create">Create room</button></div>
+          <div class="card-block"><h3 style="margin:0;font-size:14px">Host this table</h3><p class="hint">Friends join your current table with its setup, cards and scores.</p><button class="btn btn--primary" value="create">Create room</button></div>
           <div class="card-block"><h3 style="margin:0;font-size:14px">Join a room</h3><input type="text" name="code" maxlength="6" value="${esc(prefillCode)}" placeholder="CODE" style="text-transform:uppercase;letter-spacing:.15em;font-weight:800"><button class="btn" value="join">Join</button></div>
         </div>
       </div>`;
@@ -2108,7 +2251,7 @@
       <p class="hint"><b>Balance</b>: Tools → Bot games plays hundreds of games to show seat fairness, game length and which cards the winners played; Rules → What changed? diffs your edits against any saved version.</p>
       <p class="hint"><b>View</b>: “All hands” for one shared screen, “Pass &amp; play” hides hands between turns, “X-ray” shows everything for design work, or pick a seat. Online rooms keep hands private per player.</p>
       <div class="kbd-list">${keys.map(([k, d]) => `<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join("")}</div>
-    </div><div class="dlg-foot"><button type="button" class="btn" data-start-tour>Take the tour</button><button class="btn primary" value="cancel">Got it</button></div>`, {
+    </div><div class="dlg-foot"><button type="button" class="btn" data-start-tour>Take the tour</button><button class="btn btn--primary" value="cancel">Got it</button></div>`, {
       bind(form) { form.querySelector("[data-start-tour]").addEventListener("click", startTour); },
     });
   }
@@ -2247,7 +2390,7 @@
     target.classList.add("pinged");
     setTimeout(() => target.classList.remove("pinged"), 1800);
     const rect = target.getBoundingClientRect();
-    floatLabel(`📍 ${event.name || ""}`, rect.left + rect.width / 2, rect.top, event.color);
+    floatLabel(`${event.name || "Ping"}`, rect.left + rect.width / 2, rect.top, event.color);
   }
 
   function showReaction(event) {
@@ -2307,7 +2450,7 @@
     if (timer.left <= 0) {
       timer.left = 0;
       stopTimer();
-      toast("⏱ Time!", "error");
+      toast("Time!", "error");
       if (timer.autoNext) { dispatch({ type: "nextTurn" }); resetTimer(true); }
     }
     renderTop();
@@ -3248,8 +3391,8 @@
             <div class="small dim">${design.updatedAt ? "Updated " + new Date(design.updatedAt).toLocaleString() : ""}${design.versions?.length ? ` · ${design.versions.length} earlier version${design.versions.length === 1 ? "" : "s"}` : ""}${design.note ? ` · “${esc(design.note)}”` : ""}</div>
           </div>
           <div class="row tight lib-actions">
-            <button type="button" class="btn sm primary" data-lib="play" data-id="${esc(design.id)}">Play</button>
-            <button type="button" class="btn sm" data-lib="more" data-id="${esc(design.id)}">More ▾</button>
+            <button type="button" class="btn btn--sm btn--primary" data-lib="play" data-id="${esc(design.id)}">Play</button>
+            <button type="button" class="btn btn--sm" data-lib="more" data-id="${esc(design.id)}" aria-haspopup="menu">More ${ICON("chevron-down")}</button>
           </div>
         </div>`).join("");
       return head("My games") + `<div class="dlg-body">
@@ -3260,7 +3403,7 @@
           <button type="button" class="btn" data-lib="import">Import file…</button>
           <button type="button" class="btn" data-lib="export-all" ${library.length ? "" : "disabled"}>Export all</button>
           <span class="grow"></span>
-          <button type="button" class="btn primary" data-lib="save">${current && library.some((d) => d.id === current) ? "Save changes to this game" : "Save this table as a game"}</button>
+          <button type="button" class="btn btn--primary" data-lib="save">${current && library.some((d) => d.id === current) ? "Save changes to this game" : "Save this table as a game"}</button>
           <button class="btn" value="cancel">Close</button>
         </div>`;
     };
@@ -3363,7 +3506,7 @@
           <textarea readonly id="shareLinkText" style="min-height:90px;font-size:12px">${esc(link)}</textarea>
           <div class="small dim">${link.length.toLocaleString()} characters</div>
         </div>
-        <div class="dlg-foot"><button type="button" class="btn primary" data-copy-link>Copy link</button><button class="btn" value="cancel">Done</button></div>`, {
+        <div class="dlg-foot"><button type="button" class="btn btn--primary" data-copy-link>Copy link</button><button class="btn" value="cancel">Done</button></div>`, {
         bind(form) {
           form.querySelector("[data-copy-link]").addEventListener("click", () => {
             navigator.clipboard?.writeText(link).then(() => toast("Link copied", "good"), () => { $("#shareLinkText").select(); toast("Select the text and copy it"); });
@@ -3387,7 +3530,7 @@
           <div><div class="small muted">${esc(payload.family || "Custom")}</div><h3 style="margin:2px 0 6px">${esc(payload.name || "Untitled")}</h3><p class="hint">${esc(payload.tagline || payload.description || "")}</p></div>
           <p class="hint">Adds it to My games in this browser. Nothing is uploaded anywhere.</p>
         </div>
-        <div class="dlg-foot"><button class="btn" value="cancel">Ignore</button><button class="btn" value="add">Add to My games</button><button class="btn primary" value="play">Add & play</button></div>`, {
+        <div class="dlg-foot"><button class="btn" value="cancel">Ignore</button><button class="btn" value="add">Add to My games</button><button class="btn btn--primary" value="play">Add & play</button></div>`, {
         onSubmit(form, value) {
           const library = loadLibrary();
           const now = Date.now();
@@ -3399,7 +3542,7 @@
       });
     } else {
       openDialog(head("Table from a link") + `<div class="dlg-body"><p class="hint">Open the shared table “${esc(payload?.title || "Untitled")}”? Your current table stays in Undo.</p></div>
-        <div class="dlg-foot"><button class="btn" value="cancel">Ignore</button><button class="btn primary" value="open">Open table</button></div>`, {
+        <div class="dlg-foot"><button class="btn" value="cancel">Ignore</button><button class="btn btn--primary" value="open">Open table</button></div>`, {
         onSubmit() {
           try { replaceState(E.migrate(payload), "Shared table opened"); } catch (error) { toast(error.message, "error"); }
         },
@@ -3437,7 +3580,7 @@
           <p class="hint">Triggers fire after play (moves, draws, actions, turns), never while you set up or collect. Inside the action, <code>@subject</code> and <code>@winner</code> mean the player it fired for: whoever played the card, emptied their hand, played the last card, or won the game. “A card is played” is how you give cards effects, e.g. Skip → next turn.</p>
           ${v.macros.length ? "" : `<p class="hint" style="color:var(--gold)">Build an action first (Play → + New action). A trigger runs one.</p>`}
         </div>
-        <div class="dlg-foot">${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save" ${v.macros.length ? "" : "disabled"}>Save</button></div>`;
+        <div class="dlg-foot">${existing ? `<button class="btn btn--danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="save" ${v.macros.length ? "" : "disabled"}>Save</button></div>`;
     };
     const sync = (form) => {
       draft.event = form.event.value;
@@ -3485,7 +3628,7 @@
         </div>
         <div class="field"><span>Card values</span>
           <div class="value-grid">${RANK_LABELS.map(([rank, label]) => `<label><span>${label}</span>${num("rank-" + rank, scheme.ranks[rank])}</label>`).join("")}<label><span>Joker</span>${num("joker", scheme.joker)}</label></div>
-          <div class="row tight"><button type="button" class="btn sm" data-preset-values="pip">Pips (faces 10)</button><button type="button" class="btn sm" data-preset-values="rank">Rank (J11 Q12 K13 A14)</button><button type="button" class="btn sm" data-preset-values="zero">All zero</button></div>
+          <div class="row tight"><button type="button" class="btn btn--sm" data-preset-values="pip">Pips (faces 10)</button><button type="button" class="btn btn--sm" data-preset-values="rank">Rank (J11 Q12 K13 A14)</button><button type="button" class="btn btn--sm" data-preset-values="zero">All zero</button></div>
         </div>
         <div class="field"><span>Suit bonus <span class="dim">added to every card of the suit</span></span>
           <div class="value-grid four">${E.STD_SUITS.map((suit) => `<label><span class="${suit === "h" || suit === "d" ? "red-text" : ""}">${SUIT_SYMBOL[suit]}</span>${num("suit-" + suit, scheme.suits[suit])}</label>`).join("")}</div>
@@ -3510,7 +3653,7 @@
         </div>
         <label class="field"><span>Attach to a group <span class="dim">shows as a badge and can be scored by actions</span></span><select name="attach"><option value="">(don't attach)</option>${zones.map((zone) => `<option value="${esc(zone.seat ? "seat:" + zone.key : zone.id)}">${esc(zone.name)}${zone.seat ? " (every seat)" : ""}${(zone.evals || []).includes("points:" + scheme.id) ? " ✓" : ""}</option>`).join("")}</select></label>
       </div>
-      <div class="dlg-foot">${existing ? `<button class="btn danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save">Save</button></div>`;
+      <div class="dlg-foot">${existing ? `<button class="btn btn--danger" value="delete" style="margin-right:auto">Delete</button>` : ""}<button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="save">Save</button></div>`;
     const read = (form) => {
       const out = { id: scheme.id, name: form.name.value, low: form.low.checked, ranks: {}, suits: {}, joker: form.joker.value, cards: form.cards.value, customValues: form.customValues.checked };
       for (const rank of E.STD_RANKS) out.ranks[rank] = form["rank-" + rank].value;
@@ -3590,13 +3733,13 @@
     const standings = v.players.slice().sort((a, b) => (v.scores.lowWins ? totals[a.id] - totals[b.id] : totals[b.id] - totals[a.id]));
     el.hidden = false;
     if (confettiFor !== over.t) { confettiFor = over.t; confetti(); playSound("win"); }
-    el.innerHTML = `<div class="go-title">🏁 ${esc(names.join(" & "))} win${names.length > 1 ? "" : "s"}!</div>
+    el.innerHTML = `<div class="go-title">${ICON("flag")}<span>${esc(names.join(" & "))} win${names.length > 1 ? "" : "s"}!</span></div>
       <div class="small muted">${esc(over.reason)}</div>
       <div class="go-standings">${standings.map((player, i) => `<span style="--c:${esc(player.color)}"><i class="swatch"></i>${i + 1}. ${esc(player.name)} <b>${E.fmt(totals[player.id])}</b></span>`).join("")}</div>
       <div class="row">
-        ${net.mode !== "client" ? `<button class="btn sm primary" data-act="play-again">Play again</button>` : ""}
-        <button class="btn sm" data-act="open-tab" data-tab="scores">Results & stats</button>
-        <button class="btn sm ghost" data-act="dismiss-over">Keep playing</button>
+        ${net.mode !== "client" ? `<button class="btn btn--sm btn--primary" data-act="play-again">Play again</button>` : ""}
+        <button class="btn btn--sm" data-act="open-tab" data-tab="scores">Results & stats</button>
+        <button class="btn btn--sm btn--ghost" data-act="dismiss-over">Keep playing</button>
       </div>`;
     if (net.mode !== "client") recordResult(state, true);
   }
@@ -3643,7 +3786,7 @@
     const all = loadResults();
     const mine = all.filter((entry) => (v.designId && entry.designId === v.designId) || entry.title === v.title);
     if (!mine.length) return `<p class="hint">Finished games are recorded automatically when someone hits the target or the round limit. For other games, record the result yourself.</p>
-      <div class="row"><button class="btn sm" data-act="record-result">Record current result</button></div>`;
+      <div class="row"><button class="btn btn--sm" data-act="record-result">Record current result</button></div>`;
     const seats = Math.max(...mine.map((entry) => entry.players.length));
     const wins = Array.from({ length: seats }, () => 0);
     const played = Array.from({ length: seats }, () => 0);
@@ -3664,7 +3807,7 @@
       <div class="small muted">Win rate by seat (seat 1 is first at the table)</div>
       <div class="list">${seatRows}</div>
       <div class="log">${recent}</div>
-      <div class="row"><button class="btn sm" data-act="record-result">Record current result</button><button class="btn sm" data-act="export-results">Export CSV</button><button class="btn sm danger" data-act="clear-results">Clear</button></div>`;
+      <div class="row"><button class="btn btn--sm" data-act="record-result">Record current result</button><button class="btn btn--sm" data-act="export-results">Export CSV</button><button class="btn btn--sm btn--danger" data-act="clear-results">Clear</button></div>`;
   }
 
   // =========================================================== SIMULATOR
@@ -3764,7 +3907,7 @@
         <label class="field"><span>Scored by</span><select id="simEval">${evaluators.map(([value, label]) => `<option value="${esc(value)}"${sim.cfg.evaluator === value ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
         <label class="field"><span>Trials</span><input id="simTrials" type="number" min="50" max="20000" step="50" value="${sim.cfg.trials}"></label>
       </div>
-      <div class="row"><button class="btn primary" data-act="simulate" ${sim.running ? "disabled" : ""}>${sim.running ? `Running… ${Math.round(sim.progress * 100)}%` : "Simulate"}</button><span class="muted small">Runs the action on a copy of the table: your game isn't touched.</span></div>
+      <div class="row"><button class="btn btn--primary" data-act="simulate" ${sim.running ? "disabled" : ""}>${sim.running ? `Running… ${Math.round(sim.progress * 100)}%` : "Simulate"}</button><span class="muted small">Runs the action on a copy of the table: your game isn't touched.</span></div>
       ${r ? `<div class="small dim">${r.trials.toLocaleString()} × “${esc(r.macro)}” → ${esc(r.target)} in ${Math.round(r.ms)} ms${r.failures ? ` · ${r.failures} failed` : ""}${r.average !== null ? ` · average value ${r.average.toFixed(2)}` : ""}</div>
         <div class="list">${rows || `<p class="hint">Nothing to score. Is an evaluator attached to that group?</p>`}</div>
         ${seats ? `<div class="small muted">Best hand by seat${r.seats.ties ? ` (ties ${pct(r.seats.ties)})` : ""}</div><div class="list">${seats}</div>` : ""}` : ""}`;
@@ -3811,10 +3954,10 @@
         </div>
         <div class="dlg-foot">
           <span class="grow small muted nowrap">${picked.size} picked</span>
-          <button type="button" class="btn sm" data-browse="all">Pick all</button>
-          ${hand && hand !== zoneId ? `<button type="button" class="btn sm" data-browse="hand" ${picked.size ? "" : "disabled"}>To my hand</button>` : ""}
+          <button type="button" class="btn btn--sm" data-browse="all">Pick all</button>
+          ${hand && hand !== zoneId ? `<button type="button" class="btn btn--sm" data-browse="hand" ${picked.size ? "" : "disabled"}>To my hand</button>` : ""}
           <select id="browseTo" style="width:auto;max-width:180px">${zoneOptions("", {})}</select>
-          <button type="button" class="btn sm primary" data-browse="move" ${picked.size ? "" : "disabled"}>Move</button>
+          <button type="button" class="btn btn--sm btn--primary" data-browse="move" ${picked.size ? "" : "disabled"}>Move</button>
           <button class="btn" value="cancel">Done</button>
         </div>`;
     };
@@ -3876,7 +4019,7 @@
     if (zone) facts.push(`In ${esc(E.zoneLabel(v, zone))}`);
     if (card.playedBy) facts.push(`Played by ${esc(E.playerById(v, card.playedBy)?.name || "?")}`);
     openDialog(head("Card") + `<div class="dlg-body inspect-body"><div class="inspect-card" style="--card-width:min(220px, 56vw)">${cardHTML({ ...card }, zone || { visibility: "public" }, index)}</div><div class="list">${facts.map((fact) => `<div class="small">${fact}</div>`).join("")}</div></div>
-      <div class="dlg-foot"><button class="btn primary" value="cancel">Close</button></div>`);
+      <div class="dlg-foot"><button class="btn btn--primary" value="cancel">Close</button></div>`);
   }
 
   // ====================================================== COMMAND PALETTE
@@ -4059,7 +4202,7 @@
         <label class="check"><input type="checkbox" name="replace"> Replace the existing custom cards</label>
         <label class="check"><input type="checkbox" name="none"> Custom cards only (drop the standard 52)</label>
       </div>
-      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="import">Add to deck builder</button></div>`, {
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="import">Add to deck builder</button></div>`, {
       onSubmit(form) {
         const items = parseCustomRows(form.rows.value);
         if (!items.length) { toast("No rows with a name were found.", "error"); return false; }
@@ -4471,12 +4614,12 @@
         <label class="field"><span>Games</span><input id="bgGames" type="number" min="1" max="500" value="${botGames.cfg.games}"></label>
       </div>
       ${againstOptions.length ? `<label class="field"><span>Compare with <span class="dim">A/B test against a saved design or version</span></span><select id="bgAgainst"><option value="">Nothing</option>${againstOptions.map(([id, label]) => `<option value="${esc(id)}"${botGames.cfg.against === id ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>` : ""}
-      <div class="row"><button class="btn primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays legal cards to the end (${esc(ends)}).</span></div>
+      <div class="row"><button class="btn btn--primary" data-act="bot-games" ${botGames.running ? "disabled" : ""}>${botGames.running ? `Playing… ${Math.round(botGames.progress * 100)}%` : "Play bot games"}</button><span class="muted small">Every seat plays legal cards to the end (${esc(ends)}).</span></div>
       ${r ? `<div class="small dim">${r.games} games in ${(r.ms / 1000).toFixed(1)} s · ${r.finished} finished${r.games - r.finished ? `, ${r.games - r.finished} hit the move limit` : ""} · avg ${Math.round(r.avgSteps)} moves, ${r.avgRounds.toFixed(1)} rounds${r.ties ? ` · ${r.ties} ties` : ""}</div>
         <div class="small muted">Win rate and average final score by seat: <b>${fairness(r)}</b> (spread ${pct(r.spread)}${r.finished < 40 ? "; small sample, run more games for a clearer picture" : ""})</div><div class="list">${seatRows}</div>${compareTable}` : ""}
       ${r ? lengthHistogramHTML(r) : ""}
       ${r ? cardBalanceHTML(r) : ""}
-      ${r ? `<div class="row"><button class="btn sm" data-act="bot-games-csv">Export games CSV</button></div>` : ""}
+      ${r ? `<div class="row"><button class="btn btn--sm" data-act="bot-games-csv">Export games CSV</button></div>` : ""}
       <p class="hint">Needs play rules where cards are played and an end condition. Use it to spot seat-order advantages, games that drag on, or whether a rule change helps (save a version, change the rule, then compare).</p>`;
   }
 
@@ -4560,7 +4703,7 @@
           <label class="check" style="align-self:end;min-height:32px"><input type="checkbox" name="lowWins"${draft.lowWins ? " checked" : ""}> Lowest total wins</label>
         </div>
       </div>
-      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="create">Create game</button></div>`;
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="create">Create game</button></div>`;
     const sync = (form) => {
       for (const key of ["name", "style", "deck", "match", "wild", "trickScoring", "trump", "slap", "rulesMode"]) if (form[key]) draft[key] = form[key].value;
       for (const key of ["min", "max", "players", "decks", "jokers", "target", "rounds"]) if (form[key]) draft[key] = Number(form[key].value) || 0;
@@ -4696,15 +4839,15 @@
     const last = frame.log[frame.log.length - 1];
     bar.hidden = false;
     bar.innerHTML = `<span class="replay-tag">Replay</span>
-      <button class="btn sm icon" data-rp="first" title="First">⏮</button>
-      <button class="btn sm icon" data-rp="prev" title="Back (←)">◀</button>
-      <button class="btn sm icon${replay.timer ? " primary" : ""}" data-rp="play" title="Play / pause (space)">${replay.timer ? "⏸" : "⏵"}</button>
-      <button class="btn sm icon" data-rp="next" title="Forward (→)">▶</button>
+      <button type="button" class="btn btn--sm btn--icon" data-rp="first" title="First" aria-label="First">${ICON("arrow-left")}</button>
+      <button type="button" class="btn btn--sm btn--icon" data-rp="prev" title="Back (←)" aria-label="Back">${ICON("chevron-left")}</button>
+      <button class="btn btn--sm btn--icon" aria-pressed="${Boolean(replay.timer)}" data-rp="play" title="Play / pause (space)" aria-label="${replay.timer ? "Pause" : "Play"}">${replay.timer ? ICON("pause") : ICON("play")}</button>
+      <button type="button" class="btn btn--sm btn--icon" data-rp="next" title="Forward (→)" aria-label="Forward">${ICON("chevron-right")}</button>
       <input type="range" min="0" max="${replay.frames.length - 1}" value="${replay.index}" data-rp="seek" aria-label="Replay position">
       <span class="replay-step small mono">${replay.index + 1}/${replay.frames.length}</span>
       <span class="replay-text small grow">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : ""}</span>
-      ${replay.index < replay.frames.length - 1 ? `<button class="btn sm" data-rp="resume" title="Undo back to this moment and keep playing from here">Play from here</button>` : ""}
-      <button class="btn sm primary" data-rp="exit">Exit</button>`;
+      ${replay.index < replay.frames.length - 1 ? `<button class="btn btn--sm" data-rp="resume" title="Undo back to this moment and keep playing from here">Play from here</button>` : ""}
+      <button class="btn btn--sm btn--primary" data-rp="exit">Exit</button>`;
   }
 
   function handleReplay(el) {
@@ -4860,9 +5003,9 @@
     return `<div class="stat-row"><div><b>${pacing.turns}</b><span>turns</span></div><div><b>${seconds(total / pacing.turns)}</b><span>avg turn</span></div><div><b>${seconds(pacing.longest.ms)}</b><span>longest (${esc(E.playerById(v, pacing.longest.player)?.name || "?")})</span></div></div>
       <div class="list">${entries.map(({ player, stat }) => {
         const avg = stat.ms / stat.turns;
-        return `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label">${player.bot ? "🤖 " : ""}${esc(player.name)}</span><div class="prob-bar grow"><span style="width:${(avg / slowest) * 100}%;background:linear-gradient(90deg, color-mix(in srgb, ${esc(player.color)} 35%, transparent), ${esc(player.color)})"></span><em>${seconds(avg)} × ${stat.turns}</em></div></div>`;
+        return `<div class="row tight" style="flex-wrap:nowrap"><span class="small sim-label">${player.bot ? ICON("bot") + " " : ""}${esc(player.name)}</span><div class="prob-bar grow"><span style="width:${(avg / slowest) * 100}%;background:linear-gradient(90deg, color-mix(in srgb, ${esc(player.color)} 35%, transparent), ${esc(player.color)})"></span><em>${seconds(avg)} × ${stat.turns}</em></div></div>`;
       }).join("")}</div>
-      <div class="row"><button class="btn sm" data-act="reset-pacing">Reset timing</button></div>`;
+      <div class="row"><button class="btn btn--sm" data-act="reset-pacing">Reset timing</button></div>`;
   }
 
   // ========================================================== CONFETTI
@@ -4956,8 +5099,8 @@
 
   function designCheckHTML(v) {
     const issues = E.lintDesign(v);
-    if (!issues.length) return `<p class="check-ok">✓ No problems found: references, turn passing, deal sizes and the end of the game all check out.</p>`;
-    const icon = { error: "⛔", warn: "⚠️", info: "ℹ️" };
+    if (!issues.length) return `<p class="check-ok">No problems found: references, turn passing, deal sizes and the end of the game all check out.</p>`;
+    const icon = { error: ICON("warning"), warn: ICON("warning"), info: ICON("info") };
     return `<div class="list">${issues.map((issue) => `<div class="issue issue-${issue.level}"><span>${icon[issue.level]}</span><span>${esc(issue.message)}</span></div>`).join("")}</div>`;
   }
 
@@ -4978,7 +5121,7 @@
     showPing({ zone: play.to, name: "Hint", color: "#f4c95d" });
     const what = card?.visible ? (card.custom ? card.label : E.cardName(card)) : "That card";
     const claim = view.zones[play.to]?.rule?.claim ? ` as ${RANK_WORD(E.nextClaimRank(view.zones[play.to]))}${play.bluff ? ", a bluff: you have none" : ""}` : "";
-    toast(`💡 ${play.cards?.length > 1 ? `${play.cards.length} × ${what.replace(/[♠♥♦♣]/g, "")}` : what}${play.buy ? " (buy)" : ""} → ${view.zones[play.to]?.name || "?"}${claim} (press P to play it)`);
+    toast(`Hint: ${play.cards?.length > 1 ? `${play.cards.length} × ${what.replace(/[♠♥♦♣]/g, "")}` : what}${play.buy ? " (buy)" : ""} → ${view.zones[play.to]?.name || "?"}${claim} (press P to play it)`);
   }
 
   // ================================================================== QR
@@ -5010,11 +5153,11 @@
 
   // ================================================================ TOUR
   const TOUR = [
-    { target: "#newBtn", title: "Start or design a game", text: "Pick one of the ready-made games, or ✨ Design your own from a few answers. Everything is editable afterwards.", tab: null },
-    { target: ".macro-grid", title: "One-tap actions", text: "Actions script the flow: deal, flip, find the winner, score… Press 1–9 or click. ● Record turns what you do by hand into a new action.", tab: "play" },
+    { target: "#newBtn", title: "Start or design a game", text: "Pick one of the ready-made games, or design your own from a few answers. Everything is editable afterwards.", tab: null },
+    { target: ".macro-grid", title: "One-tap actions", text: "Actions script the flow: deal, flip, find the winner, score… Press 1–9 or click. Record turns what you do by hand into a new action.", tab: "play" },
     { target: "#seats .zone, #around .zone", title: "Cards and groups", text: "Tap cards to select, drag to move, double-click to flip. Places a card can legally go glow green; H asks the smart bot for a hint.", tab: null },
     { target: '#tabs [data-tab="rules"]', title: "Rules and automation", text: "Give groups play rules, add triggers and scoring formulas, generate the rules document, and run the design check.", tab: null },
-    { target: '#tabs [data-tab="tools"]', title: "Playtest like a lab", text: "Bots, whole-game simulations with A/B comparisons, deal odds, seeded replays, pacing and results by seat.", tab: null },
+    { target: '#menuBtn', title: "Playtest like a lab", text: "More → Tools: bots, whole-game simulations with A/B comparisons, deal odds, seeded replays, pacing and results by seat.", tab: null },
     { target: "#roomBtn", title: "Play together", text: "Open an online room: hands stay private and friends join by link or QR code. Ctrl/⌘+K finds any command.", tab: null },
   ];
   const tour = { step: -1 };
@@ -5054,7 +5197,7 @@
     spot.style.height = rect.height + pad * 2 + "px";
     const bubble = layer.querySelector(".tour-bubble");
     bubble.innerHTML = `<div class="small muted">${tour.step + 1} of ${TOUR.length}</div><h3>${esc(step.title)}</h3><p>${esc(step.text)}</p>
-      <div class="row tight"><button class="btn sm ghost" data-tour="skip">Skip</button><span class="grow"></span>${tour.step ? `<button class="btn sm" data-tour="back">Back</button>` : ""}<button class="btn sm primary" data-tour="next">${tour.step === TOUR.length - 1 ? "Done" : "Next"}</button></div>`;
+      <div class="row tight"><button class="btn btn--sm btn--ghost" data-tour="skip">Skip</button><span class="grow"></span>${tour.step ? `<button class="btn btn--sm" data-tour="back">Back</button>` : ""}<button class="btn btn--sm btn--primary" data-tour="next">${tour.step === TOUR.length - 1 ? "Done" : "Next"}</button></div>`;
     const width = Math.min(320, window.innerWidth - 24);
     bubble.style.width = width + "px";
     const below = rect.bottom + 14 + 170 < window.innerHeight;
@@ -5069,11 +5212,11 @@
     const show = isCompact() && !prefs.side && !selection.size && !replay.active && view && view.macros.length > 0;
     dock.hidden = !show;
     if (!show) return;
-    const macros = view.macros.slice(0, 6).map((macro) => `<button class="btn sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("");
-    const next = view.realtime ? "" : `<button class="btn sm primary" data-act="next-turn">Next ›</button>`;
-    dock.innerHTML = `<button class="btn sm icon" data-act="open-side" title="Controls" aria-label="Open controls"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+    const macros = view.macros.slice(0, 6).map((macro) => `<button class="btn btn--sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("");
+    const next = view.realtime ? "" : `<button type="button" class="btn btn--sm btn--primary" data-act="next-turn">Next ${ICON("chevron-right")}</button>`;
+    dock.innerHTML = `<button type="button" class="btn btn--sm btn--icon" data-act="open-side" title="Controls" aria-label="Open controls">${ICON("menu")}</button>
       <div class="dock-scroll">${macros}</div>
-      <button class="btn sm icon" data-act="hint" title="Hint" aria-label="Hint">💡</button>${next}`;
+      <button type="button" class="btn btn--sm btn--icon" data-act="hint" title="Hint" aria-label="Hint">${ICON("bulb")}</button>${next}`;
   }
 
   /** Slaps, calls, challenges and trades per player, once any have happened. */
@@ -5085,11 +5228,11 @@
     const line = (player) => {
       const s = stats[player.id];
       const bits = [];
-      if (s.slaps || s.wrongSlaps) bits.push(cell(`👋 ${s.slaps || 0}/${(s.slaps || 0) + (s.wrongSlaps || 0)}`, "Good slaps / all slaps"));
-      if (s.calls) bits.push(cell(`🔍 ${s.rightCalls || 0}/${s.calls}`, "Calls that caught a bluff / all calls"));
-      if (s.caught) bits.push(cell(`🤥 ${s.caught}`, "Times caught bluffing"));
-      if (s.challenges) bits.push(cell(`👑 ${s.challenges}`, "Challenges won"));
-      if (s.trades) bits.push(cell(`🤝 ${s.trades}`, "Trades made"));
+      if (s.slaps || s.wrongSlaps) bits.push(cell(`${ICON("hand")} ${s.slaps || 0}/${(s.slaps || 0) + (s.wrongSlaps || 0)}`, "Good slaps / all slaps"));
+      if (s.calls) bits.push(cell(`${ICON("search")} ${s.rightCalls || 0}/${s.calls}`, "Calls that caught a bluff / all calls"));
+      if (s.caught) bits.push(cell(`${ICON("warning")} ${s.caught}`, "Times caught bluffing"));
+      if (s.challenges) bits.push(cell(`${ICON("crown")} ${s.challenges}`, "Challenges won"));
+      if (s.trades) bits.push(cell(`${ICON("handshake")} ${s.trades}`, "Trades made"));
       return `<div class="list-row talk-row" style="--c:${esc(player.color)}"><span class="grow small"><i class="swatch"></i> <b>${esc(player.name)}</b></span><span class="talk-stats small">${bits.join("")}</span></div>`;
     };
     return block("Table talk", `<div class="list">${rows.map(line).join("")}</div><p class="hint">Playtest reflexes and reads: who slaps well, who calls right, who gets caught.</p>`);
@@ -5107,7 +5250,7 @@
           ${scoreChartHTML(v)}
           <p class="small muted">${v.scores.target ? `Playing to ${E.fmt(v.scores.target)}${v.scores.lowWins ? ", lowest wins" : ""}.` : v.scores.maxRounds ? `${v.scores.maxRounds} rounds${v.scores.lowWins ? ", lowest wins" : ""}.` : ""} This board updates live.</p>
         </div>
-        <div class="dlg-foot"><button class="btn primary" value="cancel">Close</button></div>`;
+        <div class="dlg-foot"><button class="btn btn--primary" value="cancel">Close</button></div>`;
     };
     openDialog(draw(), { wide: true });
     dialog().classList.add("scoreboard-dialog");
