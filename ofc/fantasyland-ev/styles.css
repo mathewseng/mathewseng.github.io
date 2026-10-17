@@ -53,6 +53,15 @@
   font-weight: 600;
 }
 
+/* Long single-line chips wrap instead of widening narrow screens at large
+   text sizes. */
+.ev-dataset .badge,
+.joker-chip--hypothetical {
+  max-width: 100%;
+  line-height: var(--lh-data);
+  white-space: normal;
+}
+
 .ev-controls {
   display: grid;
   gap: 8px;
@@ -144,7 +153,7 @@
 
 /* Wide screens: the definitions stay beside the matrix and the deck tables
    (a sticky side column), so a definition link swaps copy that is on screen. */
-@media (min-width: 1180px) {
+@media (min-width: 74em) {
   .section-panel--matrix {
     grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
     align-items: start;
@@ -1031,7 +1040,6 @@
     color: var(--muted);
     font-size: var(--t-xs);
     font-weight: 600;
-    white-space: nowrap;
   }
 
   .matrix-table td[data-value] {
