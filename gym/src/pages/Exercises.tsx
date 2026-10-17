@@ -140,7 +140,7 @@ export default function Exercises() {
         description="Machines and free weights stay separate, only comparable sets count, and the best known set for each movement is shown."
       />
 
-      <div className="grid gap-5 lg:grid-cols-[21rem_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[min(21rem,35%)_minmax(0,1fr)]">
         <Surface className="self-start p-3 sm:p-4">
           <SearchField
             label="Search exercises"

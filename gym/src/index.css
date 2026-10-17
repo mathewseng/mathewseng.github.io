@@ -92,6 +92,8 @@ html {
    are fixed to the bottom, so scrollIntoView / focus must stop above them.
    AppShell and ActionBar measure both into custom properties. */
 html {
+  /* The sticky topbar must not cover a heading scrolled to the top. */
+  scroll-padding-top: 5rem;
   scroll-padding-bottom: calc(var(--tab-bar-h, 0px) + var(--action-bar-h, 0px) + 16px);
 }
 

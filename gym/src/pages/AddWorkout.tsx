@@ -1021,7 +1021,7 @@ function WorkoutEditor({
                 title="Workout context · 0–6"
                 description="For energy, sleep, and appetite, 6 is better. For symptoms and disruption, 6 is more severe."
               />
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))]">
                 {scores.map((score) => (
                   <ScoreControl
                     key={score.key}

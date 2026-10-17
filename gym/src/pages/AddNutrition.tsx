@@ -384,7 +384,7 @@ function NutritionEditor({ existing }: { existing?: NutritionEntry }) {
               title="Daily context · 0–6"
               description="Appetite and meal quality run low → high. Illness and travel run none → severe."
             />
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))]">
               {ratings.map((rating) => (
                 <ScoreControl
                   key={rating.key}
