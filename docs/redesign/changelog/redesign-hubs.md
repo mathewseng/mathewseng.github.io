@@ -69,11 +69,15 @@ offline-manifest script restamped its `?bgv=` hash, as it does for every Backgam
   `/dice/reports/#play` under the group "Fair Dice Payout Explorer" (the page's one name), and
   the custom payout checker as a secondary `.hub-links` entry; title is "Dice" like the other
   hubs; the footer's source link gained `target`/`rel`.
+- Compact tiles (≤ 640px) are one column: `auto-fit` still fitted two 250px columns above
+  about 530px, so the icon-beside-copy row tiles sat side by side with a 190px text column and
+  the three-line clamp ellipsised the OFC Fantasyland and Poker research copy (seen at 540–640px
+  during the second verification pass).
 
 ## CSS
 
-- `shared/hub.css` 650 → 777 lines (+127: `.tiles--hubs`, `.hub-links`, footer links, touch
-  edge, row-tile art). `shared/hub-art.css` 674 → 788 (+114: dice faces and fan, `.art-image`,
+- `shared/hub.css` 650 → 780 lines (+130: `.tiles--hubs`, `.hub-links`, footer links, touch
+  edge, row-tile art, one-column compact tiles). `shared/hub-art.css` 674 → 792 (+118: dice faces and fan, `.art-image`,
   `.art-ofc-first`). Zero colour literals in both (baseline unchanged).
 - `backgammon/offline-manifest.js` regenerated (hashes hub.css/hub-art.css); the script also
   restamps `?bgv=` in the Backgammon pages and `sw.js`.
@@ -88,6 +92,9 @@ offline-manifest script restamped its `?bgv=` hash, as it does for every Backgam
   375×812 and copied over `scripts/screenshots/baseline/`. Extra states rendered from a
   scratchpad script: tile hover, tile focus ring, switcher focus, skip link, link-list focus,
   dice hero hover, touch pressed state, 1366×768, 1280×720, 768×1024 and 320×568 (no overflow).
+- Second pass after the interrupted run: the whole list above again (suite 459 pass / 0 fail;
+  shell sweep clean at 16px and 24px roots; the ten pictures identical to the baselines), plus
+  1024×768, 640×900, 600×900 and 540×900 renders, which found the two-column compact tiles.
 - `BG_MODULES=updates node backgammon/tests/browser.cjs` and `BG_MODULES=mobile-quick …`
   against `_site`.
 

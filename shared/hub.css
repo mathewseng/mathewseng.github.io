@@ -716,7 +716,10 @@ html.is-ready .hero .facts {
     margin-top: 10px;
   }
 
+  /* The compact row layout is a single-column list; two row tiles side by side
+     (auto-fit still fits two 250px columns above ~530px) ellipsise their copy. */
   .tiles {
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
 
