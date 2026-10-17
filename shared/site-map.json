@@ -12,8 +12,7 @@
           "title": "Fantasyland",
           "tools": [
             { "name": "Fantasyland Trainer", "path": "/ofc/fantasyland-trainer/" },
-            { "name": "Fantasyland EV", "path": "/ofc/fantasyland-ev/" },
-            { "name": "Fantasyland overview", "path": "/ofc/fantasyland-ev/#overview" }
+            { "name": "Fantasyland EV", "path": "/ofc/fantasyland-ev/" }
           ]
         }
       ]
