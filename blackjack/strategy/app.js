@@ -301,13 +301,26 @@ function wireControls() {
     $("card-pad").addEventListener("click", (event) => {
         const button = event.target.closest("button[data-card]");
         if (!button) return;
-        if (state.hand.length >= 6) {
-            toast("Hand limit reached");
-            return;
-        }
-        state.hand.push(Number(button.dataset.card));
-        renderHandTray();
-        renderHandSolver();
+        addCard(Number(button.dataset.card));
+    });
+
+    // Card pad shortcuts: 2-9, T and A add a card when no field or dialog has the keyboard.
+    document.addEventListener("keydown", (event) => {
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (document.querySelector("dialog[open]")) return;
+        const target = event.target;
+        if (target && typeof target.closest === "function" && target.closest("input, select, textarea, [contenteditable='true']")) return;
+        const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+        const card = /^[2-9]$/.test(key) ? Number(key) : key === "T" ? 10 : key === "A" ? 11 : null;
+        if (card === null) return;
+        event.preventDefault();
+        addCard(card);
+    });
+
+    $("strategy-table").addEventListener("keydown", moveChartFocus);
+    $("chart-options-button").addEventListener("click", () => openDialog($("chart-options"), $("chart-options-button")));
+    document.querySelectorAll("dialog [data-close]").forEach((button) => {
+        button.addEventListener("click", () => button.closest("dialog").close());
     });
 
     $("clear-hand").addEventListener("click", () => {
@@ -382,10 +395,73 @@ function wireControls() {
         if (event.target === $("dealer-modal")) closeDealerModal();
     });
 
-    document.querySelectorAll(".mobile-tab").forEach((tab) => {
-        tab.addEventListener("click", () => setMobileView(tab.dataset.view));
-    });
+    if (typeof Tabs !== "undefined" && Tabs && $("mobile-tabs")) {
+        syncingTabs = true;
+        mobileTabs = Tabs.init($("mobile-tabs"), {
+            onChange(id) {
+                if (syncingTabs) return;
+                syncingTabs = true;
+                setMobileView(id);
+                syncingTabs = false;
+            },
+        });
+        syncingTabs = false;
+    } else {
+        document.querySelectorAll(".mobile-tab").forEach((tab) => {
+            tab.addEventListener("click", () => setMobileView(tab.dataset.view));
+        });
+    }
 }
+
+function addCard(card) {
+    if (state.hand.length >= 6) {
+        toast("Hand limit reached");
+        return;
+    }
+    state.hand.push(card);
+    renderHandTray();
+    renderHandSolver();
+}
+
+// Opens a kit dialog through shared/sheet.js when it is loaded (focus return,
+// bottom sheet on phones), falling back to the native modal.
+function openDialog(dialog, opener) {
+    if (!dialog) return;
+    if (typeof Sheet !== "undefined" && Sheet && Sheet.open) Sheet.open(dialog, { returnFocus: opener || undefined });
+    else if (dialog.showModal) dialog.showModal();
+    else dialog.setAttribute("open", "");
+}
+
+// Roving tabindex for the chart: one tab stop, arrow keys move between the
+// dealer heads (row 0) and the action cells; Home and End jump within a row.
+function moveChartFocus(event) {
+    const step = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[event.key];
+    if (!step && event.key !== "Home" && event.key !== "End") return;
+    const current = event.target.closest(".dealer-head, .action-cell");
+    if (!current) return;
+    const cell = current.closest("th, td");
+    const row = cell.parentElement;
+    const rows = Array.from(event.currentTarget.querySelectorAll("tr"));
+    const rowIndex = rows.indexOf(row);
+    const colIndex = Array.from(row.children).indexOf(cell);
+    let nextRow = rowIndex;
+    let nextCol = colIndex;
+    if (event.key === "Home") nextCol = 1;
+    else if (event.key === "End") nextCol = row.children.length - 1;
+    else {
+        nextRow = clamp(rowIndex + step[0], 0, rows.length - 1);
+        nextCol = clamp(colIndex + step[1], 1, row.children.length - 1);
+    }
+    const target = rows[nextRow]?.children[nextCol]?.querySelector("button");
+    if (!target) return;
+    event.preventDefault();
+    current.tabIndex = -1;
+    target.tabIndex = 0;
+    target.focus();
+}
+
+let mobileTabs = null;
+let syncingTabs = false;
 
 // Compact layouts (phones, tablets) show one workspace panel at a time; the
 // desktop app shell shows them all and ignores data-view.
@@ -400,10 +476,13 @@ function setMobileView(view) {
     if (!workspace || !view) return;
     workspace.dataset.view = view;
     document.querySelectorAll(".mobile-tab").forEach((item) => {
-        const active = item.dataset.view === view;
-        item.classList.toggle("active", active);
-        item.setAttribute("aria-pressed", String(active));
+        item.classList.toggle("active", item.dataset.view === view);
     });
+    if (mobileTabs && !syncingTabs) {
+        syncingTabs = true;
+        mobileTabs.activate(view);
+        syncingTabs = false;
+    }
     if (isCompactLayout()) workspace.scrollTop = 0;
 }
 
@@ -1889,7 +1968,7 @@ function renderChart() {
     let html = "<thead><tr><th class='row-head'>Hand</th>";
     dealerOrder.forEach((dealer) => {
         const bust = bustByDealer.get(dealer) || 0;
-        html += `<th><button class="dealer-head" type="button" data-dealer="${dealer}" title="Dealer outcome distribution for ${dealer}"><span class="dealer-card">${dealer}</span><span class="dealer-bust">${formatHeaderPercent(bust)}</span></button></th>`;
+        html += `<th><button class="dealer-head" type="button" data-dealer="${dealer}" tabindex="-1" aria-label="Dealer ${dealer}, busts ${formatHeaderPercent(bust)}. Show the outcome distribution"><span class="dealer-card">${dealer}</span><span class="dealer-bust">${formatHeaderPercent(bust)}</span></button></th>`;
     });
     html += "</tr></thead><tbody>";
 
@@ -1915,10 +1994,12 @@ function renderChart() {
         });
     });
     table.querySelectorAll(".dealer-head").forEach((button) => {
-        button.addEventListener("click", () => showDealerModal(button.dataset.dealer));
+        button.addEventListener("click", () => showDealerModal(button.dataset.dealer, button));
     });
 
     markSelectedCell();
+    const entry = table.querySelector(".selected-cell") || table.querySelector(".action-cell");
+    if (entry) entry.tabIndex = 0;
 }
 
 function selectChartHand(row, cell) {
@@ -1956,12 +2037,13 @@ function cellButton(row, cell) {
         : "";
     const displayEv = round4(evForCellAction(cell, displayAction));
     const payload = JSON.stringify({ ...cell, a: displayAction, ev: displayEv, indices: displayIndices, x: Boolean(active) }).replaceAll('"', "&quot;");
-    const title = `${row.label} vs ${cell.dealer}: ${action.label}`;
+    const indexText = visibleIndices.length ? `, index ${visibleIndices.map(formatIndexBadge).join(" ")}` : "";
+    const title = `${row.label} vs ${cell.dealer}: ${action.label}${evMode ? `, EV ${formatSigned(displayEv)}` : ""}${indexText}`;
     const evMarkup = evMode
-        ? `<span class="cell-ev">${formatSigned(displayEv)}</span><span class="cell-gap">Δ ${cell.gap.toFixed(3)}</span>`
+        ? `<span class="cell-ev">${displayEv >= 0 ? "+" : ""}${displayEv.toFixed(2)}</span><span class="cell-gap">Δ ${cell.gap.toFixed(3)}</span>`
         : "";
     const style = evMode ? ` style="--cell-bg:${evColor(displayEv, cell.gap)}"` : "";
-    return `<button class="action-cell ${action.className}${active}${selected}${evMode ? " ev-cell" : ""}" type="button" data-row="${row.id}" data-row-label="${row.label}" data-dealer="${cell.dealer}" data-cell="${payload}" title="${title}"${style}>
+    return `<button class="action-cell ${action.className}${active}${selected}${evMode ? " ev-cell" : ""}" type="button" tabindex="-1" data-row="${row.id}" data-row-label="${row.label}" data-dealer="${cell.dealer}" data-cell="${payload}" aria-label="${title}"${style}>
         <span class="action-code">${displayAction}</span>${evMarkup}${badge}
     </button>`;
 }
@@ -1973,7 +2055,7 @@ function renderLegend() {
         .filter((item) => visibleActions.has(item.code))
         .map((item) => {
             const action = ACTIONS[item.code] || ACTIONS.H;
-            return `<div class="legend-item"><span class="legend-code ${action.className}">${item.code}</span><span class="legend-label">${legendLabel(item.code, item.label)}</span></div>`;
+            return `<span class="chip legend-item"><span class="legend-code ${action.className}" aria-hidden="true">${item.code}</span><span class="legend-label">${legendLabel(item.code, item.label)}</span></span>`;
         })
         .join("");
 }
@@ -2154,7 +2236,7 @@ function renderProbabilityRows(cell) {
     </div>`;
 }
 
-function showDealerModal(dealerLabelValue) {
+function showDealerModal(dealerLabelValue, opener = null) {
     const dealer = dealerValueFromLabel(dealerLabelValue);
     const config = collectConfig();
     const trueCount = $("apply-count-toggle").checked ? computeTrueCount().exact : 0;
@@ -2176,9 +2258,7 @@ function showDealerModal(dealerLabelValue) {
         </div>`)
         .join("");
 
-    const dialog = $("dealer-modal");
-    if (dialog.showModal) dialog.showModal();
-    else dialog.setAttribute("open", "");
+    openDialog($("dealer-modal"), opener);
 }
 
 function closeDealerModal() {
@@ -2300,9 +2380,9 @@ function formatHeaderPercent(value) {
 
 function evColor(ev, gap) {
     const confidence = Math.min(1, Math.max(0, gap / 0.08));
-    if (Math.abs(ev) < 0.015) return `hsl(220 16% ${26 + confidence * 7}%)`;
-    if (ev > 0) return `hsl(158 70% ${22 + confidence * 10}%)`;
-    return `hsl(356 72% ${24 + confidence * 8}%)`;
+    if (Math.abs(ev) < 0.015) return `color-mix(in oklab, var(--muted) ${Math.round(16 + confidence * 12)}%, var(--surface))`;
+    if (ev > 0) return `color-mix(in oklab, var(--good) ${Math.round(22 + confidence * 26)}%, var(--surface))`;
+    return `color-mix(in oklab, var(--bad) ${Math.round(22 + confidence * 26)}%, var(--surface))`;
 }
 
 function markSelectedCell() {
@@ -2405,13 +2485,16 @@ function copyConfig() {
         indexGroup: currentIndexGroup(),
         indexRange: getIndexRange(),
     };
-    const text = JSON.stringify(config, null, 2);
-    if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(text).then(() => toast("Config copied"));
-    } else {
-        toast(text);
-    }
     history.replaceState(null, "", `#${encodeURIComponent(JSON.stringify(config))}`);
+    const url = location.href;
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(url).then(
+            () => toast("Share link copied"),
+            () => toast("Could not copy; the share link is in the address bar"),
+        );
+    } else {
+        toast("The share link is in the address bar");
+    }
 }
 
 function applyHashConfig() {
@@ -2431,9 +2514,28 @@ function applyHashConfig() {
 }
 
 function toast(message) {
-    const toastEl = $("toast");
-    toastEl.textContent = message;
-    toastEl.classList.add("show");
-    clearTimeout(toastEl.hideTimer);
-    toastEl.hideTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    const stack = $("toast");
+    if (!stack || typeof document.createElement !== "function") return;
+    const item = document.createElement("div");
+    item.className = "toast";
+    const text = document.createElement("span");
+    text.textContent = message;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "btn btn--ghost btn--icon btn--sm";
+    close.setAttribute("aria-label", "Dismiss");
+    close.textContent = "✕";
+    let timer = 0;
+    const remove = () => {
+        clearTimeout(timer);
+        item.remove();
+    };
+    close.addEventListener("click", remove);
+    item.addEventListener("mouseenter", () => clearTimeout(timer));
+    item.addEventListener("mouseleave", () => {
+        timer = setTimeout(remove, 2200);
+    });
+    item.append(text, close);
+    stack.append(item);
+    timer = setTimeout(remove, 2600);
 }
