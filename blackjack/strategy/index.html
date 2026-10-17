@@ -1,487 +1,526 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0b0d10">
-    <meta name="description"
-        content="Rules-aware blackjack strategy charts, realtime EVs, Hi-Lo index deviations, and final-total probabilities.">
+<!doctype html>
+<html lang="en" data-family="blackjack">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Rules-aware blackjack strategy charts, realtime EVs, Hi-Lo index deviations, and final-total probabilities." />
     <title>Blackjack Strategy Lab</title>
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="styles.css?v=20261003">
-</head>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%23f4c95d'%3E♠%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/tabs.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script src="app.js?v=20261016" defer></script>
+  </head>
 
-<body>
+  <body>
+    <a class="skip-link" href="#main">Skip to the strategy chart</a>
     <div class="app-shell">
-        <header class="topbar">
-            <div class="brand-block">
-                <a class="home-link" href="/" aria-label="Home">MS</a>
-                <div>
-                    <p class="eyebrow">Realtime EV engine</p>
-                    <h1>Blackjack Strategy Lab</h1>
-                </div>
-            </div>
-
-            <div class="status-cluster" aria-live="polite">
-                <div class="metric-pill">
-                    <span>House edge</span>
-                    <strong id="metric-edge">--</strong>
-                </div>
-                <div class="metric-pill">
-                    <span>True count</span>
-                    <strong id="metric-true-count">0</strong>
-                </div>
-                <div class="metric-pill">
-                    <span>Solve</span>
-                    <strong id="metric-speed">--</strong>
-                </div>
-            </div>
-        </header>
-
-        <nav class="mobile-tabs" aria-label="Sections">
-            <button class="mobile-tab active" type="button" data-view="chart" aria-pressed="true">Chart</button>
-            <button class="mobile-tab" type="button" data-view="rules" aria-pressed="false">Rules</button>
-            <button class="mobile-tab" type="button" data-view="hand" aria-pressed="false">Hand</button>
-            <button class="mobile-tab" type="button" data-view="count" aria-pressed="false">Count</button>
-            <button class="mobile-tab" type="button" data-view="display" aria-pressed="false">Display</button>
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">Projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a href="/blackjack/">Blackjack</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Strategy Lab</span>
         </nav>
+        <nav class="tool-nav" aria-label="Blackjack tools">
+          <a href="/blackjack/strategy/" aria-current="page">Strategy Lab</a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="btn btn--sm bj-share" id="copy-config" type="button" title="Copy a link to these rules, count and chart settings">
+            <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-link" /></svg>
+            <span>Share link</span>
+          </button>
+        </div>
+      </header>
 
-        <main class="workspace" id="workspace" data-view="chart">
-            <aside class="rules-panel surface" id="rules-panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Configuration</p>
-                        <h2>Table rules</h2>
-                    </div>
-                    <button class="icon-button" id="reset-rules" type="button" title="Reset rules"
-                        aria-label="Reset rules">
-                        <span aria-hidden="true">↺</span>
-                    </button>
+      <div class="tool-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Blackjack · Realtime EV engine</p>
+          <h1>Strategy Lab</h1>
+        </div>
+        <div class="stat-strip bj-metrics">
+          <div class="stat">
+            <span class="stat-label">House edge</span>
+            <strong class="stat-value" id="metric-edge">--</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">True count</span>
+            <strong class="stat-value" id="metric-true-count">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs bj-views" role="tablist" aria-label="Sections" id="mobile-tabs">
+        <button class="mobile-tab active" type="button" role="tab" data-tab="chart" data-view="chart" aria-selected="true">Chart</button>
+        <button class="mobile-tab" type="button" role="tab" data-tab="hand" data-view="hand" aria-selected="false">Hand</button>
+        <button class="mobile-tab" type="button" role="tab" data-tab="count" data-view="count" aria-selected="false">Count</button>
+        <button class="mobile-tab" type="button" role="tab" data-tab="rules" data-view="rules" aria-selected="false">Rules</button>
+      </div>
+
+      <main id="main" class="app-main" tabindex="-1">
+        <div class="workspace" id="workspace" data-view="chart">
+          <section class="panel bj-chart chart-panel" id="chart-panel" aria-labelledby="chart-title">
+            <div class="panel-head">
+              <div class="bj-chart-title">
+                <p class="eyebrow eyebrow--plain">Strategy chart</p>
+                <h2 id="chart-title">6D S17, DAS, Peek</h2>
+              </div>
+              <div class="panel-actions bj-toolbar">
+                <div class="field field--select field--inline">
+                  <label for="view-mode">View</label>
+                  <select id="view-mode">
+                    <option value="strategy">Strategy</option>
+                    <option value="ev">EV</option>
+                  </select>
                 </div>
+                <div class="field field--select field--inline">
+                  <label for="index-group">Indices</label>
+                  <select id="index-group">
+                    <option value="custom" selected>Custom</option>
+                    <option value="illustrious18">Illustrious 18</option>
+                    <option value="fab4">Fab 4</option>
+                    <option value="i18Fab4">I18 + Fab 4</option>
+                    <option value="sweet16">Sweet 16</option>
+                    <option value="catch20">Catch 20</option>
+                    <option value="catch22">Catch 22</option>
+                    <option value="bjaS17">BJA S17</option>
+                    <option value="bjaH17">BJA H17</option>
+                    <option value="jackaceMdS17">JackAce MD S17</option>
+                  </select>
+                </div>
+                <button class="btn btn--sm" id="chart-options-button" type="button" aria-haspopup="dialog">
+                  <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-settings" /></svg>
+                  <span>Options</span>
+                </button>
+              </div>
+            </div>
 
-                <label class="control-field">
-                    <span>Preset</span>
-                    <select id="preset-select">
-                        <option value="vegas">6D Vegas Strip</option>
-                        <option value="atlantic">8D Late Surrender</option>
-                        <option value="downtown">2D H17 Downtown</option>
-                        <option value="single">Single Deck S17</option>
-                        <option value="european">European No Hole Card</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </label>
+            <div class="panel-body bj-chart-body">
+              <div class="chart-scroll" id="chart-scroll">
+                <table class="strategy-table compact matrix" id="strategy-table" aria-label="Blackjack strategy chart"></table>
+              </div>
+            </div>
 
-                <div class="control-field">
-                    <span>Decks <strong id="decks-value" class="inline-value">6</strong></span>
-                    <div class="range-input-row">
-                        <button class="range-stepper" type="button" data-step-target="decks-slider" data-step-dir="-1"
-                            aria-label="Decrease decks">−</button>
-                        <input id="decks-slider" class="tick-slider" type="range" min="1" max="9" step="1" value="6"
-                            list="deck-ticks" aria-label="Deck count">
-                        <button class="range-stepper" type="button" data-step-target="decks-slider" data-step-dir="1"
-                            aria-label="Increase decks">+</button>
-                        <input id="decks-input" class="number-box" type="number" min="1" max="9" step="1" value="6"
-                            aria-label="Deck count number" title="Use 9 for infinite decks">
-                    </div>
+            <div class="panel-foot">
+              <div class="legend-bar chip-row" id="legend-bar" aria-label="Action legend"></div>
+            </div>
+          </section>
+
+          <aside class="panel bj-hand solver-panel" id="solver-panel" aria-labelledby="solver-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow eyebrow--plain">Instant hand solve</p>
+                <h2 id="solver-title">Hand</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="btn btn--ghost btn--sm" id="clear-hand" type="button" aria-label="Clear hand">Clear</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="field field--select">
+                <label for="dealer-select">Dealer up card</label>
+                <select id="dealer-select">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">T</option>
+                  <option value="11">A</option>
+                </select>
+              </div>
+
+              <div class="hand-tray card-row" id="hand-tray" aria-label="Current player hand"></div>
+
+              <div class="card-pad" id="card-pad" aria-label="Add player card">
+                <button class="btn" type="button" data-card="2" aria-keyshortcuts="2">2</button>
+                <button class="btn" type="button" data-card="3" aria-keyshortcuts="3">3</button>
+                <button class="btn" type="button" data-card="4" aria-keyshortcuts="4">4</button>
+                <button class="btn" type="button" data-card="5" aria-keyshortcuts="5">5</button>
+                <button class="btn" type="button" data-card="6" aria-keyshortcuts="6">6</button>
+                <button class="btn" type="button" data-card="7" aria-keyshortcuts="7">7</button>
+                <button class="btn" type="button" data-card="8" aria-keyshortcuts="8">8</button>
+                <button class="btn" type="button" data-card="9" aria-keyshortcuts="9">9</button>
+                <button class="btn" type="button" data-card="10" aria-keyshortcuts="T">T</button>
+                <button class="btn" type="button" data-card="11" aria-keyshortcuts="A">A</button>
+              </div>
+              <p class="field-hint bj-pad-hint">Keys 2–9, T and A add a card.</p>
+
+              <div class="decision-card" id="decision-card">
+                <span class="decision-code">--</span>
+                <div>
+                  <strong id="decision-label">Add cards</strong>
+                  <p id="decision-detail">Select a dealer card and player hand.</p>
+                </div>
+              </div>
+
+              <div class="cell-inspector" id="cell-inspector">
+                <p class="eyebrow eyebrow--plain">Selected cell</p>
+                <div id="cell-detail">Tap any chart cell for action, count index, and margin.</div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="panel bj-count count-panel" id="count-panel" aria-labelledby="count-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow eyebrow--plain">Hi-Lo</p>
+                <h2 id="count-title">Count</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="btn btn--ghost btn--sm btn--icon" id="undo-count" type="button" title="Undo last count" aria-label="Undo last count">
+                  <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-undo" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="stat-strip count-readout">
+                <div class="stat">
+                  <span class="stat-label">Running</span>
+                  <strong class="stat-value" id="running-count">0</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Decks left</span>
+                  <strong class="stat-value" id="decks-left">6.00</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Applied true count</span>
+                  <strong class="stat-value" id="applied-count">0</strong>
+                </div>
+              </div>
+
+              <label class="switch-row count-apply" title="Apply the true count to the chart and hand solver">
+                <span>Apply count to the chart and hand</span>
+                <span class="switch"><input id="apply-count-toggle" type="checkbox" checked /></span>
+              </label>
+
+              <div class="field range-field">
+                <label for="decks-remaining-input">Decks remaining</label>
+                <div class="range-input-row">
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="decks-remaining" data-step-dir="-1" aria-label="Decrease decks remaining">−</button>
+                  <input id="decks-remaining" type="range" min="0.01" max="6" step="0.01" value="6" aria-label="Decks remaining" />
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="decks-remaining" data-step-dir="1" aria-label="Increase decks remaining">+</button>
+                  <input id="decks-remaining-input" class="number-box" type="number" min="0.01" max="6" step="0.01" value="6.00" aria-label="Decks remaining number" />
+                </div>
+              </div>
+
+              <div class="field range-field">
+                <label for="running-count-input">Running count <strong id="running-count-value" class="inline-value">0</strong></label>
+                <div class="range-input-row">
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="running-count-slider" data-step-dir="-1" aria-label="Decrease running count">−</button>
+                  <input id="running-count-slider" type="range" min="-100" max="100" step="1" value="0" aria-label="Running count" />
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="running-count-slider" data-step-dir="1" aria-label="Increase running count">+</button>
+                  <input id="running-count-input" class="number-box" type="number" min="-100" max="100" step="1" value="0" aria-label="Running count number" />
+                </div>
+              </div>
+
+              <div class="field range-field">
+                <label for="true-count-input">True count <strong id="true-count-value" class="inline-value">0.00</strong></label>
+                <div class="range-input-row">
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="true-count-slider" data-step-dir="-1" aria-label="Decrease true count">−</button>
+                  <input id="true-count-slider" type="range" min="-26" max="26" step="0.01" value="0" aria-label="True count" />
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="true-count-slider" data-step-dir="1" aria-label="Increase true count">+</button>
+                  <input id="true-count-input" class="number-box" type="number" min="-26" max="26" step="1" value="0" aria-label="True count number" />
+                </div>
+              </div>
+
+              <div class="count-buttons" id="count-buttons" aria-label="Count a card">
+                <button class="btn" type="button" data-delta="1" data-label="2-6">2-6 <span>+1</span></button>
+                <button class="btn" type="button" data-delta="0" data-label="7-9">7-9 <span>0</span></button>
+                <button class="btn" type="button" data-delta="-1" data-label="T-A">T-A <span>-1</span></button>
+              </div>
+
+              <div class="count-actions">
+                <button class="btn" id="reset-count" type="button">Reset count</button>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel bj-rules rules-panel" id="rules-panel" aria-labelledby="rules-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow eyebrow--plain">Configuration</p>
+                <h2 id="rules-title">Table rules</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="btn btn--ghost btn--sm" id="reset-rules" type="button" title="Reset rules" aria-label="Reset rules">Reset</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="field field--select">
+                <label for="preset-select">Preset</label>
+                <select id="preset-select">
+                  <option value="vegas">6D Vegas Strip</option>
+                  <option value="atlantic">8D Late Surrender</option>
+                  <option value="downtown">2D H17 Downtown</option>
+                  <option value="single">Single Deck S17</option>
+                  <option value="european">European No Hole Card</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div class="field range-field">
+                <label for="decks-input">Decks <strong id="decks-value" class="inline-value">6</strong></label>
+                <div class="range-input-row">
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="decks-slider" data-step-dir="-1" aria-label="Decrease decks">−</button>
+                  <div class="range-ticks">
+                    <input id="decks-slider" class="tick-slider" type="range" min="1" max="9" step="1" value="6" list="deck-ticks" aria-label="Deck count" />
                     <datalist id="deck-ticks">
-                        <option value="1" label="1"></option>
-                        <option value="2" label="2"></option>
-                        <option value="3" label="3"></option>
-                        <option value="4" label="4"></option>
-                        <option value="5" label="5"></option>
-                        <option value="6" label="6"></option>
-                        <option value="7" label="7"></option>
-                        <option value="8" label="8"></option>
-                        <option value="9" label="∞"></option>
+                      <option value="1" label="1"></option>
+                      <option value="2" label="2"></option>
+                      <option value="3" label="3"></option>
+                      <option value="4" label="4"></option>
+                      <option value="5" label="5"></option>
+                      <option value="6" label="6"></option>
+                      <option value="7" label="7"></option>
+                      <option value="8" label="8"></option>
+                      <option value="9" label="∞"></option>
                     </datalist>
                     <div class="tick-labels" aria-hidden="true">
-                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>∞</span>
+                      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>∞</span>
                     </div>
+                  </div>
+                  <button class="btn btn--icon btn--sm range-stepper" type="button" data-step-target="decks-slider" data-step-dir="1" aria-label="Increase decks">+</button>
+                  <input id="decks-input" class="number-box" type="number" min="1" max="9" step="1" value="6" aria-label="Deck count number" title="Use 9 for infinite decks" />
                 </div>
+              </div>
 
-                <div class="control-field">
-                    <span>Soft 17</span>
-                    <div class="segmented two-up" role="radiogroup" aria-label="Dealer soft 17 rule">
-                        <label><input type="radio" name="soft17" value="0" checked><span>Stand</span></label>
-                        <label><input type="radio" name="soft17" value="1"><span>Hit</span></label>
-                    </div>
+              <div class="field">
+                <span class="field-label" id="soft17-label">Soft 17</span>
+                <div class="segmented segmented--block" role="radiogroup" aria-labelledby="soft17-label">
+                  <label><input type="radio" name="soft17" value="0" checked />Dealer stands</label>
+                  <label><input type="radio" name="soft17" value="1" />Dealer hits</label>
                 </div>
+              </div>
 
-                <label class="control-field">
-                    <span>Double</span>
-                    <select id="double-rule">
-                        <option value="0">Any two cards</option>
-                        <option value="1">Hard 9 to 11</option>
-                        <option value="2">Hard 10 to 11</option>
-                        <option value="3">Hard / soft 9 to 11</option>
-                    </select>
+              <div class="field field--select">
+                <label for="double-rule">Double</label>
+                <select id="double-rule">
+                  <option value="0">Any two cards</option>
+                  <option value="1">Hard 9 to 11</option>
+                  <option value="2">Hard 10 to 11</option>
+                  <option value="3">Hard / soft 9 to 11</option>
+                </select>
+              </div>
+
+              <div class="field field--select">
+                <label for="peek-rule">Dealer peek</label>
+                <select id="peek-rule">
+                  <option value="0">Peek for blackjack</option>
+                  <option value="1">No hole-card peek</option>
+                  <option value="2">Peek on ace only</option>
+                  <option value="3">Playtech split-loss peek</option>
+                </select>
+              </div>
+
+              <div class="field field--select">
+                <label for="surrender-rule">Surrender</label>
+                <select id="surrender-rule">
+                  <option value="0">None</option>
+                  <option value="1">Late surrender</option>
+                  <option value="2">Early against 10</option>
+                  <option value="3">Full early surrender</option>
+                </select>
+              </div>
+
+              <div class="toggle-grid">
+                <label class="switch-row">
+                  <span>Double after split</span>
+                  <span class="switch"><input id="das-toggle" type="checkbox" checked /></span>
                 </label>
-
-                <label class="control-field">
-                    <span>Dealer peek</span>
-                    <select id="peek-rule">
-                        <option value="0">Peek for blackjack</option>
-                        <option value="1">No hole-card peek</option>
-                        <option value="2">Peek on ace only</option>
-                        <option value="3">Playtech split-loss peek</option>
-                    </select>
+                <label class="switch-row">
+                  <span>Hit split aces</span>
+                  <span class="switch"><input id="hsa-toggle" type="checkbox" /></span>
                 </label>
-
-                <label class="control-field">
-                    <span>Surrender</span>
-                    <select id="surrender-rule">
-                        <option value="0">None</option>
-                        <option value="1">Late surrender</option>
-                        <option value="2">Early against 10</option>
-                        <option value="3">Full early surrender</option>
-                    </select>
+                <label class="switch-row">
+                  <span>Resplit aces</span>
+                  <span class="switch"><input id="rsa-toggle" type="checkbox" /></span>
                 </label>
+              </div>
 
-                <div class="toggle-grid">
-                    <label class="switch-line">
-                        <span>Double after split</span>
-                        <input id="das-toggle" type="checkbox" checked>
-                    </label>
-                    <label class="switch-line">
-                        <span>Hit split aces</span>
-                        <input id="hsa-toggle" type="checkbox">
-                    </label>
-                    <label class="switch-line">
-                        <span>Resplit aces</span>
-                        <input id="rsa-toggle" type="checkbox">
-                    </label>
+              <div class="advanced-grid">
+                <div class="field field--select">
+                  <label for="resplit-rule">Resplits</label>
+                  <select id="resplit-rule">
+                    <option value="0">No resplits</option>
+                    <option value="3">To 3 hands</option>
+                    <option value="4">To 4 hands</option>
+                  </select>
                 </div>
-
-                <div class="advanced-grid">
-                    <label class="control-field">
-                        <span>Resplits</span>
-                        <select id="resplit-rule">
-                            <option value="0">No resplits</option>
-                            <option value="3">To 3 hands</option>
-                            <option value="4">To 4 hands</option>
-                        </select>
-                    </label>
-
-                    <label class="control-field">
-                        <span>Charlie</span>
-                        <select id="charlie-rule">
-                            <option value="0">None</option>
-                            <option value="5">5-card</option>
-                            <option value="6">6-card</option>
-                            <option value="7">7-card</option>
-                        </select>
-                    </label>
-
-                    <label class="control-field">
-                        <span>Blackjack pays</span>
-                        <select id="blackjack-pay">
-                            <option value="0">3:2</option>
-                            <option value="1">6:5</option>
-                            <option value="2">2:1</option>
-                            <option value="3">1:1</option>
-                        </select>
-                    </label>
-
-                    <label class="control-field">
-                        <span>Optimization</span>
-                        <select id="optimization-rule">
-                            <option value="0">Per hand</option>
-                            <option value="1">Per wager</option>
-                            <option value="2">Two-tier</option>
-                        </select>
-                    </label>
+                <div class="field field--select">
+                  <label for="charlie-rule">Charlie</label>
+                  <select id="charlie-rule">
+                    <option value="0">None</option>
+                    <option value="5">5-card</option>
+                    <option value="6">6-card</option>
+                    <option value="7">7-card</option>
+                  </select>
                 </div>
-            </aside>
-
-            <section class="chart-panel surface" id="chart-panel">
-                <div class="panel-heading chart-heading">
-                    <div>
-                        <p class="eyebrow">Strategy chart</p>
-                        <h2 id="chart-title">6D S17, DAS, Peek</h2>
-                    </div>
+                <div class="field field--select">
+                  <label for="blackjack-pay">Blackjack pays</label>
+                  <select id="blackjack-pay">
+                    <option value="0">3:2</option>
+                    <option value="1">6:5</option>
+                    <option value="2">2:1</option>
+                    <option value="3">1:1</option>
+                  </select>
                 </div>
-
-                <div class="chart-scroll" id="chart-scroll">
-                    <table class="strategy-table compact" id="strategy-table" aria-label="Blackjack strategy chart"></table>
+                <div class="field field--select">
+                  <label for="optimization-rule">Optimization</label>
+                  <select id="optimization-rule">
+                    <option value="0">Per hand</option>
+                    <option value="1">Per wager</option>
+                    <option value="2">Two-tier</option>
+                  </select>
                 </div>
-
-                <div class="legend-bar" id="legend-bar" aria-label="Action legend"></div>
-            </section>
-
-            <aside class="solver-panel surface" id="solver-panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Instant hand solve</p>
-                        <h2>Decision</h2>
-                    </div>
-                    <button class="icon-button" id="clear-hand" type="button" title="Clear hand"
-                        aria-label="Clear hand">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-
-                <label class="control-field">
-                    <span>Dealer up card</span>
-                    <select id="dealer-select">
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">T</option>
-                        <option value="11">A</option>
-                    </select>
-                </label>
-
-                <div class="hand-tray card-row" id="hand-tray" aria-label="Current player hand"></div>
-
-                <div class="card-pad" id="card-pad" aria-label="Add player card">
-                    <button type="button" data-card="2">2</button>
-                    <button type="button" data-card="3">3</button>
-                    <button type="button" data-card="4">4</button>
-                    <button type="button" data-card="5">5</button>
-                    <button type="button" data-card="6">6</button>
-                    <button type="button" data-card="7">7</button>
-                    <button type="button" data-card="8">8</button>
-                    <button type="button" data-card="9">9</button>
-                    <button type="button" data-card="10">T</button>
-                    <button type="button" data-card="11">A</button>
-                </div>
-
-                <div class="decision-card" id="decision-card">
-                    <span class="decision-code">--</span>
-                    <div>
-                        <strong id="decision-label">Add cards</strong>
-                        <p id="decision-detail">Select a dealer card and player hand.</p>
-                    </div>
-                </div>
-
-                <div class="cell-inspector" id="cell-inspector">
-                    <p class="eyebrow">Selected cell</p>
-                    <div id="cell-detail">Tap any chart cell for action, count index, and margin.</div>
-                </div>
-            </aside>
-
-            <section class="count-panel surface" id="count-panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Hi-Lo</p>
-                        <h2>Count tracker</h2>
-                    </div>
-                    <button class="icon-button" id="undo-count" type="button" title="Undo count"
-                        aria-label="Undo count">
-                        <span aria-hidden="true">↶</span>
-                    </button>
-                </div>
-
-                <div class="count-readout">
-                    <div>
-                        <span>Running</span>
-                        <strong id="running-count">0</strong>
-                    </div>
-                    <div>
-                        <span>Decks left</span>
-                        <strong id="decks-left">6.00</strong>
-                    </div>
-                    <div>
-                        <span>Applied TC</span>
-                        <strong id="applied-count">0</strong>
-                    </div>
-                </div>
-
-                <label class="switch-line count-apply" title="Apply the true count to the chart and hand solver">
-                    <span>Apply count</span>
-                    <input id="apply-count-toggle" type="checkbox" checked>
-                </label>
-
-                <label class="range-field">
-                    <span>Decks remaining</span>
-                    <div class="range-input-row">
-                        <button class="range-stepper" type="button" data-step-target="decks-remaining" data-step-dir="-1"
-                            aria-label="Decrease decks remaining">−</button>
-                        <input id="decks-remaining" type="range" min="0.01" max="6" step="0.01" value="6">
-                        <button class="range-stepper" type="button" data-step-target="decks-remaining" data-step-dir="1"
-                            aria-label="Increase decks remaining">+</button>
-                        <input id="decks-remaining-input" class="number-box" type="number" min="0.01" max="6"
-                            step="0.01" value="6.00" aria-label="Decks remaining number">
-                    </div>
-                </label>
-
-                <label class="range-field">
-                    <span>Running count <strong id="running-count-value" class="inline-value">0</strong></span>
-                    <div class="range-input-row">
-                        <button class="range-stepper" type="button" data-step-target="running-count-slider" data-step-dir="-1"
-                            aria-label="Decrease running count">−</button>
-                        <input id="running-count-slider" type="range" min="-100" max="100" step="1" value="0">
-                        <button class="range-stepper" type="button" data-step-target="running-count-slider" data-step-dir="1"
-                            aria-label="Increase running count">+</button>
-                        <input id="running-count-input" class="number-box" type="number" min="-100" max="100"
-                            step="1" value="0" aria-label="Running count number">
-                    </div>
-                </label>
-
-                <label class="range-field">
-                    <span>True count <strong id="true-count-value" class="inline-value">0.00</strong></span>
-                    <div class="range-input-row">
-                        <button class="range-stepper" type="button" data-step-target="true-count-slider" data-step-dir="-1"
-                            aria-label="Decrease true count">−</button>
-                        <input id="true-count-slider" type="range" min="-26" max="26" step="0.01" value="0">
-                        <button class="range-stepper" type="button" data-step-target="true-count-slider" data-step-dir="1"
-                            aria-label="Increase true count">+</button>
-                        <input id="true-count-input" class="number-box" type="number" min="-26" max="26"
-                            step="1" value="0" aria-label="True count number">
-                    </div>
-                </label>
-
-                <div class="count-buttons" id="count-buttons">
-                    <button type="button" data-delta="1" data-label="2-6">2-6 <span>+1</span></button>
-                    <button type="button" data-delta="0" data-label="7-9">7-9 <span>0</span></button>
-                    <button type="button" data-delta="-1" data-label="T-A">T-A <span>-1</span></button>
-                </div>
-
-                <div class="count-actions">
-                    <button class="secondary-button" id="reset-count" type="button">Reset count</button>
-                    <button class="secondary-button" id="copy-config" type="button">Copy config</button>
-                </div>
-            </section>
-
-            <section class="chart-settings-panel surface" id="chart-settings-panel">
-                <div class="chart-toolbar">
-                    <div class="toolbar-heading">
-                        <p class="eyebrow">Chart controls</p>
-                        <h2>Display settings</h2>
-                    </div>
-                    <div class="toolbar-actions">
-                        <label class="toolbar-select">
-                            <span>View</span>
-                            <select id="view-mode">
-                                <option value="strategy">Strategy</option>
-                                <option value="ev">EV</option>
-                            </select>
-                        </label>
-                        <label class="toolbar-select index-group-select">
-                            <span>Index group</span>
-                            <select id="index-group">
-                                <option value="custom" selected>Custom</option>
-                                <option value="illustrious18">Illustrious 18</option>
-                                <option value="fab4">Fab 4</option>
-                                <option value="i18Fab4">I18 + Fab 4</option>
-                                <option value="sweet16">Sweet 16</option>
-                                <option value="catch20">Catch 20</option>
-                                <option value="catch22">Catch 22</option>
-                                <option value="bjaS17">BJA S17</option>
-                                <option value="bjaH17">BJA H17</option>
-                                <option value="jackaceMdS17">JackAce MD S17</option>
-                            </select>
-                        </label>
-                        <label class="mini-switch">
-                            <input id="show-indices-toggle" type="checkbox" checked>
-                            <span>Indices</span>
-                        </label>
-                        <div class="index-range" aria-label="Visible index range">
-                            <span>Index <strong id="index-range-value">-5 to +10</strong></span>
-                            <div class="dual-slider-wrap">
-                                <div class="dual-slider">
-                                    <input id="index-min-range" type="range" value="-5" min="-5" max="10" step="0.01"
-                                        aria-label="Minimum index">
-                                    <input id="index-max-range" type="range" value="10" min="-5" max="10" step="0.01"
-                                        aria-label="Maximum index">
-                                </div>
-                            </div>
-                            <div class="number-pair">
-                                <label>Low <input id="index-min-input" class="number-box" type="number" value="-5"
-                                        step="1" aria-label="Minimum index number"></label>
-                                <label>High <input id="index-max-input" class="number-box" type="number" value="10"
-                                        step="1" aria-label="Maximum index number"></label>
-                            </div>
-                        </div>
-                        <label class="toolbar-select compact-select">
-                            <span>Decimals</span>
-                            <input id="index-decimals" type="range" value="0" min="0" max="3" step="1"
-                                aria-label="Index decimals">
-                            <input id="index-decimals-input" class="number-box tiny" type="number" value="0" min="0"
-                                max="3" step="1" aria-label="Index decimal places number">
-                        </label>
-                        <label class="mini-switch">
-                            <input id="reverse-26-toggle" type="checkbox">
-                            <span>Rev 2-6</span>
-                        </label>
-                        <label class="mini-switch">
-                            <input id="colorblind-toggle" type="checkbox">
-                            <span>Alt</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="engine-strip">
-                    <div class="index-audit" id="index-audit" aria-label="Index validation">
-                        <div>
-                            <span>Source</span>
-                            <strong id="audit-group">--</strong>
-                        </div>
-                        <div>
-                            <span>Matched</span>
-                            <strong id="audit-matched">--</strong>
-                        </div>
-                        <div>
-                            <span>Avg diff</span>
-                            <strong id="audit-average">--</strong>
-                        </div>
-                        <div>
-                            <span>Worst</span>
-                            <strong id="audit-worst">--</strong>
-                        </div>
-                    </div>
-
-                    <dl class="report-grid" id="report-panel" aria-label="Engine report">
-                        <div>
-                            <dt>Player EV</dt>
-                            <dd id="report-player-edge">--</dd>
-                        </div>
-                        <div>
-                            <dt>Std dev / hand</dt>
-                            <dd id="report-stdev">--</dd>
-                        </div>
-                        <div>
-                            <dt>Rule combos</dt>
-                            <dd id="report-combos">--</dd>
-                        </div>
-                        <div>
-                            <dt>Cells solved</dt>
-                            <dd id="report-cells">--</dd>
-                        </div>
-                    </dl>
-
-                    <div class="report-links">
-                        <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" title="Open solver report">Solver report ↗</a>
-                        <a href="data/solver-report.json">Benchmark JSON</a>
-                        <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs">Rust source</a>
-                        <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md">Metrics notes</a>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <dialog class="dealer-modal" id="dealer-modal">
-            <div class="modal-card">
-                <button class="icon-button modal-close" id="dealer-modal-close" type="button"
-                    aria-label="Close dealer distribution">×</button>
-                <p class="eyebrow">Dealer outcome</p>
-                <h2 id="dealer-modal-title">Dealer 2</h2>
-                <div class="modal-meta" id="dealer-modal-meta"></div>
-                <div class="dealer-outcomes" id="dealer-modal-detail"></div>
+              </div>
             </div>
-        </dialog>
+          </aside>
 
-        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+          <details class="panel panel--quiet bj-about chart-settings-panel" id="chart-settings-panel">
+            <summary>
+              <span class="bj-about-title">About the engine</span>
+              <span class="bj-about-summary">Index audit, benchmark and source</span>
+              <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-down" /></svg>
+            </summary>
+            <div class="bj-about-body">
+              <div class="stat-strip index-audit" id="index-audit" aria-label="Index validation">
+                <div class="stat">
+                  <span class="stat-label">Index source</span>
+                  <strong class="stat-value" id="audit-group">--</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Matched</span>
+                  <strong class="stat-value" id="audit-matched">--</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Avg diff</span>
+                  <strong class="stat-value" id="audit-average">--</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Worst</span>
+                  <strong class="stat-value" id="audit-worst">--</strong>
+                </div>
+              </div>
+
+              <dl class="stat-strip report-grid" id="report-panel" aria-label="Engine report">
+                <div class="stat">
+                  <dt class="stat-label">Player EV</dt>
+                  <dd class="stat-value" id="report-player-edge">--</dd>
+                </div>
+                <div class="stat">
+                  <dt class="stat-label">Std dev / hand</dt>
+                  <dd class="stat-value" id="report-stdev">--</dd>
+                </div>
+                <div class="stat">
+                  <dt class="stat-label">Rule combos</dt>
+                  <dd class="stat-value" id="report-combos">--</dd>
+                </div>
+                <div class="stat">
+                  <dt class="stat-label">Cells solved</dt>
+                  <dd class="stat-value" id="report-cells">--</dd>
+                </div>
+                <div class="stat">
+                  <dt class="stat-label">Last solve</dt>
+                  <dd class="stat-value" id="metric-speed">--</dd>
+                </div>
+              </dl>
+
+              <div class="report-links">
+                <a class="btn btn--sm" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" target="_blank" rel="noopener">Solver report <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-external" /></svg><span class="sr-only">(opens GitHub)</span></a>
+                <a class="btn btn--sm" href="data/solver-report.json">Benchmark JSON</a>
+                <a class="btn btn--sm" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs" target="_blank" rel="noopener">Rust source <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-external" /></svg><span class="sr-only">(opens GitHub)</span></a>
+                <a class="btn btn--sm" href="https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md" target="_blank" rel="noopener">Metrics notes <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-external" /></svg><span class="sr-only">(opens GitHub)</span></a>
+              </div>
+            </div>
+          </details>
+        </div>
+      </main>
     </div>
 
-    <script src="../../shared/cards.js?v=20261003"></script>
-    <script src="app.js?v=20261003" defer></script>
-</body>
+    <dialog class="dialog dialog--sheet" id="chart-options" aria-labelledby="chart-options-title">
+      <div class="dialog-head">
+        <h2 id="chart-options-title">Chart options</h2>
+        <button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close chart options">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body bj-options">
+        <label class="switch-row">
+          <span>Show count indices</span>
+          <span class="switch"><input id="show-indices-toggle" type="checkbox" checked /></span>
+        </label>
 
+        <div class="field index-range" aria-label="Visible index range">
+          <span class="field-label">Visible index range <strong id="index-range-value" class="inline-value">-5 to +10</strong></span>
+          <div class="dual-slider-wrap">
+            <div class="dual-slider">
+              <input id="index-min-range" type="range" value="-5" min="-5" max="10" step="0.01" aria-label="Minimum index" />
+              <input id="index-max-range" type="range" value="10" min="-5" max="10" step="0.01" aria-label="Maximum index" />
+            </div>
+          </div>
+          <div class="number-pair">
+            <div class="field">
+              <label for="index-min-input">Low</label>
+              <input id="index-min-input" class="number-box" type="number" value="-5" step="1" aria-label="Minimum index number" />
+            </div>
+            <div class="field">
+              <label for="index-max-input">High</label>
+              <input id="index-max-input" class="number-box" type="number" value="10" step="1" aria-label="Maximum index number" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="index-decimals-input">Index decimals</label>
+          <div class="range-input-row range-input-row--plain">
+            <input id="index-decimals" type="range" value="0" min="0" max="3" step="1" aria-label="Index decimals" />
+            <input id="index-decimals-input" class="number-box tiny" type="number" value="0" min="0" max="3" step="1" aria-label="Index decimal places number" />
+          </div>
+        </div>
+
+        <label class="switch-row">
+          <span>Reverse dealer order <small class="field-hint">6 5 4 3 2 7 8 9 T A</small></span>
+          <span class="switch"><input id="reverse-26-toggle" type="checkbox" /></span>
+        </label>
+
+        <label class="switch-row">
+          <span>Colourblind palette</span>
+          <span class="switch"><input id="colorblind-toggle" type="checkbox" /></span>
+        </label>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn--primary" type="button" data-close>Done</button>
+      </div>
+    </dialog>
+
+    <dialog class="dialog dialog--sheet dealer-modal" id="dealer-modal" aria-labelledby="dealer-modal-title">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Dealer outcome</p>
+          <h2 id="dealer-modal-title">Dealer 2</h2>
+        </div>
+        <button class="btn btn--ghost btn--icon" id="dealer-modal-close" type="button" aria-label="Close dealer distribution">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <p class="modal-meta field-hint" id="dealer-modal-meta"></p>
+        <div class="dealer-outcomes" id="dealer-modal-detail"></div>
+      </div>
+    </dialog>
+
+    <div class="toast-stack" id="toast" role="status" aria-live="polite"></div>
+    <div class="toast-stack toast-stack--alert" id="alerts" role="alert" aria-live="assertive"></div>
+  </body>
 </html>

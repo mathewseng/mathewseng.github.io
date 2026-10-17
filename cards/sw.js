@@ -1,6 +1,6 @@
 // Card Table Workshop offline support: network first, falling back to the last copy we saw.
-const CACHE = "card-workshop-v6";
-const CORE = ["./", "./index.html", "./styles.css", "./app.js", "./engine.js", "./evaluators.js", "./presets.js", "../shared/peer-room.js", "../shared/cards.css", "../shared/cards.js", "./icon.svg", "./manifest.webmanifest"];
+const CACHE = "card-workshop-v7";
+const CORE = ["./", "./index.html", "./styles.css", "./app.js", "./engine.js", "./evaluators.js", "./presets.js", "../shared/tokens.css", "../shared/app.css", "../shared/cards.css", "../shared/cards.js", "../shared/sheet.js", "../shared/peer-room.js", "../shared/icons.svg", "./icon.svg", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));

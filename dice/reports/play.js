@@ -166,9 +166,7 @@ export function createPlay({ onBusy, onBrowse }) {
   }
   function setBusy(busy) {
     $("roll-button").disabled = busy || !game;
-    $("roll-button").innerHTML = busy
-      ? "Rolling…"
-      : 'Roll again <span aria-hidden="true">↗</span>';
+    $("roll-button").textContent = busy ? "Rolling…" : "Roll again";
     $("play-schedule").disabled = busy;
     $("reset-pnl").disabled = busy;
     $("choose-schedule").disabled = busy;
@@ -266,14 +264,14 @@ export function createPlay({ onBusy, onBrowse }) {
       $("result-detail").textContent = "Your selected schedule is active.";
     }
     setBusy(false);
-    $("roll-button").innerHTML = 'Roll dice <span aria-hidden="true">↗</span>';
+    $("roll-button").textContent = "Roll dice";
     $("play-error").textContent = "";
     return true;
   }
   $("face-buttons").innerHTML = Array.from(
     { length: 6 },
     (_, i) =>
-      `<button data-face-choice="${i + 1}" aria-pressed="${i === 0}" aria-label="Choose face ${i + 1}">${i + 1}</button>`,
+      `<button type="button" data-face-choice="${i + 1}" aria-pressed="${i === 0}" aria-label="Choose face ${i + 1}">${i + 1}</button>`,
   ).join("");
   $("face-buttons").addEventListener("click", (event) => {
     const button = event.target.closest("[data-face-choice]");

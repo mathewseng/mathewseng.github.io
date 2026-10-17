@@ -21,11 +21,11 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
     .map((rule) => `<option value="${rule.id}">${rule.name}</option>`)
     .join("")}</optgroup>`;
   root.innerHTML = `
-    <div class="match-section-head"><h3>Play a matchup</h3><button id="match-play-compare" class="match-text-button">Analyze this matchup ↗</button></div>
+    <div class="match-section-head"><h3>Play a matchup</h3><button id="match-play-compare" class="match-text-button" type="button">Analyze this matchup</button></div>
     <div class="match-play-controls">
-      <label>Side A<select id="match-play-a">${playOptions}</select></label>
-      <label>Side B<select id="match-play-b">${playOptions}</select></label>
-      <label>Add to A<input id="match-play-handicap" type="number" min="-36" max="36" step="0.5" value="0" aria-describedby="match-play-handicap-help" /></label>
+      <div class="field field--select"><label for="match-play-a">Side A</label><select id="match-play-a">${playOptions}</select></div>
+      <div class="field field--select"><label for="match-play-b">Side B</label><select id="match-play-b">${playOptions}</select></div>
+      <div class="field"><label for="match-play-handicap">Add to A</label><input id="match-play-handicap" type="number" min="-36" max="36" step="0.5" value="0" aria-describedby="match-play-handicap-help" /></div>
     </div>
     <p id="match-play-handicap-help" class="hint">Handicap: −36 to +36 in half-points. Higher score wins.</p>
     <p id="match-play-error" class="error" role="alert" hidden></p>
@@ -37,7 +37,7 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
               (
                 side,
               ) => `<section class="match-play-side" aria-label="Side ${side.toUpperCase()}">
-            <div class="match-play-side-heading"><span class="eyebrow">SIDE ${side.toUpperCase()}</span><h4 id="match-play-${side}-name"></h4></div>
+            <div class="match-play-side-heading"><span class="eyebrow eyebrow--plain">Side ${side.toUpperCase()}</span><h4 id="match-play-${side}-name"></h4></div>
             <div id="match-play-${side}-dice" class="match-play-dice" role="img" aria-label="Two dice ready to roll"></div>
             <div class="match-play-score"><strong id="match-play-${side}-score">—</strong><span id="match-play-${side}-detail">Ready to roll</span></div>
           </section>`,
@@ -47,13 +47,13 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
         <p id="match-play-result" class="match-play-result" role="status" aria-live="polite">Roll both pairs to begin.</p>
       </div>
       <section class="match-play-session" aria-labelledby="match-play-session-title">
-        <div class="match-section-head"><h4 id="match-play-session-title">This matchup · <span id="match-play-rounds">0 rolls</span></h4><button id="match-play-reset" class="match-text-button">Reset counts</button></div>
+        <div class="match-section-head"><h4 id="match-play-session-title">This matchup · <span id="match-play-rounds">0 rolls</span></h4><button id="match-play-reset" class="match-text-button" type="button">Reset counts</button></div>
         <table class="match-play-stats"><caption class="sr-only">Running results from A’s perspective, alongside exact probabilities for this matchup</caption><thead><tr><th scope="col">Result</th><th scope="col">Count</th><th scope="col">Observed</th><th scope="col">Exact</th></tr></thead><tbody>${outcomes.map(([key, label]) => `<tr class="match-play-stat-${key}"><th scope="row">${label}</th><td id="match-play-count-${key}" class="match-play-count">0</td><td id="match-play-observed-${key}">—</td><td><strong id="match-play-exact-${key}"></strong><small id="match-play-fraction-${key}" class="match-exact"></small></td></tr>`).join("")}</tbody></table>
         <div class="match-play-bars"><div><span>Observed</span><div id="match-play-observed-bar" class="match-outcome-bar" role="img"></div></div><div><span>Exact</span><div id="match-play-exact-bar" class="match-outcome-bar" role="img"></div></div></div>
         <p class="hint">Counts stay separate for each matchup and handicap until you reload. Exact odds stay the same on every roll; observed results will vary.</p>
-        <details class="match-details"><summary>Recent rolls <span id="match-play-history-count"></span></summary><ol id="match-play-history" class="match-play-history"></ol></details>
+        <details class="match-details disclosure"><summary>Recent rolls <span id="match-play-history-count"></span></summary><ol id="match-play-history" class="match-play-history"></ol></details>
       </section>
-      <div class="match-play-actions"><button id="match-play-roll">Roll both pairs <span aria-hidden="true">↗</span></button><label>Animation<select id="match-play-speed"><option value="normal">Normal</option><option value="instant">Instant</option></select></label></div>
+      <div class="match-play-actions"><button id="match-play-roll" class="btn btn--primary btn--lg" type="button">Roll both pairs</button><div class="field field--select"><label for="match-play-speed">Animation</label><select id="match-play-speed"><option value="normal">Normal</option><option value="instant">Instant</option></select></div></div>
     </div>`;
   const $ = (id) => root.querySelector(`#${id}`);
   const sessions = new Map();
@@ -154,7 +154,7 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
     $("match-play-roll").disabled = value || !validInput;
     $("match-play-roll").textContent = value
       ? "Rolling both pairs…"
-      : "Roll both pairs ↗";
+      : "Roll both pairs";
     $("match-play-table").setAttribute("aria-busy", String(value));
   }
   function finish() {

@@ -38,6 +38,12 @@ let handStrict = true,
 let browseScrollTop = 0;
 let activeOptions = { ...DEFAULTS };
 let matchups = null;
+let pendingPlayRoute = false;
+const inspector = $("inspector");
+const viewTabs = window.Tabs?.init($("view-tabs")) || null;
+function syncViewTabs(view) {
+  viewTabs?.activate(view === "analysis" ? "explore" : view);
+}
 const play = createPlay({
   onBusy(busy) {
     document
@@ -57,7 +63,10 @@ function setView(view) {
     matchups = createMatchups($("matchups-workspace"));
   }
   if (view === "play" && !play.hasGame) {
-    if (!selected || !useSelected(false)) return;
+    if (!selected || !useSelected(false)) {
+      syncViewTabs(document.documentElement.dataset.view || "explore");
+      return;
+    }
   }
   if (view !== "matchups") matchups?.leave();
   const wasInExplore = $("explore-workspace").contains(document.activeElement);
@@ -66,11 +75,12 @@ function setView(view) {
   if (view === "analysis" && previousView === "explore")
     browseScrollTop = $("results-scroll").scrollTop;
   document.documentElement.dataset.view = view;
+  syncViewTabs(view);
+  // On phones the inspector is a bottom sheet; leaving the analysis view closes it.
+  if (view !== "analysis" && inspector.open) inspector.close();
   $("explore-workspace").hidden = view === "play" || view === "matchups";
   $("play-workspace").hidden = view !== "play";
   $("matchups-workspace").hidden = view !== "matchups";
-  document.querySelector(".skip-link").href = view === "matchups" ? "#matchups-workspace" : "#results-title";
-  document.querySelector(".skip-link").textContent = view === "matchups" ? "Skip to matchup probabilities" : "Skip to payout schedules";
   document.querySelectorAll("[data-view]").forEach((el) => {
     if (el.tagName === "BUTTON")
       el.setAttribute("aria-pressed", String(el.dataset.view === view));
@@ -92,6 +102,10 @@ function setView(view) {
   }
 }
 $("back-to-schedules").addEventListener("click", () => setView("explore"));
+// Escape, a backdrop tap or the Back button close the sheet; the view follows.
+inspector.addEventListener("close", () => {
+  if (document.documentElement.dataset.view === "analysis") setView("explore");
+});
 document.addEventListener("keydown", (event) => {
   if (
     event.key === "Escape" &&
@@ -114,7 +128,7 @@ document.addEventListener("keydown", (event) => {
     event.isComposing ||
     play.busy ||
     document.documentElement.dataset.view === "matchups" ||
-    document.querySelector("dialog[open]") ||
+    document.querySelector("dialog[open]:not(#inspector)") ||
     event.target.isContentEditable ||
     event.target.closest?.(
       'input, textarea, select, [role="textbox"], [role="combobox"], [role="slider"], [role="menu"], [role="listbox"]',
@@ -206,11 +220,21 @@ document
   .forEach((button) =>
     button.addEventListener("click", () => $(button.dataset.close).close()),
   );
-setView(["#matchups", "#cycles"].includes(location.hash) ? "matchups" : "explore");
-window.addEventListener("hashchange", () => {
-  if (["#matchups", "#cycles"].includes(location.hash)) setView("matchups");
-  if (location.hash === "#cycles") matchups.openCycles();
-});
+// Deep links: #explore, #matchups, #cycles and #play (the Dice hub links to
+// them). #play needs a selected schedule, so it waits for the first result.
+function routeHash() {
+  const hash = location.hash;
+  if (["#matchups", "#cycles"].includes(hash)) setView("matchups");
+  else if (hash === "#play") {
+    pendingPlayRoute = true;
+    if (selected) {
+      pendingPlayRoute = false;
+      setView("play");
+    }
+  } else if (hash === "#explore") setView("explore");
+  if (hash === "#cycles") matchups.openCycles();
+}
+window.addEventListener("hashchange", routeHash);
 matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
   if (!event.matches && document.documentElement.dataset.view === "analysis")
     setView("explore");
@@ -390,7 +414,7 @@ function feature() {
   $("featured").hidden = !pass;
   if (pass)
     $("featured").innerHTML =
-      `<div><p class="feature-name">${n === 4 ? "Favorite 4-Dice Schedule" : "Featured 3-Dice Schedule"} · unranked reference</p><p class="feature-payouts">${p.map((v) => `<span class="${tone(v)}">${signed(v)}</span>`).join("")}</p></div><button id="inspect-feature">Inspect <span aria-hidden="true">↗</span></button>`;
+      `<div><p class="feature-name">${n === 4 ? "Favorite 4-Dice Schedule" : "Featured 3-Dice Schedule"} · unranked reference</p><p class="feature-payouts">${p.map((v) => `<span class="${tone(v)}">${signed(v)}</span>`).join("")}</p></div><button id="inspect-feature" class="btn btn--sm" type="button">Inspect</button>`;
   return pass ? p : null;
 }
 function chart(values, label, units) {
@@ -403,26 +427,22 @@ function chart(values, label, units) {
     top = 28,
     xstep = width / values.length;
   const baseline = top + (max / range) * plot;
-  return `<div class="chart-scroll" role="region" tabindex="0" aria-label="${label}, scroll for more categories"><svg class="payout-chart" style="min-width:${width + 16}px" viewBox="0 0 ${width + 16} 176" role="img" aria-label="${label}"><title>${label}: ${values.map((v, k) => `${categories[k].label}, ${signed(Number(v.toFixed(5)))} ${units}`).join("; ")}</title><line x1="8" x2="${width + 8}" y1="${baseline}" y2="${baseline}" stroke="#454b55" />${values
+  return `<div class="chart-scroll" role="region" tabindex="0" aria-label="${label}, scroll for more categories"><svg class="payout-chart" style="min-width:${width + 16}px" viewBox="0 0 ${width + 16} 176" role="img" aria-label="${label}"><title>${label}: ${values.map((v, k) => `${categories[k].label}, ${signed(Number(v.toFixed(5)))} ${units}`).join("; ")}</title><line x1="8" x2="${width + 8}" y1="${baseline}" y2="${baseline}" style="stroke:var(--line-strong)" />${values
     .map((v, k) => {
       const x = 8 + k * xstep + xstep * 0.22,
         y = top + ((max - Math.max(0, v)) / range) * plot;
       const h = Math.max(v === 0 ? 0 : 1, (Math.abs(v) / range) * plot),
         textY = v < 0 ? y + h + 13 : y - 7;
-      return `<rect x="${x}" y="${y}" width="${xstep * 0.56}" height="${h}" rx="2" fill="${v < 0 ? "#f0a29a" : "#e9c46b"}"/><text x="${x + xstep * 0.28}" y="${textY}" text-anchor="middle" style="fill:${v < 0 ? "#f0a29a" : "#e9c46b"}">${mode === "sum" && values.length > 11 ? "" : Math.abs(v) >= 1000 ? signed(Number((v / 1000).toFixed(1))) + "k" : signed(Number(v.toFixed(3)))}</text><text x="${x + xstep * 0.28}" y="170" text-anchor="middle">${mode === "sum" && values.length > 11 && k !== 0 && k !== values.length - 1 && (n + k) % 5 !== 0 ? "" : categories[k].key === "quads-pair" ? "4+2" : categories[k].short}</text>`;
+      return `<rect x="${x}" y="${y}" width="${xstep * 0.56}" height="${h}" rx="2" style="fill:${v < 0 ? "var(--bad)" : "var(--good)"}"/><text x="${x + xstep * 0.28}" y="${textY}" text-anchor="middle" style="fill:${v < 0 ? "var(--bad)" : "var(--good)"}">${mode === "sum" && values.length > 11 ? "" : Math.abs(v) >= 1000 ? signed(Number((v / 1000).toFixed(1))) + "k" : signed(Number(v.toFixed(3)))}</text><text x="${x + xstep * 0.28}" y="170" text-anchor="middle">${mode === "sum" && values.length > 11 && k !== 0 && k !== values.length - 1 && (n + k) % 5 !== 0 ? "" : categories[k].key === "quads-pair" ? "4+2" : categories[k].short}</text>`;
     })
     .join("")}</svg></div>`;
 }
-function contributionTable(dice, payouts, visual = false, scoringMode = mode) {
+function contributionTable(dice, payouts, scoringMode = mode) {
   const categories = outcomes(dice, scoringMode),
     w = weights(dice, scoringMode),
     total = 6 ** dice,
     products = payouts.map((v, k) => integer(v) * BigInt(w[k]));
-  const max = products.reduce((s, v) => {
-    const a = v < 0n ? -v : v;
-    return a > s ? a : s;
-  }, 1n);
-  return `<table class="contributions"><caption class="sr-only">Outcome probabilities and expected contribution per play, in net units</caption><thead><tr><th scope="col">${scoringMode === "chosen" ? "Matches" : scoringMode === "sum" ? "Total" : "Hand"}</th><th scope="col">Probability</th><th scope="col">EV contribution</th></tr></thead><tbody>${products.map((v, k) => `<tr><td>${scoringMode === "chosen" ? k : categories[k].label}</td><td>${w[k]} / ${total}<small>${pct(w[k], total)}</small></td><td class="${tone(v)}">${visual ? `<span class="contribution-bar" aria-hidden="true" style="--bar:${Number(((v < 0n ? -v : v) * 24n) / max)}px"></span>` : ""}${v} / ${total}<small>≈ ${decimal(v, BigInt(total))} units</small></td></tr>`).join("")}</tbody></table>`;
+  return `<table class="contributions"><caption class="sr-only">Outcome probabilities and expected contribution per play, in net units</caption><thead><tr><th scope="col">${scoringMode === "chosen" ? "Matches" : scoringMode === "sum" ? "Total" : "Hand"}</th><th scope="col">Probability</th><th scope="col">EV contribution</th></tr></thead><tbody>${products.map((v, k) => `<tr><td>${scoringMode === "chosen" ? k : categories[k].label}</td><td>${w[k]} / ${total}<small>${pct(w[k], total)}</small></td><td class="${tone(v)}">${v} / ${total}<small>≈ ${decimal(v, BigInt(total))} units</small></td></tr>`).join("")}</tbody></table>`;
 }
 function inspect(p, title = "Selected schedule", shouldScroll = false) {
   const source = rows.find((row) => row.payouts.join() === p.join());
@@ -451,16 +471,17 @@ function inspect(p, title = "Selected schedule", shouldScroll = false) {
           )
           .join("")}</div>`
       : `<div class="schedule-strip">${p.map((v, k) => `<div class="schedule-value"><span class="${tone(v)}">${signed(v)}</span><small>${categories[k].label}</small></div>`).join("")}</div>`
-  }<div class="proof-badge"><span>Expected value / play</span><strong>0 <small>EXACT</small></strong></div><div class="chart-head"><h3>Payout curve</h3><span>NET UNITS · ${mode === "sum" ? "TOTAL" : "HAND RANK"} →</span></div>${chart(p, "Payout by outcome", "units")}<dl class="metric-grid"><div><dt>Win anything</dt><dd>${pct(m.winWeight, total)}</dd><small>${m.winWeight} / ${total}</small></div><div><dt>${categories.at(-1).label}</dt><dd>${pct(w.at(-1), total)}</dd><small>${w.at(-1)} / ${total}</small></div><div><dt>Maximum / range</dt><dd>${signed(m.max)} / ${m.range}</dd></div><div><dt>Largest jump</dt><dd>${m.largestJump}</dd></div><div><dt>Std dev / roll</dt><dd id="inspector-stdev">${m.stdev.toFixed(2)} units</dd><small>Variance ${m.variance.toFixed(2)} units²</small></div><div><dt>Simplicity / 100</dt><dd id="inspector-simplicity">${m.simplicity.toFixed(1)}</dd><small>Amounts ${m.amountSimplicity.toFixed(1)} / 100<br />${m.sharedFactor ? `${m.sharedCount} of ${m.nonzeroCount} nonzero payouts share ${m.sharedFactor}` : "No shared factor above 1"}${m.primePayoutCount ? `<br />${m.primePayoutCount} prime payout${m.primePayoutCount > 1 ? "s" : ""} &gt; 5: ×${m.primeMultiplier.toPrecision(3)}` : ""}${m.unlistedPayoutCount ? `<br />${m.unlistedPayoutCount} amount${m.unlistedPayoutCount > 1 ? "s" : ""} outside preferred list: ×${m.unlistedMultiplier.toPrecision(3)} to Simplicity and Recommended` : ""}</small></div><div><dt>${mode === "sum" ? "Worst loss" : "Starting loss"} / 100</dt><dd id="inspector-starting-loss">${m.startingLossPreference.toFixed(1)}</dd><small>${(0.3 * m.startingLossPreference).toFixed(1)} of 30 points before any unlisted-amount penalty</small></div>${mode === "sum" ? `<div><dt>Rule ease / 100</dt><dd>${m.ruleEase.toFixed(1)}</dd></div>` : ""}<div><dt>Smoothness / 100</dt><dd>${m.smoothness.toFixed(1)}</dd></div><div><dt>Steepness / 100</dt><dd>${m.steepness.toFixed(1)}</dd></div></dl><p class="jumps">Adjacent jumps<br /><span>${m.jumps.map(signed).join(" → ")}</span></p><div class="ev-proof"><h3>The exact balance</h3><p class="formula">[${expression}] / ${total}</p><p class="ev-total">= ${evNumerator(n, p, mode)} / ${total} = 0</p><div class="chart-head"><h3>Expected contribution</h3><span>NET UNITS / PLAY</span></div>${chart(
+  }<div class="proof-badge"><span>Expected value / play</span><strong>0 <small>exact</small></strong></div><div class="chart-head"><h3>Payout curve</h3><span>Net units · ${mode === "sum" ? "total" : "hand rank"} →</span></div>${chart(p, "Payout by outcome", "units")}<dl class="metric-grid"><div><dt>Win anything</dt><dd>${pct(m.winWeight, total)}</dd><small>${m.winWeight} / ${total}</small></div><div><dt>${categories.at(-1).label}</dt><dd>${pct(w.at(-1), total)}</dd><small>${w.at(-1)} / ${total}</small></div><div><dt>Maximum / range</dt><dd>${signed(m.max)} / ${m.range}</dd></div><div><dt>Largest jump</dt><dd>${m.largestJump}</dd></div><div><dt>Std dev / roll</dt><dd id="inspector-stdev">${m.stdev.toFixed(2)} units</dd><small>Variance ${m.variance.toFixed(2)} units²</small></div><div><dt>Simplicity / 100</dt><dd id="inspector-simplicity">${m.simplicity.toFixed(1)}</dd><small>Amounts ${m.amountSimplicity.toFixed(1)} / 100<br />${m.sharedFactor ? `${m.sharedCount} of ${m.nonzeroCount} nonzero payouts share ${m.sharedFactor}` : "No shared factor above 1"}${m.primePayoutCount ? `<br />${m.primePayoutCount} prime payout${m.primePayoutCount > 1 ? "s" : ""} &gt; 5: ×${m.primeMultiplier.toPrecision(3)}` : ""}${m.unlistedPayoutCount ? `<br />${m.unlistedPayoutCount} amount${m.unlistedPayoutCount > 1 ? "s" : ""} outside preferred list: ×${m.unlistedMultiplier.toPrecision(3)} to Simplicity and Recommended` : ""}</small></div><div><dt>${mode === "sum" ? "Worst loss" : "Starting loss"} / 100</dt><dd id="inspector-starting-loss">${m.startingLossPreference.toFixed(1)}</dd><small>${(0.3 * m.startingLossPreference).toFixed(1)} of 30 points before any unlisted-amount penalty</small></div>${mode === "sum" ? `<div><dt>Rule ease / 100</dt><dd>${m.ruleEase.toFixed(1)}</dd></div>` : ""}<div><dt>Smoothness / 100</dt><dd>${m.smoothness.toFixed(1)}</dd></div><div><dt>Steepness / 100</dt><dd>${m.steepness.toFixed(1)}</dd></div></dl><p class="jumps">Adjacent jumps<br /><span>${m.jumps.map(signed).join(" → ")}</span></p><div class="ev-proof"><h3>The exact balance</h3><p class="formula">[${expression}] / ${total}</p><p class="ev-total">= ${evNumerator(n, p, mode)} / ${total} = 0</p><div class="chart-head"><h3>Expected contribution</h3><span>Net units / play</span></div>${chart(
     p.map((v, k) => (v * w[k]) / total),
     "Expected contribution by outcome",
     "units per play",
-  )}${contributionTable(n, p, true)}</div>`;
+  )}${contributionTable(n, p)}</div>`;
   renderRows();
   if (shouldScroll && matchMedia("(max-width: 760px)").matches) {
     setView("analysis");
-    $("inspector").scrollTop = 0;
-    $("inspector").focus({ preventScroll: true });
+    if (!inspector.open) window.Sheet.open(inspector, { dismissible: true });
+    inspector.scrollTop = 0;
+    inspector.focus({ preventScroll: true });
   }
 }
 function failSearch(message) {
@@ -546,6 +567,10 @@ function search() {
         $("analysis").innerHTML =
           '<p class="hint">No schedule selected. Adjust your filters or open the custom checker.</p>';
       renderRows();
+      if (pendingPlayRoute && selected) {
+        pendingPlayRoute = false;
+        setView("play");
+      }
       worker?.terminate();
       worker = null;
     };
@@ -669,7 +694,7 @@ function checkCustom() {
         ? `${numerator === 0n ? "Player / house edge" : numerator > 0n ? "Player edge" : "House edge"} ≈ ${decimal((numerator < 0n ? -numerator : numerator) * 100n, total * -stake, 6)}%`
         : "Stake-based edge: undefined (p[0] is not negative).";
     $("checker-result").innerHTML =
-      `<div class="checker-status ${fair ? "" : "unfair"}"><h3>${fair ? "Exactly fair · zero EV" : "Not zero EV"}</h3><p>Exact numerator: ${numerator}<br />EV = ${numerator} / ${total}${fair ? " = 0" : ` ≈ ${decimal(numerator, total)}`} units / play<br />${edge}</p></div>${contributionTable(dice, p, false, scoringMode)}${!fair ? `<div class="repair"><p>Keep the first ${categories.length - 1} payouts. For exactly zero EV, the payout for ${categories.at(-1).label} must be <strong>${signed(required)}</strong>.</p><p class="hint">${filterText}</p><button id="apply-repair">Use ${signed(required)} as final payout</button></div>` : `<p class="hint" style="margin-top:16px">${filterText}</p>`}`;
+      `<div class="checker-status ${fair ? "" : "unfair"}"><h3>${fair ? "Exactly fair · zero EV" : "Not zero EV"}</h3><p>Exact numerator: ${numerator}<br />EV = ${numerator} / ${total}${fair ? " = 0" : ` ≈ ${decimal(numerator, total)}`} units / play<br />${edge}</p></div>${contributionTable(dice, p, scoringMode)}${!fair ? `<div class="repair"><p>Keep the first ${categories.length - 1} payouts. For exactly zero EV, the payout for ${categories.at(-1).label} must be <strong>${signed(required)}</strong>.</p><p class="hint">${filterText}</p><button id="apply-repair" class="btn" type="button">Use ${signed(required)} as final payout</button></div>` : `<p class="hint" style="margin-top:16px">${filterText}</p>`}`;
     if (!fair) pendingRepair = repaired;
     if (
       fair &&
@@ -683,8 +708,9 @@ function checkCustom() {
       customGame = { n: dice, mode: scoringMode, payouts: p.map(Number) };
       const button = document.createElement("button");
       button.id = "play-custom";
-      button.className = "primary-button";
-      button.textContent = "Play this custom schedule ↗";
+      button.type = "button";
+      button.className = "btn btn--primary";
+      button.textContent = "Play this custom schedule";
       button.disabled = play.busy;
       $("checker-result").append(button);
     }
@@ -734,4 +760,6 @@ document.querySelectorAll("button[data-mode]").forEach((button) =>
     search();
   }),
 );
+setView("explore");
 search();
+routeHash();

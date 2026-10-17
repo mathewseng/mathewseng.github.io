@@ -1,469 +1,517 @@
-.match-tabs {
-  flex-wrap: wrap;
-}
+/* Three-rule cycles panel of the Matchups workspace. Loads after matchups.css;
+ * markup from cycles.js. Diagram arrows and win figures use --good, the
+ * node rings use the accent (selection), and nothing renders under 12px. */
+
 .cycle-intro {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.7;
   max-width: 800px;
-  margin: 0 0 24px;
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.6;
 }
+
 .cycle-layout {
   display: grid;
   grid-template-columns: 265px minmax(0, 1fr);
-  gap: 32px;
+  gap: 28px;
   align-items: start;
 }
+
 .cycle-browser {
   position: sticky;
-  top: 14px;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   min-width: 0;
 }
-.cycle-browser label + label {
-  margin-top: 12px;
+
+.cycle-filter-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
 .cycle-list {
   max-height: 48vh;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-md);
+  background: var(--surface);
   overflow: auto;
   scrollbar-gutter: stable;
-  border-top: 1px solid var(--line);
 }
+
 .cycle-list button {
   display: block;
   width: 100%;
-  padding: 13px 12px;
+  padding: 10px 12px;
   border: 0;
-  border-bottom: 1px solid var(--line);
-  border-left: 2px solid transparent;
-  border-radius: 0;
+  border-bottom: 1px solid var(--line-opaque);
+  border-left: 3px solid transparent;
+  background: none;
+  color: var(--ink);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
 }
+
+.cycle-list button:last-child {
+  border-bottom: 0;
+}
+
+@media (hover: hover) {
+  .cycle-list button:hover {
+    background: color-mix(in oklab, var(--ink) 3%, transparent);
+  }
+}
+
 .cycle-list button[aria-pressed="true"] {
   border-left-color: var(--accent);
-  background: var(--raised);
+  background: var(--accent-soft);
 }
+
+.cycle-list button:focus-visible {
+  outline-offset: -2px;
+}
+
 .cycle-list button span {
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
+
 .cycle-list button small {
   display: block;
+  margin: 3px 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
-  margin: 5px 0;
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
 }
+
 .cycle-list button em {
   color: var(--accent);
-  font-size: 10px;
+  font-size: var(--t-xs);
   font-style: normal;
 }
+
+.cycle-list > .hint {
+  padding: 12px;
+}
+
 .cycle-detail {
   min-width: 0;
-  border-top: 1px solid var(--line);
-  padding-top: 17px;
 }
+
 .cycle-detail-heading {
   display: flex;
-  justify-content: space-between;
   align-items: start;
+  justify-content: space-between;
   gap: 10px;
 }
+
+.cycle-detail-heading > div {
+  min-width: 0;
+}
+
 .cycle-detail-heading .hint {
-  margin: 9px 0 0;
-  line-height: 1.6;
+  margin: 6px 0 0;
 }
+
 .cycle-detail-heading .hint strong {
-  font-weight: 500;
   color: var(--ink);
+  font-weight: 600;
 }
+
 .cycle-paging {
   display: flex;
-  gap: 5px;
+  flex: none;
+  gap: 6px;
 }
-.cycle-paging button {
-  min-width: 40px;
-}
+
 .cycle-visual {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(160px, 1fr);
-  align-items: center;
   gap: 22px;
-  padding: 20px 0;
+  align-items: center;
+  padding: 16px 0;
 }
+
 .cycle-visual figure {
-  margin: 0;
   min-width: 0;
+  margin: 0;
 }
+
 .cycle-diagram {
   display: block;
   width: 100%;
+  max-width: 390px;
+  margin: auto;
   overflow: visible;
 }
+
 .cycle-diagram circle {
-  fill: var(--panel);
+  fill: var(--surface-2);
   stroke: var(--accent);
   stroke-width: 1.5;
 }
+
 .cycle-diagram marker path {
-  fill: var(--positive);
+  fill: var(--good);
 }
+
 .cycle-arc {
-  stroke: var(--positive);
-  stroke-width: 2;
   fill: none;
+  stroke: var(--good);
+  stroke-width: 2;
 }
+
 .cycle-diagram text {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
+
 .cycle-node-label {
   font-size: 25px;
   fill: var(--ink);
 }
+
 .cycle-percent {
   font-size: 20px;
-  fill: var(--positive);
+  fill: var(--good);
   paint-order: stroke;
   stroke: var(--page);
   stroke-width: 9px;
   stroke-linejoin: round;
 }
+
 .cycle-edge-caption {
-  font-size: 12px;
+  font-size: 13px;
   fill: var(--muted);
   paint-order: stroke;
   stroke: var(--page);
   stroke-width: 7px;
 }
+
 .cycle-center {
   font-size: 15px;
   fill: var(--muted);
 }
+
 .cycle-edge {
-  transition: opacity 160ms;
+  transition: opacity var(--d-fast);
 }
+
 .cycle-detail[data-highlight="0"] .cycle-edge:not([data-diagram-edge="0"]),
 .cycle-detail[data-highlight="1"] .cycle-edge:not([data-diagram-edge="1"]),
 .cycle-detail[data-highlight="2"] .cycle-edge:not([data-diagram-edge="2"]) {
   opacity: 0.25;
 }
+
 .cycle-visual figcaption {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
   text-align: center;
-  line-height: 1.6;
 }
+
 .cycle-rules {
-  list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
+
 .cycle-rules li {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 18px 0;
+  margin: 14px 0;
 }
+
 .cycle-letter {
+  display: grid;
   flex: 0 0 30px;
   width: 30px;
   height: 30px;
-  display: grid;
   place-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 50%;
   color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--font-mono);
+  font-weight: 600;
 }
+
 .cycle-rules strong {
   display: block;
-  font-size: 15px;
-  font-weight: 550;
+  font-size: var(--t-md);
+  font-weight: 600;
 }
+
 .cycle-rules small {
   display: block;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
-  margin-top: 4px;
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
 }
+
 .cycle-note,
 .cycle-explanation {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: var(--t-sm);
+  line-height: 1.6;
 }
+
 .cycle-note {
-  border-top: 1px solid var(--line);
   margin: 0;
-  padding: 14px 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
 }
+
+.cycle-odds {
+  overflow-x: auto;
+}
+
 .cycle-odds table {
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
+  white-space: normal;
 }
+
 .cycle-odds caption {
+  padding: 4px 0 12px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--t-xs);
   text-align: left;
-  padding: 4px 0 16px;
+  white-space: normal;
 }
+
 .cycle-odds th,
 .cycle-odds td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line-opaque);
   text-align: left;
-  padding: 14px 8px;
-  border-bottom: 1px solid var(--line);
 }
+
 .cycle-odds th:first-child {
   padding-left: 0;
 }
+
 .cycle-odds thead th {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 400;
   padding-top: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
+
 .cycle-odds tbody th {
-  font-size: 13px;
+  font-size: var(--t-sm);
   white-space: nowrap;
 }
+
 .cycle-odds td > strong {
   display: block;
-  font-size: 16px;
-  font-weight: 550;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
+  font-size: var(--t-md);
+  font-weight: 600;
+  white-space: nowrap;
 }
+
 .cycle-odds td > small {
   display: block;
   color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10px;
-}
-.cycle-wins > strong {
-  color: var(--positive);
-}
-.cycle-ties > strong {
-  color: var(--accent);
-}
-.cycle-losses > strong {
-  color: var(--negative);
-}
-.cycle-odds button {
-  font-size: 11px;
-  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
   white-space: nowrap;
 }
-.cycle-odds tbody tr:hover {
-  background: var(--panel);
+
+.cycle-wins > strong {
+  color: var(--good);
 }
+
+.cycle-ties > strong {
+  color: var(--warn);
+}
+
+.cycle-losses > strong {
+  color: var(--bad);
+}
+
+.cycle-odds .btn {
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .cycle-odds tbody tr:hover {
+    background: color-mix(in oklab, var(--ink) 3%, transparent);
+  }
+}
+
 .cycle-play-context {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  align-items: center;
-  margin-bottom: 15px;
-  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
   padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
 }
-.cycle-play-context[hidden] {
-  display: none;
-}
+
 .cycle-play-context span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--t-xs);
 }
+
+.match-shell .cycle-mobile-picker,
+#cycle-filter-toggle {
+  display: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .cycle-visual {
-    animation: cycle-appear 180ms ease-out;
+    animation: cycle-appear var(--d-fast) ease-out;
   }
+
   @keyframes cycle-appear {
     from {
       opacity: 0.35;
       transform: translateY(4px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
 }
+
 @media (max-width: 1150px) {
   .cycle-layout {
     grid-template-columns: 225px minmax(0, 1fr);
     gap: 22px;
   }
+
   .cycle-visual {
     grid-template-columns: 1fr;
     gap: 6px;
   }
-  .cycle-diagram {
-    max-width: 470px;
-    margin: auto;
-  }
+
   .cycle-rules {
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
   }
+
   .cycle-rules li {
     flex: 1;
     min-width: 125px;
-    margin: 10px 0;
+    margin: 8px 0;
     gap: 8px;
   }
+
   .cycle-rules strong {
-    font-size: 13px;
+    font-size: var(--t-sm);
   }
+
   .cycle-odds td > strong {
-    font-size: 14px;
+    font-size: var(--t-sm);
   }
 }
+
 @media (max-width: 760px) {
-  .match-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .cycle-layout {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
+
   .cycle-browser {
     position: static;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0 12px;
+    gap: 6px;
   }
-  .cycle-browser label + label {
-    margin-top: 0;
-  }
-  .cycle-browser #cycle-count {
-    grid-column: 1 / -1;
-  }
-  .cycle-list {
-    grid-column: 1 / -1;
-    max-height: 145px;
-  }
-  .cycle-list button {
-    padding: 10px;
-  }
-  .cycle-list button em {
-    display: none;
-  }
-  .cycle-list button small {
-    margin-bottom: 0;
-  }
-  .cycle-intro {
-    font-size: 12px;
-    margin-bottom: 18px;
-  }
-  .cycle-detail-heading .hint {
-    font-size: 11px;
-  }
-  .cycle-visual {
-    padding: 12px 0;
-  }
-  .cycle-rules {
-    display: block;
-  }
-  .cycle-rules li {
-    margin: 12px 0;
-  }
-  .cycle-rules small {
-    margin: 2px 0 0;
-  }
-  .cycle-rules strong {
-    font-size: 14px;
-  }
-  .cycle-odds th,
-  .cycle-odds td {
-    padding: 12px 3px;
-  }
-  .cycle-odds td > strong {
-    font-size: 12px;
-  }
-  .cycle-odds td > small,
-  .cycle-odds .match-exact {
-    font-size: 9px;
-  }
-  .cycle-odds button {
-    min-height: 42px;
-    padding: 6px;
-    font-size: 11px;
-  }
-  .cycle-odds button span {
-    display: none;
-  }
-  .cycle-odds tbody th {
-    font-size: 11px;
-  }
-  .cycle-play-context {
-    align-items: start;
-  }
-}
-/* Keep the diagram and all three play actions close together. */
-.cycle-diagram {
-  max-width: 390px;
-  margin: auto;
-}
-.cycle-odds {
-  overflow-x: auto;
-}
-@media (max-width: 360px) {
-  .cycle-odds td > small {
-    font-size: 8px;
-  }
-  .cycle-odds th,
-  .cycle-odds td {
-    padding-left: 2px;
-    padding-right: 2px;
-  }
-  .cycle-odds button {
-    font-size: 10px;
-    padding: 5px;
-  }
-}
-.match-shell .cycle-mobile-picker,
-#cycle-filter-toggle {
-  display: none;
-}
-@media (max-width: 760px) {
-  .match-shell[data-panel="cycles"] .match-heading .hint {
-    display: none;
-  }
-  .match-shell[data-panel="cycles"] .match-heading h2 {
-    font-size: 22px;
-    margin-bottom: 0;
-  }
-  .cycle-browser {
-    display: block;
-  }
+
   .match-shell .cycle-mobile-picker {
     display: flex;
   }
+
   #cycle-filter-toggle {
-    display: block;
-    margin-top: 4px;
+    display: inline-flex;
+    align-self: start;
   }
+
   .cycle-filter-fields,
   .cycle-list {
     display: none;
   }
+
   .cycle-browser[data-expanded="true"] .cycle-filter-fields {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
-    margin: 8px 0;
+    gap: 10px;
+    margin: 4px 0;
   }
-  #cycle-count {
-    margin: 4px 0 0;
+
+  .cycle-intro {
+    margin-bottom: 14px;
+    font-size: var(--t-xs);
+  }
+
+  .match-shell[data-panel="cycles"] .match-heading .hint {
+    display: none;
+  }
+
+  .cycle-detail-heading .hint {
+    font-size: var(--t-xs);
+  }
+
+  .cycle-visual {
+    padding: 10px 0;
+  }
+
+  .cycle-rules {
+    display: block;
+  }
+
+  .cycle-rules li {
+    margin: 10px 0;
+  }
+
+  .cycle-rules strong {
+    font-size: var(--t-sm);
+  }
+
+  .cycle-odds th,
+  .cycle-odds td {
+    padding: 10px 3px;
+  }
+
+  .cycle-odds td > strong {
+    font-size: var(--t-xs);
+  }
+
+  .cycle-odds tbody th {
+    font-size: var(--t-xs);
+  }
+
+  .cycle-odds .btn {
+    padding-inline: 8px;
+  }
+
+  .cycle-odds .btn span {
+    display: none;
+  }
+
+  .cycle-play-context {
+    align-items: start;
   }
 }
-.cycle-odds table,
-.cycle-odds caption {
-  white-space: normal;
-}
-.cycle-odds td > strong,
-.cycle-odds td > small {
-  white-space: nowrap;
+
+@media (max-width: 360px) {
+  .cycle-odds th,
+  .cycle-odds td {
+    padding-inline: 2px;
+  }
+
+  .cycle-odds .btn {
+    padding-inline: 6px;
+  }
 }
