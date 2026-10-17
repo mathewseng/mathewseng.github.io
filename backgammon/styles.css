@@ -3946,8 +3946,12 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     height: auto;
   }
 
+  /* Size containment would resolve the auto height to zero; inline-size
+     containment keeps the container queries and lets the board's aspect
+     ratio set the row height. */
   .play-page .board-workspace {
     height: auto;
+    container-type: inline-size;
   }
 
   .play-page .board-workspace > .board-slot {
@@ -3955,6 +3959,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     max-width: none;
     max-height: calc(100dvh - 310px);
     aspect-ratio: 876 / 660;
+    align-self: start;
   }
 
   /* Setup is the task before play: the form sits inline above the board with
@@ -4552,19 +4557,25 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table {
-    --bg-equity-width: 26px;
+    --bg-equity-width: 32px;
     min-height: max(100dvh, 580px);
     padding-inline: max(4px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-right));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  /* A narrower equity rail leaves the board its full width (dice-undo.cjs). */
+  /* A narrower rail with no gap leaves the board its full width
+     (dice-undo.cjs) and still fits "+0.73" at the 12px floor. */
+  .play-page.live-table .board-slot.has-equity-bar > .bg-board {
+    width: calc(100% - var(--bg-equity-width));
+    margin-left: var(--bg-equity-width);
+  }
+
   .play-page.live-table .equity-meter {
     width: 10px;
   }
 
   .play-page.live-table .equity-number {
-    letter-spacing: -0.04em;
+    letter-spacing: -0.05em;
   }
 
   .play-page.live-table .tool-head {
