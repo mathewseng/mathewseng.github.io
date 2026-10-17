@@ -1,0 +1,731 @@
+/* OFC family stylesheet. Every OFC page loads shared/tokens.css, shared/app.css,
+ * shared/cards.css, then this file, then its own stylesheet. Tokens only: the
+ * family accent comes from <html data-family="ofc">, and this file never
+ * declares a colour literal (shared/tests/css-literals.test.cjs).
+ *
+ * Sections: shell (topbar + one scrolling main), the OFC board component
+ * (.ofc-board / .ofc-row / .hand-chip), the felt stage, the card tray, seats
+ * and room code, status banners, the diverging score bar, the wrapping
+ * segmented control, and the rules article (one copy for the family).
+ */
+
+/* ---------- Shell ----------
+   An app shell: the topbar stays put, <main> is the one scroll region at
+   every width, and an optional .action-stage row sits under it (never over
+   the content). The topbar's tool nav drops to its own row on phones. */
+.ofc-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1320px, 100%);
+  height: 100vh;
+  height: 100dvh;
+  margin-inline: auto;
+  padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+}
+
+body:has(> .ofc-shell) {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.ofc-shell > main {
+  min-height: 0;
+  padding: 6px 0 calc(12px + env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.ofc-shell > main:focus-visible {
+  outline-offset: -2px;
+}
+
+.ofc-shell .topbar {
+  padding-top: max(4px, env(safe-area-inset-top));
+}
+
+.ofc-shell > .action-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--page);
+}
+
+@media (max-width: 640px) {
+  .ofc-shell .topbar {
+    gap: 2px 8px;
+  }
+
+  .ofc-shell .tool-nav {
+    order: 3;
+    flex-basis: 100%;
+    margin-inline: -4px;
+  }
+}
+
+/* ---------- OFC board ----------
+   <div class="ofc-board" role="radiogroup">
+     <div class="ofc-row" data-row="top">
+       <button class="ofc-row-head" role="radio" aria-checked>Top</button>
+       <div class="ofc-row-cards">…cards / .empty-slot…</div>
+       <div class="ofc-row-summary"><span class="hand-chip">…</span></div>
+     </div>
+   </div>
+   Sizes via --card-width (set --card-w-board on the page); .target,
+   [aria-checked="true"] on the head and .drag-over are the states. */
+.ofc-board {
+  --card-width: var(--card-w-board, 56px);
+  --ofc-label-w: 96px;
+  --ofc-summary-w: 150px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ofc-row {
+  display: grid;
+  grid-template-columns: var(--ofc-label-w) minmax(0, 1fr) var(--ofc-summary-w);
+  align-items: center;
+  gap: 6px 10px;
+  min-height: calc(var(--card-width) * 1.4 + 12px);
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  transition:
+    background-color var(--d-fast),
+    border-color var(--d-fast);
+}
+
+.ofc-row.target,
+.ofc-row:has(> .ofc-row-head[aria-checked="true"]) {
+  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+}
+
+.ofc-row.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.ofc-row-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--stage-ink, var(--ink));
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  line-height: var(--lh-data);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ofc-row-head:disabled {
+  cursor: default;
+}
+
+.ofc-row-head small,
+.ofc-row-key {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.ofc-row-key {
+  font-family: var(--font-mono);
+}
+
+.ofc-row-cards {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--card-width) * 0.09);
+  min-width: 0;
+}
+
+.ofc-row-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ofc-row-summary:empty {
+  display: none;
+}
+
+/* Display-only boards (opponents, history): no head, the summary under the cards. */
+.ofc-board--mini {
+  --card-width: var(--card-w-seat);
+  gap: 6px;
+}
+
+.ofc-board--mini .ofc-row {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 4px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ofc-board--mini .ofc-row-summary {
+  justify-content: center;
+}
+
+/* ---------- Hand chip ----------
+   The one score summary: hand name | points. Tones: --good when it scores,
+   --bad when it fouls, quiet otherwise. */
+.hand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.hand-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hand-chip-pts {
+  flex: none;
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hand-chip--good {
+  border-color: color-mix(in oklab, var(--good) 45%, transparent);
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.hand-chip--good .hand-chip-pts {
+  color: var(--good);
+}
+
+.hand-chip--bad {
+  border-color: color-mix(in oklab, var(--bad) 50%, transparent);
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.hand-chip--bad .hand-chip-pts {
+  color: var(--bad);
+}
+
+/* ---------- Felt stage ----------
+   Put inside a .panel--flush .panel-body. The accent only colours selection. */
+.ofc-felt {
+  --stage-ink: var(--ink);
+  position: relative;
+  padding: 8px 10px;
+  background:
+    radial-gradient(ellipse at 50% 18%, var(--felt-light), var(--felt) 58%, var(--felt-dark)),
+    var(--felt);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--ink) 8%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--accent) 16%, transparent);
+  color: var(--stage-ink);
+}
+
+.ofc-felt .ofc-row {
+  background: color-mix(in oklab, var(--felt-dark) 55%, transparent);
+}
+
+.ofc-felt .ofc-row.target,
+.ofc-felt .ofc-row:has(> .ofc-row-head[aria-checked="true"]) {
+  background: color-mix(in oklab, var(--accent) 16%, var(--felt-dark));
+}
+
+.ofc-felt .ofc-row-head small,
+.ofc-felt .ofc-row-key {
+  color: color-mix(in oklab, var(--ink) 72%, transparent);
+}
+
+.ofc-felt .hand-chip {
+  border-color: color-mix(in oklab, var(--ink) 16%, transparent);
+  background: color-mix(in oklab, var(--felt-dark) 78%, transparent);
+  color: color-mix(in oklab, var(--ink) 82%, transparent);
+}
+
+.ofc-felt .hand-chip--good {
+  border-color: color-mix(in oklab, var(--good) 45%, transparent);
+  background: color-mix(in oklab, var(--good) 16%, var(--felt-dark));
+  color: var(--good);
+}
+
+.ofc-felt .hand-chip--bad {
+  border-color: color-mix(in oklab, var(--bad) 55%, transparent);
+  background: color-mix(in oklab, var(--bad) 18%, var(--felt-dark));
+  color: var(--bad);
+}
+
+/* The stage heading: name, status dot, running royalties. */
+.ofc-stage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-height: 36px;
+  padding: 2px 8px 6px;
+  color: var(--stage-ink);
+  font-size: var(--t-sm);
+}
+
+.ofc-stage-head > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.ofc-stage-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+/* ---------- Card tray ----------
+   The draw hand: one slot per card so positions stay fixed while cards move
+   to the board. Phones get a two-row grid (--tray-columns) at ≥36px cards and
+   scroll horizontally only when even that cannot fit. */
+.ofc-tray {
+  --card-width: var(--card-w-tray);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 2px 20px;
+  border-radius: var(--r-md);
+  transition: background-color var(--d-fast);
+}
+
+.ofc-tray.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-soft);
+}
+
+.ofc-tray-slot {
+  position: relative;
+  width: var(--card-width);
+  flex: none;
+  aspect-ratio: 5 / 7;
+}
+
+.ofc-tray-slot > .playing-card,
+.ofc-tray-slot > .empty-slot {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ofc-tray-key {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1;
+  translate: -50% 0;
+}
+
+.card-drag-ghost .ofc-tray-key {
+  display: none;
+}
+
+/* Draggable cards: no browser pan while a finger is on a card. */
+.playing-card[data-origin="hand"],
+.playing-card[data-origin="board"] {
+  touch-action: none;
+  cursor: grab;
+}
+
+.playing-card[data-origin="fixed"] {
+  cursor: default;
+}
+
+@media (hover: none), (max-width: 640px) {
+  .ofc-tray-key,
+  .ofc-row-key {
+    display: none;
+  }
+
+  .ofc-tray {
+    padding-bottom: 4px;
+  }
+}
+
+/* ---------- Seats, room code ---------- */
+
+.ofc-seat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.ofc-seat-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.ofc-seat-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--t-md);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ofc-seat--empty {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.ofc-seat--empty .ofc-seat-avatar {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.ofc-seat--me {
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+.ofc-code {
+  font-family: var(--font-mono);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+
+/* ---------- Status banner ----------
+   Reconnecting, player gone, host gone: one line of copy plus an action. */
+.ofc-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid color-mix(in oklab, var(--warn) 45%, transparent);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.ofc-banner > span:first-child {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.ofc-banner--bad {
+  border-color: color-mix(in oklab, var(--bad) 50%, transparent);
+  background: var(--bad-soft);
+}
+
+.ofc-banner--info {
+  border-color: color-mix(in oklab, var(--info) 45%, transparent);
+  background: var(--info-soft);
+}
+
+.ofc-inline-error {
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.ofc-inline-error:empty {
+  display: none;
+}
+
+/* ---------- Diverging bar ----------
+   A .bar whose fill grows from the centre: --value is |v| / max (0–1), add
+   .ofc-dbar--neg for a negative value. Pair it with a label and a number. */
+.ofc-dbar {
+  --value: 0;
+  position: relative;
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.ofc-dbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: calc(var(--value) * 50%);
+  background: var(--bar-color, var(--accent));
+  transition: width var(--d-base) var(--ease);
+}
+
+.ofc-dbar--neg::before {
+  left: auto;
+  right: 50%;
+}
+
+.ofc-dbar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  background: var(--line-strong);
+}
+
+/* ---------- Wrapping segmented control ----------
+   The seven-variant picker: the kit's .segmented, allowed to wrap to a second
+   row so no option is ever truncated or scrolled out of view. */
+.segmented--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  border-radius: var(--r-md);
+  overflow: visible;
+}
+
+.segmented--wrap > label,
+.segmented--wrap > button {
+  flex: 1 1 auto;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- Rules article ----------
+   One copy for Play's rules dialog, the trainer's rules dialog and the EV
+   page's Rules tab: .rules-article (trainer/EV renderer) and .rule-section
+   (Play renderer) share the same type and spacing. */
+.rules-article,
+.rules-body {
+  display: grid;
+  gap: 4px;
+  font-size: var(--t-md);
+  line-height: var(--lh-body);
+}
+
+.rules-article-heading h3 {
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+
+.rules-article-heading p,
+.rule-intro,
+.rules-seed-note {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.rule-section,
+.rules-article > section {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  gap: 8px 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line-opaque);
+}
+
+.rule-section > strong,
+.rules-article > section > h4 {
+  margin: 0;
+  padding-top: 3px;
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: var(--lh-body);
+  text-transform: uppercase;
+}
+
+.rule-section > div {
+  min-width: 0;
+}
+
+.rule-section p,
+.rules-article p {
+  margin: 0;
+}
+
+.rule-section ul,
+.rules-article ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.rule-section li,
+.rules-article li {
+  font-size: var(--t-md);
+  line-height: var(--lh-body);
+}
+
+.royalty-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 16px;
+}
+
+.royalty-group {
+  min-width: 0;
+  padding-left: 12px;
+  border-left: 2px solid color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.royalty-group h4,
+.royalty-group h5 {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.royalty-group ul,
+.royalty-list {
+  gap: 3px;
+  padding: 0;
+  list-style: none;
+}
+
+.royalty-group li,
+.royalty-list li {
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.rule-term {
+  font-weight: 700;
+}
+
+.rule-term::after {
+  content: ": ";
+}
+
+.rule-number {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rule-keyword {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.rule-keyword.danger {
+  color: var(--bad);
+}
+
+.cribbage-hand-reference {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-opaque);
+}
+
+.cribbage-hand-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cribbage-hand-pattern {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.cribbage-hand-explanation,
+.cribbage-hand-breakdown,
+.cribbage-score-gap-note {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+@media (max-width: 640px) {
+  .rule-section,
+  .rules-article > section {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px 0;
+  }
+
+  .royalty-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Coarse pointers ---------- */
+@media (pointer: coarse), (max-width: 640px) {
+  .ofc-row-head {
+    min-height: 44px;
+  }
+}

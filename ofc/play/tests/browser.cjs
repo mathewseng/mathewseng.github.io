@@ -181,7 +181,10 @@ async function placeTurn(page, state) {
     await host.screenshot({ path: "/tmp/ofc-ledger-mobile.png", fullPage: true });
     await host.locator(".history-board").last().scrollIntoViewIfNeeded();
     await host.screenshot({ path: "/tmp/ofc-ledger-history-mobile.png" });
-    assert.equal(await host.locator("#ledger-chart").evaluate((canvas) => canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data.some((v) => v > 0)), true);
+    // The ledger charts are HTML bar lists (one diverging bar per player per hand), not canvases.
+    assert.equal(await host.locator("#ledger-chart .ofc-dbar").count(), 2, "running score draws one bar per player for the one completed hand");
+    assert.equal(await host.locator("#hand-chart .ofc-dbar").count(), 2, "points per hand draws one bar per player");
+    assert.match(await host.locator("#ledger-chart").getAttribute("aria-label"), /Running score: Ada [+-]?\d+/);
     await host.locator('[data-close-dialog="ledger-modal"]').click();
     await host.setViewportSize({ width: 1440, height: 900 });
     console.log("PASS private discards, board history, and rendered ledger graphs");

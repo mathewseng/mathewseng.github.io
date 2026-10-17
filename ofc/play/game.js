@@ -240,6 +240,34 @@
     return advanceAction(state);
   }
 
+  // The host's recovery action for a seat that left mid-hand: a legal placement
+  // for the active player's draw (rows filled bottom → middle → top in draw
+  // order, the rest discarded), or the first enabled variant while BTN is
+  // still choosing. The hand then continues exactly as if that player had acted.
+  function autoPlacement(state) {
+    const active = playerById(state, state.activePlayerId);
+    const action = state.actionQueue[state.actionIndex];
+    if (state.phase !== "placement" || !active || !action) throw new Error("No seat is waiting to act.");
+    const expectedPlaced = action.kind === "fantasy" ? 13 : action.round === 0 ? 5 : 2;
+    const room = { bottom: ROW_LIMITS.bottom - active.board.bottom.length, middle: ROW_LIMITS.middle - active.board.middle.length, top: ROW_LIMITS.top - active.board.top.length };
+    const placements = [];
+    for (const cardId of active.draw) {
+      if (placements.length === expectedPlaced) break;
+      const row = ["bottom", "middle", "top"].find((key) => room[key] > 0);
+      if (!row) break;
+      room[row] -= 1;
+      placements.push({ cardId, row });
+    }
+    return { placements };
+  }
+
+  function autoSetActive(source) {
+    if (source.phase === "choose-variant") return chooseVariant(source, ownerId(source.players[source.buttonIndex]), source.settings.dealerChoices[0]);
+    const active = playerById(source, source.activePlayerId);
+    if (source.phase !== "placement" || !active) throw new Error("No seat is waiting to act.");
+    return submitPlacement(source, ownerId(active), autoPlacement(source));
+  }
+
   function settleHand(source) {
     const state = clone(source);
     state.phase = "showdown";
@@ -558,6 +586,8 @@
     scoringVariant,
     chooseVariant,
     ROW_LIMITS,
+    autoPlacement,
+    autoSetActive,
     awardFantasyland,
     boardComplete,
     compareVariantRow,

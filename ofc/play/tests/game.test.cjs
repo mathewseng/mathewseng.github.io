@@ -281,3 +281,24 @@ console.log("Dealer's Choice, Progressive, multiple FL, and 2 on BTN tests passe
   assert.ok(/^7/.test(preview.assignments.JK1));
 }
 console.log("Auto discards, private history, set provenance, and live royalty tests passed.");
+
+{
+  // The host can auto-set a seat that left mid-hand; the hand still settles.
+  let state = Game.createGame(people, {}, "auto-set");
+  const first = state.players.find((p) => p.id === state.activePlayerId);
+  const payload = Game.autoPlacement(state);
+  assert.equal(payload.placements.length, 5);
+  assert.ok(payload.placements.every((p) => p.row === "bottom"));
+  state = Game.autoSetActive(state);
+  assert.equal(first.board.bottom.length, 0, "the source state is not mutated");
+  assert.equal(state.players.find((p) => p.id === first.id).board.bottom.length, 5);
+  while (state.phase === "placement") state = Game.autoSetActive(state);
+  assert.equal(state.phase, "showdown");
+  assert.equal(state.ledger.length, 1);
+  let choice = Game.createGame(people, { variant: "dealerschoice", dealerChoices: ["low", "high"] }, "auto-choice");
+  assert.equal(choice.phase, "choose-variant");
+  choice = Game.autoSetActive(choice);
+  assert.equal(choice.phase, "placement");
+  assert.equal(choice.handVariant, "low");
+}
+console.log("Auto-set recovery tests passed.");
