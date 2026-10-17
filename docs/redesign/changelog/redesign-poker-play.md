@@ -4,7 +4,7 @@ Branch from `main` at 3d2e4dc. Pages: `/poker/play/`. New family stylesheet: `po
 
 ## What changed
 
-### `poker/table.css` (new, 960 lines, zero colour literals, no `!important`)
+### `poker/table.css` (new, 970 lines, zero colour literals, no `!important`)
 
 The poker-tables family kit on tokens, for Mixed Poker now and Rush, Ultimate Omaha and Edge the Dealer when they migrate:
 
@@ -17,13 +17,13 @@ The poker-tables family kit on tokens, for Mixed Poker now and Rush, Ultimate Om
 - `.settings-row` (label + hint | control, 44px rows, 16px inputs on coarse pointers).
 - `.table-banner` (warn/bad/info) and `.table-notice` (centred message on the felt).
 
-### `/poker/play/` (index.html, styles.css 1697 → 1038 lines, app.js)
+### `/poker/play/` (index.html, styles.css 1697 → 1065 lines, app.js)
 
 - Head: tokens → app → cards → table → page, each `?v=20261016`; `data-family="poker"`; `theme-color #08090d`; `is-ready` line; skip link; `main#main[tabindex="-1"]`.
 - Topbar: crumbs MS → Poker → Mixed Poker; tool nav Mixed Poker · Poker Rush · Ultimate Omaha · Edge the Dealer · 222 with `aria-current`; connection `.badge` (`#connection` keeps its `data-state` and inner `<span>`), guide icon button, Leave as a danger button. On phones the family crumb hides and the badge collapses to a titled dot so row 1 is mark + tool + actions and row 2 the tool nav.
 - Setup: `.tool-head` with H1; `#setup-tabs` is a real `.tabs` tablist driven by `shared/tabs.js` (keeps `data-setup-tab` and `.active`); the three panels are `.panel`s with `.panel-body`; Create/Join is a kit `.segmented` with `aria-pressed`; name and code are `.field`s; stakes are `.settings-row`s; quick mixes are `.btn--sm`; rotation move/remove are 44px icon buttons (focus restored after a move or remove); catalog families are a `.segmented` with `aria-pressed`; game options carry `aria-pressed`; the straddle is the kit `.switch`; the CSS-content empty text is a real `#rotation-empty` paragraph.
 - Lobby: code pill (`#room-code-display`) with a copy-code button, Copy invite, roster of `.seat.seat--lobby` (same component as the table), host settings as chips, "N of M seats", host start hint, guest "Waiting for the host to deal the first hand." copy, reconnecting banner.
-- Game: the felt is the hero. Opponents sit on three rails around the centre (clockwise from the hero's left) on desktops ≥ 821×561, and in a wrapped grid on phones and short windows; each seat shows a dealer disc, position badges, bet chip, status badge and (when active) a clock. Pot and street sit in the felt centre with the boards; the stat strip keeps `#street-label/#pot-label` (hidden) and shows To call and Next game. The hero seat spans the felt's bottom edge with avatar, dealer disc, status badge, clock, bet chip, cards and hand chips. The decision and results panels are `.action-stage`s (sticky bottom; a right-hand column on landscape phones). `minmax()`/flex rows keep the table at ≥ 16rem on desktop while the view is height-bounded, so the stage never collapses it.
+- Game: the felt is the hero. Opponents sit on three rails around the centre (clockwise from the hero's left) on desktops ≥ 821×561, in a wrapped grid on tablets and short windows, and on phones (≤ 640px) in one horizontally snapping strip (as the pre-redesign page had) so the pot, the board and the hero's own cards stay near the top of the felt; each seat shows a dealer disc, position badges, bet chip, status badge and (when active) a clock. Pot and street sit in the felt centre with the boards; the stat strip keeps `#street-label/#pot-label` (hidden) and shows To call and Next game. The hero seat spans the felt's bottom edge with avatar, dealer disc, status badge, clock, bet chip, cards and hand chips. The decision and results panels are `.action-stage`s (sticky bottom; a right-hand column on landscape phones). `minmax()`/flex rows keep the table at ≥ 16rem on desktop while the view is height-bounded, so the stage never collapses it.
 - Dialogs: guide and ledger are kit `.dialog.dialog--sheet` opened through `shared/sheet.js` (backdrop tap, focus return, keyboard fitting); ledger stacks are a `.stat-strip`.
 - Live regions: one polite `#toast` stack and one assertive `#alerts` stack (toasts have a dismiss control and pause on hover/focus); the inline error paragraphs no longer carry `role="alert"`, and errors are announced once through the assertive stack. Toasts sit above the sticky stage via `--stage-h` (ResizeObserver).
 - Completeness-pass fixes (small logic, called out in the commit):
@@ -35,6 +35,14 @@ The poker-tables family kit on tokens, for Mixed Poker now and Rush, Ultimate Om
   - Errors render in the visible view (`#setup-error`, `#room-error`, new `#game-error` in the action stage status line).
   - Reconnecting banner in the room and game views; the disconnected seat is dashed red and the host keeps the force-fold recovery action.
 - Kept: every id, data attribute and class app.js binds (audit Constraints), `--seat-columns` and `--hero-count`, storage keys, the PeerRoom protocol (one additive action type), `Cards.html/emptySlotHtml` for every card.
+
+## Continuation after the usage-limit interruption
+
+The checkpointed work was reviewed against the brief, the notes and the audit, then verified from scratch (the checks below were rerun). Two phone defects found while looking at the designed-state pictures were fixed:
+
+- The hero's game-summary chip (`.hand-chip`, `white-space: nowrap`) was clipped at both edges inside the felt at 375px; chips in a `.hand-chip-row` now wrap (`poker/table.css`).
+- Five opponents in a two-column grid pushed the hero's cards about 400px below the fold on a 375×812 phone; opponents are now one horizontal snap strip under 640px (`poker/play/styles.css`), which leaves the board, the pot and the hero seat one short scroll away with the action stage always visible. A scroll container never grows the page's `scrollWidth`, so the shell sweep still passes.
+- A no-op `escapeText` helper was removed from `app.js`.
 
 ## Checks
 

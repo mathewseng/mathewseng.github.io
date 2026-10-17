@@ -480,6 +480,16 @@
   gap: 6px;
 }
 
+/* In a row (the hero's readouts) a long chip wraps instead of being clipped
+   by the stage's overflow on narrow screens. */
+.hand-chip-row > .hand-chip {
+  max-width: 100%;
+  padding-block: 4px;
+  line-height: var(--lh-data);
+  text-align: center;
+  white-space: normal;
+}
+
 /* ---------- Lobby ----------
    Name and code fields, create/join segmented, a code pill with copy, a
    roster of .seat, host settings, Start/Leave and guest waiting copy. */

@@ -950,6 +950,33 @@
     max-width: none;
   }
 
+  /* Opponents: one horizontally snapping strip (as the pre-redesign page had),
+     so the board, the pot and the hero's own cards stay near the top of the
+     felt instead of under a wrapped grid. A scroll container never grows the
+     page's scrollWidth. Top padding leaves room for the dealer disc, bottom
+     padding for the active seat's ring. */
+  .seats {
+    display: flex;
+    gap: 6px;
+    margin-inline: calc(-1 * var(--s-2));
+    padding: 10px var(--s-2) 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--s-2);
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, transparent, black 10px, black calc(100% - 10px), transparent);
+  }
+
+  .seats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .seats .seat {
+    flex: 0 0 10rem;
+    scroll-snap-align: start;
+  }
+
   .core-settings .settings-row input,
   .core-settings .settings-row select,
   .settings-row input:not([type="checkbox"], [type="radio"], [type="range"]),

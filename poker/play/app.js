@@ -596,7 +596,7 @@
     if (els.roomLede) {
       els.roomLede.textContent = room.isHost
         ? "Share the code or the invite link. Deal once every seat is filled."
-        : (host ? escapeText(host.name) : "The host") + " deals the first hand once every seat is filled. Keep this page open.";
+        : (host ? String(host.name ?? "") : "The host") + " deals the first hand once every seat is filled. Keep this page open.";
     }
     if (els.rosterCount) els.rosterCount.textContent = roster.length + " of " + settings.seats + " seats";
     els.roster.innerHTML = Array.from({ length: settings.seats }, (_, seat) => {
@@ -1256,11 +1256,6 @@
   function signed(value) {
     const number = Number(value) || 0;
     return number > 0 ? "+" + formatChips(number) : number < 0 ? "-" + formatChips(Math.abs(number)) : "0";
-  }
-
-  // Plain text for textContent assignments (no entity escaping needed).
-  function escapeText(value) {
-    return String(value ?? "");
   }
 
   function escapeHtml(value) {
