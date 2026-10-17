@@ -1408,30 +1408,40 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   aspect-ratio: auto;
 }
 
+/* The confirm stage (.action-stage is not in app.css yet; see
+   docs/redesign/shared-requests). Stacked layouts and the landscape dock
+   show it as a full-width row under the board; wide tables leave it empty
+   and #confirm sits at the end of the action row instead. */
 .board-actions {
   display: flex;
-  flex: 0 0 144px;
   align-items: center;
   justify-content: center;
   min-width: 0;
 }
 
-.board-actions #confirm {
+.board-actions:empty {
+  display: none;
+}
+
+#confirm {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 120px;
-  padding: 16px 12px;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 18px;
   border: 1px solid transparent;
   border-radius: var(--r-md);
-  font-size: var(--t-lg);
+  font-size: var(--t-md);
   line-height: 1.3;
   white-space: normal;
 }
 
-.board-actions #confirm kbd.keycap {
+.board-actions #confirm {
+  width: 100%;
+}
+
+#confirm kbd.keycap {
   align-self: center;
   width: auto;
   margin: 0;
@@ -1440,17 +1450,13 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .confirm-content,
 .confirm-copy {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 5px;
-}
-
-.confirm-content {
   gap: 10px;
 }
 
 .confirm-copy strong {
-  font-size: var(--t-lg);
+  font-size: var(--t-md);
   font-weight: 650;
   line-height: 1.2;
 }
@@ -1465,15 +1471,15 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .confirm-check {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
   border: 1.5px solid currentColor;
   border-radius: 50%;
-  font-size: 21px;
+  font-size: 15px;
   line-height: 1;
 }
 
-.board-actions #confirm:disabled {
+#confirm:disabled {
   border-color: var(--line-strong);
   background: var(--surface);
   color: var(--muted);
@@ -1481,8 +1487,73 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   opacity: 1;
 }
 
-.board-actions #confirm:disabled .confirm-check {
+#confirm:disabled .confirm-check {
   opacity: 0.45;
+}
+
+/* Game result card: an overlay in the board slot, like the opening roll. */
+.game-over-card {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  width: min(440px, calc(100% - 48px));
+  padding: 18px 20px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
+  text-align: center;
+  animation: roll-panel-in 240ms ease-out;
+}
+
+.game-over-card > .eyebrow {
+  justify-content: center;
+}
+
+.game-over-card h2 {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.game-over-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4px;
+  text-align: left;
+}
+
+.game-over-stats .stat {
+  padding: 8px 10px;
+}
+
+.game-over-stats .stat-value small {
+  display: block;
+  margin: 2px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Setup: the engine-strength explanation behind a disclosure. */
+.setup-engine > summary {
+  min-height: 36px;
+}
+
+.setup-engine > p {
+  margin: 0 0 6px;
+}
+
+.setup-mode-note {
+  margin: -6px 0 0;
+}
+
+/* Resignation picker: one row per level. */
+.resign-options .list-row {
+  display: flex;
+  justify-content: space-between;
 }
 
 .turn-ready {
@@ -1499,7 +1570,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   }
 }
 
-:is(.board-actions, .action-help) .btn {
+:is(.board-actions, .action-help, #actions) .btn {
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
@@ -3584,8 +3655,20 @@ html.bg-dialog-open {
   font-size: var(--t-sm);
 }
 
-.app-update-dialog .btn {
+.app-update-dialog .update-actions {
+  display: grid;
+  gap: 10px;
   margin-top: 20px;
+}
+
+.app-update-dialog .update-actions .btn {
+  width: 100%;
+}
+
+.app-update-dialog .update-refresh-link {
+  justify-self: center;
+  padding: 8px 4px;
+  font-size: var(--t-sm);
 }
 
 /* Toast: one dark kit toast with a dismiss control; errors switch it to the
@@ -3874,6 +3957,29 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     align-self: start;
     margin: 0;
     text-align: right;
+  }
+
+  /* Wide tables have a reserved status row: #message is the one status line
+     and the draft line reads as its secondary, muted counterpart. */
+  .play-page.desktop-table .action-message.routine-status,
+  .play-page.desktop-table #draft-line {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    clip-path: none;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .play-page.desktop-table #draft-line {
+    color: var(--muted);
+    font-size: var(--t-sm);
+  }
+
+  .play-page.desktop-table #actions #confirm {
+    min-width: 180px;
   }
 
   .play-page.desktop-table .action-main {
@@ -4623,26 +4729,8 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .board-actions #confirm {
-    flex-direction: row;
-    justify-content: center;
-    width: 100%;
     min-height: 52px;
     padding: 8px 16px;
-    font-size: var(--t-md);
-  }
-
-  .confirm-content {
-    flex-direction: row;
-    gap: 12px;
-  }
-
-  .confirm-copy {
-    align-items: flex-start;
-    gap: 2px;
-  }
-
-  .confirm-copy strong {
-    font-size: var(--t-md);
   }
 
   .play-page.live-table .action-area {
@@ -5371,25 +5459,19 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .board-actions #confirm {
-    flex-direction: row;
     gap: 6px;
-    width: 100%;
     min-height: 60px;
     padding: 8px;
     font-size: var(--t-sm);
   }
 
   .confirm-content {
-    flex-direction: row;
     gap: 8px;
   }
 
-  .confirm-copy {
-    align-items: flex-start;
-  }
-
-  .confirm-copy strong {
-    font-size: var(--t-md);
+  .game-over-card {
+    width: min(360px, calc(100% - 24px));
+    padding: 12px 14px;
   }
 
   .play-page.live-table .player-strip {
