@@ -470,6 +470,9 @@ const server = http.createServer((req, res) => {
         (report.dragFeedback ||= []).push(
           await run("drag-feedback", browser, base, out, browserName),
         );
+        (report.highlightRendering ||= []).push(
+          await run("highlight-rendering", browser, base, out, browserName),
+        );
         (report.moveArrows ||= []).push(
           await run("move-arrows", browser, base, out, browserName),
         );

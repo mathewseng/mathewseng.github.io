@@ -1620,6 +1620,10 @@ export class Board {
         }),
       );
       g.append(patternOverlay(g.lastChild, p % 2 ? "pointB" : "pointA"));
+      // Hover/focus strokes belong above the point paint. At phone scale the
+      // non-scaling border is wider than the gap beside the triangle, so drawing
+      // it underneath lets the triangle/pattern cut off the inside of the ring.
+      g.append(g.querySelector(".point-hit"));
       if (reachable.includes(p)) {
         const glow = g.querySelector('.point-shape').cloneNode(false);
         glow.setAttribute('class', 'point-glow');
@@ -1759,7 +1763,7 @@ export class Board {
       if (returnLabel) returnLabel.replaceWith(returnIcon(x + 30, top ? 274 : 386));
       for (const ring of g.querySelectorAll(".source-ring,.landing-ring")) {
         const halo = ring.cloneNode(false);
-        halo.setAttribute("class", "ring-halo");
+        halo.setAttribute("class", `ring-halo${ring.classList.contains("source-ring") ? " source-ring-halo" : ""}`);
         ring.before(halo);
       }
       if (numbers && shortcuts && !matchMedia("(pointer: coarse), (max-width: 700px)").matches) {
@@ -1861,7 +1865,7 @@ export class Board {
       if (returnLabel) returnLabel.replaceWith(returnIcon(408, top ? 274 : 409));
       for (const ring of g.querySelectorAll(".source-ring")) {
         const halo = ring.cloneNode(false);
-        halo.setAttribute("class", "ring-halo");
+        halo.setAttribute("class", "ring-halo source-ring-halo");
         ring.before(halo);
       }
       children.push(g);

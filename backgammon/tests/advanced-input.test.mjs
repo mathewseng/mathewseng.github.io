@@ -30,7 +30,9 @@ test('advanced selected-die clicks are complete-turn legal across both players, 
         }
         else if (action.type === "undo" && checker) {
           assert.ok(!candidates.some(s=>s.from===point));
-          assert.equal(next.length,draft.length-1,'checker undo removes only one step');
+          assert.equal(next.length,draft.length-action.route.steps.length,'checker undo restores its complete journey');
+          assert.equal(action.route.to,action.route.steps[0].from);
+          assert.equal(action.route.from,action.route.steps.at(-1).to);
         }
         checked++;
       }

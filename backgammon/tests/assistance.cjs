@@ -189,6 +189,8 @@ module.exports = async function assistanceUX(
       /Best 13\/7 8\/7/,
     );
     // Player identity uses its own accent; EV-loss text keeps the loss scale.
+    assert.equal(await page.locator('[data-history-filter="self"]').getAttribute("aria-pressed"), "true");
+    await page.locator('[data-history-filter="all"]').click();
     const historyColors = await page.evaluate(() => {
       const color = (side) => {
         const row = document.querySelector(

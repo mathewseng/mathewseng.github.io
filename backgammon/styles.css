@@ -1822,7 +1822,7 @@ button.teal-die:hover {
   stroke-dasharray: none;
   stroke-width: 5;
 }
-.drag-origin, .drag-source .source-ring {
+.drag-origin, .drag-source :is(.source-ring, .source-ring-halo) {
   visibility: hidden;
 }
 
@@ -2636,7 +2636,7 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 .point.return-destination .destination-badge {
   fill: var(--board-undo);
 }
-.point.return-destination .destination-die {
+.point.return-destination text.destination-die {
   fill: var(--board-undo-text, #21180e);
 }
 .point.return-destination[data-point^="bar"] .point-accent {
@@ -3259,8 +3259,9 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   stroke-width: 2;
 }
 .bg-board.is-dragging .point.return-destination.drop-hover .point-hit {
-  fill: color-mix(in srgb, var(--board-undo) 20%, transparent);
-  stroke: var(--board-undo);
+  /* The return wash/accent already draws one complete amber outline. */
+  fill: transparent;
+  stroke: none;
 }
 html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible .point-hit {
   stroke: var(--board-focus);

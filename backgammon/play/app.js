@@ -181,7 +181,7 @@ const analysisJump = button("Analysis ↓", () => {
 document.querySelector(".action-area").append(analysisJump);
 const reviewStatus = el("div", { class: "row wrap muted small", id: "auto-review-status", role: "status", hidden: true });
 reviewArea.append(reviewStatus);
-let feedbackFilter = "all";
+let feedbackFilter = "self";
 const feedbackFilters = el("div", {
   class: "history-filters", role: "group", "aria-label": "Filter decision history", hidden: true,
 });

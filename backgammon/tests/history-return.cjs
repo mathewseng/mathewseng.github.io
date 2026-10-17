@@ -86,6 +86,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
     });
     await page.goto(base + "/backgammon/play/#resume=" + fixture.id);
     await page.locator("#board.roll-ready").waitFor();
+    assert.equal(await page.locator('[data-history-filter="self"]').getAttribute("aria-pressed"), "true", "resumed games start with You selected");
+    assert.equal(await page.locator('#move-feedback [data-history-side="opponent"]').count(), 0);
+    await page.locator('[data-history-filter="all"]').click();
     for (const side of ["self", "opponent"])
       assert.ok(
         await page

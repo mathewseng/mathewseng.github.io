@@ -73,8 +73,8 @@ export function reverseRoutes(state, paths, draft) {
 
 // Checkers are indistinguishable in canonical state. For draft interaction the
 // most recent arrival is the top checker, so continuing that stack continues
-// its journey. Point-space returns undo that journey; checker taps undo only
-// its latest editable step, including when an earlier step was forced.
+// its journey. A checker-tap return removes that checker's entire editable
+// journey; a forced prefix stays locked even if the checker continued after it.
 function draftCheckers(state, draft) {
   const stacks = new Map();
   const add = (point, count) =>
@@ -96,15 +96,15 @@ function draftCheckers(state, draft) {
 export function checkerUndoRoutes(state, paths, draft, minDraft = 0) {
   const routes = [];
   for (const [from, checkers] of draftCheckers(state, draft)) {
-    const index = checkers.at(-1)?.indices.at(-1);
-    if (index === undefined || index < minDraft) continue;
-    const step = draft[index];
-    const remaining = draft.filter((_, i) => i !== index);
+    const indices = checkers.at(-1)?.indices.filter(i => i >= minDraft) || [];
+    if (!indices.length) continue;
+    const steps = indices.map(i => draft[i]);
+    const remaining = draft.filter((_, i) => !indices.includes(i));
     // An entry or a move into the home board may enable later moves. Never
     // remove it if retaining those moves would make the draft illegal.
     if (!matchingPaths(paths, remaining).length) continue;
-    routes.push({ from, to: step.from, undo: true, remaining,
-      steps: [step], die: step.die });
+    routes.push({ from, to: steps[0].from, undo: true, remaining,
+      steps, die: steps.reduce((total, step) => total + step.die, 0) });
   }
   return routes;
 }

@@ -60,13 +60,12 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.keyboard.press("x");
     await page.locator(".draft-progress").waitFor({state:"detached"});
     // Real GNUbg results, including both players' checker and cube decisions.
-    await page.waitForFunction(()=>document.querySelectorAll(".feedback-review").length===5,null,{timeout:60000});
-    assert.equal(await page.locator(".history-turn").count(),3,"five decisions share three turn rows");
+    await page.waitForFunction(()=>document.querySelectorAll(".feedback-review").length===3,null,{timeout:60000});
+    assert.equal(await page.locator('[data-history-filter="self"]').getAttribute("aria-pressed"),"true","You is selected by default");
     assert.deepEqual(await page.locator(".history-turn").evaluateAll(es=>es.map(e=>[...e.querySelectorAll(".feedback-review")].map(b=>b.dataset.decisionType))),
-      [["cube"],["cube","checker"],["cube","checker"]]);
+      [["cube"],["cube","checker"]]);
     const original=await saved();
     await page.locator("#analysis-jump").tap();
-    await page.locator('[data-history-filter="self"]').tap();
     assert.equal(await page.locator(".feedback-review").count(),3);
     assert.equal(await page.locator(".history-turn").count(),2);
     assert.equal(await page.locator('.feedback-review[data-history-side="opponent"]').count(),0);
@@ -109,6 +108,8 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.keyboard.press("Enter");
     assert.equal(await page.locator(".feedback-review").count(),5);
     assert.equal(await page.locator(".history-turn").count(),3);
+    assert.deepEqual(await page.locator(".history-turn").evaluateAll(es=>es.map(e=>[...e.querySelectorAll(".feedback-review")].map(b=>b.dataset.decisionType))),
+      [["cube"],["cube","checker"],["cube","checker"]]);
     for (const [width,height] of [[390,844],[1366,768]]) {
       await page.setViewportSize({width,height});
       await page.evaluate(()=>document.querySelector("#review-heading").scrollIntoView({block:"start"}));

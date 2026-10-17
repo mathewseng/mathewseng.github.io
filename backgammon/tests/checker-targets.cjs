@@ -108,16 +108,16 @@ module.exports=async function checkerTargets(browser,base,out,name){
           return d.draft;
         },{fixture:returnFixture,turn,locked});
         const point=turn?16:7;
-        assert.equal(await page.locator(`[data-point="${point}"] .draft-undo-checker`).count(),locked===2?0:1,'amber cue matches single-step undo even after forced prefix');
+        assert.equal(await page.locator(`[data-point="${point}"] .draft-undo-checker`).count(),locked===2?0:1,'amber cue matches editable checker return even after forced prefix');
         await tapChecker(point);
-        assert.deepEqual(await page.evaluate(()=>targets.d.draft),locked===2?draft:draft.slice(0,1),'checker tap removes latest step only');
+        assert.deepEqual(await page.evaluate(()=>targets.d.draft),draft.slice(0,locked),'checker tap returns the full editable journey');
         if(locked<2){
-          const previous=turn?13:10;
-          assert.equal(await page.locator(`[data-point="${previous}"] > .checker`).count(),1,'checker lands at intermediate point');
+          const origin=locked?10:15,previous=turn?23-origin:origin;
+          assert.equal(await page.locator(`[data-point="${previous}"] > .checker`).count(),1,'checker lands at its original location unless a forced step is locked');
           assert.equal(await page.locator(`[data-point="${point}"] > .checker`).count(),0);
-          assert.equal(await page.locator('.board-die.consumed').count(),1,'one die restored');
+          assert.equal(await page.locator('.board-die.consumed').count(),locked,'all dice used by the editable journey are restored');
         }
-        results.push({touch,turn,orientation,locked,checkerStepUndo:true});
+        results.push({touch,turn,orientation,locked,checkerOriginReturn:true});
       }
       for(const count of [6,10,15])for(const orientation of [0,1]){
         await fixture('advanced',orientation);
