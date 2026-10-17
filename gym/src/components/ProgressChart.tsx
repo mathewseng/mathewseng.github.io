@@ -11,7 +11,10 @@ import {
   YAxis,
 } from "recharts";
 
-import { Surface } from "./ui";
+import { prefersReducedMotion, Surface } from "./ui";
+
+// Recharts animates in JS, so the CSS reduced-motion rule cannot reach it.
+const ANIMATION_MS = 400;
 
 export interface ChartPoint {
   label: string;
@@ -74,6 +77,7 @@ export default function ProgressChart({
   height?: number;
 }) {
   const gradientId = useId().replaceAll(":", "");
+  const animate = !prefersReducedMotion();
   const hasSecondary = data.some((point) => point.secondary !== undefined);
   const common = {
     data,
@@ -141,6 +145,8 @@ export default function ProgressChart({
                 strokeWidth={2.4}
                 fill={`url(#${gradientId})`}
                 connectNulls={false}
+                isAnimationActive={animate}
+                animationDuration={ANIMATION_MS}
                 activeDot={{ r: 5, fill: "var(--accent)" }}
               />
             </AreaChart>
@@ -185,6 +191,8 @@ export default function ProgressChart({
                 stroke="var(--accent)"
                 strokeWidth={2.4}
                 connectNulls={false}
+                isAnimationActive={animate}
+                animationDuration={ANIMATION_MS}
                 dot={{ r: 4, fill: "var(--surface-2)", strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: "var(--accent)" }}
               />
@@ -197,6 +205,8 @@ export default function ProgressChart({
                   strokeWidth={1.8}
                   strokeDasharray="5 5"
                   connectNulls={false}
+                  isAnimationActive={animate}
+                  animationDuration={ANIMATION_MS}
                   dot={{ r: 3, fill: "var(--surface-2)", strokeWidth: 2 }}
                 />
               ) : null}
