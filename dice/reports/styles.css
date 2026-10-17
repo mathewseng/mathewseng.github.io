@@ -1138,7 +1138,7 @@ td.sum-rule-cell {
   font-weight: 600;
 }
 
-#face-buttons > button {
+.face-picker .segmented > button {
   min-width: 40px;
   font-family: var(--font-mono);
   font-weight: 600;
@@ -1606,6 +1606,10 @@ td.sum-rule-cell {
     padding: 0 8px;
   }
 
+  .dice-tabs > button {
+    min-width: 44px;
+  }
+
   .dice-tabs > button span {
     display: none;
   }
@@ -1640,12 +1644,68 @@ td.sum-rule-cell {
     font-size: var(--t-md);
   }
 
-  .results-panel .panel-actions .field > label {
+  .results-panel .panel-actions .field > label,
+  .dice-filters-button span {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
+  }
+
+  /* Title, filters and ranking share one 44px row. */
+  .results-panel .panel-head {
+    flex-wrap: nowrap;
+  }
+
+  .results-panel .panel-head h2 {
+    white-space: nowrap;
+    text-wrap: nowrap;
+  }
+
+  .results-panel .panel-actions {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .results-panel .panel-actions .field--inline {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dice-filters-button {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .field--inline select {
+    min-width: 0;
+    max-width: 9.5rem;
+  }
+
+  .featured {
+    align-items: center;
+  }
+
+  .feature-name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .feature-payouts {
+    margin-top: 2px;
+    flex-wrap: nowrap;
+    overflow: auto;
+    scrollbar-width: none;
+  }
+
+  .search-meta p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
 
   .search-meta {
@@ -1726,10 +1786,13 @@ td.sum-rule-cell {
     gap: 6px;
   }
 
+  /* Fits without scrolling at phone sizes; at 200% zoom the table scrolls. */
   .play-table {
     flex: 1 1 auto;
     gap: 6px;
     padding: 12px 12px 8px;
+    overflow: auto;
+    overscroll-behavior: contain;
   }
 
   .play-top {
@@ -1785,7 +1848,7 @@ td.sum-rule-cell {
     gap: 8px;
   }
 
-  #face-buttons > button {
+  .face-picker .segmented > button {
     min-width: 0;
     padding: 0 6px;
   }
