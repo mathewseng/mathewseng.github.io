@@ -7,7 +7,6 @@ import {
   initialState,
   clone,
   errors,
-  assertState,
   legalPaths,
   legalTurns,
   positionKey,
@@ -26,16 +25,16 @@ import {
   el,
   button,
   field,
-  select,
   DraftBoard,
   dialog,
   confirmDialog,
   saveDialog,
-  toast,
   showError,
   copy,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { PositionEditor } from "../ui/position-editor.mjs";
+import { choiceButtons } from "../ui/choice-buttons.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
@@ -52,7 +51,6 @@ const pageProgress = readPageProgress();
 const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
-  brush = "ivory",
   result = null,
   previousResult = null,
   checkpoint = null,
@@ -67,16 +65,15 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   openedPosition = false;
 const analysis = new AnalysisPanel(),
   draft = new DraftBoard(ui.board, () => {});
-const study = new StudyStrip(previewCandidate);
-const brushSelect = select(
-  [["ivory", "Place Ivory"], ["teal", "Place Teal"], ["remove", "Remove checker"]],
-  brush,
-  value => { brush = value; render(); },
-);
-brushSelect.setAttribute("aria-label", "Board editing tool");
-const mobileEditor = el("div", { class: "study-editor", hidden: true },
-  brushSelect, button("Dice & rules", contextDialog));
-study.node.after(mobileEditor);
+const study = new StudyStrip(previewCandidate, {dropdown:false});
+const editor = new PositionEditor(ui.board, next => { source = next; changed(); });
+const renderDraft = draft.render.bind(draft);
+draft.render = () => { renderDraft(); if (editing) editor.sync(source, true); };
+editor.onDice = () => diceDialog();
+editor.onContext = contextDialog;
+const editorContext = button("Dice & rules", contextDialog, "", {id:"editor-context"});
+editor.node.append(editorContext);
+study.node.after(editor.node);
 function previewCandidate(candidate) {
   preview = candidate ? candidate.steps.reduce((s, st) => applyStep(s, st), source) : null;
   draft.previewTrace = candidate ? { state: preview, trace: moveTrace(preview, source.turn, candidate.steps, source.dice) } : null;
@@ -96,6 +93,7 @@ const editControl = button(
     editing = !editing;
     preview = null;
     render();
+    if (!editing) autoAnalyze();
   },
   "",
   { id: "edit-position" },
@@ -111,8 +109,6 @@ const sourceControl = button("Source", () => {
   render();
 }, "source-preview-control");
 analysis.preset = "auto";
-const normalPoint = draft.board.onPoint;
-draft.board.onPoint = (p) => (editing ? paint(p) : normalPoint(p));
 const hash = new URLSearchParams(location.hash.slice(1)),
   params = new URLSearchParams(location.search);
 try {
@@ -240,8 +236,6 @@ async function saveDraft() {
 function render() {
   const problems = errors(source);
   study.set(editing || problems.length ? null : result, preview);
-  mobileEditor.hidden = !editing;
-  brushSelect.value = brush;
   ui.equityBar.set({
     state: source,
     result,
@@ -252,10 +246,11 @@ function render() {
           ? "Return to Source to see its equity."
           : "",
   });
-  draft.set(source, problems.length ? [] : legalPaths(source), false);
+  draft.set(source, editing || problems.length ? [] : legalPaths(source), false);
   draft.preview = preview;
   draft.render();
-  if (editing) ui.board.render(source, { ...settings(), editor: true });
+  editor.sync(source, editing);
+  document.querySelector(".app").classList.toggle("editing-position", editing);
   $("subtitle").textContent = review
     ? `${review.title} · event ${index}/${review.events.length}`
     : preview
@@ -264,7 +259,7 @@ function render() {
   $("message").textContent = problems.length
     ? problems.join(" ")
     : editing
-      ? "Tap to place from off or return a checker to off."
+      ? ""
       : preview
         ? "Preview only. Return to the source to edit."
         : busy
@@ -328,16 +323,8 @@ function panel(problems) {
     ),
   );
   if (review) {
-    const timeline = select(
-      replay(review.initial, review.events).map((s, i) => [
-        String(i),
-        i
-          ? `${i}. ${review.events[i - 1].action.type} · ${s.phase}`
-          : "Initial position",
-      ]),
-      String(index),
-      (v) => seek(Number(v)),
-    );
+    const timeline = el("input", {type:"range", min:0, max:review.events.length, value:index,
+      "aria-label":"Match event", onInput:e => seek(Number(e.target.value))});
     p.append(
       field("Timeline", timeline),
       el(
@@ -364,20 +351,7 @@ function panel(problems) {
   }
   if (editing) {
     p.append(
-      el("h2", {}, "Checker placement"),
-      field(
-        "Board tool",
-        select(
-          [
-            ["ivory", "Place Ivory from off"],
-            ["teal", "Place Teal from off"],
-            ["remove", "Return checker to off"],
-          ],
-          brush,
-          (v) => { brush = v; brushSelect.value = v; },
-        ),
-      ),
-      button("Edit exact point counts", pointDialog),
+      el("h2", {}, "Position setup"),
       button("Dice, cube & match context", contextDialog),
       el(
         "div",
@@ -387,6 +361,7 @@ function panel(problems) {
             "Reset position?",
             "The current editable draft will be replaced.",
             () => {
+              editor.reset();
               source = initialState({
                 phase: "move",
                 dice: [3, 1],
@@ -401,6 +376,7 @@ function panel(problems) {
             "Clear board?",
             "Both sets of checkers move to their off trays. Place checkers to make a valid position.",
             () => {
+              editor.past.push(clone(source)); editor.future = []; editor.selected = null;
               source.points = Array(24).fill(0);
               source.bar = [0, 0];
               source.off = [15, 15];
@@ -419,7 +395,7 @@ function panel(problems) {
       el("summary", {}, "Analysis settings"),
       field(
         "Analysis strength",
-        select(
+        choiceButtons(
           [
             ["auto", "Auto · 2 ply minimum"],
             ...Object.entries(PRESETS).map(([key, value]) => [
@@ -468,7 +444,7 @@ function panel(problems) {
         ),
         field(
           "Rollout trials per alternative",
-          select(
+          choiceButtons(
             [64, 256, 1024, 4096].map((n) => [String(n), String(n)]),
             String(rolloutTrials),
             (v) => (rolloutTrials = Number(v)),
@@ -542,92 +518,38 @@ function panel(problems) {
       }),
     );
 }
-function paint(raw) {
-  let p = raw;
-  const selected = brush === "ivory" ? 0 : 1,
-    sg = selected === 0 ? 1 : -1;
-  if (typeof p === "string") {
-    if (!p.startsWith("bar"))
-      return toast(
-        "Use the bar or a board point; off checkers are the placement supply.",
-      );
-    const owner = Number(p.at(-1));
-    if (brush === "remove") {
-      if (source.bar[owner]) {
-        source.bar[owner]--;
-        source.off[owner]++;
-      }
-    } else if (owner === selected && source.off[selected] > 0) {
-      source.bar[selected]++;
-      source.off[selected]--;
-    }
-  } else if (brush === "remove") {
-    if (source.points[p]) {
-      const owner = source.points[p] > 0 ? 0 : 1;
-      source.points[p] -= source.points[p] > 0 ? 1 : -1;
-      source.off[owner]++;
-    }
-  } else if (source.points[p] * sg < 0)
-    toast("Remove the opposing checkers first.");
-  else if (source.off[selected] > 0) {
-    source.points[p] += sg;
-    source.off[selected]--;
-  } else toast("No checkers in that off tray. Return one first.");
-  changed();
+function diceChoices(value) {
+  const group = choiceButtons([1,2,3,4,5,6].map(n=>[n,String(n)]), value);
+  group.classList.add('dice-choices');
+  const pips = [[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
+  for (const b of group.children) {
+    const n = Number(b.dataset.choice);
+    b.setAttribute('aria-label',String(n));
+    b.replaceChildren(...Array.from({length:9}, (_,i)=>el('span', {class:pips[n-1].includes(i)?'pip':'', 'aria-hidden':true})));
+  }
+  return group;
 }
-function pointDialog() {
-  const points = source.points.map((n, i) =>
-    field(
-      String(i + 1),
-      el("input", {
-        type: "number",
-        min: -15,
-        max: 15,
-        value: n,
-        "aria-label": `Canonical point ${i + 1}; positive Ivory, negative Teal`,
-      }),
-    ),
-  );
-  let d;
-  d = dialog(
-    "Exact checker counts",
-    el(
-      "div",
-      { class: "stack" },
-      el(
-        "p",
-        { class: "muted" },
-        "Positive counts are Ivory; negative counts are Teal. Off counts are edited separately in context.",
-      ),
-      el("div", { class: "editor-grid" }, ...points),
-    ),
-    [
-      button(
-        "Apply draft",
-        () => {
-          source.points = points.map((l) =>
-            Number(l.querySelector("input").value),
-          );
-          d.close();
-          changed();
-        },
-        "primary",
-      ),
-    ],
-  );
+function diceDialog() {
+  const turn = choiceButtons([[0,'White'],[1,'Black']],source.turn);
+  const first = diceChoices(source.dice[0]||3), second = diceChoices(source.dice[1]||1);
+  const d = dialog('Set dice', el('div',{class:'dice-editor-fields'},field('Player on roll',turn),field('First die',first),field('Second die',second)),[
+    button('Apply dice',()=>{editor.past.push(clone(source));editor.future=[];
+      source={...source,turn:Number(turn.value),phase:'move',pending:null,dice:[+first.value,+second.value]};
+      d.close();changed();},'primary')]);
+  d.classList.add('dice-editor-dialog');
 }
 function contextDialog() {
   let contextRules = rulesOf(source);
   const input = (v, min, max) =>
     el("input", { type: "number", value: v, min, max });
-  const turn = select(
+  const turn = choiceButtons(
       [
-        ["0", "Ivory"],
-        ["1", "Teal"],
+        ["0", "White"],
+        ["1", "Black"],
       ],
       source.turn,
     ),
-    phase = select(
+    phase = choiceButtons(
       [
         ["move", "Rolled dice"],
         ["roll", "Before roll"],
@@ -639,14 +561,14 @@ function contextDialog() {
         ? ["double", "beaver", "raccoon"][source.pending.depth]
         : source.phase,
     );
-  const d1 = input(source.dice[0] || 3, 1, 6),
-    d2 = input(source.dice[1] || 1, 1, 6),
+  const d1 = diceChoices(source.dice[0] || 3),
+    d2 = diceChoices(source.dice[1] || 1),
     cube = input(source.cube.value, 1, 1024),
-    owner = select(
+    owner = choiceButtons(
       [
         ["center", "Centered"],
-        ["0", "Ivory"],
-        ["1", "Teal"],
+        ["0", "White"],
+        ["1", "Black"],
       ],
       source.cube.owner === null ? "center" : source.cube.owner,
     ),
@@ -667,7 +589,7 @@ function contextDialog() {
     rulesPanel.replaceChildren(
       ruleControls(Number(len.value), contextRules, (rules) => {
         contextRules = rules;
-      }),
+      }, choiceButtons),
     );
   len.addEventListener("input", setRules);
   setRules();
@@ -699,17 +621,17 @@ function contextDialog() {
       el(
         "div",
         { class: "pair" },
-        ...score.map((n, i) => field(`${i ? "Teal" : "Ivory"} score`, n)),
+        ...score.map((n, i) => field(`${i ? "Black" : "White"} score`, n)),
       ),
       el(
         "div",
         { class: "pair" },
-        ...bar.map((n, i) => field(`${i ? "Teal" : "Ivory"} on bar`, n)),
+        ...bar.map((n, i) => field(`${i ? "Black" : "White"} on bar`, n)),
       ),
       el(
         "div",
         { class: "pair" },
-        ...off.map((n, i) => field(`${i ? "Teal" : "Ivory"} off`, n)),
+        ...off.map((n, i) => field(`${i ? "Black" : "White"} off`, n)),
       ),
       el("label", { class: "check" }, crawford, "Crawford game"),
       el("label", { class: "check" }, played, "Crawford already played"),
@@ -719,6 +641,7 @@ function contextDialog() {
       button(
         "Apply context",
         () => {
+          editor.past.push(clone(source)); editor.future = []; editor.selected = null;
           source = {
             ...source,
             turn: Number(turn.value),
@@ -787,6 +710,7 @@ function xgidDialog() {
         "Import",
         () => {
           source = fromXGID(text.value);
+          editor.reset();
           d.close();
           changed();
           autoAnalyze();
@@ -799,6 +723,7 @@ function xgidDialog() {
 async function analyze() {
   if (busy) return;
   const token = ++analysisEpoch;
+  editing = false;
   busy = true;
   preview = null;
   render();

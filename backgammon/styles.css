@@ -848,6 +848,7 @@ button kbd.keycap,
 
 .equity-number {
   width: 100%;
+  min-height: 1.2em;
   font-size: var(--t-xs);
   font-weight: 650;
   line-height: 1.2;
@@ -1090,8 +1091,9 @@ button.die.preferred {
 }
 
 .bg-board.is-dragging .point.return-destination.drop-hover .point-hit {
-  fill: color-mix(in srgb, var(--board-undo) 20%, transparent);
-  stroke: var(--board-undo);
+  /* The return wash/accent already draws one complete amber outline. */
+  fill: transparent;
+  stroke: none;
 }
 
 /* Washes: reachable before selection, destinations after, amber for returns. */
@@ -1124,8 +1126,9 @@ button.die.preferred {
   stroke: var(--board-destination);
   stroke-width: 2;
   stroke-opacity: 1;
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--board-destination) 65%, transparent));
-  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  filter: none;
+  vector-effect: none;
 }
 
 .point.reachable[data-point^="off"] .point-accent {
@@ -1144,7 +1147,7 @@ button.die.preferred {
   fill: var(--board-undo);
 }
 
-.point.return-destination .destination-die {
+.point.return-destination text.destination-die {
   fill: var(--board-undo-text, var(--on-accent));
 }
 
@@ -1194,7 +1197,7 @@ button.die.preferred {
   stroke: var(--board-destination);
   stroke-width: 2;
   stroke-dasharray: none;
-  vector-effect: non-scaling-stroke;
+  vector-effect: none;
 }
 
 .point.drop-hover .landing-ring {
@@ -1208,7 +1211,7 @@ button.die.preferred {
 }
 
 .drag-origin,
-.drag-source .source-ring {
+.drag-source :is(.source-ring, .source-ring-halo) {
   visibility: hidden;
 }
 
@@ -2645,6 +2648,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 /* Ranked moves. */
 .review-moves {
   min-width: 0;
+  align-self: start;
 }
 
 .review-move-heading,
@@ -2723,13 +2727,18 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .review-move-pages {
+  flex-wrap: nowrap;
   gap: 4px;
   margin-top: 8px;
 }
 
+/* The pager arrows are glyphs with aria-labels: large enough to read. */
 .review-move-pages .btn {
+  min-width: 44px;
+  min-height: 44px;
   padding: 5px 8px;
-  font-size: var(--t-sm);
+  font-size: 24px;
+  line-height: 1;
 }
 
 .review-cube-choice {
@@ -3288,6 +3297,226 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   padding: 7px 1px;
   font-size: 1rem;
   text-align: center;
+}
+
+/* Position editor (ui/position-editor.mjs): the board is the input, with
+   stable, thumb-sized supplies and actions beneath it. */
+.position-editor:not([hidden]) {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.editor-supplies,
+.editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.editor-supply {
+  display: inline-flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+}
+
+.editor-supply-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-supply[aria-pressed="true"],
+.choice-buttons button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  box-shadow: inset 0 -2px var(--accent);
+}
+
+.editor-help {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.4;
+}
+
+.position-editor #editor-context {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.bg-board.is-editor .source-ring,
+.bg-board.is-editor .source-ring-halo {
+  visibility: hidden;
+}
+
+.bg-board.is-editor .editor-target .point-hit {
+  fill: color-mix(in srgb, var(--board-destination) 12%, transparent);
+}
+
+.bg-board.is-editor .point.selected .point-hit {
+  fill: color-mix(in srgb, var(--board-selection) 18%, transparent);
+  stroke: var(--board-selection);
+  stroke-width: 2;
+}
+
+.bg-board.is-editor .point.selected .checker:last-of-type {
+  filter: drop-shadow(0 0 3px var(--board-selection));
+}
+
+/* Choice buttons (ui/choice-buttons.mjs): a visible select. */
+.choice-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+.choice-buttons button {
+  min-height: 44px;
+  padding: 8px;
+  font-size: var(--t-md);
+  white-space: normal;
+}
+
+.dice-choices {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.dice-choices button {
+  display: grid;
+  grid-template: repeat(3, 6px) / repeat(3, 6px);
+  gap: 3px;
+  place-content: center;
+  /* .btn centres flex items; pips are empty cells and must stretch. */
+  place-items: stretch;
+  padding: 6px;
+}
+
+.dice-choices .pip {
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dice-editor-dialog {
+  width: min(700px, calc(100vw - 28px));
+  max-width: calc(100vw - 28px);
+}
+
+/* Two rows of pips per die on the narrowest phones: the dialog may use the
+   whole viewport height so the form never scrolls. */
+@media (max-height: 600px) {
+  .dialog.dice-editor-dialog[open] {
+    max-height: calc(100dvh - 16px);
+  }
+}
+
+.dice-editor-fields {
+  display: grid;
+  gap: 12px;
+}
+
+/* The solver's study strip names the previewed move on a button. */
+.app[data-page="solver"] .study-current {
+  padding-inline: 10px;
+  font-size: var(--t-md);
+  text-align: left;
+  white-space: normal;
+}
+
+.app[data-page="solver"] .study-strip:not([hidden]) {
+  gap: 2px;
+  padding-top: 6px;
+}
+
+.app[data-page="solver"] .study-strip-heading {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.study-original {
+  min-height: 44px;
+  padding: 6px 10px;
+  font-size: var(--t-sm);
+}
+
+.app[data-page="solver"] .touch-moves {
+  display: none;
+}
+
+.app[data-page="solver"].editing-position #message:empty {
+  display: none;
+}
+
+.app[data-page="solver"].editing-position .action-area {
+  gap: 10px;
+}
+
+@media (min-width: 650px) {
+  .dice-editor-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dice-editor-fields > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1050px) {
+  .position-editor:not([hidden]) {
+    grid-template-columns: 1fr auto;
+  }
+
+  .editor-supplies {
+    grid-column: 1;
+  }
+
+  .editor-actions {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .editor-actions button {
+    flex: 1;
+  }
+
+  .position-editor #editor-context {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    max-width: 80px;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 359px) {
+  .dice-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-height: 500px) and (min-width: 650px) {
+  .position-editor:not([hidden]) {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .position-editor #editor-context {
+    grid-column: 1;
+    grid-row: auto;
+    max-width: none;
+  }
+
+  .position-editor button {
+    padding-inline: 6px;
+    font-size: var(--t-sm);
+  }
+
+  .editor-help {
+    display: none;
+  }
 }
 
 /* Trainer: help beside the decision, never behind a drawer. */
@@ -4183,6 +4412,10 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   select,
   textarea {
     font-size: 1rem;
+  }
+
+  .decision-loss-unit {
+    display: none;
   }
 
   .check {
@@ -5612,6 +5845,17 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .decision-dialog .decision-content .review-moves {
     grid-column: 2;
     grid-row: 1 / 8;
+  }
+
+  .decision-dialog .decision-values caption {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .decision-dialog .decision-values th,

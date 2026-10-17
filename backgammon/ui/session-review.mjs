@@ -22,7 +22,7 @@ export function sessionReview(
   } = {},
 ) {
   const snapshot = clone(model),
-    names = model.names || ["Ivory", "Teal"];
+    names = model.names || ["White", "Black"];
   const engine = new EngineClient(),
     body = el("div", { class: "session-review" }),
     status = el("p", { role: "status", class: "muted" });

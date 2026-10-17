@@ -26,6 +26,7 @@ import {
   nearestRoutes,
   originalReturnRoutes,
   checkerUndoRoutes,
+  undoDieDraft,
   dieSwitchRoutes,
   preferHittingRoutes,
 } from "../core/draft.mjs";
@@ -88,7 +89,9 @@ const CLOSE_ICON =
   '<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>';
 export function field(label, input) {
   input.setAttribute("aria-label", String(label));
-  return el("label", { class: "field" }, label, input);
+  // A button group has several controls; wrapping it in a label would activate
+  // its first button when the user taps the heading.
+  return el(input.getAttribute("role") === "group" ? "div" : "label", { class: "field" }, label, input);
 }
 export function select(options, value, change) {
   const node = el("select", { onChange: (e) => change?.(e.target.value) });
@@ -371,8 +374,8 @@ export async function preferences() {
   const s = settings();
   const orient = select(
     [
-      ["0", "Ivory home at bottom right"],
-      ["1", "Teal home at bottom right"],
+      ["0", "White home at bottom right"],
+      ["1", "Black home at bottom right"],
     ],
     s.orientation,
     (v) => saveSettings({ orientation: Number(v) }),
@@ -598,7 +601,7 @@ export function about() {
     ),
   );
 }
-export function players(s, names = ["Ivory", "Teal"]) {
+export function players(s, names = ["White", "Black"]) {
   const orientation = settings().orientation;
   for (const [id, p] of [
     ["opponent", 1 - orientation],
@@ -851,7 +854,7 @@ export class DraftBoard {
   }
   tapDie(index, value) {
     if (!this.enabled || this.preview || this.board.playbackTimer) return;
-    if (this.draft.length > this.minDraft) return this.undoTo(index ?? this.draft.length - 1);
+    if (this.draft.length > this.minDraft) return this.undoDie(index ?? this.draft.length - 1);
     // Forced steps cannot be undone. With no editable draft, retain die choice.
     if (index !== null) return;
     if (value !== (this.advanced ? this.activeDie() : this.preferred)) this.preferDie(value);
@@ -1161,6 +1164,22 @@ export class DraftBoard {
   undo() {
     return this.undoTo(this.draft.length - 1);
   }
+  undoDie(index) {
+    if (!this.enabled || this.preview) return;
+    const remaining = undoDieDraft(this.state, this.paths, this.draft, index, this.minDraft);
+    if (!remaining) return;
+    const before = this.current(), step = this.draft[index],
+      count = this.draft.length - remaining.length,
+      exact = JSON.stringify(remaining) === JSON.stringify(this.draft.filter((_, i) => i !== index));
+    this.draft = remaining;
+    if (this.advanced) this.preferred = step.die;
+    this.selected = null;
+    this.hint = count === 1 ? "Move undone." : "Move and dependent continuation undone.";
+    this.render();
+    if (exact) this.board.animateMove(before, this.current(), step, true);
+    else this.board.animateRestore(before, this.current(), "undo");
+    this.onChange({ kind: "undo" });
+  }
   undoTo(index) {
     if (!this.enabled || this.preview || !Number.isInteger(index) ||
         index < this.minDraft || index >= this.draft.length) return;
@@ -1272,7 +1291,7 @@ export class DraftBoard {
               ? `Click a checker or destination · using die ${this.activeDie() ?? "–"}.`
               : this.complete()
               ? this.draft.length
-                ? "Ready to confirm. Tap a used die to undo from that step."
+                ? "Ready to confirm. Tap a used die to undo its move."
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? display.moveHints

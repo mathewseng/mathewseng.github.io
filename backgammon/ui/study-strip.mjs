@@ -6,7 +6,7 @@ import { boardKey } from "../core/rules.mjs";
 // Keep previews beside the board on phones. These are the same evaluated
 // candidates used by the full results panel; choosing one never edits a game.
 export class StudyStrip {
-  constructor(onPreview, { container = document.querySelector(".action-area"), playedLabel = "played" } = {}) {
+  constructor(onPreview, { container = document.querySelector(".action-area"), playedLabel = "played", dropdown = true } = {}) {
     this.onPreview = onPreview;
     this.playedLabel = playedLabel;
     this.bestPlayedLabel = `Best · ${playedLabel}`;
@@ -23,10 +23,12 @@ export class StudyStrip {
     });
     this.heading = el("strong");
     this.value = el("span", { class: "study-preview-value", role: "status" });
-    this.chooser = el("div", { class: "study-preview-controls" }, this.previous, this.select, this.next);
+    this.current = dropdown ? null : button('Original position', () => openPanel(), 'study-current', {'aria-label':'Compare evaluated moves'});
+    this.original = dropdown ? null : button('Original', () => this.choose(-1), 'study-original', {'aria-label':'Show original position'});
+    this.chooser = el("div", { class: "study-preview-controls" }, this.previous, this.current || this.select, this.next);
     this.details = button("Compare cube options", () => openPanel(), "ghost");
     this.node = el("section", { class: "study-strip", hidden: true, "aria-label": "Position review" },
-      el("div", { class: "study-strip-heading" }, this.heading),
+      el("div", { class: "study-strip-heading" }, this.heading, this.original),
       this.chooser, this.value, this.details);
     container.prepend(this.node);
   }
@@ -40,6 +42,7 @@ export class StudyStrip {
     const isChecker = result.type === "checker";
     this.chooser.hidden = !isChecker;
     this.details.hidden = isChecker;
+    if (this.original) this.original.hidden = !isChecker;
     const units = result.units === "current-cube-points" ? "equity" : "match win";
     const previewKey = preview ? boardKey(preview) : null;
     const candidates = (result.candidates || []).slice(0, 10);
@@ -57,6 +60,11 @@ export class StudyStrip {
     }
     const chosen = earlierPreview ? -2 : preview ? this.candidates.findIndex(c => c.key === previewKey) : -1;
     this.select.value = String(chosen);
+    if (this.current) {
+      this.current.textContent = this.select.selectedOptions[0]?.textContent || 'Original position';
+      this.current.dataset.previewIndex = chosen;
+      this.original.setAttribute('aria-pressed', String(chosen === -1));
+    }
     this.previous.disabled = chosen < 0;
     this.next.disabled = chosen >= this.candidates.length - 1;
     if (isChecker) {

@@ -23,6 +23,9 @@ export class EquityBar {
     this.meter.append(this.fill);
     this.label = element("span", "equity-number equity-bottom-number");
     this.topLabel = element("span", "equity-number equity-top-number");
+    // The group announces the complete reading, including its perspective.
+    this.label.setAttribute("aria-hidden", "true");
+    this.topLabel.setAttribute("aria-hidden", "true");
     this.retry = element("button", "equity-retry");
     this.retry.type = "button";
     this.retry.textContent = "Retry";
@@ -99,14 +102,12 @@ export class EquityBar {
     if (reading) {
       const equity = orientation ? -reading.ivory : reading.ivory;
       this.fill.style.height = `${equityFraction(equity) * 100}%`;
-      this.label.textContent = (equity >= 0 ? "+" : "") + equity.toFixed(2);
-      this.topLabel.textContent = (-equity >= 0 ? "+" : "") + (-equity).toFixed(2);
-      this.topLabel.setAttribute("aria-label", `${playerName(1 - orientation)} equity ${this.topLabel.textContent}`);
-      this.label.setAttribute("aria-label", `${playerName(orientation)} equity ${this.label.textContent}`);
-      this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${this.label.textContent} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;
+      this.label.textContent = equity >= 0 ? equity.toFixed(3) : "";
+      this.topLabel.textContent = equity < 0 ? (-equity).toFixed(3) : "";
+      this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(3)} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;
     } else {
       this.label.textContent = status === "loading" ? "…" : "—";
-      this.topLabel.textContent = this.label.textContent;
+      this.topLabel.textContent = "";
       this.node.title = reason;
     }
     this.node.setAttribute("aria-label", this.node.title);
@@ -126,6 +127,8 @@ export class EquityBar {
       auto = false,
       blocked = "",
       submitted = null,
+      engine = this.engine,
+      preset = 'quick',
     } = this.context;
     if (
       blocked ||
@@ -140,8 +143,9 @@ export class EquityBar {
       );
       return;
     }
-    const ready = equityReading(state, result);
-    if (ready) {
+    const prepared = auto ? engine.peek(state, {preset, submitted}) : null;
+    const ready = equityReading(state, result || prepared);
+    if (ready && (result || engine === this.engine)) {
       if (this.engine.active || this.engine.initializing) this.stop();
       this.paint("ready", ready);
       return;
@@ -155,22 +159,24 @@ export class EquityBar {
       );
       return;
     }
-    const key = positionKey(state) + JSON.stringify(submitted);
+    const key = positionKey(state) + JSON.stringify([preset, submitted]);
     if (this.key === key) {
       this.position();
-      if (this.reading) this.paint("ready", this.reading);
+      if (ready || this.reading) this.paint("ready", ready || this.reading);
       return;
     }
     if (this.engine.active || this.engine.initializing) this.stop();
     this.key = key;
     const token = ++this.token;
-    this.paint(
-      "loading",
-      null,
-      "Evaluating the current decision · GNUbg Quick",
-    );
-    this.engine
-      .analyze(state, { preset: "quick", submitted, priority: 0 })
+    this.paint(ready ? 'ready' : 'loading', ready, 'Evaluating the current decision');
+    const publish = result => {
+      if (token !== this.token || this.key !== key || !this.enabled) return;
+      const reading = equityReading(state, result);
+      if (reading) this.paint('ready', reading);
+    };
+    engine
+      .analyze(state, { preset, submitted, priority: engine === this.engine ? 0 : submitted ? -4 : -5,
+        onEvaluation: publish })
       .then((result) => {
         if (token !== this.token || this.key !== key || !this.enabled)
           return;
@@ -182,6 +188,10 @@ export class EquityBar {
         this.paint("ready", reading);
       })
       .catch((error) => {
+        if (error.name === 'AbortError') {
+          if (token === this.token) this.key = null;
+          return;
+        }
         if (token === this.token && this.enabled)
           this.paint("error", null, error.message);
       });

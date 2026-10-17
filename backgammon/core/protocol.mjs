@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { certainBearoff } from './certain-bearoff.mjs';
 import { initialState, clone, assertState, replay } from "./rules.mjs";
 import { defaultPlayRules } from "./play-session.mjs";
 import {
@@ -90,7 +91,7 @@ export function validateSession(s) {
       typeof s.undoRequest.id !== "string" ||
       s.undoRequest.id.length > 100 ||
       !Number.isInteger(s.undoRequest.target) ||
-      s.events[s.undoRequest.target]?.action.type !== "move")
+      !["move", "finish-race"].includes(s.events[s.undoRequest.target]?.action.type))
   )
     throw new Error("Invalid undo request.");
   if (JSON.stringify(s).length > 3 * 1024 * 1024)
@@ -204,7 +205,8 @@ export function accept(
       if (clientId !== hostId || !s.started)
         throw new Error("Only the host can advance a forced turn.");
       const before = s.events.length;
-      if (blockedBarRoll(s.state)) {
+      if (certainBearoff(s.state)) s = playAction(s, {type:"finish-race"}, s.state.turn);
+      else if (blockedBarRoll(s.state)) {
         const actor = s.state.turn;
         // Include the host's actual roll in the recovery hash even though every
         // roll passes to the same board. Never use dice supplied by the command.

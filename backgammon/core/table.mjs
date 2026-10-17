@@ -206,7 +206,7 @@ export function playAction(
     table,
     action,
     actor,
-    (action.type === "move" && !!forcedTurn(source.state)) ||
+    action.type === "finish-race" || (action.type === "move" && !!forcedTurn(source.state)) ||
       (action.type === "roll" && blockedBarRoll(source.state)),
   );
   table.undoReply = null;
@@ -225,6 +225,10 @@ export function takebackTarget(table, actor = null) {
     states;
   for (let i = table.events.length - 1; i >= 0; i--) {
     const event = table.events[i];
+    if (event.action.type === "finish-race" && table.state.phase === "over") {
+      target ??= i;
+      continue;
+    }
     if (!["roll", "move"].includes(event.action.type)) break;
     if (event.action.type !== "move") continue;
     // Do not trust an imported/missing automatic marker to authorize a rewind.

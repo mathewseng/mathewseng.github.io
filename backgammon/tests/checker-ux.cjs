@@ -462,7 +462,7 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     await load("tall");
     assert.match(
       await page.locator('[data-point="12"]').getAttribute("aria-label"),
-      /15 Ivory/,
+      /15 White/,
     );
     await drag(12, 9);
     assert.equal((await info()).draft.length, 1);
@@ -695,8 +695,8 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
         const label = document
             .querySelector(`[data-point="${i}"]`)
             .getAttribute("aria-label"),
-          match = label.match(/(\d+) (Ivory|Teal) checkers/);
-        return match ? Number(match[1]) * (match[2] === "Ivory" ? 1 : -1) : 0;
+          match = label.match(/(\d+) (White|Black) checkers/);
+        return match ? Number(match[1]) * (match[2] === "White" ? 1 : -1) : 0;
       }),
     );
     const committed = await bot.evaluate(async () => {

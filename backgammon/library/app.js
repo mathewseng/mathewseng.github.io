@@ -236,7 +236,7 @@ function renderList() {
         summary.append(
           el("div", { class: "library-session-players" }, ...totals.map((t, player) =>
             el("div", { class: "library-session-player", "data-player": player },
-              el("strong", {}, item.names?.[player] || (player ? "Teal" : "Ivory")),
+              el("strong", {}, item.names?.[player] || (player ? "Black" : "White")),
               el("span", {}, `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV points lost" : "equity lost"}`),
             ))),
           el("p", { class: "library-session-count" },

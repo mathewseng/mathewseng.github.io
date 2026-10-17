@@ -27,6 +27,40 @@ export function checkerRoutes(paths, draft, from) {
   }
   return [...routes.values()].sort((a, b) => a.steps.length - b.steps.length);
 }
+// A die belongs to its draft step, not the entire suffix of the turn. Preserve
+// every other die that can still be replayed legally. A later step by the same
+// checker can start from its revised location. Only remove dependencies when
+// that single-die revision is impossible (e.g. a blocked alternative entry).
+export function undoDieDraft(state, paths, draft, index, minDraft = 0) {
+  if (!Number.isInteger(index) || index < minDraft || index >= draft.length)
+    return null;
+  const single = draft.filter((_, i) => i !== index);
+  if (matchingPaths(paths, single).length) return single;
+  const checker = [...draftCheckers(state, draft).values()].flat()
+    .find(checker => checker.indices.includes(index));
+  const same = (a, b) => a && b && a.from === b.from && a.to === b.to && a.die === b.die;
+  for (const path of matchingPaths(paths, draft.slice(0, index))) {
+    let point = draft[index].from, valid = true;
+    for (let j = index + 1; j < draft.length; j++) {
+      const step = path.steps[j - 1];
+      if (checker?.indices.includes(j)) {
+        if (!step || step.from !== point || step.die !== draft[j].die) { valid = false; break; }
+        point = step.to;
+      } else if (!same(step, draft[j])) { valid = false; break; }
+    }
+    if (valid) return path.steps.slice(0, draft.length - 1);
+  }
+  // At most eight subsets; keep the greatest number of independent steps.
+  const chosen = 1 << index, earlier = chosen - 1;
+  let best = null;
+  for (let mask = chosen; mask < 2 ** draft.length; mask++) {
+    if (!(mask & chosen) || (mask & earlier)) continue;
+    const remaining = draft.filter((_, i) => !(mask & (1 << i)));
+    if (best && remaining.length <= best.length) continue;
+    if (matchingPaths(paths, remaining).length) best = remaining;
+  }
+  return best;
+}
 // At most 15 subsets for a four-step draft. A reversal is offered only when
 // the remaining draft is still a legal prefix and exactly one own checker
 // returns to one previous point. Unrelated moves stay; dependent ones cannot
@@ -73,8 +107,8 @@ export function reverseRoutes(state, paths, draft) {
 
 // Checkers are indistinguishable in canonical state. For draft interaction the
 // most recent arrival is the top checker, so continuing that stack continues
-// its journey. Point-space returns undo that journey; checker taps undo only
-// its latest editable step, including when an earlier step was forced.
+// its journey. A checker-tap return removes that checker's entire editable
+// journey; a forced prefix stays locked even if the checker continued after it.
 function draftCheckers(state, draft) {
   const stacks = new Map();
   const add = (point, count) =>
@@ -96,15 +130,15 @@ function draftCheckers(state, draft) {
 export function checkerUndoRoutes(state, paths, draft, minDraft = 0) {
   const routes = [];
   for (const [from, checkers] of draftCheckers(state, draft)) {
-    const index = checkers.at(-1)?.indices.at(-1);
-    if (index === undefined || index < minDraft) continue;
-    const step = draft[index];
-    const remaining = draft.filter((_, i) => i !== index);
+    const indices = checkers.at(-1)?.indices.filter(i => i >= minDraft) || [];
+    if (!indices.length) continue;
+    const steps = indices.map(i => draft[i]);
+    const remaining = draft.filter((_, i) => !indices.includes(i));
     // An entry or a move into the home board may enable later moves. Never
     // remove it if retaining those moves would make the draft illegal.
     if (!matchingPaths(paths, remaining).length) continue;
-    routes.push({ from, to: step.from, undo: true, remaining,
-      steps: [step], die: step.die });
+    routes.push({ from, to: steps[0].from, undo: true, remaining,
+      steps, die: steps.reduce((total, step) => total + step.die, 0) });
   }
   return routes;
 }

@@ -327,8 +327,9 @@ module.exports = async function directPlay(browser, base, out, name) {
         } else {
           initial.points[5] = 1;
           initial.points[4] = 1;
-          initial.points[23] = -15;
-          initial.off = [13, 0];
+          // Keep the race uncertain so this tests a chosen turn, not adjudication.
+          initial.points[18] = -2;
+          initial.off = [13, 13];
         }
         const id = crypto.randomUUID();
         await st.put("work", {

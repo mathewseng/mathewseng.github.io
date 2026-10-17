@@ -497,3 +497,31 @@ test('queued unlisted Auto grade sends the completed root basis without restarti
     assert.equal((await grade).actual.key,turns.at(-1).key);
   } finally {client.destroy();}
 });
+
+test('live equity can reuse prepared and intermediate results without resolving Auto early', async () => {
+  const worker = new WorkerMock(), client = new EngineClient({workerFactory:()=>worker, openingBook:null});
+  const state=initialState({phase:'move', dice:[1,4]}), candidates=legalTurns(state).slice(0,3).map((c,i)=>({...c,equity:.3-i*.02}));
+  try {
+    let resolved=false;
+    const first=client.analyze(state,{preset:'auto',priority:-20}).then(r=>{resolved=true;return r;});
+    await wait();
+    const result={status:'complete',type:'checker',perspective:0,candidates,settings:{plies:0,name:'Quick'}};
+    const id=worker.messages.at(-1).id;
+    worker.reply({id,type:'evaluation',result});
+    assert.equal(resolved,false,'display progress does not bypass minimum search depth');
+    const stages=[];
+    const joined=client.analyze(state,{preset:'auto',onEvaluation:r=>stages.push(r),priority:10});
+    assert.equal(stages.length,1,'late subscriber immediately sees the completed stage');
+    const display=client.peek({...state,dice:[4,1]},{preset:'auto',submitted:candidates[1].steps});
+    assert.ok(Math.abs(display.actual.equity-.28)<1e-12);
+    display.candidates[0].equity=99;
+    assert.equal(client.peek(state,{preset:'auto'}).candidates[0].equity,.3);
+    for (const changed of [{...state,turn:1},{...state,dice:[2,4]}, {...state,cube:{value:2,owner:0}}])
+      assert.equal(client.peek(changed,{preset:'auto'}),null,'no reading crosses decision context');
+    assert.equal(client.peek(state,{preset:'expert'}),null);
+    worker.reply({id,type:'result',result:{...result,settings:{plies:3,name:'Expert'},budget:{reason:'predicted-cost'}}});
+    await first;await joined;
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1,'one worker search serves both consumers');
+    assert.equal(client.peek(state,{preset:'auto'}).settings.plies,3);
+  } finally {client.destroy();}
+});

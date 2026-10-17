@@ -109,7 +109,7 @@ module.exports = async function researchScreen(browser, base, output, browserNam
       await page.waitForFunction(() => document.querySelector('#analyze')?.textContent === 'Analyze' &&
         document.querySelector('#analysis-budget')?.textContent.includes('completed'), {}, { timeout: 180000 });
       await page.getByText('Analysis settings', { exact: true }).click();
-      await page.getByLabel('Analysis strength', { exact: true }).selectOption('research');
+      await page.getByLabel('Analysis strength', { exact: true }).locator('[data-choice="research"]').click();
       await page.locator('#analyze').click();
       await page.waitForFunction(() => document.querySelector('#analyze')?.textContent === 'Analyze' &&
         document.querySelector('#panel')?.textContent.includes('Research · 4 ply'), {}, { timeout: 180000 });

@@ -74,7 +74,8 @@ import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
-import { ensureLocalRolls, localPlayAction } from "../core/local-rolls.mjs";
+import { certainBearoff } from "../core/certain-bearoff.mjs";
+import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
 import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
@@ -161,6 +162,7 @@ function renderResultCard(s) {
 }
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 let acceptedCubeTimer = null, acceptedCubeKey = "";
+let draftSaveFrame = null, draftSaveTimer = null;
 const analysis = new AnalysisPanel();
 const autoReview = new AutoReview({
   engine: analysis.engine,
@@ -207,7 +209,7 @@ const analysisJump = button("Analysis ↓", () => {
 document.querySelector(".action-area").append(analysisJump);
 const reviewStatus = el("div", { class: "row wrap muted small", id: "auto-review-status", role: "status", hidden: true });
 reviewArea.append(reviewStatus);
-let feedbackFilter = "all";
+let feedbackFilter = "self";
 const feedbackFilters = el("div", {
   class: "history-filters", role: "group", "aria-label": "Filter decision history", hidden: true,
 });
@@ -288,7 +290,7 @@ helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, (change) => {
   actions();
   detailDraft();
-  persist(false);
+  saveDraftAfterPaint();
   autoDraft(change?.kind === "move");
   prethink.update();
 });
@@ -469,6 +471,7 @@ addEventListener("pagehide", () => {
 });
 addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    if (draftSaveFrame !== null || draftSaveTimer !== null) persist(false);
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
@@ -577,6 +580,7 @@ function restore(recovery) {
   recovery = clone(recovery);
   game = clone(recovery.game);
   config = game.config = localConfig(game.config);
+  botPaused = !!game.reviewingTurn;
   feedback = recovery.feedback || null;
   boardKey = "";
   render();
@@ -677,7 +681,7 @@ function render() {
       event = m?.events?.at(-1);
     boardKey = key;
     draft.names = m?.names ||
-      m?.players?.map((p) => p.name) || ["Ivory", "Teal"];
+      m?.players?.map((p) => p.name) || ["White", "Black"];
     draft.set(s, legalPaths(s), enabled);
     if (
       before &&
@@ -702,7 +706,7 @@ function render() {
       ui.board.playTurn(
         transition(before, roll.action, roll.actor),
         event.action.steps,
-        { automatic: true },
+        { automatic: true, rolled: true },
       );
     }
     if (freshEvent) {
@@ -818,9 +822,10 @@ function autoDraft(advance = false) {
 function autoPlay() {
   const m = model(),
     s = state(),
+    certain = m?.started && certainBearoff(s),
     blocked = m?.started && blockedBarRoll(s),
     forced = m?.started && forcedTurn(s);
-  if ((!forced && !blocked) || committing || assistanceJob || m.undoRequest || m.reviewingTurn || opening.busy)
+  if ((!certain && !forced && !blocked) || committing || assistanceJob || m.undoRequest || m.reviewingTurn || opening.busy)
     return false;
   if (opening.active) return false;
   const key = positionKey(s),
@@ -839,7 +844,8 @@ function autoPlay() {
       });
   } else if (forcedSchedule !== `${id}:${key}`) {
     forcedSchedule = `${id}:${key}`;
-    setTimeout(() => {
+    setTimeout(async () => {
+      await ui.board.waitForPresentation();
       forcedSchedule = "";
       if (
         game?.id === id &&
@@ -847,7 +853,7 @@ function autoPlay() {
         !committing &&
         !game.undoRequest && !game.reviewingTurn
       )
-        commit(blocked ? { type: "roll" } : { type: "move", steps: forced.steps }).catch(showError);
+        commit(certain ? {type:"finish-race"} : blocked ? { type: "roll" } : { type: "move", steps: forced.steps }).catch(showError);
     }, reducedMotion() ? 0 : 650);
   }
   return true;
@@ -938,7 +944,7 @@ function setupFields() {
     fields.append(
       el("div", { class: "pair setup-names" },
       field(
-        "Ivory player",
+        "White player",
         el("input", {
           value: config.name,
           maxlength: 24,
@@ -946,7 +952,7 @@ function setupFields() {
         }),
       ),
       field(
-        "Teal player",
+        "Black player",
         el("input", {
           value: config.opponent,
           maxlength: 24,
@@ -1060,8 +1066,8 @@ function start() {
         ? [0, 1].map((p) =>
             p === config.humanSide ? config.name || "You" : "GNUbg",
           )
-        : [config.name || "Ivory", config.opponent || "Teal"],
-    humanNames: [config.name || "Ivory", config.opponent || "Teal"],
+        : [config.name || "White", config.opponent || "Black"],
+    humanNames: [config.name || "White", config.opponent || "Black"],
     started: true,
   };
   feedback = null;
@@ -1074,8 +1080,11 @@ function start() {
 function actions() {
   const table = model();
   const hasDraft = draft.draft.length > 0;
+  const ahead = settings().analysisAhead;
   ui.equityBar.set({
     state: state(),
+    engine: ahead ? analysis.engine : undefined,
+    preset: ahead ? config.reviewStrength || 'auto' : 'quick',
     auto: true,
     submitted: hasDraft && draft.complete() ? draft.draft : null,
     blocked:
@@ -1582,7 +1591,7 @@ function renderActions() {
     );
   } else if (s.phase === "over") {
     $("message").textContent =
-      `${names()[s.result.winner]} ${names()[s.result.winner] === "You" ? "win" : "wins"} ${s.result.points} point${s.result.points === 1 ? "" : "s"} · ${{ 1: "single game", 2: "gammon", 3: "backgammon" }[s.result.level] || "game"}${s.result.matchOver ? " · match complete" : ""}.`;
+      `${names()[s.result.winner]} ${names()[s.result.winner] === "You" ? "win" : "wins"} ${s.result.points} point${s.result.points === 1 ? "" : "s"} · ${{ 1: "single game", 2: "gammon", 3: "backgammon" }[s.result.level] || "game"}${s.result.matchOver ? " · match complete" : ""}${s.result.reason === "certain bearoff" ? " · certain result" : ""}.`;
     a.append(
       button(
         s.result.matchOver ? "Rematch" : "Next game",
@@ -1606,7 +1615,7 @@ function renderActions() {
 }
 function names() {
   return (
-    model()?.names || model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
+    model()?.names || model()?.players?.map((p) => p.name) || ["White", "Black"]
   );
 }
 function playerControls(close = () => {}, prefix = "") {
@@ -1660,8 +1669,8 @@ function playerControls(close = () => {}, prefix = "") {
             choice("Play both sides", null, "play-both"),
           ]
         : [
-            choice("Bot plays Ivory", 1, "bot-ivory"),
-            choice("Bot plays Teal", 0, "bot-teal"),
+            choice("Bot plays White", 1, "bot-ivory"),
+            choice("Bot plays Black", 0, "bot-teal"),
           ]),
     ),
     ...(draft.draft.length
@@ -1695,7 +1704,7 @@ function panel() {
           el(
             "div",
             { class: "list-row" },
-            `${i === 0 ? "Ivory" : "Teal"} · ${v.name} · ${online.roster.some((r) => r.id === v.id && r.connected) ? "connected" : "away"}`,
+            `${i === 0 ? "White" : "Black"} · ${v.name} · ${online.roster.some((r) => r.id === v.id && r.connected) ? "connected" : "away"}`,
           ),
         ),
       ),
@@ -1871,7 +1880,7 @@ function panel() {
 }
 function eventText(e) {
   const a = e.action;
-  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : (a.type === "practice-roll" ? "practice roll" : a.type) + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
+  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : (a.type === "finish-race" ? "certain result" : a.type === "practice-roll" ? "practice roll" : a.type) + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
 }
 function detailDraft() {
   const p = $("draft-controls");
@@ -1898,7 +1907,17 @@ function detailDraft() {
       ),
     );
 }
+function saveDraftAfterPaint() {
+  if (draftSaveFrame !== null || draftSaveTimer !== null) return;
+  draftSaveFrame = requestAnimationFrame(() => {
+    draftSaveFrame = null;
+    draftSaveTimer = setTimeout(() => { draftSaveTimer = null; persist(false); }, 0);
+  });
+}
 async function persist(history = true) {
+  cancelAnimationFrame(draftSaveFrame);
+  clearTimeout(draftSaveTimer);
+  draftSaveFrame = draftSaveTimer = null;
   if (game) {
     if (config.mode !== "online") ensureLocalRolls(game);
     const current = game;
@@ -1928,8 +1947,6 @@ async function commit(action, evaluation = null) {
   releaseAssistance();
   committing = true;
   draft.enabled = false;
-  draft.render();
-  actions();
   try {
     const eventIndex = game.events.length;
     game = await localPlayAction(game, action);
@@ -1942,12 +1959,15 @@ async function commit(action, evaluation = null) {
     if (action.type === "next") feedback = null;
     draft.draft = [];
     boardKey = "";
-    await persist();
   } finally {
     committing = false;
     boardKey = "";
     render();
   }
+  // The new state and its animation are visible before IndexedDB/history work.
+  // Capture/save the exact committed snapshot now, without locking interaction
+  // until the library transaction completes.
+  await persist();
 }
 // The engine-strength explanation lives behind a disclosure, never above
 // the primary action.
@@ -2536,6 +2556,14 @@ async function computerTurn() {
     return;
   if (s.phase === "roll" && !s.pending && !canDouble(s)) {
     // Exact rule shortcut, not a heuristic recommendation.
+    botBusy = true;
+    const token = epoch;
+    await ui.board.waitForPresentation();
+    if (token !== epoch || s !== state()) return;
+    const dice = await futureLocalRoll(game) || cryptoDice();
+    if (token !== epoch || s !== state()) return;
+    prethink.prepareAfter(s, {type:'roll', dice});
+    botBusy = false;
     await commit({type:"roll"});
     return;
   }
@@ -2587,10 +2615,11 @@ async function computerTurn() {
           result: gradeCube(s, result, action.type),
         };
     }
-    if (s.phase === 'move' && action.type === 'move') prethink.prepareAfter(s,action);
+    prethink.prepareAfter(s,action.type === 'roll'
+      ? {...action,dice:await futureLocalRoll(game) || cryptoDice()} : action);
     if (!reducedMotion()) {
       await new Promise(resolve => setTimeout(resolve, s.phase === "move" ? 650 : 300));
-      while (ui.board.playbackTimer && token === epoch) await new Promise(resolve => setTimeout(resolve, 80));
+      await ui.board.waitForPresentation();
     }
     if (token !== epoch || key !== positionKey(state())) return;
     botBusy = false;

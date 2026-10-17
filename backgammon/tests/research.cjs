@@ -135,7 +135,7 @@ module.exports = async function research(browser, base, output) {
       fullPage: true,
     });
     await page.locator("#rollout-controls summary").click();
-    await page.getByLabel("Rollout trials per alternative").selectOption("64");
+    await page.getByLabel("Rollout trials per alternative").locator('[data-choice="64"]').click();
     await page.locator("#start-rollout").click();
     await page.waitForFunction(
       () =>
@@ -158,7 +158,7 @@ module.exports = async function research(browser, base, output) {
       await page.locator("#start-rollout").textContent(),
       /saved trials/,
     );
-    await page.getByLabel("Rollout trials per alternative").selectOption("64");
+    await page.getByLabel("Rollout trials per alternative").locator('[data-choice="64"]').click();
     await page.locator("#start-rollout").click();
     await page.waitForFunction(
       () =>

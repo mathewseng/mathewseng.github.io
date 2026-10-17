@@ -61,15 +61,33 @@ export class Prethink {
   prepareAfter(state, action) {
     const view=this.view();
     if (!view?.enabled || view.game?.config.mode !== 'computer') return;
-    const next=transition(state,action,decisionPlayer(state));
-    if (!['roll','double','move'].includes(next.phase) || (next.phase==='roll'&&!canDouble(next))) return;
-    const preset=decisionPlayer(next)===view.game.config.humanSide
-      ? view.game.config.reviewStrength||'auto' : view.game.config.strength||'auto';
-    this.engine.analyze(next,{preset,priority:-20}).catch(()=>{});
+    const next=transition(state,action,decisionPlayer(state)), model=view.game;
+    const plan = { gameId:model.id, keys:new Set() };
+    this.plan = plan;
+    // Follow the chosen action through the next cube decision AND its known
+    // roll during playback. Previously this stopped at the cube, leaving the
+    // expensive checker search to start only after the player tapped Roll.
+    const prepare = async (node, remaining) => {
+      const current=this.view();
+      if (!remaining || this.plan !== plan || !current?.enabled || current.game?.id !== model.id ||
+          current.game.state.sequence > node.state.sequence || !['roll','double','move'].includes(node.state.phase)) return;
+      plan.keys.add(analysisKey(node.state));
+      const preset=decisionPlayer(node.state)===model.config.humanSide
+        ? model.config.reviewStrength||'auto' : model.config.strength||'auto';
+      const skip = node.state.phase === 'move' ? forcedTurn(node.state) : node.state.phase === 'roll' && !canDouble(node.state);
+      const result=skip ? null : await this.engine.analyze(node.state,{preset,priority:-20});
+      if (this.plan !== plan) return;
+      const dice=node.state.phase === 'roll' ? await futureLocalRoll(model,node.rolls || 0,node.state.turn) : null;
+      const children=continuations(node,result,dice ? [{dice,weight:1}] : chanceRolls());
+      // One principal continuation here; the idle scheduler covers alternatives.
+      if (children[0]) await prepare(children[0],remaining-1);
+    };
+    prepare({state:next,turns:0,rolls:action.type === 'roll' ? 1 : 0,weight:1},3).catch(()=>{});
   }
   pause() {
     clearTimeout(this.timer); this.timer = null;
     this.scope = null; this.job = null;
+    this.plan = null;
     this.engine.cancelWhere(job => [-20,-5,-4].includes(job.priority));
   }
   update() {
@@ -83,7 +101,8 @@ export class Prethink {
     const key = contextKey(model);
     if (this.scope?.key !== key) {
       const position = analysisKey(model.state);
-      this.engine.cancelWhere(job => [-20,-5,-4].includes(job.priority) && analysisKey(job.state) !== position);
+      this.engine.cancelWhere(job => [-20,-5,-4].includes(job.priority) && analysisKey(job.state) !== position &&
+        !(this.plan?.gameId === model.id && this.plan.keys.has(analysisKey(job.state))));
       this.scope = {key, state:structuredClone(model.state), root:null, done:new Set(), queue:[], seen:new Set(), nodes:0, spent:0};
       this.job = null;
     }
@@ -96,7 +115,7 @@ export class Prethink {
         this.job = null;
       }
     }
-    if (view.idle && !this.job) this.timer = setTimeout(() => this.run(), 120);
+    if (view.idle && !this.job) this.timer = setTimeout(() => this.run(), 16);
   }
   async run() {
     const view = this.view(), scope = this.scope;

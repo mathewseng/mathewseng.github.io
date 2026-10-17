@@ -24,7 +24,7 @@ export function parseMAT(text) {
   const matchLength = Number(header[1]);
   let s = null,
     initial = null,
-    names = ["Ivory", "Teal"],
+    names = ["White", "Black"],
     events = [],
     games = 0;
   const add = (action, actor = s.turn) => {

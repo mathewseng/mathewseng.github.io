@@ -13,11 +13,11 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=664c032d43615525" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=664c032d43615525" />
-    <link rel="stylesheet" href="../styles.css?bgv=664c032d43615525" />
-    <link rel="stylesheet" href="./controls.css?bgv=664c032d43615525" />
-    <script type="module" src="../ui/update-page.mjs?bgv=664c032d43615525"></script>
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=9e0e08bbd4bc800b" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=9e0e08bbd4bc800b" />
+    <link rel="stylesheet" href="../styles.css?bgv=9e0e08bbd4bc800b" />
+    <link rel="stylesheet" href="./controls.css?bgv=9e0e08bbd4bc800b" />
+    <script type="module" src="../ui/update-page.mjs?bgv=9e0e08bbd4bc800b"></script>
   </head>
   <body class="controls-page">
     <header class="topbar">
@@ -47,9 +47,9 @@
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. D also beavers/raccoons, P passes and T takes. Opening rolls happen automatically.</p></div>
             <div class="flow-next">Dice rolled · continue ↓</div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">2</span><h2>Which die is selected?</h2></div>
-            <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo from that step; tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange forward arrow. Regular moves show a green check.</p></div></li>
+            <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo its move (and any continuation that depends on it); tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange forward arrow. Regular moves show a green check.</p></div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">3</span><h2>Did you tap your checker?</h2></div>
-            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play that checker with the selected die, or use the other die if the selected one cannot move it. If it has no legal forward move with either die and its latest step can be undone, move it back one step. Earlier steps and other checkers stay put; forced steps cannot be undone. Otherwise do nothing.</p></div>
+            <div class="flow-answer"><span class="flow-yes">Yes →</span><p>Play that checker with the selected die, or use the other die if the selected one cannot move it. If it has no legal forward move and shows the amber return cue, tap it to return to its original location and restore all dice used by that checker. Other checkers stay put. Forced steps stay locked, so a checker moved after a forced step returns only to that locked location. Otherwise do nothing.</p></div>
             <div class="flow-next">Open point area · continue ↓</div></li>
           <li><div class="flow-question"><span class="flow-number" aria-hidden="true">4</span><h2>Can a checker land here?</h2></div>
             <div class="flow-answer"><span class="flow-yes">Yes →</span><p>If this is a moved checker’s original point, return that checker first. Otherwise prefer a single step with the selected die, then a single step with the other die. Otherwise move the nearest checker using a legal chain of remaining dice (including doubles). Routes cannot jump blocked points. Prefer a route that hits a checker; if several do, use the selected die first. No route dialog opens.</p></div>

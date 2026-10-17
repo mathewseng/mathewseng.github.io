@@ -9,6 +9,12 @@ module.exports = async function equityBarUX(browser, base, out, name) {
   });
   const page = await context.newPage(),
     errors = [];
+  const readEquity = () => page.locator('#equity-bar').evaluate(n => {
+    const bottom=n.querySelector('.equity-bottom-number').textContent;
+    const top=n.querySelector('.equity-top-number').textContent;
+    if ([bottom,top].filter(Boolean).length!==1 || !/^\d+\.\d{3}$/.test(bottom||top)) throw Error('Only the positive side has an unsigned number');
+    return bottom ? Number(bottom) : -Number(top);
+  });
   let assets = 0;
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => {
@@ -114,16 +120,14 @@ module.exports = async function equityBarUX(browser, base, out, name) {
           path: path.join(out, `${name}-equity-bar-${width}.png`),
         });
     }
-    const initialValue = Number(
-      await page.locator(".equity-bottom-number").innerText(),
-    );
+    const initialValue = await readEquity();
     await page.evaluate(async () => {
       const st = await import("/backgammon/core/storage.mjs");
       st.saveSettings({ orientation: 1 });
       dispatchEvent(new Event("bg-settings"));
     });
     assert.equal(
-      Number(await page.locator(".equity-bottom-number").innerText()),
+      await readEquity(),
       -initialValue,
     );
     await page.evaluate(async () => {
@@ -222,7 +226,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
         .waitFor({ timeout: 60000 });
       assert.ok(
         Number.isFinite(
-          Number(await page.locator(".equity-bottom-number").innerText()),
+          await readEquity(),
         ),
       );
       assert.match(
@@ -298,7 +302,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.getByText("Analysis settings", { exact: true }).click();
     await page
       .getByLabel("Analysis strength", { exact: true })
-      .selectOption("quick");
+      .locator('[data-choice="quick"]').click();
     await page.locator("#analyze").click();
     await page
       .locator('#equity-bar[data-state="ready"]')

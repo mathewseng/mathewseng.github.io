@@ -72,8 +72,8 @@ export function appearanceControls() {
     el(
       "div",
       { class: "theme-dice-samples" },
-      el("span", {}, dieFace(3, { player: 0 }), "Ivory"),
-      el("span", {}, dieFace(5, { player: 1 }), "Teal"),
+      el("span", {}, dieFace(3, { player: 0 }), "White"),
+      el("span", {}, dieFace(5, { player: 1 }), "Black"),
     ),
     el(
       "p",
@@ -142,7 +142,7 @@ export function appearanceControls() {
     el(
       "p",
       { class: "muted small" },
-      "Fine-tune individual colors. Player sides stay Ivory and Teal.",
+      "Fine-tune individual colors. Player sides stay White and Black.",
     ),
     warnings,
   );

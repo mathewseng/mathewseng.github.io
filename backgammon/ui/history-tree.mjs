@@ -23,6 +23,7 @@ function eventLabel(event) {
       resign: "Offer resignation",
       accept: "Accept resignation",
       reject: "Decline resignation",
+      "finish-race": "Certain result",
     }[a.type] || a.type
   );
 }
@@ -31,7 +32,7 @@ function eventLabel(event) {
 export function historyExplorer(model, { onReturn } = {}) {
   const snapshot = clone(model),
     tree = historyTree(snapshot),
-    names = snapshot.names || ["Ivory", "Teal"];
+    names = snapshot.names || ["White", "Black"];
   const slot = el("div", { class: "history-preview-board" });
   const caption = el("p", { class: "history-preview-caption", role: "status" });
   const trail = el("p", { class: "muted small history-trail" });

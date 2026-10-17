@@ -427,7 +427,7 @@ export class Board {
               (this.state.turn ? -1 : 1)
             : raw === `bar${this.state.turn}` || raw === `off${this.state.turn}`;
         const checkerTap =
-          own &&
+          (own || this.renderOptions.editor) &&
           (checkerHit(p, pos) >= 0 || [...p.querySelectorAll(".off-checker")].some((r) =>
             pos.x >= +r.getAttribute("x") &&
             pos.x <= +r.getAttribute("x") + +r.getAttribute("width") &&
@@ -601,7 +601,7 @@ export class Board {
   activateDie(die) {
     if (!die) return false;
     if (this.onDieTap) {
-      this.onDieTap(die.hasAttribute("data-draft-index") ? Number(die.dataset.draftIndex) : null, Number(die.dataset.die));
+      this.onDieTap(die.hasAttribute("data-draft-index") ? Number(die.dataset.draftIndex) : null, Number(die.dataset.die), Number(die.dataset.dieIndex));
       return true;
     }
     // The selected/used face shares the surrounding lane's switch/undo action.
@@ -624,7 +624,7 @@ export class Board {
       hideDice,
       interactive,
       preview,
-      historical = false, forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, shortcuts = null,
+      editor = false, historical = false, forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, shortcuts = null,
     },
   ) {
     const group = svg("g", {
@@ -640,13 +640,13 @@ export class Board {
       return group;
     }
     const values =
-      !historical && s.dice[0] === s.dice[1]
+      !historical && !editor && s.dice[0] === s.dice[1]
         ? Array(4).fill(s.dice[0])
         : s.dice;
     const used = usedDice.map((value, index) => ({ value, index })), forced = [...forcedDice],
       center = s.turn === orientation ? 610 : 204;
     const undoAction = usedDice.length > lockedDice;
-    if (interactive && chooseDie && !historical) {
+    if (interactive && chooseDie && !historical && !editor) {
       // The whole empty middle lane on the active dice's half, from the inner
       // frame to the bar. Point targets end at 294/start at 366; the bar and
       // cube stay outside. Faces above this layer retain their individual undo.
@@ -674,17 +674,18 @@ export class Board {
         !values.slice(0, i).some((v, j) => v === value && j >= usedDice.filter(d => d === value).length);
       const clickable = interactive && chooseDie && (undoAction
         ? draftIndex === null || draftIndex >= lockedDice : !consumed && !blocked);
-      const actionLabel = undoAction ? consumed ? "Undo from die " : "Undo last move, die "
+      const actionLabel = undoAction ? consumed ? "Undo move for die " : "Undo last move, die "
         : active ? "Switch selected die, die " : "Use die ";
       const x = center + (i - (values.length - 1) / 2) * (values.length === 2 ? 120 : 72);
       const die = svg("g", {
         transform: `translate(${x} 330)`,
         "data-die": value,
+        "data-die-index": i,
         ...(consumed ? { "data-draft-index": draftIndex } : {}),
         class: `board-die${consumed ? " consumed" : ""}${isForced ? " forced" : ""}${blocked ? " blocked" : ""}${active && clickable ? " preferred" : ""}`,
         "data-status": isForced ? "forced" : consumed ? "used" : blocked ? "blocked" : active ? "selected" : "available",
         role: clickable ? "button" : "img",
-        "aria-label": `${clickable ? actionLabel : "Die "}${value}${historical ? ", previous roll" : isForced ? ", forced move" : consumed ? ", used" : blocked ? ", no legal move" : active ? ", selected" : ", available"}`,
+        "aria-label": `${editor ? "Edit die " + (i + 1) + ", " : clickable ? actionLabel : "Die "}${value}${historical ? ", previous roll" : isForced ? ", forced move" : consumed ? ", used" : blocked ? ", no legal move" : active ? ", selected" : ", available"}`,
         ...(clickable
           ? { tabindex: 0, "aria-pressed": active }
           : {}),
@@ -744,7 +745,7 @@ export class Board {
       die.append(body);
       group.append(die);
     });
-    if (interactive && chooseDie && !historical && (values.length === 2 || undoAction)) {
+    if (interactive && chooseDie && !historical && !editor && (values.length === 2 || undoAction)) {
       const swap = svg("g", { class: "dice-switch", role: "button", tabindex: 0,
         "aria-label": undoAction ? "Undo draft step" : "Switch selected die", transform: `translate(${center + (values.length === 2 ? 0 : 165)} 330)` });
       swap.append(svg("rect", { class: "dice-switch-surface", x: -19, y: -22, width: 38, height: 44, rx: 9, fill: "var(--panel)", stroke: "var(--line)" }));
@@ -951,7 +952,19 @@ export class Board {
     this.render(state, { ...options, interactive: false, preview: true });
     if (snapshot) animatePreview(this.svg, snapshot, this.animations);
   }
-  playTurn(before, steps, { automatic = false } = {}) {
+  animateEdit(before, after, from, to, player) {
+    if (reducedMotion() || document.hidden) return;
+    this.flyChecker(this.dropOrigin || checkerPosition(before, from, player, this.options.orientation),
+      checkerPosition(after, to, player, this.options.orientation), player, to,
+      {drop:!!this.dropOrigin, residentCount:typeof to === 'number' ? Math.max(0, before.points[to] * (player ? -1 : 1)) : 0});
+  }
+  async waitForPresentation() {
+    while (!reducedMotion() && !document.hidden &&
+      (this.playbackTimer || performance.now() < (this.diceSettledAt || 0))) {
+      await new Promise(resolve => setTimeout(resolve, 32));
+    }
+  }
+  playTurn(before, steps, { automatic = false, rolled = false } = {}) {
     if (!steps.length) return;
     if (reducedMotion() || document.hidden) {
       const after = steps.reduce((s, step) => applyStep(s, step), before);
@@ -995,7 +1008,12 @@ export class Board {
       current = after;
       this.playbackTimer = setTimeout(advance, duration + 200);
     };
-    advance();
+    if (rolled) {
+      this.render(before, {...options, playback:true, interactive:false, lastMove:null,
+        selected:null, sources:[], destinations:[], moves:[], usedDice:[], forcedDice:[]});
+      this.animateDice();
+      this.playbackTimer = setTimeout(advance, Math.max(0, this.diceSettledAt - performance.now()));
+    } else advance();
   }
   animateMove(before, after, step, reverse = false, route = [step]) {
     const cue = reverse
@@ -1239,6 +1257,7 @@ export class Board {
   animateDice() {
     sound.play("roll");
     if (reducedMotion() || document.hidden) return;
+    this.diceSettledAt = performance.now() + 740;
     this.svg.querySelectorAll(".board-die").forEach((die, i) => {
       // The outer SVG transform fixes the die's location. Animate the face inside
       // it, preserving focus/hit targets and displaying only the committed value.
@@ -1260,10 +1279,11 @@ export class Board {
           { transform: restingTransform, opacity: 1 },
         ],
         {
-          duration: 440,
+          duration: 560,
           delay: i * 30,
           easing: "cubic-bezier(.2,.75,.3,1)",
           fill: "backwards",
+          id: "dice-roll",
         },
       );
       this.animations.push(animation);
@@ -1448,6 +1468,7 @@ export class Board {
       interactive = true,
       preview = false,
       editor = false,
+      diceState = null,
       playback = false,
       usedDice = [],
       forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, boardShortcuts: shortcuts = null,
@@ -1507,6 +1528,7 @@ export class Board {
       interactive,
       preview,
       editor,
+      diceState,
       usedDice,
       forcedDice, lockedDice, playableDice, advanced, boardShortcuts: shortcuts,
       chooseDie,
@@ -1620,11 +1642,15 @@ export class Board {
         }),
       );
       g.append(patternOverlay(g.lastChild, p % 2 ? "pointB" : "pointA"));
+      // Hover/focus strokes belong above the point paint. At phone scale the
+      // non-scaling border is wider than the gap beside the triangle, so drawing
+      // it underneath lets the triangle/pattern cut off the inside of the ring.
+      g.append(g.querySelector(".point-hit"));
       if (reachable.includes(p)) {
-        const glow = g.querySelector('.point-shape').cloneNode(false);
-        glow.setAttribute('class', 'point-glow');
-        glow.setAttribute('fill', 'none');
-        g.append(glow);
+        // One inset rounded outline, rather than a filtered triangle whose
+        // sharp corners/blur leave rectangular seams on small Safari boards.
+        g.append(svg('rect', {x:x+5, y:top ? 29 : 368, width:50, height:263,
+          rx:8, class:'point-glow', fill:'none', 'pointer-events':'none'}));
       }
       if (
         destinations.includes(p) ||
@@ -1634,15 +1660,16 @@ export class Board {
       )
         g.append(
           svg("rect", {
-            x: x + 3,
-            y: top ? 32 : 370,
-            width: 54,
-            height: 258,
+            x: x + 5,
+            y: top ? 29 : 368,
+            width: 50,
+            height: 263,
             rx: 8,
             class: "point-wash",
             "pointer-events": "none",
           }),
         );
+      if (reachable.includes(p)) g.append(g.querySelector('.point-glow'));
       if (numbers) {
         // The number lane is destination space too, not a dead strip of frame.
         g.append(svg("rect", {
@@ -1684,11 +1711,11 @@ export class Board {
       if (destinations.includes(p))
         g.append(
           svg("rect", {
-            x: x + 4,
-            y: top ? 255 : 367,
-            width: 52,
-            height: 38,
-            rx: 19,
+            x: x + 8,
+            y: top ? 252 : 376,
+            width: 44,
+            height: 32,
+            rx: 16,
             class: "destination-badge",
             fill: boardColor("destination"),
             stroke: boardColor("surface"),
@@ -1724,10 +1751,10 @@ export class Board {
             "text",
             {
               x: x + 30,
-              y: top ? 281 : 393,
+              y: top ? 276 : 400,
               "text-anchor": "middle",
               fill: boardColor("destinationText"),
-              "font-size": compact ? 29 : 23,
+              "font-size": 23,
               "font-weight": 700,
               "pointer-events": "none",
               class: "destination-die",
@@ -1756,10 +1783,10 @@ export class Board {
         );
       }
       const returnLabel = [...g.querySelectorAll("text.destination-die")].find(n => n.textContent === "↶");
-      if (returnLabel) returnLabel.replaceWith(returnIcon(x + 30, top ? 274 : 386));
-      for (const ring of g.querySelectorAll(".source-ring,.landing-ring")) {
+      if (returnLabel) returnLabel.replaceWith(returnIcon(x + 30, top ? 268 : 392));
+      for (const ring of g.querySelectorAll(".source-ring")) {
         const halo = ring.cloneNode(false);
-        halo.setAttribute("class", "ring-halo");
+        halo.setAttribute("class", `ring-halo${ring.classList.contains("source-ring") ? " source-ring-halo" : ""}`);
         ring.before(halo);
       }
       if (numbers && shortcuts && !matchMedia("(pointer: coarse), (max-width: 700px)").matches) {
@@ -1785,7 +1812,7 @@ export class Board {
         "aria-label": `${playerName(p)} bar, ${s.bar[p]} checkers${returnToBar ? ", return checker and restore its entry die" : ""}`,
         "aria-disabled": !interactive,
         "aria-pressed": selected === "bar" && s.turn === p,
-        class: `point${sources.includes("bar") && s.turn === p ? " movable" : ""}${selected === "bar" && s.turn === p ? " selected" : ""}${returnToBar ? " destination return-destination" : ""}`,
+        class: `point${(sources.includes("bar") && s.turn === p) || (editor && s.bar[p]) ? " movable" : ""}${selected === "bar" && s.turn === p ? " selected" : ""}${returnToBar ? " destination return-destination" : ""}`,
       });
       g.append(
         svg("rect", {
@@ -1861,7 +1888,7 @@ export class Board {
       if (returnLabel) returnLabel.replaceWith(returnIcon(408, top ? 274 : 409));
       for (const ring of g.querySelectorAll(".source-ring")) {
         const halo = ring.cloneNode(false);
-        halo.setAttribute("class", "ring-halo");
+        halo.setAttribute("class", "ring-halo source-ring-halo");
         ring.before(halo);
       }
       children.push(g);
@@ -1872,7 +1899,7 @@ export class Board {
         "aria-disabled": !interactive,
         "aria-pressed": selected === "off" && s.turn === p,
         "aria-label": `${playerName(p)} borne off, ${s.off[p]} checkers${(destinations.includes("off") || reachable.includes("off")) && s.turn === p ? ", legal bearoff destination" : ""}${undoSources.includes("off") && s.turn === p ? ", tap checker to undo its draft bearoff" : sources.includes("off") && s.turn === p ? ", draft return available: select a borne-off checker" : ""}${lastMove?.player === p && lastMove.points.off ? `, ${lastMove.points.off} moved last turn` : ""}`,
-        class: `point${reachable.includes("off") && s.turn === p ? " reachable" : ""}${destinations.includes("off") && s.turn === p ? " destination" : ""}${sources.includes("off") && s.turn === p ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
+        class: `point${reachable.includes("off") && s.turn === p ? " reachable" : ""}${destinations.includes("off") && s.turn === p ? " destination" : ""}${(sources.includes("off") && s.turn === p) || (editor && s.off[p]) ? " movable" : ""}${selected === "off" && s.turn === p ? " selected" : ""}`,
       });
       const movedOff =
         lastMove?.player === p ? lastMove.points.off || 0 : 0;
@@ -1998,8 +2025,9 @@ export class Board {
       this.dice(
         historicalDice
           ? { ...s, dice: lastMove.dice, turn: lastMove.player }
-          : s,
+          : diceState || s,
         {
+          editor,
           orientation,
           usedDice: historicalDice && lastMove.automatic ? lastMove.steps.map(st => st.die) : usedDice,
           forcedDice: historicalDice && lastMove.automatic ? lastMove.steps.map(st => st.die) : forcedDice,

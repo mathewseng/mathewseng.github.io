@@ -14,7 +14,7 @@ The tested parser expects `N point match`, `Game N`, a two-player `Name : score`
  5 point match
 
  Game 1
- Ivory : 0                      Teal : 0
+ White : 0                      Black : 0
   1) 31: 8/5 6/5                 61: 13/7 8/7
   2)  Doubles => 2                Takes
 ```

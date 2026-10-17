@@ -125,10 +125,10 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       .getByRole("button", { name: "Dice, cube & match context", exact: true })
       .click();
     assert.equal(
-      await page.getByLabel("Decision", { exact: true }).inputValue(),
+      await page.getByLabel("Decision", { exact: true }).locator('[aria-pressed="true"]').getAttribute('data-choice'),
       "beaver",
     );
-    await page.getByLabel("Decision", { exact: true }).selectOption("raccoon");
+    await page.getByLabel("Decision", { exact: true }).locator('[data-choice="raccoon"]').click();
     await page
       .getByLabel("Cube value (accepted stake)", { exact: true })
       .fill("4");
@@ -142,7 +142,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       await page.locator("#position-rules").innerText(),
       /Jacoby.*Beavers \+ raccoons/,
     );
-    await page.locator("#analyze").click();
+    // Done editing already starts this decision's analysis.
     await page
       .getByRole("button", { name: "Save as exercise", exact: true })
       .waitFor({ timeout: 45000 });
@@ -172,7 +172,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
     await page.locator("#cube-take").waitFor();
     assert.match(
       await page.locator("#message").innerText(),
-      /Raccoon to 8.*Teal to decide/,
+      /Raccoon to 8.*Black to decide/,
     );
     assert.match(await page.locator("#practice-rules").innerText(), /Jacoby/);
     await page.locator("#cube-take").click();

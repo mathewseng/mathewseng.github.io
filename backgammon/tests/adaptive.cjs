@@ -69,7 +69,7 @@ module.exports = async function adaptive(browser,base,out,name="browser") {
       await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze"&&
         document.querySelector("#analysis-budget")?.textContent.includes("completed")&&
         !document.querySelector("#analysis-budget")?.textContent.includes("searching deeper"));
-      assert.equal(await page.getByLabel("Analysis strength").inputValue(),"auto");
+      assert.equal(await page.getByLabel("Analysis strength").locator('[aria-pressed="true"]').getAttribute("data-choice"),"auto");
       // On phones study controls open the same complete analysis panel.
       if(viewport.width<600) {
         await page.locator("#panel-toggle").click();

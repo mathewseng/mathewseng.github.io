@@ -23,8 +23,8 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     // Fix depth for this ten-preview navigation test. Auto's completed depth
     // and screened list legitimately depend on this browser's speed.
     await page.locator("#panel-toggle").tap();
-    await page.getByText("Analysis settings",{exact:true}).click();
-    await page.getByLabel("Analysis strength",{exact:true}).selectOption("deep");
+    await page.getByText("Analysis settings",{exact:true}).tap();
+    await page.getByLabel("Analysis strength",{exact:true}).locator('[data-choice="deep"]').tap();
     await page.locator("#details-dialog .close").tap();
     await page.locator("#analyze").tap();
     await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze"&&document.querySelector("#message")?.textContent.includes("· Deep"));
@@ -36,18 +36,18 @@ module.exports = async function mobileStudy(browser, base, out, name) {
       assert.ok(!original.overflow,`solver ${width}: no horizontal scroll`);
       if (width >=375) assert.ok(original.actions.bottom <= height+1,`solver ${width}: primary action below screen ${JSON.stringify(original)}`);
       await page.getByRole("button",{name:"Next move preview",exact:true}).tap();
-      assert.equal(await page.getByLabel("Preview evaluated move",{exact:true}).inputValue(),"0");
+      assert.equal(await page.locator(".study-current").getAttribute("data-preview-index"),"0");
       await page.getByRole("button",{name:"Next move preview",exact:true}).tap();
-      assert.equal(await page.getByLabel("Preview evaluated move",{exact:true}).inputValue(),"1");
-      await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("9");
+      assert.equal(await page.locator(".study-current").getAttribute("data-preview-index"),"1");
+      for(let i=0;i<8;i++) await page.getByRole("button",{name:"Next move preview",exact:true}).tap();
       assert.ok(await page.getByRole("button",{name:"Next move preview",exact:true}).isDisabled());
       await page.getByRole("button",{name:"Previous move preview",exact:true}).tap();
-      assert.equal(await page.getByLabel("Preview evaluated move",{exact:true}).inputValue(),"8");
+      assert.equal(await page.locator(".study-current").getAttribute("data-preview-index"),"8");
       await shot(`solver-${width}`);
       const preview = await bounds();
       assert.equal(preview.board.width,original.board.width,"preview preserves board width");
       assert.equal(preview.board.height,original.board.height,"preview preserves board height");
-      await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("-1");
+      await page.getByRole("button",{name:"Show original position",exact:true}).tap();
       assert.ok(await page.getByRole("button",{name:"Previous move preview",exact:true}).isDisabled());
       assert.deepEqual(await saved(),source,"previews do not edit the persisted source or run more analysis");
       if (width === 320) {
@@ -59,14 +59,17 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     await page.locator("#panel-toggle").tap();
     await page.locator("#details-dialog .list button").nth(2).tap();
     await page.locator("#details-dialog").waitFor({state:"detached"});
-    assert.equal(await page.getByLabel("Preview evaluated move",{exact:true}).inputValue(),"2","a full-list preview reveals board and synchronizes strip");
+    assert.equal(await page.locator(".study-current").getAttribute("data-preview-index"),"2","a full-list preview reveals board and synchronizes strip");
     await page.locator("#edit-position").tap();
     assert.ok(await page.locator(".study-strip").isHidden(),"editing hides stale analysis");
-    await page.getByLabel("Board editing tool",{exact:true}).selectOption("remove");
     await page.locator('#board [data-point="7"] .checker > circle').first().tap();
+    await page.locator("#editor-to-tray").tap();
     const removed = await saved();
     assert.equal(removed.state.off[0],source.state.off[0] + 1);
-    await page.getByLabel("Board editing tool",{exact:true}).selectOption("ivory");
+    // Tap the nested label: selection redraws it during the click, which must
+    // not be mistaken for an outside-background tap by the document handler.
+    await page.locator('[data-editor-supply="0"] > span').nth(1).tap();
+    assert.equal(await page.locator('[data-editor-supply="0"]').getAttribute('aria-pressed'),'true');
     await page.locator('#board [data-point="7"] .point-number-hit').tap();
     assert.equal((await saved()).state.off[0],0);
     await page.getByRole("button",{name:"Dice & rules",exact:true}).tap();
@@ -74,7 +77,7 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).tap();
     await shot("editor");
     await page.setViewportSize({width:1440,height:900});
-    assert.ok(await page.locator(".study-editor").isHidden(),"desktop retains the inspector");
+    assert.ok(await page.locator(".position-editor").isVisible(),"desktop and mobile share the direct editor");
     await page.setViewportSize({width:390,height:844});
     await page.goto(base + "/backgammon/trainer/");
     await page.locator("#submit-decision").waitFor();
@@ -113,7 +116,7 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     const boardPoints = await page.locator('#board .point[data-point]').evaluateAll(ns => ns.filter(n=>/^\d+$/.test(n.dataset.point)).map(n=>({i:Number(n.dataset.point),count:n.getAttribute("aria-label")})));
     for (const n of boardPoints) {
       const expected = trainerOriginal[n.i];
-      assert.ok(n.count.includes(expected ? `${Math.abs(expected)} ${expected > 0 ? "Ivory" : "Teal"} checkers` : "empty"),"Original restores the actual exercise, not the submitted draft");
+      assert.ok(n.count.includes(expected ? `${Math.abs(expected)} ${expected > 0 ? "White" : "Black"} checkers` : "empty"),"Original restores the actual exercise, not the submitted draft");
     }
     await page.locator("#next-exercise").tap();
     assert.ok(await page.locator(".study-strip").isHidden(),"next exercise hides previous answer");
