@@ -176,7 +176,7 @@ export default function WorkoutCalendar({
                 </span>
                 {hasNutrition ? (
                   <span
-                    className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[var(--warn)]"
+                    className="nutrition-mark absolute bottom-1.5 right-1.5"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -197,11 +197,7 @@ export default function WorkoutCalendar({
               </span>
             ))}
             <span className="flex items-center gap-1.5">
-              <span
-                className="h-2 w-2 rounded-full bg-[var(--warn)]"
-                aria-hidden="true"
-              />{" "}
-              nutrition
+              <span className="nutrition-mark" aria-hidden="true" /> nutrition
             </span>
           </div>
           {undatedCount ? (

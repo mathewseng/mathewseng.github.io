@@ -47,9 +47,13 @@ export function ScoreControl({
   }
 
   return (
-    <fieldset id={id} className={clsx("min-w-0", compact ? "" : "surface p-4")}>
-      {/* The legend holds only text; the Clear control sits beside the group below. */}
-      <legend className="flex w-full items-center justify-between gap-3">
+    <fieldset
+      id={id}
+      className={clsx("@container min-w-0", compact ? "" : "surface p-4")}
+    >
+      {/* The legend holds only text; the Clear control sits beside the group below.
+          It floats so it sits inside the bordered surface instead of on its edge. */}
+      <legend className="float-left flex w-full items-center justify-between gap-3">
         <span className="text-sm font-bold">{label}</span>
         <span
           className={clsx(
@@ -68,7 +72,7 @@ export function ScoreControl({
       </legend>
       <div
         className={clsx(
-          "mt-3 grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-7",
+          "clear-both pt-3 grid grid-cols-4 gap-1.5 @min-[23rem]:grid-cols-7",
           compact ? "sm:gap-1.5" : "sm:gap-2",
         )}
         role="radiogroup"

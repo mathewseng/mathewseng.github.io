@@ -49,8 +49,8 @@ export default function Goals() {
             : undefined;
 
           return (
-            <Surface key={goal.id} as="article" className="overflow-hidden">
-              <div className="p-5 sm:p-6">
+            <Surface key={goal.id} as="article" className="flex flex-col overflow-hidden">
+              <div className="flex-1 p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap gap-2">

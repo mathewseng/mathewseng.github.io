@@ -1021,6 +1021,15 @@ body::after {
     background: var(--type-color, var(--type-other));
   }
 
+  /* Nutrition is a hollow ring so it never shares a colour with a workout type. */
+  .nutrition-mark {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+  }
+
   .dot-grid {
     background-image: radial-gradient(var(--line) 1px, transparent 1px);
     background-size: 14px 14px;
