@@ -13,8 +13,8 @@ import { clsx } from "clsx";
 
 import type { NutritionEntry, Workout } from "../lib/types";
 import { formatWorkoutDuration, formatWorkoutStartTime } from "../lib/workoutTime";
-import { Link } from "../router";
-import { Badge, EmptyState, Surface } from "./ui";
+
+import { Badge, Button, ButtonLink, EmptyState, Surface } from "./ui";
 
 const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
@@ -52,15 +52,10 @@ function getMonthCells(month: Date): Date[] {
   });
 }
 
-// Colours from the site's shared palette (landing page and hubs).
-const typeColor: Record<Workout["type"], string> = {
-  push: "#8ab4ff",
-  pull: "#8fd9b6",
-  legs: "#ffb77a",
-  "full-body": "#b6a6ff",
-  upper: "#f4c95d",
-  other: "#9aa7b7",
-};
+// Workout-type colours come from the family map in shared/tokens.css (index.css).
+export function typeColorVar(type: Workout["type"]): React.CSSProperties {
+  return { "--type-color": `var(--type-${type})` } as React.CSSProperties;
+}
 
 export default function WorkoutCalendar({
   workouts,
@@ -106,23 +101,16 @@ export default function WorkoutCalendar({
       <Surface className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
           <div>
-            <p className="eyebrow">Training rhythm</p>
-            <h2 className="mt-1 text-xl font-black tracking-[-0.03em]">
+            <p className="eyebrow">Calendar</p>
+            <h2 className="mt-1 text-xl font-bold tracking-[-0.02em]">
               {monthFormatter.format(visibleMonth)}
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="button-secondary !h-11 !min-h-11 !w-11 !p-0"
-              onClick={() => moveMonth(-1)}
-              aria-label="Previous month"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <button
-              type="button"
-              className="button-secondary !h-11 !min-h-11 !px-3 text-xs"
+            <Button size="icon" onClick={() => moveMonth(-1)} aria-label="Previous month">
+              <ArrowLeft size={16} aria-hidden="true" />
+            </Button>
+            <Button
               onClick={() => {
                 const current = parseLocalDate(newestDate);
                 setVisibleMonth(current);
@@ -130,15 +118,10 @@ export default function WorkoutCalendar({
               }}
             >
               Latest
-            </button>
-            <button
-              type="button"
-              className="button-secondary !h-11 !min-h-11 !w-11 !p-0"
-              onClick={() => moveMonth(1)}
-              aria-label="Next month"
-            >
-              <ArrowRight size={16} />
-            </button>
+            </Button>
+            <Button size="icon" onClick={() => moveMonth(1)} aria-label="Next month">
+              <ArrowRight size={16} aria-hidden="true" />
+            </Button>
           </div>
         </div>
 
@@ -146,7 +129,7 @@ export default function WorkoutCalendar({
           {weekdayLabels.map((day) => (
             <div
               key={day}
-              className="py-2 text-center text-[0.68rem] font-extrabold uppercase tracking-wider text-[var(--faint)]"
+              className="py-2 text-center text-xs font-bold uppercase tracking-wider text-[var(--muted)]"
             >
               <span className="sm:hidden">{day.slice(0, 1)}</span>
               <span className="hidden sm:inline">{day}</span>
@@ -163,10 +146,12 @@ export default function WorkoutCalendar({
               <button
                 key={iso}
                 type="button"
-                className="calendar-cell hover:bg-[var(--surface-soft)]"
+                className="calendar-cell"
                 data-outside={outside}
                 data-selected={iso === selectedDate}
                 data-today={isToday}
+                aria-pressed={iso === selectedDate}
+                aria-current={isToday ? "date" : undefined}
                 onClick={() => setSelectedDate(iso)}
                 aria-label={`${detailFormatter.format(date)}: ${dayWorkouts.length} workout${dayWorkouts.length === 1 ? "" : "s"}${dayWorkouts.length ? ` (${dayWorkouts.map((workout) => workout.type).join(", ")})` : ""}${hasNutrition ? ", nutrition recorded" : ""}`}
               >
@@ -175,22 +160,23 @@ export default function WorkoutCalendar({
                   {dayWorkouts.slice(0, compact ? 1 : 2).map((workout) => (
                     <span
                       key={workout.id}
-                      className="h-2 w-2 rounded-full sm:block sm:h-auto sm:w-auto sm:truncate sm:rounded-md sm:px-1.5 sm:py-1 sm:text-[0.68rem] sm:font-extrabold sm:uppercase sm:tracking-wide sm:text-[#0b0d12]"
-                      style={{ backgroundColor: typeColor[workout.type] }}
+                      className="type-pill-wrap"
+                      style={typeColorVar(workout.type)}
                       aria-hidden="true"
                     >
-                      <span className="hidden sm:inline">{workout.type}</span>
+                      <span className="type-dot sm:hidden" />
+                      <span className="type-pill hidden sm:block">{workout.type}</span>
                     </span>
                   ))}
                   {dayWorkouts.length > (compact ? 1 : 2) ? (
-                    <span className="hidden text-[0.68rem] font-bold text-[var(--muted)] sm:block">
+                    <span className="hidden text-xs font-bold text-[var(--muted)] sm:block">
                       +{dayWorkouts.length - (compact ? 1 : 2)} more
                     </span>
                   ) : null}
                 </span>
                 {hasNutrition ? (
                   <span
-                    className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[var(--orange)]"
+                    className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[var(--warn)]"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -200,16 +186,27 @@ export default function WorkoutCalendar({
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--muted)]">
           <div className="flex flex-wrap items-center gap-3">
+            {(["push", "pull", "legs", "full-body", "upper"] as const).map((type) => (
+              <span key={type} className="flex items-center gap-1.5">
+                <span
+                  className="type-dot"
+                  style={typeColorVar(type)}
+                  aria-hidden="true"
+                />
+                {type}
+              </span>
+            ))}
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[var(--acid)]" /> workout
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[var(--orange)]" /> nutrition
+              <span
+                className="h-2 w-2 rounded-full bg-[var(--warn)]"
+                aria-hidden="true"
+              />{" "}
+              nutrition
             </span>
           </div>
           {undatedCount ? (
             <span className="flex items-center gap-1.5 font-semibold">
-              <CircleAlert size={13} /> {undatedCount} honest-to-source undated sessions
+              <CircleAlert size={13} aria-hidden="true" /> {undatedCount} undated sessions
             </span>
           ) : null}
         </div>
@@ -219,7 +216,7 @@ export default function WorkoutCalendar({
             aria-live="polite"
           >
             <div className="min-w-0">
-              <p className="text-xs font-extrabold">
+              <p className="text-xs font-bold">
                 {detailFormatter.format(selectedDateObject)}
               </p>
               <p className="mt-1 truncate text-xs text-[var(--muted)]">
@@ -230,12 +227,9 @@ export default function WorkoutCalendar({
                     : "No entries recorded"}
               </p>
             </div>
-            <Link
-              to="/workouts"
-              className="button-ghost shrink-0 justify-between !px-2 text-xs"
-            >
-              Open calendar <ArrowRight size={14} />
-            </Link>
+            <ButtonLink to="/workouts" variant="ghost" className="shrink-0">
+              Open calendar <ArrowRight size={14} aria-hidden="true" />
+            </ButtonLink>
           </div>
         ) : null}
       </Surface>
@@ -243,19 +237,19 @@ export default function WorkoutCalendar({
       {!compact ? (
         <Surface className="self-start p-4 sm:p-5">
           <p className="eyebrow">Selected day</p>
-          <h3 className="mt-1 text-lg font-black tracking-[-0.025em]">
+          <h3 className="mt-1 text-lg font-bold tracking-[-0.02em]">
             {detailFormatter.format(selectedDateObject)}
           </h3>
           <div className="mt-4 space-y-3">
             {selectedWorkouts.map((workout) => (
               <div
                 key={workout.id}
-                className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4"
+                className="rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Badge tone="accent">{workout.type}</Badge>
-                    <p className="mt-2 text-sm font-extrabold">{workout.title}</p>
+                    <p className="mt-2 text-sm font-bold">{workout.title}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
                       <Clock3 size={12} />
                       {workout.startTime
@@ -274,11 +268,11 @@ export default function WorkoutCalendar({
             {selectedNutrition.map((entry) => (
               <div
                 key={entry.id}
-                className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4"
+                className="rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-4"
               >
                 <div className="flex items-center gap-2">
-                  <Apple size={16} className="text-[var(--orange)]" />
-                  <p className="text-sm font-extrabold">Nutrition logged</p>
+                  <Apple size={16} className="text-[var(--warn)]" aria-hidden="true" />
+                  <p className="text-sm font-bold">Nutrition logged</p>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
                   {[
@@ -296,21 +290,13 @@ export default function WorkoutCalendar({
                 title="Open day"
                 description="No workout or nutrition entry is attached to this date."
                 action={
-                  <Link
-                    to={`/add?date=${selectedDate}`}
-                    className="button-secondary text-xs"
-                  >
-                    Add a workout
-                  </Link>
+                  <ButtonLink to={`/add?date=${selectedDate}`}>Add a workout</ButtonLink>
                 }
               />
             ) : (
-              <Link
-                to={`/add?date=${selectedDate}`}
-                className="button-secondary w-full text-xs"
-              >
-                <CalendarPlus size={15} /> Add another entry
-              </Link>
+              <ButtonLink to={`/add?date=${selectedDate}`} block>
+                <CalendarPlus size={15} aria-hidden="true" /> Add another entry
+              </ButtonLink>
             )}
           </div>
         </Surface>

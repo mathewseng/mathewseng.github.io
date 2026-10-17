@@ -4,7 +4,6 @@ import {
   ChartNoAxesCombined,
   ChevronRight,
   Dumbbell,
-  FilePlus2,
   Goal,
   Lightbulb,
   Menu,
@@ -18,10 +17,12 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 
-import { clsx } from "clsx";
-
 import { benchGoal } from "../data/goals";
 import { NavLink, useLocation } from "../router";
+import { ConfirmProvider } from "./confirm";
+import { ToastProvider, ToastViewport } from "./toast";
+import { Button, ButtonLink, ProgressBar } from "./ui";
+
 const navigation = [
   { to: "/", label: "Dashboard", icon: ChartNoAxesCombined, end: true },
   { to: "/workouts", label: "Calendar", icon: CalendarDays },
@@ -32,7 +33,7 @@ const navigation = [
   { to: "/notes", label: "Notes", icon: NotebookText },
 ];
 
-const pageNames: Record<string, string> = {
+export const pageNames: Record<string, string> = {
   "/": "Dashboard",
   "/workouts": "Training calendar",
   "/exercises": "Exercise progress",
@@ -45,32 +46,31 @@ const pageNames: Record<string, string> = {
   "/settings": "Data & settings",
 };
 
-function Brand({ onNavigate }: { onNavigate?: () => void } = {}) {
+const THEME_COLORS = { dark: "#08090d", light: "#f4f6fa" };
+
+function Brand({ current, onNavigate }: { current?: string; onNavigate?: () => void }) {
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className="flex min-h-11 items-center gap-2.5 text-[0.92rem] text-[var(--muted)]"
-    >
-      <a
-        href="/"
-        className="flex items-center gap-2.5 transition-colors hover:text-[var(--ink)]"
-      >
+    <nav aria-label="Breadcrumb" className="crumbs">
+      <a href="/">
         <span className="mark" aria-hidden="true">
           MS
         </span>
-        Projects
+        <span className="hidden sm:inline">Projects</span>
       </a>
-      <span aria-hidden="true" className="text-[var(--faint)]">
+      <span aria-hidden="true" className="crumb-sep">
         /
       </span>
-      <NavLink
-        to="/"
-        end
-        className="font-semibold text-[var(--ink)]"
-        onClick={onNavigate}
-      >
+      <NavLink to="/" end className="crumb-current" onClick={onNavigate}>
         Gym Tracker
       </NavLink>
+      {current ? (
+        <>
+          <span aria-hidden="true" className="crumb-sep hidden lg:inline">
+            /
+          </span>
+          <span className="hidden text-[var(--ink)] lg:inline">{current}</span>
+        </>
+      ) : null}
     </nav>
   );
 }
@@ -78,317 +78,256 @@ function Brand({ onNavigate }: { onNavigate?: () => void } = {}) {
 function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
   const Icon = dark ? Sun : Moon;
   return (
-    <button
-      type="button"
+    <Button
+      size="icon"
       onClick={onToggle}
-      className="button-secondary !h-11 !min-h-11 !w-11 !p-0"
       aria-label={dark ? "Use light mode" : "Use dark mode"}
+      aria-pressed={dark}
     >
-      <Icon size={17} />
-    </button>
+      <Icon size={17} aria-hidden="true" />
+    </Button>
+  );
+}
+
+function initialDark(): boolean {
+  try {
+    const saved = localStorage.getItem("gym-theme");
+    if (saved) return saved === "dark";
+  } catch {
+    // Storage may be unavailable; fall through to the OS preference.
+  }
+  return !window.matchMedia("(prefers-color-scheme: light)").matches;
+}
+
+function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <>
+      {navigation.map(({ to, label, icon: Icon, end }) => (
+        <NavLink key={to} to={to} end={end} className="nav-row" onClick={onNavigate}>
+          <Icon size={17} aria-hidden="true" />
+          {label}
+        </NavLink>
+      ))}
+    </>
   );
 }
 
 export default function AppShell({ children }: PropsWithChildren) {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
-  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-  const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem("gym-theme");
-    return saved ? saved === "dark" : true;
-  });
+  const menuRef = useRef<HTMLDialogElement>(null);
+  const [dark, setDark] = useState(initialDark);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pageName = pageNames[location.pathname] ?? "Gym Tracker";
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("gym-theme", dark ? "dark" : "light");
+    try {
+      localStorage.setItem("gym-theme", dark ? "dark" : "light");
+    } catch {
+      // A full or blocked storage only loses the preference.
+    }
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", dark ? THEME_COLORS.dark : THEME_COLORS.light);
   }, [dark]);
 
   useEffect(() => {
-    document.title = `${pageNames[location.pathname] ?? "Gym Tracker"} — Gym Tracker`;
+    document.title = `${pageName} — Gym Tracker`;
     window.requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
-  }, [location.pathname]);
+  }, [pageName, location.pathname]);
+
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    if (mobileMenuOpen && !menu.open) menu.showModal();
+    if (!mobileMenuOpen && menu.open) menu.close();
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    const handleMenuKeys = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileMenuOpen(false);
-        window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const menu = document.getElementById("mobile-menu");
-      const focusable = menu?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (!menu || !focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
+    const closeOnDesktop = window.matchMedia("(min-width: 1024px)");
+    const handle = (event: MediaQueryListEvent) => {
+      if (event.matches) setMobileMenuOpen(false);
     };
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleMenuKeys);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleMenuKeys);
-    };
+    closeOnDesktop.addEventListener("change", handle);
+    return () => closeOnDesktop.removeEventListener("change", handle);
   }, [mobileMenuOpen]);
 
+  const closeMenu = () => setMobileMenuOpen(false);
+  const benchPercent = Math.round(
+    ((benchGoal.currentValue ?? 0) / (benchGoal.targetValue ?? 1)) * 100,
+  );
+
   return (
-    <div className="min-h-screen">
-      <a
-        href="#main-content"
-        inert={mobileMenuOpen}
-        aria-hidden={mobileMenuOpen}
-        className="button-primary fixed left-4 top-4 z-[70] -translate-y-24 transition-transform focus:translate-y-0"
-        onClick={(event) => {
-          event.preventDefault();
-          mainRef.current?.focus();
-        }}
-      >
-        Skip to content
-      </a>
-
-      <aside
-        inert={mobileMenuOpen}
-        aria-hidden={mobileMenuOpen}
-        className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_72%,transparent)] p-5 backdrop-blur-xl lg:flex lg:flex-col"
-      >
-        <Brand />
-        <nav className="mt-9 grid gap-1" aria-label="Primary navigation">
-          {navigation.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                clsx(
-                  "flex min-h-11 items-center gap-3 rounded-full px-3.5 text-sm font-semibold transition-colors",
-                  isActive
-                    ? "bg-[var(--surface-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--line-strong)] [&>svg]:text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]",
-                )
-              }
-            >
-              <Icon size={17} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="mt-auto">
-          <NavLink
-            to="/add"
-            className="button-primary mb-3 w-full"
-            aria-label="Log a new workout"
-          >
-            <Plus size={17} /> Log workout
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className="flex min-h-11 items-center justify-between rounded-full px-3.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]"
-          >
-            <span className="flex items-center gap-3">
-              <Settings size={17} /> Data & settings
-            </span>
-            <ChevronRight size={15} />
-          </NavLink>
-        </div>
-      </aside>
-
-      <div inert={mobileMenuOpen} aria-hidden={mobileMenuOpen} className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--page)_88%,transparent)] px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-          <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between">
-            <div className="lg:hidden">
-              <Brand />
-            </div>
-            <div className="hidden lg:block">
-              <p className="eyebrow">Personal training system</p>
-              <p className="mt-0.5 text-sm font-bold">
-                {pageNames[location.pathname] ?? "Gym Tracker"}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="hidden items-center gap-2 rounded-full border border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_70%,transparent)] px-3.5 py-2 text-xs font-semibold text-[var(--muted)] backdrop-blur-md sm:flex">
-                <Trophy size={15} className="text-[var(--orange)]" />
-                Bench goal{" "}
-                <span className="text-[var(--ink)]">
-                  {benchGoal.currentValue} / {benchGoal.targetValue} lb
-                </span>
-              </div>
-              <ThemeToggle dark={dark} onToggle={() => setDark((value) => !value)} />
-              <button
-                ref={mobileMenuButtonRef}
-                type="button"
-                className="button-secondary !h-11 !min-h-11 !w-11 !p-0 lg:hidden"
-                aria-label="Open all navigation"
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-menu"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu size={19} />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main
-          ref={mainRef}
-          id="main-content"
-          tabIndex={-1}
-          className="mx-auto max-w-[1500px] overflow-x-clip px-4 py-6 pb-28 focus:outline-none sm:px-6 sm:py-8 lg:px-8 lg:pb-10"
-        >
-          {children}
-        </main>
-      </div>
-
-      {mobileMenuOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
-            aria-label="Close navigation menu"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+    <ToastProvider>
+      <ConfirmProvider>
+        <div className="min-h-screen">
+          <a
+            href="#main"
+            className="skip-link"
+            onClick={(event) => {
+              event.preventDefault();
+              mainRef.current?.focus();
             }}
-          />
-          <section
-            id="mobile-menu"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="mobile-menu-title"
-            className="surface-raised absolute inset-y-2 right-2 flex w-[min(22rem,calc(100%-1rem))] flex-col overflow-y-auto rounded-3xl p-4 shadow-2xl"
           >
-            <h2 id="mobile-menu-title" className="sr-only">
-              All training views
-            </h2>
-            <div className="flex items-center justify-between gap-4">
-              <Brand onNavigate={() => setMobileMenuOpen(false)} />
-              <button
-                type="button"
-                autoFocus
-                className="button-secondary !h-11 !min-h-11 !w-11 !p-0"
-                aria-label="Close navigation menu"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  window.requestAnimationFrame(() =>
-                    mobileMenuButtonRef.current?.focus(),
-                  );
-                }}
-              >
-                <X size={19} />
-              </button>
-            </div>
+            Skip to content
+          </a>
 
-            <nav className="mt-6 grid gap-1" aria-label="All training views">
-              {navigation.map(({ to, label, icon: Icon, end }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={end}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    clsx(
-                      "flex min-h-12 items-center gap-3 rounded-full px-3.5 text-sm font-semibold",
-                      isActive
-                        ? "bg-[var(--surface-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--line-strong)] [&>svg]:text-[var(--accent)]"
-                        : "text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]",
-                    )
-                  }
-                >
-                  <Icon size={18} />
-                  {label}
-                </NavLink>
-              ))}
-              <NavLink
-                to="/settings"
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  clsx(
-                    "flex min-h-12 items-center gap-3 rounded-full px-3.5 text-sm font-semibold",
-                    isActive
-                      ? "bg-[var(--surface-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--line-strong)] [&>svg]:text-[var(--accent)]"
-                      : "text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]",
-                  )
-                }
-              >
-                <Settings size={18} />
-                Data & settings
-              </NavLink>
+          <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_72%,transparent)] p-5 backdrop-blur-xl lg:flex lg:flex-col">
+            <Brand />
+            <nav className="mt-8 grid gap-1" aria-label="Primary navigation">
+              <NavItems />
             </nav>
 
-            <div className="mt-auto pt-6">
-              <div className="mb-3 rounded-2xl bg-[var(--surface-soft)] p-4">
-                <p className="eyebrow">145 lb bench goal</p>
-                <div className="mt-2 flex items-end justify-between gap-4">
-                  <strong className="text-xl font-black">
-                    {benchGoal.currentValue} / {benchGoal.targetValue} lb
-                  </strong>
-                  <span className="text-xs font-extrabold text-[var(--muted)]">
-                    {Math.round(
-                      ((benchGoal.currentValue ?? 0) / (benchGoal.targetValue ?? 1)) *
-                        100,
-                    )}
-                    %
-                  </span>
-                </div>
-              </div>
-              <NavLink
+            <div className="mt-auto">
+              <ButtonLink
                 to="/add"
-                className="button-primary w-full"
-                onClick={() => setMobileMenuOpen(false)}
+                variant="primary"
+                block
+                className="mb-3"
+                aria-label="Log a new workout"
               >
-                <FilePlus2 size={17} /> Log workout
+                <Plus size={17} aria-hidden="true" /> Log workout
+              </ButtonLink>
+              <NavLink to="/settings" className="nav-row justify-between">
+                <span className="flex items-center gap-3">
+                  <Settings size={17} aria-hidden="true" /> Data & settings
+                </span>
+                <ChevronRight size={15} aria-hidden="true" />
               </NavLink>
             </div>
-          </section>
-        </div>
-      ) : null}
+          </aside>
 
-      <nav
-        inert={mobileMenuOpen}
-        aria-hidden={mobileMenuOpen}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_94%,transparent)] px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl lg:hidden"
-        aria-label="Mobile navigation"
-      >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
-          {[
-            navigation[0],
-            navigation[1],
-            navigation[2],
-            navigation[4],
-            { to: "/add", label: "Add", icon: Plus },
-          ].map((item) => {
-            if (!item) return null;
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={"end" in item ? item.end : false}
-                className={({ isActive }) =>
-                  clsx(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[0.68rem] font-extrabold",
-                    isActive ? "text-[var(--accent)]" : "text-[var(--muted)]",
-                  )
-                }
+          <div className="lg:pl-64">
+            <header className="topbar px-4 sm:px-6 lg:px-8">
+              <div className="topbar-inner mx-auto max-w-[1500px]">
+                <div className="lg:hidden">
+                  <Brand />
+                </div>
+                <div className="hidden lg:block">
+                  <p className="eyebrow">Gym Tracker</p>
+                  <p className="mt-0.5 text-sm font-semibold">{pageName}</p>
+                </div>
+                <div className="topbar-actions">
+                  <div className="hidden min-h-10 items-center gap-2 rounded-full border border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_70%,transparent)] px-3.5 text-xs font-semibold text-[var(--muted)] sm:flex">
+                    <Trophy size={15} className="text-[var(--warn)]" aria-hidden="true" />
+                    Bench goal{" "}
+                    <span className="text-[var(--ink)]">
+                      {benchGoal.currentValue} / {benchGoal.targetValue} lb
+                    </span>
+                  </div>
+                  <ThemeToggle dark={dark} onToggle={() => setDark((value) => !value)} />
+                  <Button
+                    size="icon"
+                    className="lg:hidden"
+                    aria-label="Open all navigation"
+                    aria-expanded={mobileMenuOpen}
+                    aria-controls="mobile-menu"
+                    onClick={() => setMobileMenuOpen(true)}
+                  >
+                    <Menu size={19} aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+            </header>
+
+            <main
+              ref={mainRef}
+              id="main"
+              tabIndex={-1}
+              className="mx-auto max-w-[1500px] overflow-x-clip px-4 py-6 pb-28 sm:px-6 sm:py-8 lg:px-8 lg:pb-10"
+            >
+              <div id="main-content">{children}</div>
+            </main>
+          </div>
+
+          <dialog
+            ref={menuRef}
+            id="mobile-menu"
+            className="dialog dialog--sheet lg:hidden"
+            aria-labelledby="mobile-menu-title"
+            onCancel={(event) => {
+              event.preventDefault();
+              closeMenu();
+            }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) closeMenu();
+            }}
+          >
+            <div className="dialog-head">
+              <h2 id="mobile-menu-title">All training views</h2>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Close navigation menu"
+                onClick={closeMenu}
               >
-                <Icon size={19} strokeWidth={2.2} />
-                {item.label}
-              </NavLink>
-            );
-          })}
+                <X size={19} aria-hidden="true" />
+              </Button>
+            </div>
+            <div className="dialog-body">
+              <nav className="grid gap-1" aria-label="All training views">
+                <NavItems onNavigate={closeMenu} />
+                <NavLink to="/settings" className="nav-row" onClick={closeMenu}>
+                  <Settings size={18} aria-hidden="true" />
+                  Data & settings
+                </NavLink>
+              </nav>
+              <div className="well mt-5 p-4">
+                <p className="eyebrow">{benchGoal.targetValue} lb bench goal</p>
+                <div className="mt-2 flex items-end justify-between gap-4">
+                  <strong className="text-xl font-extrabold">
+                    {benchGoal.currentValue} / {benchGoal.targetValue} lb
+                  </strong>
+                  <span className="text-xs font-bold text-[var(--muted)]">
+                    {benchPercent}%
+                  </span>
+                </div>
+                <ProgressBar
+                  className="mt-3"
+                  value={benchGoal.currentValue ?? 0}
+                  max={benchGoal.targetValue ?? 1}
+                  label="Bench goal progress"
+                />
+              </div>
+            </div>
+            <div className="dialog-foot">
+              <ButtonLink to="/add" variant="primary" block onClick={closeMenu}>
+                <Plus size={17} aria-hidden="true" /> Log workout
+              </ButtonLink>
+            </div>
+          </dialog>
+
+          <nav className="tab-bar lg:hidden" aria-label="Mobile navigation">
+            <div className="mx-auto grid max-w-lg grid-cols-5">
+              {[
+                navigation[0],
+                navigation[1],
+                navigation[2],
+                navigation[4],
+                { to: "/add", label: "Add", icon: Plus },
+              ].map((item) => {
+                if (!item) return null;
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={"end" in item ? item.end : false}
+                    className="tab-bar-item"
+                  >
+                    <Icon size={19} strokeWidth={2.2} aria-hidden="true" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </nav>
+
+          <ToastViewport />
         </div>
-      </nav>
-    </div>
+      </ConfirmProvider>
+    </ToastProvider>
   );
 }

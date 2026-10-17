@@ -13,14 +13,21 @@ import {
 import { useMemo, useState } from "react";
 
 import { ScoreControl } from "../components/ScoreControl";
-import { Badge, PageHeader, SectionHeading, Surface } from "../components/ui";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  PageHeader,
+  SectionHeading,
+  SegmentedControl,
+  Surface,
+} from "../components/ui";
 import type { ReadinessInput, Scale0To6, WorkoutType } from "../lib/types";
 import {
   suggestWorkout,
   WORKOUT_DURATION_OPTIONS,
   type WorkoutDurationMinutes,
 } from "../lib/workoutSuggestions";
-import { Link } from "../router";
 
 const initialReadiness: Required<
   Pick<
@@ -47,16 +54,17 @@ const initialReadiness: Required<
 
 const workoutTypes: WorkoutType[] = ["push", "pull", "legs", "full-body"];
 
+// Outcomes use the semantic tokens, never the accent.
 function readinessColor(level: string): string {
   switch (level) {
     case "high":
-      return "var(--accent-2)";
+      return "var(--good)";
     case "moderate":
-      return "#f4c95d";
+      return "var(--info)";
     case "low":
-      return "var(--orange)";
+      return "var(--warn)";
     default:
-      return "var(--danger)";
+      return "var(--bad)";
   }
 }
 
@@ -89,21 +97,19 @@ export default function Suggested() {
   return (
     <>
       <PageHeader
-        eyebrow="Transparent session builder"
-        title="Meet today where it is."
-        description="Rate each signal from 0–6. The rules below adjust exercise choice and volume, then tell you exactly why."
+        eyebrow="Planning"
+        title="Session builder"
+        description="Rate each signal from 0–6. The rules below adjust exercise choice and volume, then say exactly why."
         actions={
-          <button
-            type="button"
-            className="button-secondary"
+          <Button
             onClick={() => {
               setReadiness(initialReadiness);
               setDuration(45);
               setRequestedType("auto");
             }}
           >
-            <RotateCcw size={15} /> Reset
-          </button>
+            <RotateCcw size={15} aria-hidden="true" /> Reset
+          </Button>
         }
       />
 
@@ -221,26 +227,21 @@ export default function Suggested() {
                 </select>
               </label>
             </div>
-            <fieldset className="mt-4">
-              <legend className="label">Time available</legend>
-              <div className="grid grid-cols-5 gap-2">
-                {WORKOUT_DURATION_OPTIONS.map((minutes) => (
-                  <button
-                    key={minutes}
-                    type="button"
-                    onClick={() => setDuration(minutes)}
-                    aria-pressed={duration === minutes}
-                    className={
-                      duration === minutes
-                        ? "button-primary !px-2 text-xs"
-                        : "button-secondary !px-2 text-xs"
-                    }
-                  >
-                    {minutes}m
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            <div className="mt-4">
+              <span className="label" id="duration-label">
+                Time available
+              </span>
+              <SegmentedControl
+                block
+                label="Time available"
+                options={WORKOUT_DURATION_OPTIONS.map((minutes) => ({
+                  value: minutes,
+                  label: `${minutes}m`,
+                }))}
+                value={duration}
+                onChange={setDuration}
+              />
+            </div>
           </Surface>
         </div>
 
@@ -255,13 +256,14 @@ export default function Suggested() {
                 <div>
                   <div className="flex flex-wrap gap-2">
                     <Badge tone="accent">
-                      <Sparkles size={12} /> {suggestion.sessionType}
+                      <Sparkles size={12} aria-hidden="true" /> {suggestion.sessionType}
                     </Badge>
                     <Badge tone="accent">
-                      <Clock3 size={12} /> {suggestion.desiredDurationMinutes} min
+                      <Clock3 size={12} aria-hidden="true" />{" "}
+                      {suggestion.desiredDurationMinutes} min
                     </Badge>
                   </div>
-                  <h2 className="mt-5 text-3xl font-black tracking-[-0.05em] sm:text-4xl">
+                  <h2 className="mt-5 text-2xl font-extrabold tracking-[-0.03em] sm:text-3xl">
                     {suggestion.title}
                   </h2>
                   <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
@@ -269,7 +271,11 @@ export default function Suggested() {
                     the standard template based on the recorded readiness signals.
                   </p>
                 </div>
-                <div className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full border-[10px] border-[var(--surface-soft)]">
+                <div
+                  className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full border-[10px] border-[var(--surface-3)]"
+                  role="img"
+                  aria-label={`Readiness ${suggestion.readiness.score} of 6, ${suggestion.readiness.level}`}
+                >
                   <div
                     className="absolute inset-[-10px] rounded-full border-[10px] border-transparent"
                     style={{
@@ -278,19 +284,22 @@ export default function Suggested() {
                     }}
                   />
                   <div className="text-center">
-                    <p className="text-2xl font-black">{suggestion.readiness.score}</p>
-                    <p className="text-[0.58rem] font-bold uppercase tracking-wide text-[var(--muted)]">
-                      of 6
+                    <p className="text-2xl font-extrabold">
+                      {suggestion.readiness.score}
                     </p>
+                    <p className="text-xs font-bold text-[var(--muted)]">of 6</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-4">
-                <span className="text-xs font-extrabold capitalize">
+                <span className="text-xs font-bold capitalize">
                   {suggestion.readiness.level} readiness
                 </span>
-                <span className="h-1 w-1 rounded-full bg-[var(--faint)]" />
+                <span
+                  className="h-1 w-1 rounded-full bg-[var(--muted)]"
+                  aria-hidden="true"
+                />
                 <span className="text-xs text-[var(--muted)]">
                   {requestedType === "auto"
                     ? `Rotated from ${lastWorkoutType}`
@@ -301,11 +310,15 @@ export default function Suggested() {
           </Surface>
 
           {suggestion.warnings.length ? (
-            <Surface className="mt-3 border-[color-mix(in_srgb,var(--danger)_35%,var(--line))] bg-red-500/8 p-4">
+            <Surface className="surface-danger mt-3 p-4">
               <div className="flex items-start gap-3">
-                <ShieldAlert size={18} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+                <ShieldAlert
+                  size={18}
+                  className="mt-0.5 shrink-0 text-[var(--bad)]"
+                  aria-hidden="true"
+                />
                 <div>
-                  <p className="text-sm font-extrabold">Safety adjustment</p>
+                  <p className="text-sm font-bold">Safety adjustment</p>
                   <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--muted)]">
                     {suggestion.warnings.map((warning) => (
                       <li key={warning}>{warning}</li>
@@ -320,12 +333,15 @@ export default function Suggested() {
             {suggestion.exercises.map((exercise, index) => (
               <Surface key={`${exercise.exerciseId}-${index}`} className="p-4">
                 <div className="flex items-start gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-soft)] text-xs font-black">
+                  <span
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-sm bg-[var(--surface-3)] text-xs font-bold"
+                    aria-hidden="true"
+                  >
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-sm font-extrabold">{exercise.name}</h3>
+                      <h3 className="text-sm font-bold">{exercise.name}</h3>
                       {exercise.optional ? <Badge tone="quality">optional</Badge> : null}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-[var(--muted)]">
@@ -359,8 +375,8 @@ export default function Suggested() {
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <Surface className="p-4">
               <div className="flex items-center gap-2">
-                <Gauge size={16} className="text-[var(--accent)]" />
-                <p className="text-sm font-extrabold">Why this changed</p>
+                <Gauge size={16} className="text-[var(--accent)]" aria-hidden="true" />
+                <p className="text-sm font-bold">Why this changed</p>
               </div>
               <ul className="mt-3 space-y-2">
                 {suggestion.reasons.map((reason) => (
@@ -368,7 +384,7 @@ export default function Suggested() {
                     key={reason}
                     className="flex items-start gap-2 text-xs leading-5 text-[var(--muted)]"
                   >
-                    <Info size={13} className="mt-1 shrink-0" />
+                    <Info size={13} className="mt-1 shrink-0" aria-hidden="true" />
                     {reason}
                   </li>
                 ))}
@@ -376,8 +392,12 @@ export default function Suggested() {
             </Surface>
             <Surface className="p-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[var(--accent)]" />
-                <p className="text-sm font-extrabold">Session guardrails</p>
+                <CheckCircle2
+                  size={16}
+                  className="text-[var(--accent)]"
+                  aria-hidden="true"
+                />
+                <p className="text-sm font-bold">Session guardrails</p>
               </div>
               <ul className="mt-3 space-y-2">
                 {suggestion.guardrails.map((guardrail) => (
@@ -385,7 +405,11 @@ export default function Suggested() {
                     key={guardrail}
                     className="flex items-start gap-2 text-xs leading-5 text-[var(--muted)]"
                   >
-                    <CheckCircle2 size={13} className="mt-1 shrink-0" />
+                    <CheckCircle2
+                      size={13}
+                      className="mt-1 shrink-0"
+                      aria-hidden="true"
+                    />
                     {guardrail}
                   </li>
                 ))}
@@ -393,14 +417,19 @@ export default function Suggested() {
             </Surface>
           </div>
 
-          <Link to="/add" className="button-primary mt-4 w-full sm:w-auto">
-            <Dumbbell size={16} /> Start with this plan <ArrowRight size={15} />
-          </Link>
+          <ButtonLink to="/add" variant="primary" className="mt-4 w-full sm:w-auto">
+            <Dumbbell size={16} aria-hidden="true" /> Start with this plan{" "}
+            <ArrowRight size={15} aria-hidden="true" />
+          </ButtonLink>
         </div>
       </div>
 
       <Surface className="mt-6 flex items-start gap-3 border-dashed p-4">
-        <AlertTriangle size={17} className="mt-0.5 shrink-0 text-[var(--orange)]" />
+        <AlertTriangle
+          size={17}
+          className="mt-0.5 shrink-0 text-[var(--warn)]"
+          aria-hidden="true"
+        />
         <p className="text-xs leading-5 text-[var(--muted)]">
           Stop for sharp pain or concerning symptoms. Do not train through severe illness.
           This planner provides general organizational guidance, not medical advice or

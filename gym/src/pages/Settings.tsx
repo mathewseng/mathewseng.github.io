@@ -14,7 +14,16 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { Badge, PageHeader, SectionHeading, Surface } from "../components/ui";
+import { useConfirm } from "../components/confirm";
+import { useToast } from "../components/toast";
+import {
+  Badge,
+  Button,
+  MetricCard,
+  PageHeader,
+  SectionHeading,
+  Surface,
+} from "../components/ui";
 import { goals as seedGoals } from "../data/goals";
 import { creatineNotice } from "../data/nutrition";
 import {
@@ -49,9 +58,9 @@ export default function Settings() {
     replaceLocalData,
     clearAllLocalData,
   } = useAppState();
+  const toast = useToast();
+  const confirm = useConfirm();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [message, setMessage] = useState<string>();
-  const [error, setError] = useState<string>();
   const [acknowledged, setAcknowledged] = useState(
     localData.settings.creatineNoticeAcknowledged === true,
   );
@@ -77,46 +86,67 @@ export default function Settings() {
         creatineTargetG: acknowledged ? creatineTarget : undefined,
       },
     });
-    setMessage("Settings saved in this browser.");
+    toast("Settings saved in this browser.", "good");
   }
 
   async function copyMarkdown() {
-    await navigator.clipboard.writeText(exportAllMarkdown(combinedData));
-    setMessage("All Markdown copied.");
+    try {
+      await navigator.clipboard.writeText(exportAllMarkdown(combinedData));
+      toast("All Markdown copied.", "good");
+    } catch {
+      toast("The clipboard is not available; download the Markdown instead.", "alert");
+    }
   }
 
   async function importFile(file: File | undefined) {
     if (!file) return;
-    setError(undefined);
-    setMessage(undefined);
     try {
       const text = await file.text();
       const parsed = importLocalData(text);
-      setMessage(
+      toast(
         `Backup restored: ${parsed.workouts.length} workouts and ${parsed.nutritionEntries.length} nutrition entries.`,
+        "good",
       );
     } catch (caught) {
-      setError(
+      toast(
         caught instanceof Error ? caught.message : "The backup could not be restored.",
+        "alert",
       );
     } finally {
       if (fileInput.current) fileInput.current.value = "";
     }
   }
 
+  async function clearData() {
+    const confirmed = await confirm({
+      title: "Clear all local gym data?",
+      description:
+        "Local workouts, nutrition, notes, goals and preferences are removed from this browser. Committed history stays. Export a backup first if you may need it.",
+      confirmLabel: "Clear local data",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    clearAllLocalData();
+    toast("Local browser data cleared.");
+  }
+
   return (
     <>
       <PageHeader
         eyebrow="Data vault"
-        title="Back up what belongs to you."
-        description="Your new entries live in this browser. Export them before changing devices, clearing storage, or relying on them long-term."
+        title="Data & settings"
+        description="New entries live in this browser. Export them before changing devices, clearing storage, or relying on them long-term."
       />
 
       {(recoveredFromInvalidData || storageError) && (
-        <Surface className="mb-5 flex items-start gap-3 border-[color-mix(in_srgb,var(--danger)_35%,var(--line))] bg-red-500/8 p-4">
-          <AlertTriangle size={17} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+        <Surface className="surface-danger mb-5 flex items-start gap-3 p-4">
+          <AlertTriangle
+            size={17}
+            className="mt-0.5 shrink-0 text-[var(--bad)]"
+            aria-hidden="true"
+          />
           <div>
-            <p className="text-sm font-extrabold">Local data needs attention</p>
+            <p className="text-sm font-bold">Local data needs attention</p>
             <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
               {storageError ??
                 "Invalid browser data was ignored so the seeded history could still load. Restore a known-good backup if available."}
@@ -125,55 +155,26 @@ export default function Settings() {
         </Surface>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Surface className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Local workouts</p>
-              <p className="mt-3 text-4xl font-black tracking-[-0.055em]">
-                {localData.workouts.length}
-              </p>
-            </div>
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--surface-soft)]">
-              <HardDrive size={18} />
-            </span>
-          </div>
-          <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-            {workouts.length} workouts including committed seed history.
-          </p>
-        </Surface>
-        <Surface className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Local nutrition</p>
-              <p className="mt-3 text-4xl font-black tracking-[-0.055em]">
-                {localData.nutritionEntries.length}
-              </p>
-            </div>
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--surface-soft)]">
-              <Database size={18} />
-            </span>
-          </div>
-          <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-            Dated entries only; undated observations remain in seed data.
-          </p>
-        </Surface>
-        <Surface className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Schema</p>
-              <p className="mt-3 text-4xl font-black tracking-[-0.055em]">
-                v{SCHEMA_VERSION}
-              </p>
-            </div>
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--acid-soft)]">
-              <ShieldCheck size={18} />
-            </span>
-          </div>
-          <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-            Versioned import with validation and migration support.
-          </p>
-        </Surface>
+      <section className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          label="Local workouts"
+          value={`${localData.workouts.length}`}
+          detail={`${workouts.length} workouts including committed seed history.`}
+          icon={HardDrive}
+        />
+        <MetricCard
+          label="Local nutrition"
+          value={`${localData.nutritionEntries.length}`}
+          detail="Dated entries only; undated observations remain in seed data."
+          icon={Database}
+        />
+        <MetricCard
+          label="Schema"
+          value={`v${SCHEMA_VERSION}`}
+          detail="Versioned import with validation and migration support."
+          icon={ShieldCheck}
+          accent="var(--accent-soft)"
+        />
       </section>
 
       <section className="mt-7">
@@ -184,20 +185,22 @@ export default function Settings() {
         <div className="grid gap-4 xl:grid-cols-2">
           <Surface className="p-5">
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-ink)]">
+              <span
+                className="grid h-10 w-10 place-items-center rounded-md bg-[var(--accent)] text-[var(--on-accent)]"
+                aria-hidden="true"
+              >
                 <FileJson size={18} />
               </span>
               <div>
-                <h3 className="text-sm font-extrabold">JSON backup</h3>
+                <h3 className="text-sm font-bold">JSON backup</h3>
                 <p className="mt-0.5 text-xs text-[var(--muted)]">
                   Best for complete restore
                 </p>
               </div>
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                className="button-primary text-xs"
+              <Button
+                variant="primary"
                 onClick={() =>
                   downloadText(
                     `gym-local-backup-${today()}.json`,
@@ -206,11 +209,9 @@ export default function Settings() {
                   )
                 }
               >
-                <Download size={15} /> Local-only backup
-              </button>
-              <button
-                type="button"
-                className="button-secondary text-xs"
+                <Download size={15} aria-hidden="true" /> Local-only backup
+              </Button>
+              <Button
                 onClick={() =>
                   downloadText(
                     `gym-complete-snapshot-${today()}.json`,
@@ -219,26 +220,26 @@ export default function Settings() {
                   )
                 }
               >
-                <Download size={15} /> Full snapshot
-              </button>
-              <button
-                type="button"
-                className="button-secondary text-xs sm:col-span-2"
+                <Download size={15} aria-hidden="true" /> Full snapshot
+              </Button>
+              <Button
+                className="sm:col-span-2"
                 onClick={() => fileInput.current?.click()}
               >
-                <Upload size={15} /> Restore local backup
-              </button>
+                <Upload size={15} aria-hidden="true" /> Restore local backup
+              </Button>
               <input
                 ref={fileInput}
                 type="file"
                 accept="application/json,.json"
                 className="sr-only"
+                aria-label="Backup file to restore"
                 onChange={(event) => void importFile(event.target.files?.[0])}
               />
             </div>
-            <div className="mt-4 flex items-start gap-2 rounded-xl bg-[var(--surface-soft)] p-3">
-              <Info size={14} className="mt-0.5 shrink-0" />
-              <p className="text-[0.68rem] leading-5 text-[var(--muted)]">
+            <div className="well mt-4 flex items-start gap-2 p-3">
+              <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <p className="text-xs leading-5 text-[var(--muted)]">
                 A malformed import fails before replacing valid browser data. Restoring a
                 valid backup replaces the local entries in this browser.
               </p>
@@ -247,27 +248,24 @@ export default function Settings() {
 
           <Surface className="p-5">
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--surface-soft)]">
+              <span
+                className="grid h-10 w-10 place-items-center rounded-md bg-[var(--surface-3)]"
+                aria-hidden="true"
+              >
                 <FileText size={18} />
               </span>
               <div>
-                <h3 className="text-sm font-extrabold">Markdown export</h3>
+                <h3 className="text-sm font-bold">Markdown export</h3>
                 <p className="mt-0.5 text-xs text-[var(--muted)]">
                   Readable and ready to commit
                 </p>
               </div>
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                className="button-primary text-xs"
-                onClick={copyMarkdown}
-              >
-                <Clipboard size={15} /> Copy all Markdown
-              </button>
-              <button
-                type="button"
-                className="button-secondary text-xs"
+              <Button variant="primary" onClick={copyMarkdown}>
+                <Clipboard size={15} aria-hidden="true" /> Copy all Markdown
+              </Button>
+              <Button
                 onClick={() =>
                   downloadText(
                     `gym-workouts-${today()}.md`,
@@ -276,11 +274,10 @@ export default function Settings() {
                   )
                 }
               >
-                <Download size={15} /> Workouts
-              </button>
-              <button
-                type="button"
-                className="button-secondary text-xs sm:col-span-2"
+                <Download size={15} aria-hidden="true" /> Workouts
+              </Button>
+              <Button
+                className="sm:col-span-2"
                 onClick={() =>
                   downloadText(
                     `gym-nutrition-${today()}.md`,
@@ -289,13 +286,12 @@ export default function Settings() {
                   )
                 }
               >
-                <Download size={15} /> Nutrition
-              </button>
+                <Download size={15} aria-hidden="true" /> Nutrition
+              </Button>
             </div>
-            <p className="mt-4 text-[0.68rem] leading-5 text-[var(--muted)]">
-              When you send me your next daily workout, I’ll add one repository JSON log
-              plus the readable LOGS.md entry, rerun the checks, and push the updated site
-              to main.
+            <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
+              The Markdown export matches the repository's LOGS.md format, so a day's
+              entry can be committed as it is.
             </p>
           </Surface>
         </div>
@@ -308,16 +304,15 @@ export default function Settings() {
             description="A personal target can only be stored after you acknowledge the neutral dose context."
           />
           <Surface className="p-5">
-            <Badge tone="warm">{creatineNotice.reportedDose} reported</Badge>
+            <Badge tone="warn">{creatineNotice.reportedDose} reported</Badge>
             <p className="mt-3 text-xs leading-6 text-[var(--muted)]">
               {creatineNotice.message} {creatineNotice.safety}
             </p>
-            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--line)] p-3">
+            <label className="check mt-4">
               <input
                 type="checkbox"
                 checked={acknowledged}
                 onChange={(event) => setAcknowledged(event.target.checked)}
-                className="mt-1"
               />
               <span className="text-xs leading-5">
                 I understand this is background information, not personalized medical
@@ -341,13 +336,9 @@ export default function Settings() {
                 placeholder={acknowledged ? "Optional" : "Acknowledge notice first"}
               />
             </label>
-            <button
-              type="button"
-              className="button-primary mt-4 text-xs"
-              onClick={saveSettings}
-            >
-              <Check size={14} /> Save preference
-            </button>
+            <Button variant="primary" className="mt-4" onClick={saveSettings}>
+              <Check size={14} aria-hidden="true" /> Save preference
+            </Button>
           </Surface>
         </div>
 
@@ -358,47 +349,25 @@ export default function Settings() {
           />
           <Surface className="p-5">
             <div className="flex items-start gap-3">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+              <AlertTriangle
+                size={18}
+                className="mt-0.5 shrink-0 text-[var(--bad)]"
+                aria-hidden="true"
+              />
               <div>
-                <p className="text-sm font-extrabold">This cannot be undone here</p>
+                <p className="text-sm font-bold">This cannot be undone here</p>
                 <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
                   Export a JSON backup first. Clearing removes local workouts, nutrition,
                   notes, goals, and preferences from this browser.
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              className="button-danger mt-5 text-xs"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Permanently clear all local gym data from this browser? Export a backup first if you may need it.",
-                  )
-                ) {
-                  clearAllLocalData();
-                  setMessage("Local browser data cleared.");
-                }
-              }}
-            >
-              <RotateCcw size={14} /> Clear local data
-            </button>
+            <Button variant="danger" className="mt-5" onClick={() => void clearData()}>
+              <RotateCcw size={14} aria-hidden="true" /> Clear local data
+            </Button>
           </Surface>
         </div>
       </section>
-
-      {message || error ? (
-        <div
-          className={
-            error
-              ? "fixed bottom-24 right-4 z-50 max-w-sm rounded-2xl border border-red-500/30 bg-[var(--surface-raised)] p-4 text-sm font-bold text-[var(--danger)] shadow-2xl lg:bottom-6"
-              : "fixed bottom-24 right-4 z-50 max-w-sm rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 text-sm font-bold shadow-2xl lg:bottom-6"
-          }
-          role="status"
-        >
-          {error ?? message}
-        </div>
-      ) : null}
     </>
   );
 }

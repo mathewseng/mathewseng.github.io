@@ -47,14 +47,14 @@ export function ScoreControl({
   }
 
   return (
-    <fieldset className={clsx("min-w-0", compact ? "" : "surface p-4")}>
+    <fieldset id={id} className={clsx("min-w-0", compact ? "" : "surface p-4")}>
       <legend className="flex w-full items-center justify-between gap-3">
-        <span className="text-sm font-extrabold">{label}</span>
+        <span className="text-sm font-bold">{label}</span>
         <span className="flex items-center gap-2">
           {onClear && value !== undefined ? (
             <button
               type="button"
-              className="min-h-11 rounded-lg px-2 text-xs font-extrabold text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]"
+              className="btn btn--ghost btn--sm text-xs"
               onClick={onClear}
             >
               Clear
@@ -62,14 +62,14 @@ export function ScoreControl({
           ) : null}
           <span
             className={clsx(
-              "grid h-8 min-w-8 place-items-center rounded-xl px-2 text-sm font-black",
+              "grid h-8 min-w-8 place-items-center rounded-sm px-2 text-sm font-extrabold",
               value === undefined
-                ? "bg-[var(--surface-soft)] text-[var(--faint)]"
+                ? "bg-[var(--surface-3)] text-[var(--muted)]"
                 : direction === "positive"
-                  ? "bg-[var(--acid-soft)] text-[var(--ink)]"
+                  ? "bg-[var(--accent-soft)] text-[var(--ink)]"
                   : value >= 4
-                    ? "bg-red-500/15 text-[var(--danger)]"
-                    : "bg-[var(--surface-soft)]",
+                    ? "bg-[var(--bad-soft)] text-[var(--bad)]"
+                    : "bg-[var(--surface-3)]",
             )}
           >
             {value ?? "—"}
@@ -87,7 +87,6 @@ export function ScoreControl({
         {scores.map((score) => (
           <button
             key={score}
-            id={score === value ? id : undefined}
             type="button"
             role="radio"
             aria-checked={score === value}
@@ -96,17 +95,17 @@ export function ScoreControl({
             tabIndex={score === value || (value === undefined && score === 0) ? 0 : -1}
             data-score={score}
             className={clsx(
-              "grid min-h-11 place-items-center rounded-xl border text-xs font-black transition-colors",
+              "grid min-h-11 place-items-center rounded-sm border text-xs font-bold transition-colors",
               score === value
-                ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]"
-                : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--muted)] hover:border-[var(--line-strong)] hover:text-[var(--ink)]",
+                ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
+                : "border-[var(--line-strong)] bg-[var(--surface-2)] text-[var(--muted)] hover:border-[var(--control-border)] hover:text-[var(--ink)]",
             )}
           >
             {score}
           </button>
         ))}
       </div>
-      <div className="mt-2 flex justify-between gap-4 text-xs font-semibold text-[var(--faint)]">
+      <div className="mt-2 flex justify-between gap-4 text-xs font-semibold text-[var(--muted)]">
         <span>0 · {lowLabel}</span>
         <span className="text-right">6 · {highLabel}</span>
       </div>

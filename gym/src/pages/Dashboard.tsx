@@ -16,12 +16,20 @@ import {
 
 import ProgressChart from "../components/ProgressChart";
 import WorkoutCalendar from "../components/WorkoutCalendar";
-import { Badge, MetricCard, PageHeader, SectionHeading, Surface } from "../components/ui";
+import {
+  Badge,
+  ButtonLink,
+  MetricCard,
+  PageHeader,
+  ProgressBar,
+  SectionHeading,
+  Surface,
+} from "../components/ui";
 import { benchGoal } from "../data/goals";
 import { profile } from "../data/profile";
 import { compareWorkoutsNewestFirst, workouts as seedWorkouts } from "../data/workouts";
 import type { Workout } from "../lib/types";
-import { Link } from "../router";
+
 import { useAppState } from "../state/AppState";
 
 const benchProgress = [
@@ -277,28 +285,22 @@ function GoalMiniCard({
 }) {
   const percent = Math.min(100, Math.round((current / target) * 100));
   return (
-    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+    <div className="rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-extrabold">{title}</p>
+          <p className="text-sm font-bold">{title}</p>
           <p className="mt-1 text-xs text-[var(--muted)]">{detail}</p>
         </div>
-        <span className="text-sm font-black">{percent}%</span>
+        <span className="text-sm font-bold">{percent}%</span>
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-        <div
-          className="h-full rounded-full bg-[var(--accent)]"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <div className="mt-2 flex justify-between text-[0.67rem] font-bold text-[var(--muted)]">
-        <span>
-          {current} {unit}
-        </span>
-        <span>
-          {target} {unit}
-        </span>
-      </div>
+      <ProgressBar
+        className="mt-4"
+        value={current}
+        max={target}
+        label={`${title} progress`}
+        start={`${current} ${unit}`}
+        end={`${target} ${unit}`}
+      />
     </div>
   );
 }
@@ -318,23 +320,22 @@ export default function Dashboard() {
     : "Undated training history";
   const benchCurrent = benchGoal.currentValue ?? 115;
   const benchTarget = benchGoal.targetValue ?? 145;
-  const benchPercent = Math.min(100, Math.round((benchCurrent / benchTarget) * 100));
   const benchRemaining = Math.max(0, benchTarget - benchCurrent);
 
   return (
     <>
       <PageHeader
         eyebrow={`${latestDateLabel} · Latest log`}
-        title="Build the next rep."
-        description="Your dashboard keeps performance and context together, so one hard day never gets mistaken for a trend."
+        title="Dashboard"
+        description="Performance and context stay together, so one hard day is never mistaken for a trend."
         actions={
           <>
-            <Link to="/suggested" className="button-secondary">
-              <Sparkles size={16} /> Build next session
-            </Link>
-            <Link to="/add" className="button-primary">
-              <Plus size={16} /> Log workout
-            </Link>
+            <ButtonLink to="/suggested">
+              <Sparkles size={16} aria-hidden="true" /> Build next session
+            </ButtonLink>
+            <ButtonLink to="/add" variant="primary">
+              <Plus size={16} aria-hidden="true" /> Log workout
+            </ButtonLink>
           </>
         }
       />
@@ -351,13 +352,13 @@ export default function Dashboard() {
           <div className="relative flex h-full flex-col">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="accent">
-                <HeartPulse size={12} /> Recovery-aware
+                <HeartPulse size={12} aria-hidden="true" /> Recovery-aware
               </Badge>
               <Badge tone="accent">Pull → Legs next</Badge>
             </div>
             <div className="mt-8 max-w-xl sm:mt-10">
               <p className="eyebrow-accent">Suggested next session</p>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] sm:text-5xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-[-0.03em] sm:text-4xl">
                 Legs, build carefully.
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-6 text-[var(--muted)]">
@@ -369,22 +370,18 @@ export default function Dashboard() {
             <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
               <div className="flex items-center gap-5">
                 <div>
-                  <p className="text-2xl font-black">45–60</p>
-                  <p className="text-[0.66rem] font-bold uppercase tracking-wide text-[var(--muted)]">
-                    minutes
-                  </p>
+                  <p className="text-2xl font-extrabold">45–60</p>
+                  <p className="eyebrow">minutes</p>
                 </div>
-                <div className="h-9 w-px bg-[var(--line-strong)]" />
+                <div className="h-9 w-px bg-[var(--line-strong)]" aria-hidden="true" />
                 <div>
-                  <p className="text-2xl font-black">2–3</p>
-                  <p className="text-[0.66rem] font-bold uppercase tracking-wide text-[var(--muted)]">
-                    target RIR
-                  </p>
+                  <p className="text-2xl font-extrabold">2–3</p>
+                  <p className="eyebrow">target RIR</p>
                 </div>
               </div>
-              <Link to="/suggested" className="button-primary">
-                Tune readiness <ArrowRight size={16} />
-              </Link>
+              <ButtonLink to="/suggested" variant="primary">
+                Tune readiness <ArrowRight size={16} aria-hidden="true" />
+              </ButtonLink>
             </div>
           </div>
         </Surface>
@@ -394,26 +391,30 @@ export default function Dashboard() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="eyebrow">Bench trajectory</p>
-                <h2 className="mt-1 text-lg font-black">
+                <h2 className="mt-1 text-lg font-bold">
                   {benchCurrent} → {benchTarget} lb
                 </h2>
               </div>
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--acid-soft)]">
+              <span
+                className="grid h-10 w-10 place-items-center rounded-md bg-[var(--accent-soft)]"
+                aria-hidden="true"
+              >
                 <Trophy size={18} />
               </span>
             </div>
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-              <div
-                className="h-full rounded-full bg-[var(--accent)]"
-                style={{ width: `${benchPercent}%` }}
-              />
-            </div>
+            <ProgressBar
+              className="mt-5"
+              size="lg"
+              value={benchCurrent}
+              max={benchTarget}
+              label="Bench goal progress"
+            />
             <div className="mt-3 flex items-start justify-between gap-3 text-xs">
               <span className="text-[var(--muted)]">Confirmed single</span>
               <strong>{benchRemaining} lb to goal</strong>
             </div>
-            <div className="mt-4 rounded-2xl bg-[var(--surface-soft)] p-3">
-              <p className="text-xs font-extrabold">Next controlled checkpoint</p>
+            <div className="well mt-4 p-3">
+              <p className="text-xs font-bold">Next controlled checkpoint</p>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
                 October 4 logged 6 / 6 / 5 at 105 lb plus an incomplete sixth attempt.
                 September 28 remains your 6 / 6 / 6 best. Keep 105 lb and build repeatable
@@ -426,9 +427,12 @@ export default function Dashboard() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="eyebrow">October 6 context</p>
-                <h2 className="mt-1 text-lg font-black">Pull in 50 minutes</h2>
+                <h2 className="mt-1 text-lg font-bold">Pull in 50 minutes</h2>
               </div>
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/12 text-[var(--orange)]">
+              <span
+                className="grid h-10 w-10 place-items-center rounded-md bg-[var(--warn-soft)] text-[var(--warn)]"
+                aria-hidden="true"
+              >
                 <Gauge size={18} />
               </span>
             </div>
@@ -453,7 +457,7 @@ export default function Dashboard() {
           value="115 lb"
           detail="Confirmed · Smith machine"
           icon={Trophy}
-          accent="var(--acid-soft)"
+          accent="var(--accent-soft)"
         />
         <MetricCard
           label="Pull-up best"
@@ -506,12 +510,9 @@ export default function Dashboard() {
           title="Training calendar"
           description="Dated sessions land on the calendar; five undated sessions stay visible without invented dates."
           action={
-            <Link
-              to="/workouts"
-              className="hidden items-center gap-1 text-xs font-extrabold text-[var(--muted)] hover:text-[var(--ink)] sm:flex"
-            >
-              Full history <ChevronRight size={14} />
-            </Link>
+            <ButtonLink to="/workouts" variant="ghost" className="hidden sm:inline-flex">
+              Full history <ChevronRight size={14} aria-hidden="true" />
+            </ButtonLink>
           }
         />
         <WorkoutCalendar
@@ -523,8 +524,8 @@ export default function Dashboard() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="eyebrow">Weekly training frequency</p>
-              <h3 className="mt-1 text-lg font-black tracking-[-0.025em]">
-                Rhythm, not perfection
+              <h3 className="mt-1 text-lg font-bold tracking-[-0.02em]">
+                Sessions per week
               </h3>
               <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
                 Only dated sessions are counted; undated history is excluded.
@@ -539,17 +540,17 @@ export default function Dashboard() {
             >
               {trainingWeeks.map((week) => (
                 <div key={week.label} className="flex h-full flex-col justify-end">
-                  <span className="mb-1 text-center text-xs font-black">
+                  <span className="mb-1 text-center text-xs font-bold">
                     {week.count || "—"}
                   </span>
                   <span
-                    className="min-h-1 rounded-t-lg bg-[var(--accent)]"
+                    className="min-h-1 rounded-t-sm bg-[var(--accent)]"
                     style={{
                       height: `${Math.max(6, Math.min(100, (week.count / 5) * 100))}%`,
                       opacity: week.count ? 1 : 0.18,
                     }}
                   />
-                  <span className="mt-2 truncate text-center text-[0.58rem] font-bold text-[var(--faint)]">
+                  <span className="mt-2 truncate text-center text-xs font-semibold text-[var(--muted)]">
                     {week.label}
                   </span>
                 </div>
@@ -619,16 +620,24 @@ export default function Dashboard() {
             <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
               <div className="bg-[var(--surface)] p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+6 reps</Badge>
-                  <BarChart3 size={18} className="text-[var(--muted)]" />
+                  <Badge tone="good">+6 reps</Badge>
+                  <BarChart3
+                    size={18}
+                    className="text-[var(--muted)]"
+                    aria-hidden="true"
+                  />
                 </div>
-                <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
+                <h3 className="mt-6 text-xl font-bold tracking-[-0.02em]">
                   Bench at 95 lb
                 </h3>
                 <p className="mt-2 text-sm text-[var(--muted)]">Jul 14 → Sep 7</p>
-                <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
+                <div className="mt-5 flex items-center gap-3 text-sm font-bold">
                   <span>7 / 7 / 5</span>
-                  <ArrowRight size={15} className="text-[var(--faint)]" />
+                  <ArrowRight
+                    size={15}
+                    className="text-[var(--muted)]"
+                    aria-hidden="true"
+                  />
                   <span>8 / 8 / 9</span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
@@ -637,16 +646,24 @@ export default function Dashboard() {
               </div>
               <div className="bg-[var(--surface)] p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <Badge tone="accent">+17 reps</Badge>
-                  <Dumbbell size={18} className="text-[var(--muted)]" />
+                  <Badge tone="good">+17 reps</Badge>
+                  <Dumbbell
+                    size={18}
+                    className="text-[var(--muted)]"
+                    aria-hidden="true"
+                  />
                 </div>
-                <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
+                <h3 className="mt-6 text-xl font-bold tracking-[-0.02em]">
                   Pushdown at 30 lb
                 </h3>
                 <p className="mt-2 text-sm text-[var(--muted)]">Travel return → Aug 3</p>
-                <div className="mt-5 flex items-center gap-3 text-sm font-extrabold">
+                <div className="mt-5 flex items-center gap-3 text-sm font-bold">
                   <span>10 / 8 / 5</span>
-                  <ArrowRight size={15} className="text-[var(--faint)]" />
+                  <ArrowRight
+                    size={15}
+                    className="text-[var(--muted)]"
+                    aria-hidden="true"
+                  />
                   <span>10 / 10 / 10 / 10</span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
@@ -674,32 +691,32 @@ export default function Dashboard() {
               unit="reps"
               detail="Full range · no partials"
             />
-            <Link
-              to="/goals"
-              className="button-ghost w-full justify-between !px-2 text-xs"
-            >
-              View every goal <ChevronRight size={15} />
-            </Link>
+            <ButtonLink to="/goals" variant="ghost" block className="justify-between">
+              View every goal <ChevronRight size={15} aria-hidden="true" />
+            </ButtonLink>
           </Surface>
         </div>
       </section>
 
       <Surface className="mt-8 flex flex-col gap-4 border-dashed p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--surface-soft)]">
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[var(--surface-3)]"
+            aria-hidden="true"
+          >
             <CircleAlert size={18} />
           </span>
           <div>
-            <p className="text-sm font-extrabold">Data stays in this browser</p>
+            <p className="text-sm font-bold">Data stays in this browser</p>
             <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
               Local entries do not sync automatically. Export a backup before changing
               devices or clearing browser data.
             </p>
           </div>
         </div>
-        <Link to="/settings" className="button-secondary shrink-0 text-xs">
+        <ButtonLink to="/settings" className="shrink-0">
           Review backup options
-        </Link>
+        </ButtonLink>
       </Surface>
 
       <span className="sr-only">

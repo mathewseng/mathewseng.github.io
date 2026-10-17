@@ -2,7 +2,8 @@ import { AlertTriangle, Beaker, Check, Info, Plus, Save, Trash2 } from "lucide-r
 import { useMemo, useState } from "react";
 
 import { ScoreControl } from "../components/ScoreControl";
-import { PageHeader, SectionHeading, Surface } from "../components/ui";
+import { useToast } from "../components/toast";
+import { Button, PageHeader, SectionHeading, Surface } from "../components/ui";
 import { creatineNotice } from "../data/nutrition";
 import type {
   DataQuality,
@@ -34,6 +35,7 @@ function newId(): string {
 
 export default function AddNutrition() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { saveNutritionEntry } = useAppState();
   const [date, setDate] = useState(localToday());
   const [bodyWeightLb, setBodyWeightLb] = useState<number>();
@@ -51,7 +53,6 @@ export default function AddNutrition() {
   const [supplements, setSupplements] = useState<SupplementEntry[]>([]);
   const [notes, setNotes] = useState("");
   const [dataQuality, setDataQuality] = useState<DataQuality>("complete");
-  const [message, setMessage] = useState<string>();
 
   const entry = useMemo<NutritionEntry>(
     () => ({
@@ -97,11 +98,19 @@ export default function AddNutrition() {
 
   function handleSave() {
     if (!validation.valid) {
-      setMessage("Review the validation issues before saving.");
+      toast("Review the validation issues before saving.", "alert");
       return;
     }
-    saveNutritionEntry({ ...entry, id: newId() });
-    setMessage("Nutrition entry saved in this browser.");
+    try {
+      saveNutritionEntry({ ...entry, id: newId() });
+    } catch (caught) {
+      toast(
+        caught instanceof Error ? caught.message : "The entry could not be saved.",
+        "alert",
+      );
+      return;
+    }
+    toast("Nutrition entry saved in this browser.", "good");
     window.setTimeout(() => navigate("/nutrition"), 450);
   }
 
@@ -109,7 +118,7 @@ export default function AddNutrition() {
     <>
       <PageHeader
         eyebrow="Daily nutrition"
-        title="Log what you know."
+        title="Log nutrition"
         description="Blank means unknown. Targets stay yours to choose, and supplement tracking never turns into a prescription."
       />
 
@@ -263,13 +272,14 @@ export default function AddNutrition() {
               </label>
 
               {highDose ? (
-                <div className="mt-4 flex items-start gap-3 rounded-2xl bg-orange-500/10 p-4">
+                <div className="mt-4 flex items-start gap-3 rounded-md bg-[var(--warn-soft)] p-4">
                   <AlertTriangle
                     size={17}
-                    className="mt-0.5 shrink-0 text-[var(--orange)]"
+                    className="mt-0.5 shrink-0 text-[var(--warn)]"
+                    aria-hidden="true"
                   />
                   <div>
-                    <p className="text-sm font-extrabold">Review the duration and plan</p>
+                    <p className="text-sm font-bold">Review the duration and plan</p>
                     <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
                       {creatineNotice.message} Entry is still allowed. Consider discussing
                       prolonged high-dose use with a qualified clinician.
@@ -282,7 +292,7 @@ export default function AddNutrition() {
                 {supplements.map((supplement, index) => (
                   <div
                     key={`supplement-${index}`}
-                    className="grid gap-2 rounded-2xl border border-[var(--line)] p-3 sm:grid-cols-[minmax(0,1fr)_8rem_7rem_auto]"
+                    className="grid gap-2 rounded-md border border-[var(--line)] p-3 sm:grid-cols-[minmax(0,1fr)_8rem_7rem_auto]"
                   >
                     <input
                       className="field"
@@ -335,9 +345,10 @@ export default function AddNutrition() {
                       placeholder="Unit"
                       aria-label={`Supplement ${index + 1} unit`}
                     />
-                    <button
-                      type="button"
-                      className="button-ghost !h-11 !min-h-11 !w-11 !p-0 hover:!text-[var(--danger)]"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:text-[var(--bad)]"
                       onClick={() =>
                         setSupplements((current) =>
                           current.filter((_, itemIndex) => itemIndex !== index),
@@ -345,18 +356,18 @@ export default function AddNutrition() {
                       }
                       aria-label={`Remove supplement ${index + 1}`}
                     >
-                      <Trash2 size={15} />
-                    </button>
+                      <Trash2 size={15} aria-hidden="true" />
+                    </Button>
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                className="button-secondary mt-3 border-dashed text-xs"
+              <Button
+                dashed
+                className="mt-3"
                 onClick={() => setSupplements((current) => [...current, { name: "" }])}
               >
-                <Plus size={14} /> Add another supplement
-              </button>
+                <Plus size={14} aria-hidden="true" /> Add another supplement
+              </Button>
             </Surface>
           </div>
 
@@ -391,41 +402,40 @@ export default function AddNutrition() {
         <aside className="self-start xl:sticky xl:top-24">
           <Surface className="p-4">
             <div className="flex items-center gap-2">
-              <Beaker size={17} />
-              <h2 className="text-sm font-extrabold">Entry check</h2>
+              <Beaker size={17} aria-hidden="true" />
+              <h2 className="text-sm font-bold">Entry check</h2>
             </div>
             <div className="mt-4 space-y-2">
               {validation.valid ? (
-                <div className="flex items-center gap-2 rounded-xl bg-[var(--acid-soft)] p-3 text-xs font-extrabold">
-                  <Check size={14} /> Ready to save
+                <div className="flex items-center gap-2 rounded-sm bg-[var(--accent-soft)] p-3 text-xs font-bold">
+                  <Check size={14} aria-hidden="true" /> Ready to save
                 </div>
               ) : (
                 validation.errors.map((error) => (
                   <div
                     key={`${error.path}-${error.message}`}
-                    className="flex items-start gap-2 rounded-xl bg-red-500/10 p-3 text-xs leading-5 text-[var(--danger)]"
+                    className="flex items-start gap-2 rounded-sm bg-[var(--bad-soft)] p-3 text-xs leading-5 text-[var(--bad)]"
                   >
-                    <AlertTriangle size={13} className="mt-1 shrink-0" />
+                    <AlertTriangle
+                      size={13}
+                      className="mt-1 shrink-0"
+                      aria-hidden="true"
+                    />
                     {error.message}
                   </div>
                 ))
               )}
             </div>
-            <button
-              type="button"
-              className="button-primary mt-4 w-full"
-              onClick={handleSave}
-            >
-              <Save size={16} /> Save nutrition
-            </button>
-            {message ? (
-              <p className="mt-3 text-center text-xs font-bold text-[var(--muted)]">
-                {message}
-              </p>
-            ) : null}
+            <Button variant="primary" block className="mt-4" onClick={handleSave}>
+              <Save size={16} aria-hidden="true" /> Save nutrition
+            </Button>
             <div className="mt-4 flex items-start gap-2 border-t border-[var(--line)] pt-4">
-              <Info size={14} className="mt-0.5 shrink-0 text-[var(--muted)]" />
-              <p className="text-[0.68rem] leading-5 text-[var(--muted)]">
+              <Info
+                size={14}
+                className="mt-0.5 shrink-0 text-[var(--muted)]"
+                aria-hidden="true"
+              />
+              <p className="text-xs leading-5 text-[var(--muted)]">
                 Saved entries remain in this browser until you export or commit them.
               </p>
             </div>

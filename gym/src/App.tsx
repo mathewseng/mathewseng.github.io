@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 
 import AppShell from "./components/AppShell";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Navigate, useLocation } from "./router";
 import { AppStateProvider } from "./state/AppState";
 
@@ -19,8 +20,11 @@ function PageLoading() {
   return (
     <div className="grid min-h-[60vh] place-items-center" role="status">
       <div className="text-center">
-        <span className="mx-auto block h-10 w-10 animate-pulse rounded-2xl bg-[var(--accent)]" />
-        <p className="mt-3 text-xs font-extrabold text-[var(--muted)]">
+        <span
+          className="mx-auto block h-10 w-10 animate-pulse rounded-md bg-[var(--accent)]"
+          aria-hidden="true"
+        />
+        <p className="mt-3 text-xs font-bold text-[var(--muted)]">
           Loading training view…
         </p>
       </div>
@@ -46,9 +50,11 @@ export default function App() {
   return (
     <AppStateProvider>
       <AppShell>
-        <Suspense fallback={<PageLoading />}>
-          {pages[pathname] ?? <Navigate to="/" replace />}
-        </Suspense>
+        <ErrorBoundary key={pathname}>
+          <Suspense fallback={<PageLoading />}>
+            {pages[pathname] ?? <Navigate to="/" replace />}
+          </Suspense>
+        </ErrorBoundary>
       </AppShell>
     </AppStateProvider>
   );

@@ -1,7 +1,6 @@
 import {
   AlertCircle,
   Check,
-  ChevronDown,
   Clipboard,
   Download,
   Dumbbell,
@@ -18,7 +17,9 @@ import { useMemo, useState } from "react";
 
 import { ScoreControl } from "../components/ScoreControl";
 import WorkoutCard from "../components/WorkoutCard";
-import { PageHeader, SectionHeading, Surface } from "../components/ui";
+import { useConfirm } from "../components/confirm";
+import { useToast } from "../components/toast";
+import { Button, PageHeader, SectionHeading, Surface, Toggle } from "../components/ui";
 import { exercises as exerciseRegistry } from "../data/exercises";
 import { workoutToMarkdown } from "../lib/markdownExport";
 import type {
@@ -110,39 +111,6 @@ function downloadText(filename: string, text: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function Toggle({
-  checked,
-  onChange,
-  label,
-  tone = "neutral",
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label: string;
-  tone?: "neutral" | "danger" | "warm";
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={
-        checked
-          ? tone === "danger"
-            ? "button-danger !min-h-9 !px-3 text-xs"
-            : tone === "warm"
-              ? "button-secondary !min-h-9 border-orange-500/50 bg-orange-500/10 !px-3 text-xs text-[var(--orange)]"
-              : "button-primary !min-h-9 !px-3 text-xs"
-          : "button-secondary !min-h-9 !px-3 text-xs"
-      }
-    >
-      {checked ? <Check size={13} /> : null}
-      {label}
-    </button>
-  );
-}
-
 function SetEditor({
   set,
   index,
@@ -155,17 +123,18 @@ function SetEditor({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-3 sm:p-4">
+    <div className="rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-extrabold">Set {index + 1}</p>
-        <button
-          type="button"
-          className="grid h-8 w-8 place-items-center rounded-lg text-[var(--muted)] hover:bg-red-500/10 hover:text-[var(--danger)]"
+        <p className="text-xs font-bold">Set {index + 1}</p>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:text-[var(--bad)]"
           onClick={onDelete}
           aria-label={`Remove set ${index + 1}`}
         >
-          <X size={15} />
-        </button>
+          <X size={15} aria-hidden="true" />
+        </Button>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label>
@@ -249,13 +218,13 @@ function SetEditor({
           checked={set.warmup ?? false}
           onChange={(checked) => onChange({ ...set, warmup: checked || undefined })}
           label="Warm-up"
-          tone="warm"
+          tone="warn"
         />
         <Toggle
           checked={set.rampUp ?? false}
           onChange={(checked) => onChange({ ...set, rampUp: checked || undefined })}
           label="Ramp-up"
-          tone="warm"
+          tone="warn"
         />
         <Toggle
           checked={set.perSide ?? false}
@@ -316,24 +285,28 @@ function ExerciseEditor({
     <Surface className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] p-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--accent)] text-xs font-black text-[var(--accent-ink)]">
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-sm bg-[var(--accent)] text-xs font-bold text-[var(--on-accent)]"
+            aria-hidden="true"
+          >
             {index + 1}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold">{exercise.name}</p>
-            <p className="truncate text-[0.66rem] text-[var(--muted)]">
+            <p className="truncate text-sm font-bold">{exercise.name}</p>
+            <p className="truncate text-xs text-[var(--muted)]">
               {definition?.category ?? "other"} · {exercise.sets.length} sets
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          className="button-ghost !h-9 !min-h-9 !w-9 !p-0 hover:!text-[var(--danger)]"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:text-[var(--bad)]"
           onClick={onDelete}
           aria-label={`Remove ${exercise.name}`}
         >
-          <Trash2 size={15} />
-        </button>
+          <Trash2 size={15} aria-hidden="true" />
+        </Button>
       </div>
       <div className="p-4">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -341,7 +314,7 @@ function ExerciseEditor({
             <span className="label">Exercise</span>
             <div className="relative">
               <select
-                className="field appearance-none !pr-10"
+                className="field"
                 value={exercise.exerciseId}
                 onChange={(event) => {
                   const nextDefinition = exerciseRegistry.find(
@@ -364,10 +337,6 @@ function ExerciseEditor({
                   </option>
                 ))}
               </select>
-              <ChevronDown
-                size={15}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)]"
-              />
             </div>
           </label>
           <label>
@@ -387,9 +356,13 @@ function ExerciseEditor({
         </div>
 
         {definition?.weightMayBePerSide ? (
-          <div className="mt-3 flex items-start gap-2 rounded-xl bg-[var(--surface-soft)] p-3">
-            <Info size={14} className="mt-0.5 shrink-0 text-[var(--orange)]" />
-            <p className="text-[0.68rem] leading-5 text-[var(--muted)]">
+          <div className="well mt-3 flex items-start gap-2 p-3">
+            <Info
+              size={14}
+              className="mt-0.5 shrink-0 text-[var(--warn)]"
+              aria-hidden="true"
+            />
+            <p className="text-xs leading-5 text-[var(--muted)]">
               This movement may be logged per side. Mark each relevant set explicitly;
               volume will not double it unless you choose that policy.
             </p>
@@ -417,13 +390,14 @@ function ExerciseEditor({
             />
           ))}
         </div>
-        <button
-          type="button"
-          className="button-secondary mt-3 w-full border-dashed text-xs"
+        <Button
+          block
+          dashed
+          className="mt-3"
           onClick={() => onChange({ ...exercise, sets: [...exercise.sets, newSet()] })}
         >
-          <Plus size={14} /> Add set
-        </button>
+          <Plus size={14} aria-hidden="true" /> Add set
+        </Button>
         <label className="mt-3 block">
           <span className="label">Exercise note</span>
           <textarea
@@ -442,6 +416,8 @@ function ExerciseEditor({
 
 export default function AddWorkout() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [searchParams] = useSearchParams();
   const { workouts, getLocalWorkout, saveWorkout } = useAppState();
   const editId = searchParams.get("edit");
@@ -467,7 +443,6 @@ export default function AddWorkout() {
     existing?.dataQuality ?? "complete",
   );
   const [preview, setPreview] = useState(false);
-  const [message, setMessage] = useState<string>();
 
   const workout = useMemo<Workout>(
     () => ({
@@ -524,36 +499,61 @@ export default function AddWorkout() {
   }
 
   async function copyMarkdown() {
-    await navigator.clipboard.writeText(workoutToMarkdown(workout));
-    setMessage("Markdown copied.");
+    try {
+      await navigator.clipboard.writeText(workoutToMarkdown(workout));
+      toast("Markdown copied.", "good");
+    } catch {
+      toast("The clipboard is not available; download the Markdown instead.", "alert");
+    }
   }
 
   function handleSave() {
     if (errors.length) {
-      setMessage("Review the highlighted validation issues before saving.");
+      toast("Review the validation issues before saving.", "alert");
       return;
     }
-    saveWorkout(workout);
-    setMessage(
+    try {
+      saveWorkout(workout);
+    } catch (caught) {
+      toast(
+        caught instanceof Error ? caught.message : "The workout could not be saved.",
+        "alert",
+      );
+      return;
+    }
+    toast(
       existing ? "Workout updated in this browser." : "Workout saved in this browser.",
+      "good",
     );
     window.setTimeout(() => navigate("/workouts"), 450);
+  }
+
+  async function clearForm() {
+    const confirmed = await confirm({
+      title: "Clear the form?",
+      description:
+        "Exercises, sets, context scores and notes typed so far are discarded.",
+      confirmLabel: "Clear form",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    setExercises([newExercise()]);
+    setContext({});
+    setNotes("");
+    setStartTime(localTimeNow());
+    setDurationMinutes(undefined);
   }
 
   return (
     <>
       <PageHeader
-        eyebrow={existing ? "Edit local entry" : "Phone-first logging"}
-        title={existing ? "Update workout" : "Log today’s work"}
+        eyebrow={existing ? "Edit local entry" : "Logging"}
+        title={existing ? "Update workout" : "Log a workout"}
         description="Every readiness signal is numeric from 0–6. Set-state toggles describe what happened; they are not recovery context."
         actions={
-          <button
-            type="button"
-            className="button-secondary"
-            onClick={() => setPreview((value) => !value)}
-          >
-            <Eye size={16} /> {preview ? "Edit form" : "Preview"}
-          </button>
+          <Button onClick={() => setPreview((value) => !value)}>
+            <Eye size={16} aria-hidden="true" /> {preview ? "Edit form" : "Preview"}
+          </Button>
         }
       />
 
@@ -564,13 +564,14 @@ export default function AddWorkout() {
             description="This is how the workout will appear in history."
           />
           <WorkoutCard workout={workout} defaultExpanded />
-          <button
-            type="button"
-            className="button-primary mt-4 w-full sm:w-auto"
+          <Button
+            variant="primary"
+            className="mt-4 w-full sm:w-auto"
             onClick={handleSave}
           >
-            <Save size={16} /> {existing ? "Update workout" : "Save workout"}
-          </button>
+            <Save size={16} aria-hidden="true" />{" "}
+            {existing ? "Update workout" : "Save workout"}
+          </Button>
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
@@ -659,13 +660,14 @@ export default function AddWorkout() {
                   );
                 })}
               </div>
-              <button
-                type="button"
-                className="button-secondary mt-4 w-full border-dashed"
+              <Button
+                block
+                dashed
+                className="mt-4"
                 onClick={() => setExercises((current) => [...current, newExercise()])}
               >
-                <Plus size={16} /> Add exercise
-              </button>
+                <Plus size={16} aria-hidden="true" /> Add exercise
+              </Button>
             </div>
 
             <div className="mt-6">
@@ -787,8 +789,8 @@ export default function AddWorkout() {
           <aside className="self-start xl:sticky xl:top-24">
             <Surface className="p-4">
               <div className="flex items-center gap-2">
-                <Dumbbell size={17} />
-                <h2 className="text-sm font-extrabold">Entry summary</h2>
+                <Dumbbell size={17} aria-hidden="true" />
+                <h2 className="text-sm font-bold">Entry summary</h2>
               </div>
               <dl className="mt-4 space-y-3 text-xs">
                 <div className="flex justify-between gap-3">
@@ -818,42 +820,35 @@ export default function AddWorkout() {
               </dl>
 
               {errors.length ? (
-                <div className="mt-4 rounded-xl bg-red-500/10 p-3">
-                  <div className="flex items-center gap-2 text-[var(--danger)]">
-                    <AlertCircle size={14} />
-                    <p className="text-xs font-extrabold">
+                <div className="mt-4 rounded-sm bg-[var(--bad-soft)] p-3">
+                  <div className="flex items-center gap-2 text-[var(--bad)]">
+                    <AlertCircle size={14} aria-hidden="true" />
+                    <p className="text-xs font-bold">
                       {errors.length} issue{errors.length === 1 ? "" : "s"}
                     </p>
                   </div>
-                  <ul className="mt-2 space-y-1 text-[0.68rem] leading-5 text-[var(--muted)]">
+                  <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--muted)]">
                     {errors.slice(0, 5).map((error) => (
                       <li key={`${error.path}-${error.message}`}>{error.message}</li>
                     ))}
                   </ul>
                 </div>
               ) : (
-                <div className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--acid-soft)] p-3 text-xs font-extrabold">
-                  <Check size={14} /> Ready to save
+                <div className="mt-4 flex items-center gap-2 rounded-sm bg-[var(--accent-soft)] p-3 text-xs font-bold">
+                  <Check size={14} aria-hidden="true" /> Ready to save
                 </div>
               )}
 
-              <button
-                type="button"
-                className="button-primary mt-4 w-full"
-                onClick={handleSave}
-              >
-                <Save size={16} /> {existing ? "Update workout" : "Save workout"}
-              </button>
-              <button
-                type="button"
-                className="button-secondary mt-2 w-full text-xs"
-                onClick={copyMarkdown}
-              >
-                <Clipboard size={14} /> Copy Markdown
-              </button>
-              <button
-                type="button"
-                className="button-secondary mt-2 w-full text-xs"
+              <Button variant="primary" block className="mt-4" onClick={handleSave}>
+                <Save size={16} aria-hidden="true" />{" "}
+                {existing ? "Update workout" : "Save workout"}
+              </Button>
+              <Button block className="mt-2" onClick={copyMarkdown}>
+                <Clipboard size={14} aria-hidden="true" /> Copy Markdown
+              </Button>
+              <Button
+                block
+                className="mt-2"
                 onClick={() =>
                   downloadText(
                     `${workout.date ?? "undated"}-workout.md`,
@@ -862,11 +857,11 @@ export default function AddWorkout() {
                   )
                 }
               >
-                <Download size={14} /> Download Markdown
-              </button>
-              <button
-                type="button"
-                className="button-secondary mt-2 w-full text-xs"
+                <Download size={14} aria-hidden="true" /> Download Markdown
+              </Button>
+              <Button
+                block
+                className="mt-2"
                 onClick={() =>
                   downloadText(
                     `${workout.date ?? "undated"}-workout.json`,
@@ -875,29 +870,18 @@ export default function AddWorkout() {
                   )
                 }
               >
-                <FileJson size={14} /> Download JSON
-              </button>
-              {message ? (
-                <p className="mt-3 text-center text-xs font-bold text-[var(--muted)]">
-                  {message}
-                </p>
-              ) : null}
+                <FileJson size={14} aria-hidden="true" /> Download JSON
+              </Button>
             </Surface>
 
-            <button
-              type="button"
-              className="button-ghost mt-2 w-full text-xs"
-              onClick={() => {
-                setExercises([newExercise()]);
-                setContext({});
-                setNotes("");
-                setStartTime(localTimeNow());
-                setDurationMinutes(undefined);
-                setMessage(undefined);
-              }}
+            <Button
+              variant="ghost"
+              block
+              className="mt-2"
+              onClick={() => void clearForm()}
             >
-              <RotateCcw size={14} /> Clear form
-            </button>
+              <RotateCcw size={14} aria-hidden="true" /> Clear form
+            </Button>
           </aside>
         </div>
       )}

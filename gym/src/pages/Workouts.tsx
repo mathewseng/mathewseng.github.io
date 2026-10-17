@@ -1,35 +1,43 @@
 import {
   CalendarDays,
-  Check,
   ChevronDown,
   CircleAlert,
   Filter,
   Plus,
-  Search,
   Trash2,
-  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import WorkoutCalendar from "../components/WorkoutCalendar";
 import WorkoutCard from "../components/WorkoutCard";
-import { Badge, PageHeader, SectionHeading, Surface } from "../components/ui";
+import { useConfirm } from "../components/confirm";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Chip,
+  EmptyState,
+  PageHeader,
+  SearchField,
+  SectionHeading,
+  SegmentedControl,
+  Surface,
+} from "../components/ui";
 import { compareWorkoutsNewestFirst } from "../data/workouts";
 import type { WorkoutType } from "../lib/types";
-import { Link } from "../router";
 import { useAppState } from "../state/AppState";
 
 type ContextFilter =
   "illness" | "travel" | "soreness" | "back-pain" | "incomplete" | "failed";
 
-const typeOptions: Array<WorkoutType | "all"> = [
-  "all",
-  "push",
-  "pull",
-  "legs",
-  "full-body",
-  "upper",
-  "other",
+const typeOptions: Array<{ value: WorkoutType | "all"; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "push", label: "Push" },
+  { value: "pull", label: "Pull" },
+  { value: "legs", label: "Legs" },
+  { value: "full-body", label: "Full body" },
+  { value: "upper", label: "Upper" },
+  { value: "other", label: "Other" },
 ];
 
 const contextOptions: Array<{ id: ContextFilter; label: string }> = [
@@ -43,6 +51,7 @@ const contextOptions: Array<{ id: ContextFilter; label: string }> = [
 
 export default function Workouts() {
   const { workouts, nutritionEntries, isLocalWorkout, deleteWorkout } = useAppState();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [type, setType] = useState<WorkoutType | "all">("all");
   const [filters, setFilters] = useState<ContextFilter[]>([]);
@@ -107,16 +116,27 @@ export default function Workouts() {
     );
   }
 
+  async function removeWorkout(id: string, title: string) {
+    const confirmed = await confirm({
+      title: `Delete “${title}”?`,
+      description:
+        "The entry is removed from this browser. This cannot be undone unless it is in a backup.",
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
+    if (confirmed) deleteWorkout(id);
+  }
+
   return (
     <>
       <PageHeader
-        eyebrow="History & rhythm"
+        eyebrow="History"
         title="Training calendar"
-        description="Scan your month, inspect every set, and filter by the recovery context that shaped the session."
+        description="Scan the month, inspect every set, and filter by the recovery context that shaped the session."
         actions={
-          <Link to="/add" className="button-primary">
-            <Plus size={16} /> Add workout
-          </Link>
+          <ButtonLink to="/add" variant="primary">
+            <Plus size={16} aria-hidden="true" /> Add workout
+          </ButtonLink>
         }
       />
 
@@ -125,88 +145,50 @@ export default function Workouts() {
       <section className="mt-8">
         <SectionHeading
           title="Workout history"
-          description={`${workouts.length} sessions · ${workouts.filter((workout) => !workout.date).length} honestly undated`}
+          description={`${workouts.length} sessions · ${workouts.filter((workout) => !workout.date).length} undated`}
         />
 
         <Surface className="mb-4 p-3 sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <label className="relative min-w-0 flex-1">
-              <span className="sr-only">Search exercise or workout</span>
-              <Search
-                size={16}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]"
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="field !pl-10"
-                placeholder="Search exercise or session"
-              />
-              {search ? (
-                <button
-                  type="button"
-                  className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-xl text-[var(--muted)] hover:bg-[var(--surface-soft)]"
-                  onClick={() => setSearch("")}
-                  aria-label="Clear search"
-                >
-                  <X size={15} />
-                </button>
-              ) : null}
-            </label>
-            <div className="flex gap-2 overflow-x-auto pb-1 lg:pb-0">
-              {typeOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setType(option)}
-                  className={
-                    type === option
-                      ? "button-primary !min-h-11 whitespace-nowrap !px-3 text-xs capitalize"
-                      : "button-secondary !min-h-11 whitespace-nowrap !px-3 text-xs capitalize"
-                  }
-                  aria-pressed={type === option}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="button-secondary !min-h-11 shrink-0 text-xs"
+            <SearchField
+              className="flex-1"
+              label="Search exercise or workout"
+              value={search}
+              onChange={setSearch}
+              placeholder="Search exercise or session"
+            />
+            <SegmentedControl
+              label="Workout type"
+              options={typeOptions}
+              value={type}
+              onChange={setType}
+            />
+            <Button
+              className="shrink-0"
               onClick={() => setShowFilters((value) => !value)}
               aria-expanded={showFilters}
             >
-              <Filter size={15} /> Context
+              <Filter size={15} aria-hidden="true" /> Context
               {filters.length ? (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--accent)] px-1 text-[0.62rem] text-[var(--accent-ink)]">
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--accent)] px-1 text-xs text-[var(--on-accent)]">
                   {filters.length}
                 </span>
               ) : null}
-              <ChevronDown size={14} />
-            </button>
+              <ChevronDown size={14} aria-hidden="true" />
+            </Button>
           </div>
 
           {showFilters ? (
             <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--line)] pt-3">
-              {contextOptions.map((option) => {
-                const active = filters.includes(option.id);
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => toggleFilter(option.id)}
-                    className={
-                      active
-                        ? "button-primary !min-h-11 !px-3 text-xs"
-                        : "button-secondary !min-h-11 !px-3 text-xs"
-                    }
-                    aria-pressed={active}
-                  >
-                    {active ? <Check size={13} /> : null}
-                    {option.label}
-                  </button>
-                );
-              })}
+              {contextOptions.map((option) => (
+                <Chip
+                  key={option.id}
+                  pressed={filters.includes(option.id)}
+                  onClick={() => toggleFilter(option.id)}
+                >
+                  {option.label}
+                </Chip>
+              ))}
             </div>
           ) : null}
         </Surface>
@@ -220,27 +202,15 @@ export default function Workouts() {
                 actions={
                   isLocalWorkout(workout.id) ? (
                     <>
-                      <Link
-                        to={`/add?edit=${workout.id}`}
-                        className="button-secondary text-xs"
-                      >
+                      <ButtonLink to={`/add?edit=${workout.id}`}>
                         Edit local entry
-                      </Link>
-                      <button
-                        type="button"
-                        className="button-danger text-xs"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Delete “${workout.title}” from this browser? This cannot be undone unless it is in a backup.`,
-                            )
-                          ) {
-                            deleteWorkout(workout.id);
-                          }
-                        }}
+                      </ButtonLink>
+                      <Button
+                        variant="danger"
+                        onClick={() => void removeWorkout(workout.id, workout.title)}
                       >
-                        <Trash2 size={14} /> Delete
-                      </button>
+                        <Trash2 size={14} aria-hidden="true" /> Delete
+                      </Button>
                     </>
                   ) : null
                 }
@@ -248,14 +218,12 @@ export default function Workouts() {
             ))}
           </div>
         ) : (
-          <Surface className="grid min-h-44 place-items-center p-6 text-center">
-            <div>
-              <CalendarDays className="mx-auto text-[var(--muted)]" size={24} />
-              <p className="mt-3 text-sm font-extrabold">No dated workouts match</p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                Try clearing a filter or search.
-              </p>
-            </div>
+          <Surface>
+            <EmptyState
+              icon={CalendarDays}
+              title="No dated workouts match"
+              description="Try clearing a filter or search."
+            />
           </Surface>
         )}
 
@@ -263,13 +231,17 @@ export default function Workouts() {
           <div className="mt-7">
             <button
               type="button"
-              className="mb-3 flex w-full items-center justify-between gap-3 text-left"
+              className="mb-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-sm text-left"
               onClick={() => setShowUndated((value) => !value)}
               aria-expanded={showUndated}
             >
               <div>
-                <h2 className="flex items-center gap-2 text-lg font-black tracking-[-0.025em]">
-                  <CircleAlert size={17} className="text-[var(--orange)]" />
+                <h2 className="flex items-center gap-2 text-lg font-bold tracking-[-0.02em]">
+                  <CircleAlert
+                    size={17}
+                    className="text-[var(--warn)]"
+                    aria-hidden="true"
+                  />
                   Undated history
                 </h2>
                 <p className="mt-1 text-xs text-[var(--muted)]">
