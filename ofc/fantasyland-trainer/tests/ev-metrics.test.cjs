@@ -11,7 +11,7 @@ const context = {
   document: { addEventListener() {} },
   localStorage: { getItem() { return null; }, setItem() {} },
   performance: { now: () => Date.now() },
-  window: { OFCFantasylandCore: core, OFCSolverCore: trainerCore, setTimeout },
+  window: { OFCFantasylandCore: core, setTimeout },
 };
 vm.runInNewContext(source, context, { filename: "fantasyland-ev/app.js" });
 
@@ -45,32 +45,12 @@ assert.equal(
 );
 assert.equal(JSON.stringify(api.parseResultsCache("not-json")), JSON.stringify(emptyCache), "malformed cached results should be discarded");
 
-const delegatedVariants = [];
-const delegationContext = {
-  console,
-  document: { addEventListener() {} },
-  localStorage: { getItem() { return null; }, setItem() {} },
-  performance: { now: () => Date.now() },
-  window: {
-    OFCFantasylandCore: core,
-    OFCSolverCore: {
-      solveVariantHand(ids, variant, options) {
-        delegatedVariants.push({ ids, variant, options });
-        return { best: { points: 0 }, bestRoyalty: null, bestRepeat: null };
-      },
-    },
-    setTimeout,
-  },
-};
-vm.runInNewContext(source, delegationContext, { filename: "fantasyland-ev-delegation.js" });
-core.ACTIVE_VARIANT_ORDER.forEach((variant) => delegationContext.window.OFCFantasylandEV.solveSample(["As"], variant));
-delegationContext.window.OFCFantasylandEV.solveSample(["As"], "low", 11);
-assert.deepEqual(delegatedVariants.slice(0, -1).map(({ variant }) => variant), core.ACTIVE_VARIANT_ORDER, "every active EV variant should delegate to the trainer solver");
-assert.equal(delegatedVariants.every(({ options }) => options.allowUnsupportedCardCount === true), true, "EV delegation should retain off-rule analytical card counts");
-assert.equal(delegatedVariants[delegatedVariants.length - 1].options.topRepeatMinRank, 11, "JJJ+ EV samples should pass the top-repeat threshold into the trainer solver");
-
+// The EV page no longer loads the trainer solver (the Monte-Carlo run path was
+// unreachable and is deleted); the precompute scripts call it directly, so the
+// complete-solver guarantee is checked on the solver itself.
+assert.equal(typeof api.solveSample, "undefined", "the EV page should not carry the deleted run path");
 const previousFalseFoul = ["Qs", "2s", "9h", "5h", "3c", "Th", "Tc", "Kh", "3h", "Ts", "As", "9c", "4c", "4d"];
-const exactHigh = api.solveSample(previousFalseFoul, "high");
+const exactHigh = trainerCore.solveVariantHand(previousFalseFoul, "high", { allowUnsupportedCardCount: true });
 assert.ok(exactHigh.best, "EV High samples must use the trainer's complete solver and never report a false foul");
 
 core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
@@ -91,7 +71,10 @@ core.ACTIVE_VARIANT_ORDER.forEach((variant) => {
   });
   closeTo(api.hypergeometricJokers(cards, 1, 1), cards / 53, `${cards} cards from a one-joker deck should draw the joker with n/53 probability`);
   closeTo(api.hypergeometricJokers(cards, 2, 2), cards * (cards - 1) / (54 * 53), `${cards} cards: both jokers have the exact inclusion probability`);
+  [0, 1, 2].forEach((jokers) => closeTo(core.hypergeometricJokers(cards, jokers, 2), api.hypergeometricJokers(cards, jokers, 2), `${cards} cards: the page uses the shared helper`));
 });
+assert.equal(core.scenarioKey({ cards: 14, jokers: 2 }), "14-2", "the shared configuration key is cards-jokers");
+assert.equal(core.choose(54, 2), 1431, "the shared binomial helper");
 
 const synthetic = {
   "14-0": { immediate: 10, repeatRate: 0.1, foulRate: 0.2 },
@@ -123,64 +106,37 @@ closeTo(
   "joker recursive EV should weight future 0J, 1J, and 2J Fantasyland deals from the 54-card deck"
 );
 
-const aggregate = api.finalizeAggregate({
+// A finalized 4-sample aggregate in the shape the precompute scripts write.
+const aggregate = {
   samples: 4,
-  immediateSum: 20,
-  immediateSquared: 120,
-  strategySum: 18,
-  repeatCount: 1,
-  repeatPointSum: 8,
-  repeatSources: [0, 0, 1, 0, 0, 0, 0, 0],
-  repeatDetails: {
-    topTripsByRank: Array(15).fill(0),
-    topBdpWheel: 0,
-    bottomQuadsByRank: Array(15).fill(0),
-    bottomStraightFlushByRank: Array(15).fill(0),
-    bottomStraightFlush: 0,
-    bottomRoyalFlush: 0,
-    cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 11 ? 3 : 0),
+  immediate: 5,
+  strategy: 4.5,
+  repeatRate: 0.25,
+  recursiveRepeatRate: 0.3,
+  repeatLine: 8,
+  qualifyRate: 0.75,
+  foulRate: 0.25,
+  totals: {
+    samples: 4,
+    immediateSum: 20,
+    immediateSquared: 120,
+    strategySum: 18,
+    repeatCount: 1,
+    repeatPointSum: 8,
+    repeatSources: [0, 0, 1, 0, 0, 0, 0, 0],
+    repeatDetails: {
+      topTripsByRank: Array(15).fill(0),
+      topBdpWheel: 0,
+      bottomQuadsByRank: Array(15).fill(0),
+      bottomStraightFlushByRank: Array(15).fill(0),
+      bottomStraightFlush: 0,
+      bottomRoyalFlush: 0,
+      cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 11 ? 3 : 0),
+    },
+    qualifyCount: 3,
+    distribution: Array.from({ length: 128 }, (_, score) => score < 4 ? 1 : 0),
   },
-  qualifyCount: 3,
-  distribution: Array.from({ length: 128 }, (_, score) => score < 4 ? 1 : 0),
-});
-assert.equal(aggregate.qualifyRate, 0.75, "EV aggregate should retain legal-board probability");
-assert.equal(aggregate.foulRate, 0.25, "EV aggregate foul chance should equal one minus legal-board probability");
-assert.equal(aggregate.totals.samples, 4, "EV aggregate should retain raw totals for cumulative runs");
-assert.equal(aggregate.totals.repeatSources[2], 1, "EV aggregate should retain the middle-row repeat source");
-
-const restored = api.aggregateFromResult(aggregate);
-assert.deepEqual(Array.from(restored.distribution), Array.from({ length: 128 }, (_, score) => score < 4 ? 1 : 0), "cumulative runs should restore exact distribution totals");
-assert.equal(restored.immediateSum, 20, "cumulative runs should restore immediate royalty totals");
-const merged = api.mergeAggregate(restored, {
-  samples: 2,
-  immediateSum: 8,
-  immediateSquared: 34,
-  strategySum: 7,
-  repeatCount: 1,
-  repeatPointSum: 6,
-  repeatSources: [0, 1, 0, 0, 0, 0, 0, 0],
-  repeatDetails: {
-    topTripsByRank: Array.from({ length: 15 }, (_, rank) => rank === 14 ? 1 : 0),
-    topBdpWheel: 0,
-    bottomQuadsByRank: Array(15).fill(0),
-    bottomStraightFlushByRank: Array(15).fill(0),
-    bottomStraightFlush: 0,
-    bottomRoyalFlush: 0,
-    cribbageMiddleByScore: Array.from({ length: 30 }, (_, score) => score === 12 ? 2 : 0),
-  },
-  qualifyCount: 2,
-  distribution: Array.from({ length: 128 }, (_, score) => score === 1 || score === 2 ? 1 : 0),
-});
-assert.equal(merged.samples, 6, "cumulative runs should add sample counts");
-assert.deepEqual(Array.from(merged.repeatSources), [0, 1, 1, 0, 0, 0, 0, 0], "cumulative runs should merge repeat-source buckets");
-assert.equal(merged.repeatDetails.topTripsByRank[14], 1, "cumulative runs should merge top trips ranks");
-assert.equal(merged.repeatDetails.cribbageMiddleByScore[11], 3, "cumulative runs should retain existing Cribbage score frequencies");
-assert.equal(merged.repeatDetails.cribbageMiddleByScore[12], 2, "cumulative runs should add new Cribbage score frequencies");
-assert.equal(api.finalizeAggregate(merged).immediate, 28 / 6, "cumulative runs should calculate EV from all saved and new samples");
-
-assert.equal(api.sampleChunkSize(24), 1, "small runs should checkpoint each sample");
-assert.equal(api.sampleChunkSize(100000), 25, "large runs should use bounded worker chunks");
-assert.equal(api.formatDuration(61000), "1m 01s", "time estimates should remain compact and precise");
+};
 
 assert.equal(
   api.applyPrecomputedResults({ schemaVersion: 1, samplesPerConfig: 9999, results: {} }),

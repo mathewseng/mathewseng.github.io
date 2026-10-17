@@ -322,9 +322,11 @@
 
     if (twoJoker.length) {
       const rates = twoJoker.map(({ result }) => finiteNumber(result.repeatRate));
+      const low = formatPct(Math.min(...rates));
+      const high = formatPct(Math.max(...rates));
       insights.push([
         "Jokers drive repeat equity",
-        `Two-joker hands repeat in ${formatPct(Math.min(...rates))} to ${formatPct(Math.max(...rates))} of deals across ${minCards}–${maxCards} cards.`,
+        `Two-joker hands repeat in ${low === high ? low : `${low} to ${high}`} of deals across ${minCards}–${maxCards} cards.`,
       ]);
     }
     if (minCards !== maxCards && find(minCards, 0) && find(maxCards, 0) && find(minCards, 2) && find(maxCards, 2)) {
@@ -497,9 +499,9 @@
       return;
     }
     const maxImmediate = Math.max(1, ...results.map((entry) => entry.result.immediate));
-    renderBarChart(els.evChart, results, (result) => result.immediate, maxImmediate, formatPoints);
-    renderBarChart(els.repeatChart, results, (result) => result.repeatRate, 1, formatPct);
-    renderBarChart(els.foulChart, results, resultFoulRate, 1, formatPct);
+    renderMetricMatrix(els.evChart, results, "immediate", maxImmediate);
+    renderMetricMatrix(els.repeatChart, results, "repeat", 1);
+    renderMetricMatrix(els.foulChart, results, "foul", 1);
     renderDistributionChart(results);
     renderRepeatSourceChart(results);
   }
@@ -791,23 +793,56 @@
     return `${percentage.toFixed(percentage > 0 && percentage < 1 ? 2 : 1)}%`;
   }
 
-  function renderBarChart(target, entries, valueFor, max, formatter) {
+  // The overview's metric matrix (the report page's matrix cells): one row per
+  // card count, one column per joker count, each cell a value, a bar in the
+  // joker hue and a one-line companion metric. Every cell keeps the
+  // `.chart-row` hook and names its configuration for screen readers.
+  function renderMetricMatrix(target, entries, metric, max) {
+    const metricMeta = {
+      immediate: { valueFor: (result) => result.immediate, format: formatPoints, meta: (result) => `${formatPct(result.repeatRate)} repeat` },
+      repeat: { valueFor: (result) => result.repeatRate, format: formatPct, meta: (result) => `${formatPoints(result.immediate)} EV` },
+      foul: { valueFor: resultFoulRate, format: formatPct, meta: (result) => `${formatPoints(result.immediate)} EV` },
+    }[metric];
+    const byKey = new Map(entries.map((entry) => [scenarioKey(entry.scenario), entry]));
+    const cardCounts = [...new Set(entries.map(({ scenario }) => scenario.cards))].sort((a, b) => a - b);
     const fragment = document.createDocumentFragment();
-    entries.forEach(({ scenario, result }) => {
-      const value = valueFor(result);
-      const hypothetical = !Core.supportsVariantCardCount(state.variant, scenario.cards);
-      const row = document.createElement("div");
-      row.className = "chart-row";
-      row.classList.toggle("is-hypothetical", hypothetical);
-      row.dataset.jokers = String(scenario.jokers);
-      row.innerHTML = `
-        <span>${scenario.cards}C / ${scenario.jokers}J</span>
-        <div class="bar-track" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(2)}%"></i></div>
-        <strong>${formatter(value)}</strong>
-      `;
-      fragment.appendChild(row);
+    const head = document.createElement("div");
+    head.className = "metric-matrix-head";
+    head.setAttribute("aria-hidden", "true");
+    head.innerHTML = `<span class="metric-matrix-corner">Cards</span>${[0, 1, 2].map((jokers) => `<span class="metric-matrix-col"><i class="joker-dot j${jokers}"></i>${jokers} joker${jokers === 1 ? "" : "s"}</span>`).join("")}`;
+    fragment.appendChild(head);
+    cardCounts.forEach((cards) => {
+      const hypothetical = !Core.supportsVariantCardCount(state.variant, cards);
+      const label = document.createElement("div");
+      label.className = "metric-matrix-label";
+      label.classList.toggle("is-hypothetical", hypothetical);
+      label.innerHTML = `<span>${cards} cards</span>${hypothetical ? '<small class="hypothetical-tag">hypothetical</small>' : ""}`;
+      fragment.appendChild(label);
+      [0, 1, 2].forEach((jokers) => {
+        const entry = byKey.get(scenarioKey({ cards, jokers }));
+        if (!entry) {
+          const empty = document.createElement("div");
+          empty.className = "matrix-cell matrix-cell--empty";
+          empty.innerHTML = `<span class="sr-only">${cards} cards, ${jokers} jokers: </span><span class="cell-muted">--</span>`;
+          fragment.appendChild(empty);
+          return;
+        }
+        const value = metricMeta.valueFor(entry.result);
+        const cell = document.createElement("div");
+        cell.className = "chart-row matrix-cell";
+        cell.classList.toggle("is-hypothetical", hypothetical);
+        cell.dataset.jokers = String(jokers);
+        cell.dataset.config = scenarioKey(entry.scenario);
+        cell.innerHTML = `
+          <span class="sr-only">${configLabel(entry.scenario)}${hypothetical ? " (hypothetical)" : ""}: </span>
+          <strong class="matrix-value">${metricMeta.format(value)}</strong>
+          <div class="bar-track" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(2)}%"></i></div>
+          <span class="matrix-meta">${metricMeta.meta(entry.result)}</span>
+        `;
+        fragment.appendChild(cell);
+      });
     });
-    target.className = "bar-chart";
+    target.className = "bar-chart metric-matrix";
     target.replaceChildren(fragment);
   }
 

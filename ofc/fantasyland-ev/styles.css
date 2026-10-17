@@ -154,6 +154,7 @@
 
 /* ---------- Overview: highlights ---------- */
 
+.ev-summary .stat-label,
 .ev-summary .stat-delta {
   white-space: normal;
 }
@@ -185,29 +186,76 @@
   text-align: center;
 }
 
-.chart-row {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 56px;
+/* The metric matrix: card counts down, joker counts across; each cell is a
+   value, a bar in the joker hue and a companion metric. */
+.metric-matrix {
+  grid-template-columns: minmax(96px, auto) repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.metric-matrix-head {
+  display: contents;
+}
+
+.metric-matrix-corner,
+.metric-matrix-col {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 24px;
+  gap: 6px;
+  padding: 0 2px 2px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.metric-matrix-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
   font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.metric-matrix-label.is-hypothetical > span {
+  color: var(--muted);
+}
+
+.matrix-cell {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-sm);
+  background: var(--surface);
   font-variant-numeric: tabular-nums;
 }
 
-.chart-row > span {
-  color: var(--muted);
-  font-weight: 600;
-  white-space: nowrap;
+.matrix-cell--empty {
+  border-style: dashed;
+  background: none;
 }
 
-.chart-row > strong {
+.matrix-value {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+}
+
+.matrix-meta {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
   font-weight: 600;
-  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .bar-track {
-  height: 10px;
+  height: 6px;
   border-radius: var(--r-pill);
   background: var(--surface-3);
   overflow: hidden;
@@ -229,7 +277,7 @@
   background: var(--joker-2);
 }
 
-/* Off-rule card counts: hatched fill as well as the legend chip. */
+/* Off-rule card counts: hatched fill and a "hypothetical" tag on the row. */
 .chart-row.is-hypothetical .bar-track i {
   background-image: var(--hatch);
 }
@@ -750,6 +798,11 @@
   color: var(--muted);
 }
 
+.deck-label {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
 .deck-count {
   display: inline-grid;
   place-items: center;
@@ -909,6 +962,7 @@
   }
 
   .matrix-table td,
+  .matrix-table td.num,
   .matrix-wrap .data-table td:first-child {
     position: static;
     display: block;
@@ -932,12 +986,16 @@
     color: var(--muted);
     font-size: var(--t-xs);
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .matrix-table td[data-value] {
     font-weight: 600;
+  }
+
+  .deck-matrix-panel .data-table :is(th, td),
+  .joker-panel .data-table :is(th, td) {
+    padding-inline: 8px;
   }
 
   .definition-list > div {
@@ -945,8 +1003,27 @@
     gap: 2px;
   }
 
-  .chart-row {
-    grid-template-columns: 58px minmax(0, 1fr) 52px;
+  .metric-matrix {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric-matrix-corner {
+    display: none;
+  }
+
+  .metric-matrix-label {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    padding-top: 6px;
+  }
+
+  .matrix-cell {
+    padding: 8px 10px;
+  }
+
+  .matrix-meta {
+    white-space: normal;
   }
 
   .repeat-source-row {
