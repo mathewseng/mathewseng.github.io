@@ -3856,6 +3856,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .solver-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
@@ -3878,6 +3879,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .solver-group > .btn {
   width: 100%;
+  min-width: 0;
+  white-space: normal;
 }
 
 /* Visible edit mode: the board frame carries the accent while editing. */
@@ -3952,6 +3955,7 @@ button.library-item {
 
 .library-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
@@ -3968,6 +3972,8 @@ button.library-item {
 
 .library-group > .btn {
   width: 100%;
+  min-width: 0;
+  white-space: normal;
 }
 
 .library-group--danger {
@@ -4252,6 +4258,16 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 /* ======================================================================
    7. Hub and documents
    ====================================================================== */
+
+/* The 12px floor on the hub: shared/hub.css sets the group heads, tags and
+   the phone footer just under it (shared request 2 of redesign-bg-shell). */
+.hub-backgammon .group-head h2,
+.hub-backgammon .group-head span,
+.hub-backgammon .tags span,
+.hub-backgammon .foot,
+.hub-backgammon .foot a {
+  font-size: var(--t-xs);
+}
 
 /* The featured Play tile carries the live board in its art slot; on phones
    the board moves below the three study tiles (section 8). */
