@@ -59,12 +59,18 @@ export function useToast(): ToastValue["toast"] {
 
 function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
   const [paused, setPaused] = useState(false);
+  // The viewport passes a fresh callback on every render; keep the timer on the
+  // toast itself so re-renders (route changes, other toasts) do not restart it.
+  const dismissRef = useRef(onDismiss);
+  useEffect(() => {
+    dismissRef.current = onDismiss;
+  }, [onDismiss]);
 
   useEffect(() => {
     if (paused) return;
-    const timer = window.setTimeout(onDismiss, TOAST_LIFETIME_MS);
+    const timer = window.setTimeout(() => dismissRef.current(), TOAST_LIFETIME_MS);
     return () => window.clearTimeout(timer);
-  }, [onDismiss, paused]);
+  }, [paused]);
 
   return (
     <div
@@ -73,8 +79,13 @@ function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) 
         item.tone === "alert" && "toast--alert",
         item.tone === "good" && "toast--good",
       )}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      // A tap fires no matching leave, so only a mouse hover pauses the timer.
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") setPaused(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setPaused(false);
+      }}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
