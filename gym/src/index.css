@@ -519,6 +519,11 @@ body::after {
     box-shadow: var(--focus-halo);
   }
 
+  /* SearchField draws its own 44px clear button; hide the UA one. */
+  .field[type="search"]::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
   .field::placeholder {
     color: var(--muted);
   }

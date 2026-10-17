@@ -5,7 +5,7 @@ Page: `/gym/` (one built React app; hash routes `#/`, `#/workouts`, `#/exercises
 
 ## What changed
 
-### Tokens and stylesheet (`gym/src/index.css`, 479 → 1,250 lines)
+### Tokens and stylesheet (`gym/src/index.css`, 479 → 1,264 lines)
 
 The stylesheet grows because the component kit (buttons, chips, segmented control,
 switch, badge, progress, dialog, sheet, toast, calendar, topbar) moved out of per-element
@@ -95,6 +95,19 @@ the TSX shrank by about the same amount and the 76 `!` overrides are gone.
 - Calendar cells carry `aria-pressed` and `aria-current="date"`; the compact dashboard
   calendar shows the selected day's entries under the grid.
 
+### Review pass after the interrupted run
+
+- `ScoreControl`: the legend floats inside the bordered surface (it sat on the
+  fieldset's top edge, cutting the value pill); the 0–6 grid goes to seven columns by
+  container width (`@container`, `@min-[23rem]`) instead of viewport width, so the radios
+  stay at least 44px wide at a 24px root font on 844×390.
+- Goal cards are flex columns, so the "Next action" footer sits at the bottom of
+  equal-height cards instead of leaving a gap under it.
+- The calendar's nutrition marker is a hollow ring (`.nutrition-mark`): `--warn` equals
+  the "upper" workout-type colour in the dark scheme, so the two were indistinguishable.
+- `SearchField` hides the UA search cancel glyph; it showed a second clear button
+  beside the 44px one.
+
 ## Logic changes (allowed by a finding in the notes)
 
 - `router.tsx` `Link`: `window.scrollTo` uses `behavior: "auto"` when
@@ -109,8 +122,9 @@ the TSX shrank by about the same amount and the 76 `!` overrides are gone.
 
 ## Verification
 
-- `cd gym && npm run format:check && npm run lint && npm run typecheck && npm test`: all
-  pass (70 tests), Node 22 (`engines` requires ≥ 22).
+- `cd gym && npm ci && npm run format:check && npm run lint && npm run typecheck && npm test`:
+  all pass (7 files, 70 tests), Node 22.23 (`engines` requires ≥ 22); `npm run build` passes and
+  the built `dist/assets/index-*.css` carries `--family-gym` with no `@import` left.
 - `npm run build`, `sh scripts/assemble-site.sh _site`, `SHELL_PAGES=/gym/ node
   scripts/shell-browser.cjs`: ok at 1440×900, 375×812, 844×390 (no overflow, 0 text
   nodes under 12px, 0 targets under 44px, skip link and `main#main` present). The sweep
@@ -121,7 +135,11 @@ the TSX shrank by about the same amount and the 76 `!` overrides are gone.
   toasts, Add preview, and empty search states: no overflow, no text under 12px, no
   targets under 44px, a ring on the first 25 tabbable elements, exactly two live regions,
   no page errors. The same pass at a 24px root font is clean.
-- `node scripts/run-tests.mjs` passes (Gym is excluded from the css-literals and shell
+- Screenshot baselines `scripts/screenshots/baseline/gym-1440x900.png` and
+  `gym-375x812.png` replaced after review. They are now the light scheme, because the
+  harness's Chromium reports `prefers-color-scheme: light` and Gym follows it when no theme
+  is saved; the dark scheme is covered by the state renders.
+- `node scripts/run-tests.mjs` passes (451 tests) (Gym is excluded from the css-literals and shell
   tests by design; nothing under `shared/` changed).
 
 ## Deferred (the content half of Step 7, outside this slice)
