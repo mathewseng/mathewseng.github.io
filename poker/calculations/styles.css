@@ -1,235 +1,70 @@
-/* Poker hand probability calculations.
+/* Poker hand probability calculations. An app shell on shared/tokens.css +
+ * shared/app.css + poker/tools.css: the topbar, tool head (with the solver
+ * summary strip) and the phone tab strip are fixed chrome; the workspace is a
+ * named-area grid on desktop (>= 960px) whose panels scroll internally, and a
+ * one-section-at-a-time column behind the tabs below that (data-view on
+ * .workspace: Explore, Map, Table, Glance, Solver). The ten rank colours are
+ * the --calc-rank-* tokens below, derived from the shared chart palette and
+ * read by app.js. Tokens only: no colour literals, no !important.
  *
- * Layout: an app shell that fills the viewport. On desktop (>= 960px) a
- * scrolling sidebar holds the rank / cards controls and the solver metrics,
- * and the panels sit in a grid (trend + distribution over map + table; the
- * map joins the top row from 1300px). Long content scrolls inside its panel.
- * Below 960px the view tabs show one section at a time (data-view on
- * .workspace): Explore (controls, trend, distribution), Map, Table, Glance
- * and Solver.
- */
-:root {
-  color-scheme: dark;
-  --page: #08090d;
-  --surface: #121620;
-  --surface-soft: #1a202c;
-  --ink: #eef4ff;
-  --muted: #9aa7b7;
-  --soft: #707d8d;
-  --line: #283141;
-  --line-strong: #394456;
-  --green: #8fd9b6;
-  --blue: #8ab4ff;
-  --gold: #f4c95d;
-  --red: #ff8b83;
-  --teal: #5dd4c7;
-  --violet: #b6a6ff;
-  --orange: #ffad66;
-  --table-head: #1a202c;
-  --table-stick: #121620;
-  --shadow: 0 18px 58px rgba(0, 0, 0, 0.28);
-  --radius: 8px;
-  --shell-gap: 8px;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+ * Sections: rank tokens, tool head, workspace grid, panels, controls, trend
+ * chart, distribution rows, map, glance cards, probability table, solver
+ * metrics, then the breakpoints: >= 1300 (four columns), < 960 (tabbed). */
+
+/* ---------- Rank colours (chart palette, one token per rank) ---------- */
+
+.workspace {
+  --calc-rank-0: var(--muted); /* high card */
+  --calc-rank-1: var(--cat-1); /* pair */
+  --calc-rank-2: var(--cat-2); /* two pair */
+  --calc-rank-3: var(--cat-3); /* trips */
+  --calc-rank-4: var(--cat-5); /* straight */
+  --calc-rank-5: var(--cat-4); /* flush */
+  --calc-rank-6: var(--info); /* full house */
+  --calc-rank-7: var(--cat-6); /* quads */
+  --calc-rank-8: var(--player-2); /* straight flush */
+  --calc-rank-9: var(--ink); /* royal flush */
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  height: 100%;
-  overflow-x: hidden;
-}
-
-body {
-  height: 100%;
-  margin: 0;
-  background: var(--page);
-  color: var(--ink);
-  overflow-x: hidden;
-}
-
-a {
-  color: inherit;
-}
-
-p,
-h1,
-h2,
-h3 {
-  margin: 0;
-}
-
-button,
-table {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-/* App shell ---------------------------------------------------------------- */
-
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  gap: var(--shell-gap);
-  width: 100%;
-  height: 100%;
-  padding: var(--shell-gap);
-}
-
-.topbar {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.brand {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 0.92rem;
-  font-weight: 760;
-  text-decoration: none;
-}
-
-.brand-mark {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-  color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 850;
-}
-
-.title-block {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.eyebrow {
-  margin-bottom: 3px;
-  color: var(--green);
-  font-size: 0.66rem;
-  font-weight: 850;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-h1 {
-  font-size: 1.02rem;
-  line-height: 1.1;
-  letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-h2 {
-  font-size: 0.98rem;
-  line-height: 1.15;
-  letter-spacing: 0;
-}
+/* ---------- Tool head: the summary strip sits in the right slot ---------- */
 
 .summary-grid {
-  display: flex;
   flex: 0 1 auto;
-  gap: 6px;
-  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  align-self: center;
 }
 
-.summary-card {
-  min-width: 0;
-  padding: 4px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-}
-
-.summary-card span,
-.metric-card span,
-.control-label {
-  display: block;
-  margin-bottom: 2px;
-  color: var(--muted);
-  font-size: 0.6rem;
-  font-weight: 820;
-  text-transform: uppercase;
-  letter-spacing: 0;
+.summary-card .stat-value {
+  font-size: var(--t-md);
   white-space: nowrap;
 }
 
-.summary-card strong {
-  display: block;
-  font-size: 0.86rem;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.source-link {
-  flex: 0 0 auto;
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-  color: var(--ink);
-  font-size: 0.84rem;
-  font-weight: 740;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.source-link:hover,
-.source-link:focus-visible {
-  border-color: var(--ink);
-  outline: none;
-}
-
+/* The phone tab strip (a .tabs--pill tablist) is hidden on the desktop grid. */
 .view-tabs {
   display: none;
+  flex: none;
+  margin-bottom: 10px;
 }
 
-/* Desktop workspace -------------------------------------------------------- */
+/* ---------- Workspace grid ---------- */
 
 .workspace {
   display: grid;
   flex: 1 1 auto;
-  min-height: 520px;
   grid-template-columns: 236px minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     "side trend detail"
     "side map table";
-  gap: var(--shell-gap);
+  gap: 10px;
+  min-height: 0;
 }
 
 .sidebar {
   grid-area: side;
   display: flex;
   flex-direction: column;
-  gap: var(--shell-gap);
+  gap: 10px;
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -237,21 +72,8 @@ h2 {
   scrollbar-width: thin;
 }
 
-.panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
 .sidebar .panel {
   flex: 0 0 auto;
-  box-shadow: none;
 }
 
 .trend-panel {
@@ -274,33 +96,33 @@ h2 {
   display: none;
 }
 
+/* ---------- Panels ---------- */
+
 .panel-heading {
-  flex: 0 0 auto;
   display: grid;
-  gap: 1px;
-  margin-bottom: 8px;
+  flex: 0 0 auto;
+  gap: 2px;
   min-width: 0;
+  padding: 12px 14px 8px;
 }
 
-.panel-heading .eyebrow {
-  margin-bottom: 1px;
+.panel-heading h2 {
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: var(--lh-heading);
 }
 
 .panel-meta {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.76rem;
-  line-height: 1.35;
-  white-space: nowrap;
   overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: var(--lh-data);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
+  padding: 4px 14px 14px;
   scrollbar-width: thin;
 }
 
@@ -309,45 +131,56 @@ h2 {
   overflow: visible;
 }
 
-/* Controls ----------------------------------------------------------------- */
+/* ---------- Controls ---------- */
+
+.control-panel {
+  padding: 12px 14px;
+}
 
 .control-toggle {
   display: none;
 }
 
 .control-group + .control-group {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .control-label {
+  display: block;
   margin-bottom: 6px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .rank-controls {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 5px;
+  gap: 4px;
 }
 
 .card-controls {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 5px;
+  gap: 4px;
 }
 
 .rank-button,
 .card-button {
-  min-height: 32px;
+  min-height: 36px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: #161b26;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
   color: var(--ink);
-  font-size: 0.84rem;
-  font-weight: 760;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
   transition:
-    border-color 160ms ease,
-    background 160ms ease,
-    transform 160ms ease;
+    border-color var(--d-fast),
+    background-color var(--d-fast);
 }
 
 .rank-button {
@@ -357,48 +190,50 @@ h2 {
   gap: 8px;
   min-width: 0;
   padding: 0 10px;
-  text-align: left;
-  white-space: nowrap;
   overflow: hidden;
+  text-align: left;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-button {
   min-width: 0;
   padding: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .rank-button:hover,
-.rank-button:focus-visible,
-.card-button:hover,
-.card-button:focus-visible {
-  border-color: var(--ink);
-  outline: none;
-  transform: translateY(-1px);
+.card-button:hover {
+  border-color: var(--control-border);
+  background: var(--surface-3);
 }
 
 .rank-button.active,
 .card-button.active {
-  border-color: var(--active-color, var(--ink));
-  background: color-mix(in srgb, var(--active-color, var(--ink)) 16%, #111720);
+  border-color: var(--active-color, var(--accent));
+  background: color-mix(in oklab, var(--active-color, var(--accent)) 16%, var(--surface-2));
+}
+
+.card-button.active {
+  --active-color: var(--accent);
 }
 
 .rank-swatch {
+  flex: 0 0 auto;
   width: 10px;
   height: 10px;
-  flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--rank-color);
 }
 
 .run-meta {
   margin-top: 10px;
   color: var(--muted);
-  font-size: 0.74rem;
-  line-height: 1.35;
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
 }
 
-/* Trend chart -------------------------------------------------------------- */
+/* ---------- Trend chart ---------- */
 
 .chart-frame {
   display: flex;
@@ -412,20 +247,15 @@ h2 {
   min-height: 150px;
 }
 
-.axis-label,
-.point-label {
+.chart .axis-label,
+.chart .point-label {
   fill: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--t-xs);
+  font-weight: 600;
 }
 
-.grid-line {
-  stroke: #273244;
-  stroke-width: 1;
-}
-
-.axis-line {
-  stroke: #59677b;
+.chart .axis-line {
+  stroke: var(--line-strong);
   stroke-width: 1;
 }
 
@@ -448,7 +278,7 @@ h2 {
   fill: var(--rank-color);
 }
 
-/* Selected deal ------------------------------------------------------------ */
+/* ---------- Selected deal ---------- */
 
 .distribution-list {
   display: grid;
@@ -461,17 +291,19 @@ h2 {
   grid-template-columns: minmax(84px, 118px) minmax(0, 1fr) 72px;
   gap: 10px;
   align-items: center;
-  min-height: 22px;
+  min-height: 28px;
+  padding: 0;
   border: 0;
+  border-radius: var(--r-sm);
   background: transparent;
   color: inherit;
-  padding: 0;
+  font: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
-.distribution-row:focus-visible {
-  outline: 2px solid var(--rank-color);
-  outline-offset: 2px;
+.distribution-row.active {
+  background: color-mix(in oklab, var(--rank-color) 10%, transparent);
 }
 
 .distribution-name {
@@ -479,37 +311,26 @@ h2 {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
   color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 760;
-  white-space: nowrap;
-  overflow: hidden;
+  font-size: var(--t-sm);
+  font-weight: 600;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.bar-track {
+.distribution-row .bar-track {
   height: 10px;
-  border-radius: 999px;
-  background: var(--surface-soft);
-  overflow: hidden;
-}
-
-.bar-fill {
-  display: block;
-  width: var(--bar-width);
-  height: 100%;
-  border-radius: inherit;
-  background: var(--rank-color);
 }
 
 .distribution-value {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* Distribution map --------------------------------------------------------- */
+/* ---------- Distribution map ---------- */
 
 .stacked-map {
   display: grid;
@@ -519,67 +340,83 @@ h2 {
 
 .stack-row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 96px;
+  grid-template-columns: 56px minmax(0, 1fr) 104px;
   gap: 8px;
   align-items: center;
 }
 
 .stack-label {
   color: var(--ink);
-  font-size: 0.8rem;
-  font-weight: 820;
+  font-size: var(--t-sm);
+  font-weight: 600;
   white-space: nowrap;
 }
 
+/* The map's stacked bar is a row of segment buttons, not the kit's .stack-bar. */
 .stack-bar {
   display: flex;
-  height: 18px;
+  gap: 0;
+  height: 22px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: var(--surface-soft);
+  background: var(--surface-3);
   overflow: hidden;
 }
 
 .stack-segment {
-  min-width: 2px;
-  height: 100%;
-  border: 0;
-  padding: 0;
-  background: var(--rank-color);
-  color: #071019;
+  container-type: inline-size;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.64rem;
-  font-weight: 900;
+  min-width: 2px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--rank-color);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 700;
   line-height: 1;
   opacity: 0.62;
   overflow: hidden;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .stack-segment.active {
   opacity: 1;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.stack-segment:focus-visible {
+  outline-offset: -3px;
+  opacity: 1;
 }
 
 .stack-segment span {
   min-width: 0;
   overflow: hidden;
-  text-overflow: clip;
+}
+
+/* Abbreviations only where they fit; the aria-label carries the full text. */
+@container (max-width: 27px) {
+  .stack-segment span {
+    display: none;
+  }
 }
 
 .stack-top {
+  overflow: hidden;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: var(--t-xs);
   font-variant-numeric: tabular-nums;
   text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* At a glance (phone only) ------------------------------------------------- */
+/* ---------- At a glance (phone only) ---------- */
 
 .mobile-card-grid {
   display: grid;
@@ -588,10 +425,10 @@ h2 {
 }
 
 .mobile-hand-card {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
   padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
 }
 
 .mobile-hand-head {
@@ -603,23 +440,23 @@ h2 {
 }
 
 .mobile-hand-head strong {
-  font-size: 1rem;
+  font-size: var(--t-md);
 }
 
 .mobile-hand-head span {
   color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 740;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .mobile-rank-list {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .mobile-rank-row {
   display: grid;
-  grid-template-columns: minmax(86px, 1fr) 80px;
+  grid-template-columns: minmax(86px, 1fr) 90px;
   gap: 10px;
   align-items: center;
 }
@@ -628,82 +465,60 @@ h2 {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 44px;
+  padding: 0 4px;
   border: 0;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--ink);
-  padding: 0;
-  font-weight: 760;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
   text-align: left;
+  cursor: pointer;
+}
+
+.mobile-rank-row button.active {
+  background: color-mix(in oklab, var(--rank-color) 12%, transparent);
 }
 
 .mobile-rank-row span:last-child {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* Probability table -------------------------------------------------------- */
+/* ---------- Probability table ---------- */
 
-.table-wrap {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+.table-panel .panel-body {
+  margin: 0 14px 14px;
+  padding: 0;
 }
 
-table {
+#probabilityTable {
   width: max-content;
   min-width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
 }
 
-th,
-td {
-  border-bottom: 1px solid var(--line);
-  padding: 6px 8px;
+#probabilityTable th,
+#probabilityTable td {
   text-align: right;
-  white-space: nowrap;
-}
-
-th {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: var(--table-head);
-  color: #dce6f3;
-  font-size: 0.68rem;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
-td {
-  color: #e6edf7;
-  font-size: 0.86rem;
-}
-
-tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-tbody tr:hover td {
-  background-color: #171d28;
 }
 
 .sticky-one,
 .sticky-two {
   position: sticky;
   z-index: 2;
-  background: var(--table-stick);
+  background: var(--surface);
   text-align: left;
 }
 
-th.sticky-one,
-th.sticky-two {
+#probabilityTable th.sticky-one,
+#probabilityTable th.sticky-two {
   z-index: 4;
-  background: var(--table-head);
+  background: var(--surface-3);
+  text-align: left;
 }
 
 .sticky-one {
@@ -714,62 +529,56 @@ th.sticky-two {
 .sticky-two {
   left: 64px;
   min-width: 88px;
-  border-right: 1px solid var(--line);
-}
-
-.method-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border: 1px solid rgba(19, 121, 91, 0.3);
-  border-radius: 999px;
-  color: var(--green);
-  font-size: 0.7rem;
-  font-weight: 820;
+  border-right: 1px solid var(--line-opaque);
 }
 
 .count-cell {
   color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .prob-cell {
   min-width: 86px;
   padding: 0;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--rank-color) 14%, transparent) var(--p), transparent 0),
+    linear-gradient(90deg, color-mix(in oklab, var(--rank-color) 14%, transparent) var(--p), transparent 0),
     var(--surface);
-  font-variant-numeric: tabular-nums;
 }
 
 .prob-cell.active {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--rank-color) 58%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--rank-color) 58%, transparent);
 }
 
 .prob-button {
   width: 100%;
   min-height: 36px;
+  padding: 0 10px;
   border: 0;
   background: transparent;
   color: inherit;
-  padding: 0 8px;
-  text-align: right;
+  font: inherit;
+  font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
+  text-align: right;
+  cursor: pointer;
 }
 
 .prob-button:focus-visible {
-  outline: 2px solid var(--rank-color);
   outline-offset: -2px;
 }
 
-/* Solver metrics ----------------------------------------------------------- */
+.error-state {
+  padding: 18px;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* ---------- Solver metrics ---------- */
 
 .intro-copy {
   margin-bottom: 10px;
   color: var(--muted);
-  font-size: 0.76rem;
-  line-height: 1.45;
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
 }
 
 .metrics-grid {
@@ -780,23 +589,34 @@ th.sticky-two {
 
 .metric-card {
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
   padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.metric-card span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .metric-card strong {
   display: block;
   margin-bottom: 4px;
-  font-size: 0.96rem;
-  line-height: 1.1;
+  font-size: var(--t-md);
+  line-height: var(--lh-heading);
 }
 
 .metric-card p {
   color: var(--muted);
-  font-size: 0.74rem;
-  line-height: 1.35;
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
 }
 
 .layer-chart {
@@ -805,8 +625,8 @@ th.sticky-two {
   margin-top: 8px;
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
 }
 
 .layer-row {
@@ -818,8 +638,8 @@ th.sticky-two {
 
 .layer-row span {
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 780;
+  font-size: var(--t-xs);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -828,48 +648,32 @@ th.sticky-two {
   text-align: right;
 }
 
-.layer-track {
-  height: 8px;
-  border-radius: 999px;
-  background: #232b39;
-  overflow: hidden;
+.source-line {
+  margin-top: 12px;
+  font-size: var(--t-sm);
 }
 
-.layer-fill {
-  width: var(--bar-width);
-  height: 100%;
-  border-radius: inherit;
-  background: var(--blue);
+.source-link {
+  color: var(--accent);
+  text-decoration: none;
 }
 
-.error-state {
-  padding: 18px;
-  color: var(--red);
-  font-weight: 740;
+.source-link:hover {
+  text-decoration: underline;
 }
 
-/* Wide desktops: the map joins the top row and the table spans the bottom. */
+/* ---------- Wide desktops: the map joins the top row and the table spans the bottom ---------- */
 
 @media (min-width: 1300px) {
   .workspace {
     grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.08fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       "side trend detail map"
       "side table table table";
   }
 
-  .rank-button,
-  .card-button {
-    min-height: 34px;
-  }
-
   .distribution-list {
     gap: 5px;
-  }
-
-  .distribution-row {
-    min-height: 26px;
   }
 
   .stacked-map {
@@ -877,99 +681,58 @@ th.sticky-two {
   }
 
   .stack-bar {
-    height: 20px;
+    height: 24px;
   }
 }
 
-/* Narrow desktops: hide the brand name so the header stays on one line. */
+/* Short desktop windows: the grid keeps a usable height and the app scrolls. */
+@media (min-width: 960px) and (max-height: 720px) {
+  .app {
+    overflow-y: auto;
+  }
 
-@media (max-width: 1299px) {
-  .brand-name {
-    display: none;
+  .workspace {
+    min-height: 560px;
   }
 }
 
-/* Compact layout: one section at a time behind the tabs. ------------------ */
+/* ---------- Compact layout: one section at a time behind the tabs ---------- */
 
 @media (max-width: 959px) {
-  .app-shell {
-    gap: 6px;
-    padding: 6px;
+  .app > .tool-head {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .topbar {
-    flex-wrap: wrap;
-    gap: 6px;
-    min-height: 0;
-    padding: 6px 8px;
-  }
-
-  .brand {
-    flex: 1 1 auto;
-  }
-
-  .brand-name {
-    display: inline;
-  }
-
-  .title-block {
-    display: none;
-  }
-
-  .source-link {
-    min-height: 34px;
-    padding: 0 10px;
-    font-size: 0.8rem;
+  .app > .tool-head > div:first-child {
+    flex: none;
   }
 
   .summary-grid {
-    order: 2;
-    flex: 1 0 100%;
-    display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    align-self: stretch;
   }
 
   .summary-card {
-    padding: 3px 6px;
+    padding: 8px 10px;
   }
 
-  .summary-card span {
-    font-size: 0.54rem;
-  }
-
-  .summary-card strong {
-    font-size: 0.74rem;
+  .summary-card .stat-value {
+    overflow: hidden;
+    font-size: var(--t-sm);
+    text-overflow: ellipsis;
   }
 
   .view-tabs {
-    display: grid;
-    flex: 0 0 auto;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-  }
-
-  .view-tab {
-    min-height: 38px;
-    padding: 0 4px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--muted);
-    font-size: 0.82rem;
-    font-weight: 820;
-  }
-
-  .view-tab.active {
-    border-color: var(--green);
-    background: color-mix(in srgb, var(--green) 18%, #111720);
-    color: var(--ink);
+    display: flex;
+    margin-top: 10px;
+    margin-inline: -12px;
   }
 
   .workspace {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     min-height: 0;
     overflow: auto;
     overscroll-behavior: contain;
@@ -1013,11 +776,6 @@ th.sticky-two {
     overflow: auto;
   }
 
-  .panel {
-    padding: 10px;
-    box-shadow: none;
-  }
-
   .panel-meta {
     white-space: normal;
   }
@@ -1025,18 +783,8 @@ th.sticky-two {
   /* Collapsible controls: a summary button, expanded on demand. */
   .control-toggle {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 8px;
     width: 100%;
-    min-height: 40px;
-    padding: 0 10px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius);
-    background: #161b26;
-    color: var(--ink);
-    font-size: 0.86rem;
-    font-weight: 760;
     text-align: left;
   }
 
@@ -1049,11 +797,11 @@ th.sticky-two {
 
   .control-caret {
     color: var(--muted);
-    transition: transform 160ms ease;
+    transition: rotate var(--d-fast) var(--ease);
   }
 
   .control-toggle[aria-expanded="true"] .control-caret {
-    transform: rotate(180deg);
+    rotate: 180deg;
   }
 
   .control-body {
@@ -1065,7 +813,6 @@ th.sticky-two {
     display: block;
   }
 
-  /* Touch targets. */
   .rank-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
@@ -1078,7 +825,7 @@ th.sticky-two {
 
   .rank-button,
   .card-button {
-    min-height: 38px;
+    min-height: 44px;
   }
 
   .chart-frame,
@@ -1092,16 +839,16 @@ th.sticky-two {
 
   .distribution-row {
     grid-template-columns: minmax(92px, 118px) minmax(0, 1fr) 70px;
-    min-height: 36px;
+    min-height: 44px;
   }
 
   .stack-row {
-    grid-template-columns: 50px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
     gap: 6px 8px;
   }
 
   .stack-bar {
-    height: 36px;
+    height: 44px;
   }
 
   .stack-top {
@@ -1110,7 +857,7 @@ th.sticky-two {
   }
 
   .prob-button {
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .metrics-grid {
@@ -1119,16 +866,8 @@ th.sticky-two {
 }
 
 @media (max-width: 400px) {
-  .view-tab {
-    font-size: 0.76rem;
-  }
-
-  .summary-card span {
-    font-size: 0.5rem;
-  }
-
-  .summary-card strong {
-    font-size: 0.7rem;
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .distribution-row {

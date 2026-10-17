@@ -1,17 +1,9 @@
 const DATA_URL = "./data/probabilities.json";
 
-const RANK_COLORS = [
-  "#a4afbd",
-  "#7fb4ff",
-  "#6ed0a8",
-  "#f3c45f",
-  "#c5a6ff",
-  "#ff8b83",
-  "#5dd4c7",
-  "#9c92ff",
-  "#ffad66",
-  "#f8fafc",
-];
+// The ten rank colours are tokens (--calc-rank-0 … --calc-rank-9 on the
+// workspace, defined in styles.css from the shared chart palette) and are
+// piped inline as --rank-color wherever a rank is drawn.
+const RANK_COLORS = Array.from({ length: 10 }, (_, index) => `var(--calc-rank-${index})`);
 
 const RANK_ABBREVIATIONS = ["HC", "P", "TP", "T", "S", "F", "B", "Q", "SF", "RF"];
 
@@ -57,27 +49,22 @@ fetch(DATA_URL)
   })
   .catch((error) => {
     elements.probabilityTable.querySelector("tbody").innerHTML =
-      `<tr><td class="error-state" colspan="13">${error.message}</td></tr>`;
+      `<tr><td class="error-state error-text" colspan="13">${error.message}</td></tr>`;
     elements.runMeta.textContent = "Data failed to load.";
   });
 
 // Compact layouts show one workspace section at a time; the desktop grid
-// shows them all and ignores data-view.
-document.querySelectorAll(".view-tab").forEach((tab) => {
-  tab.addEventListener("click", () => setView(tab.dataset.view));
-});
-
+// shows them all and ignores data-view. The strip is a real tablist
+// (shared/tabs.js owns aria-selected, the .active class and the keys).
 function setView(view) {
   const workspace = document.querySelector("#workspace");
   if (!workspace || !view) return;
   workspace.dataset.view = view;
-  document.querySelectorAll(".view-tab").forEach((tab) => {
-    const active = tab.dataset.view === view;
-    tab.classList.toggle("active", active);
-    tab.setAttribute("aria-pressed", String(active));
-  });
+  document.querySelectorAll(".view-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
   workspace.scrollTop = 0;
 }
+if (window.Tabs) window.Tabs.init(document.querySelector("#view-tabs"), { onChange: setView });
+else document.querySelectorAll(".view-tab").forEach((tab) => tab.addEventListener("click", () => setView(tab.dataset.view)));
 
 // On phones the rank / cards controls collapse behind a summary button.
 const controlToggle = document.querySelector("#controlToggle");
@@ -185,9 +172,15 @@ function renderTrendChart(data) {
     `${rank.label}: ${formatProbability(current.probability)} at ${current.cards} cards; peak ${formatProbability(peak.probability)} at ${peak.cards}.`;
   elements.stackMeta.textContent = `${rank.label} highlighted across every card count.`;
 
-  const width = 720;
-  const height = 310;
-  const margin = { top: 24, right: 18, bottom: 42, left: 62 };
+  // The SVG is drawn at the panel's own pixel size (no viewBox scaling), so
+  // axis labels render at the 12px they are set to; a resize redraws it.
+  const frame = elements.trendChart.getBoundingClientRect();
+  const pad = getComputedStyle(elements.trendChart);
+  const boxWidth = frame.width - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight);
+  const boxHeight = frame.height - parseFloat(pad.paddingTop) - parseFloat(pad.paddingBottom);
+  const width = Math.max(300, Math.round(boxWidth) || 720);
+  const height = boxHeight >= 170 ? Math.min(360, Math.round(boxHeight)) : Math.round(width * 0.52);
+  const margin = { top: 20, right: 18, bottom: 40, left: 64 };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
   const maxProbability = Math.max(...values.map((value) => value.probability));
@@ -223,7 +216,7 @@ function renderTrendChart(data) {
               style="--rank-color: ${color}"
               cx="${point.x}"
               cy="${point.y}"
-              r="${point.cards === selectedCards ? 6 : 4}"
+              r="${point.cards === selectedCards ? 6 : 4.5}"
               data-cards="${point.cards}"
             >
               <title>${point.cards} cards: ${formatProbability(point.probability)}</title>
@@ -234,6 +227,16 @@ function renderTrendChart(data) {
       </g>
     </svg>
   `;
+}
+
+if (typeof ResizeObserver === "function") {
+  let frameWidth = 0;
+  new ResizeObserver((entries) => {
+    const width = Math.round(entries[0].contentRect.width);
+    if (!appData || width === frameWidth) return;
+    frameWidth = width;
+    renderTrendChart(appData);
+  }).observe(elements.trendChart);
 }
 
 function renderDistribution(data) {
@@ -265,9 +268,7 @@ function renderDistribution(data) {
         <span class="rank-swatch" aria-hidden="true"></span>
         <span>${rank.label}</span>
       </span>
-      <span class="bar-track" aria-hidden="true">
-        <span class="bar-fill" style="--bar-width: ${barWidth(rank.probability, maxProbability)}"></span>
-      </span>
+      <span class="bar bar-track" aria-hidden="true" style="--value: ${barValue(rank.probability, maxProbability)}; --bar-color: var(--rank-color)"></span>
       <span class="distribution-value">${formatProbability(rank.probability)}</span>
     `;
     elements.distributionList.append(button);
@@ -368,7 +369,7 @@ function renderProbabilityTable(data) {
     const tr = document.createElement("tr");
     tr.append(
       cell(`${row.cards}`, "sticky-one"),
-      htmlCell('<span class="method-pill">Exact</span>', "sticky-two"),
+      htmlCell('<span class="method-pill badge badge--good badge--plain">Exact</span>', "sticky-two"),
       cell(formatInteger.format(row.observations), "count-cell"),
     );
 
@@ -411,9 +412,7 @@ function renderMetrics(data) {
     .map((layer) => `
       <div class="layer-row">
         <span>${layer.rank}</span>
-        <div class="layer-track" aria-hidden="true">
-          <div class="layer-fill" style="--bar-width: ${barWidth(layer.states, maxStates)}"></div>
-        </div>
+        <div class="bar layer-track" aria-hidden="true" style="--value: ${barValue(layer.states, maxStates)}; --bar-color: var(--cat-1)"></div>
         <span>${compactNumber(layer.states)}</span>
       </div>
     `)
@@ -438,9 +437,10 @@ function htmlCell(html, className = "") {
   return td;
 }
 
-function barWidth(value, max) {
-  if (!max) return "0%";
-  return `${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(4)}%`;
+// Fill fraction for the kit's .bar (--value, 0–1).
+function barValue(value, max) {
+  if (!max) return "0";
+  return Math.max(0, Math.min(1, value / max)).toFixed(6);
 }
 
 function formatProbability(probability) {
