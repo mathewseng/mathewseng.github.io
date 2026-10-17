@@ -578,6 +578,13 @@ function renderSim() {
   for (let s = 0; s < 4; s++)
     for (let r = 0; r < 13; r++) {
       const c = r * 4 + s;
+      // Each suit row opens with its suit mark: the desktop deck's cards are
+      // too small for shared/cards.css to draw one (hidden on phones).
+      if (r === 0) {
+        const mark = el("span", "deck-suit", PlayingCards.SUIT_SYMBOL[PlayingCards.normalize(cardName(c)).suit]);
+        mark.setAttribute("aria-hidden", "true");
+        grid.append(mark);
+      }
       const owner = sim.hands.findIndex((h) => h.includes(c));
       const b = el("button", "deck-card");
       b.type = "button";

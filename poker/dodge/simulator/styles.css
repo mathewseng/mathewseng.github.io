@@ -240,9 +240,10 @@
   font-size: var(--t-sm);
 }
 
+/* 44px keeps the suit mark (shared/cards.css drops it below 44px). */
 .seat .cards {
-  --card-width: 36px;
-  min-height: 50px;
+  --card-width: 44px;
+  min-height: calc(var(--card-width) * 1.4);
 }
 
 .empty-hand {
@@ -336,8 +337,20 @@
   line-height: var(--lh-data);
 }
 
+/* The desktop deck is too narrow for 44px cards, so its cards are rank-only:
+   each suit row starts with its suit mark (the matrix rows are suits). */
 .deck-grid {
+  grid-template-columns: max-content repeat(13, minmax(0, 1fr));
   gap: 4px;
+}
+
+.deck-suit {
+  display: grid;
+  place-items: center;
+  min-width: 1.1em;
+  color: var(--muted);
+  font-size: var(--t-md);
+  line-height: 1;
 }
 
 .deck-card {
@@ -1137,6 +1150,11 @@
     right: 1px;
     bottom: 1px;
     padding: 0 3px;
+  }
+
+  /* At 44px the cards carry their own suit mark. */
+  .deck-suit {
+    display: none;
   }
 
   .action-row > .btn {
