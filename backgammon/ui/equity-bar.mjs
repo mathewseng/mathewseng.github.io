@@ -23,6 +23,9 @@ export class EquityBar {
     this.meter.append(this.fill);
     this.label = element("span", "equity-number equity-bottom-number");
     this.topLabel = element("span", "equity-number equity-top-number");
+    // The group announces the complete reading, including its perspective.
+    this.label.setAttribute("aria-hidden", "true");
+    this.topLabel.setAttribute("aria-hidden", "true");
     this.retry = element("button", "equity-retry");
     this.retry.type = "button";
     this.retry.textContent = "Retry";
@@ -99,14 +102,12 @@ export class EquityBar {
     if (reading) {
       const equity = orientation ? -reading.ivory : reading.ivory;
       this.fill.style.height = `${equityFraction(equity) * 100}%`;
-      this.label.textContent = (equity >= 0 ? "+" : "") + equity.toFixed(2);
-      this.topLabel.textContent = (-equity >= 0 ? "+" : "") + (-equity).toFixed(2);
-      this.topLabel.setAttribute("aria-label", `${playerName(1 - orientation)} equity ${this.topLabel.textContent}`);
-      this.label.setAttribute("aria-label", `${playerName(orientation)} equity ${this.label.textContent}`);
-      this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${this.label.textContent} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;
+      this.label.textContent = equity >= 0 ? equity.toFixed(2) : "";
+      this.topLabel.textContent = equity < 0 ? (-equity).toFixed(2) : "";
+      this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(2)} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;
     } else {
       this.label.textContent = status === "loading" ? "…" : "—";
-      this.topLabel.textContent = this.label.textContent;
+      this.topLabel.textContent = "";
       this.node.title = reason;
     }
     this.node.setAttribute("aria-label", this.node.title);

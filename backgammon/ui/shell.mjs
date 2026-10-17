@@ -72,7 +72,9 @@ export const button = (text, action, cls = "", attrs = {}) =>
   );
 export function field(label, input) {
   input.setAttribute("aria-label", String(label));
-  return el("label", { class: "field" }, label, input);
+  // A button group has several controls; wrapping it in a label would activate
+  // its first button when the user taps the heading.
+  return el(input.getAttribute("role") === "group" ? "div" : "label", { class: "field" }, label, input);
 }
 export function select(options, value, change) {
   const node = el("select", { onChange: (e) => change?.(e.target.value) });
@@ -309,8 +311,8 @@ export async function preferences() {
   const s = settings();
   const orient = select(
     [
-      ["0", "Ivory home at bottom right"],
-      ["1", "Teal home at bottom right"],
+      ["0", "White home at bottom right"],
+      ["1", "Black home at bottom right"],
     ],
     s.orientation,
     (v) => saveSettings({ orientation: Number(v) }),
@@ -536,7 +538,7 @@ export function about() {
     ),
   );
 }
-export function players(s, names = ["Ivory", "Teal"]) {
+export function players(s, names = ["White", "Black"]) {
   const orientation = settings().orientation;
   for (const [id, p] of [
     ["opponent", 1 - orientation],

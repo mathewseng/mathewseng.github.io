@@ -51,7 +51,7 @@ export function humanControls(config, state) {
     decisionPlayer(state) === (config.humanSide === 1 ? 1 : 0)
   );
 }
-export function controlNames(config, humanNames = ["Ivory", "Teal"]) {
+export function controlNames(config, humanNames = ["White", "Black"]) {
   return config.mode === "local"
     ? [...humanNames]
     : [0, 1].map((p) =>
@@ -80,7 +80,7 @@ export function studyGame(state, context, id) {
   const humanNames = context?.game?.humanNames ||
     context?.game?.names?.map((name, p) =>
       name === "GNUbg" ? playerName(p) : name,
-    ) || ["Ivory", "Teal"];
+    ) || ["White", "Black"];
   return {
     id,
     initial: clone(state),

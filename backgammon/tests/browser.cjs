@@ -212,7 +212,7 @@ const server = http.createServer((req, res) => {
         await page
           .getByRole("button", { name: "Done editing", exact: true })
           .click();
-        await page.locator("#analyze").click();
+        // A valid edited position starts analysis as soon as editing finishes.
         await page
           .getByText("Evaluated moves", { exact: true })
           .waitFor({ timeout: 45000 });
@@ -629,6 +629,9 @@ const server = http.createServer((req, res) => {
         );
         (report.mobileStudy ||= []).push(
           await run("mobile-study", browser, base, out, browserName),
+        );
+        (report.solverEditor ||= []).push(
+          await run("solver-editor", browser, base, out, browserName),
         );
         (report.mobileLibrary ||= []).push(
           await run("mobile-library", browser, base, out, browserName),

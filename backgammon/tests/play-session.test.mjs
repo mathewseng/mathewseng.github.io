@@ -6,6 +6,7 @@ import {
   positionKey,
   legalPaths,
   clone,
+  playerName,
 } from "../core/rules.mjs";
 import {
   defaultPlayRules,
@@ -14,7 +15,15 @@ import {
   studyGame,
   matchesPlayContext,
   lastMove,
+  controlNames,
 } from "../core/play-session.mjs";
+
+test("player colors are White and Black while custom names remain intact", () => {
+  assert.deepEqual([0, 1].map(playerName), ["White", "Black"]);
+  assert.deepEqual(controlNames({ mode: "local" }), ["White", "Black"]);
+  assert.deepEqual(controlNames({ mode: "local" }, ["Ada", "Sam"]), ["Ada", "Sam"]);
+  assert.deepEqual(studyGame(initialState(), null, "editor").names, ["White", "Black"]);
+});
 
 function table(state = initialState({ phase: "move", dice: [3, 1] })) {
   return {

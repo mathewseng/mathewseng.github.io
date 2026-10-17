@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Canonical points[0..23] are Ivory's 1..24. Positive = Ivory (0), negative = Teal (1).
-// Ivory moves down; Teal up. bar/off use player indexes. Display orientation never changes state.
+// Canonical points[0..23] are White's 1..24. Positive = White (0), negative = Black (1).
+// White moves down; Black up. bar/off use player indexes. Display orientation never changes state.
 export const clone = (value) => structuredClone(value);
 export const sign = (player) => (player === 0 ? 1 : -1);
 export const distance = (point, player) =>
   player === 0 ? point + 1 : 24 - point;
-export const playerName = (p) => (p === 0 ? "Ivory" : "Teal");
+export const playerName = (p) => (p === 0 ? "White" : "Black");
 // GNUbg cubeinfo uses a signed 32-bit cube; retain room for a doubled offer.
 export const MAX_CUBE = 2 ** 29;
 export const STANDARD_RULES = Object.freeze({

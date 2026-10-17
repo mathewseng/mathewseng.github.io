@@ -2,6 +2,7 @@ const { launchQuietBrowser } = require("../../scripts/quiet-browser.cjs");
 const { chromium } = require("playwright");
 const fs = require("node:fs");
 const assert = require("node:assert/strict");
+const { seedOpening, openingComplete } = require("./play-helpers.cjs");
 (async () => {
   const b = await launchQuietBrowser(chromium, {
     headless: true,
@@ -18,23 +19,24 @@ const assert = require("node:assert/strict");
       }),
       p = await c.newPage();
     const base = process.env.BG_BASE_URL || "http://127.0.0.1:8765";
+    await seedOpening(p, [3, 1]);
     await p.goto(base + "/backgammon/play/");
+    await p.evaluate(async () => {
+      (await import('/backgammon/core/storage.mjs')).saveSettings({ interactionMode: 'beginner' });
+      dispatchEvent(new Event('bg-settings'));
+    });
     await p.getByRole("button", { name: "Same device", exact: true }).tap();
-    await p.getByLabel("Ivory player").fill("Long name — localization");
+    await p.getByLabel("White player").fill("Long name — localization");
     await p.locator("#start-match").tap();
-    do {
-      await p.locator("#roll").tap();
-      await p.waitForTimeout(30);
-    } while (await p.locator("#roll").count());
-    await p.locator("#begin-turn").tap();
+    await openingComplete(p);
     const step = await p.evaluate(async () => {
       const { get } = await import("/backgammon/core/storage.mjs"),
         { legalTurns } = await import("/backgammon/core/rules.mjs");
       return legalTurns((await get("work", "play")).game.state)[0].steps[0];
     });
-    await p.locator(`g[data-point="${step.from}"]`).tap();
+    await p.locator(`g[data-point="${step.from}"] > .checker`).last().tap();
     assert.ok(await p.locator(".destination").count());
-    await p.locator(`g[data-point="${step.to}"]`).tap();
+    await p.locator(`g[data-point="${step.to}"] > .point-hit`).tap();
     assert.ok(await p.locator("#board .board-die.consumed[role=button]").count());
     await p.screenshot({
       path: "backgammon/test-results/touch-active-390.png",
@@ -103,7 +105,7 @@ const assert = require("node:assert/strict");
       },
     };
     fs.writeFileSync(
-      "backgammon/docs/interaction-benchmark.json",
+      process.env.BG_INTERACTION_REPORT || "backgammon/docs/interaction-benchmark.json",
       JSON.stringify(report, null, 2),
     );
     console.log(JSON.stringify(report, null, 2));

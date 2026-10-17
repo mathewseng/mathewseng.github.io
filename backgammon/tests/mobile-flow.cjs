@@ -66,20 +66,20 @@ module.exports = async function mobileFlow(browser, base, out, name) {
     await page.goto(base+"/backgammon/solver/");
     await page.locator("#analyze").waitFor();
     await page.locator("#edit-position").tap();
-    await page.getByLabel("Board editing tool",{exact:true}).selectOption("remove");
+    assert.equal(await page.locator(".position-editor select").count(),0);
     await page.getByRole("button",{name:"Dice & rules",exact:true}).tap();
     await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).tap();
     await shot("solver-edit-landscape");
     await page.locator("#edit-position").tap();
-    await page.locator("#analyze").tap();
+    // Done editing automatically analyzes; clicking Analyze here would cancel.
     await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze" && !document.querySelector(".study-strip").hidden);
     for (const [width,height] of [[667,375],[844,390],[932,430]]) {
       await page.setViewportSize({width,height});
       await reachable("#analyze");
-      await reachable(".study-preview-controls select");
+      await reachable(".study-current");
       await page.getByRole("button",{name:"Next move preview",exact:true}).tap();
-      assert.equal(await page.getByLabel("Preview evaluated move",{exact:true}).inputValue(),"0");
-      await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("-1");
+      assert.equal(await page.locator(".study-current").getAttribute("data-preview-index"),"0");
+      await page.getByRole("button",{name:"Show original position",exact:true}).tap();
       await shot(`solver-results-${width}`);
     }
     await page.setViewportSize({width:390,height:844});

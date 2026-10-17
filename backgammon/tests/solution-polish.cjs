@@ -101,7 +101,7 @@ module.exports=async(browser,base,out,name)=>{
   for(const [width,height] of [[390,844],[844,390],[1366,768]]) {
    await page.setViewportSize({width,height});await page.waitForTimeout(60);
    assert.equal(await page.locator('.off-checker').count(),0);
-   const labels=await page.locator('.equity-number').allTextContents();assert.ok(labels.includes('+0.73')&&labels.includes('-0.73'));
+   const labels=await page.locator('.equity-number').allTextContents();assert.deepEqual(labels.filter(Boolean),['0.73']);
    const bounds=await page.evaluate(()=>{
     const board=window.polishBoard.svg,cube=board.querySelector('.cube-hit').getBoundingClientRect(),off=board.querySelector('[data-point="off0"] .point-hit').getBoundingClientRect();
     return {separated:cube.bottom<off.top,numbers:[...window.polishBar.node.querySelectorAll('.equity-number')].every(n=>n.scrollWidth<=n.clientWidth+1),overflow:document.documentElement.scrollWidth<=innerWidth+1};

@@ -645,7 +645,7 @@ function render() {
       event = m?.events?.at(-1);
     boardKey = key;
     draft.names = m?.names ||
-      m?.players?.map((p) => p.name) || ["Ivory", "Teal"];
+      m?.players?.map((p) => p.name) || ["White", "Black"];
     draft.set(s, legalPaths(s), enabled);
     if (
       before &&
@@ -900,7 +900,7 @@ function setupFields() {
     fields.append(
       el("div", { class: "pair setup-names" },
       field(
-        "Ivory player",
+        "White player",
         el("input", {
           value: config.name,
           maxlength: 24,
@@ -908,7 +908,7 @@ function setupFields() {
         }),
       ),
       field(
-        "Teal player",
+        "Black player",
         el("input", {
           value: config.opponent,
           maxlength: 24,
@@ -1022,8 +1022,8 @@ function start() {
         ? [0, 1].map((p) =>
             p === config.humanSide ? config.name || "You" : "GNUbg",
           )
-        : [config.name || "Ivory", config.opponent || "Teal"],
-    humanNames: [config.name || "Ivory", config.opponent || "Teal"],
+        : [config.name || "White", config.opponent || "Black"],
+    humanNames: [config.name || "White", config.opponent || "Black"],
     started: true,
   };
   feedback = null;
@@ -1559,7 +1559,7 @@ function renderActions() {
 }
 function names() {
   return (
-    model()?.names || model()?.players?.map((p) => p.name) || ["Ivory", "Teal"]
+    model()?.names || model()?.players?.map((p) => p.name) || ["White", "Black"]
   );
 }
 function playerControls(close = () => {}, prefix = "") {
@@ -1613,8 +1613,8 @@ function playerControls(close = () => {}, prefix = "") {
             choice("Play both sides", null, "play-both"),
           ]
         : [
-            choice("Bot plays Ivory", 1, "bot-ivory"),
-            choice("Bot plays Teal", 0, "bot-teal"),
+            choice("Bot plays White", 1, "bot-ivory"),
+            choice("Bot plays Black", 0, "bot-teal"),
           ]),
     ),
     ...(draft.draft.length
@@ -1648,7 +1648,7 @@ function panel() {
           el(
             "div",
             { class: "list-row" },
-            `${i === 0 ? "Ivory" : "Teal"} · ${v.name} · ${online.roster.some((r) => r.id === v.id && r.connected) ? "connected" : "away"}`,
+            `${i === 0 ? "White" : "Black"} · ${v.name} · ${online.roster.some((r) => r.id === v.id && r.connected) ? "connected" : "away"}`,
           ),
         ),
       ),

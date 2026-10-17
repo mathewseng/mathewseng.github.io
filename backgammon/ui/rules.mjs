@@ -2,13 +2,13 @@
 import { el, field, select } from "./shell.mjs";
 import { ruleGuide } from "../core/rule-guide.mjs";
 import { rulesOf, ruleSummary } from "../core/rules.mjs";
-export function ruleControls(matchLength, initial, change = () => {}) {
+export function ruleControls(matchLength, initial, change = () => {}, choice = select) {
   let rules = rulesOf({ rules: initial });
   const summary = el("summary", {}, "Rules"),
     note = el("p", { class: "muted small" });
   const cube = el("input", { type: "checkbox", checked: rules.cube });
   const jacoby = el("input", { type: "checkbox", checked: rules.jacoby });
-  const automatic = select(
+  const automatic = choice(
     [
       [0, "Off"],
       [-1, "Every opening tie · no limit"],
@@ -17,7 +17,7 @@ export function ruleControls(matchLength, initial, change = () => {}) {
     ],
     rules.automaticDoubles,
   );
-  const immediate = select(
+  const immediate = choice(
     [
       [0, "Off"],
       [1, "Beavers"],

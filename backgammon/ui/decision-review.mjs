@@ -18,6 +18,15 @@ import { EngineClient } from "../engine/client.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
 import { StudyStrip } from "./study-strip.mjs";
 
+function lossSummary(feedback) {
+  const units = feedback.label === "EV lost" ? feedback.units : "normalized match equity";
+  return el("p", {
+    class: "decision-loss", "data-loss-tone": feedback.tone,
+    title: `${feedback.label} ${feedback.value} · ${units}`,
+    "aria-label": `${feedback.label} ${feedback.value} · ${units}`,
+  }, `${feedback.label} ${feedback.value}`, el("span", {class: "decision-loss-unit"}, ` · ${units}`));
+}
+
 // A separate instance of the shared renderer: previews cannot touch the live
 // DraftBoard. Callers own live analysis; this dialog owns and cancels the
 // optional worker that expands an older saved review.
@@ -322,13 +331,9 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.settings.name} · ${result.settings.plies} ply · ${playerName(f.perspective)}’s decision perspective`,
+            `${result.settings.name} · ${result.settings.plies} ply · ${playerName(f.perspective)}`,
           ),
-          el(
-            "p",
-            { class: "decision-loss", "data-loss-tone": f.tone },
-            `${f.label} ${f.value} · ${f.label === "EV lost" ? f.units : "normalized match equity"}`,
-          ),
+          lossSummary(f),
           decisionValues(f, false, {
             opponent,
             onChoice: (choice) => {
@@ -393,11 +398,7 @@ export function decisionReview(
       if (result.actual) {
         const f = decisionFeedback(result, source);
         body.append(
-          el(
-            "p",
-            { class: "decision-loss", "data-loss-tone": f.tone },
-            `${f.label} ${f.value} · ${f.label === "EV lost" ? f.units : "normalized match equity"}`,
-          ),
+          lossSummary(f),
           decisionValues(f, true, { opponent }),
           lossLegend(),
           el(
@@ -560,14 +561,14 @@ export function decisionReview(
           redraw();
         }
       };
-      const prev = button("Previous moves", () => {
+      const prev = button("‹", () => {
         page--;
         redraw();
-      });
-      const next = button("Next moves", () => {
+      }, "", {"aria-label": "Previous moves", title: "Previous moves"});
+      const next = button("›", () => {
         page++;
         redraw();
-      });
+      }, "", {"aria-label": "Next moves", title: "Next moves"});
       const pager = el(
         "div",
         { class: "row spread review-move-pages" },
