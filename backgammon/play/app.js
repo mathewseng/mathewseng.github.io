@@ -139,7 +139,7 @@ ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
 // Game result card: an overlay in the board slot (like the opening roll)
 // naming the result level, the score change and the cube.
-const resultCard = el("section", { class: "game-over-card", hidden: true, "aria-label": "Game result" });
+const resultCard = el("section", { class: "bg-result-card game-over-card", hidden: true, "aria-label": "Game result" });
 ui.board.container.append(resultCard);
 function renderResultCard(s) {
   const r = s?.phase === "over" ? s.result : null;
@@ -253,8 +253,18 @@ function placeReview() {
 }
 desktopTable.addEventListener("change", () => {
   placeReview();
-  if (model()?.started) arrangeActions();
+  placeConfirm();
 });
+// One home for #confirm per layout: the end of the action row on wide tables,
+// the full-width stage under the board when the table stacks (and in the
+// landscape dock). Only #confirm moves: the help buttons may be inside the
+// open practice sheet when the layout changes.
+function placeConfirm() {
+  const confirm = $("confirm");
+  if (!confirm) return;
+  const home = desktopTable.matches ? $("actions") : boardActions;
+  if (confirm.parentElement !== home) home.append(confirm);
+}
 
 
 document
@@ -1146,9 +1156,7 @@ function arrangeActions() {
   const prefs = settings();
   draftKeys.replaceChildren(...(prefs.keyboardEnabled ? [["undo", "Undo"], ["reset", "Reset"]].filter(([action]) => prefs.shortcuts[action]?.[0]).map(([action, label]) =>
     el("span", {}, shortcutBadge(prefs.shortcuts[action][0]), label)) : []));
-  // One home per layout: the full-width stage under the board when the table
-  // stacks (and in the landscape dock), the end of the action row on wide tables.
-  if ($("confirm")) (desktopTable.matches ? $("actions") : boardActions).append($("confirm"));
+  placeConfirm();
   if (!model()?.started || config.mode === "online") return;
   const human =
     config.mode === "computer" ? config.humanSide : state().turn;

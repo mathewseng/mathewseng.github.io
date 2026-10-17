@@ -332,6 +332,12 @@ details .stack {
   width: 100%;
 }
 
+/* Evaluated-move rows (ui/analysis.mjs) stack their lines in one column:
+   notation and value, then the delta, then board features. */
+button.list-row:has(> .row.spread) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .move-picker {
   width: 100%;
 }
@@ -1494,13 +1500,14 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   opacity: 0.45;
 }
 
-/* Game result card: an overlay in the board slot, like the opening roll. */
-.game-over-card {
+/* Result card: an overlay in the board slot, like the opening roll. Play's
+   game over and Trainer's session summary share it. */
+.bg-result-card {
   position: absolute;
   z-index: 3;
   display: grid;
   gap: 10px;
-  width: min(440px, calc(100% - 48px));
+  width: min(520px, calc(100% - 48px));
   padding: 18px 20px 16px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-lg);
@@ -1510,11 +1517,15 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   animation: roll-panel-in 240ms ease-out;
 }
 
-.game-over-card > .eyebrow {
+.bg-result-card[hidden] {
+  display: none;
+}
+
+.bg-result-card > .eyebrow {
   justify-content: center;
 }
 
-.game-over-card h2 {
+.bg-result-card h2 {
   margin: 0;
   font-size: var(--t-xl);
   font-weight: 700;
@@ -1522,17 +1533,28 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   overflow-wrap: anywhere;
 }
 
-.game-over-stats {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+/* Stats wrap as whole rows (no empty grid cells) and labels may wrap. */
+.bg-result-card .stat-strip,
+.trainer-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
   margin-top: 4px;
   text-align: left;
 }
 
-.game-over-stats .stat {
+.bg-result-card .stat,
+.trainer-summary-stats .stat {
+  flex: 1 1 80px;
   padding: 8px 10px;
 }
 
-.game-over-stats .stat-value small {
+.bg-result-card .stat-label,
+.trainer-summary-stats .stat-label {
+  overflow: visible;
+  white-space: normal;
+}
+
+.bg-result-card .stat-value small {
   display: block;
   margin: 2px 0 0;
   overflow: hidden;
@@ -3598,28 +3620,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: color-mix(in oklab, var(--ink) 3%, transparent);
 }
 
-.library-item[aria-selected="true"] {
-  background: var(--accent-soft);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-
-.library-item > div {
-  flex: 1;
-  min-width: 0;
-}
-
-.library-item h2 {
-  margin-bottom: 4px;
-  font-size: var(--t-md);
-  overflow-wrap: anywhere;
-}
-
-.library-item p {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--t-sm);
-  overflow-wrap: anywhere;
-}
 
 .item-glyph {
   display: grid;
@@ -3630,17 +3630,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   border-radius: var(--r-sm);
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 20px;
-}
-
-.library-session-summary p {
-  margin: 5px 0;
-  font-size: var(--t-sm);
-  line-height: var(--lh-body);
-}
-
-.library-session-summary .library-session-count {
-  margin-bottom: 0;
 }
 
 .library-session-players {
@@ -3693,6 +3682,307 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .library-open {
   width: 100%;
+}
+
+/* Trainer: the session stepper in the tool head. Each step carries its
+   result as visually hidden text; colour only repeats it. */
+.trainer-steps {
+  display: flex;
+  flex: none;
+  gap: 3px;
+  align-self: center;
+  width: clamp(96px, 16vw, 220px);
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trainer-steps:empty {
+  display: none;
+}
+
+.trainer-steps > li {
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+}
+
+.trainer-steps > li[data-step="current"] {
+  background: var(--accent);
+}
+
+.trainer-steps > li[data-step="done"] {
+  background: var(--muted);
+}
+
+.trainer-steps > li[data-step="perfect"],
+.trainer-steps > li[data-step="close"] {
+  background: var(--good);
+}
+
+.trainer-steps > li[data-step="small"],
+.trainer-steps > li[data-step="medium"] {
+  background: var(--warn);
+}
+
+.trainer-steps > li[data-step="large"] {
+  background: var(--bad);
+}
+
+.trainer-steps > li[data-step="skipped"] {
+  background: repeating-linear-gradient(90deg, var(--muted) 0 3px, transparent 3px 5px);
+}
+
+/* Trainer result card: best, yours and the loss as kit list rows. */
+.trainer-result {
+  display: grid;
+  gap: 10px;
+}
+
+.trainer-result .decision-loss {
+  margin: 0;
+}
+
+.trainer-result-rows .list-row,
+.trainer-summary-rows .list-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.trainer-result-rows .list-row-sub,
+.trainer-summary-rows .list-row-sub {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.trainer-result-rows .list-row:last-child .list-row-value,
+.trainer-summary-rows .list-row .list-row-value {
+  color: var(--loss-color, var(--ink));
+}
+
+.trainer-result-rows[data-loss-tone],
+.trainer-summary-rows [data-loss-tone] {
+  --loss-color: var(--ink);
+}
+
+.trainer-result-rows[data-loss-tone="perfect"],
+.trainer-result-rows[data-loss-tone="close"],
+.trainer-summary-rows [data-loss-tone="perfect"],
+.trainer-summary-rows [data-loss-tone="close"] {
+  --loss-color: var(--good);
+}
+
+.trainer-result-rows[data-loss-tone="small"],
+.trainer-result-rows[data-loss-tone="medium"],
+.trainer-summary-rows [data-loss-tone="small"],
+.trainer-summary-rows [data-loss-tone="medium"] {
+  --loss-color: var(--warn);
+}
+
+.trainer-result-rows[data-loss-tone="large"],
+.trainer-summary-rows [data-loss-tone="large"] {
+  --loss-color: var(--bad);
+}
+
+.trainer-summary-rows [data-loss-tone="skipped"] {
+  --loss-color: var(--muted);
+}
+
+
+/* Solver: context strip, analysis progress, inspector groups, edit mode. */
+.solver-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: center;
+  min-width: 0;
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.solver-context-item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.solver-context-label {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.solver-context-item strong {
+  font-weight: 600;
+}
+
+.solver-context-edit {
+  margin-left: auto;
+}
+
+/* Phones keep the same summary in the subtitle and on the board itself. */
+@media (max-width: 700px), (max-height: 500px) and (min-width: 650px) {
+  .solver-context {
+    display: none;
+  }
+}
+
+.solver-progress {
+  min-width: 0;
+}
+
+.solver-progress[hidden] {
+  display: none;
+}
+
+.solver-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  align-items: center;
+  margin: 2px 0 4px;
+}
+
+.solver-sections-label {
+  margin-right: 4px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.solver-sections .btn {
+  padding-inline: 10px;
+}
+
+.solver-group {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 8px;
+}
+
+.solver-group:first-of-type {
+  padding-top: 4px;
+  border-top: 0;
+}
+
+.solver-group-title {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.solver-group > .btn {
+  width: 100%;
+}
+
+/* Visible edit mode: the board frame carries the accent while editing. */
+.app[data-page="solver"].editing-position #board > .bg-board {
+  border-radius: var(--r-md);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Library rows are real buttons with a pressed state. */
+button.library-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line-opaque);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.library-item[aria-pressed="true"] {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.library-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.library-item-body {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.library-item-title {
+  font-size: var(--t-md);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.library-item-meta {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+
+.library-session-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.library-session-count {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.item-glyph svg {
+  display: block;
+}
+
+/* Library inspector groups: Open, Edit, Export, then a separated danger zone. */
+.library-selected-kind {
+  margin: 0;
+}
+
+.library-selected-title {
+  margin: 2px 0 6px;
+}
+
+.library-group {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.library-group-title {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.library-group > .btn {
+  width: 100%;
+}
+
+.library-group--danger {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--bad) 40%, transparent);
+  border-radius: var(--r-md);
+}
+
+.library-group--danger .library-group-title {
+  color: var(--bad);
+}
+
+.library-group--danger p {
+  margin: 0;
 }
 
 /* All controls sheet and the phone tool list. */
@@ -4822,10 +5112,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding-block: 14px;
   }
 
-  .library-item h2 {
-    font-size: var(--t-md);
-  }
-
   /* Review section on phones. */
   .play-review:not([hidden]) {
     gap: 16px;
@@ -5702,7 +5988,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 8px;
   }
 
-  .game-over-card {
+  .bg-result-card {
     width: min(360px, calc(100% - 24px));
     padding: 12px 14px;
   }
