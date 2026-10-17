@@ -121,9 +121,10 @@
   padding: 0 var(--s-3) var(--s-3);
 }
 
+/* 12.5rem fits five seat-size cards on one line at showdown. */
 .seats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
   gap: var(--s-2);
 }
 
@@ -265,12 +266,32 @@
   animation: pnl-bounce var(--d-slow) var(--spring);
 }
 
+/* Host controls at showdown: next bet and next draws as label | control
+   rows, Next Hand full width beneath. */
+.host-showdown-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+
+.host-showdown-controls > .btn {
+  grid-column: 1 / -1;
+  margin-left: 0;
+}
+
+.host-showdown-controls .money-input > input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
 .host-select {
   gap: 0;
 }
 
 .host-select select {
-  width: 9rem;
+  width: 100%;
 }
 
 /* ---------- Rules: the reversed hand-rankings counter ---------- */

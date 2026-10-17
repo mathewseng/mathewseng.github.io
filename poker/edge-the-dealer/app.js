@@ -472,7 +472,8 @@ class EdgeTheDealerController {
 
     initials(name) {
         const parts = String(name || 'P').trim().split(/\s+/).filter(Boolean);
-        return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'P';
+        // Escaped: the avatar is interpolated into innerHTML and names come from peers.
+        return this.escapeHtml(parts.slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'P');
     }
 
     /**

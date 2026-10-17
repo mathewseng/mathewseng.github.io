@@ -1578,6 +1578,12 @@
   font-size: var(--t-xs);
 }
 
+/* Seats in a row share the tallest seat's height; their rows pack at the
+   top instead of stretching (a queued seat would otherwise float apart). */
+.table-app .seat {
+  align-content: start;
+}
+
 /* Per-seat showdown lines (payout equation and PnL this hand). */
 .table-app .seat > .player-hands,
 .table-app .seat > .payout-equation,
@@ -1814,6 +1820,7 @@
   .table-app .seats {
     display: flex;
     flex-wrap: nowrap;
+    justify-content: flex-start;
     gap: 6px;
     margin-inline: calc(-1 * var(--s-2));
     padding: 8px var(--s-2) 4px;
