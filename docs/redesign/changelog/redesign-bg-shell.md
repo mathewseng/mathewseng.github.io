@@ -8,7 +8,7 @@ link the tokens and kit (their document restyle is the other half of step 6).
 
 ## What changed
 
-### `backgammon/styles.css` (3970 → 5687 lines)
+### `backgammon/styles.css` (3970 → 5698 lines)
 
 Rewritten from scratch as one file in eight labelled layers: aliases and
 base, shell, board, play, review and tools, dialogs and toast, hub and
@@ -131,12 +131,12 @@ board and drag surfaces. No other test changed.
   viewport), update gate, populated Library with the inspector sheet,
   trainer hint, decision review at 1366×768 / 390×844 / 844×390, landscape
   setup, live table, trainer and Library.
-- `node backgammon/tests/browser.cjs` (full chromium suite): see the
-  structured report.
+- `node backgammon/tests/browser.cjs` (full chromium suite, `BG_KEEP_GOING=1`):
+  72 modules run, 72 passed, exit 0 on the final branch state.
 
 ## Deferred
 
-- The ≤1,800-line target: the rewrite is 5,687 lines in the repository's
+- The ≤1,800-line target: the rewrite is 5,698 lines in the repository's
   one-declaration-per-line style (about 2,470 declarations and 910
   selector lines). Reaching the target needs either a denser format or dropping
   the per-viewport Play/Trainer/Solver/Library rules the 84 Playwright
@@ -159,6 +159,6 @@ board and drag surfaces. No other test changed.
   outline, report TOC, generated refresh CSS) are the other halves of step 6
   and were not part of this slice.
 - `last-move-entry.cjs` is timing-sensitive (a 320ms exit fade read after
-  the engine's reply); it passed alone and in the second full run but failed
-  once under the first full run's load. Nothing in this branch touches the
-  WAAPI animations it measures.
+  the engine's reply); it failed once under the first full run's load and
+  passed alone and in the second and third full runs. Nothing in this branch
+  touches the WAAPI animations it measures.
