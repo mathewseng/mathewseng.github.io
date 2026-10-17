@@ -67,10 +67,12 @@ function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) 
   }, [onDismiss]);
 
   useEffect(() => {
-    if (paused) return;
+    // Alerts (failed saves, restores, clipboard) stay until dismissed, so a phone
+    // user who looks away does not lose the message about what to do next.
+    if (paused || item.tone === "alert") return;
     const timer = window.setTimeout(() => dismissRef.current(), TOAST_LIFETIME_MS);
     return () => window.clearTimeout(timer);
-  }, [paused]);
+  }, [item.tone, paused]);
 
   return (
     <div

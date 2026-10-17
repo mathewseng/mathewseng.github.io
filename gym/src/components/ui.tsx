@@ -514,14 +514,26 @@ export function ActionBar({
     const bar = barRef.current;
     if (!bar) return;
     const root = document.documentElement;
-    const write = () => root.style.setProperty("--action-bar-h", `${bar.offsetHeight}px`);
+    const topbar = document.querySelector<HTMLElement>(".topbar");
+    const write = () => {
+      // A landscape phone docks the bar as a right-side column (CSS) under the
+      // sticky topbar; then its width, not its height, is what the content
+      // must make room for.
+      const column = getComputedStyle(bar).flexDirection === "column";
+      if (topbar) root.style.setProperty("--topbar-h", `${topbar.offsetHeight}px`);
+      root.style.setProperty("--action-bar-h", column ? "0px" : `${bar.offsetHeight}px`);
+      root.style.setProperty("--action-bar-w", column ? `${bar.offsetWidth}px` : "0px");
+    };
     write();
     const observer =
       typeof ResizeObserver === "function" ? new ResizeObserver(write) : null;
     observer?.observe(bar);
+    if (topbar) observer?.observe(topbar);
     return () => {
       observer?.disconnect();
       root.style.removeProperty("--action-bar-h");
+      root.style.removeProperty("--action-bar-w");
+      root.style.removeProperty("--topbar-h");
     };
   }, []);
 

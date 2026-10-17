@@ -247,12 +247,13 @@ function NutritionEditor({ existing }: { existing?: NutritionEntry }) {
     const confirmed = await confirm({
       title: "Clear the form?",
       description:
-        "The date, every value, context score, supplement and note typed so far are discarded.",
+        "Every value, context score, supplement and note typed so far is discarded. The date stays.",
       confirmLabel: "Clear form",
       tone: "danger",
     });
     if (!confirmed) return;
-    const fresh = blankForm();
+    // The date stays (as on Add workout), so clearing an edit never moves the entry.
+    const fresh: NutritionForm = { ...blankForm(), date: form.date };
     setForm(fresh);
     setBaseline(JSON.stringify(fresh));
     toast("Form cleared.");

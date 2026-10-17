@@ -64,7 +64,9 @@ export function HashRouter({ children }: PropsWithChildren) {
           if (!leave) return;
           blockerRef.current = null;
           acceptedHash.current = next;
-          window.location.hash = next;
+          // The restored entry sits right after the one the user went to (for Back
+          // and Forward alike), so step back onto it instead of pushing another.
+          window.history.back();
         });
         return;
       }

@@ -197,6 +197,11 @@ body::after {
 
 /* Each page's sections rise in through @starting-style, so a stalled
    transition can never leave content at opacity 0. */
+/* Room for the landscape action column (0 unless ActionBar publishes it). */
+#main-content {
+  padding-inline-end: var(--action-bar-w, 0px);
+}
+
 #main-content > * {
   opacity: 1;
   translate: none;
@@ -1274,6 +1279,42 @@ body::after {
       inset-inline-start: 16rem;
       padding-inline: 32px;
       padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Landscape phones: the bar becomes a right-side column between the sticky
+     topbar and the tab bar, so the fixed chrome no longer stacks three rows
+     into a 390px viewport. ActionBar then publishes --action-bar-w instead of
+     --action-bar-h, and the content and toasts step aside by that width. */
+  @media (max-height: 560px) {
+    .action-bar {
+      inset-inline: auto 0;
+      top: var(--topbar-h, 57px);
+      flex-direction: column;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      justify-content: flex-end;
+      gap: 8px;
+      width: min(13rem, 34vw);
+      overflow-y: auto;
+      border-top: 0;
+      border-inline-start: 1px solid var(--line);
+      padding: 12px;
+      padding-inline-end: max(12px, env(safe-area-inset-right));
+    }
+
+    .action-bar > .btn {
+      flex-shrink: 0;
+      white-space: normal;
+    }
+
+    .action-bar > :last-child {
+      margin-inline-start: 0;
+    }
+
+    .toast-stack {
+      left: calc((100% - var(--action-bar-w, 0px)) / 2);
+      width: min(100% - var(--action-bar-w, 0px) - 24px, 480px);
     }
   }
 

@@ -595,7 +595,7 @@ function WorkoutEditor({
   const confirm = useConfirm();
   const { workouts, saveWorkout } = useAppState();
   const queryDate = searchParams.get("date") ?? undefined;
-  const [plan] = useState(() =>
+  const [plan, setPlan] = useState(() =>
     existing ? undefined : parsePlan(searchParams, knownExerciseIds),
   );
   const [workoutId] = useState(existing?.id ?? newId("local-workout"));
@@ -734,14 +734,24 @@ function WorkoutEditor({
     const confirmed = await confirm({
       title: "Clear the form?",
       description:
-        "Date, type, title, exercises, sets, context scores and notes typed so far are discarded.",
+        "Exercises, sets, context scores, notes, start time and duration typed so far are discarded. The date, type and title stay.",
       confirmLabel: "Clear form",
       tone: "danger",
     });
     if (!confirmed) return;
-    const fresh = blankForm();
+    // Same scope as before the redesign: date, type, title and data quality stay, so
+    // clearing an edit never moves the saved entry to another day.
+    const fresh: WorkoutForm = {
+      ...form,
+      startTime: localTimeNow(),
+      durationMinutes: undefined,
+      exercises: [newExercise()],
+      context: {},
+      notes: "",
+    };
     setForm(fresh);
     setBaseline(JSON.stringify(fresh));
+    setPlan(undefined);
     setPreview(false);
     toast("Form cleared.");
   }
