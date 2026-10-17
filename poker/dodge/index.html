@@ -54,7 +54,7 @@
           <p class="lede">Start with four cards. Keep drawing. Dodge a straight or better.</p>
         </div>
         <button class="btn btn--primary export-button" id="export-button" type="button" disabled>
-          <span>Export CSV</span>
+          <span class="phone-sr">Export CSV</span>
           <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-download" /></svg>
         </button>
       </div>
@@ -78,7 +78,7 @@
         <section class="filter-panel panel panel--quiet" aria-label="Filter hand population">
           <div class="filters">
             <div class="field search-field">
-              <label for="search">Find a hand or ranks</label>
+              <label for="search" class="phone-sr">Find a hand or ranks</label>
               <input id="search" type="search" placeholder="AKQJ or As Kh Qd Jc" autocomplete="off" spellcheck="false" />
             </div>
             <button
@@ -192,7 +192,7 @@
                 <span id="page-status"></span>
                 <div class="pagination-controls">
                   <div class="field field--select field--inline">
-                    <label for="page-size">Rows</label>
+                    <label for="page-size" class="phone-sr">Rows</label>
                     <select id="page-size">
                       <option>25</option>
                       <option>50</option>
@@ -204,7 +204,7 @@
                     <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-left" /></svg>
                   </button>
                   <div class="field field--inline page-jump">
-                    <label for="page-number">Page</label>
+                    <label for="page-number" class="phone-sr">Page</label>
                     <input id="page-number" type="number" min="1" value="1" />
                   </div>
                   <span id="page-total"></span>
@@ -278,7 +278,8 @@
               </div>
               <div class="panel-body">
                 <div class="scatter-wrap">
-                  <canvas id="scatter" aria-label="Scatter plot of mean additional draws versus standard deviation"></canvas>
+                  <canvas id="scatter" role="img" aria-label="Scatter plot of mean additional draws versus standard deviation" aria-describedby="scatter-summary"></canvas>
+                  <p id="scatter-summary" class="sr-only"></p>
                   <div id="scatter-tooltip" class="scatter-tooltip" hidden></div>
                 </div>
                 <div class="legend" id="scatter-legend"></div>

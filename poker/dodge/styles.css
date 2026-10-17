@@ -4,13 +4,15 @@
  * its panels. Playing cards come from shared/cards.css; this file only sets
  * --card-width per context. Tokens only: no colour literals, no !important.
  *
- * Sections: category palette, filters, summary, panels and charts, explorer
- * (table, sticky rows, side column), reports, lab, overlays, then the
- * breakpoints: ≥1300, ≤1299, ≤1150, ≤850 (tablet), ≤700 (phone). */
+ * Sections: category palette and layout variables, shared text roles, filters,
+ * summary, panels and charts, explorer (table, sticky rows, side column),
+ * reports, lab, overlays, then the breakpoints: ≥1200, ≥1300, ≤1299, ≤1150,
+ * ≤850 (tablet), ≤700 (phone). */
 
 /* ---------- Category palette (bust rankings) and layout variables ----------
    Charts and legends read these; app.js pipes them inline as var() so the
-   JavaScript carries no colour literals. */
+   JavaScript carries no colour literals. The sticky offsets of the table's
+   aggregate rows are the row variables, never literals. */
 body.app-shell {
   --dodge-cat-0: var(--cat-2); /* straight */
   --dodge-cat-1: var(--cat-1); /* flush */
@@ -30,9 +32,148 @@ body.app-shell {
   min-height: 0;
 }
 
-.export-button {
+/* ---------- Text roles shared across the views ---------- */
+
+/* Secondary notes: 12px muted. */
+.filter-bottom,
+.panel-head p,
+.pagination,
+.outcome-row,
+.detail-subtitle,
+.detail-note,
+.detail-metrics dd > small,
+.aggregate-label > small,
+.compare-numbers,
+.texture-name > small,
+.texture-head,
+.scatter-tooltip p,
+.heatmap-key,
+.in-panel-note,
+.live-stats p {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.detail-subtitle,
+.detail-note,
+.in-panel-note {
+  line-height: var(--lh-body);
+}
+
+/* Eyebrow labels: 12px uppercase, tracked, muted. */
+.detail-eyebrow,
+.detail-metrics dt,
+.aggregate-label {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.heatmap-label,
+.texture-head {
+  font-weight: 600;
+}
+
+/* Things that never grow or shrink inside their flex rows. */
+.export-button,
+.filter-panel,
+.summary,
+.filters .reset,
+.numeric-rule .field,
+.numeric-rule .btn--icon,
+.panel-head .field--select,
+.explorer-side > .panel,
+.explorer-charts > .panel {
   flex: none;
 }
+
+/* Buttons that are their content: a sortable header, a texture name, a
+   heatmap cell, an out. The focus ring comes from the kit. */
+#hand-table thead th button,
+.texture-name,
+.heatmap-cell,
+.outs-card {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.heatmap-cell:disabled,
+.outs-card:disabled {
+  cursor: default;
+}
+
+/* Selection and navigation take the accent. */
+.pin-button.pinned,
+.texture-name:hover,
+.method-content a,
+.reopen-hand .icon {
+  color: var(--accent);
+}
+
+#population-label,
+.scope-note,
+#page-status {
+  white-space: nowrap;
+}
+
+#population-label strong,
+.scope-note strong,
+.compare-numbers strong {
+  color: var(--ink);
+}
+
+.detail-note,
+.method-content,
+.provenance {
+  overflow-wrap: anywhere;
+}
+
+.table-options .field--select,
+.panel-head .field--select {
+  min-width: 11rem;
+}
+
+.explorer-charts .panel-body,
+.report-grid .panel-body {
+  overflow: visible;
+}
+
+/* Internal scroll regions. */
+.explorer-side,
+#reports-view,
+#lab-view {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.texture-chart,
+.heatmap-wrap,
+.outs-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* Right-aligned numeric tables inside panels. */
+.detail-table th,
+.detail-table td,
+.small-table th,
+.small-table td {
+  text-align: right;
+}
+
+.detail-table th:first-child,
+.detail-table td:first-child,
+.small-table th:first-child,
+.small-table td:first-child {
+  text-align: left;
+}
+
+/* ---------- Head, tabs, loading ---------- */
 
 .tab-count {
   min-height: 22px;
@@ -46,28 +187,9 @@ body.app-shell {
   color: var(--ink);
 }
 
-/* ---------- Loading and error ---------- */
-
-.loading {
-  margin: 16px auto;
-  width: min(100%, 32rem);
-}
-
-.error {
-  margin: 16px 0;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in oklab, var(--bad) 50%, transparent);
-  border-radius: var(--r-md);
-  background: var(--bad-soft);
-  color: var(--ink);
-  font-size: var(--t-sm);
-  line-height: var(--lh-body);
-}
-
 /* ---------- Filters ---------- */
 
 .filter-panel {
-  flex: none;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -102,10 +224,6 @@ body.app-shell {
   flex: 1.4 1 150px;
 }
 
-.filters .reset {
-  flex: none;
-}
-
 .filter-bottom {
   display: flex;
   flex: 1 1 auto;
@@ -114,8 +232,6 @@ body.app-shell {
   justify-content: space-between;
   gap: 6px 14px;
   min-height: 28px;
-  color: var(--muted);
-  font-size: var(--t-xs);
 }
 
 .filter-tools {
@@ -131,19 +247,9 @@ body.app-shell {
 
 #population-label {
   margin-left: auto;
-  white-space: nowrap;
-}
-
-#population-label strong {
-  color: var(--ink);
-}
-
-.scope-note {
-  white-space: nowrap;
 }
 
 .scope-note strong {
-  color: var(--ink);
   font-weight: 500;
 }
 
@@ -166,43 +272,21 @@ body.app-shell {
   border-left: 2px solid var(--accent);
 }
 
-.numeric-rule .field {
-  flex: none;
-}
-
 .numeric-rule input {
   width: 7rem;
-}
-
-.numeric-rule .btn--icon {
-  flex: none;
 }
 
 /* ---------- Population summary strip ---------- */
 
 .summary {
-  flex: none;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 10px;
 }
 
-.summary .stat {
-  padding: 8px 14px;
-}
-
-.summary .stat-value small {
-  font-weight: 500;
-}
-
 .summary .stat-delta {
   overflow: hidden;
-  font-weight: 500;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.summary .stat:first-child .stat-value {
-  color: var(--accent);
 }
 
 /* ---------- Panels, charts, outcome rows ---------- */
@@ -217,18 +301,12 @@ body.app-shell {
 
 .panel-head p {
   margin-top: 2px;
-  color: var(--muted);
-  font-size: var(--t-xs);
   line-height: var(--lh-data);
 }
 
-.panel-head h2 {
+.panel-head h2,
+.comparison-panel h2 {
   font-size: var(--t-md);
-}
-
-.panel-head .field--select {
-  flex: none;
-  min-width: 11rem;
 }
 
 .chart.tall {
@@ -246,7 +324,6 @@ body.app-shell {
   grid-template-columns: minmax(96px, 0.5fr) minmax(0, 1fr) 4.5rem;
   gap: 10px;
   align-items: center;
-  font-size: var(--t-xs);
 }
 
 .outcome-row > .outcome-label {
@@ -254,12 +331,12 @@ body.app-shell {
   align-items: center;
   gap: 6px;
   overflow: hidden;
-  color: var(--muted);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .outcome-number {
+  color: var(--ink);
   font-weight: 600;
   text-align: right;
 }
@@ -308,10 +385,6 @@ body.app-shell {
   gap: 8px;
 }
 
-.table-options .field--select {
-  min-width: 11rem;
-}
-
 .table-scroll {
   flex: 1;
   min-height: 0;
@@ -329,27 +402,24 @@ body.app-shell {
 #hand-table thead th {
   height: var(--dodge-head-h);
   padding-block: 0;
+}
+
+#hand-table thead th,
+#hand-table td {
   text-align: right;
 }
 
-#hand-table thead th:first-child {
+#hand-table thead th:first-child,
+#hand-table td:first-child {
   text-align: left;
 }
 
 #hand-table thead th button {
-  padding: 0;
-  border: 0;
-  background: none;
   color: inherit;
-  font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
   white-space: nowrap;
   cursor: pointer;
-}
-
-#hand-table thead th button:hover {
-  color: var(--ink);
 }
 
 #hand-table th[aria-sort]:not([aria-sort="none"]) {
@@ -366,11 +436,6 @@ body.app-shell {
 
 #hand-table td {
   background: var(--surface);
-  text-align: right;
-}
-
-#hand-table td:first-child {
-  text-align: left;
 }
 
 #hand-table td.metric-cell {
@@ -391,8 +456,7 @@ body.app-shell {
   }
 }
 
-/* Aggregate and baseline rows stay under the head; the offsets are the row
-   variables above, never literals. */
+/* Aggregate and baseline rows stay under the head. */
 #hand-table .aggregate-row td,
 #hand-table .baseline-row td {
   position: sticky;
@@ -422,15 +486,11 @@ body.app-shell {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: var(--t-xs);
+  color: inherit;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .aggregate-label > small {
-  color: var(--muted);
-  font-size: var(--t-xs);
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -447,20 +507,6 @@ body.app-shell {
   font-size: var(--t-md);
   font-weight: 400;
   line-height: 1;
-}
-
-.pin-button.pinned {
-  color: var(--accent);
-}
-
-.hand-button {
-  display: flex;
-  align-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: none;
-  cursor: pointer;
 }
 
 /* Card contexts: only --card-width and layout; faces come from shared/cards.css. */
@@ -488,69 +534,18 @@ body.app-shell {
   border-bottom: 2px solid var(--accent);
 }
 
-.metric-cell {
-  font-weight: 500;
-}
-
-.spark-hist {
-  display: inline-flex;
-  align-items: end;
-  gap: 2px;
-  width: 78px;
-  height: 28px;
-  vertical-align: middle;
-}
-
-.spark-hist > i {
-  width: 4px;
-  border-radius: 1px 1px 0 0;
-  background: var(--good);
-}
-
-.mini-stack {
-  display: inline-flex;
-  width: 96px;
-  height: 12px;
-  border-radius: 3px;
-  overflow: hidden;
-  vertical-align: middle;
-}
-
-.mini-stack > i {
-  display: block;
-  height: 100%;
-  background: var(--swatch);
-}
-
 .pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
   padding: 8px 14px;
-  color: var(--muted);
-  font-size: var(--t-xs);
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.field--inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-}
-
-.field--inline > label {
-  font-size: var(--t-xs);
-  white-space: nowrap;
-}
-
-.field--inline.field--select::after {
-  bottom: 12px;
 }
 
 .page-jump input {
@@ -562,67 +557,41 @@ body.app-shell {
   min-width: 5rem;
 }
 
-.empty-cell {
-  padding: 48px 16px;
-  color: var(--muted);
-  font-size: var(--t-sm);
-  text-align: center;
-  white-space: normal;
-}
-
 /* Explorer side column: hand inspector, pinned comparison, overview charts */
 .explorer-side {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .explorer-charts {
   display: contents;
 }
 
-.explorer-side > .panel,
-.explorer-charts > .panel {
-  flex: none;
-}
-
 .explorer-charts .panel-body {
   padding: 10px 14px 12px;
-  overflow: visible;
 }
 
 .detail-panel {
   padding: 16px;
 }
 
-.detail-eyebrow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
+.detail-eyebrow,
 .detail-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.detail-eyebrow {
+  margin-bottom: 12px;
+  letter-spacing: 0.06em;
 }
 
 .detail-subtitle {
   margin: 10px 0 14px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: var(--lh-body);
 }
 
 .detail-metrics {
@@ -634,11 +603,6 @@ body.app-shell {
 
 .detail-metrics dt {
   margin-bottom: 2px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .detail-metrics dd {
@@ -648,8 +612,6 @@ body.app-shell {
 }
 
 .detail-metrics dd > small {
-  color: var(--muted);
-  font-size: var(--t-xs);
   font-weight: 500;
 }
 
@@ -664,15 +626,8 @@ body.app-shell {
   font-weight: 600;
 }
 
-.detail-panel .chart {
-  padding: 6px 0 0;
-}
-
 .detail-note {
   margin-top: 10px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: var(--lh-body);
 }
 
 .detail-actions {
@@ -701,12 +656,6 @@ body.app-shell {
 .detail-table th,
 .detail-table td {
   padding: 5px 8px;
-  text-align: right;
-}
-
-.detail-table th:first-child,
-.detail-table td:first-child {
-  text-align: left;
 }
 
 .detail-table thead th {
@@ -715,10 +664,6 @@ body.app-shell {
 
 .comparison-panel {
   padding: 14px 16px;
-}
-
-.comparison-panel h2 {
-  font-size: var(--t-md);
 }
 
 .comparison-cards {
@@ -739,20 +684,9 @@ body.app-shell {
 .compare-numbers {
   display: flex;
   justify-content: space-between;
-  color: var(--muted);
-  font-size: var(--t-xs);
-}
-
-.compare-numbers strong {
-  color: var(--ink);
 }
 
 /* ---------- Population reports ---------- */
-
-#reports-view {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
 
 .report-grid {
   display: grid;
@@ -766,16 +700,8 @@ body.app-shell {
   grid-column: 1 / -1;
 }
 
-.report-grid .panel-body {
-  overflow: visible;
-}
-
 .report-grid .legend {
   margin-top: 8px;
-}
-
-.texture-chart {
-  overflow-x: auto;
 }
 
 .texture-row {
@@ -794,46 +720,29 @@ body.app-shell {
 
 .texture-name {
   padding: 4px 0;
-  border: 0;
   border-radius: var(--r-sm);
-  background: none;
   color: var(--ink);
-  font: inherit;
   font-weight: 600;
   text-align: left;
-  cursor: pointer;
-}
-
-.texture-name:hover {
-  color: var(--accent);
 }
 
 .texture-name > small {
   display: block;
   margin-top: 2px;
-  color: var(--muted);
-  font-size: var(--t-xs);
   font-weight: 500;
 }
 
-.texture-row .bar {
+.texture-row .bar,
+.texture-row .mini-stack {
   height: 12px;
 }
 
 .texture-row .mini-stack {
   width: 100%;
-  height: 12px;
 }
 
 .texture-value {
   text-align: right;
-}
-
-.texture-head {
-  padding-top: 0;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
 }
 
 .scatter-wrap {
@@ -863,12 +772,6 @@ body.app-shell {
 
 .scatter-tooltip p {
   margin-top: 5px;
-  color: var(--muted);
-}
-
-.heatmap-wrap {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
 }
 
 .rank-heatmap {
@@ -882,7 +785,6 @@ body.app-shell {
   align-self: center;
   color: var(--muted);
   font-size: var(--t-xs);
-  font-weight: 600;
   text-align: center;
 }
 
@@ -890,21 +792,16 @@ body.app-shell {
   --t: 0;
   min-width: 0;
   min-height: 28px;
-  padding: 0;
-  border: 0;
   border-radius: 3px;
   background: color-mix(in oklab, var(--good) calc(var(--t) * 100%), var(--surface-3));
   color: color-mix(in oklab, var(--on-accent) calc(var(--t) * 100%), var(--ink));
-  font: inherit;
   font-size: var(--t-xs);
   font-weight: 600;
-  cursor: pointer;
 }
 
 .heatmap-cell:disabled {
   background: var(--surface-2);
   color: var(--muted);
-  cursor: default;
 }
 
 @media (hover: hover) {
@@ -920,8 +817,6 @@ body.app-shell {
   justify-content: center;
   gap: 12px;
   margin-top: 10px;
-  color: var(--muted);
-  font-size: var(--t-xs);
 }
 
 .heatmap-key > i {
@@ -973,30 +868,6 @@ body.app-shell {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.payout-summary .stat:last-child .stat-value {
-  color: var(--accent);
-}
-
-.in-panel-note {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: var(--lh-body);
-}
-
-.small-table .table-wrap {
-  max-height: none;
-}
-
-.small-table th,
-.small-table td {
-  text-align: right;
-}
-
-.small-table th:first-child,
-.small-table td:first-child {
-  text-align: left;
-}
-
 .small-table tr.target-row td {
   background: var(--accent-soft);
   color: var(--ink);
@@ -1039,12 +910,6 @@ body.app-shell {
   font-size: var(--t-md);
 }
 
-.live-stats p {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-}
-
 .live-stats .risk {
   font-size: var(--t-xl);
   font-weight: 700;
@@ -1054,11 +919,6 @@ body.app-shell {
 .draw-actions {
   display: flex;
   gap: 8px;
-}
-
-.outs-wrap {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
 }
 
 .outs-grid {
@@ -1072,11 +932,7 @@ body.app-shell {
   display: block;
   width: 100%;
   max-width: 48px;
-  padding: 0;
-  border: 0;
   border-radius: 10% / 7.1429%;
-  background: none;
-  cursor: pointer;
   justify-self: center;
 }
 
@@ -1094,11 +950,7 @@ body.app-shell {
   outline-offset: 1px;
 }
 
-.outs-card:disabled {
-  cursor: default;
-}
-
-/* ---------- Dialogs and toast ---------- */
+/* ---------- Dialogs ---------- */
 
 .hand-dialog .dialog-body {
   padding: 0;
@@ -1136,10 +988,6 @@ body.app-shell {
   font-size: var(--t-xs);
 }
 
-.method-content a {
-  color: var(--accent);
-}
-
 .method-links {
   display: flex;
   flex-wrap: wrap;
@@ -1151,7 +999,6 @@ body.app-shell {
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
-  overflow-wrap: anywhere;
 }
 
 .column-choices {
@@ -1161,7 +1008,6 @@ body.app-shell {
 }
 
 .column-choices .check {
-  min-height: 40px;
   font-size: var(--t-sm);
 }
 
@@ -1243,7 +1089,11 @@ body.app-shell {
   }
 
   .explorer-side > .detail-panel,
-  .explorer-side > .comparison-panel {
+  .explorer-side > .comparison-panel,
+  .detail-head,
+  .detail-draw-table,
+  .detail-actions,
+  .detail-note {
     grid-column: 1 / -1;
   }
 
@@ -1252,13 +1102,6 @@ body.app-shell {
     grid-template-columns: 1fr 1fr;
     gap: 0 24px;
     padding: 16px;
-  }
-
-  .detail-head,
-  .detail-draw-table,
-  .detail-actions,
-  .detail-note {
-    grid-column: 1 / -1;
   }
 
   .detail-panel .detail-divider {
@@ -1282,16 +1125,13 @@ body.app-shell {
     flex-direction: row;
     gap: 24px;
     overflow: auto;
+    scroll-snap-type: x proximity;
   }
 
   .comparison-entry {
     flex: 1;
     min-width: 210px;
-  }
-
-  #lab-view {
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    scroll-snap-align: start;
   }
 
   .lab-grid {
@@ -1314,7 +1154,8 @@ body.app-shell {
 }
 
 /* ---------- Phones: tabs, filters and the summary stay put; the table (or the
-   active view) is the only vertical scroll container. ---------- */
+   active view) is the only vertical scroll container. Labels that the layout
+   drops carry .phone-sr (poker/tools.css) and stay in the accessibility tree. ---------- */
 
 @media (max-width: 700px) {
   body.app-shell {
@@ -1322,12 +1163,23 @@ body.app-shell {
     --dodge-row-h: 56px;
   }
 
-  .export-button {
+  .export-button,
+  .tab-count,
+  .table-title,
+  .summary .stat-delta,
+  .explorer-side,
+  #hand-table .pin-button,
+  .filter-tools,
+  .filter-panel:not(.filters-open) .numeric-rules,
+  .filter-panel:not(.filters-open) .filter-apply {
     display: none;
   }
 
   .table-options .export-button {
     display: inline-flex;
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
   }
 
   .filter-panel {
@@ -1345,22 +1197,6 @@ body.app-shell {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px 8px;
     align-items: center;
-  }
-
-  .filters > .search-field > label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .filter-toggle {
-    gap: 6px;
   }
 
   .filter-chevron {
@@ -1388,10 +1224,6 @@ body.app-shell {
     grid-column: 1 / -1;
   }
 
-  .filters .reset {
-    border-color: var(--line-strong);
-  }
-
   .filter-bottom {
     gap: 8px;
     min-height: 0;
@@ -1403,8 +1235,8 @@ body.app-shell {
     margin: 0;
   }
 
-  .filter-tools {
-    display: none;
+  .filters-open .filter-tools {
+    display: flex;
     justify-content: space-between;
     width: 100%;
     gap: 10px;
@@ -1412,16 +1244,8 @@ body.app-shell {
     border-bottom: 1px solid var(--line);
   }
 
-  .filters-open .filter-tools {
-    display: flex;
-  }
-
   .filter-tools .check {
     min-height: 44px;
-  }
-
-  .filter-panel:not(.filters-open) .numeric-rules {
-    display: none;
   }
 
   .numeric-rules {
@@ -1433,42 +1257,24 @@ body.app-shell {
     margin-top: 12px;
   }
 
-  .filter-panel:not(.filters-open) .filter-apply {
-    display: none;
-  }
-
+  /* The metric takes a row of its own; the operator, value and remove button share the next. */
   .numeric-rule {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 5rem 44px;
+    flex-wrap: wrap;
     gap: 8px;
     width: 100%;
     padding-left: 8px;
   }
 
-  .numeric-rule .field:first-child {
-    grid-column: 1 / 3;
-  }
-
-  .numeric-rule .field:nth-child(2) {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .numeric-rule .field:nth-child(3) {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  .numeric-rule input,
   .numeric-rule .field {
-    width: 100%;
-    min-width: 0;
+    flex: 1 1 5rem;
   }
 
-  .numeric-rule .btn--icon {
-    grid-column: 3;
-    grid-row: 1 / 3;
-    align-self: center;
+  .numeric-rule .field:first-child {
+    flex-basis: 100%;
+  }
+
+  .numeric-rule input {
+    width: 100%;
   }
 
   .summary {
@@ -1486,45 +1292,8 @@ body.app-shell {
     letter-spacing: -0.02em;
   }
 
-  .tab-count {
-    display: none;
-  }
-
-  .table-options .export-button > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .table-options .export-button {
-    width: 44px;
-    min-width: 44px;
-    padding: 0;
-  }
-
-  .summary .stat-delta {
-    display: none;
-  }
-
-  #explorer-view {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .explorer-workspace {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-  }
-
+  #explorer-view,
+  .explorer-workspace,
   .table-panel {
     display: flex;
     flex: 1;
@@ -1532,12 +1301,13 @@ body.app-shell {
     min-height: 0;
   }
 
-  .table-toolbar {
-    padding: 8px;
+  #explorer-view {
+    overflow: hidden;
   }
 
-  .table-title {
-    display: none;
+  .table-toolbar,
+  .pagination {
+    padding: 8px;
   }
 
   .table-options {
@@ -1552,9 +1322,7 @@ body.app-shell {
   }
 
   .table-scroll {
-    flex: 1;
     max-height: none;
-    min-height: 0;
     scroll-padding-top: calc(var(--dodge-head-h) + var(--dodge-row-h) * 2);
   }
 
@@ -1568,20 +1336,8 @@ body.app-shell {
     width: 1%;
   }
 
-  #hand-table .pin-button {
-    display: none;
-  }
-
-  #hand-table [data-row] {
-    cursor: pointer;
-  }
-
   .cards {
     --card-width: 36px;
-  }
-
-  .cards.large {
-    --card-width: 44px;
   }
 
   .hand-button {
@@ -1591,39 +1347,10 @@ body.app-shell {
   .pagination {
     flex-wrap: wrap;
     gap: 6px;
-    padding: 8px;
-  }
-
-  .pagination-controls > .field--select > label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  #page-status {
-    white-space: nowrap;
   }
 
   .pagination-controls {
     gap: 4px;
-  }
-
-  .page-jump > label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
   }
 
   .page-jump input {
@@ -1659,22 +1386,6 @@ body.app-shell {
     color: var(--accent);
   }
 
-  #reports-view,
-  #lab-view {
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .explorer-side {
-    display: none;
-  }
-
-  .report-grid,
-  .lab-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-
   .report-grid > .comparison-panel,
   .report-grid > .explorer-charts > .panel {
     grid-column: 1 / -1;
@@ -1697,15 +1408,11 @@ body.app-shell {
   }
 
   .rank-heatmap {
-    grid-template-columns: 24px repeat(13, 40px);
+    grid-template-columns: 24px repeat(13, 44px);
     grid-auto-rows: 44px;
     gap: 4px;
     min-width: 0;
     padding-bottom: 8px;
-  }
-
-  .heatmap-cell {
-    min-height: 44px;
   }
 
   .rank-heatmap > .heatmap-label:nth-child(14n + 1) {
@@ -1718,27 +1425,8 @@ body.app-shell {
     place-items: center;
   }
 
-  .mobile-hint {
-    margin: 2px 0 8px;
-    color: var(--muted);
-    font-size: var(--t-xs);
-  }
-
-  .scatter-wrap {
-    height: 300px;
-  }
-
-  .comparison-cards {
-    flex-direction: row;
-    gap: 22px;
-    overflow: auto;
-    scroll-snap-type: x proximity;
-  }
-
   .comparison-entry {
-    flex: 1;
     min-width: 270px;
-    scroll-snap-align: start;
   }
 
   .lab-controls {
@@ -1754,13 +1442,8 @@ body.app-shell {
     grid-column: 1 / -1;
   }
 
-  .payout-summary .stat:first-child .stat-value {
-    font-size: var(--t-xl);
-  }
-
   .draw-actions {
     width: 100%;
-    gap: 8px;
   }
 
   .draw-actions .btn--primary {
@@ -1773,10 +1456,6 @@ body.app-shell {
     padding: 4px 4px 10px;
   }
 
-  .outs-card {
-    max-width: none;
-  }
-
   .hand-dialog[open] {
     height: 85dvh;
   }
@@ -1784,10 +1463,6 @@ body.app-shell {
   .detail-panel {
     display: block;
     padding: 16px;
-  }
-
-  .detail-title {
-    margin-top: 6px;
   }
 
   .detail-panel .detail-metrics {
@@ -1807,10 +1482,6 @@ body.app-shell {
     font-size: var(--t-md);
   }
 
-  .detail-note {
-    overflow-wrap: anywhere;
-  }
-
   .detail-draw-table > summary {
     min-height: 44px;
     padding: 12px 0;
@@ -1820,31 +1491,7 @@ body.app-shell {
     white-space: normal;
   }
 
-  .detail-actions {
-    padding-bottom: 8px;
-  }
-
   .method-content {
     font-size: var(--t-md);
-    overflow-wrap: anywhere;
   }
-
-  .column-choices {
-    gap: 0 16px;
-  }
-
-  .column-choices .check {
-    min-height: 44px;
-  }
-}
-
-/* ---------- Histogram bars (charts.mjs emits class hooks, no colours) ---------- */
-
-.chart .hist-bar {
-  fill: var(--good);
-  opacity: 0.55;
-}
-
-.chart .hist-bar.mode {
-  opacity: 1;
 }

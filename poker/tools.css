@@ -1,7 +1,11 @@
 /* Poker tool pages: the app-shell frame and the "data dialect" shared by the
  * Dodge reports, the Dodge simulator, 222 and Calculations. Loaded after
  * shared/tokens.css, shared/app.css and shared/cards.css; tokens only, no
- * colour literals. Page stylesheets add their own layout on top. */
+ * colour literals. Page stylesheets add their own layout on top.
+ *
+ * Sections: app shell, shared small pieces (inline fields, loading, errors,
+ * card buttons, empty cells), charts, colour scales, dense tables, card
+ * wrappers, then the 700px phone breakpoint and the coarse-pointer sizes. */
 
 /* ---------- App shell: topbar / tool head / tabs / one view that scrolls ---------- */
 
@@ -58,7 +62,75 @@ body.app-shell > .topbar {
   min-height: 0;
 }
 
-/* ---------- Charts: SVG text, grid, legends ---------- */
+/* ---------- Shared small pieces ---------- */
+
+/* A label beside its control instead of above it (toolbars, pagination). */
+.field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.field--inline > label {
+  white-space: nowrap;
+}
+
+.field--inline.field--select::after {
+  bottom: 12px;
+}
+
+/* The kit's indeterminate .progress while a dataset loads. */
+.loading {
+  width: min(100%, 32rem);
+  margin: 16px auto;
+}
+
+/* A load error as a box; an inline error as red text. */
+.error {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, var(--bad) 50%, transparent);
+  border-radius: var(--r-md);
+  background: var(--bad-soft);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.error-text {
+  color: var(--bad);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+/* A button whose content is a row of playing cards. */
+.hand-button {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+}
+
+/* The empty row of a data table. */
+.empty-cell {
+  padding: 48px 16px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  text-align: center;
+  white-space: normal;
+}
+
+/* A phone-only hint under a horizontally scrolling region. */
+.mobile-hint {
+  margin: 2px 0 8px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+/* ---------- Charts: SVG text, grid, legends, inline sparks ---------- */
 
 .chart > svg {
   display: block;
@@ -85,6 +157,16 @@ body.app-shell > .topbar {
 .chart .value-label {
   fill: var(--ink);
   font-weight: 600;
+}
+
+/* Histogram bars: the modal draw is solid, the rest are tinted. */
+.chart .hist-bar {
+  fill: var(--good);
+  opacity: 0.55;
+}
+
+.chart .hist-bar.mode {
+  opacity: 1;
 }
 
 .empty-chart {
@@ -118,6 +200,38 @@ body.app-shell > .topbar {
   background: var(--swatch, var(--accent));
 }
 
+/* Inline spark histogram: <span class="spark-hist"><i style="height:…%"></i>…</span> */
+.spark-hist {
+  display: inline-flex;
+  align-items: end;
+  gap: 2px;
+  width: 78px;
+  height: 28px;
+  vertical-align: middle;
+}
+
+.spark-hist > i {
+  width: 4px;
+  border-radius: 1px 1px 0 0;
+  background: var(--good);
+}
+
+/* Inline stacked share bar: <span class="mini-stack"><i style="width:…%; --swatch:…"></i>…</span> */
+.mini-stack {
+  display: inline-flex;
+  width: 96px;
+  height: 12px;
+  border-radius: 3px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.mini-stack > i {
+  display: block;
+  height: 100%;
+  background: var(--swatch);
+}
+
 /* ---------- Colour scales piped through custom properties ---------- */
 
 .scaled {
@@ -133,21 +247,6 @@ body.app-shell > .topbar {
   color: var(--on-accent);
   font-weight: 600;
   text-align: right;
-}
-
-.scale-legend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-}
-
-.scale-legend > i {
-  width: 90px;
-  height: 8px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(90deg, var(--bad), var(--warn), var(--good));
 }
 
 /* ---------- Dense tables (the kit's .data-table, right-aligned numerics) ---------- */
@@ -172,7 +271,9 @@ body.app-shell > .topbar {
   min-width: 0;
 }
 
-/* ---------- Phone / desktop visibility at the tool pages' 700px breakpoint ---------- */
+/* ---------- Phone / desktop visibility at the tool pages' 700px breakpoint ----------
+   .phone-only / .desk-only switch display; .phone-sr keeps a label in the
+   accessibility tree while the phone layout drops it from view. */
 
 @media (min-width: 701px) {
   .phone-only {
@@ -181,8 +282,21 @@ body.app-shell > .topbar {
 }
 
 @media (max-width: 700px) {
-  .desk-only {
+  .desk-only,
+  .crumbs a.desk-only {
     display: none;
+  }
+
+  .phone-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   body.app-shell > .topbar {
@@ -229,5 +343,14 @@ body.app-shell > .topbar {
 
   .app > .tabs {
     margin-bottom: 10px;
+  }
+}
+
+/* Segmented options are 44px wide as well as tall on coarse pointers (the
+   kit only sets the height). */
+@media (pointer: coarse), (max-width: 700px) {
+  .segmented > label,
+  .segmented > button {
+    min-width: 44px;
   }
 }

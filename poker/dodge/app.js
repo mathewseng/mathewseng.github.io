@@ -724,6 +724,21 @@ function renderScatter() {
     ctx.fillStyle = muted;
     ctx.fillText("No matching hands", w / 2, h / 2);
   }
+  // The canvas has no DOM: a text summary per suit pattern describes it for
+  // assistive technology (aria-describedby on the canvas).
+  const groups = {};
+  scatterPoints.forEach(({ r }) => {
+    const g = (groups[r.suitPattern] ??= { n: 0, mean: 0, sd: 0 });
+    g.n++;
+    g.mean += r.mean;
+    g.sd += r.sd;
+  });
+  $("scatter-summary").textContent = scatterPoints.length
+    ? `${count(scatterPoints.length)} hand classes, one dot each. ${Object.entries(SUIT_LABELS)
+        .filter(([key]) => groups[key])
+        .map(([key, label]) => `${label}: ${count(groups[key].n)} classes, mean ${num(groups[key].mean / groups[key].n, 2)} draws, standard deviation ${num(groups[key].sd / groups[key].n, 2)}`)
+        .join("; ")}.`
+    : "No matching hands.";
   $("scatter-legend").innerHTML = Object.entries(SUIT_LABELS)
     .map(
       ([key, label]) =>

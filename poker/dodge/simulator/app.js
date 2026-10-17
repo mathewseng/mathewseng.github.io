@@ -96,6 +96,16 @@ const PlayingCards = window.PlayingCards;
 function cardEl(c, extra = "") {
   return PlayingCards.element(cardName(c), { className: extra, title: cardName(c) });
 }
+// One polite live region (#toast, the kit's .toast-stack) carries notices
+// such as a copied link; #spot-error and #on-error stay for errors only.
+function toast(text) {
+  const stack = $("toast");
+  const node = el("div", "toast");
+  node.append(el("span", "", text));
+  stack.replaceChildren(node);
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => node.remove(), 2800);
+}
 function badge(kind, text) {
   return el("span", `badge ${BADGE_TONE[kind] ?? ""} ${kind}`.replace(/\s+/g, " ").trim(), text);
 }
@@ -754,9 +764,10 @@ function renderCubePanel(status, alive) {
     const url = `${location.origin}${location.pathname}#spot=${encodeURIComponent(spotString())}`;
     try {
       await navigator.clipboard.writeText(url);
-      spotError("Link copied.");
+      spotError("");
+      toast("Link copied.");
     } catch {
-      spotError(url);
+      spotError(`Copy this link: ${url}`);
     }
   });
   $("spot-toggle").addEventListener("click", () => {

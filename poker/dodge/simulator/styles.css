@@ -43,20 +43,6 @@
   font-size: var(--t-sm);
 }
 
-.field--inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
-
-.field--inline > label {
-  white-space: nowrap;
-}
-
-.field--inline.field--select::after {
-  bottom: 12px;
-}
-
 .spacer {
   flex: 1;
 }
@@ -123,13 +109,6 @@
 
 .spot-controls .buttons {
   margin-left: auto;
-}
-
-.error-text {
-  color: var(--bad);
-  font-size: var(--t-sm);
-  line-height: var(--lh-body);
-  overflow-wrap: anywhere;
 }
 
 /* ---------- Split layout ---------- */
@@ -885,11 +864,6 @@
   overscroll-behavior: contain;
 }
 
-.loading {
-  width: min(100%, 32rem);
-  margin: 16px auto;
-}
-
 .report-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -1055,8 +1029,9 @@
   }
 }
 
-/* ---------- Phones: grouped toolbar (stepping | actions, one primary), seats
-   in one column, summary in two. ---------- */
+/* ---------- Phones: grouped toolbar (stepping | actions, one primary; the
+   step labels carry .phone-sr from poker/tools.css), seats in one column,
+   summary in two. ---------- */
 
 @media (max-width: 700px) {
   .toolbar {
@@ -1078,8 +1053,15 @@
     display: none;
   }
 
+  /* The step buttons sit at the end of the first row (players, or the ace-high
+     switch in the trainer) instead of taking a row of their own. */
+  .toolbar > :first-child {
+    order: -2;
+  }
+
   .toolbar .step-group {
     flex: none;
+    order: -1;
     margin-left: auto;
   }
 
@@ -1091,18 +1073,6 @@
     width: 44px;
     min-width: 44px;
     padding: 0;
-  }
-
-  .toolbar .step-group .btn > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
   }
 
   .toolbar .action-group {
@@ -1154,8 +1124,13 @@
     grid-template-columns: 1fr;
   }
 
+  /* 13 columns do not fit a phone at 44px: the deck scrolls sideways. */
   .deck-grid {
-    gap: 3px;
+    grid-template-columns: repeat(13, 44px);
+    gap: 6px;
+    padding-bottom: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
   }
 
   .deck-card .owner {
