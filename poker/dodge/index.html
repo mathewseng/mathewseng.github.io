@@ -1,512 +1,436 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="poker">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#111417" />
-    <title>Dodge · Hand reports</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <title>Dodge Reports</title>
     <meta
       name="description"
       content="Explore all 16,432 four-card starting hands in Dodge. Simulated bust distributions, exact outs, survival curves, and game design tools."
     />
-    <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="./styles.css?v=20261003" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%23f28b82'%3E♥%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../tools.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
   </head>
-  <body>
+  <body class="app-shell">
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="topbar">
-      <a href="/poker/" class="brand" aria-label="Back to poker"
-        ><span class="brand-mark">d<span>•</span></span
-        ><strong>DODGE</strong><span class="brand-separator"></span
-        ><span class="brand-section">RESEARCH</span></a
-      >
-      <div class="top-actions">
-        <span class="dataset-status" id="dataset-status"
-          >Loading simulations</span
-        ><a href="./simulator/" class="site-link">Simulator</a
-        ><button
-          id="method-button"
-          class="quiet"
-          aria-label="Rules & methodology"
-        >
-          <span class="desktop-only">Rules & methodology</span
-          ><span class="mobile-only">Rules</span></button
-        ><a href="/" class="site-link">MS ↗</a>
-      </div>
-    </header>
-    <main>
-      <div class="page-heading">
-        <div class="heading-text">
-          <span class="breadcrumb desktop-only">POKER / DODGE / REPORTS</span>
-          <h1>
-            <span class="desktop-only">Every hand. Every way to bust.</span
-            ><span class="mobile-only">Dodge reports</span>
-          </h1>
-          <p class="desktop-only">
-            Start with four cards. Keep drawing. Dodge a straight or better.
-          </p>
-        </div>
-        <nav class="tabs" aria-label="Report views">
-          <button
-            class="active"
-            data-tab="explorer"
-            aria-current="page"
-            aria-label="Hand explorer"
-          >
-            <span class="tab-label desktop-only">Hand explorer</span
-            ><span class="tab-label mobile-only">Hands</span>
-            <span class="tab-count">16,432</span></button
-          ><button data-tab="reports" aria-label="Population reports">
-            <span class="desktop-only">Population reports</span
-            ><span class="mobile-only">Reports</span></button
-          ><button data-tab="lab" aria-label="Game design lab">
-            <span class="desktop-only">Game design lab</span
-            ><span class="mobile-only">Game lab</span>
-          </button>
-        </nav>
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="desk-only">Projects</span></a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <a href="/poker/">Poker</a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <span class="crumb-current" aria-current="page">Dodge reports</span>
+      </nav>
+      <nav class="tool-nav" aria-label="Poker tools">
+        <a href="/poker/dodge/" aria-current="page">Dodge reports</a>
+        <a href="/poker/dodge/simulator/">Simulator</a>
+        <a href="/poker/222/">222</a>
+        <a href="/poker/calculations/">Calculations</a>
+      </nav>
+      <div class="topbar-actions">
+        <span class="badge dataset-status" id="dataset-status">Loading simulations</span>
         <button
-          class="primary"
-          id="export-button"
-          aria-label="Export filtered CSV"
-          disabled
+          id="method-button"
+          class="btn btn--ghost btn--icon"
+          type="button"
+          aria-label="Rules & methodology"
+          title="Rules & methodology"
         >
-          <span class="desktop-only">Export filtered CSV</span
-          ><span class="mobile-only">Export</span>
-          <span aria-hidden="true">↓</span>
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg>
         </button>
       </div>
-      <div id="loading" class="loading" role="status">
-        <span class="loading-dot"></span>Loading the complete hand universe…
+    </header>
+    <main id="main" tabindex="-1" class="app">
+      <div class="tool-head">
+        <div>
+          <p class="eyebrow">Poker · Reports</p>
+          <h1>Dodge reports</h1>
+          <p class="lede">Start with four cards. Keep drawing. Dodge a straight or better.</p>
+        </div>
+        <button class="btn btn--primary export-button" id="export-button" type="button" disabled>
+          <span class="phone-sr">Export CSV</span>
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-download" /></svg>
+        </button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Report views" id="view-tabs">
+        <button type="button" role="tab" data-tab="explorer" aria-selected="true" aria-controls="explorer-view">
+          Hand explorer <span class="chip tab-count">16,432</span>
+        </button>
+        <button type="button" role="tab" data-tab="reports" aria-selected="false" aria-controls="reports-view" tabindex="-1">
+          Reports
+        </button>
+        <button type="button" role="tab" data-tab="lab" aria-selected="false" aria-controls="lab-view" tabindex="-1">
+          Design lab
+        </button>
+      </div>
+      <div id="loading" class="loading progress" aria-busy="true">
+        <div class="progress-label"><span>Loading the complete hand universe…</span></div>
+        <div class="bar bar--indeterminate"></div>
       </div>
       <div id="load-error" class="error" role="alert" hidden></div>
       <div id="app" hidden>
-        <section class="filter-panel" aria-label="Filter hand population">
+        <section class="filter-panel panel panel--quiet" aria-label="Filter hand population">
           <div class="filters">
-            <label class="search-field"
-              ><span>Find a hand or ranks</span
-              ><input
-                id="search"
-                type="search"
-                placeholder="AKQJ or As Kh Qd Jc"
-                autocomplete="off"
-                spellcheck="false"
-                aria-label="Find a hand or ranks"
-            /></label>
+            <div class="field search-field">
+              <label for="search" class="phone-sr">Find a hand or ranks</label>
+              <input id="search" type="search" placeholder="AKQJ or As Kh Qd Jc" autocomplete="off" spellcheck="false" />
+            </div>
             <button
-              class="mobile-only filter-toggle"
+              class="btn phone-only filter-toggle"
               id="filter-toggle"
+              type="button"
               aria-expanded="false"
               aria-controls="advanced-filters"
             >
-              <span>Filters</span
-              ><span id="filter-count" class="filter-count" hidden></span
-              ><span class="filter-chevron" aria-hidden="true">⌄</span>
+              <span>Filters</span><span id="filter-count" class="chip chip--accent filter-count" hidden></span>
+              <svg class="icon filter-chevron" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-down" /></svg>
             </button>
             <div id="advanced-filters" class="advanced-filters">
-              <label
-                ><span>Pairing</span
-                ><select id="pairing">
+              <div class="field field--select">
+                <label for="pairing">Pairing</label>
+                <select id="pairing">
                   <option value="">All pairings</option>
-                </select></label
-              >
-              <label
-                ><span>Suits</span
-                ><select id="suits">
+                </select>
+              </div>
+              <div class="field field--select">
+                <label for="suits">Suits</label>
+                <select id="suits">
                   <option value="">All patterns</option>
-                </select></label
-              >
-              <label
-                ><span>High card</span
-                ><select id="high">
+                </select>
+              </div>
+              <div class="field field--select">
+                <label for="high">High card</label>
+                <select id="high">
                   <option value="">Any rank</option>
-                </select></label
-              >
-              <label
+                </select>
+              </div>
+              <div
+                class="field field--select"
                 title="Most distinct starting ranks in a valid five-rank straight window, including A2345."
-                ><span>Connectivity</span
-                ><select id="connected">
+              >
+                <label for="connected">Connectivity</label>
+                <select id="connected">
                   <option value="">Any connection</option>
                   <option value="4">4 in a straight window</option>
                   <option value="3">3 in a straight window</option>
                   <option value="2">2 in a straight window</option>
                   <option value="1">1 in a straight window</option>
-                </select></label
-              >
-              <label class="weight-field"
-                ><span>Aggregate weighting</span
-                ><select id="weighting">
+                </select>
+              </div>
+              <div class="field field--select weight-field">
+                <label for="weighting">Aggregate weighting</label>
+                <select id="weighting">
                   <option value="deals">Actual deal frequency</option>
                   <option value="classes">Equal hand classes</option>
-                </select></label
-              >
-              <button class="quiet reset" id="reset-filters">Reset</button>
+                </select>
+              </div>
+              <button class="btn btn--ghost reset" id="reset-filters" type="button">Reset</button>
             </div>
           </div>
           <div class="filter-bottom">
             <div class="filter-tools">
-              <button class="text-button" id="add-rule">+ Metric filter</button
-              ><label class="check-label"
-                ><input type="checkbox" id="pinned-only" /> Pinned hands
-                <span id="pin-count">0</span></label
+              <button class="btn btn--ghost btn--sm" id="add-rule" type="button">
+                <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-plus" /></svg>Metric filter
+              </button>
+              <label class="check check-label"
+                ><input type="checkbox" id="pinned-only" /> Pinned hands <span id="pin-count" class="chip">0</span></label
               >
             </div>
-            <p id="population-label" aria-live="polite"></p>
-            <p class="scope-note desktop-only">
-              Draws are
-              <strong>additional cards, including the bust card</strong>.
-              <span class="wide-only"
-                >Charts and aggregates follow your filters.</span
-              >
+            <p id="population-label"></p>
+            <p class="scope-note desk-only">
+              Draws are <strong>additional cards, including the bust card</strong>.
+              <span class="wide-only">Charts and aggregates follow your filters.</span>
               <span id="scope-weight"></span>
             </p>
           </div>
           <div id="numeric-rules" class="numeric-rules"></div>
-          <button class="mobile-only filter-apply" id="filter-apply">
-            Show matching hands
-          </button>
+          <button class="btn btn--primary phone-only filter-apply" id="filter-apply" type="button">Show matching hands</button>
         </section>
-        <section
-          id="summary"
-          class="summary"
-          aria-label="Filtered population summary"
-        ></section>
+        <section id="summary" class="summary stat-strip" aria-label="Filtered population summary"></section>
 
-        <section id="explorer-view" class="view">
+        <section id="explorer-view" class="view" role="tabpanel" aria-label="Hand explorer">
           <div class="explorer-workspace">
             <article class="panel table-panel">
-              <div class="table-toolbar">
+              <div class="table-toolbar panel-head">
                 <div class="table-title">
                   <h2>Starting hands</h2>
-                  <p id="table-context">
-                    <span class="desktop-only"
-                      >Click a hand to inspect · Shift-click headers to sort by
-                      multiple columns</span
-                    ><span class="mobile-only"
-                      >Tap a hand for its full report.</span
-                    >
-                  </p>
+                  <p id="table-context" class="desk-only">Click a hand to inspect · Shift-click headers to sort by multiple columns</p>
                 </div>
                 <div class="table-options">
-                  <label class="sr-only" for="column-preset"
-                    >Column preset</label
-                  ><select id="column-preset">
-                    <option value="quick">Essential metrics</option>
-                    <option value="core">Core metrics</option>
-                    <option value="outcomes">Bust rankings</option>
-                    <option value="survival">Survival</option>
-                    <option value="all">All metrics</option>
-                    <option value="custom" hidden>
-                      Custom columns
-                    </option></select
-                  ><button class="quiet" id="columns-button">Columns</button>
+                  <div class="field field--select">
+                    <label class="sr-only" for="column-preset">Column preset</label>
+                    <select id="column-preset">
+                      <option value="quick">Essential metrics</option>
+                      <option value="core">Core metrics</option>
+                      <option value="outcomes">Bust rankings</option>
+                      <option value="survival">Survival</option>
+                      <option value="all">All metrics</option>
+                      <option value="custom" hidden>Custom columns</option>
+                    </select>
+                  </div>
+                  <button class="btn" id="columns-button" type="button">Columns</button>
                 </div>
               </div>
               <div
-                class="table-scroll"
+                class="table-scroll table-wrap table-wrap--sticky-col"
                 tabindex="0"
                 role="region"
                 aria-label="Sortable hand report, scroll horizontally for more metrics"
               >
-                <table id="hand-table">
+                <table id="hand-table" class="data-table">
                   <thead></thead>
                   <tbody></tbody>
                 </table>
               </div>
-              <div class="pagination">
-                <span id="page-status" aria-live="polite"></span>
-                <div>
-                  <label
-                    >Rows
+              <div class="pagination panel-foot">
+                <span id="page-status"></span>
+                <div class="pagination-controls">
+                  <div class="field field--select field--inline">
+                    <label for="page-size" class="phone-sr">Rows</label>
                     <select id="page-size">
                       <option>25</option>
                       <option>50</option>
                       <option>100</option>
                       <option>250</option>
-                    </select></label
-                  ><button id="previous-page" aria-label="Previous page">
-                    ←</button
-                  ><label class="page-jump"
-                    >Page
-                    <input
-                      id="page-number"
-                      type="number"
-                      min="1"
-                      value="1"
-                      aria-label="Page number" /></label
-                  ><span id="page-total"></span
-                  ><button id="next-page" aria-label="Next page">→</button>
+                    </select>
+                  </div>
+                  <button id="previous-page" class="btn btn--icon" type="button" aria-label="Previous page">
+                    <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-left" /></svg>
+                  </button>
+                  <div class="field field--inline page-jump">
+                    <label for="page-number" class="phone-sr">Page</label>
+                    <input id="page-number" type="number" min="1" value="1" />
+                  </div>
+                  <span id="page-total"></span>
+                  <button id="next-page" class="btn btn--icon" type="button" aria-label="Next page">
+                    <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-right" /></svg>
+                  </button>
                 </div>
               </div>
             </article>
             <div class="explorer-side">
-              <aside
-                id="hand-detail"
-                class="panel detail-panel"
-                aria-label="Selected hand details"
-              ></aside>
-              <section
-                id="comparison-panel"
-                class="panel comparison-panel"
-                hidden
-              ></section>
+              <aside id="hand-detail" class="panel detail-panel" aria-label="Selected hand details"></aside>
+              <section id="comparison-panel" class="panel comparison-panel" hidden></section>
               <div class="explorer-charts">
                 <article class="panel">
-                  <div class="panel-heading">
+                  <div class="panel-head">
                     <div>
                       <h2>When does the hand bust?</h2>
-                      <p>
-                        Probability of busting on each draw · filtered
-                        population
-                      </p>
+                      <p>Probability of busting on each draw · filtered population</p>
                     </div>
-                    <span class="tag">DISTRIBUTION</span>
                   </div>
-                  <div id="overview-hist" class="chart"></div>
+                  <div class="panel-body">
+                    <div id="overview-hist" class="chart"></div>
+                  </div>
                 </article>
                 <article class="panel">
-                  <div class="panel-heading">
+                  <div class="panel-head">
                     <div>
                       <h2>What causes the bust?</h2>
                       <p>Highest five-card ranking when play stops</p>
                     </div>
                   </div>
-                  <div id="overview-outcomes" class="outcome-list"></div>
+                  <div class="panel-body">
+                    <div id="overview-outcomes" class="outcome-list"></div>
+                  </div>
                 </article>
               </div>
             </div>
           </div>
-          <button id="reopen-hand" class="mobile-only reopen-hand">
-            <span>Selected hand</span><span id="reopen-hand-cards"></span
-            ><span aria-hidden="true">↗</span>
+          <button id="reopen-hand" class="btn phone-only reopen-hand" type="button">
+            <span>Selected hand</span><span id="reopen-hand-cards"></span>
+            <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-up" /></svg>
           </button>
         </section>
 
-        <section id="reports-view" class="view" hidden>
+        <section id="reports-view" class="view" role="tabpanel" aria-label="Population reports" hidden>
           <div class="report-grid">
             <article class="panel">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>Survival curve</h2>
-                  <p>
-                    Chance of completing k draws without busting · P(T &gt; k)
-                  </p>
+                  <p>Chance of completing k draws without busting · P(T &gt; k)</p>
                 </div>
               </div>
-              <div id="survival-chart" class="chart tall"></div>
+              <div class="panel-body"><div id="survival-chart" class="chart tall"></div></div>
             </article>
             <article class="panel">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>The next draw gets dangerous</h2>
                   <p>Bust risk on draw k, conditional on reaching that draw</p>
                 </div>
               </div>
-              <div id="hazard-chart" class="chart tall"></div>
+              <div class="panel-body"><div id="hazard-chart" class="chart tall"></div></div>
             </article>
             <article class="panel">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>Longevity vs. variability</h2>
                   <p>One dot per hand class · select a dot to inspect</p>
                 </div>
               </div>
-              <div class="scatter-wrap">
-                <canvas
-                  id="scatter"
-                  aria-label="Scatter plot of mean additional draws versus standard deviation"
-                ></canvas>
-                <div id="scatter-tooltip" class="scatter-tooltip" hidden></div>
+              <div class="panel-body">
+                <div class="scatter-wrap">
+                  <canvas id="scatter" role="img" aria-label="Scatter plot of mean additional draws versus standard deviation" aria-describedby="scatter-summary"></canvas>
+                  <p id="scatter-summary" class="sr-only"></p>
+                  <div id="scatter-tooltip" class="scatter-tooltip" hidden></div>
+                </div>
+                <div class="legend" id="scatter-legend"></div>
               </div>
-              <div class="legend" id="scatter-legend"></div>
             </article>
             <article class="panel">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>Which ranks survive together?</h2>
-                  <p>
-                    Mean draws for hands containing both ranks · overlapping
-                    groups
-                  </p>
+                  <p>Mean draws for hands containing both ranks · overlapping groups</p>
                 </div>
               </div>
-              <div id="rank-heatmap" class="rank-heatmap"></div>
-              <p class="mobile-only mobile-hint">
-                Swipe to compare all ranks. Tap a cell to filter.
-              </p>
-              <div class="heatmap-key">
-                <span>Shorter life</span><i></i><span>Longer life</span>
+              <div class="panel-body">
+                <div class="heatmap-wrap"><div id="rank-heatmap" class="rank-heatmap"></div></div>
+                <p class="phone-only mobile-hint">Swipe to compare all ranks. Tap a cell to filter.</p>
+                <div class="heatmap-key"><span>Shorter life</span><i></i><span>Longer life</span></div>
               </div>
             </article>
             <article class="panel wide">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>Starting texture changes the game</h2>
-                  <p>
-                    Mean draws to bust and the mix of finishing hands · click a
-                    group to filter
-                  </p>
+                  <p>Mean draws to bust and the mix of finishing hands · click a group to filter</p>
                 </div>
-                <label
-                  ><span class="sr-only">Group hands by</span
-                  ><select id="group-by">
+                <div class="field field--select panel-actions">
+                  <label class="sr-only" for="group-by">Group hands by</label>
+                  <select id="group-by">
                     <option value="suitedness">Suit pattern</option>
                     <option value="pairing">Pairing</option>
                     <option value="highCard">Highest rank</option>
                     <option value="connectivity">Straight connectivity</option>
-                  </select></label
-                >
-              </div>
-              <div id="texture-chart" class="texture-chart"></div>
-            </article>
-            <article class="panel full">
-              <div class="panel-heading">
-                <div>
-                  <h2>How the bust changes with depth</h2>
-                  <p>
-                    Joint probability of draw number and finishing rank · each
-                    column is an unconditional probability
-                  </p>
+                  </select>
                 </div>
               </div>
-              <div id="joint-chart" class="chart tall"></div>
-              <div id="joint-legend" class="legend"></div>
+              <div class="panel-body"><div id="texture-chart" class="texture-chart"></div></div>
+            </article>
+            <article class="panel full">
+              <div class="panel-head">
+                <div>
+                  <h2>How the bust changes with depth</h2>
+                  <p>Joint probability of draw number and finishing rank · each column is an unconditional probability</p>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div id="joint-chart" class="chart tall"></div>
+                <div id="joint-legend" class="legend"></div>
+              </div>
             </article>
           </div>
         </section>
 
-        <section id="lab-view" class="view" hidden>
+        <section id="lab-view" class="view" role="tabpanel" aria-label="Game design lab" hidden>
           <div class="lab-grid">
             <article class="panel">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>Design a survival bet</h2>
                   <p>A win means surviving every draw through the target.</p>
                 </div>
-                <span class="tag">SCENARIO</span>
               </div>
-              <div class="lab-controls">
-                <label
-                  >Target safe draws <output id="target-label">5</output
-                  ><input
-                    id="target"
-                    type="range"
-                    min="1"
-                    max="12"
-                    value="5" /></label
-                ><label
-                  >Desired house edge
-                  <div class="input-unit">
-                    <input
-                      id="house-edge"
-                      type="number"
-                      min="0"
-                      max="50"
-                      step="0.5"
-                      value="5"
-                    /><span>%</span>
-                  </div></label
-                >
+              <div class="panel-body">
+                <div class="lab-controls">
+                  <div class="field">
+                    <label for="target">Target safe draws</label>
+                    <div class="field-row">
+                      <input id="target" type="range" min="1" max="12" value="5" />
+                      <output id="target-label" for="target">5</output>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="house-edge">Desired house edge</label>
+                    <div class="input-unit">
+                      <input id="house-edge" type="number" min="0" max="50" step="0.5" value="5" /><span>%</span>
+                    </div>
+                  </div>
+                </div>
+                <div id="payout-summary" class="payout-summary stat-strip"></div>
+                <p class="in-panel-note">
+                  Multipliers are <strong>total returns including the stake</strong>; a bust returns zero. Payout = (1 − edge) ÷
+                  win probability. Uses the filtered population.
+                </p>
+                <div id="payout-chart" class="chart"></div>
+                <div id="payout-table" class="small-table"></div>
               </div>
-              <div id="payout-summary" class="payout-summary"></div>
-              <p class="in-panel-note">
-                Multipliers are
-                <strong>total returns including the stake</strong>; a bust
-                returns zero. Payout = (1 − edge) ÷ win probability. Uses the
-                filtered population.
-              </p>
-              <div id="payout-chart" class="chart"></div>
-              <div id="payout-table" class="small-table"></div>
             </article>
             <article class="panel live-panel">
-              <div class="panel-heading">
+              <div class="panel-head">
                 <div>
                   <h2>Draw lab</h2>
                   <p>Exact next-card outs for the selected hand and runout</p>
                 </div>
-                <button id="reset-runout" class="quiet">Reset runout</button>
-              </div>
-              <div class="live-row">
-                <div id="live-hand" class="live-hand"></div>
-                <div class="draw-actions">
-                  <button id="draw-random" class="primary">
-                    Draw a random card</button
-                  ><button id="undo-draw" class="quiet">Undo</button>
+                <div class="panel-actions">
+                  <button id="reset-runout" class="btn btn--ghost btn--sm" type="button">Reset runout</button>
                 </div>
               </div>
-              <div id="live-stats" class="live-stats" aria-live="polite"></div>
-              <p class="in-panel-note">
-                Or choose a remaining card below. Outlined cards bust; muted
-                cards are already held. Newly drawn cards are underlined above.
-                Cards stay rank-first.
-              </p>
-              <div
-                id="outs-grid"
-                class="outs-grid"
-                aria-label="Remaining deck and bust outs"
-              ></div>
-              <p class="mobile-only mobile-hint">
-                Swipe the deck to reach lower ranks.
-              </p>
-              <div id="outs-legend" class="legend"></div>
+              <div class="panel-body">
+                <div class="live-row">
+                  <div id="live-hand" class="live-hand"></div>
+                  <div class="draw-actions">
+                    <button id="draw-random" class="btn btn--primary" type="button">Draw a random card</button>
+                    <button id="undo-draw" class="btn btn--ghost" type="button">Undo</button>
+                  </div>
+                </div>
+                <div id="live-stats" class="live-stats"></div>
+                <p class="in-panel-note">
+                  Or choose a remaining card below. Outlined cards bust; muted cards are already held. Newly drawn cards are
+                  underlined above. Cards stay rank-first.
+                </p>
+                <div class="outs-wrap">
+                  <div id="outs-grid" class="outs-grid" aria-label="Remaining deck and bust outs"></div>
+                </div>
+                <p class="phone-only mobile-hint">Swipe the deck to reach lower ranks.</p>
+                <div id="outs-legend" class="legend"></div>
+              </div>
             </article>
           </div>
         </section>
-        <footer class="report-footer">
-          <span id="footer-provenance"></span
-          ><button id="footer-method" class="text-button">
-            How this was calculated ↗
-          </button>
-        </footer>
       </div>
     </main>
-    <dialog
-      id="hand-dialog"
-      class="hand-dialog"
-      aria-labelledby="hand-dialog-title"
-    >
-      <div class="dialog-heading">
+    <dialog id="hand-dialog" class="dialog dialog--sheet hand-dialog" aria-labelledby="hand-dialog-title">
+      <div class="dialog-head">
         <h2 id="hand-dialog-title">Hand report</h2>
-        <button
-          class="quiet"
-          data-close="hand-dialog"
-          aria-label="Close hand report"
-        >
-          Done
+        <button class="btn btn--ghost" type="button" data-close="hand-dialog" aria-label="Close hand report">Done</button>
+      </div>
+      <div id="hand-dialog-content" class="dialog-body"></div>
+    </dialog>
+    <dialog id="method-dialog" class="dialog dialog--wide dialog--sheet" aria-labelledby="method-title">
+      <div class="dialog-head">
+        <h2 id="method-title">Rules &amp; methodology</h2>
+        <button class="btn btn--ghost btn--icon" type="button" data-close="method-dialog" aria-label="Close methodology">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
         </button>
       </div>
-      <div id="hand-dialog-content"></div>
-    </dialog>
-    <dialog id="method-dialog" aria-labelledby="method-title">
-      <div class="dialog-heading">
-        <h2 id="method-title">Rules & methodology</h2>
-        <button
-          data-close="method-dialog"
-          class="quiet"
-          aria-label="Close methodology"
-        >
-          ✕
-        </button>
+      <div class="dialog-body">
+        <div class="method-content" id="method-content"></div>
+        <p class="field-hint provenance" id="footer-provenance"></p>
       </div>
-      <div class="method-content" id="method-content"></div>
     </dialog>
-    <dialog id="columns-dialog" aria-labelledby="columns-title">
-      <div class="dialog-heading">
+    <dialog id="columns-dialog" class="dialog dialog--sheet" aria-labelledby="columns-title">
+      <div class="dialog-head">
         <h2 id="columns-title">Choose table columns</h2>
-        <button
-          data-close="columns-dialog"
-          class="quiet"
-          aria-label="Close column settings"
-        >
-          ✕
+        <button class="btn btn--ghost btn--icon" type="button" data-close="columns-dialog" aria-label="Close column settings">
+          <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
         </button>
       </div>
-      <div id="column-choices" class="column-choices"></div>
+      <div class="dialog-body"><div id="column-choices" class="column-choices"></div></div>
     </dialog>
-    <div id="toast" class="toast" role="status" hidden></div>
-    <script src="../../shared/cards.js?v=20261003"></script>
-    <script type="module" src="./app.js?v=20261003"></script>
+    <div id="toast" class="toast-stack" role="status" aria-live="polite"></div>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/tabs.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script type="module" src="./app.js?v=20261016"></script>
   </body>
 </html>

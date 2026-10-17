@@ -1,22 +1,34 @@
 // Spot solver: type any hands, board, button and cube state, then solve.
 // In a two-player spot the second hand may be left blank: the first seat is
 // then solved against the opponent's full range.
-import { parseCards, cardName, dealTable } from "./engine.mjs";
-import { $, el, button, cardEl, renderSeats, fmtInt } from "./ui.js";
+import { parseCards, cardName, dealTable, scoringOf } from "./engine.mjs";
+import { $, el, badge, cardEl, emptySlot, renderSeats, fmtInt, signed, evColor, paint, toast } from "./ui.js";
 import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, fillScoringSelect, parseCubeState } from "./cube-view.js";
 import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
 
+const phone = matchMedia("(max-width: 700px)");
+
 export function initSpot({ pool, sim }) {
-  const st = { n: 2, token: 0, result: null };
+  const st = { n: 2, token: 0, result: null, progress: null };
   const countEl = $("spot-count");
-  for (let k = 2; k <= 7; k++)
-    countEl.append(
-      button(String(k), k === st.n ? "active" : "", () => {
-        st.n = k;
-        countEl.querySelectorAll("button").forEach((x) => x.classList.toggle("active", Number(x.textContent) === k));
-        buildInputs();
-      }),
-    );
+  for (let k = 2; k <= 7; k++) {
+    const b = el("button", k === st.n ? "active" : "", String(k));
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(k === st.n));
+    b.addEventListener("click", () => {
+      st.n = k;
+      syncCount();
+      buildInputs();
+    });
+    countEl.append(b);
+  }
+  function syncCount() {
+    countEl.querySelectorAll("button").forEach((x) => {
+      const on = Number(x.textContent) === st.n;
+      x.classList.toggle("active", on);
+      x.setAttribute("aria-pressed", String(on));
+    });
+  }
   fillVariantSelect($("spot-variant"), "fr");
   fillScoringSelect($("spot-scoring"), "classic");
   fillDropSelect($("spot-drop"), 6, "classic");
@@ -50,16 +62,17 @@ export function initSpot({ pool, sim }) {
     const wrap = $("spot-hands");
     wrap.replaceChildren();
     for (let i = 0; i < st.n; i++) {
-      const label = el("label", "field");
-      label.append(el("span", "label", `Seat ${i + 1} (6 cards${st.n === 2 && i === 1 ? ", or blank for unknown" : ""})`));
-      const input = el("input");
+      const field = el("div", "field");
+      const label = el("label", "", `Seat ${i + 1} (6 cards${st.n === 2 && i === 1 ? ", or blank for unknown" : ""})`);
+      label.htmlFor = `spot-hand-${i}`;
+      const input = el("input", "cards-input");
       input.id = `spot-hand-${i}`;
       input.placeholder = st.n === 2 && i === 1 ? "blank = unknown hand" : "e.g. As Ad Kh 9h 7c 2s";
       input.autocomplete = "off";
       input.spellcheck = false;
       input.value = values[i] ?? "";
-      label.append(input);
-      wrap.append(label);
+      field.append(label, input);
+      wrap.append(field);
     }
     $("spot-cube-controls").hidden = st.n !== 2;
   }
@@ -71,23 +84,29 @@ export function initSpot({ pool, sim }) {
   }
   $("spot-random").addEventListener("click", () => {
     fillRandom();
-    solve();
+    solve({ reveal: true });
   });
   $("spot-from-sim").addEventListener("click", () => {
     const s = sim.state;
     st.n = s.hands.length;
-    countEl.querySelectorAll("button").forEach((x) => x.classList.toggle("active", Number(x.textContent) === st.n));
+    syncCount();
     buildInputs(s.hands.map((h) => h.map(cardName).join(" ")));
     $("spot-board").value = s.board.map(cardName).join(" ");
     $("spot-variant").value = s.variant;
     $("spot-btn").value = String(s.btn);
     $("spot-cube-state").value = `${s.cube.level}:${s.cube.owner ?? ""}`;
-    solve();
+    solve({ reveal: true });
   });
   $("spot-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    solve();
+    solve({ reveal: true });
   });
+  function showError(message) {
+    const err = $("spot-error");
+    err.textContent = message || "";
+    err.hidden = !message;
+    if (message) toast(message, { alert: true });
+  }
   function readSpot() {
     const hands = [];
     const seen = new Set();
@@ -116,20 +135,27 @@ export function initSpot({ pool, sim }) {
     refreshTaken();
     return { hands, board, street, btn: Number($("spot-btn").value), variant: $("spot-variant").value, cube, takenOn: $("spot-taken").value || null, dropUnit: Number($("spot-drop").value) || 6, scoring: $("spot-scoring").value, precision: $("spot-precision").value, tabled: $("spot-tabled").checked };
   }
-  async function solve() {
-    const err = $("spot-error");
-    err.hidden = true;
+  // After Solve the result takes focus, and on phones it scrolls into view so
+  // the solve has a visible response above the fold.
+  function revealResult() {
+    const result = $("spot-result");
+    if (phone.matches) result.scrollIntoView({ behavior: "smooth", block: "start" });
+    result.focus({ preventScroll: !phone.matches });
+  }
+  async function solve({ reveal = false } = {}) {
+    showError("");
     let spot;
     try {
       spot = readSpot();
     } catch (error) {
-      err.textContent = error.message;
-      err.hidden = false;
+      showError(error.message);
       return;
     }
     const token = ++st.token;
     st.result = { spot, view: null };
+    st.progress = null;
     render();
+    if (reveal) revealResult();
     try {
       const view = await computeView(pool, {
         hands: spot.hands,
@@ -141,7 +167,10 @@ export function initSpot({ pool, sim }) {
         cubeEnabled: spot.hands.length === 2,
         history: historyFromCube(spot.cube, spot.variant, spot.street, spot.btn, spot.takenOn),
         onProgress: (f) => {
-          if (!st.result?.view) $("spot-meta").replaceChildren(el("span", "muted", `Solving the equilibrium… ${Math.round(f * 100)}%`));
+          if (token === st.token && !st.result?.view) {
+            st.progress = f;
+            renderSummary();
+          }
         },
         forceTabled: spot.tabled,
         dropUnit: spot.dropUnit,
@@ -150,26 +179,66 @@ export function initSpot({ pool, sim }) {
       });
       if (token !== st.token) return;
       st.result.view = view;
+      st.progress = null;
       render();
     } catch (error) {
-      err.textContent = `Computation failed: ${error.message}`;
-      err.hidden = false;
+      if (token !== st.token) return;
+      st.progress = null;
+      renderSummary();
+      showError(`Computation failed: ${error.message}`);
     }
+  }
+  // The sticky summary: one tile per seat with its EV, or the solve progress.
+  function renderSummary() {
+    const box = $("spot-summary");
+    const r = st.result;
+    box.hidden = !r;
+    if (!r) return;
+    box.replaceChildren();
+    const { spot, view } = r;
+    const names = spot.hands.map((_, i) => `Seat ${i + 1}`);
+    const scoring = scoringOf(spot.scoring);
+    if (!view) {
+      const bar = el("div", "progress");
+      bar.setAttribute("aria-busy", "true");
+      const label = el("div", "progress-label");
+      label.append(el("span", "", st.progress == null ? "Computing equities…" : "Solving the equilibrium…"), el("span", "", st.progress == null ? "" : `${Math.round(st.progress * 100)}%`));
+      const track = el("div", `bar${st.progress == null ? " bar--indeterminate" : ""}`);
+      if (st.progress != null) track.style.setProperty("--value", String(st.progress));
+      bar.append(label, track);
+      box.append(bar);
+      return;
+    }
+    const strip = el("div", "stat-strip spot-strip");
+    strip.append(statTile("Street", ["Preflop", "Flop", "Turn", "River"][spot.street]));
+    names.forEach((n, i) => {
+      const p = view.stats?.players?.[i];
+      const tile = statTile(`${n} EV`, p ? signed(p.ev) : "—");
+      if (p) paint(tile.querySelector(".stat-value"), { ...evColor(p.ev, scoring.maxNet * (names.length - 1) * 0.5), background: "transparent" });
+      strip.append(tile);
+    });
+    box.append(strip);
+  }
+  function statTile(label, value) {
+    const tile = el("div", "stat");
+    tile.append(el("span", "stat-label", label), el("span", "stat-value", value));
+    return tile;
   }
   function render() {
     const r = st.result;
     $("spot-empty").hidden = Boolean(r);
+    renderSummary();
     if (!r) return;
     const { spot, view } = r;
     const names = spot.hands.map((_, i) => `Seat ${i + 1}`);
     const bc = $("spot-board-cards");
     bc.replaceChildren();
-    for (let i = 0; i < 5; i++) bc.append(i < spot.board.length ? cardEl(spot.board[i]) : el("span", "slot"));
+    for (let i = 0; i < 5; i++) bc.append(i < spot.board.length ? cardEl(spot.board[i]) : emptySlot());
     const meta = $("spot-meta");
     meta.replaceChildren();
     meta.append(el("span", "", ["Preflop", "Flop", "Turn", "River"][spot.street]));
     if (view) {
-      meta.append(el("span", "tag info-tag", view.mode === "perfect" ? "Tabled · perfect information" : "Hidden hands · numbers vs range"));
+      meta.append(view.mode === "perfect" ? badge("Tabled · perfect information", "info") : badge("Hidden hands · numbers vs range"));
       if (view.mode === "perfect") meta.append(el("span", "", `${view.stats.exact ? "exact" : "sampled"}, ${fmtInt(view.stats.count)} runouts, ${view.stats.ms.toFixed(0)} ms`));
       else if (view.decision) meta.append(el("span", "", `solver ${view.decision.solve.ms} ms`));
     } else meta.append(el("span", "muted", "computing…"));
