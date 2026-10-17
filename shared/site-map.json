@@ -1,0 +1,108 @@
+{
+  "$comment": "The one list behind the landing page and the hubs. The HTML stays static; shared/tests/site-map.test.cjs fails when a hub's tiles, group counts, fact chips, landing tags or favicons disagree with this file. Add a tool here first, then to its hub. Tools are listed in README order, which is also the order of each family's tool nav.",
+  "families": [
+    {
+      "id": "ofc",
+      "name": "OFC",
+      "path": "/ofc/",
+      "glyph": "♣",
+      "groups": [
+        { "title": "Play", "tools": [{ "name": "Play OFC", "path": "/ofc/play/" }] },
+        {
+          "title": "Fantasyland",
+          "tools": [
+            { "name": "Fantasyland Trainer", "path": "/ofc/fantasyland-trainer/" },
+            { "name": "Fantasyland EV", "path": "/ofc/fantasyland-ev/" },
+            { "name": "Fantasyland overview", "path": "/ofc/fantasyland-ev/#overview" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "poker",
+      "name": "Poker",
+      "path": "/poker/",
+      "glyph": "♥",
+      "groups": [
+        {
+          "title": "Play",
+          "tools": [
+            { "name": "Mixed Poker", "path": "/poker/play/" },
+            { "name": "Poker Rush", "path": "/poker/rush/" },
+            { "name": "Ultimate Omaha", "path": "/poker/ultimate-omaha/" },
+            { "name": "Edge the Dealer", "path": "/poker/edge-the-dealer/" },
+            { "name": "222", "path": "/poker/222/" }
+          ]
+        },
+        {
+          "title": "Research",
+          "tools": [
+            { "name": "Dodge Reports", "path": "/poker/dodge/" },
+            { "name": "Dodge Simulator", "path": "/poker/dodge/simulator/" },
+            { "name": "Poker Calculations", "path": "/poker/calculations/" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blackjack",
+      "name": "Blackjack",
+      "path": "/blackjack/",
+      "glyph": "♠",
+      "groups": [{ "title": "Tools", "tools": [{ "name": "Strategy Lab", "path": "/blackjack/strategy/" }] }],
+      "links": {
+        "title": "Reference",
+        "items": [
+          { "name": "Solver report", "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" },
+          { "name": "Metrics notes", "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md" },
+          { "name": "Rust solver source", "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs" }
+        ]
+      }
+    },
+    {
+      "id": "backgammon",
+      "name": "Backgammon",
+      "path": "/backgammon/",
+      "glyph": "◆",
+      "hub": "backgammon/index.html is owned by the Backgammon family step and is not checked by the site-map test yet; its tool list below feeds the landing tile.",
+      "groups": [
+        {
+          "title": "Tools",
+          "tools": [
+            { "name": "Play", "path": "/backgammon/play/" },
+            { "name": "Trainer", "path": "/backgammon/trainer/" },
+            { "name": "Solver", "path": "/backgammon/solver/" },
+            { "name": "Library", "path": "/backgammon/library/" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dice",
+      "name": "Dice",
+      "path": "/dice/",
+      "glyph": "pips:5",
+      "groups": [
+        {
+          "title": "Fair Dice Payout Explorer",
+          "unit": "workspaces",
+          "tools": [
+            { "name": "Explore payouts", "path": "/dice/reports/#explore" },
+            { "name": "Matchups", "path": "/dice/reports/#matchups" },
+            { "name": "Play", "path": "/dice/reports/#play" }
+          ]
+        }
+      ],
+      "links": {
+        "title": "Also on the report",
+        "items": [{ "name": "Custom payout checker", "href": "/dice/reports/#explore" }]
+      }
+    }
+  ],
+  "apps": [
+    { "name": "Card Table Workshop", "path": "/cards/" },
+    { "name": "Gym Tracker", "path": "/gym/" },
+    { "name": "Microtonal Lab", "path": "/microtonal-lab/" }
+  ],
+  "source": [{ "name": "Jazz Piano ML", "href": "https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" }]
+}
