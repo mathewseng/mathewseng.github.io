@@ -9,23 +9,24 @@
       content="Project directory for Mathew Seng: browser tools, card games, music experiments, and small utility projects."
     />
     <title>Mathew Seng Projects</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%238ab4ff'%3E♦%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='15' fill='%238ab4ff'/%3E%3Ctext x='32' y='41' font-family='Inter, system-ui, sans-serif' font-size='26' font-weight='800' text-anchor='middle' fill='%230b0d12'%3EMS%3C/text%3E%3C/svg%3E" />
     <link rel="stylesheet" href="shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="shared/app.css?v=20261016" />
     <link rel="stylesheet" href="shared/cards.css?v=20261016" />
     <link rel="stylesheet" href="shared/hub.css?v=20261016" />
     <link rel="stylesheet" href="shared/hub-art.css?v=20261016" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="shared/hub.js" defer></script>
+    <script src="shared/hub.js?v=20261016" defer></script>
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="shell">
       <header class="topbar">
         <nav class="crumbs" aria-label="Breadcrumb">
           <span class="mark" aria-hidden="true">MS</span>
           <span class="crumb-current" aria-current="page">Projects</span>
         </nav>
-        <nav class="switcher" aria-label="Game hubs">
+        <nav class="switcher" aria-label="Game families">
           <a href="/ofc/" data-to="ofc">OFC</a>
           <a href="/poker/" data-to="poker">Poker</a>
           <a href="/blackjack/" data-to="blackjack">Blackjack</a>
@@ -34,7 +35,7 @@
         </nav>
       </header>
 
-      <main>
+      <main id="main" tabindex="-1">
         <section class="hero hero--home" aria-labelledby="home-title">
           <div>
             <p class="eyebrow">Project directory</p>
@@ -44,8 +45,8 @@
               open to a hub of their tools.
             </p>
             <ul class="facts" aria-label="At a glance">
-              <li><b>8</b> projects</li>
-              <li><b>23</b> live pages</li>
+              <li><b>9</b> projects</li>
+              <li><b>30</b> live pages</li>
               <li><b>5</b> game hubs</li>
             </ul>
           </div>
@@ -56,155 +57,151 @@
               <span class="playing-card suit-c" aria-label="Ace of clubs" style="--k: 0.5; --y: 2px; --n: 2"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">A</span></span>
               <span class="playing-card suit-d" aria-label="Ace of diamonds" style="--k: 1.5; --y: 12px; --n: 3"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">A</span></span>
               <div class="fan-chip" style="--accent: var(--family-ofc)"></div>
-              <div class="fan-chip fan-chip--alt" style="--accent: var(--family-poker)"></div>
             </div>
           </div>
         </section>
 
-      <section class="group" aria-labelledby="group-hubs">
-        <div class="group-head">
-          <h2 id="group-hubs">Game hubs</h2>
-          <span>5 hubs</span>
-        </div>
-        <ul class="tiles" role="list">
-          <li>
-            <a class="tile" href="/poker/" style="--i: 0; --accent: var(--family-poker); --accent-2: var(--family-poker-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="playing-card suit-h" aria-label="Ten of hearts" style="--k: -2; --y: 6px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">T</span></span><span class="playing-card suit-h" aria-label="Jack of hearts" style="--k: -1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">J</span></span><span class="playing-card suit-h" aria-label="Queen of hearts" style="--k: 0; --y: 0px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-h" aria-label="King of hearts" style="--k: 1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Ace of hearts" style="--k: 2; --y: 6px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span></div></div>
-              <div>
-                <h3>Poker</h3>
-                <p>Mixed-game cash tables, Poker Rush, Ultimate Omaha and Edge the Dealer, Dodge reports, and hand-ranking odds.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Hub</span><span>6 tools</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a class="tile" href="/ofc/" style="--i: 1; --accent: var(--family-ofc); --accent-2: var(--family-ofc-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-ofc"><div><span class="playing-card suit-h" aria-label="Queen of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-s" aria-label="Queen of spades"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">Q</span></span><span class="empty-slot"></span></div><div><span class="playing-card suit-c" aria-label="Nine of clubs"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">9</span></span><span class="playing-card suit-d" aria-label="Nine of diamonds"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">9</span></span><span class="playing-card suit-s" aria-label="Jack of spades"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">J</span></span><span class="playing-card suit-c" aria-label="Jack of clubs"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">J</span></span><span class="playing-card suit-d" aria-label="Four of diamonds"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">4</span></span></div><div><span class="playing-card suit-h" aria-label="Ace of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span><span class="playing-card suit-h" aria-label="King of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Eight of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">8</span></span><span class="playing-card suit-h" aria-label="Five of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Three of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">3</span></span></div></div></div>
-              <div>
-                <h3>OFC Tools</h3>
-                <p>Pineapple tables with friends, plus a Fantasyland trainer, EV matrix, and royalty reports.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Hub</span><span>4 tools</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a class="tile" href="/blackjack/" style="--i: 2; --accent: var(--family-blackjack); --accent-2: var(--family-blackjack-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-chart"><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H hit-me"></span><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span></div></div>
-              <div>
-                <h3>Blackjack</h3>
-                <p>Rules-aware basic strategy and Hi-Lo count indices from a Rust solver compiled to WebAssembly.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Hub</span><span>Strategy Lab</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a class="tile" href="/backgammon/" style="--i: 3; --accent: var(--family-backgammon); --accent-2: var(--family-backgammon-2)">
-              <div class="tile-art" aria-hidden="true">
-                <img src="/backgammon/icon.svg" width="108" height="108" style="width: 64%; height: 64%; max-width: 108px; object-fit: contain" alt="" />
-              </div>
-              <div>
-                <h3>Backgammon</h3>
-                <p>Play GNUbg or a friend, practice decisions, analyze positions, and build a personal study library.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Hub</span><span>4 tools</span></div>
-                <span class="go" aria-hidden="true">→</span>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a class="tile" href="/dice/" style="--i: 4; --accent: var(--family-dice); --accent-2: var(--family-dice-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-bars"><span style="--h: 12%; --c: 0"></span><span style="--h: 20%; --c: 1"></span><span style="--h: 35%; --c: 2"></span><span style="--h: 60%; --c: 3"></span><span style="--h: 100%; --c: 4"></span></div></div>
-              <div><h3>Dice</h3><p>Explore exact fair payout schedules, compare reward curves, and check custom payouts for two through six dice.</p></div>
-              <div class="tile-foot"><div class="tags"><span>Hub</span><span>Exact math</span></div><span class="go" aria-hidden="true">→</span></div>
-            </a>
-          </li>
-        </ul>
-      </section>
+        <section class="group" aria-labelledby="group-hubs">
+          <div class="group-head">
+            <h2 id="group-hubs">Game hubs</h2>
+            <span>5 hubs</span>
+          </div>
+          <ul class="tiles tiles--hubs" role="list">
+            <li>
+              <a class="tile" href="/ofc/" style="--i: 0; --accent: var(--family-ofc); --accent-2: var(--family-ofc-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-ofc"><div><span class="playing-card suit-h" aria-label="Queen of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-s" aria-label="Queen of spades"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">Q</span></span><span class="empty-slot"></span></div><div><span class="playing-card suit-c" aria-label="Nine of clubs"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">9</span></span><span class="playing-card suit-d" aria-label="Nine of diamonds"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">9</span></span><span class="playing-card suit-s" aria-label="Jack of spades"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">J</span></span><span class="playing-card suit-c" aria-label="Jack of clubs"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">J</span></span><span class="playing-card suit-d" aria-label="Four of diamonds"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">4</span></span></div><div><span class="playing-card suit-h" aria-label="Ace of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span><span class="playing-card suit-h" aria-label="King of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Eight of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">8</span></span><span class="playing-card suit-h" aria-label="Five of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Three of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">3</span></span></div></div></div>
+                <div>
+                  <h3>OFC</h3>
+                  <p>Pineapple tables with friends, plus a Fantasyland trainer, EV matrix, and royalty overview.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Hub</span><span>4 tools</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/poker/" style="--i: 1; --accent: var(--family-poker); --accent-2: var(--family-poker-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="playing-card suit-h" aria-label="Ten of hearts" style="--k: -2; --y: 6px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">T</span></span><span class="playing-card suit-h" aria-label="Jack of hearts" style="--k: -1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">J</span></span><span class="playing-card suit-h" aria-label="Queen of hearts" style="--k: 0; --y: 0px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-h" aria-label="King of hearts" style="--k: 1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Ace of hearts" style="--k: 2; --y: 6px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span></div></div>
+                <div>
+                  <h3>Poker</h3>
+                  <p>Peer-to-peer cash tables in 30 mixed games, two table-game prototypes, and poker research.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Hub</span><span>8 tools</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/blackjack/" style="--i: 2; --accent: var(--family-blackjack); --accent-2: var(--family-blackjack-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-chart"><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H hit-me"></span><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span></div></div>
+                <div>
+                  <h3>Blackjack</h3>
+                  <p>Rules-aware basic strategy and Hi-Lo count indices, solved in your browser by a Rust engine.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Hub</span><span>Strategy Lab</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/backgammon/" style="--i: 3; --accent: var(--family-backgammon); --accent-2: var(--family-backgammon-2)">
+                <div class="tile-art" aria-hidden="true"><img class="art-image" src="/backgammon/icon.svg" width="108" height="108" alt="" /></div>
+                <div>
+                  <h3>Backgammon</h3>
+                  <p>Play GNUbg or a friend, practice decisions, analyze positions, and keep a personal study library.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Hub</span><span>4 tools</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li class="wide">
+              <a class="tile tile--row" href="/dice/" style="--i: 4; --accent: var(--family-dice); --accent-2: var(--family-dice-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-dice"><svg class="hub-die" viewBox="0 0 64 64" style="--k: -1"><rect x="2" y="2" width="60" height="60" rx="15"/><circle cx="20" cy="20" r="5.5"/><circle cx="44" cy="20" r="5.5"/><circle cx="32" cy="32" r="5.5"/><circle cx="20" cy="44" r="5.5"/><circle cx="44" cy="44" r="5.5"/></svg><svg class="hub-die" viewBox="0 0 64 64" style="--k: 1"><rect x="2" y="2" width="60" height="60" rx="15"/><circle cx="20" cy="20" r="5.5"/><circle cx="44" cy="44" r="5.5"/></svg></div></div>
+                <div>
+                  <h3>Dice</h3>
+                  <p>Exact fair payout schedules, every two-dice matchup, and a custom payout checker.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Hub</span><span>3 workspaces</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </section>
 
-      <section class="group" aria-labelledby="group-apps">
-        <div class="group-head">
-          <h2 id="group-apps">Apps &amp; experiments</h2>
-          <span>3 apps</span>
-        </div>
-        <ul class="tiles" role="list">
-          <li>
-            <a class="tile" href="/cards/" style="--i: 3; --accent: var(--family-cards); --accent-2: var(--family-cards-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="playing-card suit-c" aria-label="Five of clubs" style="--k: -2; --y: 6px"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Five of hearts" style="--k: -1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-d" aria-label="Jack of diamonds" style="--k: 0; --y: 0px"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">J</span></span><span class="playing-card suit-s" aria-label="Ace of spades" style="--k: 1; --y: 3px"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">A</span></span><span class="playing-card joker" aria-label="Joker" style="--k: 2; --y: 6px"><span class="card-suit" aria-hidden="true">★</span><span class="card-rank">JK</span></span></div></div>
-              <div>
-                <h3>Card Table Workshop</h3>
-                <p>Card game design workbench: 31 playable games, rules and triggers, bots that bluff and slap, balance reports, version diffs, and private online rooms.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Game design</span><span>Multiplayer</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a class="tile" href="/gym/" style="--i: 4; --accent: var(--family-gym); --accent-2: var(--family-gym-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-bars"><span style="--h: 32%; --c: 0"></span><span style="--h: 48%; --c: 1"></span><span style="--h: 42%; --c: 2"></span><span style="--h: 68%; --c: 3"></span><span style="--h: 58%; --c: 4"></span><span style="--h: 82%; --c: 5"></span><span style="--h: 72%; --c: 6"></span><span style="--h: 94%; --c: 7"></span></div></div>
-              <div>
-                <h3>Gym Tracker</h3>
-                <p>Recovery-aware training calendar with workout history, progress charts, goals, nutrition, and local export.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Fitness</span><span>React</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a class="tile" href="/microtonal-lab/" style="--i: 5; --accent: var(--family-microtonal); --accent-2: var(--family-microtonal-2)">
-              <div class="tile-art" aria-hidden="true"><div class="art-wave"><span style="--h: 17%; --c: 0"></span><span style="--h: 29%; --c: 1"></span><span style="--h: 34%; --c: 2"></span><span style="--h: 28%; --c: 3"></span><span style="--h: 32%; --c: 4"></span><span style="--h: 56%; --c: 5"></span><span style="--h: 71%; --c: 6"></span><span style="--h: 57%; --c: 7"></span><span style="--h: 40%; --c: 8"></span><span style="--h: 55%; --c: 9"></span><span style="--h: 87%; --c: 10"></span><span style="--h: 88%; --c: 11"></span><span style="--h: 57%; --c: 12"></span><span style="--h: 44%; --c: 13"></span><span style="--h: 70%; --c: 14"></span><span style="--h: 92%; --c: 15"></span><span style="--h: 74%; --c: 16"></span><span style="--h: 43%; --c: 17"></span><span style="--h: 43%; --c: 18"></span><span style="--h: 63%; --c: 19"></span><span style="--h: 64%; --c: 20"></span><span style="--h: 42%; --c: 21"></span><span style="--h: 26%; --c: 22"></span><span style="--h: 28%; --c: 23"></span><span style="--h: 28%; --c: 24"></span><span style="--h: 19%; --c: 25"></span></div></div>
-              <div>
-                <h3>Microtonal Lab</h3>
-                <p>Interactive tuning explorer and browser instrument for equal, just, and world scales.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Audio</span><span>Tuning</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-              </div>
-            </a>
-          </li>
-        </ul>
-      </section>
+        <section class="group" aria-labelledby="group-apps">
+          <div class="group-head">
+            <h2 id="group-apps">Apps &amp; experiments</h2>
+            <span>3 apps</span>
+          </div>
+          <ul class="tiles" role="list">
+            <li>
+              <a class="tile" href="/cards/" style="--i: 5; --accent: var(--family-cards); --accent-2: var(--family-cards-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="playing-card suit-c" aria-label="Five of clubs" style="--k: -2; --y: 6px"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Five of hearts" style="--k: -1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-d" aria-label="Jack of diamonds" style="--k: 0; --y: 0px"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">J</span></span><span class="playing-card suit-s" aria-label="Ace of spades" style="--k: 1; --y: 3px"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">A</span></span><span class="playing-card joker" aria-label="Joker" style="--k: 2; --y: 6px"><span class="card-suit" aria-hidden="true">★</span><span class="card-rank">JK</span></span></div></div>
+                <div>
+                  <h3>Card Table Workshop</h3>
+                  <p>A card game design workbench: 31 playable games, rules and triggers, bluffing bots, and online rooms.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Game design</span><span>Multiplayer</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/gym/" style="--i: 6; --accent: var(--family-gym); --accent-2: var(--family-gym-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-bars"><span style="--h: 32%; --c: 0"></span><span style="--h: 48%; --c: 1"></span><span style="--h: 42%; --c: 2"></span><span style="--h: 68%; --c: 3"></span><span style="--h: 58%; --c: 4"></span><span style="--h: 82%; --c: 5"></span><span style="--h: 72%; --c: 6"></span><span style="--h: 94%; --c: 7"></span></div></div>
+                <div>
+                  <h3>Gym Tracker</h3>
+                  <p>Recovery-aware training calendar with workout history, progress charts, goals, and nutrition.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Fitness</span><span>React</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/microtonal-lab/" style="--i: 7; --accent: var(--family-microtonal); --accent-2: var(--family-microtonal-2)">
+                <div class="tile-art" aria-hidden="true"><div class="art-wave"><span style="--h: 17%; --c: 0"></span><span style="--h: 29%; --c: 1"></span><span style="--h: 34%; --c: 2"></span><span style="--h: 28%; --c: 3"></span><span style="--h: 32%; --c: 4"></span><span style="--h: 56%; --c: 5"></span><span style="--h: 71%; --c: 6"></span><span style="--h: 57%; --c: 7"></span><span style="--h: 40%; --c: 8"></span><span style="--h: 55%; --c: 9"></span><span style="--h: 87%; --c: 10"></span><span style="--h: 88%; --c: 11"></span><span style="--h: 57%; --c: 12"></span><span style="--h: 44%; --c: 13"></span><span style="--h: 70%; --c: 14"></span><span style="--h: 92%; --c: 15"></span><span style="--h: 74%; --c: 16"></span><span style="--h: 43%; --c: 17"></span><span style="--h: 43%; --c: 18"></span><span style="--h: 63%; --c: 19"></span><span style="--h: 64%; --c: 20"></span><span style="--h: 42%; --c: 21"></span><span style="--h: 26%; --c: 22"></span><span style="--h: 28%; --c: 23"></span><span style="--h: 28%; --c: 24"></span><span style="--h: 19%; --c: 25"></span></div></div>
+                <div>
+                  <h3>Microtonal Lab</h3>
+                  <p>Interactive tuning explorer and browser instrument for equal, just, and world scales.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Audio</span><span>Tuning</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </section>
 
-      <section class="group" aria-labelledby="group-source">
-        <div class="group-head">
-          <h2 id="group-source">Source only</h2>
-          <span>1 project</span>
-        </div>
-        <ul class="tiles" role="list">
-          <li>
-            <a class="tile tile--row" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" target="_blank" rel="noopener" style="--i: 6; --accent: var(--info); --accent-2: var(--family-home-2)">
-              <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
-              <div>
-                <h3>Jazz Piano ML<span class="visually-hidden"> (opens GitHub)</span></h3>
-                <p>Python pipeline for jazz piano MIDI normalization, tokenization, transcription backends, and a small symbolic transformer.</p>
-              </div>
-              <div class="tile-foot">
-                <div class="tags"><span>Python</span><span>Source only</span></div>
-                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
-              </div>
-            </a>
-          </li>
-        </ul>
-      </section>
+        <section class="group" aria-labelledby="group-source">
+          <div class="group-head">
+            <h2 id="group-source">Source only</h2>
+            <span>1 project</span>
+          </div>
+          <ul class="hub-links">
+            <li>
+              <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" target="_blank" rel="noopener">Jazz Piano ML<span class="visually-hidden"> (opens GitHub)</span><svg class="icon" aria-hidden="true"><use href="shared/icons.svg#i-external" /></svg></a>
+              <span>Python pipeline for jazz piano MIDI normalization, tokenization, and a small symbolic transformer.</span>
+            </li>
+          </ul>
+        </section>
       </main>
 
       <footer class="foot">
-        <span>Static pages on GitHub Pages.</span>
-        <a href="https://github.com/mathewseng/mathewseng.github.io" target="_blank" rel="noopener">View source on GitHub ↗</a>
+        <nav class="foot-links" aria-label="Site">
+          <a href="https://github.com/mathewseng/mathewseng.github.io" target="_blank" rel="noopener">Source on GitHub<span class="visually-hidden"> (opens GitHub)</span><svg class="icon" aria-hidden="true"><use href="shared/icons.svg#i-external" /></svg></a>
+        </nav>
+        <span>Static pages on GitHub Pages. Everything runs in your browser.</span>
       </footer>
     </div>
   </body>

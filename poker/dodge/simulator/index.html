@@ -1,67 +1,84 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="poker">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#111417" />
-    <title>Dodge · Table simulator &amp; cube trainer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <title>Dodge Simulator</title>
     <meta
       name="description"
       content="Simulate Dodge hands for two to four players with live equity and bust odds, and train doubling-cube decisions against a solver-backed bot."
     />
-    <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="../../../shared/cards.css?v=20261005" />
-    <link rel="stylesheet" href="./styles.css?v=20261006" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%23f28b82'%3E♥%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../../tools.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
   </head>
-  <body>
+  <body class="app-shell">
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="topbar">
-      <a href="/poker/" class="brand" aria-label="Back to poker"
-        ><span class="brand-mark">d<span>•</span></span
-        ><strong>DODGE</strong><span class="brand-separator"></span
-        ><span class="brand-section">SIMULATOR</span></a
-      >
-      <nav class="tabs" aria-label="Views">
-        <button class="active" data-tab="sim" aria-current="page">
-          <span class="desktop-only">Table simulator</span><span class="mobile-only">Table</span>
-        </button>
-        <button data-tab="trainer"><span class="desktop-only">Cube trainer</span><span class="mobile-only">Trainer</span></button>
-        <button data-tab="online"><span class="desktop-only">Play online</span><span class="mobile-only">Online</span></button>
-        <button data-tab="reports">Reports</button>
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="desk-only">Projects</span></a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <a href="/poker/">Poker</a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <a href="../" class="desk-only">Dodge</a>
+        <span class="crumb-sep desk-only" aria-hidden="true">/</span>
+        <span class="crumb-current" aria-current="page">Simulator</span>
       </nav>
-      <div class="top-actions">
-        <a href="../" class="quiet-link desktop-only">Hand reports</a
-        ><button id="rules-button" class="quiet" aria-label="Rules &amp; method">
-          <span class="desktop-only">Rules &amp; method</span
-          ><span class="mobile-only">Rules</span></button
-        ><a href="/" class="site-link desktop-only">MS ↗</a>
+      <nav class="tool-nav" aria-label="Poker tools">
+        <a href="/poker/dodge/">Dodge reports</a>
+        <a href="/poker/dodge/simulator/" aria-current="page">Simulator</a>
+        <a href="/poker/222/">222</a>
+        <a href="/poker/calculations/">Calculations</a>
+      </nav>
+      <div class="topbar-actions">
+        <button id="rules-button" class="btn btn--ghost btn--icon" type="button" aria-label="Rules &amp; method" title="Rules &amp; method">
+          <svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-rules" /></svg>
+        </button>
       </div>
     </header>
-    <main>
-      <h1 class="sr-only">Dodge table simulator, cube trainer, online rooms and reports</h1>
+    <main id="main" tabindex="-1" class="app">
+      <div class="tool-head">
+        <div>
+          <p class="eyebrow">Poker · Simulator</p>
+          <h1>Dodge simulator</h1>
+          <p class="lede">
+            Deal two to four seats with live equity and bust odds, train doubling-cube decisions against the solver, or open a
+            peer-to-peer table.
+          </p>
+        </div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Views" id="view-tabs">
+        <button type="button" role="tab" data-tab="sim" aria-selected="true" aria-controls="view-sim">Table simulator</button>
+        <button type="button" role="tab" data-tab="trainer" aria-selected="false" aria-controls="view-trainer" tabindex="-1">Cube trainer</button>
+        <button type="button" role="tab" data-tab="online" aria-selected="false" aria-controls="view-online" tabindex="-1">Play online</button>
+        <button type="button" role="tab" data-tab="reports" aria-selected="false" aria-controls="view-reports" tabindex="-1">Reports</button>
+      </div>
 
       <!-- ========== SIMULATOR ========== -->
-      <section id="view-sim" class="view">
-        <div class="toolbar">
+      <section id="view-sim" class="view" role="tabpanel" aria-label="Table simulator">
+        <div class="toolbar panel panel--quiet">
           <div class="control">
-            <span class="label">Players</span>
-            <div class="segmented" id="player-count" role="group" aria-label="Players">
-              <button data-n="2">2</button><button data-n="3">3</button
-              ><button data-n="4" class="active">4</button>
+            <span class="label" id="player-count-label">Players</span>
+            <div class="segmented" id="player-count" role="group" aria-labelledby="player-count-label">
+              <button type="button" data-n="2" aria-pressed="false">2</button><button type="button" data-n="3" aria-pressed="false">3</button
+              ><button type="button" data-n="4" class="active" aria-pressed="true">4</button>
             </div>
           </div>
-          <label class="control check">
+          <label class="check control">
             <input type="checkbox" id="ace-high" checked />
             <span>Ace high for first draw</span>
           </label>
-          <label class="control check" id="cube-mode-control">
+          <label class="check control" id="cube-mode-control">
             <input type="checkbox" id="cube-mode" />
             <span>Doubling cube (2 players)</span>
           </label>
-          <div class="control">
-            <span class="label">Precision</span>
+          <div class="field field--select field--inline control">
+            <label for="precision">Precision</label>
             <select id="precision">
               <option value="fast">Fast</option>
               <option value="standard" selected>Standard</option>
@@ -70,107 +87,115 @@
           </div>
           <div class="spacer"></div>
           <div class="buttons">
-            <button id="back-button" class="quiet" disabled title="Step back (←)">◀ Back</button>
-            <button id="forward-button" class="quiet" disabled title="Step forward (→)">Forward ▶</button>
-            <button id="draw-button">Draw card</button>
-            <button id="playout-button">Play out</button>
-            <button id="deal-button" class="primary">New deal</button>
+            <div class="btn-group step-group">
+              <button id="back-button" class="btn btn--ghost" type="button" disabled aria-label="Step back" title="Step back (←)">
+                <svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-chevron-left" /></svg><span class="phone-sr">Back</span>
+              </button>
+              <button id="forward-button" class="btn btn--ghost" type="button" disabled aria-label="Step forward" title="Step forward (→)">
+                <span class="phone-sr">Forward</span><svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-chevron-right" /></svg>
+              </button>
+            </div>
+            <div class="btn-group action-group">
+              <button id="draw-button" class="btn" type="button">Draw card</button>
+              <button id="playout-button" class="btn" type="button">Play out</button>
+              <button id="deal-button" class="btn btn--primary" type="button">New deal</button>
+            </div>
           </div>
         </div>
 
         <div class="spot-bar">
-          <button id="spot-toggle" class="quiet">Solve a spot ▾</button>
-          <span class="muted">Type each seat's cards like a solver input, choose who is on turn and the cube state, then load it.</span>
+          <button id="spot-toggle" class="btn btn--ghost btn--sm" type="button" aria-expanded="false" aria-controls="spot-panel">
+            Solve a spot<svg class="icon spot-chevron" aria-hidden="true"><use href="../../../shared/icons.svg#i-chevron-down" /></svg>
+          </button>
+          <span class="muted desk-only">Type each seat's cards like a solver input, choose who is on turn and the cube state, then load it.</span>
         </div>
-        <div id="spot-panel" class="spot-panel" hidden>
+        <div id="spot-panel" class="spot-panel panel panel--quiet" hidden>
           <div class="spot-seats" id="spot-seats"></div>
           <div class="spot-controls">
-            <label class="field"><span class="label">On turn</span><select id="spot-turn"></select></label>
-            <label class="field"><span class="label">Cube</span><select id="spot-cube-owner"></select></label>
-            <label class="field"><span class="label">Cube value</span>
+            <div class="field field--select"><label for="spot-turn">On turn</label><select id="spot-turn"></select></div>
+            <div class="field field--select"><label for="spot-cube-owner">Cube</label><select id="spot-cube-owner"></select></div>
+            <div class="field field--select">
+              <label for="spot-cube-value">Cube value</label>
               <select id="spot-cube-value">
                 <option>1</option><option>2</option><option>4</option><option>8</option><option>16</option><option>32</option>
               </select>
-            </label>
+            </div>
             <div class="buttons">
-              <button id="spot-copy" class="quiet">Copy link</button>
-              <button id="spot-load" class="primary">Load spot</button>
+              <button id="spot-copy" class="btn" type="button">
+                <svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-link" /></svg>Copy link
+              </button>
+              <button id="spot-load" class="btn btn--primary" type="button">Load spot</button>
             </div>
           </div>
-          <p id="spot-error" class="error-text" hidden></p>
+          <p id="spot-error" class="error-text" role="alert" hidden></p>
         </div>
 
         <div class="split" id="sim-split">
-        <div class="split-main">
-        <div class="summary" id="summary">
-          <div class="stat">
-            <span class="stat-label">Status</span>
-            <span class="stat-value" id="sum-status">—</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Deck</span>
-            <span class="stat-value" id="sum-deck">—</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Deck runs out</span>
-            <span class="stat-value" id="sum-deckout">—</span>
-            <span class="stat-note">survivors split</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Games simulated</span>
-            <span class="stat-value" id="sum-games">—</span>
-          </div>
-          <div class="stat" id="sum-compute-wrap">
-            <span class="stat-label">Compute</span>
-            <span class="stat-value" id="sum-compute">—</span>
-          </div>
-        </div>
-
-        <div class="seats" id="seats"></div>
-        </div>
-        <aside class="split-side">
-        <div id="cube-panel" class="cube-panel" hidden>
-          <div class="cube-head">
-            <div class="cube-face" id="cube-face">
-              <span class="cube-value" id="cube-value">1</span>
-              <span class="cube-owner" id="cube-owner">centered</span>
+          <div class="split-main">
+            <div class="summary stat-strip" id="summary">
+              <div class="stat stat--status">
+                <span class="stat-label">Status</span>
+                <span class="stat-value" id="sum-status">—</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Deck</span>
+                <span class="stat-value" id="sum-deck">—</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Deck runs out</span>
+                <span class="stat-value" id="sum-deckout">—</span>
+                <span class="stat-delta">survivors split</span>
+              </div>
             </div>
-            <div class="cube-text">
-              <h2 id="cube-title">Cube decision</h2>
-              <p id="cube-subtitle" class="muted">
-                Equities are for the player on turn, in points at the current
-                cube and as an equivalent win chance.
+            <div class="seats" id="seats"></div>
+          </div>
+          <aside class="split-side">
+            <div id="cube-panel" class="cube-panel panel" hidden>
+              <div class="cube-head">
+                <div class="cube-face" id="cube-face">
+                  <span class="cube-value" id="cube-value">1</span>
+                  <span class="cube-owner" id="cube-owner">centered</span>
+                </div>
+                <div class="cube-text">
+                  <h2 id="cube-title">Cube decision</h2>
+                  <p id="cube-subtitle" class="muted">
+                    Equities are for the player on turn, in points at the current cube and as an equivalent win chance.
+                  </p>
+                </div>
+                <div class="cube-actions" id="cube-actions"></div>
+              </div>
+              <div class="cube-options" id="cube-table"></div>
+            </div>
+
+            <section class="deck-panel panel">
+              <div class="deck-head">
+                <h2>Deck</h2>
+                <p class="muted" id="deck-help"></p>
+              </div>
+              <div class="deck-grid deck-matrix" id="deck-grid"></div>
+              <p class="phone-only mobile-hint">Swipe the deck to reach lower ranks.</p>
+              <p class="telemetry">
+                <span>Games simulated <b id="sum-games">—</b></span>
+                <span id="sum-compute-wrap">Compute <b id="sum-compute">—</b></span>
               </p>
-            </div>
-            <div class="cube-actions" id="cube-actions"></div>
-          </div>
-          <div class="cube-options" id="cube-table"></div>
-        </div>
-
-        <section class="deck-panel">
-          <div class="deck-head">
-            <h2>Deck</h2>
-            <p class="muted" id="deck-help"></p>
-          </div>
-          <div class="deck-grid deck-matrix" id="deck-grid"></div>
-        </section>
-        </aside>
+            </section>
+          </aside>
         </div>
       </section>
 
       <!-- ========== TRAINER ========== -->
-      <section id="view-trainer" class="view" hidden>
-        <div class="toolbar">
-          <label class="control check">
+      <section id="view-trainer" class="view" role="tabpanel" aria-label="Cube trainer" hidden>
+        <div class="toolbar panel panel--quiet">
+          <label class="check control">
             <input type="checkbox" id="tr-ace-high" checked />
             <span>Ace high for first draw</span>
           </label>
-          <label class="control check">
+          <label class="check control">
             <input type="checkbox" id="tr-peek" />
             <span>Show analysis before deciding</span>
           </label>
-          <div class="control">
-            <span class="label">Precision</span>
+          <div class="field field--select field--inline control">
+            <label for="tr-precision">Precision</label>
             <select id="tr-precision">
               <option value="fast">Fast</option>
               <option value="standard" selected>Standard</option>
@@ -179,16 +204,24 @@
           </div>
           <div class="spacer"></div>
           <div class="buttons">
-            <button id="tr-back" class="quiet" disabled title="Step back (←)">◀ Back</button>
-            <button id="tr-forward" class="quiet" disabled title="Step forward (→)">Forward ▶</button>
-            <button id="tr-live" class="quiet" hidden>Resume live</button>
-            <button id="tr-reset" class="quiet">Reset score</button>
-            <button id="tr-new" class="primary">New game</button>
+            <div class="btn-group step-group">
+              <button id="tr-back" class="btn btn--ghost" type="button" disabled aria-label="Step back" title="Step back (←)">
+                <svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-chevron-left" /></svg><span class="phone-sr">Back</span>
+              </button>
+              <button id="tr-forward" class="btn btn--ghost" type="button" disabled aria-label="Step forward" title="Step forward (→)">
+                <span class="phone-sr">Forward</span><svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-chevron-right" /></svg>
+              </button>
+            </div>
+            <div class="btn-group action-group">
+              <button id="tr-live" class="btn btn--ghost" type="button" hidden>Resume live</button>
+              <button id="tr-reset" class="btn btn--ghost" type="button">Reset score</button>
+              <button id="tr-new" class="btn btn--primary" type="button">New game</button>
+            </div>
           </div>
         </div>
 
         <div class="trainer-grid">
-          <div class="trainer-table">
+          <div class="trainer-table panel">
             <div class="score-row">
               <div class="score"><span class="stat-label">You</span><b id="score-you">0</b></div>
               <div class="cube-face small" id="tr-cube-face">
@@ -198,24 +231,23 @@
               <div class="score"><span class="stat-label">Bot</span><b id="score-bot">0</b></div>
             </div>
             <div class="trainer-seats" id="tr-seats"></div>
-            <div class="prompt" id="tr-prompt">Press New game to deal.</div>
+            <div class="prompt" id="tr-prompt" role="status" aria-live="polite">Press New game to deal.</div>
             <div class="action-row" id="tr-actions"></div>
           </div>
           <aside class="trainer-side">
-            <section class="analysis" id="tr-analysis">
+            <section class="analysis panel" id="tr-analysis">
               <h2 id="tr-analysis-title">Cube analysis</h2>
               <p class="muted" id="tr-analysis-note">
-                After each double, take, or pass you will see the solver's
-                equities here, with the correct play marked. Step back through
-                the game to see how the numbers moved.
+                After each double, take, or pass you will see the solver's equities here, with the correct play marked. Step back
+                through the game to see how the numbers moved.
               </p>
               <div id="tr-analysis-body"></div>
             </section>
-            <section class="analysis">
+            <section class="analysis panel">
               <h2>Session</h2>
               <div class="session-stats" id="tr-session"></div>
             </section>
-            <section class="analysis">
+            <section class="analysis panel">
               <h2>Log</h2>
               <ol class="log" id="tr-log"></ol>
             </section>
@@ -224,186 +256,195 @@
       </section>
 
       <!-- ========== ONLINE ========== -->
-      <section id="view-online" class="view" hidden>
-        <div id="online-lobby" class="report-grid">
-          <div class="report-card">
-            <h2>Play online</h2>
-            <p>
-              Peer-to-peer rooms for two to four players. The host's browser
-              runs the table; everyone sees every card, live equity, and bust
-              odds. Share the room code or the invite link.
-            </p>
-            <label class="field">
-              <span class="label">Your name</span>
-              <input id="on-name" maxlength="20" placeholder="Name" autocomplete="nickname" />
-            </label>
-            <div class="online-forms">
-              <div class="online-form">
-                <h3>Create a room</h3>
-                <div class="control">
-                  <span class="label">Seats</span>
-                  <div class="segmented" id="on-seat-count" role="group" aria-label="Seats">
-                    <button data-n="2">2</button><button data-n="3">3</button
-                    ><button data-n="4" class="active">4</button>
-                  </div>
-                </div>
-                <label class="control check"><input type="checkbox" id="on-cube" /><span>Doubling cube (2 seats)</span></label>
-                <label class="control check"><input type="checkbox" id="on-ace-high" checked /><span>Ace high for first draw</span></label>
-                <button id="on-create" class="primary">Create room</button>
-              </div>
-              <div class="online-form">
-                <h3>Join a room</h3>
-                <label class="field">
-                  <span class="label">Room code</span>
-                  <input id="on-code" maxlength="8" placeholder="ABCD" autocapitalize="characters" />
-                </label>
-                <button id="on-join">Join room</button>
-                <button id="on-resume" class="quiet" hidden>Resume previous table</button>
+      <section id="view-online" class="view" role="tabpanel" aria-label="Play online" hidden>
+        <div id="online-lobby" class="lobby-wrap">
+          <div class="lobby panel">
+            <div class="panel-head">
+              <div>
+                <h2>Play online</h2>
+                <p>
+                  Peer-to-peer rooms for two to four players. The host's browser runs the table; everyone sees every card, live
+                  equity, and bust odds. Share the room code or the invite link.
+                </p>
               </div>
             </div>
-            <p id="on-error" class="error-text" hidden></p>
+            <div class="panel-body">
+              <div class="field lobby-name">
+                <label for="on-name">Your name</label>
+                <input id="on-name" maxlength="20" placeholder="Name" autocomplete="nickname" />
+              </div>
+              <div class="online-forms">
+                <div class="online-form panel panel--quiet">
+                  <h3>Create a room</h3>
+                  <div class="control">
+                    <span class="label" id="on-seat-count-label">Seats</span>
+                    <div class="segmented" id="on-seat-count" role="group" aria-labelledby="on-seat-count-label">
+                      <button type="button" data-n="2" aria-pressed="false">2</button><button type="button" data-n="3" aria-pressed="false">3</button
+                      ><button type="button" data-n="4" class="active" aria-pressed="true">4</button>
+                    </div>
+                  </div>
+                  <label class="check"><input type="checkbox" id="on-cube" /><span>Doubling cube (2 seats)</span></label>
+                  <label class="check"><input type="checkbox" id="on-ace-high" checked /><span>Ace high for first draw</span></label>
+                  <button id="on-create" class="btn btn--primary" type="button">Create room</button>
+                </div>
+                <div class="online-form panel panel--quiet">
+                  <h3>Join a room</h3>
+                  <div class="field">
+                    <label for="on-code">Room code</label>
+                    <input id="on-code" maxlength="8" placeholder="ABCD" autocapitalize="characters" />
+                  </div>
+                  <button id="on-join" class="btn" type="button">Join room</button>
+                  <button id="on-resume" class="btn btn--ghost" type="button" hidden>Resume previous table</button>
+                </div>
+              </div>
+              <p id="on-error" class="error-text" role="alert" hidden></p>
+            </div>
           </div>
         </div>
         <div id="online-room" hidden>
-          <div class="toolbar">
+          <div class="toolbar panel panel--quiet">
             <div class="control">
               <span class="label">Room</span>
               <b id="on-room-code" class="room-code">—</b>
-              <span id="on-connection" class="conn">Offline</span>
+              <span id="on-connection" class="conn badge" data-state="offline">Offline</span>
             </div>
-            <div class="control"><span class="label">Players</span><span id="on-roster"></span></div>
+            <div class="control"><span class="label">Players</span><span id="on-roster" class="roster"></span></div>
             <div class="spacer"></div>
             <div class="buttons">
-              <button id="on-copy" class="quiet">Copy invite</button>
-              <button id="on-leave" class="quiet">Leave</button>
-              <button id="on-start" class="primary" hidden>Start game</button>
+              <div class="btn-group action-group">
+                <button id="on-copy" class="btn" type="button">
+                  <svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-link" /></svg>Copy invite
+                </button>
+                <button id="on-leave" class="btn btn--ghost" type="button">Leave</button>
+                <button id="on-start" class="btn btn--primary" type="button" hidden>Start game</button>
+              </div>
             </div>
           </div>
-          <div class="summary">
-            <div class="stat"><span class="stat-label">Status</span><span class="stat-value" id="on-status">—</span></div>
+          <div class="summary stat-strip">
+            <div class="stat stat--status"><span class="stat-label">Status</span><span class="stat-value" id="on-status">—</span></div>
             <div class="stat"><span class="stat-label">Deck</span><span class="stat-value" id="on-deck">—</span></div>
-            <div class="stat"><span class="stat-label">Deck runs out</span><span class="stat-value" id="on-deckout">—</span><span class="stat-note">survivors split</span></div>
+            <div class="stat">
+              <span class="stat-label">Deck runs out</span><span class="stat-value" id="on-deckout">—</span>
+              <span class="stat-delta">survivors split</span>
+            </div>
             <div class="stat"><span class="stat-label">Games</span><span class="stat-value" id="on-games">0</span></div>
           </div>
           <div class="split">
-          <div class="split-main">
-          <div class="prompt" id="on-prompt"></div>
-          <div class="action-row" id="on-actions"></div>
-          <div class="seats" id="on-seats"></div>
-          </div>
-          <aside class="split-side">
-          <div id="on-cube-panel" class="cube-panel" hidden>
-            <div class="cube-head">
-              <div class="cube-face">
-                <span class="cube-value" id="on-cube-value">1</span>
-                <span class="cube-owner" id="on-cube-owner">centered</span>
-              </div>
-              <div class="cube-text">
-                <h2 id="on-cube-title">Cube</h2>
-                <p id="on-cube-subtitle" class="muted"></p>
-              </div>
+            <div class="split-main">
+              <div class="prompt" id="on-prompt" role="status" aria-live="polite"></div>
+              <div class="action-row" id="on-actions"></div>
+              <div class="seats" id="on-seats"></div>
             </div>
-            <div class="cube-options" id="on-cube-table"></div>
-          </div>
-          <section class="analysis">
-            <h2>Log</h2>
-            <ol class="log" id="on-log"></ol>
-          </section>
-          </aside>
+            <aside class="split-side">
+              <div id="on-cube-panel" class="cube-panel panel" hidden>
+                <div class="cube-head">
+                  <div class="cube-face">
+                    <span class="cube-value" id="on-cube-value">1</span>
+                    <span class="cube-owner" id="on-cube-owner">centered</span>
+                  </div>
+                  <div class="cube-text">
+                    <h2 id="on-cube-title">Cube</h2>
+                    <p id="on-cube-subtitle" class="muted"></p>
+                  </div>
+                </div>
+                <div class="cube-options" id="on-cube-table"></div>
+              </div>
+              <section class="analysis panel">
+                <h2>Log</h2>
+                <ol class="log" id="on-log"></ol>
+              </section>
+            </aside>
           </div>
         </div>
       </section>
 
       <!-- ========== REPORTS ========== -->
-      <section id="view-reports" class="view" hidden>
-        <div id="reports-loading" class="loading">Loading precomputed reports…</div>
+      <section id="view-reports" class="view" role="tabpanel" aria-label="Reports" hidden>
+        <div id="reports-loading" class="loading progress" aria-busy="true">
+          <div class="progress-label"><span>Loading precomputed reports…</span></div>
+          <div class="bar bar--indeterminate"></div>
+        </div>
         <div id="reports" hidden></div>
       </section>
     </main>
 
-    <dialog id="rules-dialog" aria-labelledby="rules-title">
+    <dialog id="rules-dialog" class="dialog dialog--wide dialog--sheet" aria-labelledby="rules-title">
       <div class="dialog-head">
         <h2 id="rules-title">Rules &amp; method</h2>
-        <button class="quiet" data-close="rules-dialog" aria-label="Close">✕</button>
+        <button class="btn btn--ghost btn--icon" type="button" data-close="rules-dialog" aria-label="Close">
+          <svg class="icon" aria-hidden="true"><use href="../../../shared/icons.svg#i-close" /></svg>
+        </button>
       </div>
-      <div class="dialog-body">
+      <div class="dialog-body rules-body">
         <h3>The game</h3>
         <ul>
           <li>Two to four players are each dealt one card from a 52-card deck.</li>
           <li>
-            The player holding the lowest card draws first. Ties are broken by
-            suit: clubs are lowest, then diamonds, hearts, spades. By default
-            the ace counts as the highest card for this rule; untick the option
-            to count it low.
+            The player holding the lowest card draws first. Ties are broken by suit: clubs are lowest, then diamonds, hearts,
+            spades. By default the ace counts as the highest card for this rule; untick the option to count it low.
           </li>
           <li>Players draw one card at a time in clockwise seat order and keep every card.</li>
           <li>
-            A player busts when their cards contain a straight or better
-            (straight, flush, full house, four of a kind, straight flush, royal
-            flush). Aces play high or low in straights, no wraparound. A busted
-            player draws no more cards.
+            A player busts when their cards contain a straight or better (straight, flush, full house, four of a kind, straight
+            flush, royal flush). Aces play high or low in straights, no wraparound. A busted player draws no more cards.
           </li>
           <li>The last player still drawing wins. If the deck runs out first, the survivors split the pot equally.</li>
         </ul>
         <h3>Statistics</h3>
         <ul>
           <li>
-            <b>Equity</b> is the chance to win the pot, from a Monte Carlo
-            simulation of the whole table from the current position (splits
-            count fractionally).
+            <b>Equity</b> is the chance to win the pot, from a Monte Carlo simulation of the whole table from the current position
+            (splits count fractionally).
           </li>
           <li>
-            <b>Bust next / in 2 / in 3</b> are exact: every one-, two- and
-            three-card completion from the remaining deck is enumerated.
+            <b>Bust next / in 2 / in 3</b> are exact: every one-, two- and three-card completion from the remaining deck is
+            enumerated.
           </li>
           <li>
-            <b>Draws to bust</b> counts a player's own further draws including
-            the bust card, as if they alone kept drawing from the current deck.
-            The first three draws are exact and the tail is simulated.
+            <b>Draws to bust</b> counts a player's own further draws including the bust card, as if they alone kept drawing from
+            the current deck. The first three draws are exact and the tail is simulated.
           </li>
           <li>
-            Seventeen cards always contain five of a suit, so a hand of
-            <i>n</i> cards busts within 17 − <i>n</i> draws. With four players
-            the deck can run out: three players at 17, 17 and 9 cards leave a
-            fourth player with only 9 cards and no deck.
+            Seventeen cards always contain five of a suit, so a hand of <i>n</i> cards busts within 17 − <i>n</i> draws. With four
+            players the deck can run out: three players at 17, 17 and 9 cards leave a fourth player with only 9 cards and no deck.
           </li>
         </ul>
         <h3>Doubling cube</h3>
         <ul>
           <li>
-            Money-game cube, as in backgammon. It starts centered at 1. Before
-            drawing, the player on turn may <b>double</b>. The opponent then
-            <b>takes</b> (the cube doubles and they own it; only the owner may
-            redouble) or <b>passes</b> (the doubler wins the current stake).
+            Money-game cube, as in backgammon. It starts centered at 1. Before drawing, the player on turn may <b>double</b>. The
+            opponent then <b>takes</b> (the cube doubles and they own it; only the owner may redouble) or <b>passes</b> (the doubler
+            wins the current stake).
           </li>
           <li>
-            The solver expands every possible next card exactly. Each resulting
-            position is valued by a dynamic program over the cube states on a
-            race model that uses each player's hazard sequence (probability of
-            busting on each future draw given survival), with the first draws
-            exact and the tail simulated. Deep precision adds a second exact
-            ply.
+            The solver expands every possible next card exactly. Each resulting position is valued by a dynamic program over the
+            cube states on a race model that uses each player's hazard sequence (probability of busting on each future draw given
+            survival), with the first draws exact and the tail simulated. Deep precision adds a second exact ply.
           </li>
           <li>
-            Shown equities are in points at the current cube value and as the
-            equivalent win chance ((E + 1) / 2 at a cube of 1). The correct
-            double decision compares No double against the smaller of
-            Double/Take and Double/Pass; the correct response takes when
-            Double/Take beats −1 cube.
+            Shown equities are in points at the current cube value and as the equivalent win chance ((E + 1) / 2 at a cube of 1).
+            The correct double decision compares No double against the smaller of Double/Take and Double/Pass; the correct response
+            takes when Double/Take beats −1 cube.
           </li>
           <li>
-            In this game the take point is the dead-cube 25%: two-ply analysis
-            moves take equities by less than 0.005, because games usually end
-            by a bust before the cube owner can redouble. Doubles come early
-            (65% win chance on average) since one card can end the game.
+            In this game the take point is the dead-cube 25%: two-ply analysis moves take equities by less than 0.005, because
+            games usually end by a bust before the cube owner can redouble. Doubles come early (65% win chance on average) since
+            one card can end the game.
           </li>
         </ul>
+        <p class="field-hint">
+          <a href="../">Dodge reports</a> ·
+          <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/poker/dodge/simulator" target="_blank" rel="noopener">Source on GitHub ↗</a>
+        </p>
       </div>
     </dialog>
 
-    <script src="../../../shared/cards.js?v=20261005"></script>
+    <div id="toast" class="toast-stack" role="status" aria-live="polite"></div>
+    <script src="../../../shared/cards.js?v=20261016"></script>
+    <script src="../../../shared/tabs.js?v=20261016"></script>
+    <script src="../../../shared/sheet.js?v=20261016"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="../../../shared/peer-room.js?v=20260908a"></script>
-    <script type="module" src="./app.js?v=20261007"></script>
+    <script src="../../../shared/peer-room.js?v=20261016"></script>
+    <script type="module" src="./app.js?v=20261016"></script>
   </body>
 </html>

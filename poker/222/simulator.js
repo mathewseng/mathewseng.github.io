@@ -2,10 +2,14 @@
 // Two-player tables follow the information model: numbers are against the
 // opponent's range while a cube action remains, and perfect information once
 // hands are tabled (or when "Table hands" is ticked).
-import { dealTable, shuffledDeck, remainingDeck } from "./engine.mjs";
-import { $, el, button, cardEl, renderSeats, fmtInt, STREET_CARDS, streetName } from "./ui.js";
+import { dealTable, shuffledDeck, remainingDeck, cardLabel } from "./engine.mjs";
+import { $, el, button, badge, cardEl, cardIndex, emptySlot, renderSeats, fmtInt, STREET_CARDS, streetName } from "./ui.js";
 import { cubeSituation, renderCubePanel, renderHiddenCubePanel, fillVariantSelect, fillDropSelect, fillScoringSelect, parseCubeState } from "./cube-view.js";
 import { computeView, historyFromCube, takenOnOptions } from "./table-view.js";
+
+const PlayingCards = window.PlayingCards;
+const Sheet = window.Sheet;
+const phone = matchMedia("(max-width: 700px)");
 
 export function initSimulator({ pool }) {
   const sim = {
@@ -29,12 +33,22 @@ export function initSimulator({ pool }) {
 
   const countEl = $("player-count");
   for (let k = 2; k <= 7; k++) {
-    const b = button(String(k), k === sim.n ? "active" : "", () => {
+    const b = el("button", k === sim.n ? "active" : "", String(k));
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(k === sim.n));
+    b.addEventListener("click", () => {
       sim.n = k;
-      countEl.querySelectorAll("button").forEach((x) => x.classList.toggle("active", Number(x.textContent) === k));
+      syncCount();
       newDeal();
     });
     countEl.append(b);
+  }
+  function syncCount() {
+    countEl.querySelectorAll("button").forEach((x) => {
+      const on = Number(x.textContent) === sim.n;
+      x.classList.toggle("active", on);
+      x.setAttribute("aria-pressed", String(on));
+    });
   }
   fillVariantSelect($("sim-variant"), sim.variant);
   fillScoringSelect($("sim-scoring"), sim.scoring);
@@ -76,6 +90,51 @@ export function initSimulator({ pool }) {
   });
   $("sim-back").addEventListener("click", () => setStreet(sim.street - 1));
   $("sim-next").addEventListener("click", () => setStreet(sim.street + 1));
+  $("sim-selection-cancel").addEventListener("click", () => {
+    sim.selected = null;
+    render();
+  });
+  $("sim-selection-deck").addEventListener("click", () => openDeckSheet());
+
+  /* ---------- the deck: a side panel on desktop, a sheet on phones ---------- */
+  const deckPanel = $("sim-deck-panel");
+  const deckHome = deckPanel.parentElement;
+  const deckDialog = $("sim-deck-dialog");
+  let swapped = false;
+  let swappedIn = null; // the card a sheet swap put in the selected card's place
+  let focusCard = null; // data-card of the card the next render should focus
+  function placeDeck() {
+    const target = phone.matches ? $("sim-deck-dialog-body") : deckHome;
+    if (deckPanel.parentElement !== target) target.append(deckPanel);
+  }
+  function openDeckSheet() {
+    if (!phone.matches || deckDialog.open) return;
+    placeDeck();
+    swapped = false;
+    swappedIn = null;
+    const card = sim.selected?.card;
+    Sheet.open(deckDialog, {
+      dismissible: true,
+      returnFocus: false,
+      onClose: () => {
+        // Closing the sheet without swapping cancels the selection; focus goes
+        // back to the card that was selected, or after a swap to the card that
+        // took its place.
+        if (!swapped && sim.selected) {
+          sim.selected = null;
+          render();
+        }
+        const target = swapped ? swappedIn : card;
+        const back = target != null ? document.querySelector(`#view-sim button.playing-card[data-card="${target}"]`) : null;
+        (back || $("sim-board-cards").querySelector("button") || $("main")).focus({ preventScroll: true });
+      },
+    });
+  }
+  phone.addEventListener("change", () => {
+    if (deckDialog.open) deckDialog.close();
+    placeDeck();
+  });
+  placeDeck();
 
   function newDeal() {
     const t = dealTable(sim.n);
@@ -105,8 +164,7 @@ export function initSimulator({ pool }) {
       scoring: sim.scoring,
       precision: precision(),
       onProgress: (f) => {
-        const m = $("sim-meta");
-        if (!sim.view) m.replaceChildren(el("span", "muted", `Solving the equilibrium… ${Math.round(f * 100)}%`));
+        if (!sim.view) renderProgress(f);
       },
     };
   }
@@ -121,13 +179,15 @@ export function initSimulator({ pool }) {
       render();
     } catch (error) {
       console.error(error);
-      $("sim-meta").textContent = `Computation failed: ${error.message}`;
+      const meta = $("sim-meta");
+      meta.replaceChildren(el("span", "error-text", `Computation failed: ${error.message}`));
     }
   }
   function onCardClick(slot) {
     if (sim.selected && sim.selected.card === slot.card) sim.selected = null;
     else sim.selected = slot;
     render();
+    if (sim.selected) openDeckSheet();
   }
   function swapIn(card) {
     const sel = sim.selected;
@@ -137,6 +197,9 @@ export function initSimulator({ pool }) {
     setAt(from, card);
     if (where) setAt(where, sel.card);
     sim.selected = null;
+    swapped = true;
+    focusCard = swappedIn = String(card);
+    if (deckDialog.open) deckDialog.close();
     recompute();
   }
   function locate(card) {
@@ -151,39 +214,68 @@ export function initSimulator({ pool }) {
     if (pos.seat < 0) sim.board[pos.index] = card;
     else sim.hands[pos.seat][pos.index] = card;
   }
+  function renderProgress(f) {
+    const meta = $("sim-meta");
+    const bar = el("div", "progress progress--inline");
+    bar.setAttribute("aria-busy", "true");
+    const label = el("div", "progress-label");
+    label.append(el("span", "", "Solving the equilibrium…"), el("span", "", `${Math.round(f * 100)}%`));
+    const track = el("div", "bar");
+    track.style.setProperty("--value", String(f));
+    bar.append(label, track);
+    meta.replaceChildren(bar);
+  }
   function render() {
+    // Re-rendering rebuilds every card button: keep keyboard focus on the same
+    // card (or on the card just swapped in, which takes the old one's place).
+    const active = document.activeElement;
+    const keepFocus = focusCard ?? (active?.matches?.("#view-sim button.playing-card") ? active.dataset.card : null);
+    focusCard = null;
     const board = visibleBoard();
     const view = sim.view;
     const steps = $("sim-streets");
     steps.replaceChildren();
-    for (let s = 0; s < 4; s++) steps.append(button(streetName(s), `${s === sim.street ? "active" : s < sim.street ? "done" : ""}`, () => setStreet(s)));
+    for (let s = 0; s < 4; s++) {
+      const b = button(streetName(s), `btn--sm step${s === sim.street ? " active" : s < sim.street ? " done" : ""}`, () => setStreet(s));
+      b.setAttribute("aria-pressed", String(s === sim.street));
+      steps.append(b);
+    }
     $("sim-back").disabled = sim.street === 0;
     $("sim-next").disabled = sim.street === 3;
-    $("sim-next").textContent = sim.street < 3 ? `Deal ${streetName(sim.street + 1).toLowerCase()} ▶` : "River dealt";
+    $("sim-next").querySelector(".btn-label").textContent = sim.street < 3 ? `Deal ${streetName(sim.street + 1).toLowerCase()}` : "River dealt";
     const bc = $("sim-board-cards");
     bc.replaceChildren();
     for (let i = 0; i < 5; i++) {
       if (i < board.length) {
         const c = board[i];
-        const node = cardEl(c, sim.selected?.card === c ? "selected clickable" : "clickable");
+        const isSelected = sim.selected?.card === c;
+        const node = cardEl(c, `clickable${isSelected ? " selected" : ""}`);
+        node.setAttribute("aria-label", `${cardLabel(c)} on the board${isSelected ? ", selected" : ""}: select to swap`);
         node.addEventListener("click", () => onCardClick({ seat: -1, card: c }));
         bc.append(node);
-      } else bc.append(el("span", "slot"));
+      } else bc.append(emptySlot());
     }
     const meta = $("sim-meta");
     meta.replaceChildren();
     if (view) {
       if (view.mode === "perfect") {
         const s = view.stats;
-        meta.append(el("span", "tag info-tag", "Tabled · perfect information"));
+        meta.append(badge("Tabled · perfect information", "info"));
         meta.append(spanb(`${s.exact ? "Exact" : "Sampled"}: `, `${fmtInt(s.count)} runouts`), spanb("Compute: ", `${s.ms.toFixed(0)} ms`));
       } else {
-        meta.append(el("span", "tag info-tag", "Hidden hands · numbers vs range"));
+        meta.append(badge("Hidden hands · numbers vs range"));
         const p0 = view.stats.players.find(Boolean);
         if (p0) meta.append(spanb(`${p0.exact ? "Exact" : "Sampled"}: `, `${fmtInt(p0.count)} opponent hands × runouts`));
         if (view.decision) meta.append(spanb("Solver: ", `${view.decision.solve.ms} ms`));
       }
     } else meta.append(el("span", "muted", "Computing…"));
+    // The selection message lives in the board strip, next to the cards.
+    const selection = $("sim-selection");
+    if (sim.selected) {
+      const what = sim.selected.seat < 0 ? `${cardLabel(sim.selected.card)} from the board` : `${cardLabel(sim.selected.card)} from Seat ${sim.selected.seat + 1}`;
+      $("sim-selection-text").textContent = `Selected ${what}. Pick a deck card to swap it in, or select the card again to cancel.`;
+      selection.hidden = false;
+    } else selection.hidden = true;
     const panel = $("sim-cube");
     panel.hidden = sim.n !== 2;
     if (sim.n === 2) {
@@ -220,6 +312,9 @@ export function initSimulator({ pool }) {
       pending: !view,
     });
     renderDeck();
+    if (keepFocus != null && !deckDialog.open) {
+      document.querySelector(`#view-sim button.playing-card[data-card="${keepFocus}"]`)?.focus({ preventScroll: true });
+    }
   }
   function spanb(label, value) {
     const s = el("span");
@@ -229,25 +324,38 @@ export function initSimulator({ pool }) {
   function renderDeck() {
     const grid = $("sim-deck");
     grid.replaceChildren();
+    // held: card -> { mark (what the deck card shows), who (full description) }
     const held = new Map();
-    sim.hands.forEach((h, i) => h.forEach((c) => held.set(c, `S${i + 1}`)));
-    sim.board.forEach((c, i) => held.set(c, i < STREET_CARDS[sim.street] ? "B" : "b"));
+    sim.hands.forEach((h, i) => h.forEach((c) => held.set(c, { mark: String(i + 1), who: `held by Seat ${i + 1}` })));
+    sim.board.forEach((c, i) => {
+      const dealt = i < STREET_CARDS[sim.street];
+      held.set(c, { mark: "B", who: dealt ? "on the board" : "an undealt board card", undealt: !dealt });
+    });
     $("sim-deck-help").textContent = sim.selected
-      ? `Selected ${sim.selected.seat < 0 ? "a board card" : `a card from Seat ${sim.selected.seat + 1}`}. Click a deck card to swap it in, or click the card again to cancel.`
-      : "Click a card in a hand or on the board, then click a deck card to swap it in. Undealt board cards are marked b.";
-    for (let r = 12; r >= 0; r--)
-      for (let s = 3; s >= 0; s--) {
-        const c = r * 4 + s;
-        const who = held.get(c);
-        const b = el("button", `deck-card${who ? " held" : ""}`);
-        b.type = "button";
-        b.append(cardEl(c));
-        if (who) b.append(el("span", "who", who));
-        b.title = who ? `Held: ${who}` : "Free";
-        b.disabled = !sim.selected || (who != null && c === sim.selected.card);
-        b.addEventListener("click", () => swapIn(c));
-        grid.append(b);
+      ? `Pick a card to swap in for ${cardLabel(sim.selected.card)}.`
+      : "Select a card in a hand or on the board, then pick a deck card to swap it in. Numbers mark the seat holding a card, B the board; undealt board cards are dimmed.";
+    PlayingCards.deckMatrix().forEach((id, i) => {
+      // Each suit row opens with its suit mark: the desktop deck's cards are
+      // too small for shared/cards.css to draw one (hidden on phones).
+      if (i % 13 === 0) {
+        const suit = PlayingCards.normalize(id).suit;
+        const mark = el("span", "deck-suit", PlayingCards.SUIT_SYMBOL[suit]);
+        mark.setAttribute("aria-hidden", "true");
+        grid.append(mark);
       }
+      const c = cardIndex(id);
+      const who = held.get(c);
+      const b = el("button", `deck-card${who ? " held" : ""}${who?.undealt ? " undealt" : ""}`);
+      b.type = "button";
+      b.append(cardEl(c));
+      if (who) b.append(el("span", "owner", who.mark));
+      const state = who ? who.who : "free";
+      b.title = `${cardLabel(c)}: ${state}`;
+      b.setAttribute("aria-label", `${cardLabel(c)}, ${state}`);
+      b.disabled = !sim.selected || (who != null && c === sim.selected.card);
+      b.addEventListener("click", () => swapIn(c));
+      grid.append(b);
+    });
   }
   newDeal();
   return {
@@ -256,7 +364,7 @@ export function initSimulator({ pool }) {
     },
     load({ hands, board, btn, variant, cube }) {
       sim.n = hands.length;
-      countEl.querySelectorAll("button").forEach((x) => x.classList.toggle("active", Number(x.textContent) === sim.n));
+      syncCount();
       sim.hands = hands.map((h) => h.slice());
       const rest = remainingDeck(hands, [board]);
       sim.board = board.concat(rest.slice(0, 5 - board.length));
