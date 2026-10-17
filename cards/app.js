@@ -707,6 +707,8 @@
     $("#undoBtn").disabled = net.mode !== "client" && !history.length;
     $("#redoBtn").disabled = net.mode !== "client" && !future.length;
     $("#reactBtn").hidden = net.mode === "local";
+    // The log and chat sheet gets a topbar button in an online room; locally it lives in More.
+    $("#logBtn").hidden = net.mode === "local";
     renderRoomBadge();
     renderGuestChrome();
   }
@@ -1956,8 +1958,10 @@
         const next = E.createTable(preset, { players: names });
         next.rev = (state?.rev || 0) + 1;
         replaceState(next, `${preset.name} ready — ${n} player${n > 1 ? "s" : ""}`);
+        const firstRun = !load(STORE.seen, false);
         store(STORE.seen, true);
-        if (!load(STORE.toured, false) && !navigator.webdriver) setTimeout(startTour, 450);
+        // First run: the gallery is the one opening screen; the tour is offered, not stacked on it.
+        if (firstRun && !load(STORE.toured, false)) setTimeout(() => toast("New here? More → How it works has the tour and the shortcuts."), 450);
       },
     });
   }
@@ -2314,8 +2318,8 @@
       <p class="hint"><b>Play rules</b> live on groups: whose turn it is, follow suit, match suit or rank, build up or down, wild ranks, one card each, pass the turn after playing. The Rules tab switches checks off, to warnings (great for playtests) or enforced.</p>
       <p class="hint"><b>Triggers</b> fire actions by themselves: when a trick is full, when the deck runs out, when a hand empties, when a phase starts, when the game ends. <b>Custom scoring</b> (Scores tab) defines card values and bonuses you can attach to any group.</p>
       <p class="hint"><b>Design tools</b>: save games to My games with version history, share them as links, generate a rules document from the table, simulate deals thousands of times, replay deals with seeded shuffles, and track playtest results by seat.</p>
-      <p class="hint"><b>Start fast</b>: New game → ✨ Design your own builds a playable table from a few answers, and new groups and actions have one-click templates (hand, discard, trick, foundation, meld… deal, draw, take trick, reshuffle, showdown…).</p>
-      <p class="hint"><b>Bots</b> (Players tab, 🤖) make random legal plays under your rules, so a table full of bots playtests whole hands; set what they do when stuck in Play → Bots. Seats can have <b>teams</b>, groups can require <b>sets or runs</b>, Log → Rewind jumps back in time, and Deck → Print & play makes a paper prototype.</p>
+      <p class="hint"><b>Start fast</b>: New game → Design your own builds a playable table from a few answers, and new groups and actions have one-click templates (hand, discard, trick, foundation, meld… deal, draw, take trick, reshuffle, showdown…).</p>
+      <p class="hint"><b>Bots</b> (Players tab, the bot toggle) make random legal plays under your rules, so a table full of bots playtests whole hands; set what they do when stuck in Play → Bots. Seats can have <b>teams</b>, groups can require <b>sets or runs</b>, Log → Rewind jumps back in time, and Deck → Print & play makes a paper prototype.</p>
       <p class="hint"><b>Social mechanics</b>: piles can be <b>slapped</b> in real time (Jacks, pairs, sandwiches…: first slap wins the pile), take <b>bluffs</b> (play face down, claim a rank, anyone can call it), run <b>face-card challenges</b> (Egyptian Ratscrew), or be <b>climbed</b> with bigger sets. Select your cards and 🤝 <b>Offer</b> them to trade with another player. <b>Real-time</b> games (Speed, or tick it in Play → Bots) drop turns entirely: everyone plays at once. Bots slap, bluff, call, trade and race too, and Scores → Table talk tallies who did what.</p>
       <p class="hint"><b>Balance</b>: Tools → Bot games plays hundreds of games to show seat fairness, game length and which cards the winners played; Rules → What changed? diffs your edits against any saved version.</p>
       <p class="hint"><b>View</b>: “All hands” for one shared screen, “Pass &amp; play” hides hands between turns, “X-ray” shows everything for design work, or pick a seat. Online rooms keep hands private per player.</p>
@@ -5312,6 +5316,32 @@
     const below = rect.bottom + 14 + 170 < window.innerHeight;
     bubble.style.top = (below ? rect.bottom + 14 : Math.max(12, rect.top - 14 - bubble.offsetHeight)) + "px";
     bubble.style.left = Math.max(12, Math.min(window.innerWidth - width - 12, rect.left + rect.width / 2 - width / 2)) + "px";
+  }
+
+  // =============================================================== STAGE
+  /**
+   * The one bottom stage holds the dock, the selection actions and the replay transport.
+   * It shows while any of them shows, and its height is measured into --stage-h so the
+   * felt, the phone sheet and the toasts sit above it instead of computing offsets from
+   * each other. A landscape phone puts the stage in a side column, where it takes no height.
+   */
+  function bindStage() {
+    const stage = $("#stage");
+    if (!stage) return;
+    const bars = ["#selectionBar", "#replayBar", "#dock"].map((selector) => $(selector));
+    const measure = () => {
+      const docked = !stage.hidden && getComputedStyle(stage).position !== "static";
+      document.body.style.setProperty("--stage-h", (docked ? Math.ceil(stage.getBoundingClientRect().height) : 0) + "px");
+    };
+    const sync = () => {
+      const show = bars.some((bar) => bar && !bar.hidden);
+      if (stage.hidden === show) stage.hidden = !show;
+      measure();
+    };
+    if (typeof MutationObserver === "function") new MutationObserver(sync).observe(stage, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+    if (typeof ResizeObserver === "function") new ResizeObserver(measure).observe(stage);
+    window.addEventListener("resize", measure);
+    sync();
   }
 
   // ================================================================ DOCK

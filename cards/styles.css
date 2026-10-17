@@ -13,6 +13,7 @@ body {
 }
 
 body {
+  --stage-h: 0px; /* measured from the bottom stage by app.js (bindStage) */
   --card-width: 70px;
   --ct-felt-1: var(--felt-light);
   --ct-felt-2: var(--felt-dark);
@@ -76,12 +77,16 @@ a {
 /* ---------- Shell ---------- */
 
 .app-shell {
-  --stage-h: 0px;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   grid-template-columns: minmax(0, 1fr);
   height: 100%;
   padding: 0 var(--s-3) env(safe-area-inset-bottom);
+}
+
+/* The stage carries the safe-area inset itself while it shows. */
+.app-shell:has(> .ct-stage:not([hidden])) {
+  padding-bottom: 0;
 }
 
 .topbar {
@@ -321,7 +326,7 @@ body.side-collapsed .side {
 .table {
   position: relative;
   min-height: 0;
-  padding: 14px 14px calc(24px + var(--stage-h));
+  padding: 14px 14px 24px;
   border: 1px solid var(--ct-line);
   border-radius: var(--r-lg);
   background:
@@ -691,8 +696,8 @@ body.side-collapsed .side {
 }
 
 .zone-tools .btn {
-  min-height: 28px;
-  padding: 0 7px;
+  min-height: 36px;
+  padding: 0 9px;
   border-color: color-mix(in srgb, var(--ink) 12%, transparent);
   background: color-mix(in srgb, black 25%, transparent);
   color: var(--ct-felt-ink);
@@ -700,8 +705,8 @@ body.side-collapsed .side {
 }
 
 .zone-tools .btn--icon {
-  width: 28px;
-  min-width: 28px;
+  width: 36px;
+  min-width: 36px;
   padding: 0;
 }
 
@@ -2746,11 +2751,13 @@ input[type="range"] {
 /* ---------- Toasts (the kit stack, above the stage) ---------- */
 
 .toasts {
-  bottom: calc(12px + var(--stage-h, 0px) + env(safe-area-inset-bottom));
+  bottom: calc(12px + max(var(--stage-h, 0px), env(safe-area-inset-bottom)));
 }
 
+/* Errors stack at the top so they never sit on the polite stack. */
 .toasts--alert {
-  bottom: calc(12px + var(--stage-h, 0px) + env(safe-area-inset-bottom));
+  top: calc(12px + env(safe-area-inset-top));
+  bottom: auto;
 }
 
 .toast .toast-close {
@@ -3747,12 +3754,12 @@ table.compare th {
   }
 
   .zone-tools .btn {
-    min-height: 32px;
+    min-height: 44px;
   }
 
   .zone-tools .btn--icon {
-    width: 32px;
-    min-width: 32px;
+    width: 44px;
+    min-width: 44px;
   }
 
   .menu button {
@@ -3770,14 +3777,12 @@ table.compare th {
   }
 
   /* Compact controls on the felt get a 44px touch target through an invisible halo. */
-  .zone-tools .btn,
   .pill.phase,
   .eval.scoreable {
     position: relative;
     z-index: 1;
   }
 
-  .zone-tools .btn::before,
   .pill.phase::before {
     content: "";
     position: absolute;
@@ -3827,7 +3832,23 @@ table.compare th {
     display: none;
   }
 
+  /* One topbar row: the page name gives way (ellipsis) before the actions wrap. */
+  .topbar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .crumbs {
+    flex: 1 1 auto;
+    gap: 8px;
+  }
+
+  .crumbs > a {
+    flex: none;
+  }
+
   .top-actions {
+    flex: none;
     gap: 4px;
   }
 
@@ -3874,7 +3895,7 @@ table.compare th {
   }
 
   .table {
-    padding: 10px 8px calc(24px + var(--stage-h));
+    padding: 10px 8px 24px;
   }
 
   .seats {
