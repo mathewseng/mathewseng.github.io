@@ -115,7 +115,12 @@ supplies), dice choices and the dice dialog; they keep their design.
 - Phones (live table): `#message` and the draft line ellipsize on one
   line each; a wrapped status line pushed the exact-fit 375×667 stage
   past the viewport (`assistance.cjs` "Arial phone layout" failed
-  intermittently in full runs).
+  intermittently in full runs). Correction (integration, 2026-10-17): the
+  one-line status was not the cause of that failure. The real cause was
+  `#confirm` sitting in `#actions` for one rendering update after a resize,
+  before the desktopTable media-query listener moved it; fixed in CSS by
+  redesign/bg-assist-fix (see backgammon/styles.css, the comment above the
+  two `#confirm` home rules).
 - Hub: group heads, tags and the phone footer from `shared/hub.css` were
   11.2–11.8px; a hub-scoped override sets them to `--t-xs` (the shell
   sweep now reports 0 sub-12px nodes on `/backgammon/`).
