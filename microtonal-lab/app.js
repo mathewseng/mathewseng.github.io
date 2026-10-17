@@ -3,7 +3,19 @@
 
   const TWO_PI = Math.PI * 2;
   const ROOT_FREQUENCY = 261.63;
-  const COLOR_PALETTE = ["#57d6ff", "#a7f06d", "#ff5d92", "#f7c75c", "#ad8cff", "#5ff0c8"];
+  // The scope reads its colours from shared/tokens.css (see readTheme); the
+  // six categorical tokens colour pitch classes, where colour carries meaning.
+  const THEME_TOKENS = {
+    canvas: "--surface",
+    grid: "--chart-grid",
+    ring: "--line-strong",
+    spoke: "--line",
+    ink: "--ink",
+    muted: "--muted",
+    accent: "--accent",
+    cats: ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6"],
+  };
+  let theme = null;
   const FAMILY_LABELS = {
     equal: "Equal",
     just: "Just",
@@ -510,8 +522,14 @@
       "baseFrequency",
       "waveform",
       "volume",
+      "volumeReadout",
       "brightness",
+      "brightnessReadout",
       "release",
+      "releaseReadout",
+      "labStatus",
+      "labAlert",
+      "builderError",
       "holdButton",
       "droneButton",
       "pulseButton",
@@ -554,11 +572,39 @@
 
   function init() {
     getDom();
+    theme = readTheme();
     state.preset = PRESETS.find((preset) => preset.id === "equal-12-2-1") ?? PRESETS.find((preset) => preset.divisions === 12) ?? PRESETS[0];
     state.scale = buildScale(state.preset);
     bindEvents();
+    syncRangeOutputs();
     renderAll();
     drawLoop();
+  }
+
+  function announce(message, assertive = false) {
+    const region = assertive ? dom.labAlert : dom.labStatus;
+    if (!region) {
+      return;
+    }
+    region.textContent = "";
+    window.requestAnimationFrame(() => {
+      region.textContent = message;
+    });
+  }
+
+  function syncRangeOutputs() {
+    if (dom.volumeReadout) {
+      dom.volumeReadout.value = `${Math.round(state.volume * 100)}%`;
+    }
+    if (dom.brightnessReadout) {
+      dom.brightnessReadout.value = `${Math.round(state.brightness)} Hz`;
+    }
+    if (dom.releaseReadout) {
+      dom.releaseReadout.value = `${state.release.toFixed(2)} s`;
+    }
+    if (dom.tempoReadout) {
+      dom.tempoReadout.value = String(state.tempo);
+    }
   }
 
   function bindEvents() {
@@ -583,6 +629,7 @@
       state.family = button.dataset.family;
       dom.familyTabs.querySelectorAll(".tab-button").forEach((tab) => {
         tab.classList.toggle("active", tab === button);
+        tab.setAttribute("aria-pressed", String(tab === button));
       });
       renderPresetList();
     });
@@ -620,6 +667,7 @@
       if (audio) {
         audio.master.gain.setTargetAtTime(state.volume * 0.62, audio.ctx.currentTime, 0.018);
       }
+      syncRangeOutputs();
     });
 
     dom.brightness.addEventListener("input", () => {
@@ -627,10 +675,12 @@
       activeVoices.forEach((voice) => {
         voice.filter.frequency.setTargetAtTime(state.brightness, audio.ctx.currentTime, 0.025);
       });
+      syncRangeOutputs();
     });
 
     dom.release.addEventListener("input", () => {
       state.release = Number(dom.release.value);
+      syncRangeOutputs();
     });
 
     dom.holdButton.addEventListener("click", () => {
@@ -665,32 +715,31 @@
 
     dom.tempo.addEventListener("input", () => {
       state.tempo = Number(dom.tempo.value);
-      dom.tempoReadout.value = String(state.tempo);
+      syncRangeOutputs();
       if (state.pulse) {
         stopPulseTimer();
         startPulseTimer();
       }
     });
 
+    // Each pulse step is a stepper: − and + buttons work by touch, mouse and
+    // keyboard; a right-click on the step still steps it down.
     dom.pulseSteps.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-pulse-index]");
-      if (!button) {
+      const button = event.target.closest("[data-pulse-delta]");
+      const step = event.target.closest("[data-pulse-index]");
+      if (!button || !step) {
         return;
       }
-      const pulseIndex = Number(button.dataset.pulseIndex);
-      state.pulsePattern[pulseIndex] = positiveModulo(state.pulsePattern[pulseIndex] + 1, Math.max(1, state.scale.size * 2));
-      renderPulseSteps();
+      stepPulse(Number(step.dataset.pulseIndex), Number(button.dataset.pulseDelta) || 1);
     });
 
     dom.pulseSteps.addEventListener("contextmenu", (event) => {
-      const button = event.target.closest("[data-pulse-index]");
-      if (!button) {
+      const step = event.target.closest("[data-pulse-index]");
+      if (!step) {
         return;
       }
       event.preventDefault();
-      const pulseIndex = Number(button.dataset.pulseIndex);
-      state.pulsePattern[pulseIndex] = positiveModulo(state.pulsePattern[pulseIndex] - 1, Math.max(1, state.scale.size * 2));
-      renderPulseSteps();
+      stepPulse(Number(step.dataset.pulseIndex), -1);
     });
 
     dom.rangeDown.addEventListener("click", () => {
@@ -762,36 +811,85 @@
       }
     });
 
-    dom.builderTabs.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-builder]");
-      if (!button) {
-        return;
-      }
-      state.builderMode = button.dataset.builder;
-      dom.builderTabs.querySelectorAll(".tab-button").forEach((tab) => {
-        tab.classList.toggle("active", tab === button);
+    // Builder modes are a real tablist (shared/tabs.js moves focus and
+    // aria-selected); the panels follow state.builderMode either way.
+    if (window.Tabs && typeof window.Tabs.init === "function") {
+      window.Tabs.init(dom.builderTabs, { onChange: (id) => setBuilderMode(id) });
+    } else {
+      dom.builderTabs.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-builder]");
+        if (button) {
+          setBuilderMode(button.dataset.builder);
+        }
       });
-      document.querySelectorAll("[data-builder-panel]").forEach((panel) => {
-        panel.classList.toggle("active", panel.dataset.builderPanel === state.builderMode);
-      });
-    });
+    }
 
     dom.builderForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const preset = createCustomPreset();
       if (preset) {
+        setBuilderError("");
         loadPreset(preset);
+        announce(`Loaded ${preset.name}.`);
       } else {
+        setBuilderError(builderErrorMessage());
         dom.builderForm.classList.remove("error-flash");
         requestAnimationFrame(() => dom.builderForm.classList.add("error-flash"));
       }
     });
 
     window.addEventListener("resize", () => {
+      theme = readTheme();
       drawTuning();
     });
 
+    if (window.matchMedia) {
+      window.matchMedia("(pointer: coarse)").addEventListener?.("change", () => renderKeyboard());
+    }
+
     bindViewNav();
+  }
+
+  function setBuilderMode(mode) {
+    state.builderMode = mode;
+    dom.builderTabs.querySelectorAll(".tab-button").forEach((tab) => {
+      const active = tab.dataset.builder === mode;
+      tab.classList.toggle("active", active);
+      tab.setAttribute("aria-selected", String(active));
+    });
+    document.querySelectorAll("[data-builder-panel]").forEach((panel) => {
+      const active = panel.dataset.builderPanel === mode;
+      panel.classList.toggle("active", active);
+      panel.hidden = !active;
+    });
+    setBuilderError("");
+  }
+
+  function builderErrorMessage() {
+    if (state.builderMode === "equal") {
+      return "Divisions and visible steps need whole numbers of 2 or more, and the period a ratio like 2/1.";
+    }
+    if (state.builderMode === "list") {
+      return "List at least one ratio (like 3/2) or cents value, and give the period as a ratio like 2/1.";
+    }
+    return "Step cents must be above 0, notes a whole number of 2 or more, and the period a ratio like 2/1.";
+  }
+
+  function setBuilderError(message) {
+    if (dom.builderError) {
+      dom.builderError.textContent = message;
+    }
+    if (message) {
+      announce(message, true);
+    }
+  }
+
+  function stepPulse(pulseIndex, delta) {
+    if (!Number.isInteger(pulseIndex) || pulseIndex < 0 || pulseIndex >= state.pulsePattern.length) {
+      return;
+    }
+    state.pulsePattern[pulseIndex] = positiveModulo(state.pulsePattern[pulseIndex] + delta, Math.max(1, state.scale.size * 2));
+    renderPulseSteps();
   }
 
   const VIEW_IDS = ["play", "scope", "tunings", "builder"];
@@ -804,6 +902,21 @@
       return;
     }
     const buttons = Array.from(nav.querySelectorAll("[data-view]"));
+    if (window.Tabs && typeof window.Tabs.init === "function") {
+      // The shared tablist owns clicks, arrow keys, the hash and localStorage
+      // (same key and precedence as before); it reports back through onChange.
+      window.Tabs.init(nav, {
+        storageKey: VIEW_KEY,
+        hash: true,
+        onChange: (id, tab) => {
+          setView(id, false);
+          if (tab && document.activeElement === tab && window.matchMedia?.("(min-width: 900px)").matches) {
+            document.querySelector(`[data-pane="${id}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+          }
+        },
+      });
+      return;
+    }
     buttons.forEach((button) => {
       button.addEventListener("click", () => setView(button.dataset.view, true));
     });
@@ -934,60 +1047,107 @@
       .join("");
   }
 
+  function isCoarsePointer() {
+    return Boolean(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  }
+
+  // One key tile. The letter hint is a keycap badge on fine pointers; the
+  // pitch label and cents are the key's own name.
+  function keyButton(key, keyInfo) {
+    const button = document.createElement("button");
+    const index = keyInfo.index;
+    const pitch = pitchAt(index);
+    const keyClasses = ["key-button", "is-used-key", keyInfo.isWhite ? "is-white-key" : "is-black-key"];
+    if (isHarmonicKeyboardIndex(index)) {
+      keyClasses.push("is-harmonic-key");
+    }
+    if (isOctaveKeyboardIndex(index)) {
+      keyClasses.push("is-octave-key");
+    }
+    button.className = keyClasses.join(" ");
+    button.type = "button";
+    if (key) {
+      button.dataset.key = key;
+    }
+    button.dataset.index = String(index);
+    button.dataset.slot = String(keyInfo.slot);
+    button.setAttribute("aria-label", `Play ${keyboardPitchLabel(keyInfo, pitch)} at ${pitch.frequency.toFixed(2)} hertz`);
+    if (pitch.step === 0) {
+      button.classList.add("is-anchor");
+    }
+    const letter = document.createElement("span");
+    letter.className = "key-letter";
+    letter.setAttribute("aria-hidden", "true");
+    if (key && window.Keycap && typeof window.Keycap.keycap === "function") {
+      letter.appendChild(window.Keycap.keycap(displayKey(key)));
+    } else if (key) {
+      letter.textContent = displayKey(key);
+    }
+    const step = document.createElement("span");
+    step.className = "key-step";
+    step.textContent = keyboardPitchLabel(keyInfo, pitch);
+    const cents = document.createElement("span");
+    cents.className = "key-cents";
+    cents.textContent = formatCents(pitch.localCents);
+    button.append(letter, step, cents);
+    return button;
+  }
+
   function renderKeyboard() {
     keyToIndex.clear();
     dom.rangeReadout.value = String(state.keyboardBase);
     dom.keyboard.innerHTML = "";
     const keyboardMap = buildKeyboardMap();
 
+    if (isCoarsePointer()) {
+      // Touch: an isomorphic grid of the mapped pitches, one period per row
+      // (rows of at most twelve), with no filler keys. Right is one step up,
+      // the row above is one row length up.
+      const seen = new Set();
+      const entries = [...keyboardMap.entries()]
+        .sort((a, b) => a[1].index - b[1].index)
+        .filter(([, keyInfo]) => !seen.has(keyInfo.index) && seen.add(keyInfo.index));
+      keyboardMap.forEach((keyInfo, key) => keyToIndex.set(key, keyInfo.index));
+      const size = keyboardPeriodStride();
+      const rowLength = size <= 12 ? size : size <= 24 ? Math.ceil(size / 2) : 12;
+      const rows = [];
+      for (let start = 0; start < entries.length; start += rowLength) {
+        rows.push(entries.slice(start, start + rowLength));
+      }
+      rows.reverse().forEach((rowEntries) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "key-row";
+        rowEntries.forEach(([key, keyInfo]) => rowEl.appendChild(keyButton(key, keyInfo)));
+        dom.keyboard.appendChild(rowEl);
+      });
+      syncActiveKeys();
+      return;
+    }
+
+    // Fine pointers: the QWERTY rows as a straight lattice (no stagger); keys
+    // without a pitch are inert placeholders rather than disabled buttons.
     COMPUTER_KEY_ROWS.forEach((row) => {
       const rowEl = document.createElement("div");
       rowEl.className = "key-row";
       rowEl.style.setProperty("--row-offset", String(row.offset));
 
       row.keys.forEach((key) => {
-        const button = document.createElement("button");
         const keyInfo = keyboardMap.get(key);
         if (!keyInfo) {
-          button.className = "key-button is-unused-key";
-          button.type = "button";
-          button.disabled = true;
-          button.dataset.key = key;
-          button.setAttribute("aria-label", `${displayKey(key)} is unmapped`);
-          button.innerHTML = `
+          const filler = document.createElement("span");
+          filler.className = "key-button is-unused-key";
+          filler.dataset.key = key;
+          filler.setAttribute("aria-hidden", "true");
+          filler.innerHTML = `
             <span class="key-letter">${escapeHtml(displayKey(key))}</span>
-            <span class="key-step">--</span>
+            <span class="key-step">–</span>
             <span class="key-cents">unused</span>
           `;
-          rowEl.appendChild(button);
+          rowEl.appendChild(filler);
           return;
         }
-
-        const index = keyInfo.index;
-        const pitch = pitchAt(index);
-        const keyClasses = ["key-button", "is-used-key", keyInfo.isWhite ? "is-white-key" : "is-black-key"];
-        if (isHarmonicKeyboardIndex(index)) {
-          keyClasses.push("is-harmonic-key");
-        }
-        if (isOctaveKeyboardIndex(index)) {
-          keyClasses.push("is-octave-key");
-        }
-        button.className = keyClasses.join(" ");
-        button.type = "button";
-        button.dataset.key = key;
-        button.dataset.index = String(index);
-        button.dataset.slot = String(keyInfo.slot);
-        button.setAttribute("aria-label", `Play ${keyboardPitchLabel(keyInfo, pitch)} at ${pitch.frequency.toFixed(2)} hertz`);
-        if (pitch.step === 0) {
-          button.classList.add("is-anchor");
-        }
-        button.innerHTML = `
-          <span class="key-letter">${escapeHtml(displayKey(key))}</span>
-          <span class="key-step">${escapeHtml(keyboardPitchLabel(keyInfo, pitch))}</span>
-          <span class="key-cents">${escapeHtml(formatCents(pitch.localCents))}</span>
-        `;
-        rowEl.appendChild(button);
-        keyToIndex.set(key, index);
+        rowEl.appendChild(keyButton(key, keyInfo));
+        keyToIndex.set(key, keyInfo.index);
       });
 
       dom.keyboard.appendChild(rowEl);
@@ -1097,10 +1257,19 @@
 
   function renderPulseSteps() {
     dom.pulseSteps.innerHTML = state.pulsePattern
-      .map(
-        (value, index) =>
-          `<button class="pulse-step${index === state.pulseStep && state.pulse ? " active" : ""}" type="button" data-pulse-index="${index}">+${value}</button>`,
-      )
+      .map((value, index) => {
+        const playing = index === state.pulseStep && state.pulse;
+        const label = `Step ${index + 1} scale index`;
+        return `<div class="pulse-step stepper${playing ? " active" : ""}" data-pulse-index="${index}" role="group" aria-label="${label}">
+            <button class="btn btn--sm btn--icon" type="button" data-pulse-delta="-1" aria-label="${label}: down one">
+              <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-minus" /></svg>
+            </button>
+            <output class="pulse-value" aria-label="${label}">${value}</output>
+            <button class="btn btn--sm btn--icon" type="button" data-pulse-delta="1" aria-label="${label}: up one">
+              <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-plus" /></svg>
+            </button>
+          </div>`;
+      })
       .join("");
   }
 
@@ -1155,10 +1324,43 @@
     });
   }
 
+  // The audio pill reports the real context state: idle until a gesture starts
+  // it, running, suspended (the browser paused it: press again), or unavailable.
+  const AUDIO_STATUS = {
+    idle: ["Start audio", "Audio starts on the first key you play; press to start it now"],
+    running: ["Audio running", "Audio is running"],
+    suspended: ["Audio paused", "The browser suspended audio; press to resume it"],
+    unavailable: ["Audio unavailable", "Web Audio is not available in this browser, so the keys stay silent"],
+  };
+
+  function setAudioStatus(status) {
+    const [label, hint] = AUDIO_STATUS[status] || AUDIO_STATUS.idle;
+    const previous = dom.audioButton.dataset.state;
+    dom.audioButton.dataset.state = status;
+    dom.audioButton.title = hint;
+    dom.audioButton.setAttribute("aria-label", `${label}. ${hint}`);
+    const text = dom.audioButton.querySelector(".ml-audio-text");
+    if (text) {
+      text.textContent = label;
+    } else {
+      dom.audioButton.textContent = label;
+    }
+    if (previous !== status && status !== "idle") {
+      announce(hint, status === "unavailable");
+    }
+  }
+
+  function syncAudioStatus() {
+    if (!audio) {
+      return;
+    }
+    setAudioStatus(audio.ctx.state === "running" ? "running" : "suspended");
+  }
+
   async function ensureAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
-      dom.audioButton.textContent = "Audio unavailable";
+      setAudioStatus("unavailable");
       return null;
     }
 
@@ -1192,12 +1394,17 @@
       wet.connect(compressor);
 
       audio = { ctx, master, compressor, delay, feedback, wet, analyser };
+      ctx.addEventListener("statechange", syncAudioStatus);
     }
 
     if (audio.ctx.state === "suspended") {
-      await audio.ctx.resume();
+      try {
+        await audio.ctx.resume();
+      } catch (error) {
+        // The browser refused (no gesture yet); the pill shows the real state.
+      }
     }
-    dom.audioButton.textContent = "Audio running";
+    syncAudioStatus();
     return audio;
   }
 
@@ -1467,6 +1674,48 @@
     return null;
   }
 
+  // Resolves the page's colour tokens for the canvas, so the scope follows the
+  // theme. Alpha variants are built with a probe element and color-mix.
+  function readTheme() {
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    root.appendChild(probe);
+    const resolve = (value) => {
+      probe.style.color = "";
+      probe.style.color = value;
+      const resolved = getComputedStyle(probe).color;
+      return resolved && resolved !== "" ? resolved : value;
+    };
+    const mix = (value, percent) => resolve(`color-mix(in srgb, ${value} ${percent}%, transparent)`);
+    const ink = resolve(token(THEME_TOKENS.ink, "white"));
+    const muted = resolve(token(THEME_TOKENS.muted, "silver"));
+    const accent = resolve(token(THEME_TOKENS.accent, "white"));
+    const result = {
+      canvas: resolve(token(THEME_TOKENS.canvas, "black")),
+      grid: resolve(token(THEME_TOKENS.grid, "gray")),
+      ring: resolve(token(THEME_TOKENS.ring, "gray")),
+      spoke: resolve(token(THEME_TOKENS.spoke, "gray")),
+      ink,
+      inkSoft: mix(ink, 72),
+      muted,
+      mutedSoft: mix(muted, 80),
+      accent,
+      accentLine: mix(accent, 70),
+      cats: THEME_TOKENS.cats.map((name) => resolve(token(name, accent))),
+      font: token("--font-sans", "Inter, system-ui, sans-serif"),
+    };
+    probe.remove();
+    return result;
+  }
+
+  function pitchClassColor(index) {
+    const cats = theme?.cats?.length ? theme.cats : ["currentColor"];
+    return cats[index % cats.length];
+  }
+
   function drawLoop() {
     drawTuning();
     window.requestAnimationFrame(drawLoop);
@@ -1476,6 +1725,12 @@
     const canvas = dom.tuningCanvas;
     const context = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    if (!theme) {
+      theme = readTheme();
+    }
     const dpr = window.devicePixelRatio || 1;
     const width = Math.max(160, rect.width);
     const height = Math.max(160, rect.height);
@@ -1487,7 +1742,7 @@
 
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.clearRect(0, 0, width, height);
-    context.fillStyle = "#080b10";
+    context.fillStyle = theme.canvas;
     context.fillRect(0, 0, width, height);
 
     drawGrid(context, width, height);
@@ -1497,7 +1752,7 @@
 
   function drawGrid(context, width, height) {
     context.save();
-    context.strokeStyle = "rgba(255, 255, 255, 0.045)";
+    context.strokeStyle = theme.grid;
     context.lineWidth = 1;
     for (let x = 0; x <= width; x += 44) {
       context.beginPath();
@@ -1520,9 +1775,14 @@
       return;
     }
 
+    // Keep the pitch map clear of the overlay (preset name and meters) that
+    // sits over the top of the canvas; it shrinks and drops on short scopes.
+    const overlay = dom.tuningCanvas.parentElement?.querySelector(".scope-overlay");
+    const overlayBottom = overlay ? Math.max(0, overlay.getBoundingClientRect().bottom - dom.tuningCanvas.getBoundingClientRect().top) : 0;
+    const top = overlayBottom + 8;
     const centerX = width * 0.5;
-    const centerY = height * 0.54;
-    const radius = Math.min(width, height) * 0.31;
+    const radius = Math.max(28, Math.min(Math.min(width, height) * 0.31, (height - top - 16) / 2));
+    const centerY = Math.max(height * 0.54, top + radius + 2);
     const activeSteps = new Set([...activeVoices.values()].map((voice) => stepForIndex(voice.index)));
     const activeIndices = [...activeVoices.values()].map((voice) => voice.index);
     const points = scale.cents.slice(0, Math.min(scale.cents.length, 96)).map((cents, index) => {
@@ -1536,13 +1796,13 @@
         angle,
         x: centerX + Math.cos(angle) * radius * ring,
         y: centerY + Math.sin(angle) * radius * ring,
-        color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+        color: pitchClassColor(index),
         active: activeSteps.has(index),
       };
     });
 
     context.save();
-    context.strokeStyle = "rgba(255, 255, 255, 0.09)";
+    context.strokeStyle = theme.ring;
     context.lineWidth = 1;
     [0.34, 0.56, 0.82, 1].forEach((ring) => {
       context.beginPath();
@@ -1558,7 +1818,7 @@
     context.stroke();
 
     points.forEach((point) => {
-      context.strokeStyle = point.active ? `${point.color}cc` : "rgba(255, 255, 255, 0.07)";
+      context.strokeStyle = point.active ? point.color : theme.spoke;
       context.lineWidth = point.active ? 2 : 1;
       context.beginPath();
       context.moveTo(centerX, centerY);
@@ -1582,14 +1842,14 @@
     });
 
     if (points.length <= 31) {
-      context.font = "700 11px Inter, system-ui, sans-serif";
+      context.font = `600 12px ${theme.font}`;
       context.textAlign = "center";
       context.textBaseline = "middle";
       points.forEach((point) => {
         const labelRadius = radius * (scale.repeat ? 0.98 : 0.96);
         const labelX = centerX + Math.cos(point.angle) * labelRadius;
         const labelY = centerY + Math.sin(point.angle) * labelRadius;
-        context.fillStyle = point.active ? point.color : "rgba(244, 247, 251, 0.7)";
+        context.fillStyle = point.active ? point.color : theme.inkSoft;
         context.fillText(String(point.index), labelX, labelY);
       });
     }
@@ -1598,21 +1858,20 @@
       const pitch = pitchAt(index);
       const periodCents = scale.repeat ? scale.periodCents : Math.max(1200, Math.abs(scale.stepCents || 1200) * scale.size);
       const angle = (positiveModulo(pitch.localCents, periodCents) / periodCents) * TWO_PI - Math.PI / 2;
-      const color = COLOR_PALETTE[activeIndex % COLOR_PALETTE.length];
-      context.strokeStyle = color;
+      context.strokeStyle = pitchClassColor(stepForIndex(index));
       context.lineWidth = 3;
       context.beginPath();
       context.arc(centerX, centerY, radius * (0.9 + activeIndex * 0.035), angle - 0.08, angle + 0.08);
       context.stroke();
     });
 
-    context.fillStyle = "rgba(244, 247, 251, 0.94)";
-    context.font = "900 22px Inter, system-ui, sans-serif";
+    context.fillStyle = theme.ink;
+    context.font = `700 22px ${theme.font}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(formatPeriod(scale.period), centerX, centerY - 9);
-    context.fillStyle = "rgba(164, 175, 191, 0.86)";
-    context.font = "800 11px Inter, system-ui, sans-serif";
+    context.fillStyle = theme.muted;
+    context.font = `600 12px ${theme.font}`;
     context.fillText(scale.repeat ? "repeat period" : "open chain", centerX, centerY + 16);
     context.restore();
   }
@@ -1622,7 +1881,7 @@
     const waveHeight = 54;
 
     context.save();
-    context.strokeStyle = "rgba(87, 214, 255, 0.58)";
+    context.strokeStyle = theme.accentLine;
     context.lineWidth = 2;
     context.beginPath();
 
@@ -1651,8 +1910,8 @@
     }
 
     context.stroke();
-    context.fillStyle = "rgba(164, 175, 191, 0.72)";
-    context.font = "800 11px Inter, system-ui, sans-serif";
+    context.fillStyle = theme.mutedSoft;
+    context.font = `600 12px ${theme.font}`;
     context.textAlign = "left";
     context.fillText("signal", 16, baseY + waveHeight * 0.5 + 6);
     context.restore();

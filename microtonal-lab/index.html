@@ -1,130 +1,165 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="microtonal">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#08090d" />
+    <meta
+      name="description"
+      content="Microtonal Lab: a tuning explorer and browser instrument. Play 56 equal, just, world and free tunings from the keyboard, watch the pitch map and signal, sequence a pulse pattern and build your own scales."
+    />
     <title>Microtonal Lab</title>
-    <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20261003" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='12' fill='%23f0abfc'/%3E%3Cg fill='%230b0d12'%3E%3Crect x='16' y='34' width='8' height='14' rx='2'/%3E%3Crect x='28' y='20' width='8' height='28' rx='2'/%3E%3Crect x='40' y='28' width='8' height='20' rx='2'/%3E%3C/g%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
+    <script src="../shared/tabs.js?v=20261016"></script>
+    <script src="../shared/keycap.js?v=20261016"></script>
+    <script src="./app.js?v=20261016" defer></script>
   </head>
   <body>
-    <main class="lab-shell" id="labShell" data-view="play">
+    <a class="skip-link" href="#main">Skip to the instrument</a>
+    <p id="labStatus" class="sr-only" role="status" aria-live="polite"></p>
+    <p id="labAlert" class="sr-only" role="alert" aria-live="assertive"></p>
+
+    <div class="app-shell lab-shell" id="labShell" data-view="play">
       <header class="topbar">
-        <div class="brand-lockup">
-          <div class="brand-mark" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <div>
-            <p class="eyebrow">microtonal instrument</p>
-            <h1>Microtonal Lab</h1>
-          </div>
-        </div>
-
-        <nav class="lab-nav" id="labNav" role="tablist" aria-label="Lab views">
-          <button class="nav-button" type="button" role="tab" data-view="play" aria-selected="true">Play</button>
-          <button class="nav-button" type="button" role="tab" data-view="scope" aria-selected="false">Scope</button>
-          <button class="nav-button" type="button" role="tab" data-view="tunings" aria-selected="false">Tunings</button>
-          <button class="nav-button" type="button" role="tab" data-view="builder" aria-selected="false">Builder</button>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">Projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Microtonal Lab</span>
         </nav>
-
-        <div class="transport" aria-label="Audio controls">
-          <button id="audioButton" class="primary-button" type="button">Start audio</button>
-          <button id="panicButton" class="icon-button" type="button" aria-label="Stop all notes" title="Stop all notes">
-            <span aria-hidden="true">!</span>
+        <nav class="tool-nav" aria-label="Microtonal Lab tools">
+          <a href="/microtonal-lab/" aria-current="page">Microtonal Lab</a>
+        </nav>
+        <div class="topbar-actions transport" aria-label="Audio controls">
+          <button id="audioButton" class="btn btn--sm ml-audio" type="button" data-state="idle" title="Audio starts on the first key you play; press to start it now">
+            <span class="ml-audio-dot" aria-hidden="true"></span>
+            <span class="ml-audio-text">Start audio</span>
+          </button>
+          <button id="panicButton" class="btn btn--sm btn--icon ml-panic" type="button" aria-label="Stop all notes" title="Stop all notes">
+            <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-stop" /></svg>
           </button>
         </div>
       </header>
 
-      <section class="workbench">
-        <aside class="panel preset-panel" data-pane="tunings" aria-label="Tuning presets">
+      <div class="tool-head">
+        <div>
+          <p class="eyebrow eyebrow--plain">Tuning explorer · Browser instrument</p>
+          <h1>Microtonal Lab</h1>
+        </div>
+      </div>
+
+      <nav class="tabs lab-nav" id="labNav" role="tablist" aria-label="Lab views">
+        <button class="nav-button" type="button" role="tab" data-view="play" data-tab="play" aria-selected="true">Play</button>
+        <button class="nav-button" type="button" role="tab" data-view="scope" data-tab="scope" aria-selected="false">Scope</button>
+        <button class="nav-button" type="button" role="tab" data-view="tunings" data-tab="tunings" aria-selected="false">Tunings</button>
+        <button class="nav-button" type="button" role="tab" data-view="builder" data-tab="builder" aria-selected="false">Builder</button>
+      </nav>
+
+      <main id="main" class="workbench" tabindex="-1">
+        <aside class="panel preset-panel" data-pane="tunings" aria-labelledby="tuningsTitle">
           <div class="panel-head">
             <div>
-              <p class="panel-kicker">tuning bank</p>
-              <h2>Tunings</h2>
+              <p class="ml-kicker">Tuning bank</p>
+              <h2 id="tuningsTitle">Tunings</h2>
             </div>
-            <output id="presetCount" class="pill">0</output>
+            <output id="presetCount" class="badge badge--plain" aria-label="Matching tunings">0</output>
           </div>
+          <div class="panel-body preset-body">
+            <div class="field search-box">
+              <label for="presetSearch">Search</label>
+              <input id="presetSearch" type="search" autocomplete="off" placeholder="EDO, just, tritave…" />
+            </div>
 
-          <label class="search-box">
-            <span>Search</span>
-            <input id="presetSearch" type="search" autocomplete="off" placeholder="EDO, just, tritave..." />
-          </label>
+            <div class="segmented segmented--block tab-row" id="familyTabs" role="group" aria-label="Tuning families">
+              <button class="tab-button active" type="button" data-family="all" aria-pressed="true">All</button>
+              <button class="tab-button" type="button" data-family="equal" aria-pressed="false">Equal</button>
+              <button class="tab-button" type="button" data-family="just" aria-pressed="false">Just</button>
+              <button class="tab-button" type="button" data-family="world" aria-pressed="false">World</button>
+              <button class="tab-button" type="button" data-family="free" aria-pressed="false" title="Non-octave and generator tunings">Free</button>
+            </div>
 
-          <div class="tab-row" id="familyTabs" role="tablist" aria-label="Tuning families">
-            <button class="tab-button active" type="button" data-family="all">All</button>
-            <button class="tab-button" type="button" data-family="equal">Equal</button>
-            <button class="tab-button" type="button" data-family="just">Just</button>
-            <button class="tab-button" type="button" data-family="world">World</button>
-            <button class="tab-button" type="button" data-family="free">Free</button>
+            <div id="presetList" class="preset-list" aria-label="Tuning presets"></div>
           </div>
-
-          <div id="presetList" class="preset-list"></div>
         </aside>
 
         <section class="instrument" aria-label="Microtonal keyboard">
-          <section class="panel command-panel" data-pane="play">
+          <section class="panel command-panel" data-pane="play" aria-label="Sound">
             <div class="control-grid">
-              <label class="field">
-                <span>Root frequency</span>
+              <div class="field">
+                <label for="baseFrequency">Root frequency</label>
                 <input id="baseFrequency" type="number" min="20" max="1200" step="0.01" value="261.63" />
-              </label>
+              </div>
 
-              <label class="field">
-                <span>Wave</span>
+              <div class="field field--select">
+                <label for="waveform">Wave</label>
                 <select id="waveform">
                   <option value="sine">Sine</option>
                   <option value="triangle" selected>Triangle</option>
                   <option value="sawtooth">Saw</option>
                   <option value="square">Square</option>
                 </select>
-              </label>
+              </div>
 
-              <label class="field range-field">
-                <span>Volume</span>
-                <input id="volume" type="range" min="0" max="1" step="0.01" value="0.72" />
-              </label>
+              <div class="field range-field">
+                <label for="volume">Volume</label>
+                <div class="field-row">
+                  <input id="volume" type="range" min="0" max="1" step="0.01" value="0.72" />
+                  <output id="volumeReadout" for="volume">72%</output>
+                </div>
+              </div>
 
-              <label class="field range-field">
-                <span>Brightness</span>
-                <input id="brightness" type="range" min="600" max="9000" step="10" value="4200" />
-              </label>
+              <div class="field range-field">
+                <label for="brightness">Brightness</label>
+                <div class="field-row">
+                  <input id="brightness" type="range" min="600" max="9000" step="10" value="4200" />
+                  <output id="brightnessReadout" for="brightness">4200 Hz</output>
+                </div>
+              </div>
 
-              <label class="field range-field">
-                <span>Release</span>
-                <input id="release" type="range" min="0.04" max="2.4" step="0.01" value="0.42" />
-              </label>
+              <div class="field range-field">
+                <label for="release">Release</label>
+                <div class="field-row">
+                  <input id="release" type="range" min="0.04" max="2.4" step="0.01" value="0.42" />
+                  <output id="releaseReadout" for="release">0.42 s</output>
+                </div>
+              </div>
 
-              <div class="toggle-cluster" aria-label="Performance options">
-                <button id="holdButton" class="toggle-button" type="button" aria-pressed="false">Hold</button>
-                <button id="droneButton" class="toggle-button" type="button" aria-pressed="false">Drone</button>
-                <button id="pulseButton" class="toggle-button" type="button" aria-pressed="false">Pulse</button>
+              <div class="toggle-cluster btn-group" role="group" aria-label="Performance options">
+                <button id="holdButton" class="btn btn--sm toggle-button" type="button" aria-pressed="false" title="Keys stay on until pressed again">Hold</button>
+                <button id="droneButton" class="btn btn--sm toggle-button" type="button" aria-pressed="false" title="A low root note under everything">Drone</button>
+                <button id="pulseButton" class="btn btn--sm toggle-button" type="button" aria-pressed="false" title="Loop the pulse pattern">Pulse</button>
               </div>
             </div>
           </section>
 
-          <section class="visual-layout" data-pane="scope">
-            <div class="panel scope-panel">
-              <canvas id="tuningCanvas" width="1200" height="700" aria-label="Tuning visualization"></canvas>
-              <div class="scope-overlay">
-                <div>
-                  <p class="panel-kicker">active preset</p>
-                  <h2 id="activePresetName">12-EDO</h2>
-                </div>
-                <div class="mini-meters">
-                  <div>
-                    <span>Period</span>
-                    <strong id="periodReadout">2:1</strong>
+          <section class="visual-layout" data-pane="scope" aria-label="Scope and readout">
+            <div class="panel panel--flush scope-panel">
+              <div class="panel-body">
+                <canvas id="tuningCanvas" width="1200" height="700" aria-label="Pitch map of the active tuning and the live signal" role="img"></canvas>
+                <div class="scope-overlay">
+                  <div class="scope-title">
+                    <p class="ml-kicker">Active preset</p>
+                    <h2 id="activePresetName">12-EDO</h2>
                   </div>
-                  <div>
-                    <span>Steps</span>
-                    <strong id="stepReadout">12</strong>
-                  </div>
-                  <div>
-                    <span>Last</span>
-                    <strong id="lastNoteReadout">--</strong>
+                  <div class="mini-meters">
+                    <div>
+                      <span>Period</span>
+                      <strong id="periodReadout">2:1</strong>
+                    </div>
+                    <div>
+                      <span>Steps</span>
+                      <strong id="stepReadout">12</strong>
+                    </div>
+                    <div>
+                      <span>Last</span>
+                      <strong id="lastNoteReadout">--</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -133,145 +168,151 @@
             <div class="panel readout-panel">
               <div class="panel-head">
                 <div>
-                  <p class="panel-kicker">pitch readout</p>
+                  <p class="ml-kicker">Pitch readout</p>
                   <h2 id="focusedNote">Step 0</h2>
                 </div>
-                <output id="frequencyReadout" class="pill">261.63 Hz</output>
+                <output id="frequencyReadout" class="badge badge--plain badge--accent" aria-label="Frequency">261.63 Hz</output>
               </div>
+              <div class="panel-body readout-body">
+                <div class="readout-grid">
+                  <div>
+                    <span>Cents</span>
+                    <strong id="centsReadout">0.00</strong>
+                  </div>
+                  <div>
+                    <span>Ratio</span>
+                    <strong id="ratioReadout">1:1</strong>
+                  </div>
+                  <div>
+                    <span>Family</span>
+                    <strong id="familyReadout">Equal</strong>
+                  </div>
+                  <div>
+                    <span>Index</span>
+                    <strong id="indexReadout">0</strong>
+                  </div>
+                </div>
 
-              <div class="readout-grid">
-                <div>
-                  <span>Cents</span>
-                  <strong id="centsReadout">0.00</strong>
+                <div class="sequencer">
+                  <div class="sequencer-head">
+                    <span id="pulseStepsLabel">Pulse pattern · scale index</span>
+                    <button id="shufflePulse" class="btn btn--sm small-button" type="button">Shuffle</button>
+                  </div>
+                  <div id="pulseSteps" class="pulse-steps" role="group" aria-labelledby="pulseStepsLabel"></div>
+                  <div class="field range-field tempo-field">
+                    <label for="tempo">Tempo</label>
+                    <div class="field-row">
+                      <input id="tempo" type="range" min="48" max="190" step="1" value="96" />
+                      <output id="tempoReadout" for="tempo">96</output>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span>Ratio</span>
-                  <strong id="ratioReadout">1:1</strong>
-                </div>
-                <div>
-                  <span>Family</span>
-                  <strong id="familyReadout">Equal</strong>
-                </div>
-                <div>
-                  <span>Index</span>
-                  <strong id="indexReadout">0</strong>
-                </div>
-              </div>
-
-              <div class="sequencer">
-                <div class="sequencer-head">
-                  <span>Pulse pattern</span>
-                  <button id="shufflePulse" class="small-button" type="button">Shuffle</button>
-                </div>
-                <div id="pulseSteps" class="pulse-steps" aria-label="Pulse pattern steps"></div>
-                <label class="field range-field tempo-field">
-                  <span>Tempo</span>
-                  <input id="tempo" type="range" min="48" max="190" step="1" value="96" />
-                  <output id="tempoReadout">96</output>
-                </label>
               </div>
             </div>
           </section>
 
-          <section class="panel keyboard-panel" data-pane="play">
+          <section class="panel keyboard-panel" data-pane="play" aria-labelledby="keyboardTitle">
             <div class="panel-head keyboard-head">
               <div>
-                <p class="panel-kicker">qwerty pitch grid</p>
-                <h2>Keyboard</h2>
+                <p class="ml-kicker"><span class="ml-fine-only">QWERTY pitch grid</span><span class="ml-coarse-only">Isomorphic pitch grid</span></p>
+                <h2 id="keyboardTitle">Keyboard</h2>
               </div>
-              <div class="range-controls">
-                <button id="rangeDown" class="small-button" type="button" aria-label="Shift keyboard range down">-</button>
-                <output id="rangeReadout" class="pill">-10</output>
-                <button id="rangeUp" class="small-button" type="button" aria-label="Shift keyboard range up">+</button>
+              <div class="range-controls stepper" role="group" aria-label="Keyboard range">
+                <button id="rangeDown" class="btn btn--sm btn--icon small-button" type="button" aria-label="Shift keyboard range down">
+                  <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-minus" /></svg>
+                </button>
+                <output id="rangeReadout" class="range-readout" aria-label="Keyboard range start, as a scale index">-10</output>
+                <button id="rangeUp" class="btn btn--sm btn--icon small-button" type="button" aria-label="Shift keyboard range up">
+                  <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-plus" /></svg>
+                </button>
               </div>
             </div>
             <div id="keyboard" class="keyboard" aria-label="Playable keyboard"></div>
           </section>
         </section>
 
-        <aside class="panel builder-panel" data-pane="builder" aria-label="Custom tuning builder">
+        <aside class="panel builder-panel" data-pane="builder" aria-labelledby="builderTitle">
           <div class="panel-head">
             <div>
-              <p class="panel-kicker">build a scale</p>
-              <h2>Builder</h2>
+              <p class="ml-kicker">Build a scale</p>
+              <h2 id="builderTitle">Builder</h2>
             </div>
           </div>
 
-          <div class="builder-tabs" id="builderTabs" role="tablist" aria-label="Builder mode">
-            <button class="tab-button active" type="button" data-builder="equal">Equal</button>
-            <button class="tab-button" type="button" data-builder="list">List</button>
-            <button class="tab-button" type="button" data-builder="generator">Generator</button>
+          <div class="tabs builder-tabs" id="builderTabs" role="tablist" aria-label="Builder mode">
+            <button class="tab-button active" type="button" role="tab" data-builder="equal" data-tab="equal" aria-selected="true" aria-controls="builderEqual" id="builderTabEqual">Equal</button>
+            <button class="tab-button" type="button" role="tab" data-builder="list" data-tab="list" aria-selected="false" aria-controls="builderList" id="builderTabList">List</button>
+            <button class="tab-button" type="button" role="tab" data-builder="generator" data-tab="generator" aria-selected="false" aria-controls="builderGenerator" id="builderTabGenerator">Generator</button>
           </div>
 
-          <form id="builderForm" class="builder-form">
-            <div class="builder-section active" data-builder-panel="equal">
-              <label class="field">
-                <span>Divisions</span>
-                <input id="customDivisions" type="number" min="2" max="144" step="1" value="17" />
-              </label>
-              <label class="field">
-                <span>Period ratio</span>
-                <input id="customEqualPeriod" value="2/1" />
-              </label>
-              <label class="field">
-                <span>Visible steps</span>
-                <input id="customEqualSize" type="number" min="2" max="144" step="1" value="17" />
-              </label>
-            </div>
-
-            <div class="builder-section" data-builder-panel="list">
-              <label class="field">
-                <span>List type</span>
-                <select id="customListType">
-                  <option value="ratios">Ratios</option>
-                  <option value="cents">Cents</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Repeat period</span>
-                <input id="customListPeriod" value="2/1" />
-              </label>
-              <label class="field textarea-field">
-                <span>Values</span>
-                <textarea id="customListValues" rows="5">1/1 16/15 9/8 6/5 5/4 4/3 3/2 8/5 5/3 15/8</textarea>
-              </label>
-            </div>
-
-            <div class="builder-section" data-builder-panel="generator">
-              <label class="field">
-                <span>Step cents</span>
-                <input id="customGeneratorStep" type="number" min="1" max="2400" step="0.01" value="117.11" />
-              </label>
-              <label class="field">
-                <span>Notes</span>
-                <input id="customGeneratorSize" type="number" min="2" max="96" step="1" value="24" />
-              </label>
-              <label class="check-field">
-                <input id="customGeneratorRepeat" type="checkbox" />
-                <span>Repeat at period</span>
-              </label>
-              <label class="field">
-                <span>Period ratio</span>
-                <input id="customGeneratorPeriod" value="2/1" />
-              </label>
-            </div>
-
-            <button class="primary-button wide" type="submit">Load tuning</button>
-          </form>
-
-          <section class="scale-map" aria-label="Current tuning steps">
-            <div class="panel-head compact">
-              <div>
-                <p class="panel-kicker">scale map</p>
-                <h2>Steps</h2>
+          <div class="panel-body builder-body">
+            <form id="builderForm" class="builder-form">
+              <div class="builder-section active" data-builder-panel="equal" id="builderEqual" role="tabpanel" aria-labelledby="builderTabEqual">
+                <div class="field">
+                  <label for="customDivisions">Divisions</label>
+                  <input id="customDivisions" type="number" min="2" max="144" step="1" value="17" />
+                </div>
+                <div class="field">
+                  <label for="customEqualPeriod">Period ratio</label>
+                  <input id="customEqualPeriod" value="2/1" />
+                </div>
+                <div class="field">
+                  <label for="customEqualSize">Visible steps</label>
+                  <input id="customEqualSize" type="number" min="2" max="144" step="1" value="17" />
+                </div>
               </div>
-            </div>
-            <div id="scaleMap" class="scale-map-list"></div>
-          </section>
-        </aside>
-      </section>
-    </main>
 
-    <script src="./app.js?v=20261003"></script>
+              <div class="builder-section" data-builder-panel="list" id="builderList" role="tabpanel" aria-labelledby="builderTabList" hidden>
+                <div class="field field--select">
+                  <label for="customListType">List type</label>
+                  <select id="customListType">
+                    <option value="ratios">Ratios</option>
+                    <option value="cents">Cents</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="customListPeriod">Repeat period</label>
+                  <input id="customListPeriod" value="2/1" />
+                </div>
+                <div class="field textarea-field">
+                  <label for="customListValues">Values</label>
+                  <textarea id="customListValues" rows="5">1/1 16/15 9/8 6/5 5/4 4/3 3/2 8/5 5/3 15/8</textarea>
+                </div>
+              </div>
+
+              <div class="builder-section" data-builder-panel="generator" id="builderGenerator" role="tabpanel" aria-labelledby="builderTabGenerator" hidden>
+                <div class="field">
+                  <label for="customGeneratorStep">Step cents</label>
+                  <input id="customGeneratorStep" type="number" min="1" max="2400" step="0.01" value="117.11" />
+                </div>
+                <div class="field">
+                  <label for="customGeneratorSize">Notes</label>
+                  <input id="customGeneratorSize" type="number" min="2" max="96" step="1" value="24" />
+                </div>
+                <label class="check check-field">
+                  <input id="customGeneratorRepeat" type="checkbox" />
+                  <span>Repeat at period</span>
+                </label>
+                <div class="field">
+                  <label for="customGeneratorPeriod">Period ratio</label>
+                  <input id="customGeneratorPeriod" value="2/1" />
+                </div>
+              </div>
+
+              <p id="builderError" class="field-error" aria-live="off"></p>
+              <button class="btn btn--primary primary-button wide" type="submit">Load tuning</button>
+            </form>
+
+            <section class="scale-map" aria-labelledby="scaleMapTitle">
+              <div class="scale-map-head">
+                <p class="ml-kicker">Scale map</p>
+                <h2 id="scaleMapTitle">Steps</h2>
+              </div>
+              <div id="scaleMap" class="scale-map-list list"></div>
+            </section>
+          </div>
+        </aside>
+      </main>
+    </div>
   </body>
 </html>
