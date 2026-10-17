@@ -14,8 +14,8 @@
  *                         editor, shortcuts, trainer, solver, library
  *   6. dialogs and toast  the one dialog component (sheet variant on phones),
  *                         the update gate, the toast
- *   7. hub and documents  the family hub tile slots; a small compatibility
- *                         block for the controls and report pages
+ *   7. hub                the family hub's board slot, recent links and update
+ *                         line (the documents are styled by docs.css)
  *   8. breakpoints        480 (tiny phones), 700 (phones), 1024 (stacked
  *                         tablets), landscape-short (≤500px tall) and the
  *                         container queries on the stage
@@ -48,7 +48,7 @@
   --tone-small: var(--warn);
   --tone-medium: color-mix(in oklab, var(--warn) 45%, var(--bad));
   --tone-large: var(--bad);
-  --bg-shadow: color-mix(in oklab, black 45%, transparent);
+  --bg-shadow: color-mix(in oklab, var(--page) 45%, transparent);
   --bg-equity-width: 44px;
   font-variant-numeric: tabular-nums;
 }
@@ -180,12 +180,6 @@ html[data-focus-navigation="false"] :is(.app, .play-review, dialog) :focus-visib
   gap: 12px;
 }
 
-.separator {
-  margin: 18px 0;
-  border: 0;
-  border-top: 1px solid var(--line);
-}
-
 .notice {
   padding: 0 0 0 12px;
   border-left: 2px solid var(--accent);
@@ -208,7 +202,6 @@ label.field {
   font-weight: 500;
 }
 
-.field--select select,
 .field select,
 .touch-moves select,
 .study-preview-controls select,
@@ -338,10 +331,6 @@ button.list-row:has(> .row.spread) {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.move-picker {
-  width: 100%;
-}
-
 .history {
   margin: 0;
   padding: 0;
@@ -442,10 +431,6 @@ kbd:not(.keycap) {
 
 .app .crumbs .brand:hover {
   color: var(--ink);
-}
-
-.app .crumbs .crumb-projects {
-  display: none;
 }
 
 .app .tool-nav {
@@ -814,7 +799,6 @@ button kbd.keycap,
 .touch-moves,
 .touch-destinations,
 .study-strip,
-.study-editor,
 .review-preview-controls,
 #analysis-jump {
   display: none;
@@ -1470,13 +1454,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   line-height: 1.2;
 }
 
-.confirm-status {
-  font-size: var(--t-xs);
-  font-weight: 500;
-  line-height: 1.3;
-  white-space: nowrap;
-}
-
 .confirm-check {
   display: grid;
   place-items: center;
@@ -1523,6 +1500,14 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .bg-result-card > .eyebrow {
   justify-content: center;
+  padding-inline: 36px;
+}
+
+/* Hides the card so the final position can be studied (hideCardButton). */
+.bg-result-card > .bg-result-hide {
+  position: absolute;
+  top: 4px;
+  right: 4px;
 }
 
 .bg-result-card h2 {
@@ -1930,13 +1915,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: color-mix(in srgb, var(--loss-color) 7%, transparent);
 }
 
-.feedback-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.feedback-heading .value,
 .decision-loss[data-loss-tone] {
   color: var(--loss-color);
 }
@@ -3307,26 +3285,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   text-align: center;
 }
 
-/* Solver: exact counts and editing. */
-.editor-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-}
-
-.editor-grid label {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  text-align: center;
-}
-
-.editor-grid input {
-  min-height: 40px;
-  padding: 7px 1px;
-  font-size: 1rem;
-  text-align: center;
-}
-
 /* Position editor (ui/position-editor.mjs): the board is the input, with
    stable, thumb-sized supplies and actions beneath it. */
 .position-editor:not([hidden]) {
@@ -3692,12 +3650,16 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 /* Trainer: the session stepper in the tool head. Each step carries its
    result as visually hidden text; colour only repeats it. */
+/* The bar grows past its base width when a long session needs room for
+   every pill (20 decisions: 138px). */
 .trainer-steps {
   display: flex;
   flex: none;
-  gap: 3px;
+  gap: 2px;
   align-self: center;
-  width: clamp(96px, 16vw, 220px);
+  width: max-content;
+  min-width: clamp(96px, 16vw, 220px);
+  max-width: 100%;
   margin: 6px 0 0;
   padding: 0;
   list-style: none;
@@ -3709,7 +3671,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .trainer-steps > li {
   flex: 1 1 0;
-  min-width: 6px;
+  min-width: 5px;
   height: 6px;
   border-radius: var(--r-pill);
   background: var(--surface-3);
@@ -4266,7 +4228,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 }
 
 /* ======================================================================
-   7. Hub and documents
+   7. Hub
    ====================================================================== */
 
 /* The featured Play tile carries the live board in its art slot; on phones
@@ -4357,58 +4319,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   min-height: 44px;
   color: var(--accent);
   font-weight: 600;
-}
-
-/* Clicks & highlights and the engine report still link this file for their
-   header until docs.css replaces it; the kit topbar styles the rest. */
-.controls-page .topbar,
-.engine-report .topbar {
-  gap: 10px 24px;
-  border-bottom: 1px solid var(--line);
-}
-
-.controls-page .brand,
-.engine-report .brand,
-.controls-page .site-link,
-.engine-report .site-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--muted);
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.controls-page .brand:hover,
-.engine-report .brand:hover,
-.controls-page .site-link:hover,
-.engine-report .site-link:hover {
-  color: var(--ink);
-}
-
-.controls-page .nav,
-.engine-report .nav {
-  display: flex;
-  gap: 2px;
-  margin: auto;
-}
-
-.controls-page .nav a,
-.engine-report .nav a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: var(--r-sm);
-  color: var(--muted);
-  font-size: var(--t-sm);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.controls-page .nav a:hover,
-.engine-report .nav a:hover {
-  color: var(--ink);
 }
 
 /* ======================================================================
@@ -5114,10 +5024,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .editor-grid {
-    gap: 6px;
-  }
-
   .library-filters {
     gap: 8px;
   }
@@ -5435,13 +5341,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     justify-self: start;
     padding-inline: 0;
     color: var(--accent);
-  }
-
-  .study-editor:not([hidden]) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px;
-    padding-bottom: 4px;
   }
 
   .app[data-page="solver"] .action-area:has(.study-strip:not([hidden])) #message {
@@ -5877,10 +5776,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     display: none;
   }
 
-  .app[data-page="solver"] .study-editor:not([hidden]) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .app[data-page="solver"] .action-message {
     font-size: var(--t-sm);
   }
@@ -5933,11 +5828,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     justify-self: start;
     padding-inline: 0;
     color: var(--accent);
-  }
-
-  .study-editor:not([hidden]) {
-    display: grid;
-    gap: 6px;
   }
 
   .app[data-page="solver"] .action-area:has(.study-strip:not([hidden])) #message {

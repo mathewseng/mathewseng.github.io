@@ -79,7 +79,14 @@ export const button = (text, action, cls = "", attrs = {}) => {
     {
       type: "button",
       class: buttonClasses(override ?? cls),
-      onClick: () => Promise.resolve().then(action).catch(showError),
+      // A dialog's action clears that dialog's error line when it starts and
+      // reports its own failure there (showError).
+      onClick: (event) => {
+        const host = event.currentTarget.closest("dialog.bg-dialog");
+        const slot = host?.querySelector(":scope > .dialog-body > .dialog-error");
+        if (slot) slot.textContent = "";
+        return Promise.resolve().then(action).catch((e) => showError(e, host));
+      },
       ...rest,
     },
     text,
@@ -165,11 +172,12 @@ function installToast(node) {
   node.addEventListener("focusin", pause);
   node.addEventListener("focusout", resume);
 }
-// Errors raised while a dialog is open render inside it, where the user is
-// looking; otherwise they go to the alert toast.
-export function showError(e) {
+// An error raised by a dialog's own action (`source` is that dialog, or an
+// element inside it) renders inside it, where the user is looking; anything
+// else (engine, network, background saves) goes to the alert toast.
+export function showError(e, source) {
   const message = e?.message || String(e);
-  const open = [...document.querySelectorAll("dialog.bg-dialog[open]")].at(-1);
+  const open = source?.closest?.("dialog.bg-dialog[open]");
   const slot = open?.querySelector(":scope > .dialog-body > .dialog-error");
   if (slot) {
     slot.textContent = message;
@@ -231,6 +239,18 @@ export function confirmDialog(title, text, action, { verb = "Continue", danger =
     ),
   ]);
   return d;
+}
+// The board-slot result cards (Play's game over, Trainer's session summary)
+// cover the final position; this hides one on request and moves focus to the
+// next action, so the board can be studied before going on.
+export function hideCardButton(card, label, onHide) {
+  const hide = button("", () => {
+    card.hidden = true;
+    onHide?.();
+    (document.querySelector("#actions button:not(:disabled)") || $("main"))?.focus();
+  }, "ghost btn--icon bg-result-hide", { "aria-label": label, title: label });
+  hide.innerHTML = CLOSE_ICON;
+  return hide;
 }
 export function saveDialog(state, kind = "position", extra = {}) {
   const name = el("input", {

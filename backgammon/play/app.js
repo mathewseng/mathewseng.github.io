@@ -55,6 +55,7 @@ import {
   DraftBoard,
   dialog,
   confirmDialog,
+  hideCardButton,
   saveDialog,
   toast,
   showError,
@@ -141,16 +142,19 @@ boardWorkspace.append(ui.board.container, boardActions);
 // naming the result level, the score change and the cube.
 const resultCard = el("section", { class: "bg-result-card game-over-card", hidden: true, "aria-label": "Game result" });
 ui.board.container.append(resultCard);
+let hiddenResult = "";
 function renderResultCard(s) {
   const r = s?.phase === "over" ? s.result : null;
-  resultCard.hidden = !r;
-  if (!r) return;
+  const key = r ? `${s.gameNumber}:${s.scores.join("-")}` : "";
+  resultCard.hidden = !r || key === hiddenResult;
+  if (resultCard.hidden) return;
   const winner = names()[r.winner];
   const level = { 1: "single game", 2: "gammon", 3: "backgammon" }[r.level] || "game";
   const stat = (label, value, extra) => el("div", { class: "stat" },
     el("span", { class: "stat-label" }, label),
     el("strong", { class: "stat-value" }, value, ...(extra ? [el("small", {}, extra)] : [])));
   resultCard.replaceChildren(
+    hideCardButton(resultCard, "Hide the result to see the board", () => { hiddenResult = key; }),
     el("p", { class: "eyebrow eyebrow--plain" }, r.matchOver ? "Match complete" : `Game ${s.gameNumber} over`),
     el("h2", {}, `${winner} ${winner === "You" ? "win" : "wins"} a ${level}`),
     el("div", { class: "stat-strip game-over-stats" },
@@ -463,6 +467,7 @@ $("toolbar").prepend(
           resumeIntent(null);
           render();
         },
+        config.mode === "online" && online.room ? { verb: "Leave", danger: true } : {},
       ),
     "ghost",
   ),
@@ -528,7 +533,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
           leaving = true;
           location.href = a.href;
         },
-        { verb: "Leave" },
+        { verb: "Leave", danger: Boolean(online.room?.connected) },
       );
     }
   }),

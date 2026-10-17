@@ -201,7 +201,7 @@
   border-bottom: 1px solid var(--line);
   background: var(--page);
   scroll-snap-type: x proximity;
-  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, var(--page) calc(100% - 32px), transparent);
 }
 
 .docs-toc--sticky::-webkit-scrollbar {

@@ -38,6 +38,7 @@ import {
   showError,
   dialog,
   confirmDialog,
+  hideCardButton,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
@@ -577,6 +578,7 @@ function finish() {
       stat("Mistakes saved", String(s.saved)),
     );
   summaryCard.replaceChildren(
+    hideCardButton(summaryCard, "Hide the summary to see the board"),
     el("p", { class: "eyebrow eyebrow--plain" }, "Session complete"),
     el("h2", {}, `${count} decision${count === 1 ? "" : "s"} studied`),
     stats(),
