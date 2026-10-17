@@ -3,7 +3,10 @@
 // because all hands are face up.
 import { VARIANTS, variantOf, scoringOf, actorOn, dealTable, settle, cardName, STREETS } from "./engine.mjs";
 import { offerRaise, reraise, canReraise, optionLabel, reraiseName } from "./cube-rules.mjs";
-import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, STREET_CARDS, streetName } from "./ui.js";
+import { $, el, button, badge, cardEl, emptySlot, renderSeats, renderOptionTable, renderResultCard, replaceActions, cubeFace, signed, STREET_CARDS, streetName, toast } from "./ui.js";
+
+// Auto-deal delays the host uses; clients count down from the same numbers.
+const AUTO_DELAY = { preflop: 2500, street: 3500, over: 6000 };
 import { fillVariantSelect, fillDropSelect, fillScoringSelect } from "./cube-view.js";
 import { computeView, actionState, gradeHidden, cubeKey } from "./table-view.js";
 
@@ -12,7 +15,7 @@ const hostKey = (code) => `222.host.${code}`;
 
 export function initOnline({ pool }) {
   const PeerRoom = window.PeerRoom;
-  const st = { model: null, view: null, viewKey: null, token: 0, timer: null, roster: [] };
+  const st = { model: null, view: null, viewKey: null, token: 0, timer: null, roster: [], countdown: null, countdownKey: null, countdownEnd: 0 };
   const lobby = $("online-lobby"),
     roomView = $("online-room");
   fillVariantSelect($("on-variant"), "fr");
@@ -28,9 +31,18 @@ export function initOnline({ pool }) {
   const room = new PeerRoom({ namespace: "two22", maxPlayers: 7, storageKey: "222.room.session.v1" });
 
   /* ---------- lobby ---------- */
+  // Errors render where the player is looking: the lobby's own line before a
+  // room exists, else the room's error slot plus the assertive toast.
   const showError = (msg) => {
-    $("on-error").textContent = msg;
-    $("on-error").hidden = !msg;
+    const inRoom = !roomView.hidden;
+    const slot = inRoom ? $("on-room-error") : $("on-error");
+    slot.textContent = msg || "";
+    slot.hidden = !msg;
+    if (msg && inRoom) toast(msg, { alert: true });
+  };
+  const clearRoomError = () => {
+    $("on-room-error").textContent = "";
+    $("on-room-error").hidden = true;
   };
   const name = () => {
     const v = $("on-name").value.trim() || "Player";
@@ -74,8 +86,10 @@ export function initOnline({ pool }) {
   });
   $("on-leave").addEventListener("click", () => {
     clearTimeout(st.timer);
+    stopCountdown();
     room.leave();
     st.model = null;
+    clearRoomError();
     roomView.hidden = true;
     lobby.hidden = false;
     $("on-resume").hidden = !room.savedSession();
@@ -84,8 +98,7 @@ export function initOnline({ pool }) {
     const url = `${location.origin}${location.pathname}#${room.roomCode}`;
     try {
       await navigator.clipboard.writeText(`Join my 222 table: ${url}\nRoom code: ${room.roomCode}`);
-      $("on-copy").textContent = "Copied!";
-      setTimeout(() => ($("on-copy").textContent = "Copy invite"), 1500);
+      toast("Invite copied.");
     } catch {
       prompt("Copy this invite link", url);
     }
@@ -93,6 +106,7 @@ export function initOnline({ pool }) {
   function enterRoom() {
     lobby.hidden = true;
     roomView.hidden = false;
+    clearRoomError();
     $("on-room-code").textContent = room.roomCode;
     history.replaceState(null, "", `#${room.roomCode}`);
     render();
@@ -114,7 +128,7 @@ export function initOnline({ pool }) {
   /* ---------- room events ---------- */
   room.onStatus = (status, message) => {
     $("on-status").textContent = message;
-    $("on-status").style.color = status === "connected" ? "var(--green)" : "var(--amber)";
+    $("on-status").dataset.state = status;
   };
   room.onError = (error) => showError(error.message);
   room.onRoster = (roster) => {
@@ -127,6 +141,7 @@ export function initOnline({ pool }) {
   };
   room.onState = (state) => {
     if (!room.isHost) st.model = state;
+    clearRoomError();
     render();
   };
   room.onAction = handleAction;
@@ -363,12 +378,51 @@ export function initOnline({ pool }) {
     const h = hand();
     return h.playerIds.map((id, i) => st.model.players.find((p) => p.id === id) ?? { id, name: `Seat ${i + 1}`, score: 0 });
   }
+  // Auto-deal countdown beside the prompt (not inside the live region, so the
+  // ticking is never announced). Runs on every peer from the same delays the
+  // host's timer uses, restarted whenever the hand reaches a new phase.
+  function stopCountdown() {
+    clearInterval(st.countdown);
+    st.countdown = null;
+    st.countdownKey = null;
+    $("on-timer").hidden = true;
+  }
+  function syncCountdown(m) {
+    const h = m.hand;
+    const auto = m.settings?.auto && h && (h.phase === "street" || h.phase === "over");
+    if (!auto) return stopCountdown();
+    const key = `${h.number}:${h.street}:${h.phase}`;
+    if (st.countdownKey !== key) {
+      st.countdownKey = key;
+      st.countdownEnd = Date.now() + (h.phase === "over" ? AUTO_DELAY.over : h.street === 0 ? AUTO_DELAY.preflop : AUTO_DELAY.street);
+      clearInterval(st.countdown);
+      st.countdown = setInterval(tickCountdown, 250);
+    }
+    tickCountdown();
+  }
+  function tickCountdown() {
+    const h = st.model?.hand;
+    const timer = $("on-timer");
+    if (!h || st.countdownKey == null) return stopCountdown();
+    const left = Math.max(0, Math.ceil((st.countdownEnd - Date.now()) / 1000));
+    const what = h.phase === "over" ? "Next hand" : h.street === 3 ? "Showdown" : streetName(h.street + 1);
+    timer.textContent = left > 0 ? `${what} in ${left}s` : `${what}…`;
+    timer.hidden = false;
+  }
   function render() {
     const m = st.model;
     renderRoster();
     if (!m) return;
     const isHost = room.isHost;
     $("on-settings").hidden = !(isHost && (!m.hand || m.hand.phase === "over"));
+    // Guests in a fresh room get a waiting state instead of an empty table.
+    const waiting = !m.hand && !isHost;
+    $("on-waiting").hidden = !waiting;
+    if (waiting) {
+      const n = (st.roster.length ? st.roster : m.players).length;
+      $("on-waiting-text").textContent = `You are in with ${n} player${n === 1 ? "" : "s"} at the table. The host picks the settings and deals the first hand; cards and equities appear here.`;
+    }
+    syncCountdown(m);
     if (isHost) {
       $("on-cube").checked = m.settings.cube;
       $("on-variant").value = m.settings.variant;
@@ -388,18 +442,22 @@ export function initOnline({ pool }) {
     const board = h.board.slice(0, STREET_CARDS[h.street]);
     const steps = $("on-streets");
     steps.replaceChildren();
-    for (let s = 0; s < 4; s++) steps.append(button(streetName(s), s === h.street ? "active" : s < h.street ? "done" : "", null, true));
+    for (let s = 0; s < 4; s++) {
+      const b = button(streetName(s), `btn--sm step${s === h.street ? " active" : s < h.street ? " done" : ""}`, null, true);
+      b.setAttribute("aria-pressed", String(s === h.street));
+      steps.append(b);
+    }
     const nextBtn = $("on-next");
     nextBtn.hidden = !isHost;
     nextBtn.disabled = !(h.phase === "street" || h.phase === "over");
     nextBtn.textContent = h.phase === "over" ? "Next hand" : h.street === 3 ? "Showdown" : `Deal ${streetName(h.street + 1).toLowerCase()}`;
     const bc = $("on-board-cards");
     bc.replaceChildren();
-    for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i]) : el("span", "slot"));
+    for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i]) : emptySlot());
     const meta = $("on-meta");
     meta.replaceChildren();
     meta.append(el("span", "", `Hand ${h.number} · ${names.length} players · ${scoringOf(h.scoring).short} scoring${h.cubeEnabled ? ` · ${VARIANTS[h.variant].name}` : ""}`));
-    meta.append(el("span", "tag info-tag", h.tabled ? "Tabled · perfect information" : "Hidden · numbers vs range"));
+    meta.append(h.tabled ? badge("Tabled · perfect information", "info") : badge("Hidden · numbers vs range"));
     if (st.view?.mode === "perfect") meta.append(el("span", "", `${st.view.stats.exact ? "Exact" : "Sampled"}: ${st.view.stats.count.toLocaleString("en-US")} runouts`));
     const cp = $("on-cube-panel");
     cp.hidden = !h.cubeEnabled;
@@ -411,17 +469,22 @@ export function initOnline({ pool }) {
     // prompt and actions
     const prompt = $("on-prompt");
     const actions = $("on-actions");
-    actions.replaceChildren();
+    const actionButtons = [];
     prompt.classList.remove("alert");
     const level = h.cube.level;
     const verb = level > 1 ? "Redouble" : "Double";
+    const auto = Boolean(m.settings?.auto);
     const act = (choice) => () => room.sendAction({ type: "cube", choice });
-    if (h.phase === "street") prompt.textContent = h.street === 3 ? "River dealt. Waiting for showdown." : `${streetName(h.street)} dealt.${isHost ? "" : " Waiting for the host to deal."}`;
+    if (h.phase === "street") {
+      const dealt = h.street === 3 ? "River dealt." : `${streetName(h.street)} dealt.`;
+      const next = h.street === 3 ? "Showdown" : `The ${streetName(h.street + 1).toLowerCase()}`;
+      prompt.textContent = auto ? `${dealt} ${next} deals automatically.` : isHost ? `${dealt} Deal the ${h.street === 3 ? "showdown" : streetName(h.street + 1).toLowerCase()} when ready.` : `${dealt} Waiting for the host to deal.`;
+    }
     else if (h.phase === "decision") {
       if (me === h.actor) {
         prompt.textContent = `${streetName(h.street)}: your cube decision at ${level}.`;
         prompt.classList.add("alert");
-        actions.append(button(optionLabel("noDouble", 0, level, level, h.dropUnit), "", act("noDouble")), button(optionLabel("double", 0, level, level, h.dropUnit), "primary", act("double")));
+        actionButtons.push(button(optionLabel("noDouble", 0, level, level, h.dropUnit), "", act("noDouble")), button(optionLabel("double", 0, level, level, h.dropUnit), "primary", act("double")));
       } else prompt.textContent = `${streetName(h.street)}: ${names[h.actor]} is deciding whether to ${verb.toLowerCase()}.`;
     } else if (h.phase === "chain") {
       const pd = h.pending;
@@ -429,31 +492,20 @@ export function initOnline({ pool }) {
       if (me === pd.responder) {
         prompt.textContent = `${names[pd.raiser]} ${raiseWord}s to ${pd.level}. Drop (lose ${pd.drop}), take${canReraise(pd) ? `, or ${reraiseName(pd.k).toLowerCase()}` : ""}?`;
         prompt.classList.add("alert");
-        actions.append(button(optionLabel("drop", pd.k, pd.base, pd.base, pd.dropUnit), "", act("drop")), button(optionLabel("take", pd.k, pd.base, pd.base, pd.dropUnit), "primary", act("take")));
-        if (canReraise(pd)) actions.append(button(optionLabel("reraise", pd.k, pd.base, pd.base, pd.dropUnit), "", act("reraise")));
+        actionButtons.push(button(optionLabel("drop", pd.k, pd.base, pd.base, pd.dropUnit), "", act("drop")), button(optionLabel("take", pd.k, pd.base, pd.base, pd.dropUnit), "primary", act("take")));
+        if (canReraise(pd)) actionButtons.push(button(optionLabel("reraise", pd.k, pd.base, pd.base, pd.dropUnit), "", act("reraise")));
       } else prompt.textContent = `${names[pd.raiser]} ${raiseWord}s to ${pd.level}. ${names[pd.responder]} to reply.`;
     } else if (h.phase === "over") {
       const mine = me >= 0 ? ` You: ${signed(h.result.nets[me], 0)}.` : "";
-      prompt.textContent = `Hand over (${h.result.reason}).${mine}${isHost ? "" : " Waiting for the next deal."}`;
+      prompt.textContent = `Hand over (${h.result.reason}).${mine}${auto ? " The next hand deals automatically." : isHost ? " Deal the next hand when ready." : " Waiting for the host to deal the next hand."}`;
     }
-    if (h.phase === "over" && h.result.perHand) actions.append(resultTable(h, names));
+    replaceActions(actions, actionButtons);
+    // The shared result card above the seats, never inside the action row.
+    if (h.phase === "over" && h.result) renderResultCard($("on-result"), { names, result: h.result, cube: h.cube, me: me >= 0 ? me : null });
+    else $("on-result").replaceChildren();
     renderSeats($("on-seats"), { hands: h.hands, board, stats: st.view?.stats ?? null, names, btn: h.btn, highlight: me >= 0 ? me : undefined, pending: !st.view });
     computeStats();
     renderAnalysis();
-  }
-  function resultTable(h, names) {
-    const t = el("table", "points-table");
-    const head = el("tr");
-    head.append(el("th", "", "Player"), el("th", "num", "H1"), el("th", "num", "H2"), el("th", "num", "H3"), el("th", "num", "Scoop"), el("th", "num", `Net × ${h.cube.level}`));
-    t.append(head);
-    names.forEach((n, i) => {
-      const tr = el("tr");
-      tr.append(el("td", "", n));
-      h.result.perHand[i].forEach((x) => tr.append(el("td", "num", signed(x, 0))));
-      tr.append(el("td", "num", signed(h.result.scoop[i], 0)), el("td", "num", signed(h.result.nets[i], 0)));
-      t.append(tr);
-    });
-    return t;
   }
   function viewSpec(h, street = h.street) {
     return {
@@ -525,8 +577,7 @@ export function initOnline({ pool }) {
       const n = el("span", "name", r.name + (r.id === room.clientId ? " (you)" : "") + (r.host ? " · host" : ""));
       li.append(n);
       const sc = scores.get(r.id) ?? 0;
-      const s = el("span", "score", signed(sc, 0));
-      s.style.color = sc > 0 ? "var(--green)" : sc < 0 ? "var(--red)" : "var(--muted)";
+      const s = el("span", `score${sc > 0 ? " is-good" : sc < 0 ? " is-bad" : ""}`, signed(sc, 0));
       li.append(s);
       list.append(li);
     }

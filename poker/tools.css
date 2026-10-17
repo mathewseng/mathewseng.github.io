@@ -346,6 +346,24 @@ body.app-shell > .topbar {
   }
 }
 
+/* Landscape phones (844×390): the heading block collapses to one row, as the
+   kit does on short desktop windows, so the view keeps most of the height. */
+@media (min-width: 701px) and (max-height: 560px) {
+  .app > .tool-head {
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 0;
+  }
+
+  .app > .tool-head h1 {
+    font-size: var(--t-lg);
+  }
+
+  .app > .tool-head .lede {
+    display: none;
+  }
+}
+
 /* Segmented options are 44px wide as well as tall on coarse pointers (the
    kit only sets the height). */
 @media (pointer: coarse), (max-width: 700px) {
@@ -353,4 +371,183 @@ body.app-shell > .topbar {
   .segmented > button {
     min-width: 44px;
   }
+}
+
+/* ---------- Cube option rows (the Dodge simulator's pattern, now shared with 222) ----------
+   A .cube-options list of .opt rows: label and tags, the equity, a centred
+   equity bar fed by --scale, then mix and loss against the best option.
+   .best / .chosen mark the equilibrium's pick and the player's. The Dodge
+   simulator stylesheet still carries an identical copy until it is pruned. */
+
+.cube-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.opt-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in oklab, var(--good) 45%, transparent);
+  border-radius: var(--r-sm);
+  background: var(--good-soft);
+}
+
+.opt-verdict-label {
+  color: var(--good);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.opt-verdict > b {
+  color: var(--good);
+  font-size: var(--t-md);
+}
+
+.opt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opt-section-title {
+  padding-top: 4px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.opt-summary {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.opt {
+  min-width: 0;
+  padding: 6px 10px 7px;
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.opt.best {
+  border-left-color: var(--good);
+  background: color-mix(in oklab, var(--good) 8%, var(--surface-2));
+}
+
+.opt.chosen:not(.best) {
+  border-left-color: var(--warn);
+}
+
+.opt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.opt-label {
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.opt.best .opt-label {
+  color: var(--good);
+}
+
+.opt-tag {
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.opt-tag.best {
+  background: var(--good);
+  color: var(--on-accent);
+}
+
+.opt-tag.good {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.opt-tag.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.opt-value {
+  margin-left: auto;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.opt-bar {
+  position: relative;
+  height: 6px;
+  margin: 5px 0 4px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.opt-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--muted);
+}
+
+.opt-bar > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  background: var(--scale, var(--accent));
+}
+
+.opt-meta {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.opt-meta.loss {
+  color: var(--bad);
+}
+
+.verdict {
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.verdict.good {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.verdict.bad {
+  border-color: var(--bad);
+  color: var(--bad);
 }

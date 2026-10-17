@@ -4,7 +4,7 @@
 // remaining streets show perfect-information equities.
 import { VARIANTS, variantOf, scoringOf, DROP_UNIT, MAX_CUBE, dealTable, settle, cardName, STREETS } from "./engine.mjs";
 import { offerRaise, reraise, canReraise, optionLabel, reraiseName, levelAfter } from "./cube-rules.mjs";
-import { $, el, button, cardEl, renderSeats, renderOptionTable, cubeFace, signed, pct, STREET_CARDS, streetName, metric, evColor } from "./ui.js";
+import { $, el, button, badge, cardEl, emptySlot, renderSeats, renderOptionTable, renderResultCard, replaceActions, cubeFace, signed, pct, STREET_CARDS, streetName, metric, evColor } from "./ui.js";
 import { ownerLabel, fillVariantSelect, fillDropSelect, fillScoringSelect } from "./cube-view.js";
 import { computeView, gradeHidden, sampleAction, cubeKey } from "./table-view.js";
 
@@ -293,7 +293,11 @@ export function initTrainer({ pool }) {
     $("tr-cube-face").replaceChildren(cubeFace(tr.cube.level, ownerLabel(tr.cube, NAMES), true));
     const steps = $("tr-streets");
     steps.replaceChildren();
-    for (let s = 0; s < 4; s++) steps.append(button(streetName(s), `${s === tr.view ? "active" : s < tr.street ? "done" : ""}`, () => setView(s), tr.phase === "idle" || s > tr.street));
+    for (let s = 0; s < 4; s++) {
+      const b = button(streetName(s), `btn--sm step${s === tr.view ? " active" : s < tr.street ? " done" : ""}`, () => setView(s), tr.phase === "idle" || s > tr.street);
+      b.setAttribute("aria-pressed", String(s === tr.view));
+      steps.append(b);
+    }
     const live = tr.view === tr.street;
     $("tr-view-note").textContent = tr.phase === "idle" ? "" : live ? "" : `Reviewing the ${streetName(tr.view).toLowerCase()}. Click ${streetName(tr.street)} to return to the live street.`;
     const snap = tr.snapshots[tr.view];
@@ -301,11 +305,11 @@ export function initTrainer({ pool }) {
     const board = tr.phase === "idle" ? [] : visibleBoard(tr.view);
     const bc = $("tr-board-cards");
     bc.replaceChildren();
-    for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i], i >= STREET_CARDS[tr.view - 1] && live ? "new" : "") : el("span", "slot"));
+    for (let i = 0; i < 5; i++) bc.append(i < board.length ? cardEl(board[i], i >= STREET_CARDS[tr.view - 1] && live ? "new" : "") : emptySlot());
     const meta = $("tr-meta");
     meta.replaceChildren();
     if (view) {
-      meta.append(el("span", "tag info-tag", view.tabled ? "Tabled · perfect information" : "Hidden · numbers vs range"));
+      meta.append(view.tabled ? badge("Tabled · perfect information", "info") : badge("Hidden · numbers vs range"));
       if (view.mode === "perfect") meta.append(spanb(`${view.stats.exact ? "Exact" : "Sampled"}: `, `${view.stats.count.toLocaleString("en-US")} runouts`));
       else if (view.stats.conditioned) meta.append(el("span", "muted", "Range conditioned on the earlier cube action"));
       if (view.decision) meta.append(spanb("Solve: ", `${view.decision.solve.iterations} it · ±${view.decision.solve.tolerance.toFixed(2)} pts`));
@@ -313,7 +317,7 @@ export function initTrainer({ pool }) {
     } else if (tr.phase !== "idle") meta.append(el("span", "muted", "Computing…"));
     const prompt = $("tr-prompt");
     const actions = $("tr-actions");
-    actions.replaceChildren();
+    const actionButtons = [];
     prompt.classList.remove("alert");
     const level = tr.cube.level;
     const verb = level > 1 ? "Redouble" : "Double";
@@ -322,12 +326,12 @@ export function initTrainer({ pool }) {
     else if (!view) prompt.textContent = tr.progress != null ? `Solving the equilibrium… ${Math.round(tr.progress * 100)}%` : "Computing equities and the equilibrium…";
     else if (tr.phase === "street") {
       prompt.textContent = tr.street === 3 ? "River dealt. Go to showdown." : `${streetName(tr.street)} dealt. No action here.`;
-      actions.append(button(tr.street === 3 ? "Showdown" : `Deal ${streetName(tr.street + 1).toLowerCase()}`, "primary", next));
+      actionButtons.push(button(tr.street === 3 ? "Showdown" : `Deal ${streetName(tr.street + 1).toLowerCase()}`, "primary", next));
     } else if (tr.phase === "decision") {
       if (tr.actor === YOU) {
         prompt.textContent = `${streetName(tr.street)}: your cube decision at ${level}.`;
         prompt.classList.add("alert");
-        actions.append(button(optionLabel("noDouble", 0, level, level, tr.dropUnit), "", () => act(YOU, "noDouble")), button(optionLabel("double", 0, level, level, tr.dropUnit), "primary", () => act(YOU, "double")));
+        actionButtons.push(button(optionLabel("noDouble", 0, level, level, tr.dropUnit), "", () => act(YOU, "noDouble")), button(optionLabel("double", 0, level, level, tr.dropUnit), "primary", () => act(YOU, "double")));
       } else prompt.textContent = `${streetName(tr.street)}: bot is deciding whether to ${verb.toLowerCase()}…`;
     } else if (tr.phase === "chain") {
       const pd = tr.pending;
@@ -335,13 +339,24 @@ export function initTrainer({ pool }) {
       if (pd.responder === YOU) {
         prompt.textContent = `Bot ${verbFor(BOT, raiseWord)} to ${pd.level}. Drop (lose ${pd.drop}), take at ${pd.level}${canReraise(pd) ? `, or ${reraiseName(pd.k).toLowerCase()} to ${levelAfter(pd.base, pd.k + 1)}` : ""}?`;
         prompt.classList.add("alert");
-        actions.append(button(optionLabel("drop", pd.k, pd.base, pd.base, pd.dropUnit), "", () => act(YOU, "drop")), button(optionLabel("take", pd.k, pd.base, pd.base, pd.dropUnit), "primary", () => act(YOU, "take")));
-        if (canReraise(pd)) actions.append(button(optionLabel("reraise", pd.k, pd.base, pd.base, pd.dropUnit), "", () => act(YOU, "reraise")));
+        actionButtons.push(button(optionLabel("drop", pd.k, pd.base, pd.base, pd.dropUnit), "", () => act(YOU, "drop")), button(optionLabel("take", pd.k, pd.base, pd.base, pd.dropUnit), "primary", () => act(YOU, "take")));
+        if (canReraise(pd)) actionButtons.push(button(optionLabel("reraise", pd.k, pd.base, pd.base, pd.dropUnit), "", () => act(YOU, "reraise")));
       } else prompt.textContent = `You ${raiseWord} to ${pd.level}. Bot is deciding…`;
     } else if (tr.phase === "over") {
       prompt.textContent = `Hand over: ${signed(tr.result.net, 0)} for you (${tr.result.reason}).`;
-      actions.append(button("New hand", "primary", newHand));
+      actionButtons.push(button("New hand", "primary", newHand));
     }
+    replaceActions(actions, actionButtons);
+    // The shared result card above the seats once the hand is over.
+    if (tr.phase === "over" && live && tr.result) {
+      const r = tr.result.settle;
+      renderResultCard($("tr-result"), {
+        names: NAMES,
+        result: { nets: [tr.result.net, -tr.result.net], reason: tr.result.reason, perHand: r?.perHand, scoop: r?.scoop },
+        cube: tr.cube,
+        me: YOU,
+      });
+    } else $("tr-result").replaceChildren();
     if (tr.phase === "idle") $("tr-seats").replaceChildren();
     else {
       const tabled = view ? view.tabled : false;
@@ -380,9 +395,8 @@ export function initTrainer({ pool }) {
       renderOptionTable(table, sh.grade, { preview: sh.preview, level: sh.level, chooser: sh.chooser === YOU ? "you" : "the bot" });
       block.append(table);
       if (!sh.preview && sh.chooser === YOU) {
-        const verdict = el("p", `small ${sh.grade.error > 0.005 ? "error" : ""}`);
+        const verdict = el("p", `small verdict ${sh.grade.error > 0.005 ? "is-bad" : "is-good"}`);
         verdict.textContent = sh.grade.error > 0.005 ? `Mistake: ${sh.grade.error.toFixed(2)} points given up against the equilibrium.` : "Correct (or part of the equilibrium mix).";
-        if (sh.grade.error <= 0.005) verdict.style.color = "var(--green)";
         block.append(verdict);
       }
       body.append(block);
