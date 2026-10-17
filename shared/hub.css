@@ -337,13 +337,17 @@ html.is-ready .hero .facts {
   letter-spacing: -0.012em;
 }
 
+/* Copy is under 110 characters (site-map.test.cjs); three lines fit at the
+   250px column minimum, but the landing hub row and three-column tablets
+   narrow the paragraph to ~180-230px, so the clamp is four lines: a safety
+   net that only shows on those widths and never ellipsises the budget. */
 .tile p {
   display: -webkit-box;
   margin-top: 4px;
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.45;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -401,11 +405,6 @@ html.is-ready .hero .facts {
   background: var(--accent);
   color: var(--on-accent);
   translate: 3px 0;
-}
-
-.tile[target="_blank"]:hover .go,
-.tile[target="_blank"]:focus-visible .go {
-  translate: 2px -2px;
 }
 
 /* Featured tile: text on the left, a live preview on the right. */
@@ -716,6 +715,12 @@ html.is-ready .hero .facts {
     margin-top: 10px;
   }
 
+  /* The crumbs home link (32px mark + "Projects") measured 96x32 on phones;
+     the 44px floor belongs in app.css (see shared-requests), held here meanwhile. */
+  .crumbs a {
+    min-height: 44px;
+  }
+
   /* The compact row layout is a single-column list; two row tiles side by side
      (auto-fit still fits two 250px columns above ~530px) ellipsise their copy. */
   .tiles {
@@ -741,11 +746,14 @@ html.is-ready .hero .facts {
     font-size: 0.98rem;
   }
 
+  /* The one-column list has room for the whole description, so no clamp:
+     a 164px text column at 320px wide ellipsised most tiles. */
   .tile p {
+    display: block;
     margin-top: 2px;
     font-size: var(--t-sm);
     line-height: 1.35;
-    -webkit-line-clamp: 3;
+    overflow: visible;
   }
 
   .tile--featured p {

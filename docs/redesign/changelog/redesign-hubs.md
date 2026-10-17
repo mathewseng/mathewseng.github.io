@@ -112,3 +112,68 @@ offline-manifest script restamped its `?bgv=` hash, as it does for every Backgam
 - Live regions: the hubs have no dynamic content, so no `aria-live` regions were added.
 - Hero cards still carry `aria-label` inside `aria-hidden` containers (markup identical to
   `PlayingCards.html`); harmless, left for the cards step.
+
+## Review fixes (branch `redesign/hubs-fixed`)
+
+Each finding of the independent review of `redesign/hubs` (3c6c016), verified before acting:
+
+- **P2 Dice "Play" tile → `/dice/reports/#play` opens Explore.** Verified (`dice/reports/app.js`
+  routes only `#matchups`/`#cycles`, and `setView("play")` needs a selected schedule). The
+  delegate's decision for this step is explicit: the hub links `#explore`, `#matchups` and
+  `#play` regardless, and the dice page gains hash-to-view routing in step 4; `dice/reports/`
+  is not in this step's files. Kept the link; reworded the tile copy so it no longer promises
+  a workspace that opens on its own ("Roll a schedule or matchup you picked in Explore, with
+  animated dice and a running scoreboard."). Open item for the Dice step: route `#play`
+  (and `#explore`) on load.
+- **P2 "Fantasyland overview" → `/ofc/fantasyland-ev/#overview` does not exist yet.** Verified
+  (`SECTION_IDS` has no `overview`; the EV page opens on Royalty EV). Not changed: the
+  delegate's decision names this exact target and title, and the OFC step folds the report in
+  and adds the `redirects.json` entry. Until then the tile opens the EV page.
+- **P2 Tile copy ellipsised at 844×390 and 1024×768.** Verified with a scratchpad sweep (every
+  hub at 13 viewports plus a dense 320–1241px pass every 20px): Poker clipped three tiles at
+  844 and two at 1100, the landing clipped Backgammon at 1024 and four hubs at 900. Fix in
+  `shared/hub.css`: the standard `.tile p` clamp is four lines (110 characters fit three lines
+  at the 250px column minimum but the landing hub row and three-column tablets narrow the
+  paragraph to 180–230px; the fourth line only renders there, so the 1440×900 pictures are
+  unchanged), and the phone list (≤ 640px) drops the clamp altogether (`display: block`),
+  which also fixes the P3 below. After the change the dense sweep reports no clipped copy
+  and no horizontal overflow on any hub at any width from 320 to 1241. The site-map test now
+  guards the rules (`hub.css never ellipsises tile copy that fits the budget`), and
+  shared-requests asks the shell sweep to assert `scrollHeight <= clientHeight` on `.tile p`.
+- **P2 Jazz Piano ML styled as an app tile with a second arrow glyph.** Verified. The landing's
+  "Source only" group is now a `.hub-links` entry (underlined accent link, external icon,
+  hidden "(opens GitHub)", muted description) and the diagonal `.go` arrow is gone, so the
+  page carries one arrow glyph. The dead `.tile[target="_blank"] .go` rule was removed from
+  hub.css. `site-map.test.cjs`: the landing's source group is asserted as a link list with no
+  tiles, no tile may carry `target="_blank"`, and no `.go` may hold the diagonal arrow.
+  Stagger indices now run 0–7.
+- **P3 "three table-game prototypes" vs the hub's "two".** Landing copy says two (the hub tags
+  Ultimate Omaha and Edge the Dealer as prototypes; Poker Rush is a seeded sprint).
+- **P3 Crumbs home link 96×32 on phones.** Verified on `/ofc/` at 375 wide. `shared/hub.css`
+  phone block sets `.crumbs a { min-height: 44px }` (now 96×44); the app.css request is in
+  shared-requests.
+- **P3 Poker hero fan 1.3px past the viewport at 375/320.** Verified (scrollWidth 376/321
+  without mobile emulation). `shared/hub-art.css` phone fan spread 15px → 14px per card
+  (hover 18 → 17); the last card's right edge is now 318.8 at 320 wide and the document no
+  longer scrolls sideways at 320, 375, 540 or 640.
+- **P3 `livePages()` counted untracked `index.html` files.** `git ls-files --cached` only, with
+  a comment; README is not in this step's files, so the convention note (edit the HTML and
+  `site-map.json` together for counts, `SITE_MAP_WRITE=1` for favicons) stays in the changelog
+  above for the integrator.
+- **P3 Three-line clamp ellipsises most tiles at 320px.** Fixed by the phone-list unclamp
+  above; the 320×568 renders of every hub show full copy.
+- **P3 Deferred step-1 items (Backgammon hub tiles, OG image, switcher edge fade).** No action;
+  still listed under Deferred for the Backgammon and app.css owners.
+
+CSS: `shared/hub.css` 780 → 788 (+8), `shared/hub-art.css` 792 → 794 (+2); no colour
+literals added. `backgammon/offline-manifest.js` regenerated (hub.css and hub-art.css hashes;
+the script restamps `?bgv=` across the Backgammon pages and `sw.js`).
+
+Verification repeated: `node scripts/run-tests.mjs` (460 pass), the shell sweep for the five
+hubs at 16px and 24px roots, `node scripts/screenshots.cjs --compare --only …` (eight pictures
+changed as expected: the landing's link list at both viewports, the Dice Play copy, and on
+every phone picture the 12px taller crumbs row plus the fan shift; all reviewed and copied
+over the baselines), the scratchpad
+clip/overflow sweep, the extra states (1024×768 and 320×568 landing, 844×390 and 320×568
+Poker, link-list focus, phone pressed tile, crumbs box) and the Backgammon `updates` and
+`mobile-quick` browser suites against `_site`.

@@ -23,7 +23,7 @@ const template = read("shared/favicon.template.svg").trim();
 // Hubs built on shared/hub.css. Backgammon's hub belongs to its own family step.
 const HUB_PAGES = map.families.filter((family) => !family.hub).map((family) => ({ family, file: `${family.id}/index.html` }));
 const LANDING = "index.html";
-const MAX_TILE_COPY = 110; // standard tiles: three lines at 250px
+const MAX_TILE_COPY = 110; // standard tiles: three lines at the 250px column minimum, under the four-line clamp everywhere wider than a phone
 const MAX_FEATURED_COPY = 150; // featured tiles: three lines across a 30rem column
 
 const text = (html) => html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -54,10 +54,12 @@ function facts(html) {
   });
 }
 
-// Every published page: an index.html that assemble-site.sh ships. Gym is
-// published from its build but has an index.html in the source tree.
+// Every published page: a tracked index.html that assemble-site.sh ships (an
+// untracked scratch page in a working copy is not deployed, so it is not
+// counted). Gym is published from its build but has an index.html in the
+// source tree.
 function livePages() {
-  return execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "index.html", "*/index.html"], { cwd: root, encoding: "utf8" })
+  return execFileSync("git", ["ls-files", "--cached", "index.html", "*/index.html"], { cwd: root, encoding: "utf8" })
     .split("\n")
     .filter((file) => file && !file.includes("/tests/") && !file.startsWith("shared/") && !file.startsWith("scripts/") && !file.startsWith("jazz-piano-ml/") && !file.startsWith("node_modules/") && !file.includes("/simulation/"))
     .filter((file) => !/\/solver\//.test(file) || file === "backgammon/solver/index.html")
@@ -150,7 +152,8 @@ test("index.html lists every family, app and source project in site-map order", 
   assert.deepEqual(hubs.tiles.map((tile) => tile.href), map.families.map((family) => family.path), "hub tiles");
   assert.deepEqual(apps.tiles.map((tile) => tile.href), map.apps.map((app) => app.path), "app tiles");
   assert.deepEqual(apps.tiles.map((tile) => tile.name), map.apps.map((app) => app.name), "app names");
-  assert.deepEqual(source.tiles.map(({ href, name }) => ({ href, name })), map.source.map((item) => ({ href: item.href, name: item.name })), "source tiles");
+  assert.deepEqual(source.links, map.source.map((item) => ({ href: item.href, name: item.name })), "source-only projects are a link list");
+  assert.equal(source.tiles.length, 0, "an external GitHub link looks like a link, not an app tile");
   assert.equal(hubs.count, `${map.families.length} hubs`);
   assert.equal(apps.count, `${map.apps.length} apps`);
   assert.equal(source.count, `${map.source.length} project${map.source.length === 1 ? "" : "s"}`);
@@ -171,7 +174,24 @@ test("index.html lists every family, app and source project in site-map order", 
   const stagger = Array.from(html.matchAll(/class="tile[^"]*"[^>]*style="--i: (\d+)/g), (m) => Number(m[1]));
   assert.deepEqual(stagger, stagger.map((_, i) => i), "tile stagger indices run 0..n without repeats");
   assert.ok(!/class="go"[^>]*>→/.test(html), "one arrow glyph: the SVG arrow, never a text arrow");
+  assert.ok(!/class="go"[^>]*>\s*<svg[^>]*>\s*<line x1="7" y1="17"/.test(html), "one arrow glyph: no diagonal external arrow on a tile");
+  assert.ok(!/<a class="tile[^"]*"[^>]*target="_blank"/.test(html), "no tile opens an external site");
   assert.ok(!/<img[^>]*style=/.test(html), "tile art images carry no inline style");
+});
+
+test("hub.css never ellipsises tile copy that fits the budget", () => {
+  // 110 characters need up to four lines once the landing hub row or a
+  // three-column tablet narrows the paragraph below 250px, and the phone list
+  // has room for all of it; see the .tile p rules in shared/hub.css.
+  const css = read("shared/hub.css").replace(/\/\*[\s\S]*?\*\//g, "");
+  const clamps = Array.from(css.matchAll(/-webkit-line-clamp:\s*(\d+)/g), (m) => Number(m[1]));
+  assert.ok(clamps.length, "the standard tile clamp exists");
+  assert.ok(clamps.every((lines) => lines >= 3), `every clamp allows at least three lines (${clamps.join(", ")})`);
+  const standard = css.match(/\n\.tile p \{([^}]*)\}/);
+  assert.ok(standard && /-webkit-line-clamp:\s*4/.test(standard[1]), ".tile p clamps at four lines");
+  const phones = css.slice(css.lastIndexOf("@media (max-width: 640px)"));
+  const phoneCopy = phones.match(/\n  \.tile p \{([^}]*)\}/);
+  assert.ok(phoneCopy && /display:\s*block/.test(phoneCopy[1]) && !/line-clamp/.test(phoneCopy[1]), "the phone list does not clamp tile copy");
 });
 
 test("every hub favicon is the template filled with its family colour", () => {

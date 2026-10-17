@@ -721,12 +721,14 @@ svg.hub-die circle {
     height: 110px;
   }
 
+  /* 14px of spread keeps the five-card fan inside a 320px viewport (15px put
+     the last card 1.3px past the edge). */
   .fan .playing-card {
-    translate: calc(var(--k) * 15px) var(--y, 0px);
+    translate: calc(var(--k) * 14px) var(--y, 0px);
   }
 
   .fan:hover .playing-card {
-    translate: calc(var(--k) * 18px) var(--y, 0px);
+    translate: calc(var(--k) * 17px) var(--y, 0px);
   }
 
   .fan-chip,

@@ -62,3 +62,22 @@ in app.css.
 `hub.css` styles every `svg` inside a `.tile` as an 18px stroked icon, which is why the dice
 faces needed `svg.hub-die` to win. If `.tile svg` becomes `.tile-icon svg, .go svg` in a later
 hub.css pass, the `svg.hub-die` specificity workaround can go.
+
+## `.crumbs a` needs the 44px floor on phones (review fix, redesign/hubs-fixed)
+
+The crumbs home link (the 32px `.mark` plus "Projects") measures 96×32 on every hub at
+≤ 640px; the shell sweep does not check `.crumbs a`, so it passed. `shared/hub.css` holds
+`min-height: 44px` on `.crumbs a` in its phone block until app.css takes it:
+
+```css
+@media (pointer: coarse), (max-width: 640px) {
+  .crumbs a { min-height: 44px; }
+}
+```
+
+## Clipped tile copy belongs in the shell sweep
+
+`scripts/shell-browser.cjs` has no clamp assertion, so the ellipsised tile copy at 844×390
+and 1024×768 that the review found passed every sweep. A one-line check on hub pages would
+keep it fixed: every `.tile p` with `scrollHeight <= clientHeight + 1`. The site-map test
+guards the hub.css rules statically meanwhile.
