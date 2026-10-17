@@ -1,0 +1,960 @@
+/* Poker table components shared by Mixed Poker, Poker Rush, Ultimate Omaha and
+ * Edge the Dealer (docs/redesign/prompt.md, step 5). Loaded after
+ * shared/tokens.css, shared/app.css and shared/cards.css; tokens only, no
+ * colour literals, no !important.
+ *
+ * Sections: stage and felt, seats, hand chips, lobby, action stage, log and
+ * chat, settings rows, banners and notices, phones.
+ *
+ * The family accent (data-family="poker") is used for selection, the active
+ * seat, the dealer button and the primary action only; outcomes use --good /
+ * --bad / --warn / --info. Every playing card comes from shared/cards.js and
+ * is sized through --card-width alone.
+ */
+
+/* ---------- Stage and felt ----------
+   A stage is a flush panel whose inside is a different material. The felt is
+   a radial green gradient with an inset highlight and a rail mixed from the
+   accent; labels on it read --stage-ink / --stage-muted, never --ink. */
+.stage {
+  --stage-ink: color-mix(in srgb, white 92%, var(--felt));
+  --stage-muted: color-mix(in srgb, white 68%, transparent);
+  --stage-line: color-mix(in srgb, white 14%, transparent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  color: var(--stage-ink);
+  overflow: hidden;
+}
+
+.felt {
+  background:
+    radial-gradient(ellipse at 50% 38%, var(--felt-light), var(--felt) 58%, var(--felt-dark) 100%),
+    var(--felt-dark);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--felt-light) 40%, transparent),
+    inset 0 0 120px color-mix(in srgb, black 35%, transparent),
+    var(--shadow-tile);
+  border-color: color-mix(in oklab, var(--accent) 28%, var(--felt-rail));
+}
+
+.felt-label {
+  color: var(--stage-muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Pot, street and the community boards in the felt centre. */
+.felt-centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--s-3) var(--s-4);
+  text-align: center;
+}
+
+.felt-pot {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: 4px 14px;
+  border: 1px solid var(--stage-line);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, black 24%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.felt-pot .felt-label {
+  letter-spacing: 0.08em;
+}
+
+.felt-pot strong {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: var(--lh-data);
+}
+
+.felt-street {
+  color: var(--stage-muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.felt-message {
+  color: var(--stage-muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.felt-message:empty {
+  display: none;
+}
+
+/* Board lines: a label and a row of community cards; several stack. */
+.board-stack {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.board-line {
+  display: grid;
+  grid-template-columns: minmax(3.5rem, auto) auto;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.board-line > .felt-label,
+.board-line > span:first-child {
+  color: var(--stage-muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.board-cards {
+  --card-width: var(--card-w-table);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- Seats ----------
+   <article class="seat seat--active"> avatar | name + stack | bet | badges |
+   card row. States: --active (to act, accent ring), --folded, --disconnected,
+   --confirmed, --host, --me, --queued, --empty, --busted, --winner. The
+   dealer button is a .seat-dealer disc. Cards use --card-w-seat. */
+.seat {
+  --seat-ring: var(--line-strong);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "avatar name bet"
+    "avatar meta bet"
+    "cards cards cards";
+  align-items: center;
+  gap: 2px var(--s-2);
+  min-width: 0;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--seat-ring);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--seat-bg) 82%, transparent);
+  color: var(--ink);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+  transition:
+    border-color var(--d-fast),
+    box-shadow var(--d-fast),
+    opacity var(--d-fast);
+}
+
+.seat-avatar {
+  grid-area: avatar;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--surface-3), var(--surface));
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.seat-name {
+  grid-area: name;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.seat-name > span:first-child,
+.seat-name > strong {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.seat-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.seat-stack {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.seat-pnl {
+  font-variant-numeric: tabular-nums;
+}
+
+.seat-pnl.is-good,
+.seat-pnl.positive {
+  color: var(--good);
+}
+
+.seat-pnl.is-bad,
+.seat-pnl.negative {
+  color: var(--bad);
+}
+
+/* Bet chip: the amount a seat has in front of it this street. */
+.seat-bet {
+  grid-area: bet;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: start;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid color-mix(in oklab, var(--accent-2) 40%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--accent-2) 14%, var(--surface));
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.seat-bet::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border: 2px dashed color-mix(in srgb, white 80%, transparent);
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: inset 0 0 0 2px var(--accent-2);
+}
+
+.seat-bet:empty,
+.seat-bet[hidden] {
+  display: none;
+}
+
+.seat-cards {
+  --card-width: var(--card-w-seat);
+  grid-area: cards;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 3px;
+  min-height: calc(var(--card-w-seat) * 7 / 5);
+  margin-top: 4px;
+}
+
+.seat-cards:empty {
+  display: none;
+}
+
+/* Status and position badges in the meta row. */
+.seat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.seat-badge--good {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.seat-badge--bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.seat-badge--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.seat-badge--info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.seat-badge--accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Dealer button: an accent disc beside the avatar. */
+.seat-dealer {
+  position: absolute;
+  top: -8px;
+  left: 34px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--on-accent);
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-xs);
+  font-weight: 800;
+  box-shadow: 0 2px 6px color-mix(in srgb, black 40%, transparent);
+}
+
+/* Per-seat action clock: seconds left for the player to act. */
+.seat-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.seat-clock:empty {
+  display: none;
+}
+
+.seat-clock.is-out {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.seat--active {
+  --seat-ring: var(--accent);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--accent) 24%, transparent),
+    0 10px 28px -12px color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.seat--active .seat-avatar {
+  border-color: var(--accent);
+}
+
+.seat--folded,
+.seat--queued {
+  opacity: 0.6;
+}
+
+.seat--folded .seat-cards {
+  opacity: 0.45;
+}
+
+.seat--disconnected {
+  --seat-ring: color-mix(in oklab, var(--bad) 55%, transparent);
+  border-style: dashed;
+}
+
+.seat--confirmed {
+  --seat-ring: color-mix(in oklab, var(--good) 55%, transparent);
+}
+
+.seat--host .seat-avatar {
+  border-color: color-mix(in oklab, var(--accent-2) 70%, transparent);
+}
+
+.seat--me {
+  --seat-ring: color-mix(in oklab, var(--accent) 45%, var(--line-strong));
+  background: color-mix(in srgb, var(--seat-bg) 92%, var(--accent));
+}
+
+.seat--winner {
+  --seat-ring: var(--good);
+}
+
+.seat--busted .seat-stack {
+  color: var(--bad);
+}
+
+.seat--empty {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--seat-bg) 40%, transparent);
+  color: var(--muted);
+}
+
+.seat--empty .seat-avatar {
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
+}
+
+/* Lobby seats: no card row, one line of meta. */
+.seat--lobby {
+  grid-template-areas:
+    "avatar name bet"
+    "avatar meta bet";
+}
+
+/* ---------- Hand chip ----------
+   A hand strength or outcome readout: "Flush · Qualifies". */
+.hand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hand-chip strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.hand-chip--good {
+  border-color: color-mix(in oklab, var(--good) 45%, transparent);
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.hand-chip--good strong {
+  color: var(--good);
+}
+
+.hand-chip--bad {
+  border-color: color-mix(in oklab, var(--bad) 45%, transparent);
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.hand-chip--bad strong {
+  color: var(--bad);
+}
+
+.hand-chip--warn {
+  border-color: color-mix(in oklab, var(--warn) 45%, transparent);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.hand-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ---------- Lobby ----------
+   Name and code fields, create/join segmented, a code pill with copy, a
+   roster of .seat, host settings, Start/Leave and guest waiting copy. */
+.lobby {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.lobby-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+
+.lobby-code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 44px;
+  padding: 0 6px 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+}
+
+.lobby-code-pill > span:first-child {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lobby-code-pill strong,
+.lobby-code-pill code {
+  font-family: var(--font-mono);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.lobby-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: var(--s-2);
+}
+
+.lobby-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lobby-wait {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.lobby-wait::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: lobby-pulse 1.6s var(--ease) infinite;
+}
+
+@keyframes lobby-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.lobby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+
+.lobby-actions .field-hint {
+  flex: 1 1 12rem;
+}
+
+/* ---------- Action stage ----------
+   The sticky bottom bar: a status line, an optional amount control and up
+   to three action slots (danger | secondary | primary). --host adds a host
+   row beneath. Phones: full width over the safe-area inset. */
+.action-stage {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  gap: var(--s-2) var(--s-4);
+  padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-sheet);
+}
+
+.action-stage-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s-3);
+  min-width: 0;
+}
+
+.action-stage-status h2,
+.action-stage-title {
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+}
+
+.action-stage-status .eyebrow {
+  flex-basis: 100%;
+}
+
+.action-stage-clock {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.action-stage-clock.is-out {
+  color: var(--bad);
+}
+
+.action-stage-clock:empty {
+  display: none;
+}
+
+.action-stage-error {
+  color: var(--bad);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.action-stage-error:empty {
+  display: none;
+}
+
+.action-stage-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+.action-stage-actions > [hidden] {
+  display: none;
+}
+
+.action-stage-host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
+}
+
+.action-stage-host:empty {
+  display: none;
+}
+
+/* Amount control: presets and a number input in one bordered row. */
+.amount-control {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(6rem, 1.4fr);
+  min-width: 0;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.amount-control > button,
+.amount-control > input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--line-opaque);
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--d-fast),
+    color var(--d-fast);
+}
+
+.amount-control > button:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.amount-control > button:focus-visible,
+.amount-control > input:focus-visible {
+  outline-offset: -3px;
+}
+
+.amount-control > input {
+  border-right: 0;
+  color: var(--ink);
+  font-size: var(--t-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+
+/* ---------- Log and chat ---------- */
+
+.table-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-log-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.table-log-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-opaque);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.table-log-entry:last-child {
+  border-bottom: 0;
+}
+
+.table-log-entry time,
+.table-log-time {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.table-log-entry .card-row,
+.table-log-cards {
+  --card-width: var(--card-w-preview);
+  display: inline-flex;
+  gap: 2px;
+}
+
+.table-log-entry--system {
+  color: var(--muted);
+}
+
+.table-log-entry--good {
+  color: var(--good);
+}
+
+.table-log-entry--bad {
+  color: var(--bad);
+}
+
+.table-chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Settings rows ----------
+   <div class="settings-row"><label for=x><strong>Label</strong><small>Hint</small></label><input id=x></div> */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: 44px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-row:last-child {
+  border-bottom: 0;
+}
+
+.settings-row > label,
+.settings-row > .settings-row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 8rem;
+  color: var(--ink);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: var(--lh-data);
+}
+
+.settings-row > label small,
+.settings-row-label small {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 500;
+}
+
+.settings-row input:not([type="checkbox"], [type="radio"], [type="range"]),
+.settings-row select {
+  width: 7.5rem;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--d-fast);
+}
+
+.settings-row input:hover,
+.settings-row select:hover {
+  border-color: color-mix(in oklab, var(--control-border) 55%, var(--ink));
+}
+
+.settings-row .paired-input {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.settings-row .paired-input input {
+  width: 4.5rem;
+}
+
+/* ---------- Banners and notices ----------
+   .table-banner: a one-line status bar (reconnecting, host gone) with an
+   optional action. .table-notice: a centred message on the felt (spectating,
+   waiting for the host, table over). */
+.table-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in oklab, var(--warn) 45%, transparent);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.table-banner > span:first-child {
+  flex: 1 1 12rem;
+}
+
+.table-banner--bad {
+  border-color: color-mix(in oklab, var(--bad) 45%, transparent);
+  background: var(--bad-soft);
+}
+
+.table-banner--info {
+  border-color: color-mix(in oklab, var(--info) 45%, transparent);
+  background: var(--info-soft);
+}
+
+.table-banner[hidden] {
+  display: none;
+}
+
+.table-notice {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  max-width: 32rem;
+  margin-inline: auto;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--stage-line);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, black 28%, transparent);
+  color: var(--stage-ink);
+  text-align: center;
+}
+
+.table-notice h3,
+.table-notice-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+}
+
+.table-notice p {
+  color: var(--stage-muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+/* ---------- Phones and coarse pointers ---------- */
+
+@media (pointer: coarse), (max-width: 640px) {
+  .settings-row input:not([type="checkbox"], [type="radio"], [type="range"]),
+  .settings-row select {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .amount-control > input {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .action-stage {
+    margin-inline: -12px;
+    border-inline: 0;
+    border-bottom: 0;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+
+  .seat {
+    padding: 6px 10px;
+  }
+
+  .seat-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .seat-dealer {
+    left: 30px;
+  }
+}
+
+/* ---------- Forced colours ---------- */
+
+@media (forced-colors: active) {
+  .stage,
+  .seat,
+  .hand-chip,
+  .seat-bet,
+  .seat-badge,
+  .action-stage,
+  .amount-control,
+  .table-banner,
+  .table-notice,
+  .lobby-code-pill {
+    border: 1px solid CanvasText;
+  }
+
+  .seat-dealer {
+    forced-color-adjust: none;
+  }
+}
