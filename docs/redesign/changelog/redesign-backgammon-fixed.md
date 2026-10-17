@@ -177,4 +177,37 @@ strip's fade mask uses `var(--page)` too.
 
 ## Verification
 
-See the bottom section, written after the final runs.
+All on the final branch state after `node backgammon/scripts/offline-manifest.mjs`
+and `sh scripts/assemble-site.sh _site`.
+
+- `node scripts/run-tests.mjs`: 480 pass, 0 fail (470 before, plus main's
+  site-map tests and the new refresh-tokens test).
+- `BG_KEEP_GOING=1 node backgammon/tests/browser.cjs` (chromium 145): the
+  integration block and 76 modules, 77 PASS, 0 FAIL, exit 0.
+- `BG_MODULES=interaction-latency,play-latency node backgammon/tests/browser.cjs`:
+  both pass.
+- `BG_BASE_URL=http://127.0.0.1:18765 node backgammon/tests/interaction.cjs`
+  (python http.server on `_site`): pass; the benchmark JSON it rewrites was
+  restored.
+- `BG_BROWSERS=chromium node backgammon/tests/search-policy-browser.cjs`: pass.
+- `BG_BROWSERS=chromium node backgammon/tests/opening-book-browser.cjs`: pass
+  (28,659 entries, 14 live cross-checks).
+- `BG_BASE_URL=… node backgammon/tests/computer-game.cjs`: fails waiting for
+  the hidden `#roll`, as on `main` and on `redesign/bg-docs` (the script is
+  stale; `.action-help :is(#roll, #double-cube) { display: none }` predates
+  the redesign). `live-network.cjs` (real PeerJS signalling) and
+  `book-generator.cjs` were not run.
+- `SHELL_PAGES=<the eight pages> node scripts/shell-browser.cjs`: 8 pages × 3
+  viewports pass; 0 text under 12px, 0 targets under 44px, 0 missing rings,
+  skip link and `main#main` everywhere. Same with `SHELL_ROOT_FONT=24`.
+- `node scripts/screenshots.cjs --compare --only <the eight pages>`: 8
+  changed (hub at both sizes: new copy, footer and spacing; controls and
+  reports: footer; trainer: stepper gaps). All sixteen pictures reviewed and
+  copied over the Backgammon baselines.
+- Scratch Playwright renders (scratchpad `fix-states.cjs`, `hub-metrics.cjs`):
+  hub metrics at 320×568–430×932 and 1440×900; Settings opened with Space
+  (ring on Close), keyboard tab switching; update-gate failure actions;
+  game-over card and its hidden state at 375×812 and 1440×900; Trainer
+  session summary and hidden state at 375×812, 844×390 and 1440×900; the
+  20-decision stepper at 320, 375 and 1440; the history tree tablist at
+  390×844 (suite screenshot). No page errors.
