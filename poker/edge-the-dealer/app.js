@@ -19,7 +19,6 @@ class EdgeTheDealerController {
 
         // QoL state
         this.streak = { type: null, count: 0 }; // 'win' | 'lose' | null
-        this.soundEnabled = false;
         this.previousPnl = 0;
         this.isAnimatingPnl = false;
 
@@ -31,8 +30,24 @@ class EdgeTheDealerController {
         this.setupLogAndChat();
         this.setupCollapsibles();
         this.setupSwipeGestures();
+        this.setupStageObserver();
 
         this.checkForReconnection();
+    }
+
+    /**
+     * The sticky action stage's height is published as --stage-h so toasts
+     * stack above it instead of covering the primary action.
+     */
+    setupStageObserver() {
+        const stage = document.getElementById('action-area');
+        if (!stage || typeof ResizeObserver !== 'function') return;
+        const measure = () => {
+            const visible = this.currentScreen === 'game' ? stage.offsetHeight : 0;
+            document.documentElement.style.setProperty('--stage-h', `${visible}px`);
+        };
+        new ResizeObserver(measure).observe(stage);
+        measure();
     }
 
     async checkForReconnection() {
@@ -96,6 +111,7 @@ class EdgeTheDealerController {
         const startJoinBtn = document.getElementById('start-join-btn');
         const roomCodeInput = document.getElementById('room-code-input');
         startJoinBtn.addEventListener('click', () => this.startOrJoinGame());
+        document.getElementById('connect-cancel-btn').addEventListener('click', () => this.cancelConnect());
         roomCodeInput.addEventListener('input', () => this.updateStartJoinButton());
         roomCodeInput.addEventListener('keypress', e => {
             if (e.key === 'Enter') this.startOrJoinGame();
@@ -114,8 +130,9 @@ class EdgeTheDealerController {
         document.getElementById('next-hand-btn').addEventListener('click', () => this.startNextHand());
         document.getElementById('quit-game-btn').addEventListener('click', () => this.quitGame());
         document.getElementById('rules-btn').addEventListener('click', () => this.showRules());
+        document.getElementById('rules-preview-btn')?.addEventListener('click', () => this.showRules());
         document.getElementById('close-rules').addEventListener('click', () => this.hideRules());
-        document.getElementById('sound-toggle-btn').addEventListener('click', () => this.toggleSound());
+        document.querySelector('[data-close-rules]')?.addEventListener('click', () => this.hideRules());
 
         // Card selection
         document.getElementById('hole-cards').addEventListener('click', (e) => {
@@ -126,11 +143,6 @@ class EdgeTheDealerController {
             this.toggleDiscard(index);
             this.triggerTapRipple(slot);
             this.triggerHaptic();
-        });
-
-        // Close modal on backdrop click
-        document.getElementById('rules-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'rules-modal') this.hideRules();
         });
     }
 
@@ -191,11 +203,15 @@ class EdgeTheDealerController {
     }
 
     setupLogAndChat() {
+        // Tab switching (shared/tabs.js adds the tablist keyboard model and
+        // the hidden attribute on panels; the page keeps its own .active flags)
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.switchTab(btn.dataset.tab);
             });
         });
+        // onChange keeps .active in step when the arrow keys / Home / End switch tabs.
+        if (window.Tabs) Tabs.init(document.getElementById('log-chat-tabs'), { onChange: (id) => this.switchTab(id) });
 
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-chat-btn');
@@ -207,7 +223,11 @@ class EdgeTheDealerController {
 
         const emojiBtn = document.getElementById('emoji-picker-btn');
         const emojiPicker = document.getElementById('emoji-picker');
-        emojiBtn?.addEventListener('click', () => emojiPicker?.classList.toggle('hidden'));
+        const setPickerOpen = (open) => {
+            emojiPicker?.classList.toggle('hidden', !open);
+            emojiBtn?.setAttribute('aria-expanded', String(open));
+        };
+        emojiBtn?.addEventListener('click', () => setPickerOpen(emojiPicker?.classList.contains('hidden')));
 
         document.querySelectorAll('.emoji-option').forEach(emoji => {
             emoji.addEventListener('click', () => {
@@ -216,13 +236,19 @@ class EdgeTheDealerController {
                     chatInput.value += text;
                     chatInput.focus();
                 }
-                emojiPicker?.classList.add('hidden');
+                setPickerOpen(false);
             });
         });
 
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-picker-btn')) {
-                emojiPicker?.classList.add('hidden');
+                setPickerOpen(false);
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && emojiPicker && !emojiPicker.classList.contains('hidden')) {
+                setPickerOpen(false);
+                emojiBtn?.focus();
             }
         });
     }
@@ -231,7 +257,8 @@ class EdgeTheDealerController {
         document.querySelectorAll('.collapsible .section-header').forEach(header => {
             header.addEventListener('click', () => {
                 const collapsible = header.closest('.collapsible');
-                collapsible.classList.toggle('collapsed');
+                const collapsed = collapsible.classList.toggle('collapsed');
+                header.setAttribute('aria-expanded', String(!collapsed));
             });
         });
     }
@@ -293,13 +320,6 @@ class EdgeTheDealerController {
         setTimeout(() => slot.classList.remove('tap-ripple'), 400);
     }
 
-    toggleSound() {
-        this.soundEnabled = !this.soundEnabled;
-        const btn = document.getElementById('sound-toggle-btn');
-        btn.textContent = this.soundEnabled ? '🔊' : '🔇';
-        btn.classList.toggle('active', this.soundEnabled);
-    }
-
     // ============ MENU / LOBBY ============
 
     updateStartJoinButton() {
@@ -322,6 +342,7 @@ class EdgeTheDealerController {
     }
 
     startOrJoinGame() {
+        if (this.connecting) return;
         const roomCode = document.getElementById('room-code-input').value.trim();
         if (roomCode) this.joinRoom();
         else this.createRoom();
@@ -330,22 +351,65 @@ class EdgeTheDealerController {
     setButtonLoading(btn, loading) {
         if (loading) {
             btn.classList.add('loading');
+            btn.setAttribute('aria-busy', 'true');
             btn.disabled = true;
         } else {
             btn.classList.remove('loading');
+            btn.removeAttribute('aria-busy');
             btn.disabled = false;
         }
+    }
+
+    /**
+     * Connecting state: the Start/Join button is busy and a Cancel sits
+     * under it. Each attempt has an id; cancelling bumps it, so a promise
+     * that settles later is ignored instead of opening the lobby.
+     */
+    beginConnect(statusText) {
+        this.connectAttempt = (this.connectAttempt || 0) + 1;
+        this.connecting = true;
+        this.setButtonLoading(document.getElementById('start-join-btn'), true);
+        this.setConnectingUi(statusText);
+        return this.connectAttempt;
+    }
+
+    endConnect(attempt) {
+        if (attempt !== this.connectAttempt) return;
+        this.connecting = false;
+        this.setButtonLoading(document.getElementById('start-join-btn'), false);
+        this.setConnectingUi(null);
+    }
+
+    setConnectingUi(statusText) {
+        const status = document.getElementById('connect-status');
+        const cancel = document.getElementById('connect-cancel-btn');
+        if (status) {
+            status.textContent = statusText || '';
+            status.hidden = !statusText;
+        }
+        if (cancel) cancel.hidden = !statusText;
+    }
+
+    cancelConnect() {
+        if (!this.connecting) return;
+        this.connectAttempt += 1;
+        this.connecting = false;
+        try { this.multiplayer.leave(); } catch (err) { console.error('Leave error:', err); }
+        this.setButtonLoading(document.getElementById('start-join-btn'), false);
+        this.setConnectingUi(null);
+        this.showToast('Connection cancelled', 'info');
+        document.getElementById('start-join-btn').focus();
     }
 
     async createRoom() {
         const name = document.getElementById('player-name').value.trim() || 'Host';
         this.multiplayer.myName = name;
 
-        const btn = document.getElementById('start-join-btn');
-        this.setButtonLoading(btn, true);
+        const attempt = this.beginConnect('Creating the room…');
 
         try {
             const result = await this.multiplayer.initPeer(true);
+            if (attempt !== this.connectAttempt) return;
             this.myPlayerId = result.peerId;
 
             document.getElementById('room-code').textContent = this.multiplayer.roomCode;
@@ -358,9 +422,10 @@ class EdgeTheDealerController {
             this.showScreen('lobby');
             this.showToast(`Room created: ${this.multiplayer.roomCode}`, 'success');
         } catch (err) {
+            if (attempt !== this.connectAttempt) return;
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(btn, false);
+            this.endConnect(attempt);
         }
     }
 
@@ -374,13 +439,14 @@ class EdgeTheDealerController {
 
         this.multiplayer.myName = name;
 
-        const btn = document.getElementById('start-join-btn');
-        this.setButtonLoading(btn, true);
+        const attempt = this.beginConnect(`Connecting to room ${roomCode}…`);
 
         try {
             await this.multiplayer.initPeer(false, roomCode);
+            if (attempt !== this.connectAttempt) return;
             this.myPlayerId = this.multiplayer.myId;
             await this.multiplayer.connectToRoom();
+            if (attempt !== this.connectAttempt) return;
 
             document.getElementById('room-code').textContent = roomCode;
             document.getElementById('your-name').textContent = name;
@@ -390,9 +456,10 @@ class EdgeTheDealerController {
 
             this.showScreen('lobby');
         } catch (err) {
+            if (attempt !== this.connectAttempt) return;
             this.showToast(err.message, 'error');
         } finally {
-            this.setButtonLoading(btn, false);
+            this.endConnect(attempt);
         }
     }
 
@@ -402,12 +469,16 @@ class EdgeTheDealerController {
 
         players.forEach(player => {
             const isQueued = player.queued;
+            const isMe = player.id === this.myPlayerId;
             const div = document.createElement('div');
-            div.className = `lobby-player ${player.isHost ? 'host' : ''} ${isQueued ? 'queued' : ''}`;
+            div.className = `lobby-player seat seat--lobby ${player.isHost ? 'host seat--host' : ''} ${isQueued ? 'queued seat--queued' : ''} ${isMe ? 'seat--me' : ''}`;
             div.innerHTML = `
-                <div class="player-name">${this.escapeHtml(player.name)}</div>
-                ${player.isHost ? '<div class="host-badge">Host</div>' : ''}
-                ${isQueued ? '<div class="queued-badge">Joining next hand</div>' : ''}
+                <span class="seat-avatar" aria-hidden="true">${this.initials(player.name)}</span>
+                <div class="player-name seat-name"><span>${this.escapeHtml(player.name)}</span>${isMe ? '<span class="seat-badge">You</span>' : ''}</div>
+                <div class="seat-meta">
+                    ${player.isHost ? '<span class="host-badge seat-badge seat-badge--accent">Host</span>' : '<span class="seat-badge">Player</span>'}
+                    ${isQueued ? '<span class="queued-badge seat-badge seat-badge--warn">Joining next hand</span>' : ''}
+                </div>
             `;
             container.appendChild(div);
         });
@@ -420,10 +491,44 @@ class EdgeTheDealerController {
         }
     }
 
-    copyRoomCode() {
-        navigator.clipboard.writeText(this.multiplayer.roomCode).then(() => {
+    async copyRoomCode() {
+        const code = this.multiplayer.roomCode || '';
+        try {
+            await this.copyText(code);
             this.showToast('Room code copied!', 'success');
-        });
+        } catch (err) {
+            this.showToast(`Could not copy. The room code is ${code}.`, 'error');
+        }
+    }
+
+    /**
+     * Clipboard API with an execCommand fallback for browsers (and insecure
+     * contexts) that do not expose navigator.clipboard.
+     */
+    async copyText(text) {
+        if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand('copy');
+        area.remove();
+        if (!ok) throw new Error('Copy failed');
+    }
+
+    initials(name) {
+        const parts = String(name || 'P').trim().split(/\s+/).filter(Boolean);
+        // Escaped: the avatar is interpolated into innerHTML and names come from peers.
+        return this.escapeHtml(parts.slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'P');
+    }
+
+    /**
+     * A peer-supplied display name, escaped for innerHTML. Names reach every
+     * client through the host, so the chat and the log must never trust them.
+     */
+    safeName(name) {
+        return this.escapeHtml(name || 'Player');
     }
 
     leaveLobby() {
@@ -438,6 +543,11 @@ class EdgeTheDealerController {
         if (screenId === 'game') {
             document.getElementById('game-room-code').textContent = this.multiplayer.roomCode;
         }
+
+        // Quit lives in the topbar while a game runs; the lobby has its own button.
+        const quitBtn = document.getElementById('quit-game-btn');
+        if (quitBtn) quitBtn.hidden = screenId !== 'game';
+        if (screenId !== 'game') document.documentElement.style.setProperty('--stage-h', '0px');
     }
 
     leaveRoomAndReturnToMenu(options = {}) {
@@ -474,8 +584,17 @@ class EdgeTheDealerController {
         this.showScreen('menu');
     }
 
-    quitGame() {
-        const shouldQuit = window.confirm('Quit the current game and return to the main page?');
+    async quitGame() {
+        const isHost = this.multiplayer.isHost;
+        const othersSeated = (this.multiplayer.players?.size || 0) > 1;
+        const text = isHost
+            ? (othersSeated
+                ? 'You leave the table and your saved session is cleared. The other players keep playing: one of them becomes the host.'
+                : 'You leave the table and your saved session is cleared. Nobody else is seated, so the room ends.')
+            : 'Your seat is given up and your saved session is cleared. You can rejoin with the room code.';
+        const shouldQuit = window.Sheet
+            ? await Sheet.confirm({ title: 'Quit the game?', text, verb: 'Quit', danger: true, sheet: true })
+            : window.confirm(text);
         if (!shouldQuit) return;
 
         const quitBtn = document.getElementById('quit-game-btn');
@@ -813,7 +932,12 @@ class EdgeTheDealerController {
             this.updateDealerComparison(myPlayer, state);
             this.updateMyHandResults(state, myPlayer);
             this.updateStreakDisplay();
+        } else {
+            // Queued late joiner: empty slots and a persistent explanation
+            this.updateHoleCards([], false, { queued: true });
         }
+        const queuedNotice = document.getElementById('queued-notice');
+        if (queuedNotice) queuedNotice.hidden = !!myPlayer || !this.gameStarted;
 
         // Everyone else
         this.updatePlayersArea(state.players, state.phase, state.results, state.queuedPlayers);
@@ -858,7 +982,7 @@ class EdgeTheDealerController {
 
         if (state.phase !== 'draw' && state.phase !== 'results') {
             el.textContent = '';
-            el.className = 'dealer-comparison';
+            el.className = 'dealer-comparison hand-chip';
             return;
         }
 
@@ -867,7 +991,7 @@ class EdgeTheDealerController {
 
         if (keptCards.length !== 5 || !state.dealerBestHand) {
             el.textContent = '';
-            el.className = 'dealer-comparison';
+            el.className = 'dealer-comparison hand-chip';
             return;
         }
 
@@ -875,18 +999,18 @@ class EdgeTheDealerController {
             const hand = Poker.evaluate5CardHand(keptCards);
             const cmp = Poker.compareHands(hand, state.dealerBestHand);
             if (cmp > 0) {
-                el.textContent = '✓ Beats Dealer';
-                el.className = 'dealer-comparison beats';
+                el.textContent = 'Beats dealer';
+                el.className = 'dealer-comparison hand-chip hand-chip--good beats';
             } else if (cmp === 0) {
-                el.textContent = '= Ties Dealer';
-                el.className = 'dealer-comparison beats';
+                el.textContent = 'Ties dealer';
+                el.className = 'dealer-comparison hand-chip hand-chip--warn beats';
             } else {
-                el.textContent = '✗ Below Dealer';
-                el.className = 'dealer-comparison loses';
+                el.textContent = 'Below dealer';
+                el.className = 'dealer-comparison hand-chip hand-chip--bad loses';
             }
         } catch {
             el.textContent = '';
-            el.className = 'dealer-comparison';
+            el.className = 'dealer-comparison hand-chip';
         }
     }
 
@@ -896,7 +1020,8 @@ class EdgeTheDealerController {
         const el = document.getElementById('my-pnl');
         if (!el) return;
 
-        el.style.color = targetValue >= 0 ? 'var(--gold-light)' : 'var(--danger)';
+        el.classList.toggle('is-good', targetValue > 0);
+        el.classList.toggle('is-bad', targetValue < 0);
 
         if (this.previousPnl !== targetValue) {
             el.classList.remove('animating');
@@ -940,16 +1065,16 @@ class EdgeTheDealerController {
 
         if (!this.streak.type || this.streak.count < 2) {
             el.textContent = '';
-            el.className = 'player-streak';
+            el.className = 'player-streak chip';
             return;
         }
 
         if (this.streak.type === 'win') {
-            el.textContent = `🔥 ${this.streak.count}W`;
-            el.className = 'player-streak win-streak';
+            el.textContent = `${this.streak.count}W streak`;
+            el.className = 'player-streak chip chip--good win-streak';
         } else {
-            el.textContent = `${this.streak.count}L`;
-            el.className = 'player-streak lose-streak';
+            el.textContent = `${this.streak.count}L streak`;
+            el.className = 'player-streak chip chip--bad lose-streak';
         }
     }
 
@@ -994,7 +1119,7 @@ class EdgeTheDealerController {
         celebration.classList.add('active');
         celebration.innerHTML = '';
 
-        const colors = ['#57d6ff', '#a77dff', '#64f7a8', '#ffb347', '#ff6b8a', '#f4d03f'];
+        const colors = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-5)', 'var(--cat-6)', 'var(--accent)'];
         for (let i = 0; i < 40; i++) {
             const piece = document.createElement('div');
             piece.className = 'confetti-piece';
@@ -1043,14 +1168,14 @@ class EdgeTheDealerController {
         }
 
         resultEl.innerHTML = `
-            Dealer: <strong>${this.escapeHtml(dealerBest.name)}</strong>
+            <span class="hand-chip dealer-chip"><span class="hand-chip-label">Dealer</span><strong>${this.escapeHtml(dealerBest.name)}</strong></span>
             ${modeText ? `<span class="mode-note">${this.escapeHtml(modeText)}</span>` : ''}
         `;
     }
 
     // ============ HOLE CARDS ============
 
-    updateHoleCards(cards, canSelect) {
+    updateHoleCards(cards, canSelect, { queued = false } = {}) {
         const container = document.getElementById('hole-cards');
         const slots = container.querySelectorAll('.card-slot');
         const displayCards = this.sortCardsForDisplay(cards || []);
@@ -1059,18 +1184,38 @@ class EdgeTheDealerController {
             slot.classList.remove('selected-discard', 'locked', 'confirmed-discard');
 
             const card = displayCards[i];
-            // Staggered deal animation (only replays when the card in the slot changes)
-            this.fillSlot(slot, card, { dealDelay: i * 0.06 });
-            if (!card) return;
+            // Staggered deal animation (only replays when the card in the slot changes).
+            // Hole cards are buttons so a discard can be chosen from the keyboard.
+            this.fillSlot(slot, card, { dealDelay: i * 0.06, interactive: true });
+            const badge = slot.querySelector('.slot-badge');
+            if (!card) {
+                if (badge) badge.remove();
+                return;
+            }
 
-            const cardEl = slot.firstElementChild;
+            const cardEl = slot.querySelector('.playing-card');
             const selected = !card.faceDown && this.selectedDiscards.has(i);
-            if (cardEl) cardEl.classList.toggle('dim', selected);
+            if (cardEl) {
+                cardEl.classList.toggle('dim', selected);
+                cardEl.setAttribute('aria-pressed', String(selected));
+                cardEl.setAttribute('aria-disabled', String(!canSelect));
+            }
             if (selected) {
                 slot.classList.add('selected-discard');
                 if (!canSelect) {
                     slot.classList.add('confirmed-discard');
                 }
+            }
+
+            // Visible text for the slot state instead of CSS content
+            const badgeText = selected ? (canSelect ? 'Replace' : 'Queued') : '';
+            if (badgeText) {
+                const el = badge || document.createElement('span');
+                el.className = `slot-badge${canSelect ? '' : ' slot-badge--warn'}`;
+                el.textContent = badgeText;
+                if (!badge) slot.appendChild(el);
+            } else if (badge) {
+                badge.remove();
             }
 
             if (!canSelect) {
@@ -1079,10 +1224,13 @@ class EdgeTheDealerController {
         });
 
         const help = document.getElementById('discard-help');
-        if (this.currentState?.phase === 'draw') {
+        if (queued) {
+            // Not dealt in yet: #queued-notice explains; no discard count to report.
+            help.textContent = '';
+        } else if (this.currentState?.phase === 'draw') {
             help.textContent = canSelect
-                ? `Tap cards to replace. Selected: ${this.selectedDiscards.size} of 5`
-                : `Confirmed ${this.selectedDiscards.size} discard${this.selectedDiscards.size === 1 ? '' : 's'} — waiting...`;
+                ? `Select the cards to replace. Selected: ${this.selectedDiscards.size} of 5`
+                : `Confirmed ${this.selectedDiscards.size} discard${this.selectedDiscards.size === 1 ? '' : 's'}. Waiting for the other players.`;
         } else if (this.currentState?.phase === 'results') {
             help.textContent = 'Showdown complete.';
         } else {
@@ -1102,44 +1250,53 @@ class EdgeTheDealerController {
             const name = playerInfo ? playerInfo.name : (isMe ? 'You' : `Player ${index + 1}`);
             const displayPnl = phase === 'results' ? player.actualPnl : player.pnl;
 
-            const playerBox = document.createElement('div');
-            playerBox.className = `player-box ${player.hasConfirmed ? 'confirmed acted' : ''} ${phase === 'results' ? 'showdown' : ''}`;
-            playerBox.style.animationDelay = `${index * 0.05}s`;
+            const playerBox = document.createElement('article');
+            const result = phase === 'results' && results ? results.find(r => r.playerId === player.id) : null;
+            const seatState = [
+                player.hasConfirmed ? 'confirmed acted seat--confirmed' : '',
+                phase === 'results' ? 'showdown' : '',
+                isMe ? 'seat--me' : '',
+                playerInfo?.isHost ? 'seat--host' : '',
+                result?.isWinner ? 'seat--winner' : ''
+            ].filter(Boolean).join(' ');
+            playerBox.className = `player-box seat ${seatState}`.trim();
+            playerBox.style.setProperty('--deal-delay', `${index * 0.05}s`);
+            const pnlClass = displayPnl > 0 ? 'is-good' : (displayPnl < 0 ? 'is-bad' : '');
 
+            let statusHtml = '';
             let detailsHtml = '';
             if (phase !== 'results') {
-                detailsHtml = `
-                    <div class="status ${player.hasConfirmed ? 'confirmed' : 'waiting'}">
-                        ${player.hasConfirmed ? '✓ Confirmed' : '... Waiting'}
-                    </div>
-                    <div class="discard-count">Discards: ${player.discardCount || 0}</div>
+                statusHtml = `
+                    <span class="status ${player.hasConfirmed ? 'confirmed seat-badge seat-badge--good' : 'waiting seat-badge'}">${player.hasConfirmed ? 'Confirmed' : 'Waiting'}</span>
+                    <span class="discard-count">Discards ${player.discardCount || 0}</span>
                 `;
-            } else if (results) {
-                const result = results.find(r => r.playerId === player.id);
-                if (result) {
-                    const sortedCards = this.sortCardsForDisplay(result.holeCards || []);
-                    const cardsHtml = `<div class="player-cards">${PlayingCards.rowHtml(sortedCards.map(card => this.cardFace(card)))}</div>`;
+            } else if (result) {
+                const sortedCards = this.sortCardsForDisplay(result.holeCards || []);
+                const cardsHtml = `<div class="player-cards seat-cards">${PlayingCards.rowHtml(sortedCards.map(card => this.cardFace(card)))}</div>`;
 
-                    const compareClass = result.beatsDealer ? 'beats' : 'misses';
-                    const compareText = result.beatsDealer ? '✓ Beats dealer' : '✗ Below dealer';
-                    const payoutClass = result.netResult >= 0 ? 'win' : 'lose';
+                const compareClass = result.beatsDealer ? 'beats hand-chip--good' : 'misses hand-chip--bad';
+                const compareText = result.beatsDealer ? 'Beats dealer' : 'Below dealer';
+                const payoutClass = result.netResult >= 0 ? 'win' : 'lose';
 
-                    detailsHtml = `
-                        ${cardsHtml}
-                        <div class="hand-result-line"><strong>${this.escapeHtml(result.hand.name)}</strong></div>
-                        <div class="dealer-compare ${compareClass}">${compareText}</div>
-                        ${result.isWinner ? '<div class="winner-label">🏆 Winner</div>' : ''}
-                        <div class="payout ${payoutClass}">${this.formatCurrency(result.netResult, true)}</div>
-                    `;
-                }
+                statusHtml = result.isWinner ? '<span class="winner-label seat-badge seat-badge--good">Winner</span>' : '';
+                detailsHtml = `
+                    ${cardsHtml}
+                    <div class="player-hands hand-chip-row">
+                        <span class="hand-result-line hand-chip"><strong>${this.escapeHtml(result.hand.name)}</strong></span>
+                        <span class="dealer-compare hand-chip ${compareClass}">${compareText}</span>
+                    </div>
+                    <div class="payout ${payoutClass}">This hand: ${this.formatCurrency(result.netResult, true)}</div>
+                `;
             }
 
             playerBox.innerHTML = `
-                <div class="name">${this.escapeHtml(name)}${isMe ? ' (You)' : ''}</div>
-                <div class="pnl" style="color: ${displayPnl >= 0 ? 'var(--gold-light)' : 'var(--danger)'}">
-                    PnL: ${this.formatCurrency(displayPnl)}
+                <span class="seat-avatar" aria-hidden="true">${this.initials(name)}</span>
+                <div class="name seat-name"><span>${this.escapeHtml(name)}</span>${isMe ? '<span class="seat-badge">You</span>' : ''}</div>
+                <div class="seat-meta">
+                    <span class="pnl seat-pnl ${pnlClass}">PnL ${this.formatCurrency(displayPnl)}</span>
+                    <span class="bet-amount">Bet ${this.formatCurrency(player.totalBet)}</span>
+                    ${statusHtml}
                 </div>
-                <div class="bet-amount">Bet: ${this.formatCurrency(player.totalBet)}</div>
                 ${detailsHtml}
             `;
             container.appendChild(playerBox);
@@ -1152,11 +1309,12 @@ class EdgeTheDealerController {
                 const isMe = playerId === this.myPlayerId;
                 const name = playerInfo ? playerInfo.name : (isMe ? 'You' : 'Player');
 
-                const div = document.createElement('div');
-                div.className = 'player-box queued';
+                const div = document.createElement('article');
+                div.className = 'player-box seat seat--queued queued';
                 div.innerHTML = `
-                    <div class="name">${this.escapeHtml(name)}${isMe ? ' (You)' : ''}</div>
-                    <div class="queued-status">⏳ Joining next hand</div>
+                    <span class="seat-avatar" aria-hidden="true">${this.initials(name)}</span>
+                    <div class="name seat-name"><span>${this.escapeHtml(name)}</span>${isMe ? '<span class="seat-badge">You</span>' : ''}</div>
+                    <div class="seat-meta"><span class="queued-status seat-badge seat-badge--warn">Joining next hand</span></div>
                 `;
                 container.appendChild(div);
             });
@@ -1181,8 +1339,8 @@ class EdgeTheDealerController {
             ? 'Showdown'
             : `Draw Round ${state.currentDrawRound} of ${state.drawCount}`;
         drawRoundBanner.innerHTML = `
-            <span>${drawLabel}</span>
-            <span class="draw-meta">Deck: ${state.deckCount ?? 0} • Discards: ${state.discardCount ?? 0}</span>
+            <span class="draw-title">${drawLabel}</span>
+            <span class="draw-meta">Deck ${state.deckCount ?? 0} · Discards ${state.discardCount ?? 0}</span>
         `;
 
         if (state.phase === 'results') {
@@ -1221,7 +1379,7 @@ class EdgeTheDealerController {
 
         confirmBtn.textContent = canAct
             ? `Confirm${this.selectedDiscards.size > 0 ? ` (${this.selectedDiscards.size})` : ''}`
-            : 'Confirmed ✓';
+            : (myPlayer ? 'Confirmed' : 'Confirm');
 
         waitingDraw.classList.toggle('hidden', !myPlayer || !myPlayer.hasConfirmed);
     }
@@ -1260,8 +1418,10 @@ class EdgeTheDealerController {
             : 'No one beat dealer — highest hand won';
 
         resultsDiv.innerHTML = `
-            <div class="my-hand-row">Dealer: ${this.escapeHtml(dealerBest.name)}</div>
-            <div class="my-hand-row ${compareClass}">You: ${this.escapeHtml(myResult.hand.name)} ${myResult.beatsDealer ? '✓' : '✗'}</div>
+            <div class="hand-chip-row">
+                <span class="my-hand-row hand-chip"><span class="hand-chip-label">Dealer</span><strong>${this.escapeHtml(dealerBest.name)}</strong></span>
+                <span class="my-hand-row hand-chip ${compareClass} ${myResult.beatsDealer ? 'hand-chip--good' : 'hand-chip--bad'}"><span class="hand-chip-label">You</span><strong>${this.escapeHtml(myResult.hand.name)}</strong><span class="sr-only">${myResult.beatsDealer ? 'beats the dealer' : 'below the dealer'}</span></span>
+            </div>
             <div class="my-hand-equation">${this.escapeHtml(modeText)}</div>
             <div class="my-hand-total ${netClass}">This hand: ${this.formatCurrency(myResult.netResult, true)}</div>
         `;
@@ -1303,8 +1463,9 @@ class EdgeTheDealerController {
         if (!key) return;
 
         slot.style.setProperty('--deal-delay', `${options.dealDelay || 0}s`);
-        slot.appendChild(PlayingCards.element(this.cardFace(card)));
-        void slot.offsetWidth; // restart the deal animation
+        const cardOptions = options.interactive ? { tag: 'button', interactive: true, pressed: false } : {};
+        slot.appendChild(PlayingCards.element(this.cardFace(card), cardOptions));
+        void slot.offsetWidth; // restart the deal transition
         slot.classList.add('dealt');
     }
 
@@ -1436,19 +1597,19 @@ class EdgeTheDealerController {
         this.handNumber += 1;
         const playerNames = players.map(p => {
             const info = this.multiplayer.getPlayer(p.id);
-            return info?.name || 'Player';
+            return this.safeName(info?.name);
         }).join(', ');
 
         this.addLogEntry(
             'hand-start',
-            `<strong>═══ Hand #${this.handNumber} ═══</strong><br>` +
-            `Bet: ${this.formatCurrency(baseBet)} • Draws: ${drawCount} • Players: ${playerNames}`
+            `<strong>Hand ${this.handNumber}</strong>` +
+            `Bet ${this.formatCurrency(baseBet)} · Draws ${drawCount} · Players: ${playerNames}`
         );
     }
 
     logDiscardConfirm(playerId, discardCount, round, totalRounds) {
         const playerInfo = this.multiplayer.getPlayer(playerId);
-        const name = playerInfo?.name || 'Player';
+        const name = this.safeName(playerInfo?.name);
         const isMe = playerId === this.myPlayerId;
         this.addLogEntry(
             'action',
@@ -1459,7 +1620,7 @@ class EdgeTheDealerController {
     }
 
     logShowdown(state) {
-        this.addLogEntry('showdown', '<strong>─── Showdown ───</strong>');
+        this.addLogEntry('showdown', '<strong>Showdown</strong>');
 
         if (state.dealerBestHand) {
             this.addLogEntry('showdown', `Dealer: <strong>${this.escapeHtml(state.dealerBestHand.name)}</strong>`);
@@ -1473,7 +1634,7 @@ class EdgeTheDealerController {
 
         state.results.forEach(result => {
             const playerInfo = this.multiplayer.getPlayer(result.playerId);
-            const name = playerInfo?.name || 'Player';
+            const name = this.safeName(playerInfo?.name);
             const isMe = result.playerId === this.myPlayerId;
 
             const cls = result.netResult > 0 ? 'win' : (result.netResult < 0 ? 'lose' : 'push');
@@ -1482,17 +1643,17 @@ class EdgeTheDealerController {
                 'result',
                 `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ` +
                 `${this.escapeHtml(result.hand.name)} (${compareText}) ` +
-                `${result.isWinner ? '🏆' : ''} ${this.formatCurrency(result.netResult, true)}`,
+                `${result.isWinner ? 'wins ' : ''}${this.formatCurrency(result.netResult, true)}`,
                 cls
             );
         });
     }
 
     logPnLSummary(players) {
-        this.addLogEntry('showdown', '<strong>─── PnL Summary ───</strong>');
+        this.addLogEntry('showdown', '<strong>PnL summary</strong>');
         players.forEach(player => {
             const info = this.multiplayer.getPlayer(player.id);
-            const name = info?.name || 'Player';
+            const name = this.safeName(info?.name);
             const isMe = player.id === this.myPlayerId;
             const pnl = player.actualPnl ?? player.pnl ?? 0;
             const cls = pnl > 0 ? 'win' : (pnl < 0 ? 'lose' : 'push');
@@ -1559,10 +1720,10 @@ class EdgeTheDealerController {
         msg.className = `chat-message${isEmojiOnly ? ' emoji-blast' : ''}`;
 
         if (isEmojiOnly) {
-            msg.innerHTML = text;
+            msg.textContent = text;
         } else {
             msg.innerHTML = `
-                <span class="sender${isMe ? ' me' : ''}">${senderName}:</span>
+                <span class="sender${isMe ? ' me' : ''}">${this.safeName(senderName)}:</span>
                 <span class="text">${this.escapeHtml(text)}</span>
                 <span class="timestamp">${time}</span>
             `;
@@ -1645,24 +1806,48 @@ class EdgeTheDealerController {
     // ============ RULES / TOAST / UTILS ============
 
     showRules() {
-        document.getElementById('rules-modal').classList.remove('hidden');
+        const dialog = document.getElementById('rules-modal');
+        if (window.Sheet) Sheet.open(dialog, { dismissible: true, sheet: true });
+        else dialog.showModal();
     }
 
     hideRules() {
-        document.getElementById('rules-modal').classList.add('hidden');
+        const dialog = document.getElementById('rules-modal');
+        if (window.Sheet) Sheet.close(dialog);
+        else dialog.close();
     }
 
+    /**
+     * Toasts: errors go to the assertive #alerts stack, everything else to
+     * the polite #toast-container. Each toast has a dismiss control and
+     * pauses its timer while hovered or focused.
+     */
     showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
+        const alert = type === 'error';
+        const container = document.getElementById(alert ? 'alerts' : 'toast-container') || document.getElementById('toast-container');
+        if (!container) return;
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        container.appendChild(toast);
+        toast.className = `toast ${type}${alert ? ' toast--alert' : type === 'success' ? ' toast--good' : ''}`;
+        const text = document.createElement('span');
+        text.textContent = message;
+        const dismiss = document.createElement('button');
+        dismiss.type = 'button';
+        dismiss.className = 'btn btn--ghost btn--icon btn--sm';
+        dismiss.setAttribute('aria-label', 'Dismiss');
+        dismiss.innerHTML = '<svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>';
+        toast.append(text, dismiss);
 
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        let timer = 0;
+        const remove = () => { clearTimeout(timer); toast.remove(); };
+        const arm = () => { clearTimeout(timer); timer = setTimeout(remove, alert ? 6000 : 3500); };
+        dismiss.addEventListener('click', remove);
+        toast.addEventListener('mouseenter', () => clearTimeout(timer));
+        toast.addEventListener('focusin', () => clearTimeout(timer));
+        toast.addEventListener('mouseleave', arm);
+        toast.addEventListener('focusout', arm);
+        while (container.children.length >= 3) container.firstElementChild.remove();
+        container.appendChild(toast);
+        arm();
     }
 
     escapeHtml(text) {
@@ -1674,4 +1859,12 @@ class EdgeTheDealerController {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.gameController = new EdgeTheDealerController();
+    // Phones: the tool nav is a scrolling strip; bring this page's entry into view.
+    const toolNav = document.querySelector('.tool-nav');
+    const current = toolNav?.querySelector('[aria-current="page"]');
+    if (toolNav && current && toolNav.scrollWidth > toolNav.clientWidth) {
+        const navBox = toolNav.getBoundingClientRect();
+        const box = current.getBoundingClientRect();
+        toolNav.scrollLeft += box.left - navBox.left - (navBox.width - box.width) / 2;
+    }
 });

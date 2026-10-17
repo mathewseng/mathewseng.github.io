@@ -1,255 +1,326 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="poker">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#090b10" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Poker Rush: a seeded discard-and-draw sprint. Any straight or better scores, clears and refills; play the daily seed, a random seed, or race a friend." />
     <title>Poker Rush</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261005" />
-    <link rel="stylesheet" href="./styles.css?v=20261005" />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../table.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body>
-    <main class="shell">
-      <section id="lobby" class="lobby" aria-labelledby="gameTitle">
-        <div class="lobby-top">
-          <div class="logo-mark" aria-hidden="true">PR</div>
-          <button id="instructionsButton" class="icon-button" type="button" aria-label="Instructions">
-            <span aria-hidden="true">i</span>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell app--shell">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">Projects</span></a>
+          <span class="crumb-sep crumb-family" aria-hidden="true">/</span>
+          <a class="crumb-family" href="/poker/">Poker</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Poker Rush</span>
+        </nav>
+        <nav class="tool-nav" aria-label="Poker tables">
+          <a href="/poker/play/">Mixed Poker</a>
+          <a href="/poker/rush/" aria-current="page">Poker Rush</a>
+          <a href="/poker/ultimate-omaha/">Ultimate Omaha</a>
+          <a href="/poker/edge-the-dealer/">Edge the Dealer</a>
+          <a href="/poker/222/">222</a>
+        </nav>
+        <div class="topbar-actions">
+          <span class="badge badge--warn connection" id="connection" data-state="offline" hidden title="Offline"><span>Offline</span></span>
+          <button class="btn btn--ghost btn--icon" id="soundButton" type="button" aria-pressed="true" aria-label="Sound effects" title="Sound effects">
+            <svg class="icon icon-sound-on" aria-hidden="true"><use href="../../shared/icons.svg#i-sound" /></svg>
+            <svg class="icon icon-sound-off" aria-hidden="true"><use href="../../shared/icons.svg#i-sound-off" /></svg>
+          </button>
+          <button class="btn btn--ghost btn--icon" id="instructionsButton" type="button" aria-label="How to play" title="How to play">
+            <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-help" /></svg>
           </button>
         </div>
+      </header>
 
-        <div class="title-stack">
-          <p class="eyebrow">Seeded poker sprint</p>
-          <h1 id="gameTitle">Poker Rush</h1>
-        </div>
-
-        <div class="main-actions" aria-label="Start game">
-          <button id="dailyButton" class="primary-action" type="button">
-            <span class="action-kicker">Play</span>
-            <span>Daily</span>
-          </button>
-          <button id="randomButton" class="primary-action alt" type="button">
-            <span class="action-kicker">Play</span>
-            <span>Random</span>
-          </button>
-          <button id="multiplayerButton" class="primary-action multi" type="button">
-            <span class="action-kicker">Play</span>
-            <span>Multiplayer</span>
-          </button>
-        </div>
-
-        <details class="options-drawer">
-          <summary>Options</summary>
-          <form id="optionsForm" class="options-grid">
-            <fieldset>
-              <legend>Cards</legend>
-              <div class="segmented">
-                <label><input type="radio" name="handSize" value="5" /> <span>5</span></label>
-                <label><input type="radio" name="handSize" value="6" /> <span>6</span></label>
-                <label><input type="radio" name="handSize" value="7" checked /> <span>7</span></label>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>Jokers</legend>
-              <div class="segmented five">
-                <label><input type="radio" name="jokers" value="0" checked /> <span>0</span></label>
-                <label><input type="radio" name="jokers" value="1" /> <span>1</span></label>
-                <label><input type="radio" name="jokers" value="2" /> <span>2</span></label>
-                <label><input type="radio" name="jokers" value="3" /> <span>3</span></label>
-                <label><input type="radio" name="jokers" value="4" /> <span>4</span></label>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>Time</legend>
-              <div class="segmented four">
-                <label><input type="radio" name="timeLimit" value="15" /> <span>15s</span></label>
-                <label><input type="radio" name="timeLimit" value="30" /> <span>30s</span></label>
-                <label><input type="radio" name="timeLimit" value="60" checked /> <span>60s</span></label>
-                <label><input type="radio" name="timeLimit" value="0" /> <span>No limit</span></label>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>Discards</legend>
-              <select name="discardMode">
-                <option value="bottom" selected>Bottom of deck</option>
-                <option value="pile">Discard pile, reshuffle</option>
-                <option value="random">Random in deck</option>
-                <option value="infinite">Infinite deck</option>
-              </select>
-            </fieldset>
-
-            <fieldset>
-              <legend>Ends</legend>
-              <select name="endMode">
-                <option value="no_scores" selected>No more scores possible</option>
-                <option value="discards">52 discards</option>
-                <option value="seen_count">52 plus jokers seen</option>
-                <option value="seen_all">Every card seen once</option>
-              </select>
-            </fieldset>
-          </form>
-        </details>
-      </section>
-
-      <section id="gameView" class="game-view" aria-label="Poker Rush table" hidden>
-        <header class="table-header">
-          <div class="score-box">
-            <span class="metric-label">Score</span>
-            <strong id="scoreValue">0</strong>
-          </div>
-          <div class="round-metrics">
+      <main id="main" tabindex="-1">
+        <section id="lobby" class="lobby-view view" aria-labelledby="gameTitle">
+          <div class="tool-head">
             <div>
-              <span class="metric-label">Time</span>
-              <strong id="timeValue">60.0</strong>
+              <p class="eyebrow">Poker · Seeded sprint</p>
+              <h1 id="gameTitle">Poker Rush</h1>
+              <p class="lede">Discard and draw as fast as you can. Any straight or better scores, clears from your hand and refills from the deck.</p>
             </div>
-            <div>
-              <span class="metric-label">Seen</span>
-              <strong id="seenValue">0/52</strong>
-            </div>
-            <div>
-              <span class="metric-label">Discards</span>
-              <strong id="discardValue">0</strong>
-            </div>
-            <div>
-              <span class="metric-label">Deck</span>
-              <strong id="deckValue">45</strong>
+            <div class="stat-strip rush-records" id="records" aria-label="Your records">
+              <div class="stat"><span class="stat-label">Best score</span><strong class="stat-value" id="bestScoreValue">–</strong></div>
+              <div class="stat"><span class="stat-label">Today</span><strong class="stat-value" id="todayScoreValue">Not played</strong></div>
             </div>
           </div>
-          <div class="header-actions">
-            <button id="soundButton" class="small-button" type="button" aria-label="Toggle sound">SFX</button>
-            <button id="matrixToggleButton" class="small-button" type="button" aria-pressed="false">Matrix</button>
-            <button id="newDailyButton" class="small-button" type="button">Daily</button>
-            <button id="newRandomButton" class="small-button" type="button">Random</button>
-            <button id="endGameButton" class="small-button danger" type="button">End</button>
-          </div>
-        </header>
 
-        <section id="scoreStrip" class="score-strip" aria-live="polite">
-          <div class="strip-title">
-            <span>Scored hands</span>
-            <strong id="scoreSummary">0 hands</strong>
+          <div class="rush-tiles" aria-label="Start a game">
+            <button id="dailyButton" class="rush-tile rush-tile--featured" type="button">
+              <span class="rush-tile-kicker">Play</span>
+              <span class="rush-tile-title">Daily</span>
+              <span class="rush-tile-text" id="dailyTileText">One seed for everyone today. Same deck, same draws; beat your best.</span>
+              <span class="rush-tile-foot"><span class="badge badge--plain" id="dailySeedBadge">Seed</span><span class="badge badge--good" id="dailyPlayedBadge" hidden>Played today</span><span class="rush-tile-go" aria-hidden="true"><svg class="icon"><use href="../../shared/icons.svg#i-arrow-right" /></svg></span></span>
+            </button>
+            <button id="randomButton" class="rush-tile" type="button">
+              <span class="rush-tile-kicker">Play</span>
+              <span class="rush-tile-title">Random</span>
+              <span class="rush-tile-text">A fresh seed every time. The seed shows in the header so you can share it.</span>
+              <span class="rush-tile-foot"><span class="rush-tile-go" aria-hidden="true"><svg class="icon"><use href="../../shared/icons.svg#i-arrow-right" /></svg></span></span>
+            </button>
+            <button id="multiplayerButton" class="rush-tile" type="button">
+              <span class="rush-tile-kicker">Race</span>
+              <span class="rush-tile-title">Multiplayer</span>
+              <span class="rush-tile-text">Two players, one deck, one clock. Share a room code; no sign-up.</span>
+              <span class="rush-tile-foot"><span class="rush-tile-go" aria-hidden="true"><svg class="icon"><use href="../../shared/icons.svg#i-arrow-right" /></svg></span></span>
+            </button>
           </div>
-          <div id="playersPanel" class="players-panel" hidden></div>
-          <div id="scoredHands" class="scored-hands"></div>
+
+          <div class="rush-options-row">
+            <button class="btn" id="optionsButton" type="button" aria-haspopup="dialog" aria-controls="optionsDialog">
+              <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-settings" /></svg>Options
+            </button>
+            <div class="chip-row" id="optionsSummary" aria-label="Current options"></div>
+          </div>
         </section>
 
-        <section class="table-surface">
-          <div class="seed-row">
-            <span id="seedBadge" class="seed-badge"></span>
-            <span id="modeBadge" class="mode-badge"></span>
+        <section id="roomView" class="room-view view" aria-labelledby="roomTitle" hidden>
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker Rush · Room</p>
+              <h1 id="roomTitle" tabindex="-1">Waiting for a player</h1>
+              <p class="lede" id="roomLede">Share the code or the invite link. Start the race once your opponent is in.</p>
+            </div>
+            <div class="lobby-code">
+              <span class="lobby-code-pill"><span>Room</span><strong id="inviteCode">------</strong><button class="btn btn--ghost btn--icon" id="copyCodeButton" type="button" aria-label="Copy room code" title="Copy room code"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-copy" /></svg></button></span>
+              <button class="btn" id="copyInviteButton" type="button"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-link" /></svg>Copy invite</button>
+            </div>
           </div>
-          <div id="hand" class="hand" aria-label="Current hand"></div>
-          <div id="statusLine" class="status-line" role="status" aria-live="polite"></div>
+          <div class="table-banner table-banner--info" id="roomBanner" hidden><span></span></div>
+          <div class="room-grid">
+            <section class="panel" aria-labelledby="roomSeatsTitle">
+              <div class="panel-head"><h2 id="roomSeatsTitle">Players</h2><span class="field-hint" id="rosterCount">1 of 2</span></div>
+              <div class="panel-body lobby">
+                <div class="lobby-roster" id="roster"></div>
+                <div class="lobby-actions">
+                  <button class="btn btn--primary btn--lg" id="startGameButton" type="button">Start race</button>
+                  <p class="lobby-wait" id="roomWait" hidden>Waiting for the host to start the race.</p>
+                  <p class="field-hint" id="connectionStatus"></p>
+                </div>
+                <p class="field-error" id="roomError"></p>
+              </div>
+            </section>
+            <section class="panel" aria-labelledby="roomOptionsTitle">
+              <div class="panel-head"><h2 id="roomOptionsTitle">Race options</h2><button class="btn btn--ghost btn--sm" id="roomOptionsButton" type="button" aria-haspopup="dialog" aria-controls="optionsDialog">Change</button></div>
+              <div class="panel-body">
+                <div class="lobby-settings chip-row" id="roomOptions"></div>
+                <p class="field-hint">Discards are random in multiplayer so both decks stay in step.</p>
+                <div class="lobby-actions"><button class="btn btn--danger" id="leaveRoomButton" type="button">Leave room</button></div>
+              </div>
+            </section>
+          </div>
         </section>
 
-        <section class="lower-grid">
-          <div id="matrixPanel" class="matrix-panel" hidden>
-            <div class="panel-head">
-              <span>Card matrix</span>
-              <strong id="uniqueSeenValue">0 unique</strong>
+        <section id="gameView" class="game-view view" aria-label="Poker Rush table" hidden>
+          <header class="tool-head game-header">
+            <div>
+              <p class="eyebrow eyebrow--plain game-kicker"><span id="seedBadge"></span><span class="crumb-sep" aria-hidden="true">·</span><span id="modeBadge"></span></p>
+              <div class="header-actions">
+                <button id="matrixToggleButton" class="btn btn--sm" type="button" aria-pressed="false" aria-controls="matrixPanel"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-cards" /></svg>Matrix</button>
+                <button id="newDailyButton" class="btn btn--sm" type="button">Daily</button>
+                <button id="newRandomButton" class="btn btn--sm" type="button">Random</button>
+                <button id="endGameButton" class="btn btn--sm btn--danger" type="button">End</button>
+              </div>
             </div>
-            <div id="cardMatrix" class="card-matrix" aria-label="Seen and discarded cards"></div>
-          </div>
+            <div class="stat-strip round-metrics" aria-label="Run status">
+              <div class="stat stat--score"><span class="stat-label">Score</span><strong class="stat-value" id="scoreValue">0</strong></div>
+              <div class="stat"><span class="stat-label">Time</span><strong class="stat-value" id="timeValue">60.0</strong></div>
+              <div class="stat"><span class="stat-label">Seen</span><strong class="stat-value" id="seenValue">0/52</strong></div>
+              <div class="stat"><span class="stat-label">Discards</span><strong class="stat-value" id="discardValue">0</strong></div>
+              <div class="stat"><span class="stat-label">Deck</span><strong class="stat-value" id="deckValue">45</strong></div>
+            </div>
+          </header>
 
-          <div class="history-panel">
-            <div class="panel-head">
-              <span>Scores</span>
-              <strong id="pointsBreakdown">0 pts</strong>
-            </div>
-            <div id="scoreList" class="score-list"></div>
+          <div class="table-banner" id="gameBanner" hidden><span></span></div>
+
+          <div class="game-grid">
+            <section class="table-surface stage felt" aria-label="Your hand">
+              <div id="hand" class="hand" aria-label="Current hand"></div>
+              <p id="statusLine" class="status-line felt-message" role="status" aria-live="polite"></p>
+            </section>
+
+            <section id="scoreStrip" class="score-strip panel" aria-labelledby="scoreStripTitle">
+              <div class="panel-head">
+                <h2 id="scoreStripTitle">Scored hands</h2>
+                <strong class="strip-count" id="scoreSummary">0 hands</strong>
+              </div>
+              <div class="panel-body score-strip-body">
+                <div id="playersPanel" class="players-panel" hidden></div>
+                <div id="scoredHands" class="scored-hands"></div>
+                <div class="history-panel">
+                  <div class="history-head">
+                    <span>All scores</span>
+                    <strong id="pointsBreakdown">0 pts</strong>
+                  </div>
+                  <div id="scoreList" class="score-list"></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="matrixPanel" class="matrix-panel panel" hidden aria-labelledby="matrixTitle">
+              <div class="panel-head">
+                <h2 id="matrixTitle">Card matrix</h2>
+                <strong class="strip-count" id="uniqueSeenValue">0 unique</strong>
+              </div>
+              <div class="panel-body">
+                <div id="cardMatrix" class="card-matrix" aria-label="Seen and discarded cards"></div>
+                <div class="matrix-legend" aria-hidden="true">
+                  <span><i class="matrix-key matrix-key--active"></i>In hand</span>
+                  <span><i class="matrix-key matrix-key--scored"></i>Scored</span>
+                  <span><i class="matrix-key matrix-key--discarded"></i>Discarded</span>
+                  <span><i class="matrix-key matrix-key--unseen"></i>Not seen</span>
+                </div>
+              </div>
+            </section>
           </div>
         </section>
-      </section>
-    </main>
+      </main>
+    </div>
 
-    <dialog id="instructionsDialog" class="modal">
+    <dialog id="instructionsDialog" class="dialog dialog--sheet" aria-labelledby="instructionsTitle">
       <form method="dialog">
-        <div class="modal-head">
-          <h2>Poker Rush</h2>
-          <button class="icon-button" value="close" aria-label="Close instructions" type="submit">x</button>
+        <div class="dialog-head">
+          <div><p class="eyebrow eyebrow--plain">How to play</p><h2 id="instructionsTitle">Poker Rush</h2></div>
+          <button class="btn btn--ghost btn--icon" value="close" aria-label="Close" type="submit"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
         </div>
-        <div class="modal-body">
-          <p>Start with 5, 6, or 7 cards. Tap a card, click it, or press its number key to discard and draw.</p>
-          <p>Any 5-card straight-or-better hand scores immediately, clears from your hand, and refills from the deck.</p>
+        <div class="dialog-body rush-copy">
+          <p>Start with 5, 6 or 7 cards. Tap a card, click it, or press its number key (<kbd class="keycap">1</kbd>–<kbd class="keycap">7</kbd>) to discard it and draw.</p>
+          <p>Any five-card straight or better scores at once, clears from your hand and refills from the deck.</p>
           <ul>
             <li>Straight, flush, full house: 1 point</li>
             <li>Four of a kind: 3 points</li>
             <li>Straight flush: 5 points</li>
             <li>Royal flush: 10 points</li>
           </ul>
-          <p>Daily games use your local date as the seed in YYYYMMDD format. Random games show the seed in the table header.</p>
+          <p>Daily games use your local date as the seed (YYYYMMDD). Random games show their seed in the header. Multiplayer races two players on one shared deck and clock.</p>
+          <p class="field-hint">Poker Rush is part of <a href="/poker/">the Poker family</a>; the source is on <a href="https://github.com/mathewseng/mathewseng.github.io" rel="noopener">GitHub</a>.</p>
         </div>
       </form>
     </dialog>
 
-    <dialog id="multiplayerDialog" class="modal multiplayer-modal">
-      <form method="dialog">
-        <div class="modal-head">
-          <h2>Multiplayer</h2>
-          <button class="icon-button" value="close" aria-label="Close multiplayer" type="submit">x</button>
-        </div>
-      </form>
-      <div class="multiplayer-body">
-        <label class="field-label">
-          <span>Name</span>
-          <input id="playerNameInput" maxlength="18" value="Player" />
-        </label>
-
-        <div class="multiplayer-grid">
-          <section class="connect-panel">
-            <div class="connect-head">
-              <strong>Host</strong>
-              <button id="hostGameButton" class="small-button" type="button">Create</button>
+    <dialog id="optionsDialog" class="dialog dialog--sheet" aria-labelledby="optionsTitle">
+      <div class="dialog-head">
+        <div><p class="eyebrow eyebrow--plain">Setup</p><h2 id="optionsTitle">Options</h2></div>
+        <button class="btn btn--ghost btn--icon" id="optionsCloseButton" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
+      </div>
+      <div class="dialog-body">
+        <form id="optionsForm" class="options-grid">
+          <fieldset class="field">
+            <legend class="field-label">Cards in hand</legend>
+            <div class="segmented segmented--block" role="radiogroup" aria-label="Cards in hand">
+              <label><input type="radio" name="handSize" value="5" /><span>5</span></label>
+              <label><input type="radio" name="handSize" value="6" /><span>6</span></label>
+              <label><input type="radio" name="handSize" value="7" checked /><span>7</span></label>
             </div>
-            <label class="field-label">
-              <span>Invite code</span>
-              <textarea id="inviteCode" readonly rows="5"></textarea>
-            </label>
-            <label class="field-label">
-              <span>Answer code</span>
-              <textarea id="answerCodeInput" rows="5"></textarea>
-            </label>
-            <button id="acceptAnswerButton" class="small-button" type="button">Connect</button>
-          </section>
+          </fieldset>
 
-          <section class="connect-panel">
-            <div class="connect-head">
-              <strong>Join</strong>
-              <button id="joinGameButton" class="small-button" type="button">Answer</button>
+          <fieldset class="field">
+            <legend class="field-label">Jokers</legend>
+            <div class="segmented segmented--block" role="radiogroup" aria-label="Jokers">
+              <label><input type="radio" name="jokers" value="0" checked /><span>0</span></label>
+              <label><input type="radio" name="jokers" value="1" /><span>1</span></label>
+              <label><input type="radio" name="jokers" value="2" /><span>2</span></label>
+              <label><input type="radio" name="jokers" value="3" /><span>3</span></label>
+              <label><input type="radio" name="jokers" value="4" /><span>4</span></label>
             </div>
-            <label class="field-label">
-              <span>Invite code</span>
-              <textarea id="joinInviteCode" rows="5"></textarea>
-            </label>
-            <label class="field-label">
-              <span>Answer code</span>
-              <textarea id="joinAnswerCode" readonly rows="5"></textarea>
-            </label>
-          </section>
-        </div>
+          </fieldset>
 
-        <p id="connectionStatus" class="connection-status">Idle</p>
+          <fieldset class="field">
+            <legend class="field-label">Time limit</legend>
+            <div class="segmented segmented--block" role="radiogroup" aria-label="Time limit">
+              <label><input type="radio" name="timeLimit" value="15" /><span>15s</span></label>
+              <label><input type="radio" name="timeLimit" value="30" /><span>30s</span></label>
+              <label><input type="radio" name="timeLimit" value="60" checked /><span>60s</span></label>
+              <label><input type="radio" name="timeLimit" value="0" /><span>None</span></label>
+            </div>
+          </fieldset>
+
+          <div class="field field--select">
+            <label for="discardModeSelect">Discards go</label>
+            <select name="discardMode" id="discardModeSelect">
+              <option value="bottom" selected>To the bottom of the deck</option>
+              <option value="pile">To a pile, reshuffled when the deck runs out</option>
+              <option value="random">Back into the deck at random</option>
+              <option value="infinite">Nowhere: the deck never runs out</option>
+            </select>
+          </div>
+
+          <div class="field field--select">
+            <label for="endModeSelect">The run ends when</label>
+            <select name="endMode" id="endModeSelect">
+              <option value="no_scores" selected>No more scores are possible</option>
+              <option value="discards">52 cards have been discarded</option>
+              <option value="seen_count">52 cards plus jokers have been seen</option>
+              <option value="seen_all">Every card has been seen once</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-foot"><button class="btn btn--primary" id="optionsDoneButton" type="button">Done</button></div>
+    </dialog>
+
+    <dialog id="multiplayerDialog" class="dialog dialog--sheet" aria-labelledby="multiplayerTitle">
+      <div class="dialog-head">
+        <div><p class="eyebrow eyebrow--plain">Multiplayer</p><h2 id="multiplayerTitle">Race a friend</h2></div>
+        <button class="btn btn--ghost btn--icon" id="multiplayerCloseButton" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
+      </div>
+      <div class="dialog-body multiplayer-body">
+        <div class="dialog-error" id="multiplayerError"></div>
+        <div class="segmented segmented--block" role="group" aria-label="Create or join">
+          <button id="hostGameButton" type="button" aria-pressed="true">Create a room</button>
+          <button id="joinGameButton" type="button" aria-pressed="false">Join a room</button>
+        </div>
+        <div class="field">
+          <label for="playerNameInput">Your name</label>
+          <input id="playerNameInput" maxlength="18" autocomplete="nickname" placeholder="Player" />
+        </div>
+        <div class="field" id="joinFields" hidden>
+          <label for="joinInviteCode">Room code</label>
+          <input id="joinInviteCode" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234" />
+          <span class="field-hint">Six letters and digits from the host's invite.</span>
+        </div>
+        <p class="field-hint" id="multiplayerHint">Both players draw from the same shuffled deck on one clock. Discards go back into the deck at random.</p>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn--primary btn--lg" id="connectButton" type="button">Create room</button>
       </div>
     </dialog>
 
-    <div id="gameOver" class="game-over" hidden>
-      <div class="game-over-card">
-        <span class="metric-label">Game over</span>
-        <h2 id="gameOverTitle">Time expired</h2>
-        <p id="gameOverSummary"></p>
-        <div class="game-over-actions">
-          <button id="againButton" class="primary-action compact" type="button">Play Again</button>
-          <button id="backButton" class="small-button" type="button">Options</button>
-        </div>
+    <dialog id="gameOver" class="dialog dialog--sheet game-over" aria-labelledby="gameOverTitle">
+      <div class="dialog-head">
+        <div><p class="eyebrow eyebrow--plain" id="gameOverKicker">Game over</p><h2 id="gameOverTitle">Time expired</h2></div>
       </div>
-    </div>
+      <div class="dialog-body">
+        <p id="gameOverSummary" class="game-over-summary"></p>
+        <div class="stat-strip game-over-stats" id="gameOverStats"></div>
+        <p class="lobby-wait" id="gameOverWait" hidden>Waiting for the host to start another race.</p>
+      </div>
+      <div class="dialog-foot game-over-actions">
+        <button id="backButton" class="btn" type="button">Options</button>
+        <button id="againButton" class="btn btn--primary" type="button">Play again</button>
+      </div>
+    </dialog>
 
-    <script src="../../shared/cards.js?v=20261005"></script>
-    <script src="./game.js"></script>
-    <script src="./app.js?v=20261005"></script>
+    <div class="toast-stack toast-stack--alert" id="alerts" role="alert" aria-live="assertive"></div>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../../shared/peer-room.js?v=20261016"></script>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script src="./game.js?v=20261016"></script>
+    <script src="./app.js?v=20261016"></script>
   </body>
 </html>

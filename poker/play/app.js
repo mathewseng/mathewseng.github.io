@@ -6,6 +6,8 @@
   const Engine = window.MixedPokerEngine;
   const PeerRoom = window.PeerRoom;
   const Cards = window.PlayingCards;
+  const Sheet = window.Sheet;
+  const Tabs = window.Tabs;
   if (!Catalog || !Eval || !Engine || !PeerRoom || !Cards) return;
 
   const $ = (id) => document.getElementById(id);
@@ -39,6 +41,7 @@
     actionClock: $("action-clock"),
     quickMixes: $("quick-mixes"),
     rotation: $("rotation"),
+    rotationEmpty: $("rotation-empty"),
     clearMix: $("clear-mix"),
     mixCount: $("mix-count"),
     mixCap: $("mix-cap"),
@@ -48,29 +51,49 @@
     setupGrid: $("setup-grid"),
     rotationTab: $("rotation-tab"),
     roomCodeDisplay: $("room-code-display"),
+    copyCode: $("copy-code"),
     copyInvite: $("copy-invite"),
     waitingTitle: $("waiting-title"),
+    roomLede: $("room-lede"),
+    roomBanner: $("room-banner"),
     roster: $("roster"),
+    rosterCount: $("roster-count"),
     lobbyMix: $("lobby-mix"),
+    lobbySettings: $("lobby-settings"),
+    lobbyWait: $("lobby-wait"),
     startGame: $("start-game"),
+    startHint: $("start-hint"),
     roomError: $("room-error"),
     gameKicker: $("game-kicker"),
     gameTitle: $("game-title"),
     gameRoomCode: $("game-room-code"),
+    gameBanner: $("game-banner"),
     streetLabel: $("street-label"),
     potLabel: $("pot-label"),
     callLabel: $("call-label"),
     nextGameLabel: $("next-game-label"),
+    feltStreet: $("felt-street"),
+    feltPot: $("felt-pot"),
     seatsView: $("seats-view"),
     boards: $("boards"),
     tableMessage: $("table-message"),
+    tableNotice: $("table-notice"),
+    tableNoticeTitle: $("table-notice-title"),
+    tableNoticeText: $("table-notice-text"),
+    heroSeat: $("hero-seat"),
+    heroAvatar: $("hero-avatar"),
+    heroDealer: $("hero-dealer"),
     heroName: $("hero-name"),
     heroStatus: $("hero-status"),
+    heroClock: $("hero-clock"),
+    heroBet: $("hero-bet"),
     heroCards: $("hero-cards"),
     handEvaluation: $("hand-evaluation"),
     decisionPanel: $("decision-panel"),
     decisionKicker: $("decision-kicker"),
     decisionTitle: $("decision-title"),
+    decisionClock: $("decision-clock"),
+    gameError: $("game-error"),
     betControls: $("bet-controls"),
     amountControl: $("amount-control"),
     betAmount: $("bet-amount"),
@@ -82,9 +105,16 @@
     drawButton: $("draw-button"),
     forceFoldButton: $("force-fold-button"),
     resultsPanel: $("results-panel"),
+    resultKicker: $("result-kicker"),
     resultTitle: $("result-title"),
     resultsList: $("results-list"),
+    resultsWait: $("results-wait"),
+    resultsHint: $("results-hint"),
     nextHandButton: $("next-hand-button"),
+    addChips: $("add-chips"),
+    addChipsToggle: $("add-chips-toggle"),
+    addChipsPlayer: $("add-chips-player"),
+    addChipsAmount: $("add-chips-amount"),
     guideButton: $("guide-button"),
     guideModal: $("guide-modal"),
     guideTabs: $("guide-tabs"),
@@ -96,6 +126,7 @@
     copyLedger: $("copy-ledger"),
     exportLedger: $("export-ledger"),
     toast: $("toast"),
+    alerts: $("alerts"),
   };
 
   const QUICK_MIXES = [
@@ -105,6 +136,9 @@
     { label: "Draw mix", games: ["a5-td", "27-td", "5cd", "badugi", "badacey", "badeucy", "archie", "ari"] },
     { label: "All 30", games: Catalog.GAMES.map((game) => game.id) },
   ];
+
+  const ICONS = "../../shared/icons.svg";
+  const icon = (name) => '<svg class="icon" aria-hidden="true"><use href="' + ICONS + "#" + name + '" /></svg>';
 
   const room = new PeerRoom({
     namespace: "mixed-poker",
@@ -120,10 +154,12 @@
   let selectedDiscards = new Set();
   let selectionKey = "";
   let betKey = "";
-  let toastTimer = 0;
   let clockTimer = 0;
   let clockRenderTimer = 0;
   let publishingRoster = false;
+  let connectionState = "offline";
+  let rotationFocus = null;
+  let addChipsOpen = false;
 
   initialize();
 
@@ -151,15 +187,36 @@
     els.roomCode.addEventListener("input", () => { els.roomCode.value = cleanCode(els.roomCode.value); });
     els.connectButton.addEventListener("click", connect);
     els.resumeButton.addEventListener("click", resume);
-    els.leaveButton.addEventListener("click", leave);
+    els.leaveButton.addEventListener("click", confirmLeave);
     els.copyInvite.addEventListener("click", copyInvite);
+    if (els.copyCode) els.copyCode.addEventListener("click", copyCode);
     els.startGame.addEventListener("click", () => room.sendAction({ type: "start" }));
     els.nextHandButton.addEventListener("click", () => room.sendAction({ type: "next" }));
     els.forceFoldButton.addEventListener("click", () => room.sendAction({ type: "force_fold" }));
+    if (els.addChips) els.addChips.addEventListener("submit", submitAddChips);
+    if (els.addChipsToggle) {
+      els.addChipsToggle.addEventListener("click", () => {
+        addChipsOpen = !addChipsOpen;
+        renderAddChips(currentViewState());
+        if (addChipsOpen) els.addChipsPlayer.focus();
+      });
+    }
     els.clearMix.addEventListener("click", () => { selectedGames = []; saveSelectedGames(); renderMixBuilder(); });
     els.rotation.addEventListener("click", handleRotationClick);
     els.gameCatalog.addEventListener("click", handleCatalogClick);
-    els.setupTabs.addEventListener("click", handleSetupTab);
+    // Phone layout only: the three setup panels become tabs (shared/tabs.js
+    // drives aria-selected, arrow keys and the underline; the grid's
+    // data-setup-tab shows one panel at a time).
+    if (Tabs) {
+      Tabs.init(els.setupTabs, {
+        onChange(id) {
+          els.setupGrid.dataset.setupTab = id;
+          els.setupTabs.querySelectorAll("[data-setup-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.setupTab === id));
+        },
+      });
+    } else {
+      els.setupTabs.addEventListener("click", handleSetupTab);
+    }
     els.heroCards.addEventListener("click", handleCardSelection);
     els.foldButton.addEventListener("click", () => sendBetAction("fold"));
     els.passButton.addEventListener("click", () => sendBetAction(els.passButton.dataset.action));
@@ -169,7 +226,7 @@
     els.guideButton.addEventListener("click", () => {
       activeFamily = model?.gameId ? Catalog.getGame(model.gameId).family : activeFamily;
       renderGuide(activeFamily);
-      els.guideModal.showModal();
+      openDialog(els.guideModal);
     });
     els.ledgerButton.addEventListener("click", openLedger);
     els.copyLedger.addEventListener("click", copyLedger);
@@ -181,14 +238,15 @@
 
   function bindRoom() {
     room.onStatus = (status, message) => {
-      els.connection.dataset.state = status;
-      els.connection.querySelector("span").textContent = status === "connected" ? "Connected" : status === "reconnecting" ? "Recovering" : "Offline";
+      connectionState = status === "connected" ? "connected" : status === "reconnecting" ? "reconnecting" : "offline";
+      els.connection.dataset.state = connectionState;
+      const label = connectionState === "connected" ? "Connected" : connectionState === "reconnecting" ? "Recovering" : "Offline";
+      els.connection.querySelector("span").textContent = label;
+      els.connection.title = label;
+      renderBanners();
       if (message) showToast(message);
     };
-    room.onError = (error) => {
-      showError(error.message);
-      showToast(error.message);
-    };
+    room.onError = (error) => showError(error.message);
     room.onRoster = (roster) => {
       latestRoster = roster;
       if (room.isHost && model && !publishingRoster) {
@@ -218,7 +276,7 @@
     };
     room.onAction = handleHostAction;
     room.onEvent = (_clientId, event) => {
-      if (event?.kind === "error" && (!event.target || event.target === room.clientId)) showToast(event.message);
+      if (event?.kind === "error" && (!event.target || event.target === room.clientId)) showError(event.message);
     };
     room.onBecomeHost = (recovered) => {
       model = recovered || loadHostState(room.roomCode);
@@ -274,6 +332,22 @@
     }
   }
 
+  // Leave takes a confirm that says what happens to the room and the saved
+  // session: PeerRoom.leave() closes the room for everyone when the host
+  // leaves and removes the saved session on this device either way.
+  async function confirmLeave() {
+    const host = room.isHost;
+    const inHand = model?.kind === "poker" && !["showdown", "between"].includes(model.phase);
+    const text = host
+      ? "Everyone is disconnected and the room closes. The saved session on this device is removed, so Resume will not bring it back; the hand ledger stays in this browser's storage."
+      : (inHand ? "The hand is still running: your seat is marked disconnected and the host can force-fold it. " : "Your seat is released. ") +
+        "The saved session on this device is removed; you can rejoin with the room code while the table is open.";
+    const ok = Sheet
+      ? await Sheet.confirm({ title: host ? "Close the table?" : "Leave the table?", text, verb: host ? "Close table" : "Leave", danger: true, sheet: true })
+      : window.confirm(text);
+    if (ok) leave();
+  }
+
   function leave() {
     room.leave();
     clearTimeout(clockTimer);
@@ -308,6 +382,13 @@
         requireHost(clientId);
         model = Engine.startHand(model);
         publishModel();
+      } else if (action.type === "adjust") {
+        // Add-on between hands: the host tops up a busted (or any) stack through
+        // the engine's existing adjustStack, which records it in the ledger.
+        requireHost(clientId);
+        model = Engine.adjustStack(model, String(action.playerId), action.amount, "Add-on");
+        publishModel();
+        showToast(playerName(action.playerId) + " +" + formatChips(action.amount) + " added to the ledger.");
       } else if (action.type === "force_fold") {
         requireHost(clientId);
         if (model.stage !== "betting") throw new Error("The current decision is not a betting action.");
@@ -317,12 +398,8 @@
         publishModel();
       }
     } catch (error) {
-      if (clientId === room.clientId) {
-        showError(error.message);
-        showToast(error.message);
-      } else {
-        room.broadcastEvent({ kind: "error", target: clientId, message: error.message });
-      }
+      if (clientId === room.clientId) showError(error.message);
+      else room.broadcastEvent({ kind: "error", target: clientId, message: error.message });
     }
   }
 
@@ -372,39 +449,55 @@
       }
       publishModel();
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, { alert: true });
     }
   }
 
+  // The sticky action stage's height is published as --stage-h so toasts
+  // stack above it instead of covering the primary action.
+  const stageObserver = typeof ResizeObserver === "function" ? new ResizeObserver(measureStage) : null;
+  if (stageObserver) [els.decisionPanel, els.resultsPanel].forEach((stage) => stageObserver.observe(stage));
+
+  function measureStage() {
+    const stage = els.gameView.hidden ? null : [els.decisionPanel, els.resultsPanel].find((panel) => !panel.hidden);
+    document.documentElement.style.setProperty("--stage-h", (stage ? stage.offsetHeight : 0) + "px");
+  }
+
   function render() {
-    const connected = room.connected;
+    const connected = room.connected || connectionState === "reconnecting";
     els.leaveButton.hidden = !connected;
     if (!connected) {
       els.setupView.hidden = false;
       els.roomView.hidden = true;
       els.gameView.hidden = true;
       stopClockRendering();
+      measureStage();
       return;
     }
     if (!model || model.kind === "poker-lobby") {
       renderRoom();
       stopClockRendering();
+      measureStage();
       return;
     }
     renderGame();
     startClockRendering();
+    renderBanners();
+    measureStage();
   }
 
   function renderSetupMode() {
     const joining = setupMode === "join";
     els.createMode.classList.toggle("active", !joining);
     els.joinMode.classList.toggle("active", joining);
+    els.createMode.setAttribute("aria-pressed", String(!joining));
+    els.joinMode.setAttribute("aria-pressed", String(joining));
     els.joinFields.hidden = !joining;
     els.connectButton.textContent = joining ? "Join table" : "Create table";
   }
 
   function renderMixBuilder() {
-    els.quickMixes.innerHTML = QUICK_MIXES.map((mix, index) => '<button type="button" data-quick="' + index + '">' + escapeHtml(mix.label) + "</button>").join("");
+    els.quickMixes.innerHTML = QUICK_MIXES.map((mix, index) => '<button class="btn btn--sm" type="button" data-quick="' + index + '">' + escapeHtml(mix.label) + "</button>").join("");
     els.quickMixes.querySelectorAll("[data-quick]").forEach((button) => {
       button.addEventListener("click", () => {
         selectedGames = QUICK_MIXES[Number(button.dataset.quick)].games.slice();
@@ -412,20 +505,31 @@
         renderMixBuilder();
       });
     });
-    els.catalogTabs.innerHTML = Catalog.FAMILIES.map((family) => '<button type="button" data-family="' + family.id + '" class="' + (family.id === activeFamily ? "active" : "") + '">' + escapeHtml(family.label) + "</button>").join("");
+    els.catalogTabs.innerHTML = Catalog.FAMILIES.map((family) => '<button type="button" data-family="' + family.id + '" class="' + (family.id === activeFamily ? "active" : "") + '" aria-pressed="' + (family.id === activeFamily) + '">' + escapeHtml(family.label) + "</button>").join("");
     els.catalogTabs.querySelectorAll("[data-family]").forEach((button) => {
       button.addEventListener("click", () => {
         activeFamily = button.dataset.family;
         renderMixBuilder();
+        els.catalogTabs.querySelector('[data-family="' + activeFamily + '"]')?.focus();
       });
     });
     const familyGames = Catalog.gamesByFamily(activeFamily);
-    els.gameCatalog.innerHTML = familyGames.map((game) => '<button class="game-option' + (selectedGames.includes(game.id) ? " selected" : "") + '" type="button" data-game="' + game.id + '"><strong>' + escapeHtml(game.short) + "</strong><span>" + escapeHtml(game.name) + "</span></button>").join("");
+    els.gameCatalog.innerHTML = familyGames.map((game) => '<button class="game-option' + (selectedGames.includes(game.id) ? " selected" : "") + '" type="button" data-game="' + game.id + '" aria-pressed="' + selectedGames.includes(game.id) + '"><strong>' + escapeHtml(game.short) + "</strong><span>" + escapeHtml(game.name) + "</span></button>").join("");
     els.rotation.classList.toggle("empty", !selectedGames.length);
+    if (els.rotationEmpty) els.rotationEmpty.hidden = Boolean(selectedGames.length);
     els.rotation.innerHTML = selectedGames.map((id, index) => {
       const game = Catalog.getGame(id);
-      return '<div class="rotation-item"><span>' + (index + 1) + " · " + escapeHtml(game.short) + '</span><button type="button" data-move="-1" data-index="' + index + '" aria-label="Move left">‹</button><button type="button" data-move="1" data-index="' + index + '" aria-label="Move right">›</button><button type="button" data-remove="' + index + '" aria-label="Remove">×</button></div>';
+      const label = escapeHtml(game.short);
+      return '<div class="rotation-item"><span>' + (index + 1) + " · " + label + '</span>' +
+        '<button class="btn btn--ghost btn--icon btn--sm" type="button" data-move="-1" data-index="' + index + '" aria-label="Move ' + label + ' earlier"' + (index === 0 ? " disabled" : "") + ">" + icon("i-chevron-left") + "</button>" +
+        '<button class="btn btn--ghost btn--icon btn--sm" type="button" data-move="1" data-index="' + index + '" aria-label="Move ' + label + ' later"' + (index === selectedGames.length - 1 ? " disabled" : "") + ">" + icon("i-chevron-right") + "</button>" +
+        '<button class="btn btn--ghost btn--icon btn--sm" type="button" data-remove="' + index + '" aria-label="Remove ' + label + '">' + icon("i-close") + "</button></div>";
     }).join("");
+    if (rotationFocus) {
+      const target = els.rotation.querySelector(rotationFocus.remove ? '[data-remove="' + rotationFocus.index + '"]' : '[data-move="' + rotationFocus.move + '"][data-index="' + rotationFocus.index + '"]');
+      (target && !target.disabled ? target : els.rotation.querySelector("button:not(:disabled)") || els.clearMix).focus();
+      rotationFocus = null;
+    }
     const cap = selectedGames.length ? Math.min(...selectedGames.map((id) => Catalog.getGame(id).maxPlayers)) : 8;
     els.mixCount.textContent = selectedGames.length + " game" + (selectedGames.length === 1 ? "" : "s");
     els.rotationTab.textContent = "Rotation · " + selectedGames.length;
@@ -437,7 +541,9 @@
   function handleRotationClick(event) {
     const remove = event.target.closest("[data-remove]");
     if (remove) {
-      selectedGames.splice(Number(remove.dataset.remove), 1);
+      const index = Number(remove.dataset.remove);
+      selectedGames.splice(index, 1);
+      rotationFocus = { remove: true, index: Math.min(index, selectedGames.length - 1) };
       saveSelectedGames();
       renderMixBuilder();
       return;
@@ -448,16 +554,20 @@
     const to = from + Number(move.dataset.move);
     if (to < 0 || to >= selectedGames.length) return;
     [selectedGames[from], selectedGames[to]] = [selectedGames[to], selectedGames[from]];
+    rotationFocus = { move: move.dataset.move, index: to };
     saveSelectedGames();
     renderMixBuilder();
   }
 
-  // Phone layout only: the three setup panels become tabs.
+  // Fallback when shared/tabs.js is unavailable.
   function handleSetupTab(event) {
     const button = event.target.closest("[data-setup-tab]");
     if (!button) return;
     els.setupGrid.dataset.setupTab = button.dataset.setupTab;
-    els.setupTabs.querySelectorAll("[data-setup-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
+    els.setupTabs.querySelectorAll("[data-setup-tab]").forEach((tab) => {
+      tab.classList.toggle("active", tab === button);
+      tab.setAttribute("aria-selected", String(tab === button));
+    });
   }
 
   function handleCatalogClick(event) {
@@ -469,6 +579,7 @@
     else selectedGames.push(id);
     saveSelectedGames();
     renderMixBuilder();
+    els.gameCatalog.querySelector('[data-game="' + id + '"]')?.focus();
   }
 
   function renderRoom() {
@@ -477,16 +588,47 @@
     els.gameView.hidden = true;
     const settings = model?.settings || readSettings();
     const roster = model?.players || latestRoster;
+    const host = roster.find((player) => player.host) || latestRoster.find((player) => player.host);
+    const ready = roster.filter((player) => player.connected !== false).length;
+    const full = roster.length >= settings.seats;
     els.roomCodeDisplay.textContent = room.roomCode;
-    els.waitingTitle.textContent = roster.length >= settings.seats ? "Table ready" : "Waiting for players";
+    els.waitingTitle.textContent = full ? "Table ready" : "Waiting for players";
+    if (els.roomLede) {
+      els.roomLede.textContent = room.isHost
+        ? "Share the code or the invite link. Deal once every seat is filled."
+        : (host ? String(host.name ?? "") : "The host") + " deals the first hand once every seat is filled. Keep this page open.";
+    }
+    if (els.rosterCount) els.rosterCount.textContent = roster.length + " of " + settings.seats + " seats";
     els.roster.innerHTML = Array.from({ length: settings.seats }, (_, seat) => {
       const player = roster[seat];
-      if (!player) return '<div class="roster-seat empty"><span class="avatar">' + (seat + 1) + '</span><strong>Open seat</strong></div>';
-      return '<div class="roster-seat"><span class="avatar">' + initials(player.name) + '</span><strong>' + escapeHtml(player.name) + '</strong><small>' + (player.host ? "Host" : player.connected === false ? "Reconnecting" : "Ready") + "</small></div>";
+      if (!player) return '<div class="seat seat--lobby seat--empty roster-seat empty"><span class="avatar seat-avatar">' + (seat + 1) + '</span><span class="seat-head seat-name"><strong>Open seat</strong></span><span class="seat-meta"><small class="seat-badge">Waiting</small></span></div>';
+      const me = player.id === room.clientId;
+      const status = player.host ? "Host" : player.connected === false ? "Reconnecting" : "Ready";
+      const tone = player.connected === false ? " seat-badge--warn" : player.host ? " seat-badge--accent" : " seat-badge--good";
+      return '<div class="seat seat--lobby roster-seat' + (player.host ? " seat--host" : "") + (me ? " seat--me" : "") + (player.connected === false ? " seat--disconnected" : "") + '"><span class="avatar seat-avatar">' + initials(player.name) + '</span><span class="seat-head seat-name"><strong>' + escapeHtml(player.name) + "</strong>" + (me ? '<span class="seat-badge">You</span>' : "") + '</span><span class="seat-meta"><small class="seat-badge' + tone + '">' + status + "</small></span></div>";
     }).join("");
-    els.lobbyMix.innerHTML = settings.games.map((id, index) => '<span class="mix-chip">' + (index + 1) + " · " + escapeHtml(Catalog.getGame(id).short) + "</span>").join("");
+    els.lobbyMix.innerHTML = settings.games.map((id, index) => '<span class="mix-chip chip">' + (index + 1) + " · " + escapeHtml(Catalog.getGame(id).short) + "</span>").join("");
+    if (els.lobbySettings) {
+      const facts = [
+        settings.seats + " seats",
+        "Stack " + formatChips(settings.startingStack),
+        "Blinds " + formatChips(settings.smallBlind) + "/" + formatChips(settings.bigBlind),
+        "Bets " + formatChips(settings.smallBet) + "/" + formatChips(settings.bigBet),
+        "Ante " + formatChips(settings.ante) + " · bring-in " + formatChips(settings.bringIn),
+        "Change every " + settings.handsPerGame + " hand" + (settings.handsPerGame === 1 ? "" : "s"),
+        "Raise cap " + settings.raiseCap,
+      ];
+      if (settings.straddle) facts.push("Live straddle");
+      if (settings.bombEvery) facts.push("Bomb pot every " + settings.bombEvery + " · ante " + formatChips(settings.bombAnte));
+      if (settings.actionClock) facts.push("Clock " + settings.actionClock + "s");
+      els.lobbySettings.innerHTML = facts.map((fact) => '<span class="chip">' + escapeHtml(fact) + "</span>").join("");
+    }
     els.startGame.hidden = !room.isHost;
-    els.startGame.disabled = roster.filter((player) => player.connected !== false).length !== settings.seats;
+    els.startGame.disabled = ready !== settings.seats;
+    if (els.lobbyWait) els.lobbyWait.hidden = room.isHost;
+    if (els.startHint) {
+      els.startHint.textContent = !room.isHost ? "" : ready === settings.seats ? "Every seat is filled and connected." : full ? "Waiting for a reconnecting player." : (settings.seats - roster.length) + " more player" + (settings.seats - roster.length === 1 ? "" : "s") + " to go.";
+    }
     els.roomError.textContent = "";
   }
 
@@ -497,14 +639,16 @@
     const state = currentViewState();
     const game = Catalog.getGame(state.gameId);
     const me = state.players.find((player) => player.id === room.clientId);
-    if (!me) return showError("This table is already seated.");
     syncSelection(state, me);
     els.gameKicker.textContent = "Hand " + state.handNumber + " · Game " + (state.gameIndex + 1) + "/" + state.settings.games.length;
     els.gameTitle.textContent = game.name;
     els.gameRoomCode.textContent = room.roomCode;
-    els.streetLabel.textContent = state.street || state.phase;
+    const street = streetLabel(state);
+    els.streetLabel.textContent = street;
     els.potLabel.textContent = formatChips(Engine.potSize(state));
-    const legal = Engine.legalActions(state, me.id);
+    if (els.feltStreet) els.feltStreet.textContent = street;
+    if (els.feltPot) els.feltPot.textContent = formatChips(Engine.potSize(state));
+    const legal = me ? Engine.legalActions(state, me.id) : null;
     els.callLabel.textContent = legal ? formatChips(legal.toCall) : "—";
     els.nextGameLabel.textContent = nextGameText(state);
     renderSeats(state, me);
@@ -512,19 +656,63 @@
     renderHero(state, me, game);
     renderDecision(state, me, legal);
     renderResults(state, me);
+    renderTableNotice(state, me);
+    tickClock();
     if (state.phase === "showdown") persistLedger(state);
   }
 
+  function streetLabel(state) {
+    const value = state.street || state.phase || "";
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
+  }
+
+  // Opponents sit on three rails around the felt centre, clockwise from the
+  // hero's left: left rail (bottom to top), top rail, right rail (top to
+  // bottom). Phones collapse the rails into one wrapped grid (styles.css).
   function renderSeats(state, me) {
-    const others = state.players.filter((player) => player.id !== me.id);
-    els.seatsView.style.setProperty("--seat-columns", Math.max(1, others.length));
-    els.seatsView.innerHTML = others.map((player) => {
-      const active = state.activePlayerId === player.id;
-      const badges = playerBadges(state, player).join(" · ");
-      const cards = player.down.concat(player.up, player.hole);
-      const status = player.disconnected ? "Disconnected" : player.folded ? "Folded" : player.allIn ? "All-in" : player.lastAction || badges;
-      return '<article class="seat' + (active ? " active" : "") + (player.disconnected ? " disconnected" : "") + '"><div class="seat-head"><strong>' + escapeHtml(player.name) + '</strong><span>' + formatChips(player.stack) + '</span></div><div class="seat-meta"><span>' + escapeHtml(status) + '</span><span>' + formatChips(player.streetBet) + '</span></div><div class="seat-cards">' + cards.map((id) => cardHtml(id)).join("") + "</div></article>";
-    }).join("");
+    const index = me ? state.players.indexOf(me) : -1;
+    const others = index >= 0 ? state.players.slice(index + 1).concat(state.players.slice(0, index)) : state.players.slice();
+    const count = others.length;
+    const sideEach = count >= 6 ? 2 : count >= 3 ? 1 : 0;
+    const topCount = count - sideEach * 2;
+    els.seatsView.style.setProperty("--seat-columns", Math.max(1, count));
+    const rails = { left: [], top: [], right: [] };
+    others.forEach((player, position) => {
+      const rail = position < sideEach ? "left" : position < sideEach + topCount ? "top" : "right";
+      rails[rail].push(seatHtml(state, player));
+    });
+    rails.left.reverse();
+    els.seatsView.innerHTML = ["left", "top", "right"].map((rail) => '<div class="seat-rail" data-rail="' + rail + '">' + rails[rail].join("") + "</div>").join("");
+  }
+
+  function seatHtml(state, player) {
+    const active = state.activePlayerId === player.id;
+    const dealer = state.players[state.buttonIndex]?.id === player.id;
+    const badges = playerBadges(state, player);
+    const cards = player.down.concat(player.up, player.hole);
+    const busted = player.stack <= 0 && !player.allIn && state.phase === "showdown";
+    const won = state.phase === "showdown" && Number(state.handResult?.net?.[player.id] || 0) > 0;
+    const status = player.disconnected ? ["Disconnected", "bad"]
+      : player.folded ? ["Folded", ""]
+      : player.allIn ? ["All-in", "warn"]
+      : state.phase === "showdown" ? [signed(Number(state.handResult?.net?.[player.id] || 0)), won ? "good" : Number(state.handResult?.net?.[player.id] || 0) < 0 ? "bad" : ""]
+      : active ? ["To act", "accent"]
+      : player.lastAction ? [player.lastAction, "info"]
+      : ["Waiting", ""];
+    const classes = ["seat",
+      active ? "seat--active active" : "",
+      player.folded ? "seat--folded" : "",
+      player.disconnected ? "seat--disconnected disconnected" : "",
+      busted ? "seat--busted" : "",
+      won ? "seat--winner" : "",
+    ].filter(Boolean).join(" ");
+    return '<article class="' + classes + '" data-player-id="' + escapeHtml(player.id) + '" aria-label="' + escapeHtml(player.name) + '">' +
+      '<span class="seat-avatar" aria-hidden="true">' + initials(player.name) + "</span>" +
+      (dealer ? '<span class="seat-dealer" title="Dealer" aria-label="Dealer">D</span>' : "") +
+      '<span class="seat-head seat-name"><strong>' + escapeHtml(player.name) + "</strong></span>" +
+      '<span class="seat-meta"><span class="seat-stack">' + formatChips(player.stack) + "</span>" + badges.map((badge) => '<span class="seat-badge">' + badge + "</span>").join("") + '<span class="seat-badge' + (status[1] ? " seat-badge--" + status[1] : "") + '">' + escapeHtml(status[0]) + "</span>" + (active ? '<span class="seat-clock" data-clock></span>' : "") + "</span>" +
+      (player.streetBet > 0 ? '<span class="seat-bet" aria-label="Bet ' + formatChips(player.streetBet) + '">' + formatChips(player.streetBet) + "</span>" : "") +
+      '<div class="seat-cards">' + cards.map((id) => cardHtml(id)).join("") + "</div></article>";
   }
 
   function renderBoards(state, game) {
@@ -539,38 +727,84 @@
     els.boards.innerHTML = boards.map((board, index) => {
       const slots = index >= state.boards.length ? 5 : expected || board.length;
       const label = boards.length > 1 ? (index >= state.boards.length ? "Zombie " + (index - state.boards.length + 1) : "Board " + (index + 1)) : "Board";
-      return '<div class="board-line"><span>' + label + '</span><div class="board-cards">' + Array.from({ length: slots }, (_, cardIndex) => board[cardIndex] ? cardHtml(board[cardIndex]) : Cards.emptySlotHtml()).join("") + "</div></div>";
+      return '<div class="board-line"><span class="felt-label">' + label + '</span><div class="board-cards">' + Array.from({ length: slots }, (_, cardIndex) => board[cardIndex] ? cardHtml(board[cardIndex]) : Cards.emptySlotHtml()).join("") + "</div></div>";
     }).join("");
     els.tableMessage.textContent = state.isBombPot ? "Bomb pot" : "";
   }
 
   function renderHero(state, me, game) {
+    els.heroSeat.hidden = !me;
+    if (!me) return;
     const cards = me.down.concat(me.up, me.hole);
+    const mine = state.activePlayerId === me.id;
+    const net = Number(state.handResult?.net?.[me.id] || 0);
     els.heroName.textContent = me.name;
-    els.heroStatus.textContent = me.folded ? "Folded" : me.allIn ? "All-in" : state.activePlayerId === me.id ? "Your decision" : formatChips(me.stack) + " behind";
+    if (els.heroAvatar) els.heroAvatar.textContent = initials(me.name);
+    if (els.heroDealer) els.heroDealer.hidden = state.players[state.buttonIndex]?.id !== me.id;
+    const status = me.disconnected ? ["Disconnected", "bad"]
+      : me.folded ? ["Folded", ""]
+      : state.phase === "showdown" ? [me.stack <= 0 ? "Busted" : net > 0 ? "Won " + formatChips(net) : net < 0 ? "Lost " + formatChips(-net) : "Break even", me.stack <= 0 ? "bad" : net > 0 ? "good" : ""]
+      : me.allIn ? ["All-in", "warn"]
+      : mine ? ["Your decision", "accent"]
+      : [formatChips(me.stack) + " behind", ""];
+    els.heroStatus.textContent = status[0];
+    els.heroStatus.className = "seat-badge" + (status[1] ? " seat-badge--" + status[1] : "");
+    els.heroSeat.classList.toggle("seat--active", mine);
+    els.heroSeat.classList.toggle("active", mine);
+    els.heroSeat.classList.toggle("seat--folded", Boolean(me.folded));
+    els.heroSeat.classList.toggle("seat--winner", state.phase === "showdown" && net > 0);
+    if (els.heroBet) {
+      els.heroBet.hidden = !(me.streetBet > 0);
+      els.heroBet.textContent = me.streetBet > 0 ? formatChips(me.streetBet) : "";
+    }
+    if (els.heroClock) els.heroClock.hidden = !mine;
     els.heroCards.style.setProperty("--hero-count", Math.max(1, cards.length));
-    const selectable = state.activePlayerId === me.id && ["draw", "discard"].includes(state.stage);
-    els.heroCards.innerHTML = cards.map((id) => cardHtml(id, {
+    const selectable = mine && ["draw", "discard"].includes(state.stage);
+    renderCardRow(els.heroCards, cards, (id) => ({
       selectable: selectable && (state.stage === "draw" ? me.hole.includes(id) : me.down.includes(id)),
       selected: selectedDiscards.has(id),
-    })).join("");
+    }));
     if (state.phase === "showdown" && !me.folded) {
-      els.handEvaluation.innerHTML = me.evaluation.map((component) => '<span class="evaluation-chip">' + escapeHtml(component.label) + ' · <strong>' + escapeHtml(component.qualifies ? component.name : "No qualifier") + "</strong></span>").join("");
+      els.handEvaluation.innerHTML = me.evaluation.map((component) => '<span class="evaluation-chip hand-chip' + (component.qualifies ? " hand-chip--good" : " hand-chip--bad") + '">' + escapeHtml(component.label) + ' · <strong>' + escapeHtml(component.qualifies ? component.name : "No qualifier") + "</strong></span>").join("");
     } else {
-      els.handEvaluation.innerHTML = '<span class="evaluation-chip">' + escapeHtml(game.short) + " · " + escapeHtml(game.summary) + "</span>";
+      els.handEvaluation.innerHTML = '<span class="evaluation-chip hand-chip">' + escapeHtml(game.short) + " · " + escapeHtml(game.summary) + "</span>";
+    }
+  }
+
+  // Renders a card row by diffing: when the cards and their selectability are
+  // unchanged only the selected state is toggled, so a tap or keypress never
+  // loses focus. When the row really changes, focus is restored to the card
+  // with the same data-card-id.
+  function renderCardRow(container, cards, optionsFor) {
+    const options = cards.map((id) => optionsFor(id));
+    const keys = cards.map((id, index) => id + ":" + (options[index].selectable ? "s" : "n"));
+    const existing = Array.from(container.children);
+    if (existing.length === keys.length && existing.every((child, index) => child.dataset.key === keys[index])) {
+      existing.forEach((child, index) => {
+        const selected = Boolean(options[index].selected);
+        child.classList.toggle("selected", selected);
+        if (child.tagName === "BUTTON") child.setAttribute("aria-pressed", String(selected));
+      });
+      return;
+    }
+    const focused = container.contains(document.activeElement) ? document.activeElement.dataset.cardId : null;
+    container.innerHTML = cards.map((id, index) => cardHtml(id, { ...options[index], key: keys[index] })).join("");
+    if (focused) {
+      const target = container.querySelector('[data-card-id="' + focused + '"]') || container.querySelector("button");
+      if (target) target.focus();
     }
   }
 
   function renderDecision(state, me, legal) {
-    const mine = state.activePlayerId === me.id;
+    const mine = Boolean(me) && state.activePlayerId === me.id;
     const active = state.players.find((player) => player.id === state.activePlayerId);
-    const seconds = remainingSeconds(state);
     // At showdown the results panel takes this slot; the decision panel has nothing to offer.
     els.decisionPanel.hidden = state.phase === "showdown";
+    els.decisionPanel.classList.toggle("action-stage--host", room.isHost);
     els.decisionKicker.textContent = state.stage === "draw" ? "Draw" : state.stage === "discard" ? "Discard" : "Action";
     els.decisionTitle.textContent = mine
-      ? (state.stage === "draw" ? "Choose your discards" : state.stage === "discard" ? "Discard two down cards" : "Your action") + (seconds !== null ? " · " + seconds + "s" : "")
-      : active ? active.name + " is acting" + (seconds !== null ? " · " + seconds + "s" : "") : "Waiting";
+      ? state.stage === "draw" ? "Choose your discards" : state.stage === "discard" ? "Discard two down cards" : "Your action"
+      : active ? active.name + " is acting" + (active.disconnected ? " (disconnected)" : "") : me ? "Waiting" : "Watching the hand";
     els.betControls.hidden = !mine || state.stage !== "betting";
     els.drawControls.hidden = !mine || !["draw", "discard"].includes(state.stage);
     els.forceFoldButton.hidden = !(room.isHost && active?.disconnected && state.stage === "betting");
@@ -623,13 +857,19 @@
     room.sendAction({ type: "bet", action });
   }
 
+  // Toggling a discard updates the card in place (renderCardRow diffs), so the
+  // tapped card keeps focus; only the draw controls are re-rendered.
   function handleCardSelection(event) {
     const card = event.target.closest("[data-card-id]");
-    if (!card || !card.dataset.selectable) return;
+    if (!card || !card.dataset.selectable || !model) return;
     const id = card.dataset.cardId;
     if (selectedDiscards.has(id)) selectedDiscards.delete(id);
     else selectedDiscards.add(id);
-    renderGame();
+    const state = currentViewState();
+    const me = state.players.find((player) => player.id === room.clientId);
+    if (!me) return;
+    renderHero(state, me, Catalog.getGame(state.gameId));
+    renderDecision(state, me, Engine.legalActions(state, me.id));
   }
 
   function submitCardSelection() {
@@ -638,7 +878,7 @@
   }
 
   function syncSelection(state, me) {
-    const key = [state.handNumber, state.stage, state.street, state.activePlayerId, me.hole.join(","), me.down.join(",")].join(":");
+    const key = me ? [state.handNumber, state.stage, state.street, state.activePlayerId, me.hole.join(","), me.down.join(",")].join(":") : "";
     if (key === selectionKey) return;
     selectionKey = key;
     selectedDiscards = new Set();
@@ -648,43 +888,132 @@
     const showdown = state.phase === "showdown";
     els.resultsPanel.hidden = !showdown;
     if (!showdown) return;
-    const myNet = Number(state.handResult?.net?.[me.id] || 0);
-    els.resultTitle.textContent = state.handResult?.uncontestedWinnerId ? playerName(state.handResult.uncontestedWinnerId) + " won uncontested" : myNet > 0 ? "Won " + formatChips(myNet) : myNet < 0 ? "Lost " + formatChips(Math.abs(myNet)) : "Break even";
-    els.resultsList.innerHTML = state.players.map((player) => {
-      const net = Number(state.handResult?.net?.[player.id] || 0);
-      const result = player.folded ? "Folded" : player.evaluation.map((entry) => entry.qualifies ? entry.label + ": " + entry.name : entry.label + ": no qualifier").join(" · ");
-      return '<div class="result-row"><span>' + escapeHtml(player.name) + " · " + escapeHtml(result) + '</span><strong class="' + (net > 0 ? "positive" : net < 0 ? "negative" : "") + '">' + signed(net) + "</strong></div>";
-    }).join("");
+    const funded = state.players.filter((player) => player.stack > 0);
+    const tableOver = funded.length < 2;
+    const myNet = me ? Number(state.handResult?.net?.[me.id] || 0) : 0;
+    els.resultsPanel.classList.toggle("action-stage--host", room.isHost);
+    if (els.resultKicker) els.resultKicker.textContent = tableOver ? "Table over" : "Hand complete";
+    els.resultTitle.textContent = tableOver
+      ? funded.length === 1 ? playerName(funded[0].id) + " has every chip" : "Nobody has chips left"
+      : state.handResult?.uncontestedWinnerId ? playerName(state.handResult.uncontestedWinnerId) + " won uncontested"
+      : !me ? "Showdown"
+      : myNet > 0 ? "Won " + formatChips(myNet) : myNet < 0 ? "Lost " + formatChips(Math.abs(myNet)) : "Break even";
+    if (tableOver) {
+      // Final ledger: closing stacks and the session net per player.
+      els.resultsList.innerHTML = state.players.map((player) => {
+        const net = sessionNet(state, player.id);
+        return '<div class="result-row"><span><b>' + escapeHtml(player.name) + "</b> · stack " + formatChips(player.stack) + (player.stack <= 0 ? ' · <span class="seat-badge seat-badge--bad">Busted</span>' : "") + '</span><strong class="' + (net > 0 ? "positive" : net < 0 ? "negative" : "") + '">' + signed(net) + "</strong></div>";
+      }).join("");
+    } else {
+      els.resultsList.innerHTML = state.players.map((player) => {
+        const net = Number(state.handResult?.net?.[player.id] || 0);
+        const result = player.folded ? "Folded" : player.evaluation.map((entry) => entry.qualifies ? entry.label + ": " + entry.name : entry.label + ": no qualifier").join(" · ");
+        return '<div class="result-row"><span><b>' + escapeHtml(player.name) + "</b> · " + escapeHtml(result) + (player.stack <= 0 ? ' · <span class="seat-badge seat-badge--bad">Busted</span>' : "") + '</span><strong class="' + (net > 0 ? "positive" : net < 0 ? "negative" : "") + '">' + signed(net) + "</strong></div>";
+      }).join("");
+    }
     els.nextHandButton.hidden = !room.isHost;
+    els.nextHandButton.disabled = tableOver;
+    if (els.resultsWait) els.resultsWait.hidden = room.isHost;
+    if (els.resultsHint) {
+      els.resultsHint.textContent = room.isHost
+        ? tableOver ? "Add chips to a busted player to keep playing, or close the table from Leave." : ""
+        : tableOver ? "The table is over until the host adds chips." : me && me.stack <= 0 ? "You are out of chips. Ask the host for an add-on." : "";
+    }
+    renderAddChips(state);
+  }
+
+  // The host's add-on form sits behind a toggle unless the table is over.
+  function renderAddChips(state) {
+    if (!els.addChips || !state || state.kind !== "poker") return;
+    const tableOver = state.players.filter((player) => player.stack > 0).length < 2;
+    const open = room.isHost && (tableOver || addChipsOpen);
+    els.addChips.hidden = !open;
+    if (els.addChipsToggle) {
+      els.addChipsToggle.hidden = !room.isHost || tableOver;
+      els.addChipsToggle.setAttribute("aria-expanded", String(open));
+      els.addChipsToggle.textContent = open ? "Hide add chips" : "Add chips…";
+    }
+    if (!open) return;
+    const current = els.addChipsPlayer.value;
+    const players = state.players.slice().sort((a, b) => (a.stack <= 0 ? 0 : 1) - (b.stack <= 0 ? 0 : 1));
+    els.addChipsPlayer.innerHTML = players.map((player) => '<option value="' + escapeHtml(player.id) + '">' + escapeHtml(player.name) + " · " + formatChips(player.stack) + "</option>").join("");
+    if (players.some((player) => player.id === current)) els.addChipsPlayer.value = current;
+    if (!els.addChipsAmount.value) els.addChipsAmount.value = state.settings.startingStack;
+  }
+
+  function submitAddChips(event) {
+    event.preventDefault();
+    const amount = Math.trunc(Number(els.addChipsAmount.value));
+    if (!amount || amount < 1) return showError("Enter the number of chips to add.");
+    room.sendAction({ type: "adjust", playerId: els.addChipsPlayer.value, amount });
+    addChipsOpen = false;
+  }
+
+  function sessionNet(state, playerId) {
+    return state.ledger.reduce((sum, entry) => sum + (entry.adjustment ? 0 : Number(entry.net?.[playerId] || 0)), 0);
+  }
+
+  // Designed states on the felt: a late joiner watches the hand, a host
+  // without a seat is told so, and a table with fewer than two funded
+  // players is over until chips are added.
+  function renderTableNotice(state, me) {
+    if (!els.tableNotice) return;
+    let title = "";
+    let text = "";
+    if (!me) {
+      title = "You're watching this table";
+      text = "The hand was dealt to " + state.players.length + " seats before you joined, so you can't be seated at this table. Watch the action; the host can start a new table with you in it.";
+    } else if (state.phase === "showdown" && state.players.filter((player) => player.stack > 0).length < 2) {
+      title = "Table over";
+      text = room.isHost ? "Fewer than two players have chips. Add chips below to keep playing." : "Fewer than two players have chips. The host can add chips to continue.";
+    }
+    els.tableNotice.hidden = !title;
+    els.tableNoticeTitle.textContent = title;
+    els.tableNoticeText.textContent = text;
+  }
+
+  function renderBanners() {
+    const reconnecting = connectionState === "reconnecting";
+    const text = reconnecting ? "Connection lost. Recovering the table; keep this page open." : "";
+    [els.roomBanner, els.gameBanner].forEach((banner) => {
+      if (!banner) return;
+      banner.hidden = !text;
+      banner.querySelector("span").textContent = text;
+    });
   }
 
   function renderGuide(familyId) {
-    els.guideTabs.innerHTML = Catalog.FAMILIES.map((family) => '<button type="button" data-guide-family="' + family.id + '" class="' + (family.id === familyId ? "active" : "") + '">' + escapeHtml(family.label) + "</button>").join("");
+    els.guideTabs.innerHTML = Catalog.FAMILIES.map((family) => '<button type="button" data-guide-family="' + family.id + '" class="' + (family.id === familyId ? "active" : "") + '" aria-pressed="' + (family.id === familyId) + '">' + escapeHtml(family.label) + "</button>").join("");
     els.guideTabs.querySelectorAll("[data-guide-family]").forEach((button) => {
       button.addEventListener("click", () => {
         activeFamily = button.dataset.guideFamily;
         renderGuide(activeFamily);
+        els.guideTabs.querySelector('[data-guide-family="' + activeFamily + '"]')?.focus();
       });
     });
     els.guideList.innerHTML = Catalog.gamesByFamily(familyId).map((game) => '<article class="guide-game"><h3>' + escapeHtml(game.short) + "<span>" + escapeHtml(structureLabel(game.structure)) + '</span></h3><p><strong>' + escapeHtml(game.name) + ".</strong> " + escapeHtml(game.summary) + "</p></article>").join("");
   }
 
+  function openDialog(dialog) {
+    if (Sheet) Sheet.open(dialog, { dismissible: true });
+    else dialog.showModal();
+  }
+
   function openLedger() {
     if (!model || model.kind !== "poker") return;
-    els.ledgerStacks.innerHTML = model.players.map((player) => '<div class="ledger-stack"><span>' + escapeHtml(player.name) + '</span><strong>' + formatChips(player.stack) + "</strong></div>").join("");
+    els.ledgerStacks.innerHTML = model.players.map((player) => '<div class="ledger-stack stat"><span class="stat-label">' + escapeHtml(player.name) + '</span><strong class="stat-value">' + formatChips(player.stack) + "</strong></div>").join("");
     els.ledgerEntries.innerHTML = model.ledger.length ? model.ledger.slice().reverse().map((entry) => {
-      if (entry.adjustment) return '<div class="ledger-entry"><span>Adjustment</span><div>' + escapeHtml(entry.note) + " · " + signed(entry.amount) + "</div></div>";
+      if (entry.adjustment) return '<div class="ledger-entry"><span>Adjustment</span><div>' + escapeHtml(entry.note) + " · " + escapeHtml(playerName(entry.playerId)) + " " + signed(entry.amount) + "</div></div>";
       const game = Catalog.getGame(entry.gameId);
       const net = model.players.map((player) => '<span class="' + (entry.net[player.id] > 0 ? "positive" : entry.net[player.id] < 0 ? "negative" : "") + '">' + escapeHtml(player.name) + " " + signed(entry.net[player.id] || 0) + "</span>").join("");
       return '<div class="ledger-entry"><span>Hand ' + entry.handNumber + " · " + escapeHtml(game.short) + '</span><div class="ledger-net">' + net + "</div></div>";
-    }).join("") : '<p class="error">No completed hands yet.</p>';
-    els.ledgerModal.showModal();
+    }).join("") : '<p class="ledger-empty error">No completed hands yet.</p>';
+    openDialog(els.ledgerModal);
   }
 
   async function copyLedger() {
     if (!model || model.kind !== "poker") return;
-    await copyText(Engine.ledgerText(model));
-    showToast("Ledger copied.");
+    await copyWithToast(Engine.ledgerText(model), "Ledger copied.");
   }
 
   function exportLedger() {
@@ -699,8 +1028,20 @@
 
   async function copyInvite() {
     const url = location.origin + location.pathname + "#" + room.roomCode;
-    await copyText("Join my mixed poker table: " + url + "\nRoom code: " + room.roomCode);
-    showToast("Invite copied.");
+    await copyWithToast("Join my mixed poker table: " + url + "\nRoom code: " + room.roomCode, "Invite copied.");
+  }
+
+  async function copyCode() {
+    await copyWithToast(room.roomCode, "Room code " + room.roomCode + " copied.");
+  }
+
+  async function copyWithToast(text, message) {
+    try {
+      await copyText(text);
+      showToast(message);
+    } catch (_error) {
+      showToast("Copying failed. Select the room code and copy it by hand.", { alert: true });
+    }
   }
 
   function readSettings() {
@@ -732,7 +1073,6 @@
 
   function playerBadges(state, player) {
     const badges = [];
-    if (state.players[state.buttonIndex]?.id === player.id) badges.push("BTN");
     if (state.smallBlindPlayerId === player.id) badges.push("SB");
     if (state.bigBlindPlayerId === player.id) badges.push("BB");
     if (state.straddlePlayerId === player.id) badges.push("STR");
@@ -743,12 +1083,14 @@
   // Every card face comes from the shared component (shared/cards.js). Ids are
   // "As"/"Td" from the engine or "BACK" for a hidden card.
   function cardHtml(id, options = {}) {
-    if (!options.selectable) return Cards.html(id, { selected: options.selected });
+    const attrs = options.key ? { "data-key": options.key } : {};
+    if (!options.selectable) return Cards.html(id, { selected: options.selected, attrs });
     return Cards.html(id, {
       tag: "button",
       interactive: true,
       selected: options.selected,
-      attrs: { "data-card-id": id, "data-selectable": "true" },
+      pressed: Boolean(options.selected),
+      attrs: { ...attrs, "data-card-id": id, "data-selectable": "true" },
     });
   }
 
@@ -762,10 +1104,27 @@
     return Math.max(0, Math.ceil((state.actionDeadline - Date.now()) / 1000));
   }
 
+  // The action clock only rewrites the clock badges ([data-clock]), never the
+  // whole view, so focus and selection survive the twice-a-second tick.
+  function tickClock() {
+    const state = currentViewState();
+    const clocks = els.gameView.querySelectorAll("[data-clock]");
+    if (!state || state.kind !== "poker" || !state.activePlayerId || !state.actionDeadline) {
+      clocks.forEach((clock) => { clock.textContent = ""; clock.classList.remove("is-out"); });
+      return;
+    }
+    const seconds = remainingSeconds(state);
+    const out = seconds <= 0;
+    clocks.forEach((clock) => {
+      clock.textContent = out ? "Timed out" : seconds + "s";
+      clock.classList.toggle("is-out", out);
+    });
+  }
+
   function startClockRendering() {
     if (clockRenderTimer) return;
     clockRenderTimer = setInterval(() => {
-      if (model?.kind === "poker" && model.activePlayerId && model.actionDeadline) renderGame();
+      if (model?.kind === "poker" && model.activePlayerId && model.actionDeadline) tickClock();
     }, 500);
   }
 
@@ -812,35 +1171,58 @@
   function setBusy(busy) {
     els.connectButton.disabled = busy;
     els.resumeButton.disabled = busy;
+    els.connectButton.setAttribute("aria-busy", String(busy));
     if (busy) els.connectButton.textContent = "Connecting…";
     else renderSetupMode();
   }
 
+  // Errors render where the user is looking (the visible view's error slot)
+  // and are announced once through the page's assertive live region.
   function showError(message) {
     if (!els.setupView.hidden) els.setupError.textContent = message;
-    else els.roomError.textContent = message;
+    else if (!els.roomView.hidden) els.roomError.textContent = message;
+    else if (els.gameError) els.gameError.textContent = message;
+    showToast(message, { alert: true });
   }
 
   function clearErrors() {
     els.setupError.textContent = "";
     els.roomError.textContent = "";
+    if (els.gameError) els.gameError.textContent = "";
   }
 
-  function showToast(message) {
-    clearTimeout(toastTimer);
-    els.toast.textContent = message;
-    els.toast.classList.add("show");
-    toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2500);
+  // One polite stack (#toast) and one assertive stack (#alerts); each toast
+  // has a dismiss control and pauses its timer while hovered or focused.
+  function showToast(message, { alert = false } = {}) {
+    const stack = alert && els.alerts ? els.alerts : els.toast;
+    if (!stack) return;
+    const toast = document.createElement("div");
+    toast.className = "toast" + (alert ? " toast--alert" : "");
+    toast.innerHTML = "<span></span>" + '<button class="btn btn--ghost btn--icon btn--sm" type="button" aria-label="Dismiss">' + icon("i-close") + "</button>";
+    toast.firstChild.textContent = message;
+    let timer = 0;
+    const remove = () => { clearTimeout(timer); toast.remove(); };
+    const arm = () => { clearTimeout(timer); timer = setTimeout(remove, alert ? 6000 : 3500); };
+    toast.querySelector("button").addEventListener("click", remove);
+    toast.addEventListener("mouseenter", () => clearTimeout(timer));
+    toast.addEventListener("focusin", () => clearTimeout(timer));
+    toast.addEventListener("mouseleave", arm);
+    toast.addEventListener("focusout", arm);
+    while (stack.children.length >= 3) stack.firstElementChild.remove();
+    stack.append(toast);
+    arm();
   }
 
   async function copyText(text) {
     if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
     const area = document.createElement("textarea");
     area.value = text;
+    area.setAttribute("aria-hidden", "true");
     document.body.appendChild(area);
     area.select();
-    document.execCommand("copy");
+    const ok = document.execCommand("copy");
     area.remove();
+    if (!ok) throw new Error("Copy failed.");
   }
 
   function copyRosterPlayer(player) {

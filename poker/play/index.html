@@ -1,157 +1,223 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-family="poker">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#070a0e" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Peer-to-peer mixed-game poker cash table: hold'em, Omaha, stud, draw, Badugi, Dramaha and Archie variants in one rotation." />
     <title>Mixed Poker</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="./styles.css?v=20261003b" />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../table.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body>
-    <div class="shell">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell app--shell">
       <header class="topbar">
-        <a class="brand" href="/">
-          <span class="mark">MS</span>
-          <span><strong>Mixed Poker</strong><small>Peer-to-peer cash games</small></span>
-        </a>
-        <nav>
-          <a href="/ofc/play/">OFC</a>
-          <a href="/poker/dodge/">Dodge reports</a>
-          <button class="icon-button" id="guide-button" type="button" aria-label="Game guide">?</button>
-          <span class="connection" id="connection" data-state="offline"><i></i><span>Offline</span></span>
-          <button class="button quiet small" id="leave-button" type="button" hidden>Leave</button>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">Projects</span></a>
+          <span class="crumb-sep crumb-family" aria-hidden="true">/</span>
+          <a class="crumb-family" href="/poker/">Poker</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Mixed Poker</span>
         </nav>
+        <nav class="tool-nav" aria-label="Poker tables">
+          <a href="/poker/play/" aria-current="page">Mixed Poker</a>
+          <a href="/poker/rush/">Poker Rush</a>
+          <a href="/poker/ultimate-omaha/">Ultimate Omaha</a>
+          <a href="/poker/edge-the-dealer/">Edge the Dealer</a>
+          <a href="/poker/222/">222</a>
+        </nav>
+        <div class="topbar-actions">
+          <span class="badge badge--warn connection" id="connection" data-state="offline" title="Offline"><span>Offline</span></span>
+          <button class="btn btn--ghost btn--icon" id="guide-button" type="button" aria-label="Game guide" title="Game guide"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+          <button class="btn btn--danger" id="leave-button" type="button" hidden>Leave</button>
+        </div>
       </header>
 
-      <main>
-        <section class="setup-view" id="setup-view">
-          <header class="page-heading">
-            <div><p class="eyebrow">Cash table</p><h1>Build a mixed game</h1></div>
-            <div class="segmented setup-tabs" id="setup-tabs" aria-label="Setup sections">
-              <button class="active" type="button" data-setup-tab="table">Table</button>
-              <button type="button" data-setup-tab="rotation" id="rotation-tab">Rotation</button>
-              <button type="button" data-setup-tab="options">Options</button>
+      <main id="main" tabindex="-1">
+        <section class="setup-view view" id="setup-view" aria-labelledby="setup-title">
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker · Cash table</p>
+              <h1 id="setup-title">Build a mixed game</h1>
+              <p class="lede">Pick a rotation, set the stakes, then create a room and share the code. Friends join peer-to-peer; nobody signs up.</p>
             </div>
-          </header>
+          </div>
+          <div class="tabs setup-tabs" id="setup-tabs" role="tablist" aria-label="Setup sections">
+            <button class="active" type="button" role="tab" aria-selected="true" data-tab="table" data-setup-tab="table">Table</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="rotation" data-setup-tab="rotation" id="rotation-tab">Rotation</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="options" data-setup-tab="options">Options</button>
+          </div>
 
           <div class="setup-grid" id="setup-grid" data-setup-tab="table">
-            <aside class="connect-panel panel" data-setup-section="table">
-              <div class="panel-title">
-                <div><p class="step">01</p><h2>Table</h2></div>
-                <div class="segmented mode-switch">
-                  <button class="active" id="create-mode" type="button">Create</button>
-                  <button id="join-mode" type="button">Join</button>
+            <section class="connect-panel panel" data-setup-section="table" aria-labelledby="panel-table">
+              <div class="panel-head">
+                <div><p class="step">01</p><h2 id="panel-table">Table</h2></div>
+                <div class="segmented mode-switch" role="group" aria-label="Create or join">
+                  <button class="active" id="create-mode" type="button" aria-pressed="true">Create</button>
+                  <button id="join-mode" type="button" aria-pressed="false">Join</button>
                 </div>
               </div>
-              <label class="field-label" for="player-name">Your name</label>
-              <input id="player-name" maxlength="24" autocomplete="nickname" placeholder="Player" />
-              <div id="join-fields" hidden>
-                <label class="field-label" for="room-code">Room code</label>
-                <input id="room-code" class="code-input" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="ABC234" />
-              </div>
-              <button class="button primary full" id="connect-button" type="button">Create table</button>
-              <button class="button quiet full" id="resume-button" type="button" hidden>Resume saved table</button>
-              <p class="error" id="setup-error" role="alert"></p>
+              <div class="panel-body">
+                <div class="field">
+                  <label for="player-name">Your name</label>
+                  <input id="player-name" maxlength="24" autocomplete="nickname" placeholder="Player" />
+                </div>
+                <div class="field" id="join-fields" hidden>
+                  <label for="room-code">Room code</label>
+                  <input id="room-code" class="code-input" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234" />
+                  <span class="field-hint">Six letters and digits from the host's invite.</span>
+                </div>
+                <button class="btn btn--primary btn--lg full" id="connect-button" type="button">Create table</button>
+                <button class="btn full" id="resume-button" type="button" hidden>Resume saved table</button>
+                <p class="field-error inline-error" id="setup-error"></p>
 
-              <div class="core-settings">
-                <label><span>Seats</span><select id="seats"></select></label>
-                <label><span>Starting stack</span><input id="starting-stack" type="number" min="20" value="2000" /></label>
-                <label><span>Small / big blind</span><span class="paired-input"><input id="small-blind" type="number" min="1" value="5" /><input id="big-blind" type="number" min="2" value="10" /></span></label>
-                <label><span>Small / big bet</span><span class="paired-input"><input id="small-bet" type="number" min="1" value="10" /><input id="big-bet" type="number" min="2" value="20" /></span></label>
-                <label><span>Ante / bring-in</span><span class="paired-input"><input id="ante" type="number" min="0" value="1" /><input id="bring-in" type="number" min="1" value="5" /></span></label>
+                <div class="core-settings">
+                  <div class="settings-row"><label for="seats"><strong>Seats</strong></label><select id="seats"></select></div>
+                  <div class="settings-row"><label for="starting-stack"><strong>Starting stack</strong></label><input id="starting-stack" type="number" min="20" value="2000" /></div>
+                  <div class="settings-row"><label for="small-blind"><strong>Small / big blind</strong></label><span class="paired-input"><input id="small-blind" type="number" min="1" value="5" aria-label="Small blind" /><input id="big-blind" type="number" min="2" value="10" aria-label="Big blind" /></span></div>
+                  <div class="settings-row"><label for="small-bet"><strong>Small / big bet</strong><small>Fixed-limit games</small></label><span class="paired-input"><input id="small-bet" type="number" min="1" value="10" aria-label="Small bet" /><input id="big-bet" type="number" min="2" value="20" aria-label="Big bet" /></span></div>
+                  <div class="settings-row"><label for="ante"><strong>Ante / bring-in</strong><small>Stud games</small></label><span class="paired-input"><input id="ante" type="number" min="0" value="1" aria-label="Ante" /><input id="bring-in" type="number" min="1" value="5" aria-label="Bring-in" /></span></div>
+                </div>
               </div>
-            </aside>
+            </section>
 
-            <section class="mix-panel panel" data-setup-section="rotation">
-              <div class="panel-title">
-                <div><p class="step">02</p><h2>Rotation</h2></div>
+            <section class="mix-panel panel" data-setup-section="rotation" aria-labelledby="panel-rotation">
+              <div class="panel-head">
+                <div><p class="step">02</p><h2 id="panel-rotation">Rotation</h2></div>
                 <div class="mix-meta"><strong id="mix-count">8 games</strong><span id="mix-cap">8 seats max</span></div>
               </div>
-              <div class="quick-mixes" id="quick-mixes"></div>
-              <div class="rotation" id="rotation"></div>
-              <div class="rotation-actions">
-                <button class="button quiet small" id="clear-mix" type="button">Clear</button>
-                <label>Change every
-                  <select id="hands-per-game">
-                    <option value="1">hand</option>
-                    <option value="orbit" selected>orbit</option>
-                    <option value="6">6 hands</option>
-                    <option value="12">12 hands</option>
-                  </select>
-                </label>
-              </div>
+              <div class="panel-body">
+                <div class="btn-group quick-mixes" id="quick-mixes" role="group" aria-label="Quick mixes"></div>
+                <div class="rotation" id="rotation" aria-label="Rotation order"></div>
+                <p class="field-hint rotation-empty" id="rotation-empty" hidden>Add games from the catalog below.</p>
+                <div class="rotation-actions">
+                  <button class="btn btn--ghost btn--sm" id="clear-mix" type="button">Clear</button>
+                  <label class="rotation-every">Change every
+                    <select id="hands-per-game">
+                      <option value="1">hand</option>
+                      <option value="orbit" selected>orbit</option>
+                      <option value="6">6 hands</option>
+                      <option value="12">12 hands</option>
+                    </select>
+                  </label>
+                </div>
 
-              <div class="catalog-tabs" id="catalog-tabs"></div>
-              <div class="game-catalog" id="game-catalog"></div>
+                <div class="segmented catalog-tabs" id="catalog-tabs" role="group" aria-label="Game families"></div>
+                <div class="game-catalog" id="game-catalog" role="group" aria-label="Games"></div>
+              </div>
             </section>
 
-            <section class="advanced panel" data-setup-section="options">
-              <div class="panel-title">
-                <div><p class="step">03</p><h2>Table options</h2></div>
-                <span>Applied across the mix</span>
+            <section class="advanced panel" data-setup-section="options" aria-labelledby="panel-options">
+              <div class="panel-head">
+                <div><p class="step">03</p><h2 id="panel-options">Table options</h2></div>
+                <span class="field-hint">Applied across the mix</span>
               </div>
-              <div class="advanced-grid">
-                <label class="number-setting"><span><strong>Limit raise cap</strong><small>Total bets per street</small></span><select id="raise-cap"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
-                <label class="toggle-setting"><span><strong>Live straddle</strong><small>2× big blind, when available</small></span><input id="straddle" type="checkbox" /><i></i></label>
-                <label class="number-setting"><span><strong>Bomb pot</strong><small>Every N hands; 0 is off</small></span><input id="bomb-every" type="number" min="0" max="99" value="0" /></label>
-                <label class="number-setting"><span><strong>Bomb ante</strong><small>Posted by every player</small></span><input id="bomb-ante" type="number" min="1" value="10" /></label>
-                <label class="number-setting"><span><strong>Action clock</strong><small>Seconds; 0 is off</small></span><input id="action-clock" type="number" min="0" max="300" value="0" /></label>
+              <div class="panel-body">
+                <div class="advanced-grid">
+                  <div class="settings-row number-setting"><label for="raise-cap"><strong>Limit raise cap</strong><small>Total bets per street</small></label><select id="raise-cap"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div>
+                  <div class="settings-row toggle-setting"><label for="straddle"><strong>Live straddle</strong><small>2× big blind, when available</small></label><span class="switch"><input id="straddle" type="checkbox" role="switch" /></span></div>
+                  <div class="settings-row number-setting"><label for="bomb-every"><strong>Bomb pot</strong><small>Every N hands; 0 is off</small></label><input id="bomb-every" type="number" min="0" max="99" value="0" /></div>
+                  <div class="settings-row number-setting"><label for="bomb-ante"><strong>Bomb ante</strong><small>Posted by every player</small></label><input id="bomb-ante" type="number" min="1" value="10" /></div>
+                  <div class="settings-row number-setting"><label for="action-clock"><strong>Action clock</strong><small>Seconds; 0 is off</small></label><input id="action-clock" type="number" min="0" max="300" value="0" /></div>
+                </div>
               </div>
             </section>
           </div>
         </section>
 
-        <section class="room-view" id="room-view" hidden>
-          <div class="room-top panel">
-            <span>Room</span><strong id="room-code-display">------</strong>
-            <button class="button secondary" id="copy-invite" type="button">Copy invite</button>
+        <section class="room-view view" id="room-view" hidden aria-labelledby="waiting-title">
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker · Lobby</p>
+              <h1 id="waiting-title">Waiting for players</h1>
+              <p class="lede" id="room-lede">Share the code or the invite link. The table deals once every seat is filled.</p>
+            </div>
+            <div class="lobby-code room-top">
+              <span class="lobby-code-pill"><span>Room</span><strong id="room-code-display">------</strong><button class="btn btn--ghost btn--icon" id="copy-code" type="button" aria-label="Copy room code" title="Copy room code"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-copy" /></svg></button></span>
+              <button class="btn" id="copy-invite" type="button"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-link" /></svg>Copy invite</button>
+            </div>
           </div>
-          <section class="waiting panel">
-            <div class="page-heading compact"><div><p class="eyebrow">Lobby</p><h1 id="waiting-title">Waiting for players</h1></div></div>
-            <div class="roster" id="roster"></div>
-            <div class="lobby-mix" id="lobby-mix"></div>
-            <button class="button primary full" id="start-game" type="button">Deal first hand</button>
-            <p class="error" id="room-error" role="alert"></p>
-          </section>
+          <div class="table-banner table-banner--info" id="room-banner" hidden><span></span></div>
+          <div class="lobby-grid">
+            <section class="waiting panel" aria-label="Seats">
+              <div class="panel-head"><h2>Seats</h2><span class="field-hint" id="roster-count"></span></div>
+              <div class="panel-body lobby">
+                <div class="roster lobby-roster" id="roster"></div>
+                <div class="lobby-actions">
+                  <button class="btn btn--primary btn--lg" id="start-game" type="button">Deal first hand</button>
+                  <p class="lobby-wait" id="lobby-wait" hidden>Waiting for the host to deal the first hand.</p>
+                  <p class="field-hint" id="start-hint"></p>
+                </div>
+                <p class="field-error inline-error" id="room-error"></p>
+              </div>
+            </section>
+            <section class="panel lobby-mix-panel" aria-labelledby="lobby-mix-title">
+              <div class="panel-head"><h2 id="lobby-mix-title">Table</h2></div>
+              <div class="panel-body">
+                <p class="field-hint">Rotation</p>
+                <div class="lobby-mix chip-row" id="lobby-mix"></div>
+                <p class="field-hint">Stakes</p>
+                <div class="lobby-settings" id="lobby-settings"></div>
+              </div>
+            </section>
+          </div>
         </section>
 
-        <section class="game-view" id="game-view" hidden>
-          <header class="game-header">
+        <section class="game-view view" id="game-view" hidden aria-labelledby="game-title">
+          <header class="game-header tool-head">
             <div><p class="eyebrow" id="game-kicker">Hand 1 · Game 1/8</p><h1 id="game-title">Limit Hold’em</h1></div>
             <div class="game-header-actions">
-              <button class="button quiet small" id="ledger-button" type="button">Ledger</button>
-              <span class="room-tag" id="game-room-code">------</span>
+              <div class="table-meta stat-strip" aria-label="Table status">
+                <div class="stat stat--street"><span class="stat-label">Street</span><strong class="stat-value" id="street-label">Preflop</strong></div>
+                <div class="stat stat--pot"><span class="stat-label">Pot</span><strong class="stat-value" id="pot-label">0</strong></div>
+                <div class="stat"><span class="stat-label">To call</span><strong class="stat-value" id="call-label">0</strong></div>
+                <div class="stat"><span class="stat-label">Next game</span><strong class="stat-value" id="next-game-label">O8</strong></div>
+              </div>
+              <button class="btn" id="ledger-button" type="button"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-history" /></svg>Ledger</button>
+              <span class="badge badge--plain room-tag" id="game-room-code">------</span>
             </div>
           </header>
 
-          <div class="table-meta">
-            <div><span>Street</span><strong id="street-label">Preflop</strong></div>
-            <div><span>Pot</span><strong id="pot-label">0</strong></div>
-            <div><span>To call</span><strong id="call-label">0</strong></div>
-            <div><span>Next game</span><strong id="next-game-label">O8</strong></div>
-          </div>
+          <div class="table-banner" id="game-banner" hidden><span></span></div>
 
-          <section class="table-surface">
+          <section class="table-surface stage felt" aria-label="Table">
             <div class="seats" id="seats-view"></div>
-            <div class="center-table">
+            <div class="center-table felt-centre">
+              <div class="felt-head">
+                <span class="felt-street" id="felt-street">Preflop</span>
+                <span class="felt-pot"><span class="felt-label">Pot</span><strong id="felt-pot">0</strong></span>
+              </div>
               <div class="board-stack" id="boards"></div>
-              <p class="table-message" id="table-message"></p>
+              <p class="table-message felt-message" id="table-message"></p>
+              <div class="table-notice" id="table-notice" hidden><h3 id="table-notice-title"></h3><p id="table-notice-text"></p></div>
             </div>
+            <section class="hero-hand seat seat--me" id="hero-seat" aria-label="Your hand">
+              <div class="hero-hand-head seat-name">
+                <span class="seat-avatar" id="hero-avatar" aria-hidden="true">You</span>
+                <span class="seat-dealer" id="hero-dealer" title="Dealer" aria-label="Dealer" hidden>D</span>
+                <strong id="hero-name">Your hand</strong>
+                <span class="seat-badge" id="hero-status">Waiting</span>
+                <span class="seat-clock" id="hero-clock" data-clock hidden></span>
+                <span class="seat-bet" id="hero-bet" hidden></span>
+              </div>
+              <div class="hero-cards" id="hero-cards"></div>
+              <div class="hand-evaluation hand-chip-row" id="hand-evaluation"></div>
+            </section>
           </section>
 
-          <section class="hero-hand panel">
-            <div class="hero-hand-head">
-              <div><span class="live-dot"></span><strong id="hero-name">Your hand</strong></div>
-              <span id="hero-status">Waiting</span>
+          <section class="decision-panel action-stage" id="decision-panel" aria-label="Your action">
+            <div class="decision-copy action-stage-status">
+              <p class="eyebrow eyebrow--plain" id="decision-kicker">Action</p>
+              <h2 id="decision-title">Waiting for player</h2>
+              <span class="action-stage-clock" id="decision-clock" data-clock></span>
+              <p class="action-stage-error" id="game-error"></p>
             </div>
-            <div class="hero-cards" id="hero-cards"></div>
-            <div class="hand-evaluation" id="hand-evaluation"></div>
-          </section>
-
-          <section class="decision-panel panel" id="decision-panel">
-            <div class="decision-copy"><p class="eyebrow" id="decision-kicker">Action</p><h2 id="decision-title">Waiting for player</h2></div>
             <div class="bet-controls" id="bet-controls">
               <div class="amount-control" id="amount-control">
                 <button type="button" data-bet-preset="min">Min</button>
@@ -160,49 +226,72 @@
                 <button type="button" data-bet-preset="max">Max</button>
                 <input id="bet-amount" type="number" min="0" aria-label="Total bet amount" />
               </div>
-              <div class="action-buttons">
-                <button class="button danger" id="fold-button" type="button">Fold</button>
-                <button class="button secondary" id="pass-button" type="button">Check</button>
-                <button class="button primary" id="raise-button" type="button">Bet</button>
+              <div class="action-buttons action-stage-actions">
+                <button class="btn btn--danger btn--lg" id="fold-button" type="button">Fold</button>
+                <button class="btn btn--lg" id="pass-button" type="button">Check</button>
+                <button class="btn btn--primary btn--lg" id="raise-button" type="button">Bet</button>
               </div>
             </div>
             <div class="draw-controls" id="draw-controls" hidden>
               <span id="draw-help">Select cards to discard</span>
-              <button class="button primary" id="draw-button" type="button">Pat</button>
+              <button class="btn btn--primary btn--lg" id="draw-button" type="button">Pat</button>
             </div>
-            <button class="button danger" id="force-fold-button" type="button" hidden>Force-fold disconnected player</button>
+            <div class="action-stage-host" id="decision-host">
+              <button class="btn btn--danger" id="force-fold-button" type="button" hidden>Force-fold disconnected player</button>
+            </div>
           </section>
 
-          <section class="results-panel panel" id="results-panel" hidden>
-            <div><p class="eyebrow">Hand complete</p><h2 id="result-title">Showdown</h2></div>
+          <section class="results-panel action-stage" id="results-panel" hidden aria-labelledby="result-title">
+            <div class="action-stage-status">
+              <p class="eyebrow eyebrow--plain" id="result-kicker">Hand complete</p>
+              <h2 id="result-title">Showdown</h2>
+            </div>
             <div class="results-list" id="results-list"></div>
-            <button class="button primary" id="next-hand-button" type="button">Deal next hand</button>
+            <div class="results-actions">
+              <button class="btn btn--primary btn--lg" id="next-hand-button" type="button">Deal next hand</button>
+              <button class="btn btn--ghost btn--sm" id="add-chips-toggle" type="button" aria-expanded="false" aria-controls="add-chips" hidden>Add chips…</button>
+              <p class="lobby-wait" id="results-wait" hidden>Waiting for the host to deal the next hand.</p>
+              <p class="field-hint" id="results-hint"></p>
+            </div>
+            <form class="action-stage-host add-chips" id="add-chips" hidden>
+              <label class="add-chips-label" for="add-chips-player"><strong>Add chips</strong><small>Recorded in the ledger as an add-on</small></label>
+              <select id="add-chips-player" aria-label="Player"></select>
+              <input id="add-chips-amount" type="number" min="1" step="1" aria-label="Amount" />
+              <button class="btn" id="add-chips-button" type="submit">Add chips</button>
+            </form>
           </section>
         </section>
       </main>
     </div>
 
-    <dialog class="modal guide-modal" id="guide-modal">
-      <header><div><p class="eyebrow">Game guide</p><h2>Mixed-game rules</h2></div><button class="icon-button" data-close="guide-modal" type="button" aria-label="Close">×</button></header>
-      <div class="guide-tabs" id="guide-tabs"></div>
-      <div class="guide-list" id="guide-list"></div>
+    <dialog class="dialog dialog--wide dialog--sheet guide-modal" id="guide-modal" aria-labelledby="guide-title">
+      <div class="dialog-head"><div><p class="eyebrow eyebrow--plain">Game guide</p><h2 id="guide-title">Mixed-game rules</h2></div><button class="btn btn--ghost btn--icon" data-close="guide-modal" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+      <div class="dialog-body">
+        <div class="segmented guide-tabs" id="guide-tabs" role="group" aria-label="Game families"></div>
+        <div class="guide-list" id="guide-list"></div>
+      </div>
     </dialog>
 
-    <dialog class="modal ledger-modal" id="ledger-modal">
-      <header><div><p class="eyebrow">Local record</p><h2>Table ledger</h2></div><button class="icon-button" data-close="ledger-modal" type="button" aria-label="Close">×</button></header>
-      <div class="ledger-stacks" id="ledger-stacks"></div>
-      <div class="ledger-entries" id="ledger-entries"></div>
-      <footer><button class="button secondary" id="copy-ledger" type="button">Copy ledger</button><button class="button primary" id="export-ledger" type="button">Export JSON</button></footer>
+    <dialog class="dialog dialog--sheet ledger-modal" id="ledger-modal" aria-labelledby="ledger-title">
+      <div class="dialog-head"><div><p class="eyebrow eyebrow--plain">Local record</p><h2 id="ledger-title">Table ledger</h2></div><button class="btn btn--ghost btn--icon" data-close="ledger-modal" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+      <div class="dialog-body">
+        <div class="ledger-stacks stat-strip" id="ledger-stacks"></div>
+        <div class="ledger-entries" id="ledger-entries"></div>
+      </div>
+      <div class="dialog-foot"><button class="btn" id="copy-ledger" type="button">Copy ledger</button><button class="btn btn--primary" id="export-ledger" type="button">Export JSON</button></div>
     </dialog>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="toast-stack" id="toast" role="status" aria-live="polite"></div>
+    <div class="toast-stack toast-stack--alert" id="alerts" role="alert" aria-live="assertive"></div>
 
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="../../shared/peer-room.js?v=20260908a"></script>
-    <script src="../../shared/cards.js?v=20261003b"></script>
-    <script src="./game-catalog.js?v=20260907a"></script>
-    <script src="./evaluator.js?v=20260907a"></script>
-    <script src="./engine.js?v=20260907a"></script>
-    <script src="./app.js?v=20261003b"></script>
+    <script src="../../shared/peer-room.js?v=20261016"></script>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/tabs.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script src="./game-catalog.js?v=20261016"></script>
+    <script src="./evaluator.js?v=20261016"></script>
+    <script src="./engine.js?v=20261016"></script>
+    <script src="./app.js?v=20261016"></script>
   </body>
 </html>

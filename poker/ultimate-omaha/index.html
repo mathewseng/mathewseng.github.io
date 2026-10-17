@@ -1,300 +1,319 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html lang="en" data-family="poker">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Peer-to-peer double-board Omaha against fixed multiplier payouts: check or double, qualify with aces-up on both boards." />
     <title>Ultimate Omaha</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Pro:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="styles.css?v=20261003">
-</head>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../table.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
+  </head>
 
-<body>
-    <div class="game-container">
-        <!-- Ambient background -->
-        <div class="ambient-bg"></div>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell app--shell table-app game-container">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">Projects</span></a>
+          <span class="crumb-sep crumb-family" aria-hidden="true">/</span>
+          <a class="crumb-family" href="/poker/">Poker</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Ultimate Omaha</span>
+        </nav>
+        <nav class="tool-nav" aria-label="Poker tables">
+          <a href="/poker/play/">Mixed Poker</a>
+          <a href="/poker/rush/">Poker Rush</a>
+          <a href="/poker/ultimate-omaha/" aria-current="page">Ultimate Omaha</a>
+          <a href="/poker/edge-the-dealer/">Edge the Dealer</a>
+          <a href="/poker/222/">222</a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="btn btn--ghost btn--icon" id="rules-btn" type="button" aria-label="Rules" title="Rules"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+          <button class="btn btn--danger" id="leave-game-btn" type="button" hidden>Leave</button>
+        </div>
+      </header>
 
-        <!-- Main Menu Screen -->
-        <div id="menu-screen" class="screen active">
-            <div class="menu-content">
-                <h1 class="game-title">
-                    <span class="title-line">Ultimate</span>
-                    <span class="title-line accent">Omaha</span>
-                </h1>
-                <p class="tagline">Double Board • High Stakes • Multiplied Payouts</p>
-
-                <div class="menu-section">
-                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
+      <main id="main" tabindex="-1">
+        <!-- Main menu -->
+        <section id="menu-screen" class="screen active menu-screen" aria-labelledby="menu-title">
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker · Double board</p>
+              <h1 id="menu-title">Ultimate Omaha</h1>
+              <p class="lede">Four hole cards, two boards, fixed multiplier payouts. Host a room and share the code; friends join peer-to-peer.</p>
+            </div>
+          </div>
+          <div class="menu-grid">
+            <section class="panel menu-panel" aria-label="Start or join a room">
+              <div class="panel-body menu-content">
+                <div class="field menu-section">
+                  <label for="player-name">Your name</label>
+                  <input type="text" id="player-name" placeholder="Player" maxlength="15" autocomplete="nickname" />
                 </div>
-
-                <div class="menu-section">
-                    <input type="text" id="room-code-input" placeholder="Room code" maxlength="6">
+                <div class="field menu-section">
+                  <label for="room-code-input">Room code</label>
+                  <input type="text" id="room-code-input" class="code-input" placeholder="ABC234" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                  <span class="field-hint">Leave the code blank to host a new room.</span>
                 </div>
-
                 <div class="menu-buttons">
-                    <button id="start-join-btn" class="btn btn-primary">
-                        <span class="btn-icon">♠</span>
-                        <span class="btn-text">Start Game</span>
-                        <span class="btn-loader hidden"></span>
-                    </button>
+                  <button id="start-join-btn" class="btn btn--primary btn--lg full btn-primary" type="button">
+                    <span class="btn-icon" aria-hidden="true">♠</span>
+                    <span class="btn-text">Start Game</span>
+                    <span class="btn-loader" aria-hidden="true"></span>
+                  </button>
+                  <p id="connect-status" class="field-hint connect-status" hidden></p>
+                  <button id="connect-cancel-btn" class="btn btn--ghost full" type="button" hidden>Cancel</button>
                 </div>
+              </div>
+            </section>
 
-                <div class="rules-preview">
-                    <h3>Quick Rules</h3>
-                    <ul>
-                        <li>4 hole cards, 2 community boards</li>
-                        <li>Qualify with Aces+ on BOTH boards</li>
-                        <li>Multipliers stack: Flush × Boat = 6x!</li>
-                    </ul>
-                </div>
+            <section class="panel rules-preview" aria-labelledby="quick-rules-title">
+              <div class="panel-head"><h2 id="quick-rules-title">Quick rules</h2></div>
+              <div class="panel-body">
+                <ul class="rules-list">
+                  <li>4 hole cards, 2 community boards</li>
+                  <li>Qualify with aces up or better on both boards</li>
+                  <li>Multipliers stack: flush × boat pays 6×</li>
+                </ul>
+                <button class="btn btn--sm" id="rules-preview-btn" type="button">Full rules</button>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Lobby -->
+        <section id="lobby-screen" class="screen lobby-screen" aria-labelledby="lobby-title">
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker · Lobby</p>
+              <h1 id="lobby-title">Waiting for players</h1>
+              <p class="lede you-are">You are <strong id="your-name" class="your-name"></strong>. Share the code; the host deals when everyone is in.</p>
             </div>
-        </div>
+            <div class="lobby-code room-info">
+              <span class="lobby-code-pill"><span class="room-label">Room</span><strong id="room-code" class="room-code">------</strong><button id="copy-code-btn" class="btn btn--ghost btn--icon" type="button" aria-label="Copy room code" title="Copy room code"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-copy" /></svg></button></span>
+            </div>
+          </div>
 
-        <!-- Lobby Screen -->
-        <div id="lobby-screen" class="screen">
-            <div class="lobby-content">
-                <div class="lobby-header">
-                    <h2>Game Lobby</h2>
-                    <div class="you-are">
-                        <span>You are:</span>
-                        <span id="your-name" class="your-name"></span>
-                    </div>
-                    <div class="room-info">
-                        <span class="room-label">Room Code:</span>
-                        <span id="room-code" class="room-code"></span>
-                        <button id="copy-code-btn" class="btn-icon-only" title="Copy code">📋</button>
-                    </div>
-                </div>
-
-                <div class="players-list">
-                    <h3>Players <span id="player-count">(0/10)</span></h3>
-                    <div id="lobby-players"></div>
-                </div>
-
-                <div class="lobby-settings" id="host-controls">
-                    <label>
-                        <span>Bet Amount:</span>
-                        <div class="bet-input-wrapper">
-                            <span class="currency-symbol">$</span>
-                            <input type="number" id="base-bet" value="1.00" min="0.01" step="0.01" placeholder="1.00">
-                        </div>
-                    </label>
-                </div>
-
+          <div class="lobby-grid">
+            <section class="panel players-list" aria-labelledby="players-title">
+              <div class="panel-head"><h2 id="players-title">Players</h2><span class="field-hint" id="player-count">(0/10)</span></div>
+              <div class="panel-body lobby">
+                <div id="lobby-players" class="lobby-roster"></div>
                 <div class="lobby-actions">
-                    <button id="start-game-btn" class="btn btn-primary hidden">Start Game</button>
-                    <button id="leave-lobby-btn" class="btn btn-secondary">Leave Lobby</button>
+                  <button id="start-game-btn" class="btn btn--primary btn--lg hidden" type="button">Start Game</button>
+                  <button id="leave-lobby-btn" class="btn" type="button">Leave Lobby</button>
+                  <p id="waiting-message" class="waiting-msg lobby-wait">Waiting for host to start...</p>
                 </div>
+              </div>
+            </section>
 
-                <p id="waiting-message" class="waiting-msg">Waiting for host to start...</p>
+            <section class="panel lobby-settings-panel" aria-labelledby="table-settings-title">
+              <div class="panel-head"><h2 id="table-settings-title">Table</h2></div>
+              <div class="panel-body">
+                <div class="lobby-settings host-settings" id="host-controls">
+                  <div class="settings-row">
+                    <label for="base-bet"><strong>Bet amount</strong><small>Per player, per hand</small></label>
+                    <span class="money-input bet-input-wrapper"><span class="currency-symbol" aria-hidden="true">$</span><input type="number" id="base-bet" value="1.00" min="0.01" step="0.01" placeholder="1.00" /></span>
+                  </div>
+                </div>
+                <p class="field-hint guest-settings-note">The host sets the bet before dealing. Up to 10 players share one deck; anyone who joins mid-hand plays from the next hand.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Game -->
+        <section id="game-screen" class="screen game-screen" aria-labelledby="game-title">
+          <header class="game-header tool-head">
+            <div>
+              <p class="eyebrow">Poker · Double board</p>
+              <h1 id="game-title">Ultimate Omaha</h1>
             </div>
-        </div>
+            <div class="game-header-actions">
+              <span class="badge badge--accent phase-badge" id="phase-label">Waiting</span>
+              <span class="badge badge--plain room-tag"><span class="game-room-label">Room</span> <strong id="game-room-code" class="game-room-code"></strong></span>
+            </div>
+          </header>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen">
-            <!-- Game Header with Room Code -->
-            <div class="game-header">
-                <span class="game-room-label">Room:</span>
-                <span id="game-room-code" class="game-room-code"></span>
+          <!-- Two columns on desktop (table | hand, actions, log); one stacked column on phones -->
+          <div class="game-layout">
+            <div class="game-column table-column">
+              <section class="stage felt table-surface" aria-label="Table">
+                <div class="felt-centre boards-container">
+                  <span class="felt-street" id="felt-phase">Waiting for the deal</span>
+                  <div class="board-stack">
+                    <div class="board board-line" id="board-1">
+                      <span class="felt-label">Board 1</span>
+                      <div class="board-cards">
+                        <div class="card-slot" data-slot="0"></div>
+                        <div class="card-slot" data-slot="1"></div>
+                        <div class="card-slot" data-slot="2"></div>
+                        <div class="card-slot" data-slot="3"></div>
+                        <div class="card-slot" data-slot="4"></div>
+                      </div>
+                      <span class="board-result hand-chip" id="board-1-result"></span>
+                    </div>
+                    <div class="board board-line" id="board-2">
+                      <span class="felt-label">Board 2</span>
+                      <div class="board-cards">
+                        <div class="card-slot" data-slot="0"></div>
+                        <div class="card-slot" data-slot="1"></div>
+                        <div class="card-slot" data-slot="2"></div>
+                        <div class="card-slot" data-slot="3"></div>
+                        <div class="card-slot" data-slot="4"></div>
+                      </div>
+                      <span class="board-result hand-chip" id="board-2-result"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="players-area seats" id="players-area" aria-label="Players"></div>
+              </section>
             </div>
 
-            <!-- Two columns on desktop (table | hand, actions, log); one stacked column on phones -->
-            <div class="game-layout">
-                <div class="game-column table-column">
-                    <!-- Community Boards (stacked vertically) -->
-                    <div class="boards-container">
-                        <div class="board" id="board-1">
-                            <div class="board-cards">
-                                <div class="card-slot" data-slot="0"></div>
-                                <div class="card-slot" data-slot="1"></div>
-                                <div class="card-slot" data-slot="2"></div>
-                                <div class="card-slot" data-slot="3"></div>
-                                <div class="card-slot" data-slot="4"></div>
-                            </div>
-                            <div class="board-result" id="board-1-result"></div>
-                        </div>
-
-                        <div class="board" id="board-2">
-                            <div class="board-cards">
-                                <div class="card-slot" data-slot="0"></div>
-                                <div class="card-slot" data-slot="1"></div>
-                                <div class="card-slot" data-slot="2"></div>
-                                <div class="card-slot" data-slot="3"></div>
-                                <div class="card-slot" data-slot="4"></div>
-                            </div>
-                            <div class="board-result" id="board-2-result"></div>
-                        </div>
-                    </div>
-
-                    <!-- Players Area -->
-                    <div class="players-area" id="players-area">
-                        <!-- Player boxes will be dynamically added -->
-                    </div>
+            <div class="game-column side-column">
+              <section class="player-hand-area panel" aria-labelledby="hand-title">
+                <div class="panel-head">
+                  <h2 class="hand-label" id="hand-title">Your hand</h2>
+                  <span class="player-pnl"><span class="stat-label">PnL</span> <strong id="my-pnl" class="seat-pnl">$0</strong></span>
                 </div>
-
-                <div class="game-column side-column">
-                    <!-- Current Player's Hand -->
-                    <div class="player-hand-area">
-                        <div class="hand-label">Your Hand</div>
-                        <div class="hole-cards" id="hole-cards">
-                            <div class="card-slot hole" data-slot="0"></div>
-                            <div class="card-slot hole" data-slot="1"></div>
-                            <div class="card-slot hole" data-slot="2"></div>
-                            <div class="card-slot hole" data-slot="3"></div>
-                        </div>
-                        <div class="player-pnl">
-                            <span>PnL: </span>
-                            <span id="my-pnl">$0</span>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="action-area" id="action-area">
-                        <div class="action-header">
-                            <div class="current-bet-info">
-                                <span>Your Bet: </span>
-                                <span id="current-bet">$0</span>
-                            </div>
-                            <button id="rules-btn" class="btn-icon-only" title="Rules">?</button>
-                        </div>
-                        <div class="action-buttons" id="action-buttons">
-                            <button id="check-btn" class="btn btn-action">Check</button>
-                            <button id="double-btn" class="btn btn-action btn-raise">Double</button>
-                        </div>
-                        <!-- Host showdown controls replace action buttons -->
-                        <div id="host-showdown-controls" class="host-showdown-controls hidden">
-                            <label>
-                                <span>Next Bet: $</span>
-                                <input type="number" id="next-bet" value="1.00" min="0.01" step="0.01">
-                            </label>
-                            <button id="next-hand-btn" class="btn btn-primary">Next Hand</button>
-                        </div>
-                        <p id="waiting-next" class="waiting-msg hidden">Waiting for host...</p>
-                    </div>
-
-                    <!-- Game Log & Chat -->
-                    <div class="log-chat-container">
-                        <div class="log-chat-tabs">
-                            <button class="tab-btn active" data-tab="game-log">📋 Game Log</button>
-                            <button class="tab-btn" data-tab="chat">💬 Chat</button>
-                        </div>
-                        <div class="tab-content active" id="game-log-tab">
-                            <div class="game-log" id="game-log">
-                                <!-- Game log entries will be added here -->
-                            </div>
-                        </div>
-                        <div class="tab-content" id="chat-tab">
-                            <div class="chat-messages" id="chat-messages">
-                                <!-- Chat messages will be added here -->
-                            </div>
-                            <div class="chat-input-area">
-                                <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
-                                <button id="send-chat-btn" class="btn btn-chat-send">Send</button>
-                                <div class="emoji-picker-btn" id="emoji-picker-btn">😀</div>
-                                <div class="emoji-picker hidden" id="emoji-picker">
-                                    <span class="emoji-option">👍</span>
-                                    <span class="emoji-option">👎</span>
-                                    <span class="emoji-option">🎉</span>
-                                    <span class="emoji-option">🔥</span>
-                                    <span class="emoji-option">💰</span>
-                                    <span class="emoji-option">😭</span>
-                                    <span class="emoji-option">😎</span>
-                                    <span class="emoji-option">🤑</span>
-                                    <span class="emoji-option">♠️</span>
-                                    <span class="emoji-option">♥️</span>
-                                    <span class="emoji-option">♦️</span>
-                                    <span class="emoji-option">♣️</span>
-                                    <span class="emoji-option">🃏</span>
-                                    <span class="emoji-option">GG</span>
-                                    <span class="emoji-option">NH</span>
-                                    <span class="emoji-option">GL</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="panel-body">
+                  <div class="hole-cards" id="hole-cards">
+                    <div class="card-slot hole" data-slot="0"></div>
+                    <div class="card-slot hole" data-slot="1"></div>
+                    <div class="card-slot hole" data-slot="2"></div>
+                    <div class="card-slot hole" data-slot="3"></div>
+                  </div>
+                  <div class="queued-notice" id="queued-notice" hidden>
+                    <strong>You are in for the next hand.</strong>
+                    <span>A hand was already running when you joined. Watch the boards; the host deals you in when this one is over.</span>
+                  </div>
                 </div>
+              </section>
+
+              <section class="action-area action-stage" id="action-area" aria-label="Your action">
+                <div class="action-stage-status action-header">
+                  <p class="eyebrow eyebrow--plain" id="action-kicker">Action</p>
+                  <h2 class="action-stage-title" id="action-title">Waiting for the deal</h2>
+                  <span class="current-bet-info">Your bet <strong id="current-bet">$0</strong></span>
+                </div>
+                <div class="action-buttons action-stage-actions" id="action-buttons">
+                  <button id="check-btn" class="btn btn--lg btn-action" type="button">Check</button>
+                  <button id="double-btn" class="btn btn--primary btn--lg btn-action btn-raise" type="button">Double</button>
+                </div>
+                <div id="host-showdown-controls" class="host-showdown-controls action-stage-host hidden">
+                  <label class="settings-row-label" for="next-bet"><strong>Next bet</strong></label>
+                  <span class="money-input"><span aria-hidden="true">$</span><input type="number" id="next-bet" value="1.00" min="0.01" step="0.01" /></span>
+                  <button id="next-hand-btn" class="btn btn--primary" type="button">Next Hand</button>
+                </div>
+                <p id="waiting-next" class="waiting-msg lobby-wait hidden">Waiting for the host to deal the next hand.</p>
+              </section>
+
+              <section class="log-chat-container panel" aria-label="Game log and chat">
+                <div class="tabs log-chat-tabs" id="log-chat-tabs" role="tablist" aria-label="Log and chat">
+                  <button class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="game-log-tab" data-tab="game-log">Game log</button>
+                  <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="chat-tab" data-tab="chat">Chat</button>
+                </div>
+                <div class="tab-content active" id="game-log-tab" role="tabpanel" aria-label="Game log">
+                  <div class="game-log" id="game-log"></div>
+                </div>
+                <div class="tab-content" id="chat-tab" role="tabpanel" aria-label="Chat" hidden>
+                  <div class="chat-messages" id="chat-messages"></div>
+                  <div class="chat-input-area table-chat-form">
+                    <input type="text" id="chat-input" placeholder="Type a message…" maxlength="200" aria-label="Chat message" />
+                    <button id="emoji-picker-btn" class="btn btn--ghost btn--icon emoji-picker-btn" type="button" aria-label="Insert emoji" aria-expanded="false" aria-controls="emoji-picker"><span aria-hidden="true">😀</span></button>
+                    <button id="send-chat-btn" class="btn btn-chat-send" type="button">Send</button>
+                    <div class="emoji-picker hidden" id="emoji-picker" role="group" aria-label="Quick emoji">
+                      <button type="button" class="emoji-option">👍</button>
+                      <button type="button" class="emoji-option">👎</button>
+                      <button type="button" class="emoji-option">🎉</button>
+                      <button type="button" class="emoji-option">🔥</button>
+                      <button type="button" class="emoji-option">💰</button>
+                      <button type="button" class="emoji-option">😭</button>
+                      <button type="button" class="emoji-option">😎</button>
+                      <button type="button" class="emoji-option">🤑</button>
+                      <button type="button" class="emoji-option">♠️</button>
+                      <button type="button" class="emoji-option">♥️</button>
+                      <button type="button" class="emoji-option">♦️</button>
+                      <button type="button" class="emoji-option">♣️</button>
+                      <button type="button" class="emoji-option">🃏</button>
+                      <button type="button" class="emoji-option">GG</button>
+                      <button type="button" class="emoji-option">NH</button>
+                      <button type="button" class="emoji-option">GL</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
-        </div>
-
-        <!-- Rules Modal -->
-        <div id="rules-modal" class="modal hidden">
-            <div class="modal-content">
-                <button class="modal-close" id="close-rules">&times;</button>
-                <h2>Ultimate Omaha Rules</h2>
-
-                <div class="rules-section">
-                    <h3>Gameplay</h3>
-                    <ol>
-                        <li>Each player places an equal bet and receives 4 hole cards</li>
-                        <li><strong>Preflop:</strong> Check or Double your bet</li>
-                        <li>Two separate flops are revealed</li>
-                        <li><strong>Flop:</strong> Check or Double again</li>
-                        <li><strong>Showdown:</strong> Turns and Rivers are revealed</li>
-                    </ol>
-                </div>
-
-                <div class="rules-section">
-                    <h3>Qualifying</h3>
-                    <p>You must make a <strong>Pair of Aces or better</strong> on <strong>BOTH</strong> boards to
-                        qualify.</p>
-                    <p>If you don't qualify, you <strong>foul</strong> and lose your bet.</p>
-                    <p class="omaha-note">Remember: This is Omaha—you must use exactly 2 hole cards and 3 board cards!
-                    </p>
-                </div>
-
-                <div class="rules-section">
-                    <h3>Multipliers</h3>
-                    <table class="multiplier-table">
-                        <tr>
-                            <td>Pair / Two Pair / Trips</td>
-                            <td>1×</td>
-                        </tr>
-                        <tr>
-                            <td>Straight</td>
-                            <td>2×</td>
-                        </tr>
-                        <tr>
-                            <td>Flush</td>
-                            <td>2×</td>
-                        </tr>
-                        <tr>
-                            <td>Boat</td>
-                            <td>3×</td>
-                        </tr>
-                        <tr>
-                            <td>Quads</td>
-                            <td>4×</td>
-                        </tr>
-                        <tr>
-                            <td>Straight Flush</td>
-                            <td>5×</td>
-                        </tr>
-                        <tr>
-                            <td>Royal Flush</td>
-                            <td>10×</td>
-                        </tr>
-                    </table>
-                    <p class="multiplier-note">Multipliers from both boards <strong>multiply together!</strong></p>
-                    <p class="example">Example: Flush (2×) + Boat (3×) = 6× payout!</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toast Notifications -->
-        <div id="toast-container"></div>
+          </div>
+        </section>
+      </main>
     </div>
 
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="../../shared/cards.js?v=20261003"></script>
-    <script src="poker.js"></script>
-    <script src="game.js"></script>
-    <script src="multiplayer.js"></script>
-    <script src="app.js?v=20261003"></script>
-</body>
+    <!-- Rules -->
+    <dialog class="dialog dialog--sheet rules-modal" id="rules-modal" aria-labelledby="rules-title">
+      <div class="dialog-head">
+        <div><p class="eyebrow eyebrow--plain">Rules</p><h2 id="rules-title">Ultimate Omaha</h2></div>
+        <button class="btn btn--ghost btn--icon modal-close" id="close-rules" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
+      </div>
+      <div class="dialog-body modal-content rules-body">
+        <section class="rules-section">
+          <h3>Gameplay</h3>
+          <ol>
+            <li>Each player places an equal bet and receives 4 hole cards</li>
+            <li><strong>Preflop:</strong> check or double your bet</li>
+            <li>Two separate flops are revealed</li>
+            <li><strong>Flop:</strong> check or double again</li>
+            <li><strong>Showdown:</strong> turns and rivers are revealed</li>
+          </ol>
+        </section>
 
+        <section class="rules-section">
+          <h3>Qualifying</h3>
+          <p>You must make a <strong>pair of aces or better</strong> on <strong>both</strong> boards to qualify.</p>
+          <p>If you don't qualify, you <strong>foul</strong> and lose your bet.</p>
+          <p class="omaha-note">This is Omaha: you must use exactly 2 hole cards and 3 board cards.</p>
+        </section>
+
+        <section class="rules-section">
+          <h3>Multipliers</h3>
+          <div class="table-wrap">
+            <table class="data-table multiplier-table">
+              <thead><tr><th scope="col">Hand</th><th scope="col" class="num">Multiplier</th></tr></thead>
+              <tbody>
+                <tr><td>Pair / Two pair / Trips</td><td class="num"><span class="badge badge--warn">1×</span></td></tr>
+                <tr><td>Straight</td><td class="num"><span class="badge badge--warn">2×</span></td></tr>
+                <tr><td>Flush</td><td class="num"><span class="badge badge--warn">2×</span></td></tr>
+                <tr><td>Boat</td><td class="num"><span class="badge badge--warn">3×</span></td></tr>
+                <tr><td>Quads</td><td class="num"><span class="badge badge--warn">4×</span></td></tr>
+                <tr><td>Straight flush</td><td class="num"><span class="badge badge--warn">5×</span></td></tr>
+                <tr><td>Royal flush</td><td class="num"><span class="badge badge--warn">10×</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="multiplier-note">Multipliers from both boards <strong>multiply together</strong>.</p>
+          <p class="example">Example: flush (2×) and boat (3×) pay 6×.</p>
+        </section>
+      </div>
+      <div class="dialog-foot"><button class="btn btn--primary" type="button" data-close-rules>Got it</button></div>
+    </dialog>
+
+    <!-- Toasts: one polite and one assertive region -->
+    <div class="toast-stack" id="toast-container" role="status" aria-live="polite"></div>
+    <div class="toast-stack toast-stack--alert" id="alerts" role="alert" aria-live="assertive"></div>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/tabs.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script src="poker.js?v=20261016"></script>
+    <script src="game.js?v=20261016"></script>
+    <script src="multiplayer.js?v=20261016"></script>
+    <script src="app.js?v=20261016"></script>
+  </body>
 </html>
