@@ -38,6 +38,9 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      - name: Sweep every assembled page for shell regressions
+        run: node scripts/shell-browser.cjs
+
       - name: Test assembled Dice reports
         run: node dice/reports/tests/browser.cjs
 

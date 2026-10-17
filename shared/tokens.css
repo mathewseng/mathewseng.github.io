@@ -1,0 +1,247 @@
+/* Design tokens for every page on the site. Load this first on every page, then
+ * shared/app.css (chrome and components), then the page's own stylesheet.
+ *
+ * Dark only; the site has no light theme (Gym keeps its own light :root and
+ * reads this file for its dark scheme). Pages never redefine a token: a page
+ * that needs a different accent sets data-family on <html>.
+ *
+ * Contrast ratios in the comments are WCAG 2 ratios against --page / --surface /
+ * --surface-2 / --surface-3, checked by shared/tests/shell.test.cjs.
+ *
+ * TODO(author): Inter is named in the stack but never loaded, so the site renders
+ * in the OS UI font and the 650/750/850 weights round to 600/700/800. Decide
+ * between self-hosting shared/fonts/InterVariable.woff2 (latin subset,
+ * font-display: swap, size-adjust fallback metrics, kept out of Backgammon's
+ * BG_SHELL precache) and dropping Inter for the system stack. Until then the
+ * existing stack stays as it is.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Colour: surfaces and lines ---------- */
+  --page: #08090d;
+  --surface: #10141c;
+  --surface-2: #151a24;
+  --surface-3: #1b2130; /* inset wells, segmented tracks, table heads */
+  --glass: rgba(16, 20, 28, 0.66);
+  --line: rgba(148, 163, 184, 0.13);
+  --line-strong: rgba(148, 163, 184, 0.24);
+  --line-opaque: #262c36; /* data-table rows, matrix borders, sheet dividers: alpha lines wash out over --surface-3 */
+  --control-border: #5c6879; /* inputs and selects: 3.5:1 page, 3.3:1 surface, 3.1:1 surface-2, 2.8:1 surface-3 (the brief's #4a5563 measured 2.4:1) */
+
+  /* ---------- Colour: text ---------- */
+  --ink: #eef4ff; /* 18.0:1 page, 16.7:1 surface, 15.8:1 surface-2, 14.6:1 surface-3 */
+  --muted: #9aa7b7; /* 8.1:1 page, 7.5:1 surface, 7.1:1 surface-2, 6.6:1 surface-3 (AA; keep 12px muted text off wells where possible) */
+  --soft: #6f7b8b; /* 4.6:1 page, 4.3:1 surface: tertiary only, never on data, never under 15px */
+  --on-accent: #0b0d12; /* ink on accent fills: 11.8:1 on ofc, 8.1:1 poker, 12.4:1 blackjack, 9.6:1 dice, 11.9:1 backgammon, 9.3:1 home, 5.9:1 on --bad */
+
+  /* ---------- Colour: the family map (one source for hubs, switcher dots, favicons, tiles, Gym) ---------- */
+  --family-ofc: #8fd9b6; /* 12.1:1 page, 11.2:1 surface */
+  --family-ofc-2: #7cc8ff;
+  --family-poker: #f28b82; /* 8.3:1 page, 7.7:1 surface; shifted from #ff8b83 to stay apart from --bad */
+  --family-poker-2: #ffb77a;
+  --family-blackjack: #f4c95d; /* 12.7:1 page, 11.7:1 surface */
+  --family-blackjack-2: #ffe7a3;
+  --family-dice: #c4a7ff; /* 9.8:1 page, 9.1:1 surface; lilac so Dice stops colliding with Blackjack gold */
+  --family-dice-2: #8ab4ff;
+  --family-backgammon: #9bd6c9; /* 12.2:1 page, 11.3:1 surface */
+  --family-backgammon-2: #7cc8ff;
+  --family-home: #8ab4ff; /* 9.5:1 page, 8.8:1 surface */
+  --family-home-2: #b6a6ff;
+  /* The three below have no hub behind them; confirm with the author before step 4 of the rollout. */
+  --family-cards: #b6a6ff; /* 9.4:1 page */
+  --family-cards-2: #8ab4ff;
+  --family-gym: #8ab4ff; /* 9.5:1 page */
+  --family-gym-2: #8fd9b6;
+  --family-microtonal: #f0abfc; /* 11.3:1 page */
+  --family-microtonal-2: #b6a6ff;
+
+  /* The accent is for brand, navigation, selection and the primary action only.
+     Pages without a data-family fall back to the home accent. */
+  --accent: var(--family-home);
+  --accent-2: var(--family-home-2);
+
+  /* ---------- Colour: semantic, family independent ---------- */
+  --good: #8fd9b6; /* 12.1:1 page, 9.8:1 surface-3 */
+  --bad: #e5655f; /* 6.0:1 page, 5.6:1 surface, 4.9:1 surface-3 */
+  --warn: #f4c95d; /* 12.7:1 page, 10.2:1 surface-3 */
+  --info: #7cc8ff; /* 11.0:1 page, 8.9:1 surface-3 */
+  --good-soft: color-mix(in oklab, var(--good) 14%, transparent);
+  --bad-soft: color-mix(in oklab, var(--bad) 14%, transparent);
+  --warn-soft: color-mix(in oklab, var(--warn) 14%, transparent);
+  --info-soft: color-mix(in oklab, var(--info) 14%, transparent);
+  --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
+
+  /* Blackjack actions (hub preview and strategy chart): outcomes use the semantic set. */
+  --hit: var(--bad);
+  --stand: var(--good);
+  --double: var(--warn);
+  --split: var(--info);
+  --surrender: #b6a6ff; /* 9.4:1 page */
+
+  /* Chart series, grid and player identity. Blue/orange stays distinguishable
+     under colour-vision deficiency; Backgammon derives checker dots and
+     history-row borders from the same two tokens. Board colours stay on the
+     runtime --board-* system in backgammon/core/appearance.mjs. */
+  --cat-1: #8ab4ff;
+  --cat-2: #8fd9b6;
+  --cat-3: #f4c95d;
+  --cat-4: #e5655f;
+  --cat-5: #b6a6ff;
+  --cat-6: #f0abfc;
+  --chart-grid: rgba(148, 163, 184, 0.12);
+  --player-1: #8ab4ff; /* 9.5:1 page */
+  --player-2: #ffb77a; /* 11.7:1 page */
+
+  /* ---------- Materials: the poker felt (hub previews now, the .felt stage later) ---------- */
+  --felt-light: #1b5e45;
+  --felt: #0f3527;
+  --felt-dark: #0a2119;
+  --felt-rail: #2a1d17;
+  --seat-bg: #232a37;
+
+  /* ---------- Type ---------- */
+  /* The root font size is the browser default (16px); pages never set a root
+     font-size (the 13px roots in 222/Dodge and the 15px root in Backgammon go
+     when those families migrate). */
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --t-xs: 0.75rem; /* 12px: the floor. Table headers, tags, eyebrows, axis labels */
+  --t-sm: 0.8125rem; /* 13px: dense data cells, secondary UI */
+  --t-md: 0.9375rem; /* 15px: body, controls */
+  --t-lg: 1.125rem; /* 18px: panel titles */
+  --t-xl: 1.5rem; /* 24px: tool page H1 */
+  --t-hero: clamp(2.3rem, 5.4vw, 3.9rem); /* hubs only */
+  --lh-heading: 1.2;
+  --lh-data: 1.3;
+  --lh-body: 1.45;
+
+  /* ---------- Spacing (4px base), radius, shadow ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --gutter: min(1200px, 100% - 32px); /* hub page column; app shells use full width with a 12px outer gap */
+  --r-sm: 8px; /* buttons, fields, matrix cells */
+  --r-md: 12px; /* nested panels, sheet controls */
+  --r-lg: 16px; /* tiles, panels, stages, dialogs */
+  --r-pill: 999px;
+  --radius: var(--r-lg); /* hub.css alias kept for Backgammon's :root override until step 6 */
+  --shadow-tile:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 48px -32px rgba(0, 0, 0, 0.9);
+  --shadow-raised:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 34px 64px -30px color-mix(in oklab, var(--accent) 38%, #000);
+  --shadow-sheet: 0 -18px 48px -24px rgba(0, 0, 0, 0.9);
+
+  /* ---------- Focus ring: outline plus an optional halo ----------
+     Backgammon's tests assert outline presence, so the ring is always an
+     outline; the halo is a box-shadow pages may add. */
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+  --focus-halo: 0 0 0 5px color-mix(in oklab, var(--accent) 22%, transparent);
+
+  /* ---------- Motion ---------- */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --d-fast: 150ms;
+  --d-base: 300ms;
+  --d-slow: 450ms;
+
+  /* ---------- Card widths (--card-width is the only card API) ---------- */
+  --card-w-preview: 22px;
+  --card-w-seat: 32px;
+  --card-w-tray: 44px;
+  --card-w-table: clamp(44px, 6vw, 72px);
+  /* --card-w-board is set per page. Cards floor at 36px on phones. */
+
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Family accents ---------- */
+
+[data-family="ofc"] {
+  --accent: var(--family-ofc);
+  --accent-2: var(--family-ofc-2);
+}
+
+[data-family="poker"] {
+  --accent: var(--family-poker);
+  --accent-2: var(--family-poker-2);
+}
+
+[data-family="blackjack"] {
+  --accent: var(--family-blackjack);
+  --accent-2: var(--family-blackjack-2);
+}
+
+[data-family="dice"] {
+  --accent: var(--family-dice);
+  --accent-2: var(--family-dice-2);
+}
+
+[data-family="backgammon"] {
+  --accent: var(--family-backgammon);
+  --accent-2: var(--family-backgammon-2);
+}
+
+[data-family="home"] {
+  --accent: var(--family-home);
+  --accent-2: var(--family-home-2);
+}
+
+[data-family="cards"] {
+  --accent: var(--family-cards);
+  --accent-2: var(--family-cards-2);
+}
+
+[data-family="gym"] {
+  --accent: var(--family-gym);
+  --accent-2: var(--family-gym-2);
+}
+
+[data-family="microtonal"] {
+  --accent: var(--family-microtonal);
+  --accent-2: var(--family-microtonal-2);
+}
+
+/* ---------- Light theme hook (not used by any page) ----------
+ * Gym is the only light surface and keeps its own light :root. If the site
+ * ever gains a light theme, set data-theme="light" on <html> and fill this in.
+ * The accents must be re-derived: #8fd9b6, #f4c95d, #7cc8ff, #c4a7ff and
+ * #9bd6c9 all fail AA (4.5:1) on white, so each family needs a darker pair
+ * (Gym uses #2f62d8 blue and #1f9d74 green on #f4f6fa, for example). */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* ---------- Motion preferences ----------
+ * Near-zero durations rather than animation: none, so scripts that await
+ * animationend / transitionend (the Backgammon board, the OFC trainer) never
+ * stall. Delays are zeroed as well so staggered reveals land at once.
+ * These are the only !important rules allowed outside [hidden] below. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* The hidden attribute always hides, whatever display a class sets. */
+[hidden] {
+  display: none !important;
+}

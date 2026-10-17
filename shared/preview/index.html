@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en" data-family="poker">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <title>Shared kit preview</title>
+    <!-- Kitchen sink for shared/tokens.css + shared/app.css. Not published:
+         scripts/assemble-site.sh excludes /shared/preview. Open it from the
+         repository root (python3 -m http.server) and resize to 375, 1024, 1440. -->
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="../app.css" />
+    <link rel="stylesheet" href="../cards.css" />
+    <script src="../cards.js"></script>
+    <script src="../tabs.js"></script>
+    <script src="../sheet.js"></script>
+    <script src="../keycap.js"></script>
+    <script src="../card-drag.js"></script>
+    <style>
+      /* Preview-only layout. */
+      .kit {
+        display: grid;
+        gap: 28px;
+        padding-block: 8px 48px;
+      }
+      .kit section {
+        display: grid;
+        gap: 12px;
+      }
+      .kit h2 {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 4px 12px;
+        font-size: var(--t-lg);
+        font-weight: 600;
+      }
+      .kit h2 code {
+        color: var(--muted);
+        font: 500 var(--t-xs) var(--font-mono);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+        gap: 12px;
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 8px;
+      }
+      .swatch {
+        display: grid;
+        gap: 4px;
+        font-size: var(--t-xs);
+        color: var(--muted);
+      }
+      .swatch i {
+        display: block;
+        height: 40px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--r-sm);
+        background: var(--c);
+      }
+      .type-sample > * {
+        margin: 0 0 4px;
+      }
+      .fam {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .fam button {
+        --accent: var(--f);
+        padding: 0 10px;
+        min-height: 36px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--r-pill);
+        background: var(--accent-soft);
+        color: var(--ink);
+        font: inherit;
+        font-size: var(--t-xs);
+        font-weight: 600;
+      }
+      .demo-stage {
+        min-height: 160px;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(ellipse at 50% 35%, var(--felt-light), var(--felt) 55%, var(--felt-dark));
+        color: var(--ink);
+      }
+      .drop-row {
+        display: flex;
+        gap: 10px;
+        min-height: 60px;
+        padding: 8px;
+        border: 1px dashed var(--line-strong);
+        border-radius: var(--r-md);
+      }
+      .drop-row.drag-over {
+        background: var(--accent-soft);
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a href="/poker/">Poker</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Kit preview</span>
+        </nav>
+        <nav class="tool-nav" aria-label="Poker tools">
+          <a href="#">Mixed Poker</a>
+          <a href="#">Rush</a>
+          <a href="#" aria-current="page">Dodge reports</a>
+          <a href="#">Simulator</a>
+          <a href="#">222</a>
+          <a href="#">Calculations</a>
+        </nav>
+        <div class="topbar-actions">
+          <span class="badge badge--warn">Offline</span>
+          <button class="btn btn--ghost btn--icon" type="button" aria-label="Sound"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-sound" /></svg></button>
+          <button class="btn btn--ghost btn--icon" type="button" aria-label="Rules"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-rules" /></svg></button>
+          <button class="btn btn--ghost btn--icon" type="button" aria-label="Settings"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-settings" /></svg></button>
+        </div>
+      </header>
+
+      <main id="main" tabindex="-1" class="kit">
+        <div class="tool-head">
+          <div>
+            <p class="eyebrow">Shared kit · Preview</p>
+            <h1>Every component at every width</h1>
+            <p class="lede">Tokens, chrome and the first-wave components from <code>shared/app.css</code>. Switch the family accent to see what changes (and what must not).</p>
+          </div>
+          <div class="stat-strip" style="min-width: 260px">
+            <div class="stat"><span class="stat-label">Components</span><span class="stat-value">22</span></div>
+            <div class="stat"><span class="stat-label">Type floor</span><span class="stat-value">12<small>px</small></span></div>
+          </div>
+        </div>
+
+        <!-- A tablist without aria-controls: these tabs only scroll to a section, so no panel is hidden. -->
+        <div class="tabs" role="tablist" aria-label="Preview sections" id="kit-tabs">
+          <button type="button" role="tab" aria-selected="true" data-tab="all">Everything</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="tokens">Tokens</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="controls">Controls</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="data">Data</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="overlays">Overlays</button>
+        </div>
+        <p class="field-hint">All sections are shown below; the tabs above scroll to a section (the tablist itself is the demo).</p>
+
+        <section id="sec-tokens">
+          <h2>Family accents <code>[data-family]</code></h2>
+          <div class="fam" id="family-switch">
+            <button type="button" style="--f: var(--family-home)" data-family="home">home</button>
+            <button type="button" style="--f: var(--family-ofc)" data-family="ofc">ofc</button>
+            <button type="button" style="--f: var(--family-poker)" data-family="poker">poker</button>
+            <button type="button" style="--f: var(--family-blackjack)" data-family="blackjack">blackjack</button>
+            <button type="button" style="--f: var(--family-dice)" data-family="dice">dice</button>
+            <button type="button" style="--f: var(--family-backgammon)" data-family="backgammon">backgammon</button>
+            <button type="button" style="--f: var(--family-cards)" data-family="cards">cards</button>
+            <button type="button" style="--f: var(--family-gym)" data-family="gym">gym</button>
+            <button type="button" style="--f: var(--family-microtonal)" data-family="microtonal">microtonal</button>
+          </div>
+          <h2>Colour <code>tokens.css</code></h2>
+          <div class="swatches">
+            <div class="swatch"><i style="--c: var(--page)"></i>page</div>
+            <div class="swatch"><i style="--c: var(--surface)"></i>surface</div>
+            <div class="swatch"><i style="--c: var(--surface-2)"></i>surface-2</div>
+            <div class="swatch"><i style="--c: var(--surface-3)"></i>surface-3</div>
+            <div class="swatch"><i style="--c: var(--line-opaque)"></i>line-opaque</div>
+            <div class="swatch"><i style="--c: var(--control-border)"></i>control-border</div>
+            <div class="swatch"><i style="--c: var(--ink)"></i>ink</div>
+            <div class="swatch"><i style="--c: var(--muted)"></i>muted</div>
+            <div class="swatch"><i style="--c: var(--soft)"></i>soft</div>
+            <div class="swatch"><i style="--c: var(--accent)"></i>accent</div>
+            <div class="swatch"><i style="--c: var(--accent-2)"></i>accent-2</div>
+            <div class="swatch"><i style="--c: var(--good)"></i>good</div>
+            <div class="swatch"><i style="--c: var(--bad)"></i>bad</div>
+            <div class="swatch"><i style="--c: var(--warn)"></i>warn</div>
+            <div class="swatch"><i style="--c: var(--info)"></i>info</div>
+            <div class="swatch"><i style="--c: var(--cat-1)"></i>cat-1</div>
+            <div class="swatch"><i style="--c: var(--cat-2)"></i>cat-2</div>
+            <div class="swatch"><i style="--c: var(--cat-3)"></i>cat-3</div>
+            <div class="swatch"><i style="--c: var(--cat-4)"></i>cat-4</div>
+            <div class="swatch"><i style="--c: var(--cat-5)"></i>cat-5</div>
+            <div class="swatch"><i style="--c: var(--cat-6)"></i>cat-6</div>
+            <div class="swatch"><i style="--c: var(--player-1)"></i>player-1</div>
+            <div class="swatch"><i style="--c: var(--player-2)"></i>player-2</div>
+          </div>
+          <h2>Type scale <code>--t-xs … --t-xl</code></h2>
+          <div class="type-sample panel"><div class="panel-body">
+            <p style="font-size: var(--t-xs); color: var(--muted)">--t-xs 12px · table headers, tags, eyebrows, axis labels (the floor)</p>
+            <p style="font-size: var(--t-sm)">--t-sm 13px · dense data cells, secondary UI 0123456789</p>
+            <p style="font-size: var(--t-md)">--t-md 15px · body and controls. The quick brown fox jumps over the lazy dog.</p>
+            <p style="font-size: var(--t-lg); font-weight: 600">--t-lg 18px · panel titles</p>
+            <p style="font-size: var(--t-xl); font-weight: 700">--t-xl 24px · tool page H1</p>
+            <p style="font-size: var(--t-xs); color: var(--soft)">--soft is tertiary only and never under 15px — this line is a deliberate violation to spot.</p>
+          </div></div>
+          <h2>Eyebrow, chips and badges <code>.eyebrow .chip .badge</code></h2>
+          <p class="eyebrow">Poker · Reports</p>
+          <div class="row">
+            <span class="chip">Hub</span><span class="chip">6 tools</span>
+            <span class="chip chip--good">+4 flush</span><span class="chip chip--bad">Foul</span><span class="chip chip--warn">Marginal</span><span class="chip chip--info">Note</span><span class="chip chip--accent">Selected</span>
+            <button type="button" class="chip" aria-pressed="true">Filter on</button><button type="button" class="chip" aria-pressed="false">Filter off</button>
+          </div>
+          <div class="row">
+            <span class="badge">Idle</span><span class="badge badge--good">Connected</span><span class="badge badge--bad">Host gone</span><span class="badge badge--warn">Offline</span><span class="badge badge--info">Engine busy</span><span class="badge badge--accent">Your turn</span><span class="badge badge--plain">v1.4</span>
+          </div>
+        </section>
+
+        <section id="sec-controls">
+          <h2>Buttons <code>.btn</code></h2>
+          <div class="row">
+            <button class="btn btn--primary" type="button">Deal</button>
+            <button class="btn" type="button">Secondary</button>
+            <button class="btn btn--ghost" type="button">Ghost</button>
+            <button class="btn btn--danger" type="button">Leave table</button>
+            <button class="btn btn--primary" type="button" disabled>Disabled</button>
+            <button class="btn" type="button" aria-pressed="true">Pressed</button>
+            <a class="btn" href="#">Link button</a>
+          </div>
+          <div class="row">
+            <button class="btn btn--sm" type="button">Small 36</button>
+            <button class="btn" type="button">Medium 40</button>
+            <button class="btn btn--lg btn--primary" type="button">Large 44</button>
+            <button class="btn btn--icon" type="button" aria-label="Copy"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-copy" /></svg></button>
+            <button class="btn btn--icon btn--sm" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-close" /></svg></button>
+            <button class="btn" type="button" id="keycap-btn">Confirm</button>
+            <button class="btn btn--primary" type="button" id="keycap-btn-2">Roll</button>
+          </div>
+          <h2>Icons <code>icons.svg</code></h2>
+          <div class="row" id="icon-row"></div>
+          <h2>Tabs <code>.tabs</code> and pill strip <code>.tabs--pill</code></h2>
+          <div class="tabs" role="tablist" aria-label="Demo tabs" id="demo-tabs">
+            <button type="button" role="tab" aria-selected="true" aria-controls="p-ev" data-tab="ev">Royalty EV</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="p-repeat" data-tab="repeat">Repeat</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="p-foul" data-tab="foul">Foul</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="p-matrix" data-tab="matrix">Matrix</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="p-rules" data-tab="rules">Scoring rules</button>
+          </div>
+          <div class="panel"><div class="panel-body">
+            <div id="p-ev" role="tabpanel">Royalty EV panel. Arrow keys move between tabs; the underline slides.</div>
+            <div id="p-repeat" role="tabpanel" hidden>Repeat panel.</div>
+            <div id="p-foul" role="tabpanel" hidden>Foul panel.</div>
+            <div id="p-matrix" role="tabpanel" hidden>Matrix panel.</div>
+            <div id="p-rules" role="tabpanel" hidden>Rules panel.</div>
+          </div></div>
+          <div class="tabs tabs--pill" role="tablist" aria-label="Views" id="pill-tabs">
+            <button type="button" role="tab" aria-selected="true" data-tab="table">Table</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="hands">Hands</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="ledger">Ledger</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="chat">Chat</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="settings">Settings</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="history">History</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="rules">Rules</button>
+          </div>
+          <h2>Segmented <code>.segmented</code></h2>
+          <div class="row">
+            <div class="segmented" role="radiogroup" aria-label="Soft 17">
+              <label><input type="radio" name="s17" checked />Dealer stands</label>
+              <label><input type="radio" name="s17" />Dealer hits</label>
+            </div>
+            <div class="segmented" role="group" aria-label="Players">
+              <button type="button" aria-pressed="false">2</button><button type="button" aria-pressed="true">3</button><button type="button" aria-pressed="false">4</button>
+            </div>
+          </div>
+          <div class="segmented segmented--block" role="radiogroup" aria-label="Mode">
+            <label><input type="radio" name="mode" checked />Explorer</label>
+            <label><input type="radio" name="mode" />Custom checker</label>
+            <label><input type="radio" name="mode" />Matchups</label>
+            <label><input type="radio" name="mode" disabled />Disabled</label>
+          </div>
+          <h2>Fields <code>.field</code></h2>
+          <div class="cols">
+            <div class="field"><label for="f-name">Player name</label><input id="f-name" type="text" placeholder="Your name" /><span class="field-hint">Shown to other players.</span></div>
+            <div class="field field--select"><label for="f-variant">Variant</label><select id="f-variant"><option>Pineapple</option><option>Regular</option><option>Progressive</option></select></div>
+            <div class="field field--error"><label for="f-code">Room code</label><input id="f-code" type="text" value="ABC" aria-invalid="true" aria-describedby="f-code-err" /><span class="field-error" id="f-code-err">Codes are four letters.</span></div>
+            <div class="field"><label for="f-stack">Starting stack</label><div class="field-row"><input id="f-stack" type="range" min="50" max="500" step="10" value="200" oninput="this.closest('.field-row').querySelector('output').value = this.value" /><output for="f-stack">200</output></div></div>
+            <div class="field"><label for="f-decks">Decks</label><div class="stepper"><button class="btn btn--icon" type="button" aria-label="Fewer decks">−</button><input id="f-decks" type="number" value="6" min="1" max="8" /><button class="btn btn--icon" type="button" aria-label="More decks">+</button></div></div>
+            <div class="field"><label for="f-notes">Notes</label><textarea id="f-notes" rows="2" placeholder="Anything to remember"></textarea></div>
+          </div>
+          <label class="check"><input type="checkbox" checked />Allow spectators</label>
+          <h2>Switch <code>.switch</code></h2>
+          <div class="cols">
+            <div class="switch-row"><span>Sound effects</span><button class="switch" type="button" role="switch" aria-checked="true" aria-label="Sound effects" onclick="this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true')"></button></div>
+            <div class="switch-row"><span>Colourblind palette</span><label class="switch"><input type="checkbox" aria-label="Colourblind palette" /></label></div>
+            <div class="switch-row"><span>Disabled</span><button class="switch" type="button" role="switch" aria-checked="false" disabled aria-label="Disabled"></button></div>
+          </div>
+          <h2>Playing cards <code>cards.css</code> · selected vs focused</h2>
+          <div class="row" id="card-row" style="--card-width: 56px"></div>
+          <div class="row" style="--card-width: 36px" id="card-row-small"></div>
+          <h2>Card drag <code>card-drag.js</code></h2>
+          <div class="cols">
+            <div class="drop-row" data-row="hand" id="drag-hand" style="--card-width: 48px"></div>
+            <div class="drop-row" data-row="board" id="drag-board" style="--card-width: 48px"></div>
+          </div>
+        </section>
+
+        <section id="sec-data">
+          <h2>Stat strip <code>.stat-strip</code></h2>
+          <div class="stat-strip">
+            <div class="stat"><span class="stat-label">Equity</span><span class="stat-value">61.4<small>%</small></span><span class="stat-delta is-good">+2.1</span></div>
+            <div class="stat"><span class="stat-label">Bust odds</span><span class="stat-value">18.0<small>%</small></span><span class="stat-delta is-bad">−0.8</span></div>
+            <div class="stat"><span class="stat-label">Pot</span><span class="stat-value">1,240</span></div>
+            <div class="stat"><span class="stat-label">Street</span><span class="stat-value">Turn</span><span class="stat-delta">3 to act</span></div>
+          </div>
+          <h2>Panel <code>.panel</code> and list rows <code>.list-row</code></h2>
+          <div class="cols">
+            <div class="panel">
+              <div class="panel-head"><h3>Candidate moves</h3><div class="panel-actions"><button class="btn btn--ghost btn--sm" type="button">Show all</button></div></div>
+              <div class="panel-body" style="padding: 0">
+                <button class="list-row" type="button" aria-pressed="true"><span class="list-row-label">24/18 13/11</span><span class="list-row-value">+0.142</span><span class="list-row-delta">best</span></button>
+                <button class="list-row" type="button"><span class="list-row-label">24/18 6/4</span><span class="list-row-value">+0.121</span><span class="list-row-delta is-bad">−0.021</span></button>
+                <button class="list-row" type="button"><span class="list-row-label">13/7 13/11 with a long description that truncates</span><span class="list-row-sub">double · take</span><span class="list-row-value">+0.080</span><span class="list-row-delta is-bad">−0.062</span></button>
+                <button class="list-row" type="button"><span class="list-row-label">8/2 6/4</span><span class="list-row-value">−0.010</span><span class="list-row-delta is-bad">−0.152</span></button>
+              </div>
+              <div class="panel-foot"><span class="field-hint">Loss in equity against the best move.</span></div>
+            </div>
+            <div class="panel panel--flush">
+              <div class="panel-head"><h3>Stage</h3><span class="badge badge--accent">Your turn</span></div>
+              <div class="panel-body"><div class="demo-stage"><div class="card-row" style="--card-width: var(--card-w-table)" id="stage-cards"></div></div></div>
+            </div>
+          </div>
+          <h2>Bars <code>.bar .bar-list .stack-bar .sparkline .progress</code></h2>
+          <div class="cols">
+            <ul class="bar-list">
+              <li class="bar-row"><span class="bar-row-label">Straight</span><span class="bar" style="--value: 0.72"></span><span class="bar-row-value">72%</span></li>
+              <li class="bar-row"><span class="bar-row-label">Flush</span><span class="bar" style="--value: 0.41; --bar-color: var(--cat-2)"></span><span class="bar-row-value">41%</span></li>
+              <li class="bar-row"><span class="bar-row-label">Full house</span><span class="bar" style="--value: 0.18; --bar-color: var(--cat-3)"></span><span class="bar-row-value">18%</span></li>
+              <li class="bar-row"><span class="bar-row-label">Quads</span><span class="bar" style="--value: 0.04; --bar-color: var(--cat-4)"></span><span class="bar-row-value">4%</span></li>
+            </ul>
+            <div style="display: grid; gap: 12px">
+              <div class="stack-bar" aria-label="Win 54%, tie 6%, lose 40%"><span style="--value: 54; --bar-color: var(--good)"></span><span style="--value: 6; --bar-color: var(--muted)"></span><span style="--value: 40; --bar-color: var(--bad)"></span></div>
+              <svg class="sparkline" viewBox="0 0 100 32" preserveAspectRatio="none" role="img" aria-label="Bankroll trend"><path class="area" d="M0 28 L10 20 L20 24 L30 12 L40 16 L50 8 L60 14 L70 6 L80 10 L90 4 L100 9 L100 32 L0 32 Z" /><polyline points="0,28 10,20 20,24 30,12 40,16 50,8 60,14 70,6 80,10 90,4 100,9" /></svg>
+              <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="64" aria-labelledby="prog-label"><div class="progress-label"><span id="prog-label">Analysing 20 positions</span><span>64%</span></div><div class="bar" style="--value: 0.64"></div></div>
+              <div class="progress" aria-busy="true"><div class="progress-label"><span>Loading engine</span></div><div class="bar bar--indeterminate"></div></div>
+            </div>
+          </div>
+          <h2>Data table <code>.table-wrap .data-table</code></h2>
+          <div class="table-wrap table-wrap--sticky-col" style="max-height: 260px">
+            <table class="data-table">
+              <thead><tr><th>Hand</th><th class="num" aria-sort="descending">Survival</th><th class="num">Bust</th><th class="num">EV</th><th class="num">Draws</th><th class="num">Straight</th><th class="num">Flush</th><th class="num">Full house</th><th class="num">Quads</th></tr></thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+          <h2>Empty state <code>.empty-state</code></h2>
+          <div class="panel"><div class="panel-body"><div class="empty-state"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-cards" /></svg><h3>No saved positions</h3><p>Set up a position in the solver and save it to see it here.</p><button class="btn btn--primary" type="button">Open solver</button></div></div></div>
+        </section>
+
+        <section id="sec-overlays">
+          <h2>Dialogs <code>.dialog .dialog--sheet</code> and toasts <code>.toast</code></h2>
+          <div class="row">
+            <button class="btn" type="button" id="open-dialog">Open dialog</button>
+            <button class="btn" type="button" id="open-sheet">Open sheet (phone: bottom)</button>
+            <button class="btn btn--danger" type="button" id="open-confirm">Delete with confirm</button>
+            <button class="btn" type="button" id="toast-ok">Toast</button>
+            <button class="btn" type="button" id="toast-alert">Alert toast</button>
+          </div>
+          <dialog class="dialog" id="demo-dialog" aria-labelledby="demo-dialog-title">
+            <div class="dialog-head"><h2 id="demo-dialog-title">Table settings</h2><button class="btn btn--ghost btn--icon" type="button" aria-label="Close" data-close><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-close" /></svg></button></div>
+            <div class="dialog-body">
+              <div class="dialog-error" role="alert"></div>
+              <div class="cols">
+                <div class="field"><label for="d-blind">Big blind</label><input id="d-blind" type="number" value="2" /></div>
+                <div class="field field--select"><label for="d-game">Game</label><select id="d-game"><option>Hold'em</option><option>Omaha</option><option>Razz</option></select></div>
+              </div>
+              <div class="switch-row" style="margin-top: 12px"><span>Allow straddles</span><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Allow straddles" onclick="this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true')"></button></div>
+              <p class="field-hint" style="margin-top: 12px">Long content scrolls inside the body while the head and foot stay put.</p>
+              <p style="height: 600px; color: var(--soft)">(spacer)</p>
+            </div>
+            <div class="dialog-foot"><button class="btn btn--ghost" type="button" data-close>Cancel</button><button class="btn" type="button" id="dialog-error-btn">Raise error</button><button class="btn btn--primary" type="button" data-close>Save</button></div>
+          </dialog>
+          <div class="toast-stack" role="status" aria-live="polite" id="toasts"></div>
+          <div class="toast-stack" role="alert" aria-live="assertive" id="alerts" style="bottom: calc(72px + env(safe-area-inset-bottom))"></div>
+        </section>
+      </main>
+
+      <footer class="foot">
+        <a href="/">mathewseng.github.io</a>
+        <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/shared" target="_blank" rel="noopener">View source on GitHub ↗</a>
+      </footer>
+    </div>
+
+    <script>
+      // Family switch
+      document.getElementById("family-switch").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-family]");
+        if (b) document.documentElement.dataset.family = b.dataset.family;
+      });
+      // Tabs
+      Tabs.init(document.getElementById("kit-tabs"), { onChange: (id) => { const el = id === "all" ? null : document.getElementById("sec-" + id); if (el) el.scrollIntoView({ block: "start" }); } });
+      Tabs.init(document.getElementById("demo-tabs"), { storageKey: "kit.demo-tabs", hash: false });
+      Tabs.init(document.getElementById("pill-tabs"));
+      // Keycaps
+      document.getElementById("keycap-btn").append(Keycap.keycap("Space"));
+      document.getElementById("keycap-btn-2").append(Keycap.keycap("r"));
+      // Icons
+      fetch("../icons.svg").then((r) => r.text()).then((svg) => {
+        const ids = Array.from(svg.matchAll(/<symbol id="([^"]+)"/g), (m) => m[1]);
+        document.getElementById("icon-row").innerHTML = ids.map((id) => `<span class="chip" title="${id}"><svg class="icon" aria-hidden="true"><use href="../icons.svg#${id}"/></svg>${id.slice(2)}</span>`).join("");
+      });
+      // Cards
+      document.getElementById("card-row").innerHTML =
+        PlayingCards.html("Ah", { tag: "button", interactive: true }) +
+        PlayingCards.html("Kc", { tag: "button", selected: true }) +
+        PlayingCards.html("Qd", { tag: "button", staged: true }) +
+        PlayingCards.html("Js", { tag: "button", danger: true }) +
+        PlayingCards.html("Td", { dim: true }) +
+        PlayingCards.html("JK", { corner: "1" }) +
+        PlayingCards.html("BACK") +
+        PlayingCards.html("9h", { badge: "3", badgeClass: "latest" }) +
+        PlayingCards.emptySlotHtml();
+      document.getElementById("card-row-small").innerHTML = PlayingCards.rowHtml(["As", "Kh", "Qd", "Jc", "Ts"], { tag: "button" }) + PlayingCards.html("2c", { tag: "button", selected: true });
+      document.getElementById("stage-cards").innerHTML = PlayingCards.rowHtml(["As", "Kh", "7c", "7d", "2s"]);
+      // Drag
+      const hand = document.getElementById("drag-hand"), board = document.getElementById("drag-board");
+      hand.innerHTML = ["Ah", "Kh", "Qh"].map((c) => PlayingCards.html(c, { tag: "button", interactive: true, attrs: { "data-card-id": c } })).join("");
+      new CardDrag(document.getElementById("sec-controls"), {
+        canDrag: () => true,
+        resolve: (target) => { const row = target && target.closest("[data-row]"); return row ? { target: row, rect: row.getBoundingClientRect() } : null; },
+        drop: (id, target) => { const card = document.querySelector(`[data-card-id="${id}"]`); if (card && card.parentElement !== target) target.append(card); },
+        targets: "[data-row]",
+      });
+      // Dialogs
+      const dialog = document.getElementById("demo-dialog");
+      dialog.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => dialog.close()));
+      document.getElementById("open-dialog").addEventListener("click", () => { dialog.classList.remove("dialog--sheet"); Sheet.open(dialog, { dismissible: true }); });
+      document.getElementById("open-sheet").addEventListener("click", () => Sheet.open(dialog, { sheet: true, dismissible: true }));
+      document.getElementById("dialog-error-btn").addEventListener("click", () => Sheet.setError(dialog, "The room code was rejected by the host."));
+      document.getElementById("open-confirm").addEventListener("click", async () => { const ok = await Sheet.confirm({ title: "Delete saved match?", text: "This removes the match and its notes from this device.", verb: "Delete", danger: true }); toast(ok ? "Deleted" : "Kept", ok ? "alert" : ""); });
+      // Toasts
+      function toast(text, kind) {
+        const stack = document.getElementById(kind === "alert" ? "alerts" : "toasts");
+        const t = document.createElement("div");
+        t.className = "toast" + (kind === "alert" ? " toast--alert" : "");
+        t.innerHTML = `<span>${text}</span><button class="btn btn--ghost btn--icon btn--sm" type="button" aria-label="Dismiss"><svg class="icon" aria-hidden="true"><use href="../icons.svg#i-close"/></svg></button>`;
+        t.querySelector("button").addEventListener("click", () => t.remove());
+        stack.append(t);
+        setTimeout(() => t.remove(), 5000);
+      }
+      document.getElementById("toast-ok").addEventListener("click", () => toast("Link copied to the clipboard."));
+      document.getElementById("toast-alert").addEventListener("click", () => toast("Connection lost. Reconnecting…", "alert"));
+      // Table
+      const hands = ["A♠ K♠", "Q♦ Q♣", "J♥ T♥", "9♣ 8♣", "7♠ 2♦", "A♥ 5♥", "K♣ Q♦", "6♦ 6♠", "T♣ 9♦", "4♥ 3♥", "8♠ 7♦", "J♣ J♦"];
+      document.getElementById("table-body").innerHTML = hands.map((h, i) => `<tr${i === 1 ? ' class="is-selected"' : ""}><td>${h}</td><td class="num">${(82 - i * 3.7).toFixed(1)}%</td><td class="num">${(18 + i * 3.7).toFixed(1)}%</td><td class="num">${(0.4 - i * 0.05).toFixed(2)}</td><td class="num">${3 + (i % 3)}</td><td class="num">${(12 + i).toFixed(1)}%</td><td class="num">${(5 + i / 2).toFixed(1)}%</td><td class="num">${(2 + i / 4).toFixed(1)}%</td><td class="num">${(0.2 + i / 10).toFixed(1)}%</td></tr>`).join("");
+    </script>
+  </body>
+</html>

@@ -36,7 +36,7 @@ test("offline release generation ignores macOS metadata excluded by deployment",
       join(base, "engine/vendor/core.wasm"),
       new Uint8Array([0, 97, 115, 109]),
     );
-    for (const name of ["hub.css", "hub.js", "peer-room.js"])
+    for (const name of ["tokens.css", "app.css", "hub.css", "hub-art.css", "hub.js", "peer-room.js", "icons.svg", "tabs.js", "sheet.js", "card-drag.js", "keycap.js"])
       writeFileSync(join(root, "shared", name), "");
     const generate = () =>
       execFileSync(process.execPath, [

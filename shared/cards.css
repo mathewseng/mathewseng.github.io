@@ -5,9 +5,15 @@
  * small sizes the rank alone, centred. Cards use the poker 5:7 ratio.
  *
  * Markup (from shared/cards.js):
- *   <span class="playing-card suit-h" aria-label="King of hearts">
+ *   <span class="playing-card suit-h" role="img" aria-label="King of hearts">
  *     <span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span>
  *   </span>
+ * Button cards (tag: "button") carry aria-pressed="true" when selected.
+ *
+ * States: .selected is an accent ring with a lift; keyboard focus is a white
+ * ring, so the two stay distinct when a selected card is focused. The hover
+ * outline only applies on devices that hover, so it cannot stick to the last
+ * tapped card on touch screens.
  *
  * Size with --card-width on the card or any ancestor (or give the card
  * width: 100% inside a grid cell). Everything inside scales with the card's
@@ -18,7 +24,7 @@
   --card-spade: #504f4f;
   --card-heart: #9f2517;
   --card-diamond: #2634bd;
-  --card-club: #4faa41;
+  --card-club: #3e8f35; /* 4.1:1 under the white rank (was #4faa41 at 2.9:1) */
   --card-joker: #6a3fc9;
   --card-suit-ink: rgba(0, 0, 0, 0.4);
   --card-back: #1f2128;
@@ -26,8 +32,15 @@
   --card-back-ink: #6f7488;
   --card-text: #ffffff;
   --card-focus: #ffffff;
-  --card-selected: #ffffff;
+  --card-selected: var(--accent, #8fd9b6);
+  --card-selected-halo: color-mix(in oklab, var(--card-selected) 28%, transparent);
   --card-staged: #35d6a0;
+  --card-staged-ink: #06281c;
+  --card-danger: #ff6673;
+  --card-badge-bg: rgba(0, 0, 0, 0.55);
+  --card-corner-bg: rgba(0, 0, 0, 0.5);
+  --card-slot-line: rgba(255, 255, 255, 0.18);
+  --card-slot-bg: rgba(255, 255, 255, 0.03);
   --card-ring: 0 0 0 0 transparent;
   --card-shadow: 0 0 0 0 transparent;
   --card-dim-opacity: 0.3;
@@ -145,8 +158,8 @@ button.playing-card:disabled,
   bottom: 4%;
   padding: 2cqw 5cqw;
   border-radius: 6cqw;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  background: var(--card-badge-bg);
+  color: var(--card-text);
   font-size: 15cqw;
   font-weight: 800;
   line-height: 1.2;
@@ -159,8 +172,8 @@ button.playing-card:disabled,
   right: 5%;
   padding: 2cqw 4cqw;
   border-radius: 5cqw;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  background: var(--card-corner-bg);
+  color: var(--card-text);
   font-size: 13cqw;
   font-weight: 800;
   line-height: 1.2;
@@ -169,7 +182,7 @@ button.playing-card:disabled,
 
 .playing-card > .card-badge.latest {
   background: var(--card-staged);
-  color: #06281c;
+  color: var(--card-staged-ink);
 }
 
 .playing-card.back {
@@ -193,20 +206,29 @@ button.playing-card:disabled,
 }
 
 .empty-slot {
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--card-slot-line);
+  background: var(--card-slot-bg);
 }
 
-/* States */
-.playing-card.interactive:hover,
+/* States. Selected: accent ring, halo and a small lift. Focus: white ring
+ * (declared last so it wins the outline when a selected card is focused). */
+.playing-card.selected {
+  --card-ring: 0 0 0 4px var(--card-selected-halo);
+  outline: 2px solid var(--card-selected);
+  outline-offset: 2px;
+  translate: 0 -3px;
+}
+
+@media (hover: hover) {
+  .playing-card.interactive:hover {
+    outline: 2px solid var(--card-focus);
+    outline-offset: 2px;
+  }
+}
+
 .playing-card.interactive:focus-visible,
 button.playing-card:focus-visible {
   outline: 2px solid var(--card-focus);
-  outline-offset: 2px;
-}
-
-.playing-card.selected {
-  outline: 2px solid var(--card-selected);
   outline-offset: 2px;
 }
 
@@ -219,7 +241,7 @@ button.playing-card:focus-visible {
 }
 
 .playing-card.danger {
-  outline: 2px solid #ff6673;
+  outline: 2px solid var(--card-danger);
   outline-offset: 1px;
 }
 
@@ -231,6 +253,12 @@ button.playing-card:focus-visible {
   from {
     transform: translateY(6px) scale(0.9);
     opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playing-card.new {
+    animation-duration: 0.01ms;
   }
 }
 

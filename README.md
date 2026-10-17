@@ -15,7 +15,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `blackjack/` | Blackjack hub: `strategy/` |
 | `dice/` | Dice hub: `reports/` (exact fair payouts, custom checker, two-dice matchup and probability reports) |
 | `backgammon/` | Backgammon hub: `play/`, `trainer/`, `solver/`, `library/`; pinned GNUbg WASM |
-| `shared/` | Code shared across project families: `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, and `hub.css` + `hub.js` for the landing and hub pages |
+| `shared/` | Code shared across project families: `tokens.css` (design tokens, loaded first on every page) and `app.css` (site chrome and the component kit), `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, `hub.css` + `hub-art.css` + `hub.js` for the landing and hub pages, `icons.svg`, and the behaviour helpers `tabs.js`, `sheet.js`, `card-drag.js`, `keycap.js`; `shared/preview/` is the kitchen-sink page for the kit and is not published |
 | `jazz-piano-ml/` | Python source project; not published |
 | `redirects.json` | Old URL → new URL; the deploy writes a redirect page for each entry |
 | `scripts/` | Repo tooling (test runner, redirect builder); not published |
@@ -24,7 +24,11 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 
 - Folder and file names are kebab-case, and a page's folder path is its URL.
 - A group of related pages is a family with a hub `index.html` at its root (`ofc/`, `poker/`, `blackjack/`, `backgammon/`, `dice/`).
-  The landing page and hubs share `shared/hub.css` and `shared/hub.js`; set the accent with `data-family` on `<html>`.
+  The landing page and hubs share `shared/hub.css`, `shared/hub-art.css` and `shared/hub.js`; set the accent with `data-family` on `<html>`.
+- Every page links `shared/tokens.css` first, then `shared/app.css`, then its own stylesheets. Pages never redefine a token;
+  they pick a family accent with `data-family`. Shared stylesheets are linked with one `?v=<date>` query per page head
+  (Backgammon's `?bgv=` release hash covers them through its offline manifest), bumped whenever a shared file changes.
+  The site-wide redesign that introduced this is documented in `docs/redesign/`.
 - Each page has `index.html`, `app.js` as its entry script, `styles.css`, and role-named modules
   (`engine.js`, `game.js`). Tests go in `tests/*.test.cjs` or `tests/*.test.mjs`, and notes go in
   `README.md` or `docs/`.
@@ -45,7 +49,19 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 node scripts/run-tests.mjs
 ```
 
-That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`. The gym app has its own checks in `gym/package.json`.
+That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`, including the colour-literal drift lint
+(`shared/tests/css-literals.test.cjs`, baseline in `css-literals.json`; lower a count and re-record it with
+`CSS_LITERALS_UPDATE=1`) and, when Playwright is installed, the shell sweep below. The gym app has its own checks in `gym/package.json`.
+
+```bash
+sh scripts/assemble-site.sh _site
+node scripts/shell-browser.cjs      # every page at 1440x900, 375x812 and 844x390: overflow, 44px targets, focus rings, 12px floor
+node scripts/screenshots.cjs --compare   # every page at 1440x900 and 375x812 against scripts/screenshots/baseline/
+```
+
+`scripts/screenshots/baseline/` holds the pre-redesign pictures; review a change by eye and copy the new picture over
+its baseline deliberately. Backgammon's offline manifest hashes `shared/`, so run `node backgammon/scripts/offline-manifest.mjs`
+after any shared change.
 Push directly to `main` to publish. `.github/workflows/deploy.yml` compiles Gym, versions
 Backgammon's offline assets, assembles static files and redirects, and deploys to GitHub Pages.
 There is no manual build or release step. Pages still needs a short time to publish after a push;

@@ -103,7 +103,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
           `${file} invalidates the browser's stylesheet cache`,
         );
     }
-    for (const file of ["hub.css", "hub.js", "peer-room.js"])
+    for (const file of ["tokens.css", "app.css", "hub.css", "hub-art.css", "hub.js", "peer-room.js", "icons.svg", "tabs.js", "sheet.js", "card-drag.js", "keycap.js"])
       releaseHash.update(file).update(readFileSync(join(site, "shared", file)));
     assert.equal(
       releaseHash.digest("hex").slice(0, 16),

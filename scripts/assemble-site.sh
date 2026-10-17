@@ -9,7 +9,7 @@ rsync -a --delete \
   --exclude 'node_modules' --exclude 'redirects.json' \
   --exclude 'package.json' --exclude 'package-lock.json' \
   --exclude '.gitignore' --exclude '.DS_Store' --exclude '*.md' \
-  --exclude 'scripts' --exclude 'simulation' \
+  --exclude 'scripts' --exclude 'simulation' --exclude '/shared/preview' \
   --include '/backgammon/solver/' --exclude 'solver' --exclude 'tests' --exclude 'test-results' \
   ./ "$site_target/"
 if [ -d gym/dist ]; then

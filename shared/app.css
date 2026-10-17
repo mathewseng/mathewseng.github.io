@@ -1,0 +1,2064 @@
+/* Site chrome and the shared component kit. Every page loads shared/tokens.css,
+ * then this file, then its own stylesheet. Hubs add shared/hub.css (hero, tiles)
+ * and shared/hub-art.css (illustrations).
+ *
+ * Sections: base, focus, skip link, shell and topbar (crumbs, mark, switcher,
+ * tool nav, actions), tool head, footer, eyebrow, then the components in the
+ * order of docs/redesign/prompt.md: tabs, segmented, btn, field, switch,
+ * chip/badge, stat, panel, data-table, bar/progress, list-row, dialog, toast,
+ * empty-state, keycap, card drag, icons, utilities, forced colours.
+ *
+ * Class names here are new and sit beside the ids and classes that tests pin.
+ * Only the tokens file uses !important.
+ */
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--page);
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  color: var(--ink);
+  overflow-x: clip;
+}
+
+/* A soft accent light over the top of the page plus a faint dot grid. Static
+   here; shared/hub.css adds the slow drift on hub pages only. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::before {
+  top: -38vmax;
+  right: -24vmax;
+  width: 88vmax;
+  height: 88vmax;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, color-mix(in oklab, var(--accent) 20%, transparent), transparent 72%),
+    radial-gradient(closest-side at 30% 70%, color-mix(in oklab, var(--accent-2) 10%, transparent), transparent 70%);
+}
+
+body::after {
+  inset: 0;
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 10%, transparent 75%);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 38%, transparent);
+  color: white;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* ---------- Focus ----------
+   One ring for every interactive element: an outline (Backgammon's tests
+   assert outline presence) with an optional halo via --focus-halo. */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* ---------- Skip link ---------- */
+
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-decoration: none;
+  translate: 0 -200%;
+  opacity: 0;
+  transition:
+    translate var(--d-fast) var(--ease),
+    opacity var(--d-fast);
+}
+
+.skip-link:focus-visible {
+  translate: 0 0;
+  opacity: 1;
+  outline-offset: 0;
+}
+
+/* ---------- Shell ----------
+   Hub and document pages: a centred column; the footer sits at the bottom
+   when content is short. App shells set their own grid. */
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: var(--gutter);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: 10px 0 12px;
+}
+
+.shell > main {
+  flex: 1;
+}
+
+/* ---------- Topbar ----------
+   Left: mark → family → current page. Centre: the hub switcher (hubs) or the
+   family's tool nav (tool pages). Right: status badge and icon buttons. */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  min-height: 56px;
+  padding: 4px 0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--r-sm);
+  text-decoration: none;
+  transition: color var(--d-fast);
+}
+
+.crumbs a:hover {
+  color: var(--ink);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: linear-gradient(160deg, var(--surface-2), var(--surface));
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition:
+    border-color var(--d-base),
+    box-shadow var(--d-base);
+}
+
+.crumbs a:hover .mark {
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+.crumb-sep {
+  color: var(--soft);
+}
+
+.crumb-current {
+  color: var(--ink);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Family switcher: the same five links in the same order on every hub, each
+   a 44px target. Dots read the family map. */
+.switcher {
+  display: flex;
+  gap: 2px;
+  max-width: 100%;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  view-transition-name: hub-switcher;
+}
+
+.switcher a {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--d-fast),
+    background-color var(--d-fast);
+}
+
+.switcher a::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot, var(--accent));
+  opacity: 0.55;
+  transition: opacity var(--d-fast);
+}
+
+.switcher a[data-to="ofc"] {
+  --dot: var(--family-ofc);
+}
+
+.switcher a[data-to="poker"] {
+  --dot: var(--family-poker);
+}
+
+.switcher a[data-to="blackjack"] {
+  --dot: var(--family-blackjack);
+}
+
+.switcher a[data-to="backgammon"] {
+  --dot: var(--family-backgammon);
+}
+
+.switcher a[data-to="dice"] {
+  --dot: var(--family-dice);
+}
+
+.switcher a:hover {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--muted) 8%, transparent);
+}
+
+.switcher a:hover::before,
+.switcher a[aria-current="page"]::before {
+  opacity: 1;
+}
+
+.switcher a[aria-current="page"] {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--muted) 12%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.switcher a:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Tool nav: the family's tools in README order, aria-current on this page. */
+.tool-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.tool-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tool-nav a {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  transition:
+    color var(--d-fast),
+    background-color var(--d-fast);
+}
+
+.tool-nav a:hover {
+  color: var(--ink);
+}
+
+.tool-nav a[aria-current="page"] {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.tool-nav a:focus-visible {
+  outline-offset: -2px;
+}
+
+/* ---------- Tool head (tool pages) ----------
+   Eyebrow + H1 + optional lede on the left, a stat strip or the primary action
+   on the right, the page's .tabs beneath. Collapses on short desktop windows. */
+.tool-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0 8px;
+}
+
+.tool-head > div:first-child {
+  min-width: 0;
+  flex: 1 1 20rem;
+}
+
+.tool-head h1 {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  letter-spacing: -0.02em;
+  view-transition-name: hub-title;
+}
+
+.tool-head .lede {
+  max-width: 44rem;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--t-md);
+  line-height: var(--lh-body);
+}
+
+@media (min-width: 881px) and (max-height: 820px) {
+  .tool-head {
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 0;
+  }
+
+  .tool-head h1 {
+    font-size: var(--t-lg);
+  }
+
+  .tool-head .lede {
+    display: none;
+  }
+}
+
+/* ---------- Footer (hubs, landing and document pages only) ---------- */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--soft);
+  font-size: 0.8rem;
+}
+
+.foot a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color var(--d-fast);
+}
+
+.foot a:hover {
+  color: var(--accent);
+}
+
+/* ---------- Eyebrow ---------- */
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.eyebrow--plain::before {
+  display: none;
+}
+
+/* ---------- Tabs ----------
+   Markup: <div class="tabs" role="tablist"><button role="tab" aria-selected
+   aria-controls>…</div> with panels role="tabpanel" hidden. shared/tabs.js
+   adds keyboard movement, hash/localStorage persistence and the sliding
+   underline (it sets --tab-left/--tab-width and .has-indicator). Without JS
+   the selected tab keeps a static underline. */
+.tabs {
+  --tab-left: 0px;
+  --tab-width: 0px;
+  position: relative;
+  display: flex;
+  gap: 2px;
+  max-width: 100%;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs > [role="tab"] {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: color var(--d-fast);
+}
+
+.tabs > [role="tab"]:hover {
+  color: var(--ink);
+}
+
+.tabs > [role="tab"][aria-selected="true"] {
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.tabs.has-indicator > [role="tab"][aria-selected="true"] {
+  box-shadow: none;
+}
+
+.tabs > [role="tab"]:focus-visible {
+  outline-offset: -2px;
+}
+
+.tabs.has-indicator::after {
+  content: "";
+  position: absolute;
+  left: var(--tab-left);
+  bottom: 0;
+  width: var(--tab-width);
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  transition:
+    left var(--d-base) var(--ease),
+    width var(--d-base) var(--ease);
+}
+
+/* Pill strip: the phone view switcher under the topbar, 44px pills that scroll
+   horizontally with an edge fade and never wrap. */
+.tabs--pill {
+  gap: 4px;
+  padding-inline: 12px;
+  border-bottom: 0;
+  scroll-padding-inline: 12px;
+  mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
+}
+
+.tabs--pill > [role="tab"] {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+}
+
+.tabs--pill > [role="tab"][aria-selected="true"],
+.tabs--pill.has-indicator > [role="tab"][aria-selected="true"] {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+.tabs--pill.has-indicator::after {
+  display: none;
+}
+
+/* ---------- Segmented control ----------
+   A radio group: <div class="segmented" role="radiogroup"><label><input
+   type="radio">Text</label>…</div>, or buttons with aria-pressed. Focus on the
+   hidden input surfaces on its label. */
+.segmented {
+  display: inline-flex;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.segmented--block {
+  display: flex;
+  width: 100%;
+}
+
+.segmented > label,
+.segmented > button {
+  position: relative;
+  display: inline-flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    color var(--d-fast),
+    background-color var(--d-fast),
+    box-shadow var(--d-fast);
+}
+
+.segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented > label:hover,
+.segmented > button:hover {
+  color: var(--ink);
+}
+
+.segmented > label:has(input:checked),
+.segmented > button[aria-pressed="true"],
+.segmented > button[aria-checked="true"],
+.segmented > [aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 1px 2px color-mix(in oklab, black 30%, transparent);
+}
+
+.segmented > label:has(input:focus-visible),
+.segmented > button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.segmented > label:has(input:disabled),
+.segmented > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---------- Buttons ----------
+   primary (accent fill), secondary (default), ghost, danger. Sizes: sm 36
+   (fine pointers only), md 40, lg 44; phones always 44. No hover lift. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-fast),
+    border-color var(--d-fast),
+    color var(--d-fast),
+    box-shadow var(--d-fast);
+}
+
+.btn:hover {
+  background: var(--surface-3);
+  border-color: var(--control-border);
+}
+
+.btn:active {
+  background: color-mix(in oklab, var(--surface-3) 85%, var(--ink));
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn--primary:hover {
+  background: color-mix(in oklab, var(--accent) 86%, white);
+  border-color: color-mix(in oklab, var(--accent) 86%, white);
+}
+
+.btn--primary:active {
+  background: color-mix(in oklab, var(--accent) 85%, black);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-2);
+  border-color: transparent;
+  color: var(--ink);
+}
+
+.btn--danger {
+  background: var(--bad-soft);
+  border-color: color-mix(in oklab, var(--bad) 50%, transparent);
+  color: var(--bad);
+}
+
+.btn--danger:hover {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: var(--on-accent);
+}
+
+.btn--lg {
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+.btn--icon {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+}
+
+.btn--icon.btn--lg {
+  width: 44px;
+  min-width: 44px;
+}
+
+.btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  color: var(--ink);
+}
+
+.btn kbd.keycap {
+  margin-left: 2px;
+}
+
+.btn-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (pointer: fine) {
+  .btn--sm {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: var(--t-sm);
+  }
+
+  .btn--icon.btn--sm {
+    width: 36px;
+    min-width: 36px;
+  }
+}
+
+/* ---------- Fields ----------
+   <div class="field"><label for=x>Label</label><input id=x></div>; a select
+   gets .field--select for the chevron; a range pairs with <output> in
+   .field-row. Controls are 40px, 44px on phones, 16px text on coarse pointers. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field > label,
+.field-label {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: var(--lh-data);
+}
+
+.field input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  line-height: var(--lh-data);
+  transition: border-color var(--d-fast);
+}
+
+.field textarea {
+  min-height: 96px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+  border-color: color-mix(in oklab, var(--control-border) 55%, var(--ink));
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--soft);
+}
+
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+  opacity: 0.5;
+}
+
+.field--select {
+  position: relative;
+}
+
+.field--select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+}
+
+.field--select::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 16px;
+  height: 16px;
+  background: var(--muted);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+.field input[type="range"] {
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.field-row output,
+.field-value {
+  min-width: 3.5ch;
+  color: var(--ink);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: var(--lh-data);
+}
+
+.field--error input,
+.field--error select,
+.field--error textarea {
+  border-color: var(--bad);
+}
+
+.field-error {
+  color: var(--bad);
+  font-size: var(--t-xs);
+  line-height: var(--lh-data);
+}
+
+.field-error:empty {
+  display: none;
+}
+
+/* Stepper: [−] [ 12 ] [+] */
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.stepper > .btn {
+  border-radius: 0;
+}
+
+.stepper > .btn:first-child {
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+}
+
+.stepper > .btn:last-child {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+
+.stepper > input {
+  width: 4.5ch;
+  margin-inline: -1px;
+  border-radius: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native checkbox or radio with a label in a 44px row. */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: var(--t-md);
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* ---------- Switch ----------
+   <button class="switch" role="switch" aria-checked="true"> or
+   <label class="switch"><input type="checkbox"></label>, 44×24. A
+   .switch-row puts the text and the switch in a 44px row. */
+.switch {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    background-color var(--d-fast),
+    border-color var(--d-fast);
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition:
+    translate var(--d-fast) var(--ease),
+    background-color var(--d-fast);
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch[aria-checked="true"],
+.switch:has(input:checked) {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch[aria-checked="true"]::after,
+.switch:has(input:checked)::after {
+  translate: 20px 0;
+  background: var(--on-accent);
+}
+
+.switch:has(input:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.switch:disabled,
+.switch:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  font-size: var(--t-md);
+}
+
+.switch-row .field-hint {
+  display: block;
+}
+
+/* ---------- Chip and badge ----------
+   .chip: a tag or filter (button.chip with aria-pressed). .badge: a small
+   status pill with a dot. Tones: --good, --bad, --warn, --info, --accent. */
+.chip,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chip {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--muted) 6%, transparent);
+  color: var(--muted);
+}
+
+button.chip {
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color var(--d-fast),
+    background-color var(--d-fast),
+    border-color var(--d-fast);
+}
+
+button.chip:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+button.chip[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  color: var(--ink);
+}
+
+.badge {
+  min-height: 22px;
+  padding: 0 8px 0 7px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.badge--plain {
+  padding-left: 8px;
+}
+
+.badge--plain::before {
+  display: none;
+}
+
+.chip--good,
+.badge--good {
+  background: var(--good-soft);
+  border-color: color-mix(in oklab, var(--good) 40%, transparent);
+  color: var(--good);
+}
+
+.chip--bad,
+.badge--bad {
+  background: var(--bad-soft);
+  border-color: color-mix(in oklab, var(--bad) 40%, transparent);
+  color: var(--bad);
+}
+
+.chip--warn,
+.badge--warn {
+  background: var(--warn-soft);
+  border-color: color-mix(in oklab, var(--warn) 40%, transparent);
+  color: var(--warn);
+}
+
+.chip--info,
+.badge--info {
+  background: var(--info-soft);
+  border-color: color-mix(in oklab, var(--info) 40%, transparent);
+  color: var(--info);
+}
+
+.chip--accent,
+.badge--accent {
+  background: var(--accent-soft);
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  color: var(--accent);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---------- Stat tile and strip ---------- */
+
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.stat-label {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.stat-value {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: var(--lh-data);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-value small {
+  margin-left: 2px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.stat-delta {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.is-good {
+  color: var(--good);
+}
+
+.is-bad {
+  color: var(--bad);
+}
+
+.is-warn {
+  color: var(--warn);
+}
+
+/* ---------- Panel ----------
+   The hub tile without link affordance. .panel-body scrolls internally; a
+   .panel--flush panel has no padding and clips its stage. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: linear-gradient(170deg, var(--surface-2), var(--surface) 60%);
+  box-shadow: var(--shadow-tile);
+}
+
+.panel-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-head h2,
+.panel-head h3,
+.panel-title {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: -0.01em;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.panel-body {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.panel-foot {
+  flex: none;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.panel--flush > .panel-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.panel--quiet {
+  background: var(--surface);
+  box-shadow: none;
+}
+
+/* ---------- Data table ----------
+   Always inside .table-wrap (horizontal scroll, scroll shadows). Sticky head
+   on --surface-3; offsets are the --table-sticky-* variables, never literals.
+   .table-wrap--sticky-col pins the first column. Never shrink type to fit. */
+.table-wrap {
+  --table-sticky-top: 0px;
+  --table-sticky-left: 0px;
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left / 48px 100% no-repeat local,
+    linear-gradient(to left, var(--surface) 30%, transparent) right / 48px 100% no-repeat local,
+    linear-gradient(to right, color-mix(in oklab, black 45%, transparent), transparent) left / 14px 100% no-repeat scroll,
+    linear-gradient(to left, color-mix(in oklab, black 45%, transparent), transparent) right / 14px 100% no-repeat scroll,
+    var(--surface);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table th,
+.data-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-opaque);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: var(--table-sticky-top);
+  z-index: 2;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.data-table th[aria-sort] {
+  cursor: pointer;
+}
+
+.data-table th[aria-sort="ascending"]::after {
+  content: " ↑";
+}
+
+.data-table th[aria-sort="descending"]::after {
+  content: " ↓";
+}
+
+.data-table .num,
+.data-table [data-num] {
+  text-align: right;
+}
+
+.data-table .wrap {
+  white-space: normal;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table tbody tr[aria-selected="true"] > td,
+.data-table tbody tr.is-selected > td {
+  background: var(--accent-soft);
+}
+
+.data-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface-3);
+  font-weight: 600;
+}
+
+.table-wrap--sticky-col .data-table th:first-child,
+.table-wrap--sticky-col .data-table td:first-child {
+  position: sticky;
+  left: var(--table-sticky-left);
+  z-index: 1;
+  background: var(--surface);
+  border-right: 1px solid var(--line-opaque);
+}
+
+.table-wrap--sticky-col .data-table thead th:first-child {
+  z-index: 3;
+  background: var(--surface-3);
+}
+
+@media (hover: hover) {
+  .data-table tbody tr:hover > td {
+    background: color-mix(in oklab, var(--ink) 3%, transparent);
+  }
+
+  .table-wrap--sticky-col .data-table tbody tr:hover > td:first-child {
+    background: color-mix(in oklab, var(--ink) 3%, var(--surface));
+  }
+}
+
+/* ---------- Bars, sparkline, progress ----------
+   Fill with --value (0–1) and --bar-color. Never colour only: pair every bar
+   with a label or a pattern. */
+.bar {
+  --value: 0;
+  position: relative;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.bar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--value) * 100%);
+  border-radius: inherit;
+  background: var(--bar-color, var(--accent));
+  transition: width var(--d-base) var(--ease);
+}
+
+.bar--lg {
+  height: 12px;
+}
+
+.bar--indeterminate::before {
+  width: 40%;
+  animation: bar-slide 1.2s var(--ease) infinite;
+}
+
+@keyframes bar-slide {
+  from {
+    translate: -100% 0;
+  }
+
+  to {
+    translate: 250% 0;
+  }
+}
+
+.bar-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.45fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  font-size: var(--t-sm);
+}
+
+.bar-row-label {
+  overflow: hidden;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bar-row-value {
+  min-width: 4ch;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stack-bar {
+  display: flex;
+  gap: 1px;
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.stack-bar > * {
+  flex: var(--value, 1) 1 0;
+  min-width: 0;
+  background: var(--bar-color, var(--accent));
+}
+
+.sparkline {
+  display: block;
+  width: 100%;
+  height: 32px;
+  overflow: visible;
+}
+
+.sparkline path,
+.sparkline polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparkline .area {
+  fill: var(--accent-soft);
+  stroke: none;
+}
+
+.progress {
+  display: grid;
+  gap: 6px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- List row ----------
+   label | tabular value | delta. The one decision-value and ranked-move row.
+   Pressed state via aria-pressed, aria-current or .is-selected. */
+.list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 2px 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line-opaque);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+  text-align: left;
+  text-decoration: none;
+}
+
+.list-row:last-child {
+  border-bottom: 0;
+}
+
+button.list-row,
+a.list-row {
+  cursor: pointer;
+  transition: background-color var(--d-fast);
+}
+
+@media (hover: hover) {
+  button.list-row:hover,
+  a.list-row:hover {
+    background: color-mix(in oklab, var(--ink) 3%, transparent);
+  }
+}
+
+.list-row[aria-pressed="true"],
+.list-row[aria-current],
+.list-row.is-selected {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.list-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.list-row-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.list-row-sub {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.list-row-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.list-row-delta {
+  min-width: 5ch;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.list-row-value:last-child,
+.list-row-delta:last-child {
+  grid-column: 3;
+}
+
+/* ---------- Dialog ----------
+   Native <dialog class="dialog">: .dialog-head, scrolling .dialog-body, sticky
+   .dialog-foot. .dialog--sheet becomes a bottom sheet at ≤700px (portrait).
+   shared/sheet.js opens it, fits the keyboard viewport (--dialog-visible-*,
+   data-keyboard), locks the page, handles backdrop taps and returns focus.
+   Errors raised inside a modal render in its .dialog-error, not a toast. */
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: min(100% - 24px, 520px);
+  max-height: min(85dvh, calc(var(--dialog-visible-height, 100dvh) - 24px));
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-raised);
+  opacity: 0;
+  translate: 0 8px;
+  overscroll-behavior: contain;
+  transition:
+    opacity var(--d-base) var(--ease),
+    translate var(--d-base) var(--ease),
+    display var(--d-base) allow-discrete,
+    overlay var(--d-base) allow-discrete;
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+.dialog::backdrop {
+  background: color-mix(in oklab, var(--page) 72%, transparent);
+  opacity: 0;
+  transition:
+    opacity var(--d-base) var(--ease),
+    display var(--d-base) allow-discrete,
+    overlay var(--d-base) allow-discrete;
+}
+
+.dialog[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+.dialog--wide {
+  width: min(100% - 24px, 760px);
+}
+
+.dialog-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-opaque);
+}
+
+.dialog-head h2 {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+}
+
+.dialog-body {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line-opaque);
+  background: var(--surface);
+}
+
+.dialog-foot:empty {
+  display: none;
+}
+
+.dialog-error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.dialog-error:empty {
+  display: none;
+}
+
+/* Keyboard-viewport fitting (set by shared/sheet.js from visualViewport). */
+.dialog[data-keyboard] {
+  top: var(--dialog-visible-top);
+  bottom: auto;
+  margin-block: 12px 0;
+  max-height: calc(var(--dialog-visible-height) - 24px);
+}
+
+@media (max-width: 700px) and (min-height: 501px) {
+  .dialog--sheet[open]:not([data-keyboard]) {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: 85dvh;
+    margin: 0;
+    border-inline: 0;
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: var(--shadow-sheet);
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .dialog--sheet[open]:not([data-keyboard]) {
+      translate: 0 24px;
+    }
+  }
+
+  .dialog--sheet::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    border-radius: var(--r-pill);
+    background: var(--line-strong);
+    translate: -50% 0;
+  }
+
+  .dialog--sheet .dialog-head {
+    padding-top: 22px;
+  }
+}
+
+html.has-dialog {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ---------- Toast ----------
+   One bottom-centre stack per page: <div class="toast-stack" role="status"
+   aria-live="polite"> holding .toast elements; .toast--alert goes in the
+   assertive region. Pause on hover is up to the page's timer. */
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(100% - 24px, 480px);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+  box-shadow: var(--shadow-raised);
+  pointer-events: auto;
+  transition:
+    opacity var(--d-base) var(--ease),
+    translate var(--d-base) var(--ease);
+}
+
+@starting-style {
+  .toast {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+.toast > span:first-child {
+  flex: 1;
+}
+
+.toast--alert {
+  border-color: color-mix(in oklab, var(--bad) 50%, transparent);
+  background: color-mix(in oklab, var(--bad) 16%, var(--surface-2));
+}
+
+.toast--good {
+  border-color: color-mix(in oklab, var(--good) 50%, transparent);
+  background: color-mix(in oklab, var(--good) 14%, var(--surface-2));
+}
+
+/* ---------- Empty state ---------- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state .icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+.empty-state h3,
+.empty-state-title {
+  color: var(--ink);
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.empty-state p {
+  max-width: 28rem;
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+/* ---------- Keycap (shared/keycap.js) ---------- */
+
+.keycap {
+  --keycap-fill: color-mix(in srgb, currentColor 7%, transparent);
+  --keycap-stroke: color-mix(in srgb, currentColor 27%, transparent);
+  display: inline-block;
+  color: inherit;
+  vertical-align: middle;
+}
+
+.keycap > svg {
+  display: block;
+  height: 20px;
+}
+
+.keycap-art {
+  color: inherit;
+}
+
+.keycap-face {
+  fill: var(--keycap-fill);
+  stroke: var(--keycap-stroke);
+  stroke-width: 1;
+}
+
+.keycap-edge {
+  fill: none;
+  stroke: var(--keycap-stroke);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.keycap-label {
+  fill: currentColor;
+  font: 600 13px var(--font-sans);
+}
+
+@media (pointer: coarse) {
+  .btn kbd.keycap {
+    display: none;
+  }
+}
+
+/* ---------- Card drag ghost (shared/card-drag.js) ---------- */
+
+.drag-source-hidden {
+  visibility: hidden;
+}
+
+.card-drag-ghost {
+  position: fixed;
+  z-index: 100;
+  margin: 0;
+  outline: 1px solid var(--ink);
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 10px 14px color-mix(in oklab, black 40%, transparent));
+  pointer-events: none;
+}
+
+.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+/* ---------- Icons (shared/icons.svg, 20px grid) ----------
+   <svg class="icon" aria-hidden="true"><use href="/shared/icons.svg#i-settings"/></svg> */
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: middle;
+}
+
+/* ---------- Utilities ---------- */
+
+.visually-hidden,
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .desktop-only {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) {
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* ---------- Phones and coarse pointers ----------
+   Every control is a 44px target; text inputs are 16px so iOS does not zoom. */
+@media (pointer: coarse), (max-width: 640px) {
+  .btn,
+  .btn--sm {
+    min-height: 44px;
+  }
+
+  .btn--icon,
+  .btn--icon.btn--sm {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .tabs > [role="tab"] {
+    min-height: 44px;
+  }
+
+  .segmented {
+    padding: 2px;
+  }
+
+  .segmented > label,
+  .segmented > button {
+    min-height: 44px;
+  }
+
+  .field input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+  .field select,
+  .field textarea {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  button.chip {
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    width: min(1200px, 100% - 24px);
+    padding-top: 8px;
+  }
+
+  .switcher {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .switcher a {
+    flex: 1 0 auto;
+    padding: 0 8px;
+    font-size: var(--t-xs);
+    scroll-snap-align: start;
+  }
+
+  .switcher a::before {
+    display: none;
+  }
+
+  .foot {
+    margin-top: 12px;
+    font-size: 0.74rem;
+  }
+}
+
+/* ---------- Forced colours ---------- */
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid transparent;
+  }
+
+  .panel,
+  .btn,
+  .chip,
+  .badge,
+  .switcher,
+  .segmented,
+  .stat-strip,
+  .table-wrap,
+  .dialog,
+  .toast,
+  .list,
+  .mark {
+    border: 1px solid CanvasText;
+  }
+
+  .switch::after,
+  .bar::before,
+  .tabs.has-indicator::after {
+    background: CanvasText;
+  }
+}

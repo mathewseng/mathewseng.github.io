@@ -1416,25 +1416,6 @@ html[data-motion="reduce"] *:before {
     gap: 8px;
     flex-wrap: wrap;
   }
-  .hub-backgammon .switcher {
-    max-width: 100%;
-    padding: 3px;
-    display: flex;
-    width: 100%;
-    gap: 0;
-  }
-  .hub-backgammon .switcher a {
-    padding: 9px 6px;
-    font-size: 12px;
-    flex: 1 1 auto;
-    min-width: 44px;
-    min-height: 44px;
-    justify-content: center;
-    text-align: center;
-  }
-  .hub-backgammon .switcher a::before {
-    display: none;
-  }
   .hub-backgammon .hub-layout {
     margin-top: 20px;
   }

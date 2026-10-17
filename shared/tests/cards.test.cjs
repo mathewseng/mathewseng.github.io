@@ -22,13 +22,18 @@ test("normalizes strings, objects, tens, symbols, jokers and backs", () => {
 test("html uses the shared markup with suit class, suit mark and rank", () => {
   assert.equal(
     Cards.html("Kh"),
-    '<span class="playing-card suit-h" aria-label="King of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span>',
+    '<span class="playing-card suit-h" role="img" aria-label="King of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span>',
   );
   const button = Cards.html("As", { tag: "button", selected: true, className: "deck-card", attrs: { "data-card": "As" }, badge: "2" });
-  assert.ok(button.startsWith('<button class="playing-card suit-s selected deck-card" type="button" aria-label="Ace of spades" data-card="As">'));
+  assert.ok(button.startsWith('<button class="playing-card suit-s selected deck-card" type="button" aria-label="Ace of spades" aria-pressed="true" data-card="As">'));
+  assert.ok(!button.includes('role="img"'), "button cards are buttons, not images");
+  assert.ok(!Cards.html("As", { tag: "button" }).includes("aria-pressed"), "unselected buttons carry no pressed state unless asked");
+  assert.ok(Cards.html("As", { tag: "button", pressed: false }).includes('aria-pressed="false"'));
+  assert.ok(Cards.html("As", { attrs: { role: "button" } }).includes('role="button"'));
+  assert.ok(!Cards.html("As", { attrs: { role: "button" } }).includes('role="img"'));
   assert.ok(button.includes('<span class="card-badge">2</span>'));
   assert.ok(button.endsWith("</button>"));
-  assert.equal(Cards.html("BACK"), '<span class="playing-card back" aria-label="Face-down card"></span>');
+  assert.equal(Cards.html("BACK"), '<span class="playing-card back" role="img" aria-label="Face-down card"></span>');
   assert.ok(Cards.html("JK").includes('class="playing-card joker"'));
   assert.ok(Cards.html("JK").includes('<span class="card-rank">JK</span>'));
   assert.ok(Cards.html("Td", { disabled: true }).includes('aria-disabled="true"'));

@@ -7,8 +7,12 @@
     <meta name="description" content="Open-face Chinese poker tools: peer-to-peer Pineapple tables, a Fantasyland trainer, EV matrix, and royalty reports." />
     <title>OFC Tools</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='82' font-size='88' text-anchor='middle' fill='%238fd9b6'%3E♣%3C/text%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="../shared/hub.css?v=20261003" />
+    <link rel="stylesheet" href="../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../shared/hub.css?v=20261016" />
+    <link rel="stylesheet" href="../shared/hub-art.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
     <script src="../shared/hub.js" defer></script>
   </head>
   <body>
@@ -24,6 +28,7 @@
           <a href="/poker/" data-to="poker">Poker</a>
           <a href="/blackjack/" data-to="blackjack">Blackjack</a>
           <a href="/backgammon/" data-to="backgammon">Backgammon</a>
+          <a href="/dice/" data-to="dice">Dice</a>
         </nav>
       </header>
 
@@ -44,7 +49,7 @@
           <span class="playing-card suit-h" aria-label="Queen of hearts" style="--k: -1; --y: 6px; --n: 0"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span>
           <span class="playing-card suit-s" aria-label="Queen of spades" style="--k: 0; --y: 0px; --n: 1"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">Q</span></span>
           <span class="playing-card joker" aria-label="Joker" style="--k: 1; --y: 6px; --n: 2"><span class="card-suit" aria-hidden="true">★</span><span class="card-rank">JK</span></span>
-          <div class="chip"></div>
+          <div class="fan-chip"></div>
             </div>
           </div>
         </section>
@@ -69,10 +74,10 @@
               </div>
               </div>
               <div class="preview" aria-hidden="true">
-                <div class="ofc-board">
-                  <div class="ofc-row"><b>Top</b><span class="playing-card suit-h" aria-label="Queen of hearts" style="--c: 0; grid-column-start: 3"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-s" aria-label="Queen of spades" style="--c: 1"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">Q</span></span><span class="empty-slot"></span><span class="royalty">+7 · Fantasyland</span></div>
-                  <div class="ofc-row"><b>Middle</b><span class="playing-card suit-c" aria-label="Nine of clubs" style="--c: 2"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">9</span></span><span class="playing-card suit-d" aria-label="Nine of diamonds" style="--c: 3"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">9</span></span><span class="playing-card suit-s" aria-label="Jack of spades" style="--c: 4"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">J</span></span><span class="playing-card suit-c" aria-label="Jack of clubs" style="--c: 5"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">J</span></span><span class="playing-card suit-d" aria-label="Four of diamonds" style="--c: 6"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">4</span></span><span class="royalty quiet">Two pair</span></div>
-                  <div class="ofc-row"><b>Bottom</b><span class="playing-card suit-h" aria-label="Ace of hearts" style="--c: 7"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span><span class="playing-card suit-h" aria-label="King of hearts" style="--c: 8"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Eight of hearts" style="--c: 9"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">8</span></span><span class="playing-card suit-h" aria-label="Five of hearts" style="--c: 10"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Three of hearts" style="--c: 11"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">3</span></span><span class="royalty">+4 flush</span></div>
+                <div class="art-ofc-board">
+                  <div class="art-ofc-row"><b>Top</b><span class="playing-card suit-h" aria-label="Queen of hearts" style="--c: 0; grid-column-start: 3"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-s" aria-label="Queen of spades" style="--c: 1"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">Q</span></span><span class="empty-slot"></span><span class="art-royalty">+7 · Fantasyland</span></div>
+                  <div class="art-ofc-row"><b>Middle</b><span class="playing-card suit-c" aria-label="Nine of clubs" style="--c: 2"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">9</span></span><span class="playing-card suit-d" aria-label="Nine of diamonds" style="--c: 3"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">9</span></span><span class="playing-card suit-s" aria-label="Jack of spades" style="--c: 4"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">J</span></span><span class="playing-card suit-c" aria-label="Jack of clubs" style="--c: 5"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">J</span></span><span class="playing-card suit-d" aria-label="Four of diamonds" style="--c: 6"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">4</span></span><span class="art-royalty quiet">Two pair</span></div>
+                  <div class="art-ofc-row"><b>Bottom</b><span class="playing-card suit-h" aria-label="Ace of hearts" style="--c: 7"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span><span class="playing-card suit-h" aria-label="King of hearts" style="--c: 8"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Eight of hearts" style="--c: 9"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">8</span></span><span class="playing-card suit-h" aria-label="Five of hearts" style="--c: 10"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Three of hearts" style="--c: 11"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">3</span></span><span class="art-royalty">+4 flush</span></div>
                 </div>
               </div>
             </a>

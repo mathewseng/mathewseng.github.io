@@ -1,0 +1,674 @@
+/* Illustrations for the landing page and the family hubs, cut out of hub.css:
+ * the hero card fan and chips, the landing tile art, and the featured-tile
+ * previews (poker table, OFC board, blackjack chart). Hub-only: this is the
+ * one place ambient loops (bob, spin, glow, turn, breathe, ping, eq) live.
+ *
+ * Entrances use @starting-style transitions gated on html.is-ready (set before
+ * first paint by the inline script in each hub's head), never
+ * animation-fill-mode: backwards, so nothing can be left invisible.
+ * Playing cards come from shared/cards.css; this file only positions them.
+ */
+
+/* ---------- Hero: fanned cards and chips ---------- */
+
+.fan {
+  --tx: 0;
+  --ty: 0;
+  --card-width: 92px;
+  position: relative;
+  height: 172px;
+  display: grid;
+  place-items: center;
+  perspective: 1000px;
+}
+
+.fan::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 26%, transparent), transparent);
+  filter: blur(8px);
+  animation: glow 7s ease-in-out infinite alternate;
+}
+
+.fan-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform: rotateY(calc(var(--tx) * 9deg)) rotateX(calc(var(--ty) * -7deg));
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease);
+}
+
+.fan .playing-card {
+  position: absolute;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, white 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--page) 35%, transparent),
+    0 24px 44px -18px color-mix(in srgb, black 85%, transparent);
+  translate: calc(var(--k) * 30px) var(--y, 0px);
+  rotate: calc(var(--k) * 9deg);
+  transform-origin: 50% 115%;
+  transition:
+    translate 0.6s var(--spring),
+    rotate 0.6s var(--spring),
+    opacity 0.9s var(--ease) calc(var(--n, 0) * 90ms + 0.25s),
+    scale 0.9s var(--spring) calc(var(--n, 0) * 90ms + 0.25s);
+  animation: bob 6s ease-in-out infinite;
+  animation-delay: calc(var(--n, 0) * -1.1s);
+}
+
+@starting-style {
+  html.is-ready .fan .playing-card {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+.fan:hover .playing-card {
+  translate: calc(var(--k) * 40px) calc(var(--y, 0px) - 6px);
+  rotate: calc(var(--k) * 12deg);
+}
+
+.fan-chip {
+  position: absolute;
+  left: 14%;
+  bottom: 4%;
+  width: 54px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in oklab, var(--accent) 88%, black) 0 40%, color-mix(in srgb, white 90%, transparent) 41% 44%, transparent 45%),
+    repeating-conic-gradient(color-mix(in srgb, var(--ink) 92%, white) 0 12deg, color-mix(in oklab, var(--accent) 85%, black) 12deg 45deg);
+  box-shadow:
+    inset 0 0 0 4px color-mix(in oklab, var(--accent) 85%, black),
+    inset 0 0 0 5px color-mix(in srgb, white 35%, transparent),
+    0 16px 30px -12px color-mix(in srgb, black 90%, transparent);
+  translate: 0 0 30px;
+  transition:
+    opacity 0.9s var(--ease) 0.7s,
+    scale 0.9s var(--spring) 0.7s;
+  animation: spin 40s linear infinite;
+}
+
+@starting-style {
+  html.is-ready .fan-chip {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+.fan-chip--alt {
+  left: auto;
+  right: 10%;
+  bottom: 14%;
+  width: 42px;
+  transition-delay: 0.85s;
+  animation: spin 48s linear infinite reverse;
+}
+
+/* ---------- Featured tile previews ---------- */
+
+.preview .playing-card {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, white 8%, transparent),
+    0 6px 12px -6px color-mix(in srgb, black 80%, transparent);
+}
+
+/* Poker: a table with action moving around the seats. */
+.art-table {
+  position: relative;
+  width: min(100% - 56px, 320px);
+  aspect-ratio: 2 / 1.08;
+  margin: 22px 28px;
+}
+
+.art-felt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at 50% 35%, var(--felt-light) 0%, var(--felt) 55%, var(--felt-dark) 100%);
+  box-shadow:
+    inset 0 0 0 6px var(--felt-rail),
+    inset 0 0 0 7px color-mix(in srgb, white 8%, transparent),
+    inset 0 18px 40px color-mix(in srgb, black 45%, transparent),
+    0 20px 40px -20px color-mix(in srgb, black 90%, transparent);
+}
+
+.art-board {
+  display: flex;
+  gap: 4px;
+}
+
+.art-board .playing-card {
+  transition:
+    opacity 0.7s var(--ease) calc(var(--c, 0) * 120ms + 0.8s),
+    rotate 0.7s var(--ease) calc(var(--c, 0) * 120ms + 0.8s);
+}
+
+@starting-style {
+  html.is-ready .art-board .playing-card {
+    opacity: 0;
+    rotate: y 90deg;
+  }
+}
+
+.art-pot {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, black 35%, transparent);
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.art-seat {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background-color: var(--seat-bg);
+  background-image: linear-gradient(160deg, color-mix(in srgb, white 10%, transparent), transparent 70%);
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 6px 12px -6px black;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  translate: -50% -50%;
+  animation: turn 9s var(--ease) infinite;
+  animation-delay: calc(var(--s) * 1.5s);
+}
+
+/* OFC: a Pineapple board with Fantasyland on the top row. */
+.art-ofc-board {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+}
+
+.art-ofc-row {
+  display: grid;
+  grid-template-columns: 52px repeat(5, var(--card-width)) auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.art-ofc-row .art-royalty {
+  grid-column: 7;
+  justify-self: start;
+}
+
+.art-ofc-row > b {
+  color: var(--soft);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.art-ofc-row .playing-card {
+  transition:
+    opacity 0.6s var(--ease) calc(var(--c, 0) * 60ms + 0.7s),
+    translate 0.6s var(--ease) calc(var(--c, 0) * 60ms + 0.7s);
+}
+
+@starting-style {
+  html.is-ready .art-ofc-row .playing-card {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+.art-ofc-row .empty-slot {
+  border: 1.5px dashed color-mix(in oklab, var(--accent) 60%, transparent);
+  background: none;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.art-royalty {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.art-royalty.quiet {
+  background: color-mix(in oklab, var(--muted) 8%, transparent);
+  color: var(--soft);
+}
+
+/* Blackjack: a slice of the hard-total chart with one lookup highlighted. */
+.art-bj {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.art-bj-grid {
+  display: grid;
+  grid-template-columns: 22px repeat(10, 16px);
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.art-bj-grid b {
+  display: grid;
+  place-items: center;
+  height: 15px;
+  color: var(--soft);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.art-bj-grid b.on {
+  color: var(--accent);
+}
+
+.art-bj-grid span {
+  height: 15px;
+  border-radius: 3px;
+  opacity: 0.32;
+  transition:
+    opacity 0.5s var(--ease) calc(var(--c, 0) * 6ms + 0.6s),
+    scale 0.5s var(--ease) calc(var(--c, 0) * 6ms + 0.6s);
+}
+
+@starting-style {
+  html.is-ready .art-bj-grid span {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+.art-bj-grid span.on {
+  opacity: 0.9;
+}
+
+.art-bj-grid .H,
+.art-chart .H {
+  background: var(--hit);
+}
+
+.art-bj-grid .S,
+.art-chart .S {
+  background: var(--stand);
+}
+
+.art-bj-grid .D,
+.art-chart .D {
+  background: var(--double);
+}
+
+.art-bj-grid span.hit-me {
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px var(--page),
+    0 0 0 3.5px var(--accent);
+  animation: ping 2.2s ease-out 1.6s infinite;
+}
+
+.art-bj-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.art-bj-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+}
+
+.art-bj-key span::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--swatch);
+}
+
+.art-bj-key strong {
+  color: var(--ink);
+}
+
+/* ---------- Landing tile art ---------- */
+
+.tile-art .playing-card {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, white 8%, transparent),
+    0 6px 12px -6px color-mix(in srgb, black 80%, transparent);
+}
+
+.art-fan {
+  display: flex;
+  align-items: flex-end;
+}
+
+.art-fan .playing-card {
+  margin-inline: -3px;
+  rotate: calc(var(--k) * 7deg);
+  translate: 0 var(--y);
+  transition:
+    margin 0.5s var(--spring),
+    rotate 0.5s var(--spring),
+    translate 0.5s var(--spring);
+}
+
+.tile:hover .art-fan .playing-card {
+  margin-inline: 1px;
+  rotate: calc(var(--k) * 10deg);
+  translate: 0 calc(var(--y) - 4px);
+}
+
+.art-ofc {
+  --card-width: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+
+.art-ofc div {
+  display: flex;
+  gap: 3px;
+}
+
+.art-ofc .empty-slot {
+  border: 1.5px dashed color-mix(in oklab, var(--accent) 65%, transparent);
+  background: none;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.art-chart {
+  display: grid;
+  grid-template-columns: repeat(10, 12px);
+  gap: 2px;
+}
+
+.art-chart span {
+  height: 12px;
+  border-radius: 3px;
+  opacity: 0.55;
+  transition: opacity 0.4s;
+}
+
+.tile:hover .art-chart span {
+  opacity: 0.8;
+}
+
+.art-chart span.hit-me {
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px var(--page),
+    0 0 0 3.5px var(--accent);
+  animation: ping 2.2s ease-out 1.6s infinite;
+}
+
+.art-bars,
+.art-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 44px;
+}
+
+.art-bars span {
+  width: 12px;
+  height: var(--h);
+  border-radius: 4px 4px 2px 2px;
+  background: var(--accent);
+  transform-origin: bottom;
+  transition: scale 0.9s var(--ease) calc(var(--c, 0) * 60ms + 0.6s);
+}
+
+@starting-style {
+  html.is-ready .art-bars span {
+    scale: 1 0;
+  }
+}
+
+.art-bars span:nth-child(even) {
+  background: var(--accent-2);
+}
+
+.art-wave {
+  align-items: center;
+  gap: 3px;
+}
+
+.art-wave span {
+  width: 4px;
+  height: var(--h);
+  border-radius: 999px;
+  background: linear-gradient(var(--accent), var(--accent-2));
+  animation: eq 1.1s ease-in-out infinite alternate paused;
+  animation-delay: calc(var(--c) * -110ms);
+}
+
+.tile:hover .art-wave span {
+  animation-play-state: running;
+}
+
+/* ---------- Ambient motion (hub-only) ---------- */
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.7;
+    scale: 0.94;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+
+@keyframes turn {
+  0%,
+  13% {
+    background-color: var(--accent);
+    color: var(--on-accent);
+    box-shadow:
+      0 0 0 1px var(--accent),
+      0 0 0 6px color-mix(in oklab, var(--accent) 22%, transparent),
+      0 6px 16px -4px color-mix(in oklab, var(--accent) 60%, black);
+  }
+
+  18%,
+  100% {
+    background-color: var(--seat-bg);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes eq {
+  to {
+    scale: 1 0.3;
+  }
+}
+
+@keyframes ping {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--page),
+      0 0 0 3.5px var(--accent);
+  }
+
+  70%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--page),
+      0 0 0 12px transparent;
+  }
+}
+
+/* ---------- Short desktop windows ---------- */
+
+@media (min-width: 881px) and (max-height: 820px) {
+  .fan {
+    --card-width: 68px;
+    height: 124px;
+  }
+
+  .fan::before {
+    width: 170px;
+    height: 170px;
+  }
+
+  .fan-chip {
+    width: 42px;
+  }
+
+  .tile-art .art-fan {
+    --card-width: 24px;
+  }
+}
+
+/* ---------- Tablets ---------- */
+
+@media (max-width: 880px) {
+  .fan {
+    --card-width: 62px;
+    width: 180px;
+    height: 118px;
+  }
+
+  .fan::before {
+    width: 150px;
+    height: 150px;
+  }
+
+  .fan .playing-card {
+    translate: calc(var(--k) * 22px) var(--y, 0px);
+  }
+
+  .fan:hover .playing-card {
+    translate: calc(var(--k) * 26px) var(--y, 0px);
+  }
+
+  .fan-chip {
+    left: 8%;
+    width: 36px;
+  }
+
+  .fan-chip--alt {
+    width: 28px;
+  }
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 640px) {
+  .fan {
+    --card-width: 44px;
+    width: 120px;
+    height: 92px;
+    margin-top: 4px;
+  }
+
+  .fan::before {
+    width: 110px;
+    height: 110px;
+  }
+
+  .fan .playing-card {
+    translate: calc(var(--k) * 15px) var(--y, 0px);
+  }
+
+  .fan:hover .playing-card {
+    translate: calc(var(--k) * 18px) var(--y, 0px);
+  }
+
+  .fan-chip,
+  .fan-chip--alt {
+    display: none;
+  }
+
+  .art-ofc {
+    --card-width: 9px;
+    gap: 2px;
+  }
+
+  .art-ofc div {
+    gap: 2px;
+  }
+
+  .art-chart {
+    grid-template-columns: repeat(10, 3.5px);
+    gap: 1px;
+  }
+
+  .art-chart span {
+    height: 3.5px;
+    border-radius: 1px;
+  }
+
+  .art-bars,
+  .art-wave {
+    gap: 2px;
+    height: 30px;
+  }
+
+  .art-bars span {
+    width: 4px;
+  }
+
+  .art-wave span {
+    width: 2px;
+  }
+
+  .art-wave span:nth-child(n + 15) {
+    display: none;
+  }
+}

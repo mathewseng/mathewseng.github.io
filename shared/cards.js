@@ -5,8 +5,10 @@
 //   PlayingCards.html("Kh")                         -> '<span class="playing-card suit-h" ...>'
 //   PlayingCards.html({ rank: 14, suit: "s" }, { tag: "button", selected: true })
 //   Options: tag, className, selected, staged, dim, danger, interactive, disabled,
-//   badge (+ badgeClass, bottom-right), corner (small marker, top-right), attrs,
-//   label, title, style, extra (trusted overlay markup appended inside the card).
+//   pressed (explicit aria-pressed for button cards), badge (+ badgeClass,
+//   bottom-right), corner (small marker, top-right), attrs, label, title, style,
+//   extra (trusted overlay markup appended inside the card).
+//   Non-button cards carry role="img"; selected button cards carry aria-pressed="true".
 //   PlayingCards.element("Td", { className: "new" }) -> HTMLElement
 //   PlayingCards.normalize("10h")                   -> { rank: "T", suit: "h", label: "Ten of hearts", ... }
 //
@@ -93,7 +95,11 @@
     const attrs = [];
     if (tag === "button") attrs.push('type="button"');
     if (options.disabled) attrs.push(tag === "button" ? "disabled" : 'aria-disabled="true"');
+    // A generic element with only aria-label is ignored by most screen readers.
+    if (tag !== "button" && !(options.attrs && options.attrs.role)) attrs.push('role="img"');
     attrs.push('aria-label="' + escapeHtml(options.label || info.label) + '"');
+    if (tag === "button" && options.pressed != null) attrs.push('aria-pressed="' + (options.pressed ? "true" : "false") + '"');
+    else if (tag === "button" && options.selected) attrs.push('aria-pressed="true"');
     if (options.title) attrs.push('title="' + escapeHtml(options.title) + '"');
     if (options.attrs) {
       for (const [name, value] of Object.entries(options.attrs)) {
