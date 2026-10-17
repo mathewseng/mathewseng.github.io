@@ -1,355 +1,371 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!doctype html>
+<html lang="en" data-family="poker">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Peer-to-peer five-card draw against a shared seven-card open dealer hand: the lowest hand that still beats the dealer wins." />
     <title>Edge the Dealer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Pro:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="../../shared/cards.css?v=20261004" />
-    <link rel="stylesheet" href="styles.css?v=20261003">
-</head>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
+    <link rel="stylesheet" href="../table.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <script>document.documentElement.classList.add("is-ready");</script>
+  </head>
 
-<body>
-    <div class="game-container">
-        <div class="ambient-bg"></div>
-        <!-- Floating suit particles -->
-        <div class="particles" aria-hidden="true">
-            <span class="particle">♠</span>
-            <span class="particle">♥</span>
-            <span class="particle">♦</span>
-            <span class="particle">♣</span>
-            <span class="particle">♠</span>
-            <span class="particle">♥</span>
-            <span class="particle">♦</span>
-            <span class="particle">♣</span>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell app--shell table-app game-container">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">Projects</span></a>
+          <span class="crumb-sep crumb-family" aria-hidden="true">/</span>
+          <a class="crumb-family" href="/poker/">Poker</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Edge the Dealer</span>
+        </nav>
+        <nav class="tool-nav" aria-label="Poker tables">
+          <a href="/poker/play/">Mixed Poker</a>
+          <a href="/poker/rush/">Poker Rush</a>
+          <a href="/poker/ultimate-omaha/">Ultimate Omaha</a>
+          <a href="/poker/edge-the-dealer/" aria-current="page">Edge the Dealer</a>
+          <a href="/poker/222/">222</a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="btn btn--ghost btn--icon" id="rules-btn" type="button" aria-label="Rules" title="Rules"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+          <button class="btn btn--danger btn-quit-game" id="quit-game-btn" type="button" hidden>Quit</button>
         </div>
+      </header>
 
-        <!-- Main Menu Screen -->
-        <div id="menu-screen" class="screen active">
-            <div class="menu-content">
-                <div class="logo-container">
-                    <div class="logo-suits" aria-hidden="true">♠ ♥ ♦ ♣</div>
-                    <h1 class="game-title">
-                        <span class="title-line">Edge the</span>
-                        <span class="title-line accent">Dealer</span>
-                    </h1>
-                    <p class="tagline">Lowest Winning Hand &bull; Shared Dealer &bull; Multi-Draw</p>
+      <main id="main" tabindex="-1">
+        <!-- Main menu -->
+        <section id="menu-screen" class="screen active menu-screen" aria-labelledby="menu-title">
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker · Draw against the dealer</p>
+              <h1 id="menu-title">Edge the Dealer</h1>
+              <p class="lede">Five-card draw against a seven-card open dealer hand. The lowest hand that still beats the dealer wins. Host a room and share the code.</p>
+            </div>
+          </div>
+          <div class="menu-grid">
+            <section class="panel menu-panel" aria-label="Start or join a room">
+              <div class="panel-body menu-content">
+                <div class="field menu-section">
+                  <label for="player-name">Your name</label>
+                  <input type="text" id="player-name" placeholder="Player" maxlength="15" autocomplete="nickname" />
                 </div>
-
-                <div class="menu-section">
-                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="15"
-                        autocomplete="off">
+                <div class="field menu-section">
+                  <label for="room-code-input">Room code</label>
+                  <input type="text" id="room-code-input" class="code-input" placeholder="ABC234" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                  <span class="field-hint">Leave the code blank to host a new room.</span>
                 </div>
-
-                <div class="menu-section">
-                    <input type="text" id="room-code-input" placeholder="Room code (or leave blank to host)"
-                        maxlength="6" autocomplete="off">
-                </div>
-
                 <div class="menu-buttons">
-                    <button id="start-join-btn" class="btn btn-primary btn-glow">
-                        <span class="btn-icon">♠</span>
-                        <span class="btn-text">Start Game</span>
-                        <span class="btn-loader hidden"></span>
-                    </button>
+                  <button id="start-join-btn" class="btn btn--primary btn--lg full btn-primary btn-glow" type="button">
+                    <span class="btn-icon" aria-hidden="true">♠</span>
+                    <span class="btn-text">Start Game</span>
+                    <span class="btn-loader" aria-hidden="true"></span>
+                  </button>
                 </div>
+              </div>
+            </section>
 
-                <div class="rules-preview">
-                    <h3>Quick Rules</h3>
-                    <ul>
-                        <li>Players get 5 cards. Dealer gets 7 open cards.</li>
-                        <li>Discard 0-5 cards per draw round, then confirm.</li>
-                        <li>If anyone beats dealer, the <strong>weakest</strong> such hand wins.</li>
-                        <li>If nobody beats dealer, the <strong>strongest</strong> hand wins.</li>
-                    </ul>
-                </div>
+            <section class="panel rules-preview" aria-labelledby="quick-rules-title">
+              <div class="panel-head"><h2 id="quick-rules-title">Quick rules</h2></div>
+              <div class="panel-body">
+                <ul class="rules-list">
+                  <li>Players get 5 cards. The dealer gets 7 open cards.</li>
+                  <li>Discard 0–5 cards per draw round, then confirm.</li>
+                  <li>If anyone beats the dealer, the <strong>weakest</strong> such hand wins.</li>
+                  <li>If nobody beats the dealer, the <strong>strongest</strong> hand wins.</li>
+                </ul>
+                <button class="btn btn--sm" id="rules-preview-btn" type="button">Full rules</button>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Lobby -->
+        <section id="lobby-screen" class="screen lobby-screen" aria-labelledby="lobby-title">
+          <div class="tool-head">
+            <div>
+              <p class="eyebrow">Poker · Lobby</p>
+              <h1 id="lobby-title">Waiting for players</h1>
+              <p class="lede you-are">You are <strong id="your-name" class="your-name"></strong>. Share the code; the host deals when everyone is in.</p>
             </div>
-        </div>
+            <div class="lobby-code room-info">
+              <span class="lobby-code-pill"><span class="room-label">Room</span><strong id="room-code" class="room-code">------</strong><button id="copy-code-btn" class="btn btn--ghost btn--icon" type="button" aria-label="Copy room code" title="Copy room code"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-copy" /></svg></button></span>
+            </div>
+          </div>
 
-        <!-- Lobby Screen -->
-        <div id="lobby-screen" class="screen">
-            <div class="lobby-content">
-                <div class="lobby-header">
-                    <h2>Game Lobby</h2>
-                    <div class="you-are">
-                        <span>You are:</span>
-                        <span id="your-name" class="your-name"></span>
-                    </div>
-                    <div class="room-info">
-                        <span class="room-label">Room Code:</span>
-                        <span id="room-code" class="room-code"></span>
-                        <button id="copy-code-btn" class="btn-icon-only" title="Copy code">📋</button>
-                    </div>
-                </div>
-
-                <div class="players-list">
-                    <h3>Players <span id="player-count">(0/9)</span></h3>
-                    <div id="lobby-players"></div>
-                </div>
-
-                <div class="lobby-settings" id="host-controls">
-                    <label>
-                        <span>Bet Amount:</span>
-                        <div class="bet-input-wrapper">
-                            <span class="currency-symbol">$</span>
-                            <input type="number" id="base-bet" value="1.00" min="0.01" step="0.01" placeholder="1.00">
-                        </div>
-                    </label>
-                    <label>
-                        <span>Draws Per Hand:</span>
-                        <select id="draw-count">
-                            <option value="1">Single Draw</option>
-                            <option value="2">Double Draw</option>
-                            <option value="3">Triple Draw</option>
-                            <option value="4">Quadruple Draw</option>
-                        </select>
-                    </label>
-                </div>
-
+          <div class="lobby-grid">
+            <section class="panel players-list" aria-labelledby="players-title">
+              <div class="panel-head"><h2 id="players-title">Players</h2><span class="field-hint" id="player-count">(0/9)</span></div>
+              <div class="panel-body lobby">
+                <div id="lobby-players" class="lobby-roster"></div>
                 <div class="lobby-actions">
-                    <button id="start-game-btn" class="btn btn-primary btn-glow hidden">Start Game</button>
-                    <button id="leave-lobby-btn" class="btn btn-secondary">Leave Lobby</button>
+                  <button id="start-game-btn" class="btn btn--primary btn--lg btn-glow hidden" type="button">Start Game</button>
+                  <button id="leave-lobby-btn" class="btn" type="button">Leave Lobby</button>
+                  <p id="waiting-message" class="waiting-msg lobby-wait">Waiting for host to start...</p>
                 </div>
+              </div>
+            </section>
 
-                <p id="waiting-message" class="waiting-msg">Waiting for host to start...</p>
+            <section class="panel lobby-settings-panel" aria-labelledby="table-settings-title">
+              <div class="panel-head"><h2 id="table-settings-title">Table</h2></div>
+              <div class="panel-body">
+                <div class="lobby-settings host-settings" id="host-controls">
+                  <div class="settings-row">
+                    <label for="base-bet"><strong>Bet amount</strong><small>Per player, per hand</small></label>
+                    <span class="money-input bet-input-wrapper"><span class="currency-symbol" aria-hidden="true">$</span><input type="number" id="base-bet" value="1.00" min="0.01" step="0.01" placeholder="1.00" /></span>
+                  </div>
+                  <div class="settings-row">
+                    <label for="draw-count"><strong>Draws per hand</strong><small>Rounds of discards before the showdown</small></label>
+                    <select id="draw-count">
+                      <option value="1">Single Draw</option>
+                      <option value="2">Double Draw</option>
+                      <option value="3">Triple Draw</option>
+                      <option value="4">Quadruple Draw</option>
+                    </select>
+                  </div>
+                </div>
+                <p class="field-hint guest-settings-note">The host sets the bet and the number of draws before dealing. Up to 9 players share one deck; anyone who joins mid-hand plays from the next hand.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Game -->
+        <section id="game-screen" class="screen game-screen" aria-labelledby="game-title">
+          <header class="game-header tool-head">
+            <div>
+              <p class="eyebrow">Poker · Draw against the dealer</p>
+              <h1 id="game-title">Edge the Dealer</h1>
             </div>
-        </div>
+            <div class="game-header-actions game-room-info">
+              <span class="badge badge--plain room-tag"><span class="game-room-label">Room</span> <strong id="game-room-code" class="game-room-code"></strong></span>
+            </div>
+          </header>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen">
-            <div class="game-header">
-                <div class="game-room-info">
-                    <span class="game-room-label">Room:</span>
-                    <span id="game-room-code" class="game-room-code"></span>
+          <!-- Two columns on desktop (dealer + players | hand, actions, log); one stacked column on phones -->
+          <div class="game-layout">
+            <div class="game-column table-column">
+              <!-- Dealer cards (collapsible) -->
+              <section class="dealer-area collapsible stage felt" id="dealer-area" aria-labelledby="dealer-toggle">
+                <button class="section-header" id="dealer-toggle" type="button" aria-expanded="true" aria-controls="dealer-content">
+                  <span class="dealer-label">Dealer <span class="felt-label">7 cards</span></span>
+                  <svg class="icon collapse-icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-down" /></svg>
+                </button>
+                <div class="collapsible-content" id="dealer-content">
+                  <div class="dealer-hand-groups">
+                    <div class="dealer-group used board-line">
+                      <span class="dealer-group-label felt-label">Best five</span>
+                      <div class="dealer-cards dealer-used-cards board-cards" id="dealer-used-cards">
+                        <div class="card-slot" data-slot="0"></div>
+                        <div class="card-slot" data-slot="1"></div>
+                        <div class="card-slot" data-slot="2"></div>
+                        <div class="card-slot" data-slot="3"></div>
+                        <div class="card-slot" data-slot="4"></div>
+                      </div>
+                    </div>
+                    <div class="dealer-group unused board-line">
+                      <span class="dealer-group-label felt-label">Unused</span>
+                      <div class="dealer-cards dealer-unused-cards board-cards" id="dealer-unused-cards">
+                        <div class="card-slot" data-slot="0"></div>
+                        <div class="card-slot" data-slot="1"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="dealer-hand-result" id="dealer-hand-result"></div>
                 </div>
-                <div class="game-header-actions">
-                    <button id="sound-toggle-btn" class="btn-icon-only" title="Toggle sound">🔇</button>
-                    <button id="quit-game-btn" class="btn btn-secondary btn-quit-game">Quit</button>
+              </section>
+
+              <!-- Players (collapsible) -->
+              <section class="players-section collapsible panel" id="players-section" aria-labelledby="players-toggle">
+                <button class="section-header" id="players-toggle" type="button" aria-expanded="true" aria-controls="players-content">
+                  <span class="section-title">Players</span>
+                  <svg class="icon collapse-icon" aria-hidden="true"><use href="../../shared/icons.svg#i-chevron-down" /></svg>
+                </button>
+                <div class="collapsible-content" id="players-content">
+                  <div class="players-area seats" id="players-area"></div>
                 </div>
+              </section>
             </div>
 
-            <!-- Two columns on desktop (dealer + players | hand, actions, log); one stacked column on phones -->
-            <div class="game-layout">
-                <div class="game-column table-column">
-                    <!-- Dealer Cards (collapsible) -->
-                    <div class="dealer-area collapsible" id="dealer-area">
-                        <div class="section-header" id="dealer-toggle">
-                            <div class="dealer-label">Dealer (7 Cards)</div>
-                            <span class="collapse-icon">▾</span>
-                        </div>
-                        <div class="collapsible-content">
-                            <div class="dealer-hand-groups">
-                                <div class="dealer-group used">
-                                    <div class="dealer-group-label">Best 5-Card Hand</div>
-                                    <div class="dealer-cards dealer-used-cards" id="dealer-used-cards">
-                                        <div class="card-slot" data-slot="0"></div>
-                                        <div class="card-slot" data-slot="1"></div>
-                                        <div class="card-slot" data-slot="2"></div>
-                                        <div class="card-slot" data-slot="3"></div>
-                                        <div class="card-slot" data-slot="4"></div>
-                                    </div>
-                                </div>
-                                <div class="dealer-group unused">
-                                    <div class="dealer-group-label">Unused</div>
-                                    <div class="dealer-cards dealer-unused-cards" id="dealer-unused-cards">
-                                        <div class="card-slot" data-slot="0"></div>
-                                        <div class="card-slot" data-slot="1"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="dealer-hand-result" id="dealer-hand-result"></div>
-                        </div>
-                    </div>
+            <div class="game-column side-column">
+              <!-- Current player's hand -->
+              <section class="player-hand-area panel" id="player-hand-area" aria-labelledby="hand-title">
+                <div class="panel-head">
+                  <h2 class="hand-label" id="hand-title">Your hand</h2>
+                  <div class="player-stats">
+                    <span class="player-pnl"><span class="stat-label">PnL</span> <strong id="my-pnl" class="pnl-value seat-pnl">$0</strong></span>
+                    <span class="player-streak chip" id="player-streak"></span>
+                  </div>
+                </div>
+                <div class="panel-body">
+                  <div class="hole-cards five-cards" id="hole-cards">
+                    <div class="card-slot hole" data-slot="0"></div>
+                    <div class="card-slot hole" data-slot="1"></div>
+                    <div class="card-slot hole" data-slot="2"></div>
+                    <div class="card-slot hole" data-slot="3"></div>
+                    <div class="card-slot hole" data-slot="4"></div>
+                  </div>
+                  <div class="hand-indicators hand-chip-row">
+                    <span class="hand-strength hand-chip" id="hand-strength"></span>
+                    <span class="dealer-comparison hand-chip" id="dealer-comparison"></span>
+                  </div>
+                  <p class="discard-help field-hint" id="discard-help">Select 0-5 cards, then confirm.</p>
+                  <div class="queued-notice" id="queued-notice" hidden>
+                    <strong>You are in for the next hand.</strong>
+                    <span>A hand was already running when you joined. Watch the dealer's cards; the host deals you in when this one is over.</span>
+                  </div>
+                </div>
+              </section>
 
-                    <!-- Players Area (collapsible) -->
-                    <div class="players-section collapsible" id="players-section">
-                        <div class="section-header" id="players-toggle">
-                            <span class="section-title">Players</span>
-                            <span class="collapse-icon">▾</span>
-                        </div>
-                        <div class="collapsible-content">
-                            <div class="players-area" id="players-area"></div>
-                        </div>
-                    </div>
+              <!-- Action buttons (sticky bottom on phones) -->
+              <section class="action-area action-stage" id="action-area" aria-label="Your action">
+                <div class="action-stage-status action-header">
+                  <div class="draw-round-banner" id="draw-round-banner">Draw Round 1 of 1</div>
+                  <span class="current-bet-info">Your bet <strong id="current-bet">$0</strong></span>
                 </div>
 
-                <div class="game-column side-column">
-                    <!-- Current Player's Hand -->
-                    <div class="player-hand-area" id="player-hand-area">
-                        <div class="hand-label">Your Hand</div>
-                        <div class="hole-cards five-cards" id="hole-cards">
-                            <div class="card-slot hole" data-slot="0"></div>
-                            <div class="card-slot hole" data-slot="1"></div>
-                            <div class="card-slot hole" data-slot="2"></div>
-                            <div class="card-slot hole" data-slot="3"></div>
-                            <div class="card-slot hole" data-slot="4"></div>
-                        </div>
-                        <div class="hand-indicators">
-                            <div class="hand-strength" id="hand-strength"></div>
-                            <div class="dealer-comparison" id="dealer-comparison"></div>
-                        </div>
-                        <div class="discard-help" id="discard-help">Select 0-5 cards, then confirm.</div>
-                        <div class="player-stats">
-                            <div class="player-pnl">
-                                <span>PnL: </span>
-                                <span id="my-pnl" class="pnl-value">$0</span>
-                            </div>
-                            <div class="player-streak" id="player-streak"></div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons (sticky bottom on phones) -->
-                    <div class="action-area" id="action-area">
-                        <div class="action-header">
-                            <div class="current-bet-info">
-                                <span>Your Bet: </span>
-                                <span id="current-bet">$0</span>
-                            </div>
-                            <button id="rules-btn" class="btn-icon-only" title="Rules">?</button>
-                        </div>
-
-                        <div class="draw-round-banner" id="draw-round-banner">Draw Round 1 of 1</div>
-
-                        <div class="action-buttons-grid" id="action-buttons">
-                            <button id="keep-all-btn" class="btn btn-action btn-keep">Keep All</button>
-                            <button id="replace-all-btn" class="btn btn-action btn-replace">Replace All</button>
-                            <button id="clear-discards-btn" class="btn btn-action btn-secondary">Clear</button>
-                            <button id="confirm-discards-btn" class="btn btn-action btn-confirm">Confirm</button>
-                        </div>
-
-                        <p id="waiting-draw" class="waiting-msg hidden">Waiting for other players...</p>
-
-                        <!-- Host showdown controls -->
-                        <div id="host-showdown-controls" class="host-showdown-controls hidden">
-                            <label>
-                                <span>Next Bet: $</span>
-                                <input type="number" id="next-bet" value="1.00" min="0.01" step="0.01">
-                            </label>
-                            <label>
-                                <span>Next Draws:</span>
-                                <select id="next-draw-count">
-                                    <option value="1">Single</option>
-                                    <option value="2">Double</option>
-                                    <option value="3">Triple</option>
-                                    <option value="4">Quadruple</option>
-                                </select>
-                            </label>
-                            <button id="next-hand-btn" class="btn btn-primary btn-glow">Next Hand</button>
-                        </div>
-                        <p id="waiting-next" class="waiting-msg hidden">Waiting for host...</p>
-                    </div>
-
-                    <!-- Game Log & Chat -->
-                    <div class="log-chat-container">
-                        <div class="log-chat-tabs">
-                            <button class="tab-btn active" data-tab="game-log">📋 Log</button>
-                            <button class="tab-btn" data-tab="chat">💬 Chat</button>
-                        </div>
-                        <div class="tab-content active" id="game-log-tab">
-                            <div class="game-log" id="game-log"></div>
-                        </div>
-                        <div class="tab-content" id="chat-tab">
-                            <div class="chat-messages" id="chat-messages"></div>
-                            <div class="chat-input-area">
-                                <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
-                                <button id="send-chat-btn" class="btn btn-chat-send">Send</button>
-                                <div class="emoji-picker-btn" id="emoji-picker-btn">😀</div>
-                                <div class="emoji-picker hidden" id="emoji-picker">
-                                    <span class="emoji-option">👍</span>
-                                    <span class="emoji-option">👎</span>
-                                    <span class="emoji-option">🎉</span>
-                                    <span class="emoji-option">🔥</span>
-                                    <span class="emoji-option">💰</span>
-                                    <span class="emoji-option">😭</span>
-                                    <span class="emoji-option">😎</span>
-                                    <span class="emoji-option">🤑</span>
-                                    <span class="emoji-option">♠️</span>
-                                    <span class="emoji-option">♥️</span>
-                                    <span class="emoji-option">♦️</span>
-                                    <span class="emoji-option">♣️</span>
-                                    <span class="emoji-option">🃏</span>
-                                    <span class="emoji-option">GG</span>
-                                    <span class="emoji-option">NH</span>
-                                    <span class="emoji-option">GL</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="action-buttons-grid action-stage-actions" id="action-buttons">
+                  <button id="keep-all-btn" class="btn btn--lg btn-action btn-keep" type="button">Keep All</button>
+                  <button id="replace-all-btn" class="btn btn--lg btn-action btn-replace" type="button">Replace All</button>
+                  <button id="clear-discards-btn" class="btn btn--ghost btn--lg btn-action btn-secondary" type="button">Clear</button>
+                  <button id="confirm-discards-btn" class="btn btn--primary btn--lg btn-action btn-confirm" type="button">Confirm</button>
                 </div>
+
+                <p id="waiting-draw" class="waiting-msg lobby-wait hidden">Waiting for the other players to confirm.</p>
+
+                <!-- Host showdown controls -->
+                <div id="host-showdown-controls" class="host-showdown-controls action-stage-host hidden">
+                  <label class="settings-row-label" for="next-bet"><strong>Next bet</strong></label>
+                  <span class="money-input"><span aria-hidden="true">$</span><input type="number" id="next-bet" value="1.00" min="0.01" step="0.01" /></span>
+                  <label class="settings-row-label" for="next-draw-count"><strong>Next draws</strong></label>
+                  <span class="field field--select host-select"><select id="next-draw-count" aria-label="Draws per hand for the next hand">
+                    <option value="1">Single</option>
+                    <option value="2">Double</option>
+                    <option value="3">Triple</option>
+                    <option value="4">Quadruple</option>
+                  </select></span>
+                  <button id="next-hand-btn" class="btn btn--primary btn-glow" type="button">Next Hand</button>
+                </div>
+                <p id="waiting-next" class="waiting-msg lobby-wait hidden">Waiting for the host to deal the next hand.</p>
+              </section>
+
+              <!-- Game log and chat -->
+              <section class="log-chat-container panel" aria-label="Game log and chat">
+                <div class="tabs log-chat-tabs" id="log-chat-tabs" role="tablist" aria-label="Log and chat">
+                  <button class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="game-log-tab" data-tab="game-log">Log</button>
+                  <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="chat-tab" data-tab="chat">Chat</button>
+                </div>
+                <div class="tab-content active" id="game-log-tab" role="tabpanel" aria-label="Game log">
+                  <div class="game-log" id="game-log"></div>
+                </div>
+                <div class="tab-content" id="chat-tab" role="tabpanel" aria-label="Chat" hidden>
+                  <div class="chat-messages" id="chat-messages"></div>
+                  <div class="chat-input-area table-chat-form">
+                    <input type="text" id="chat-input" placeholder="Type a message…" maxlength="200" aria-label="Chat message" />
+                    <button id="emoji-picker-btn" class="btn btn--ghost btn--icon emoji-picker-btn" type="button" aria-label="Insert emoji" aria-expanded="false" aria-controls="emoji-picker"><span aria-hidden="true">😀</span></button>
+                    <button id="send-chat-btn" class="btn btn-chat-send" type="button">Send</button>
+                    <div class="emoji-picker hidden" id="emoji-picker" role="group" aria-label="Quick emoji">
+                      <button type="button" class="emoji-option">👍</button>
+                      <button type="button" class="emoji-option">👎</button>
+                      <button type="button" class="emoji-option">🎉</button>
+                      <button type="button" class="emoji-option">🔥</button>
+                      <button type="button" class="emoji-option">💰</button>
+                      <button type="button" class="emoji-option">😭</button>
+                      <button type="button" class="emoji-option">😎</button>
+                      <button type="button" class="emoji-option">🤑</button>
+                      <button type="button" class="emoji-option">♠️</button>
+                      <button type="button" class="emoji-option">♥️</button>
+                      <button type="button" class="emoji-option">♦️</button>
+                      <button type="button" class="emoji-option">♣️</button>
+                      <button type="button" class="emoji-option">🃏</button>
+                      <button type="button" class="emoji-option">GG</button>
+                      <button type="button" class="emoji-option">NH</button>
+                      <button type="button" class="emoji-option">GL</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
-        </div>
-
-        <!-- Rules Modal -->
-        <div id="rules-modal" class="modal hidden">
-            <div class="modal-content">
-                <button class="modal-close" id="close-rules">&times;</button>
-                <h2>Edge the Dealer Rules</h2>
-
-                <div class="rules-section">
-                    <h3>Setup</h3>
-                    <ol>
-                        <li>Each player antes the same base bet and gets 5 cards.</li>
-                        <li>The dealer gets 7 open cards; everyone sees them.</li>
-                        <li>The dealer's hand is their best 5-card poker hand from the 7.</li>
-                    </ol>
-                </div>
-
-                <div class="rules-section">
-                    <h3>Draw Rounds</h3>
-                    <ol>
-                        <li>Host sets draw mode: Single / Double / Triple / Quadruple.</li>
-                        <li>In each draw round, pick 0-5 cards to discard, then confirm.</li>
-                        <li>All discards and replacements happen at once after everyone confirms.</li>
-                        <li>If deck runs out, all discards are reshuffled into the deck.</li>
-                    </ol>
-                </div>
-
-                <div class="rules-section">
-                    <h3>Who Wins?</h3>
-                    <p>All players are ranked by standard high poker hand strength.</p>
-                    <p>If one or more players beat the dealer, the winner is the <strong>lowest</strong> hand among
-                        those that beat the dealer.</p>
-                    <p>If nobody beats the dealer, the <strong>highest</strong> player hand wins.</p>
-                    <p>Ties split the pot equally.</p>
-                </div>
-
-                <div class="rules-section">
-                    <h3>Hand Rankings (High to Low)</h3>
-                    <ol class="hand-rankings">
-                        <li>Royal Flush</li>
-                        <li>Straight Flush</li>
-                        <li>Quads (Four of a Kind)</li>
-                        <li>Boat (Full House)</li>
-                        <li>Flush</li>
-                        <li>Straight</li>
-                        <li>Trips (Three of a Kind)</li>
-                        <li>Two Pair</li>
-                        <li>Pair</li>
-                        <li>High Card</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-
-        <!-- Winner celebration overlay -->
-        <div id="winner-celebration" class="winner-celebration hidden" aria-hidden="true"></div>
-
-        <div id="toast-container"></div>
+          </div>
+        </section>
+      </main>
     </div>
 
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="../../shared/cards.js?v=20261003"></script>
-    <script src="../ultimate-omaha/poker.js"></script>
-    <script src="../ultimate-omaha/multiplayer.js"></script>
-    <script src="game.js"></script>
-    <script src="app.js?v=20261003"></script>
-</body>
+    <!-- Rules -->
+    <dialog class="dialog dialog--sheet rules-modal" id="rules-modal" aria-labelledby="rules-title">
+      <div class="dialog-head">
+        <div><p class="eyebrow eyebrow--plain">Rules</p><h2 id="rules-title">Edge the Dealer</h2></div>
+        <button class="btn btn--ghost btn--icon modal-close" id="close-rules" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
+      </div>
+      <div class="dialog-body modal-content rules-body">
+        <section class="rules-section">
+          <h3>Setup</h3>
+          <ol>
+            <li>Each player antes the same base bet and gets 5 cards.</li>
+            <li>The dealer gets 7 open cards; everyone sees them.</li>
+            <li>The dealer's hand is their best 5-card poker hand from the 7.</li>
+          </ol>
+        </section>
 
+        <section class="rules-section">
+          <h3>Draw rounds</h3>
+          <ol>
+            <li>The host sets the draw mode: single, double, triple or quadruple.</li>
+            <li>In each draw round, pick 0–5 cards to discard, then confirm.</li>
+            <li>All discards and replacements happen at once after everyone confirms.</li>
+            <li>If the deck runs out, all discards are reshuffled into the deck.</li>
+          </ol>
+        </section>
+
+        <section class="rules-section">
+          <h3>Who wins?</h3>
+          <p>All players are ranked by standard high poker hand strength.</p>
+          <p>If one or more players beat the dealer, the winner is the <strong>lowest</strong> hand among those that beat the dealer.</p>
+          <p>If nobody beats the dealer, the <strong>highest</strong> player hand wins.</p>
+          <p>Ties split the pot equally.</p>
+        </section>
+
+        <section class="rules-section">
+          <h3>Hand rankings (high to low)</h3>
+          <ol class="hand-rankings">
+            <li>Royal flush</li>
+            <li>Straight flush</li>
+            <li>Quads (four of a kind)</li>
+            <li>Boat (full house)</li>
+            <li>Flush</li>
+            <li>Straight</li>
+            <li>Trips (three of a kind)</li>
+            <li>Two pair</li>
+            <li>Pair</li>
+            <li>High card</li>
+          </ol>
+        </section>
+      </div>
+      <div class="dialog-foot"><button class="btn btn--primary" type="button" data-close-rules>Got it</button></div>
+    </dialog>
+
+    <!-- Winner celebration overlay -->
+    <div id="winner-celebration" class="winner-celebration hidden" aria-hidden="true"></div>
+
+    <!-- Toasts: one polite and one assertive region -->
+    <div class="toast-stack" id="toast-container" role="status" aria-live="polite"></div>
+    <div class="toast-stack toast-stack--alert" id="alerts" role="alert" aria-live="assertive"></div>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="../../shared/cards.js?v=20261016"></script>
+    <script src="../../shared/tabs.js?v=20261016"></script>
+    <script src="../../shared/sheet.js?v=20261016"></script>
+    <script src="../ultimate-omaha/poker.js?v=20261016"></script>
+    <script src="../ultimate-omaha/multiplayer.js?v=20261016"></script>
+    <script src="game.js?v=20261016"></script>
+    <script src="app.js?v=20261016"></script>
+  </body>
 </html>

@@ -10,7 +10,7 @@ class GameController {
         this.currentScreen = 'menu';
         this.myPlayerId = null;
         this.gameStarted = false;
-        
+
         // Game log and chat
         this.handNumber = 0;
         this.lastPhase = null;
@@ -18,9 +18,25 @@ class GameController {
         this.setupEventListeners();
         this.setupMultiplayerCallbacks();
         this.setupLogAndChat();
-        
+        this.setupStageObserver();
+
         // Check for session to reconnect
         this.checkForReconnection();
+    }
+
+    /**
+     * The sticky action stage's height is published as --stage-h so toasts
+     * stack above it instead of covering the primary action.
+     */
+    setupStageObserver() {
+        const stage = document.getElementById('action-area');
+        if (!stage || typeof ResizeObserver !== 'function') return;
+        const measure = () => {
+            const visible = this.currentScreen === 'game' ? stage.offsetHeight : 0;
+            document.documentElement.style.setProperty('--stage-h', `${visible}px`);
+        };
+        new ResizeObserver(measure).observe(stage);
+        measure();
     }
 
     /**
@@ -47,7 +63,7 @@ class GameController {
                 document.getElementById('start-game-btn').classList.remove('hidden');
                 document.getElementById('host-controls').style.display = 'flex';
                 document.getElementById('waiting-message').classList.add('hidden');
-                
+
                 // If game was in progress, go to game screen
                 // Check both session and multiplayer for gameInProgress
                 if (session.gameInProgress || this.multiplayer.gameInProgress) {
@@ -66,7 +82,7 @@ class GameController {
                 document.getElementById('start-game-btn').classList.add('hidden');
                 document.getElementById('host-controls').style.display = 'none';
                 document.getElementById('waiting-message').classList.remove('hidden');
-                
+
                 this.showScreen('lobby');
                 this.showToast('Reconnected!', 'success');
             }
@@ -84,7 +100,7 @@ class GameController {
         const absAmount = Math.abs(amount);
         const isWhole = absAmount === Math.floor(absAmount);
         const formatted = isWhole ? absAmount.toString() : absAmount.toFixed(2);
-        
+
         if (amount < 0) {
             return `-$${formatted}`;
         } else if (forceSign && amount > 0) {
@@ -99,9 +115,9 @@ class GameController {
         // Menu screen - combined start/join button
         const startJoinBtn = document.getElementById('start-join-btn');
         const roomCodeInput = document.getElementById('room-code-input');
-        
+
         startJoinBtn.addEventListener('click', () => this.startOrJoinGame());
-        
+
         // Update button text based on room code input
         roomCodeInput.addEventListener('input', () => this.updateStartJoinButton());
         roomCodeInput.addEventListener('keypress', (e) => {
@@ -117,13 +133,11 @@ class GameController {
         document.getElementById('check-btn').addEventListener('click', () => this.sendAction('check'));
         document.getElementById('double-btn').addEventListener('click', () => this.sendAction('double'));
         document.getElementById('rules-btn').addEventListener('click', () => this.showRules());
+        document.getElementById('rules-preview-btn')?.addEventListener('click', () => this.showRules());
         document.getElementById('close-rules').addEventListener('click', () => this.hideRules());
+        document.querySelector('[data-close-rules]')?.addEventListener('click', () => this.hideRules());
         document.getElementById('next-hand-btn').addEventListener('click', () => this.startNextHand());
-
-        // Close modal on outside click
-        document.getElementById('rules-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'rules-modal') this.hideRules();
-        });
+        document.getElementById('leave-game-btn')?.addEventListener('click', () => this.quitGame());
     }
 
     updateStartJoinButton() {
@@ -131,7 +145,7 @@ class GameController {
         const btn = document.getElementById('start-join-btn');
         const btnText = btn.querySelector('.btn-text');
         const btnIcon = btn.querySelector('.btn-icon');
-        
+
         if (roomCode) {
             btnText.textContent = 'Join Game';
             btnIcon.textContent = '♦';
@@ -143,6 +157,33 @@ class GameController {
             btn.classList.remove('btn-secondary');
             btn.classList.add('btn-primary');
         }
+    }
+
+    /**
+     * Leave a running game: a kit confirm that says what happens to the
+     * room and the saved session, then the same clean exit Edge the Dealer
+     * uses (the page reloads so every piece of local state is fresh).
+     */
+    async quitGame() {
+        const isHost = this.multiplayer.isHost;
+        const text = isHost
+            ? 'Leaving closes the room for everyone at the table and clears your saved session.'
+            : 'Your seat is given up and your saved session is cleared. You can rejoin with the room code.';
+        const ok = window.Sheet
+            ? await Sheet.confirm({ title: isHost ? 'Close the table?' : 'Leave the table?', text, verb: isHost ? 'Close table' : 'Leave', danger: true, sheet: true })
+            : window.confirm(text);
+        if (!ok) return;
+
+        const leaveBtn = document.getElementById('leave-game-btn');
+        if (leaveBtn) {
+            leaveBtn.disabled = true;
+            leaveBtn.textContent = 'Leaving…';
+        }
+
+        try { this.multiplayer.leave(); } catch (err) { console.error('Leave error:', err); }
+        try { this.multiplayer.clearSession(); } catch (err) { console.error('Clear session error:', err); }
+        this.gameStarted = false;
+        window.location.replace(window.location.pathname + window.location.search);
     }
 
     startOrJoinGame() {
@@ -157,7 +198,7 @@ class GameController {
     setupMultiplayerCallbacks() {
         this.multiplayer.onPlayerJoin = (players) => {
             this.updateLobbyPlayers(players);
-            
+
             // If game already started and this is host, check for new players to queue
             if (this.gameStarted && this.multiplayer.isHost) {
                 // New players get queued automatically by host
@@ -181,7 +222,7 @@ class GameController {
         this.multiplayer.onReconnected = (playerId) => {
             this.showToast(`A player reconnected!`, 'success');
             this.updateLobbyPlayers(this.multiplayer.getAllPlayers());
-            
+
             // Send current game state to reconnected player
             if (this.gameStarted && this.multiplayer.isHost) {
                 this.multiplayer.broadcastGameState(this.game.getGameState());
@@ -198,7 +239,7 @@ class GameController {
             } else {
                 this.showToast('Connected to room!', 'success');
             }
-            
+
             // If game is in progress, show game screen and notify player they're queued
             if (data.gameInProgress) {
                 this.gameStarted = true;
@@ -225,18 +266,20 @@ class GameController {
     // ============ GAME LOG & CHAT ============
 
     setupLogAndChat() {
-        // Tab switching
+        // Tab switching (shared/tabs.js adds the tablist keyboard model and
+        // the hidden attribute on panels; the page keeps its own .active flags)
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tabId = btn.dataset.tab;
                 this.switchTab(tabId);
             });
         });
+        if (window.Tabs) Tabs.init(document.getElementById('log-chat-tabs'));
 
         // Chat input
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-chat-btn');
-        
+
         chatInput?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendChatMessage();
         });
@@ -245,9 +288,13 @@ class GameController {
         // Emoji picker
         const emojiBtn = document.getElementById('emoji-picker-btn');
         const emojiPicker = document.getElementById('emoji-picker');
-        
+
+        const setPickerOpen = (open) => {
+            emojiPicker?.classList.toggle('hidden', !open);
+            emojiBtn?.setAttribute('aria-expanded', String(open));
+        };
         emojiBtn?.addEventListener('click', () => {
-            emojiPicker?.classList.toggle('hidden');
+            setPickerOpen(emojiPicker?.classList.contains('hidden'));
         });
 
         // Emoji selection
@@ -258,14 +305,20 @@ class GameController {
                     chatInput.value += text;
                     chatInput.focus();
                 }
-                emojiPicker?.classList.add('hidden');
+                setPickerOpen(false);
             });
         });
 
-        // Close emoji picker when clicking outside
+        // Close emoji picker when clicking outside or pressing Escape
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-picker-btn')) {
-                emojiPicker?.classList.add('hidden');
+                setPickerOpen(false);
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && emojiPicker && !emojiPicker.classList.contains('hidden')) {
+                setPickerOpen(false);
+                emojiBtn?.focus();
             }
         });
     }
@@ -297,28 +350,36 @@ class GameController {
         logContainer.scrollTop = logContainer.scrollHeight;
     }
 
+    /**
+     * A peer-supplied display name, escaped for innerHTML. Names reach every
+     * client through the host, so the chat and the log must never trust them.
+     */
+    safeName(name) {
+        return this.escapeHtml(name || 'Player');
+    }
+
     logHandStart(baseBet, players) {
         this.handNumber++;
         const playerNames = players.map(p => {
             const info = this.multiplayer.getPlayer(p.id);
-            return info?.name || 'Player';
+            return this.safeName(info?.name);
         }).join(', ');
-        
-        this.addLogEntry('hand-start', 
-            `<strong>═══ Hand #${this.handNumber} ═══</strong><br>` +
-            `Bet: ${this.formatCurrency(baseBet)} • Players: ${playerNames}`
+
+        this.addLogEntry('hand-start',
+            `<strong>Hand ${this.handNumber}</strong>` +
+            `Bet ${this.formatCurrency(baseBet)} · Players: ${playerNames}`
         );
     }
 
     logAction(playerId, action, amount) {
         const playerInfo = this.multiplayer.getPlayer(playerId);
-        const name = playerInfo?.name || 'Player';
+        const name = this.safeName(playerInfo?.name);
         const isMe = playerId === this.myPlayerId;
-        
+
         const actionClass = action === 'double' ? 'double' : '';
         const actionText = action === 'check' ? 'checks' : `doubles to ${this.formatCurrency(amount)}`;
-        
-        this.addLogEntry('action', 
+
+        this.addLogEntry('action',
             `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span> ` +
             `<span class="action-type ${actionClass}">${actionText}</span>`
         );
@@ -337,42 +398,42 @@ class GameController {
     }
 
     logShowdown(results) {
-        this.addLogEntry('showdown', '<strong>─── Showdown ───</strong>');
-        
+        this.addLogEntry('showdown', '<strong>Showdown</strong>');
+
         results.forEach(result => {
             const playerInfo = this.multiplayer.getPlayer(result.playerId);
-            const name = playerInfo?.name || 'Player';
+            const name = this.safeName(playerInfo?.name);
             const isMe = result.playerId === this.myPlayerId;
-            
+
             // Log their cards
             this.addLogEntry('showdown',
                 `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ${this.logCardsHtml(result.holeCards)}`
             );
-            
+
             // Log their result
             const resultClass = result.netResult > 0 ? 'win' : (result.netResult < 0 ? 'lose' : 'push');
-            const handDesc = result.qualifies 
-                ? `${result.hand1.name} + ${result.hand2.name} (${result.totalMultiplier}×)`
-                : 'FOUL';
-            
-            this.addLogEntry('result', 
-                `  → ${handDesc}: ${this.formatCurrency(result.netResult, true)}`,
+            const handDesc = result.qualifies
+                ? `${this.escapeHtml(result.hand1.name)} + ${this.escapeHtml(result.hand2.name)} (${result.totalMultiplier}×)`
+                : 'Foul';
+
+            this.addLogEntry('result',
+                `${handDesc}: ${this.formatCurrency(result.netResult, true)}`,
                 resultClass
             );
         });
     }
 
     logPnLSummary(players) {
-        this.addLogEntry('showdown', '<strong>─── PnL Summary ───</strong>');
-        
+        this.addLogEntry('showdown', '<strong>PnL summary</strong>');
+
         players.forEach(player => {
             const playerInfo = this.multiplayer.getPlayer(player.id);
-            const name = playerInfo?.name || 'Player';
+            const name = this.safeName(playerInfo?.name);
             const isMe = player.id === this.myPlayerId;
             const pnl = player.actualPnl || player.pnl;
             const resultClass = pnl > 0 ? 'win' : (pnl < 0 ? 'lose' : 'push');
-            
-            this.addLogEntry('result', 
+
+            this.addLogEntry('result',
                 `<span class="player-name">${name}${isMe ? ' (you)' : ''}</span>: ` +
                 `${this.formatCurrency(pnl, true)} total`,
                 resultClass
@@ -385,7 +446,7 @@ class GameController {
     sendChatMessage() {
         const input = document.getElementById('chat-input');
         if (!input) return;
-        
+
         const text = input.value.trim();
         if (!text) return;
 
@@ -431,12 +492,12 @@ class GameController {
 
         const msg = document.createElement('div');
         msg.className = `chat-message${isEmojiOnly ? ' emoji-blast' : ''}`;
-        
+
         if (isEmojiOnly) {
-            msg.innerHTML = text;
+            msg.textContent = text;
         } else {
             msg.innerHTML = `
-                <span class="sender${isMe ? ' me' : ''}">${senderName}:</span>
+                <span class="sender${isMe ? ' me' : ''}">${this.safeName(senderName)}:</span>
                 <span class="text">${this.escapeHtml(text)}</span>
                 <span class="timestamp">${time}</span>
             `;
@@ -471,36 +532,36 @@ class GameController {
     handleBecomeHost(gameState) {
         console.log('We are now the host!');
         this.showToast('You are now the host!', 'success');
-        
+
         // Restore game state if available
         if (gameState) {
             this.game.deserialize(this.convertGameStateToInternal(gameState));
             this.gameStarted = gameState.phase !== 'waiting';
             this.multiplayer.setGameInProgress(this.gameStarted);
         }
-        
+
         // Update UI to show host controls
         document.getElementById('start-game-btn').classList.remove('hidden');
         document.getElementById('host-controls').style.display = 'flex';
         document.getElementById('waiting-message').classList.add('hidden');
-        
+
         // Update room code display
         document.getElementById('room-code').textContent = this.multiplayer.roomCode;
-        
+
         // If game is in progress, show game screen
         if (this.gameStarted) {
             this.showScreen('game');
-            
+
             // Show host showdown controls if at results
             if (gameState && gameState.phase === 'results') {
                 document.getElementById('host-showdown-controls').classList.remove('hidden');
                 document.getElementById('waiting-next').classList.add('hidden');
             }
-            
+
             // Broadcast current state to all players
             this.multiplayer.broadcastGameState(this.game.getGameState());
         }
-        
+
         // Log the host migration
         this.addSystemMessage('You are now the host!');
     }
@@ -536,12 +597,17 @@ class GameController {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`${screenId}-screen`).classList.add('active');
         this.currentScreen = screenId;
-        
+
         // Show room code in game screen
         if (screenId === 'game') {
             const roomCode = this.multiplayer.roomCode;
             document.getElementById('game-room-code').textContent = roomCode;
         }
+
+        // Leave lives in the topbar while a game runs; the lobby has its own button.
+        const leaveBtn = document.getElementById('leave-game-btn');
+        if (leaveBtn) leaveBtn.hidden = screenId !== 'game';
+        if (screenId !== 'game') document.documentElement.style.setProperty('--stage-h', '0px');
     }
 
     // ============ LOADING STATES ============
@@ -549,9 +615,11 @@ class GameController {
     setButtonLoading(btn, loading) {
         if (loading) {
             btn.classList.add('loading');
+            btn.setAttribute('aria-busy', 'true');
             btn.disabled = true;
         } else {
             btn.classList.remove('loading');
+            btn.removeAttribute('aria-busy');
             btn.disabled = false;
         }
     }
@@ -627,12 +695,16 @@ class GameController {
 
         players.forEach(player => {
             const isQueued = player.queued;
+            const isMe = player.id === this.myPlayerId;
             const div = document.createElement('div');
-            div.className = `lobby-player ${player.isHost ? 'host' : ''} ${isQueued ? 'queued' : ''}`;
+            div.className = `lobby-player seat seat--lobby ${player.isHost ? 'host seat--host' : ''} ${isQueued ? 'queued seat--queued' : ''} ${isMe ? 'seat--me' : ''}`;
             div.innerHTML = `
-                <div class="player-name">${this.escapeHtml(player.name)}</div>
-                ${player.isHost ? '<div class="host-badge">Host</div>' : ''}
-                ${isQueued ? '<div class="queued-badge">Joining next hand</div>' : ''}
+                <span class="seat-avatar" aria-hidden="true">${this.initials(player.name)}</span>
+                <div class="player-name seat-name"><span>${this.escapeHtml(player.name)}</span>${isMe ? '<span class="seat-badge">You</span>' : ''}</div>
+                <div class="seat-meta">
+                    ${player.isHost ? '<span class="host-badge seat-badge seat-badge--accent">Host</span>' : '<span class="seat-badge">Player</span>'}
+                    ${isQueued ? '<span class="queued-badge seat-badge seat-badge--warn">Joining next hand</span>' : ''}
+                </div>
             `;
             container.appendChild(div);
         });
@@ -645,10 +717,35 @@ class GameController {
         }
     }
 
-    copyRoomCode() {
-        navigator.clipboard.writeText(this.multiplayer.roomCode).then(() => {
+    async copyRoomCode() {
+        const code = this.multiplayer.roomCode || '';
+        try {
+            await this.copyText(code);
             this.showToast('Room code copied!', 'success');
-        });
+        } catch (err) {
+            this.showToast(`Could not copy. The room code is ${code}.`, 'error');
+        }
+    }
+
+    /**
+     * Clipboard API with an execCommand fallback for browsers (and insecure
+     * contexts) that do not expose navigator.clipboard.
+     */
+    async copyText(text) {
+        if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand('copy');
+        area.remove();
+        if (!ok) throw new Error('Copy failed');
+    }
+
+    initials(name) {
+        const parts = String(name || 'P').trim().split(/\s+/).filter(Boolean);
+        return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'P';
     }
 
     leaveLobby() {
@@ -673,7 +770,7 @@ class GameController {
 
         // Log hand start
         this.logHandStart(baseBet, this.game.players);
-        this.multiplayer.broadcast({ 
+        this.multiplayer.broadcast({
             type: 'hand_start_log',
             baseBet,
             players: this.game.players.map(p => ({ id: p.id }))
@@ -711,7 +808,7 @@ class GameController {
             this.logAction(data.playerId, data.action, data.amount);
             return;
         }
-        
+
         if (data.type === 'hand_start_log') {
             this.logHandStart(data.baseBet, data.players);
             return;
@@ -752,7 +849,7 @@ class GameController {
             case 'next_hand':
                 // Only host can start next hand
                 break;
-                
+
             case 'join':
                 // Player joining mid-game - queue them for next hand
                 if (this.gameStarted && this.game.phase !== 'waiting') {
@@ -794,27 +891,27 @@ class GameController {
 
     startNextHand() {
         if (!this.multiplayer.isHost) return;
-        
+
         // Get the new bet amount from host controls
         const nextBetInput = document.getElementById('next-bet');
         if (nextBetInput) {
             const newBet = parseFloat(nextBetInput.value) || 1.00;
             this.game.setBaseBet(newBet);
         }
-        
+
         // Clear queued status for players joining this hand
         this.multiplayer.clearQueuedStatus();
-        
+
         this.game.startHand();
-        
+
         // Log hand start
         this.logHandStart(this.game.baseBet, this.game.players);
-        this.multiplayer.broadcast({ 
+        this.multiplayer.broadcast({
             type: 'hand_start_log',
             baseBet: this.game.baseBet,
             players: this.game.players.map(p => ({ id: p.id }))
         });
-        
+
         this.multiplayer.broadcastGameState(this.game.getGameState());
     }
 
@@ -852,10 +949,17 @@ class GameController {
             this.updateHoleCards(myPlayer.holeCards);
             // Show starting PnL during hand, actual PnL at results
             const displayPnl = state.phase === 'results' ? myPlayer.actualPnl : myPlayer.pnl;
-            document.getElementById('my-pnl').textContent = this.formatCurrency(displayPnl);
-            document.getElementById('my-pnl').style.color = displayPnl >= 0 ? 'var(--gold-light)' : 'var(--danger)';
+            const pnlEl = document.getElementById('my-pnl');
+            pnlEl.textContent = this.formatCurrency(displayPnl);
+            pnlEl.classList.toggle('is-good', displayPnl > 0);
+            pnlEl.classList.toggle('is-bad', displayPnl < 0);
             document.getElementById('current-bet').textContent = this.formatCurrency(myPlayer.totalBet);
+        } else {
+            this.updateHoleCards([]);
         }
+
+        // Street / phase indicator and the queued late joiner's explanation
+        this.updatePhaseIndicator(state, myPlayer);
 
         // Update other players - pass results for showdown and queued players
         this.updatePlayersArea(state.players, state.phase, state.results, state.queuedPlayers);
@@ -895,6 +999,46 @@ class GameController {
         return phaseNames[phase] || phase;
     }
 
+    /**
+     * The street in the game header, on the felt and in the action stage,
+     * plus the persistent note a queued late joiner sees in the hand panel.
+     */
+    updatePhaseIndicator(state, myPlayer) {
+        const phase = this.formatPhase(state.phase);
+        const phaseLabel = document.getElementById('phase-label');
+        if (phaseLabel) phaseLabel.textContent = phase;
+
+        const feltPhase = document.getElementById('felt-phase');
+        if (feltPhase) {
+            feltPhase.textContent = state.phase === 'waiting'
+                ? 'Waiting for the deal'
+                : state.phase === 'results'
+                    ? 'Showdown'
+                    : `${phase} · bet ${this.formatCurrency(state.baseBet)}`;
+        }
+
+        const queued = !myPlayer && this.gameStarted;
+        const notice = document.getElementById('queued-notice');
+        if (notice) notice.hidden = !queued;
+
+        const kicker = document.getElementById('action-kicker');
+        const title = document.getElementById('action-title');
+        if (kicker) kicker.textContent = phase;
+        if (title) {
+            if (queued) {
+                title.textContent = 'In from the next hand';
+            } else if (state.phase === 'results') {
+                title.textContent = 'Hand complete';
+            } else if (myPlayer && myPlayer.hasActed) {
+                title.textContent = 'Waiting for the other players';
+            } else if (myPlayer) {
+                title.textContent = state.phase === 'flop' ? 'Check or double on the flop' : 'Check or double';
+            } else {
+                title.textContent = 'Waiting for the deal';
+            }
+        }
+    }
+
     updateBoard(boardId, cards) {
         const board = document.getElementById(boardId);
         const slots = board.querySelectorAll('.card-slot');
@@ -906,7 +1050,7 @@ class GameController {
         const container = document.getElementById('hole-cards');
         const slots = container.querySelectorAll('.card-slot');
 
-        cards.forEach((card, i) => this.fillSlot(slots[i], card));
+        slots.forEach((slot, i) => this.fillSlot(slot, cards[i] || null));
     }
 
     // ============ CARD RENDERING (shared component) ============
@@ -951,13 +1095,20 @@ class GameController {
             const playerInfo = this.multiplayer.getPlayer(player.id);
             const isMe = player.id === this.myPlayerId;
 
-            const div = document.createElement('div');
-            div.className = `player-box ${player.hasActed ? 'acted' : ''} ${phase === 'results' ? 'showdown' : ''}`;
+            const div = document.createElement('article');
+            const seatState = [
+                player.hasActed ? 'acted seat--confirmed' : '',
+                phase === 'results' ? 'showdown' : '',
+                isMe ? 'seat--me' : '',
+                playerInfo?.isHost ? 'seat--host' : ''
+            ].filter(Boolean).join(' ');
+            div.className = `player-box seat ${seatState}`.trim();
 
             const name = playerInfo ? playerInfo.name : (isMe ? 'You' : `Player ${index + 1}`);
 
             // Show starting PnL during hand, actual PnL at results
             const displayPnl = phase === 'results' ? player.actualPnl : player.pnl;
+            const pnlClass = displayPnl > 0 ? 'is-good' : (displayPnl < 0 ? 'is-bad' : '');
 
             // Get result for this player at showdown
             let resultHtml = '';
@@ -966,28 +1117,25 @@ class GameController {
                 if (playerResult) {
                     // Show hole cards
                     const holeCards = playerResult.holeCards || [];
-                    const cardsHtml = `<div class="player-cards">${PlayingCards.rowHtml(holeCards.map(card => this.cardFace(card)))}</div>`;
+                    const cardsHtml = `<div class="player-cards seat-cards">${PlayingCards.rowHtml(holeCards.map(card => this.cardFace(card)))}</div>`;
 
-                    // Show hands on each board (just name and multiplier)
-                    const hand1Class = playerResult.hand1.qualifies ? 'qualified' : 'fouled';
-                    const hand2Class = playerResult.hand2.qualifies ? 'qualified' : 'fouled';
-                    
+                    // Show hands on each board (name and multiplier badge)
                     const handsHtml = `
-                        <div class="player-hands">
-                            <div class="hand-result ${hand1Class}">${playerResult.hand1.name} (${playerResult.hand1.multiplier}×)</div>
-                            <div class="hand-result ${hand2Class}">${playerResult.hand2.name} (${playerResult.hand2.multiplier}×)</div>
+                        <div class="player-hands hand-chip-row">
+                            ${this.handResultHtml(playerResult.hand1, 'Board 1')}
+                            ${this.handResultHtml(playerResult.hand2, 'Board 2')}
                         </div>
                     `;
 
                     // Show equation: bet × totalMultiplier = hand payout (not net PnL)
                     const payoutClass = playerResult.netResult >= 0 ? 'win' : 'lose';
-                    const handPayout = playerResult.qualifies 
-                        ? playerResult.totalBet * playerResult.totalMultiplier 
+                    const handPayout = playerResult.qualifies
+                        ? playerResult.totalBet * playerResult.totalMultiplier
                         : -playerResult.totalBet;
-                    const equationText = playerResult.qualifies 
+                    const equationText = playerResult.qualifies
                         ? `${this.formatCurrency(playerResult.totalBet)} × ${playerResult.totalMultiplier} = ${this.formatCurrency(handPayout, true)}`
-                        : `FOUL = ${this.formatCurrency(handPayout, true)}`;
-                    
+                        : `Foul = ${this.formatCurrency(handPayout, true)}`;
+
                     resultHtml = `
                         ${cardsHtml}
                         ${handsHtml}
@@ -997,11 +1145,20 @@ class GameController {
                 }
             }
 
+            const statusHtml = phase !== 'results'
+                ? (player.hasActed
+                    ? '<span class="status seat-badge seat-badge--good">Acted</span>'
+                    : '<span class="status waiting seat-badge">Waiting</span>')
+                : '';
+
             div.innerHTML = `
-                <div class="name">${this.escapeHtml(name)}${isMe ? ' (You)' : ''}</div>
-                <div class="pnl" style="color: ${displayPnl >= 0 ? 'var(--gold-light)' : 'var(--danger)'}">PnL: ${this.formatCurrency(displayPnl)}</div>
-                <div class="bet-amount">Bet: ${this.formatCurrency(player.totalBet)}</div>
-                ${phase !== 'results' ? `<div class="status ${player.hasActed ? '' : 'waiting'}">${player.hasActed ? '✓' : '...'}</div>` : ''}
+                <span class="seat-avatar" aria-hidden="true">${this.initials(name)}</span>
+                <div class="name seat-name"><span>${this.escapeHtml(name)}</span>${isMe ? '<span class="seat-badge">You</span>' : ''}</div>
+                <div class="seat-meta">
+                    <span class="pnl seat-pnl ${pnlClass}">PnL ${this.formatCurrency(displayPnl)}</span>
+                    <span class="bet-amount">Bet ${this.formatCurrency(player.totalBet)}</span>
+                    ${statusHtml}
+                </div>
                 ${resultHtml}
             `;
 
@@ -1013,22 +1170,38 @@ class GameController {
             queuedPlayerIds.forEach(playerId => {
                 // Don't show if they're already in the active players list
                 if (players.some(p => p.id === playerId)) return;
-                
+
                 const playerInfo = this.multiplayer.getPlayer(playerId);
                 const isMe = playerId === this.myPlayerId;
                 const name = playerInfo ? playerInfo.name : (isMe ? 'You' : 'Player');
-                
-                const div = document.createElement('div');
-                div.className = 'player-box queued';
-                
+
+                const div = document.createElement('article');
+                div.className = 'player-box seat seat--queued queued';
+
                 div.innerHTML = `
-                    <div class="name">${this.escapeHtml(name)}${isMe ? ' (You)' : ''}</div>
-                    <div class="queued-status">⏳ Waiting for next hand</div>
+                    <span class="seat-avatar" aria-hidden="true">${this.initials(name)}</span>
+                    <div class="name seat-name"><span>${this.escapeHtml(name)}</span>${isMe ? '<span class="seat-badge">You</span>' : ''}</div>
+                    <div class="seat-meta"><span class="queued-status seat-badge seat-badge--warn">Joining next hand</span></div>
                 `;
-                
+
                 container.appendChild(div);
             });
         }
+    }
+
+    /**
+     * A board result as a hand chip: name, multiplier badge (gold is the
+     * multiplier colour) and whether it qualifies.
+     */
+    handResultHtml(hand, label) {
+        const tone = hand.qualifies ? 'hand-chip--good' : 'hand-chip--bad';
+        const state = hand.qualifies ? 'qualified' : 'fouled';
+        return `<span class="hand-result hand-chip ${tone} ${state}">` +
+            `${label ? `<span class="hand-chip-label">${label}</span>` : ''}` +
+            `<strong>${this.escapeHtml(hand.name)}</strong>` +
+            `<span class="badge badge--warn mult">${hand.multiplier}×</span>` +
+            `<span class="sr-only">${hand.qualifies ? 'qualifies' : 'fouls'}</span>` +
+            `</span>`;
     }
 
     updateActionButtons(state, myPlayer) {
@@ -1041,14 +1214,14 @@ class GameController {
         if (state.phase === 'results') {
             // Hide action buttons, show host controls or waiting message
             actionButtons.classList.add('hidden');
-            
+
             if (this.multiplayer.isHost) {
                 hostControls.classList.remove('hidden');
                 waitingMsg.classList.add('hidden');
-                
-                // Set the next bet input to current bet
+
+                // Refill the next-bet input from the table unless the host is editing it
                 const nextBetInput = document.getElementById('next-bet');
-                if (nextBetInput && nextBetInput.value === '1.00') {
+                if (nextBetInput && document.activeElement !== nextBetInput) {
                     nextBetInput.value = state.baseBet % 1 === 0 ? state.baseBet : state.baseBet.toFixed(2);
                 }
             } else {
@@ -1077,7 +1250,7 @@ class GameController {
 
         const board1Cards = state.board1.filter(c => !c.faceDown);
         const board2Cards = state.board2.filter(c => !c.faceDown);
-        
+
         if (board1Cards.length !== 5 || board2Cards.length !== 5) return;
 
         const hand1 = Poker.evaluateOmahaHand(holeCards, board1Cards);
@@ -1094,21 +1267,27 @@ class GameController {
         const hand1Pnl = qualifies1 ? myPlayer.totalBet * mult1 : -myPlayer.totalBet;
         const hand2Pnl = qualifies2 ? myPlayer.totalBet * mult2 : -myPlayer.totalBet;
 
-        result1.innerHTML = `${hand1.name} (${mult1}×) ${qualifies1 ? '✓' : '✗'}`;
-        result1.className = `board-result ${qualifies1 ? 'qualified' : 'fouled'}`;
+        result1.innerHTML = this.boardResultHtml(hand1, mult1, qualifies1);
+        result1.className = `board-result hand-chip ${qualifies1 ? 'qualified hand-chip--good' : 'fouled hand-chip--bad'}`;
 
-        result2.innerHTML = `${hand2.name} (${mult2}×) ${qualifies2 ? '✓' : '✗'}`;
-        result2.className = `board-result ${qualifies2 ? 'qualified' : 'fouled'}`;
+        result2.innerHTML = this.boardResultHtml(hand2, mult2, qualifies2);
+        result2.className = `board-result hand-chip ${qualifies2 ? 'qualified hand-chip--good' : 'fouled hand-chip--bad'}`;
 
         // Update the player-hand-area with total pnl this hand
         this.updateMyHandResults(state, myPlayer, hand1, hand2, qualifies1, qualifies2);
+    }
+
+    boardResultHtml(hand, multiplier, qualifies) {
+        return `<strong>${this.escapeHtml(hand.name)}</strong>` +
+            `<span class="badge badge--warn mult">${multiplier}×</span>` +
+            `<span class="board-result-state">${qualifies ? 'Qualifies' : 'Foul'}</span>`;
     }
 
     updateMyHandResults(state, myPlayer, hand1, hand2, qualifies1, qualifies2) {
         // Find or create the results container in player-hand-area
         const handArea = document.querySelector('.player-hand-area');
         let resultsDiv = handArea.querySelector('.my-hand-results');
-        
+
         if (!resultsDiv) {
             resultsDiv = document.createElement('div');
             resultsDiv.className = 'my-hand-results';
@@ -1126,17 +1305,19 @@ class GameController {
         const netClass = netPnl >= 0 ? 'win' : 'lose';
 
         const totalMult = (qualifies1 && qualifies2) ? mult1 * mult2 : 0;
-        const handPayout = (qualifies1 && qualifies2) 
-            ? myPlayer.totalBet * totalMult 
+        const handPayout = (qualifies1 && qualifies2)
+            ? myPlayer.totalBet * totalMult
             : -myPlayer.totalBet;
         const equationClass = (qualifies1 && qualifies2) ? 'win' : 'lose';
         const equationText = (qualifies1 && qualifies2)
             ? `${this.formatCurrency(myPlayer.totalBet)} × ${totalMult} = ${this.formatCurrency(handPayout, true)}`
-            : `FOUL = ${this.formatCurrency(handPayout, true)}`;
+            : `Foul = ${this.formatCurrency(handPayout, true)}`;
 
         resultsDiv.innerHTML = `
-            <div class="my-hand-row ${qualifies1 ? 'qualified' : 'fouled'}">Board 1: ${hand1.name} (${mult1}×)</div>
-            <div class="my-hand-row ${qualifies2 ? 'qualified' : 'fouled'}">Board 2: ${hand2.name} (${mult2}×)</div>
+            <div class="hand-chip-row">
+                ${this.handResultHtml({ name: hand1.name, multiplier: mult1, qualifies: qualifies1 }, 'Board 1')}
+                ${this.handResultHtml({ name: hand2.name, multiplier: mult2, qualifies: qualifies2 }, 'Board 2')}
+            </div>
             <div class="my-hand-equation ${equationClass}">${equationText}</div>
             <div class="my-hand-total ${netClass}">PnL this hand: ${this.formatCurrency(netPnl, true)}</div>
         `;
@@ -1145,26 +1326,50 @@ class GameController {
     // ============ RULES MODAL ============
 
     showRules() {
-        document.getElementById('rules-modal').classList.remove('hidden');
+        const dialog = document.getElementById('rules-modal');
+        if (window.Sheet) Sheet.open(dialog, { dismissible: true, sheet: true });
+        else dialog.showModal();
     }
 
     hideRules() {
-        document.getElementById('rules-modal').classList.add('hidden');
+        const dialog = document.getElementById('rules-modal');
+        if (window.Sheet) Sheet.close(dialog);
+        else dialog.close();
     }
 
     // ============ UTILITIES ============
 
+    /**
+     * Toasts: errors go to the assertive #alerts stack, everything else to
+     * the polite #toast-container. Each toast has a dismiss control and
+     * pauses its timer while hovered or focused.
+     */
     showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
+        const alert = type === 'error';
+        const container = document.getElementById(alert ? 'alerts' : 'toast-container') || document.getElementById('toast-container');
+        if (!container) return;
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        container.appendChild(toast);
+        toast.className = `toast ${type}${alert ? ' toast--alert' : type === 'success' ? ' toast--good' : ''}`;
+        const text = document.createElement('span');
+        text.textContent = message;
+        const dismiss = document.createElement('button');
+        dismiss.type = 'button';
+        dismiss.className = 'btn btn--ghost btn--icon btn--sm';
+        dismiss.setAttribute('aria-label', 'Dismiss');
+        dismiss.innerHTML = '<svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>';
+        toast.append(text, dismiss);
 
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        let timer = 0;
+        const remove = () => { clearTimeout(timer); toast.remove(); };
+        const arm = () => { clearTimeout(timer); timer = setTimeout(remove, alert ? 6000 : 3500); };
+        dismiss.addEventListener('click', remove);
+        toast.addEventListener('mouseenter', () => clearTimeout(timer));
+        toast.addEventListener('focusin', () => clearTimeout(timer));
+        toast.addEventListener('mouseleave', arm);
+        toast.addEventListener('focusout', arm);
+        while (container.children.length >= 3) container.firstElementChild.remove();
+        container.appendChild(toast);
+        arm();
     }
 
     escapeHtml(text) {

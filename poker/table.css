@@ -4,7 +4,9 @@
  * colour literals, no !important.
  *
  * Sections: stage and felt, seats, hand chips, lobby, action stage, log and
- * chat, settings rows, banners and notices, phones.
+ * chat, settings rows, banners and notices, card slots, collapsibles, chat
+ * popover, confetti, the table app shell (Ultimate Omaha and Edge the
+ * Dealer, scoped to .table-app), phones.
  *
  * The family accent (data-family="poker") is used for selection, the active
  * seat, the dealer button and the primary action only; outcomes use --good /
@@ -912,6 +914,978 @@
   line-height: var(--lh-body);
 }
 
+/* ---------- Card slots ----------
+   A dashed placeholder sized by --card-width that holds one shared
+   .playing-card once dealt. The page's fillSlot() inserts the card, forces a
+   reflow and adds .dealt, so the card transitions in from above; --deal-delay
+   (set inline by the page) staggers a row. No animation-fill-mode, so a
+   stalled animation can never leave a card invisible. */
+.card-slot {
+  position: relative;
+  flex: none;
+  width: var(--card-width);
+  aspect-ratio: 5 / 7;
+  border: 1px dashed var(--stage-line, var(--line-strong));
+  border-radius: 10% / 7.1429%;
+  background: color-mix(in srgb, black 22%, transparent);
+  transition:
+    border-color var(--d-base) var(--ease),
+    background-color var(--d-base) var(--ease),
+    translate var(--d-fast) var(--ease),
+    scale var(--d-fast) var(--ease);
+}
+
+.card-slot > .playing-card {
+  display: block;
+  width: 100%;
+  opacity: 0;
+  translate: 0 -14px;
+}
+
+.card-slot.dealt {
+  border-color: transparent;
+  background: transparent;
+}
+
+.card-slot.dealt > .playing-card {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity var(--d-base) var(--ease) var(--deal-delay, 0s),
+    translate var(--d-base) var(--ease) var(--deal-delay, 0s);
+}
+
+/* Visible text for a slot state ("Replace", "Queued"), centred over the card. */
+.slot-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in oklab, var(--bad) 45%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  color: var(--bad);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  line-height: var(--lh-data);
+  white-space: nowrap;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.slot-badge--warn {
+  border-color: color-mix(in oklab, var(--warn) 45%, transparent);
+  color: var(--warn);
+}
+
+/* A money field: "$" prefix beside a number input, used by host controls. */
+.money-input {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding-left: 10px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--t-md);
+  font-weight: 600;
+  transition: border-color var(--d-fast);
+}
+
+.money-input:hover {
+  border-color: color-mix(in oklab, var(--control-border) 55%, var(--ink));
+}
+
+.money-input:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.money-input > input,
+.settings-row .money-input > input {
+  width: 5.5rem;
+  min-height: 38px;
+  padding: 0 10px 0 4px;
+  border: 0;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-input > input:focus-visible {
+  outline: none;
+}
+
+/* ---------- Log entries and chat (the pages' own markup) ----------
+   Log lines come from the page as .log-entry <type>; chat lines as
+   .chat-message with .sender / .text / .timestamp children. */
+.log-entry {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-opaque);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.log-entry:last-child {
+  border-bottom: 0;
+}
+
+.log-entry strong {
+  color: var(--ink);
+}
+
+.log-entry.hand-start {
+  padding-top: 10px;
+  color: var(--ink);
+}
+
+.log-entry.hand-start strong {
+  display: block;
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.log-entry.action {
+  color: var(--ink);
+}
+
+.log-entry .player-name {
+  font-weight: 700;
+}
+
+.log-entry .action-type.double {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.log-entry.showdown strong {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.log-entry.result.win {
+  color: var(--good);
+}
+
+.log-entry.result.lose {
+  color: var(--bad);
+}
+
+.log-entry.result.push {
+  color: var(--muted);
+}
+
+.log-entry .log-cards {
+  --card-width: var(--card-w-preview);
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.chat-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-opaque);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.chat-message:last-child {
+  border-bottom: 0;
+}
+
+.chat-message .sender {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.chat-message .sender.me {
+  color: var(--accent);
+}
+
+.chat-message .text {
+  flex: 1 1 auto;
+  color: var(--ink);
+}
+
+.chat-message .timestamp {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-message.system {
+  justify-content: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.chat-message.emoji-blast {
+  justify-content: center;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+/* The chat form keeps its emoji popover above the input. */
+.table-chat-form {
+  position: relative;
+}
+
+.table-chat-form > input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+}
+
+.table-chat-form > input::placeholder {
+  color: var(--muted);
+}
+
+.emoji-picker {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-raised);
+}
+
+.emoji-option {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.emoji-option:hover {
+  background: var(--surface-3);
+}
+
+/* Unread dot on the chat tab while another tab is open. */
+.tabs > [role="tab"].has-notification::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: lobby-pulse 1.2s var(--ease) infinite;
+}
+
+/* ---------- Collapsible sections ----------
+   <section class="collapsible"><button class="section-header" aria-expanded>
+   title <svg class="icon collapse-icon"></button><div class="collapsible-content"> */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.section-header:focus-visible {
+  outline-offset: -3px;
+}
+
+.section-header .collapse-icon {
+  color: var(--muted);
+  transition: rotate var(--d-fast) var(--ease);
+}
+
+.collapsible.collapsed .collapse-icon {
+  rotate: -90deg;
+}
+
+.collapsible.collapsed .collapsible-content {
+  display: none;
+}
+
+/* ---------- Confetti (Edge the Dealer's winner moment) ---------- */
+.winner-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: confetti-fall 2s linear forwards;
+}
+
+@keyframes confetti-fall {
+  to {
+    translate: 0 110vh;
+    rotate: 540deg;
+    opacity: 0;
+  }
+}
+
+/* ---------- Topbar on phones ----------
+   Row 1: mark + current tool + actions; row 2: the tool nav as a scrolling
+   strip. The family crumb is reachable through the tool nav. */
+@media (max-width: 640px) {
+  .app--shell .topbar {
+    gap: 6px 12px;
+  }
+
+  .app--shell .crumbs .crumb-family {
+    display: none;
+  }
+
+  .app--shell .topbar .tool-nav {
+    order: 3;
+    width: 100%;
+    margin-inline: -12px;
+    padding-inline: 12px;
+    scroll-padding-inline: 12px;
+    mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
+  }
+
+  .table-chat-form > input {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .money-input > input,
+  .settings-row .money-input > input {
+    min-height: 42px;
+    font-size: 1rem;
+  }
+}
+
+/* ---------- Table app shell (Ultimate Omaha and Edge the Dealer) ----------
+   The two casino-pair pages share one screen model: a menu, a lobby and a
+   game screen with a table column and a side column (hand panel, action
+   stage, log and chat). Scoped to .table-app so Mixed Poker's own layout
+   classes are untouched. Phones stack with the action stage sticky at the
+   bottom; desktops at least 821px wide fit the viewport and scroll the two
+   columns internally. */
+.table-app {
+  width: calc(100% - 24px);
+  max-width: 1500px;
+  padding: 8px 0 12px;
+}
+
+.table-app > main {
+  min-width: 0;
+  min-height: 0;
+}
+
+.table-app > main:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Screens: the page's own view switch (menu, lobby, game). */
+.table-app .screen {
+  display: none;
+}
+
+.table-app .screen.active {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-height: 0;
+}
+
+.table-app .tool-head {
+  padding-bottom: 4px;
+}
+
+.table-app .full {
+  width: 100%;
+}
+
+.table-app .code-input {
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* The Start button's loader renders only while .loading is set (the old
+   markup carried a hidden class that always won). */
+.btn-loader {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.btn.loading .btn-text,
+.btn.loading .btn-icon {
+  display: none;
+}
+
+.btn.loading .btn-loader {
+  display: inline-block;
+}
+
+/* Menu: the start/join panel beside the quick rules. */
+.menu-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+  width: min(100%, 60rem);
+}
+
+.menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.menu-buttons {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.rules-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 var(--s-3);
+  padding-left: 1.2em;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.rules-list li::marker {
+  color: var(--accent);
+}
+
+.rules-list strong {
+  color: var(--ink);
+}
+
+/* Lobby: the roster panel beside the host's table settings. */
+.lobby-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: start;
+}
+
+.table-app .players-list .panel-body {
+  gap: var(--s-4);
+}
+
+.table-app .lobby-actions .lobby-wait {
+  flex-basis: 100%;
+}
+
+.host-settings {
+  display: flex;
+  flex-direction: column;
+}
+
+.guest-settings-note {
+  margin-top: var(--s-2);
+  line-height: var(--lh-body);
+}
+
+/* Game header: phase badge and room pill on the right. */
+.table-app .game-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.room-tag {
+  font-variant-numeric: tabular-nums;
+}
+
+.room-tag strong {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* Game layout: phones stack (table, hand, log, then the sticky stage last). */
+.table-app .game-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-height: 0;
+}
+
+.table-app .game-column {
+  display: contents;
+}
+
+.table-app .table-column > * {
+  order: 1;
+}
+
+.table-app .player-hand-area {
+  order: 2;
+}
+
+.table-app .log-chat-container {
+  order: 4;
+}
+
+.table-app .action-area {
+  order: 5;
+}
+
+/* Hero hand panel. */
+.table-app .player-hand-area .panel-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.player-pnl {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-pnl strong {
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.table-app .hole-cards {
+  --card-width: var(--card-w-board);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.queued-notice {
+  display: grid;
+  gap: 4px;
+  padding: var(--s-3);
+  border: 1px solid color-mix(in oklab, var(--warn) 40%, transparent);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  text-align: center;
+}
+
+.queued-notice strong {
+  color: var(--warn);
+}
+
+/* Showdown results injected under the hero's cards by app.js. */
+.my-hand-results {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 0 var(--s-4) var(--s-4);
+  text-align: center;
+}
+
+.my-hand-results:empty {
+  display: none;
+}
+
+.my-hand-equation {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.my-hand-total {
+  font-size: var(--t-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hand-chip-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.hand-chip--good .hand-chip-label,
+.hand-chip--bad .hand-chip-label,
+.hand-chip--warn .hand-chip-label {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.hand-chip .mult,
+.badge.mult {
+  min-height: 18px;
+  padding: 0 6px;
+  font-size: var(--t-xs);
+}
+
+/* Per-seat showdown lines (payout equation and PnL this hand). */
+.table-app .seat > .player-hands,
+.table-app .seat > .payout-equation,
+.table-app .seat > .payout {
+  grid-column: 1 / -1;
+}
+
+.table-app .seat > .player-hands {
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+
+.payout-equation,
+.payout {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.payout-equation {
+  color: var(--muted);
+}
+
+.payout {
+  font-weight: 700;
+}
+
+.payout.win,
+.my-hand-total.win,
+.my-hand-equation.win {
+  color: var(--good);
+}
+
+.payout.lose,
+.my-hand-total.lose,
+.my-hand-equation.lose {
+  color: var(--bad);
+}
+
+/* Action stage: the bet readout beside the title, host controls beneath. */
+.table-app .action-stage-status .current-bet-info {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-app .action-stage-status .current-bet-info strong {
+  color: var(--ink);
+}
+
+.host-showdown-controls {
+  align-items: center;
+}
+
+.host-showdown-controls .settings-row-label {
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.host-showdown-controls > .btn {
+  margin-left: auto;
+}
+
+.table-app .action-area .lobby-wait {
+  margin: 0;
+}
+
+/* Log and chat panel with real tabs; the lists scroll internally. */
+.log-chat-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.log-chat-container .tabs {
+  flex: none;
+  padding-inline: var(--s-2);
+}
+
+.log-chat-container .tab-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--s-2) var(--s-3) var(--s-3);
+}
+
+.game-log,
+.chat-messages {
+  flex: 1;
+  min-height: 8rem;
+  max-height: clamp(10rem, 40vh, 24rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.log-chat-container .table-chat-form {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+/* Rules dialog body. */
+.rules-body {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.rules-section h3 {
+  margin-bottom: var(--s-2);
+  font-size: var(--t-md);
+  font-weight: 700;
+}
+
+.rules-section ol,
+.rules-section ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 1.3em;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.rules-section p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.rules-section strong {
+  color: var(--ink);
+}
+
+.rules-section .table-wrap {
+  margin-top: var(--s-2);
+}
+
+/* Toasts above the sticky action stage (--stage-h from app.js). */
+.table-app ~ .toast-stack {
+  bottom: calc(var(--stage-h, 0px) + 12px + env(safe-area-inset-bottom));
+}
+
+.table-app ~ .toast-stack--alert {
+  bottom: calc(var(--stage-h, 0px) + 68px + env(safe-area-inset-bottom));
+}
+
+/* Desktop: fit the viewport; two columns. */
+@media (min-width: 821px) {
+  .table-app {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .table-app > main {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .table-app .screen.active {
+    height: 100%;
+  }
+
+  .menu-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: start;
+  }
+
+  .lobby-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  }
+
+  .table-app .game-layout {
+    display: grid;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+    gap: var(--s-3);
+    min-height: 0;
+  }
+
+  .table-app .game-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .table-app .table-column {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .table-app .side-column > .action-area {
+    position: static;
+    margin: 0;
+    border-radius: var(--r-lg);
+  }
+
+  .log-chat-container {
+    flex: 1;
+    min-height: 12rem;
+  }
+
+  .game-log,
+  .chat-messages {
+    max-height: none;
+  }
+}
+
+/* Short desktop windows: no lede. */
+@media (min-width: 881px) and (max-height: 820px) {
+  .table-app .tool-head .lede {
+    display: none;
+  }
+}
+
+/* Phones. */
+@media (max-width: 640px) {
+  .table-app .tool-head .lede {
+    display: none;
+  }
+
+  .table-app .game-header {
+    flex-wrap: wrap;
+  }
+
+  /* Seats: one horizontally snapping strip. A scroll container never grows
+     the page's scrollWidth. */
+  .table-app .seats {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-inline: calc(-1 * var(--s-2));
+    padding: 8px var(--s-2) 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--s-2);
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, transparent, black 10px, black calc(100% - 10px), transparent);
+  }
+
+  .table-app .seats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .table-app .seats > .seat {
+    flex: 0 0 11rem;
+    max-width: none;
+    scroll-snap-align: start;
+  }
+
+  .table-app .seats > .seat.showdown {
+    flex-basis: 13rem;
+  }
+
+  .host-showdown-controls > .btn {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+/* Landscape phones: the action stage becomes a right-hand column. */
+@media (max-width: 1020px) and (max-height: 560px) {
+  /* The screen grows with its content (main scrolls); a bounded height would
+     collapse the auto rows of the stage and panels, which have min-height 0. */
+  .table-app .game-screen.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem);
+    grid-auto-rows: auto;
+    align-items: start;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .table-app .game-header {
+    grid-column: 1 / -1;
+  }
+
+  .table-app .game-layout,
+  .table-app .game-column {
+    display: contents;
+  }
+
+  .table-app .table-column > *,
+  .table-app .player-hand-area,
+  .table-app .log-chat-container {
+    grid-column: 1;
+  }
+
+  .table-app .action-area {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    grid-column: 2;
+    grid-row: 2 / span 4;
+    margin: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-tile);
+  }
+}
+
 /* ---------- Phones and coarse pointers ---------- */
 
 @media (pointer: coarse), (max-width: 640px) {
@@ -960,7 +1934,11 @@
   .amount-control,
   .table-banner,
   .table-notice,
-  .lobby-code-pill {
+  .lobby-code-pill,
+  .card-slot,
+  .slot-badge,
+  .money-input,
+  .emoji-picker {
     border: 1px solid CanvasText;
   }
 

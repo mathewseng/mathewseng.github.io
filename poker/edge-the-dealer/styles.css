@@ -1,1469 +1,343 @@
-@import url("../ultimate-omaha/styles.css?v=20261003");
+/* Edge the Dealer page styles. Loaded after shared/tokens.css, shared/app.css,
+ * shared/cards.css and poker/table.css (which holds the table app shell the
+ * casino pair shares: screens, menu, lobby, game layout, hand panel, action
+ * stage, log and chat, rules dialog). This file holds only what is specific
+ * to this page: the dealer's best-five and unused groups on the felt, the
+ * collapsible sections, the five hole cards with swipe and tap discard
+ * selection, the 2×2 draw actions, compact solo mode and the streak chip.
+ * Tokens only: no palette, no !important. The @import of Ultimate Omaha's
+ * stylesheet is gone.
+ */
 
-/* ============================================================
-   EDGE THE DEALER - Modern UI/UX Overhaul
-   iPhone-first, dark luxe with electric accents
-   ============================================================ */
-
-:root {
-    /* Card sizes per context (shared/cards.css cards size from --card-width alone).
-       The dealer shows all 7 cards in one row, the hand shows 5. */
-    --dealer-card-width: clamp(44px, 5vw, 60px);
-    --hole-card-width: clamp(52px, 16vw, 80px);
-    --mini-card-width: 22px;
-
-    /* Panels */
-    --panel-bg: rgba(9, 19, 26, 0.82);
-    --panel-border: rgba(110, 190, 235, 0.18);
-    --panel-glass: linear-gradient(160deg, rgba(14, 30, 42, 0.88), rgba(8, 16, 26, 0.78));
-
-    /* Electric accent palette */
-    --accent-cyan: #57d6ff;
-    --accent-cyan-dim: rgba(87, 214, 255, 0.15);
-    --accent-violet: #a77dff;
-    --accent-violet-dim: rgba(167, 125, 255, 0.12);
-    --accent-lime: #64f7a8;
-    --accent-lime-dim: rgba(100, 247, 168, 0.12);
-    --accent-rose: #ff6b8a;
-    --accent-amber: #ffb347;
-
-    /* Soft text */
-    --soft-text: #9cb5c6;
-    --softer-text: #6d8494;
-
-    /* Card glow per suit (matches the shared four-colour faces) */
-    --glow-spade: rgba(150, 165, 180, 0.3);
-    --glow-heart: rgba(199, 46, 60, 0.45);
-    --glow-diamond: rgba(50, 105, 211, 0.45);
-    --glow-club: rgba(20, 137, 79, 0.45);
-
-    /* Animation timing */
-    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --duration-fast: 0.18s;
-    --duration-normal: 0.3s;
-    --duration-slow: 0.5s;
+/* Card widths for this page (the only card API is --card-width): seven
+   dealer cards fit a 375px phone; hole cards are the hero. */
+.game-screen {
+  --card-w-board: clamp(44px, 14.5vw, 72px);
+  --card-w-dealer: clamp(36px, 10.5vw, 48px);
 }
 
-/* ============ GLOBAL OVERRIDES ============ */
-
-html {
-    min-height: 100%;
-    min-height: -webkit-fill-available;
+/* Five hole cards need a wider side column than Omaha's four. */
+.host-settings select {
+  width: 10rem;
 }
 
-body {
-    color: #eff8ff;
-    background:
-        radial-gradient(1200px 600px at 15% -10%, rgba(87, 214, 255, 0.14), transparent 55%),
-        radial-gradient(900px 500px at 85% -20%, rgba(167, 125, 255, 0.16), transparent 55%),
-        radial-gradient(900px 700px at 50% 120%, rgba(27, 66, 54, 0.3), transparent 60%),
-        #060c12;
-    overscroll-behavior-y: none;
-    -webkit-overflow-scrolling: touch;
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-}
-
-/* Ambient animated background */
-.ambient-bg {
-    background:
-        radial-gradient(ellipse at 25% 18%, rgba(87, 214, 255, 0.1) 0%, transparent 45%),
-        radial-gradient(ellipse at 75% 28%, rgba(167, 125, 255, 0.08) 0%, transparent 45%),
-        radial-gradient(ellipse at 50% 84%, rgba(100, 247, 168, 0.06) 0%, transparent 55%),
-        linear-gradient(180deg, #04080c 0%, #0a1118 100%);
-    animation: ambientShift 9s ease-in-out infinite alternate;
-}
-
-@keyframes ambientShift {
-    from { filter: saturate(1); transform: scale(1); }
-    to { filter: saturate(1.12); transform: scale(1.02); }
-}
-
-/* Floating suit particles */
-.particles {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-}
-
-.particle {
-    position: absolute;
-    font-size: 1.4rem;
-    opacity: 0;
-    color: var(--accent-cyan);
-    animation: floatParticle 18s linear infinite;
-    will-change: transform, opacity;
-}
-
-.particle:nth-child(1) { left: 5%; animation-delay: 0s; color: var(--accent-cyan); }
-.particle:nth-child(2) { left: 15%; animation-delay: 2s; color: var(--accent-rose); }
-.particle:nth-child(3) { left: 30%; animation-delay: 4s; color: var(--accent-violet); }
-.particle:nth-child(4) { left: 45%; animation-delay: 6s; color: var(--accent-lime); }
-.particle:nth-child(5) { left: 60%; animation-delay: 8s; color: var(--accent-cyan); }
-.particle:nth-child(6) { left: 72%; animation-delay: 10s; color: var(--accent-rose); }
-.particle:nth-child(7) { left: 85%; animation-delay: 12s; color: var(--accent-violet); }
-.particle:nth-child(8) { left: 93%; animation-delay: 14s; color: var(--accent-lime); }
-
-@keyframes floatParticle {
-    0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-    5% { opacity: 0.12; }
-    50% { opacity: 0.08; }
-    95% { opacity: 0.12; }
-    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
-}
-
-/* ============ SCREENS & TRANSITIONS ============ */
-
-.screen {
-    width: 100%;
-    padding:
-        max(0.8rem, env(safe-area-inset-top))
-        max(0.7rem, env(safe-area-inset-right))
-        max(0.9rem, env(safe-area-inset-bottom))
-        max(0.7rem, env(safe-area-inset-left));
-    position: relative;
-    z-index: 1;
-}
-
-.screen.active {
-    animation: screenIn 0.4s var(--ease-out-expo);
-}
-
-@keyframes screenIn {
-    from { opacity: 0; transform: translateY(16px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* ============ MENU SCREEN ============ */
-
-.menu-content,
-.lobby-content {
-    width: 100%;
-    border: 1px solid rgba(140, 214, 255, 0.15);
-    background: var(--panel-glass);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 20px;
-}
-
-.logo-container {
-    margin-bottom: 1.5rem;
-}
-
-.logo-suits {
-    font-size: 1.4rem;
-    letter-spacing: 0.5em;
-    color: var(--accent-cyan);
-    opacity: 0.5;
-    margin-bottom: 0.5rem;
-    animation: suitPulse 3s ease-in-out infinite;
-}
-
-@keyframes suitPulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.7; }
-}
-
-.title-line {
-    letter-spacing: 0.14em;
-}
-
-.title-line.accent {
-    color: #8de8ff;
-    text-shadow:
-        0 0 40px rgba(87, 214, 255, 0.4),
-        0 0 80px rgba(87, 214, 255, 0.15);
-    background: linear-gradient(135deg, #8de8ff, #a77dff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.tagline {
-    color: var(--soft-text);
-    font-size: 0.95rem;
-}
-
-.rules-preview {
-    border-color: rgba(110, 190, 235, 0.25);
-    border-radius: 14px;
-}
-
-.rules-preview li {
-    line-height: 1.6;
-}
-
-/* Glowing primary button */
-.btn-glow {
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-glow::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-    opacity: 0;
-    z-index: -1;
-    transition: opacity 0.3s;
-    filter: blur(12px);
-}
-
-.btn-glow:hover::after,
-.btn-glow:active::after {
-    opacity: 0.4;
-}
-
-/* ============ LOBBY SCREEN ============ */
-
-.lobby-content {
-    border-radius: 20px;
-}
-
-/* ============ GAME SCREEN ============ */
-
-#game-screen.active {
-    width: 100%;
-    max-width: 640px;
-    margin: 0 auto;
-    justify-content: flex-start;
-    gap: 0.65rem;
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-}
-
-.game-layout {
-    gap: 0.65rem;
-}
-
-/* Phone order: dealer, hand, actions, players, log */
-.dealer-area { order: 1; }
-.players-section { order: 4; }
-
-/* Compact single-player mode */
-#game-screen.compact-solo .game-header .game-room-info {
-    display: none;
-}
-
-#game-screen.compact-solo .players-section {
-    display: none;
-}
-
-/* ============ GAME HEADER ============ */
-
-.game-header {
-    width: 100%;
-    position: sticky;
-    top: max(0.3rem, env(safe-area-inset-top));
-    z-index: 40;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--panel-border);
-    background: var(--panel-glass);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 14px;
-}
-
-.game-room-info {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.game-room-label {
-    color: var(--soft-text);
-    font-size: 0.82rem;
-}
-
-.game-room-code {
-    color: #a6f0ff;
-    text-shadow: 0 0 12px rgba(87, 214, 255, 0.25);
-    font-size: 0.95rem;
-}
-
-.game-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-#sound-toggle-btn {
-    font-size: 1.1rem;
-    padding: 0.3rem;
-    opacity: 0.6;
-    transition: opacity var(--duration-fast);
-}
-
-#sound-toggle-btn:hover,
-#sound-toggle-btn.active {
-    opacity: 1;
-}
-
-.btn-quit-game {
-    font-size: 0.68rem;
-    padding: 0.4rem 0.65rem;
-    min-height: 36px;
-    border: 1px solid rgba(255, 146, 146, 0.3);
-    color: #ffd9d9;
-    background: linear-gradient(140deg, rgba(83, 24, 34, 0.8), rgba(52, 17, 23, 0.74));
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    border-radius: 10px;
-}
-
-.btn-quit-game:hover {
-    border-color: rgba(255, 176, 176, 0.55);
-    background: linear-gradient(140deg, rgba(110, 31, 44, 0.88), rgba(67, 21, 30, 0.84));
-}
-
-/* ============ COLLAPSIBLE SECTIONS ============ */
-
-.collapsible .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: 0.5rem 0;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-.collapsible .collapse-icon {
-    color: var(--soft-text);
-    font-size: 0.9rem;
-    transition: transform var(--duration-normal) var(--ease-out-expo);
-}
-
-.collapsible.collapsed .collapse-icon {
-    transform: rotate(-90deg);
-}
-
-.collapsible .collapsible-content {
-    overflow: hidden;
-    max-height: 600px;
-    transition: max-height 0.4s var(--ease-out-expo), opacity 0.3s;
-    opacity: 1;
-}
-
-.collapsible.collapsed .collapsible-content {
-    max-height: 0;
-    opacity: 0;
-}
-
+/* Phones: dealer, hand, players, log, then the sticky action stage. */
 .players-section {
-    width: 100%;
+  order: 3;
 }
 
-.players-section .section-header {
-    padding: 0.4rem 0.2rem;
-}
-
-.section-title {
-    color: var(--soft-text);
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-/* ============ PANELS (shared glassmorphism) ============ */
-
-.dealer-area,
-.player-hand-area,
-.action-area,
-.log-chat-container {
-    width: 100%;
-    border-radius: 18px;
-    border: 1px solid var(--panel-border);
-    background: var(--panel-glass);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    animation: panelSlideIn 0.45s var(--ease-out-expo);
-}
-
-@keyframes panelSlideIn {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ============ DEALER AREA ============ */
+/* ---------- Dealer stage ---------- */
 
 .dealer-area {
-    padding: 0.75rem 0.85rem 0.7rem;
+  gap: 0;
 }
 
-.dealer-label {
-    text-align: center;
-    color: #8feeff;
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    font-size: 0.88rem;
+.dealer-area .section-header {
+  color: var(--stage-ink);
+  font-size: var(--t-md);
+  font-weight: 700;
 }
 
-/* Best five and unused cards side by side (wraps on very narrow screens) */
+.dealer-area .section-header .felt-label {
+  margin-left: 6px;
+}
+
+.dealer-area .collapsible-content {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-3);
+  padding: 0 var(--s-3) var(--s-3);
+}
+
 .dealer-hand-groups {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-    gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--s-3) var(--s-5);
 }
 
 .dealer-group {
-    flex: 0 1 auto;
-    min-width: 0;
-    border-radius: 14px;
-    border: 1px solid rgba(140, 214, 255, 0.12);
-    background: rgba(6, 14, 22, 0.5);
-    padding: 0.45rem 0.4rem 0.5rem;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
 }
 
-.dealer-group.unused {
-    border-style: dashed;
-    border-color: rgba(156, 181, 198, 0.18);
+.dealer-group .board-cards {
+  --card-width: var(--card-w-dealer);
+  gap: 4px;
 }
 
-.dealer-group-label {
-    text-align: center;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #b7d4e5;
-    margin-bottom: 0.3rem;
+/* The best five carry an accent glow; the unused two are greyed. */
+.dealer-used-cards .card-slot.dealt {
+  box-shadow:
+    0 6px 16px color-mix(in srgb, black 35%, transparent),
+    0 0 18px color-mix(in oklab, var(--accent) 35%, transparent);
+  border-radius: 10% / 7.1429%;
 }
 
-.dealer-group.unused .dealer-group-label {
-    color: #7a8d9d;
-}
-
-.dealer-cards {
-    --card-width: var(--dealer-card-width);
-    display: flex;
-    justify-content: center;
-    gap: 0.4rem;
-    flex-wrap: nowrap;
+.dealer-unused-cards .card-slot.unused-slot {
+  filter: grayscale(1) brightness(0.65);
+  opacity: 0.6;
 }
 
 .dealer-hand-result {
-    margin-top: 0.55rem;
-    text-align: center;
-    color: #d2f7ff;
-    min-height: 1.4em;
-    font-size: 0.92rem;
-    font-family: var(--font-display);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px var(--s-3);
+  color: var(--stage-muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
+.dealer-hand-result:empty {
+  display: none;
+}
+
+.dealer-hand-result .hand-chip {
+  background: color-mix(in srgb, black 28%, transparent);
+  border-color: var(--stage-line);
+  color: var(--stage-muted);
+}
+
+.dealer-hand-result .hand-chip strong {
+  color: var(--stage-ink);
 }
 
 .dealer-hand-result .mode-note {
-    display: block;
-    margin-top: 0.2rem;
-    color: #9cb5c6;
-    font-size: 0.72rem;
-    font-family: var(--font-mono);
+  flex-basis: 100%;
 }
 
-/* ============ CARD SLOTS ============ */
-
-/* The slot is a dashed placeholder sized like a card; it holds one shared
-   .playing-card at full width once dealt. Slot states (selected-discard,
-   confirmed-discard, locked, tap-ripple, unused-slot) live on the slot. */
-.card-slot {
-    width: var(--card-width);
-    aspect-ratio: 5 / 7;
-    border-radius: 10% / 7.1429%;
-    border: 1px dashed rgba(160, 208, 230, 0.3);
-    background: rgba(5, 12, 18, 0.5);
-    overflow: visible;
-    position: relative;
-    transition:
-        transform var(--duration-normal) var(--ease-spring),
-        border-color var(--duration-fast),
-        box-shadow var(--duration-normal);
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+.dealer-hand-result.result-mode .mode-note {
+  color: var(--stage-ink);
 }
 
-.card-slot.dealt {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    animation: cardDealIn 0.4s var(--ease-out-expo) backwards;
+/* ---------- Players panel ---------- */
+
+.players-section .collapsible-content {
+  padding: 0 var(--s-3) var(--s-3);
 }
 
-/* Staggered deal animation via custom property */
-.card-slot.dealt {
-    animation-delay: var(--deal-delay, 0s);
+.seats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: var(--s-2);
 }
 
-@keyframes cardDealIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px) rotateY(60deg) scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) rotateY(0) scale(1);
-    }
+.seats:empty {
+  display: none;
 }
 
-/* Suit-coloured glow around the dealer's best five (on the slot wrapper) */
-.dealer-used-cards .card-slot.dealt[data-suit="s"] {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-spade);
+.discard-count {
+  font-variant-numeric: tabular-nums;
 }
 
-.dealer-used-cards .card-slot.dealt[data-suit="h"] {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-heart);
+/* Compact solo mode: alone at the table, the players panel and the room
+   pill are noise. */
+#game-screen.compact-solo .players-section,
+#game-screen.compact-solo .game-room-info {
+  display: none;
 }
 
-.dealer-used-cards .card-slot.dealt[data-suit="d"] {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-diamond);
-}
-
-.dealer-used-cards .card-slot.dealt[data-suit="c"] {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 20px var(--glow-club);
-}
-
-/* Unused dealer cards: greyed out (the whole slot, card included) */
-.dealer-unused-cards .card-slot.unused-slot {
-    filter: grayscale(1) brightness(0.65);
-    opacity: 0.6;
-}
-
-/* ============ PLAYER HAND AREA ============ */
-
-.player-hand-area {
-    padding: 0.85rem 0.85rem 0.75rem;
-    position: relative;
-}
-
-.hand-label {
-    margin-bottom: 0.5rem;
-    color: #9de9ff;
-    font-size: 0.82rem;
-    text-align: center;
-    font-family: var(--font-display);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-}
-
-.hole-cards.five-cards {
-    --card-width: var(--hole-card-width);
-    display: flex;
-    gap: clamp(0.25rem, 1.2vw, 0.5rem);
-    justify-content: center;
-    margin-bottom: 0.55rem;
-}
-
-/* Interactive cards */
-#hole-cards .card-slot {
-    cursor: pointer;
-}
-
-#hole-cards .card-slot:not(.locked):hover,
-#hole-cards .card-slot:not(.locked):active {
-    transform: translateY(-5px) scale(1.03);
-    border-color: rgba(141, 232, 255, 0.55);
-    box-shadow:
-        0 0 0 2px rgba(141, 232, 255, 0.15),
-        0 10px 24px rgba(0, 0, 0, 0.3),
-        0 0 20px var(--accent-cyan-dim);
-}
-
-#hole-cards .card-slot:not(.locked):active {
-    transform: translateY(-3px) scale(1.01);
-    transition-duration: 0.08s;
-}
-
-#hole-cards .card-slot.locked {
-    cursor: not-allowed;
-}
-
-/* Selected for discard (the card itself uses the shared .dim state) */
-#hole-cards .card-slot.selected-discard {
-    transform: translateY(4px) scale(0.96);
-    border-color: rgba(255, 107, 138, 0.6);
-    background: rgba(255, 107, 138, 0.08);
-    box-shadow: 0 0 0 2px rgba(255, 107, 138, 0.12), 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-#hole-cards .card-slot.selected-discard::after {
-    content: "REPLACE";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    padding: 3px 7px;
-    border-radius: 6px;
-    color: var(--accent-rose);
-    background: rgba(10, 10, 15, 0.88);
-    border: 1px solid rgba(255, 107, 138, 0.35);
-    pointer-events: none;
-    z-index: 2;
-    animation: badgeIn 0.2s var(--ease-spring);
-}
-
-@keyframes badgeIn {
-    from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
-    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-}
-
-#hole-cards .card-slot.confirmed-discard::after {
-    content: "QUEUED";
-    color: var(--accent-amber);
-    border-color: rgba(255, 179, 71, 0.35);
-}
-
-/* Card tap ripple effect */
-#hole-cards .card-slot.tap-ripple::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: radial-gradient(circle at center, rgba(87, 214, 255, 0.3) 0%, transparent 70%);
-    animation: tapRipple 0.4s ease-out forwards;
-    pointer-events: none;
-    z-index: 3;
-}
-
-@keyframes tapRipple {
-    from { opacity: 1; transform: scale(0.5); }
-    to { opacity: 0; transform: scale(1.4); }
-}
-
-/* ============ HAND INDICATORS ============ */
-
-.hand-indicators {
-    display: flex;
-    justify-content: center;
-    gap: 0.8rem;
-    margin-bottom: 0.45rem;
-    flex-wrap: wrap;
-}
-
-.hand-strength,
-.dealer-comparison {
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    padding: 0.25rem 0.65rem;
-    border-radius: 20px;
-    transition: all var(--duration-normal) var(--ease-out-expo);
-    min-height: 1.6em;
-}
-
-.hand-strength {
-    color: var(--accent-cyan);
-    background: var(--accent-cyan-dim);
-    border: 1px solid rgba(87, 214, 255, 0.2);
-}
-
-.hand-strength:empty,
-.dealer-comparison:empty {
-    display: none;
-}
-
-.dealer-comparison {
-    font-weight: 500;
-}
-
-.dealer-comparison.beats {
-    color: var(--accent-lime);
-    background: var(--accent-lime-dim);
-    border: 1px solid rgba(100, 247, 168, 0.25);
-}
-
-.dealer-comparison.loses {
-    color: var(--accent-rose);
-    background: rgba(255, 107, 138, 0.1);
-    border: 1px solid rgba(255, 107, 138, 0.2);
-}
-
-/* ============ DISCARD HELP ============ */
-
-.discard-help {
-    text-align: center;
-    margin: 0 0 0.5rem;
-    padding: 0.4rem 0.6rem;
-    border-radius: 12px;
-    color: #cae3f2;
-    font-size: 0.8rem;
-    border: 1px solid rgba(110, 190, 235, 0.15);
-    background: rgba(12, 24, 34, 0.45);
-}
-
-/* ============ PLAYER STATS ============ */
+/* ---------- Hole cards: tap, click, keyboard or swipe to discard ---------- */
 
 .player-stats {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-}
-
-.player-pnl {
-    color: #d9f3ff;
-    text-align: center;
-    font-family: var(--font-mono);
-    font-size: 1rem;
-}
-
-.player-pnl span:first-child {
-    color: var(--soft-text);
-}
-
-.pnl-value {
-    font-weight: 500;
-    transition: color 0.3s;
-}
-
-.pnl-value.animating {
-    animation: pnlBounce 0.5s var(--ease-spring);
-}
-
-@keyframes pnlBounce {
-    0% { transform: scale(1); }
-    30% { transform: scale(1.25); }
-    100% { transform: scale(1); }
-}
-
-.player-streak {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
 }
 
 .player-streak:empty {
-    display: none;
+  display: none;
 }
 
-.player-streak.win-streak {
-    color: var(--accent-lime);
-    background: var(--accent-lime-dim);
+.pnl-value.animating {
+  animation: pnl-bounce var(--d-slow) var(--spring);
 }
 
-.player-streak.lose-streak {
-    color: var(--accent-rose);
-    background: rgba(255, 107, 138, 0.1);
+@keyframes pnl-bounce {
+  40% {
+    scale: 1.18;
+  }
 }
 
-/* ============ PLAYERS AREA ============ */
-
-.players-area {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-    gap: 0.45rem;
-    align-items: stretch;
+#hole-cards .card-slot {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.player-box {
-    min-width: 0;
-    background: rgba(10, 20, 30, 0.65);
-    border: 1px solid rgba(132, 180, 208, 0.2);
-    border-radius: 14px;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-    transition: border-color var(--duration-normal), box-shadow var(--duration-normal);
-    animation: playerBoxIn 0.35s var(--ease-out-expo) backwards;
+#hole-cards .card-slot > .playing-card {
+  cursor: pointer;
 }
 
-@keyframes playerBoxIn {
-    from { opacity: 0; transform: translateY(8px) scale(0.96); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+#hole-cards .card-slot.locked > .playing-card {
+  cursor: not-allowed;
 }
 
-.player-box.confirmed {
-    border-color: rgba(100, 247, 168, 0.45);
-    box-shadow: 0 0 0 1px rgba(100, 247, 168, 0.12), 0 6px 16px rgba(0, 0, 0, 0.2);
+@media (hover: hover) {
+  #hole-cards .card-slot:not(.locked):hover {
+    translate: 0 -4px;
+  }
 }
 
-.player-box .name {
-    color: #dbf0ff;
-    font-size: 0.82rem;
+#hole-cards .card-slot.selected-discard {
+  translate: 0 4px;
+  scale: 0.96;
+  border-color: color-mix(in oklab, var(--bad) 60%, transparent);
+  background: var(--bad-soft);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--bad) 18%, transparent);
 }
 
-.player-box .player-cards {
-    flex-wrap: wrap;
+#hole-cards .card-slot.confirmed-discard {
+  border-color: color-mix(in oklab, var(--warn) 60%, transparent);
+  background: var(--warn-soft);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--warn) 18%, transparent);
 }
 
-.player-box .status {
-    font-size: 0.76rem;
-    margin-top: 0.3rem;
+/* Tap ripple on the slot. */
+#hole-cards .card-slot.tap-ripple::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, color-mix(in oklab, var(--accent) 35%, transparent) 0%, transparent 70%);
+  animation: tap-ripple 0.4s ease-out forwards;
+  pointer-events: none;
 }
 
-.player-box .status.waiting {
-    color: var(--softer-text);
+@keyframes tap-ripple {
+  from {
+    opacity: 1;
+    scale: 0.5;
+  }
+
+  to {
+    opacity: 0;
+    scale: 1.4;
+  }
 }
 
-.player-box .status.confirmed {
-    color: var(--accent-lime);
+.hand-indicators .hand-chip:empty {
+  display: none;
 }
 
-.player-box .discard-count {
-    color: #b0c8da;
-    font-size: 0.72rem;
+.discard-help {
+  margin: 0;
+  text-align: center;
 }
 
-.player-box .hand-result-line,
-.player-box .dealer-compare,
-.player-box .payout {
-    font-size: 0.74rem;
+.discard-help:empty {
+  display: none;
 }
 
-.player-box .dealer-compare.beats {
-    color: var(--accent-lime);
-}
-
-.player-box .dealer-compare.misses {
-    color: var(--accent-rose);
-}
-
-/* Winner label */
-.winner-label {
-    color: var(--accent-amber);
-    font-weight: 600;
-    animation: winnerGlow 1.2s ease-in-out infinite alternate;
-}
-
-@keyframes winnerGlow {
-    from { text-shadow: 0 0 4px rgba(255, 179, 71, 0.2); }
-    to { text-shadow: 0 0 14px rgba(255, 179, 71, 0.7), 0 0 28px rgba(255, 179, 71, 0.25); }
-}
-
-/* ============ ACTION AREA (sticky bottom) ============ */
-
-.action-area {
-    padding: 0.75rem 0.85rem;
-    position: sticky;
-    bottom: max(0.35rem, env(safe-area-inset-bottom));
-    z-index: 25;
-}
-
-.action-header {
-    margin-bottom: 0.45rem;
-}
+/* ---------- Action stage: draw round, 2×2 actions, host controls ---------- */
 
 .draw-round-banner {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    text-align: center;
-    margin-bottom: 0.5rem;
-    color: #8eeaff;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    letter-spacing: 0.03em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s-3);
 }
 
-.draw-round-banner .draw-meta {
-    color: #a0b8ca;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
+.draw-title {
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: var(--lh-heading);
 }
 
-/* 2x2 action button grid */
+.draw-meta {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .action-buttons-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.btn-action {
-    min-height: 48px;
-    font-size: 0.88rem;
-    border-radius: 12px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    transition:
-        transform var(--duration-fast),
-        box-shadow var(--duration-normal),
-        background var(--duration-fast);
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+.btn-confirm.ripple {
+  animation: pnl-bounce var(--d-slow) var(--spring);
 }
 
-.btn-action:active:not(:disabled) {
-    transform: scale(0.97);
+.host-select {
+  gap: 0;
 }
 
-/* Keep All button */
-.btn-keep {
-    background: linear-gradient(135deg, rgba(100, 247, 168, 0.15), rgba(100, 247, 168, 0.08));
-    border: 1px solid rgba(100, 247, 168, 0.35);
-    color: var(--accent-lime);
+.host-select select {
+  width: 9rem;
 }
 
-.btn-keep:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(100, 247, 168, 0.22), rgba(100, 247, 168, 0.12));
-    box-shadow: 0 0 16px rgba(100, 247, 168, 0.15);
-}
-
-/* Replace All button */
-.btn-replace {
-    background: linear-gradient(135deg, rgba(255, 107, 138, 0.12), rgba(255, 107, 138, 0.06));
-    border: 1px solid rgba(255, 107, 138, 0.3);
-    color: var(--accent-rose);
-}
-
-.btn-replace:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(255, 107, 138, 0.18), rgba(255, 107, 138, 0.1));
-    box-shadow: 0 0 16px rgba(255, 107, 138, 0.12);
-}
-
-/* Clear button */
-#clear-discards-btn {
-    border-color: rgba(150, 188, 214, 0.3);
-    color: #d0e3f2;
-}
-
-/* Confirm button */
-.btn-confirm {
-    background: linear-gradient(135deg, #2bd6b3 0%, #1da88e 100%);
-    color: #fff;
-    border: none;
-    box-shadow: 0 4px 14px rgba(43, 214, 179, 0.25);
-}
-
-.btn-confirm:hover:not(:disabled) {
-    background: linear-gradient(135deg, #38e4c2 0%, #24b99c 100%);
-    box-shadow: 0 6px 20px rgba(43, 214, 179, 0.35);
-}
-
-.btn-confirm:disabled {
-    background: rgba(43, 214, 179, 0.2);
-    color: rgba(255, 255, 255, 0.4);
-    box-shadow: none;
-}
-
-/* Button confirm ripple */
-.btn-confirm.ripple::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: rgba(255, 255, 255, 0.3);
-    animation: btnRipple 0.5s ease-out forwards;
-}
-
-@keyframes btnRipple {
-    from { opacity: 1; transform: scale(0.5); }
-    to { opacity: 0; transform: scale(1.5); }
-}
-
-/* Host showdown controls */
-.host-showdown-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    align-items: center;
-    justify-content: center;
-}
-
-.host-showdown-controls label {
-    font-size: 0.8rem;
-}
-
-.host-showdown-controls select {
-    min-width: 100px;
-}
-
-/* ============ LOG / CHAT ============ */
-
-.log-chat-container {
-    border-radius: 16px;
-}
-
-.tab-content {
-    height: 220px;
-}
-
-.game-log {
-    font-size: 0.78rem;
-}
-
-.chat-messages {
-    height: 140px;
-}
-
-.chat-input-area {
-    padding: 0.5rem;
-}
-
-.chat-input-area input {
-    min-height: 40px;
-    border-radius: 16px;
-}
-
-.btn-chat-send {
-    min-height: 40px;
-    border-radius: 16px;
-}
-
-.emoji-picker-btn {
-    width: 40px;
-    height: 40px;
-}
-
-/* ============ DEALER RESULT MODES ============ */
-
-.dealer-hand-result.result-mode {
-    color: #d2f7ff;
-}
-
-/* ============ MY HAND RESULTS ============ */
-
-.my-hand-results {
-    margin-top: 0.65rem;
-    padding-top: 0.65rem;
-    border-top: 1px solid rgba(110, 190, 235, 0.15);
-    text-align: center;
-    animation: resultsIn 0.5s var(--ease-out-expo);
-}
-
-@keyframes resultsIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.my-hand-results:empty {
-    display: none;
-}
-
-.my-hand-row {
-    font-size: 0.83rem;
-    padding: 0.2rem 0;
-}
-
-.my-hand-row.qualified {
-    color: var(--accent-lime);
-}
-
-.my-hand-row.fouled {
-    color: var(--accent-rose);
-}
-
-.my-hand-equation {
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    margin-top: 0.3rem;
-    color: var(--soft-text);
-}
-
-.my-hand-total {
-    font-family: var(--font-mono);
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-top: 0.2rem;
-}
-
-.my-hand-total.win {
-    color: var(--accent-lime);
-}
-
-.my-hand-total.lose {
-    color: var(--accent-rose);
-}
-
-/* ============ WINNER CELEBRATION OVERLAY ============ */
-
-.winner-celebration {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-    overflow: hidden;
-}
-
-.winner-celebration.active {
-    display: block;
-}
-
-.confetti-piece {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    opacity: 0;
-    animation: confettiFall 2.5s ease-out forwards;
-}
-
-@keyframes confettiFall {
-    0% {
-        opacity: 1;
-        transform: translateY(-20vh) rotate(0deg);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(110vh) rotate(720deg);
-    }
-}
-
-/* ============ RULES MODAL ============ */
+/* ---------- Rules: the reversed hand-rankings counter ---------- */
 
 .hand-rankings {
-    counter-reset: rank 11;
+  counter-reset: rank 11;
+  list-style: none;
+  padding-left: 0;
 }
 
 .hand-rankings li {
-    counter-increment: rank -1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  counter-increment: rank -1;
 }
 
-.hand-rankings li::marker {
-    content: counter(rank) ". ";
+.hand-rankings li::before {
+  content: counter(rank);
+  min-width: 1.5em;
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-/* ============ TOAST OVERRIDES ============ */
+/* ---------- Desktop ---------- */
 
-.toast {
-    border-radius: 12px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+@media (min-width: 821px) {
+  .game-screen {
+    --card-w-board: clamp(44px, 7.5vh, 64px);
+    --card-w-dealer: clamp(40px, 6.5vh, 56px);
+  }
+
+  .table-app .game-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 26rem);
+  }
+
+  .dealer-area {
+    flex: none;
+  }
+
+  .action-buttons-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-/* ============ DESKTOP APP SHELL ============
-   The base two-column grid comes from ../ultimate-omaha/styles.css; these
-   rules adapt it to this page's full-width panels and sticky bars. */
-@media (min-width: 900px) {
-    #game-screen.active {
-        max-width: none;
-        gap: 0.5rem;
-        padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
-    }
-
-    .game-layout {
-        max-width: 1180px;
-        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-        gap: 0.8rem;
-    }
-
-    .game-column {
-        align-items: stretch;
-        gap: 0.65rem;
-        padding: 0.15rem;
-    }
-
-    .game-header {
-        position: static;
-    }
-
-    .action-area {
-        position: static;
-    }
-
-    .players-section {
-        flex: 1 1 auto;
-    }
-
-    .collapsible .collapsible-content {
-        max-height: none;
-    }
-
-    .collapsible.collapsed .collapsible-content {
-        max-height: 0;
-    }
-
-    .log-chat-container {
-        max-width: none;
-    }
-
-    .tab-content {
-        height: auto;
-    }
-
-    .chat-messages {
-        height: auto;
-    }
+@media (min-width: 881px) and (max-height: 820px) {
+  .game-screen {
+    --card-w-board: clamp(44px, 8vh, 68px);
+  }
 }
 
-/* Short desktop windows (1024x768): tighter panels */
-@media (min-width: 900px) and (max-height: 800px) {
-    :root {
-        --dealer-card-width: clamp(44px, 4.8vw, 54px);
-        --hole-card-width: 56px;
-    }
-
-    .dealer-area {
-        padding: 0.45rem 0.75rem 0.55rem;
-    }
-
-    .player-hand-area {
-        padding: 0.6rem 0.85rem 0.55rem;
-    }
-
-    .hole-cards.five-cards {
-        margin-bottom: 0.45rem;
-    }
-
-    .hand-indicators {
-        margin-bottom: 0.35rem;
-    }
-
-    .discard-help {
-        margin-bottom: 0.4rem;
-        padding: 0.3rem 0.5rem;
-    }
-
-    .action-area {
-        padding: 0.55rem 0.85rem;
-    }
-
-    .action-header {
-        margin-bottom: 0.35rem;
-    }
-
-    .draw-round-banner {
-        margin-bottom: 0.35rem;
-    }
-
-    .btn-action {
-        min-height: 40px;
-    }
-
-    .my-hand-results {
-        margin-top: 0.4rem;
-        padding-top: 0.4rem;
-    }
-
-    .my-hand-row {
-        padding: 0.1rem 0;
-    }
-
-    .log-chat-container {
-        min-height: 110px;
-    }
-}
-
-/* ============ RESPONSIVE: IPHONE-FIRST ============ */
-
-@media (max-width: 900px) {
-    #game-screen.active {
-        gap: 0.55rem;
-    }
-
-    .players-area {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    }
-
-    .tab-content {
-        height: 200px;
-    }
-}
+/* ---------- Phones ---------- */
 
 @media (max-width: 640px) {
-    #game-screen.active {
-        padding-bottom: max(0.9rem, env(safe-area-inset-bottom));
-    }
+  .dealer-hand-groups {
+    gap: var(--s-2) var(--s-3);
+  }
 
-    .game-header {
-        gap: 0.4rem;
-        flex-wrap: wrap;
-        padding: 0.45rem 0.6rem;
-    }
-
-    .game-room-info {
-        max-width: calc(100% - 110px);
-    }
-
-    .game-room-code {
-        letter-spacing: 0.08em;
-        font-size: 0.88rem;
-    }
-
-    .btn-quit-game {
-        font-size: 0.62rem;
-        padding: 0.35rem 0.52rem;
-    }
-
-    .dealer-area,
-    .player-hand-area,
-    .action-area,
-    .log-chat-container {
-        border-radius: 14px;
-    }
-
-    .dealer-area,
-    .player-hand-area {
-        padding: 0.65rem;
-    }
-
-    :root {
-        /* all 7 dealer cards fit one row on a 375px phone */
-        --dealer-card-width: clamp(34px, 10.5vw, 48px);
-        --mini-card-width: 23px;
-    }
-
-    .dealer-cards {
-        gap: 0.25rem;
-    }
-
-    .dealer-group {
-        padding: 0.35rem 0.2rem 0.4rem;
-    }
-
-    .hand-label {
-        font-size: 0.76rem;
-    }
-
-    .hole-cards.five-cards {
-        gap: clamp(0.2rem, 1vw, 0.35rem);
-    }
-
-    .hand-indicators {
-        gap: 0.5rem;
-    }
-
-    .hand-strength,
-    .dealer-comparison {
-        font-size: 0.72rem;
-        padding: 0.2rem 0.5rem;
-    }
-
-    .discard-help {
-        font-size: 0.74rem;
-        padding: 0.35rem 0.5rem;
-    }
-
-    .players-area {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.35rem;
-    }
-
-    .player-box {
-        padding: 0.5rem 0.4rem;
-    }
-
-    .player-box .name {
-        font-size: 0.76rem;
-    }
-
-    .player-box .pnl,
-    .player-box .bet-amount,
-    .player-box .status,
-    .player-box .discard-count {
-        font-size: 0.68rem;
-    }
-
-    .action-area {
-        padding: 0.6rem;
-        bottom: max(0.15rem, env(safe-area-inset-bottom));
-    }
-
-    .draw-round-banner {
-        font-size: 0.86rem;
-        margin-bottom: 0.4rem;
-    }
-
-    .draw-round-banner .draw-meta {
-        font-size: 0.65rem;
-    }
-
-    .action-buttons-grid {
-        gap: 0.3rem;
-    }
-
-    .btn-action {
-        min-height: 46px;
-        font-size: 0.82rem;
-        padding: 0.45rem 0.4rem;
-    }
-
-    .host-showdown-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .host-showdown-controls label {
-        justify-content: space-between;
-    }
-
-    .host-showdown-controls input,
-    .host-showdown-controls select {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .tab-content {
-        height: 170px;
-    }
-
-    .chat-messages {
-        height: 105px;
-    }
-
-    .chat-input-area {
-        gap: 0.3rem;
-        padding: 0.4rem;
-    }
-
-    .chat-input-area input {
-        min-height: 36px;
-        font-size: 0.8rem;
-    }
-
-    .btn-chat-send {
-        min-height: 36px;
-        font-size: 0.74rem;
-        padding: 0.35rem 0.5rem;
-    }
-
-    .emoji-picker-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 0.95rem;
-    }
+  .seats {
+    display: flex;
+  }
 }
 
-/* Extra-small phones (iPhone SE, etc.) */
-@media (max-width: 375px) {
-    :root {
-        --hole-card-width: clamp(48px, 15.5vw, 60px);
-    }
-
-    .btn-action {
-        min-height: 42px;
-        font-size: 0.76rem;
-    }
-
-    .player-pnl {
-        font-size: 0.9rem;
-    }
-}
-
-/* Landscape on phones */
-@media (max-height: 500px) and (orientation: landscape) {
-    .dealer-area {
-        padding: 0.4rem 0.6rem;
-    }
-
-    .player-hand-area {
-        padding: 0.5rem 0.6rem;
-    }
-
-    .hole-cards.five-cards {
-        --card-width: 50px;
-        margin-bottom: 0.3rem;
-    }
-
-    .action-area {
-        position: relative;
-        bottom: unset;
-    }
+/* The page's own show/hide flag (app.js toggles it). Last, so it wins over
+   every same-specificity display rule before it. */
+.hidden {
+  display: none;
 }
