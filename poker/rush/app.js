@@ -1082,20 +1082,24 @@
   }
 
   function hostGone(message) {
-    if (game && game.status === "playing" && playMode === "peer") {
+    closeRoomQuietly();
+    multiplayerGame = null;
+    showAlert(message);
+    if (els.gameView.hidden) {
+      backToLobby();
+      return;
+    }
+    // The race view stays up with the result; Play again starts a solo
+    // random run and Options goes back to the lobby.
+    playMode = "single";
+    lastStartKind = "random";
+    if (game && game.status === "playing") {
       game.status = "ended";
       game.endReason = "The host closed the room";
       renderStatus();
       showGameOver();
     }
-    showAlert(message);
-    closeRoomQuietly();
-    multiplayerGame = null;
-    if (els.gameView.hidden) backToLobby();
-    else {
-      playMode = "single";
-      showView("game");
-    }
+    showView("game");
   }
 
   // leave() tells the host first; when the host is already gone that send
@@ -1415,7 +1419,7 @@
       els.gameOverSummary.textContent = tie
         ? `It's a tie at ${first.score} point${first.score === 1 ? "" : "s"} each.`
         : `${first.name} wins ${first.score}–${second ? second.score : 0}${first.isLocal ? ". That's you." : "."}`;
-      game.players.forEach((player) => stats.push(statTile(player.isLocal ? `${player.name} (you)` : player.name, `${player.score} pts`, !tie && player.id === first.id ? "is-good" : "")));
+      game.players.forEach((player) => stats.push(statTile(player.isLocal ? "You" : player.name, `${player.score} pts`, !tie && player.id === first.id ? "is-good" : "")));
       stats.push(statTile("Seed", game.seed));
     } else {
       els.gameOverKicker.textContent = "Run over";
