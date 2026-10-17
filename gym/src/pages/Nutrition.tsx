@@ -4,6 +4,7 @@ import {
   Beaker,
   CircleAlert,
   Droplets,
+  Pencil,
   Plus,
   Scale,
   Trash2,
@@ -265,13 +266,17 @@ export default function Nutrition() {
                       </p>
                     </div>
                     {isLocalNutritionEntry(entry.id) ? (
-                      <Button
-                        variant="danger"
-                        className="self-start sm:self-auto"
-                        onClick={() => void removeEntry(entry.id, entry.date)}
-                      >
-                        <Trash2 size={14} aria-hidden="true" /> Delete
-                      </Button>
+                      <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+                        <ButtonLink to={`/add-nutrition?edit=${entry.id}`}>
+                          <Pencil size={14} aria-hidden="true" /> Edit
+                        </ButtonLink>
+                        <Button
+                          variant="danger"
+                          onClick={() => void removeEntry(entry.id, entry.date)}
+                        >
+                          <Trash2 size={14} aria-hidden="true" /> Delete
+                        </Button>
+                      </div>
                     ) : null}
                   </div>
                 ))}

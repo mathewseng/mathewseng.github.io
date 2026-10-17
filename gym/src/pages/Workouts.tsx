@@ -25,6 +25,8 @@ import {
 } from "../components/ui";
 import { compareWorkoutsNewestFirst } from "../data/workouts";
 import type { WorkoutType } from "../lib/types";
+import { isValidIsoDate } from "../lib/validation";
+import { useSearchParams } from "../router";
 import { useAppState } from "../state/AppState";
 
 type ContextFilter =
@@ -52,6 +54,10 @@ const contextOptions: Array<{ id: ContextFilter; label: string }> = [
 export default function Workouts() {
   const { workouts, nutritionEntries, isLocalWorkout, deleteWorkout } = useAppState();
   const confirm = useConfirm();
+  const [searchParams] = useSearchParams();
+  const queryDate = searchParams.get("date");
+  // `#/workouts?date=YYYY-MM-DD` opens the calendar on that day.
+  const initialDate = queryDate && isValidIsoDate(queryDate) ? queryDate : undefined;
   const [search, setSearch] = useState("");
   const [type, setType] = useState<WorkoutType | "all">("all");
   const [filters, setFilters] = useState<ContextFilter[]>([]);
@@ -140,7 +146,12 @@ export default function Workouts() {
         }
       />
 
-      <WorkoutCalendar workouts={workouts} nutritionEntries={nutritionEntries} />
+      <WorkoutCalendar
+        key={initialDate ?? "latest"}
+        workouts={workouts}
+        nutritionEntries={nutritionEntries}
+        initialDate={initialDate}
+      />
 
       <section className="mt-8">
         <SectionHeading
@@ -229,29 +240,37 @@ export default function Workouts() {
 
         {undated.length ? (
           <div className="mt-7">
-            <button
-              type="button"
-              className="mb-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-sm text-left"
-              onClick={() => setShowUndated((value) => !value)}
-              aria-expanded={showUndated}
-            >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="flex items-center gap-2 text-lg font-bold tracking-[-0.02em]">
-                  <CircleAlert
-                    size={17}
-                    className="text-[var(--warn)]"
-                    aria-hidden="true"
-                  />
-                  Undated history
+                <h2 className="text-lg font-bold tracking-[-0.02em]">
+                  <button
+                    type="button"
+                    className="flex min-h-11 items-center gap-2 rounded-sm text-left"
+                    onClick={() => setShowUndated((value) => !value)}
+                    aria-expanded={showUndated}
+                    aria-controls="undated-history"
+                  >
+                    <CircleAlert
+                      size={17}
+                      className="text-[var(--warn)]"
+                      aria-hidden="true"
+                    />
+                    Undated history
+                    <ChevronDown
+                      size={16}
+                      className={showUndated ? "rotate-180" : undefined}
+                      aria-hidden="true"
+                    />
+                  </button>
                 </h2>
-                <p className="mt-1 text-xs text-[var(--muted)]">
+                <p className="text-xs text-[var(--muted)]">
                   Kept in source order; never assigned a made-up date.
                 </p>
               </div>
               <Badge tone="quality">{undated.length} sessions</Badge>
-            </button>
+            </div>
             {showUndated ? (
-              <div className="space-y-3">
+              <div id="undated-history" className="space-y-3">
                 {undated.map((workout) => (
                   <WorkoutCard key={workout.id} workout={workout} />
                 ))}

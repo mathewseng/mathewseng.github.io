@@ -88,11 +88,19 @@ html {
   background: var(--page);
 }
 
-/* Below the desktop sidebar breakpoint the tab bar is fixed to the bottom, so
-   scrollIntoView / focus must stop above it. */
+/* The tab bar (below the desktop sidebar breakpoint) and a view's action bar
+   are fixed to the bottom, so scrollIntoView / focus must stop above them.
+   AppShell and ActionBar measure both into custom properties. */
+html {
+  scroll-padding-bottom: calc(var(--tab-bar-h, 0px) + var(--action-bar-h, 0px) + 16px);
+}
+
 @media (max-width: 1023px) {
   html {
-    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(
+      var(--tab-bar-h, calc(5.5rem + env(safe-area-inset-bottom))) +
+        var(--action-bar-h, 0px) + 16px
+    );
   }
 }
 
@@ -189,7 +197,7 @@ body::after {
    transition can never leave content at opacity 0. */
 #main-content > * {
   opacity: 1;
-  translate: 0 0;
+  translate: none;
   transition:
     opacity var(--d-slow) var(--ease),
     translate var(--d-slow) var(--ease);
@@ -954,6 +962,16 @@ body::after {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
+  /* role="row" wrappers take no box, so header and day cells stay grid items. */
+  .calendar-grid > [role="row"] {
+    display: contents;
+  }
+
+  .calendar-day {
+    display: grid;
+    min-width: 0;
+  }
+
   .calendar-cell {
     position: relative;
     min-height: 5.6rem;
@@ -963,7 +981,7 @@ body::after {
     text-align: left;
   }
 
-  .calendar-cell:nth-child(7n) {
+  .calendar-day:nth-child(7n) > .calendar-cell {
     border-right: 0;
   }
 
@@ -1174,7 +1192,11 @@ body::after {
   .toast-stack {
     position: fixed;
     left: 50%;
-    bottom: calc(76px + env(safe-area-inset-bottom));
+    /* Above the tab bar and any action bar (both measured by script). */
+    bottom: calc(
+      var(--tab-bar-h, calc(76px + env(safe-area-inset-bottom))) +
+        var(--action-bar-h, 0px) + 8px
+    );
     z-index: 60;
     display: flex;
     flex-direction: column;
@@ -1187,7 +1209,105 @@ body::after {
 
   @media (min-width: 1024px) {
     .toast-stack {
-      bottom: calc(16px + env(safe-area-inset-bottom));
+      bottom: calc(16px + var(--action-bar-h, 0px) + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* ---------- Mobile action bar (the view's primary action) ---------- */
+
+  .action-bar-spacer {
+    height: var(--action-bar-h, 0px);
+  }
+
+  .action-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: var(--tab-bar-h, 0px);
+    z-index: 35;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    padding: 8px 16px;
+    backdrop-filter: blur(18px);
+  }
+
+  .action-bar > .btn {
+    flex-shrink: 0;
+  }
+
+  /* Beside the desktop sidebar, with no tab bar beneath it. */
+  @media (min-width: 1024px) {
+    .action-bar {
+      inset-inline-start: 16rem;
+      padding-inline: 32px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+  }
+
+  .action-bar-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    border-radius: var(--r-sm);
+    color: var(--muted);
+    font-size: var(--t-sm);
+    font-weight: 700;
+    text-align: left;
+  }
+
+  button.action-bar-status {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--bad) 60%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  /* ---------- Field errors ---------- */
+
+  .field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+    color: var(--bad);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .field-error > svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  [data-invalid="true"] {
+    border-color: var(--bad);
+  }
+
+  /* An issue in the summary moves focus to its field. */
+  .issue-link {
+    display: block;
+    width: 100%;
+    min-height: 36px;
+    border-radius: var(--r-sm);
+    padding: 6px 0;
+    color: var(--ink);
+    font-size: var(--t-xs);
+    line-height: 1.4;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--bad) 60%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  @media (pointer: coarse) {
+    .issue-link {
+      min-height: 44px;
     }
   }
 

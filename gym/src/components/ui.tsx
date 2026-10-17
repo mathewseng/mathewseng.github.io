@@ -1,11 +1,14 @@
 import type { LucideIcon } from "lucide-react";
-import { Check, Search, X } from "lucide-react";
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  PropsWithChildren,
-  ReactNode,
+import { AlertCircle, Check, Search, X } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type PropsWithChildren,
+  type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { clsx } from "clsx";
 
@@ -419,5 +422,125 @@ export function EmptyState({
       <p className="mx-auto max-w-sm text-sm leading-6">{description}</p>
       {action ? <div className="mt-3">{action}</div> : null}
     </div>
+  );
+}
+
+/* ---------- Form errors ---------- */
+
+/** A stable DOM id for a validation path such as `exercises[0].sets[1].reps`. */
+export function fieldDomId(formId: string, path: string): string {
+  return `${formId}-${path.replace(/[^a-zA-Z0-9]+/g, "-").replace(/-$/, "")}`;
+}
+
+export function groupIssuesByPath(
+  issues: ReadonlyArray<{ path: string; message: string }>,
+): Map<string, string[]> {
+  const grouped = new Map<string, string[]>();
+  for (const issue of issues) {
+    grouped.set(issue.path, [...(grouped.get(issue.path) ?? []), issue.message]);
+  }
+  return grouped;
+}
+
+/**
+ * The id, aria-invalid and aria-describedby a control needs for its errors,
+ * plus the messages to render with FieldError.
+ */
+export function fieldA11y(formId: string, errors: Map<string, string[]>, path: string) {
+  const id = fieldDomId(formId, path);
+  const messages = errors.get(path) ?? [];
+  return {
+    errorId: `${id}-error`,
+    messages,
+    props: {
+      id,
+      "aria-invalid": messages.length ? (true as const) : undefined,
+      "aria-describedby": messages.length ? `${id}-error` : undefined,
+    },
+  };
+}
+
+export function FieldError({ id, messages }: { id: string; messages: string[] }) {
+  if (!messages.length) return null;
+  return (
+    <p id={id} className="field-error">
+      <AlertCircle size={13} aria-hidden="true" />
+      <span>{messages.join(" ")}</span>
+    </p>
+  );
+}
+
+export function prefersReducedMotion(): boolean {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Focuses the control for a validation path, or its nearest enclosing group. */
+export function focusIssue(formId: string, path: string) {
+  let candidate = path;
+  while (candidate) {
+    const element = document.getElementById(fieldDomId(formId, candidate));
+    if (element) {
+      element.focus({ preventScroll: true });
+      element.scrollIntoView({
+        block: "center",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
+      return;
+    }
+    const next = candidate.replace(/(\.[^.[\]]+|\[\d+\])$/, "");
+    if (next === candidate) return;
+    candidate = next;
+  }
+}
+
+/* ---------- Mobile action bar ---------- */
+
+/**
+ * A fixed bar above the tab bar holding the view's primary action on phones
+ * and tablets. Its height is published as --action-bar-h so the toast stack,
+ * the scroll padding and the in-flow spacer keep content clear of it.
+ */
+export function ActionBar({
+  children,
+  className,
+  label,
+}: PropsWithChildren<{ className?: string; label: string }>) {
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const root = document.documentElement;
+    const write = () => root.style.setProperty("--action-bar-h", `${bar.offsetHeight}px`);
+    write();
+    const observer =
+      typeof ResizeObserver === "function" ? new ResizeObserver(write) : null;
+    observer?.observe(bar);
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty("--action-bar-h");
+    };
+  }, []);
+
+  // The bar is portalled to <body> so no transformed ancestor (the view's
+  // entrance transition) can become its containing block.
+  return (
+    <>
+      <div className={clsx("action-bar-spacer", className)} aria-hidden="true" />
+      {createPortal(
+        <div
+          ref={barRef}
+          className={clsx("action-bar", className)}
+          role="region"
+          aria-label={label}
+        >
+          {children}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }

@@ -116,6 +116,7 @@ export default function AppShell({ children }: PropsWithChildren) {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDialogElement>(null);
+  const tabBarRef = useRef<HTMLElement>(null);
   const [dark, setDark] = useState(initialDark);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pageName = pageNames[location.pathname] ?? "Gym Tracker";
@@ -143,6 +144,23 @@ export default function AppShell({ children }: PropsWithChildren) {
     if (mobileMenuOpen && !menu.open) menu.showModal();
     if (!mobileMenuOpen && menu.open) menu.close();
   }, [mobileMenuOpen]);
+
+  // The tab bar's height (0 while it is hidden on desktop) positions the
+  // toast stack, action bars and scroll padding above it.
+  useEffect(() => {
+    const bar = tabBarRef.current;
+    if (!bar) return;
+    const root = document.documentElement;
+    const write = () => root.style.setProperty("--tab-bar-h", `${bar.offsetHeight}px`);
+    write();
+    const observer =
+      typeof ResizeObserver === "function" ? new ResizeObserver(write) : null;
+    observer?.observe(bar);
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty("--tab-bar-h");
+    };
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -299,7 +317,11 @@ export default function AppShell({ children }: PropsWithChildren) {
             </div>
           </dialog>
 
-          <nav className="tab-bar lg:hidden" aria-label="Mobile navigation">
+          <nav
+            ref={tabBarRef}
+            className="tab-bar lg:hidden"
+            aria-label="Mobile navigation"
+          >
             <div className="mx-auto grid max-w-lg grid-cols-5">
               {[
                 navigation[0],

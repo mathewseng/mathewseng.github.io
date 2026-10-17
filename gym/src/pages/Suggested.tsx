@@ -22,35 +22,16 @@ import {
   SegmentedControl,
   Surface,
 } from "../components/ui";
-import type { ReadinessInput, Scale0To6, WorkoutType } from "../lib/types";
+import { suggestionToSearch } from "../lib/planHandoff";
+import type { Scale0To6, WorkoutType } from "../lib/types";
 import {
+  DEFAULT_READINESS_SCORES,
   suggestWorkout,
   WORKOUT_DURATION_OPTIONS,
   type WorkoutDurationMinutes,
 } from "../lib/workoutSuggestions";
 
-const initialReadiness: Required<
-  Pick<
-    ReadinessInput,
-    | "energy"
-    | "sleepQuality"
-    | "soreness"
-    | "appetite"
-    | "illness"
-    | "travelImpact"
-    | "backPain"
-    | "generalPain"
-  >
-> = {
-  energy: 3,
-  sleepQuality: 3,
-  soreness: 2,
-  appetite: 3,
-  illness: 0,
-  travelImpact: 2,
-  backPain: 0,
-  generalPain: 0,
-};
+const initialReadiness = DEFAULT_READINESS_SCORES;
 
 const workoutTypes: WorkoutType[] = ["push", "pull", "legs", "full-body"];
 
@@ -417,10 +398,16 @@ export default function Suggested() {
             </Surface>
           </div>
 
-          <ButtonLink to="/add" variant="primary" className="mt-4 w-full sm:w-auto">
-            <Dumbbell size={16} aria-hidden="true" /> Start with this plan{" "}
-            <ArrowRight size={15} aria-hidden="true" />
-          </ButtonLink>
+          {suggestion.exercises.length ? (
+            <ButtonLink
+              to={`/add${suggestionToSearch(suggestion)}`}
+              variant="primary"
+              className="mt-4 w-full sm:w-auto"
+            >
+              <Dumbbell size={16} aria-hidden="true" /> Start with this plan{" "}
+              <ArrowRight size={15} aria-hidden="true" />
+            </ButtonLink>
+          ) : null}
         </div>
       </div>
 

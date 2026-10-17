@@ -129,13 +129,17 @@ export default function WorkoutCard({
               </span>
             </span>
           </span>
-          <span
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-sm bg-[var(--surface-2)] text-[var(--muted)]"
-            aria-hidden="true"
-          >
-            {expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+          <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-[var(--muted)]">
+            <span className="sr-only sm:not-sr-only">
+              {expanded ? "Hide sets" : "Show sets"}
+            </span>
+            <span
+              className="grid h-9 w-9 place-items-center rounded-sm bg-[var(--surface-2)]"
+              aria-hidden="true"
+            >
+              {expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+            </span>
           </span>
-          <span className="sr-only">{expanded ? "Hide sets" : "Show sets"}</span>
         </button>
       </div>
 

@@ -1,10 +1,36 @@
-import { AlertTriangle, Beaker, Check, Info, Plus, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Beaker,
+  Check,
+  FileQuestion,
+  Info,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 import { ScoreControl } from "../components/ScoreControl";
+import { useConfirm } from "../components/confirm";
 import { useToast } from "../components/toast";
-import { Button, PageHeader, SectionHeading, Surface } from "../components/ui";
+import {
+  ActionBar,
+  Button,
+  ButtonLink,
+  EmptyState,
+  FieldError,
+  PageHeader,
+  SectionHeading,
+  Surface,
+  fieldA11y,
+  focusIssue,
+  groupIssuesByPath,
+} from "../components/ui";
 import { creatineNotice } from "../data/nutrition";
+import { errorMessage, localToday, numericValue } from "../lib/formUtils";
 import type {
   DataQuality,
   NutritionEntry,
@@ -12,113 +38,301 @@ import type {
   SupplementEntry,
 } from "../lib/types";
 import { validateNutritionEntry } from "../lib/validation";
-import { useNavigate } from "../router";
+import { useNavigate, useNavigationGuard, useSearchParams } from "../router";
 import { useAppState } from "../state/AppState";
 
-function localToday(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+const FORM_ID = "nutrition";
 
-function numericValue(value: string): number | undefined {
-  if (value.trim() === "") return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+type NumericKey =
+  | "bodyWeightLb"
+  | "calories"
+  | "proteinG"
+  | "carbsG"
+  | "fatG"
+  | "fiberG"
+  | "waterOz"
+  | "creatineG";
+
+type RatingKey = "appetite" | "mealQuality" | "illness" | "travelImpact";
+
+interface NutritionForm extends Partial<Record<NumericKey, number>> {
+  date: string;
+  appetite?: Scale0To6;
+  mealQuality?: Scale0To6;
+  illness?: Scale0To6;
+  travelImpact?: Scale0To6;
+  supplements: SupplementEntry[];
+  notes: string;
+  dataQuality: DataQuality;
 }
 
 function newId(): string {
   return `local-nutrition-${crypto.randomUUID()}`;
 }
 
+function blankForm(): NutritionForm {
+  return { date: localToday(), supplements: [], notes: "", dataQuality: "complete" };
+}
+
+function formFromEntry(entry: NutritionEntry): NutritionForm {
+  return {
+    date: entry.date,
+    bodyWeightLb: entry.bodyWeightLb,
+    calories: entry.calories,
+    proteinG: entry.proteinG,
+    carbsG: entry.carbsG,
+    fatG: entry.fatG,
+    fiberG: entry.fiberG,
+    waterOz: entry.waterOz,
+    creatineG: entry.creatineG,
+    appetite: entry.appetite,
+    mealQuality: entry.mealQuality,
+    illness: entry.illness,
+    travelImpact: entry.travelImpact,
+    supplements: entry.otherSupplements ?? [],
+    notes: entry.notes ?? "",
+    dataQuality: entry.dataQuality ?? "complete",
+  };
+}
+
+function EditNotFound({ id, seedDate }: { id: string; seedDate?: string }) {
+  return (
+    <>
+      <PageHeader eyebrow="Edit local entry" title="Nutrition entry not found" />
+      <Surface>
+        <EmptyState
+          icon={FileQuestion}
+          title={
+            seedDate
+              ? "Bundled entries can’t be edited here"
+              : "No saved entry has this link"
+          }
+          description={
+            seedDate
+              ? `The ${seedDate} entry is part of the bundled history. It is changed in the repository data, not in this browser.`
+              : `Nothing saved in this browser has the id “${id}”. It may have been deleted, or saved on another device.`
+          }
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <ButtonLink to="/nutrition">
+                <ArrowLeft size={15} aria-hidden="true" /> Open nutrition
+              </ButtonLink>
+              <ButtonLink to="/add-nutrition" variant="primary">
+                <Plus size={15} aria-hidden="true" /> Log a new day
+              </ButtonLink>
+            </div>
+          }
+        />
+      </Surface>
+    </>
+  );
+}
+
 export default function AddNutrition() {
+  const [searchParams] = useSearchParams();
+  const { nutritionEntries, getLocalNutritionEntry } = useAppState();
+  const editId = searchParams.get("edit");
+  const existing = editId ? getLocalNutritionEntry(editId) : undefined;
+
+  if (editId && !existing) {
+    return (
+      <EditNotFound
+        id={editId}
+        seedDate={nutritionEntries.find((entry) => entry.id === editId)?.date}
+      />
+    );
+  }
+  return <NutritionEditor key={editId ?? "new"} existing={existing} />;
+}
+
+function NutritionEditor({ existing }: { existing?: NutritionEntry }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirm();
   const { saveNutritionEntry } = useAppState();
-  const [date, setDate] = useState(localToday());
-  const [bodyWeightLb, setBodyWeightLb] = useState<number>();
-  const [calories, setCalories] = useState<number>();
-  const [proteinG, setProteinG] = useState<number>();
-  const [carbsG, setCarbsG] = useState<number>();
-  const [fatG, setFatG] = useState<number>();
-  const [fiberG, setFiberG] = useState<number>();
-  const [waterOz, setWaterOz] = useState<number>();
-  const [creatineG, setCreatineG] = useState<number>();
-  const [appetite, setAppetite] = useState<Scale0To6>();
-  const [mealQuality, setMealQuality] = useState<Scale0To6>();
-  const [illness, setIllness] = useState<Scale0To6>();
-  const [travelImpact, setTravelImpact] = useState<Scale0To6>();
-  const [supplements, setSupplements] = useState<SupplementEntry[]>([]);
-  const [notes, setNotes] = useState("");
-  const [dataQuality, setDataQuality] = useState<DataQuality>("complete");
+  const [entryId] = useState(() => existing?.id ?? newId());
+  const [form, setForm] = useState<NutritionForm>(() =>
+    existing ? formFromEntry(existing) : blankForm(),
+  );
+  const [baseline, setBaseline] = useState(() => JSON.stringify(form));
+  const [saved, setSaved] = useState(false);
+  const dirty = !saved && JSON.stringify(form) !== baseline;
+
+  const update = (patch: Partial<NutritionForm>) =>
+    setForm((current) => ({ ...current, ...patch }));
+
+  const askToLeave = useCallback(
+    () =>
+      confirm({
+        title: "Leave without saving?",
+        description:
+          "This nutrition entry has changes that are not saved yet. Leaving discards them.",
+        confirmLabel: "Leave",
+        cancelLabel: "Keep editing",
+        tone: "danger",
+      }),
+    [confirm],
+  );
+  useNavigationGuard(dirty, askToLeave);
 
   const entry = useMemo<NutritionEntry>(
     () => ({
-      id: newId(),
-      date,
-      bodyWeightLb,
-      calories,
-      proteinG,
-      carbsG,
-      fatG,
-      fiberG,
-      waterOz,
-      creatineG,
-      otherSupplements: supplements.length ? supplements : undefined,
-      appetite,
-      mealQuality,
-      illness,
-      travelImpact,
-      notes: notes.trim() || undefined,
-      dataQuality,
+      id: entryId,
+      date: form.date,
+      bodyWeightLb: form.bodyWeightLb,
+      calories: form.calories,
+      proteinG: form.proteinG,
+      carbsG: form.carbsG,
+      fatG: form.fatG,
+      fiberG: form.fiberG,
+      waterOz: form.waterOz,
+      creatineG: form.creatineG,
+      otherSupplements: form.supplements.length ? form.supplements : undefined,
+      appetite: form.appetite,
+      mealQuality: form.mealQuality,
+      illness: form.illness,
+      travelImpact: form.travelImpact,
+      notes: form.notes.trim() || undefined,
+      dataQuality: form.dataQuality,
     }),
-    [
-      appetite,
-      bodyWeightLb,
-      calories,
-      carbsG,
-      creatineG,
-      dataQuality,
-      date,
-      fatG,
-      fiberG,
-      illness,
-      mealQuality,
-      notes,
-      proteinG,
-      supplements,
-      travelImpact,
-      waterOz,
-    ],
+    [entryId, form],
   );
   const validation = validateNutritionEntry(entry);
-  const highDose = creatineG !== undefined && creatineG >= 15;
+  const errorMap = groupIssuesByPath(validation.errors);
+  const field = (path: string) => fieldA11y(FORM_ID, errorMap, path);
+  const highDose = form.creatineG !== undefined && form.creatineG >= 15;
+  const saveLabel = existing ? "Update nutrition" : "Save nutrition";
+
+  function setSupplement(index: number, patch: Partial<SupplementEntry>) {
+    setForm((current) => ({
+      ...current,
+      supplements: current.supplements.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item,
+      ),
+    }));
+  }
+
+  function showFirstIssue() {
+    const first = validation.errors[0];
+    if (first) focusIssue(FORM_ID, first.path);
+  }
 
   function handleSave() {
     if (!validation.valid) {
-      toast("Review the validation issues before saving.", "alert");
+      const count = validation.errors.length;
+      toast(`Fix ${count} issue${count === 1 ? "" : "s"} before saving.`, "alert");
+      window.requestAnimationFrame(showFirstIssue);
       return;
     }
     try {
-      saveNutritionEntry({ ...entry, id: newId() });
+      saveNutritionEntry(entry);
     } catch (caught) {
       toast(
-        caught instanceof Error ? caught.message : "The entry could not be saved.",
+        `Not saved: ${errorMessage(caught, "the browser refused the write.")}`,
         "alert",
       );
       return;
     }
-    toast("Nutrition entry saved in this browser.", "good");
+    setSaved(true);
+    toast(
+      existing
+        ? "Nutrition entry updated in this browser."
+        : "Nutrition entry saved in this browser.",
+      "good",
+    );
     window.setTimeout(() => navigate("/nutrition"), 450);
   }
+
+  async function clearForm() {
+    const confirmed = await confirm({
+      title: "Clear the form?",
+      description:
+        "The date, every value, context score, supplement and note typed so far are discarded.",
+      confirmLabel: "Clear form",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    const fresh = blankForm();
+    setForm(fresh);
+    setBaseline(JSON.stringify(fresh));
+    toast("Form cleared.");
+  }
+
+  function numberField(
+    key: NumericKey,
+    label: string,
+    step: string,
+    placeholder: string,
+  ) {
+    const a11y = field(key);
+    return (
+      <div key={key}>
+        <label className="label" htmlFor={a11y.props.id}>
+          {label}
+        </label>
+        <input
+          {...a11y.props}
+          className="field"
+          type="number"
+          min="0"
+          step={step}
+          inputMode={step === "1" ? "numeric" : "decimal"}
+          value={form[key] ?? ""}
+          onChange={(event) => update({ [key]: numericValue(event.target.value) })}
+          placeholder={placeholder}
+        />
+        <FieldError id={a11y.errorId} messages={a11y.messages} />
+      </div>
+    );
+  }
+
+  const ratings: Array<{
+    key: RatingKey;
+    id: string;
+    label: string;
+    lowLabel: string;
+    highLabel: string;
+    negative?: boolean;
+  }> = [
+    {
+      key: "appetite",
+      id: "nutrition-appetite",
+      label: "Appetite",
+      lowLabel: "very low",
+      highLabel: "strong",
+    },
+    {
+      key: "mealQuality",
+      id: "nutrition-meal-quality",
+      label: "Meal quality",
+      lowLabel: "poor",
+      highLabel: "excellent",
+    },
+    {
+      key: "illness",
+      id: "nutrition-illness",
+      label: "Illness impact",
+      lowLabel: "none",
+      highLabel: "severe",
+      negative: true,
+    },
+    {
+      key: "travelImpact",
+      id: "nutrition-travel",
+      label: "Travel impact",
+      lowLabel: "none",
+      highLabel: "major",
+      negative: true,
+    },
+  ];
+
+  const dateField = field("date");
 
   return (
     <>
       <PageHeader
-        eyebrow="Daily nutrition"
-        title="Log nutrition"
+        eyebrow={existing ? "Edit local entry" : "Daily nutrition"}
+        title={existing ? "Update nutrition" : "Log nutrition"}
         description="Blank means unknown. Targets stay yours to choose, and supplement tracking never turns into a prescription."
       />
 
@@ -126,41 +340,26 @@ export default function AddNutrition() {
         <div className="min-w-0">
           <Surface className="p-4 sm:p-5">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <label>
-                <span className="label">Date</span>
+              <div>
+                <label className="label" htmlFor={dateField.props.id}>
+                  Date
+                </label>
                 <input
+                  {...dateField.props}
                   className="field"
                   type="date"
-                  value={date}
-                  onChange={(event) => setDate(event.target.value)}
+                  value={form.date}
+                  onChange={(event) => update({ date: event.target.value })}
                 />
-              </label>
-              <label>
-                <span className="label">Morning body weight (lb)</span>
-                <input
-                  className="field"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  inputMode="decimal"
-                  value={bodyWeightLb ?? ""}
-                  onChange={(event) => setBodyWeightLb(numericValue(event.target.value))}
-                  placeholder="Not recorded"
-                />
-              </label>
-              <label>
-                <span className="label">Calories</span>
-                <input
-                  className="field"
-                  type="number"
-                  min="0"
-                  step="1"
-                  inputMode="numeric"
-                  value={calories ?? ""}
-                  onChange={(event) => setCalories(numericValue(event.target.value))}
-                  placeholder="No target inferred"
-                />
-              </label>
+                <FieldError id={dateField.errorId} messages={dateField.messages} />
+              </div>
+              {numberField(
+                "bodyWeightLb",
+                "Morning body weight (lb)",
+                "0.1",
+                "Not recorded",
+              )}
+              {numberField("calories", "Calories", "1", "No target inferred")}
             </div>
           </Surface>
 
@@ -171,35 +370,11 @@ export default function AddNutrition() {
             />
             <Surface className="p-4 sm:p-5">
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                {[
-                  ["Protein", "g", proteinG, setProteinG],
-                  ["Carbohydrates", "g", carbsG, setCarbsG],
-                  ["Fat", "g", fatG, setFatG],
-                  ["Fiber", "g", fiberG, setFiberG],
-                  ["Water", "oz", waterOz, setWaterOz],
-                ].map(([label, unit, value, setter]) => (
-                  <label key={label as string}>
-                    <span className="label">
-                      {label as string} ({unit as string})
-                    </span>
-                    <input
-                      className="field"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      inputMode="decimal"
-                      value={(value as number | undefined) ?? ""}
-                      onChange={(event) =>
-                        (
-                          setter as React.Dispatch<
-                            React.SetStateAction<number | undefined>
-                          >
-                        )(numericValue(event.target.value))
-                      }
-                      placeholder="—"
-                    />
-                  </label>
-                ))}
+                {numberField("proteinG", "Protein (g)", "0.1", "—")}
+                {numberField("carbsG", "Carbohydrates (g)", "0.1", "—")}
+                {numberField("fatG", "Fat (g)", "0.1", "—")}
+                {numberField("fiberG", "Fiber (g)", "0.1", "—")}
+                {numberField("waterOz", "Water (oz)", "0.1", "—")}
               </div>
             </Surface>
           </div>
@@ -210,44 +385,19 @@ export default function AddNutrition() {
               description="Appetite and meal quality run low → high. Illness and travel run none → severe."
             />
             <div className="grid gap-3 md:grid-cols-2">
-              <ScoreControl
-                id="nutrition-appetite"
-                label="Appetite"
-                value={appetite}
-                onChange={setAppetite}
-                onClear={() => setAppetite(undefined)}
-                lowLabel="very low"
-                highLabel="strong"
-              />
-              <ScoreControl
-                id="nutrition-meal-quality"
-                label="Meal quality"
-                value={mealQuality}
-                onChange={setMealQuality}
-                onClear={() => setMealQuality(undefined)}
-                lowLabel="poor"
-                highLabel="excellent"
-              />
-              <ScoreControl
-                id="nutrition-illness"
-                label="Illness impact"
-                value={illness}
-                onChange={setIllness}
-                onClear={() => setIllness(undefined)}
-                lowLabel="none"
-                highLabel="severe"
-                direction="negative"
-              />
-              <ScoreControl
-                id="nutrition-travel"
-                label="Travel impact"
-                value={travelImpact}
-                onChange={setTravelImpact}
-                onClear={() => setTravelImpact(undefined)}
-                lowLabel="none"
-                highLabel="major"
-                direction="negative"
-              />
+              {ratings.map((rating) => (
+                <ScoreControl
+                  key={rating.key}
+                  id={rating.id}
+                  label={rating.label}
+                  value={form[rating.key]}
+                  onChange={(value) => update({ [rating.key]: value })}
+                  onClear={() => update({ [rating.key]: undefined })}
+                  lowLabel={rating.lowLabel}
+                  highLabel={rating.highLabel}
+                  direction={rating.negative ? "negative" : undefined}
+                />
+              ))}
             </div>
           </div>
 
@@ -257,19 +407,9 @@ export default function AddNutrition() {
               description="Personal observations only—never a recommendation."
             />
             <Surface className="p-4 sm:p-5">
-              <label className="block max-w-xs">
-                <span className="label">Creatine (g)</span>
-                <input
-                  className="field"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  inputMode="decimal"
-                  value={creatineG ?? ""}
-                  onChange={(event) => setCreatineG(numericValue(event.target.value))}
-                  placeholder="Not recorded"
-                />
-              </label>
+              <div className="max-w-xs">
+                {numberField("creatineG", "Creatine (g)", "0.1", "Not recorded")}
+              </div>
 
               {highDose ? (
                 <div className="mt-4 flex items-start gap-3 rounded-md bg-[var(--warn-soft)] p-4">
@@ -289,82 +429,84 @@ export default function AddNutrition() {
               ) : null}
 
               <div className="mt-4 space-y-3">
-                {supplements.map((supplement, index) => (
-                  <div
-                    key={`supplement-${index}`}
-                    className="grid gap-2 rounded-md border border-[var(--line)] p-3 sm:grid-cols-[minmax(0,1fr)_8rem_7rem_auto]"
-                  >
-                    <input
-                      className="field"
-                      value={supplement.name}
-                      onChange={(event) =>
-                        setSupplements((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, name: event.target.value }
-                              : item,
-                          ),
-                        )
-                      }
-                      placeholder="Supplement name"
-                      aria-label={`Supplement ${index + 1} name`}
-                    />
-                    <input
-                      className="field"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={supplement.dose ?? ""}
-                      onChange={(event) =>
-                        setSupplements((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? {
-                                  ...item,
-                                  dose: numericValue(event.target.value),
-                                }
-                              : item,
-                          ),
-                        )
-                      }
-                      placeholder="Dose"
-                      aria-label={`Supplement ${index + 1} dose`}
-                    />
-                    <input
-                      className="field"
-                      value={supplement.unit ?? ""}
-                      onChange={(event) =>
-                        setSupplements((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, unit: event.target.value || undefined }
-                              : item,
-                          ),
-                        )
-                      }
-                      placeholder="Unit"
-                      aria-label={`Supplement ${index + 1} unit`}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:text-[var(--bad)]"
-                      onClick={() =>
-                        setSupplements((current) =>
-                          current.filter((_, itemIndex) => itemIndex !== index),
-                        )
-                      }
-                      aria-label={`Remove supplement ${index + 1}`}
+                {form.supplements.map((supplement, index) => {
+                  const name = field(`otherSupplements[${index}].name`);
+                  const dose = field(`otherSupplements[${index}].dose`);
+                  return (
+                    <div
+                      key={`supplement-${index}`}
+                      className="rounded-md border border-[var(--line)] p-3"
                     >
-                      <Trash2 size={15} aria-hidden="true" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_7rem_auto]">
+                        <input
+                          {...name.props}
+                          className="field"
+                          value={supplement.name}
+                          onChange={(event) =>
+                            setSupplement(index, { name: event.target.value })
+                          }
+                          placeholder="Supplement name"
+                          aria-label={`Supplement ${index + 1} name`}
+                        />
+                        <input
+                          {...dose.props}
+                          className="field"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          inputMode="decimal"
+                          value={supplement.dose ?? ""}
+                          onChange={(event) =>
+                            setSupplement(index, {
+                              dose: numericValue(event.target.value),
+                            })
+                          }
+                          placeholder="Dose"
+                          aria-label={`Supplement ${index + 1} dose`}
+                        />
+                        <input
+                          className="field"
+                          value={supplement.unit ?? ""}
+                          onChange={(event) =>
+                            setSupplement(index, {
+                              unit: event.target.value || undefined,
+                            })
+                          }
+                          placeholder="Unit"
+                          aria-label={`Supplement ${index + 1} unit`}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:text-[var(--bad)]"
+                          onClick={() =>
+                            setForm((current) => ({
+                              ...current,
+                              supplements: current.supplements.filter(
+                                (_, itemIndex) => itemIndex !== index,
+                              ),
+                            }))
+                          }
+                          aria-label={`Remove supplement ${index + 1}`}
+                        >
+                          <Trash2 size={15} aria-hidden="true" />
+                        </Button>
+                      </div>
+                      <FieldError id={name.errorId} messages={name.messages} />
+                      <FieldError id={dose.errorId} messages={dose.messages} />
+                    </div>
+                  );
+                })}
               </div>
               <Button
                 dashed
                 className="mt-3"
-                onClick={() => setSupplements((current) => [...current, { name: "" }])}
+                onClick={() =>
+                  setForm((current) => ({
+                    ...current,
+                    supplements: [...current.supplements, { name: "" }],
+                  }))
+                }
               >
                 <Plus size={14} aria-hidden="true" /> Add another supplement
               </Button>
@@ -377,8 +519,8 @@ export default function AddNutrition() {
                 <span className="label">Notes</span>
                 <textarea
                   className="field min-h-28 resize-y"
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
+                  value={form.notes}
+                  onChange={(event) => update({ notes: event.target.value })}
                   placeholder="Meals, appetite, timing, travel context…"
                 />
               </label>
@@ -386,8 +528,10 @@ export default function AddNutrition() {
                 <span className="label">Data quality</span>
                 <select
                   className="field"
-                  value={dataQuality}
-                  onChange={(event) => setDataQuality(event.target.value as DataQuality)}
+                  value={form.dataQuality}
+                  onChange={(event) =>
+                    update({ dataQuality: event.target.value as DataQuality })
+                  }
                 >
                   <option value="complete">Complete</option>
                   <option value="partial">Partial</option>
@@ -399,35 +543,48 @@ export default function AddNutrition() {
           </Surface>
         </div>
 
-        <aside className="self-start xl:sticky xl:top-24">
+        <aside className="self-start xl:sticky xl:top-24" aria-label="Entry check">
           <Surface className="p-4">
             <div className="flex items-center gap-2">
               <Beaker size={17} aria-hidden="true" />
               <h2 className="text-sm font-bold">Entry check</h2>
             </div>
-            <div className="mt-4 space-y-2">
-              {validation.valid ? (
-                <div className="flex items-center gap-2 rounded-sm bg-[var(--accent-soft)] p-3 text-xs font-bold">
-                  <Check size={14} aria-hidden="true" /> Ready to save
+            {validation.valid ? (
+              <div className="mt-4 flex items-center gap-2 rounded-sm bg-[var(--good-soft)] p-3 text-xs font-bold">
+                <Check size={14} className="text-[var(--good)]" aria-hidden="true" />{" "}
+                Ready to save
+              </div>
+            ) : (
+              <div className="mt-4 rounded-sm bg-[var(--bad-soft)] p-3">
+                <div className="flex items-center gap-2 text-[var(--bad)]">
+                  <AlertCircle size={14} aria-hidden="true" />
+                  <p className="text-xs font-bold">
+                    {validation.errors.length} issue
+                    {validation.errors.length === 1 ? "" : "s"} to fix
+                  </p>
                 </div>
-              ) : (
-                validation.errors.map((error) => (
-                  <div
-                    key={`${error.path}-${error.message}`}
-                    className="flex items-start gap-2 rounded-sm bg-[var(--bad-soft)] p-3 text-xs leading-5 text-[var(--bad)]"
-                  >
-                    <AlertTriangle
-                      size={13}
-                      className="mt-1 shrink-0"
-                      aria-hidden="true"
-                    />
-                    {error.message}
-                  </div>
-                ))
-              )}
-            </div>
-            <Button variant="primary" block className="mt-4" onClick={handleSave}>
-              <Save size={16} aria-hidden="true" /> Save nutrition
+                <ul className="mt-1 space-y-0.5">
+                  {validation.errors.map((error) => (
+                    <li key={`${error.path}-${error.message}`}>
+                      <button
+                        type="button"
+                        className="issue-link"
+                        onClick={() => focusIssue(FORM_ID, error.path)}
+                      >
+                        {error.message}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Button
+              variant="primary"
+              block
+              className="mt-4 hidden xl:flex"
+              onClick={handleSave}
+            >
+              <Save size={16} aria-hidden="true" /> {saveLabel}
             </Button>
             <div className="mt-4 flex items-start gap-2 border-t border-[var(--line)] pt-4">
               <Info
@@ -440,8 +597,29 @@ export default function AddNutrition() {
               </p>
             </div>
           </Surface>
+          <Button variant="ghost" block className="mt-2" onClick={() => void clearForm()}>
+            <RotateCcw size={14} aria-hidden="true" /> Clear form
+          </Button>
         </aside>
       </div>
+
+      <ActionBar className="xl:hidden" label="Save nutrition">
+        {validation.valid ? (
+          <span className="action-bar-status">
+            <Check size={15} className="text-[var(--good)]" aria-hidden="true" />
+            Ready to save
+          </span>
+        ) : (
+          <button type="button" className="action-bar-status" onClick={showFirstIssue}>
+            <AlertCircle size={15} className="text-[var(--bad)]" aria-hidden="true" />
+            {validation.errors.length} issue
+            {validation.errors.length === 1 ? "" : "s"}
+          </button>
+        )}
+        <Button variant="primary" onClick={handleSave}>
+          <Save size={16} aria-hidden="true" /> {saveLabel}
+        </Button>
+      </ActionBar>
     </>
   );
 }
