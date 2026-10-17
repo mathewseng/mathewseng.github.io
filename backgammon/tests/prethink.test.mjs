@@ -154,3 +154,25 @@ test('completing a real draft preempts a speculative job before Confirm is click
     assert.deepEqual(h.p.scope.queue,queue,'late cancelled work cannot expand the plan');
   }finally{h.p.pause();}
 });
+
+test('chosen bot continuation prepares the seeded checker roll while foreground animation is busy', async()=>{
+  const h=harness();
+  try {
+    h.view.game.localRolls={version:1,seed:'b7'.repeat(32),cursor:5};
+    h.view.idle=false;
+    const original=structuredClone(h.view.game), action={type:'move',steps:legalTurns(original.state)[0].steps};
+    const expected=await futureLocalRoll(original);
+    h.p.prepareAfter(original.state, action);
+    for(let i=0;i<30 && !h.calls.some(c=>c.state.phase==='move');i++) await new Promise(r=>setTimeout(r,0));
+    const checker=h.calls.find(c=>c.state.phase==='move');
+    assert.ok(checker,'next checker search starts before playback finishes');
+    assert.deepEqual(checker.state.dice,expected);
+    assert.equal(checker.state.turn,1);
+    assert.deepEqual(h.view.game,original,'preparation consumes no real roll');
+    // Committing the chosen action must not kill its already-running next-roll work.
+    h.view.game={...original,state:transition(original.state,action)};
+    h.p.update();clearTimeout(h.p.timer);
+    assert.equal(h.cancelled.at(-1)({priority:-20,state:checker.state}),false);
+    h.p.pause();assert.equal(h.p.plan,null);
+  }finally{h.p.pause();}
+});

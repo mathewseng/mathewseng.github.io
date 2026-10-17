@@ -674,7 +674,7 @@ export class Board {
         !values.slice(0, i).some((v, j) => v === value && j >= usedDice.filter(d => d === value).length);
       const clickable = interactive && chooseDie && (undoAction
         ? draftIndex === null || draftIndex >= lockedDice : !consumed && !blocked);
-      const actionLabel = undoAction ? consumed ? "Undo from die " : "Undo last move, die "
+      const actionLabel = undoAction ? consumed ? "Undo move for die " : "Undo last move, die "
         : active ? "Switch selected die, die " : "Use die ";
       const x = center + (i - (values.length - 1) / 2) * (values.length === 2 ? 120 : 72);
       const die = svg("g", {
@@ -958,7 +958,13 @@ export class Board {
       checkerPosition(after, to, player, this.options.orientation), player, to,
       {drop:!!this.dropOrigin, residentCount:typeof to === 'number' ? Math.max(0, before.points[to] * (player ? -1 : 1)) : 0});
   }
-  playTurn(before, steps, { automatic = false } = {}) {
+  async waitForPresentation() {
+    while (!reducedMotion() && !document.hidden &&
+      (this.playbackTimer || performance.now() < (this.diceSettledAt || 0))) {
+      await new Promise(resolve => setTimeout(resolve, 32));
+    }
+  }
+  playTurn(before, steps, { automatic = false, rolled = false } = {}) {
     if (!steps.length) return;
     if (reducedMotion() || document.hidden) {
       const after = steps.reduce((s, step) => applyStep(s, step), before);
@@ -1002,7 +1008,12 @@ export class Board {
       current = after;
       this.playbackTimer = setTimeout(advance, duration + 200);
     };
-    advance();
+    if (rolled) {
+      this.render(before, {...options, playback:true, interactive:false, lastMove:null,
+        selected:null, sources:[], destinations:[], moves:[], usedDice:[], forcedDice:[]});
+      this.animateDice();
+      this.playbackTimer = setTimeout(advance, Math.max(0, this.diceSettledAt - performance.now()));
+    } else advance();
   }
   animateMove(before, after, step, reverse = false, route = [step]) {
     const cue = reverse
@@ -1246,6 +1257,7 @@ export class Board {
   animateDice() {
     sound.play("roll");
     if (reducedMotion() || document.hidden) return;
+    this.diceSettledAt = performance.now() + 740;
     this.svg.querySelectorAll(".board-die").forEach((die, i) => {
       // The outer SVG transform fixes the die's location. Animate the face inside
       // it, preserving focus/hit targets and displaying only the committed value.
@@ -1267,10 +1279,11 @@ export class Board {
           { transform: restingTransform, opacity: 1 },
         ],
         {
-          duration: 440,
+          duration: 560,
           delay: i * 30,
           easing: "cubic-bezier(.2,.75,.3,1)",
           fill: "backwards",
+          id: "dice-roll",
         },
       );
       this.animations.push(animation);
@@ -1634,10 +1647,10 @@ export class Board {
       // it underneath lets the triangle/pattern cut off the inside of the ring.
       g.append(g.querySelector(".point-hit"));
       if (reachable.includes(p)) {
-        const glow = g.querySelector('.point-shape').cloneNode(false);
-        glow.setAttribute('class', 'point-glow');
-        glow.setAttribute('fill', 'none');
-        g.append(glow);
+        // One inset rounded outline, rather than a filtered triangle whose
+        // sharp corners/blur leave rectangular seams on small Safari boards.
+        g.append(svg('rect', {x:x+5, y:top ? 29 : 368, width:50, height:263,
+          rx:8, class:'point-glow', fill:'none', 'pointer-events':'none'}));
       }
       if (
         destinations.includes(p) ||
@@ -1647,15 +1660,16 @@ export class Board {
       )
         g.append(
           svg("rect", {
-            x: x + 3,
-            y: top ? 32 : 370,
-            width: 54,
-            height: 258,
+            x: x + 5,
+            y: top ? 29 : 368,
+            width: 50,
+            height: 263,
             rx: 8,
             class: "point-wash",
             "pointer-events": "none",
           }),
         );
+      if (reachable.includes(p)) g.append(g.querySelector('.point-glow'));
       if (numbers) {
         // The number lane is destination space too, not a dead strip of frame.
         g.append(svg("rect", {
@@ -1697,11 +1711,11 @@ export class Board {
       if (destinations.includes(p))
         g.append(
           svg("rect", {
-            x: x + 4,
-            y: top ? 255 : 367,
-            width: 52,
-            height: 38,
-            rx: 19,
+            x: x + 8,
+            y: top ? 252 : 376,
+            width: 44,
+            height: 32,
+            rx: 16,
             class: "destination-badge",
             fill: boardColor("destination"),
             stroke: boardColor("surface"),
@@ -1737,10 +1751,10 @@ export class Board {
             "text",
             {
               x: x + 30,
-              y: top ? 281 : 393,
+              y: top ? 276 : 400,
               "text-anchor": "middle",
               fill: boardColor("destinationText"),
-              "font-size": compact ? 29 : 23,
+              "font-size": 23,
               "font-weight": 700,
               "pointer-events": "none",
               class: "destination-die",
@@ -1769,8 +1783,8 @@ export class Board {
         );
       }
       const returnLabel = [...g.querySelectorAll("text.destination-die")].find(n => n.textContent === "↶");
-      if (returnLabel) returnLabel.replaceWith(returnIcon(x + 30, top ? 274 : 386));
-      for (const ring of g.querySelectorAll(".source-ring,.landing-ring")) {
+      if (returnLabel) returnLabel.replaceWith(returnIcon(x + 30, top ? 268 : 392));
+      for (const ring of g.querySelectorAll(".source-ring")) {
         const halo = ring.cloneNode(false);
         halo.setAttribute("class", `ring-halo${ring.classList.contains("source-ring") ? " source-ring-halo" : ""}`);
         ring.before(halo);

@@ -462,6 +462,11 @@ module.exports = async function assistanceUX(
       await page.setViewportSize({ width: 1366, height: 768 });
       // A hint now supplies the complete grading cache too. Reload to test a
       // genuinely cold feedback request, not a completed cached evaluation.
+      // Preparation starts on resume, so hold before navigation and disable
+      // background consumers for this foreground cancellation/error fixture.
+      await page.evaluate(async () => (await import('/backgammon/core/storage.mjs'))
+        .saveSettings({analysisAhead:false,equityBar:false}));
+      assetMode = "hold";
       await page.goto(base + "/backgammon/play/");
       await page.locator("#resume-match").click();
       await finishDraft();

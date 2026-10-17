@@ -27,6 +27,40 @@ export function checkerRoutes(paths, draft, from) {
   }
   return [...routes.values()].sort((a, b) => a.steps.length - b.steps.length);
 }
+// A die belongs to its draft step, not the entire suffix of the turn. Preserve
+// every other die that can still be replayed legally. A later step by the same
+// checker can start from its revised location. Only remove dependencies when
+// that single-die revision is impossible (e.g. a blocked alternative entry).
+export function undoDieDraft(state, paths, draft, index, minDraft = 0) {
+  if (!Number.isInteger(index) || index < minDraft || index >= draft.length)
+    return null;
+  const single = draft.filter((_, i) => i !== index);
+  if (matchingPaths(paths, single).length) return single;
+  const checker = [...draftCheckers(state, draft).values()].flat()
+    .find(checker => checker.indices.includes(index));
+  const same = (a, b) => a && b && a.from === b.from && a.to === b.to && a.die === b.die;
+  for (const path of matchingPaths(paths, draft.slice(0, index))) {
+    let point = draft[index].from, valid = true;
+    for (let j = index + 1; j < draft.length; j++) {
+      const step = path.steps[j - 1];
+      if (checker?.indices.includes(j)) {
+        if (!step || step.from !== point || step.die !== draft[j].die) { valid = false; break; }
+        point = step.to;
+      } else if (!same(step, draft[j])) { valid = false; break; }
+    }
+    if (valid) return path.steps.slice(0, draft.length - 1);
+  }
+  // At most eight subsets; keep the greatest number of independent steps.
+  const chosen = 1 << index, earlier = chosen - 1;
+  let best = null;
+  for (let mask = chosen; mask < 2 ** draft.length; mask++) {
+    if (!(mask & chosen) || (mask & earlier)) continue;
+    const remaining = draft.filter((_, i) => !(mask & (1 << i)));
+    if (best && remaining.length <= best.length) continue;
+    if (matchingPaths(paths, remaining).length) best = remaining;
+  }
+  return best;
+}
 // At most 15 subsets for a four-step draft. A reversal is offered only when
 // the remaining draft is still a legal prefix and exactly one own checker
 // returns to one previous point. Unrelated moves stay; dependent ones cannot

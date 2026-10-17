@@ -12,7 +12,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
   const readEquity = () => page.locator('#equity-bar').evaluate(n => {
     const bottom=n.querySelector('.equity-bottom-number').textContent;
     const top=n.querySelector('.equity-top-number').textContent;
-    if ([bottom,top].filter(Boolean).length!==1 || !/^\d+\.\d{2}$/.test(bottom||top)) throw Error('Only the positive side has an unsigned number');
+    if ([bottom,top].filter(Boolean).length!==1 || !/^\d+\.\d{3}$/.test(bottom||top)) throw Error('Only the positive side has an unsigned number');
     return bottom ? Number(bottom) : -Number(top);
   });
   let assets = 0;

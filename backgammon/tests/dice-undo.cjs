@@ -36,7 +36,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
     };
     try {
       await page.goto(base+'/backgammon/play/'); await ready();
-      // Every doubles slot reverses that step and its dependent continuation.
+      // Every doubles slot restores one die, rebasing the same checker’s remaining steps.
       for (const slot of [3, 2, 1, 0]) {
         await load([3,3]);
         for (const point of [12,9,6,3]) await tap(page.locator(`#board [data-point="${point}"] .checker`).last());
@@ -60,13 +60,21 @@ module.exports = async function diceUndo(browser, base, out, name) {
         }
         assert.equal(await page.locator('#confirm').isEnabled(), true);
         await tap(page.locator('#board .board-die').nth(slot));
-        await count(slot);
+        await count(3);
         const after = await read();
-        assert.deepEqual(after.draft, before.draft.slice(0,slot));
+        assert.deepEqual(after.draft, before.draft.slice(0,3));
         assert.deepEqual(after.game.state, before.game.state, 'dice taps never change the committed roll');
         assert.equal(after.game.events.length, 0, 'undo cannot submit or take back a turn');
-        assert.equal(await used(), slot);
+        assert.equal(await used(), 3);
         assert.equal(await page.locator('#confirm').isDisabled(), true);
+      }
+      // Undo the first die of a combined checker journey without clearing both.
+      for(const value of [4,1]){
+        await load([4,1]);
+        for(const point of [12,8])await tap(page.locator(`#board [data-point="${point}"] .checker`).last());
+        await count(2);
+        await tap(page.locator(`#board .board-die[data-die="${value}"]`));await count(1);
+        assert.deepEqual((await read()).draft,[{from:12,to:value===4?11:8,die:value===4?1:4}]);
       }
       // Available dice also undo, instead of merely changing preference.
       for (const mode of ['advanced','beginner']) {
@@ -116,6 +124,18 @@ module.exports = async function diceUndo(browser, base, out, name) {
         results.push({touch,mode,turn,orientation,fullDiceLane:true});
       }
       // Match visual slots to chronological dice use, even when rolled in the other order.
+      for(const reverse of [false,true])for(const value of [4,1]){
+        await load([4,1]);
+        if(reverse)await page.keyboard.press('s');
+        for(const point of reverse?[5,12]:[12,5])await tap(page.locator(`#board [data-point="${point}"] .checker`).last());
+        await count(2);
+        const before=await read(),retained=before.draft.filter(step=>step.die!==value);
+        await tap(page.locator(`#board .board-die[data-die="${value}"]`));
+        await count(1);
+        assert.deepEqual((await read()).draft,retained,'die tap preserves the other independent move');
+        assert.deepEqual((await read()).game,before.game,'single-die undo preserves committed state');
+        assert.equal(await page.locator(`#board .board-die[data-die="${value}"]`).getAttribute('data-status'),'selected');
+      }
       await load([4,1]);
       await page.keyboard.press('s');
       await tap(page.locator('#board [data-point="5"] .checker').last());

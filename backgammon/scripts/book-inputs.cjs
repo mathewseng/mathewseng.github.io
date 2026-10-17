@@ -17,6 +17,7 @@ function resolveBookInputs() {
   // Refuse a future rules/encoding change until its book compatibility is checked.
   // The 2026-10-13 extensions change high money cubes/opening limits only.
   // The 2026-10-17 player-label rename is presentation only.
+  // Optional certain-race adjudication leaves ordinary legal turns unchanged.
   // book-inputs.test.cjs compares current legal turns and encoding to the
   // immutable bg5 snapshot. Compatible hashes do not change book provenance.
   for (const file of ['core/rules.mjs', 'core/xgid.mjs'])

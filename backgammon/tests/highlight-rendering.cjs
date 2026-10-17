@@ -99,6 +99,28 @@ module.exports = async function highlightRendering(browser, base, out, name) {
         await page.mouse.up();
         assert.equal(await page.evaluate(() => highlightFixture.d.draft.length), 0, 'dropping on original point restores its checker');
 
+        // Reported 6-3 drag: 13/10, 13/7 and 13/4. No sharp filtered triangle,
+        // overhanging badge or dark duplicate landing halo at phone scale.
+        await page.evaluate(() => {
+          const {d,r}=highlightFixture, points=Array(24).fill(0);
+          for(const [p,n] of [[13,5],[24,1],[9,1],[8,3],[6,3],[4,2],
+            [12,-1],[17,-2],[18,-2],[19,-5],[20,-1],[23,-1],[3,-1],[2,-1],[1,-1]]) points[p-1]=n;
+          const s=r.initialState({phase:'move',dice:[6,3],points});r.assertState(s);d.set(s,r.legalPaths(s));d.board.suppressClickUntil=0;
+        });
+        await lift(12,9);
+        const highlights=await page.locator('.point.destination:not(.return-destination)').evaluateAll(points=>points.map(g=>{
+          const outline=g.querySelector('.point-glow'), wash=g.querySelector('.point-wash').getBBox(),
+            badge=g.querySelector('.destination-badge').getBBox(), style=getComputedStyle(outline);
+          return {point:g.dataset.point,shape:outline.tagName,filter:style.filter,vector:style.vectorEffect,
+            inside:badge.x>wash.x && badge.y>wash.y && badge.x+badge.width<wash.x+wash.width && badge.y+badge.height<wash.y+wash.height,
+            halos:g.querySelectorAll('.ring-halo:not(.source-ring-halo)').length};
+        }));
+        assert.ok(highlights.length>=3);
+        assert.ok(highlights.every(h=>h.shape==='rect'&&h.filter==='none'&&h.vector==='none'&&h.inside&&h.halos===0),JSON.stringify(highlights));
+        if(!orientation) await page.screenshot({path:path.join(out,`${name}-clean-destinations-${width}.png`)});
+        await cancel();
+        assert.equal(await page.locator('.drop-hover,.drag-checker,.drop-landing-ghost').count(),0);
+
         // The same arrow is used for returning a checker to the bar.
         await page.evaluate(() => {
           const {d,r} = highlightFixture, s = r.initialState({phase:'move', dice:[4,1]});

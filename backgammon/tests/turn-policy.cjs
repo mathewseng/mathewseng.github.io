@@ -205,6 +205,7 @@ module.exports = async function turnPolicy(
         s.points.fill(0);
         s.phase = type === "already-rolled" ? "move" : "roll";
         if (type === "bearoff") {
+          s.phase = "move"; s.dice = [1, 2]; // Already rolled: exercise forced checker playback.
           s.points[0] = 2;
           s.points[23] = -15;
           s.off = [13, 0];
@@ -238,7 +239,6 @@ module.exports = async function turnPolicy(
         return id;
       }, type);
       await page.goto(base + "/backgammon/play/#resume=" + id);
-      if (type === "bearoff") await roll(page);
       const completed = await wait(
         (s) => s?.game.id === id && s.game.events.at(-1)?.automatic,
       );

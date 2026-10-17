@@ -2474,6 +2474,7 @@ html[data-focus-navigation="true"] .point.return-destination:focus-visible .poin
 }
 .point .landing-ring {
   stroke-width: 2;
+  vector-effect: none;
 }
 html[data-focus-navigation="true"] .point:focus-visible .point-hit {
   stroke: var(--board-focus);
@@ -2614,6 +2615,9 @@ html[data-focus-navigation="true"] .point:focus-visible .point-hit {
 /* The full point wash makes tap shortcuts visible without covering checker faces. */
 .point.reachable .point-glow {
   stroke-width: 2;
+  filter: none;
+  vector-effect: none;
+  stroke-linejoin: round;
 }
 .point.reachable .point-wash {
   fill: color-mix(in srgb, var(--board-destination) 28%, transparent);

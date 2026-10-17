@@ -23,6 +23,7 @@ function eventLabel(event) {
       resign: "Offer resignation",
       accept: "Accept resignation",
       reject: "Decline resignation",
+      "finish-race": "Certain result",
     }[a.type] || a.type
   );
 }

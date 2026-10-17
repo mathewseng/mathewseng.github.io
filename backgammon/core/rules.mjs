@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Canonical points[0..23] are White's 1..24. Positive = White (0), negative = Black (1).
 // White moves down; Black up. bar/off use player indexes. Display orientation never changes state.
+import { certainBearoff } from './certain-bearoff.mjs';
 export const clone = (value) => structuredClone(value);
 export const sign = (player) => (player === 0 ? 1 : -1);
 export const distance = (point, player) =>
@@ -419,6 +420,12 @@ export function transition(source, action, actor = source.turn) {
   if (action.type !== "next" && actor !== decisionPlayer(s))
     throw new Error("It is not your turn.");
   switch (action.type) {
+    case "finish-race": {
+      const certain = certainBearoff(source);
+      if (!certain) throw new Error("The bearoff result is not certain.");
+      finish(s, certain.winner, certain.level, "certain bearoff");
+      break;
+    }
     case "opening": {
       if (s.phase !== "opening")
         throw new Error("The opening roll is already committed.");

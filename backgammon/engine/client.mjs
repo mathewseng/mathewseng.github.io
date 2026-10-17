@@ -16,6 +16,7 @@ export class EngineClient {
     this.onStatus = onStatus;
     this.queue = [];
     this.cache = new Map();
+    this.readings = new Map();
     this.serial = 0;
     this.active = null;
     this.worker = null;
@@ -62,6 +63,7 @@ export class EngineClient {
           const job = this.active;
           if (data.type === "evaluation" && job.preset === "auto" && !job.rollout) {
             job.completed = data.result;
+            this.rememberReading(job, data.result);
             try {
               for (const listener of job.evaluationListeners) listener(structuredClone(data.result));
             } catch (e) {
@@ -95,6 +97,7 @@ export class EngineClient {
             // Returned results are editable previews; never expose the object
             // retained for future hints/grades to a caller's mutations.
             this.cache.set(job.key, structuredClone(data.result));
+            this.rememberReading(job, data.result);
             while (this.cache.size > 64)
               this.cache.delete(this.cache.keys().next().value);
             job.resolve(data.result);
@@ -196,6 +199,7 @@ export class EngineClient {
       existing.progressListeners.add(onProgress);
       existing.evaluationListeners.add(onEvaluation);
       existing.unlistedListeners.add(onUnlisted);
+      if (existing.completed) onEvaluation(existing.completed);
       existing.priority = Math.max(existing.priority, priority);
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
       if (this.active && existing !== this.active && existing.priority > this.active.priority) {
@@ -253,6 +257,35 @@ export class EngineClient {
           : hint.settings?.plies !== PRESETS[preset]?.plies)) return null;
     return hint;
   }
+  // Display-only snapshots, including completed shallow stages of an Auto
+  // search. They never resolve a decision early or change its search depth.
+  rememberReading(job, result) {
+    if (result?.status !== 'complete') return;
+    this.readings.delete(job.key);
+    const value = candidate => candidate && ({key:candidate.key,equity:candidate.equity});
+    // The rail needs numbers, not thousands of legal-step/probability arrays.
+    const reading = {status:result.status,type:result.type,settings:result.settings,
+      perspective:result.perspective,units:result.units,available:result.available,
+      outcomes:result.outcomes,decisionOptions:result.decisionOptions,decision:result.decision,
+      candidates:result.candidates?.map(value),actual:value(result.actual)};
+    this.readings.set(job.key, { position:positionKey(job.state), preset:job.preset, result:structuredClone(reading) });
+    while (this.readings.size > 64) this.readings.delete(this.readings.keys().next().value);
+  }
+  peek(state, { preset = 'auto', submitted = null } = {}) {
+    const normalize = s => positionKey(s.phase === 'move' ? {...s, dice:[...s.dice].sort((a,b)=>b-a)} : s);
+    const key = normalize(state), actualKey = submitted ? boardKey(commitTurn(state, submitted)) : null;
+    let best;
+    for (const entry of this.readings.values()) {
+      if (entry.preset !== preset || entry.position !== key) continue;
+      const actual = actualKey && (entry.result.actual?.key === actualKey ? entry.result.actual
+        : entry.result.candidates?.find(c => c.key === actualKey));
+      if (actualKey && !actual) continue;
+      if (!best || entry.result.settings.plies >= best.settings.plies) {
+        best = {...entry.result, actual:actual || undefined};
+      }
+    }
+    return best ? {...structuredClone(best), positionKey:positionKey(state), cached:true} : null;
+  }
   reuseGrade(key, preset, submittedKey) {
     const hint=this.gradeBasis(key,preset,submittedKey);
     if (!hint?.candidates?.some(c=>c.key===submittedKey)) return null;
@@ -291,6 +324,7 @@ export class EngineClient {
           this.active = null;
           result.requestId = pending.id;
           this.cache.set(pending.key, structuredClone(result));
+          this.rememberReading(pending, result);
           while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
           pending.resolve(result);
           this.onStatus("ready", `Opening book · ${result.settings.plies} ply · ready`);
@@ -383,5 +417,6 @@ export class EngineClient {
   destroy() {
     this.cancel();
     this.cache.clear();
+    this.readings.clear();
   }
 }

@@ -26,6 +26,7 @@ import {
   nearestRoutes,
   originalReturnRoutes,
   checkerUndoRoutes,
+  undoDieDraft,
   dieSwitchRoutes,
   preferHittingRoutes,
 } from "../core/draft.mjs";
@@ -791,7 +792,7 @@ export class DraftBoard {
   }
   tapDie(index, value) {
     if (!this.enabled || this.preview || this.board.playbackTimer) return;
-    if (this.draft.length > this.minDraft) return this.undoTo(index ?? this.draft.length - 1);
+    if (this.draft.length > this.minDraft) return this.undoDie(index ?? this.draft.length - 1);
     // Forced steps cannot be undone. With no editable draft, retain die choice.
     if (index !== null) return;
     if (value !== (this.advanced ? this.activeDie() : this.preferred)) this.preferDie(value);
@@ -1101,6 +1102,22 @@ export class DraftBoard {
   undo() {
     return this.undoTo(this.draft.length - 1);
   }
+  undoDie(index) {
+    if (!this.enabled || this.preview) return;
+    const remaining = undoDieDraft(this.state, this.paths, this.draft, index, this.minDraft);
+    if (!remaining) return;
+    const before = this.current(), step = this.draft[index],
+      count = this.draft.length - remaining.length,
+      exact = JSON.stringify(remaining) === JSON.stringify(this.draft.filter((_, i) => i !== index));
+    this.draft = remaining;
+    if (this.advanced) this.preferred = step.die;
+    this.selected = null;
+    this.hint = count === 1 ? "Move undone." : "Move and dependent continuation undone.";
+    this.render();
+    if (exact) this.board.animateMove(before, this.current(), step, true);
+    else this.board.animateRestore(before, this.current(), "undo");
+    this.onChange({ kind: "undo" });
+  }
   undoTo(index) {
     if (!this.enabled || this.preview || !Number.isInteger(index) ||
         index < this.minDraft || index >= this.draft.length) return;
@@ -1212,7 +1229,7 @@ export class DraftBoard {
               ? `Click a checker or destination · using die ${this.activeDie() ?? "–"}.`
               : this.complete()
               ? this.draft.length
-                ? "Ready to confirm. Tap a used die to undo from that step."
+                ? "Ready to confirm. Tap a used die to undo its move."
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? display.moveHints
