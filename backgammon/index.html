@@ -2,102 +2,167 @@
 <html lang="en" data-family="backgammon" class="hub-backgammon">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#11191d" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
     <meta
       name="description"
       content="Play backgammon, practice decisions, and analyze positions with GNUbg. Private friend rooms and a local study library."
     />
     <title>Backgammon</title>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=dae76df844cb8409" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=dae76df844cb8409" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=dae76df844cb8409" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=ff1087d93f7ccba1" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=ff1087d93f7ccba1" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=ff1087d93f7ccba1" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=ff1087d93f7ccba1" />
+    <link rel="stylesheet" href="styles.css?bgv=ff1087d93f7ccba1" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <link rel="stylesheet" href="styles.css?bgv=dae76df844cb8409" />
-    <script src="../shared/hub.js?bgv=dae76df844cb8409" defer></script>
-    <script type="module" src="app.js?bgv=dae76df844cb8409"></script>
+    <script src="../shared/hub.js?bgv=ff1087d93f7ccba1" defer></script>
+    <script type="module" src="app.js?bgv=ff1087d93f7ccba1"></script>
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="shell">
       <header class="topbar">
         <nav class="crumbs" aria-label="Breadcrumb">
-          <a href="/">MS / Projects</a><span class="crumb-sep">/</span
-          ><span aria-current="page">Backgammon</span>
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Backgammon</span>
         </nav>
         <nav class="switcher" aria-label="Game families">
-          <a href="/ofc/" data-to="ofc">OFC</a
-          ><a href="/poker/" data-to="poker">Poker</a
-          ><a href="/blackjack/" data-to="blackjack">Blackjack</a
-          ><a href="/backgammon/" data-to="backgammon" aria-current="page">Backgammon</a
-          ><a href="/dice/" data-to="dice">Dice</a>
+          <a href="/ofc/" data-to="ofc">OFC</a>
+          <a href="/poker/" data-to="poker">Poker</a>
+          <a href="/blackjack/" data-to="blackjack">Blackjack</a>
+          <a href="/backgammon/" data-to="backgammon" aria-current="page">Backgammon</a>
+          <a href="/dice/" data-to="dice">Dice</a>
         </nav>
       </header>
-      <main class="hub-main">
-        <div class="hub-layout">
-          <div class="hub-intro">
+
+      <main class="hub-main" id="main" tabindex="-1">
+        <section class="hero" aria-labelledby="hub-title">
+          <div>
             <p class="eyebrow">Play · Practice · Understand</p>
-            <h1>Backgammon</h1>
-            <p>
-              Play a friend or GNUbg. Practice a decision. Take a closer look.
-            </p>
-            <a class="primary" id="hub-play" href="/backgammon/play/"
-              >Play backgammon <span aria-hidden="true">&nbsp;→</span></a
-            >
+            <h1 id="hub-title">Backgammon</h1>
+            <p class="lede">Play a friend or GNUbg, practice one decision at a time, and take a closer look at any position. No account needed; analysis runs on your device.</p>
+            <ul class="facts" aria-label="At a glance">
+              <li><b>4</b> tools</li>
+              <li><b>24</b> board palettes</li>
+              <li><b>GNUbg</b> on device</li>
+            </ul>
             <div class="hub-recent" id="recent"></div>
           </div>
-          <div
-            class="board-slot"
-            id="hub-board"
-            aria-label="Starting backgammon position"
-          ></div>
-        </div>
-        <ul class="hub-tools">
-          <li>
-            <a href="/backgammon/trainer/"
-              ><h2>Trainer <span aria-hidden="true">↗</span></h2>
-              <p>
-                Make the decision first. Compare your move and revisit what you
-                learn.
-              </p></a
-            >
-          </li>
-          <li>
-            <a href="/backgammon/solver/"
-              ><h2>Solver <span aria-hidden="true">↗</span></h2>
-              <p>
-                Set up a position, explore alternatives, or review a saved match
-                with GNUbg.
-              </p></a
-            >
-          </li>
-          <li>
-            <a href="/backgammon/library/"
-              ><h2>Library <span aria-hidden="true">↗</span></h2>
-              <p>
-                Your positions, matches, and notes. Saved locally, ready to
-                study.
-              </p></a
-            >
-          </li>
-        </ul>
-        <p class="muted small">
-          No account needed. Computer analysis runs on your device.
-          <a
-            href="https://github.com/mathewseng/mathewseng.github.io/tree/main/backgammon"
-            >About &amp; source</a
-          >
-        </p>
-        <div class="hub-update">
-          <a href="/backgammon/controls/">Clicks &amp; highlights</a> · <a href="/backgammon/refresh/">Refresh app</a> · <a href="/backgammon/reports/">Engine accuracy & speed</a>
-          <span id="app-update-status" role="status"
-            >Updates keep your saved games and settings.</span
-          >
-        </div>
+        </section>
+
+        <section class="group group-play" aria-labelledby="group-play">
+          <div class="group-head">
+            <h2 id="group-play">Play</h2>
+            <span>1 tool</span>
+          </div>
+          <ul class="tiles" role="list">
+            <li class="wide hub-feature">
+              <a class="tile" id="hub-play" href="/backgammon/play/" style="--i: 0">
+                <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8v8M12 8v8M17 8v8"/></svg></span>
+                <div>
+                  <h3>Play backgammon</h3>
+                  <p>Against GNUbg, on one device, or in a private friend room. On-board dice, a draft you can revise, and automatic game history.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>GNUbg</span><span>Same device</span><span>Online</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+              <div class="preview hub-board-frame" aria-hidden="true">
+                <div class="board-slot" id="hub-board"></div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="group group-study" aria-labelledby="group-study">
+          <div class="group-head">
+            <h2 id="group-study">Study</h2>
+            <span>3 tools</span>
+          </div>
+          <ul class="tiles hub-tools" role="list">
+            <li>
+              <a class="tile" href="/backgammon/trainer/" style="--i: 1">
+                <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+                <div>
+                  <h3>Trainer</h3>
+                  <p>Make the decision first. Compare your move with GNUbg and revisit what you learn.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Hidden answers</span><span>Spaced review</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/backgammon/solver/" style="--i: 2">
+                <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                <div>
+                  <h3>Solver</h3>
+                  <p>Set up a position, explore alternatives, or review a saved match with GNUbg.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Position editor</span><span>Rollouts</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="tile" href="/backgammon/library/" style="--i: 3">
+                <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                <div>
+                  <h3>Library</h3>
+                  <p>Your positions, matches, and notes. Saved locally, ready to study.</p>
+                </div>
+                <div class="tile-foot">
+                  <div class="tags"><span>Local</span><span>Export</span></div>
+                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <section class="group group-more" aria-labelledby="group-more">
+          <div class="group-head">
+            <h2 id="group-more">Docs &amp; app</h2>
+            <span>2 pages</span>
+          </div>
+          <ul class="tiles" role="list">
+            <li>
+              <a class="tile tile--row" href="/backgammon/controls/" aria-label="Clicks & highlights" style="--i: 4">
+                <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11.5V5a2 2 0 0 1 4 0v6"/><path d="M13 11V9a2 2 0 0 1 4 0v3"/><path d="M17 12a2 2 0 0 1 4 0v3a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.3L4.5 14a2 2 0 0 1 3.4-2.1L9 13.5"/></svg></span>
+                <div>
+                  <h3>Clicks &amp; highlights</h3>
+                  <p>How taps, clicks and keys select, move and return checkers.</p>
+                </div>
+                <div class="tile-foot"><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span></div>
+              </a>
+            </li>
+            <li>
+              <a class="tile tile--row" href="/backgammon/reports/" aria-label="Engine accuracy & speed" style="--i: 5">
+                <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                <div>
+                  <h3>Engine accuracy &amp; speed</h3>
+                  <p>Measured GNUbg timings and accuracy, by browser and setting.</p>
+                </div>
+                <div class="tile-foot"><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span></div>
+              </a>
+            </li>
+          </ul>
+          <p class="hub-update">
+            <span id="app-update-status" role="status">Updates keep your saved games and settings.</span>
+            <a href="/backgammon/refresh/">Refresh app</a>
+          </p>
+        </section>
       </main>
+
+      <footer class="foot">
+        <a href="/">mathewseng.github.io</a>
+        <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/backgammon" target="_blank" rel="noopener">About &amp; source on GitHub ↗</a>
+      </footer>
     </div>
   </body>
 </html>

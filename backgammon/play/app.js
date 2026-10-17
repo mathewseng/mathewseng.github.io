@@ -484,6 +484,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
           leaving = true;
           location.href = a.href;
         },
+        { verb: "Leave" },
       );
     }
   }),
@@ -1551,7 +1552,7 @@ function renderActions() {
       button("Game review", showSessionReview, "", { id: "game-review" }),
       el(
         "a",
-        { href: "/backgammon/library/#games", class: "button ghost" },
+        { href: "/backgammon/library/#games", class: "btn btn--ghost button ghost" },
         "Session Library",
       ),
     );
@@ -1668,6 +1669,7 @@ function panel() {
               history.replaceState(null, "", location.pathname);
               render();
             },
+            { verb: "Leave", danger: true },
           ),
         "danger",
       ),

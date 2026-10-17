@@ -59,17 +59,33 @@ export function el(tag, attrs = {}, ...children) {
   n.append(...children.filter((x) => x !== null && x !== undefined));
   return n;
 }
-export const button = (text, action, cls = "", attrs = {}) =>
-  el(
+// Buttons are kit buttons (.btn plus a variant) unless they draw themselves:
+// list rows, ranked moves, tree toggles and theme swatches keep their own class.
+const KIT_VARIANTS = { primary: "btn--primary", ghost: "btn--ghost", danger: "btn--danger" };
+const CUSTOM_CONTROLS = new Set([
+  "list-row", "review-move", "review-cube-choice", "feedback-review",
+  "history-evaluation", "history-node-toggle", "theme-preset",
+]);
+export function buttonClasses(cls = "") {
+  const tokens = String(cls).split(/\s+/).filter(Boolean);
+  if (tokens.some((t) => CUSTOM_CONTROLS.has(t))) return tokens.join(" ");
+  return ["btn", ...tokens.map((t) => KIT_VARIANTS[t]).filter(Boolean), ...tokens].join(" ");
+}
+export const button = (text, action, cls = "", attrs = {}) => {
+  const { class: override, ...rest } = attrs;
+  return el(
     "button",
     {
       type: "button",
-      class: cls,
+      class: buttonClasses(override ?? cls),
       onClick: () => Promise.resolve().then(action).catch(showError),
-      ...attrs,
+      ...rest,
     },
     text,
   );
+};
+const CLOSE_ICON =
+  '<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>';
 export function field(label, input) {
   input.setAttribute("aria-label", String(label));
   return el("label", { class: "field" }, label, input);
@@ -80,25 +96,63 @@ export function select(options, value, change) {
   node.value = value;
   return node;
 }
-let toastTimer;
-export function toast(text) {
-  $("toast").textContent = text;
-  $("toast").hidden = false;
+// One toast: a polite status by default, the assertive alert variant for
+// errors. It pauses while hovered or focused and has a dismiss control.
+let toastTimer, toastPaused = false;
+export function toast(text, { alert = false, duration = 5000 } = {}) {
+  const node = $("toast");
+  if (!node) return;
+  (node.querySelector(".toast-text") || node).textContent = text;
+  node.classList.toggle("toast--alert", alert);
+  node.setAttribute("role", alert ? "alert" : "status");
+  node.setAttribute("aria-live", alert ? "assertive" : "polite");
+  node.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => ($("toast").hidden = true), 5000);
+  const hide = () => {
+    if (toastPaused) { toastTimer = setTimeout(hide, 1000); return; }
+    node.hidden = true;
+  };
+  toastTimer = setTimeout(hide, duration);
 }
+function installToast(node) {
+  node.querySelector(".toast-close").addEventListener("click", () => {
+    clearTimeout(toastTimer);
+    node.hidden = true;
+  });
+  const pause = () => { toastPaused = true; };
+  const resume = () => { toastPaused = false; };
+  node.addEventListener("mouseenter", pause);
+  node.addEventListener("mouseleave", resume);
+  node.addEventListener("focusin", pause);
+  node.addEventListener("focusout", resume);
+}
+// Errors raised while a dialog is open render inside it, where the user is
+// looking; otherwise they go to the alert toast.
 export function showError(e) {
-  toast(e?.message || String(e));
+  const message = e?.message || String(e);
+  const open = [...document.querySelectorAll("dialog.bg-dialog[open]")].at(-1);
+  const slot = open?.querySelector(":scope > .dialog-body > .dialog-error");
+  if (slot) {
+    slot.textContent = message;
+    slot.scrollIntoView?.({ block: "nearest" });
+  } else toast(message, { alert: true });
   console.error(e);
 }
+// The one dialog component: kit markup (.dialog-head, a scrolling .dialog-body
+// with an error slot, a footer of actions) plus the older .dialog-header,
+// .drawer and .close hooks. options.sheet opens it as a bottom sheet on phones.
 export function dialog(title, content, actions = [], options = {}) {
-  const d = el("dialog", { class: `dialog${options.sheet ? " drawer" : ""}`, "aria-label": title }),
-    close = button("Close", () => d.close(), "ghost close");
+  const d = el("dialog", {
+      class: `dialog bg-dialog${options.sheet ? " dialog--sheet drawer" : ""}${options.wide ? " dialog--wide" : ""}`,
+      "aria-label": title,
+    }),
+    close = button("", () => d.close(), "ghost close btn--icon", { "aria-label": "Close" });
+  close.innerHTML = CLOSE_ICON;
   installDialogBehavior(d, { dismissible: options.sheet || options.dismissible });
   d.append(
-    el("div", { class: "dialog-header" }, el("h2", {}, title), close),
-    el("div", { class: "dialog-body" }, content),
-    el("footer", {}, ...actions),
+    el("div", { class: "dialog-head dialog-header" }, el("h2", {}, title), close),
+    el("div", { class: "dialog-body" }, el("div", { class: "dialog-error", role: "alert" }), content),
+    el("footer", { class: "dialog-foot" }, ...actions),
   );
   document.body.append(d);
   // Safari's on-screen keyboard can shrink the visual viewport without
@@ -122,19 +176,22 @@ export function dialog(title, content, actions = [], options = {}) {
   d.showModal();
   return d;
 }
-export function confirmDialog(title, text, action) {
+// Confirms take a verb ("Delete", "Replace", "Leave") and a danger variant;
+// the generic "Continue" remains for non-destructive choices.
+export function confirmDialog(title, text, action, { verb = "Continue", danger = false } = {}) {
   let d;
   d = dialog(title, el("p", {}, text), [
-    button("Cancel", () => d.close()),
+    button("Cancel", () => d.close(), "ghost"),
     button(
-      "Continue",
+      verb,
       async () => {
         await action();
         d.close();
       },
-      "primary",
+      danger ? "danger" : "primary",
     ),
   ]);
+  return d;
 }
 export function saveDialog(state, kind = "position", extra = {}) {
   const name = el("input", {
@@ -218,14 +275,19 @@ export function shell(page, title, subtitle = "") {
       dispatchEvent(new Event("bg-motion"));
     }
   });
-  document.body.innerHTML = `<div class="app"><header class="topbar"><a class="brand" href="/backgammon/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Backgammon</a><nav class="nav" aria-label="Backgammon tools">${["play", "trainer", "solver", "library"].map((p) => `<a href="/backgammon/${p}/" ${p === page ? 'aria-current="page"' : ""}>${p[0].toUpperCase() + p.slice(1)}</a>`).join("")}</nav><div class="header-tools"><a class="site-link" href="/">All projects</a><button id="preferences" class="ghost" type="button">Settings</button></div></header><div class="tool-head"><div><h1 id="page-title"></h1><p class="subtitle" id="subtitle"></p></div><div class="toolbar-actions" id="toolbar"><button id="panel-toggle" class="panel-toggle" type="button">Details</button></div></div><main class="workspace" id="workspace"><section class="stage" aria-label="Game workspace"><div id="opponent" class="player-strip"></div><div id="board" class="board-slot"></div><div id="player" class="player-strip"></div><div class="action-area"><div id="message" class="action-message" role="status" aria-live="polite"></div><div class="action-main"><div id="actions" class="action-buttons"></div></div><div id="draft-line" class="draft-line"></div></div></section><aside class="inspector" id="inspector" aria-label="Details"><div class="panel-body" id="panel"></div></aside></main></div><div class="toast" id="toast" role="status" hidden></div>`;
+  const label = page[0].toUpperCase() + page.slice(1);
+  const navLinks = [["play", "Play"], ["trainer", "Trainer"], ["solver", "Solver"], ["library", "Library"], ["controls", "Docs"]]
+    .map(([p, text]) => `<a href="/backgammon/${p}/"${p === page ? ' aria-current="page"' : ""}>${text}</a>`)
+    .join("");
+  document.body.innerHTML = `<a class="skip-link" href="#main">Skip to content</a><div class="app"><header class="topbar"><nav class="crumbs" aria-label="Breadcrumb"><a class="site-link" href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">All projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a class="brand" href="/backgammon/">Backgammon</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">${label}</span></nav><nav class="nav tool-nav" aria-label="Backgammon tools">${navLinks}</nav><div class="header-tools topbar-actions"><button id="preferences" class="btn btn--ghost" type="button">Settings</button></div></header><div class="tool-head"><div><h1 id="page-title"></h1><p class="subtitle" id="subtitle"></p></div><div class="toolbar-actions" id="toolbar"><button id="panel-toggle" class="btn panel-toggle" type="button">Details</button></div></div><main class="app-main" id="main" tabindex="-1"><div class="workspace" id="workspace"><section class="stage" aria-label="Game workspace"><div id="opponent" class="player-strip"></div><div id="board" class="board-slot board-frame"></div><div id="player" class="player-strip"></div><div class="action-area"><div id="message" class="action-message" role="status" aria-live="polite"></div><div class="action-main"><div id="actions" class="action-buttons"></div></div><div id="draft-line" class="draft-line"></div></div></section><aside class="inspector panel" id="inspector" aria-label="Details"><div class="panel-body" id="panel"></div></aside></div></main></div><div class="toast-stack"><div class="toast" id="toast" role="status" aria-live="polite" hidden><span class="toast-text"></span><button type="button" class="btn btn--ghost btn--icon toast-close" aria-label="Dismiss">${CLOSE_ICON}</button></div></div>`;
+  installToast($("toast"));
   $("page-title").textContent = title;
   const mute = button(
     "",
     () => {
       changeSound({ enabled: !soundPreferences().enabled });
     },
-    "ghost sound-toggle",
+    "ghost sound-toggle btn--icon",
     { id: "sound-toggle", "aria-label": "Sound effects" },
   );
   mute.innerHTML =
@@ -553,7 +615,7 @@ export function players(s, names = ["Ivory", "Teal"]) {
     )
       row.animate(
         [
-          { backgroundColor: "#9bd6c928" },
+          { backgroundColor: "color-mix(in oklab, var(--accent) 18%, transparent)" },
           { backgroundColor: "transparent" },
         ],
         { duration: 420, easing: "ease-out" },
@@ -568,7 +630,7 @@ export function players(s, names = ["Ivory", "Teal"]) {
           "aria-hidden": true,
         }),
         el("strong", { title: names[p] }, names[p]),
-        active ? el("span", { class: "player-status" },
+        active ? el("span", { class: "player-status badge badge--accent badge--plain" },
           s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
       ),
       el(

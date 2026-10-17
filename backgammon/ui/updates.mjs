@@ -64,10 +64,10 @@ export function startUpdates({ onStatus = () => {} } = {}) {
     function screen(message, completed, total) {
       if (!notice) {
         notice = document.createElement("dialog");
-        notice.className = "app-update-dialog";
+        notice.className = "dialog app-update-dialog";
         notice.setAttribute("aria-labelledby", "update-title");
         notice.innerHTML =
-          '<h2 id="update-title">Updating Backgammon</h2><p class="update-message" role="status"></p><progress aria-label="App files downloaded"></progress><p class="update-count"></p><p class="update-note">Your game, draft and saved study stay in this browser.</p><button type="button" hidden>Retry update</button>';
+          '<div class="dialog-body"><h2 id="update-title">Updating Backgammon</h2><p class="update-message" role="status"></p><progress aria-label="App files downloaded"></progress><p class="update-count"></p><p class="update-note">Your game, draft and saved study stay in this browser.</p><button type="button" class="btn btn--primary" hidden>Retry update</button></div>';
         notice.addEventListener("cancel", (e) => e.preventDefault());
         notice.querySelector("button").onclick = () => {
           retries = 0;

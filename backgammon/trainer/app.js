@@ -556,6 +556,7 @@ document.querySelectorAll(".nav a,.brand,.site-link").forEach((a) =>
           await savePractice();
           location.href = a.href;
         },
+        { verb: "Leave" },
       );
     }
   }),

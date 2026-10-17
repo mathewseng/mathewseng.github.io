@@ -174,7 +174,7 @@ function renderList() {
     parent.append(
       el(
         "div",
-        { class: "empty" },
+        { class: "empty empty-state" },
         el(
           "h2",
           {},
@@ -394,6 +394,7 @@ function inspector() {
             selected = null;
             await refresh();
           },
+          { verb: "Delete", danger: true },
         ),
       "danger",
     ),
@@ -446,6 +447,7 @@ function importDialog() {
               "Replace the Library?",
               "Export a backup first if you want to keep your current collection.",
               apply,
+              { verb: "Replace", danger: true },
             );
           else await apply();
         },

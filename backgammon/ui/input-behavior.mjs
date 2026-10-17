@@ -15,8 +15,15 @@ export function installInputBehavior() {
       !event.target.closest?.('input,textarea,[contenteditable="true"]'))
       root.dataset.focusNavigation = "false";
   }, true);
+  // The board, player strips and action area are drag surfaces; text in the
+  // inspector, dialogs and the review section stays selectable (styles.css
+  // scopes user-select the same way).
   document.addEventListener("selectstart", event => {
     const target = event.target.nodeType === Node.ELEMENT_NODE ? event.target : event.target.parentElement;
-    if (!target?.closest('input,textarea,[contenteditable="true"]')) event.preventDefault();
+    if (target?.closest('input,textarea,[contenteditable="true"]')) return;
+    if (target?.closest(".inspector, .play-review, .dialog-body, .dialog-head") &&
+        !target.closest(".bg-board, .decision-board, .history-preview-board, .theme-sample, .theme-swatch, .library-preview"))
+      return;
+    event.preventDefault();
   });
 }
