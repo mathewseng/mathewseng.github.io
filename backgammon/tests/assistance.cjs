@@ -38,6 +38,20 @@ module.exports = async function assistanceUX(
     }
     throw new Error("Timed out waiting for saved game");
   };
+  // play/app.js persists the draft after a paint (saveDraftAfterPaint), so a
+  // read straight after a move can see the previous draft. Wait for a frame
+  // and for two consecutive reads to agree before using the saved draft.
+  const settledSaved = async () => {
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50))));
+    let last = await saved();
+    for (let i = 0; i < 100; i++) {
+      await page.waitForTimeout(100);
+      const next = await saved();
+      if (JSON.stringify(next?.draft) === JSON.stringify(last?.draft)) return next;
+      last = next;
+    }
+    return last;
+  };
   const close = () =>
     page
       .getByRole("dialog")
@@ -126,7 +140,7 @@ module.exports = async function assistanceUX(
     assert.ok(await page.locator("#confirm").isEnabled());
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("z");
-    assert.equal((await saved()).draft.length, 1);
+    assert.equal((await waitSaved((s) => s?.draft.length === 1)).draft.length, 1);
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("x");
     await waitSaved((s) => s?.draft.length === 0);
@@ -144,7 +158,7 @@ module.exports = async function assistanceUX(
       "toggle retains keyboard focus after refresh",
     );
     await finishDraft();
-    const submitted = await saved();
+    const submitted = await settledSaved();
     begin = Date.now();
     // Repeated commands must not commit twice even while analysis is pending.
     await page.locator("#confirm").evaluate((b) => {
@@ -470,7 +484,7 @@ module.exports = async function assistanceUX(
       await page.goto(base + "/backgammon/play/");
       await page.locator("#resume-match").click();
       await finishDraft();
-      const pending = await saved();
+      const pending = await settledSaved();
       assetMode = "hold";
       await page.locator("#confirm").click();
       await waitHeld();

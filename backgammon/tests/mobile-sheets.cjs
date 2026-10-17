@@ -28,7 +28,9 @@ module.exports = async function mobileSheets(browser, base, out, name) {
     await page.locator("#confirm").waitFor();
     await page.getByLabel("Select a checker",{exact:true}).selectOption("12");
     await page.getByLabel("Move selected checker",{exact:true}).selectOption("8");
-    const before = await work();
+    // The draft is saved after a paint (play/app.js saveDraftAfterPaint); wait for it.
+    let before = await work();
+    for (let i=0; i<100 && before.draft.length!==1; i++) { await page.waitForTimeout(50); before = await work(); }
     assert.equal(before.draft.length,1);
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1366,768]]) {
       await page.setViewportSize({width,height});
