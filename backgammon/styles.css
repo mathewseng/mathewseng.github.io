@@ -937,11 +937,13 @@ button kbd.keycap,
   opacity: 0.4;
 }
 
+/* Token fallbacks keep a theme that lacks a role renderable (appearance.cjs
+   checks each role is used with a fallback). */
 .teal-die,
 button.teal-die:hover {
-  border-color: var(--board-die-border1);
-  background: var(--board-die1);
-  color: var(--board-pips1);
+  border-color: var(--board-die-border1, var(--line-strong));
+  background: var(--board-die1, var(--accent));
+  color: var(--board-pips1, var(--on-accent));
 }
 
 .die.teal-die {
@@ -1065,7 +1067,7 @@ button.die.preferred {
 
 .point:not([aria-disabled="true"]):is(.movable, .reachable, .destination, .return-destination, .selected):hover .point-hit,
 .bg-board.is-editor .point:hover .point-hit {
-  fill: color-mix(in srgb, var(--board-hover) 7%, transparent);
+  fill: color-mix(in srgb, var(--board-hover, var(--ink)) 7%, transparent);
 }
 
 .point.selected .point-hit,
@@ -1159,7 +1161,7 @@ button.die.preferred {
    they survive light themes, and landing rings on destinations. */
 .point .source-ring {
   fill: none;
-  stroke: var(--board-source);
+  stroke: var(--board-source, var(--accent));
   stroke-width: 1.5;
   stroke-dasharray: 4 6;
   stroke-dashoffset: 2;
@@ -1214,13 +1216,13 @@ button.die.preferred {
 html[data-focus-navigation="true"] .point:focus-visible .point-hit,
 html[data-focus-navigation="true"] .point.return-destination:focus-visible .point-hit,
 html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible .point-hit {
-  stroke: var(--board-focus);
+  stroke: var(--board-focus, var(--accent));
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
 
 html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
-  stroke: var(--board-focus);
+  stroke: var(--board-focus, var(--accent));
   stroke-width: 4;
   vector-effect: non-scaling-stroke;
 }
@@ -2429,8 +2431,12 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   gap: 6px;
 }
 
+/* The body is one stretched grid row, so the board column fills the dialog
+   height even when the comparison column is hidden (Board view). */
 .decision-dialog .dialog-body {
   flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
   min-height: 0;
   padding: 0;
   overflow: visible;
@@ -2688,6 +2694,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .history-dialog .dialog-body {
   flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
   min-height: 0;
   padding: 0;
   overflow: visible;
@@ -2735,6 +2743,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .history-tree-list {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .history-node {
@@ -2925,7 +2935,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .sound-settings input[type="range"] {
-  min-height: 24px;
+  min-height: 44px;
   accent-color: var(--accent);
 }
 
@@ -3928,6 +3938,25 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The board keeps a definite size from its width and the viewport, so a
+     growing action area or review never resizes it (decision-ux.cjs). */
+  .play-page .stage {
+    grid-template-rows: auto auto auto auto;
+    align-content: start;
+    height: auto;
+  }
+
+  .play-page .board-workspace {
+    height: auto;
+  }
+
+  .play-page .board-workspace > .board-slot {
+    height: auto;
+    max-width: none;
+    max-height: calc(100dvh - 310px);
+    aspect-ratio: 876 / 660;
+  }
+
   /* Setup is the task before play: the form sits inline above the board with
      a reachable Start action. */
   .play-page.setup-table {
@@ -4523,9 +4552,19 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table {
+    --bg-equity-width: 26px;
     min-height: max(100dvh, 580px);
     padding-inline: max(4px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-right));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  /* A narrower equity rail leaves the board its full width (dice-undo.cjs). */
+  .play-page.live-table .equity-meter {
+    width: 10px;
+  }
+
+  .play-page.live-table .equity-number {
+    letter-spacing: -0.04em;
   }
 
   .play-page.live-table .tool-head {
@@ -4541,7 +4580,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table .stage {
-    grid-template-rows: auto max-content auto 60px minmax(130px, 1fr);
+    grid-template-rows: auto max-content auto 60px minmax(110px, 1fr);
   }
 
   .play-page.live-table .board-workspace {
@@ -4939,17 +4978,22 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding-inline: 6px;
   }
 
+  .decision-dialog[open] {
+    gap: 6px;
+    padding: 10px;
+  }
+
   .decision-dialog .decision-content {
-    gap: 4px;
+    gap: 3px;
   }
 
   .decision-dialog .decision-values th,
   .decision-dialog .decision-values td {
-    padding-block: 4px;
+    padding-block: 2px;
   }
 
   .decision-dialog .decision-values caption {
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   .decision-dialog .decision-values thead th {
@@ -5370,14 +5414,15 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table .action-area {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    gap: 6px;
+    justify-content: flex-start;
+    gap: 4px;
     left: calc(100% + 8px);
     width: 164px;
     height: calc(100% - 206px);
     max-height: calc(100% - 206px);
     padding: 4px;
     border-top: 0;
+    overflow-y: auto;
   }
 
   .play-page.live-table .action-message {

@@ -258,11 +258,13 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       await page.evaluate(() => getComputedStyle(document.body).touchAction),
       "manipulation",
     );
+    // Selection is reserved for the board and drag surfaces; the inspector,
+    // dialogs and the review section stay selectable (docs/redesign/prompt.md).
     assert.equal(
       await page.evaluate(
         () =>
-          getComputedStyle(document.body).userSelect ||
-          getComputedStyle(document.body).webkitUserSelect,
+          getComputedStyle(document.querySelector(".bg-board")).userSelect ||
+          getComputedStyle(document.querySelector(".bg-board")).webkitUserSelect,
       ),
       "none",
     );
