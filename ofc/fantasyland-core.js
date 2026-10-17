@@ -2816,6 +2816,200 @@
     return triggers;
   }
 
+  // ---------- Rules article ----------
+  // The rules article shared by the trainer's rules dialog and the EV page's
+  // Rules tab (styled by ofc/ofc.css). DOM-optional: nodes are built only
+  // through the document passed in, so Node callers never touch the DOM.
+  //   createRulesArticle(document, "cribbage", {
+  //     repeatExtra: ["JJJ+ option: ..."],  // lines appended to Repeat Fantasyland
+  //     note: "...",                        // the closing .rules-seed-note
+  //   })
+  const RULE_KEYWORDS = "Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust";
+  const RULE_TOKEN_PATTERN = new RegExp(`(\\b\\d+(?:[-–]\\d+)?(?:pts?)?\\+?\\b|\\b(?:${RULE_KEYWORDS})\\b)`, "gi");
+  const RULE_KEYWORD_PATTERN = new RegExp(`^(?:${RULE_KEYWORDS})$`, "i");
+
+  function createRulesArticle(doc, variantValue, options = {}) {
+    if (!doc || typeof doc.createElement !== "function") return null;
+    const active = normalizeVariant(variantValue);
+    const rules = RULE_SECTIONS.find((section) => section.id === active);
+    if (!rules) return null;
+    const article = doc.createElement("article");
+    article.className = "rules-article";
+    const heading = doc.createElement("div");
+    heading.className = "rules-article-heading";
+    const title = doc.createElement("h3");
+    title.textContent = rules.title;
+    const short = doc.createElement("p");
+    short.textContent = VARIANTS[active].short;
+    heading.append(title, short);
+    article.appendChild(heading);
+    const sections = [];
+    if (rules.natural) sections.push(["Natural OFC", rules.natural]);
+    sections.push(["Fantasyland board", [rules.qualification]], ["Royalties", rules.scoring]);
+    if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
+    sections.push(["Repeat Fantasyland", [rules.repeat].concat(options.repeatExtra || [])]);
+    if (rules.stacking) sections.push(["Stacking / Super FL", [rules.stacking]]);
+    if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
+    sections.forEach(([label, lines]) => {
+      const section = doc.createElement("section");
+      const sectionTitle = doc.createElement("h4");
+      sectionTitle.textContent = label;
+      section.appendChild(sectionTitle);
+      if (label === "Royalties") {
+        section.classList.add("royalties-section");
+        section.appendChild(createRoyaltyGroups(doc, lines));
+      } else {
+        const list = doc.createElement("ul");
+        lines.forEach((line) => {
+          const item = doc.createElement("li");
+          appendRuleLine(doc, item, line);
+          list.appendChild(item);
+        });
+        section.appendChild(list);
+      }
+      article.appendChild(section);
+    });
+    if (active === "cribbage") article.appendChild(createCribbage24PlusHands(doc));
+    if (options.note) {
+      const note = doc.createElement("p");
+      note.className = "rules-seed-note";
+      note.textContent = options.note;
+      article.appendChild(note);
+    }
+    return article;
+  }
+
+  function createRoyaltyGroups(doc, groups) {
+    const wrapper = doc.createElement("div");
+    wrapper.className = "royalty-groups";
+    groups.forEach((group) => {
+      const block = doc.createElement("div");
+      block.className = "royalty-group";
+      const title = doc.createElement("h5");
+      title.textContent = group.label;
+      const list = doc.createElement("ul");
+      list.className = "royalty-list";
+      group.items.forEach((line) => {
+        const item = doc.createElement("li");
+        appendRuleLine(doc, item, line);
+        list.appendChild(item);
+      });
+      block.append(title, list);
+      wrapper.appendChild(block);
+    });
+    return wrapper;
+  }
+
+  function createCribbage24PlusHands(doc) {
+    const section = doc.createElement("section");
+    section.className = "cribbage-hand-reference";
+    const sectionTitle = doc.createElement("h4");
+    sectionTitle.textContent = "24+ hands";
+
+    const reference = doc.createElement("div");
+    reference.className = "cribbage-hand-reference-body";
+    const intro = doc.createElement("header");
+    intro.innerHTML = `
+      <div>
+        <h5>Complete rank-combination list</h5>
+        <p>Five-card patterns after joker substitution. Suits are ignored.</p>
+      </div>
+    `;
+    reference.appendChild(intro);
+
+    CRIBBAGE_24_PLUS_HANDS.forEach((scoreGroup) => {
+      const group = doc.createElement("div");
+      group.className = "cribbage-score-group";
+      const heading = doc.createElement("div");
+      heading.className = "cribbage-score-heading";
+      heading.innerHTML = `
+        <strong><mark>${scoreGroup.score}</mark> points</strong>
+        <span>${scoreGroup.royalties} royalties</span>
+      `;
+      group.appendChild(heading);
+
+      const hands = doc.createElement("div");
+      hands.className = "cribbage-hand-list";
+      scoreGroup.patterns.forEach((pattern) => {
+        const row = doc.createElement("div");
+        row.className = "cribbage-hand-row";
+        const cards = doc.createElement("strong");
+        cards.className = "cribbage-hand-pattern";
+        cards.textContent = pattern.label;
+        cards.setAttribute("aria-label", `${pattern.label.split("").join(" ")}${pattern.note ? `, ${pattern.note}` : ""}`);
+        if (pattern.note) {
+          const note = doc.createElement("small");
+          note.textContent = ` (${pattern.note})`;
+          cards.appendChild(note);
+        }
+
+        const explanation = doc.createElement("div");
+        explanation.className = "cribbage-hand-explanation";
+        const breakdown = doc.createElement("span");
+        breakdown.className = "cribbage-hand-breakdown";
+        const visibleComponents = pattern.note
+          ? pattern.components.filter(([label]) => !/nobs?/i.test(label))
+          : pattern.components;
+        visibleComponents.forEach(([label, points], index) => {
+          if (index) breakdown.appendChild(doc.createTextNode(" + "));
+          const term = doc.createElement("span");
+          term.textContent = `${label} `;
+          const value = doc.createElement("strong");
+          value.textContent = `${points}pt${points === 1 ? "" : "s"}`;
+          term.appendChild(value);
+          breakdown.appendChild(term);
+        });
+        explanation.appendChild(breakdown);
+        row.append(cards, explanation);
+        hands.appendChild(row);
+      });
+      group.appendChild(hands);
+      reference.appendChild(group);
+    });
+
+    const gapNote = doc.createElement("p");
+    gapNote.className = "cribbage-score-gap-note";
+    gapNote.textContent = "No five-card hand scores 25, 26, or 27 points under these rules.";
+    reference.appendChild(gapNote);
+    section.append(sectionTitle, reference);
+    return section;
+  }
+
+  function appendRuleLine(doc, item, line) {
+    const separator = line.indexOf(":");
+    if (separator > 0) {
+      const term = doc.createElement("strong");
+      term.className = "rule-term";
+      term.textContent = line.slice(0, separator);
+      item.appendChild(term);
+      appendRuleDetail(doc, item, line.slice(separator + 1));
+      return;
+    }
+    appendRuleDetail(doc, item, line);
+  }
+
+  function appendRuleDetail(doc, item, text) {
+    const detail = doc.createElement("span");
+    detail.className = "rule-detail";
+    String(text).split(RULE_TOKEN_PATTERN).forEach((token) => {
+      if (!token) return;
+      if (/^\d/.test(token)) {
+        const value = doc.createElement("mark");
+        value.className = "rule-number";
+        value.textContent = token;
+        detail.appendChild(value);
+      } else if (RULE_KEYWORD_PATTERN.test(token)) {
+        const keyword = doc.createElement("em");
+        keyword.className = /^(?:foul|bust)$/i.test(token) ? "rule-keyword danger" : "rule-keyword";
+        keyword.textContent = token;
+        detail.appendChild(keyword);
+      } else {
+        detail.appendChild(doc.createTextNode(token));
+      }
+    });
+    item.appendChild(detail);
+  }
+
   function now() {
     return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
   }
@@ -2869,5 +3063,6 @@
     dealSeeded,
     findQualifyingDeal,
     naturalFantasyTriggers,
+    createRulesArticle,
   };
 });

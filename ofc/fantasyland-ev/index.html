@@ -38,7 +38,7 @@
             <h1>Fantasyland EV</h1>
             <p class="lede">Royalty EV, repeat chance and foul rate for every Fantasyland variant by cards in hand and jokers drawn, from the exact trainer solver.</p>
           </div>
-          <div class="ev-dataset" id="dataset-meta" aria-label="Dataset">
+          <div class="ev-dataset" id="dataset-meta" role="group" aria-label="Dataset">
             <span class="badge badge--accent" id="dataset-samples">10,000 samples per configuration</span>
             <span class="ev-dataset-date" id="dataset-date"></span>
           </div>
@@ -62,12 +62,6 @@
             </div>
           </div>
           <p id="variant-summary" class="variant-summary">Natural Pineapple OFC with standard 3-5-5 high-poker rankings.</p>
-          <div class="chip-row joker-legend" aria-label="Chart colours">
-            <span class="chip joker-chip" data-jokers="0"><i class="joker-dot j0" aria-hidden="true"></i>0 jokers</span>
-            <span class="chip joker-chip" data-jokers="1"><i class="joker-dot j1" aria-hidden="true"></i>1 joker</span>
-            <span class="chip joker-chip" data-jokers="2"><i class="joker-dot j2" aria-hidden="true"></i>2 jokers</span>
-            <span class="chip joker-chip joker-chip--hypothetical" id="hypothetical-legend" hidden><i class="joker-dot j-hypothetical" aria-hidden="true"></i>Off-rule card count (hypothetical)</span>
-          </div>
         </section>
 
         <div id="section-tabs" class="tabs ev-tabs" role="tablist" aria-label="Report sections">
@@ -77,8 +71,18 @@
           <button type="button" role="tab" id="section-tab-rules" data-tab="rules" data-section="rules" aria-selected="false" aria-controls="section-rules">Rules</button>
         </div>
 
+        <!-- The joker hues colour the Overview and Matrix tabs; the legend sits
+             under the tab bar and is hidden on Repeat sources (whose own legend
+             reuses those hues for rows) and Rules, so the tabs never move. -->
+        <div class="chip-row joker-legend" id="joker-legend" role="group" aria-label="Joker colours">
+          <span class="chip joker-chip" data-jokers="0"><i class="joker-dot j0" aria-hidden="true"></i>0 jokers</span>
+          <span class="chip joker-chip" data-jokers="1"><i class="joker-dot j1" aria-hidden="true"></i>1 joker</span>
+          <span class="chip joker-chip" data-jokers="2"><i class="joker-dot j2" aria-hidden="true"></i>2 jokers</span>
+          <span class="chip joker-chip joker-chip--hypothetical" id="hypothetical-legend" hidden><i class="joker-dot j-hypothetical" aria-hidden="true"></i>Off-rule card count (hypothetical)</span>
+        </div>
+
         <section class="section-panel" id="section-overview" role="tabpanel" aria-labelledby="section-tab-overview" data-section-panel="overview">
-          <div class="stat-strip ev-summary" id="summary-grid" aria-label="Highlights"></div>
+          <div class="stat-strip ev-summary" id="summary-grid" role="group" aria-label="Highlights"></div>
 
           <div class="ev-grid ev-grid--overview">
             <article class="panel chart-panel" aria-labelledby="metric-title">
@@ -136,7 +140,7 @@
               <span id="repeat-source-note" class="panel-note">Bar width = repeat chance; multi-row = Super Fantasyland</span>
             </div>
             <div class="repeat-source-body">
-              <div class="chip-row repeat-source-legend" aria-label="Repeat source legend">
+              <div class="chip-row repeat-source-legend" role="group" aria-label="Repeat source colours">
                 <span class="chip"><i class="source-top" aria-hidden="true"></i>Top</span>
                 <span class="chip"><i class="source-middle" aria-hidden="true"></i>Middle</span>
                 <span class="chip"><i class="source-bottom" aria-hidden="true"></i>Bottom</span>
@@ -146,7 +150,7 @@
                 <span class="chip"><i class="source-all" aria-hidden="true"></i>All three <b data-repeat-extra="3">+2 cards</b></span>
               </div>
               <div id="repeat-source-chart" class="repeat-source-chart"></div>
-              <div id="repeat-source-detail" class="repeat-source-detail" aria-live="polite"></div>
+              <div id="repeat-source-detail" class="repeat-source-detail"></div>
             </div>
           </article>
           <div id="repeat-source-empty" class="panel panel--quiet" hidden>
@@ -157,7 +161,7 @@
           </div>
         </section>
 
-        <section class="section-panel" id="section-matrix" role="tabpanel" aria-labelledby="section-tab-matrix" data-section-panel="matrix" hidden>
+        <section class="section-panel section-panel--matrix" id="section-matrix" role="tabpanel" aria-labelledby="section-tab-matrix" data-section-panel="matrix" hidden>
           <section class="panel matrix-panel" aria-labelledby="matrix-title">
             <div class="panel-head matrix-head">
               <div>
@@ -167,6 +171,16 @@
               <span id="matrix-meta" class="panel-note">No samples yet</span>
             </div>
             <div class="panel-body matrix-body">
+              <!-- Phones: the table head is visually hidden, so its definition
+                   links are shown here instead (app.js takes the head links out
+                   of the tab order at the same width). -->
+              <div class="chip-row matrix-definitions" role="group" aria-label="Column definitions">
+                <button class="chip definition-chip" type="button" data-definition="immediate">Royalty EV</button>
+                <button class="chip definition-chip" type="button" data-definition="repeat">Repeat FL</button>
+                <button class="chip definition-chip" type="button" data-definition="line">Repeat-line EV</button>
+                <button class="chip definition-chip" type="button" data-definition="recursive">Recursive EV</button>
+                <button class="chip definition-chip" type="button" data-definition="foul">Foul</button>
+              </div>
               <div class="table-wrap table-wrap--sticky-col matrix-wrap">
                 <table class="data-table matrix-table">
                   <thead>
@@ -269,6 +283,7 @@
       </main>
     </div>
 
+    <p id="ev-status" class="sr-only" role="status" aria-live="polite"></p>
     <div id="alerts" class="toast-stack" role="alert" aria-live="assertive"></div>
 
     <script src="../../shared/tabs.js?v=20261016"></script>

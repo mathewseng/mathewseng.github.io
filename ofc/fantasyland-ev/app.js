@@ -9,11 +9,16 @@
   const SECTION_IDS = ["overview", "repeat", "matrix", "rules"];
   // Hashes and saved sections from before the Royalty EV, Repeat and Foul tabs
   // merged into the overview: they still deep-link to the overview with the
-  // matching metric selected.
+  // matching metric selected. "charts" is the folded report page's chart tab.
   const LEGACY_SECTIONS = {
     ev: { section: "overview", metric: "immediate" },
     foul: { section: "overview", metric: "foul" },
+    charts: { section: "overview", metric: "immediate" },
   };
+  // Tabs whose charts and tables use the joker hues (and so show the legend).
+  const JOKER_LEGEND_SECTIONS = new Set(["overview", "matrix"]);
+  // Phones: the matrix head row is visually hidden (styles.css, max-width 680px).
+  const PHONE_MATRIX_QUERY = "(max-width: 680px)";
   const METRICS = {
     immediate: { title: "Royalty EV by hand", note: "Expected immediate royalties from the best legal board · higher is better" },
     repeat: { title: "Repeat chance by hand", note: "Chance that at least one legal board returns to Fantasyland" },
@@ -82,23 +87,76 @@
 
   function init() {
     cacheElements();
+    // The tabs work without the engine, so a failed load still leaves the page navigable.
+    applyLegacySection();
+    bindSectionTabs();
+    bindMatrixHeadFocus();
     if (!Core) {
-      announce("The Fantasyland engine did not load, so the charts cannot be drawn. Reload the page to try again.");
+      showEngineFailure();
       return;
     }
     bindEvents();
     state.precomputedSamples = applyPrecomputedResults(window.OFCFantasylandPrecomputed);
     renderDatasetMeta(window.OFCFantasylandPrecomputed);
-    applyLegacySection();
     buildRulesTabs();
-    bindSectionTabs();
     setMetric(state.metric);
     renderVariant();
+  }
+
+  function showEngineFailure() {
+    announce("The Fantasyland engine did not load, so the charts cannot be drawn. Reload the page to try again.");
+    const unavailable = "Unavailable: the Fantasyland engine did not load.";
+    if (els.datasetSamples) {
+      els.datasetSamples.textContent = "Engine not loaded";
+      els.datasetSamples.classList.replace("badge--accent", "badge--bad");
+    }
+    document.querySelectorAll(".empty-chart").forEach((chart) => {
+      chart.textContent = unavailable;
+    });
+    if (els.matrixMeta) els.matrixMeta.textContent = "Engine not loaded";
+    if (els.deckMatrixMeta) els.deckMatrixMeta.textContent = "Engine not loaded";
+    if (els.repeatSourceEmpty) {
+      els.repeatSourceEmpty.hidden = false;
+      const copy = els.repeatSourceEmpty.querySelector("p");
+      if (copy) copy.textContent = unavailable;
+    }
+    if (els.rulesContent) {
+      const copy = document.createElement("p");
+      copy.className = "chart-note";
+      copy.textContent = unavailable;
+      els.rulesContent.replaceChildren(copy);
+    }
+  }
+
+  // Polite status line (#ev-status): short confirmations of what a click changed.
+  function say(message) {
+    if (!els.status) return;
+    els.status.textContent = "";
+    window.setTimeout(() => {
+      els.status.textContent = message;
+    }, 30);
+  }
+
+  // On phones the matrix head row is visually hidden; its definition links
+  // leave the tab order there (the chip row above the cards replaces them).
+  function bindMatrixHeadFocus() {
+    if (!window.matchMedia) return;
+    const query = window.matchMedia(PHONE_MATRIX_QUERY);
+    const apply = () => {
+      document.querySelectorAll(".matrix-table thead .definition-link").forEach((button) => {
+        if (query.matches) button.tabIndex = -1;
+        else button.removeAttribute("tabindex");
+      });
+    };
+    apply();
+    if (query.addEventListener) query.addEventListener("change", apply);
   }
 
   function cacheElements() {
     Object.assign(els, {
       alerts: document.querySelector("#alerts"),
+      status: document.querySelector("#ev-status"),
+      jokerLegend: document.querySelector("#joker-legend"),
       datasetSamples: document.querySelector("#dataset-samples"),
       datasetDate: document.querySelector("#dataset-date"),
       variantSummary: document.querySelector("#variant-summary"),
@@ -147,7 +205,7 @@
       saveSettings();
       renderVariant();
     });
-    document.querySelectorAll(".definition-link").forEach((button) => {
+    document.querySelectorAll("button[data-definition]").forEach((button) => {
       button.addEventListener("click", () => showDefinition(button.dataset.definition));
     });
     window.addEventListener("resize", () => {
@@ -159,7 +217,7 @@
   // Map a pre-merge hash or saved section onto the overview and its metric
   // before the shared tab helper reads them.
   function applyLegacySection() {
-    const hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    const hash = normalizeHash();
     let saved = null;
     try {
       saved = localStorage.getItem(SECTION_KEY);
@@ -179,6 +237,25 @@
     }
   }
 
+  // The report redirect appends the old page's hash and query after its own
+  // target hash (/ofc/fantasyland-report/#matrix arrives as #overview#matrix,
+  // ?x=1 as #overview?x=1). Keep the last known section in the chain.
+  function normalizeHash() {
+    let raw = window.location.hash.replace(/^#/, "");
+    try {
+      raw = decodeURIComponent(raw);
+    } catch (error) {
+      // Malformed escapes: use the hash as written.
+    }
+    if (!/[#?&]/.test(raw)) return raw;
+    const known = raw.split(/[#?&]/).filter((part) => SECTION_IDS.includes(part) || LEGACY_SECTIONS[part]);
+    const picked = known.length ? known[known.length - 1] : "";
+    if (window.history?.replaceState) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${picked ? `#${picked}` : ""}`);
+    }
+    return picked;
+  }
+
   function bindSectionTabs() {
     if (!els.sectionTabs || !window.Tabs) return;
     sectionTabs = window.Tabs.init(els.sectionTabs, {
@@ -186,6 +263,7 @@
       storageKey: SECTION_KEY,
       onChange: (id) => {
         state.section = id;
+        if (els.jokerLegend) els.jokerLegend.hidden = !JOKER_LEGEND_SECTIONS.has(id);
         fitRepeatSourceLabels();
         centerDistributionModes();
       },
@@ -562,16 +640,22 @@
         ariaParts.push(`${meta.label} ${formatDetailPct(allHandsRate)}`);
       });
       track.setAttribute("aria-label", ariaParts.join(", "));
+      track.id = `repeat-track-${key}`;
       const values = document.createElement("span");
       values.className = "repeat-source-values";
+      values.id = `repeat-values-${key}`;
       const multiRowLabel = state.variant === "bdp" ? "multi" : "SF";
       values.innerHTML = `<strong>${formatPct(sourceTotal / samples)}</strong><small>${formatPct(superTotal / samples)} ${multiRowLabel}</small>`;
+      // The pinned aria-label names the button; the totals and the per-source
+      // percentages are its description.
+      row.setAttribute("aria-describedby", `${values.id} ${track.id}`);
       row.append(label, track, values);
       if (key === state.repeatDetailScenario) row.appendChild(createRepeatSourceBreakdown(counts, samples));
       row.addEventListener("click", () => {
         state.repeatDetailScenario = key;
         renderRepeatSourceChart(entries);
         els.repeatSourceChart.querySelector(".repeat-source-row.is-selected")?.focus({ preventScroll: true });
+        say(`Showing repeat details for ${scenario.cards} cards and ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}.`);
       });
       fragment.appendChild(row);
     });
@@ -848,6 +932,8 @@
 
   function renderDistributionChart(entries) {
     const fragment = document.createDocumentFragment();
+    // Tappable bins get the 44px touch floor on coarse pointers (the row scrolls sideways).
+    const binWidth = window.matchMedia?.("(pointer: coarse)").matches ? 44 : 30;
     entries.forEach(({ scenario, result }) => {
       const distribution = Array.from(result.distribution || [], (rate) => finiteNumber(rate));
       let maximum = distribution.length - 1;
@@ -870,8 +956,8 @@
       plot.className = "distribution-plot";
       plot.tabIndex = 0;
       plot.setAttribute("role", "group");
-      plot.style.gridTemplateColumns = `repeat(${bins.length}, minmax(30px, 1fr))`;
-      plot.style.minWidth = `${bins.length * 34}px`;
+      plot.style.gridTemplateColumns = `repeat(${bins.length}, minmax(${binWidth}px, 1fr))`;
+      plot.style.minWidth = `${bins.length * (binWidth + 4)}px`;
       plot.setAttribute("aria-label", `${title.textContent}: ${bins.map(({ points, rate }) => `${points} royalties ${formatDetailPct(rate)}`).join(", ")}`);
       bins.forEach(({ points, rate }) => {
         const bin = document.createElement("div");
@@ -905,6 +991,10 @@
         if (next === null || next < 0 || next >= bins.length) return;
         event.preventDefault();
         activate(next, { scroll: true });
+      });
+      // Keyboard focus marks the mode bin, so the arrow keys start from a visible bin.
+      plot.addEventListener("focus", () => {
+        if (plot.dataset.active === undefined && plot.matches(":focus-visible")) activate(mode.points, { scroll: true });
       });
       describe(mode.points, true);
       viewport.appendChild(plot);
@@ -950,6 +1040,13 @@
     const definition = DEFINITIONS[key] || DEFINITIONS.immediate;
     els.definitionTitle.textContent = definition.title;
     els.definitionCopy.textContent = definition.copy;
+    // Wide screens keep the definitions beside the tables; elsewhere bring the
+    // swapped copy into view so the click visibly does something.
+    const box = els.definitionCopy.getBoundingClientRect();
+    if (box.top < 0 || box.bottom > window.innerHeight) {
+      els.definitionCopy.closest(".definitions-panel")?.scrollIntoView({ block: "nearest" });
+    }
+    say(`${definition.title}: ${definition.copy}`);
   }
 
   // ---------- Rules ----------
@@ -995,184 +1092,14 @@
   function renderRulesArticle(value) {
     if (!els.rulesContent) return;
     const active = Core.normalizeVariant(value);
-    const rules = Core.RULE_SECTIONS.find((section) => section.id === active);
-    const article = document.createElement("article");
-    article.className = "rules-article";
-    const heading = document.createElement("div");
-    heading.className = "rules-article-heading";
-    const title = document.createElement("h3");
-    title.textContent = rules.title;
-    const short = document.createElement("p");
-    short.textContent = Core.VARIANTS[active].short;
-    heading.append(title, short);
-    article.appendChild(heading);
-    const sections = [];
-    if (rules.natural) sections.push(["Natural OFC", rules.natural]);
-    sections.push(["Fantasyland board", [rules.qualification]], ["Royalties", rules.scoring]);
-    if (rules.fantasy) sections.push(["Enter Fantasyland", [rules.fantasy]]);
-    sections.push(["Repeat Fantasyland", [rules.repeat]]);
-    if (rules.stacking) sections.push(["Stacking / Super FL", [rules.stacking]]);
-    if (rules.superFantasy) sections.push(["Super Fantasyland", [rules.superFantasy]]);
-    sections.forEach(([label, lines]) => {
-      const section = document.createElement("section");
-      const sectionTitle = document.createElement("h4");
-      sectionTitle.textContent = label;
-      section.appendChild(sectionTitle);
-      if (label === "Royalties") {
-        section.classList.add("royalties-section");
-        section.appendChild(renderRoyaltyGroups(lines));
-      } else {
-        const list = document.createElement("ul");
-        const sectionLines = label === "Repeat Fantasyland" && JACKS_PLUS_REPEAT_VARIANTS.has(active) && state.settings.topRepeatJacksPlus
-          ? lines.concat("JJJ+ option: top trips below jacks do not count as a repeat.")
-          : lines;
-        sectionLines.forEach((line) => {
-          const item = document.createElement("li");
-          appendRuleLine(item, line);
-          list.appendChild(item);
-        });
-        section.appendChild(list);
-      }
-      article.appendChild(section);
+    const article = Core.createRulesArticle(document, active, {
+      repeatExtra: JACKS_PLUS_REPEAT_VARIANTS.has(active) && state.settings.topRepeatJacksPlus
+        ? ["JJJ+ option: top trips below jacks do not count as a repeat."]
+        : [],
+      note: "Exact-hand samples use the joker count shown. Off-rule card counts are hypothetical analyses; deals with no legal board score zero royalties and appear in the Foul column.",
     });
-    if (active === "cribbage") article.appendChild(renderCribbage24PlusHands());
-    const note = document.createElement("p");
-    note.className = "rules-seed-note";
-    note.textContent = "Exact-hand samples use the joker count shown. Off-rule card counts are hypothetical analyses; deals with no legal board score zero royalties and appear in the Foul column.";
-    article.appendChild(note);
     els.rulesContent.replaceChildren(article);
     els.rulesContent.scrollTop = 0;
-  }
-
-  function renderRoyaltyGroups(groups) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "royalty-groups";
-    groups.forEach((group) => {
-      const block = document.createElement("div");
-      block.className = "royalty-group";
-      const title = document.createElement("h5");
-      title.textContent = group.label;
-      const list = document.createElement("ul");
-      list.className = "royalty-list";
-      group.items.forEach((line) => {
-        const item = document.createElement("li");
-        appendRuleLine(item, line);
-        list.appendChild(item);
-      });
-      block.append(title, list);
-      wrapper.appendChild(block);
-    });
-    return wrapper;
-  }
-
-  function renderCribbage24PlusHands() {
-    const section = document.createElement("section");
-    section.className = "cribbage-hand-reference";
-    const sectionTitle = document.createElement("h4");
-    sectionTitle.textContent = "24+ hands";
-
-    const reference = document.createElement("div");
-    reference.className = "cribbage-hand-reference-body";
-    const intro = document.createElement("header");
-    intro.innerHTML = `
-      <div>
-        <h5>Complete rank-combination list</h5>
-        <p>Five-card patterns after joker substitution. Suits are ignored.</p>
-      </div>
-    `;
-    reference.appendChild(intro);
-
-    Core.CRIBBAGE_24_PLUS_HANDS.forEach((scoreGroup) => {
-      const group = document.createElement("div");
-      group.className = "cribbage-score-group";
-      const heading = document.createElement("div");
-      heading.className = "cribbage-score-heading";
-      heading.innerHTML = `
-        <strong><mark>${scoreGroup.score}</mark> points</strong>
-        <span>${scoreGroup.royalties} royalties</span>
-      `;
-      group.appendChild(heading);
-
-      const hands = document.createElement("div");
-      hands.className = "cribbage-hand-list";
-      scoreGroup.patterns.forEach((pattern) => {
-        const row = document.createElement("div");
-        row.className = "cribbage-hand-row";
-        const cards = document.createElement("strong");
-        cards.className = "cribbage-hand-pattern";
-        cards.textContent = pattern.label;
-        cards.setAttribute("aria-label", `${pattern.label.split("").join(" ")}${pattern.note ? `, ${pattern.note}` : ""}`);
-        if (pattern.note) {
-          const note = document.createElement("small");
-          note.textContent = ` (${pattern.note})`;
-          cards.appendChild(note);
-        }
-
-        const explanation = document.createElement("div");
-        explanation.className = "cribbage-hand-explanation";
-        const breakdown = document.createElement("span");
-        breakdown.className = "cribbage-hand-breakdown";
-        const visibleComponents = pattern.note
-          ? pattern.components.filter(([label]) => !/nobs?/i.test(label))
-          : pattern.components;
-        visibleComponents.forEach(([label, points], index) => {
-          if (index) breakdown.appendChild(document.createTextNode(" + "));
-          const term = document.createElement("span");
-          term.textContent = `${label} `;
-          const value = document.createElement("strong");
-          value.textContent = `${points}pt${points === 1 ? "" : "s"}`;
-          term.appendChild(value);
-          breakdown.appendChild(term);
-        });
-        explanation.appendChild(breakdown);
-        row.append(cards, explanation);
-        hands.appendChild(row);
-      });
-      group.appendChild(hands);
-      reference.appendChild(group);
-    });
-
-    const gapNote = document.createElement("p");
-    gapNote.className = "cribbage-score-gap-note";
-    gapNote.textContent = "No five-card hand scores 25, 26, or 27 points under these rules.";
-    reference.appendChild(gapNote);
-    section.append(sectionTitle, reference);
-    return section;
-  }
-
-  function appendRuleLine(item, line) {
-    const separator = line.indexOf(":");
-    if (separator > 0) {
-      const term = document.createElement("strong");
-      term.className = "rule-term";
-      term.textContent = line.slice(0, separator);
-      item.appendChild(term);
-      appendRuleDetail(item, line.slice(separator + 1));
-      return;
-    }
-    appendRuleDetail(item, line);
-  }
-
-  function appendRuleDetail(item, text) {
-    const detail = document.createElement("span");
-    detail.className = "rule-detail";
-    String(text).split(/(\b\d+(?:[-–]\d+)?(?:pts?)?\+?\b|\b(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)\b)/gi).forEach((token) => {
-      if (!token) return;
-      if (/^\d/.test(token)) {
-        const value = document.createElement("mark");
-        value.className = "rule-number";
-        value.textContent = token;
-        detail.appendChild(value);
-      } else if (/^(?:Fantasyland|Badugi|blackjack|flush|flushes|straight|pair|pairs|trips|quads|royal flush|foul|bust)$/i.test(token)) {
-        const keyword = document.createElement("em");
-        keyword.className = /^(?:foul|bust)$/i.test(token) ? "rule-keyword danger" : "rule-keyword";
-        keyword.textContent = token;
-        detail.appendChild(keyword);
-      } else {
-        detail.appendChild(document.createTextNode(token));
-      }
-    });
-    item.appendChild(detail);
   }
 
   // ---------- State helpers ----------

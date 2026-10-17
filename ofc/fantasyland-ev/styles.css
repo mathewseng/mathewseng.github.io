@@ -139,7 +139,36 @@
 }
 
 .ev-grid--matrix {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+}
+
+/* Wide screens: the definitions stay beside the matrix and the deck tables
+   (a sticky side column), so a definition link swaps copy that is on screen. */
+@media (min-width: 1180px) {
+  .section-panel--matrix {
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    align-items: start;
+  }
+
+  .section-panel--matrix > .ev-grid--matrix {
+    display: contents;
+  }
+
+  .section-panel--matrix .panel {
+    grid-column: 1;
+  }
+
+  .section-panel--matrix .definitions-panel {
+    position: sticky;
+    top: 12px;
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+}
+
+/* The phone matrix hides its head row; these chips carry its definition links. */
+.matrix-definitions {
+  display: none;
 }
 
 .panel-note {
@@ -373,8 +402,10 @@
   border-radius: var(--r-sm);
 }
 
+/* Inset: the plot is wider than its scrolling viewport, which clips an
+   outside ring. */
 .distribution-plot:focus-visible {
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .distribution-bin {
@@ -929,6 +960,16 @@
     align-items: flex-start;
   }
 
+  .matrix-definitions {
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  .matrix-definitions .definition-chip {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+
   .matrix-wrap {
     border: 0;
     border-radius: 0;
@@ -1042,9 +1083,5 @@
   .repeat-source-row,
   .definition-link {
     min-height: 44px;
-  }
-
-  .distribution-bin {
-    min-width: 32px;
   }
 }
