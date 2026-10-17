@@ -81,7 +81,8 @@ a {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   grid-template-columns: minmax(0, 1fr);
   height: 100%;
-  padding: 0 var(--s-3) env(safe-area-inset-bottom);
+  --ct-gutter: var(--s-3);
+  padding: 0 var(--ct-gutter) env(safe-area-inset-bottom);
 }
 
 /* The stage carries the safe-area inset itself while it shows. */
@@ -2304,8 +2305,8 @@ input[type="range"] {
   z-index: 50;
   display: grid;
   gap: 6px;
-  margin: 0 calc(var(--s-3) * -1);
-  padding: 8px var(--s-3) calc(8px + env(safe-area-inset-bottom));
+  margin: 0 calc(var(--ct-gutter) * -1);
+  padding: 8px var(--ct-gutter) calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: var(--glass);
   backdrop-filter: blur(14px);
@@ -3836,7 +3837,7 @@ table.compare th {
   body[data-size="xl"] { --card-width: 78px; }
 
   .app-shell {
-    padding-inline: var(--s-2);
+    --ct-gutter: var(--s-2);
   }
 
   .tool-nav {
