@@ -110,11 +110,51 @@ supplies), dice choices and the dice dialog; they keep their design.
   Solver stays the first reachable control; Delete keeps its danger
   confirm.
 
+## Also fixed
+
+- Phones (live table): `#message` and the draft line ellipsize on one
+  line each; a wrapped status line pushed the exact-fit 375×667 stage
+  past the viewport (`assistance.cjs` "Arial phone layout" failed
+  intermittently in full runs).
+- Hub: group heads, tags and the phone footer from `shared/hub.css` were
+  11.2–11.8px; a hub-scoped override sets them to `--t-xs` (the shell
+  sweep now reports 0 sub-12px nodes on `/backgammon/`).
+- 200% text: Solver/Library inspector buttons wrap instead of overflowing
+  the 320px inspector.
+
 ## CSS
 
 `backgammon/styles.css`: 5,780 lines at the start of this slice, 6,024
-after the merge, 6,310 after the content work. Colour literals: 0
-(baseline 92). No `!important`.
+after the merge, 6,336 at the end. Colour literals: 0 (baseline 92). No
+`!important`.
+
+## Verification
+
+- `node scripts/run-tests.mjs`: 470 pass, 0 fail.
+- `node backgammon/tests/browser.cjs` (chromium, `BG_KEEP_GOING=1`) on the
+  final build: 77 modules, 77 pass, exit 0. `BG_MODULES=solver-editor`
+  passes on the merge commit.
+- Standalone scripts against `_site`: `interaction.cjs` and
+  `search-policy-browser.cjs` (chromium) pass. `computer-game.cjs` fails
+  clicking a hidden `#roll`: `.action-help :is(#roll, #double-cube)
+  { display: none }` is the same on `main`, so the script is stale there
+  too. `live-network.cjs` (needs real PeerJS signalling),
+  `opening-book-browser.cjs` and `book-generator.cjs` (engine data, not
+  touched) were not run.
+- `SHELL_PAGES=/backgammon/,/backgammon/play/,/backgammon/trainer/,/backgammon/solver/,/backgammon/library/
+  node scripts/shell-browser.cjs`: 5 pages × 3 viewports pass, 0 sub-12px
+  text, 0 small targets, 0 missing rings, skip link and `main#main`
+  everywhere; the same with `SHELL_ROOT_FONT=24`.
+- `node scripts/screenshots.cjs --compare --only <backgammon pages>`:
+  every changed picture reviewed and copied over its baseline.
+- Extra states rendered with scratch Playwright scripts at 1440×900 and
+  390×844 (and 375×667 where relevant): Play setup (computer, online),
+  live move with confirm, game over (gammon card), resignation picker;
+  Trainer revealed result (panel and phone sheet) and session summary
+  (card, panel, phone sheet); Solver analysis in progress, results with
+  a pressed preview row, editing, dice editor at 320/390/667; Library
+  populated list, selected item (inspector and phone sheet), danger
+  confirm; all pages at a 24px root font.
 
 ## Deferred
 
