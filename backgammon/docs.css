@@ -637,7 +637,20 @@
 .docs-shell > .foot a {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
   min-height: 44px;
+}
+
+.docs-shell .foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.docs-shell > .foot .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 /* ---------- Breakpoints ---------- */

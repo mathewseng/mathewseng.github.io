@@ -4259,16 +4259,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
    7. Hub and documents
    ====================================================================== */
 
-/* The 12px floor on the hub: shared/hub.css sets the group heads, tags and
-   the phone footer just under it (shared request 2 of redesign-bg-shell). */
-.hub-backgammon .group-head h2,
-.hub-backgammon .group-head span,
-.hub-backgammon .tags span,
-.hub-backgammon .foot,
-.hub-backgammon .foot a {
-  font-size: var(--t-xs);
-}
-
 /* The featured Play tile carries the live board in its art slot; on phones
    the board moves below the three study tiles (section 8). */
 .hub-feature {
@@ -6285,6 +6275,12 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 
   .hub-backgammon .hub-main > .hero {
     order: 0;
+  }
+
+  /* The column's gap spaces the groups; hub.css's group margin would add
+     10px above the study tiles, which must fit 375x667 (mobile-quick.cjs). */
+  .hub-backgammon .hub-main > .group {
+    margin-top: 0;
   }
 
   .hub-backgammon .group-play,
