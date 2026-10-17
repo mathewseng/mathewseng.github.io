@@ -416,7 +416,12 @@ kbd:not(.keycap) {
 }
 
 .app .crumbs {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.app .crumbs .crumb-current {
+  min-width: 3ch;
 }
 
 .app .crumbs > a {
@@ -977,6 +982,16 @@ button.die.preferred {
   height: 100%;
   max-height: 100%;
   overflow: visible;
+}
+
+/* Board state changes instantly unless a rule below names a transition. The
+   reduced-motion rule in tokens.css shortens every transition to 0.01ms
+   rather than removing it, which would otherwise turn each class change on
+   the SVG into a transition whose first frame still shows the old value
+   (background-focus.cjs reads the focus stroke synchronously). */
+.bg-board,
+.bg-board * {
+  transition-property: none;
 }
 
 /* Background taps can focus the SVG itself; only its controls draw focus. */
@@ -3385,6 +3400,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .practice-controls-dialog .action-help .btn {
   min-height: 48px;
+}
+
+/* Every control in the sheet wraps instead of widening it on narrow phones. */
+.practice-controls-dialog .dialog-body .btn {
+  min-width: 0;
   white-space: normal;
 }
 
@@ -3456,7 +3476,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   overflow: visible;
 }
 
-.bg-dialog footer .btn {
+/* Dialog controls are 44px at every width: Settings opens from the keyboard
+   on desktops too, and mobile-settings.cjs measures its tabs and selects
+   with a touch context at 1366×768. */
+.bg-dialog .btn,
+.bg-dialog .field :is(input:not([type="checkbox"], [type="range"]), select) {
   min-height: 44px;
 }
 
@@ -3581,14 +3605,36 @@ html.bg-dialog-open {
 }
 
 /* Motion opt-out from Settings (data-motion), beside the system preference
-   that tokens.css honours. Durations collapse; nothing is removed, so scripts
-   waiting on animationend and transitionend still finish. */
+   that tokens.css honours. Animation durations collapse; nothing is removed,
+   so scripts waiting on animationend still finish (no script in this family
+   waits on transitionend). */
 html[data-motion="reduce"] :is(.board-die-face, button.die, .dice-switch-surface, .board-cube, .opening-die .die, .opening-player.revealed .die, .opening-roll, .turn-ready, .engine-status.busy, .player-strip, .dialog, .toast, summary, .point .point-hit, .bg-dialog),
 html[data-motion="reduce"] :is(.engine-status.busy, .dialog)::before,
 html[data-motion="reduce"] .dialog::backdrop {
   animation-duration: 0.01ms;
   animation-iteration-count: 1;
-  transition-duration: 0.01ms;
+}
+
+/* With motion reduced there are no transitions at all. tokens.css shortens
+   them to 0.01ms rather than removing them, so a property that changes (a
+   theme colour, a media-query padding, a focus stroke) still shows its old
+   value in the frame the change happens; the family's tests read colours,
+   strokes and geometry in that frame. The :not(#…) clause only raises the
+   selector above every transition shorthand in the kit and in this file. */
+@media (prefers-reduced-motion: reduce) {
+  body:not(#bg-motion),
+  body:not(#bg-motion) *,
+  body:not(#bg-motion) *::before,
+  body:not(#bg-motion) *::after {
+    transition-property: none;
+  }
+}
+
+html[data-motion="reduce"] body:not(#bg-motion),
+html[data-motion="reduce"] body:not(#bg-motion) *,
+html[data-motion="reduce"] body:not(#bg-motion) *::before,
+html[data-motion="reduce"] body:not(#bg-motion) *::after {
+  transition-property: none;
 }
 
 /* ======================================================================
@@ -4012,12 +4058,31 @@ html[data-motion="reduce"] .dialog::backdrop {
     flex-wrap: wrap;
     gap: 0 8px;
     min-height: 88px;
-    padding: 2px 0;
+    padding: 0;
   }
 
   .app .crumbs {
     flex: 1 1 auto;
     font-size: var(--t-sm);
+  }
+
+  /* Row one is the mark, the tool name and two 44px icon buttons; Settings
+     keeps its name for assistive technology. */
+  .app .header-tools .topbar-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .app .header-tools #preferences {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
   }
 
   .app .tool-nav {
@@ -4038,8 +4103,8 @@ html[data-motion="reduce"] .dialog::backdrop {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px;
-    min-height: 60px;
-    padding: 6px 0;
+    min-height: 52px;
+    padding: 4px 0;
   }
 
   .app .tool-head > div:first-child {
@@ -4076,11 +4141,7 @@ html[data-motion="reduce"] .dialog::backdrop {
   }
 
   .stage {
-    grid-template-rows: 26px max-content 26px minmax(140px, 1fr);
-  }
-
-  .app:not(.play-page) {
-    min-height: calc(100vw * 0.754 + 320px);
+    grid-template-rows: auto max-content auto minmax(140px, 1fr);
   }
 
   .app:not(.play-page) .board-slot {
@@ -4111,7 +4172,8 @@ html[data-motion="reduce"] .dialog::backdrop {
 
   .player-strip {
     gap: 8px;
-    padding-inline: 4px;
+    min-height: 24px;
+    padding: 0 4px;
     font-size: var(--t-sm);
   }
 
@@ -4124,8 +4186,8 @@ html[data-motion="reduce"] .dialog::backdrop {
   }
 
   .action-area {
-    gap: 9px;
-    padding: 10px 0 2px;
+    gap: 6px;
+    padding: 6px 0 2px;
   }
 
   .action-main {
@@ -4172,6 +4234,7 @@ html[data-motion="reduce"] .dialog::backdrop {
   .app[data-page="trainer"] .action-main {
     flex-direction: column;
     align-items: stretch;
+    gap: 6px;
   }
 
   .app[data-page="trainer"] #actions {
@@ -4439,6 +4502,18 @@ html[data-motion="reduce"] .dialog::backdrop {
 
 /* Phone portrait: live table, sticky filters and bottom sheets. */
 @media (max-width: 700px) and (min-height: 501px) {
+  /* The shell grows with its content here (the page scrolls to the review
+     section below it) and still fills a tall viewport so the action area
+     sits at the bottom. */
+  .app {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .play-page .stage {
+    height: auto;
+  }
+
   .library-filters {
     position: sticky;
     top: 0;
@@ -4466,7 +4541,7 @@ html[data-motion="reduce"] .dialog::backdrop {
   }
 
   .play-page.live-table .stage {
-    grid-template-rows: 26px max-content 26px 60px minmax(130px, 1fr);
+    grid-template-rows: auto max-content auto 60px minmax(130px, 1fr);
   }
 
   .play-page.live-table .board-workspace {
@@ -4833,6 +4908,12 @@ html[data-motion="reduce"] .dialog::backdrop {
     min-height: 590px;
   }
 
+  /* "MS / Trainer": the family crumb would wrap the topbar to a third row. */
+  .app .crumbs .brand,
+  .app .crumbs .brand + .crumb-sep {
+    display: none;
+  }
+
   .toolbar-actions {
     gap: 2px;
   }
@@ -4858,6 +4939,34 @@ html[data-motion="reduce"] .dialog::backdrop {
     padding-inline: 6px;
   }
 
+  .decision-dialog .decision-content {
+    gap: 4px;
+  }
+
+  .decision-dialog .decision-values th,
+  .decision-dialog .decision-values td {
+    padding-block: 4px;
+  }
+
+  .decision-dialog .decision-values caption {
+    margin-bottom: 4px;
+  }
+
+  .decision-dialog .decision-values thead th {
+    white-space: nowrap;
+  }
+
+  .decision-dialog .decision-tabs .btn {
+    padding-inline: 6px;
+  }
+
+  .review-cube-choice {
+    padding-block: 2px;
+  }
+}
+
+/* The narrowest phones put the theme preview beside its heading and dice. */
+@media (max-width: 360px) {
   .theme-preview {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 76px;
@@ -4889,30 +4998,13 @@ html[data-motion="reduce"] .dialog::backdrop {
     gap: 8px;
     margin: 0;
   }
+}
 
-  .decision-dialog .decision-content {
-    gap: 4px;
-  }
-
-  .decision-dialog .decision-values th,
-  .decision-dialog .decision-values td {
-    padding-block: 4px;
-  }
-
-  .decision-dialog .decision-values caption {
-    margin-bottom: 4px;
-  }
-
-  .decision-dialog .decision-values thead th {
-    white-space: nowrap;
-  }
-
-  .decision-dialog .decision-tabs .btn {
-    padding-inline: 6px;
-  }
-
-  .review-cube-choice {
-    padding-block: 2px;
+/* A short phone viewport (the software keyboard is up): the preview scrolls
+   with the editor instead of covering the field being edited. */
+@media (max-height: 550px) and (max-width: 640px) {
+  .theme-preview {
+    position: static;
   }
 }
 
@@ -4979,6 +5071,15 @@ html[data-motion="reduce"] .dialog::backdrop {
     padding-bottom: 200px;
   }
 
+  /* Library beside its landscape inspector: the search keeps a full row. */
+  .library-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .library-filters input {
+    grid-column: 1 / -1;
+  }
+
   .play-page .stage {
     grid-template-rows: 25px minmax(0, 1fr) 25px;
   }
@@ -5005,9 +5106,15 @@ html[data-motion="reduce"] .dialog::backdrop {
     grid-template-rows: 46px 0 minmax(0, 1fr);
   }
 
+  /* The tool head leaves the grid (absolute), so the main area is placed
+     into the third row explicitly. */
+  .play-page.live-table .app-main,
+  .app:is([data-page="trainer"], [data-page="solver"]) .app-main {
+    grid-row: 3;
+  }
+
   .play-page.live-table .workspace,
   .app:is([data-page="trainer"], [data-page="solver"]) .workspace {
-    grid-row: 3;
     grid-template-columns: minmax(0, 1fr) 164px;
     gap: 8px;
   }
@@ -5101,9 +5208,10 @@ html[data-motion="reduce"] .dialog::backdrop {
     align-items: stretch;
   }
 
+  /* Two columns in the 164px dock keep every help button a 44px target. */
   .trainer-help {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -5491,9 +5599,11 @@ html[data-motion="reduce"] .dialog::backdrop {
     display: contents;
   }
 
-  .hub-backgammon .group-play > .group-head {
-    order: 1;
-    margin-top: 4px;
+  /* The Play and Study heads add two rows a phone cannot spare: the three
+     study tiles must fit the first viewport (mobile-quick.cjs). */
+  .hub-backgammon .group-play > .group-head,
+  .hub-backgammon .group-study > .group-head {
+    display: none;
   }
 
   .hub-backgammon #hub-play {
