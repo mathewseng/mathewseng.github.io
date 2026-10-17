@@ -21,13 +21,26 @@ export default class ErrorBoundary extends Component<
 
   reset = () => this.setState({ error: undefined });
 
+  // The fallback takes focus so it is announced without being another live
+  // region (the page has exactly one polite and one assertive, in AppShell).
+  private fallbackRef = (element: HTMLDivElement | null) => {
+    element?.focus({ preventScroll: true });
+  };
+
   override render() {
     const { error } = this.state;
     if (!error) return this.props.children;
     if (this.props.fallback) return this.props.fallback(error, this.reset);
     return (
-      <div className="surface surface-danger mx-auto max-w-lg p-5" role="alert">
-        <p className="text-sm font-bold">This view could not be shown</p>
+      <div
+        ref={this.fallbackRef}
+        tabIndex={-1}
+        aria-labelledby="error-boundary-title"
+        className="surface surface-danger mx-auto max-w-lg p-5 focus:outline-none"
+      >
+        <p id="error-boundary-title" className="text-sm font-bold">
+          This view could not be shown
+        </p>
         <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
           {error.message || "Something went wrong while rendering."} Your saved data is
           untouched.

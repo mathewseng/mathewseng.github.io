@@ -88,6 +88,14 @@ html {
   background: var(--page);
 }
 
+/* Below the desktop sidebar breakpoint the tab bar is fixed to the bottom, so
+   scrollIntoView / focus must stop above it. */
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -369,6 +377,21 @@ body::after {
 
   .tab-bar-item[aria-current="page"] {
     color: var(--accent);
+  }
+
+  /* Landscape phones: one 44px row with the label beside the icon, so the bar
+     takes 56px of a 390px viewport instead of 80. */
+  @media (max-height: 560px) {
+    .tab-bar {
+      padding-top: 4px;
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
+    }
+
+    .tab-bar-item {
+      flex-direction: row;
+      gap: 8px;
+      min-height: 44px;
+    }
   }
 
   /* ---------- Surfaces ---------- */

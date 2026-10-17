@@ -48,32 +48,22 @@ export function ScoreControl({
 
   return (
     <fieldset id={id} className={clsx("min-w-0", compact ? "" : "surface p-4")}>
+      {/* The legend holds only text; the Clear control sits beside the group below. */}
       <legend className="flex w-full items-center justify-between gap-3">
         <span className="text-sm font-bold">{label}</span>
-        <span className="flex items-center gap-2">
-          {onClear && value !== undefined ? (
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm text-xs"
-              onClick={onClear}
-            >
-              Clear
-            </button>
-          ) : null}
-          <span
-            className={clsx(
-              "grid h-8 min-w-8 place-items-center rounded-sm px-2 text-sm font-extrabold",
-              value === undefined
-                ? "bg-[var(--surface-3)] text-[var(--muted)]"
-                : direction === "positive"
-                  ? "bg-[var(--accent-soft)] text-[var(--ink)]"
-                  : value >= 4
-                    ? "bg-[var(--bad-soft)] text-[var(--bad)]"
-                    : "bg-[var(--surface-3)]",
-            )}
-          >
-            {value ?? "—"}
-          </span>
+        <span
+          className={clsx(
+            "grid h-8 min-w-8 place-items-center rounded-sm px-2 text-sm font-extrabold",
+            value === undefined
+              ? "bg-[var(--surface-3)] text-[var(--muted)]"
+              : direction === "positive"
+                ? "bg-[var(--accent-soft)] text-[var(--ink)]"
+                : value >= 4
+                  ? "bg-[var(--bad-soft)] text-[var(--bad)]"
+                  : "bg-[var(--surface-3)]",
+          )}
+        >
+          {value ?? "—"}
         </span>
       </legend>
       <div
@@ -105,8 +95,13 @@ export function ScoreControl({
           </button>
         ))}
       </div>
-      <div className="mt-2 flex justify-between gap-4 text-xs font-semibold text-[var(--muted)]">
+      <div className="mt-2 flex items-center justify-between gap-4 text-xs font-semibold text-[var(--muted)]">
         <span>0 · {lowLabel}</span>
+        {onClear && value !== undefined ? (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onClear}>
+            Clear
+          </button>
+        ) : null}
         <span className="text-right">6 · {highLabel}</span>
       </div>
     </fieldset>

@@ -18,7 +18,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 
 function PageLoading() {
   return (
-    <div className="grid min-h-[60vh] place-items-center" role="status">
+    <div className="grid min-h-[60vh] place-items-center" aria-busy="true">
       <div className="text-center">
         <span
           className="mx-auto block h-10 w-10 animate-pulse rounded-md bg-[var(--accent)]"

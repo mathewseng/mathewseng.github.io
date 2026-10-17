@@ -83,7 +83,13 @@ export function Link({ to, onClick, ...props }: LinkProps) {
       href={`#${to.startsWith("/") ? to : `/${to}`}`}
       onClick={(event) => {
         onClick?.(event);
-        if (!event.defaultPrevented) window.scrollTo({ top: 0, behavior: "smooth" });
+        if (event.defaultPrevented) return;
+        // JS scroll options ignore the CSS reduced-motion override, so honour it here
+        // (matchMedia is absent in the jsdom test harness).
+        const reduced =
+          typeof window.matchMedia === "function" &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
       }}
       {...props}
     />

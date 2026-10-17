@@ -109,20 +109,20 @@ export default function WorkoutCard({
           aria-expanded={expanded}
           aria-controls={detailId}
         >
-          <span className="grid flex-1 grid-cols-3 gap-2">
-            <span>
+          <span className="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-2">
+            <span className="min-w-0">
               <span className="eyebrow block">Exercises</span>
               <span className="mt-0.5 block text-sm font-bold">
                 {workout.exercises.length}
               </span>
             </span>
-            <span>
+            <span className="min-w-0">
               <span className="eyebrow block">Reps</span>
               <span className="mt-0.5 block text-sm font-bold">
                 {totals.completedReps}
               </span>
             </span>
-            <span>
+            <span className="min-w-0">
               <span className="eyebrow block">Volume</span>
               <span className="mt-0.5 block text-sm font-bold">
                 {totals.volumeLb.toLocaleString()} lb

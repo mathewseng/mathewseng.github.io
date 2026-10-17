@@ -210,11 +210,10 @@ export default function WorkoutCalendar({
             </span>
           ) : null}
         </div>
+        {/* Selection feedback; the pressed cell carries the accessible state, so
+            this is not a live region (the page has exactly two, in AppShell). */}
         {compact ? (
-          <div
-            className="flex flex-col gap-3 border-t border-[var(--line)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            aria-live="polite"
-          >
+          <div className="flex flex-col gap-3 border-t border-[var(--line)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="text-xs font-bold">
                 {detailFormatter.format(selectedDateObject)}
