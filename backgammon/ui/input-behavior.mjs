@@ -8,8 +8,14 @@ export function installInputBehavior() {
   // A game shortcut/programmatic focus must not leave a browser focus ring.
   // Tab/arrow navigation still has a deliberate, accessible visual focus cue.
   document.addEventListener("pointerdown", () => { root.dataset.focusNavigation = "false"; }, true);
+  // Space and Enter on a control are keyboard activation (the play shortcuts
+  // skip them there too), so the ring stays on that control and on whatever
+  // the activation focuses next, such as a dialog's Close button.
+  const control = 'button,a[href],summary,select,[role="button"],[role="tab"],[role="switch"],' +
+    '[role="checkbox"],[role="radio"],[role="option"],[role="menuitem"]';
   document.addEventListener("keydown", event => {
-    if (["Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key))
+    if (["Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key) ||
+      ([" ", "Enter"].includes(event.key) && event.target.closest?.(control)))
       root.dataset.focusNavigation = "true";
     else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey &&
       !event.target.closest?.('input,textarea,[contenteditable="true"]'))

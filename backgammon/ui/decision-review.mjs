@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { presentAnalysis, compactNotation } from "../core/move-presentation.mjs";
-import { el, button, dialog, saveDialog } from "./shell.mjs";
+import { el, button, dialog, saveDialog, tabBar } from "./shell.mjs";
 import { Board } from "./board.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
 import { settings } from "../core/storage.mjs";
@@ -83,10 +83,7 @@ export function decisionReview(
   };
   appendReturn();
 
-  const views = el("div", {
-    class: "row decision-tabs",
-    "aria-label": "Review view",
-  });
+  const views = el("div", { class: "row decision-tabs" });
   const notes = el("div", { class: "decision-notes", hidden: true });
   const layout = d.querySelector(".decision-layout");
   layout.append(notes);
@@ -108,9 +105,7 @@ export function decisionReview(
       revealSelectedMove();
     });
     notes.hidden = view !== "notes";
-    views
-      .querySelectorAll("button")
-      .forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === view));
+    selectView(views.querySelector(`[data-view="${view}"]`));
   };
   for (const [view, label] of [
     ["board", "Board"],
@@ -126,11 +121,13 @@ export function decisionReview(
         },
         "",
         {
+          role: "tab",
           "data-view": view,
           disabled: view === "notes",
         },
       ),
     );
+  const selectView = tabBar(views, "Review view", layout);
   d.querySelector(".dialog-header").after(views);
   setView("decision");
   const defaultView = () => {

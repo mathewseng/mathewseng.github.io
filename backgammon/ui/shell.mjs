@@ -85,6 +85,42 @@ export const button = (text, action, cls = "", attrs = {}) => {
     text,
   );
 };
+// In-dialog tab bars (Settings, decision review, history tree): a real
+// tablist with aria-selected, a roving tabindex and arrow/Home/End keys.
+// `panels` is one panel per tab (in order), or a single region whose content
+// follows the selected tab; tabs and panels get ids so each names the other.
+let tabSerial = 0;
+export function tabBar(list, label, panels) {
+  list.setAttribute("role", "tablist");
+  if (label) list.setAttribute("aria-label", label);
+  const tabs = () => [...list.querySelectorAll('[role="tab"]')];
+  const panelOf = (tab) => Array.isArray(panels) ? panels[tabs().indexOf(tab)] : panels;
+  for (const tab of tabs()) tab.id ||= `bg-tab-${++tabSerial}`;
+  for (const tab of tabs()) {
+    const panel = panelOf(tab);
+    if (!panel) continue;
+    panel.setAttribute("role", "tabpanel");
+    panel.id ||= `bg-tabpanel-${++tabSerial}`;
+    tab.setAttribute("aria-controls", panel.id);
+    if (Array.isArray(panels)) panel.setAttribute("aria-labelledby", tab.id);
+  }
+  list.addEventListener("keydown", (e) => {
+    const enabled = tabs().filter((t) => !t.disabled), i = enabled.indexOf(e.target);
+    const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: enabled.length - 1 }[e.key];
+    if (i < 0 || to === undefined) return;
+    e.preventDefault();
+    const next = enabled[(to + enabled.length) % enabled.length];
+    next.focus();
+    next.click();
+  });
+  return (selected) => {
+    for (const tab of tabs()) {
+      tab.setAttribute("aria-selected", String(tab === selected));
+      tab.tabIndex = tab === selected ? 0 : -1;
+    }
+    if (panels && !Array.isArray(panels)) panels.setAttribute("aria-labelledby", selected.id);
+  };
+}
 const CLOSE_ICON =
   '<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>';
 export function field(label, input) {
@@ -491,10 +527,9 @@ export async function preferences() {
   keys.hidden = true;
   const colors = appearanceControls();
   colors.hidden = true;
-  const tabs = el("div", {
-    class: "segmented settings-tabs",
-    "aria-label": "Settings sections",
-  });
+  const tabs = el("div", { class: "segmented settings-tabs" });
+  const sections = [colors, display, keys];
+  let selectTab;
   for (const [label, shortLabel, section] of [
     ["Board colors", "Board", colors],
     ["Display & controls", "Display", display],
@@ -506,12 +541,11 @@ export async function preferences() {
         colors.hidden = section !== colors;
         display.hidden = section !== display;
         keys.hidden = section !== keys;
-        for (const t of tabs.children)
-          t.setAttribute("aria-pressed", String(t === tab));
+        selectTab(tab);
         d.querySelector(".dialog-body").scrollTop = 0;
       },
       "",
-      { "aria-pressed": section === display, "aria-label": label },
+      { role: "tab", "aria-label": label },
     );
     tab.replaceChildren(
       el("span", { class: "settings-tab-wide", "aria-hidden": true }, label),
@@ -519,6 +553,8 @@ export async function preferences() {
     );
     tabs.append(tab);
   }
+  selectTab = tabBar(tabs, "Settings sections", sections);
+  selectTab(tabs.children[1]);
   const release = releaseStatus();
   display.append(el("details", { class: "settings-updates" },
     el("summary", {}, "App version & updates"), release));

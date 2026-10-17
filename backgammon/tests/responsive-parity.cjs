@@ -161,7 +161,7 @@ module.exports = async function parity(browser, base, out, name) {
       .getByRole("button", { name: "Settings", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Display & controls", exact: true })
+      .getByRole("tab", { name: "Display & controls", exact: true })
       .click();
     assert.equal(
       await page

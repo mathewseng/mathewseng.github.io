@@ -57,7 +57,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       await page.setViewportSize({ width, height });
       await page.waitForTimeout(50);
       await page
-        .getByRole("button", { name: "Comparison", exact: true })
+        .getByRole("tab", { name: "Comparison", exact: true })
         .click();
       const visited = new Set();
       for (let p = 0; p < 12; p++) {
@@ -122,7 +122,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
           await chooser.selectOption("9");
         }
         await page
-          .getByRole("button", { name: "Comparison", exact: true })
+          .getByRole("tab", { name: "Comparison", exact: true })
           .click();
         if (p === 0 && (width <= 700 || height <= 500))
           assert.ok(await page.locator('.review-move[data-rank="10"][aria-pressed="true"]').isVisible(), "Comparison opens at the move currently previewed");

@@ -29,7 +29,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
   const open = async () => {
     await page.locator("#preferences").click();
     await page.locator(".settings-dialog").waitFor();
-    await page.getByRole("button", {name:"Board colors",exact:true}).click();
+    await page.getByRole("tab", {name:"Board colors",exact:true}).click();
   };
   const close = async () => {
     await page
@@ -284,7 +284,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     assert.deepEqual(await work(), before);
     await open();
     await page
-      .getByRole("button", { name: "Display & controls", exact: true })
+      .getByRole("tab", { name: "Display & controls", exact: true })
       .click();
     await page
       .getByLabel("Board orientation", { exact: true })
@@ -306,7 +306,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     const second = await context.newPage();
     await second.goto(base + "/backgammon/solver/");
     await second.locator("#preferences").click();
-    await second.getByRole("button",{name:"Board colors",exact:true}).click();
+    await second.getByRole("tab",{name:"Board colors",exact:true}).click();
     await second.locator('[data-preset="linen"]').click();
     await page.waitForFunction(
       () =>

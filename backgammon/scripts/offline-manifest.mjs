@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
 const base = new URL("..", import.meta.url).pathname;
@@ -6,6 +6,15 @@ const base = new URL("..", import.meta.url).pathname;
 // Keep in sync with tests/deployment.test.mjs and tests/manifest-generator.test.mjs.
 // Fonts stay out of this list (and so out of BG_SHELL).
 const SHARED_FILES = ["tokens.css", "app.css", "hub.css", "hub-art.css", "hub.js", "peer-room.js", "icons.svg", "tabs.js", "sheet.js", "card-drag.js", "keycap.js"];
+// The recovery page is outside the offline cache and links nothing, so its
+// token values are copied from shared/tokens.css here (refresh-tokens.mjs).
+const refreshPage = join(base, "refresh", "index.html");
+if (existsSync(refreshPage)) {
+  const { writeRefreshTokens } = await import("./refresh-tokens.mjs");
+  const page = readFileSync(refreshPage, "utf8"),
+    next = writeRefreshTokens(page, readFileSync(join(base, "..", "shared", "tokens.css"), "utf8"));
+  if (next !== page) writeFileSync(refreshPage, next);
+}
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true })
     .filter((e) => !e.name.startsWith("."))

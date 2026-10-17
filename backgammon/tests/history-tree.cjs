@@ -161,7 +161,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       await page.setViewportSize({ width, height });
       await page.waitForTimeout(70);
       const d = page.locator(".history-dialog");
-      await d.getByRole("button", { name: "Tree", exact: true }).click();
+      await d.getByRole("tab", { name: "Tree", exact: true }).click();
       await d
         .getByRole("button", { name: "Current position", exact: true })
         .click();
@@ -181,7 +181,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
         JSON.stringify({ width, height, fit }),
       );
       await d.locator('[role="treeitem"]').first().click();
-      await d.getByRole("button", { name: "Board", exact: true }).click();
+      await d.getByRole("tab", { name: "Board", exact: true }).click();
       assert.ok(await d.locator(".bg-board").isVisible());
       assert.equal(
         JSON.stringify(await read()),
@@ -191,7 +191,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       await page.screenshot({
         path: path.join(out, `${name}-tree-board-${width}.png`),
       });
-      await d.getByRole("button", { name: "Tree", exact: true }).click();
+      await d.getByRole("tab", { name: "Tree", exact: true }).click();
       await page.screenshot({
         path: path.join(out, `${name}-tree-${width}.png`),
       });
@@ -210,7 +210,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
     await page.keyboard.press("ArrowRight");
     assert.ok(await d.locator('[role="treeitem"]').count() > 1);
     await page.keyboard.press("ArrowDown");
-    assert.notEqual(await d.locator('[aria-selected="true"]').getAttribute("data-history-node"), "0");
+    assert.notEqual(await d.locator('[role="treeitem"][aria-selected="true"]').getAttribute("data-history-node"), "0");
     // Traverse pages and restore a position in the abandoned branch.
     while (!(await d.locator(`[data-history-node="${oldNode}"]`).count()))
       await d.getByRole("button", { name: "Next page", exact: true }).click();

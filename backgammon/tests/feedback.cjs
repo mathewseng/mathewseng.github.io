@@ -142,7 +142,7 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
 
     await page.locator("#preferences").click();
     await page
-      .getByRole("button", { name: "Display & controls", exact: true })
+      .getByRole("tab", { name: "Display & controls", exact: true })
       .click();
     const volume = page.getByRole("slider", {
       name: "Sound volume",

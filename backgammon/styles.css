@@ -126,8 +126,8 @@ textarea,
 
 /* Focus: the kit's :focus-visible ring everywhere. A game shortcut or a
    pointer tap (ui/input-behavior.mjs sets data-focus-navigation="false") must
-   not leave a ring on the control it focuses; Tab and the arrow keys set the
-   flag back and the ring returns. The SVG board draws its own focus marks
+   not leave a ring on the control it focuses; Tab, the arrow keys, and Space
+   or Enter on a control set the flag back and the ring returns. The SVG board draws its own focus marks
    (section 3) under the same flag. */
 html[data-focus-navigation="false"] :is(.app, .play-review, dialog) :focus-visible {
   outline: none;
@@ -2653,7 +2653,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   overflow-wrap: anywhere;
 }
 
-.decision-tabs .btn[aria-pressed="true"] {
+.decision-tabs .btn[aria-selected="true"],
+.history-tree-tablist .btn[aria-selected="true"] {
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent);
@@ -2918,6 +2919,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .history-tree-tabs {
   flex: none;
+}
+
+.history-tree-tablist {
+  display: flex;
+  gap: inherit;
 }
 
 .history-tree-pager .btn {
@@ -4191,8 +4197,12 @@ html.bg-dialog-open {
 }
 
 .app-update-dialog .update-refresh-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   justify-self: center;
-  padding: 8px 4px;
+  min-height: 44px;
+  padding: 0 8px;
   font-size: var(--t-sm);
 }
 
