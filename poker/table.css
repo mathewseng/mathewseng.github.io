@@ -1880,7 +1880,9 @@
     grid-column: 1;
   }
 
-  .table-app .action-area {
+  /* Beats the desktop rule's position: static (844px is also >= 821px). */
+  .table-app .action-area,
+  .table-app .side-column > .action-area {
     position: sticky;
     top: 0;
     bottom: auto;

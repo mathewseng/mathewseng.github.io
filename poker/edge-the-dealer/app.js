@@ -1806,4 +1806,12 @@ class EdgeTheDealerController {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.gameController = new EdgeTheDealerController();
+    // Phones: the tool nav is a scrolling strip; bring this page's entry into view.
+    const toolNav = document.querySelector('.tool-nav');
+    const current = toolNav?.querySelector('[aria-current="page"]');
+    if (toolNav && current && toolNav.scrollWidth > toolNav.clientWidth) {
+        const navBox = toolNav.getBoundingClientRect();
+        const box = current.getBoundingClientRect();
+        toolNav.scrollLeft += box.left - navBox.left - (navBox.width - box.width) / 2;
+    }
 });
