@@ -846,6 +846,14 @@
     if (window.matchMedia) {
       window.matchMedia("(pointer: coarse)").addEventListener?.("change", () => renderKeyboard());
     }
+    // The touch grid's row length follows the panel width (rotation, view switch).
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(() => {
+        if (isCoarsePointer() && touchKeysPerRow() !== touchRowFit) {
+          renderKeyboard();
+        }
+      }).observe(dom.keyboard);
+    }
 
     bindViewNav();
   }
@@ -1045,6 +1053,29 @@
         `;
       })
       .join("");
+    if (!filtered.length) {
+      // An empty search says so instead of leaving a blank list.
+      dom.presetList.innerHTML = `
+        <div class="empty-state">
+          <p class="empty-state-title">No tunings match</p>
+          <p>Try another name, ratio or family${state.family === "all" ? "" : ", or pick All"}.</p>
+        </div>
+      `;
+    }
+  }
+
+  // How many 44px keys fit across the keyboard panel (0 while it is hidden).
+  let touchRowFit = 0;
+  function touchKeysPerRow() {
+    const box = dom.keyboard;
+    if (!box || !box.clientWidth) {
+      return 0;
+    }
+    const style = getComputedStyle(box);
+    const inner = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const keySize = box.querySelector(".key-button")?.getBoundingClientRect().width || 44;
+    const gap = parseFloat(getComputedStyle(box).rowGap) || 4;
+    return Math.max(1, Math.floor((inner + gap) / (keySize + gap)));
   }
 
   function isCoarsePointer() {
@@ -1088,7 +1119,8 @@
     step.textContent = keyboardPitchLabel(keyInfo, pitch);
     const cents = document.createElement("span");
     cents.className = "key-cents";
-    cents.textContent = formatCents(pitch.localCents);
+    // A 44px touch key has room for whole cents; the readout keeps the decimals.
+    cents.textContent = isCoarsePointer() && Number.isFinite(pitch.localCents) ? `${Math.round(pitch.localCents)}c` : formatCents(pitch.localCents);
     button.append(letter, step, cents);
     return button;
   }
@@ -1109,7 +1141,12 @@
         .filter(([, keyInfo]) => !seen.has(keyInfo.index) && seen.add(keyInfo.index));
       keyboardMap.forEach((keyInfo, key) => keyToIndex.set(key, keyInfo.index));
       const size = keyboardPeriodStride();
-      const rowLength = size <= 12 ? size : size <= 24 ? Math.ceil(size / 2) : 12;
+      const periodRow = size <= 12 ? size : size <= 24 ? Math.ceil(size / 2) : 12;
+      // Rows never overflow the panel: a narrower screen gets shorter rows
+      // (still isomorphic: the row above is always one row length up).
+      const fit = touchKeysPerRow();
+      const rowLength = fit ? Math.max(3, Math.min(periodRow, fit)) : periodRow;
+      touchRowFit = fit;
       const rows = [];
       for (let start = 0; start < entries.length; start += rowLength) {
         rows.push(entries.slice(start, start + rowLength));
