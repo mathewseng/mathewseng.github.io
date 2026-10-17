@@ -237,9 +237,9 @@
     }
   }
 
-  // The report redirect appends the old page's hash and query after its own
-  // target hash (/ofc/fantasyland-report/#matrix arrives as #overview#matrix,
-  // ?x=1 as #overview?x=1). Keep the last known section in the chain.
+  // Links copied while the report redirect still targeted #overview carry a
+  // chained fragment (#overview#matrix, #overview?x=1). Keep the last known
+  // section in the chain.
   function normalizeHash() {
     let raw = window.location.hash.replace(/^#/, "");
     try {

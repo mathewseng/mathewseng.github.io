@@ -1,7 +1,7 @@
 # redesign/ofc-ev — Step 3 (OFC), the EV and Report slice
 
 Branch `redesign/ofc-ev`, on top of the Play and Trainer slices (`ofc/ofc.css`). Page migrated: `/ofc/fantasyland-ev/`.
-Page removed: `/ofc/fantasyland-report/`, folded into the EV page and redirected to `/ofc/fantasyland-ev/#overview`.
+Page removed: `/ofc/fantasyland-report/`, folded into the EV page and redirected to `/ofc/fantasyland-ev/#overview` (changed to `/ofc/fantasyland-ev/` with no hash in `redesign-ofc-fixed`, see its Review fixes #9).
 
 ## What changed
 
