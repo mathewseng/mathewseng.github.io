@@ -291,7 +291,7 @@ function render() {
   document.querySelector(".app").classList.toggle("editing-position", editing);
   if (!preview) previewIndex = -1;
   renderContext();
-  if (!busy) setProgress();
+  if (!busy || progress.hidden) setProgress();
   $("subtitle").textContent = review
     ? `${review.title} · event ${index}/${review.events.length}`
     : preview

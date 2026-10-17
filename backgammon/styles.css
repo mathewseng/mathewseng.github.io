@@ -5263,12 +5263,19 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     overflow: visible;
   }
 
+  /* One status line on phones: the board must keep its full height, so a
+     long status or draft line ellipsizes instead of adding a row (the live
+     region still announces the whole text). */
   .play-page.live-table .action-message {
     grid-column: 1 / -1;
     grid-row: 2;
+    min-width: 0;
     margin-bottom: 2px;
+    overflow: hidden;
     font-size: var(--t-sm);
     line-height: 1.4;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .play-page.live-table .action-main {
@@ -5338,8 +5345,11 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     grid-row: 1;
     align-self: center;
     min-width: 0;
+    overflow: hidden;
     font-size: var(--t-sm);
     line-height: 1.4;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .play-page.live-table #analysis-jump {
