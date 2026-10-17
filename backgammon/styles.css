@@ -1440,18 +1440,16 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
    (a resize, then a measurement in the same task) found #confirm still in
    the other layout's home: on a 375x667 phone it sat in #actions as an
    extra 48px row and the reserved 60px stage row stayed empty, so the shell
-   grew by 33.5px. The home a layout does not use takes no space there, so
-   that unpainted moment has the target layout's exact size. The queries are
-   desktopTable's media query and its complement (play/app.js). */
+   grew by 33.5px. On stacked layouts the unused #actions home takes no
+   space, so that unpainted moment has the target layout's exact size. The
+   query is the complement of desktopTable's (play/app.js). The reverse move
+   needs no rule: hiding .board-actions on wide tables left a #confirm still
+   inside it without a box for that moment (mobile-history.cjs measures
+   Confirm straight after resizing from 768x1024 to 1366x768), and an empty
+   .board-actions is already hidden by :empty. */
 @media (max-width: 1024px), (max-height: 500px) {
   .play-page #actions > #confirm,
   .play-page #actions:has(> #confirm:only-child) {
-    display: none;
-  }
-}
-
-@media (min-width: 1025px) and (min-height: 501px) {
-  .play-page .board-actions {
     display: none;
   }
 }
@@ -3475,7 +3473,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 @media (max-width: 1050px) {
   .position-editor:not([hidden]) {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .editor-supplies {
@@ -3489,6 +3487,12 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
   .editor-actions button {
     flex: 1;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .editor-supply {
+    min-width: 0;
   }
 
   .position-editor #editor-context {
@@ -3502,6 +3506,22 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 @media (max-width: 359px) {
   .dice-choices {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* At 320px the supplies, the three actions and "Dice & rules" share 304px;
+     with DejaVu Sans (the Linux fallback) the 14px button padding pushed the
+     editor 23px past the viewport. Tighter padding and content-sized actions
+     keep one row each; labels wrap rather than overflow if fonts run wider. */
+  .position-editor button {
+    padding-inline: 8px;
+  }
+
+  .editor-supply {
+    gap: 6px;
+  }
+
+  .editor-actions button {
+    flex: 1 1 auto;
   }
 }
 
@@ -5143,7 +5163,10 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     width: 10px;
   }
 
+  /* Medium weight keeps "0.730" inside the 32px rail when the stack falls
+     back to DejaVu Sans (Linux), whose bold digits are wider than SF's. */
   .play-page.live-table .equity-number {
+    font-weight: 500;
     letter-spacing: -0.05em;
   }
 
@@ -5383,6 +5406,17 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 6px;
   }
 
+  /* After a decision the strip above already shows the equity and its
+     delta, so the result line keeps one row (ellipsized, the live region
+     still announces it whole) instead of wrapping under wider fallback
+     fonts and pushing the exact-fit stage past a 667px viewport. */
+  .app[data-page="trainer"] .action-area:has(.study-strip:not([hidden])) .action-message {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .app[data-page="solver"] .action-area,
   .app[data-page="trainer"] .action-area {
     padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -5606,6 +5640,17 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     grid-row: 2;
     gap: 8px;
     margin: 0;
+  }
+
+  /* Review footer buttons pair up two per row and wrap their own labels.
+     Sized by their labels, "Save position" and "Return to this position"
+     filled the 282px footer exactly under SF; with DejaVu Sans (Linux) each
+     took a row, the footer grew by 52px and squeezed the ranked moves below
+     the footer edge (review-ranked.cjs at 320x568). */
+  .decision-dialog footer .btn {
+    flex: 1 1 40%;
+    min-width: 0;
+    white-space: normal;
   }
 }
 
@@ -5887,6 +5932,20 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table > .topbar .header-tools {
     width: 100%;
     justify-content: space-between;
+  }
+
+  /* The 164px dock holds the sound toggle and Settings side by side; wider
+     fallback fonts (DejaVu on Linux) shorten the label instead of pushing
+     Settings past the viewport edge. */
+  .play-page.live-table > .topbar #preferences {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .play-page.live-table > .topbar .topbar-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .play-page.live-table .tool-head {
