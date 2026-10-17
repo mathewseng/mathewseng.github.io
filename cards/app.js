@@ -545,7 +545,7 @@
       body = cards.map((card, i) => cardHTML(card, zone, i)).join("");
     }
     const tools = [];
-    if (inSel) tools.push(`<button type="button" class="btn btn--sm zone-here" data-act="here" title="Move selected cards here">${ICON("download")} Here</button>`);
+    if (inSel) tools.push(`<button type="button" class="btn btn--sm zone-here" data-act="here" title="Move selected cards here">${ICON("download")} <span class="zone-here-label">Here</span></button>`);
     if (deckLike) {
       tools.push(`<button class="btn btn--sm" data-act="draw" title="Draw one to your hand (or the current player's)">Draw</button>`);
       tools.push(`<button class="btn btn--sm" data-act="deal" title="Deal from here">Deal</button>`);
@@ -1629,7 +1629,7 @@
           <label class="field"><span>Jokers</span><input type="number" min="0" max="8" value="${draft.jokers}" data-deck="jokers"></label>
         </div>
         <div class="field"><span>Suits</span><div class="row tight">${["s", "h", "d", "c"].map((suit) => `<label class="check"><input type="checkbox" data-deck-suit="${suit}"${draft.suits.includes(suit) ? " checked" : ""}> <span class="${suit === "h" || suit === "d" ? "suit-red" : ""}" style="font-size:16px">${SUIT_SYMBOL[suit]}</span></label>`).join("")}</div></div>
-        <div class="field"><span>Ranks <button class="btn btn--sm btn--ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn btn--sm ct-rank" aria-pressed="${ranks.includes(rank)}" data-deck-rank="${rank}">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
+        <div class="field"><span>Ranks <button class="btn btn--sm btn--ghost" data-act="deck-ranks-reset">reset to base</button></span><div class="row tight">${E.STD_RANKS.map((rank) => `<button class="btn btn--sm ct-pick" aria-pressed="${ranks.includes(rank)}" data-deck-rank="${rank}">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
         <datalist id="homeGroups">${E.orderedZones(v, "table").map((zone) => `<option value="${esc(zone.key || zone.name)}">`).join("")}</datalist>
         <details class="field custom-cards"${draft.custom.length <= 6 || customOpen ? " open" : ""}><summary><span>Custom cards <span class="dim">${draft.custom.length} type${draft.custom.length === 1 ? "" : "s"}, ${draft.custom.reduce((sum, item) => sum + item.count, 0)} cards</span></span></summary>
           <p class="hint">Suit and rank drive play rules (match suit or rank; numeric ranks can build up or down). Points feed custom scoring.</p>
@@ -1666,8 +1666,8 @@
       const anyTarget = hyper.ranks.length || hyper.suits.length;
       const n = Math.max(1, Math.min(N, hyper.draws));
       const calc = `
-        <div class="field"><span>Target ranks</span><div class="row tight">${rankList.map((rank) => `<button class="btn btn--sm" aria-pressed="${hyper.ranks.includes(rank)}" data-hyper-rank="${rank}" style="min-width:28px">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
-        <div class="field"><span>Target suits</span><div class="row tight">${suits.map((suit) => `<button class="btn btn--sm" aria-pressed="${hyper.suits.includes(suit)}" data-hyper-suit="${suit}">${SUIT_SYMBOL[suit]}</button>`).join("")}</div></div>
+        <div class="field"><span>Target ranks</span><div class="row tight">${rankList.map((rank) => `<button class="btn btn--sm ct-pick" aria-pressed="${hyper.ranks.includes(rank)}" data-hyper-rank="${rank}">${RANK_SHOW(rank)}</button>`).join("")}</div></div>
+        <div class="field"><span>Target suits</span><div class="row tight">${suits.map((suit) => `<button class="btn btn--sm ct-pick" aria-pressed="${hyper.suits.includes(suit)}" data-hyper-suit="${suit}">${SUIT_SYMBOL[suit]}</button>`).join("")}</div></div>
         <label class="field"><span>Cards drawn</span><input type="number" min="1" max="60" value="${hyper.draws}" data-hyper-draws data-fk="hyd"></label>
         ${anyTarget && N ? `<div class="list">
           <div class="small muted">${K} outs in ${N} unseen cards</div>
@@ -3212,6 +3212,11 @@
       const views = compact ? [
         { label: net.mode === "local" ? "Play online…" : `Online room ${net.code || ""}…`, run: () => $("#roomBtn").click() },
         ...(net.mode === "local" ? [] : [{ label: "React…", run: () => showMenu($("#menuBtn"), REACTIONS.map((emoji) => ({ label: emoji, run: () => emit({ kind: "react", emoji }) }))) }]),
+        // Online, the room badge takes the topbar room of undo and redo (styles.css hides them).
+        ...(net.mode === "local" ? [] : [
+          { label: "Undo", run: undo },
+          { label: "Redo", run: redo },
+        ]),
         { heading: "View as" },
         ...[...select.options].map((option) => ({ label: `${option.value === select.value ? "✓ " : "   "}${option.textContent}`, run: () => { select.value = option.value; select.dispatchEvent(new Event("change")); } })),
         "-",
@@ -3756,7 +3761,7 @@
     const html = head(existing ? `Edit “${scheme.name}”` : "New scoring rule") + `<div class="dlg-body">
         <div class="grid-2">
           <label class="field"><span>Name</span><input type="text" name="name" maxlength="28" value="${esc(scheme.name)}" required></label>
-          <label class="check" style="align-self:end;min-height:32px"><input type="checkbox" name="low"${scheme.low ? " checked" : ""}> Lower totals are better (penalty points)</label>
+          <label class="check" style="align-self:end"><input type="checkbox" name="low"${scheme.low ? " checked" : ""}> Lower totals are better (penalty points)</label>
         </div>
         <div class="field"><span>Card values</span>
           <div class="value-grid">${RANK_LABELS.map(([rank, label]) => `<label><span>${label}</span>${num("rank-" + rank, scheme.ranks[rank])}</label>`).join("")}<label><span>Joker</span>${num("joker", scheme.joker)}</label></div>
@@ -4834,7 +4839,7 @@
         <div class="grid-3">
           <label class="field"><span>Game ends at</span><input type="number" name="target" min="0" value="${draft.target || ""}" placeholder="no target"></label>
           <label class="field"><span>Or after rounds</span><input type="number" name="rounds" min="0" value="${draft.rounds || ""}" placeholder="no limit"></label>
-          <label class="check" style="align-self:end;min-height:32px"><input type="checkbox" name="lowWins"${draft.lowWins ? " checked" : ""}> Lowest total wins</label>
+          <label class="check" style="align-self:end"><input type="checkbox" name="lowWins"${draft.lowWins ? " checked" : ""}> Lowest total wins</label>
         </div>
       </div>
       <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn--primary" value="create">Create game</button></div>`;

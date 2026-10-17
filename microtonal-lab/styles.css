@@ -304,12 +304,9 @@ body {
   align-items: flex-end;
 }
 
+/* Wrap rather than squeeze a field below its basis. */
 .control-grid > .field {
-  flex: 1 1 5.5rem;
-}
-
-.control-grid > .range-field {
-  flex: 1 1 6.5rem;
+  flex: 1 0 6.5rem;
 }
 
 .control-grid > .toggle-cluster {
@@ -615,7 +612,7 @@ body {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   -webkit-tap-highlight-color: transparent;
   transition:
     background-color var(--d-fast),
@@ -751,6 +748,12 @@ body {
   width: 100%;
 }
 
+/* "Load tuning" stays in view when a short builder form scrolls. */
+.builder-form > [type="submit"] {
+  position: sticky;
+  bottom: 0;
+}
+
 .error-flash {
   animation: errorFlash 480ms var(--ease);
 }
@@ -838,6 +841,15 @@ body {
   .visual-layout {
     min-height: 200px;
   }
+
+  /* The readout scrolls to the pulse steps and tempo instead of clipping them. */
+  .readout-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
 }
 
 @media (min-width: 900px) and (max-height: 760px) {
@@ -854,6 +866,19 @@ body {
     gap: var(--s-2);
   }
 
+  /* The scope draws inside the row it gets. */
+  #tuningCanvas {
+    min-height: 0;
+  }
+
+  /* A shorter overlay leaves the pitch map its radius: the preset name keeps its line. */
+  .scope-title .ml-kicker {
+    display: none;
+  }
+
+  .mini-meters div {
+    padding: 3px 8px;
+  }
 }
 
 /* ---------- Narrow desktop and tablet landscape: instrument + one sidebar ---------- */
@@ -881,6 +906,16 @@ body {
 
   .visual-layout {
     grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  /* 50px keys: the pitch and the cents get the room the padding took. */
+  .key-button {
+    gap: 1px 2px;
+    padding: 4px 3px;
+  }
+
+  .readout-grid strong {
+    font-size: var(--t-sm);
   }
 }
 
