@@ -25,7 +25,10 @@
   --hatch: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in oklab, var(--page) 55%, transparent) 3px 6px);
 }
 
+/* Positioned so visually hidden labels inside the scroller (.sr-only is
+   absolutely positioned) stay inside it instead of lengthening the page. */
 .ev-shell > main {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -223,6 +226,7 @@
 }
 
 .matrix-cell {
+  position: relative;
   display: grid;
   align-content: center;
   gap: 6px;
