@@ -8,6 +8,7 @@ import {
   decisionPlayer,
 } from "./rules.mjs";
 import { settleForced } from "./table.mjs";
+import { historyStates } from "./history-states.mjs";
 const historyCache = new WeakMap();
 export function practiceTarget(table, player) {
   if (
@@ -27,7 +28,7 @@ export function practiceTarget(table, player) {
       events: table.events,
       length: table.events.length,
       state: table.state,
-      states: replay(table.initial, table.events),
+      states: historyStates(table),
     };
     historyCache.set(table, cached);
   }

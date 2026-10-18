@@ -1,4 +1,4 @@
-const { roll } = require("./play-helpers.cjs");
+const { roll, waitWork } = require("./play-helpers.cjs");
 // Real engine, persisted sessions, production board and layout regressions.
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -122,14 +122,7 @@ module.exports = async function decisionUX(
       .locator('[data-point="9"] .point-hit')
       .boundingBox();
     await page.mouse.click(tip.x + tip.width / 2, tip.y + 8);
-    let quick = await page.evaluate(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        ).draft,
-    );
+    let quick = (await waitWork(page, w => w?.draft?.length === 1)).draft;
     assert.deepEqual(
       quick.map((s) => [s.from, s.to, s.die]),
       [[12, 9, 3]],
@@ -137,22 +130,17 @@ module.exports = async function decisionUX(
     assert.ok(await page.locator(".point.reachable").count());
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("z");
+    await waitWork(page, w => w?.draft?.length === 0);
     await page.locator('[data-point="8"]').focus();
     await page.keyboard.press("Shift+Enter");
-    quick = await page.evaluate(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        ).draft,
-    );
+    quick = (await waitWork(page, w => w?.draft?.length === 1)).draft;
     assert.deepEqual(
       quick.map((s) => [s.from, s.to, s.die]),
       [[12, 8, 4]],
     );
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("z");
+    await waitWork(page, w => w?.draft?.length === 0);
     const touchTip = await page
       .locator('[data-point="9"] .point-hit')
       .boundingBox();
@@ -160,14 +148,7 @@ module.exports = async function decisionUX(
       touchTip.x + touchTip.width / 2,
       touchTip.y + 8,
     );
-    const touchDraft = await page.evaluate(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        ).draft,
-    );
+    const touchDraft = (await waitWork(page, w => w?.draft?.length === 1)).draft;
     assert.deepEqual(
       touchDraft.map((s) => [s.from, s.to, s.die]),
       [[12, 9, 3]],
@@ -241,6 +222,8 @@ module.exports = async function decisionUX(
       .getByRole("button", { name: "Close", exact: true })
       .click();
     await page.locator("#game-review").click();
+    await page.locator(".session-totals").scrollIntoViewIfNeeded();
+    assert.ok(await page.locator(".session-totals").innerText(), "session review stays readable in WebKit");
     await shot("game-review");
     // Automatic review may already have filled every missing decision.
     if (await page.locator("#analyze-session").isEnabled()) {
@@ -404,6 +387,7 @@ module.exports = async function decisionUX(
     await page.locator("#hint").waitFor({ timeout: 60000 });
     await page.locator("#hint").click();
     await page.locator("#undo-play-best").waitFor({ timeout: 60000 });
+    assert.equal(await page.locator("#undo-play-best").innerText(), "Play best");
     const priorCount = (await waitGame((g) => g.state.phase === "move"))
       .events.length;
     await page.locator("#undo-play-best").click();

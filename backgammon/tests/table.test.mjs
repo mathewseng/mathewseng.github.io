@@ -184,9 +184,11 @@ test("equivalent dice orders count as one outcome, including doubles and a winni
     s.points[23] = -15;
     s.off = [13, 0];
     s.phase = "roll";
-    const t = playAction(table(s), { type: "roll", dice });
+    let t = playAction(table(s), { type: "roll", dice });
+    assert.equal(t.state.phase, "move", "show the sealed roll before awarding it");
+    t = playAction(t, { type: "finish-race" });
     assert.equal(t.state.phase, "over");
-    assert.equal(t.state.off[0], 15);
+    assert.equal(t.state.off[0], 13, "no inconsequential checker moves");
     assert.equal(t.events.at(-1).automatic, true);
     assert.equal(takebackTarget(t), 1, 'finished forced turn remains available for explicit undo');
   }
@@ -468,6 +470,7 @@ test('undo after the opponent finishes restores the requesting player and preser
   const initial=initialState({phase:'move',dice:[1,2],points,off:[14,14],matchLength:0,scores:[2,3]});
   let t=move(table(initial));
   t=playAction(t,{type:'roll',dice:[1,2]});
+  t=playAction(t,{type:'finish-race'});
   assert.equal(t.state.result.winner,1);
   const restored=undoTurn(t,takebackTarget(t,0),0);
   assert.deepEqual(restored.state,initial);

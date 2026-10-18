@@ -186,6 +186,14 @@ const feedbackStrip = el("div", {
   "aria-label": "Decision history",
   hidden: true,
 });
+const feedbackView = {
+  context: null,
+  turns: new Map(),
+  heading: el("h2", { class: "sr-only" }, "Decision history"),
+  caption: el("p", { class: "history-context muted" }),
+  empty: el("p", { class: "history-empty muted", role: "status" }),
+  footer: button("Review session", showSessionReview, "ghost", { id: "review-session" }),
+};
 document.querySelector(".action-area").append(feedbackStrip);
 const desktopTable = matchMedia(
   "(min-width: 1025px) and (min-height: 501px)",
@@ -690,7 +698,7 @@ function render() {
     !assistanceJob &&
     !opening.active &&
     s.phase === "move" &&
-    (m.reviewingTurn || !forcedTurn(s));
+    (m.reviewingTurn || (!certainBearoff(s) && !forcedTurn(s)));
   if (key !== boardKey) {
     const before = ui.board.state,
       event = m?.events?.at(-1);
@@ -869,7 +877,7 @@ function autoPlay() {
         !game.undoRequest && !game.reviewingTurn
       )
         commit(certain ? {type:"finish-race"} : blocked ? { type: "roll" } : { type: "move", steps: forced.steps }).catch(showError);
-    }, reducedMotion() ? 0 : 650);
+    }, certain || reducedMotion() ? 0 : 650);
   }
   return true;
 }
@@ -1479,8 +1487,9 @@ function renderActions() {
       : opening.tie ? "Opening tie · rolling again…" : opening.dice ? "Beginning the first turn…" : "Rolling opening dice…";
     return;
   }
-  if (!m.reviewingTurn && (blockedBarRoll(s) || forcedTurn(s))) {
-    $("message").textContent = blockedBarRoll(s)
+  if (!m.reviewingTurn && (certainBearoff(s) || blockedBarRoll(s) || forcedTurn(s))) {
+    $("message").textContent = certainBearoff(s) ? "Game decided"
+      : blockedBarRoll(s)
       ? "All six entries blocked · passing automatically"
       : "Forced turn · playing automatically";
     return;
@@ -2131,15 +2140,36 @@ function renderFeedback() {
   }
   const reviewIndex = rows.filter(row => row.feedback && row.player === config.humanSide).at(-1)?.index;
   const shown = groupDecisionTurns(rows.filter(row => feedbackFilter === "all" || sideOf(row) === feedbackFilter)).reverse();
-  feedbackStrip.replaceChildren(
-    el("h2", { class: "sr-only" }, "Decision history"),
-    el("p", { class: "history-context muted" },
-      `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each decision maker’s perspective. Select Cube or Move to review.`,
-    ),
-  );
-  if (!shown.length) feedbackStrip.append(el("p", { class: "history-empty muted", role: "status" },
-    rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins."));
+  const context = JSON.stringify([m.id, m.initial, config.mode, viewer, names(), feedbackFilter]);
+  if (feedbackView.context !== context) {
+    feedbackView.context = context;
+    feedbackView.turns.clear();
+  }
+  const contextText = `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each decision maker’s perspective. Select Cube or Move to review.`;
+  if (feedbackView.caption.textContent !== contextText) feedbackView.caption.textContent = contextText;
+  const children = [feedbackView.heading, feedbackView.caption];
+  if (!shown.length) {
+    feedbackView.empty.textContent = rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins.";
+    children.push(feedbackView.empty);
+  }
+  const retained = new Set();
   for (const group of shown) {
+    retained.add(group.key);
+    // Grades arrive independently and each commit clones the match. Keep
+    // unchanged DOM in place, but refresh the click handlers' source data.
+    let entry = feedbackView.turns.get(group.key);
+    if (!entry) feedbackView.turns.set(group.key, entry = {});
+    entry.group = group;
+    const signature = JSON.stringify([group.turn, group.response, group.decisions.map(row => [
+      row.index, row.label, row.forced, row.result?.type, row.result?.positionKey, row.result?.settings.name,
+      row.feedback, row.index === reviewIndex, canReturnToDecision(row, m.id),
+      !row.feedback && (autoReview.job?.row.index === row.index ? "active" : autoReview.error ? "error" : "queued"),
+    ])]);
+    if (entry.signature === signature) {
+      children.push(entry.node);
+      continue;
+    }
+    entry.signature = signature;
     const side = sideOf(group);
     const playerLabel = config.mode === "local" ? names()[group.player]
       : side === "self" ? "You" : "Opponent";
@@ -2151,14 +2181,16 @@ function renderFeedback() {
       el("span", { class: "history-turn-label muted" },
         `Game ${group.game} · Turn ${group.turn}${group.response ? " · Response" : ""}`),
     );
-    feedbackStrip.append(el("section", {
+    entry.node = el("section", {
       class: "history-turn",
       "data-history-player": group.player,
       "data-history-side": side,
       "data-turn-key": group.key,
       "aria-label": `${playerLabel} · Game ${group.game} · Turn ${group.turn}${group.response ? " · Cube response" : ""}`,
-    }, identity, decisions));
+    }, identity, decisions);
+    children.push(entry.node);
     for (const row of group.decisions) {
+      const currentRow = () => entry.group.decisions.find(item => item.index === row.index);
       const kind = row.action.type === "move" ? "Move" : "Cube";
       const detail = () => el("span", { class: "history-kind muted" },
         el("span", { class: "history-kind-label" }, kind),
@@ -2178,7 +2210,7 @@ function renderFeedback() {
               ? [
                   button(
                     "Return",
-                    () => restoreDecision(row, m.id),
+                    () => restoreDecision(currentRow(), m.id),
                     "ghost",
                     { "aria-label": "Return to this position", title: "Return to this position" },
                   ),
@@ -2198,20 +2230,22 @@ function renderFeedback() {
       const f = row.feedback;
       const review = button(
         "",
-        () =>
-          decisionReview(row.source, {
+        () => {
+          const current = currentRow();
+          return decisionReview(current.source, {
             opponent: side === "opponent",
             title:
-              row.result.type === "cube"
+              current.result.type === "cube"
                 ? "Cube decision"
                 : "Checker decision",
-            onReturn: canReturnToDecision(row, m.id)
-              ? () => restoreDecision(row, m.id)
+            onReturn: canReturnToDecision(current, m.id)
+              ? () => restoreDecision(current, m.id)
               : undefined,
-            onReplay: canReplayBest(row, m.id)
-              ? (steps, result) => replayBest(row, m.id, steps, result)
+            onReplay: canReplayBest(current, m.id)
+              ? (steps, result) => replayBest(current, m.id, steps, result)
               : undefined,
-          }).result(row.result),
+          }).result(current.result);
+        },
         "feedback-review",
         {
           ...(row.index === reviewIndex
@@ -2243,11 +2277,15 @@ function renderFeedback() {
       decisions.append(review);
     }
   }
-  feedbackStrip.append(
-    button("Review session", showSessionReview, "ghost", {
-      id: "review-session",
-    }),
-  );
+  for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
+  children.push(feedbackView.footer);
+  const wanted = new Set(children);
+  for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();
+  let cursor = feedbackStrip.firstChild;
+  for (const child of children) {
+    if (child === cursor) cursor = cursor.nextSibling;
+    else feedbackStrip.insertBefore(child, cursor);
+  }
 }
 
 function canReturnToDecision(row, id) {
@@ -2491,12 +2529,18 @@ async function evaluateDecision(action) {
     job.dialog.addEventListener("close", onClose, { once: true });
   };
   try {
-    let result = await analysis.run(job.source, {
+    // A cached grade can resolve in the same microtask as the tap. Give the
+    // locked controls one paint before committing/rendering the next turn.
+    // Keep the worker running while the browser acknowledges the interaction.
+    const painted = document.hidden ? Promise.resolve() : new Promise(resolve =>
+      requestAnimationFrame(() => setTimeout(resolve, 0)));
+    const evaluation = analysis.run(job.source, {
       submitted: steps,
       preset: config.reviewStrength || "auto",
       priority: 20,
       onUnlisted: showPendingWarning,
     });
+    let [result] = await Promise.all([evaluation, painted]);
     if (!activeAssistance(job)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
     job.done = true;

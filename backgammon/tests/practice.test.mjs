@@ -99,8 +99,10 @@ test("practice can replay a winning turn, restoring scores before that decision"
   s.points[23] = -15;
   s.off = [14, 0];
   const won = move(table(s)),
-    next = replacePracticeRoll(won, 0, [3, 4]);
-  assert.equal(next.state.phase, "over"); // The replacement also wins automatically.
+    rolled = replacePracticeRoll(won, 0, [3, 4]),
+    next = playAction(rolled, { type: "finish-race" });
+  assert.equal(rolled.state.phase, "move"); // Reveal the replacement dice first.
+  assert.equal(next.state.phase, "over"); // Its sealed outcome then ends automatically.
   assert.deepEqual(next.state.scores, won.state.scores); // Not awarded twice.
   assert.deepEqual(replay(next.initial, next.events).at(-1), next.state);
   const newGame = playAction(won, { type: "next" });

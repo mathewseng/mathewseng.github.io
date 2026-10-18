@@ -119,6 +119,26 @@ module.exports=async function checkerTargets(browser,base,out,name){
         }
         results.push({touch,turn,orientation,locked,checkerOriginReturn:true});
       }
+      for(const turn of [0,1])for(const orientation of [0,1])for(const alreadyOff of [0,4]){
+        await fixture('advanced',orientation);
+        await page.evaluate(({turn,alreadyOff})=>{
+          const {d,rules:r}=targets,points=Array(24).fill(0);
+          points[5]=5;points[2]=5;points[0]=5-alreadyOff;points[18]=-15;
+          const s=r.initialState({phase:'move',dice:[3,1],turn,
+            points:turn?points.toReversed().map(n=>-n):points,
+            off:turn?[0,alreadyOff]:[alreadyOff,0]});
+          d.set(s,r.legalPaths(s));d.move({from:turn?21:2,to:'off',die:3});
+        },{turn,alreadyOff});
+        const off=page.locator(`[data-point="off${turn}"] .draft-undo-checker`);
+        assert.equal(await off.count(),1,'borne-off checker keeps its undo cue');
+        assert.equal(await off.locator('.draft-undo-tint').count(),1,'orange tint remains');
+        assert.equal(await off.locator('text').textContent(),String(alreadyOff+1),'off count remains readable');
+        assert.equal(await off.locator('.draft-undo-mark').count(),0,'return arrow never overlaps the off count');
+        if(!turn&&!orientation&&!alreadyOff)await page.locator('.bg-board').screenshot({path:path.join(out,`${name}-off-undo-${touch?'phone':'desktop'}.png`)});
+        await tapChecker(`off${turn}`);
+        assert.deepEqual(await page.evaluate(()=>targets.d.draft),[],'off checker still returns on tap');
+        results.push({touch,turn,orientation,alreadyOff,offUndoCount:true});
+      }
       for(const count of [6,10,15])for(const orientation of [0,1]){
         await fixture('advanced',orientation);
         await page.evaluate(count=>{

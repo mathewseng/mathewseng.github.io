@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Table policy, separate from the rules used by editors and training exercises.
 import { historyStateKey } from "./history-tree.mjs";
+import { historyStates } from "./history-states.mjs";
+import { certainBearoff } from "./certain-bearoff.mjs";
 import {
   clone,
   transition,
@@ -168,6 +170,9 @@ function append(table, action, actor, automatic = false) {
 }
 export function settleForced(table) {
   if (table.reviewingTurn) return table;
+  // Let the table show the actual roll before awarding a sealed race. Don't
+  // invent/animate checker steps merely because the only turn is forced.
+  if (table.state.phase === "move" && certainBearoff(table.state)) return table;
   const forced = forcedTurn(table.state);
   if (forced)
     append(
@@ -232,7 +237,7 @@ export function takebackTarget(table, actor = null) {
     if (!["roll", "move"].includes(event.action.type)) break;
     if (event.action.type !== "move") continue;
     // Do not trust an imported/missing automatic marker to authorize a rewind.
-    states ||= replay(table.initial, table.events);
+    states ||= historyStates(table);
     if (table.state.phase !== "over" && (event.automatic || forcedTurn(states[i]))) break;
     if (actor === null || event.actor === actor) {
       target = i;

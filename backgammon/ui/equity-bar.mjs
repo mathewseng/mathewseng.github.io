@@ -60,7 +60,7 @@ export class EquityBar {
       options,
     );
     addEventListener("pageshow", () => this.refresh(), options);
-    this.observer = new ResizeObserver(() => this.position());
+    this.observer = new ResizeObserver(() => this.schedulePosition());
     this.observer.observe(board.container);
     this.refresh();
   }
@@ -84,6 +84,15 @@ export class EquityBar {
       left: `${r.left - c.left + (r.width - width) / 2 - this.node.offsetWidth - 4}px`,
       top: `${r.top - c.top + (r.height - height) / 2}px`,
       height: `${height}px`,
+    });
+  }
+  schedulePosition() {
+    // State, actions, and history all update in the same task. Read geometry
+    // once after those writes, not repeatedly in the middle of rebuilding DOM.
+    if (this.positionFrame !== undefined) return;
+    this.positionFrame = requestAnimationFrame(() => {
+      this.positionFrame = undefined;
+      this.position();
     });
   }
   paint(status, reading = null, reason = "") {
@@ -111,7 +120,7 @@ export class EquityBar {
       this.node.title = reason;
     }
     this.node.setAttribute("aria-label", this.node.title);
-    this.position();
+    this.schedulePosition();
   }
   refresh() {
     this.toggle.setAttribute("aria-pressed", String(this.enabled));
@@ -161,7 +170,7 @@ export class EquityBar {
     }
     const key = positionKey(state) + JSON.stringify([preset, submitted]);
     if (this.key === key) {
-      this.position();
+      this.schedulePosition();
       if (ready || this.reading) this.paint("ready", ready || this.reading);
       return;
     }
@@ -197,6 +206,7 @@ export class EquityBar {
       });
   }
   destroy() {
+    cancelAnimationFrame(this.positionFrame);
     this.stop();
     this.life.abort();
     this.observer.disconnect();

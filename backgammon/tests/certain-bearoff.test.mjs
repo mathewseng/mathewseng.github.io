@@ -27,7 +27,7 @@ test('certain singles and gammons account for turn order, arbitrary bad play and
 
 test('contact, bars, pending decisions and rounded engine equities cannot finish a race',()=>{
  const base=position([1],[7],1);
- assert.equal(certainBearoff({...base,phase:'move',dice:[6,6]}),null);
+ assert.deepEqual(certainBearoff({...base,phase:'move',dice:[6,6]}),{winner:0,level:1});
  assert.equal(certainBearoff({...base,phase:'double',pending:{type:'double',by:1}}),null);
  const bar=structuredClone(base);bar.bar[1]=1;bar.points[23]++;assert.equal(certainBearoff(bar),null);
  const contact=position([0,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7]);
@@ -46,6 +46,28 @@ test('home outcome enumeration exactly matches canonical legal turns for all dic
   const h=Array.from({length:6},(_,i)=>home[i]||0);
   assert.deepEqual(homeRollOutcomes(h,[a,b]).map(h=>h.join(',')).sort(),expected);
  }
+});
+
+test('a known roll can seal either player’s win before any checker moves',()=>{
+ const before=position([0,0,2],[5]);
+ assert.equal(certainBearoff(before),null);
+ for(const flipped of [false,true]){
+  const s=flipped?mirror(before):before;
+  const rolled=transition(s,{type:'roll',dice:[1,1]});
+  assert.deepEqual(certainBearoff(rolled),{winner:flipped?1:0,level:1});
+  const t=playAction({id:'rolled',started:true,initial:s,state:s,events:[]},{type:'roll',dice:[1,1]});
+  assert.equal(t.state.phase,'move','sealed roll waits for its dice reveal');
+  assert.equal(t.events.length,1,'no forced checker movement before the award');
+  const won=playAction(t,{type:'finish-race'});
+  assert.deepEqual(won.state.points,s.points);
+  assert.deepEqual(replay(s,won.events).at(-1),won.state);
+  assert.deepEqual(undoTurn(won,takebackTarget(won),s.turn).state,rolled,'explicit undo restores the actual rolled position');
+ }
+ const canLose=position([0,0,0,0,0,1],[1]);
+ assert.equal(certainBearoff(canLose),null);
+ assert.deepEqual(certainBearoff(transition(canLose,{type:'roll',dice:[1,2]})),{winner:1,level:1});
+ assert.deepEqual(certainBearoff(transition(canLose,{type:'roll',dice:[6,2]})),{winner:0,level:1});
+ assert.equal(certainBearoff(transition(position([0,0,0,0,0,1],[4]),{type:'roll',dice:[3,2]})),null,'a future double can still change the winner');
 });
 
 test('early results replay, award once, and allow finished-turn undo without an automatic loop',()=>{
@@ -93,6 +115,20 @@ test('proof agrees with exhaustive canonical timing on small home boards',()=>{
   if(result)proved++;
  }
  assert.ok(proved>100);
+ // Independent oracle: enumerate the CURRENT roll with the canonical rules,
+ // then compare exhaustive fastest/slowest future finishes of both players.
+ // An exact roll must not turn 'usually winning' into a premature award.
+ for(const white of homes.filter((_,i)=>i%3===0))for(const black of homes.filter((_,i)=>i%3===0))
+  for(const turn of [0,1])for(let a=1;a<=6;a++)for(let b=a;b<=6;b++){
+   const s=position(white,black,turn,{phase:'move',dice:[a,b]});
+   const winners=legalTurns(s).map(t=>{
+    if(t.state.off[turn]===15)return turn;
+    const times=[timing(t.state.points.slice(0,6)),timing(t.state.points.slice(18).toReversed().map(n=>-n))];
+    return [0,1].find(w=>times[w].max<=times[1-w].min-((1-turn)===1-w?1:0));
+   });
+   const expected=winners.every(w=>w!==undefined&&w===winners[0])?{winner:winners[0],level:1}:null;
+   assert.deepEqual(certainBearoff(s),expected,`${boardKey(s)} ${a}-${b}, turn ${turn}`);
+  }
 });
 
 test('online host adjudication is idempotent, recoverable and requires both connected players',async()=>{

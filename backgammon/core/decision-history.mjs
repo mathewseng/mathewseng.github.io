@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import {
-  replay,
   canDouble,
   notation,
   positionKey,
   clone,
 } from "./rules.mjs";
 import { forcedTurn, blockedBarRoll } from "./table.mjs";
+import { historyStates } from "./history-states.mjs";
 import { decisionFeedback } from "./decision-feedback.mjs";
 import { CUBE_LABELS, gradeCube } from "../engine/cube-grade.mjs";
 export function compactEvaluation(source, result) {
@@ -24,7 +24,7 @@ export function gradeDecision(source, result, action) {
     : gradeCube(source, result, action.type);
 }
 export function decisionHistory(model) {
-  const states = replay(model.initial, model.events);
+  const states = historyStates(model);
   const rows = [];
   let turn = 1, turnStart = 0;
   model.events.forEach((event, index) => {

@@ -48,16 +48,41 @@ function proveWithin(home, turns, firstOff, budget, memo) {
 }
 
 export function certainBearoff(state) {
-  if(state.phase!=='roll'||state.pending||state.bar.some(Boolean))return null;
+  if(!['roll','move'].includes(state.phase)||state.pending||state.bar.some(Boolean))return null;
   const white=state.points.flatMap((n,i)=>n>0?[i]:[]),black=state.points.flatMap((n,i)=>n<0?[i]:[]);
   if(!white.length||!black.length||Math.max(...white)>=Math.min(...black))return null;
   const homes=[0,1].map(player=>Array.from({length:24},(_,i)=>Math.max(0,state.points[player?23-i:i]*(player?-1:1))));
   const jacoby=!state.matchLength&&state.rules?.jacoby&&state.cube.owner===null;
-  const key=JSON.stringify([homes,state.turn,jacoby]);
+  const key=JSON.stringify([homes,state.turn,jacoby,state.phase==='move'?state.dice:null]);
   if(cache.has(key))return cache.get(key);
   const budget={nodes:2000,outcomes:20000},memo=new Map();
+  let result=proveRace(homes,state.turn,jacoby,budget,memo);
+  if(!result&&state.phase==='move'&&!homes[state.turn].slice(6).some(Boolean)) {
+    // The current dice are known; future dice are still ALL possible rolls.
+    // Every legal way to use this roll must lead to the same exact award.
+    // One shared work budget covers every branch, including future proofs.
+    let common=null;
+    for(const next of homeRollOutcomes(homes[state.turn].slice(0,6),state.dice)) {
+      if(--budget.outcomes<0){common=null;break;}
+      const after=homes.map((home,p)=>p===state.turn?[...next,...Array(18).fill(0)]:home);
+      const proof=count(next)===0
+        ? {winner:state.turn,level:jacoby||count(after[1-state.turn])<15?1:after[1-state.turn].slice(18).some(Boolean)?3:2}
+        : proveRace(after,1-state.turn,jacoby,budget,memo);
+      if(!proof||(common&&(common.winner!==proof.winner||common.level!==proof.level))){common=null;break;}
+      common=proof;
+    }
+    result=common;
+  }
+  // A deterministic work cap gives an inconclusive answer, never a guess.
+  // Keep proof work bounded on phones, including hostile imported positions.
+  result=result?Object.freeze(result):null;
+  cache.set(key,result);if(cache.size>256)cache.delete(cache.keys().next().value);
+  return result;
+}
+
+function proveRace(homes,turn,jacoby,budget,memo) {
   let result=null;
-  for(const winner of [state.turn,1-state.turn]){
+  for(const winner of [turn,1-turn]){
     const own=homes[winner],loser=1-winner,other=homes[loser];
     if(own.slice(6).some(Boolean))continue;
     // Passed checkers may still sit in the winner's home board: contact is
@@ -65,7 +90,7 @@ export function certainBearoff(state) {
     if(count(other)===15&&!jacoby&&other.slice(18).some(Boolean))continue;
     // Four sixes achieve these earliest possible turns in a contact-free race.
     const fastest=side=>Math.ceil(side.reduce((sum,n,i)=>sum+n*Math.ceil((i+1)/6),0)/4);
-    const loserFirst=state.turn===loser?1:0;
+    const loserFirst=turn===loser?1:0;
     const winBy=fastest(other)-loserFirst;
     if(proveWithin(own.slice(0,6),winBy,false,budget,memo)!==true)continue;
     let level;
@@ -74,12 +99,9 @@ export function certainBearoff(state) {
       const firstOff=Math.ceil((other.reduce((sum,n,i)=>sum+n*Math.floor(i/6),0)+1)/4);
       if(proveWithin(own.slice(0,6),firstOff-loserFirst,false,budget,memo)===true)level=2;
       else if(!other.slice(6).some(Boolean)&&
-        proveWithin(other.slice(0,6),fastest(own)-(state.turn===winner?1:0),true,budget,memo)===true)level=1;
+        proveWithin(other.slice(0,6),fastest(own)-(turn===winner?1:0),true,budget,memo)===true)level=1;
     }
     if(level){result=Object.freeze({winner,level});break;}
   }
-  // A deterministic work cap gives an inconclusive answer, never a guess.
-  // Keep proof work bounded on phones, including hostile imported positions.
-  cache.set(key,result);if(cache.size>256)cache.delete(cache.keys().next().value);
   return result;
 }

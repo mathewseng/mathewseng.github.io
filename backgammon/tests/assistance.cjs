@@ -608,6 +608,9 @@ module.exports = async function assistanceUX(
             .getByRole("button", { name: "Confirm anyway", exact: true })
             .click();
         await edge.locator("#review-feedback").waitFor({ timeout: 60000 });
+        // Inspect the rendered review after scrolling, including WebKit on phones.
+        await edge.locator("#review-feedback").scrollIntoViewIfNeeded();
+        await edge.waitForFunction(() => document.querySelector("#review-feedback")?.innerText.includes("lost"));
         const result = await edge.evaluate(
           async () =>
             (

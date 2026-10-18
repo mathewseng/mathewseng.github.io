@@ -426,7 +426,7 @@ export function decisionReview(
             ));
       if (onReplay && !bestPlayed) {
         const replay = button(
-          "Undo & play best",
+          onUse ? "Play best" : "Undo & play best",
           async () => {
             if (replay.disabled) return;
             replay.disabled = true;

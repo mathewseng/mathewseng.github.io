@@ -475,8 +475,10 @@ const server = http.createServer((req, res) => {
         );
         (report.actionReadiness ||= []).push(
           await run("action-readiness", browser, base, out, browserName),
+          await run("confirm-latency", browser, base, out, browserName),
           await run("automatic-motion", browser, base, out, browserName),
           await run("certain-bearoff", browser, base, out, browserName),
+          await run("sealed-roll", browser, base, out, browserName),
         );
         (report.moveArrows ||= []).push(
           await run("move-arrows", browser, base, out, browserName),

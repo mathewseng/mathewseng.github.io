@@ -2950,6 +2950,12 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   width: min(900px, calc(100vw - 28px));
 }
 
+.session-dialog .dialog-body {
+  /* WebKit resolves a zero-percent flex basis before the asynchronously
+     rendered review exists, leaving only the header visible. Size to content. */
+  flex-basis: auto;
+}
+
 .session-review {
   display: grid;
   gap: 16px;

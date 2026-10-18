@@ -301,7 +301,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false, undoable = 
       "stroke-width": 1.5,
     }),
   );
-  if (undoable && count === 1)
+  if (undoable && count === 1 && !showCount)
     g.append(svg("path", { class:"draft-undo-mark", d:`M${x+8} ${y+7}v-7a8 8 0 0 0-16 0v2m-4-4 4 4 4-4`,
       fill:"none", stroke:boardColor("undoText"), "stroke-width":3,
       "stroke-linecap":"round", "stroke-linejoin":"round" }));
