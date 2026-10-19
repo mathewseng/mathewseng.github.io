@@ -10,15 +10,15 @@
     />
     <title>Backgammon</title>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=a5312fe1d109c95a" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=a5312fe1d109c95a" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=a5312fe1d109c95a" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=a5312fe1d109c95a" />
-    <link rel="stylesheet" href="styles.css?bgv=a5312fe1d109c95a" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=a5312fe1d109c95a" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=6de111978ebe1bfa" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=6de111978ebe1bfa" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=6de111978ebe1bfa" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=6de111978ebe1bfa" />
+    <link rel="stylesheet" href="styles.css?bgv=6de111978ebe1bfa" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=6de111978ebe1bfa" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="../shared/hub.js?bgv=a5312fe1d109c95a" defer></script>
-    <script type="module" src="app.js?bgv=a5312fe1d109c95a"></script>
+    <script src="../shared/hub.js?bgv=6de111978ebe1bfa" defer></script>
+    <script type="module" src="app.js?bgv=6de111978ebe1bfa"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -148,6 +148,17 @@
               </div>
               <p id="opening-context"></p>
             </div>
+            <div class="opening-color-key" aria-label="Move type colors">
+              <span data-opening-kind="point"><i aria-hidden="true"></i>Make a point</span>
+              <span data-opening-kind="anchor"><i aria-hidden="true"></i>Anchor</span>
+              <span data-opening-kind="hit"><i aria-hidden="true"></i>Hit</span>
+              <span data-opening-kind="split"><i aria-hidden="true"></i>Split</span>
+              <span data-opening-kind="run"><i aria-hidden="true"></i>Run</span>
+              <span data-opening-kind="slot"><i aria-hidden="true"></i>Slot</span>
+              <span data-opening-kind="build"><i aria-hidden="true"></i>Build</span>
+              <span data-opening-kind="develop"><i aria-hidden="true"></i>Develop</span>
+            </div>
+            <p class="opening-color-note">Color shows the main idea. The lower third shows close alternatives, in reading order.</p>
             <fieldset class="opening-picker">
               <legend id="opening-roll-label">Opening roll</legend>
               <div id="opening-rolls" class="opening-rolls"></div>

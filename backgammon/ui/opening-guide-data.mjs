@@ -107,14 +107,14 @@ export function openingSummary(position, choice) {
   const anchors=made.filter(p=>p>=18), points=made.filter(p=>p<18);
   const hits=after.bar[1-player]-state.bar[1-player];
   const features=[];
-  if(hits>0)features.push({label:hits>1?'Hit twice':'Hit',description:hits>1?'Hit two blots.':'Hit a blot.'});
+  if(hits>0)features.push({kind:'hit',label:hits>1?'Hit twice':'Hit',description:hits>1?'Hit two blots.':'Hit a blot.'});
   if(anchors.length){
     const p=anchors[0],number=24-p;
-    features.push({label:`${number}-anchor`,description:`Make an anchor on the opponent’s ${number}-point (your ${p+1}-point).`});
+    features.push({kind:'anchor',label:`${number}-anchor`,description:`Make an anchor on the opponent’s ${number}-point (your ${p+1}-point).`});
   }
   if(points.length){
     const names=points.map(p=>p===6?'bar point':`${p+1}-point`);
-    features.push({label:points.length>1?'Make points':`Make ${points[0]===6?'bar':`${points[0]+1}-point`}`,
+    features.push({kind:'point',label:points.length>1?'Make points':`Make ${points[0]===6?'bar':`${points[0]+1}-point`}`,
       description:`Make your ${names.join(' and ')}.`});
   }
   // Compact notation describes whole checker journeys, including combined dice.
@@ -122,16 +122,16 @@ export function openingSummary(position, choice) {
   const back=journeys.filter(j=>j[0]>=18&&!made.includes(j.at(-1)-1));
   if(!anchors.length&&back.length){
     const run=back.some(j=>j.at(-1)<=17);
-    features.push({label:run?'Run':'Split',description:run
+    features.push({kind:run?'run':'split',label:run?'Run':'Split',description:run
       ? (back.some(j=>j.at(-1)===13)?'Run to the midpoint.':'Run a back checker.')
       : 'Split your back checkers.'});
   }
-  if(!count(state,4)&&count(after,4)===1)features.push({label:'Slot 5',description:'Slot your 5-point.'});
+  if(!count(state,4)&&count(after,4)===1)features.push({kind:'slot',label:'Slot 5',description:'Slot your 5-point.'});
   const builders = count(state,12)-count(after,12);
-  if(!points.length&&builders>0)features.push({label:builders>1?'Build':'Builder',
+  if(!points.length&&builders>0)features.push({kind:'build',label:builders>1?'Build':'Builder',
     description:builders>1?'Bring two builders down.':'Bring a builder down.'});
-  if(!features.length)features.push({label:'Develop',description:'Develop your checkers.'});
-  return {label:features.slice(0,2).map(f=>f.label).join(' + '),description:features.map(f=>f.description).join(' ')};
+  if(!features.length)features.push({kind:'develop',label:'Develop',description:'Develop your checkers.'});
+  return {kind:features[0].kind,label:features.slice(0,2).map(f=>f.label).join(' + '),description:features.map(f=>f.description).join(' ')};
 }
 export const openingIdea=(position,choice)=>openingSummary(position,choice).description;
 

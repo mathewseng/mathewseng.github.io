@@ -30,6 +30,10 @@ test('opening guide covers every opening and precisely the book’s close window
   assert.equal(guide.get('31').moves.length,1);
   assert.equal(openingIdea(guide.get('31'),0),'Make your 5-point.');
   assert.equal(openingSummary(guide.get('65'),0).label,'Run');
+  assert.equal(openingSummary(guide.get('65'),0).kind,'run');
+  assert.equal(openingSummary(guide.get('31'),0).kind,'point');
+  assert.deepEqual(guide.get('21').moves.map((_,i)=>openingSummary(guide.get('21'),i).kind),
+    ['split','slot','split','build'],'best and alternatives retain their own main idea');
   assert.match(openingSummary(guide.get('21'),0).description,/Split.*builder/);
   assert.throws(()=>openingState('11'));
   assert.throws(()=>buildOpenings({...index,threshold:NaN}));
@@ -40,6 +44,7 @@ test('reply colors mirror the legal board and preserve all notation, equity and 
   const data=new OpeningGuideData(fileFetch),guide=await data.openings();
   const replies=await data.replies(guide.get('31'),0);
   assert.equal(openingSummary(replies.get('22'),0).label,'3-anchor + Make 4-point');
+  assert.equal(openingSummary(replies.get('22'),0).kind,'anchor');
   const together=replies.get('33'),i=together.moves.findIndex(m=>m.notation==='24/18(2)');
   assert.ok(i>=0);
   assert.equal(openingIdea(together,i),'Make your 18-point.','moving two back checkers together is not a split');
@@ -58,7 +63,7 @@ test('reply colors mirror the legal board and preserve all notation, equity and 
         const summary=openingSummary(w,i);
         assert.deepEqual(summary,openingSummary(b,i));
         if(summary.label.includes('anchor'))anchors++;
-        if(summary.label.includes('Hit'))hits++;
+        if(summary.label.includes('Hit')){hits++;assert.equal(summary.kind,'hit','hitting is the main idea when combined with another action');}
       }
     }
   }

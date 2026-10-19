@@ -14,6 +14,8 @@ const lossLabel = value => value===0 ? 'Best' : value<.001 ? '<0.001' : value.to
 const diceLabel = roll => [...roll].join('–');
 const rollGrid=Array.from({length:36},(_,i)=>`${Math.floor(i/6)+1}${i%6+1}`);
 const canonicalRoll=cell=>[...cell].sort().reverse().join('');
+const notationParts=notation=>notation.split(' ').map(part=>
+  node('span',{},...part.split(/(?=[/(])/).flatMap((segment,i)=>i?[node('wbr'),segment]:[segment])));
 function die(value) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true');
@@ -63,8 +65,12 @@ export function openingGuide(root) {
         const roll=canonicalRoll(cell),tie=mode==='opening'&&cell[0]===cell[1];
         const button=node('button',{type:'button',class:'opening-roll-choice','data-roll':cell,'data-canonical':roll,
           'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(cell)}${tie?', tie: reroll':''}`,
-          'aria-pressed':'false'},node('span',{class:'opening-dice'},...[...cell].map(die)),
-          node('span',{class:'opening-roll-notation'}),node('span',{class:'opening-roll-idea'},tie?'Reroll':'…'));
+          'aria-pressed':'false'},
+          node('span',{class:'opening-roll-content'},
+            node('span',{class:'opening-dice'},...[...cell].map(die)),
+            node('span',{class:'opening-roll-notation'}),node('span',{class:'opening-roll-idea'},tie?'Reroll':'…'),
+            node('span',{class:'opening-roll-alternatives',hidden:''})),
+          node('span',{class:'opening-alternative-colors','aria-hidden':'true',hidden:''}));
         button.disabled=tie;
         button.addEventListener('click',() => {
           if (mode==='opening') {openingCell=cell;openingRoll=roll;openingChoice=0;}
@@ -85,11 +91,23 @@ export function openingGuide(root) {
       const summary=openingSummary(p,0),notation=p.moves[0].notation;
       // Keep each checker journey together where it fits, but permit natural
       // breaks before slash/count segments in narrow six-column phone cells.
-      button.querySelector('.opening-roll-notation').replaceChildren(...notation.split(' ').map(part=>
-        node('span',{},...part.split(/(?=[/(])/).flatMap((segment,i)=>i?[node('wbr'),segment]:[segment]))));
+      button.querySelector('.opening-roll-notation').replaceChildren(...notationParts(notation));
       button.querySelector('.opening-roll-idea').textContent=summary.label;
-      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.roll)}, ${notation}. ${summary.description}`);
-      button.title=`${notation} · ${summary.description}`;
+      button.dataset.openingKind=summary.kind;
+      const alternatives=p.moves.slice(1).map((move,i)=>({...move,...openingSummary(p,i+1)}));
+      const labels=button.querySelector('.opening-roll-alternatives'),colors=button.querySelector('.opening-alternative-colors');
+      labels.hidden=colors.hidden=!alternatives.length;
+      labels.replaceChildren(...alternatives.map(move=>node('span',{
+        class:'opening-roll-alternative','data-opening-kind':move.kind,
+        title:`${move.notation} · ${move.description} · ${move.loss===0?'Also best':`${lossLabel(move.loss)} equity loss`}`,
+      },node('span',{class:'opening-kind-dot','aria-hidden':'true'}),
+      node('span',{class:'opening-alternative-notation'},...notationParts(move.notation)))));
+      // Color segments occupy only the lower third. Keep their layout separate
+      // from the text so nine close replies can still wrap at phone widths.
+      colors.replaceChildren(...alternatives.map(move=>node('span',{'data-opening-kind':move.kind})));
+      const close=alternatives.map(move=>`${move.notation} · ${move.description}`).join('\n');
+      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.roll)}, best ${notation}. ${summary.description}${close?` Close alternatives: ${close}`:''}`);
+      button.title=`Best: ${notation} · ${summary.description}${close?`\nClose alternatives:\n${close}`:''}`;
     }
   }
   function preview() {
@@ -143,7 +161,7 @@ export function openingGuide(root) {
     try {
       const next=replyPositions||await data.replies(openings.get(openingRoll),openingChoice,replySide);
       if (request!==generation) return;
-      replyPositions=next;rollSummaries(next);
+      if(replyPositions!==next){replyPositions=next;rollSummaries(next);}
       position=next.get(replyRoll);status('');showPosition();
     } catch {
       if (request!==generation) return;
