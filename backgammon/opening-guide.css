@@ -33,16 +33,19 @@
   margin-block: 20px 16px;
 }
 .opening-toolbar .segmented { flex: 0 0 auto; }
+.opening-side { display: flex; align-items: center; gap: 10px; }
+.opening-side > span { font-size: var(--t-sm); color: var(--muted); }
+#opening-context { flex-basis: 100%; }
 .opening-picker { margin: 0; padding: 0; border: 0; min-width: 0; }
 .opening-picker legend { margin-bottom: 8px; color: var(--muted); font-size: var(--t-xs); }
-.opening-rolls { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 6px; }
-.opening-reply-rolls { grid-template-columns: repeat(7,minmax(0,1fr)); }
+.opening-rolls { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 6px; }
 .opening-roll-choice {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 48px;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 96px;
   min-width: 0;
   padding: 8px;
   color: var(--ink);
@@ -52,7 +55,8 @@
   cursor: pointer;
   transition: background-color 180ms var(--ease), border-color 180ms var(--ease);
 }
-.opening-roll-choice:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.opening-roll-choice:not(:disabled):hover { background: var(--surface-2); border-color: var(--line-strong); }
+.opening-roll-choice:disabled { background: transparent; color: var(--muted); border-color: var(--line); opacity: .55; cursor: default; }
 .opening-roll-choice[aria-pressed="true"] {
   background: color-mix(in oklab,var(--accent) 16%,var(--surface));
   border-color: var(--accent);
@@ -61,7 +65,11 @@
 .opening-dice { display: flex; flex: 0 0 auto; gap: 3px; }
 .opening-dice svg { display: block; width: 22px; height: 22px; fill: currentColor; }
 .opening-die-face { fill: none; stroke: currentColor; stroke-width: 1; }
-.opening-roll-notation { font-size: var(--t-xs); font-weight: 600; line-height: 1.35; }
+.opening-roll-notation { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 5px; font-size: var(--t-xs); font-weight: 600; line-height: 1.35; }
+.opening-roll-notation > span { min-width: 0; }
+.opening-roll-notation:empty { display: none; }
+.opening-roll-idea { font-size: var(--t-xs); line-height: 1.35; color: var(--muted); text-wrap: balance; }
+.opening-roll-choice[aria-pressed="true"] .opening-roll-idea { color: var(--accent); }
 .opening-load-state { display: flex; gap: 12px; align-items: center; }
 #opening-status:not(:empty) { margin-block: 18px; color: var(--muted); }
 .opening-panel {
@@ -112,6 +120,7 @@
 }
 .opening-notation { display: flex; gap: 10px; align-items: baseline; }
 .opening-notation strong { font-weight: 600; line-height: 1.5; }
+.opening-move-idea { display: block; margin-top: 4px; font-size: var(--t-xs); color: var(--muted); line-height: 1.4; }
 .opening-rank { color: var(--muted); font-size: var(--t-xs); }
 .opening-best { color: var(--accent); font-weight: 600; }
 .opening-loss { color: var(--muted); }
@@ -123,16 +132,17 @@
 .opening-method p { max-width: 80ch; font-size: var(--t-sm); color: var(--muted); margin-bottom: 10px; }
 .opening-method a { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--t-sm); }
 @media (max-width: 1100px) {
-  .opening-roll-choice { flex-direction: column; gap: 4px; }
+  .opening-roll-choice { gap: 4px; }
   .opening-panel { gap: 16px; }
   .opening-columns, .opening-move { gap: 6px; grid-template-columns: minmax(0,1fr) 4.7em 4em; padding-inline: 8px; }
 }
 @media (max-width: 760px) {
   .opening-panel { grid-template-columns: minmax(0,1fr); gap: 20px; }
   .opening-preview { max-width: 560px; width: 100%; justify-self: center; }
-  .opening-roll-notation { display: none; }
-  .opening-rolls { grid-template-columns: repeat(5,minmax(0,1fr)); }
-  .opening-roll-choice { min-height: 44px; padding: 6px; }
+  .opening-rolls { gap: 4px; }
+  .opening-roll-choice { min-height: 92px; padding: 8px 1px; }
+  .opening-dice { gap: 2px; }
+  .opening-dice svg { width: 16px; height: 16px; }
   .opening-position-heading { margin-bottom: 14px; }
   #opening-idea { min-height: 0; }
   .opening-actions .btn { flex: 1; }
@@ -144,7 +154,6 @@
   .opening-guide .group-head { flex-wrap: wrap; gap: 6px; }
   .opening-guide .group-head h2 { font-size: var(--t-lg); }
   .opening-toolbar { gap: 10px; }
-  #opening-context { flex-basis: 100%; }
   .opening-preview-controls { gap: 8px; flex-wrap: wrap; }
   .opening-preview-controls figcaption { flex: 1; min-width: 120px; }
 }

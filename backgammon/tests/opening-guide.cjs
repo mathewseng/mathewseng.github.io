@@ -1,17 +1,32 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 module.exports=async function openingGuide(browser,base,out,name){
   const results=[];
-  for(const layout of ['desktop','portrait','landscape']){
+  for(const layout of ['desktop','portrait','landscape','narrow']){
     console.log(`Opening guide: ${name} ${layout}`);
     const touch=layout!=='desktop'&&name!=='firefox';
-    const context=await browser.newContext({viewport:layout==='desktop'?{width:1440,height:1000}:layout==='portrait'?{width:390,height:844}:{width:844,height:390},hasTouch:touch,serviceWorkers:'block',reducedMotion:'reduce'});
+    const context=await browser.newContext({viewport:layout==='desktop'?{width:1440,height:1000}:layout==='portrait'?{width:390,height:844}:layout==='narrow'?{width:320,height:568}:{width:844,height:390},hasTouch:touch,serviceWorkers:'block',reducedMotion:'reduce'});
     const page=await context.newPage(),errors=[],requests=[];
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
     const activate=locator=>touch?locator.tap():locator.click();
     try{
       await page.goto(base+'/backgammon/#openings');
       await page.locator('#opening-panel').waitFor({state:'visible'});
-      assert.equal(await page.locator('#opening-rolls button').count(),15);
+      const matrix=async()=>{
+        const cells=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>({
+          x:Math.round(n.getBoundingClientRect().x),y:Math.round(n.getBoundingClientRect().y),
+          width:n.getBoundingClientRect().width,overflows:n.scrollWidth>n.clientWidth+1,text:n.querySelector('.opening-roll-notation').textContent,
+          idea:n.querySelector('.opening-roll-idea').textContent,disabled:n.disabled,
+        })));
+        assert.equal(cells.length,36);
+        assert.equal(new Set(cells.map(c=>c.x)).size,6,'six columns');
+        assert.equal(new Set(cells.map(c=>c.y)).size,6,'six rows');
+        assert.ok(cells.every(c=>c.width>=44&&c.idea&&c.idea!=='…'&&(c.disabled||c.text)),
+          'readable touch targets include notation and a move description');
+        assert.ok(cells.every(c=>!c.overflows),'move labels stay within their grid cells');
+      };
+      await matrix();
+      assert.equal(await page.locator('#opening-rolls button:disabled').count(),6);
+      assert.equal(await page.locator('#opening-side').isVisible(),false);
       assert.equal(await page.locator('#opening-rolls [aria-pressed="true"]').getAttribute('data-roll'),'31');
       assert.equal(await page.locator('#opening-moves button').count(),1);
       assert.equal(await page.locator('#opening-board [data-point="4"] > .checker').count(),2);
@@ -19,7 +34,7 @@ module.exports=async function openingGuide(browser,base,out,name){
         const st=await import('/backgammon/core/storage.mjs');
         await st.put('work',{id:'opening-guide-test',sentinel:'unchanged'});
       });
-      const rolls=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll));
+      const rolls=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll).filter(r=>r[0]>r[1]));
       for(const roll of rolls){
         await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
         assert.equal(await page.locator('#openings').getAttribute('data-roll'),roll);
@@ -31,6 +46,9 @@ module.exports=async function openingGuide(browser,base,out,name){
           assert.match(await page.locator('#opening-caption').textContent(),/Close alternative/);
         }
       }
+      await activate(page.locator('#opening-rolls [data-roll="12"]'));
+      assert.equal(await page.locator('#openings').getAttribute('data-roll'),'21','either dice order shares the same opening');
+      assert.equal(await page.locator('#opening-rolls [aria-pressed="true"]').getAttribute('data-roll'),'12');
       await activate(page.locator('#opening-rolls [data-roll="21"]'));
       await activate(page.locator('#opening-moves [data-choice="1"]'));
       const opening=await page.locator('#opening-moves [data-choice="1"] strong').textContent();
@@ -38,14 +56,16 @@ module.exports=async function openingGuide(browser,base,out,name){
       await activate(page.locator('#opening-next'));
       await page.waitForFunction(()=>document.querySelector('#openings').dataset.mode==='reply'&&document.querySelector('#openings').dataset.loading==='false');
       assert.match(await page.locator('#opening-context').textContent(),new RegExp(opening.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-      assert.equal(await page.locator('#opening-rolls button').count(),21);
+      await matrix();
+      assert.equal(await page.locator('#opening-rolls button:disabled').count(),0,'doubles are playable replies');
+      assert.equal(await page.locator('#opening-side [aria-pressed="true"]').getAttribute('data-side'),'0','White replies by default');
       assert.equal(await page.locator('#opening-replies').getAttribute('aria-pressed'),'true');
-      const replies=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll));
+      const replies=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll).filter(r=>r[0]>=r[1]));
       for(const roll of replies){
         await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
         await page.waitForFunction(roll=>document.querySelector('#openings').dataset.roll===roll&&document.querySelector('#openings').dataset.loading==='false',roll);
         assert.equal(await page.locator('#opening-moves [aria-pressed="true"]').count(),1);
-        assert.match(await page.locator('#opening-board').getAttribute('aria-label'),/Black/);
+        assert.match(await page.locator('#opening-board').getAttribute('aria-label'),/White/);
       }
       await activate(page.locator('#opening-rolls [data-roll="64"]'));
       await page.waitForFunction(()=>document.querySelector('#openings').dataset.roll==='64');
@@ -59,9 +79,19 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.ok(await page.locator('#opening-board .last-move-arrows').count());
       assert.ok((await page.locator('#opening-caption').textContent()).includes(selected));
       const state=JSON.parse(new URLSearchParams(new URL(await page.locator('#opening-solver').getAttribute('href')).hash.slice(1)).get('state'));
-      assert.equal(state.turn,1);assert.deepEqual(state.dice,[6,4]);
+      assert.equal(state.turn,0);assert.deepEqual(state.dice,[6,4]);
       assert.equal(state.rules.immediateRedoubles,0);
       await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-replies-${layout}.png`)});
+      const whiteNotation=await page.locator('#opening-moves button').first().locator('strong').textContent();
+      await activate(page.locator('#opening-side [data-side="1"]'));
+      await page.waitForFunction(()=>document.querySelector('#opening-board').getAttribute('aria-label').startsWith('Black')&&document.querySelector('#openings').dataset.loading==='false');
+      await matrix();
+      const black=JSON.parse(new URLSearchParams(new URL(await page.locator('#opening-solver').getAttribute('href')).hash.slice(1)).get('state'));
+      assert.equal(black.turn,1);
+      assert.deepEqual(black.points,state.points.toReversed().map(n=>-n||0));
+      assert.equal(await page.locator('#opening-moves button').first().locator('strong').textContent(),whiteNotation);
+      await activate(page.locator('#opening-side [data-side="0"]'));
+      await page.waitForFunction(()=>document.querySelector('#opening-board').getAttribute('aria-label').startsWith('White')&&document.querySelector('#openings').dataset.loading==='false');
       await activate(page.locator('#opening-openings'));
       assert.equal(await page.locator('#opening-moves [aria-pressed="true"] strong').textContent(),opening,'opening choice survives returning from replies');
       await page.locator('#opening-rolls [data-roll="31"]').focus();

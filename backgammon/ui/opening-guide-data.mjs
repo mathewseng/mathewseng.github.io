@@ -67,12 +67,17 @@ export class OpeningGuideData {
     try { return buildOpenings(this.index); }
     catch (error) { this.files.delete('index.json'); throw error; }
   }
-  async reply(opening, choice, roll) {
-    if (!this.index || !REPLY_ROLLS.includes(roll) || !opening.moves[choice])
+  async reply(opening, choice, roll, player=1) {
+    if (!this.index || !REPLY_ROLLS.includes(roll) || !opening.moves[choice] || ![0,1].includes(player))
       throw Error('Choose an opening and reply roll.');
     const after = commitTurn(opening.state,opening.moves[choice].steps);
-    const state = {...after, turn:1-opening.state.turn, phase:'move',dice:[...roll].map(Number)};
-    const key = bookBoardKey(state), id = `${key}:${roll}`;
+    // The book is color-symmetric. Mirror the actual position (not just the
+    // view) so previews and Solver exports agree with the chosen replying side.
+    const state = {...after, ...(player===0 ? {
+      points:after.points.toReversed().map(n=>-n),bar:after.bar.toReversed(),
+      off:after.off.toReversed(),scores:after.scores.toReversed(),
+    } : {}), turn:player, phase:'move',dice:[...roll].map(Number)};
+    const key = bookBoardKey(state), id = `${key}:${roll}:${player}`;
     if (this.positions.has(id)) return this.positions.get(id);
     const ref = this.index.replies?.[key];
     if (!ref || !/^reply-[a-f0-9]{16}\.json$/.test(ref.file))
@@ -87,26 +92,48 @@ export class OpeningGuideData {
     this.positions.set(id,result);
     return result;
   }
+  async replies(opening, choice, player=0) {
+    return new Map(await Promise.all(REPLY_ROLLS.map(async roll=>
+      [roll,await this.reply(opening,choice,roll,player)])));
+  }
 }
 
 // Describe visible changes, not speculative strategic reasons for a ranking.
-export function openingIdea(position, choice) {
+export function openingSummary(position, choice) {
   const {state,moves} = position, move = moves[choice];
   const after = commitTurn(state,move.steps), player = state.turn;
-  if (after.bar[1-player] > state.bar[1-player]) return 'Hit a blot.';
   const count = (s,p) => Math.max(0,s.points[player ? 23-p : p] * (player ? -1 : 1));
-  for (const p of [4,3,2,6,5,1,0])
-    if (count(state,p)<2 && count(after,p)>=2) return `Make your ${p===6 ? 'bar point' : `${p+1}-point`}.`;
-  if (count(after,23)<count(state,23)) {
-    if (move.notation.includes('24/13')) return 'Run to the midpoint.';
-    if (move.steps.some(s => (player ? 23-s.from : s.from) === 12)) return 'Split the back checkers and bring a builder down.';
-    return move.notation.match(/24\/(2[0-3]|19|18)/) ? 'Split your back checkers.' : 'Run a back checker.';
+  const made=Array.from({length:24},(_,p)=>p).filter(p=>count(state,p)<2&&count(after,p)>=2);
+  const anchors=made.filter(p=>p>=18), points=made.filter(p=>p<18);
+  const hits=after.bar[1-player]-state.bar[1-player];
+  const features=[];
+  if(hits>0)features.push({label:hits>1?'Hit twice':'Hit',description:hits>1?'Hit two blots.':'Hit a blot.'});
+  if(anchors.length){
+    const p=anchors[0],number=24-p;
+    features.push({label:`${number}-anchor`,description:`Make an anchor on the opponent’s ${number}-point (your ${p+1}-point).`});
   }
-  if (!count(state,4) && count(after,4)===1) return 'Slot your 5-point.';
+  if(points.length){
+    const names=points.map(p=>p===6?'bar point':`${p+1}-point`);
+    features.push({label:points.length>1?'Make points':`Make ${points[0]===6?'bar':`${points[0]+1}-point`}`,
+      description:`Make your ${names.join(' and ')}.`});
+  }
+  // Compact notation describes whole checker journeys, including combined dice.
+  const journeys=move.notation.split(' ').map(token=>token.replace(/\(\d+\)$/,'').split('/').map(p=>Number(p.replace('*',''))));
+  const back=journeys.filter(j=>j[0]>=18&&!made.includes(j.at(-1)-1));
+  if(!anchors.length&&back.length){
+    const run=back.some(j=>j.at(-1)<=17);
+    features.push({label:run?'Run':'Split',description:run
+      ? (back.some(j=>j.at(-1)===13)?'Run to the midpoint.':'Run a back checker.')
+      : 'Split your back checkers.'});
+  }
+  if(!count(state,4)&&count(after,4)===1)features.push({label:'Slot 5',description:'Slot your 5-point.'});
   const builders = count(state,12)-count(after,12);
-  if (builders>0) return builders>1 ? 'Bring two builders down.' : 'Bring a builder down.';
-  return move.notation;
+  if(!points.length&&builders>0)features.push({label:builders>1?'Build':'Builder',
+    description:builders>1?'Bring two builders down.':'Bring a builder down.'});
+  if(!features.length)features.push({label:'Develop',description:'Develop your checkers.'});
+  return {label:features.slice(0,2).map(f=>f.label).join(' + '),description:features.map(f=>f.description).join(' ')};
 }
+export const openingIdea=(position,choice)=>openingSummary(position,choice).description;
 
 export function previewPosition(position, choice) {
   const move = position.moves[choice];

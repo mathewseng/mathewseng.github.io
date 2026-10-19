@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { Board } from './board.mjs';
-import { OpeningGuideData, OPENING_ROLLS, REPLY_ROLLS, openingIdea, previewPosition } from './opening-guide-data.mjs';
+import { OpeningGuideData, openingSummary, openingIdea, previewPosition } from './opening-guide-data.mjs';
 import { moveTrace } from '../core/move-trace.mjs';
 import { shareURL } from '../core/xgid.mjs';
 
@@ -12,6 +12,8 @@ const node = (tag,attrs={},...children) => {
 const format = value => `${value>0?'+':''}${value.toFixed(3)}`;
 const lossLabel = value => value===0 ? 'Best' : value<.001 ? '<0.001' : value.toFixed(3);
 const diceLabel = roll => [...roll].join('–');
+const rollGrid=Array.from({length:36},(_,i)=>`${Math.floor(i/6)+1}${i%6+1}`);
+const canonicalRoll=cell=>[...cell].sort().reverse().join('');
 function die(value) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true');
@@ -31,7 +33,8 @@ export function openingGuide(root) {
   const data = new OpeningGuideData(), board = new Board($('opening-board'));
   const picker = $('opening-rolls'), list = $('opening-moves'), panel = $('opening-panel');
   let openings, position, mode='opening', openingRoll='31', replyRoll='31';
-  let openingChoice=0, replyChoice=0, before=false, generation=0, pickerMode=null;
+  let openingChoice=0, replyChoice=0, replySide=0, before=false, generation=0, pickerKey=null;
+  let openingCell='31',replyCell='31',replyPositions;
   const choice = () => mode==='opening' ? openingChoice : replyChoice;
   const status = (message,error=false) => {
     $('opening-status').textContent=message;
@@ -46,28 +49,48 @@ export function openingGuide(root) {
     for (const button of $('opening-stage').querySelectorAll('button'))
       button.setAttribute('aria-pressed',String(button.dataset.stage===mode));
     $('opening-replies').disabled=!openings;
+    $('opening-side').hidden=mode!=='reply';
+    for(const button of $('opening-side').querySelectorAll('button'))
+      button.setAttribute('aria-pressed',String(+button.dataset.side===replySide));
     $('opening-context').textContent=mode==='reply'
-      ? `After ${diceLabel(openingRoll)} · ${openings.get(openingRoll).moves[openingChoice].notation}`
+      ? `After ${replySide?'White':'Black'}’s ${diceLabel(openingRoll)} · ${openings.get(openingRoll).moves[openingChoice].notation}`
       : 'White opens. Choose a roll, then a move.';
-    $('opening-roll-label').textContent=mode==='opening' ? 'Opening roll' : 'Black’s reply roll';
-    if (pickerMode!==mode) {
-      pickerMode=mode;
-      picker.classList.toggle('opening-reply-rolls',mode==='reply');
-      picker.replaceChildren(...(mode==='opening'?OPENING_ROLLS:REPLY_ROLLS).map(roll => {
-        const button=node('button',{type:'button',class:'opening-roll-choice','data-roll':roll,
-          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(roll)}`,
-          'aria-pressed':'false'},node('span',{class:'opening-dice'},...[...roll].map(die)));
-        if (mode==='opening') button.append(node('span',{class:'opening-roll-notation'},openings.get(roll).moves[0].notation));
+    $('opening-roll-label').textContent=mode==='opening' ? 'Opening roll · ties reroll' : `${replySide?'Black':'White'}’s reply roll`;
+    const key=mode==='opening'?'opening':`${openingRoll}:${openingChoice}:${replySide}`;
+    if (pickerKey!==key) {
+      pickerKey=key;replyPositions=null;
+      picker.replaceChildren(...rollGrid.map(cell => {
+        const roll=canonicalRoll(cell),tie=mode==='opening'&&cell[0]===cell[1];
+        const button=node('button',{type:'button',class:'opening-roll-choice','data-roll':cell,'data-canonical':roll,
+          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(cell)}${tie?', tie: reroll':''}`,
+          'aria-pressed':'false'},node('span',{class:'opening-dice'},...[...cell].map(die)),
+          node('span',{class:'opening-roll-notation'}),node('span',{class:'opening-roll-idea'},tie?'Reroll':'…'));
+        button.disabled=tie;
         button.addEventListener('click',() => {
-          if (mode==='opening') {openingRoll=roll;openingChoice=0;}
-          else {replyRoll=roll;replyChoice=0;}
+          if (mode==='opening') {openingCell=cell;openingRoll=roll;openingChoice=0;}
+          else {replyCell=cell;replyRoll=roll;replyChoice=0;}
           before=false; refresh();
         });
         return button;
       }));
+      if(mode==='opening')rollSummaries(openings);
     }
     for (const button of picker.children)
-      button.setAttribute('aria-pressed',String(button.dataset.roll===(mode==='opening'?openingRoll:replyRoll)));
+      button.setAttribute('aria-pressed',String(button.dataset.roll===(mode==='opening'?openingCell:replyCell)));
+  }
+  function rollSummaries(positions) {
+    for(const button of picker.children){
+      const p=positions.get(button.dataset.canonical);
+      if(!p)continue;
+      const summary=openingSummary(p,0),notation=p.moves[0].notation;
+      // Keep each checker journey together where it fits, but permit natural
+      // breaks before slash/count segments in narrow six-column phone cells.
+      button.querySelector('.opening-roll-notation').replaceChildren(...notation.split(' ').map(part=>
+        node('span',{},...part.split(/(?=[/(])/).flatMap((segment,i)=>i?[node('wbr'),segment]:[segment]))));
+      button.querySelector('.opening-roll-idea').textContent=summary.label;
+      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.roll)}, ${notation}. ${summary.description}`);
+      button.title=`${notation} · ${summary.description}`;
+    }
   }
   function preview() {
     const move=position.moves[choice()], player=position.state.turn;
@@ -88,13 +111,14 @@ export function openingGuide(root) {
   function showPosition() {
     const roll=mode==='opening'?openingRoll:replyRoll;
     root.dataset.mode=mode;root.dataset.roll=roll;
-    $('opening-heading').textContent=`${mode==='opening'?'White opens':'Black replies'} ${diceLabel(roll)}`;
+    $('opening-heading').textContent=`${mode==='opening'?'White opens':`${replySide?'Black':'White'} replies`} ${diceLabel(roll)}`;
     $('opening-window').textContent=`Close = within ${position.threshold.toFixed(3)} of best`;
     $('opening-empty').hidden=position.moves.length>1;
     list.replaceChildren(...position.moves.map((move,i) => {
       const row=node('button',{type:'button',class:'opening-move','data-choice':i,'aria-pressed':String(i===choice()),
-        'aria-label':`${move.notation}, equity ${format(move.equity)}, ${move.loss===0?'best move':`loss ${lossLabel(move.loss)}`}`},
-        node('span',{class:'opening-notation'},node('span',{class:'opening-rank'},String(i+1)),node('strong',{},move.notation)),
+        'aria-label':`${move.notation}. ${openingIdea(position,i)} Equity ${format(move.equity)}, ${move.loss===0?'best move':`loss ${lossLabel(move.loss)}`}`},
+        node('span',{class:'opening-notation'},node('span',{class:'opening-rank'},String(i+1)),
+          node('span',{},node('strong',{},move.notation),node('span',{class:'opening-move-idea'},openingIdea(position,i)))),
         node('span',{class:'opening-equity'},format(move.equity)),
         node('span',{class:move.loss===0?'opening-best':'opening-loss'},lossLabel(move.loss)));
       row.addEventListener('click',() => {
@@ -105,7 +129,7 @@ export function openingGuide(root) {
     }));
     $('opening-solver').href=shareURL(position.state);
     $('opening-next').hidden=mode==='reply';
-    $('opening-position-note').textContent=mode==='reply' ? 'The board turns so Black moves toward point 1.' : 'Arrows show the move; dotted checkers show where it began.';
+    $('opening-position-note').textContent=mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.';
     panel.hidden=false;
     preview();
   }
@@ -117,9 +141,10 @@ export function openingGuide(root) {
     }
     status('Loading replies…');
     try {
-      const next=await data.reply(openings.get(openingRoll),openingChoice,replyRoll);
+      const next=replyPositions||await data.replies(openings.get(openingRoll),openingChoice,replySide);
       if (request!==generation) return;
-      position=next;status('');showPosition();
+      replyPositions=next;rollSummaries(next);
+      position=next.get(replyRoll);status('');showPosition();
     } catch {
       if (request!==generation) return;
       panel.hidden=true;status('Replies could not load. Check your connection and retry.',true);
@@ -140,6 +165,8 @@ export function openingGuide(root) {
   $('opening-openings').addEventListener('click',()=>stage('opening'));
   $('opening-replies').addEventListener('click',()=>stage('reply'));
   $('opening-next').addEventListener('click',()=>stage('reply'));
+  for(const button of $('opening-side').querySelectorAll('button'))
+    button.addEventListener('click',()=>{replySide=+button.dataset.side;replyChoice=0;before=false;refresh();});
   $('opening-before').addEventListener('click',()=>{before=true;preview();});
   $('opening-after').addEventListener('click',()=>{before=false;preview();});
   $('opening-retry').addEventListener('click',()=>openings?refresh():start());

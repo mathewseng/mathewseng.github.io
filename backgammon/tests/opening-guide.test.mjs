@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {OpeningGuideData, OPENING_ROLLS, REPLY_ROLLS, buildOpenings, openingState, previewPosition, openingIdea} from '../ui/opening-guide-data.mjs';
+import {OpeningGuideData, OPENING_ROLLS, REPLY_ROLLS, buildOpenings, openingState, previewPosition, openingIdea, openingSummary} from '../ui/opening-guide-data.mjs';
 import {boardKey, commitTurn, assertState} from '../core/rules.mjs';
 const index=JSON.parse(readFileSync(new URL('../engine/opening-book-data/index.json',import.meta.url)));
 const fileFetch=url=>Promise.resolve(new Response(readFileSync(url)));
@@ -23,14 +23,47 @@ test('opening guide covers every opening and precisely the book’s close window
       assert.equal(boardKey(commitTurn(p.state,m.steps)),m.key);
       assert.equal(boardKey(previewPosition(p,i)),m.key);
       assert.equal(previewPosition(p,i).turn,0);
+      assert.ok(openingSummary(p,i).label);
     }
   }
   assert.equal(guide.get('65').moves[0].notation,'24/13');
   assert.equal(guide.get('31').moves.length,1);
   assert.equal(openingIdea(guide.get('31'),0),'Make your 5-point.');
+  assert.equal(openingSummary(guide.get('65'),0).label,'Run');
+  assert.match(openingSummary(guide.get('21'),0).description,/Split.*builder/);
   assert.throws(()=>openingState('11'));
   assert.throws(()=>buildOpenings({...index,threshold:NaN}));
   assert.throws(()=>buildOpenings({...index,openings:{}}));
+});
+
+test('reply colors mirror the legal board and preserve all notation, equity and descriptions',async()=>{
+  const data=new OpeningGuideData(fileFetch),guide=await data.openings();
+  const replies=await data.replies(guide.get('31'),0);
+  assert.equal(openingSummary(replies.get('22'),0).label,'3-anchor + Make 4-point');
+  const together=replies.get('33'),i=together.moves.findIndex(m=>m.notation==='24/18(2)');
+  assert.ok(i>=0);
+  assert.equal(openingIdea(together,i),'Make your 18-point.','moving two back checkers together is not a split');
+  let anchors=0,hits=0;
+  for(const opening of guide.values())for(let choice=0;choice<opening.moves.length;choice++){
+    const white=await data.replies(opening,choice),black=await data.replies(opening,choice,1);
+    assert.equal(white.size,21);assert.equal(black.size,21);
+    for(const [roll,w]of white){
+      const b=black.get(roll);
+      assertState(w.state);assert.equal(w.state.turn,0);assert.equal(b.state.turn,1);
+      assert.deepEqual(w.state.points,b.state.points.toReversed().map(n=>-n));
+      assert.deepEqual(w.state.bar,b.state.bar.toReversed());
+      for(const [i,m]of w.moves.entries()){
+        assert.equal(boardKey(commitTurn(w.state,m.steps)),m.key);
+        assert.equal(m.notation,b.moves[i].notation);assert.equal(m.equity,b.moves[i].equity);
+        const summary=openingSummary(w,i);
+        assert.deepEqual(summary,openingSummary(b,i));
+        if(summary.label.includes('anchor'))anchors++;
+        if(summary.label.includes('Hit'))hits++;
+      }
+    }
+  }
+  assert.ok(anchors>0);assert.ok(hits>0);
+  await assert.rejects(data.reply(guide.get('31'),0,'31',2));
 });
 
 test('every best and close opening has all 21 correctly oriented, cached replies without mutating its source',async()=>{

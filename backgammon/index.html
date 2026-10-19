@@ -10,15 +10,15 @@
     />
     <title>Backgammon</title>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=4ca83389cec64e5d" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=4ca83389cec64e5d" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=4ca83389cec64e5d" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=4ca83389cec64e5d" />
-    <link rel="stylesheet" href="styles.css?bgv=4ca83389cec64e5d" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=4ca83389cec64e5d" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=a5312fe1d109c95a" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=a5312fe1d109c95a" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=a5312fe1d109c95a" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=a5312fe1d109c95a" />
+    <link rel="stylesheet" href="styles.css?bgv=a5312fe1d109c95a" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=a5312fe1d109c95a" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="../shared/hub.js?bgv=4ca83389cec64e5d" defer></script>
-    <script type="module" src="app.js?bgv=4ca83389cec64e5d"></script>
+    <script src="../shared/hub.js?bgv=a5312fe1d109c95a" defer></script>
+    <script type="module" src="app.js?bgv=a5312fe1d109c95a"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -138,6 +138,13 @@
               <div class="segmented" id="opening-stage" role="group" aria-label="Study opening or reply">
                 <button type="button" id="opening-openings" data-stage="opening" aria-pressed="true">Openings</button>
                 <button type="button" id="opening-replies" data-stage="reply" aria-pressed="false" disabled>Replies</button>
+              </div>
+              <div id="opening-side" class="opening-side" hidden>
+                <span>To act</span>
+                <div class="segmented" role="group" aria-label="Replying player">
+                  <button type="button" data-side="0" aria-pressed="true">White</button>
+                  <button type="button" data-side="1" aria-pressed="false">Black</button>
+                </div>
               </div>
               <p id="opening-context"></p>
             </div>
