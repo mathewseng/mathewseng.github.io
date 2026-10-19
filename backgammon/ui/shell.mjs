@@ -884,6 +884,14 @@ export class DraftBoard {
     ];
   }
   arrivals(point) {
+    // The off tray is a shared destination. Keep every direct legal bearoff
+    // so die preference wins over the usual nearest-checker shortcut.
+    if (point === "off") {
+      const direct = this.candidates().filter(step => step.to === "off");
+      if (direct.length) return direct.map(step => ({
+        from: step.from, to: "off", steps: [step], die: step.die, undo: false,
+      }));
+    }
     const forward = nearestRoutes(
       this.paths, this.draft, point, this.state.turn,
     );

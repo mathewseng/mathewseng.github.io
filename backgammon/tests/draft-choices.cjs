@@ -29,6 +29,11 @@ module.exports = async function draftChoices(browser, base, out, name) {
       page.evaluate(async () =>
         (await import("/backgammon/core/storage.mjs")).get("work", "play"),
       );
+    // Draft persistence is deliberately deferred until after paint.
+    const waitDraft = steps => waitForAsync(page, async expected => {
+      const work = await (await import("/backgammon/core/storage.mjs")).get("work", "play");
+      return JSON.stringify(work?.draft) === JSON.stringify(expected);
+    }, steps);
     try {
       for (const fixture of fixtures)
         for (const turn of [0, 1])
@@ -173,6 +178,7 @@ module.exports = async function draftChoices(browser, base, out, name) {
               );
               await page.evaluate(() => document.activeElement?.blur());
               await page.keyboard.press("x");
+              await waitDraft(data.auto.steps);
               assert.deepEqual((await read()).draft, data.auto.steps);
             }
             if (fixture === "forced-seven") {
@@ -200,6 +206,7 @@ module.exports = async function draftChoices(browser, base, out, name) {
               assert.ok(await page.locator("#confirm").isEnabled());
               await page.evaluate(() => document.activeElement?.blur());
               await page.keyboard.press("x");
+              await waitDraft(data.auto.steps);
               assert.deepEqual((await read()).draft, data.auto.steps);
             }
             cases.push({

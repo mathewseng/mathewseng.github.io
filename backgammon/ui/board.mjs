@@ -445,6 +445,9 @@ export class Board {
         return;
       const p = e.target.closest("[data-point]");
       if (!p?.classList.contains("movable")) return;
+      // Empty tray-side space is a bear-off shortcut, never a pickup of an
+      // already borne-off checker. The count disc keeps its own undo/drag hitbox.
+      if (e.target.classList.contains("bearoff-hit")) return;
       const pos = this.coordinates(e.clientX, e.clientY);
       const pickIndex = checkerHit(p, pos);
       if (
@@ -1933,6 +1936,16 @@ export class Board {
         off.append(svg("rect", {
           x: 821, y: top ? 36 : 558, width: 44, height: 66, rx: 5,
           class: "source-ring", "pointer-events": "none",
+        }));
+      // Make the free side lane as easy to tap as a board point. Leave the
+      // visible tray unchanged and keep its checker above this destination
+      // target, so tapping that disc still returns it. The cube renders later
+      // and retains priority wherever its own hitbox overlaps this lane.
+      if (interactive && !editor && s.turn === p &&
+          (reachable.includes("off") || destinations.includes("off")))
+        off.prepend(svg("rect", {
+          x: 800, y: top ? 0 : 366, width: 74, height: 294,
+          fill: "transparent", class: "bearoff-hit",
         }));
       children.push(off);
     }

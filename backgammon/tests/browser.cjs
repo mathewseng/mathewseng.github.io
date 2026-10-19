@@ -583,6 +583,9 @@ const server = http.createServer((req, res) => {
         (report.checkerTargets ||= []).push(
           await run("checker-targets", browser, base, out, browserName),
         );
+        (report.bearoffTargets ||= []).push(
+          await run("bearoff-targets", browser, base, out, browserName),
+        );
         (report.revisionWarning ||= []).push(
           await run("revision-warning", browser, base, out, browserName),
         );

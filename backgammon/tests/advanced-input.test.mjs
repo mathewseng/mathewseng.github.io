@@ -95,6 +95,26 @@ test('a combined destination shortcut cannot silently rewrite already-spent dice
   const route={from:5,to:10,steps:[{from:12,to:9,die:3},{from:9,to:5,die:4}],remaining:[],switchDie:true};
   assert.equal(advancedAction({point:10,checker:false,candidates:[],returns:[],routes:[route],preferred:4,dice:[4,3],turn:0}),null);
 });
+
+test('bear-off destination uses the selected legal die for both players and every roll',()=>{
+  for (const turn of [0,1]) for (let a=1;a<=6;a++) for (let b=a;b<=6;b++) {
+    const points=Array(24).fill(0);points.fill(2,0,6);points[18]=-15;
+    const s=initialState({phase:'move',dice:[a,b],turn,
+      points:turn?points.toReversed().map(n=>-n):points,off:turn?[0,3]:[3,0]});
+    const paths=legalPaths(s),candidates=nextSteps(paths,[]);
+    for (const preferred of [a,b]) {
+      const action=advancedAction({point:'off',checker:false,candidates,returns:[],
+        routes:availableRoutes(paths,[]),preferred,dice:s.dice,turn});
+      assert.deepEqual(action,{type:'move',step:{from:turn?24-preferred:preferred-1,to:'off',die:preferred}});
+      assert.ok(matchingPaths(paths,[action.step]).length);
+    }
+  }
+  const points=Array(24).fill(0);points[0]=5;points[1]=5;points[2]=5;points[18]=-15;
+  const s=initialState({phase:'move',dice:[6,1],points}),paths=legalPaths(s);
+  assert.deepEqual(advancedAction({point:'off',checker:false,candidates:nextSteps(paths,[]),
+    returns:[],preferred:6,dice:s.dice,turn:0}),
+    {type:'move',step:{from:2,to:'off',die:6}},'oversized die removes the highest checker, not the nearest');
+});
 test('point-space at an original draft location returns that checker while disc input keeps its normal meaning',()=>{
   const s=initialState({phase:'move',dice:[4,2]}),paths=legalPaths(s),draft=[{from:12,to:8,die:4}];
   const candidates=nextSteps(paths,draft),returns=originalReturnRoutes(s,paths,draft);
