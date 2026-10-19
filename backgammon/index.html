@@ -10,15 +10,15 @@
     />
     <title>Backgammon</title>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=6de111978ebe1bfa" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=6de111978ebe1bfa" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=6de111978ebe1bfa" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=6de111978ebe1bfa" />
-    <link rel="stylesheet" href="styles.css?bgv=6de111978ebe1bfa" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=6de111978ebe1bfa" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=002375b2a309939b" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=002375b2a309939b" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=002375b2a309939b" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=002375b2a309939b" />
+    <link rel="stylesheet" href="styles.css?bgv=002375b2a309939b" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=002375b2a309939b" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="../shared/hub.js?bgv=6de111978ebe1bfa" defer></script>
-    <script type="module" src="app.js?bgv=6de111978ebe1bfa"></script>
+    <script src="../shared/hub.js?bgv=002375b2a309939b" defer></script>
+    <script type="module" src="app.js?bgv=002375b2a309939b"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -127,7 +127,7 @@
           </ul>
         </section>
 
-        <section class="group opening-guide" id="openings" aria-labelledby="opening-title">
+        <section class="group opening-guide" id="openings" data-layout="expanded" aria-labelledby="opening-title">
           <div class="group-head">
             <h2 id="opening-title">Opening moves &amp; replies</h2>
             <span>GNUbg · 3 ply</span>
@@ -146,6 +146,10 @@
                   <button type="button" data-side="1" aria-pressed="false">Black</button>
                 </div>
               </div>
+              <div class="segmented opening-layout" id="opening-layout" role="group" aria-label="Opening guide layout">
+                <button type="button" data-layout="expanded" aria-pressed="true">Expanded</button>
+                <button type="button" data-layout="compact" aria-pressed="false">Compact</button>
+              </div>
               <p id="opening-context"></p>
             </div>
             <div class="opening-color-key" aria-label="Move type colors">
@@ -158,8 +162,8 @@
               <span data-opening-kind="build"><i aria-hidden="true"></i>Build</span>
               <span data-opening-kind="develop"><i aria-hidden="true"></i>Develop</span>
             </div>
-            <p class="opening-color-note">Color shows the main idea. The lower third shows close alternatives, in reading order.</p>
-            <fieldset class="opening-picker">
+            <p class="opening-color-note">Color shows the main idea; the lower third shows close alternatives. Tap a roll for the full list.</p>
+            <fieldset class="opening-picker" id="opening-picker">
               <legend id="opening-roll-label">Opening roll</legend>
               <div id="opening-rolls" class="opening-rolls"></div>
             </fieldset>
@@ -180,7 +184,9 @@
               </div>
               <p id="opening-position-note"></p>
             </figure>
-            <div class="opening-comparison">
+            <div class="opening-study">
+              <div id="opening-compact-picker"></div>
+              <div class="opening-comparison">
               <div class="opening-position-heading">
                 <h3 id="opening-heading"></h3>
                 <p id="opening-idea"></p>
@@ -192,6 +198,7 @@
               <div class="opening-actions">
                 <button type="button" class="btn btn--primary" id="opening-next">Explore replies <span aria-hidden="true">→</span></button>
                 <a class="btn btn--ghost" id="opening-solver" href="/backgammon/solver/">Open in Solver <span aria-hidden="true">↗</span></a>
+              </div>
               </div>
             </div>
           </div>

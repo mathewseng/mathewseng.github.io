@@ -1,10 +1,11 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 module.exports=async function openingGuide(browser,base,out,name){
   const results=[];
-  for(const layout of ['desktop','portrait','landscape','narrow']){
+  const viewports={desktop:{width:1440,height:900},laptop:{width:1280,height:800},portrait:{width:390,height:844},landscape:{width:844,height:390},narrow:{width:320,height:568}};
+  for(const [layout,viewport] of Object.entries(viewports)){
     console.log(`Opening guide: ${name} ${layout}`);
-    const touch=layout!=='desktop'&&name!=='firefox';
-    const context=await browser.newContext({viewport:layout==='desktop'?{width:1440,height:1000}:layout==='portrait'?{width:390,height:844}:layout==='narrow'?{width:320,height:568}:{width:844,height:390},hasTouch:touch,serviceWorkers:'block',reducedMotion:'reduce'});
+    const touch=!['desktop','laptop'].includes(layout)&&name!=='firefox';
+    const context=await browser.newContext({viewport,hasTouch:touch,serviceWorkers:'block',reducedMotion:'reduce'});
     const page=await context.newPage(),errors=[],requests=[];
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
     const activate=locator=>touch?locator.tap():locator.click();
@@ -16,10 +17,20 @@ module.exports=async function openingGuide(browser,base,out,name){
           x:Math.round(n.getBoundingClientRect().x),y:Math.round(n.getBoundingClientRect().y),
           width:n.getBoundingClientRect().width,overflows:n.scrollWidth>n.clientWidth+1,text:n.querySelector('.opening-roll-notation').textContent,
           idea:n.querySelector('.opening-roll-idea').textContent,disabled:n.disabled,
+          roll:n.dataset.roll,canonical:n.dataset.canonical,
+          dice:[...n.querySelectorAll('.opening-dice svg')].map(d=>d.querySelectorAll('circle').length),label:n.getAttribute('aria-label'),
         })));
-        assert.equal(cells.length,36);
+        assert.equal(cells.length,21);
+        assert.equal(new Set(cells.map(c=>c.canonical)).size,21,'each dice combination appears exactly once');
         assert.equal(new Set(cells.map(c=>c.x)).size,6,'six columns');
         assert.equal(new Set(cells.map(c=>c.y)).size,6,'six rows');
+        const columns=[...new Set(cells.map(c=>c.x))].sort((a,b)=>a-b),rows=[...new Set(cells.map(c=>c.y))].sort((a,b)=>a-b);
+        assert.deepEqual(rows.map(y=>cells.filter(c=>c.y===y).length),[6,5,4,3,2,1],'upper-right triangle');
+        assert.ok(cells.every(c=>c.roll[0]<=c.roll[1]&&c.x===columns[+c.roll[1]-1]&&c.y===rows[+c.roll[0]-1]),'removed duplicates leave the lower-left half empty');
+        for(const c of cells){
+          assert.deepEqual(c.dice,[...c.canonical].map(Number),'higher die appears first in every button');
+          assert.ok(c.label.includes(c.dice.join('–')),'accessible roll name matches the visible dice');
+        }
         assert.ok(cells.every(c=>c.width>=44&&c.idea&&c.idea!=='…'&&(c.disabled||c.text)),
           'readable touch targets include notation and a move description');
         assert.ok(cells.every(c=>!c.overflows),'move labels stay within their grid cells');
@@ -76,17 +87,18 @@ module.exports=async function openingGuide(browser,base,out,name){
       await matrix();
       assert.equal(await page.locator('#opening-rolls button:disabled').count(),6);
       assert.equal(await page.locator('#opening-side').isVisible(),false);
-      assert.equal(await page.locator('#opening-rolls [aria-pressed="true"]').getAttribute('data-roll'),'31');
+      assert.equal(await page.locator('#opening-rolls [aria-pressed="true"]').getAttribute('data-roll'),'13');
       assert.equal(await page.locator('#opening-moves button').count(),1);
       assert.equal(await page.locator('#opening-board [data-point="4"] > .checker').count(),2);
       await page.evaluate(async()=>{
         const st=await import('/backgammon/core/storage.mjs');
         await st.put('work',{id:'opening-guide-test',sentinel:'unchanged'});
       });
-      const rolls=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll).filter(r=>r[0]>r[1]));
+      const rolls=await page.locator('#opening-rolls button:enabled').evaluateAll(ns=>ns.map(n=>n.dataset.roll));
+      assert.equal(rolls.length,15);
       for(const roll of rolls){
         await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
-        assert.equal(await page.locator('#openings').getAttribute('data-roll'),roll);
+        assert.equal(await page.locator('#openings').getAttribute('data-roll'),[...roll].reverse().join(''));
         assert.equal(await page.locator('#opening-moves [aria-pressed="true"]').count(),1);
         await alternativesMatch();
         const rows=page.locator('#opening-moves button');
@@ -97,9 +109,8 @@ module.exports=async function openingGuide(browser,base,out,name){
         }
       }
       await activate(page.locator('#opening-rolls [data-roll="12"]'));
-      assert.equal(await page.locator('#openings').getAttribute('data-roll'),'21','either dice order shares the same opening');
+      assert.equal(await page.locator('#openings').getAttribute('data-roll'),'21','upper-right cell maps to its canonical opening');
       assert.equal(await page.locator('#opening-rolls [aria-pressed="true"]').getAttribute('data-roll'),'12');
-      await activate(page.locator('#opening-rolls [data-roll="21"]'));
       await activate(page.locator('#opening-moves [data-choice="1"]'));
       const opening=await page.locator('#opening-moves [data-choice="1"] strong').textContent();
       await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-guide-${layout}.png`)});
@@ -110,15 +121,16 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.equal(await page.locator('#opening-rolls button:disabled').count(),0,'doubles are playable replies');
       assert.equal(await page.locator('#opening-side [aria-pressed="true"]').getAttribute('data-side'),'0','White replies by default');
       assert.equal(await page.locator('#opening-replies').getAttribute('aria-pressed'),'true');
-      const replies=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll).filter(r=>r[0]>=r[1]));
+      const replies=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>n.dataset.roll));
+      assert.equal(replies.length,21);
       for(const roll of replies){
         await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
-        await page.waitForFunction(roll=>document.querySelector('#openings').dataset.roll===roll&&document.querySelector('#openings').dataset.loading==='false',roll);
+        await page.waitForFunction(roll=>document.querySelector('#openings').dataset.roll===roll&&document.querySelector('#openings').dataset.loading==='false',[...roll].reverse().join(''));
         assert.equal(await page.locator('#opening-moves [aria-pressed="true"]').count(),1);
         await alternativesMatch();
         assert.match(await page.locator('#opening-board').getAttribute('aria-label'),/White/);
       }
-      await activate(page.locator('#opening-rolls [data-roll="64"]'));
+      await activate(page.locator('#opening-rolls [data-roll="46"]'));
       await page.waitForFunction(()=>document.querySelector('#openings').dataset.roll==='64');
       if(await page.locator('#opening-moves button').count()>1)await activate(page.locator('#opening-moves button').last());
       const selected=await page.locator('#opening-moves [aria-pressed="true"] strong').textContent();
@@ -145,7 +157,11 @@ module.exports=async function openingGuide(browser,base,out,name){
       await page.waitForFunction(()=>document.querySelector('#opening-board').getAttribute('aria-label').startsWith('White')&&document.querySelector('#openings').dataset.loading==='false');
       await activate(page.locator('#opening-openings'));
       assert.equal(await page.locator('#opening-moves [aria-pressed="true"] strong').textContent(),opening,'opening choice survives returning from replies');
-      await page.locator('#opening-rolls [data-roll="31"]').focus();
+      await page.locator('#opening-rolls [data-roll="16"]').focus();
+      // Safari's Option-Tab includes buttons when full keyboard access is off.
+      await page.keyboard.press(name==='webkit'?'Alt+Tab':'Tab');
+      assert.equal(await page.evaluate(()=>document.activeElement.dataset.roll),'23','keyboard skips the empty triangle and disabled opening ties');
+      await page.locator('#opening-rolls [data-roll="13"]').focus();
       await page.keyboard.press('Enter');
       assert.equal(await page.locator('#openings').getAttribute('data-roll'),'31','keyboard can change roll');
       assert.equal(await page.evaluate(async()=> (await (await import('/backgammon/core/storage.mjs')).get('work','opening-guide-test')).sentinel),'unchanged');
@@ -153,13 +169,53 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.equal(requests.filter(u=>/\/opening-book-data\/reply-/.test(u)).length,1,'all 21 replies share a single position file');
       // This reply has nine alternatives. Keep all of them readable at 320px,
       // and keep the color band proportional even when its row grows taller.
-      await activate(page.locator('#opening-rolls [data-roll="63"]'));
+      await activate(page.locator('#opening-rolls [data-roll="36"]'));
       await activate(page.locator('#opening-next'));
       await page.waitForFunction(()=>document.querySelector('#openings').dataset.mode==='reply'&&document.querySelector('#openings').dataset.loading==='false');
-      await activate(page.locator('#opening-rolls [data-roll="32"]'));
+      await activate(page.locator('#opening-rolls [data-roll="23"]'));
       assert.equal(await page.locator('#opening-moves button').count(),10);
       await alternativesMatch();await matrix();
       await page.locator('#opening-rolls').screenshot({path:path.join(out,`${name}-opening-many-alternatives-${layout}.png`)});
+      const choicesBefore=await page.locator('#opening-moves button strong').allTextContents();
+      const colorsBefore=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>[n.dataset.roll,n.dataset.openingKind,...[...n.querySelectorAll('.opening-alternative-colors > span')].map(s=>s.dataset.openingKind)]));
+      await activate(page.locator('#opening-layout [data-layout="compact"]'));
+      assert.equal(await page.locator('#openings').getAttribute('data-layout'),'compact');
+      assert.equal(await page.locator('#opening-layout [aria-pressed="true"]').getAttribute('data-layout'),'compact');
+      await matrix();
+      assert.deepEqual(await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>[n.dataset.roll,n.dataset.openingKind,...[...n.querySelectorAll('.opening-alternative-colors > span')].map(s=>s.dataset.openingKind)])),colorsBefore,'same color arrangement in Compact');
+      assert.ok(await page.locator('#opening-rolls button').evaluateAll(ns=>ns.every(n=>!n.innerText.trim()&&n.querySelectorAll('.opening-dice svg').length===2)),'compact cells show just two dice');
+      const compactBounds=await page.evaluate(()=>{
+        const rect=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+        return {grid:rect('#opening-rolls'),board:rect('#opening-board'),list:rect('#opening-moves')};
+      });
+      assert.ok(compactBounds.grid.height<=320,'all dice buttons fit in a compact six-row block');
+      if(viewport.width>760){
+        assert.ok(compactBounds.grid.x>=compactBounds.board.right,'dice grid sits beside the board');
+        assert.ok(compactBounds.list.height<=281,'long equity list scrolls beside the board');
+      }else assert.ok(compactBounds.grid.y>=compactBounds.board.bottom,'phone portrait stacks usable targets below the board');
+      assert.equal(await page.locator('#opening-moves .opening-equity:visible').count(),10,'every next-best move retains its equity');
+      await activate(page.locator('#opening-moves button').last());
+      assert.ok((await page.locator('#opening-caption').textContent()).includes(choicesBefore.at(-1)),'compact move rows preview their choice');
+      await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-compact-${layout}.png`)});
+      await activate(page.locator('#opening-layout [data-layout="expanded"]'));
+      assert.equal(await page.locator('#opening-picker').evaluate(n=>n.parentElement.id),'opening-controls');
+      assert.equal(await page.locator('#opening-moves [aria-pressed="true"] strong').textContent(),choicesBefore.at(-1),'changing layouts preserves the selected alternative');
+      await activate(page.locator('#opening-layout [data-layout="compact"]'));
+      const selectedVisible=await page.locator('#opening-moves').evaluate(n=>{
+        const list=n.getBoundingClientRect(),choice=n.querySelector('[aria-pressed="true"]').getBoundingClientRect();
+        return choice.top>=list.top-1&&choice.bottom<=list.bottom+1;
+      });
+      assert.ok(selectedVisible,'Compact reveals the selected alternative in its scrollable list');
+      await activate(page.locator('#opening-side [data-side="1"]'));
+      await page.waitForFunction(()=>document.querySelector('#opening-board').getAttribute('aria-label').startsWith('Black')&&document.querySelector('#openings').dataset.loading==='false');
+      assert.equal(await page.locator('#openings').getAttribute('data-layout'),'compact');
+      await matrix();
+      await activate(page.locator('#opening-openings'));
+      assert.equal(await page.locator('#opening-rolls button:disabled').count(),6);
+      assert.equal(await page.locator('#opening-compact-picker #opening-picker').count(),1);
+      await page.reload();
+      await page.locator('#opening-panel').waitFor({state:'visible'});
+      assert.equal(await page.locator('#openings').getAttribute('data-layout'),'compact','layout preference survives reload');
       assert.equal(requests.filter(u=>/\/engine\/vendor\/|engine\/worker/.test(u)).length,0,'guide never starts live search');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       assert.deepEqual(errors,[]);

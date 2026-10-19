@@ -12,7 +12,7 @@ const node = (tag,attrs={},...children) => {
 const format = value => `${value>0?'+':''}${value.toFixed(3)}`;
 const lossLabel = value => value===0 ? 'Best' : value<.001 ? '<0.001' : value.toFixed(3);
 const diceLabel = roll => [...roll].join('–');
-const rollGrid=Array.from({length:36},(_,i)=>`${Math.floor(i/6)+1}${i%6+1}`);
+const rollGrid=Array.from({length:36},(_,i)=>`${Math.floor(i/6)+1}${i%6+1}`).filter(cell=>cell[0]<=cell[1]);
 const canonicalRoll=cell=>[...cell].sort().reverse().join('');
 const notationParts=notation=>notation.split(' ').map(part=>
   node('span',{},...part.split(/(?=[/(])/).flatMap((segment,i)=>i?[node('wbr'),segment]:[segment])));
@@ -36,7 +36,7 @@ export function openingGuide(root) {
   const picker = $('opening-rolls'), list = $('opening-moves'), panel = $('opening-panel');
   let openings, position, mode='opening', openingRoll='31', replyRoll='31';
   let openingChoice=0, replyChoice=0, replySide=0, before=false, generation=0, pickerKey=null;
-  let openingCell='31',replyCell='31',replyPositions;
+  let replyPositions;
   const choice = () => mode==='opening' ? openingChoice : replyChoice;
   const status = (message,error=false) => {
     $('opening-status').textContent=message;
@@ -64,17 +64,19 @@ export function openingGuide(root) {
       picker.replaceChildren(...rollGrid.map(cell => {
         const roll=canonicalRoll(cell),tie=mode==='opening'&&cell[0]===cell[1];
         const button=node('button',{type:'button',class:'opening-roll-choice','data-roll':cell,'data-canonical':roll,
-          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(cell)}${tie?', tie: reroll':''}`,
+          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(roll)}${tie?', tie: reroll':''}`,
           'aria-pressed':'false'},
           node('span',{class:'opening-roll-content'},
-            node('span',{class:'opening-dice'},...[...cell].map(die)),
+            node('span',{class:'opening-dice'},...[...roll].map(die)),
             node('span',{class:'opening-roll-notation'}),node('span',{class:'opening-roll-idea'},tie?'Reroll':'…'),
             node('span',{class:'opening-roll-alternatives',hidden:''})),
           node('span',{class:'opening-alternative-colors','aria-hidden':'true',hidden:''}));
+        // Keep each unique roll in the upper-right half of the six-by-six grid.
+        button.style.gridArea=`${cell[0]} / ${cell[1]}`;
         button.disabled=tie;
         button.addEventListener('click',() => {
-          if (mode==='opening') {openingCell=cell;openingRoll=roll;openingChoice=0;}
-          else {replyCell=cell;replyRoll=roll;replyChoice=0;}
+          if (mode==='opening') {openingRoll=roll;openingChoice=0;}
+          else {replyRoll=roll;replyChoice=0;}
           before=false; refresh();
         });
         return button;
@@ -82,7 +84,7 @@ export function openingGuide(root) {
       if(mode==='opening')rollSummaries(openings);
     }
     for (const button of picker.children)
-      button.setAttribute('aria-pressed',String(button.dataset.roll===(mode==='opening'?openingCell:replyCell)));
+      button.setAttribute('aria-pressed',String(button.dataset.canonical===(mode==='opening'?openingRoll:replyRoll)));
   }
   function rollSummaries(positions) {
     for(const button of picker.children){
@@ -92,7 +94,7 @@ export function openingGuide(root) {
       // Keep each checker journey together where it fits, but permit natural
       // breaks before slash/count segments in narrow six-column phone cells.
       button.querySelector('.opening-roll-notation').replaceChildren(...notationParts(notation));
-      button.querySelector('.opening-roll-idea').textContent=summary.label;
+      button.querySelector('.opening-roll-idea').textContent=summary.label.split(' + ')[0];
       button.dataset.openingKind=summary.kind;
       const alternatives=p.moves.slice(1).map((move,i)=>({...move,...openingSummary(p,i+1)}));
       const labels=button.querySelector('.opening-roll-alternatives'),colors=button.querySelector('.opening-alternative-colors');
@@ -102,11 +104,11 @@ export function openingGuide(root) {
         title:`${move.notation} · ${move.description} · ${move.loss===0?'Also best':`${lossLabel(move.loss)} equity loss`}`,
       },node('span',{class:'opening-kind-dot','aria-hidden':'true'}),
       node('span',{class:'opening-alternative-notation'},...notationParts(move.notation)))));
-      // Color segments occupy only the lower third. Keep their layout separate
-      // from the text so nine close replies can still wrap at phone widths.
+      // Keep the same lower-third color segments in both layouts, including
+      // when Compact hides the text to leave room beside the board.
       colors.replaceChildren(...alternatives.map(move=>node('span',{'data-opening-kind':move.kind})));
       const close=alternatives.map(move=>`${move.notation} · ${move.description}`).join('\n');
-      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.roll)}, best ${notation}. ${summary.description}${close?` Close alternatives: ${close}`:''}`);
+      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.canonical)}, best ${notation}. ${summary.description}${close?` Close alternatives: ${close}`:''}`);
       button.title=`Best: ${notation} · ${summary.description}${close?`\nClose alternatives:\n${close}`:''}`;
     }
   }
@@ -123,8 +125,16 @@ export function openingGuide(root) {
     $('opening-board').setAttribute('aria-label',`${player?'Black':'White'} · ${before?'before the move':move.notation}`);
     $('opening-idea').textContent=openingIdea(position,choice());
     for (const row of list.children) row.setAttribute('aria-pressed',String(+row.dataset.choice===choice()));
+    revealChoice();
     root.dataset.choice=String(choice());
     $('opening-selection').textContent=`${player?'Black':'White'} ${diceLabel(position.state.dice.join(''))}. ${before?'Before move.':`${move.notation}. ${move.loss===0?'Best move.':`${lossLabel(move.loss)} equity loss.`}`}`;
+  }
+  function revealChoice() {
+    const selected=list.querySelector('[aria-pressed="true"]');
+    if(!selected||getComputedStyle(list).overflowY!=='auto')return;
+    const row=selected.getBoundingClientRect(),viewport=list.getBoundingClientRect();
+    if(row.top<viewport.top)list.scrollTop+=row.top-viewport.top;
+    else if(row.bottom>viewport.bottom)list.scrollTop+=row.bottom-viewport.bottom;
   }
   function showPosition() {
     const roll=mode==='opening'?openingRoll:replyRoll;
@@ -145,6 +155,7 @@ export function openingGuide(root) {
       });
       return row;
     }));
+    list.scrollTop=0;
     $('opening-solver').href=shareURL(position.state);
     $('opening-next').hidden=mode==='reply';
     $('opening-position-note').textContent=mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.';
@@ -180,6 +191,19 @@ export function openingGuide(root) {
     }
   }
   function stage(next) {mode=next;before=false;replyChoice=0;refresh();}
+  function setLayout(layout) {
+    root.dataset.layout=layout;
+    for(const button of $('opening-layout').querySelectorAll('button'))
+      button.setAttribute('aria-pressed',String(button.dataset.layout===layout));
+    (layout==='compact'?$('opening-compact-picker'):$('opening-controls')).append($('opening-picker'));
+    revealChoice();
+  }
+  for(const button of $('opening-layout').querySelectorAll('button'))
+    button.addEventListener('click',()=>{
+      setLayout(button.dataset.layout);
+      try {localStorage.setItem('backgammon:opening-guide-layout',button.dataset.layout);} catch {}
+    });
+  try {if(localStorage.getItem('backgammon:opening-guide-layout')==='compact')setLayout('compact');} catch {}
   $('opening-openings').addEventListener('click',()=>stage('opening'));
   $('opening-replies').addEventListener('click',()=>stage('reply'));
   $('opening-next').addEventListener('click',()=>stage('reply'));
