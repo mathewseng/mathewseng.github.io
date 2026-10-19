@@ -2207,6 +2207,27 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   line-height: var(--lh-body);
 }
 
+.history-game-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 6px;
+  color: var(--ink);
+  font-size: var(--t-md);
+  font-weight: 650;
+  line-height: var(--lh-heading);
+}
+
+.history-game-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line-strong);
+}
+
+.history-context + .history-game-divider {
+  margin-top: 0;
+}
+
 /* One turn shares its player identity; cube and checker grades stay
    independent. Wide tables put two decisions side by side. */
 .play-feedback [data-history-player] {

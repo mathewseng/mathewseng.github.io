@@ -66,6 +66,7 @@ module.exports=async function confirmLatency(browser,base,out,name){
    if(touch)await page.locator('#analysis-jump').click();
    else await page.locator('.history-turn').first().scrollIntoViewIfNeeded();
    await page.locator('.history-turn').first().waitFor({state:'visible'});
+   assert.deepEqual(await page.locator('.history-game-divider').allTextContents(),Array.from({length:12},(_,i)=>`Game ${12-i}`),'each game has a clear boundary in newest-first history');
    assert.match(await page.locator('.history-turn').first().innerText(),/You|Opponent/,'history remains readable after scrolling');
    assert.ok(await page.locator('.history-turn').first().locator('.history-played').first().innerText(),'the move text is rendered');
    await page.evaluate(()=>{

@@ -189,6 +189,7 @@ const feedbackStrip = el("div", {
 const feedbackView = {
   context: null,
   turns: new Map(),
+  games: new Map(),
   heading: el("h2", { class: "sr-only" }, "Decision history"),
   caption: el("p", { class: "history-context muted" }),
   empty: el("p", { class: "history-empty muted", role: "status" }),
@@ -2144,6 +2145,7 @@ function renderFeedback() {
   if (feedbackView.context !== context) {
     feedbackView.context = context;
     feedbackView.turns.clear();
+    feedbackView.games.clear();
   }
   const contextText = `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each decision maker’s perspective. Select Cube or Move to review.`;
   if (feedbackView.caption.textContent !== contextText) feedbackView.caption.textContent = contextText;
@@ -2152,8 +2154,14 @@ function renderFeedback() {
     feedbackView.empty.textContent = rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins.";
     children.push(feedbackView.empty);
   }
-  const retained = new Set();
+  const retained = new Set(), retainedGames = new Set();
   for (const group of shown) {
+    if (!retainedGames.has(group.game)) {
+      retainedGames.add(group.game);
+      if (!feedbackView.games.has(group.game))
+        feedbackView.games.set(group.game, el("h3", { class: "history-game-divider" }, `Game ${group.game}`));
+      children.push(feedbackView.games.get(group.game));
+    }
     retained.add(group.key);
     // Grades arrive independently and each commit clones the match. Keep
     // unchanged DOM in place, but refresh the click handlers' source data.
@@ -2278,6 +2286,7 @@ function renderFeedback() {
     }
   }
   for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
+  for (const game of feedbackView.games.keys()) if (!retainedGames.has(game)) feedbackView.games.delete(game);
   children.push(feedbackView.footer);
   const wanted = new Set(children);
   for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();
