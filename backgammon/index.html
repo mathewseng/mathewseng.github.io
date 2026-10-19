@@ -10,14 +10,15 @@
     />
     <title>Backgammon</title>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=c369229db6fb196d" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=c369229db6fb196d" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=c369229db6fb196d" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=c369229db6fb196d" />
-    <link rel="stylesheet" href="styles.css?bgv=c369229db6fb196d" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=4ca83389cec64e5d" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=4ca83389cec64e5d" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=4ca83389cec64e5d" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=4ca83389cec64e5d" />
+    <link rel="stylesheet" href="styles.css?bgv=4ca83389cec64e5d" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=4ca83389cec64e5d" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="../shared/hub.js?bgv=c369229db6fb196d" defer></script>
-    <script type="module" src="app.js?bgv=c369229db6fb196d"></script>
+    <script src="../shared/hub.js?bgv=4ca83389cec64e5d" defer></script>
+    <script type="module" src="app.js?bgv=4ca83389cec64e5d"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -42,13 +43,14 @@
           <div>
             <p class="eyebrow">Play · Practice · Understand</p>
             <h1 id="hub-title">Backgammon</h1>
-            <p class="lede">Play a friend or GNUbg, practice decisions, and study any position. It all runs on your device.</p>
+            <p class="lede">Play, practice, and study every move.</p>
             <ul class="facts" aria-label="At a glance">
               <li><b>4</b> tools</li>
               <li><b>24</b> board palettes</li>
               <li><b>GNUbg</b> on device</li>
             </ul>
             <div class="hub-recent" id="recent"></div>
+            <a class="opening-jump" href="#openings">Explore opening moves &amp; replies <span aria-hidden="true">↓</span></a>
           </div>
         </section>
 
@@ -123,6 +125,66 @@
               </a>
             </li>
           </ul>
+        </section>
+
+        <section class="group opening-guide" id="openings" aria-labelledby="opening-title">
+          <div class="group-head">
+            <h2 id="opening-title">Opening moves &amp; replies</h2>
+            <span>GNUbg · 3 ply</span>
+          </div>
+          <p class="opening-intro">Every opening roll. The best moves, the close calls, and what comes next.</p>
+          <div id="opening-controls" hidden>
+            <div class="opening-toolbar">
+              <div class="segmented" id="opening-stage" role="group" aria-label="Study opening or reply">
+                <button type="button" id="opening-openings" data-stage="opening" aria-pressed="true">Openings</button>
+                <button type="button" id="opening-replies" data-stage="reply" aria-pressed="false" disabled>Replies</button>
+              </div>
+              <p id="opening-context"></p>
+            </div>
+            <fieldset class="opening-picker">
+              <legend id="opening-roll-label">Opening roll</legend>
+              <div id="opening-rolls" class="opening-rolls"></div>
+            </fieldset>
+          </div>
+          <div class="opening-load-state">
+            <p id="opening-status" role="status">Loading opening moves…</p>
+            <button type="button" class="btn" id="opening-retry" hidden>Retry</button>
+          </div>
+          <div class="opening-panel" id="opening-panel" hidden>
+            <figure class="opening-preview">
+              <div id="opening-board"></div>
+              <div class="opening-preview-controls">
+                <div class="segmented" role="group" aria-label="Preview position">
+                  <button type="button" id="opening-before" aria-pressed="false">Before</button>
+                  <button type="button" id="opening-after" aria-pressed="true">After</button>
+                </div>
+                <figcaption id="opening-caption"></figcaption>
+              </div>
+              <p id="opening-position-note"></p>
+            </figure>
+            <div class="opening-comparison">
+              <div class="opening-position-heading">
+                <h3 id="opening-heading"></h3>
+                <p id="opening-idea"></p>
+              </div>
+              <div class="opening-columns" aria-hidden="true"><span>Move</span><span>Equity</span><span>Loss</span></div>
+              <div id="opening-moves" role="group" aria-label="Best move and close alternatives"></div>
+              <p id="opening-empty" hidden>No close alternatives for this roll.</p>
+              <p id="opening-window"></p>
+              <div class="opening-actions">
+                <button type="button" class="btn btn--primary" id="opening-next">Explore replies <span aria-hidden="true">→</span></button>
+                <a class="btn btn--ghost" id="opening-solver" href="/backgammon/solver/">Open in Solver <span aria-hidden="true">↗</span></a>
+              </div>
+            </div>
+          </div>
+          <p id="opening-selection" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+          <details class="opening-method">
+            <summary>About the rankings</summary>
+            <p>Best means highest evaluated equity in the site’s GNUbg opening book. Close alternatives are within <span id="opening-threshold">0.040</span> equity of best. Equity is expected value in current-cube points, from the player making the move’s perspective; loss is the gap to best.</p>
+            <p>Three-ply, cubeful money play: centered cube, Jacoby on, beavers and raccoons off. All 15 opening rolls are evaluated; replies cover all 21 rolls after every best or close opening. Reply searches screen candidates before three-ply evaluation. Rankings can change with match scores or deeper analysis. Opening doubles are excluded because tied opening dice are rerolled.</p>
+            <a href="/backgammon/reports/">How the engine evaluates moves</a>
+          </details>
+          <noscript><p>Enable JavaScript to explore the opening book and animated move previews.</p></noscript>
         </section>
 
         <section class="group group-more" aria-labelledby="group-more">

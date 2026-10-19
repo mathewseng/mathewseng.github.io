@@ -1,0 +1,153 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+import { Board } from './board.mjs';
+import { OpeningGuideData, OPENING_ROLLS, REPLY_ROLLS, openingIdea, previewPosition } from './opening-guide-data.mjs';
+import { moveTrace } from '../core/move-trace.mjs';
+import { shareURL } from '../core/xgid.mjs';
+
+const node = (tag,attrs={},...children) => {
+  const n = document.createElement(tag);
+  for (const [key,value] of Object.entries(attrs)) n.setAttribute(key,String(value));
+  n.append(...children); return n;
+};
+const format = value => `${value>0?'+':''}${value.toFixed(3)}`;
+const lossLabel = value => value===0 ? 'Best' : value<.001 ? '<0.001' : value.toFixed(3);
+const diceLabel = roll => [...roll].join('–');
+function die(value) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true');
+  const shape = (tag,attrs) => {
+    const n = document.createElementNS(svg.namespaceURI,tag);
+    for (const [key,value] of Object.entries(attrs)) n.setAttribute(key,value);
+    svg.append(n);
+  };
+  shape('rect',{x:1,y:1,width:22,height:22,rx:5,class:'opening-die-face'});
+  const pips = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+  for (const p of pips[value]) shape('circle',{cx:6+p%3*6,cy:6+Math.floor(p/3)*6,r:1.8});
+  return svg;
+}
+
+export function openingGuide(root) {
+  const $ = id => root.querySelector(`#${id}`);
+  const data = new OpeningGuideData(), board = new Board($('opening-board'));
+  const picker = $('opening-rolls'), list = $('opening-moves'), panel = $('opening-panel');
+  let openings, position, mode='opening', openingRoll='31', replyRoll='31';
+  let openingChoice=0, replyChoice=0, before=false, generation=0, pickerMode=null;
+  const choice = () => mode==='opening' ? openingChoice : replyChoice;
+  const status = (message,error=false) => {
+    $('opening-status').textContent=message;
+    $('opening-retry').hidden=!error;
+    root.dataset.loading=String(!!message && !error);
+    panel.inert=!!message;
+    panel.setAttribute('aria-busy',String(!!message && !error));
+    $('opening-before').disabled=$('opening-after').disabled=!!message;
+  };
+  function navigation() {
+    $('opening-stage').setAttribute('aria-label','Study opening or reply');
+    for (const button of $('opening-stage').querySelectorAll('button'))
+      button.setAttribute('aria-pressed',String(button.dataset.stage===mode));
+    $('opening-replies').disabled=!openings;
+    $('opening-context').textContent=mode==='reply'
+      ? `After ${diceLabel(openingRoll)} · ${openings.get(openingRoll).moves[openingChoice].notation}`
+      : 'White opens. Choose a roll, then a move.';
+    $('opening-roll-label').textContent=mode==='opening' ? 'Opening roll' : 'Black’s reply roll';
+    if (pickerMode!==mode) {
+      pickerMode=mode;
+      picker.classList.toggle('opening-reply-rolls',mode==='reply');
+      picker.replaceChildren(...(mode==='opening'?OPENING_ROLLS:REPLY_ROLLS).map(roll => {
+        const button=node('button',{type:'button',class:'opening-roll-choice','data-roll':roll,
+          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(roll)}`,
+          'aria-pressed':'false'},node('span',{class:'opening-dice'},...[...roll].map(die)));
+        if (mode==='opening') button.append(node('span',{class:'opening-roll-notation'},openings.get(roll).moves[0].notation));
+        button.addEventListener('click',() => {
+          if (mode==='opening') {openingRoll=roll;openingChoice=0;}
+          else {replyRoll=roll;replyChoice=0;}
+          before=false; refresh();
+        });
+        return button;
+      }));
+    }
+    for (const button of picker.children)
+      button.setAttribute('aria-pressed',String(button.dataset.roll===(mode==='opening'?openingRoll:replyRoll)));
+  }
+  function preview() {
+    const move=position.moves[choice()], player=position.state.turn;
+    $('opening-before').setAttribute('aria-pressed',String(before));
+    $('opening-after').setAttribute('aria-pressed',String(!before));
+    $('opening-caption').textContent=before ? 'Before the move' : `${move.loss===0?'Best move':'Close alternative'} · ${move.notation}`;
+    const after=previewPosition(position,choice());
+    board.showPreview(before?position.state:after,{
+      orientation:player,numbers:true,moveHints:false,hideDice:true,
+      lastMove:before?null:moveTrace(after,player,move.steps,position.state.dice),
+    });
+    $('opening-board').setAttribute('aria-label',`${player?'Black':'White'} · ${before?'before the move':move.notation}`);
+    $('opening-idea').textContent=openingIdea(position,choice());
+    for (const row of list.children) row.setAttribute('aria-pressed',String(+row.dataset.choice===choice()));
+    root.dataset.choice=String(choice());
+    $('opening-selection').textContent=`${player?'Black':'White'} ${diceLabel(position.state.dice.join(''))}. ${before?'Before move.':`${move.notation}. ${move.loss===0?'Best move.':`${lossLabel(move.loss)} equity loss.`}`}`;
+  }
+  function showPosition() {
+    const roll=mode==='opening'?openingRoll:replyRoll;
+    root.dataset.mode=mode;root.dataset.roll=roll;
+    $('opening-heading').textContent=`${mode==='opening'?'White opens':'Black replies'} ${diceLabel(roll)}`;
+    $('opening-window').textContent=`Close = within ${position.threshold.toFixed(3)} of best`;
+    $('opening-empty').hidden=position.moves.length>1;
+    list.replaceChildren(...position.moves.map((move,i) => {
+      const row=node('button',{type:'button',class:'opening-move','data-choice':i,'aria-pressed':String(i===choice()),
+        'aria-label':`${move.notation}, equity ${format(move.equity)}, ${move.loss===0?'best move':`loss ${lossLabel(move.loss)}`}`},
+        node('span',{class:'opening-notation'},node('span',{class:'opening-rank'},String(i+1)),node('strong',{},move.notation)),
+        node('span',{class:'opening-equity'},format(move.equity)),
+        node('span',{class:move.loss===0?'opening-best':'opening-loss'},lossLabel(move.loss)));
+      row.addEventListener('click',() => {
+        if (mode==='opening') openingChoice=i; else replyChoice=i;
+        before=false;preview();
+      });
+      return row;
+    }));
+    $('opening-solver').href=shareURL(position.state);
+    $('opening-next').hidden=mode==='reply';
+    $('opening-position-note').textContent=mode==='reply' ? 'The board turns so Black moves toward point 1.' : 'Arrows show the move; dotted checkers show where it began.';
+    panel.hidden=false;
+    preview();
+  }
+  async function refresh() {
+    const request=++generation;
+    navigation();
+    if (mode==='opening') {
+      position=openings.get(openingRoll);status('');showPosition();return;
+    }
+    status('Loading replies…');
+    try {
+      const next=await data.reply(openings.get(openingRoll),openingChoice,replyRoll);
+      if (request!==generation) return;
+      position=next;status('');showPosition();
+    } catch {
+      if (request!==generation) return;
+      panel.hidden=true;status('Replies could not load. Check your connection and retry.',true);
+    }
+  }
+  async function start() {
+    status('Loading opening moves…');
+    try {
+      openings=await data.openings();
+      $('opening-controls').hidden=false;
+      $('opening-threshold').textContent=openings.get(openingRoll).threshold.toFixed(3);
+      refresh();
+    } catch {
+      status('Opening moves could not load. Check your connection and retry.',true);
+    }
+  }
+  function stage(next) {mode=next;before=false;replyChoice=0;refresh();}
+  $('opening-openings').addEventListener('click',()=>stage('opening'));
+  $('opening-replies').addEventListener('click',()=>stage('reply'));
+  $('opening-next').addEventListener('click',()=>stage('reply'));
+  $('opening-before').addEventListener('click',()=>{before=true;preview();});
+  $('opening-after').addEventListener('click',()=>{before=false;preview();});
+  $('opening-retry').addEventListener('click',()=>openings?refresh():start());
+  // Below-the-fold study content never delays the live table/resume links.
+  if ('IntersectionObserver' in globalThis) {
+    const observer=new IntersectionObserver(entries => {
+      if (entries.some(e=>e.isIntersecting)) {observer.disconnect();start();}
+    },{rootMargin:'300px'});
+    observer.observe(root);
+  } else start();
+}

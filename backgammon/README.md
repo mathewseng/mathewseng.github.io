@@ -26,6 +26,8 @@ On macOS an existing Chrome may be selected with `CHROME_PATH='/Applications/Goo
 
 ## Architecture and controls
 
+The hub’s **Opening moves & replies** section previews all 15 opening rolls and every alternative within 0.040 equity of the book’s best move. Choose an opening move, then **Replies**, to explore all 21 reply rolls from that exact position, including doubles. Both stages show clickable move/equity/loss rows, compact notation, animated before/after boards and a Solver link. The board faces the player moving so notation and point labels agree. Rankings use the existing three-ply money/Jacoby book with immediate redoubles off; they do not claim perfect play or apply live-match settings. The guide loads its index on approach and one shared shard per reply position, without starting GNUbg or changing saved work. Unit tests cover all 735 opening-choice/reply-roll combinations; `opening-guide.cjs` checks desktop/mobile interaction, failures/retries and stale-request handling.
+
 - `core/table.mjs`: automatic forced turns, committed takeback validation, and replay of previously revealed dice; shared by local and online tables.
 - `core/play-session.mjs`: local controller assignments, Play/Solver handoff context and opponent-move markers; no rule-state mutation.
 - `core/rules.mjs`: pure state validation, complete-turn enumeration, movement, opening roll, cube, match/Crawford scoring and replay. No random generation inside transitions. Online and same-device dice use cryptographic rejection sampling. Computer tables use a private, cryptographically seeded indexed sequence (`core/local-rolls.mjs`), also with rejection sampling; the seed and cursor survive refresh and takebacks.

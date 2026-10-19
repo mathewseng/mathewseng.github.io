@@ -1,0 +1,150 @@
+/* The hub's opening-book explorer uses the same board, palette and motion as Play. */
+.opening-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 8px;
+  color: var(--accent);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.opening-jump:hover { text-decoration: underline; }
+.opening-guide {
+  padding-block: 24px;
+  border-top: 1px solid var(--line-strong);
+  scroll-margin-top: 16px;
+}
+.opening-guide [hidden] { display: none; }
+.opening-guide .group-head h2 {
+  font-size: var(--t-xl);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -.025em;
+  text-transform: none;
+}
+.opening-intro, #opening-context { color: var(--muted); font-size: var(--t-sm); }
+.opening-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-block: 20px 16px;
+}
+.opening-toolbar .segmented { flex: 0 0 auto; }
+.opening-picker { margin: 0; padding: 0; border: 0; min-width: 0; }
+.opening-picker legend { margin-bottom: 8px; color: var(--muted); font-size: var(--t-xs); }
+.opening-rolls { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 6px; }
+.opening-reply-rolls { grid-template-columns: repeat(7,minmax(0,1fr)); }
+.opening-roll-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  min-width: 0;
+  padding: 8px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background-color 180ms var(--ease), border-color 180ms var(--ease);
+}
+.opening-roll-choice:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.opening-roll-choice[aria-pressed="true"] {
+  background: color-mix(in oklab,var(--accent) 16%,var(--surface));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.opening-dice { display: flex; flex: 0 0 auto; gap: 3px; }
+.opening-dice svg { display: block; width: 22px; height: 22px; fill: currentColor; }
+.opening-die-face { fill: none; stroke: currentColor; stroke-width: 1; }
+.opening-roll-notation { font-size: var(--t-xs); font-weight: 600; line-height: 1.35; }
+.opening-load-state { display: flex; gap: 12px; align-items: center; }
+#opening-status:not(:empty) { margin-block: 18px; color: var(--muted); }
+.opening-panel {
+  display: grid;
+  grid-template-columns: minmax(0,1.3fr) minmax(0,1fr);
+  gap: 28px;
+  align-items: start;
+  margin-top: 24px;
+  transition: opacity 180ms var(--ease);
+}
+.opening-guide[data-loading="true"] .opening-panel { opacity: .45; }
+.opening-preview { min-width: 0; margin: 0; }
+#opening-board { width: 100%; aspect-ratio: 876 / 660; }
+.opening-preview-controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.opening-preview-controls .segmented { flex: 0 0 auto; }
+.opening-preview-controls figcaption { font-size: var(--t-sm); line-height: 1.4; }
+#opening-position-note { font-size: var(--t-xs); color: var(--muted); margin-top: 10px; }
+.opening-comparison { min-width: 0; }
+.opening-position-heading { margin: 4px 0 20px; }
+.opening-position-heading h3 { font-size: var(--t-xl); letter-spacing: -.025em; }
+#opening-idea { color: var(--muted); font-size: var(--t-sm); margin-top: 6px; min-height: 2.8em; }
+.opening-columns, .opening-move {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 5.2em 4.4em;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 10px;
+}
+.opening-columns { color: var(--muted); font-size: var(--t-xs); padding-block: 0 8px; }
+.opening-columns > :not(:first-child), .opening-equity, .opening-loss, .opening-best { text-align: right; }
+.opening-move {
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--t-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 180ms var(--ease), box-shadow 180ms var(--ease);
+}
+.opening-move:hover { background: var(--surface-2); }
+.opening-move[aria-pressed="true"] {
+  background: color-mix(in oklab,var(--accent) 12%,var(--surface));
+  box-shadow: inset 3px 0 var(--accent);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.opening-notation { display: flex; gap: 10px; align-items: baseline; }
+.opening-notation strong { font-weight: 600; line-height: 1.5; }
+.opening-rank { color: var(--muted); font-size: var(--t-xs); }
+.opening-best { color: var(--accent); font-weight: 600; }
+.opening-loss { color: var(--muted); }
+#opening-empty, #opening-window { font-size: var(--t-xs); color: var(--muted); margin-top: 12px; }
+.opening-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.opening-actions .btn { min-height: 44px; font-size: var(--t-sm); }
+.opening-method { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 6px; }
+.opening-method summary { cursor: pointer; padding-block: 14px; color: var(--muted); font-size: var(--t-sm); }
+.opening-method p { max-width: 80ch; font-size: var(--t-sm); color: var(--muted); margin-bottom: 10px; }
+.opening-method a { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--t-sm); }
+@media (max-width: 1100px) {
+  .opening-roll-choice { flex-direction: column; gap: 4px; }
+  .opening-panel { gap: 16px; }
+  .opening-columns, .opening-move { gap: 6px; grid-template-columns: minmax(0,1fr) 4.7em 4em; padding-inline: 8px; }
+}
+@media (max-width: 760px) {
+  .opening-panel { grid-template-columns: minmax(0,1fr); gap: 20px; }
+  .opening-preview { max-width: 560px; width: 100%; justify-self: center; }
+  .opening-roll-notation { display: none; }
+  .opening-rolls { grid-template-columns: repeat(5,minmax(0,1fr)); }
+  .opening-roll-choice { min-height: 44px; padding: 6px; }
+  .opening-position-heading { margin-bottom: 14px; }
+  #opening-idea { min-height: 0; }
+  .opening-actions .btn { flex: 1; }
+}
+@media (max-width: 640px) {
+  .hub-backgammon .hub-main > .opening-guide { order: 5; margin-top: 16px; }
+  .hub-backgammon .group-more { order: 6; }
+  .opening-jump { margin-top: 0; }
+  .opening-guide .group-head { flex-wrap: wrap; gap: 6px; }
+  .opening-guide .group-head h2 { font-size: var(--t-lg); }
+  .opening-toolbar { gap: 10px; }
+  #opening-context { flex-basis: 100%; }
+  .opening-preview-controls { gap: 8px; flex-wrap: wrap; }
+  .opening-preview-controls figcaption { flex: 1; min-width: 120px; }
+}
