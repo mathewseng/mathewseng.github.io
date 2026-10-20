@@ -53,3 +53,18 @@ node --test backgammon/tests/fullgame-ablation.test.mjs
 ## Book update decision rule
 
 The separately recorded `fullgame-promotion-plan.json` fixes the publication rule before inspecting new equities. A complete Full/strong cohort qualifies only if its mean absolute fixed-pair gap difference from XG improves on the fresh Short baseline, it has at least as many fixed-pair mean preferences for XG, and at least one cutoff or checker effect shifts clearly toward XG under the planned simultaneous interval. If it qualifies, all 15 positions and all their retained alternatives are updated together at the same policy and sample count. Individual positions are not cherry-picked from the new winners. This is a targeted engineering acceptance test, not independent evidence of general playing strength. The deeper-cube arm cannot replace a full candidate comparison unless its other alternatives are also computed.
+
+## Independent opening 2–1 precision confirmation
+
+Before inspecting any new equity comparisons, a separate 4,096-trial confirmation was added for the user's specifically requested opening 2–1. It runs Short, Full/matched and Full/strong, with two disputed moves under the first two policies and all four retained alternatives under Full/strong: **32,768 additional trials**, in 1,024 batches. Every actual trial seed is disjoint from all preceding experiments and all 1,024-trial primary-ablation seeds, including planned trials that had not yet run. The primary experiment, its sample count and its acceptance rule are unchanged.
+
+This confirmation uses 128 independent batches per move/policy (127 degrees of freedom). Cutoff and checker effects form a two-comparison simultaneous 95% family; the three policy gaps form a separate three-comparison family. The results are analyzed independently, without pooling with the 15-position ablation. Its complete Full/strong comparison can replace the 1,024-trial opening entry as a precision refinement only after the primary cohort qualifies; all four alternatives are replaced together regardless of which move wins. No deeper-cube claim is inferred from this supplement.
+
+The additional plan is recorded in `opening-fullgame-confirmation-inputs.json`. Run and summarize it with:
+
+```sh
+BG_ROLLOUT_WORKERS=2 node backgammon/scripts/run-fullgame-ablation.mjs --opening-confirmation
+python3 backgammon/scripts/summarize-fullgame-ablation.py --opening-confirmation --publish
+```
+
+The default checkpoint directory is `test-results/opening-fullgame-confirmation-v1`. The primary native executable is reused. This supplement was chosen for greater precision on the explicitly requested opening, before viewing the primary run's equity results; it is not a significance-driven extension of a revealed result.
