@@ -628,7 +628,7 @@ export function about() {
       el(
         "p",
         {},
-        "Auto (the default for computer play, hints and reviews) completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts use 0-ply play and ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
+        "Auto (the default for computer play, hints and reviews) completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts offer Basic (0/0), Balanced (1/1, default), Strong (2/2) and Short/deep checker/cube policies with ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",
@@ -642,7 +642,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg6.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg7.tar.gz" },
         "Download corresponding engine source",
       ),
       el(

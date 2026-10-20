@@ -19,4 +19,4 @@ cmp "$build/dist/gnubg-core-module.data" "$build/dist_simd/gnubg-core-module.dat
 mkdir -p "$output/vendor/simd" "$output/source"
 cp "$build"/dist/gnubg-core-module.* "$output/vendor/"
 cp "$build/dist_simd/gnubg-core-module.js" "$build/dist_simd/gnubg-core-module.wasm" "$output/vendor/simd/"
-python3 "$root/scripts/archive-engine.py" "$build" "$output/source/gnubg-core-955555c-bg6.tar.gz"
+python3 "$root/scripts/archive-engine.py" "$build" "$output/source/gnubg-core-955555c-bg7.tar.gz"

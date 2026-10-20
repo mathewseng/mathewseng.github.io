@@ -303,6 +303,33 @@ try {
       link('Published XG source','https://www.extremegammon.com/Openingbook.aspx')),
   );
 } catch(e) { failed($('opening-accuracy-content'),e); }
+if ($('rollout-accuracy-content')) try {
+  const report=await json('../data/rollout-policy-comparison.json');
+  if(!report.complete)throw Error('The rollout comparison is incomplete.');
+  let cohort='opening';
+  const target=el('div',{}),detail=el('div',{}),policies=report.policies;
+  const number=v=>Number.isFinite(v)?v.toFixed(5):'—';
+  const draw=()=>{
+    const s=report.summaries[cohort];
+    const rows=[['Five-ply book',number(s.fivePly.referenceBestEV?.meanAbsoluteDifference),`${s.fivePly.bestMoveAgreement}/${s.positions}`,'—','—'],
+      ...policies.map(p=>{const v=s.policies[p.id];return [p.name,number(v.referenceBestEV?.meanAbsoluteDifference),`${v.bestMoveAgreement}/${v.positions}`,`${v.clearLeadersUnadjusted}/${v.positions}`,number(v.maximumSamplingHalfWidth)];})];
+    target.replaceChildren(table(['Policy','Mean EV gap','XG move agreement','Clear leads*','Largest ±95%'],rows,'Same positions and alternatives · EV gap measures XG’s preferred move in current-cube equity units'));
+    const chosen=report.rows.filter(r=>cohort==='all'||r.cohort===cohort);
+    detail.replaceChildren(table(['Position','XG choice','Short/deep choice','Leader gap ±95%*'],chosen.map(r=>{
+      const p=r.policies['short-deep'],title=r.kind==='opening'?`Opening ${r.roll}`:`${new URL(r.source).pathname.split('/').at(-1).replace('Replies_to_','After ').replace('.html','')} · ${r.roll}`;
+      return [link(title,r.source),r.referenceBest.move,`${p.bestMove}${p.agrees?' · agrees':''}`,p.leaderGap?`${number(p.leaderGap.difference)} ± ${number(p.leaderGap.confidenceHalfWidth)}`:'Only candidate'];
+    }),'Short/deep choices and paired gaps to their runners-up · source links open the matching XG table'));
+  };
+  $('rollout-accuracy-content').append(
+    measured(report.engine,report.recordedAt),
+    el('p',{},`${report.coverage.positions} decisions and ${report.coverage.candidates} candidate moves, each with ${report.expectedTrials} trials under Basic, Balanced and Short/deep. The cohort includes every opening, all 39 five-ply reply disagreements and 12 agreeing reply controls. The full-game Strong option is available in Solver; this accuracy comparison tests the three named policies.`),
+    field('Rollout comparison positions',select([['opening','All 15 openings'],['reply-disagreement','39 reply disagreements'],['reply-control','12 agreeing reply controls'],['all','All 66 decisions']],cohort,v=>{cohort=v;draw();})),target,
+    el('p',{},'Basic and Balanced simulate complete games with 0/0 and 1/1 checker/cube policies. Short/deep uses 2/2 for two simulated turns, then 1/2, and a two-ply endpoint after five turns. This independently implemented short-rollout method uses GNUbg’s evaluator and ply numbering.'),
+    el('p',{},'*Clear leads and leader-gap intervals are unadjusted exploratory 95% comparisons across independent common-seed batches. They exclude model bias, screened-out alternatives and XG reference uncertainty. The largest interval is for a candidate’s EV, not its gap to another move. More agreement with XG does not prove exact play.'),
+    el('p',{},'XG’s published book mixes rollouts and XGRoller++ evaluations, with beavers enabled. Our simulations disable beavers. The existing five-ply book remains separately identified; this experiment does not silently replace its values.'),detail,
+    downloads(link('Full comparison and uncertainty','../docs/rollout-policy-comparison.json'),link('Candidate plan and build provenance','../docs/rollout-policy-inputs.json'),link('Raw independent batches (gzip)','../docs/rollout-policy-batches.jsonl.gz'),link('Native/browser implementation checks','../docs/rollout-policy-validation.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-POLICIES.md'),link('XG’s rollout description','https://www.extremegammon.com/support.aspx')),
+  );draw();
+} catch(e) { failed($('rollout-accuracy-content'),e); }
 $("method-content").append(
   el(
     "dl",
@@ -310,7 +337,7 @@ $("method-content").append(
     ...[
       [
         "Auto",
-        "Search up to four plies for about one second after loading. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
+        "Complete at least two plies, normally try three, and potentially reach four. The next-stage cost estimate and stable-lead policy can stop further search. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
       ],
       [
         "Quick / Standard / Deep",
@@ -322,7 +349,7 @@ $("method-content").append(
       ],
       [
         "Rollouts",
-        "Real GNUbg full-game simulations, with 0-ply checker and cube policy, variance reduction and seeded ISAAC dice. Up to four close 2-ply candidates, at least two, plus the submitted move. Ordinary doubling and match scores are supported; beavers/raccoons require tree analysis. No fixed-ply truncation; cubeless bearoff database termination is enabled.",
+        "Real GNUbg simulations, with Basic (0/0), Balanced (1/1, default) and Strong (2/2) full-game checker/cube policies, plus Short/deep: 2/2 for two turns, then 1/2, and a two-ply endpoint after five simulated turns. All use variance reduction and seeded ISAAC dice. Historical timing samples below used Basic. Up to four close 2-ply candidates, at least two, plus the submitted move. Ordinary doubling and match scores are supported; beavers/raccoons require tree analysis. All policies allow cubeless bearoff database termination.",
       ],
       [
         "Uncertainty",

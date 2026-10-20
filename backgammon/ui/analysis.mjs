@@ -65,7 +65,7 @@ export function resultView(
       el(
         "p",
         { class: "muted small" },
-        `${result.settings.trials} trials per alternative · intervals measure sampling error only.`,
+        `${result.settings.name} · ${result.settings.trials} trials per alternative · intervals measure sampling error only.`,
       ),
     );
   if (result.type === "cube") {

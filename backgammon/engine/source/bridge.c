@@ -10,6 +10,7 @@
 #include "xgid.h"
 #include "positionid.h"
 #include "stringbuffer.h"
+#include "movefilters.inc"
 #include <string.h>
 #include <math.h>
 static const char *failure(void) { return strdup("{\"error\":\"GNUbg evaluation failed\"}"); }
@@ -64,20 +65,30 @@ const char *bg_value(const char *xgid,int depth,int beavers) {
  * Quasi-random rotation and early stopping are disabled so pooled standard
  * errors have ordinary IID-trial semantics. Variance reduction remains on.
  */
-static void rollout_settings(const matchstate *state, int trials, unsigned int seed) {
+static void rollout_settings(const matchstate *state, int trials, unsigned int seed, int checker, int cube, int short_rollout) {
     rcRollout.nTrials=trials; rcRollout.nGamesDone=0; rcRollout.nSkip=0;
     rcRollout.nSeed=seed; rcRollout.rngRollout=RNG_ISAAC;
     rcRollout.fCubeful=state->fCubeUse;
     rcRollout.fVarRedn=TRUE; rcRollout.fRotate=FALSE;
-    rcRollout.fInitial=FALSE; rcRollout.fDoTruncate=FALSE;
-    rcRollout.fLateEvals=FALSE; rcRollout.fStopOnSTD=FALSE;
+    rcRollout.fInitial=FALSE; rcRollout.fDoTruncate=short_rollout;
+    rcRollout.nTruncate=short_rollout ? 5 : 0; rcRollout.nLate=2;
+    rcRollout.fLateEvals=short_rollout; rcRollout.fStopOnSTD=FALSE;
     rcRollout.fStopOnJsd=FALSE; rcRollout.fStopMoveOnJsd=FALSE;
     rcRollout.fTruncBearoff2=TRUE; rcRollout.fTruncBearoffOS=TRUE;
     evalcontext ec={state->fCubeUse,0,TRUE,TRUE,0.0f};
     for(int i=0;i<2;i++) {
         rcRollout.aecCube[i]=rcRollout.aecChequer[i]=ec;
-        rcRollout.aecCubeLate[i]=rcRollout.aecChequerLate[i]=ec;
+        rcRollout.aecCube[i].nPlies=cube;
+        rcRollout.aecChequer[i].nPlies=checker;
+        rcRollout.aecCubeLate[i]=rcRollout.aecCube[i];
+        rcRollout.aecChequerLate[i]=rcRollout.aecChequer[i];
+        if(short_rollout)rcRollout.aecChequerLate[i].nPlies=1;
+        /* Reset filters on every batch; never inherit another caller's policy. */
+        const movefilter filters[MAX_FILTER_PLIES][MAX_FILTER_PLIES]=MOVEFILTER_NORMAL;
+        memcpy(rcRollout.aaamfChequer[i],filters,sizeof(filters));
+        memcpy(rcRollout.aaamfLate[i],filters,sizeof(filters));
     }
+    if(short_rollout)ec.nPlies=2;
     rcRollout.aecCubeTrunc=rcRollout.aecChequerTrunc=ec;
     fInterrupt=0;
 }
@@ -87,12 +98,13 @@ static void rollout_output(StringBuffer *b,float *v,float *se,cubeinfo *ci,int c
     float eqse=cubeful ? (ci->nMatchTo ? fabsf(mwc2eq(se[6],ci)-mwc2eq(0,ci)) : se[6]) : se[5];
     sbAppendf(b,",\"standardError\":%.8f,\"mwcStandardError\":%.8f",eqse,ci->nMatchTo ? (cubeful ? se[6] : fabsf(eq2mwc(se[5],ci)-eq2mwc(0,ci))) : 0);
 }
-const char *bg_rollout(const char *original,const char *after,int trials,int seed) {
+const char *bg_rollout_config(const char *original,const char *after,int trials,int seed,int checker,int cube,int short_rollout) {
     matchstate state,post; cubeinfo ci; StringBuffer b;
-    if(trials<2||trials>256||parseXgid(&state,original)<0||!CheckPosition(state.anBoard))return failure();
+    if(short_rollout<0||short_rollout>1||(short_rollout&&(checker!=2||cube!=2))||checker<0||checker>2||cube<0||cube>2||trials<2||trials>256||parseXgid(&state,original)<0||!CheckPosition(state.anBoard))return failure();
     if(getCubeInfoFromMatchStateWithBeavers(&ci,&state,0)<0)return failure();
-    rollout_settings(&state,trials,(unsigned int)seed);
-    sbInit(&b); sbAppendf(&b,"{\"samples\":%d,",trials);
+    rollout_settings(&state,trials,(unsigned int)seed,checker,cube,short_rollout);
+    sbInit(&b); sbAppendf(&b,"{\"samples\":%d,\"checkerPlies\":%d,\"cubePlies\":%d,",trials,checker,cube);
+    sbAppendf(&b,"\"truncationPlies\":%d,\"lateAfterPlies\":%d,\"lateCheckerPlies\":%d,\"lateCubePlies\":%d,",short_rollout?5:0,short_rollout?2:0,short_rollout?1:checker,cube);
     if(after && *after) {
         move m; memset(&m,0,sizeof(m));
         if(parseXgid(&post,after)<0||!CheckPosition(post.anBoard)||post.fMove!=state.fMove)return failure();
@@ -113,4 +125,13 @@ const char *bg_rollout(const char *original,const char *after,int trials,int see
         if(ci.nMatchTo)sbAppendf(&b,",\"outcomesMWC\":[%.8f,%.8f,%.8f]",eq2mwc(eq[OUTPUT_NODOUBLE],&ci),eq2mwc(eq[OUTPUT_TAKE],&ci),eq2mwc(eq[OUTPUT_DROP],&ci));
     }
     sbAppend(&b,"}");return sbFinalize(&b);
+}
+
+const char *bg_rollout_policy(const char *original,const char *after,int trials,int seed,int checker,int cube) {
+    return bg_rollout_config(original,after,trials,seed,checker,cube,0);
+}
+
+/* Preserve the original ABI for historical replay; new callers name policies. */
+const char *bg_rollout(const char *original,const char *after,int trials,int seed) {
+    return bg_rollout_policy(original,after,trials,seed,0,0);
 }

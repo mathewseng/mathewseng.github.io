@@ -1,0 +1,19 @@
+--- a/src/eval.c
++++ b/src/eval.c
+@@ -2631,6 +2631,14 @@
+ CompareMoves(const move *pm0, const move *pm1)
+ {
+ 
+-    /*high score first */
+-    return (pm1->rScore > pm0->rScore || (pm1->rScore == pm0->rScore && pm1->rScore2 > pm0->rScore2)) ? 1 : -1;
++    /* Descending scores, then a platform-independent exact-tie order.
++     * Returning -1 in BOTH directions for equal scores violates qsort's
++     * comparator contract and changes simulated play across libc versions. */
++    if (pm0->rScore != pm1->rScore) return pm0->rScore > pm1->rScore ? -1 : 1;
++    if (pm0->rScore2 != pm1->rScore2) return pm0->rScore2 > pm1->rScore2 ? -1 : 1;
++    for (int i = 0; i < 7; i++) {
++        if (pm0->key.data[i] != pm1->key.data[i])
++            return pm0->key.data[i] < pm1->key.data[i] ? -1 : 1;
++    }
++    return 0;
+ }

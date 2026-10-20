@@ -26,7 +26,7 @@ s=s.replace(needle, '''        if (fCubefulEquity)
             iKey ^= 0x6a47b47e ^ ((pec->nPlies >= 2) << 28);''')
 x.write_text(s)
 x=p/'Makefile.emcc'
-s=x.read_text().replace('"_hint",','"_hint", "_bg_score", "_bg_cube", "_bg_value", "_bg_rollout",').replace('-s EXPORT_ES6','-s EXPORT_ES6 -s ENVIRONMENT=web,worker,node')
+s=x.read_text().replace('"_hint",','"_hint", "_bg_score", "_bg_cube", "_bg_value", "_bg_rollout", "_bg_rollout_policy", "_bg_rollout_config",').replace('-s EXPORT_ES6','-s EXPORT_ES6 -s ENVIRONMENT=web,worker,node')
 s=s.replace('DISTDIR = dist', '''DISTDIR = dist
 
 # The scalar fallback keeps upstream -O2. SIMD preserves per-neuron operation
@@ -50,3 +50,6 @@ x.write_text(s)
 x=p/'src/rollout.c'
 s=x.read_text().replace('printf("Rollout loop begins!\\n");', '(void)0;').replace('printf("Rollout loop: %d of %d\\n", ro_NextTrial, cGames);', '(void)0;')
 x.write_text(s)
+
+# Exact evaluation ties need a valid, portable ordering during simulations.
+subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/rollout-order-bg7.patch')], cwd=p, check=True)

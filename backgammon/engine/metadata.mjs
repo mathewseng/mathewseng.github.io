@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 export const ENGINE_VERSION =
-  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6";
+  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg7";
 export const PRESETS = Object.freeze({
   quick: {
     name: "Quick",
@@ -57,6 +57,7 @@ export const CAPABILITIES = {
   raccoons: true,
   automaticDoubles: true,
   rollouts: true,
+  rolloutPolicies: ["basic", "balanced", "strong", "short-deep"],
   threads: 1,
   maximumPlies: 4,
 };
@@ -68,4 +69,4 @@ export const SEARCH_OPTIONS = Object.freeze([
     `Fixed ${value.plies} ply · ${value.name}`]),
 ]);
 export const searchName = key => key === "auto" ? "Auto · adaptive" : PRESETS[key]?.name || "Auto";
-export const SEARCH_DESCRIPTION = "Auto completes at least 2 ply, usually 3. Checker searches may reach 4 when a conservative cost estimate allows it; cube decisions stop at 3 because warm-cache timings cannot reliably predict their 4-ply cost. Deeper work stops above a 5-second estimate or for a substantial, stable lead. Fixed depths do not adapt. Compatible book positions use stored 3-ply answers (except Fixed 4).";
+export const SEARCH_DESCRIPTION = "Auto completes at least 2 ply, usually 3. Checker searches may reach 4 when a conservative cost estimate allows it; cube decisions stop at 3 because warm-cache timings cannot reliably predict their 4-ply cost. Deeper work stops above a 5-second estimate or for a substantial, stable lead. Fixed depths do not adapt. Compatible book positions use stored 5-ply openings/replies or historical 3-ply later turns (except Fixed 4).";

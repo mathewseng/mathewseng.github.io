@@ -106,7 +106,7 @@ try {
     fs.writeFileSync(file,["set sound enable off","set display off","set output digits 6","set output mwc off","set rollout chequerplay plies 0","set rollout cubedecision plies 0","set rollout cubeful on","set rollout quasirandom off","set rollout varredn on","set rollout truncation enable off","set rollout later enable off","set rollout limit enable off","set rollout jsd stop off","set rollout rng isaac","set rollout seed 452","set rollout trials 32",`set xgid ${toXGID(state,{engine:true})}`,"set evaluation cubedecision type rollout","hint","quit"].join("\n")+"\n");
     const output=execFileSync(binary,["-t","-q","-r","-P",dataDir,"-s",work,"-c",file],{encoding:"utf8",timeout:60000});
     const values=[/No double\s+([+\-\d.]+)/,/Double, take\s+([+\-\d.]+)/,/Double, pass\s+([+\-\d.]+)/].map(re=>{const m=output.match(re);if(!m)throw new Error("Cannot parse native rollout: "+output);return Number(m[1]);});
-    const web=evaluator.rolloutBatch(state,null,32,452);
+    const web=evaluator.rolloutBatch(state,null,32,452,"basic");
     cases.push({topic:"cube",context,preset:"rollout32",xgid:toXGID(state,{engine:true}),seed:452,desktopOutcomes:values,webOutcomes:web.outcomes,webStandardErrors:web.outcomeSE,difference:Math.max(...values.map((v,i)=>Math.abs(v-web.outcomes[i])))});
     console.log("cube rollout",context,cases.at(-1).difference);
   }

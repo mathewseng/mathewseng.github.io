@@ -1,0 +1,2195 @@
+{
+  "schema": 1,
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg7",
+  "recordedAt": "2026-10-20T20:29:55.450Z",
+  "tolerance": 0.00001,
+  "maximumDifference": 0,
+  "description": "Seeded implementation parity, not a strength benchmark. Native ARM64 and scalar/SIMD WebAssembly, four policies, checker/cube money and match contexts, mirrored checker position, legacy ABI isolation and invalid-depth rejection.",
+  "nativeCacheMode": "default, matching WASM",
+  "build": {
+    "archive": "gnubg-core-955555c-bg6.tar.gz",
+    "archiveSHA256": "bf6aac810e16ef6b3980a93fb7975c51367bb89658d0d6344dda6890501c6ba4",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+    "flags": "-O3 -ffp-contract=off -Isrc -Isrc/lib -Wno-unused-parameter -DBG_NATIVE_NEON",
+    "architecture": "arm64",
+    "neon": true,
+    "binarySHA256": "e328b47b3cdf4321d8e1e121f453f3c97adcc6ca109f66cfa4a32948cc2ae628",
+    "inputs": {
+      "build-rollout-native.mjs": "2528d3d4c7340f86149ad2c5af140630dfe7e99ac0c5fd842f73aee7e468384b",
+      "rollout-native.c": "5e0cb3a1d67741702e8b77ef37015121f3913f6d1b716235fda326edd4ecac94",
+      "deep-book-neon.h": "c1b6d5b05fab41bb28f235ff5f12e6f1dbb27b04691ae0f9a90706ae435f3153"
+    },
+    "orderPatchSHA256": "3d84d68e7dafbdc40bd3b009ffe7931653a6efefc8b66ec6068e0747019090ad",
+    "bridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+    "builtAt": "2026-10-20T20:23:01.666Z"
+  },
+  "bridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+  "rows": [
+    {
+      "name": "opening-money",
+      "policy": "basic",
+      "checkerPlies": 0,
+      "cubePlies": 0,
+      "truncationPlies": 0,
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:0:0:10",
+      "after": "XGID=-b-A--D-C---eE---c-e----B-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -0.08484701,
+        "cubeless": -0.05352328,
+        "probabilities": [
+          0.47115529,
+          0.14159553,
+          0.0040811,
+          0.13419013,
+          0.0073204
+        ],
+        "mwc": null,
+        "standardError": 0.03443202,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -0.08484701,
+        "cubeless": -0.05352328,
+        "probabilities": [
+          0.47115529,
+          0.14159553,
+          0.0040811,
+          0.13419013,
+          0.0073204
+        ],
+        "mwc": null,
+        "standardError": 0.03443202,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -0.08484701,
+        "cubeless": -0.05352328,
+        "probabilities": [
+          0.47115529,
+          0.14159553,
+          0.0040811,
+          0.13419013,
+          0.0073204
+        ],
+        "mwc": null,
+        "standardError": 0.03443202,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "opening-money",
+      "policy": "balanced",
+      "checkerPlies": 1,
+      "cubePlies": 1,
+      "truncationPlies": 0,
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:0:0:10",
+      "after": "XGID=-b-A--D-C---eE---c-e----B-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.03987383,
+        "cubeless": -0.03676001,
+        "probabilities": [
+          0.49674168,
+          0.12162601,
+          0.00715647,
+          0.14586852,
+          0.01315742
+        ],
+        "mwc": null,
+        "standardError": 0.1409712,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.03987383,
+        "cubeless": -0.03676001,
+        "probabilities": [
+          0.49674168,
+          0.12162601,
+          0.00715647,
+          0.14586852,
+          0.01315742
+        ],
+        "mwc": null,
+        "standardError": 0.1409712,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.03987383,
+        "cubeless": -0.03676001,
+        "probabilities": [
+          0.49674168,
+          0.12162601,
+          0.00715647,
+          0.14586852,
+          0.01315742
+        ],
+        "mwc": null,
+        "standardError": 0.1409712,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "opening-money",
+      "policy": "strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:0:0:10",
+      "after": "XGID=-b-A--D-C---eE---c-e----B-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.08701931,
+        "cubeless": -0.05961871,
+        "probabilities": [
+          0.48222399,
+          0.11481313,
+          0.00333788,
+          0.13674717,
+          0.00547044
+        ],
+        "mwc": null,
+        "standardError": 0.19956563,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.08701931,
+        "cubeless": -0.05961871,
+        "probabilities": [
+          0.48222399,
+          0.11481313,
+          0.00333788,
+          0.13674717,
+          0.00547044
+        ],
+        "mwc": null,
+        "standardError": 0.19956563,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.08701931,
+        "cubeless": -0.05961871,
+        "probabilities": [
+          0.48222399,
+          0.11481313,
+          0.00333788,
+          0.13674717,
+          0.00547044
+        ],
+        "mwc": null,
+        "standardError": 0.19956563,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "opening-money",
+      "policy": "short-deep",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "xgid": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:0:0:10",
+      "after": "XGID=-b-A--D-C---eE---c-e----B-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -0.1494889,
+        "cubeless": -0.10048997,
+        "probabilities": [
+          0.46603927,
+          0.12592259,
+          0.00486597,
+          0.15471581,
+          0.00864141
+        ],
+        "mwc": null,
+        "standardError": 0.01699138,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -0.1494889,
+        "cubeless": -0.10048997,
+        "probabilities": [
+          0.46603927,
+          0.12592259,
+          0.00486597,
+          0.15471581,
+          0.00864141
+        ],
+        "mwc": null,
+        "standardError": 0.01699138,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -0.1494889,
+        "cubeless": -0.10048997,
+        "probabilities": [
+          0.46603927,
+          0.12592259,
+          0.00486597,
+          0.15471581,
+          0.00864141
+        ],
+        "mwc": null,
+        "standardError": 0.01699138,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-money",
+      "policy": "basic",
+      "checkerPlies": 0,
+      "cubePlies": 0,
+      "truncationPlies": 0,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:0:0:0:0:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -1.87730658,
+        "cubeless": -1.87730491,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.87731028,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00416295,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -1.87730658,
+        "cubeless": -1.87730491,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.87731028,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00416295,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -1.87730658,
+        "cubeless": -1.87730491,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.87731028,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00416295,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-money",
+      "policy": "balanced",
+      "checkerPlies": 1,
+      "cubePlies": 1,
+      "truncationPlies": 0,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:0:0:0:0:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -1.87459826,
+        "cubeless": -1.87459671,
+        "probabilities": [
+          0.00000273,
+          0,
+          0,
+          0.87460208,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00298966,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -1.87459826,
+        "cubeless": -1.87459671,
+        "probabilities": [
+          0.00000273,
+          0,
+          0,
+          0.87460208,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00298966,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -1.87459826,
+        "cubeless": -1.87459671,
+        "probabilities": [
+          0.00000273,
+          0,
+          0,
+          0.87460208,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00298966,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-money",
+      "policy": "strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:0:0:0:0:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -1.86747551,
+        "cubeless": -1.86747479,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86748034,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00174301,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -1.86747551,
+        "cubeless": -1.86747479,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86748034,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00174301,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -1.86747551,
+        "cubeless": -1.86747479,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86748034,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00174301,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-money",
+      "policy": "short-deep",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:0:0:0:0:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -1.86449289,
+        "cubeless": -1.86449206,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86449724,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00134378,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -1.86449289,
+        "cubeless": -1.86449206,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86449724,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00134378,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -1.86449289,
+        "cubeless": -1.86449206,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86449724,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00134378,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-match",
+      "policy": "basic",
+      "checkerPlies": 0,
+      "cubePlies": 0,
+      "truncationPlies": 0,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:2:3:0:5:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:2:3:0:5:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -2.74394751,
+        "cubeless": -2.74395418,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.87729734,
+          0.20341973
+        ],
+        "mwc": 0.03058383,
+        "standardError": 0.00828314,
+        "mwcStandardError": 0.00103851
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -2.74394751,
+        "cubeless": -2.74395418,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.87729734,
+          0.20341973
+        ],
+        "mwc": 0.03058383,
+        "standardError": 0.00828314,
+        "mwcStandardError": 0.00103851
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -2.74394751,
+        "cubeless": -2.74395418,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.87729734,
+          0.20341973
+        ],
+        "mwc": 0.03058383,
+        "standardError": 0.00828314,
+        "mwcStandardError": 0.00103851
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-match",
+      "policy": "balanced",
+      "checkerPlies": 1,
+      "cubePlies": 1,
+      "truncationPlies": 0,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:2:3:0:5:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:2:3:0:5:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -2.73865938,
+        "cubeless": -2.73866606,
+        "probabilities": [
+          0.00000273,
+          0,
+          0,
+          0.87463737,
+          0.3396517
+        ],
+        "mwc": 0.03124684,
+        "standardError": 0.00592923,
+        "mwcStandardError": 0.00074337
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -2.73865938,
+        "cubeless": -2.73866606,
+        "probabilities": [
+          0.00000273,
+          0,
+          0,
+          0.87463737,
+          0.3396517
+        ],
+        "mwc": 0.03124684,
+        "standardError": 0.00592923,
+        "mwcStandardError": 0.00074337
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -2.73865938,
+        "cubeless": -2.73866606,
+        "probabilities": [
+          0.00000273,
+          0,
+          0,
+          0.87463737,
+          0.3396517
+        ],
+        "mwc": 0.03124684,
+        "standardError": 0.00592923,
+        "mwcStandardError": 0.00074337
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-match",
+      "policy": "strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:2:3:0:5:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:2:3:0:5:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -2.72424483,
+        "cubeless": -2.72424841,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86738455,
+          0.2284088
+        ],
+        "mwc": 0.03305414,
+        "standardError": 0.00357389,
+        "mwcStandardError": 0.00044808
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -2.72424483,
+        "cubeless": -2.72424841,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86738455,
+          0.2284088
+        ],
+        "mwc": 0.03305414,
+        "standardError": 0.00357389,
+        "mwcStandardError": 0.00044808
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -2.72424483,
+        "cubeless": -2.72424841,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86738455,
+          0.2284088
+        ],
+        "mwc": 0.03305414,
+        "standardError": 0.00357389,
+        "mwcStandardError": 0.00044808
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-match",
+      "policy": "short-deep",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "xgid": "XGID=-H-A--AA--------B---AAacj-:0:0:1:24:2:3:0:5:10",
+      "after": "XGID=-IA----A--------B---AAacj-:0:0:1:00:2:3:0:5:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -2.71843982,
+        "cubeless": -2.71844506,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86446506,
+          0.00016376
+        ],
+        "mwc": 0.03378198,
+        "standardError": 0.0026865,
+        "mwcStandardError": 0.00033683
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -2.71843982,
+        "cubeless": -2.71844506,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86446506,
+          0.00016376
+        ],
+        "mwc": 0.03378198,
+        "standardError": 0.0026865,
+        "mwcStandardError": 0.00033683
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -2.71843982,
+        "cubeless": -2.71844506,
+        "probabilities": [
+          0.00000262,
+          0,
+          0,
+          0.86446506,
+          0.00016376
+        ],
+        "mwc": 0.03378198,
+        "standardError": 0.0026865,
+        "mwcStandardError": 0.00033683
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-mirror",
+      "policy": "basic",
+      "checkerPlies": 0,
+      "cubePlies": 0,
+      "truncationPlies": 0,
+      "xgid": "XGID=-JCAaa---b--------aa--a-h-:0:0:-1:24:0:0:0:0:10",
+      "after": "XGID=-JCA--a--c--------aa--a-h-:0:0:-1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -1.75373697,
+        "cubeless": -1.7537353,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75374073,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00544357,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -1.75373697,
+        "cubeless": -1.7537353,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75374073,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00544357,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": -1.75373697,
+        "cubeless": -1.7537353,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75374073,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00544357,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-mirror",
+      "policy": "balanced",
+      "checkerPlies": 1,
+      "cubePlies": 1,
+      "truncationPlies": 0,
+      "xgid": "XGID=-JCAaa---b--------aa--a-h-:0:0:-1:24:0:0:0:0:10",
+      "after": "XGID=-JCA--a--c--------aa--a-h-:0:0:-1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -1.76217437,
+        "cubeless": -1.76217258,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.76217818,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.0119145,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -1.76217437,
+        "cubeless": -1.76217258,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.76217818,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.0119145,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -1.76217437,
+        "cubeless": -1.76217258,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.76217818,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.0119145,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-mirror",
+      "policy": "strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "xgid": "XGID=-JCAaa---b--------aa--a-h-:0:0:-1:24:0:0:0:0:10",
+      "after": "XGID=-JCA--a--c--------aa--a-h-:0:0:-1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -1.75658357,
+        "cubeless": -1.75658214,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75658739,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00968951,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -1.75658357,
+        "cubeless": -1.75658214,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75658739,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00968951,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -1.75658357,
+        "cubeless": -1.75658214,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75658739,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00968951,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "checker-mirror",
+      "policy": "short-deep",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "xgid": "XGID=-JCAaa---b--------aa--a-h-:0:0:-1:24:0:0:0:0:10",
+      "after": "XGID=-JCA--a--c--------aa--a-h-:0:0:-1:00:0:0:0:0:10",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -1.75836349,
+        "cubeless": -1.75836229,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75836724,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00417254,
+        "mwcStandardError": 0
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -1.75836349,
+        "cubeless": -1.75836229,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75836724,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00417254,
+        "mwcStandardError": 0
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -1.75836349,
+        "cubeless": -1.75836229,
+        "probabilities": [
+          0.00000274,
+          0,
+          0,
+          0.75836724,
+          0
+        ],
+        "mwc": null,
+        "standardError": 0.00417254,
+        "mwcStandardError": 0
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-money",
+      "policy": "basic",
+      "checkerPlies": 0,
+      "cubePlies": 0,
+      "truncationPlies": 0,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:0:0:0:0:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 1.02144289,
+        "cubeless": 0.64170158,
+        "probabilities": [
+          0.70588046,
+          0.28217778,
+          0.01465101,
+          0.06357855,
+          0.00330952
+        ],
+        "mwc": null,
+        "standardError": 0.0508102,
+        "mwcStandardError": 0,
+        "action": "roll",
+        "outcomes": [
+          1.02144289,
+          1.26954222,
+          1
+        ],
+        "outcomeSE": [
+          0.0508102,
+          0.06907996,
+          0
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 1.02144289,
+        "cubeless": 0.64170158,
+        "probabilities": [
+          0.70588046,
+          0.28217778,
+          0.01465101,
+          0.06357855,
+          0.00330952
+        ],
+        "mwc": null,
+        "standardError": 0.0508102,
+        "mwcStandardError": 0,
+        "action": "roll",
+        "outcomes": [
+          1.02144289,
+          1.26954222,
+          1
+        ],
+        "outcomeSE": [
+          0.0508102,
+          0.06907996,
+          0
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 1.02144289,
+        "cubeless": 0.64170158,
+        "probabilities": [
+          0.70588046,
+          0.28217778,
+          0.01465101,
+          0.06357855,
+          0.00330952
+        ],
+        "mwc": null,
+        "standardError": 0.0508102,
+        "mwcStandardError": 0,
+        "action": "roll",
+        "outcomes": [
+          1.02144289,
+          1.26954222,
+          1
+        ],
+        "outcomeSE": [
+          0.0508102,
+          0.06907996,
+          0
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-money",
+      "policy": "balanced",
+      "checkerPlies": 1,
+      "cubePlies": 1,
+      "truncationPlies": 0,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:0:0:0:0:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.96366203,
+        "cubeless": 0.66708463,
+        "probabilities": [
+          0.71561623,
+          0.28764403,
+          0.01588662,
+          0.06469908,
+          0.00297951
+        ],
+        "mwc": null,
+        "standardError": 0.05778133,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.96366203,
+          1.07038879,
+          1
+        ],
+        "outcomeSE": [
+          0.05778133,
+          0.13772584,
+          0
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.96366203,
+        "cubeless": 0.66708463,
+        "probabilities": [
+          0.71561623,
+          0.28764403,
+          0.01588662,
+          0.06469908,
+          0.00297951
+        ],
+        "mwc": null,
+        "standardError": 0.05778133,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.96366203,
+          1.07038879,
+          1
+        ],
+        "outcomeSE": [
+          0.05778133,
+          0.13772584,
+          0
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.96366203,
+        "cubeless": 0.66708463,
+        "probabilities": [
+          0.71561623,
+          0.28764403,
+          0.01588662,
+          0.06469908,
+          0.00297951
+        ],
+        "mwc": null,
+        "standardError": 0.05778133,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.96366203,
+          1.07038879,
+          1
+        ],
+        "outcomeSE": [
+          0.05778133,
+          0.13772584,
+          0
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-money",
+      "policy": "strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:0:0:0:0:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.93160766,
+        "cubeless": 0.64965457,
+        "probabilities": [
+          0.72128683,
+          0.26661474,
+          0.00909957,
+          0.06603384,
+          0.00259969
+        ],
+        "mwc": null,
+        "standardError": 0.03824273,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.93160766,
+          1.2763263,
+          1
+        ],
+        "outcomeSE": [
+          0.03824273,
+          0.05565292,
+          0
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.93160766,
+        "cubeless": 0.64965457,
+        "probabilities": [
+          0.72128683,
+          0.26661474,
+          0.00909957,
+          0.06603384,
+          0.00259969
+        ],
+        "mwc": null,
+        "standardError": 0.03824273,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.93160766,
+          1.2763263,
+          1
+        ],
+        "outcomeSE": [
+          0.03824273,
+          0.05565292,
+          0
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.93160766,
+        "cubeless": 0.64965457,
+        "probabilities": [
+          0.72128683,
+          0.26661474,
+          0.00909957,
+          0.06603384,
+          0.00259969
+        ],
+        "mwc": null,
+        "standardError": 0.03824273,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.93160766,
+          1.2763263,
+          1
+        ],
+        "outcomeSE": [
+          0.03824273,
+          0.05565292,
+          0
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-money",
+      "policy": "short-deep",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:0:0:0:0:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.92364758,
+        "cubeless": 0.6394766,
+        "probabilities": [
+          0.7131511,
+          0.26389706,
+          0.01186781,
+          0.06060335,
+          0.00198689
+        ],
+        "mwc": null,
+        "standardError": 0.0029364,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.92364758,
+          1.11431026,
+          1
+        ],
+        "outcomeSE": [
+          0.0029364,
+          0.01740386,
+          0
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.92364758,
+        "cubeless": 0.6394766,
+        "probabilities": [
+          0.7131511,
+          0.26389706,
+          0.01186781,
+          0.06060335,
+          0.00198689
+        ],
+        "mwc": null,
+        "standardError": 0.0029364,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.92364758,
+          1.11431026,
+          1
+        ],
+        "outcomeSE": [
+          0.0029364,
+          0.01740386,
+          0
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.92364758,
+        "cubeless": 0.6394766,
+        "probabilities": [
+          0.7131511,
+          0.26389706,
+          0.01186781,
+          0.06060335,
+          0.00198689
+        ],
+        "mwc": null,
+        "standardError": 0.0029364,
+        "mwcStandardError": 0,
+        "action": "double",
+        "outcomes": [
+          0.92364758,
+          1.11431026,
+          1
+        ],
+        "outcomeSE": [
+          0.0029364,
+          0.01740386,
+          0
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-match",
+      "policy": "basic",
+      "checkerPlies": 0,
+      "cubePlies": 0,
+      "truncationPlies": 0,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:2:3:0:5:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 1.10601056,
+        "cubeless": 0.74683625,
+        "probabilities": [
+          0.70479131,
+          0.30083278,
+          0.01341279,
+          0.04565766,
+          0.07464608
+        ],
+        "mwc": 0.5132916,
+        "standardError": 0.01641607,
+        "mwcStandardError": 0.00205825,
+        "action": "roll",
+        "outcomes": [
+          1.10601056,
+          1.61593115,
+          1
+        ],
+        "outcomeSE": [
+          0.01641607,
+          0.07673955,
+          0
+        ],
+        "outcomesMWC": [
+          0.5132916,
+          0.57722545,
+          0.5
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 1.10601056,
+        "cubeless": 0.74683625,
+        "probabilities": [
+          0.70479131,
+          0.30083278,
+          0.01341279,
+          0.04565766,
+          0.07464608
+        ],
+        "mwc": 0.5132916,
+        "standardError": 0.01641607,
+        "mwcStandardError": 0.00205825,
+        "action": "roll",
+        "outcomes": [
+          1.10601056,
+          1.61593115,
+          1
+        ],
+        "outcomeSE": [
+          0.01641607,
+          0.07673955,
+          0
+        ],
+        "outcomesMWC": [
+          0.5132916,
+          0.57722545,
+          0.5
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 1.10601056,
+        "cubeless": 0.74683625,
+        "probabilities": [
+          0.70479131,
+          0.30083278,
+          0.01341279,
+          0.04565766,
+          0.07464608
+        ],
+        "mwc": 0.5132916,
+        "standardError": 0.01641607,
+        "mwcStandardError": 0.00205825,
+        "action": "roll",
+        "outcomes": [
+          1.10601056,
+          1.61593115,
+          1
+        ],
+        "outcomeSE": [
+          0.01641607,
+          0.07673955,
+          0
+        ],
+        "outcomesMWC": [
+          0.5132916,
+          0.57722545,
+          0.5
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-match",
+      "policy": "balanced",
+      "checkerPlies": 1,
+      "cubePlies": 1,
+      "truncationPlies": 0,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:2:3:0:5:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 1.13158417,
+        "cubeless": 0.75550741,
+        "probabilities": [
+          0.7154206,
+          0.28737807,
+          0.01780815,
+          0.06595498,
+          0.00233491
+        ],
+        "mwc": 0.51649803,
+        "standardError": 0.03416729,
+        "mwcStandardError": 0.00428389,
+        "action": "roll",
+        "outcomes": [
+          1.13158417,
+          1.60366118,
+          1
+        ],
+        "outcomeSE": [
+          0.03416729,
+          0.14655304,
+          0
+        ],
+        "outcomesMWC": [
+          0.51649803,
+          0.57568705,
+          0.5
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 1.13158417,
+        "cubeless": 0.75550741,
+        "probabilities": [
+          0.7154206,
+          0.28737807,
+          0.01780815,
+          0.06595498,
+          0.00233491
+        ],
+        "mwc": 0.51649803,
+        "standardError": 0.03416729,
+        "mwcStandardError": 0.00428389,
+        "action": "roll",
+        "outcomes": [
+          1.13158417,
+          1.60366118,
+          1
+        ],
+        "outcomeSE": [
+          0.03416729,
+          0.14655304,
+          0
+        ],
+        "outcomesMWC": [
+          0.51649803,
+          0.57568705,
+          0.5
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 1.13158417,
+        "cubeless": 0.75550741,
+        "probabilities": [
+          0.7154206,
+          0.28737807,
+          0.01780815,
+          0.06595498,
+          0.00233491
+        ],
+        "mwc": 0.51649803,
+        "standardError": 0.03416729,
+        "mwcStandardError": 0.00428389,
+        "action": "roll",
+        "outcomes": [
+          1.13158417,
+          1.60366118,
+          1
+        ],
+        "outcomeSE": [
+          0.03416729,
+          0.14655304,
+          0
+        ],
+        "outcomesMWC": [
+          0.51649803,
+          0.57568705,
+          0.5
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-match",
+      "policy": "strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:2:3:0:5:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 1.05720818,
+        "cubeless": 0.72205865,
+        "probabilities": [
+          0.69724697,
+          0.29434606,
+          0.01377715,
+          0.04912502,
+          0.00180369
+        ],
+        "mwc": 0.50717276,
+        "standardError": 0.02719259,
+        "mwcStandardError": 0.00340938,
+        "action": "roll",
+        "outcomes": [
+          1.05720818,
+          1.52580059,
+          1
+        ],
+        "outcomeSE": [
+          0.02719259,
+          0.14675069,
+          0
+        ],
+        "outcomesMWC": [
+          0.50717276,
+          0.56592488,
+          0.5
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 1.05720818,
+        "cubeless": 0.72205865,
+        "probabilities": [
+          0.69724697,
+          0.29434606,
+          0.01377715,
+          0.04912502,
+          0.00180369
+        ],
+        "mwc": 0.50717276,
+        "standardError": 0.02719259,
+        "mwcStandardError": 0.00340938,
+        "action": "roll",
+        "outcomes": [
+          1.05720818,
+          1.52580059,
+          1
+        ],
+        "outcomeSE": [
+          0.02719259,
+          0.14675069,
+          0
+        ],
+        "outcomesMWC": [
+          0.50717276,
+          0.56592488,
+          0.5
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 1.05720818,
+        "cubeless": 0.72205865,
+        "probabilities": [
+          0.69724697,
+          0.29434606,
+          0.01377715,
+          0.04912502,
+          0.00180369
+        ],
+        "mwc": 0.50717276,
+        "standardError": 0.02719259,
+        "mwcStandardError": 0.00340938,
+        "action": "roll",
+        "outcomes": [
+          1.05720818,
+          1.52580059,
+          1
+        ],
+        "outcomeSE": [
+          0.02719259,
+          0.14675069,
+          0
+        ],
+        "outcomesMWC": [
+          0.50717276,
+          0.56592488,
+          0.5
+        ]
+      },
+      "maximumDifference": 0
+    },
+    {
+      "name": "cube-match",
+      "policy": "short-deep",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "xgid": "XGID=aa--BBBB----dE---d-e----B-:0:0:1:00:2:3:0:5:10",
+      "after": "",
+      "samples": 8,
+      "seed": 19034,
+      "native": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 1.07841587,
+        "cubeless": 0.73310184,
+        "probabilities": [
+          0.70449001,
+          0.29088417,
+          0.01382877,
+          0.0665837,
+          0.0025893
+        ],
+        "mwc": 0.50983179,
+        "standardError": 0.00632954,
+        "mwcStandardError": 0.00079357,
+        "action": "roll",
+        "outcomes": [
+          1.07841587,
+          1.60449791,
+          1
+        ],
+        "outcomeSE": [
+          0.00632954,
+          0.01441026,
+          0
+        ],
+        "outcomesMWC": [
+          0.50983179,
+          0.57579195,
+          0.5
+        ]
+      },
+      "scalar": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 1.07841587,
+        "cubeless": 0.73310184,
+        "probabilities": [
+          0.70449001,
+          0.29088417,
+          0.01382877,
+          0.0665837,
+          0.0025893
+        ],
+        "mwc": 0.50983179,
+        "standardError": 0.00632954,
+        "mwcStandardError": 0.00079357,
+        "action": "roll",
+        "outcomes": [
+          1.07841587,
+          1.60449791,
+          1
+        ],
+        "outcomeSE": [
+          0.00632954,
+          0.01441026,
+          0
+        ],
+        "outcomesMWC": [
+          0.50983179,
+          0.57579195,
+          0.5
+        ]
+      },
+      "simd": {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 1.07841587,
+        "cubeless": 0.73310184,
+        "probabilities": [
+          0.70449001,
+          0.29088417,
+          0.01382877,
+          0.0665837,
+          0.0025893
+        ],
+        "mwc": 0.50983179,
+        "standardError": 0.00632954,
+        "mwcStandardError": 0.00079357,
+        "action": "roll",
+        "outcomes": [
+          1.07841587,
+          1.60449791,
+          1
+        ],
+        "outcomeSE": [
+          0.00632954,
+          0.01441026,
+          0
+        ],
+        "outcomesMWC": [
+          0.50983179,
+          0.57579195,
+          0.5
+        ]
+      },
+      "maximumDifference": 0
+    }
+  ],
+  "invalidConfigurationsRejected": [
+    [
+      -1,
+      1,
+      0
+    ],
+    [
+      3,
+      1,
+      0
+    ],
+    [
+      1,
+      -1,
+      0
+    ],
+    [
+      1,
+      3,
+      0
+    ],
+    [
+      2,
+      2,
+      -1
+    ],
+    [
+      2,
+      2,
+      2
+    ],
+    [
+      0,
+      2,
+      1
+    ],
+    [
+      2,
+      1,
+      1
+    ]
+  ]
+}

@@ -8,8 +8,8 @@ import {
   commitTurn,
 } from "../core/rules.mjs";
 import { ENGINE_VERSION } from "./metadata.mjs";
-export const ROLLOUT_POLICY =
-  "GNUbg 0-ply checker/cube; variance reduction; ISAAC; independent batches; no ply truncation";
+import {DEFAULT_ROLLOUT_POLICY, rolloutPolicy, rolloutPolicyLabel} from './rollout-policy.mjs';
+export const ROLLOUT_POLICY = rolloutPolicyLabel();
 export function rolloutUnsupported(s) {
   if (rulesOf(s).immediateRedoubles)
     return "Rollouts currently support ordinary doubling, not beavers or raccoons. Tree analysis supports your configured rules.";
@@ -83,10 +83,11 @@ export function batchSeed(seed, batch) {
 export async function runRollout(
   evaluator,
   state,
-  { trials = 256, seed = 1, resume = null } = {},
+  { trials = 256, seed = 1, resume = null, policy = DEFAULT_ROLLOUT_POLICY } = {},
   submitted = null,
   progress = () => {},
 ) {
+  const policySettings = rolloutPolicy(policy), policyLabel = rolloutPolicyLabel(policy);
   const reason = rolloutUnsupported(state);
   if (reason) throw new Error(reason);
   if (
@@ -102,7 +103,7 @@ export async function runRollout(
     ENGINE_VERSION,
     key,
     seed,
-    ROLLOUT_POLICY,
+    policyLabel,
     submitted,
   ]);
   let cp;
@@ -143,6 +144,7 @@ export async function runRollout(
       engine: ENGINE_VERSION,
       positionKey: key,
       seed,
+      policy,
       completed: 0,
       elapsedMs: 0,
       screening,
@@ -156,6 +158,7 @@ export async function runRollout(
     cp.screening?.positionKey !== key ||
     cp.engine !== ENGINE_VERSION ||
     cp.seed !== seed ||
+    cp.policy !== policy ||
     choices.some((t) => !t) ||
     cp.values.length !== (choices.length || 1)
   )
@@ -180,6 +183,7 @@ export async function runRollout(
           turn,
           32,
           batchSeed(seed, cp.completed / 32),
+          policy,
         ),
       );
     cp.values = cp.values.map((value, i) => pool(value, batch[i]));
@@ -189,11 +193,18 @@ export async function runRollout(
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
   const settings = {
-    name: "Rollout",
-    plies: 0,
+    name: `${policySettings.name} rollout`,
+    plies: policySettings.checkerPlies,
+    checkerPlies: policySettings.checkerPlies,
+    cubePlies: policySettings.cubePlies,
+    truncationPlies: policySettings.truncationPlies,
+    lateAfterPlies: policySettings.lateAfterPlies,
+    lateCheckerPlies: policySettings.lateCheckerPlies,
+    lateCubePlies: policySettings.lateCubePlies,
+    policyId: policy,
     cubeful: state.rules.cube,
     noise: 0,
-    policy: ROLLOUT_POLICY,
+    policy: policyLabel,
     trials: cp.completed,
     seed,
     varianceReduction: true,

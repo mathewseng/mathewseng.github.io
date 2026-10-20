@@ -38,6 +38,7 @@ import { choiceButtons } from "../ui/choice-buttons.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { ruleControls } from "../ui/rules.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
+import {DEFAULT_ROLLOUT_POLICY, ROLLOUT_POLICIES} from "../engine/rollout-policy.mjs";
 import { rolloutUnsupported } from "../engine/rollout.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
 import { matchesPlayContext } from "../core/play-session.mjs";
@@ -55,6 +56,7 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   previousResult = null,
   checkpoint = null,
   rolloutTrials = 256,
+  rolloutPolicyId = DEFAULT_ROLLOUT_POLICY,
   preview = null,
   review = null,
   index = 0,
@@ -205,7 +207,7 @@ try {
     savedRollout?.checkpoint?.engine === ENGINE_VERSION &&
     savedRollout.checkpoint.positionKey === positionKey(source)
   )
-    checkpoint = savedRollout.checkpoint;
+    { checkpoint = savedRollout.checkpoint; rolloutPolicyId = checkpoint.policy || DEFAULT_ROLLOUT_POLICY; }
 } catch (e) {
   showError(e);
 }
@@ -330,6 +332,7 @@ function render() {
 }
 function panel(problems) {
   const p = $("panel");
+  const rolloutOpen = p.querySelector("#rollout-controls")?.open || false;
   p.replaceChildren(
     el(
       "div",
@@ -507,13 +510,19 @@ function panel(problems) {
     add(
       el(
         "details",
-        { id: "rollout-controls" },
+        { id: "rollout-controls", open: rolloutOpen },
         el("summary", {}, "Roll out this decision"),
         el(
           "p",
           { class: "muted small" },
-          "Simulate complete games with GNUbg. More trials reduce sampling noise, not policy bias. Completed batches survive cancellation and reload.",
+          "Simulate games with GNUbg. Short/deep stops after five turns and evaluates the remaining position. More trials reduce sampling noise, not policy bias. Completed batches survive cancellation and reload.",
         ),
+        field(
+          "Rollout playing strength",
+          choiceButtons(Object.values(ROLLOUT_POLICIES).map(p=>[p.id,p.truncationPlies ? `${p.name} · 5-turn simulation` : `${p.name} · checker ${p.checkerPlies} / cube ${p.cubePlies} ply`]),
+            rolloutPolicyId, v=>{rolloutPolicyId=v;render();}),
+        ),
+        el("p",{class:"muted small"},"Balanced and Strong search before future checker and cube decisions. Strong can take substantially longer. Discard the saved rollout before changing its policy."),
         field(
           "Rollout trials per alternative",
           choiceButtons(
@@ -531,7 +540,7 @@ function panel(problems) {
                   : "Start rollout",
                 rollOut,
                 "",
-                { id: "start-rollout", disabled: busy },
+                { id: "start-rollout", disabled: busy || !!(checkpoint && checkpoint.policy !== rolloutPolicyId) },
               ),
             ]),
         checkpoint
@@ -852,7 +861,7 @@ async function rollOut() {
     checkpoint?.seed ?? crypto.getRandomValues(new Uint32Array(1))[0];
   try {
     const answer = await analysis.run(source, {
-      rollout: { trials: rolloutTrials, seed, resume: checkpoint },
+      rollout: { trials: rolloutTrials, seed, resume: checkpoint, policy: rolloutPolicyId },
       submitted:
         review?.events[index]?.action.type === "move"
           ? review.events[index].action.steps

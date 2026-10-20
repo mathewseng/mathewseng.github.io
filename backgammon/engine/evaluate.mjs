@@ -15,6 +15,7 @@ import {
 } from "../core/rules.mjs";
 import { toXGID as exportXGID } from "../core/xgid.mjs";
 import { ENGINE_VERSION, PRESETS, CAPABILITIES } from "./metadata.mjs";
+import {rolloutPolicy, DEFAULT_ROLLOUT_POLICY} from "./rollout-policy.mjs";
 import { ADAPTIVE_ROOT } from "./adaptive.mjs";
 const toXGID = (s) => exportXGID(s, { engine: true });
 export function createEvaluator(module) {
@@ -36,9 +37,12 @@ export function createEvaluator(module) {
     ]),
     cube = module.cwrap("bg_cube", "number", ["string", "number", "number"]),
     value = module.cwrap("bg_value", "number", ["string", "number", "number"]);
-  const roll = module.cwrap("bg_rollout", "number", [
+  const roll = module.cwrap("bg_rollout_config", "number", [
     "string",
     "string",
+    "number",
+    "number",
+    "number",
     "number",
     "number",
   ]);
@@ -88,15 +92,22 @@ export function createEvaluator(module) {
         preparation:{plies:prepared.settings.plies,requestId:prepared.requestId,
           reason:prepared.budget?.reason||'fixed-depth',submittedKey:key}};
     },
-    rolloutBatch(s, turn, trials, seed) {
+    rolloutBatch(s, turn, trials, seed, policy = DEFAULT_ROLLOUT_POLICY) {
+      const settings=rolloutPolicy(policy);
       const result = call(roll, [
         toXGID(s),
         turn ? toXGID({ ...turn.state, dice: [], phase: "roll" }) : "",
         trials,
         seed | 0,
+        settings.checkerPlies,
+        settings.cubePlies,
+        Number(settings.truncationPlies>0),
       ]);
       if (
         result.samples !== trials ||
+        result.checkerPlies !== settings.checkerPlies ||
+        result.cubePlies !== settings.cubePlies ||
+        ["truncationPlies","lateAfterPlies","lateCheckerPlies","lateCubePlies"].some(k=>result[k]!==settings[k]) ||
         !Number.isFinite(result.standardError) ||
         result.standardError < 0 ||
         (result.outcomeSE &&

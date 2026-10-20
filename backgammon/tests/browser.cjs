@@ -466,6 +466,7 @@ const server = http.createServer((req, res) => {
         const researchOutput = path.join(out, `research-${browserName}`);
         fs.mkdirSync(researchOutput, { recursive: true });
         await run("research", browser, base, researchOutput);
+        await run("rollout-policies", browser, base, out, browserName);
         report.adaptive = await run("adaptive", browser, base, out, browserName);
         (report.dragFeedback ||= []).push(
           await run("drag-feedback", browser, base, out, browserName),
