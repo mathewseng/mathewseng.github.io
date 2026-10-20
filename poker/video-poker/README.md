@@ -6,11 +6,17 @@ Static app at `/poker/video-poker/`. Uses the shared shell, tokens and playing-c
 
 17 single-draw presets: Jacks or Better (9/6), Tens or Better (6/5), Bonus (8/5), Bonus Deluxe (9/6), Double Bonus (10/7), Double Double Bonus (9/6), Triple Double Bonus (9/7), Triple Bonus Plus (9/5), Super Double Bonus (9/5), White Hot Aces (9/5), All American (40/8/8/8), full-pay Deuces Wild, Not So Ugly Ducks, Bonus Deuces Wild (10/4/4), Joker Poker (kings or better, 7/5), 2–7 Low, and Badeucey.
 
-The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. Custom category payouts persist in local storage; practice bankroll and in-progress hands are session-only.
+The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown. Integer category payouts and Badeucey qualification rules persist in local storage; practice bankroll and in-progress hands are session-only.
 
 2–7 payouts are interpreted as **total returns including the stake**, following ordinary video-poker convention. J-high therefore pushes. Aces are high; pairs, straights and flushes lose. A-2-3-4-5 is ace-high, not a straight. The wheel is 7-5-4-3-2. Awards within a half never stack.
 
-The user's confirmed Badeucey convention is **qualifying push + low points + badugi points**. Both qualifiers are mandatory: a five-card high-card hand (five different ranks, no straight/flush) AND a four-card badugi. Aces are high in both halves; 5-4-3-2 is the best badugi. The four-card badugi is chosen from any four of the five cards. Both games use one draw.
+The user's confirmed Badeucey convention is **qualifying push + low points + badugi points**. By default both qualifiers are mandatory: a five-card high-card hand (five different ranks, no straight/flush) AND a four-card badugi. Aces are high in both halves; 5-4-3-2 is the best badugi. The four-card badugi is chosen from any four of the five cards. Both games use one draw.
+
+The Badeucey paytable and editor separate the qualifying return, five-card low points, and four-card badugi points. T-high low and T-high badugi awards start at 0 (disabled), preserving the original return; both accept integer awards. The fixed qualifying return is 1.
+
+Badeucey qualification can instead require 3 or 2 distinct ranks in different suits, or no badugi at all. The five-card requirement can be high card only, any unpaired hand (including straights/flushes), or any hand (including pairs). Optional rank caps apply to all five cards and to a qualifying badugi subset independently; aces remain high. A badugi cap is satisfied if a subset of the required size meets the cap, even if a larger badugi has a higher card. No badugi requirement ignores that cap.
+
+Qualification and point awards are separate: five-card low points always require a genuine 2–7 high-card hand, and badugi points always require four cards. A three-card badugi may therefore qualify for the push and low points, but earns no badugi points. Apply changes before playing or solving. Applying a recommendation restores its original qualification rules as well as its payouts.
 
 ## Exact results
 
@@ -36,10 +42,11 @@ This preserves the lowest two tiers while improving stronger lows and creating a
 
 ### Suggested Badeucey points
 
-Keep the qualifying push at 1 credit.
+Keep the qualifying push at 1 credit and the original high-card / four-card qualification rules.
 
 | Low | Original | Suggested | Badugi | Original | Suggested |
 | --- | ---: | ---: | --- | ---: | ---: |
+| T-high | 0 | 0 | T-dugi | 0 | 0 |
 | 9-high | 1 | 2 | 9-dugi | 1 | 2 |
 | 8-high | 2 | 4 | 8-dugi | 2 | 4 |
 | 7-high | 4 | 10 | 7-dugi | 4 | 9 |
@@ -47,6 +54,19 @@ Keep the qualifying push at 1 credit.
 | | | | 5-dugi | 16 | 40 |
 
 The original's simultaneous qualification requirements are restrictive. Merely doubling all point awards produces 91.7011823013% RTP. The suggested table produces 98.8782635432%; increasing only its 7-dugi award from 9 to 10 pushes RTP to 100.5247328788%. These are practical integer candidates near a 99% target, not a uniquely optimal payout design. Larger top awards affect volatility; this analysis establishes mean return, not session-risk equivalence.
+
+### Qualification sensitivity
+
+With the original point awards (including both T tiers at 0), perfect-play returns change substantially:
+
+| Five-card requirement | Minimum badugi | RTP |
+| --- | ---: | ---: |
+| High card | 4 | 62.8247933400% |
+| High card | 3 | 105.9993923718% |
+| Any hand | 4 | 84.3210858433% |
+| Any hand | 3 | 146.8655491537% |
+
+These results are recorded in `analysis.json`. The original recommendation applies only to its original qualification rules. Re-solve after any rule or payout change; the editor clears stale results when either changes.
 
 ## Solver derivation
 
@@ -66,7 +86,7 @@ RTP = average over all D of max over H ⊆ D of EV(H | D)
 
 A five-bit superset Möbius transform computes the 32 numerators in 80 subtractions. Subsets use colex combinatorial indexing (`sum choose(card[i], i+1)`) with separate offsets by size. This handles all 2,598,960 starting hands (2,869,685 with a joker), without suit-isomorphism assumptions. Float64 arrays hold the subset sums; compensated summation accumulates full-game EV. Tie handling favors holding more cards within 1e-12; this has no material effect on reported RTP. Per-hand ranking shows all 32 decisions and EV loss relative to the maximum. After each draw, a decision review automatically shows the chosen hold’s EV, the best hold’s EV and the EV given up, calculated from the original deal rather than the final cards. The top five alternatives are shown with the chosen hold pinned when it falls outside them; all 32 remain available. A pre-draw solution is reused when available, and starting a new hand cancels stale review work.
 
-The same `engine.js` evaluator and `solver.js` are used in play, browser worker and offline analysis. The worker never blocks the UI and is terminated on cancellation or game changes. Edits invalidate old results, and changing games/payouts during a live wager is disabled. A manually entered study hand cannot pay credits: Deal always starts a new random hand.
+The same `engine.js` evaluator and `solver.js` are used in play, browser worker and offline analysis. The worker never blocks the UI and is terminated on cancellation or game changes. Edits invalidate old results, and changing games, rules or payouts during a live wager is disabled. A manually entered study hand cannot pay credits: Deal always starts a new random hand.
 
 ## Reproduce and test
 
@@ -81,7 +101,7 @@ node scripts/run-tests.mjs
 
 `analysis.json` is deterministic and records engine/solver SHA-256 hashes, all preset payouts and returns, candidate tables, and sensitivity experiments. The generator takes about a minute depending on hardware. Browser full-game calculations usually take a few seconds on a desktop and longer on mobile. Browser smoke screenshots are written under `/tmp/video-poker-*.png`.
 
-Tests cover rank categories, wild cards, kicker boundaries, the lowball wheel, both Badeucey qualifiers and the additive push, shuffled-deck invariants, direct draw enumeration independent of the subset algorithm, constant-pay normalization, published whole-game return benchmarks, and report reproducibility. Browser checks exercise every variant, exact worker replies, all holds, study/play separation, payout edits, recommendations, persistence, cancellation and responsive views.
+Tests cover rank categories, wild cards, kicker boundaries, the lowball wheel, Badeucey qualification combinations, subset rank limits, T-high awards and the additive push, shuffled-deck invariants, direct draw enumeration independent of the subset algorithm, constant-pay normalization, published whole-game return benchmarks, and report reproducibility. Browser checks exercise every variant, exact worker replies, all holds, study/play separation, payout/rule edits, recommendation rule restoration, saved-paytable migration, persistence, cancellation and responsive views.
 
 ## References
 

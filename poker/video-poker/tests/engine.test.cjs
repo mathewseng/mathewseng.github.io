@@ -69,3 +69,56 @@ test('zero payouts and a constant payout prove normalization for every hold',()=
   for(let k=0;k<=5;k++)sums.fill(S.C[52-k][5-k],offsets[k],offsets[k]+S.C[52][k]);
   for(const r of S.solveHand(hand('As 9h 5d 3c 2s'),E.byId.jacks,{offsets,sums,n:52}))assert.equal(r.ev,1);
 });
+
+test('Badeucey T-high tiers pay independently and never stack within a section',()=>{
+  const v={...E.byId.badeucey,pays:{...E.byId.badeucey.pays,lowT:4,badT:3}};
+  const score=s=>E.evaluate(hand(s),v);
+  assert.equal(score('Ts 9h 8d 7c 2h').payout,8,'push + T-high + T-dugi');
+  assert.equal(ev('Ts 9h 8d 7c 2h','badeucey').payout,1,'new tiers default to zero');
+  assert.equal(score('9s 8h 7d 6c 2h').payout,3,'9-high tiers replace T-high tiers');
+});
+test('Badeucey qualification rules are independent of point eligibility',()=>{
+  const score=(s,rules)=>E.evaluate(hand(s),{...E.byId.badeucey,rules:E.normalizeBadeuceyRules(rules)}).payout;
+  assert.equal(score('7s 5s 4h 3h 2d',{minBadugi:3}),9,'three-card badugi qualifies for push and wheel, no badugi points');
+  assert.equal(score('7s 5s 4h 3h 2d',{minBadugi:4}),0);
+  assert.equal(score('7s 5s 4h 3h 2s',{minBadugi:2}),9);
+  assert.equal(score('7s 5s 4h 3h 2s',{minBadugi:3}),0);
+  assert.equal(score('7s 5h 4d 3c 3s',{fiveCard:'any'}),5,'pair allowed to qualify, only 7-dugi award');
+  assert.equal(score('7s 5h 4d 3c 3s',{fiveCard:'unpaired'}),0);
+  assert.equal(score('6s 5h 4d 3c 2s',{fiveCard:'unpaired'}),17,'straight qualifies, only 5-dugi award');
+  assert.equal(score('7s 5s 4s 3s 2s',{fiveCard:'unpaired',minBadugi:0}),1,'flush qualifies but has no low or four-card badugi points');
+  assert.equal(score('7s 5s 4s 3s 2s',{fiveCard:'high-card',minBadugi:0}),0);
+  assert.equal(score('7s 7h 7d 3c 3d',{fiveCard:'any',minBadugi:2}),1,'full house can qualify under any-hand mode');
+});
+test('rank limits test the qualifying subset, while low rank limits test all five cards',()=>{
+  const score=(s,rules)=>E.evaluate(hand(s),{...E.byId.badeucey,rules:E.normalizeBadeuceyRules(rules)}).payout;
+  assert.equal(score('Ks 5h 4d 3c 2h',{minBadugi:3,maxBadugiRank:4}),1,'4-high three-card subset qualifies even with a K-high four-card badugi');
+  assert.equal(score('Ks 5h 4d 3c 2h',{minBadugi:4,maxBadugiRank:4}),0);
+  assert.equal(score('Ks 5h 4d 3c 2s',{maxBadugiRank:5}),17);
+  assert.equal(score('Ks 5h 4d 3c 2s',{maxLowRank:10}),0);
+  assert.equal(score('7s 7h 7d 3c 3d',{fiveCard:'any',minBadugi:0,maxBadugiRank:4}),1,'badugi rank cap is inactive when there is no badugi requirement');
+  assert.throws(()=>E.normalizeBadeuceyRules({minBadugi:5}));
+  assert.throws(()=>E.normalizeBadeuceyRules({fiveCard:'pair'}));
+});
+test('badugi subset scorer agrees with an independent rank/suit-set enumeration',()=>{
+  let state=713;
+  const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+  for(let sample=0;sample<500;sample++){
+    const h=E.shuffledDeck(52,random).slice(0,5);
+    for(const n of [2,3,4]){
+      let expected=15;
+      for(let m=1;m<32;m++){
+        const subset=h.filter((_,i)=>m&(1<<i));
+        if(subset.length!==n)continue;
+        const ranks=subset.map(E.rank),suits=subset.map(E.suit);
+        if(new Set(ranks).size===n&&new Set(suits).size===n)expected=Math.min(expected,Math.max(...ranks));
+      }
+      assert.equal(E.badugiHigh(h,n),expected);
+    }
+  }
+});
+test('custom-rule strategy excludes discarded cards and uses changed qualification',()=>{
+  const v={...E.byId.badeucey,rules:E.normalizeBadeuceyRules({fiveCard:'any',minBadugi:3,maxBadugiRank:8}),pays:{...E.byId.badeucey.pays,lowT:2,badT:3}};
+  const h=hand('Ts 8h 4d 3c 3s'),results=S.solveHand(h,v);
+  for(const mask of [7,15,23,31]){const b=brute(h,v,mask),r=results.find(r=>r.mask===mask);assert.equal(r.outcomes,b.n);assert.ok(Math.abs(r.ev-b.ev)<1e-10,`custom mask ${mask}`);}
+});

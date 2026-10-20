@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "engineSha256": "bd938096480c08aec81a79491c5c8d62cd87e3811a5da046bc8ebb6d3350c62a",
+  "engineSha256": "d2ded05a123b7aef3695b151fedd81a125622472953d91a44086efeec98c4836",
   "solverSha256": "febad1eab3e736ea89578c6e2e6cd00d3a3775c423769a9f7b268530dab97088",
   "rules": {
     "draws": 1,
@@ -442,11 +442,19 @@
         "low7": 4,
         "low8": 2,
         "low9": 1,
+        "lowT": 0,
         "bad5": 16,
         "bad6": 8,
         "bad7": 4,
         "bad8": 2,
-        "bad9": 1
+        "bad9": 1,
+        "badT": 0
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
       },
       "rtp": 0.6282479333999642,
       "netEV": -0.3717520666000358,
@@ -492,20 +500,28 @@
     },
     {
       "id": "badeucey",
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
       "pays": {
         "qualify": 1,
         "wheel": 20,
         "low7": 10,
         "low8": 4,
         "low9": 2,
+        "lowT": 0,
         "bad5": 40,
         "bad6": 20,
         "bad7": 9,
         "bad8": 4,
-        "bad9": 2
+        "bad9": 2,
+        "badT": 0
       },
-      "summary": "Keep the 1-credit push. Low points (9 / 8 / 7 / wheel): 2 / 4 / 10 / 20. Badugi points (9 / 8 / 7 / 6 / 5): 2 / 4 / 9 / 20 / 40.",
-      "rationale": "Both qualifiers still apply. The badugi awards do most of the balancing: increasing 7-dugi from 9 to 10 would lift return above 100%. Exact house edge: 1.1217%.",
+      "summary": "Keep the 1-credit push and both T-high awards at 0. Low points (9 / 8 / 7 / wheel): 2 / 4 / 10 / 20. Badugi points (9 / 8 / 7 / 6 / 5): 2 / 4 / 9 / 20 / 40.",
+      "rationale": "Original high-card + four-card badugi qualifiers apply, with both T-high awards at 0. The badugi awards do most of the balancing: increasing 7-dugi from 9 to 10 would lift return above 100%. Exact house edge: 1.1217%.",
       "result": {
         "rtp": 0.988782635432071,
         "netEV": -0.011217364567928989,
@@ -532,11 +548,13 @@
         "low7": 8,
         "low8": 4,
         "low9": 2,
+        "lowT": 0,
         "bad5": 32,
         "bad6": 16,
         "bad7": 8,
         "bad8": 4,
-        "bad9": 2
+        "bad9": 2,
+        "badT": 0
       },
       "result": {
         "rtp": 0.9170118230126019,
@@ -562,11 +580,13 @@
         "low7": 10,
         "low8": 4,
         "low9": 2,
+        "lowT": 0,
         "bad5": 40,
         "bad6": 20,
         "bad7": 10,
         "bad8": 4,
-        "bad9": 2
+        "bad9": 2,
+        "badT": 0
       },
       "result": {
         "rtp": 1.0052473287884642,
@@ -605,6 +625,120 @@
           958024,
           905424,
           242856
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "name": "Alternative Badeucey qualification",
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "wheel": 8,
+        "low7": 4,
+        "low8": 2,
+        "low9": 1,
+        "lowT": 0,
+        "bad5": 16,
+        "bad6": 8,
+        "bad7": 4,
+        "bad8": 2,
+        "bad9": 1,
+        "badT": 0
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 3,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "result": {
+        "rtp": 1.0599939237184912,
+        "netEV": 0.059993923718491216,
+        "deals": 2598960,
+        "holdCounts": [
+          2764,
+          106460,
+          447576,
+          574584,
+          740832,
+          726744
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "name": "Alternative Badeucey qualification",
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "wheel": 8,
+        "low7": 4,
+        "low8": 2,
+        "low9": 1,
+        "lowT": 0,
+        "bad5": 16,
+        "bad6": 8,
+        "bad7": 4,
+        "bad8": 2,
+        "bad9": 1,
+        "badT": 0
+      },
+      "rules": {
+        "fiveCard": "any",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "result": {
+        "rtp": 0.8432108584326445,
+        "netEV": -0.15678914156735546,
+        "deals": 2598960,
+        "holdCounts": [
+          6424,
+          113864,
+          836412,
+          1130340,
+          278016,
+          233904
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "name": "Alternative Badeucey qualification",
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "wheel": 8,
+        "low7": 4,
+        "low8": 2,
+        "low9": 1,
+        "lowT": 0,
+        "bad5": 16,
+        "bad6": 8,
+        "bad7": 4,
+        "bad8": 2,
+        "bad9": 1,
+        "badT": 0
+      },
+      "rules": {
+        "fiveCard": "any",
+        "minBadugi": 3,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "result": {
+        "rtp": 1.4686554915368648,
+        "netEV": 0.4686554915368648,
+        "deals": 2598960,
+        "holdCounts": [
+          5804,
+          335024,
+          1326432,
+          634772,
+          196224,
+          100704
         ],
         "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
       }

@@ -109,3 +109,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 
 @media(min-width:901px) { .machine.complete .hand { --card-width:80px; } .machine.complete .shortcut-note { display:none; } }
 @media(max-width:500px) { .decision-summary { gap:10px; } .decision-summary strong { font-size:18px; } }
+
+#pay-editor fieldset { margin:20px 0; padding:16px 0 0; border:0; border-top:1px solid var(--line-strong); min-width:0; }
+#pay-editor legend { font-size:14px; font-weight:700; padding:0 8px 0 0; }
+.rule-input { display:grid; gap:7px; margin:0 0 14px; font-size:13px; }
+.rule-input select { width:100%; min-width:0; font-size:13px; }
+#qualification-rules p { color:var(--muted); font-size:12px; line-height:1.6; margin:4px 0 0; }
