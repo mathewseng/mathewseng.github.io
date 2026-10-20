@@ -1,0 +1,619 @@
+{
+  "version": 1,
+  "engineSha256": "bd938096480c08aec81a79491c5c8d62cd87e3811a5da046bc8ebb6d3350c62a",
+  "solverSha256": "febad1eab3e736ea89578c6e2e6cd00d3a3775c423769a9f7b268530dab97088",
+  "rules": {
+    "draws": 1,
+    "lowAces": "high",
+    "low27Payouts": "total return including stake",
+    "badeuceyPayouts": "1-credit qualifying push plus best low points plus best badugi points",
+    "badeuceyQualifier": "five distinct ranks, no straight or flush, AND a four-card badugi",
+    "royal": "max-coin rate normalized to one-credit stake"
+  },
+  "originals": {
+    "jacks": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 25,
+        "fullHouse": 9,
+        "flush": 6,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 2,
+        "highPair": 1
+      },
+      "rtp": 0.9954390436951225,
+      "netEV": -0.004560956304877517,
+      "deals": 2598960,
+      "holdCounts": [
+        84360,
+        403968,
+        1651440,
+        147528,
+        292176,
+        19488
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "tens": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 25,
+        "fullHouse": 6,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 2,
+        "highPair": 1
+      },
+      "rtp": 0.9913875225563732,
+      "netEV": -0.00861247744362681,
+      "deals": 2598960,
+      "holdCounts": [
+        34248,
+        340176,
+        1752228,
+        151740,
+        301080,
+        19488
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "bonus": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 25,
+        "fullHouse": 8,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 2,
+        "highPair": 1,
+        "aces": 80,
+        "lowQuads": 40
+      },
+      "rtp": 0.9916597318723351,
+      "netEV": -0.008340268127664863,
+      "deals": 2598960,
+      "holdCounts": [
+        84360,
+        408960,
+        1649040,
+        144876,
+        292236,
+        19488
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "bonus-deluxe": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 80,
+        "fullHouse": 9,
+        "flush": 6,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1
+      },
+      "rtp": 0.9964171079005797,
+      "netEV": -0.0035828920994203095,
+      "deals": 2598960,
+      "holdCounts": [
+        52812,
+        416148,
+        1620144,
+        145128,
+        345240,
+        19488
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "double-bonus": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 50,
+        "fullHouse": 10,
+        "flush": 7,
+        "straight": 5,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80
+      },
+      "rtp": 1.0017252235510108,
+      "netEV": 0.0017252235510107905,
+      "deals": 2598960,
+      "holdCounts": [
+        36000,
+        357912,
+        1385976,
+        383412,
+        416460,
+        19200
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "double-double": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 6,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80,
+        "acesKicker": 400,
+        "lowKicker": 160
+      },
+      "rtp": 0.9898078348694812,
+      "netEV": -0.010192165130518793,
+      "deals": 2598960,
+      "holdCounts": [
+        52812,
+        602088,
+        1443696,
+        152112,
+        329196,
+        19056
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "triple-double": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 7,
+        "straight": 4,
+        "trips": 2,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80,
+        "acesKicker": 800,
+        "lowKicker": 400
+      },
+      "rtp": 0.9957780871848454,
+      "netEV": -0.004221912815154605,
+      "deals": 2598960,
+      "holdCounts": [
+        35040,
+        544476,
+        1284132,
+        369552,
+        347568,
+        18192
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "triple-plus": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 100,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 240,
+        "lowQuads": 120
+      },
+      "rtp": 0.9980331371470285,
+      "netEV": -0.0019668628529715404,
+      "deals": 2598960,
+      "holdCounts": [
+        52812,
+        608700,
+        1440300,
+        152400,
+        325960,
+        18788
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "super-double": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 80,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80,
+        "faceQuads": 120
+      },
+      "rtp": 0.996945912984678,
+      "netEV": -0.003054087015321949,
+      "deals": 2598960,
+      "holdCounts": [
+        52812,
+        442704,
+        1610328,
+        148968,
+        325140,
+        19008
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "white-hot": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 80,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 240,
+        "lowQuads": 120
+      },
+      "rtp": 0.9957162750008675,
+      "netEV": -0.004283724999132543,
+      "deals": 2598960,
+      "holdCounts": [
+        52812,
+        608952,
+        1441584,
+        150456,
+        326148,
+        19008
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "all-american": {
+      "pays": {
+        "royal": 800,
+        "straightFlush": 200,
+        "quads": 40,
+        "fullHouse": 8,
+        "flush": 8,
+        "straight": 8,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1
+      },
+      "rtp": 1.0072207684082017,
+      "netEV": 0.007220768408201739,
+      "deals": 2598960,
+      "holdCounts": [
+        17400,
+        251232,
+        1327884,
+        492324,
+        491044,
+        19076
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "deuces": {
+      "pays": {
+        "royal": 800,
+        "deuces": 200,
+        "wildRoyal": 25,
+        "fiveKind": 15,
+        "straightFlush": 9,
+        "quads": 5,
+        "fullHouse": 3,
+        "flush": 2,
+        "straight": 2,
+        "trips": 1
+      },
+      "rtp": 1.0076196120393501,
+      "netEV": 0.007619612039350132,
+      "deals": 2598960,
+      "holdCounts": [
+        495528,
+        363312,
+        961200,
+        449816,
+        264724,
+        64380
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "nsud": {
+      "pays": {
+        "royal": 800,
+        "deuces": 200,
+        "wildRoyal": 25,
+        "fiveKind": 16,
+        "straightFlush": 10,
+        "quads": 4,
+        "fullHouse": 4,
+        "flush": 3,
+        "straight": 2,
+        "trips": 1
+      },
+      "rtp": 0.9972829465166086,
+      "netEV": -0.0027170534833913518,
+      "deals": 2598960,
+      "holdCounts": [
+        451260,
+        283632,
+        883200,
+        538604,
+        379348,
+        62916
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "bonus-deuces": {
+      "pays": {
+        "royal": 800,
+        "deuces": 200,
+        "wildRoyal": 25,
+        "fiveKind": 20,
+        "straightFlush": 10,
+        "quads": 4,
+        "fullHouse": 4,
+        "flush": 3,
+        "straight": 1,
+        "trips": 1,
+        "deucesAce": 400,
+        "fiveAces": 80,
+        "fiveLow": 40
+      },
+      "rtp": 0.9986032782433346,
+      "netEV": -0.0013967217566653867,
+      "deals": 2598960,
+      "holdCounts": [
+        577356,
+        331488,
+        890280,
+        514312,
+        232432,
+        53092
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "joker": {
+      "pays": {
+        "royal": 800,
+        "fiveKind": 200,
+        "wildRoyal": 100,
+        "straightFlush": 50,
+        "quads": 20,
+        "fullHouse": 7,
+        "flush": 5,
+        "straight": 3,
+        "trips": 2,
+        "twoPair": 1,
+        "highPair": 1
+      },
+      "rtp": 1.0064629663458815,
+      "netEV": 0.0064629663458815045,
+      "deals": 2869685,
+      "holdCounts": [
+        321684,
+        473112,
+        1416960,
+        326964,
+        299048,
+        31917
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "low27": {
+      "pays": {
+        "wheel": 10,
+        "low7": 5,
+        "low8": 4,
+        "low9": 3,
+        "lowT": 2,
+        "lowJ": 1
+      },
+      "rtp": 0.8222446599923375,
+      "netEV": -0.17775534000766247,
+      "deals": 2598960,
+      "holdCounts": [
+        4368,
+        100004,
+        569372,
+        973072,
+        768040,
+        184104
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "badeucey": {
+      "pays": {
+        "qualify": 1,
+        "wheel": 8,
+        "low7": 4,
+        "low8": 2,
+        "low9": 1,
+        "bad5": 16,
+        "bad6": 8,
+        "bad7": 4,
+        "bad8": 2,
+        "bad9": 1
+      },
+      "rtp": 0.6282479333999642,
+      "netEV": -0.3717520666000358,
+      "deals": 2598960,
+      "holdCounts": [
+        4948,
+        112756,
+        560596,
+        1405860,
+        281760,
+        233040
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    }
+  },
+  "recommendations": [
+    {
+      "id": "low27",
+      "pays": {
+        "wheel": 25,
+        "low7": 7,
+        "low8": 5,
+        "low9": 4,
+        "lowT": 2,
+        "lowJ": 1
+      },
+      "summary": "Total returns: J-high 1×, T-high 2×, 9-high 4×, 8-high 5×, 7-high 7×, wheel 25×.",
+      "rationale": "Keep the J-high push and T-high award; improve the strong lows and make the wheel a bigger prize. Exact house edge: 0.6262%. This is a practical whole-number option, not a unique optimum.",
+      "result": {
+        "rtp": 0.993738073683526,
+        "netEV": -0.006261926316474042,
+        "deals": 2598960,
+        "holdCounts": [
+          15008,
+          174584,
+          609168,
+          958232,
+          679560,
+          162408
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "wheel": 20,
+        "low7": 10,
+        "low8": 4,
+        "low9": 2,
+        "bad5": 40,
+        "bad6": 20,
+        "bad7": 9,
+        "bad8": 4,
+        "bad9": 2
+      },
+      "summary": "Keep the 1-credit push. Low points (9 / 8 / 7 / wheel): 2 / 4 / 10 / 20. Badugi points (9 / 8 / 7 / 6 / 5): 2 / 4 / 9 / 20 / 40.",
+      "rationale": "Both qualifiers still apply. The badugi awards do most of the balancing: increasing 7-dugi from 9 to 10 would lift return above 100%. Exact house edge: 1.1217%.",
+      "result": {
+        "rtp": 0.988782635432071,
+        "netEV": -0.011217364567928989,
+        "deals": 2598960,
+        "holdCounts": [
+          18976,
+          330940,
+          1101328,
+          721236,
+          241440,
+          185040
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    }
+  ],
+  "experiments": [
+    {
+      "name": "Double every Badeucey point award; keep push",
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "wheel": 16,
+        "low7": 8,
+        "low8": 4,
+        "low9": 2,
+        "bad5": 32,
+        "bad6": 16,
+        "bad7": 8,
+        "bad8": 4,
+        "bad9": 2
+      },
+      "result": {
+        "rtp": 0.9170118230126019,
+        "netEV": -0.08298817698739813,
+        "deals": 2598960,
+        "holdCounts": [
+          6244,
+          309080,
+          1110552,
+          719484,
+          267120,
+          186480
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "name": "Recommended Badeucey with 7-dugi increased to 10",
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "wheel": 20,
+        "low7": 10,
+        "low8": 4,
+        "low9": 2,
+        "bad5": 40,
+        "bad6": 20,
+        "bad7": 10,
+        "bad8": 4,
+        "bad9": 2
+      },
+      "result": {
+        "rtp": 1.0052473287884642,
+        "netEV": 0.005247328788464234,
+        "deals": 2598960,
+        "holdCounts": [
+          25516,
+          337040,
+          1099200,
+          714084,
+          236640,
+          186480
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "name": "Alternative 2–7 interpretation: listed numbers are profit, plus stake",
+      "id": "low27",
+      "pays": {
+        "wheel": 11,
+        "low7": 6,
+        "low8": 5,
+        "low9": 4,
+        "lowT": 3,
+        "lowJ": 2
+      },
+      "result": {
+        "rtp": 1.2139079453631354,
+        "netEV": 0.2139079453631354,
+        "deals": 2598960,
+        "holdCounts": [
+          4092,
+          82156,
+          406408,
+          958024,
+          905424,
+          242856
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    }
+  ],
+  "sources": [
+    "https://wizardofodds.com/games/video-poker/summary/",
+    "https://wizardofodds.com/games/video-poker/tables/all-american/",
+    "https://wizardofodds.com/games/video-poker/tables/joker-poker-kings-or-better/",
+    "https://wizardofodds.com/games/video-poker/tables/deuces-wild/"
+  ]
+}

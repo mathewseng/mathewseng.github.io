@@ -28,7 +28,7 @@ const { serveSite, listPages, settle } = require("./site-pages.cjs");
 // Every published page has migrated onto tokens.css + app.css (docs/redesign/).
 const MIGRATED = new Set([
   "/", "/ofc/", "/poker/", "/blackjack/", "/dice/", "/backgammon/",
-  "/poker/dodge/", "/poker/dodge/simulator/", "/poker/222/", "/poker/calculations/",
+  "/poker/dodge/", "/poker/dodge/simulator/", "/poker/222/", "/poker/video-poker/", "/poker/calculations/",
   "/poker/play/", "/poker/rush/", "/poker/ultimate-omaha/", "/poker/edge-the-dealer/",
   "/ofc/play/", "/ofc/fantasyland-trainer/", "/ofc/fantasyland-ev/",
   "/blackjack/strategy/", "/dice/reports/", "/microtonal-lab/", "/cards/",

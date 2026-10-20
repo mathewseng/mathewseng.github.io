@@ -30,7 +30,8 @@
             { "name": "Poker Rush", "path": "/poker/rush/" },
             { "name": "Ultimate Omaha", "path": "/poker/ultimate-omaha/" },
             { "name": "Edge the Dealer", "path": "/poker/edge-the-dealer/" },
-            { "name": "222", "path": "/poker/222/" }
+            { "name": "222", "path": "/poker/222/" },
+            { "name": "Video Poker", "path": "/poker/video-poker/" }
           ]
         },
         {
