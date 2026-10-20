@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-20T23:23:36.205159+00:00",
+  "experimentSignature": "30e18e771837e22996a11f618cd502401739aa6b6fcde38520c9d4c98a37bcd1",
+  "status": "Criteria fixed before inspecting experiment equities",
+  "cohort": [
+    "opening-21",
+    "reply-20b4473214d470ab-63",
+    "reply-fd57f8a8e221b7f8-51",
+    "reply-d2855ee31ab665f9-54",
+    "reply-7985255600f3563f-44",
+    "reply-7985255600f3563f-51",
+    "reply-7e3b13415b18a2e9-63",
+    "reply-373d2637d6cfda5b-44",
+    "reply-b5499d9c6482f1a7-61",
+    "reply-cf59cb9355405192-51",
+    "reply-cf59cb9355405192-52",
+    "reply-b8e5c0a16f0875b5-44",
+    "reply-d8b0ad29eebeddb9-33",
+    "reply-ea77bd807985fd53-21",
+    "reply-2fda09c519d84905-32"
+  ],
+  "candidatePolicy": "full-strong",
+  "criteria": [
+    "Complete all 4320 planned batches and validate provenance.",
+    "Compare the same 15 fixed pairs: Full/strong must reduce mean absolute move-gap difference from XG versus the fresh Short baseline.",
+    "Full/strong must have at least as many negative fixed-pair gaps (mean preference for XG) as the fresh Short baseline.",
+    "At least one of the planned cutoff or checker effects must shift clearly toward XG under its simultaneous 95% interval.",
+    "Publish all 15 positions as one cohort, including every previously retained alternative at the same 1024-trial Full/strong policy. Do not selectively promote positions based on new winners.",
+    "Preserve ordinary sampling errors and explain that this targeted cohort does not validate general playing strength. If criteria fail, do not label this candidate policy a validated fix; investigate the failed comparison."
+  ],
+  "scope": "The deeper-cube arm compares two fixed moves and is diagnostic only until all other retained candidates have also been evaluated at that policy."
+}
