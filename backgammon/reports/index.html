@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="../styles.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="../docs.css?bgv=e85bbafc345c37ff" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../styles.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../docs.css?bgv=1a1f938b3cc99dcb" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=e85bbafc345c37ff"></script>
+    <script type="module" src="./app.js?bgv=1a1f938b3cc99dcb"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -57,7 +57,8 @@
             <a href="#speed">Depth comparison</a>
             <a href="#device">Measure this device</a>
             <a href="#accuracy">Accuracy</a>
-            <a href="#opening-accuracy">Opening book vs XG</a>
+            <a href="#opening-accuracy">Five-ply book vs XG</a>
+            <a href="#rollout-accuracy">Rollout policies vs XG</a>
             <a href="#method">Settings &amp; limits</a>
           </nav>
           <div class="docs-body">
@@ -110,6 +111,11 @@
               <h2 id="opening-accuracy-heading">Five-ply openings and replies vs XG</h2>
               <p>Offline GNUbg analysis gives the opening guide a deeper reference than the browser's live search. This comparison checks whether the extra depth actually brings equity estimates closer to published XG results.</p>
               <div id="opening-accuracy-content"></div>
+            </section>
+            <section class="docs-section" id="rollout-accuracy" aria-labelledby="rollout-accuracy-heading">
+              <h2 id="rollout-accuracy-heading">Stronger rollout policies vs XG</h2>
+              <p>Change how both simulated players choose checker moves and cube actions, then compare the resulting estimates on the same positions.</p>
+              <div id="rollout-accuracy-content"></div>
             </section>
             <section class="docs-section" id="method" aria-labelledby="method-heading">
               <h2 id="method-heading">What the settings mean</h2>

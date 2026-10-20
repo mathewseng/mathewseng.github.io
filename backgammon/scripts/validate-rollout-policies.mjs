@@ -34,6 +34,13 @@ try{
   if(maximumDifference>tolerance) {console.log(JSON.stringify({name,policy,native:n,scalar:a,simd:b}));throw Error(`${name}/${policy} parity ${maximumDifference}`);}
   rows.push({name,policy,checkerPlies:depth,cubePlies:depth,truncationPlies:policy==='short-deep'?5:0,xgid:toXGID(s,{engine:true}),after:turn?toXGID({...turn.state,dice:[],phase:'roll'},{engine:true}):'',samples:8,seed:19034,native:n,scalar:a,simd:b,maximumDifference});console.log(name,policy,maximumDifference);
  }
+ // Centered automatic opening stakes must preserve current-cube units.
+ const baseOpening=cases[0][1],scaledOpening={...baseOpening,cube:{value:4,owner:null}};
+ const baseTurn=legalTurns(baseOpening)[0],scaledTurn=legalTurns(scaledOpening)[0];
+ const baseValue=await query(baseOpening,baseTurn,2,true),scaledValue=await query(scaledOpening,scaledTurn,2,true);
+ const scaleDifference=diff(baseValue,scaledValue);
+ if(scaleDifference>tolerance)throw Error('Centered money-cube scale mismatch');
+ const centeredMoneyCubeScaleCheck={original:toXGID(baseOpening,{engine:true}),after:toXGID({...baseTurn.state,dice:[],phase:'roll'},{engine:true}),stakes:[1,4],samples:8,seed:19034,policy:'short-deep',values:[baseValue,scaledValue],maximumDifference:scaleDifference};
  // The old ABI remains exactly Basic, even following a Strong call.
  const s=race,t=legalTurns(s)[0],old=scalarModule.cwrap('bg_rollout','number',['string','string','number','number']);
  const ptr=old(toXGID(s,{engine:true}),toXGID({...t.state,dice:[],phase:'roll'},{engine:true}),8,19034);
@@ -43,6 +50,6 @@ try{
  const raw=scalarModule.cwrap('bg_rollout_config','number',['string','string','number','number','number','number','number']);
  const invalidConfigurations=[[-1,1,0],[3,1,0],[1,-1,0],[1,3,0],[2,2,-1],[2,2,2],[0,2,1],[2,1,1]];
  for(const depths of invalidConfigurations){const p=raw(toXGID(s,{engine:true}),'',8,1,...depths);const v=JSON.parse(scalarModule.UTF8ToString(p));scalarModule._free(p);if(!v.error)throw Error('Invalid native depth accepted');}
- const report={schema:1,invalidConfigurationsRejected:invalidConfigurations,engine:ENGINE_VERSION,recordedAt:new Date().toISOString(),tolerance,maximumDifference:Math.max(...rows.map(r=>r.maximumDifference)),description:'Seeded implementation parity, not a strength benchmark. Native ARM64 and scalar/SIMD WebAssembly, four policies, checker/cube money and match contexts, mirrored checker position, legacy ABI isolation and invalid-depth rejection.',nativeCacheMode:'default, matching WASM',build:JSON.parse(fs.readFileSync(path.join(native,'build.json'))),bridgeSHA256:createHash('sha256').update(fs.readFileSync(path.join(family,'engine/source/bridge.c'))).digest('hex'),rows};
+ const report={schema:1,centeredMoneyCubeScaleCheck,invalidConfigurationsRejected:invalidConfigurations,engine:ENGINE_VERSION,recordedAt:new Date().toISOString(),tolerance,maximumDifference:Math.max(...rows.map(r=>r.maximumDifference)),description:'Seeded implementation parity, not a strength benchmark. Native ARM64 and scalar/SIMD WebAssembly, four policies, checker/cube money and match contexts, mirrored checker position, legacy ABI isolation and invalid-depth rejection.',nativeCacheMode:'default, matching WASM',build:JSON.parse(fs.readFileSync(path.join(native,'build.json'))),bridgeSHA256:createHash('sha256').update(fs.readFileSync(path.join(family,'engine/source/bridge.c'))).digest('hex'),rows};
  const output=path.join(family,'docs/rollout-policy-validation.json');fs.writeFileSync(output+'.tmp',JSON.stringify(report,null,2)+'\n');fs.renameSync(output+'.tmp',output);
 }finally{child.kill();scalar.shutdown();simd.shutdown();}

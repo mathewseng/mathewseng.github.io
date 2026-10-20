@@ -17,11 +17,14 @@ export function openingState(roll) {
 }
 
 function position(state, entry, index) {
-  const result = bookResult(state, entry, index, 'expert');
+  return resultPosition(state,bookResult(state,entry,index,'expert'),index.threshold);
+}
+function resultPosition(state,result,threshold){
   const best = result.candidates[0].equity;
-  const moves = result.candidates.filter(c => best - c.equity <= index.threshold + 1e-8)
+  const moves = result.candidates.filter(c => best - c.equity <= threshold + 1e-8)
     .map(c => ({...c, ...presentMove(state,c.steps), loss:Math.max(0,best-c.equity)}));
-  return {state, moves, threshold:index.threshold, plies:result.settings.plies,
+  return {state, moves, threshold, plies:result.settings.plies, method:result.method||'tree',trials:result.settings.trials||null,
+    engine:result.engine,sourceName:result.settings.name,
     total:result.candidates.length, screened:!!result.screening};
 }
 
@@ -33,8 +36,9 @@ export function buildOpenings(index) {
 }
 
 export class OpeningGuideData {
-  constructor(fetcher = (...args) => fetch(...args), {deep=true}={}) {
+  constructor(fetcher = (...args) => fetch(...args), {deep=true,rolloutBook=null}={}) {
     this.fetcher = fetcher;
+    this.rolloutBook=rolloutBook;
     this.base = new URL(`../engine/opening-book-data/${deep?'deep/':''}`,import.meta.url);
     this.bookId = deep?DEEP_BOOK_ID:BOOK_ID;
     this.files = new Map();
@@ -65,7 +69,14 @@ export class OpeningGuideData {
   }
   async openings() {
     this.index = await this.read('index.json');
-    try { return buildOpenings(this.index); }
+    try {
+      const openings=buildOpenings(this.index);
+      if(this.rolloutBook)await Promise.all([...openings].map(async([roll,position])=>{
+        const result=await this.rolloutBook.lookupRollout(position.state).catch(()=>null);
+        if(result)openings.set(roll,resultPosition(position.state,result,result.book.openingWindow));
+      }));
+      return openings;
+    }
     catch (error) { this.files.delete('index.json'); throw error; }
   }
   async reply(opening, choice, roll, player=1) {
@@ -80,6 +91,14 @@ export class OpeningGuideData {
     } : {}), turn:player, phase:'move',dice:[...roll].map(Number)};
     const key = bookBoardKey(state), id = `${key}:${roll}:${player}`;
     if (this.positions.has(id)) return this.positions.get(id);
+    if(this.rolloutBook){
+      const rolled=await this.rolloutBook.lookupRollout(state).catch(()=>null);
+      if(rolled){
+        const result=resultPosition(state,rolled,rolled.book.openingWindow);
+        if(this.positions.size>=42)this.positions.delete(this.positions.keys().next().value);
+        this.positions.set(id,result);return result;
+      }
+    }
     const ref = this.index.replies?.[key];
     if (!ref || !/^reply-[a-f0-9]{16}\.json$/.test(ref.file))
       throw Error('This opening has no reply book.');

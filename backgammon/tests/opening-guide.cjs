@@ -167,13 +167,14 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.equal(await page.evaluate(async()=> (await (await import('/backgammon/core/storage.mjs')).get('work','opening-guide-test')).sentinel),'unchanged');
       assert.equal(requests.filter(u=>u.includes('/opening-book-data/deep/index.json')).length,1);
       assert.equal(requests.filter(u=>/\/opening-book-data\/deep\/reply-/.test(u)).length,1,'all 21 replies share a single position file');
-      // This reply has nine alternatives. Keep all of them readable at 320px,
+      // This reply has many close alternatives. Keep all of them readable at 320px,
       // and keep the color band proportional even when its row grows taller.
       await activate(page.locator('#opening-rolls [data-roll="36"]'));
       await activate(page.locator('#opening-next'));
       await page.waitForFunction(()=>document.querySelector('#openings').dataset.mode==='reply'&&document.querySelector('#openings').dataset.loading==='false');
       await activate(page.locator('#opening-rolls [data-roll="23"]'));
-      assert.equal(await page.locator('#opening-moves button').count(),10);
+      const wideListCount=await page.locator('#opening-moves button').count();
+      assert.ok(wideListCount>=6,'use a real reply with enough alternatives to exercise scrolling');
       await alternativesMatch();await matrix();
       await page.locator('#opening-rolls').screenshot({path:path.join(out,`${name}-opening-many-alternatives-${layout}.png`)});
       const choicesBefore=await page.locator('#opening-moves button strong').allTextContents();
@@ -193,7 +194,7 @@ module.exports=async function openingGuide(browser,base,out,name){
         assert.ok(compactBounds.grid.x>=compactBounds.board.right,'dice grid sits beside the board');
         assert.ok(compactBounds.list.height<=281,'long equity list scrolls beside the board');
       }else assert.ok(compactBounds.grid.y>=compactBounds.board.bottom,'phone portrait stacks usable targets below the board');
-      assert.equal(await page.locator('#opening-moves .opening-equity:visible').count(),10,'every next-best move retains its equity');
+      assert.equal(await page.locator('#opening-moves .opening-equity:visible').count(),wideListCount,'every next-best move retains its equity');
       await activate(page.locator('#opening-moves button').last());
       assert.ok((await page.locator('#opening-caption').textContent()).includes(choicesBefore.at(-1)),'compact move rows preview their choice');
       await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-compact-${layout}.png`)});

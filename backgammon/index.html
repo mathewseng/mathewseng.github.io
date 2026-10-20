@@ -10,15 +10,15 @@
     />
     <title>Backgammon</title>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="styles.css?bgv=e85bbafc345c37ff" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=e85bbafc345c37ff" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="styles.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=1a1f938b3cc99dcb" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="../shared/hub.js?bgv=e85bbafc345c37ff" defer></script>
-    <script type="module" src="app.js?bgv=e85bbafc345c37ff"></script>
+    <script src="../shared/hub.js?bgv=1a1f938b3cc99dcb" defer></script>
+    <script type="module" src="app.js?bgv=1a1f938b3cc99dcb"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -130,7 +130,7 @@
         <section class="group opening-guide" id="openings" data-layout="expanded" aria-labelledby="opening-title">
           <div class="group-head">
             <h2 id="opening-title">Opening moves &amp; replies</h2>
-            <span>GNUbg · 5 ply</span>
+            <span id="opening-method">GNUbg · 5 ply</span>
           </div>
           <p class="opening-intro">Every opening roll. The best moves, the close calls, and what comes next.</p>
           <div id="opening-controls" hidden>
@@ -206,7 +206,7 @@
           <details class="opening-method">
             <summary>About the rankings</summary>
             <p>Best means highest evaluated equity in the site’s GNUbg opening book. Close alternatives are within <span id="opening-threshold">0.040</span> equity of best. Equity is expected value in current-cube points, from the player making the move’s perspective; loss is the gap to best.</p>
-            <p>Five-ply, cubeful money play: centered cube, Jacoby on, beavers and raccoons off. Every legal move for all 15 opening rolls is evaluated; replies cover all 21 rolls after every best or close opening. Reply candidates are screened at three and four plies before five-ply evaluation. Rankings are estimates and can change with match scores or rollouts. <a href="/backgammon/reports/#opening-accuracy">Compare against published XG results.</a> Opening doubles are excluded because tied opening dice are rerolled.</p>
+            <p>Cubeful money play: centered cube, Jacoby on, beavers and raccoons off. Validated Short/deep rollouts cover all 15 openings and 51 selected replies; other replies retain five-ply estimates. Replies cover all 21 rolls after every best or close opening. Rollout values show trial counts and approximate 95% sampling intervals; these exclude model and candidate-screening error. Rankings can change with match scores or further analysis. <a href="/backgammon/reports/#rollout-accuracy">Compare against published XG results.</a> Opening doubles are excluded because tied opening dice are rerolled.</p>
             <a href="/backgammon/reports/">How the engine evaluates moves</a>
           </details>
           <noscript><p>Enable JavaScript to explore the opening book and animated move previews.</p></noscript>

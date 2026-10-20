@@ -15,7 +15,7 @@ const family=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const native=path.resolve(process.env.BG_ROLLOUT_NATIVE||'/tmp/bg-strong-rollout-native-v3');
-const out=path.resolve(process.env.BG_ROLLOUT_OUT||path.join(family,'test-results/strong-rollouts-v3'));
+const out=path.resolve(process.env.BG_ROLLOUT_OUT||path.join(family,'test-results/rollout-policy-v1'));
 const trials=Number(process.env.BG_ROLLOUT_TRIALS||512),workers=Number(process.env.BG_ROLLOUT_WORKERS||6);
 if(!Number.isInteger(trials)||trials<64||trials>65536||trials%32||!Number.isInteger(workers)||workers<1||workers>16)throw Error('Invalid trials/workers');
 const comparison=read(path.join(family,'docs/deep-book-comparison.json'));
@@ -32,9 +32,9 @@ const plan=rows.map(r=>{
  const candidates=selected.map(c=>({...c,original:toXGID(s,{engine:true}),after:toXGID({...commitTurn(s,c.steps),phase:'roll',dice:[]},{engine:true}),reference:r.commonMoves.find(m=>m.board===c.board)||null}));
  return {id:r.id,kind:r.kind,cohort:r.kind==='opening'?'opening':r.byDepth[5].agrees?'reply-control':'reply-disagreement',source:r.source,referenceBest:r.referenceBest,board:d.board,roll:d.roll,candidates};
 });
-const policies=['basic','balanced','short-deep'].map(rolloutPolicy);
+const policies=['basic','short-deep'].map(rolloutPolicy);
 const inputs={schema:1,build:read(path.join(native,'build.json')),plan,policies,trials,batchSize:32,
- method:'All 15 openings, all 39 five-ply reply disagreements and 12 evenly spaced agreeing reply controls. Opening contenders are the top two five-ply moves plus every move within .040 at any of three/four/five plies and the XG leader. Every retained five-ply reply contender is included. Fixed trials per candidate/policy; no significance-driven early stopping. Independent 32-trial batches, common seeds across candidates and policies. Money Jacoby, no beavers.',
+ method:'All 15 openings, all 39 five-ply reply disagreements and 12 evenly spaced agreeing reply controls. Opening contenders are the top two five-ply moves plus every move within .040 at any of three/four/five plies and the XG leader. Every retained five-ply reply contender is included. Fixed trials per candidate/policy; no significance-driven early stopping. Independent 32-trial batches, common seeds across candidates and policies. Money Jacoby, no beavers. Fixed accuracy comparison: Basic versus Short/deep; full-game Balanced and Strong have implementation checks only.',
  sourceSHA256:hash(fs.readFileSync(path.join(family,'docs/deep-book-evaluations.json'))),referenceSHA256:hash(fs.readFileSync(path.join(family,'docs/deep-book-comparison.json')))};
 const signature=hash(JSON.stringify(inputs));fs.mkdirSync(out,{recursive:true});
 const inputFile=path.join(out,'inputs.json'),log=path.join(out,'batches.jsonl'),lock=path.join(out,'lock');
@@ -46,7 +46,7 @@ const records=new Map();
 if(fs.existsSync(log)){const raw=fs.readFileSync(log,'utf8'),end=raw.lastIndexOf('\n')+1;if(end!==raw.length)fs.truncateSync(log,Buffer.byteLength(raw.slice(0,end)));for(const line of raw.slice(0,end).trim().split('\n').filter(Boolean)){const r=JSON.parse(line);if(records.has(r.key))throw Error('Duplicate checkpoint key');records.set(r.key,r);}}
 const jobs=[];
 // Round-robin batches provide early coverage without changing the fixed plan.
-for(const p of [policies[2],policies[0],policies[1]])for(let batch=0;batch<trials/32;batch++)for(const d of plan)for(const c of d.candidates){
+for(const p of [policies[1],policies[0]])for(let batch=0;batch<trials/32;batch++)for(const d of plan)for(const c of d.candidates){
  const key=[d.id,p.id,batch,c.board].join('|');
  const seed=(parseInt(hash(d.id).slice(0,8),16)+batch*65536)>>>0;
  jobs.push({key,id:d.id,board:c.board,policy:p.id,checkerPlies:p.checkerPlies,cubePlies:p.cubePlies,shortRollout:Number(p.truncationPlies>0),batch,seed,original:c.original,after:c.after});

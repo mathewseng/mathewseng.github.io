@@ -304,7 +304,7 @@ try {
   );
 } catch(e) { failed($('opening-accuracy-content'),e); }
 if ($('rollout-accuracy-content')) try {
-  const report=await json('../data/rollout-policy-comparison.json');
+  const [report,book]=await Promise.all([json('../data/rollout-policy-comparison.json'),json('../data/rollout-book-validation.json')]);
   if(!report.complete)throw Error('The rollout comparison is incomplete.');
   let cohort='opening';
   const target=el('div',{}),detail=el('div',{}),policies=report.policies;
@@ -322,12 +322,13 @@ if ($('rollout-accuracy-content')) try {
   };
   $('rollout-accuracy-content').append(
     measured(report.engine,report.recordedAt),
-    el('p',{},`${report.coverage.positions} decisions and ${report.coverage.candidates} candidate moves, each with ${report.expectedTrials} trials under Basic, Balanced and Short/deep. The cohort includes every opening, all 39 five-ply reply disagreements and 12 agreeing reply controls. The full-game Strong option is available in Solver; this accuracy comparison tests the three named policies.`),
+    el('p',{},`${report.coverage.positions} decisions and ${report.coverage.candidates} candidate moves, each with ${report.expectedTrials} trials under Basic and Short/deep. The cohort includes every opening, all 39 five-ply reply disagreements and 12 agreeing reply controls. Full-game Balanced and Strong are available in Solver and implementation-tested; this accuracy comparison tests Basic versus Short/deep.`),
     field('Rollout comparison positions',select([['opening','All 15 openings'],['reply-disagreement','39 reply disagreements'],['reply-control','12 agreeing reply controls'],['all','All 66 decisions']],cohort,v=>{cohort=v;draw();})),target,
-    el('p',{},'Basic and Balanced simulate complete games with 0/0 and 1/1 checker/cube policies. Short/deep uses 2/2 for two simulated turns, then 1/2, and a two-ply endpoint after five turns. This independently implemented short-rollout method uses GNUbg’s evaluator and ply numbering.'),
+    el('p',{},'Basic simulates complete games with 0/0 checker/cube policies. Short/deep uses 2/2 for two simulated turns, then 1/2, and a two-ply endpoint after five turns. This independently implemented short-rollout method uses GNUbg’s evaluator and ply numbering.'),
     el('p',{},'*Clear leads and leader-gap intervals are unadjusted exploratory 95% comparisons across independent common-seed batches. They exclude model bias, screened-out alternatives and XG reference uncertainty. The largest interval is for a candidate’s EV, not its gap to another move. More agreement with XG does not prove exact play.'),
-    el('p',{},'XG’s published book mixes rollouts and XGRoller++ evaluations, with beavers enabled. Our simulations disable beavers. The existing five-ply book remains separately identified; this experiment does not silently replace its values.'),detail,
-    downloads(link('Full comparison and uncertainty','../docs/rollout-policy-comparison.json'),link('Candidate plan and build provenance','../docs/rollout-policy-inputs.json'),link('Raw independent batches (gzip)','../docs/rollout-policy-batches.jsonl.gz'),link('Native/browser implementation checks','../docs/rollout-policy-validation.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-POLICIES.md'),link('XG’s rollout description','https://www.extremegammon.com/support.aspx')),
+    el('p',{},`The app uses these stored Short/deep estimates for ${book.coverage.sampled} decisions and retains five-ply estimates for the other ${book.coverage.fivePlyFallback} matched reference positions. Across the complete overlap, XG best-move agreement is ${book.summaries.opening.bestMoveAgreement}/${book.summaries.opening.positions} openings and ${book.summaries.reply.bestMoveAgreement}/${book.summaries.reply.positions} replies. Whole cohorts qualify only when they have no fewer matching choices and a smaller mean EV gap than their five-ply baseline. Unlisted moves receive a complete fallback comparison; rollout scores are not mixed with tree scores when grading.`),
+    el('p',{},'XG’s published book mixes rollouts and XGRoller++ evaluations, with beavers enabled. Our simulations disable beavers. This deliberately selected cohort is not an independent test of general playing strength.'),detail,
+    downloads(link('Published-book validation','../docs/rollout-book-validation.json'),link('Full comparison and uncertainty','../docs/rollout-policy-comparison.json'),link('Candidate plan and build provenance','../docs/rollout-policy-inputs.json'),link('Raw independent batches (gzip)','../docs/rollout-policy-batches.jsonl.gz'),link('Original plan and scope change','../docs/rollout-policy-plan-amendment.json'),link('Native/browser implementation checks','../docs/rollout-policy-validation.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-POLICIES.md'),link('XG’s rollout description','https://www.extremegammon.com/support.aspx')),
   );draw();
 } catch(e) { failed($('rollout-accuracy-content'),e); }
 $("method-content").append(

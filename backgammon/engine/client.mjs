@@ -2,14 +2,15 @@
 import { positionKey, boardKey, commitTurn } from "../core/rules.mjs";
 import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
 import { ADAPTIVE_SEARCH } from "./adaptive.mjs";
-import { OpeningBook, bookEligible } from "./opening-book.mjs";
+import { bookEligible } from "./opening-book.mjs";
+import { RolloutOpeningBook } from "./rollout-book.mjs";
 // One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
 export class EngineClient {
   constructor({
     workerFactory = () =>
       new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" }),
     onStatus = () => {},
-    openingBook = new OpeningBook({ preferDeep: true }),
+    openingBook = new RolloutOpeningBook(),
   } = {}) {
     this.factory = workerFactory;
     this.book = openingBook;
@@ -327,7 +328,7 @@ export class EngineClient {
           this.rememberReading(pending, result);
           while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
           pending.resolve(result);
-          this.onStatus("ready", `Opening book · ${result.settings.plies} ply · ready`);
+          this.onStatus("ready", `Opening book · ${result.method === "rollout" ? `${result.settings.trials} rollout trials` : `${result.settings.plies} ply`} · ready`);
           return;
         }
         this.active = null; this.queue.unshift(pending);

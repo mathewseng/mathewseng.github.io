@@ -590,6 +590,9 @@ const server = http.createServer((req, res) => {
         (report.openingGuide ||= []).push(
           await run("opening-guide", browser, base, out, browserName),
         );
+        (report.rolloutBook ||= []).push(
+          await run("rollout-book", browser, base, out, browserName),
+        );
         (report.deepOpeningBook ||= []).push(
           await run("deep-opening-book", browser, base, out, browserName),
         );

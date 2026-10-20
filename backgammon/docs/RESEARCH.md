@@ -37,3 +37,5 @@ All results identify the engine/version and observation date. Raw JSON is linked
 Numeric reproducibility is tested within 0.000001 equity/standard error. Saved batch moments and simulation seeds are reused verbatim, but GNUbg's floating-point evaluation cache can change the final few digits of newly computed batches after a worker restart. The resume test checks candidate identity, sample counts, scores and standard errors within this tolerance; it does not require byte-identical floating-point outputs.
 
 Desktop reference commands disable the 2-ply root move filters: otherwise GNUbg can stop with a clear 0-ply winner even when 2-ply was requested. The harness checks the depth printed by the desktop program before comparing numbers. Match-equity XML from the desktop release is supplied explicitly because the web core embeds its Kazaross-XG2 table.
+
+The stronger-rollout experiment and the promoted opening/reply estimates are documented in [ROLLOUT-POLICIES.md](ROLLOUT-POLICIES.md). The published report retains Basic, Short/deep and same-cohort five-ply results, paired sampling intervals, source provenance and the full 666-position lookup validation.

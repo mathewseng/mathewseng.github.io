@@ -1,4 +1,4 @@
-// Real five-ply assets through the default client, Solver and service worker.
+// Preserve historical five-ply assets, consistent fallback grades and offline use.
 const assert=require('node:assert/strict'),path=require('node:path');
 module.exports=async function deepOpeningBook(browser,base,out,name){
   const context=await browser.newContext({serviceWorkers:'block',reducedMotion:'reduce'}),page=await context.newPage(),errors=[],requests=[];
@@ -8,8 +8,9 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
     await page.goto(base+'/backgammon/');
     measured=await page.evaluate(async()=>{
       const {EngineClient}=await import('/backgammon/engine/client.mjs'),r=await import('/backgammon/core/rules.mjs');
+      const {OpeningBook,bookBoardKey}=await import('/backgammon/engine/opening-book.mjs');
       const {shareURL}=await import('/backgammon/core/xgid.mjs');
-      const client=new EngineClient({workerFactory:()=>{throw Error('Covered decision started WASM');}}),states=[],keys=[];
+      const client=new EngineClient({openingBook:new OpeningBook({preferDeep:true}),workerFactory:()=>{throw Error('Covered decision started WASM');}}),states=[],keys=[];
       try{
         const index=await client.book.load('deep/index.json');
         const initial=r.initialState({matchLength:0,phase:'move',dice:[3,1],rules:{cube:true,jacoby:true,immediateRedoubles:0}});
@@ -26,7 +27,10 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
           if(grade.settings.plies!==5||Math.abs(grade.error-(answer.candidates[0].equity-actual.equity))>1e-8)throw Error('Inconsistent grading');
           keys.push(answer.candidates[0].key);
         }
-        return {id:index.id,positions:states.length,states:[states[0],states.at(-1)],keys:[keys[0],keys.at(-1)],solverURL:shareURL(initial)};
+        const overlay=await(await fetch('/backgammon/engine/opening-book-data/rollout/index.json')).json();
+        const solverState=states.find(s=>!overlay.entries[bookBoardKey(s)]?.[[...s.dice].sort((a,b)=>b-a).join('')]);
+        if(!solverState)throw Error('Expected an uncovered five-ply fallback');
+        return {id:index.id,positions:states.length,states:[states[0],states.at(-1)],keys:[keys[0],keys.at(-1)],solverURL:shareURL(solverState)};
       }finally{client.destroy();}
     });
     for(const width of [1366,390]){
@@ -56,7 +60,8 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
     await livePage.goto(base+'/backgammon/');
     const grade=await livePage.evaluate(async()=>{
       const r=await import('/backgammon/core/rules.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
-      const client=new EngineClient();
+      const {OpeningBook}=await import('/backgammon/engine/opening-book.mjs');
+      const client=new EngineClient({openingBook:new OpeningBook({preferDeep:true})});
       try{
         const index=await client.book.load('deep/index.json');let state,omitted;
         for(const [board,ref]of Object.entries(index.replies)){
@@ -91,7 +96,8 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
       await tab.reload();await tab.waitForFunction(()=>!!navigator.serviceWorker.controller);
       const lookup=async states=>{
         const {EngineClient}=await import('/backgammon/engine/client.mjs');
-        const client=new EngineClient({workerFactory:()=>{throw Error('Offline book started WASM');}});
+        const {OpeningBook}=await import('/backgammon/engine/opening-book.mjs');
+        const client=new EngineClient({openingBook:new OpeningBook({preferDeep:true}),workerFactory:()=>{throw Error('Offline book started WASM');}});
         try{const keys=[];for(const state of states){const r=await client.analyze(state,{preset:'auto'});if(r.settings.plies!==5)throw Error('Lost five-ply source');keys.push(r.candidates[0].key);}return keys;}
         finally{client.destroy();}
       };
@@ -100,5 +106,5 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
       assert.deepEqual(await tab.evaluate(lookup,measured.states),measured.keys);
     }finally{await offline.close();}
   }
-  return {id:measured.id,positions:measured.positions,defaultClient:true,solver:true,comparison:true,unlistedReplyLiveGrade:measured.unlistedReplyLiveGrade,offline:name==='chromium'};
+  return {id:measured.id,positions:measured.positions,historicalBook:true,solver:true,comparison:true,unlistedReplyLiveGrade:measured.unlistedReplyLiveGrade,offline:name==='chromium'};
 };

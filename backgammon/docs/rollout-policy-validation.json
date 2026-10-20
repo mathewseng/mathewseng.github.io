@@ -2191,5 +2191,61 @@
       1,
       1
     ]
-  ]
+  ],
+  "centeredMoneyCubeScaleCheck": {
+    "stakes": [
+      1,
+      4
+    ],
+    "samples": 8,
+    "seed": 19034,
+    "policy": "short-deep",
+    "values": [
+      {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.02819262,
+        "cubeless": 0.0220829,
+        "probabilities": [
+          0.49879754,
+          0.1505902,
+          0.00526915,
+          0.12687388,
+          0.00449755
+        ],
+        "mwc": null,
+        "standardError": 0.01849823,
+        "mwcStandardError": 0
+      },
+      {
+        "samples": 8,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.02819262,
+        "cubeless": 0.0220829,
+        "probabilities": [
+          0.49879754,
+          0.1505902,
+          0.00526915,
+          0.12687388,
+          0.00449755
+        ],
+        "mwc": null,
+        "standardError": 0.01849823,
+        "mwcStandardError": 0
+      }
+    ],
+    "maximumDifference": 0,
+    "original": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:1:0:10",
+    "after": "XGID=-b----E-C--AeD---c-e---AA-:0:0:1:00:0:0:1:0:10"
+  }
 }

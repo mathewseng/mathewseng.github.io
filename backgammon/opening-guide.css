@@ -151,6 +151,7 @@
 }
 .opening-notation { display: flex; gap: 10px; align-items: baseline; }
 .opening-notation strong { font-weight: 600; line-height: 1.5; }
+.opening-interval { display: block; font-size: var(--t-xs); font-weight: 400; color: var(--muted); white-space: nowrap; }
 .opening-move-idea { display: block; margin-top: 4px; font-size: var(--t-xs); color: var(--muted); line-height: 1.4; }
 .opening-rank { color: var(--muted); font-size: var(--t-xs); }
 .opening-best { color: var(--accent); font-weight: 600; }
@@ -208,4 +209,9 @@
   .opening-toolbar { gap: 10px; }
   .opening-preview-controls { gap: 8px; flex-wrap: wrap; }
   .opening-preview-controls figcaption { flex: 1; min-width: 120px; }
+}
+
+/* Leave room for Linux font metrics above the study tools on short phones. */
+@media (max-width: 640px) and (max-height: 700px) {
+  .hub-backgammon .hub-main { gap: 6px; }
 }

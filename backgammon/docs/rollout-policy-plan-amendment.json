@@ -1,0 +1,15 @@
+{
+  "recordedAt": "2026-10-20T21:08:29Z",
+  "originalSignature": "4d36de60ef65c50c8a7a5319ef5f5f312a35f2429b5ad489674ba098024b7c65",
+  "originalPolicies": [
+    "basic",
+    "balanced",
+    "short-deep"
+  ],
+  "publishedPolicies": [
+    "basic",
+    "short-deep"
+  ],
+  "reason": "Narrowed to the original Basic baseline versus the completed Short/deep policy. Full-game Balanced adds substantial simulation cost; it and full-game Strong retain implementation checks only. No candidate, seed, or trial is dropped for either published policy. Decision made before corrected-run Balanced results were available.",
+  "publishedSignature": "0a8eaf54f195cabae6c16a7985d6846a740bc0e4efcb690f3ea9469bb9606343"
+}
