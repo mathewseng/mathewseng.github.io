@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
 const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../../scripts/quiet-browser.cjs'),{serveSite}=require('../../../scripts/site-pages.cjs');
 (async()=>{const server=await serveSite(path.resolve(process.argv[2]||'.')),browser=await launchQuietBrowser(chromium),errors=[];
 try{
+ await require('./decision-review.cjs')(browser,server.base);
  const page=await browser.newPage({viewport:{width:1440,height:900}});page.on('pageerror',e=>errors.push(e.message));
  await page.goto(server.base+'/poker/video-poker/');await page.waitForFunction(()=>document.getElementById('return-value').textContent==='99.5439%');
  assert.equal(await page.locator('#variant option').count(),17);

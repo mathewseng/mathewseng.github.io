@@ -10,10 +10,10 @@
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-  <link rel="stylesheet" href="./styles.css?v=20261020" />
+  <link rel="stylesheet" href="./styles.css?v=20261020-3" />
   <script src="../../shared/cards.js?v=20261016" defer></script>
   <script src="./engine.js?v=20261020" defer></script>
-  <script src="./app.js?v=20261020-2" defer></script>
+  <script src="./app.js?v=20261020-3" defer></script>
 </head>
 <body class="app-shell">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -32,7 +32,7 @@
         <div class="machine-actions"><button class="btn btn--ghost" id="solve-hand">Solve hand</button><button class="btn btn--ghost" id="hold-best" disabled>Hold best</button><button class="btn btn--primary deal-button" id="deal">Deal hand <span aria-hidden="true">→</span></button></div>
         <p class="shortcut-note">Tap cards to hold · Keys 1–5 · Space to deal or draw</p>
       </section>
-      <section class="strategy" aria-labelledby="strategy-title"><div class="section-heading"><h2 id="strategy-title">The best decision</h2><button class="text-button" id="show-all" hidden>Show all 32 holds</button></div><p id="strategy-status" role="status">Solve a hand to compare the exact return of every hold.</p><div id="strategy-results"></div>
+      <section class="strategy" aria-labelledby="strategy-title"><div class="section-heading"><h2 id="strategy-title">The best decision</h2><button class="text-button" id="show-all" hidden>Show all 32 holds</button></div><p id="strategy-status" role="status">Solve a hand to compare the exact return of every hold.</p><div id="decision-summary" class="decision-summary" hidden></div><div id="strategy-results"></div>
       <details class="spot-editor"><summary>Analyze a specific hand</summary><form id="spot-form"><label for="spot-hand">Five cards, separated by spaces</label><div class="input-action"><input id="spot-hand" placeholder="7s 5h 4d 3c 2s" autocomplete="off" spellcheck="false" /><button class="btn btn--ghost" type="submit">Analyze</button></div><p>Ranks 2–9, T, J, Q, K, A · Suits s, h, d, c · Joker: JK</p></form></details></section>
     </div>
     <aside class="paytable" aria-labelledby="paytable-title"><div class="section-heading"><h2 id="paytable-title">Paytable</h2><span id="paytable-unit">Return / 1 credit</span></div><div id="paytable"></div><p id="paytable-note"></p><button class="text-button" id="open-lab">Edit in payout lab →</button></aside>

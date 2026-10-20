@@ -60,6 +60,13 @@ h2 { font-size:18px; margin:0 0 12px; letter-spacing:-.35px; }
 .strategy-row .choice { display:flex; gap:12px; align-items:center; }
 .strategy-row .ev { font-variant-numeric:tabular-nums; white-space:nowrap; }
 .strategy-row .ev small { display:inline-block; min-width:84px; text-align:right; color:var(--muted); margin-left:12px; font-size:12px; }
+.decision-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; padding:12px 0 16px; }
+.decision-summary > div { display:grid; align-content:start; gap:5px; min-width:0; }
+.decision-summary span,.decision-summary small { color:var(--muted); font-size:12px; }
+.decision-summary strong { font-size:22px; letter-spacing:-.5px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.decision-summary > div:first-child strong { color:var(--accent); }
+.strategy-row.chosen { box-shadow:inset 3px 0 var(--accent); }
+.decision-marker { display:block; color:var(--accent); font-size:12px; margin-top:3px; }
 .strategy-row .rank { color:var(--muted); width:18px; }
 .spot-editor { margin-top:10px; }
 summary { min-height:44px; padding:12px 0; cursor:pointer; font-size:14px; font-weight:600; }
@@ -99,3 +106,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 @media(max-width:500px) { .vp-app { gap:14px; } .view-nav { width:100%; justify-content:space-between; } .view-nav button { padding:10px 8px; font-size:13px; } .game-bar { gap:10px; padding:12px 0; } .variant-field { display:grid; gap:4px; flex:1; min-width:0; } .variant-field label { display:none; } select { width:100%; font-size:14px; padding:8px; } .return-summary { flex-shrink:0; } .return-summary span { max-width:90px; font-size:12px; } .return-summary strong { font-size:20px; } .machine { padding:16px 12px 12px; } .hand { --card-width:clamp(44px,13.3vw,66px); gap:10px; } .meters strong { font-size:21px; } .machine-actions { flex-wrap:wrap; gap:8px; } .machine-actions .btn { font-size:13px; flex:1; padding:10px 8px; white-space:nowrap; } .machine-actions .deal-button { min-width:115px; gap:8px; } #hand-status { font-size:16px; } .shortcut-note { display:none; } .strategy-row { padding:10px 8px; } .strategy-row .ev small { display:block; margin:3px 0 0; min-width:0; } .strategy-row .choice { gap:5px; } .analysis-panel { padding:20px; } }
 @media(prefers-reduced-motion:reduce) { .hand.dealt .card-slot { animation:none; } .card-slot > button { transition:none; } }
 @media(min-width:901px) and (max-height:800px) { .play-column { overflow:auto; } .strategy { overflow:visible; flex-shrink:0; } .machine { padding-top:14px; } .hand { --card-width:80px; } .table-center { padding-top:12px; } }
+
+@media(min-width:901px) { .machine.complete .hand { --card-width:80px; } .machine.complete .shortcut-note { display:none; } }
+@media(max-width:500px) { .decision-summary { gap:10px; } .decision-summary strong { font-size:18px; } }

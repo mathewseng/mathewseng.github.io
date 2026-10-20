@@ -4,7 +4,7 @@
   const E=VideoPoker,$=id=>document.getElementById(id),fmt=(n,d=3)=>Number(n.toFixed(d)).toLocaleString('en-US',{maximumFractionDigits:d}),pct=n=>(n*100).toFixed(4)+'%';
   const clone=v=>JSON.parse(JSON.stringify(v));
   const storedKey='video-poker-paytables-v1';let saved={};try{saved=JSON.parse(localStorage.getItem(storedKey)||'{}');if(!saved||typeof saved!=='object')saved={};}catch{}
-  let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,credits=100,hands=0,lastReturn=null,rows=null,strategyHand=[],showAll=false,worker=null,request=0,busy=false,report=null,liveResult=null;
+  let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,credits=100,hands=0,lastReturn=null,rows=null,strategyHand=[],review=null,showAll=false,worker=null,request=0,busy=false,report=null,liveResult=null;
   const families=[...new Set(E.variants.map(x=>x.family))];
   $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${E.variants.filter(x=>x.family===f).map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</optgroup>`).join('');
   function configFor(id){const result=clone(E.byId[id]),p=saved[id];if(p&&Object.keys(result.pays).every(k=>Number.isInteger(p[k])&&p[k]>=0&&p[k]<=1000000)&&(id!=='badeucey'||p.qualify===1))result.pays={...p};return result;}
@@ -15,7 +15,7 @@
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
   $('open-lab').onclick=()=>setView('lab');
   function cancel(){request++;if(worker){worker.terminate();worker=null;}busy=false;$('solve-progress').hidden=true;$('cancel-solve').hidden=true;$('solve-all').disabled=false;renderControls();}
-  function clearStrategy(){rows=null;strategyHand=[];showAll=false;$('strategy-results').replaceChildren();$('strategy-status').textContent='Solve a hand to compare the exact return of every hold.';$('show-all').hidden=true;}
+  function clearStrategy(){rows=null;strategyHand=[];review=null;showAll=false;$('strategy-title').textContent='The best decision';$('decision-summary').hidden=true;$('decision-summary').replaceChildren();$('strategy-results').replaceChildren();$('strategy-status').textContent='Solve a hand to compare the exact return of every hold.';$('show-all').hidden=true;}
   function selectVariant(id){cancel();v=configFor(id);liveResult=null;phase='idle';hand=[];deck=[];mask=0;clearStrategy();$('variant').value=id;renderConfig();renderHand();$('hand-status').textContent='Five cards. One decision.';announce('');}
   $('variant').onchange=()=>selectVariant($('variant').value);
   function label(k){if(k==='highPair')return v.pairMin===10?'Tens or better':v.pairMin===13?'Kings or better':E.labels[k];if(k==='quads'&&v.pays.aces!==undefined)return v.pays.faceQuads!==undefined?'Four 5s–Ts':'Four 5s–Ks';if(k==='fiveKind'&&v.pays.fiveLow!==undefined)return 'Five 6s–Ks';return E.labels[k];}
@@ -33,29 +33,47 @@
     $('solve-status').textContent='';renderMetrics();renderControls();document.querySelector('.analysis-column').scrollTop=0;document.querySelector('.editor-panel').scrollTop=0;
   }
   function renderMetrics(){const result=knownResult();$('return-value').textContent=result?pct(result.rtp):'Not solved';$('lab-rtp').textContent=result?pct(result.rtp):'Not solved';$('analysis-badge').textContent=isOriginal()?'Original paytable':'Custom paytable';$('lab-result').textContent=result?`Net EV: ${result.netEV>=0?'+':''}${fmt(result.netEV,6)} credits / bet. ${result.rtp<=1?'House':'Player'} edge: ${pct(Math.abs(1-result.rtp))}. ${result.deals.toLocaleString()} starting hands solved.`:'Apply your payouts, then solve the full game to calculate its exact perfect-play return.';}
-  function renderControls(){const active=phase==='draw';$('variant').disabled=active;$('deal').disabled=false;$('deal').innerHTML=active?'Draw cards <span aria-hidden="true">→</span>':credits<1?'Refill credits':'Deal hand <span aria-hidden="true">→</span>';$('solve-hand').disabled=busy||hand.length!==5||phase==='complete';$('hold-best').disabled=busy||!rows||!['draw','study'].includes(phase);$('spot-hand').disabled=active;$('spot-form').querySelector('button').disabled=active;$('pay-form').querySelector('button[type=submit]').disabled=active;$('reset-pays').disabled=active;
+  function renderControls(){const active=phase==='draw';$('variant').disabled=active;$('deal').disabled=false;$('deal').innerHTML=active?'Draw cards <span aria-hidden="true">→</span>':credits<1?'Refill credits':'Deal hand <span aria-hidden="true">→</span>';$('solve-hand').disabled=busy||hand.length!==5;$('solve-hand').textContent=phase==='complete'?'Review decision':'Solve hand';$('hold-best').disabled=busy||!rows||!['draw','study'].includes(phase);$('spot-hand').disabled=active;$('spot-form').querySelector('button').disabled=active;$('pay-form').querySelector('button[type=submit]').disabled=active;$('reset-pays').disabled=active;
     document.querySelectorAll('[data-recommend]').forEach(b=>b.disabled=active);$('credits').textContent=fmt(credits);$('hands-played').textContent=hands;$('last-return').textContent=lastReturn===null?'—':fmt(lastReturn);
   }
-  function renderHand(animate=false){const canHold=['draw','study'].includes(phase);$('hand').classList.remove('dealt');$('hand').innerHTML=Array.from({length:5},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');if(animate){void $('hand').offsetWidth;$('hand').classList.add('dealt');}
+  function renderHand(animate=false){const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.remove('dealt');$('hand').innerHTML=Array.from({length:5},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');if(animate){void $('hand').offsetWidth;$('hand').classList.add('dealt');}
     $('hold-instruction').textContent=phase==='draw'?'Select your holds, then draw once.':phase==='study'?'Study hand · no credit wagered. Deal starts a random hand.':phase==='complete'?'Hand complete. Deal again when you’re ready.':'Deal a hand to begin.';renderControls();
   }
   function toggleHold(i){if(!['draw','study'].includes(phase))return;mask^=1<<i;renderHand();renderStrategy();}
   $('hand').onclick=e=>{const b=e.target.closest('[data-card]');if(b)toggleHold(+b.dataset.card);};
   function random(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}
   $('deal').onclick=()=>{cancel();announce('');if(phase==='draw'){
+    review={hand:[...hand],mask};strategyHand=[...hand];$('strategy-title').textContent='Decision review';
     hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);credits+=result.payout;lastReturn=result.payout;hands++;phase='complete';mask=0;renderHand(true);$('hand-status').textContent=result.payout?`${result.label} · ${fmt(result.payout)} returned`:result.label+' · 0 returned';
-    document.querySelectorAll('[data-pay]').forEach(el=>el.classList.toggle('paying',result.keys.includes(el.dataset.pay)));clearStrategy();$('strategy-status').textContent='Hand complete. Solve your next deal before drawing to compare holds.';
+    document.querySelectorAll('[data-pay]').forEach(el=>el.classList.toggle('paying',result.keys.includes(el.dataset.pay)));if(rows)renderStrategy();else run('hand');
   }else if(credits<1){credits=100;lastReturn=null;hands=0;renderControls();announce('Refilled to 100 practice credits.');}else{
     const shuffled=E.shuffledDeck(v.deckSize,random);hand=shuffled.slice(0,5);deck=shuffled.slice(5);credits-=1;mask=0;phase='draw';clearStrategy();renderHand(true);$('hand-status').textContent='Choose your hold';document.querySelectorAll('[data-pay]').forEach(el=>el.classList.remove('paying'));
   }};
   function describe(m,h=strategyHand){return m===0?'Draw five':m===31?'Hold all five':h.filter((_,i)=>m&(1<<i)).map(E.cardText).join(' ');}
-  function renderStrategy(){if(!rows)return;const selected=rows.find(r=>r.mask===mask),best=rows[0];$('strategy-status').textContent=`Best: ${describe(best.mask)} · ${fmt(best.ev,6)} returned / credit.${selected?` Your hold: ${fmt(selected.ev,6)} (${fmt(Math.max(0,best.ev-selected.ev),6)} EV given up).`:''}`;
-    $('strategy-results').innerHTML=(showAll?rows:rows.slice(0,5)).map((r,i)=>`<div class="strategy-row${Math.abs(r.ev-best.ev)<1e-10?' best':''}"><span class="choice"><span class="rank">${i+1}</span><span>${describe(r.mask)}</span></span><span class="ev">${fmt(r.ev,6)}×<small>${i===0?'best return':'−'+fmt(best.ev-r.ev,6)}</small></span></div>`).join('');$('show-all').hidden=false;$('show-all').textContent=showAll?'Show top 5':'Show all 32 holds';renderControls();
+  function renderStrategy(){
+    if(!rows)return;
+    const selectedMask=review?review.mask:mask,selected=rows.find(r=>r.mask===selectedMask),best=rows[0];
+    $('decision-summary').hidden=!review;
+    if(review){
+      const loss=Math.max(0,best.ev-selected.ev);
+      $('strategy-title').textContent='Decision review';
+      $('strategy-status').textContent=`Original deal: ${strategyHand.map(E.cardText).join(' ')}. EV is expected return per credit, including your stake, before the draw.`;
+      $('decision-summary').innerHTML=`<div><span>Your decision EV</span><strong id="decision-ev" data-ev="${selected.ev}">${fmt(selected.ev,6)}×</strong><small>${describe(selected.mask)}</small></div><div><span>Best decision EV</span><strong id="best-decision-ev" data-ev="${best.ev}">${fmt(best.ev,6)}×</strong><small>${describe(best.mask)}</small></div><div><span>EV given up</span><strong id="decision-loss" data-ev="${loss}">${fmt(loss,6)}</strong><small>${loss<1e-10?'Optimal decision':'credits / bet'}</small></div>`;
+    }else{
+      $('strategy-status').textContent=`Best: ${describe(best.mask)} · ${fmt(best.ev,6)} returned / credit.${selected?` Your hold: ${fmt(selected.ev,6)} (${fmt(Math.max(0,best.ev-selected.ev),6)} EV given up).`:''}`;
+    }
+    const visible=showAll?[...rows]:rows.slice(0,5);
+    if(review&&!showAll&&!visible.includes(selected))visible.push(selected);
+    $('strategy-results').innerHTML=visible.map(r=>{
+      const optimal=Math.abs(r.ev-best.ev)<1e-10,chosen=!!review&&r.mask===review.mask;
+      return `<div class="strategy-row${optimal?' best':''}${chosen?' chosen':''}" data-mask="${r.mask}"><span class="choice"><span class="rank">${rows.indexOf(r)+1}</span><span>${describe(r.mask)}${chosen?'<small class="decision-marker">Your decision</small>':''}</span></span><span class="ev">${fmt(r.ev,6)}×<small>${optimal?'best return':'−'+fmt(best.ev-r.ev,6)}</small></span></div>`;
+    }).join('');
+    $('show-all').hidden=false;$('show-all').textContent=showAll?'Show top 5':'Show all 32 holds';renderControls();
   }
   $('show-all').onclick=()=>{showAll=!showAll;renderStrategy();};
-  function run(kind){cancel();busy=true;renderControls();const id=++request;$('solve-all').disabled=true;$('cancel-solve').hidden=false;$('solve-progress').hidden=false;$('solve-progress').value=0;const status=kind==='all'?$('solve-status'):$('strategy-status');status.textContent='Starting exact solver…';
+  function run(kind){const queryHand=[...(review?review.hand:hand)];cancel();busy=true;renderControls();const id=++request;$('solve-all').disabled=true;$('cancel-solve').hidden=false;$('solve-progress').hidden=false;$('solve-progress').value=0;const status=kind==='all'?$('solve-status'):$('strategy-status');status.textContent=kind==='hand'&&review?'Reviewing your draw decision…':'Starting exact solver…';
     try{worker=new Worker('./worker.js?v=20261020');worker.onerror=error=>{if(id!==request)return;finishError(error.message||'The solver could not start. Reload the page and try again.');};worker.onmessage=({data})=>{if(data.id!==request)return;if(data.error){finishError(data.error);return;}if(data.progress!==undefined){status.textContent=data.stage+' · '+Math.round(data.progress*100)+'%';$('solve-progress').value=data.progress;return;}busy=false;$('cancel-solve').hidden=true;$('solve-progress').hidden=true;$('solve-all').disabled=false;
-      if(kind==='all'){liveResult=data.result;renderMetrics();document.querySelector('.analysis-column').scrollTop=0;status.textContent='Complete. Every hold was re-optimized for this paytable.';}else{rows=data.result;strategyHand=[...hand];renderStrategy();}worker.terminate();worker=null;renderControls();};worker.postMessage({id,kind,variant:v,hand});}
+      if(kind==='all'){liveResult=data.result;renderMetrics();document.querySelector('.analysis-column').scrollTop=0;status.textContent='Complete. Every hold was re-optimized for this paytable.';}else{rows=data.result;strategyHand=queryHand;renderStrategy();}worker.terminate();worker=null;renderControls();};worker.postMessage({id,kind,variant:v,hand:queryHand});}
     catch(error){finishError(error.message);}
     function finishError(message){cancel();status.textContent=message;announce(message);}
   }
