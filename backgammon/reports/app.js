@@ -327,10 +327,38 @@ if ($('rollout-accuracy-content')) try {
     el('p',{},'Basic simulates complete games with 0/0 checker/cube policies. Short/deep uses 2/2 for two simulated turns, then 1/2, and a two-ply endpoint after five turns. This independently implemented short-rollout method uses GNUbg’s evaluator and ply numbering.'),
     el('p',{},'*Clear leads and leader-gap intervals are unadjusted exploratory 95% comparisons across independent common-seed batches. They exclude model bias, screened-out alternatives and XG reference uncertainty. The largest interval is for a candidate’s EV, not its gap to another move. More agreement with XG does not prove exact play.'),
     el('p',{},`The app uses these stored Short/deep estimates for ${book.coverage.sampled} decisions and retains five-ply estimates for the other ${book.coverage.fivePlyFallback} matched reference positions. Across the complete overlap, XG best-move agreement is ${book.summaries.opening.bestMoveAgreement}/${book.summaries.opening.positions} openings and ${book.summaries.reply.bestMoveAgreement}/${book.summaries.reply.positions} replies. Whole cohorts qualify only when they have no fewer matching choices and a smaller mean EV gap than their five-ply baseline. Unlisted moves receive a complete fallback comparison; rollout scores are not mixed with tree scores when grading.`),
-    el('p',{},'XG’s published book mixes rollouts and XGRoller++ evaluations, with beavers enabled. Our simulations disable beavers. This deliberately selected cohort is not an independent test of general playing strength.'),detail,
+    el('p',{},'XG’s published book mixes rollouts and XGRoller++ evaluations, with beavers enabled. Our simulations disable beavers. This deliberately selected cohort is not an independent test of general playing strength.'),
+    el('p',{},link('See the independent 4,096-trial confirmation of the remaining disagreements.','#rollout-diagnostic')),detail,
     downloads(link('Published-book validation','../docs/rollout-book-validation.json'),link('Full comparison and uncertainty','../docs/rollout-policy-comparison.json'),link('Candidate plan and build provenance','../docs/rollout-policy-inputs.json'),link('Raw independent batches (gzip)','../docs/rollout-policy-batches.jsonl.gz'),link('Original plan and scope change','../docs/rollout-policy-plan-amendment.json'),link('Native/browser implementation checks','../docs/rollout-policy-validation.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-POLICIES.md'),link('XG’s rollout description','https://www.extremegammon.com/support.aspx')),
   );draw();
 } catch(e) { failed($('rollout-accuracy-content'),e); }
+if ($('rollout-diagnostic-content')) try {
+  const report=await json('../data/rollout-diagnostic-comparison.json');
+  if(!report.complete||report.coverage.classified!==24)throw Error('The fixed confirmation is incomplete.');
+  const counts=report.classifications,opening=report.rows.find(r=>r.kind==='opening');
+  const number=v=>`${v>=0?'+':''}${v.toFixed(5)}`;
+  const interval=g=>`[${number(g.familywise95.lower)}, ${number(g.familywise95.upper)}]`;
+  const names={persistent:'Persistent preference',reversed:'Reversed toward XG',unresolved:'Unresolved'};
+  let filter='all';const target=el('div',{});
+  const draw=()=>target.replaceChildren(table(
+    ['Position','Previous choice','XG choice','Fresh gap','Simultaneous 95% interval','Conclusion','XG gap*'],
+    report.rows.filter(r=>filter==='all'||r.gap.classification===filter).map(r=>[
+      link(r.kind==='opening'?`Opening ${r.roll}`:`${new URL(r.source).pathname.split('/').at(-1).replace('Replies_to_','After ').replace('.html','')} · ${r.roll}`,r.source),
+      r.previousMove,r.xgMove,number(r.gap.difference),interval(r.gap),names[r.gap.classification],
+      `${number(-r.reference.preferredGap)}${r.reference.marginalIntervalsSeparate?'':' · overlapping error bars'}`,
+    ]),'Fixed pairs · positive gaps favor our previous choice; negative gaps favor XG’s choice · current-cube equity'));
+  $('rollout-diagnostic-content').append(
+    measured(report.engine,report.recordedAt),
+    el('p',{},`${report.trialsPerMove.toLocaleString()} fresh trials per move × 48 moves = ${(report.trialsPerMove*48).toLocaleString()} rollout trials. ${counts.persistent} pairs retain a statistically clear preference against XG, ${counts.reversed} clearly reverse${counts.reversed===1?'s':''} toward XG, and ${counts.unresolved} remain unresolved after correcting for all 24 comparisons.`),
+    el('p',{},`Opening 2–1: ${opening.previousMove} versus ${opening.xgMove}. The fresh difference is ${number(opening.gap.difference)}, with simultaneous 95% interval ${interval(opening.gap)}: ${names[opening.gap.classification].toLowerCase()}.`),
+    el('p',{},'Each pair uses shared dice in 128 independent batches of 32 trials. Every trial seed is fresh relative to the earlier experiment. The two moves and 4,096-trial stopping point were fixed before this run; the previous 512 trials are excluded. Intervals use paired batch means with a Student-t approximation and Bonferroni correction across 24 positions.'),
+    el('p',{},'A persistent preference is evidence against sampling noise as the sole cause within this pipeline. It does not isolate the neural evaluator: checker choices, cube decisions, move filtering and the five-turn truncation endpoint can create systematic differences. Both engines are estimates. All 24 reference pairs use published XG rollouts with 3-ply, 4-ply or XG Roller continuation policies. Their reported marginal error bars often overlap, and their shared-dice covariance is unavailable.'),
+    el('p',{},'Unresolved means these samples cannot determine the direction confidently; it does not prove the moves are equal or that all disagreement is noise. A reversed result supports sampling instability in the original ranking. The published opening guide retains its original full candidate comparisons: this diagnostic tests only two fixed moves per position.'),
+    field('Disagreement conclusion',select([['all','All 24 positions'],...Object.entries(names).map(([k,v])=>[k,`${v} (${counts[k]})`])],filter,v=>{filter=v;draw();})),target,
+    el('p',{},'*XG gap uses the same sign convention. “Overlapping error bars” compares the two reported marginal intervals; this is not a paired significance test. XG enables beavers while these GNUbg rollouts disable them. Ordinary 95% intervals, previous 512-trial gaps and three-/four-/five-ply gaps are available in the full result download.'),
+    downloads(link('Full paired results','../docs/rollout-diagnostic-comparison.json'),link('Fixed pairs, seeds and policy','../docs/rollout-diagnostic-inputs.json'),link('Raw fresh batches (gzip)','../docs/rollout-diagnostic-batches.jsonl.gz'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-DIAGNOSTIC.md')),
+  );draw();
+} catch(e) { failed($('rollout-diagnostic-content'),e); }
 $("method-content").append(
   el(
     "dl",

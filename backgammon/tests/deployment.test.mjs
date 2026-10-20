@@ -37,6 +37,8 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "engine/opening-book-data/rollout/index.json",
       "data/rollout-policy-comparison.json",
       "data/rollout-book-validation.json",
+      "data/rollout-diagnostic-comparison.json",
+      "docs/rollout-diagnostic-batches.jsonl.gz",
       "docs/rollout-policy-batches.jsonl.gz",
       "engine/opening-book-data/index.json",
       "engine/worker.mjs",

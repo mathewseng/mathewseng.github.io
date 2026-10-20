@@ -31,7 +31,7 @@ All three complete cohorts meet the publication gate: no fewer XG best-move matc
 
 The actual published lookup path was checked against all 666 matched reference decisions: **14/15 openings and 628/651 replies** agree with XG, versus 13/15 and 612/651 previously. It uses 66 sampled entries and 600 five-ply fallbacks. Mean EV gap over all 651 replies changes from 0.012133 to 0.011746; the improvement is concentrated in the 51 recomputed replies. Every stored decision was also checked with reversed player orientation, actual-move grading and an omitted alternative. Browser tests check source labels, intervals, responsive guide/Solver/report views, missing-download fallback and cached offline use.
 
-Opening 21 still prefers splitting over slotting by just 0.000775, with a paired 95% half-width of 0.004711; this rollout does not resolve that ordering. There are still 23 reply disagreements. Further work should target sampling uncertainty and evaluator/cube-policy bias rather than claim that another depth label guarantees correctness.
+Opening 21 still prefers splitting over slotting by just 0.000775, with a paired 95% half-width of 0.004711; this rollout does not resolve that ordering. There are still 23 reply disagreements. The follow-up [independent confirmation](ROLLOUT-DIAGNOSTIC.md) gives each conflicting move 4,096 fresh trials to distinguish sampling uncertainty from persistent pipeline differences. It leaves the published full-candidate book unchanged.
 
 ## What can be reused from XG
 

@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=1a1f938b3cc99dcb" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=1a1f938b3cc99dcb" />
-    <link rel="stylesheet" href="../styles.css?bgv=1a1f938b3cc99dcb" />
-    <link rel="stylesheet" href="../docs.css?bgv=1a1f938b3cc99dcb" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=2e8364edc801adf8" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=2e8364edc801adf8" />
+    <link rel="stylesheet" href="../styles.css?bgv=2e8364edc801adf8" />
+    <link rel="stylesheet" href="../docs.css?bgv=2e8364edc801adf8" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=1a1f938b3cc99dcb"></script>
+    <script type="module" src="./app.js?bgv=2e8364edc801adf8"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -59,6 +59,7 @@
             <a href="#accuracy">Accuracy</a>
             <a href="#opening-accuracy">Five-ply book vs XG</a>
             <a href="#rollout-accuracy">Rollout policies vs XG</a>
+            <a href="#rollout-diagnostic">Remaining disagreements</a>
             <a href="#method">Settings &amp; limits</a>
           </nav>
           <div class="docs-body">
@@ -116,6 +117,11 @@
               <h2 id="rollout-accuracy-heading">Stronger rollout policies vs XG</h2>
               <p>Change how both simulated players choose checker moves and cube actions, then compare the resulting estimates on the same positions.</p>
               <div id="rollout-accuracy-content"></div>
+            </section>
+            <section class="docs-section" id="rollout-diagnostic" aria-labelledby="rollout-diagnostic-heading">
+              <h2 id="rollout-diagnostic-heading">Are the remaining disagreements sampling noise?</h2>
+              <p>Independent confirmation of opening 2–1 and the 23 reply choices still differing from XG after the first rollout comparison.</p>
+              <div id="rollout-diagnostic-content"></div>
             </section>
             <section class="docs-section" id="method" aria-labelledby="method-heading">
               <h2 id="method-heading">What the settings mean</h2>
