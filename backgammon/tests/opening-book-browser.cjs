@@ -30,7 +30,8 @@ const server=http.createServer((req,res)=>{let url=new URL(req.url,'http://local
     const later=turn=>bookCases.find(s=>bookIndex.continuations[boardKey(s)]?.turn===turn);
     const third=bookCases.filter(s=>bookIndex.continuations[boardKey(s)]?.turn===3);
     const sampleThird=[third[Math.floor(third.length*.25)],third[Math.floor(third.length*.5)],third[Math.floor(third.length*.75)],third.at(-1)];
-    const client=new EngineClient(),rows=[],fixtures=[bookCases[1],bookCases[8],bookCases[14],bookCases[25],bookCases[35],bookCases[728],later(3),{...later(3),dice:[6,6]},later(4),{...later(4),dice:[4,2]},...sampleThird];
+    const {OpeningBook}=await import('/backgammon/engine/opening-book.mjs');
+    const client=new EngineClient({openingBook:new OpeningBook()}),rows=[],fixtures=[bookCases[1],bookCases[8],bookCases[14],bookCases[25],bookCases[35],bookCases[728],later(3),{...later(3),dice:[6,6]},later(4),{...later(4),dice:[4,2]},...sampleThird];
     const mirror=s=>({...s,turn:1-s.turn,points:[...s.points].reverse().map(n=>-n),bar:[...s.bar].reverse(),off:[...s.off].reverse()});
     try{
      for(let i=0;i<fixtures.length;i++){

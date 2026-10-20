@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {OpeningGuideData, OPENING_ROLLS, REPLY_ROLLS, buildOpenings, openingState, previewPosition, openingIdea, openingSummary} from '../ui/opening-guide-data.mjs';
 import {boardKey, commitTurn, assertState} from '../core/rules.mjs';
-const index=JSON.parse(readFileSync(new URL('../engine/opening-book-data/index.json',import.meta.url)));
+import {bookBoardKey} from '../engine/opening-book.mjs';
+const index=JSON.parse(readFileSync(new URL('../engine/opening-book-data/deep/index.json',import.meta.url)));
 const fileFetch=url=>Promise.resolve(new Response(readFileSync(url)));
 
 test('opening guide covers every opening and precisely the book’s close window with compact legal notation',()=>{
@@ -74,7 +75,7 @@ test('reply colors mirror the legal board and preserve all notation, equity and 
 test('every best and close opening has all 21 correctly oriented, cached replies without mutating its source',async()=>{
   const requests=new Map();
   const data=new OpeningGuideData(url=>{requests.set(url.pathname,(requests.get(url.pathname)||0)+1);return fileFetch(url);});
-  const guide=await data.openings();let count=0;
+  const guide=await data.openings();let count=0;const visitedBoards=new Set();
   for(const opening of guide.values()) for(let choice=0;choice<opening.moves.length;choice++){
     const saved=JSON.stringify(opening);
     const after=commitTurn(opening.state,opening.moves[choice].steps);
@@ -93,8 +94,10 @@ test('every best and close opening has all 21 correctly oriented, cached replies
     }
     assert.equal(JSON.stringify(opening),saved);
   }
-  assert.equal(count,35*21);
-  assert.equal(requests.size,1+Object.keys(index.replies).length,'only the index and the distinct reply positions; equivalent openings share a shard');
+  for(const opening of guide.values())for(const choice of opening.moves)
+    visitedBoards.add(bookBoardKey({...commitTurn(opening.state,choice.steps),turn:1}));
+  assert.equal(count,[...guide.values()].reduce((n,p)=>n+p.moves.length,0)*21);
+  assert.equal(requests.size,1+visitedBoards.size,'only the index and the distinct reply positions; equivalent openings share a shard');
   assert.ok([...requests.values()].every(n=>n===1),'all rolls of a reply reuse one shard');
 });
 

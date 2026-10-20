@@ -165,8 +165,8 @@ module.exports=async function openingGuide(browser,base,out,name){
       await page.keyboard.press('Enter');
       assert.equal(await page.locator('#openings').getAttribute('data-roll'),'31','keyboard can change roll');
       assert.equal(await page.evaluate(async()=> (await (await import('/backgammon/core/storage.mjs')).get('work','opening-guide-test')).sentinel),'unchanged');
-      assert.equal(requests.filter(u=>u.includes('/opening-book-data/index.json')).length,1);
-      assert.equal(requests.filter(u=>/\/opening-book-data\/reply-/.test(u)).length,1,'all 21 replies share a single position file');
+      assert.equal(requests.filter(u=>u.includes('/opening-book-data/deep/index.json')).length,1);
+      assert.equal(requests.filter(u=>/\/opening-book-data\/deep\/reply-/.test(u)).length,1,'all 21 replies share a single position file');
       // This reply has nine alternatives. Keep all of them readable at 320px,
       // and keep the color band proportional even when its row grows taller.
       await activate(page.locator('#opening-rolls [data-roll="36"]'));
@@ -232,8 +232,8 @@ module.exports=async function openingGuide(browser,base,out,name){
   const context=await browser.newContext({serviceWorkers:'block',reducedMotion:'reduce'}),page=await context.newPage();
   try{
     let failIndex=true,failReply=true;
-    await page.route('**/opening-book-data/index.json',route=>failIndex?(failIndex=false,route.fulfill({status:503,body:''})):route.continue());
-    await page.route('**/opening-book-data/reply-*.json',async route=>{
+    await page.route('**/opening-book-data/deep/index.json',route=>failIndex?(failIndex=false,route.fulfill({status:503,body:''})):route.continue());
+    await page.route('**/opening-book-data/deep/reply-*.json',async route=>{
       if(failReply){failReply=false;return route.fulfill({status:503,body:''});}
       await new Promise(r=>setTimeout(r,250));return route.continue();
     });

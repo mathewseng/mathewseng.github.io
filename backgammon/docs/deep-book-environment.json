@@ -1,0 +1,20 @@
+{
+  "recordedAt": "2026-10-20T00:47:35.503Z",
+  "scope": "Environment and unchanged helper-source snapshot for this recorded run, captured during computation. Native build, policy and generator hashes are in the result provenance.",
+  "signature": "1aa75c213e1b463a944cc63cd54ab78b741b7ccb248a1f3309cb6abc157bb87c",
+  "sourceBase": "c13638ed22711146217cc9fabf34ca4382651d4f",
+  "helperSHA256": {
+    "backgammon/core/rules.mjs": "decdf95549269f0574f05749e3ef6ceed50acf23c5a9346cde52267bdda91d3c",
+    "backgammon/core/xgid.mjs": "dbece95af56ab80ad6db24f31003b8a236bee4bf152f762d5bc26864bf69b622",
+    "backgammon/core/certain-bearoff.mjs": "b2ac128fc2a849c10e34677c7828d04d58cb1ca6d2bad1176ebcdc881f8aa4b5",
+    "backgammon/scripts/book-branches.mjs": "e3d97c02bf3753cb6d343cc338684f7df7c0ff129783bd994882721c9663dad9"
+  },
+  "node": "v22.23.3",
+  "os": "darwin 25.5.0 arm64",
+  "cpu": "Apple M4 Pro",
+  "workers": {
+    "initial": 10,
+    "replies": 14
+  },
+  "resumeRequirement": "Keep these helper sources unchanged. The generator checkpoint signature validates the native build, generator, historical index and policy; helper hashes are recorded separately here."
+}

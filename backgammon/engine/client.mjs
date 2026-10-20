@@ -9,7 +9,7 @@ export class EngineClient {
     workerFactory = () =>
       new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" }),
     onStatus = () => {},
-    openingBook = new OpeningBook(),
+    openingBook = new OpeningBook({ preferDeep: true }),
   } = {}) {
     this.factory = workerFactory;
     this.book = openingBook;

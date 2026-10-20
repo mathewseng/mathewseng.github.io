@@ -40,6 +40,8 @@ Checker Research adds policy `retain-expert-leader-v1`: its original 2-ply short
 
 ## Opening book
 
+The runtime now prefers the separately versioned [five-ply opening/reply book](DEEP-OPENING-BOOK.md) for compatible first- and second-turn decisions. It was computed offline with a native bg6 build; the live browser depth limit is unchanged. Historical later-turn results and missing-download fallback retain their original bg5/three-ply labels. The opening guide reads the five-ply data directly. The following paragraph documents the preserved historical table.
+
 Default Jacoby money openings and first replies use a precomputed **bg5** 3-ply table before loading WASM: 15 opening rolls, 34 near-best opening boards within 0.040 equity, and all 714 reply rolls. Full third-turn coverage within the documented near-best reply window adds 1,298 boards with all 21 rolls; the retained 32 fourth-turn boards remain partial coverage. Results explicitly identify their original bg5 engine, book origin and depth. They are not relabeled as fresh bg6 analysis. The generator has separately pinned historical inputs and still reuses its completed checkpoints after a live-engine upgrade. Other contexts, unlisted submitted moves, Research and rollouts use live evaluation. See [OPENING-BOOK.md](OPENING-BOOK.md) for coverage, screening, generation, context safeguards and verification.
 
 ## Worker and capabilities

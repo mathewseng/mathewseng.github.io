@@ -589,6 +589,9 @@ const server = http.createServer((req, res) => {
         (report.openingGuide ||= []).push(
           await run("opening-guide", browser, base, out, browserName),
         );
+        (report.deepOpeningBook ||= []).push(
+          await run("deep-opening-book", browser, base, out, browserName),
+        );
         (report.revisionWarning ||= []).push(
           await run("revision-warning", browser, base, out, browserName),
         );

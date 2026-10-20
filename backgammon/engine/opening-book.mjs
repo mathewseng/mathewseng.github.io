@@ -4,6 +4,8 @@ export const BOOK_ID = 'jacoby-3ply-v3';
 // Keep historical evaluations labeled with the engine that computed them.
 // bg6 is an implementation optimization, verified against this same bg5 core.
 export const BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5';
+export const DEEP_BOOK_ID = 'jacoby-native-5ply-v1';
+export const DEEP_BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6-native5';
 const START_STATE = initialState({ matchLength: 0 });
 const START = boardKey(START_STATE);
 const BASE = new URL('./opening-book-data/', import.meta.url);
@@ -26,14 +28,17 @@ export function bookEligible(state, { preset, kind, rollout, useBook = true } = 
   return useBook && !rollout && kind === 'checker' && state.phase === 'move' &&
     ['auto', 'quick', 'standard', 'deep', 'expert'].includes(preset) && bookContext(state);
 }
-function validateHeader(value) {
-  if (value?.schema !== 1 || value.id !== BOOK_ID || value.engine !== BOOK_ENGINE_VERSION)
+export function validateBookHeader(value) {
+  const historical=value?.id===BOOK_ID&&value.engine===BOOK_ENGINE_VERSION;
+  const deep=value?.id===DEEP_BOOK_ID&&value.engine===DEEP_BOOK_ENGINE_VERSION;
+  if (value?.schema !== 1 || (!historical&&!deep))
     throw new Error('Opening book version mismatch.');
   return value;
 }
 export function bookResult(state, entry, index, requestedPreset, submitted = null) {
-  assertState(state); validateHeader(index);
-  if (!bookContext(state) || state.phase !== 'move' || index.plies !== 3 ||
+  assertState(state); validateBookHeader(index);
+  const deep=index.id===DEEP_BOOK_ID;
+  if (!bookContext(state) || state.phase !== 'move' || index.plies !== (deep?5:3) || index.settings?.plies !== index.plies ||
       !Array.isArray(entry?.rows) || !entry.rows.length || entry.rows.length > 2000 ||
       !Number.isInteger(entry.total) || entry.total < entry.rows.length)
     throw new Error('Invalid opening book position or entry.');
@@ -60,29 +65,32 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
   }).sort((a, b) => b.equity - a.equity);
   const actualKey = submitted ? boardKey(commitTurn(state, submitted)) : null;
   const actual = actualKey ? candidates.find(c => c.key === actualKey) : null;
-  // The book is screened at 3 ply. An unlisted actual move needs a fresh,
+  // Reply candidates are screened. An unlisted actual move needs a fresh,
   // consistently evaluated candidate set, not a fabricated or mixed-depth grade.
   if (actualKey && !actual) return null;
   const board = bookBoardKey(state), laterTurn = index.continuations?.[board]?.turn;
-  return { engine: BOOK_ENGINE_VERSION, settings: { ...structuredClone(index.settings), requestedPreset },
+  return { engine: index.engine, settings: { ...structuredClone(index.settings), requestedPreset },
     positionKey: positionKey(state), status: 'complete', perspective: state.turn,
     units: 'current-cube-points', type: 'checker', candidates, actual,
     error: actual ? Math.max(0, candidates[0].equity - actual.equity) : null,
-    screening: entry.total > candidates.length ? { plies: 2, total: entry.total,
-      finalists: candidates.length, threshold: .080, minimum: 10 } : null,
+    screening: entry.total > candidates.length ? { plies: deep?4:2, total: entry.total,
+      finalists: candidates.length, threshold: deep ? .040 : .080, minimum: deep?2:10,
+      ...(deep?{policy:'Union of 3- and 4-ply top two and candidates within 0.040 at either depth.'}:{}) } : null,
     elapsedMs: performance.now() - started, cached: true,
-    book: { id: BOOK_ID, source: 'precomputed',
+    book: { id: index.id, source: 'precomputed',
       stage: board === START ? 'opening' : laterTurn === 3 ? 'third-turn' : laterTurn === 4 ? 'fourth-turn' : 'reply',
       openingWindow: index.threshold,
       builtAt: laterTurn ? index.continuationBuild.builtAt : index.provenance.builtAt },
   };
 }
 export class OpeningBook {
-  constructor({ fetcher = (...args) => fetch(...args) } = {}) {
+  constructor({ fetcher = (...args) => fetch(...args), preferDeep = false } = {}) {
     this.fetcher = fetcher;
     this.files = new Map();
     this.failures = new Map();
     this.index = null;
+    this.deepIndex = null;
+    this.preferDeep = preferDeep;
   }
   async load(file) {
     if ((this.failures.get(file) || 0) > Date.now()) return null;
@@ -94,8 +102,10 @@ export class OpeningBook {
         if (!response.ok) throw new Error('Opening book unavailable.');
         const text = await response.text();
         if (text.length > 2_000_000) throw new Error('Opening book file is too large.');
-        const value = validateHeader(JSON.parse(text));
+        const value = validateBookHeader(JSON.parse(text));
+        if(value.id !== (file.startsWith('deep/')?DEEP_BOOK_ID:BOOK_ID))throw Error('Wrong book source.');
         if (file === 'index.json') this.index = value;
+        if (file === 'deep/index.json') this.deepIndex = value;
         return value;
       } catch {
         this.files.delete(file); this.failures.set(file, Date.now() + 30000);
@@ -103,28 +113,35 @@ export class OpeningBook {
       } finally { clearTimeout(timeout); }
     });
     this.files.set(file, pending);
-    // Index plus eight board shards, regardless of how large the book becomes.
+    // At most nine cached files, including the two protected book indexes.
     while (this.files.size > 9) {
-      const oldest = [...this.files.keys()].find(k => k !== 'index.json' && k !== file);
+      const oldest = [...this.files.keys()].find(k => k !== 'index.json' && k !== 'deep/index.json' && k !== file);
       this.files.delete(oldest);
     }
     return pending;
   }
   mayHave(state) {
     if (!bookContext(state)) return false;
-    if (!this.index) return true; // One small index fetch; never scan/download shards.
+    if (!this.index || (this.preferDeep&&!this.deepIndex)) return true; // Retry a missing deep index after its backoff.
     const board = bookBoardKey(state);
-    return board === START || !!this.index.replies?.[board] || !!this.index.continuations?.[board];
+    return board === START || !!this.deepIndex?.replies?.[board] || !!this.index.replies?.[board] || !!this.index.continuations?.[board];
   }
   async entry(state) {
     if (!this.mayHave(state)) return null;
-    const index = await this.load('index.json');
+    if(this.preferDeep){
+      const found=await this.sourceEntry(state,'deep/');
+      if(found)return found;
+    }
+    return this.sourceEntry(state,'');
+  }
+  async sourceEntry(state,prefix) {
+    const index = await this.load(prefix+'index.json');
     if (!index) return null;
     const board = bookBoardKey(state), roll = [...state.dice].sort((a, b) => b - a).join('');
     if (board === START) return { index, entry: index.openings?.[roll] };
     const ref = index.replies?.[board] || index.continuations?.[board];
     if (!ref || !/^(?:reply|turn)-[a-f0-9]{16}\.json$/.test(ref.file)) return null;
-    const shard = await this.load(ref.file);
+    const shard = await this.load(prefix+ref.file);
     return shard?.board === board ? { index, entry: shard.rolls?.[roll] } : null;
   }
   prepare(state) {

@@ -270,6 +270,39 @@ try {
 } catch (e) {
   failed($("accuracy-content"), e);
 }
+try {
+  const report=await json('../data/deep-book-comparison.json'),contextAudit=report.contextAudit;
+  const rows=['opening','reply'].map(kind=>{
+    const summary=report.summaries[kind],d=summary.depths;
+    return [kind==='opening'?'Opening rolls':'Reply rolls',String(d['5'].referenceBestEV?.n||0),
+      ...['3','4','5'].map(p=>d[p].referenceBestEV?.meanAbsoluteDifference.toFixed(5)||'—')];
+  });
+  const openingDepths=report.summaries.opening.depths,replyDepths=report.summaries.reply.depths;
+  const gap=(depths,depth)=>depths[depth].referenceBestEV.meanAbsoluteDifference.toFixed(5);
+  $('opening-accuracy-content').append(
+    measured(report.book,report.recordedAt),
+    el('p',{},`Moving from three to five plies reduces the mean EV gap for XG’s preferred moves from ${gap(openingDepths,'3')} to ${gap(openingDepths,'5')} for openings, and from ${gap(replyDepths,'3')} to ${gap(replyDepths,'5')} for replies. Five ply agrees with ${openingDepths['5'].bestMoveAgreement}/${report.summaries.opening.positions} opening choices and ${replyDepths['5'].bestMoveAgreement}/${report.summaries.reply.positions} reply choices; four ply agrees with ${openingDepths['4'].bestMoveAgreement}/${report.summaries.opening.positions} and ${replyDepths['4'].bestMoveAgreement}/${report.summaries.reply.positions}. More depth does not uniformly improve move choices.`),
+    el('p',{},`The book contains ${report.coverage.openingRolls} opening rolls with all ${report.coverage.openingCandidates} legal resulting moves, plus ${report.coverage.replyRolls} reply decisions across ${report.coverage.replyBoards} opening boards. The reply pass evaluates ${report.coverage.replyFinalists} screened alternatives at five plies. XG has matching positions for ${report.summaries.opening.positions} openings and ${report.summaries.reply.positions} replies. ${report.uncoveredReferencePositions.length} of its ${report.referencePositions} published positions are outside our opening-branch coverage.`),
+    table(['Positions','EV comparisons','3-ply difference','4-ply difference','5-ply difference'],rows,
+      'Mean absolute EV difference for XG’s preferred move · current-cube equity units'),
+    table(['Positions','Shared candidates','3-ply difference','4-ply difference','5-ply difference'],['opening','reply'].map(kind=>{
+      const d=report.summaries[kind].depths;
+      return [kind==='opening'?'Opening alternatives':'Reply alternatives',String(d['5'].commonCandidateEV?.n||0),...['3','4','5'].map(p=>d[p].commonCandidateEV?.meanAbsoluteDifference.toFixed(5)||'—')];
+    }),'Mean absolute EV difference across every shared candidate · identical cohort at all three depths'),
+    table(['Positions','3-ply best move','4-ply best move','5-ply best move'],['opening','reply'].map(kind=>{
+      const s=report.summaries[kind];return [kind==='opening'?'Opening rolls':'Reply rolls',...['3','4','5'].map(p=>`${s.depths[p].bestMoveAgreement}/${s.positions}`)];
+    }),'Best-move agreement with XG · every matched position'),
+    el('p',{},['opening','reply'].map(kind=>{const s=report.summaries[kind],d=s.depths['5'];return `${kind==='opening'?'Opening':'Reply'} choices at five plies lose ${d.meanSelectedMoveReferenceLoss?.toFixed(5)??'unknown'} equity as an unweighted position average according to XG, among the ${d.choiceLossCovered}/${s.positions} choices XG lists.`;}).join(' ')),
+    el('p',{},'Each depth is compared on the same resulting boards. A smaller EV difference means closer agreement with this reference, not proof of exact play. Best-move agreement includes every matched decision; EV comparisons exclude XG moves missing from the five-ply candidate set.'),
+    el('p',{},'The deeper search retains GNUbg’s neural and cube models and its static policy for future checker moves. It is not equivalent to an XG rollout.'),
+    el('p',{},'The published XG book 3.70 (2013) mixes finite rollouts and XGRoller++ evaluations and enables beavers. Our book uses Jacoby with beavers off. Its opening 6–5 diagram/XGID is inconsistent with the heading and move table; the comparison uses the standard opening position and preserves this correction in the source data.'),
+    el('p',{},`A separate paired 3-ply check across all ${contextAudit.positions} source positions found a maximum beaver-on/off EV difference of ${contextAudit.maximumAbsoluteDifference.toFixed(8)}. That rule difference does not explain the observed 3-ply gaps in this sample; equivalence at greater depth is untested.`),
+    el('p',{},'Openings score every legal move at five plies. Replies use four-ply screening, then evaluate the union of the three- and four-ply top two and all candidates within 0.040 at either depth. Screened-out candidates remain a limitation. Third- and fourth-turn entries retain their historical three-ply evaluations.'),
+    downloads(link('Full per-move comparison','../docs/deep-book-comparison.json'),link('Computed evaluations','../docs/deep-book-evaluations.json'),link('Raw native scores (JSONL)','../docs/deep-book-scores.jsonl'),link('XG positions and provenance','../docs/deep-book-xg-reference.json'),link('Paired beaver-rule check','../docs/deep-book-context-audit.json'),
+      link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/DEEP-OPENING-BOOK.md'),
+      link('Published XG source','https://www.extremegammon.com/Openingbook.aspx')),
+  );
+} catch(e) { failed($('opening-accuracy-content'),e); }
 $("method-content").append(
   el(
     "dl",

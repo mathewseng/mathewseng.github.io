@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=002375b2a309939b" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=002375b2a309939b" />
-    <link rel="stylesheet" href="../styles.css?bgv=002375b2a309939b" />
-    <link rel="stylesheet" href="../docs.css?bgv=002375b2a309939b" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=73b94380385de2e7" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=73b94380385de2e7" />
+    <link rel="stylesheet" href="../styles.css?bgv=73b94380385de2e7" />
+    <link rel="stylesheet" href="../docs.css?bgv=73b94380385de2e7" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=002375b2a309939b"></script>
+    <script type="module" src="./app.js?bgv=73b94380385de2e7"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -57,6 +57,7 @@
             <a href="#speed">Depth comparison</a>
             <a href="#device">Measure this device</a>
             <a href="#accuracy">Accuracy</a>
+            <a href="#opening-accuracy">Opening book vs XG</a>
             <a href="#method">Settings &amp; limits</a>
           </nav>
           <div class="docs-body">
@@ -104,6 +105,11 @@
             <section class="docs-section" id="accuracy" aria-labelledby="accuracy-heading">
               <h2 id="accuracy-heading">External accuracy check</h2>
               <div id="accuracy-content"></div>
+            </section>
+            <section class="docs-section" id="opening-accuracy" aria-labelledby="opening-accuracy-heading">
+              <h2 id="opening-accuracy-heading">Five-ply openings and replies vs XG</h2>
+              <p>Offline GNUbg analysis gives the opening guide a deeper reference than the browser's live search. This comparison checks whether the extra depth actually brings equity estimates closer to published XG results.</p>
+              <div id="opening-accuracy-content"></div>
             </section>
             <section class="docs-section" id="method" aria-labelledby="method-heading">
               <h2 id="method-heading">What the settings mean</h2>

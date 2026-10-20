@@ -1,4 +1,8 @@
-# Opening book with full near-best third-turn coverage
+# Historical opening book with full near-best third-turn coverage
+
+The current opening guide and compatible first/second-turn analysis prefer the
+[five-ply book](DEEP-OPENING-BOOK.md). The historical data documented below is
+preserved unchanged for later turns, comparison and download fallback.
 
 `engine/opening-book.mjs` serves genuine, precomputed GNUbg **bg5**, 3-ply checker evaluations before the engine worker starts. It is shared by Play (computer, hint and review), Trainer and Solver. Online play retains its existing prohibition on engine assistance.
 

@@ -1,0 +1,555 @@
+{
+  "schema": 1,
+  "book": "jacoby-native-5ply-research-v1",
+  "recordedAt": "2026-10-20T03:07:01.337Z",
+  "referencePositions": 729,
+  "uncoveredReferencePositions": [
+    {
+      "title": "52$-11",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-21",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-31",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-41",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-51",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-61",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-22",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-32",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-42",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-52",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-62",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-33",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-43",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-53",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-63",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-44",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-54",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-64",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-55",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-65",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "52$-66",
+      "url": "https://www.extremegammon.com/OB/Replies_to_52$.html"
+    },
+    {
+      "title": "53S-11",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-21",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-31",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-41",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-51",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-61",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-22",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-32",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-42",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-52",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-62",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-33",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-43",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-53",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-63",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-44",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-54",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-64",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-55",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-65",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "53S-66",
+      "url": "https://www.extremegammon.com/OB/Replies_to_53S.html"
+    },
+    {
+      "title": "63Z-11",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-21",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-31",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-41",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-51",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-61",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-22",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-32",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-42",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-52",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-62",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-33",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-43",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-53",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-63",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-44",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-54",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-64",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-55",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-65",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    },
+    {
+      "title": "63Z-66",
+      "url": "https://www.extremegammon.com/OB/Replies_to_63Z.html"
+    }
+  ],
+  "method": "Same final boards, same player perspective, current-cube units. EV differences use the same candidate cohort at every depth. Means are unweighted benchmark averages, not expected loss under natural dice frequencies. Selected-move loss is measured only where XG lists that move.",
+  "limitations": [
+    "XG reference enables beavers; GNU book disables them. These are discrepancies, not pure model errors.",
+    "Finite historical XG rollouts and XGRoller++ evaluations are approximate references.",
+    "Reply 5-ply candidates are screened; neither the tree search nor this sample proves optimal play."
+  ],
+  "summaries": {
+    "opening": {
+      "positions": 15,
+      "depths": {
+        "3": {
+          "commonCandidateEV": {
+            "n": 79,
+            "meanAbsoluteDifference": 0.009206785443037971,
+            "rootMeanSquareDifference": 0.011705566805231084,
+            "meanSignedDifference": 0.006238075569620252,
+            "maximumAbsoluteDifference": 0.03385161999999997
+          },
+          "referenceBestEV": {
+            "n": 15,
+            "meanAbsoluteDifference": 0.008387090666666668,
+            "rootMeanSquareDifference": 0.012154906876765993,
+            "meanSignedDifference": -0.0038808480000000005,
+            "maximumAbsoluteDifference": 0.03385161999999997
+          },
+          "bestMoveAgreement": 13,
+          "choiceLossCovered": 15,
+          "meanSelectedMoveReferenceLoss": 0.00064
+        },
+        "4": {
+          "commonCandidateEV": {
+            "n": 79,
+            "meanAbsoluteDifference": 0.006081783417721519,
+            "rootMeanSquareDifference": 0.009010588475828758,
+            "meanSignedDifference": -0.000680536329113923,
+            "maximumAbsoluteDifference": 0.04031669999999998
+          },
+          "referenceBestEV": {
+            "n": 15,
+            "meanAbsoluteDifference": 0.010056319333333332,
+            "rootMeanSquareDifference": 0.014972319933896014,
+            "meanSignedDifference": -0.009500056666666666,
+            "maximumAbsoluteDifference": 0.04031669999999998
+          },
+          "bestMoveAgreement": 15,
+          "choiceLossCovered": 15,
+          "meanSelectedMoveReferenceLoss": 0
+        },
+        "5": {
+          "commonCandidateEV": {
+            "n": 79,
+            "meanAbsoluteDifference": 0.008345282658227844,
+            "rootMeanSquareDifference": 0.010004815076793103,
+            "meanSignedDifference": 0.00610681,
+            "maximumAbsoluteDifference": 0.023826759999999975
+          },
+          "referenceBestEV": {
+            "n": 15,
+            "meanAbsoluteDifference": 0.007508165999999999,
+            "rootMeanSquareDifference": 0.009519056725717099,
+            "meanSignedDifference": -0.0008413686666666652,
+            "maximumAbsoluteDifference": 0.023826759999999975
+          },
+          "bestMoveAgreement": 13,
+          "choiceLossCovered": 15,
+          "meanSelectedMoveReferenceLoss": 0.00064
+        }
+      }
+    },
+    "reply": {
+      "positions": 651,
+      "depths": {
+        "3": {
+          "commonCandidateEV": {
+            "n": 1415,
+            "meanAbsoluteDifference": 0.02126902336395759,
+            "rootMeanSquareDifference": 0.024304375802108383,
+            "meanSignedDifference": 0.011371038035335667,
+            "maximumAbsoluteDifference": 0.05979863000000002
+          },
+          "referenceBestEV": {
+            "n": 651,
+            "meanAbsoluteDifference": 0.018979447403993852,
+            "rootMeanSquareDifference": 0.022303009999112836,
+            "meanSignedDifference": 0.0054079326574500725,
+            "maximumAbsoluteDifference": 0.05979863000000002
+          },
+          "bestMoveAgreement": 605,
+          "choiceLossCovered": 651,
+          "meanSelectedMoveReferenceLoss": 0.0005222734254992318
+        },
+        "4": {
+          "commonCandidateEV": {
+            "n": 1415,
+            "meanAbsoluteDifference": 0.013836072360424025,
+            "rootMeanSquareDifference": 0.016496789812520233,
+            "meanSignedDifference": 0.0028939976749116575,
+            "maximumAbsoluteDifference": 0.04845843999999999
+          },
+          "referenceBestEV": {
+            "n": 651,
+            "meanAbsoluteDifference": 0.013441784700460837,
+            "rootMeanSquareDifference": 0.016546379459633744,
+            "meanSignedDifference": -0.0016876885099846386,
+            "maximumAbsoluteDifference": 0.04832608999999999
+          },
+          "bestMoveAgreement": 616,
+          "choiceLossCovered": 651,
+          "meanSelectedMoveReferenceLoss": 0.0003185867895545312
+        },
+        "5": {
+          "commonCandidateEV": {
+            "n": 1415,
+            "meanAbsoluteDifference": 0.013145133915194339,
+            "rootMeanSquareDifference": 0.015520436721852491,
+            "meanSignedDifference": 0.007066871583038871,
+            "maximumAbsoluteDifference": 0.05375657999999994
+          },
+          "referenceBestEV": {
+            "n": 651,
+            "meanAbsoluteDifference": 0.012133347434715822,
+            "rootMeanSquareDifference": 0.01477579318762915,
+            "meanSignedDifference": 0.003541924147465437,
+            "maximumAbsoluteDifference": 0.04337249999999998
+          },
+          "bestMoveAgreement": 612,
+          "choiceLossCovered": 651,
+          "meanSelectedMoveReferenceLoss": 0.00035683563748079835
+        }
+      }
+    },
+    "all": {
+      "positions": 666,
+      "depths": {
+        "3": {
+          "commonCandidateEV": {
+            "n": 1494,
+            "meanAbsoluteDifference": 0.02063119418340026,
+            "rootMeanSquareDifference": 0.023805730074637262,
+            "meanSignedDifference": 0.011099616325301187,
+            "maximumAbsoluteDifference": 0.05979863000000002
+          },
+          "referenceBestEV": {
+            "n": 666,
+            "meanAbsoluteDifference": 0.018740880810810805,
+            "rootMeanSquareDifference": 0.02212574344914395,
+            "meanSignedDifference": 0.0051987258858858815,
+            "maximumAbsoluteDifference": 0.05979863000000002
+          },
+          "bestMoveAgreement": 618,
+          "choiceLossCovered": 666,
+          "meanSelectedMoveReferenceLoss": 0.0005249249249249247
+        },
+        "4": {
+          "commonCandidateEV": {
+            "n": 1494,
+            "meanAbsoluteDifference": 0.013426039678714854,
+            "rootMeanSquareDifference": 0.01618785988311379,
+            "meanSignedDifference": 0.002704982824631858,
+            "maximumAbsoluteDifference": 0.04845843999999999
+          },
+          "referenceBestEV": {
+            "n": 666,
+            "meanAbsoluteDifference": 0.013365535480480495,
+            "rootMeanSquareDifference": 0.01651257941312953,
+            "meanSignedDifference": -0.0018636427477477476,
+            "maximumAbsoluteDifference": 0.04832608999999999
+          },
+          "bestMoveAgreement": 631,
+          "choiceLossCovered": 666,
+          "meanSelectedMoveReferenceLoss": 0.00031141141141141106
+        },
+        "5": {
+          "commonCandidateEV": {
+            "n": 1494,
+            "meanAbsoluteDifference": 0.012891326519410981,
+            "rootMeanSquareDifference": 0.015278722538655257,
+            "meanSignedDifference": 0.007016105274431055,
+            "maximumAbsoluteDifference": 0.05375657999999994
+          },
+          "referenceBestEV": {
+            "n": 666,
+            "meanAbsoluteDifference": 0.012029176681681677,
+            "rootMeanSquareDifference": 0.014678135999155698,
+            "meanSignedDifference": 0.0034432013363363363,
+            "maximumAbsoluteDifference": 0.04337249999999998
+          },
+          "bestMoveAgreement": 625,
+          "choiceLossCovered": 666,
+          "meanSelectedMoveReferenceLoss": 0.0003632132132132128
+        }
+      }
+    }
+  },
+  "missingReferenceDecisions": [
+    "reply-c56403fb2492cb41-11",
+    "reply-c56403fb2492cb41-21",
+    "reply-c56403fb2492cb41-22",
+    "reply-c56403fb2492cb41-31",
+    "reply-c56403fb2492cb41-32",
+    "reply-c56403fb2492cb41-33",
+    "reply-c56403fb2492cb41-41",
+    "reply-c56403fb2492cb41-42",
+    "reply-c56403fb2492cb41-43",
+    "reply-c56403fb2492cb41-44",
+    "reply-c56403fb2492cb41-51",
+    "reply-c56403fb2492cb41-52",
+    "reply-c56403fb2492cb41-53",
+    "reply-c56403fb2492cb41-54",
+    "reply-c56403fb2492cb41-55",
+    "reply-c56403fb2492cb41-61",
+    "reply-c56403fb2492cb41-62",
+    "reply-c56403fb2492cb41-63",
+    "reply-c56403fb2492cb41-64",
+    "reply-c56403fb2492cb41-65",
+    "reply-c56403fb2492cb41-66",
+    "reply-51f3d405167b3260-11",
+    "reply-51f3d405167b3260-21",
+    "reply-51f3d405167b3260-22",
+    "reply-51f3d405167b3260-31",
+    "reply-51f3d405167b3260-32",
+    "reply-51f3d405167b3260-33",
+    "reply-51f3d405167b3260-41",
+    "reply-51f3d405167b3260-42",
+    "reply-51f3d405167b3260-43",
+    "reply-51f3d405167b3260-44",
+    "reply-51f3d405167b3260-51",
+    "reply-51f3d405167b3260-52",
+    "reply-51f3d405167b3260-53",
+    "reply-51f3d405167b3260-54",
+    "reply-51f3d405167b3260-55",
+    "reply-51f3d405167b3260-61",
+    "reply-51f3d405167b3260-62",
+    "reply-51f3d405167b3260-63",
+    "reply-51f3d405167b3260-64",
+    "reply-51f3d405167b3260-65",
+    "reply-51f3d405167b3260-66",
+    "reply-5d4412c36c0e53cc-11",
+    "reply-5d4412c36c0e53cc-21",
+    "reply-5d4412c36c0e53cc-22",
+    "reply-5d4412c36c0e53cc-31",
+    "reply-5d4412c36c0e53cc-32",
+    "reply-5d4412c36c0e53cc-33",
+    "reply-5d4412c36c0e53cc-41",
+    "reply-5d4412c36c0e53cc-42",
+    "reply-5d4412c36c0e53cc-43",
+    "reply-5d4412c36c0e53cc-44",
+    "reply-5d4412c36c0e53cc-51",
+    "reply-5d4412c36c0e53cc-52",
+    "reply-5d4412c36c0e53cc-53",
+    "reply-5d4412c36c0e53cc-54",
+    "reply-5d4412c36c0e53cc-55",
+    "reply-5d4412c36c0e53cc-61",
+    "reply-5d4412c36c0e53cc-62",
+    "reply-5d4412c36c0e53cc-63",
+    "reply-5d4412c36c0e53cc-64",
+    "reply-5d4412c36c0e53cc-65",
+    "reply-5d4412c36c0e53cc-66",
+    "reply-624221804d55f6b1-11",
+    "reply-624221804d55f6b1-21",
+    "reply-624221804d55f6b1-22",
+    "reply-624221804d55f6b1-31",
+    "reply-624221804d55f6b1-32",
+    "reply-624221804d55f6b1-33",
+    "reply-624221804d55f6b1-41",
+    "reply-624221804d55f6b1-42",
+    "reply-624221804d55f6b1-43",
+    "reply-624221804d55f6b1-44",
+    "reply-624221804d55f6b1-51",
+    "reply-624221804d55f6b1-52",
+    "reply-624221804d55f6b1-53",
+    "reply-624221804d55f6b1-54",
+    "reply-624221804d55f6b1-55",
+    "reply-624221804d55f6b1-61",
+    "reply-624221804d55f6b1-62",
+    "reply-624221804d55f6b1-63",
+    "reply-624221804d55f6b1-64",
+    "reply-624221804d55f6b1-65",
+    "reply-624221804d55f6b1-66"
+  ],
+  "contextAudit": {
+    "positions": 729,
+    "meanAbsoluteDifference": 3.786008230398661e-9,
+    "maximumAbsoluteDifference": 1.5000000000431335e-7,
+    "tolerance": 0.000001,
+    "changedBeyondTolerance": 0
+  },
+  "coverage": {
+    "openingRolls": 15,
+    "openingCandidates": 190,
+    "replyBoards": 35,
+    "replyRolls": 735,
+    "replyFinalists": 1831
+  },
+  "sourceIssueCount": 1
+}

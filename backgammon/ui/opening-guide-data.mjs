@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { initialState, commitTurn } from '../core/rules.mjs';
 import { presentMove } from '../core/move-presentation.mjs';
-import { bookResult, bookBoardKey, BOOK_ID, BOOK_ENGINE_VERSION } from '../engine/opening-book.mjs';
+import { bookResult, bookBoardKey, BOOK_ID, DEEP_BOOK_ID, validateBookHeader } from '../engine/opening-book.mjs';
 
 export const OPENING_ROLLS = Array.from({length:6}, (_, i) => i + 1)
   .flatMap(a => Array.from({length:a - 1}, (_, i) => `${a}${i + 1}`));
 export const REPLY_ROLLS = Array.from({length:6}, (_, i) => i + 1)
   .flatMap(a => Array.from({length:a}, (_, i) => `${a}${i + 1}`));
-const base = new URL('../engine/opening-book-data/', import.meta.url);
 
 // This guide uses exactly the book's rules and scores, independently of the
 // user's live table settings. It never starts an engine or changes a match.
@@ -34,8 +33,10 @@ export function buildOpenings(index) {
 }
 
 export class OpeningGuideData {
-  constructor(fetcher = (...args) => fetch(...args)) {
+  constructor(fetcher = (...args) => fetch(...args), {deep=true}={}) {
     this.fetcher = fetcher;
+    this.base = new URL(`../engine/opening-book-data/${deep?'deep/':''}`,import.meta.url);
+    this.bookId = deep?DEEP_BOOK_ID:BOOK_ID;
     this.files = new Map();
     this.positions = new Map();
   }
@@ -45,12 +46,12 @@ export class OpeningGuideData {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(),20000);
       try {
-        const response = await this.fetcher(new URL(file,base),{signal:controller.signal});
+        const response = await this.fetcher(new URL(file,this.base),{signal:controller.signal});
         if (!response.ok) throw Error('Opening book unavailable.');
         const text = await response.text();
         if (text.length > 2_000_000) throw Error('Invalid opening-book file.');
-        const data = JSON.parse(text);
-        if (data.schema !== 1 || data.id !== BOOK_ID || data.engine !== BOOK_ENGINE_VERSION)
+        const data = validateBookHeader(JSON.parse(text));
+        if (data.id !== this.bookId)
           throw Error('Opening book version mismatch.');
         return data;
       } finally { clearTimeout(timer); }
