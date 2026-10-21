@@ -333,13 +333,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       await page.unroute("**/engine/worker.mjs");
     }
     assert.equal(await page.locator("#analyze").innerText(), "Analyze");
-    await page
-      .getByRole("button", { name: "Clear board", exact: true })
-      .click();
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Continue", exact: true })
-      .click();
+    await page.locator("#editor-clear").click();
     await page
       .getByRole("button", { name: "Done editing", exact: true })
       .click();
@@ -397,7 +391,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
         .waitFor();
       assert.ok(
         await race
-          .getByRole("button", { name: "Clear board", exact: true })
+          .locator("#editor-clear")
           .isVisible(),
       );
       cases.push(
