@@ -10,12 +10,12 @@
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-  <link rel="stylesheet" href="./styles.css?v=20261021-redesign" />
+  <link rel="stylesheet" href="./styles.css?v=20261021-cribbage-grid" />
   <script src="../../shared/cards.js?v=20261016" defer></script>
   <script src="./cribbage.js?v=20261021-cribbage" defer></script>
   <script src="./engine.js?v=20261021-cribbage" defer></script>
-  <script src="./game-picker.js?v=20261021-redesign" defer></script>
-  <script src="./app.js?v=20261021-redesign" defer></script>
+  <script src="./game-picker.js?v=20261021-cribbage-grid" defer></script>
+  <script src="./app.js?v=20261021-cribbage-grid" defer></script>
 </head>
 <body class="app-shell">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -58,7 +58,7 @@
   <label class="game-search" for="game-search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="game-search" type="search" placeholder="Search games, rules, or card counts" aria-label="Search games" autocomplete="off" /></label>
   <div id="game-filters" class="game-filters" role="group" aria-label="Game families"></div>
   <div class="game-results-wrap"><div id="game-results"></div><p id="game-empty" hidden>No games match your search. Try another name or family.</p></div>
-  <div class="game-picker-footer"><span id="game-result-count" role="status"></span><span>↑ ↓ to browse · Enter to choose</span></div>
+  <div class="game-picker-footer"><span id="game-result-count" role="status"></span><span>Arrow keys to browse · Enter to choose</span></div>
 </dialog>
 </body>
 </html>

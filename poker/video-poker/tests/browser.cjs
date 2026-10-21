@@ -4,6 +4,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
 const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../../scripts/quiet-browser.cjs'),{serveSite}=require('../../../scripts/site-pages.cjs');
 (async()=>{const server=await serveSite(path.resolve(process.argv[2]||'.')),browser=await launchQuietBrowser(chromium),errors=[];
 try{
+ await require('./cribbage-grid.cjs')(browser,server.base);
  await require('./game-picker.cjs')(browser,server.base);
  await require('./game-switching.cjs')(browser,server.base);
  await require('./cribbage-browser.cjs')(browser,server.base);

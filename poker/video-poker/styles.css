@@ -256,3 +256,26 @@ body:has(.game-picker[open]) { overflow:hidden; }
 @media(min-width:901px) { .play-column { overflow:auto; } .strategy { flex-shrink:0; overflow:visible; } }
 
 @media(max-height:550px) { .game-picker { max-height:calc(100dvh - 20px); } .game-picker-heading { padding-block:12px; } .game-picker-heading h2 { font-size:23px; } .game-filters { padding-block:6px; } .game-picker-footer { padding-block:10px; } }
+
+/* Cribbage stays a four-choice matrix on phones: card counts down, rules across. */
+.cribbage-grid { width:100%; table-layout:fixed; border-collapse:separate; border-spacing:6px 8px; font-variant-numeric:tabular-nums; }
+.cribbage-grid th { text-align:center; }
+.cribbage-grid thead th { color:var(--muted); font-size:13px; line-height:1.4; font-weight:500; padding:6px 0 8px; }
+.cribbage-grid th:first-child { width:44px; }
+.cribbage-grid tbody th { text-align:left; padding:0; }
+.cribbage-grid tbody th strong { display:block; color:var(--ink); font-size:22px; line-height:1.2; font-weight:600; }
+.cribbage-grid tbody th span { display:block; color:var(--muted); font-size:12px; margin-top:3px; }
+.cribbage-grid td { padding:0; }
+.cribbage-grid .game-choice { position:relative; width:100%; min-width:44px; min-height:56px; padding:12px 4px; justify-content:center; border-radius:10px; }
+.cribbage-grid .game-choice strong { font-size:17px; font-weight:600; }
+.cribbage-grid td:nth-child(4) { padding-left:6px; }
+.cribbage-grid .game-choice[aria-pressed="true"] { background:var(--accent-soft); color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.cribbage-selected { position:absolute; top:3px; right:5px; font-size:12px; line-height:1; color:var(--accent); }
+.cribbage-filtered { color:var(--muted); text-align:center; }
+.cribbage-grid-note { color:var(--muted); font-size:12px; line-height:1.6; margin:8px 6px 0; max-width:60ch; }
+@media(max-width:360px) {
+ .cribbage-grid { border-spacing:4px 8px; }
+ .cribbage-grid th:first-child { width:34px; }
+ .cribbage-grid thead th { font-size:12px; }
+ .cribbage-grid td:nth-child(4) { padding-left:4px; }
+}
