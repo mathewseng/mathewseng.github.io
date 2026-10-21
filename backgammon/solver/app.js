@@ -16,6 +16,7 @@ import {
   rulesOf,
   ruleSummary,
   offerName,
+  pipCount,
 } from "../core/rules.mjs";
 import { fromXGID, toXGID, shareURL, sharedPosition } from "../core/xgid.mjs";
 import { get, put, itemRecord, settings } from "../core/storage.mjs";
@@ -33,11 +34,12 @@ import {
   copy,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { clearPosition, swapPositionColors } from "../core/position-editor.mjs";
 import { PositionEditor } from "../ui/position-editor.mjs";
 import { choiceButtons } from "../ui/choice-buttons.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { ruleControls } from "../ui/rules.mjs";
-import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
+import { PRESETS, ENGINE_VERSION, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
 import {DEFAULT_ROLLOUT_POLICY, ROLLOUT_POLICIES} from "../engine/rollout-policy.mjs";
 import { rolloutUnsupported } from "../engine/rollout.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
@@ -65,22 +67,81 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   analysisEpoch = 0,
   sourceContext = null,
   openedPosition = false,
-  previewIndex = -1;
+  previewIndex = -1,
+  solverView = {orientation:null, mirrored:false};
 const analysis = new AnalysisPanel(),
   draft = new DraftBoard(ui.board, () => {});
 const study = new StudyStrip(previewCandidate, {dropdown:false});
 const editor = new PositionEditor(ui.board, next => { source = next; changed(); });
+// Keep setup view changes local to Solver. Safari drops the reflection from
+// getScreenCTM(), so map mirrored pointer coordinates from the visible viewport.
+const renderBoard = ui.board.render.bind(ui.board);
+const boardCoordinates = ui.board.coordinates.bind(ui.board);
+function reflectLabels() {
+  if (!solverView.mirrored) return;
+  // Native SVG transforms keep labels legible in WebKit too. Read boxes
+  // before writing; the marker prevents retained animation clones flipping twice.
+  const labels = [...ui.board.svg.querySelectorAll('text:not([data-solver-reflected])')]
+    .map(n=>({n,box:n.getBBox()}));
+  for (const {n,box} of labels) {
+    n.setAttribute('transform', `${n.getAttribute('transform') || ''} translate(${2 * box.x + box.width} 0) scale(-1 1)`);
+    n.dataset.solverReflected = '';
+  }
+}
+for (const name of ['pickUpChecker','showDragLanding','animateEdit']) {
+  const original = ui.board[name].bind(ui.board);
+  ui.board[name] = (...args) => { const result = original(...args); reflectLabels(); return result; };
+}
+ui.board.coordinates = (x, y) => {
+  if (!solverView.mirrored) return boardCoordinates(x, y);
+  const r = ui.board.svg.getBoundingClientRect();
+  const scale = Math.min(r.width / 876, r.height / 660);
+  return new DOMPoint((r.right - x - (r.width - 876 * scale) / 2) / scale,
+    (y - r.top - (r.height - 660 * scale) / 2) / scale);
+};
+ui.board.render = (state, options = {}) => {
+  ui.board.svg.classList.toggle('solver-mirrored', solverView.mirrored);
+  renderBoard(state, {...options, orientation:solverView.orientation ?? options.orientation});
+  reflectLabels();
+};
 const renderDraft = draft.render.bind(draft);
 draft.render = () => { renderDraft(); if (editing) editor.sync(source, true); };
 editor.onDice = () => diceDialog();
-editor.onContext = contextDialog;
-const editorContext = button("Dice & rules", contextDialog, "", {id:"editor-context"});
-editor.node.append(editorContext);
+editor.onContext = () => contextDialog('cube');
+const editorContext = button("Settings", contextDialog, "", {id:"editor-context"});
+const setupTools = el('div', {class:'solver-setup-tools'},
+  button('Clear', () => editor.commit(clearPosition(source)), '', {id:'editor-clear'}),
+  button('Start', () => editor.commit({...clone(source), points:initialState().points, bar:[0,0], off:[0,0]}), '', {id:'editor-start', title:'Restore the starting checkers; keep dice, cube and score'}),
+  button('Swap colors', () => editor.commit(swapPositionColors(source)), '', {id:'editor-swap'}),
+  button('Flip board', () => changeView('orientation'), '', {id:'editor-flip'}),
+  button('Direction', () => changeView('mirrored'), '', {id:'editor-direction','aria-pressed':false}),
+  editorContext);
+const setupDisclosure = el('details', {id:'editor-tools',open:innerWidth>700},
+  el('summary',{},'Board tools'),setupTools);
+editor.node.append(setupDisclosure);
+function changeView(key) {
+  ui.board.endDrag(); editor.selected = null; editor.dragging = false;
+  if (key === 'orientation') solverView.orientation = 1 - (solverView.orientation ?? settings().orientation);
+  else solverView.mirrored = !solverView.mirrored;
+  saveDraft(); render();
+}
+const decisionChoices = choiceButtons([['move','Checker move'],['roll','Cube decision'],['double','Cube response']],source.phase,value=>{
+  const turn = value==='double' ? (source.cube.owner ?? source.turn) : source.turn;
+  const next = {...clone(source),turn,phase:value,pending:value==='double'?{type:'double',by:turn}:null,
+    dice:value==='move'?(source.dice.length?source.dice:[3,1]):[]};
+  editor.commit(next);
+});
+decisionChoices.id='editor-decision'; decisionChoices.setAttribute('aria-label','Decision to analyze');
+editor.node.append(decisionChoices);
 study.node.after(editor.node);
-// Dice, cube and score stay visible under the board (wide layouts; phones
-// keep the same summary in the subtitle and on the board itself).
+// The same controls live beside the board on desktop, and below it on phones.
 const contextStrip = el("section", { class: "solver-context", "aria-label": "Position context" });
-editor.node.before(contextStrip);
+const setupAnchor = document.createComment('Solver setup controls');
+editor.node.before(setupAnchor);
+const setupDock = el('section',{class:'solver-setup-dock','aria-label':'Position setup'},contextStrip,editor.node);
+setupAnchor.after(setupDock);
+const wideSetup = matchMedia('(min-width: 1051px) and (min-height: 601px)');
+wideSetup.addEventListener('change',()=>{setupDisclosure.open=wideSetup.matches;render();});
 // One progress component for analysis: indeterminate while GNUbg searches,
 // determinate for rollouts and match review. The text stays in #message and
 // the inspector's engine status (the page's polite regions).
@@ -99,16 +160,26 @@ function setProgress(value = null) {
   }
 }
 function renderContext() {
-  const s = source, names = ["White", "Black"];
-  const item = (label, value) =>
-    el("span", { class: "solver-context-item" }, el("span", { class: "solver-context-label" }, label), el("strong", {}, value));
+  const s = source, names = ['White','Black'];
+  const item = (label, value, action, id) => {
+    const control = button('', action, 'solver-context-item', {id,'aria-label':`${label}: ${value}`});
+    control.append(el('span',{class:'solver-context-label'},label),el('strong',{},value));
+    control.disabled = !!review;
+    return control;
+  };
   contextStrip.replaceChildren(
-    item("On roll", names[s.turn] ?? "—"),
-    item(s.phase === "double" ? "Offer" : "Dice", s.phase === "double" ? `${offerName(s)} to ${s.cube.value * 2}` : s.dice.length ? s.dice.join("–") : "Before roll"),
-    item("Cube", `${s.cube.value} · ${s.cube.owner === null ? "centred" : names[s.cube.owner]}`),
-    item(s.matchLength ? `Score · ${s.matchLength} pt` : "Score", s.matchLength ? `${s.scores[0]}–${s.scores[1]}${s.crawford ? " · Crawford" : ""}` : "Unlimited"),
-    ...(review ? [] : [button("Edit context", contextDialog, "ghost solver-context-edit")]),
+    item('Turn',names[s.turn],()=>editor.commit({...clone(source),turn:1-source.turn,
+      pending:source.pending?{...source.pending,by:1-source.pending.by}:null}), 'solver-turn'),
+    item('Dice',s.dice.length?s.dice.join('–'):'Set dice',diceDialog,'solver-dice'),
+    item('Cube',`${s.cube.value} · ${s.cube.owner===null?'Center':names[s.cube.owner]}`,()=>contextDialog('cube'),'solver-cube'),
+    item('Match',s.matchLength?`${s.scores[0]}–${s.scores[1]} / ${s.matchLength}${s.crawford?' · Crawford':''}`:'Unlimited',()=>contextDialog('match'),'solver-match'),
   );
+  for (const [id,player] of [['opponent',1-(solverView.orientation??settings().orientation)],['player',solverView.orientation??settings().orientation]]) {
+    $(id).replaceChildren(el('span',{},names[player]),el('span',{class:'muted'},`${pipCount(preview || s,player)} pips`));
+  }
+  decisionChoices.value=s.phase;
+  $('editor-direction').setAttribute('aria-pressed',String(solverView.mirrored));
+  $('editor-flip').setAttribute('aria-pressed',String((solverView.orientation??settings().orientation)===1));
 }
 function previewCandidate(candidate) {
   previewIndex = candidate && result?.candidates
@@ -148,6 +219,19 @@ const sourceControl = button("Source", () => {
   previewIndex = -1;
   render();
 }, "source-preview-control");
+const quickAnalysis = el('div',{class:'solver-quick-analysis','aria-label':'Analyze position'},
+  ...[['auto','Auto'],['deep','2 ply'],['research','4 ply']].map(([preset,label])=>button(label,()=>{
+    if(busy)cancel(); analysis.preset=preset; analyze();
+  },'',{'data-analyze-preset':preset})),
+  button('Rollout',()=>{
+    if (busy) cancel();
+    editing=false; render();
+    const controls=$('rollout-controls');
+    controls.open=true;
+    if (getComputedStyle($('inspector')).display==='none') $('panel-toggle').click();
+    controls.scrollIntoView({block:'start',behavior:'smooth'});
+  },'',{id:'solver-rollout'}));
+$('actions').after(quickAnalysis);
 analysis.preset = "auto";
 const hash = new URLSearchParams(location.hash.slice(1)),
   params = new URLSearchParams(location.search);
@@ -175,6 +259,7 @@ try {
     if (saved?.state) {
       source = saved.state;
       sourceContext = saved.context || null;
+      solverView = saved.view || solverView;
       openedPosition = true;
     }
   }
@@ -185,6 +270,7 @@ if (pageProgress?.source) {
   source = pageProgress.source;
   sourceContext = pageProgress.sourceContext;
   editing = pageProgress.editing;
+  solverView = pageProgress.solverView || solverView;
   result = presentAnalysis(source, pageProgress.result);
   review = pageProgress.review;
   index = pageProgress.index;
@@ -194,6 +280,7 @@ keepPageProgress(() => ({
   source,
   sourceContext,
   editing,
+  solverView,
   result,
   review,
   index,
@@ -268,6 +355,7 @@ async function saveDraft() {
       id: "solver",
       state: source,
       context: sourceContext,
+      view: solverView,
     });
   } catch (e) {
     showError(e);
@@ -275,6 +363,7 @@ async function saveDraft() {
 }
 function render() {
   const problems = errors(source);
+  const emptySetup = editing && source.off.every(n=>n===15);
   study.set(editing || problems.length ? null : result, preview);
   ui.equityBar.set({
     state: source,
@@ -299,7 +388,7 @@ function render() {
     : preview
       ? "Alternative preview · source position preserved"
       : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
-  $("message").textContent = problems.length
+  $("message").textContent = emptySetup ? "Choose a color, then tap points to place checkers." : problems.length
     ? problems.join(" ")
     : editing
       ? ""
@@ -312,7 +401,7 @@ function render() {
             : result?.type === "cube"
               ? `GNUbg: ${result.action} · ${result.settings.name}`
               : "Analyze from the player-on-roll perspective.";
-  $("message").classList.toggle("error", !!problems.length);
+  $("message").classList.toggle("error", !!problems.length && !emptySetup);
   const editLabel = editing ? "Done editing" : "Edit position";
   if (editControl.textContent !== editLabel)
     editControl.textContent = editLabel;
@@ -328,7 +417,15 @@ function render() {
     if (!sourceControl.isConnected) $("actions").prepend(sourceControl);
   } else sourceControl.remove();
   $("panel-toggle").textContent = result ? "Results" : "Details";
+  for(const control of quickAnalysis.querySelectorAll('button')) control.disabled=!!problems.length||!!review;
+  for(const control of quickAnalysis.querySelectorAll('[data-analyze-preset]'))
+    control.setAttribute('aria-pressed',String(control.dataset.analyzePreset===analysis.preset));
+  quickAnalysis.title = `Current analysis: ${analysis.preset === 'auto' ? 'Auto' : PRESETS[analysis.preset]?.name}`;
   panel(problems);
+  const docked = wideSetup.matches && editing;
+  document.querySelector('.app').classList.toggle('setup-docked',docked);
+  if(docked) $('panel').prepend(setupDock);
+  else setupAnchor.after(setupDock);
 }
 function panel(problems) {
   const p = $("panel");
@@ -417,44 +514,7 @@ function panel(problems) {
       ),
     );
   }
-  if (editing) {
-    add(
-      button("Dice, cube & match context", contextDialog),
-      el(
-        "div",
-        { class: "row" },
-        button("Starting position", () =>
-          confirmDialog(
-            "Reset position?",
-            "The current editable draft will be replaced.",
-            () => {
-              editor.reset();
-              source = initialState({
-                phase: "move",
-                dice: [3, 1],
-                matchLength: 0,
-              });
-              changed();
-            },
-          ),
-        ),
-        button("Clear board", () =>
-          confirmDialog(
-            "Clear board?",
-            "Both sets of checkers move to their off trays. Place checkers to make a valid position.",
-            () => {
-              editor.past.push(clone(source)); editor.future = []; editor.selected = null;
-              source.points = Array(24).fill(0);
-              source.bar = [0, 0];
-              source.off = [15, 15];
-              changed();
-            },
-          ),
-        ),
-      ),
-    );
-  } else if (!review)
-    add(button("Dice, cube & match context", contextDialog));
+  if (!review && !editing) add(button('Dice, cube & match context', contextDialog));
   if (!review) add(button("Import / export XGID", xgidDialog));
   if (!problems.length && ["move", "roll", "double"].includes(source.phase))
     add(
@@ -477,22 +537,24 @@ function panel(problems) {
         "Analysis strength",
         choiceButtons(
           [
-            ["auto", "Auto · 2 ply minimum"],
+            ["auto", "Auto · adaptive, 2–4 ply"],
             ...Object.entries(PRESETS).map(([key, value]) => [
               key,
-              `${value.name} · ${value.plies} ply`,
+              `Fixed ${value.plies} ply · ${value.name}`,
             ]),
           ],
           analysis.preset,
           (value) => {
             analysis.preset = value;
+            for(const control of quickAnalysis.querySelectorAll('[data-analyze-preset]'))
+              control.setAttribute('aria-pressed',String(control.dataset.analyzePreset===value));
           },
         ),
       ),
       el(
         "p",
         { class: "muted small" },
-        "Auto always completes at least 2 ply, normally tries 3, and can reach 4. A deeper stage is skipped if estimated above 5 seconds or the leading move has a substantial, stable advantage. Estimates can be wrong; Cancel remains available. It screens at 0 ply: top 16, up to 24 within 0.160 equity, plus the played move. Fixed Quick, Standard and Deep evaluate every legal result. Expert and Research compare 2-ply finalists at 3 or 4 ply. All use pruning and zero noise.",
+        SEARCH_DESCRIPTION,
       ),
     ),
     analysis.status,
@@ -620,12 +682,11 @@ function diceDialog() {
   const turn = choiceButtons([[0,'White'],[1,'Black']],source.turn);
   const first = diceChoices(source.dice[0]||3), second = diceChoices(source.dice[1]||1);
   const d = dialog('Set dice', el('div',{class:'dice-editor-fields'},field('Player on roll',turn),field('First die',first),field('Second die',second)),[
-    button('Apply dice',()=>{editor.past.push(clone(source));editor.future=[];
-      source={...source,turn:Number(turn.value),phase:'move',pending:null,dice:[+first.value,+second.value]};
-      d.close();changed();},'primary')]);
+    button('Apply dice',()=>{const next={...source,turn:Number(turn.value),phase:'move',pending:null,dice:[+first.value,+second.value]};
+      d.close();editor.commit(next);},'primary')]);
   d.classList.add('dice-editor-dialog');
 }
-function contextDialog() {
+function contextDialog(focus) {
   let contextRules = rulesOf(source);
   const input = (v, min, max) =>
     el("input", { type: "number", value: v, min, max });
@@ -650,7 +711,7 @@ function contextDialog() {
     );
   const d1 = diceChoices(source.dice[0] || 3),
     d2 = diceChoices(source.dice[1] || 1),
-    cube = input(source.cube.value, 1, 1024),
+    cube = choiceButtons([1,2,4,8,16,32,64,128,256,512,1024].map(n=>[n,String(n)]),source.cube.value),
     owner = choiceButtons(
       [
         ["center", "Centered"],
@@ -728,8 +789,7 @@ function contextDialog() {
       button(
         "Apply context",
         () => {
-          editor.past.push(clone(source)); editor.future = []; editor.selected = null;
-          source = {
+          const next = {
             ...source,
             turn: Number(turn.value),
             phase: ["beaver", "raccoon"].includes(phase.value)
@@ -760,13 +820,19 @@ function contextDialog() {
                 }
               : null,
           };
+          const problems = errors(next).filter(problem =>
+            !(editing && source.off.every(n=>n===15) && problem === 'Both players cannot have finished.'));
+          if (problems.length) throw new Error(problems.join(' '));
           d.close();
-          changed();
+          editor.commit(next);
         },
         "primary",
       ),
     ],
   );
+  d.classList.add('solver-context-dialog');
+  if (focus === 'cube' || focus === 'match') requestAnimationFrame(()=>
+    (focus==='cube'?cube:len).closest('.field').scrollIntoView({block:'start'}));
 }
 function xgidDialog() {
   let value = "";

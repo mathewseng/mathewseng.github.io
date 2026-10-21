@@ -67,7 +67,8 @@ module.exports = async function mobileFlow(browser, base, out, name) {
     await page.locator("#analyze").waitFor();
     await page.locator("#edit-position").tap();
     assert.equal(await page.locator(".position-editor select").count(),0);
-    await page.getByRole("button",{name:"Dice & rules",exact:true}).tap();
+    await page.locator("#editor-tools").evaluate(n=>n.open=true);
+    await page.locator("#editor-context").tap();
     await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).tap();
     await shot("solver-edit-landscape");
     await page.locator("#edit-position").tap();

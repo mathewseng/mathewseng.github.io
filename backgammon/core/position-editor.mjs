@@ -24,3 +24,28 @@ export function transferChecker(state, from, to) {
   }
   return next;
 }
+
+// Setup taps edit the position, never play a die. Returning a checker to its
+// tray keeps all fifteen accounted for and makes repeated placement reversible.
+export function editChecker(state, point, player, checkerTap = false) {
+  if (String(point).startsWith('off')) return null;
+  const owner = editorOwner(state, point);
+  if (checkerTap && editorCount(state, point))
+    return transferChecker(state, point, `off${owner}`);
+  return transferChecker(state, `off${player}`, point);
+}
+
+export function clearPosition(state) {
+  return {...clone(state), points:Array(24).fill(0), bar:[0,0], off:[15,15]};
+}
+
+export function swapPositionColors(state) {
+  const next = clone(state);
+  next.points = state.points.slice().reverse().map(n => n ? -n : 0);
+  next.bar.reverse(); next.off.reverse(); next.scores.reverse();
+  next.turn = 1 - state.turn;
+  if (next.cube.owner !== null) next.cube.owner = 1 - next.cube.owner;
+  if (next.pending?.by !== undefined) next.pending.by = 1 - next.pending.by;
+  if (next.winner !== null && next.winner !== undefined) next.winner = 1 - next.winner;
+  return next;
+}

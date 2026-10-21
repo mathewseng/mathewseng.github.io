@@ -13,7 +13,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
   try {
     await page.goto(base + '/poker/video-poker/');
     assert.equal(await page.locator('#variant optgroup').first().getAttribute('label'), 'Custom variants');
-    assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'badeucey']);
+    assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'low27-double', 'badeucey', 'badeucey-double']);
     await page.locator('#variant').selectOption('badeucey');
     await page.waitForFunction(() => document.getElementById('return-value').textContent === '62.8248%');
     assert.equal(await page.locator('#paytable .group-label').count(), 3);
@@ -66,7 +66,8 @@ module.exports = async function checkBadeuceyRules(browser, base) {
     assert.ok(await page.locator('#pay-form button[type="submit"]').isDisabled());
     await play();
     await page.locator('#deal').click();
-    assert.equal(await page.locator('#last-return').textContent(), '5', 'paired hand earns the push and four-card badugi points only');
+    assert.equal(await page.locator('#pnl').textContent(), '+4', 'paired hand earns four points after the stake is returned');
+    assert.equal(await page.locator('#hand-status').textContent(), 'Won +4');
     await page.locator('#decision-ev').waitFor({ timeout: 30000 });
     assert.equal(Number(await page.locator('#decision-ev').getAttribute('data-ev')), 5);
     assert.ok(Math.abs(Number(await page.locator('#best-decision-ev').getAttribute('data-ev')) - choices[0].ev) < 1e-10);
@@ -77,7 +78,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
     assert.equal(await page.locator('#rule-low-rank').inputValue(), '14');
     assert.equal(await page.locator('#rule-badugi-rank').inputValue(), '14');
     assert.equal(await page.locator('#pay-lowT').inputValue(), '0');
-    assert.equal(await page.locator('#lab-rtp').textContent(), '98.8783%');
+    assert.equal(await page.locator('#lab-rtp').textContent(), '99.9326%');
     await page.locator('#reset-pays').click();
     assert.equal(await page.locator('#lab-rtp').textContent(), '62.8248%');
 
@@ -86,6 +87,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
       const pays = { ...VideoPoker.byId.badeucey.pays, low9: 3 };
       delete pays.lowT;
       delete pays.badT;
+      localStorage.removeItem('video-poker-paytables-v2');
       localStorage.setItem('video-poker-paytables-v1', JSON.stringify({ badeucey: pays }));
     });
     await page.reload();

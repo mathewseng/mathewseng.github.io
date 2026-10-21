@@ -34,3 +34,23 @@ test('bar and off supplies support repeated placement and full stacks in either 
     s=transferChecker(s,`bar${owner}`,`off${owner}`);assertState(s);
   }
 });
+
+test('setup taps remove checkers and add the selected color without changing dice or totals',async()=>{
+  const {editChecker,clearPosition,swapPositionColors}=await import('../core/position-editor.mjs');
+  const s=initialState({phase:'move',dice:[6,2],matchLength:5,scores:[1,3],cube:{value:2,owner:0}});
+  for(const point of [7,18]) {
+    const player=editorOwner(s,point),removed=editChecker(s,point,1-player,true);
+    assertState(removed);assert.equal(removed.off[player],1);
+    assert.deepEqual(editChecker(removed,point,player),s);
+  }
+  assert.equal(editChecker(s,9,0),null,'cannot add from an empty tray');
+  let empty=clearPosition(s);assert.deepEqual(empty.off,[15,15]);
+  empty=editChecker(empty,9,0);assert.equal(editChecker(empty,9,1),null);
+  empty=editChecker(empty,'bar1',1);assertState(empty);
+  empty=editChecker(empty,'bar1',0,true);assert.equal(empty.bar[1],0);assert.equal(empty.off[1],15);
+  const swapped=swapPositionColors(s);assertState(swapped);
+  assert.equal(swapped.turn,1);assert.equal(swapped.cube.owner,1);assert.deepEqual(swapped.scores,[3,1]);
+  assert.deepEqual(swapPositionColors(swapped),s,'swapping twice restores exact context');
+  const offer={...s,phase:'double',dice:[],pending:{type:'double',by:0}};
+  assert.equal(swapPositionColors(offer).pending.by,1);
+});

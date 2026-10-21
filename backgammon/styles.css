@@ -3336,10 +3336,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
    stable, thumb-sized supplies and actions beneath it. */
 .position-editor:not([hidden]) {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
 }
+.position-editor .btn { min-height: 44px; }
 
 .editor-supplies,
 .editor-actions {
@@ -3375,10 +3376,21 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   line-height: 1.4;
 }
 
-.position-editor #editor-context {
-  grid-column: 3;
-  grid-row: 1;
+.solver-setup-tools {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  grid-column: 1 / -1;
 }
+.solver-setup-tools .btn { padding-inline: 8px; min-width: 0; white-space: normal; }
+.solver-setup-tools [aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+#editor-decision { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#editor-decision .btn { font-size: var(--t-sm); }
+.solver-quick-analysis { display: flex; gap: 6px; }
+.solver-quick-analysis .btn { flex: 1; white-space: nowrap; }
+.solver-quick-analysis [aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+/* The Solver counter-reflects text with native SVG transforms. */
+.bg-board.solver-mirrored { transform: scaleX(-1); transform-origin: 50% 50%; transform-box: border-box; }
 
 .bg-board.is-editor .source-ring,
 .bg-board.is-editor .source-ring-halo {
@@ -3436,6 +3448,9 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   width: min(700px, calc(100vw - 28px));
   max-width: calc(100vw - 28px);
 }
+/* WebKit otherwise shrinks an auto-height flex dialog's body to its padding. */
+.dice-editor-dialog .dialog-body,
+.solver-context-dialog .dialog-body { flex-basis: auto; }
 
 /* Two rows of pips per die on the narrowest phones: the dialog may use the
    whole viewport height so the form never scrolls. */
@@ -3499,35 +3514,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 @media (max-width: 1050px) {
-  .position-editor:not([hidden]) {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .editor-supplies {
-    grid-column: 1;
-  }
-
-  .editor-actions {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .editor-actions button {
-    flex: 1;
-    min-width: 0;
-    white-space: normal;
-  }
-
-  .editor-supply {
-    min-width: 0;
-  }
-
-  .position-editor #editor-context {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    max-width: 80px;
-    white-space: normal;
-  }
+  .position-editor:not([hidden]) { grid-template-columns: minmax(0, 1fr) auto; }
+  .editor-supply { min-width: 0; padding-inline: 8px; }
+  .editor-actions .btn { padding-inline: 10px; }
+  .solver-setup-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 359px) {
@@ -3558,11 +3548,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
     gap: 4px;
   }
 
-  .position-editor #editor-context {
-    grid-column: 1;
-    grid-row: auto;
-    max-width: none;
-  }
+  .editor-actions, .solver-setup-tools, #editor-decision { grid-column: 1; }
+  .solver-setup-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #editor-decision { grid-template-columns: 1fr; }
+  .editor-actions .btn { flex: 1; }
+  .solver-quick-analysis { flex-wrap: wrap; }
 
   .position-editor button {
     padding-inline: 6px;
@@ -3828,41 +3818,45 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 
 /* Solver: context strip, analysis progress, inspector groups, edit mode. */
+.solver-setup-dock { display: grid; gap: 10px; min-width: 0; }
+#editor-tools { grid-column: 1 / -1; }
+#editor-tools > summary { min-height: 44px; padding: 10px 0; color: var(--muted); font-size: var(--t-sm); cursor: pointer; }
+#editor-tools[open] > summary { margin-bottom: 4px; }
+.app.setup-docked .solver-context { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.app.setup-docked .position-editor { grid-template-columns: minmax(0,1fr); }
+.app.setup-docked .solver-setup-tools { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.app.setup-docked .editor-actions .btn { flex: 1; }
+.app.setup-docked #editor-decision { grid-template-columns: 1fr; }
+.app.setup-docked .solver-sections { display: none; }
+.app.setup-docked #panel > .segmented { min-height: 52px; }
+.app.setup-docked .position-editor #editor-tools { grid-column: 1; }
+.app.setup-docked #editor-tools > summary { padding-block: 6px; }
+@media (max-width: 700px) { .editor-help { display: none; } }
 .solver-context {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
   min-width: 0;
   font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
 }
-
 .solver-context-item {
-  display: inline-flex;
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  justify-content: flex-start;
   align-items: baseline;
-  white-space: nowrap;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
 }
-
-.solver-context-label {
-  color: var(--muted);
-  font-size: var(--t-xs);
-}
-
-.solver-context-item strong {
-  font-weight: 600;
-}
-
-.solver-context-edit {
-  margin-left: auto;
-}
-
-/* Phones keep the same summary in the subtitle and on the board itself. */
+.solver-context-label { color: var(--muted); font-size: var(--t-xs); }
+.solver-context-item strong { font-weight: 600; font-size: var(--t-sm); }
 @media (max-width: 700px), (max-height: 500px) and (min-width: 650px) {
-  .solver-context {
-    display: none;
-  }
+  .solver-context { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app[data-page="solver"]:not(.editing-position) .solver-setup-dock { display: none; }
+  .app[data-page="solver"] .action-main { flex-wrap: wrap; }
+  .solver-quick-analysis { flex: 1; }
 }
 
 .solver-progress {

@@ -122,7 +122,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
     await page.goto(studyURL);
     await page.locator("#edit-position").click();
     await page
-      .getByRole("button", { name: "Dice, cube & match context", exact: true })
+      .locator("#editor-context")
       .click();
     assert.equal(
       await page.getByLabel("Decision", { exact: true }).locator('[aria-pressed="true"]').getAttribute('data-choice'),
@@ -131,7 +131,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
     await page.getByLabel("Decision", { exact: true }).locator('[data-choice="raccoon"]').click();
     await page
       .getByLabel("Cube value (accepted stake)", { exact: true })
-      .fill("4");
+      .locator('[data-choice="4"]').click();
     await page
       .getByRole("button", { name: "Apply context", exact: true })
       .click();
