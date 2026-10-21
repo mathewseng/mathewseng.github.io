@@ -104,7 +104,7 @@
     const shuffled=E.shuffledDeck(v.deckSize,random);hand=shuffled.slice(0,5);deck=shuffled.slice(5);credits-=1;mask=0;lastStake=1;phase='draw';clearStrategy();renderHand(true);$('hand-status').textContent='Choose your hold';document.querySelectorAll('[data-pay]').forEach(el=>el.classList.remove('paying'));
   }};
   function describe(m,h=strategyHand){return m===0?'Draw five':m===31?'Hold all five':h.filter((_,i)=>m&(1<<i)).map(E.cardText).join(' ');}
-  function decisionLabel(r){return describe(r.mask)+(v.doubleOnDraw?(r.doubled?' · Double 2×':' · Single 1×'):'');}
+  function decisionLabel(r){return describe(r.mask)+(r.doubled?' · 2×':'');}
   function displayEV(r){return v.doubleOnDraw?r.netEV:r.ev;}
   function formatEV(r){const n=displayEV(r);return (v.doubleOnDraw&&n>0?'+':'')+fmt(n,6)+(v.doubleOnDraw?'':'×');}
   function renderStrategy(){
@@ -118,7 +118,7 @@
       $('decision-summary').innerHTML=`<div><span>Your decision ${v.doubleOnDraw?'net ':''}EV</span><strong id="decision-ev" data-ev="${displayEV(selected)}">${formatEV(selected)}</strong><small>${decisionLabel(selected)}</small></div><div><span>Best decision ${v.doubleOnDraw?'net ':''}EV</span><strong id="best-decision-ev" data-ev="${displayEV(best)}">${formatEV(best)}</strong><small>${decisionLabel(best)}</small></div><div><span>EV given up</span><strong id="decision-loss" data-ev="${loss}">${fmt(loss,6)}</strong><small>${loss<1e-10?'Optimal decision':'credits / initial deal'}</small></div>`;
     }else{
       const doubleHold=rows.find(r=>r.mask===mask&&r.doubled);
-      $('strategy-status').textContent=`Best: ${decisionLabel(best)} · ${formatEV(best)} ${v.doubleOnDraw?'net credits / initial deal':'returned / credit'}. Your hold at 1×: ${formatEV(selected)}.`+(doubleHold?` At 2×: ${formatEV(doubleHold)} net.`:'');
+      $('strategy-status').textContent=`Best: ${decisionLabel(best)} · ${formatEV(best)} ${v.doubleOnDraw?'net credits / initial deal':'returned / credit'}. Your hold: ${formatEV(selected)}.`+(doubleHold?` At 2×: ${formatEV(doubleHold)} net.`:'');
     }
     const visible=showAll?[...rows]:rows.slice(0,5);
     if(review&&!showAll&&!visible.includes(selected))visible.push(selected);
