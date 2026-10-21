@@ -14,14 +14,16 @@
   let saved=loadSettings(storedKey,'video-poker-paytables-v1'),savedRules=loadSettings(rulesKey,'video-poker-rules-v1');
   let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,pnl=0,hands=0,rows=null,strategyHand=[],review=null,showAll=false,worker=null,request=0,busy=false,report=null,liveResult=null;
   const families=['Custom variants',...new Set(E.variants.filter(x=>x.family!=='Custom variants').map(x=>x.family))];
-  $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}">${x.name}</option>`).join('')}</optgroup>`).join('');
+  $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}"${isCustom(x.id)?' disabled':''}>${x.name}</option>`).join('')}</optgroup>`).join('');
+  function bestRecommendation(id,doubled){return report?.recommendations.filter(r=>r.id===id&&!!r.doubleOnDraw===!!doubled&&r.result.rtp<=1).sort((a,b)=>b.result.rtp-a.result.rtp)[0];}
   function configFor(key){
-    const {id,doubled}=selections.find(x=>x.key===key),result=clone(E.byId[id]),p=saved[key];
+    const {id,doubled}=selections.find(x=>x.key===key),result=clone(E.byId[id]),p=saved[key],best=bestRecommendation(id,doubled);
+    if(best){result.pays=clone(best.pays);if(best.rules)result.rules=clone(best.rules);}
     if(p){
-      const merged=Object.fromEntries(Object.keys(result.pays).map(k=>[k,p[k]??result.pays[k]]));
+      const merged=Object.fromEntries(Object.keys(result.pays).map(k=>[k,p[k]??E.byId[id].pays[k]]));
       if(Object.values(merged).every(n=>Number.isInteger(n)&&n>=0&&n<=1000000)&&(id!=='badeucey'||merged.qualify===1))result.pays=merged;
     }
-    if(id==='badeucey')try{result.rules=E.normalizeBadeuceyRules(savedRules[key]);}catch{}
+    if(id==='badeucey'&&savedRules[key])try{result.rules=E.normalizeBadeuceyRules(savedRules[key]);}catch{}
     if(isCustom(id))result.doubleOnDraw=doubled;
     return result;
   }
@@ -86,7 +88,7 @@
     $('double-metrics').hidden=!v.doubleOnDraw;
     $('double-metrics').innerHTML=v.doubleOnDraw&&result?`<div><span>Optimal to double</span><strong id="double-frequency">${pct(result.doubleFrequency)}</strong></div><div><span>Average stake / deal</span><strong>${fmt(result.averageStake,6)}</strong></div><div><span>Expected return / deal</span><strong>${fmt(result.expectedReturn,6)}</strong></div><p>Double on ${result.doubleCount.toLocaleString()} of ${result.deals.toLocaleString()} deals. An additional ${pct(result.doubleTieFrequency)} tie between doubling and single stake; use single stake on ties. RTP divides expected return by average total stake. Strategy maximizes net profit per initial deal.</p>`:v.doubleOnDraw?'<p>Solve to see the optimal double frequency and average stake.</p>':'';
   }
-  function renderControls(){const active=phase==='draw';$('variant').disabled=active;$('deal').disabled=false;$('deal').innerHTML=active?'Draw cards <span aria-hidden="true">→</span>':'Deal hand <span aria-hidden="true">→</span>';$('solve-hand').disabled=busy||hand.length!==5;$('solve-hand').textContent=phase==='complete'?'Review decision':'Solve hand';$('hold-best').disabled=busy||!rows||!['draw','study'].includes(phase);$('spot-hand').disabled=active;$('spot-form').querySelector('button').disabled=active;$('pay-form').querySelector('button[type=submit]').disabled=active;$('reset-pays').disabled=active;for(const select of document.querySelectorAll('#qualification-rules select,#draw-rules select'))select.disabled=active||(select.id==='rule-badugi-rank'&&$('rule-min-badugi').value==='0');
+  function renderControls(){const active=phase==='draw';$('variant').disabled=active;$('deal').disabled=false;$('deal').innerHTML=active?'Draw cards <span aria-hidden="true">→</span>':'Deal hand <span aria-hidden="true">→</span>';$('solve-hand').disabled=busy||hand.length!==5;$('solve-hand').textContent=phase==='complete'?'Review decision':'Solve hand';$('hold-best').disabled=busy||!rows||!['draw','study'].includes(phase);$('spot-hand').disabled=active;$('spot-form').querySelector('button').disabled=active;$('pay-form').querySelector('button[type=submit]').disabled=active;$('reset-pays').disabled=active;$('best-pays').hidden=!isCustom(v.id);$('best-pays').disabled=active||!bestRecommendation(v.id,v.doubleOnDraw);for(const select of document.querySelectorAll('#qualification-rules select,#draw-rules select'))select.disabled=active||(select.id==='rule-badugi-rank'&&$('rule-min-badugi').value==='0');
     $('double-draw').hidden=!v.doubleOnDraw||!active;$('double-draw').disabled=!active||mask===31;$('double-draw').title=mask===31?'Release at least one card to double.':'Add 1 credit, double the final return, and draw.';
     document.querySelectorAll('[data-recommend]').forEach(b=>b.disabled=active);$('pnl').textContent=(pnl>0?'+':'')+fmt(pnl);$('hands-played').textContent=hands;
   }
@@ -98,14 +100,14 @@
   function random(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}
   function completeDraw(doubled=false){
     if(phase!=='draw'||(doubled&&(!v.doubleOnDraw||mask===31)))return;
-    cancel();announce('');const stake=doubled?2:1;pnl-=stake-1;
+    cancel();announce('');const stake=doubled?2:1;
     review={hand:[...hand],mask,doubled};strategyHand=[...hand];$('strategy-title').textContent='Decision review';
-    hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned;hands++;phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned===0?'You lose':returned===stake?'Push':'Won +'+fmt(returned-stake);
+    hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned-stake;hands++;phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned===0?'You lose':returned===stake?'Push':'Won +'+fmt(returned-stake);
     document.querySelectorAll('[data-pay]').forEach(el=>el.classList.toggle('paying',result.keys.includes(el.dataset.pay)));if(rows)renderStrategy();else run('hand');
   }
   $('double-draw').onclick=()=>completeDraw(true);
   $('deal').onclick=()=>{if(phase==='draw'){completeDraw();return;}cancel();announce('');
-    const shuffled=E.shuffledDeck(v.deckSize,random);hand=shuffled.slice(0,5);deck=shuffled.slice(5);pnl-=1;mask=0;phase='draw';clearStrategy();renderHand(true);$('hand-status').textContent='Choose your hold';document.querySelectorAll('[data-pay]').forEach(el=>el.classList.remove('paying'));
+    const shuffled=E.shuffledDeck(v.deckSize,random);hand=shuffled.slice(0,5);deck=shuffled.slice(5);mask=0;phase='draw';clearStrategy();renderHand(true);$('hand-status').textContent='Choose your hold';document.querySelectorAll('[data-pay]').forEach(el=>el.classList.remove('paying'));
   };
   function describe(m,h=strategyHand){return m===0?'Draw five':m===31?'Hold all five':h.filter((_,i)=>m&(1<<i)).map(E.cardText).join(' ');}
   function decisionLabel(r){return describe(r.mask)+(r.doubled?' · 2×':'');}
@@ -145,6 +147,7 @@
   function persist(){try{const key=variantKey(v.id,v.doubleOnDraw);saved[key]=v.pays;if(v.id==='badeucey')savedRules[key]=v.rules;localStorage.setItem(storedKey,JSON.stringify(saved));localStorage.setItem(rulesKey,JSON.stringify(savedRules));return true;}catch{return false;}}
   function apply(pays,rules=v.rules,doubleOnDraw=!!v.doubleOnDraw){if(phase==='draw'){announce('Finish the current draw before changing the game.');return;}cancel();v={...v,pays,doubleOnDraw:isCustom(v.id)&&doubleOnDraw,...(v.id==='badeucey'?{rules:E.normalizeBadeuceyRules(rules)}:{})};liveResult=null;clearStrategy();phase='idle';hand=[];mask=0;const kept=persist();renderConfig();renderHand();$('hand-status').textContent='Five cards. One decision.';announce(kept?'Settings applied and saved in this browser.':'Settings applied for this session; browser storage is unavailable.');}
   $('pay-form').onsubmit=e=>{e.preventDefault();const pays={};for(const input of $('pay-editor').querySelectorAll('input')){if(input.value.trim()===''){announce('Enter a payout for every category.');return;}const n=Number(input.value);if(!Number.isInteger(n)||n<0||n>1000000){announce('Payouts must be whole numbers between 0 and 1,000,000.');return;}pays[input.dataset.key]=n;}const rules=v.id==='badeucey'?{fiveCard:$('rule-five-card').value,minBadugi:Number($('rule-min-badugi').value),maxLowRank:Number($('rule-low-rank').value),maxBadugiRank:Number($('rule-badugi-rank').value)}:undefined;apply(pays,rules,$('rule-double')?.value==='true');};
+  $('best-pays').onclick=()=>{const rec=bestRecommendation(v.id,v.doubleOnDraw);if(rec)apply(clone(rec.pays),rec.rules,!!rec.doubleOnDraw);};
   $('reset-pays').onclick=()=>apply({...E.byId[v.id].pays},E.byId[v.id].rules,!!v.doubleOnDraw);
   $('pay-form').oninput=()=>{renderControls();$('edit-status').textContent='Unapplied changes. Apply settings to use them in play and the solver.';};
   function renderRecommendations(){
@@ -158,5 +161,5 @@
   }
   document.addEventListener('keydown',e=>{if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target.closest('input,select,textarea')||$('view-play').hidden)return;if(/^[1-5]$/.test(e.key)){e.preventDefault();toggleHold(+e.key-1);}if(e.code==='Space'&&!e.target.closest('button,summary,a')){e.preventDefault();$('deal').click();}});
   selectVariant('jacks');
-  fetch('./analysis.json?v=20261021').then(r=>{if(!r.ok)throw Error();return r.json();}).then(data=>{report=data;renderMetrics();renderRecommendations();}).catch(()=>{$('recommendations').textContent='Saved analysis could not load. Use “Solve full game” to calculate any paytable locally.';});
+  fetch('./analysis.json?v=20261021').then(r=>{if(!r.ok)throw Error();return r.json();}).then(data=>{report=data;for(const option of $('variant').options)option.disabled=false;renderMetrics();renderRecommendations();}).catch(()=>{for(const option of $('variant').options)option.disabled=false;$('recommendations').textContent='Saved analysis could not load. Custom games use original tables unless you have saved edits. Use “Solve full game” to calculate any paytable locally.';});
 })();

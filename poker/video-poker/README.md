@@ -6,7 +6,7 @@ Static app at `/poker/video-poker/`. Uses the shared shell, tokens and playing-c
 
 19 menu choices from 17 single-draw paytable presets: Jacks or Better (9/6), Tens or Better (6/5), Bonus (8/5), Bonus Deluxe (9/6), Double Bonus (10/7), Double Double Bonus (9/6), Triple Double Bonus (9/7), Triple Bonus Plus (9/5), Super Double Bonus (9/5), White Hot Aces (9/5), All American (40/8/8/8), full-pay Deuces Wild, Not So Ugly Ducks, Bonus Deuces Wild (10/4/4), Joker Poker (kings or better, 7/5), 2–7 Low, and Badeucey.
 
-The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown with four entries: 2–7 Low, 2–7 Low · 2× on draw, Badeucey, and Badeucey · 2× on draw. Each stake mode keeps independent payouts and qualification settings. Existing saved settings migrate to their previous stake mode; the other mode starts with the original table. Original resets only the selected mode. Integer category payouts and Badeucey qualification rules persist separately for each menu choice in local storage; session PnL and in-progress hands reset on reload.
+The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown with four entries: 2–7 Low, 2–7 Low · 2× on draw, Badeucey, and Badeucey · 2× on draw. Each stake mode keeps independent payouts and qualification settings. Existing saved settings migrate to their previous stake mode; the other mode starts with the best suggested table below 100% RTP. Original resets only the selected mode. Best RTP table applies the highest-return suggestion at or below 100% for that mode, including its qualification rules. New custom configurations use that suggestion automatically; saved edits are preserved. Integer category payouts and Badeucey qualification rules persist separately for each menu choice in local storage; session PnL and in-progress hands reset on reload.
 
 2–7 payouts are interpreted as **total returns including the stake**, following ordinary video-poker convention. J-high therefore pushes. Aces are high; pairs, straights and flushes lose. A-2-3-4-5 is ace-high, not a straight. The wheel is 7-5-4-3-2. Awards within a half never stack.
 
@@ -20,7 +20,7 @@ Qualification and point awards are separate: five-card low points always require
 
 ## Session PnL
 
-The base bet is always 1. PnL starts at zero, subtracts 1 when dealing and another 1 when choosing 2×, then adds the full payout on settlement. Negative PnL never blocks play or triggers a refill. Changing games or applying settings preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. There is no Last return meter.
+The base bet is always 1. PnL starts at zero and stays unchanged during a hand. Settlement adds the payout minus the full stake: 1 normally or 2 when choosing 2×. Negative PnL never blocks play or triggers a refill. Changing games or applying settings preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. There is no Last return meter.
 
 A zero payout displays **You lose**; returning exactly the stake displays **Push**; a win displays **Won +N**, where N is the payout minus the entire stake (including 2× when used).
 
@@ -69,7 +69,7 @@ These results are recorded in `analysis.json`. Each recommendation applies only 
 
 ## Payout options
 
-Each custom game has three base-stake and three optional 2× tables. These favor tidy integers, repeated steps and gradual increases over matching a precise 99% target. The largest suggested award is 16 and no adjacent tier increases by more than 5. Every table is exhaustively re-optimized; these returns do not imply equal volatility. Applying an option restores its payouts, qualifiers and stake rule.
+Each custom game has three base-stake and three optional 2× tables. The defaults are Wheel at twelve (2–7), Even steps (2–7 with 2×), Three-point steps (Badeucey), and Two- and four-point steps (Badeucey with 2×), chosen for the highest RTP below 100% within each mode. These favor tidy integers, repeated steps and gradual increases over matching a precise 99% target. The largest suggested award is 16 and no adjacent tier increases by more than 5. Every table is exhaustively re-optimized; these returns do not imply equal volatility. Applying an option restores its payouts, qualifiers and stake rule.
 
 ### 2–7 Low options
 

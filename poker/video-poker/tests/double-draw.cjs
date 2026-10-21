@@ -4,13 +4,13 @@ module.exports=async function checkDoubleDraw(browser,base){
  const lab=()=>page.locator('[data-view="lab"]').click(),play=()=>page.locator('[data-view="play"]').click();
  const initial=E.parseHand('7s 5h 4d 3c Kh'),v={...E.byId.low27,doubleOnDraw:true},expected=S.solveHand(initial,v);
  try{
-  await page.goto(base+'/poker/video-poker/');await page.locator('#variant').selectOption('low27');await lab();
+  await page.goto(base+'/poker/video-poker/');await page.locator('#variant').selectOption('low27');await lab();await page.locator('#reset-pays').click();
   await page.locator('#rule-double').selectOption('true');await page.locator('#pay-form button[type="submit"]').click();
   await page.waitForFunction(()=>document.querySelector('#double-frequency')?.textContent==='14.6780%');
   assert.match(await page.locator('#lab-result').textContent(),/initial deal/);
   await page.reload();await page.locator('#variant').selectOption('low27-double');await lab();assert.equal(await page.locator('#rule-double').inputValue(),'true');
   await play();await page.evaluate(cards=>{VideoPoker.shuffledDeck=()=>[...cards,...Array.from({length:52},(_,i)=>i).filter(c=>!cards.includes(c))];},initial);
-  await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'-1');
+  await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'0');
   for(let i=0;i<5;i++)await page.locator(`[data-card="${i}"]`).click();
   assert.ok(await page.locator('#double-draw').isDisabled(),'cannot double standing pat');
   await page.locator('[data-card="4"]').click();assert.ok(await page.locator('#double-draw').isEnabled());
@@ -73,7 +73,7 @@ module.exports=async function checkDoubleDraw(browser,base){
   assert.equal(await page.locator('#hands-played').textContent(),'60');
   assert.equal(await page.locator('#hand-status').textContent(),'You lose');
   assert.equal(await page.locator('#credits').count(),0);assert.equal(await page.locator('#last-return').count(),0);
-  await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'-121');
+  await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'-120');
   assert.ok(await page.locator('#double-draw').isEnabled());assert.equal(await page.locator('#bet').textContent(),'1');
 
   assert.deepEqual(errors,[]);console.log('Double draw passed: stake eligibility, PnL settlement and outcome labels, 63 actions, net EV review, saved mode, all 12 payout options and exact worker totals.');

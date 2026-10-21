@@ -11,14 +11,14 @@ try{
  await page.goto(server.base+'/poker/video-poker/');await page.waitForFunction(()=>document.getElementById('return-value').textContent==='99.5439%');
  assert.equal(await page.locator('#variant option').count(),19);
  await page.screenshot({path:'/tmp/video-poker-desktop.png',fullPage:true});
- await page.locator('#variant').selectOption('badeucey');await page.locator('.spot-editor summary').click();await page.locator('#spot-hand').fill('7s 5h 4d 3c 2s');await page.locator('#spot-form button').click();
+ await page.locator('#variant').selectOption('badeucey');await page.locator('[data-view="lab"]').click();await page.locator('#reset-pays').click();await page.locator('[data-view="play"]').click();await page.locator('.spot-editor summary').click();await page.locator('#spot-hand').fill('7s 5h 4d 3c 2s');await page.locator('#spot-form button').click();
  await page.waitForFunction(()=>document.querySelectorAll('.strategy-row').length===5,{},{timeout:30000});
  assert.match(await page.locator('#strategy-status').textContent(),/Hold all five.*25/);
  await page.locator('#hold-best').click();assert.equal(await page.locator('.card-slot.held').count(),5);
  await page.locator('#show-all').click();assert.equal(await page.locator('.strategy-row').count(),32);
  await page.waitForTimeout(350);await page.screenshot({path:'/tmp/video-poker-strategy.png',fullPage:true});
  // A study hand never pays out; Deal starts a random wager.
- await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'-1');assert.ok(await page.locator('#variant').isDisabled());
+ await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'0');assert.ok(await page.locator('#variant').isDisabled());
  await page.locator('[data-card="0"]').click();assert.equal(await page.locator('.card-slot.held').count(),1);await page.keyboard.press('2');assert.equal(await page.locator('.card-slot.held').count(),2);await page.keyboard.press('2');
  const original=await page.locator('#hand button').evaluateAll(els=>els.map(e=>e.getAttribute('aria-label')));
  await page.locator('#deal').click();const drawn=await page.locator('#hand .playing-card').evaluateAll(els=>els.map(e=>e.getAttribute('aria-label')));
