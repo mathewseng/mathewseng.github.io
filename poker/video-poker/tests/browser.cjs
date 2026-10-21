@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
 const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../../scripts/quiet-browser.cjs'),{serveSite}=require('../../../scripts/site-pages.cjs');
 (async()=>{const server=await serveSite(path.resolve(process.argv[2]||'.')),browser=await launchQuietBrowser(chromium),errors=[];
 try{
+ await require('./mobile-response.cjs')(browser,server.base);
  await require('./variant-selection.cjs')(browser,server.base);
  await require('./decision-review.cjs')(browser,server.base);
  await require('./badeucey-rules.cjs')(browser,server.base);

@@ -12,7 +12,7 @@
   const legacyModes=readSaved('video-poker-draw-rules-v1')||{};
   function loadSettings(key,legacyKey){const current=readSaved(key);if(current)return current;const migrated={};for(const [id,value]of Object.entries(readSaved(legacyKey)||{}))migrated[variantKey(id,legacyModes[id]===true)]=value;return migrated;}
   let saved=loadSettings(storedKey,'video-poker-paytables-v1'),savedRules=loadSettings(rulesKey,'video-poker-rules-v1');
-  let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,pnl=0,hands=0,rows=null,strategyHand=[],review=null,showAll=false,worker=null,request=0,busy=false,report=null,liveResult=null;
+  let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,pnl=0,hands=0,rows=null,strategyHand=[],review=null,showAll=false,worker=null,workerKind=null,request=0,busy=false,report=null,liveResult=null;
   const historyTotals={win:0,loss:0,push:0};
   const families=['Custom variants',...new Set(E.variants.filter(x=>x.family!=='Custom variants').map(x=>x.family))];
   $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}"${isCustom(x.id)?' disabled':''}>${x.name}</option>`).join('')}</optgroup>`).join('');
@@ -39,7 +39,7 @@
   function setView(view){for(const b of document.querySelectorAll('[data-view]')){const selected=b.dataset.view===view;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',selected);}for(const name of ['play','lab','rules'])$('view-'+name).hidden=name!==view;}
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
   $('open-lab').onclick=()=>setView('lab');
-  function cancel(){request++;if(worker){worker.terminate();worker=null;}busy=false;$('solve-progress').hidden=true;$('cancel-solve').hidden=true;$('solve-all').disabled=false;renderControls();}
+  function cancel(keepWorker=false){request++;if(worker&&(!keepWorker||(busy&&workerKind==='all'))){worker.terminate();worker=null;}busy=false;$('solve-progress').hidden=true;$('cancel-solve').hidden=true;$('solve-all').disabled=false;renderControls();}
   function clearStrategy(){rows=null;strategyHand=[];review=null;showAll=false;$('strategy-title').textContent='The best decision';$('decision-summary').hidden=true;$('decision-summary').replaceChildren();$('strategy-results').replaceChildren();$('strategy-status').textContent='Solve a hand to compare the exact EV of every decision.';$('show-all').hidden=true;}
   function selectVariant(id){cancel();v=configFor(id);liveResult=null;phase='idle';hand=[];deck=[];mask=0;clearStrategy();$('variant').value=id;renderConfig();renderHand();$('hand-status').textContent='Five cards. One decision.';announce('');}
   $('variant').onchange=()=>selectVariant($('variant').value);
@@ -89,14 +89,19 @@
     $('double-metrics').hidden=!v.doubleOnDraw;
     $('double-metrics').innerHTML=v.doubleOnDraw&&result?`<div><span>Optimal to double</span><strong id="double-frequency">${pct(result.doubleFrequency)}</strong></div><div><span>Average stake / deal</span><strong>${fmt(result.averageStake,6)}</strong></div><div><span>Expected return / deal</span><strong>${fmt(result.expectedReturn,6)}</strong></div><p>Double on ${result.doubleCount.toLocaleString()} of ${result.deals.toLocaleString()} deals. An additional ${pct(result.doubleTieFrequency)} tie between doubling and single stake; use single stake on ties. RTP divides expected return by average total stake. Strategy maximizes net profit per initial deal.</p>`:v.doubleOnDraw?'<p>Solve to see the optimal double frequency and average stake.</p>':'';
   }
+  function renderStakeControl(){const active=phase==='draw';$('double-draw').hidden=!v.doubleOnDraw||!active;$('double-draw').disabled=!active||mask===31;$('double-draw').title=mask===31?'Release at least one card to double.':'Add 1 credit, double the final return, and draw.';}
   function renderControls(){const active=phase==='draw';$('variant').disabled=active;$('deal').disabled=false;$('deal').innerHTML=active?'Draw cards <span aria-hidden="true">→</span>':'Deal hand <span aria-hidden="true">→</span>';$('solve-hand').disabled=busy||hand.length!==5;$('solve-hand').textContent=phase==='complete'?'Review decision':'Solve hand';$('hold-best').disabled=busy||!rows||!['draw','study'].includes(phase);$('spot-hand').disabled=active;$('spot-form').querySelector('button').disabled=active;$('pay-form').querySelector('button[type=submit]').disabled=active;$('reset-pays').disabled=active;$('best-pays').hidden=!isCustom(v.id);$('best-pays').disabled=active||!bestRecommendation(v.id,v.doubleOnDraw);for(const select of document.querySelectorAll('#qualification-rules select,#draw-rules select'))select.disabled=active||(select.id==='rule-badugi-rank'&&$('rule-min-badugi').value==='0');
-    $('double-draw').hidden=!v.doubleOnDraw||!active;$('double-draw').disabled=!active||mask===31;$('double-draw').title=mask===31?'Release at least one card to double.':'Add 1 credit, double the final return, and draw.';
+    renderStakeControl();
     document.querySelectorAll('[data-recommend]').forEach(b=>b.disabled=active);$('pnl').textContent=(pnl>0?'+':'')+fmt(pnl);$('hands-played').textContent=hands;
   }
-  function renderHand(animate=false){const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.remove('dealt');$('hand').innerHTML=Array.from({length:5},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');if(animate){void $('hand').offsetWidth;$('hand').classList.add('dealt');}
+  function renderHand(animate=false){const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.toggle('dealt',animate);$('hand').innerHTML=Array.from({length:5},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');
     $('hold-instruction').textContent=phase==='draw'?(v.doubleOnDraw?'Draw at 1×, or add 1 credit and double. Release at least one card to double.':'Select your holds, then draw once.'):phase==='study'?'Study hand · no credit wagered. Deal starts a random hand.':phase==='complete'?'Hand complete. Deal again when you’re ready.':'Deal a hand to begin.';renderControls();
   }
-  function toggleHold(i){if(!['draw','study'].includes(phase))return;mask^=1<<i;renderHand();renderStrategy();}
+  function updateHolds(){
+    for(const card of $('hand').querySelectorAll('[data-card]')){const held=!!(mask&(1<<Number(card.dataset.card))),slot=card.parentElement;slot.classList.toggle('held',held);card.classList.toggle('selected',held);card.setAttribute('aria-pressed',String(held));slot.querySelector('.hold-label').textContent=held?'HELD':'HOLD';}
+    renderStakeControl();
+  }
+  function toggleHold(i){if(!['draw','study'].includes(phase))return;mask^=1<<i;updateHolds();renderStrategy(true);}
   $('hand').onclick=e=>{const b=e.target.closest('[data-card]');if(b)toggleHold(+b.dataset.card);};
   function random(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}
   function recordHand(profit,doubled){
@@ -108,20 +113,20 @@
   }
   function completeDraw(doubled=false){
     if(phase!=='draw'||(doubled&&(!v.doubleOnDraw||mask===31)))return;
-    cancel();announce('');const stake=doubled?2:1;
+    cancel(true);announce('');const stake=doubled?2:1;
     review={hand:[...hand],mask,doubled};strategyHand=[...hand];$('strategy-title').textContent='Decision review';
     hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned-stake;hands++;recordHand(returned-stake,doubled);phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned===0?'You lose':returned===stake?'Push':'Won +'+fmt(returned-stake);
     document.querySelectorAll('[data-pay]').forEach(el=>el.classList.toggle('paying',result.keys.includes(el.dataset.pay)));if(rows)renderStrategy();else run('hand');
   }
   $('double-draw').onclick=()=>completeDraw(true);
-  $('deal').onclick=()=>{if(phase==='draw'){completeDraw();return;}cancel();announce('');
+  $('deal').onclick=()=>{if(phase==='draw'){completeDraw();return;}cancel(true);announce('');
     const shuffled=E.shuffledDeck(v.deckSize,random);hand=shuffled.slice(0,5);deck=shuffled.slice(5);mask=0;phase='draw';clearStrategy();renderHand(true);$('hand-status').textContent='Choose your hold';document.querySelectorAll('[data-pay]').forEach(el=>el.classList.remove('paying'));
   };
   function describe(m,h=strategyHand){return m===0?'Draw five':m===31?'Hold all five':h.filter((_,i)=>m&(1<<i)).map(E.cardText).join(' ');}
   function decisionLabel(r){return describe(r.mask)+(r.doubled?' · 2×':'');}
   function displayEV(r){return v.doubleOnDraw?r.netEV:r.ev;}
   function formatEV(r){const n=displayEV(r);return (v.doubleOnDraw&&n>0?'+':'')+fmt(n,6)+(v.doubleOnDraw?'':'×');}
-  function renderStrategy(){
+  function renderStrategy(selectionOnly=false){
     if(!rows)return;
     const selectedMask=review?review.mask:mask,selected=rows.find(r=>r.mask===selectedMask&&r.doubled===!!(review?.doubled)),best=rows[0];
     $('decision-summary').hidden=!review;
@@ -134,6 +139,7 @@
       const doubleHold=rows.find(r=>r.mask===mask&&r.doubled);
       $('strategy-status').textContent=`Best: ${decisionLabel(best)} · ${formatEV(best)} ${v.doubleOnDraw?'net credits / initial deal':'returned / credit'}. Your hold: ${formatEV(selected)}.`+(doubleHold?` At 2×: ${formatEV(doubleHold)} net.`:'');
     }
+    if(selectionOnly&&!review)return;
     const visible=showAll?[...rows]:rows.slice(0,5);
     if(review&&!showAll&&!visible.includes(selected))visible.push(selected);
     $('strategy-results').innerHTML=visible.map(r=>{
@@ -143,15 +149,15 @@
     $('show-all').hidden=false;$('show-all').textContent=showAll?'Show top 5':v.doubleOnDraw?`Show all ${rows.length} decisions`:'Show all 32 holds';renderControls();
   }
   $('show-all').onclick=()=>{showAll=!showAll;renderStrategy();};
-  function run(kind){const queryHand=[...(review?review.hand:hand)];cancel();busy=true;renderControls();const id=++request;$('solve-all').disabled=true;$('cancel-solve').hidden=false;$('solve-progress').hidden=false;$('solve-progress').value=0;const status=kind==='all'?$('solve-status'):$('strategy-status');status.textContent=kind==='hand'&&review?'Reviewing your draw decision…':'Starting exact solver…';
-    try{worker=new Worker('./worker.js?v=20261020-5');worker.onerror=error=>{if(id!==request)return;finishError(error.message||'The solver could not start. Reload the page and try again.');};worker.onmessage=({data})=>{if(data.id!==request)return;if(data.error){finishError(data.error);return;}if(data.progress!==undefined){status.textContent=data.stage+' · '+Math.round(data.progress*100)+'%';$('solve-progress').value=data.progress;return;}busy=false;$('cancel-solve').hidden=true;$('solve-progress').hidden=true;$('solve-all').disabled=false;
-      if(kind==='all'){liveResult=data.result;renderMetrics();document.querySelector('.analysis-column').scrollTop=0;status.textContent='Complete. Every hold was re-optimized for these rules and payouts.';}else{rows=data.result;strategyHand=queryHand;renderStrategy();}worker.terminate();worker=null;renderControls();};worker.postMessage({id,kind,variant:v,hand:queryHand});}
+  function run(kind){const queryHand=[...(review?review.hand:hand)];cancel(true);busy=true;renderControls();const id=++request;$('solve-all').disabled=true;$('cancel-solve').hidden=false;$('solve-progress').hidden=false;$('solve-progress').value=0;const status=kind==='all'?$('solve-status'):$('strategy-status');status.textContent=kind==='hand'&&review?'Reviewing your draw decision…':'Starting exact solver…';
+    try{if(!worker)worker=new Worker('./worker.js?v=20261020-5');workerKind=kind;const activeWorker=worker;worker.onerror=error=>{if(worker!==activeWorker)return;if(id!==request){worker.terminate();worker=null;return;}finishError(error.message||'The solver could not start. Reload the page and try again.');};worker.onmessage=({data})=>{if(data.id!==request)return;if(data.error){finishError(data.error);return;}if(data.progress!==undefined){status.textContent=data.stage+' · '+Math.round(data.progress*100)+'%';$('solve-progress').value=data.progress;return;}busy=false;$('cancel-solve').hidden=true;$('solve-progress').hidden=true;$('solve-all').disabled=false;
+      if(kind==='all'){liveResult=data.result;renderMetrics();document.querySelector('.analysis-column').scrollTop=0;status.textContent='Complete. Every hold was re-optimized for these rules and payouts.';}else{rows=data.result;strategyHand=queryHand;renderStrategy();}renderControls();};worker.postMessage({id,kind,variant:v,hand:queryHand});}
     catch(error){finishError(error.message);}
     function finishError(message){cancel();status.textContent=message;announce(message);}
   }
   $('solve-hand').onclick=()=>run('hand');$('solve-all').onclick=()=>run('all');$('cancel-solve').onclick=()=>{cancel();$('solve-status').textContent='Calculation canceled.';$('strategy-status').textContent=rows?'Previous solution retained.':'Calculation canceled. You can try again.';};
-  $('hold-best').onclick=()=>{if(rows){mask=rows[0].mask;renderHand();renderStrategy();if(v.doubleOnDraw)announce(rows[0].doubled?'Best hold selected. Use Double & draw for the optimal stake.':'Best hold selected. Use Draw cards at the single stake.');}};
-  $('spot-form').onsubmit=e=>{e.preventDefault();if(phase==='draw')return;try{const h=E.parseHand($('spot-hand').value,v.deckSize);cancel();hand=h;deck=[];mask=0;phase='study';clearStrategy();renderHand();$('hand-status').textContent='Study a specific hand';announce('');run('hand');}catch(error){announce(error.message);}};
+  $('hold-best').onclick=()=>{if(rows){mask=rows[0].mask;updateHolds();renderStrategy(true);if(v.doubleOnDraw)announce(rows[0].doubled?'Best hold selected. Use Double & draw for the optimal stake.':'Best hold selected. Use Draw cards at the single stake.');}};
+  $('spot-form').onsubmit=e=>{e.preventDefault();if(phase==='draw')return;try{const h=E.parseHand($('spot-hand').value,v.deckSize);cancel(true);hand=h;deck=[];mask=0;phase='study';clearStrategy();renderHand();$('hand-status').textContent='Study a specific hand';announce('');run('hand');}catch(error){announce(error.message);}};
   function persist(){try{const key=variantKey(v.id,v.doubleOnDraw);saved[key]=v.pays;if(v.id==='badeucey')savedRules[key]=v.rules;localStorage.setItem(storedKey,JSON.stringify(saved));localStorage.setItem(rulesKey,JSON.stringify(savedRules));return true;}catch{return false;}}
   function apply(pays,rules=v.rules,doubleOnDraw=!!v.doubleOnDraw){if(phase==='draw'){announce('Finish the current draw before changing the game.');return;}cancel();v={...v,pays,doubleOnDraw:isCustom(v.id)&&doubleOnDraw,...(v.id==='badeucey'?{rules:E.normalizeBadeuceyRules(rules)}:{})};liveResult=null;clearStrategy();phase='idle';hand=[];mask=0;const kept=persist();renderConfig();renderHand();$('hand-status').textContent='Five cards. One decision.';announce(kept?'Settings applied and saved in this browser.':'Settings applied for this session; browser storage is unavailable.');}
   $('pay-form').onsubmit=e=>{e.preventDefault();const pays={};for(const input of $('pay-editor').querySelectorAll('input')){if(input.value.trim()===''){announce('Enter a payout for every category.');return;}const n=Number(input.value);if(!Number.isInteger(n)||n<0||n>1000000){announce('Payouts must be whole numbers between 0 and 1,000,000.');return;}pays[input.dataset.key]=n;}const rules=v.id==='badeucey'?{fiveCard:$('rule-five-card').value,minBadugi:Number($('rule-min-badugi').value),maxLowRank:Number($('rule-low-rank').value),maxBadugiRank:Number($('rule-badugi-rank').value)}:undefined;apply(pays,rules,$('rule-double')?.value==='true');};

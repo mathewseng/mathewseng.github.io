@@ -140,3 +140,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .history-entry.win strong { color:var(--good); }
 .history-entry.loss strong { color:var(--bad); }
 #history-list:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+.vp-app button,.vp-app summary { touch-action:manipulation; }
+@media(pointer:coarse) { .hand.dealt .card-slot { animation:none; } .card-slot > button { transition:none; } }

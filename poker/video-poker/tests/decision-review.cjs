@@ -46,6 +46,7 @@ module.exports = async function checkDecisionReview(browser, base) {
     assert.equal(await page.locator('#decision-summary').isHidden(), true);
     await page.locator('#solve-hand').click();
     await page.waitForFunction(() => document.querySelectorAll('.strategy-row').length === 5, {}, { timeout: 30000 });
+    assert.equal(workers, 1, 'the next hand reuses the indexed worker');
     await page.locator('#hold-best').click();
     const countBeforeDraw = workers;
     await page.locator('#deal').click();
@@ -64,6 +65,7 @@ module.exports = async function checkDecisionReview(browser, base) {
     assert.equal(await page.locator('#decision-summary').isHidden(), true);
     assert.equal(await page.locator('#strategy-title').textContent(), 'The best decision');
     assert.equal(await page.locator('#variant').isDisabled(), true);
+    assert.equal(workers, 1, 'stale review cancellation retains the same hand index');
     assert.deepEqual(errors, []);
     console.log('Decision review passed: automatic exact EV, original-deal snapshot, chosen alternative, cached optimal hold, responsive summary, and stale-review cancellation.');
   } finally {
