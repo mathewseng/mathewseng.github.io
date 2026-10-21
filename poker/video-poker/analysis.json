@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "optionsSha256": "0a2570fef5b857ded4177e9a0c2c3b4f92b94b9944820508009eddf81c02199a",
+  "optionsSha256": "b01ce47db6107143d6be1c612416a1cf52dcfa8dc3c4902a5779aaabe8a0f24f",
   "engineSha256": "d2ded05a123b7aef3695b151fedd81a125622472953d91a44086efeec98c4836",
   "solverSha256": "bab3bec9ce48e235426bda93a98628c1045faeb90c9de5dd3559ba676d599f8e",
   "rules": {
@@ -546,300 +546,32 @@
   "recommendations": [
     {
       "id": "low27",
-      "name": "Balanced",
+      "key": "low27",
       "doubleOnDraw": false,
       "pays": {
-        "wheel": 25,
-        "low7": 7,
-        "low8": 5,
-        "low9": 4,
+        "lowJ": 1,
         "lowT": 2,
-        "lowJ": 1
+        "low9": 4,
+        "low8": 6,
+        "low7": 8,
+        "wheel": 10
       },
-      "summary": "Total returns: J-high 1×, T-high 2×, 9-high 4×, 8-high 5×, 7-high 7×, wheel 25×.",
-      "rationale": "Keep the J-high push and T-high award; improve the strong lows and make the wheel a bigger prize. Exact house edge: 0.6262%. This is a practical whole-number option, not a unique optimum.",
+      "name": "Even steps",
+      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 8 / 10.",
+      "rationale": "Two-point steps from T-high through the wheel.",
       "result": {
-        "rtp": 0.993738073683526,
-        "netEV": -0.006261926316474042,
+        "rtp": 0.9932215680686876,
+        "netEV": -0.006778431931312445,
         "deals": 2598960,
         "holdCounts": [
           15008,
-          174584,
-          609168,
-          958232,
-          679560,
-          162408
+          180812,
+          635260,
+          952904,
+          661424,
+          153552
         ],
         "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
-      }
-    },
-    {
-      "id": "badeucey",
-      "name": "Balanced",
-      "doubleOnDraw": false,
-      "rules": {
-        "fiveCard": "high-card",
-        "minBadugi": 4,
-        "maxLowRank": 14,
-        "maxBadugiRank": 14
-      },
-      "pays": {
-        "qualify": 1,
-        "wheel": 20,
-        "low7": 10,
-        "low8": 4,
-        "low9": 2,
-        "lowT": 0,
-        "bad5": 40,
-        "bad6": 20,
-        "bad7": 9,
-        "bad8": 4,
-        "bad9": 2,
-        "badT": 0
-      },
-      "summary": "Keep the 1-credit push and both T-high awards at 0. Low points (9 / 8 / 7 / wheel): 2 / 4 / 10 / 20. Badugi points (9 / 8 / 7 / 6 / 5): 2 / 4 / 9 / 20 / 40.",
-      "rationale": "Original high-card + four-card badugi qualifiers apply, with both T-high awards at 0. The badugi awards do most of the balancing: increasing 7-dugi from 9 to 10 would lift return above 100%. Exact house edge: 1.1217%.",
-      "result": {
-        "rtp": 0.988782635432071,
-        "netEV": -0.011217364567928989,
-        "deals": 2598960,
-        "holdCounts": [
-          18976,
-          330940,
-          1101328,
-          721236,
-          241440,
-          185040
-        ],
-        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
-      }
-    },
-    {
-      "id": "badeucey",
-      "key": "badeucey-tens",
-      "doubleOnDraw": false,
-      "pays": {
-        "qualify": 1,
-        "wheel": 8,
-        "low7": 4,
-        "low8": 2,
-        "low9": 1,
-        "lowT": 1,
-        "bad5": 155,
-        "bad6": 8,
-        "bad7": 4,
-        "bad8": 2,
-        "bad9": 1,
-        "badT": 1
-      },
-      "rules": {
-        "fiveCard": "high-card",
-        "minBadugi": 4,
-        "maxLowRank": 14,
-        "maxBadugiRank": 14
-      },
-      "name": "Paying tens",
-      "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 1 / 1 / 2 / 4 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 1 / 2 / 4 / 8 / 155.",
-      "rationale": "High-card hand + 4-card badugi to qualify. Pay both T-high tiers and use a larger 5-dugi top prize.",
-      "result": {
-        "rtp": 0.9892943286658997,
-        "netEV": -0.010705671334100275,
-        "deals": 2598960,
-        "holdCounts": [
-          17380,
-          387216,
-          837608,
-          904164,
-          219936,
-          232656
-        ],
-        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
-      }
-    },
-    {
-      "id": "badeucey",
-      "key": "badeucey-three",
-      "doubleOnDraw": false,
-      "pays": {
-        "qualify": 1,
-        "wheel": 4,
-        "low7": 2,
-        "low8": 1,
-        "low9": 1,
-        "lowT": 0,
-        "bad5": 39,
-        "bad6": 4,
-        "bad7": 2,
-        "bad8": 1,
-        "bad9": 1,
-        "badT": 0
-      },
-      "rules": {
-        "fiveCard": "high-card",
-        "minBadugi": 3,
-        "maxLowRank": 14,
-        "maxBadugiRank": 14
-      },
-      "name": "Three-card qualifier",
-      "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 1 / 2 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 1 / 2 / 4 / 39.",
-      "rationale": "High-card hand + 3-card badugi to qualify. A three-card badugi can qualify; use smaller low and intermediate badugi awards. Badugi points still require four cards.",
-      "result": {
-        "rtp": 0.9907809537541127,
-        "netEV": -0.009219046245887319,
-        "deals": 2598960,
-        "holdCounts": [
-          676,
-          78268,
-          428896,
-          473544,
-          799320,
-          818256
-        ],
-        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
-      }
-    },
-    {
-      "id": "badeucey",
-      "key": "badeucey-double",
-      "doubleOnDraw": true,
-      "pays": {
-        "qualify": 1,
-        "wheel": 8,
-        "low7": 4,
-        "low8": 2,
-        "low9": 1,
-        "lowT": 0,
-        "bad5": 110,
-        "bad6": 8,
-        "bad7": 4,
-        "bad8": 2,
-        "bad9": 1,
-        "badT": 0
-      },
-      "rules": {
-        "fiveCard": "high-card",
-        "minBadugi": 4,
-        "maxLowRank": 14,
-        "maxBadugiRank": 14
-      },
-      "name": "Four-card doubles",
-      "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 2 / 4 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 2 / 4 / 8 / 110.",
-      "rationale": "High-card hand + 4-card badugi to qualify. Original low and intermediate badugi awards, with the 5-dugi prize tuned for doubling.",
-      "result": {
-        "rtp": 0.9900647058277281,
-        "netEV": -0.01116410904434062,
-        "expectedReturn": 1.1125176713601288,
-        "averageStake": 1.1236817804044694,
-        "doubleCount": 321444,
-        "doubleFrequency": 0.12368178040446948,
-        "doubleTieCount": 2592,
-        "doubleTieFrequency": 0.0009973220057253672,
-        "deals": 2598960,
-        "holdCounts": [
-          17096,
-          343764,
-          739792,
-          1013988,
-          278880,
-          205440
-        ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
-      }
-    },
-    {
-      "id": "badeucey",
-      "key": "badeucey-double-tens",
-      "doubleOnDraw": true,
-      "pays": {
-        "qualify": 1,
-        "wheel": 8,
-        "low7": 4,
-        "low8": 2,
-        "low9": 1,
-        "lowT": 1,
-        "bad5": 83,
-        "bad6": 8,
-        "bad7": 4,
-        "bad8": 2,
-        "bad9": 1,
-        "badT": 1
-      },
-      "rules": {
-        "fiveCard": "high-card",
-        "minBadugi": 4,
-        "maxLowRank": 14,
-        "maxBadugiRank": 14
-      },
-      "name": "Paying tens",
-      "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 1 / 1 / 2 / 4 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 1 / 2 / 4 / 8 / 83.",
-      "rationale": "High-card hand + 4-card badugi to qualify. Pay both T-high tiers; the 5-dugi prize accounts for optional doubling.",
-      "result": {
-        "rtp": 0.990166231925604,
-        "netEV": -0.011247763851350623,
-        "expectedReturn": 1.132542059770406,
-        "averageStake": 1.1437898236217565,
-        "doubleCount": 373704,
-        "doubleFrequency": 0.1437898236217564,
-        "doubleTieCount": 648,
-        "doubleTieFrequency": 0.0002493305014313418,
-        "deals": 2598960,
-        "holdCounts": [
-          7440,
-          193748,
-          800812,
-          1104048,
-          299376,
-          193536
-        ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
-      }
-    },
-    {
-      "id": "badeucey",
-      "key": "badeucey-double-three",
-      "doubleOnDraw": true,
-      "pays": {
-        "qualify": 1,
-        "wheel": 4,
-        "low7": 2,
-        "low8": 1,
-        "low9": 1,
-        "lowT": 0,
-        "bad5": 5,
-        "bad6": 4,
-        "bad7": 2,
-        "bad8": 1,
-        "bad9": 1,
-        "badT": 0
-      },
-      "rules": {
-        "fiveCard": "high-card",
-        "minBadugi": 3,
-        "maxLowRank": 14,
-        "maxBadugiRank": 14
-      },
-      "name": "Three-card doubles",
-      "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 1 / 2 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 1 / 2 / 4 / 5.",
-      "rationale": "High-card hand + 3-card badugi to qualify. Three-card qualification and smaller point awards account for the added doubling option. Badugi points still require four cards.",
-      "result": {
-        "rtp": 0.9897766523284927,
-        "netEV": -0.011996077479446532,
-        "expectedReturn": 1.1614040518030357,
-        "averageStake": 1.1734001292824823,
-        "doubleCount": 450660,
-        "doubleFrequency": 0.17340012928248222,
-        "doubleTieCount": 9576,
-        "doubleTieFrequency": 0.0036845507433742727,
-        "deals": 2598960,
-        "holdCounts": [
-          184,
-          60620,
-          347196,
-          477504,
-          916320,
-          797136
-        ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
       }
     },
     {
@@ -852,22 +584,22 @@
         "low9": 4,
         "low8": 6,
         "low7": 8,
-        "wheel": 9
+        "wheel": 12
       },
-      "name": "Broad low awards",
-      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 8 / 9.",
-      "rationale": "Larger 7-, 8- and 9-high awards, with only a small step up for the wheel.",
+      "name": "Wheel at twelve",
+      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 8 / 12.",
+      "rationale": "Two-point steps through 7-high, then a four-point wheel bonus.",
       "result": {
-        "rtp": 0.9903537892520691,
-        "netEV": -0.009646210747930928,
+        "rtp": 0.9990784975354522,
+        "netEV": -0.0009215024645478076,
         "deals": 2598960,
         "holdCounts": [
           15008,
-          179636,
-          623868,
-          965148,
-          661712,
-          153588
+          182972,
+          650700,
+          942288,
+          656636,
+          151356
         ],
         "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
       }
@@ -877,27 +609,27 @@
       "key": "low27-wheel",
       "doubleOnDraw": false,
       "pays": {
-        "wheel": 60,
-        "low7": 5,
-        "low8": 4,
-        "low9": 3,
+        "lowJ": 1,
         "lowT": 2,
-        "lowJ": 1
+        "low9": 4,
+        "low8": 5,
+        "low7": 10,
+        "wheel": 15
       },
-      "name": "Wheel prize",
-      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 4 / 5 / 60.",
-      "rationale": "Keep the original lower awards and concentrate the increase in the wheel.",
+      "name": "Five-point finish",
+      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 5 / 10 / 15.",
+      "rationale": "The top three awards rise in even five-point steps.",
       "result": {
-        "rtp": 0.9902623693609266,
-        "netEV": -0.009737630639073402,
+        "rtp": 0.9878496527525222,
+        "netEV": -0.012150347247477766,
         "deals": 2598960,
         "holdCounts": [
-          11648,
-          161964,
-          641940,
-          1051084,
-          575952,
-          156372
+          15008,
+          181468,
+          604524,
+          964540,
+          669800,
+          163620
         ],
         "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
       }
@@ -907,33 +639,33 @@
       "key": "low27-double",
       "doubleOnDraw": true,
       "pays": {
-        "wheel": 32,
-        "low7": 5,
-        "low8": 4,
-        "low9": 3,
+        "lowJ": 1,
         "lowT": 2,
-        "lowJ": 1
+        "low9": 4,
+        "low8": 4,
+        "low7": 6,
+        "wheel": 8
       },
-      "name": "Balanced doubles",
-      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 4 / 5 / 32.",
-      "rationale": "Keep the original lower awards; the wheel is tuned for the optional doubling rule.",
+      "name": "Even steps",
+      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 4 / 6 / 8.",
+      "rationale": "Even awards from T-high onward, with 9-high and 8-high sharing a tier.",
       "result": {
-        "rtp": 0.9907936587598988,
-        "netEV": -0.011281685822172816,
-        "expectedReturn": 1.214143869015147,
-        "averageStake": 1.2254255548373196,
-        "doubleCount": 585872,
-        "doubleFrequency": 0.22542555483731955,
-        "doubleTieCount": 3024,
-        "doubleTieFrequency": 0.0011635423400129282,
+        "rtp": 0.9966846632868375,
+        "netEV": -0.003881062536915225,
+        "expectedReturn": 1.1667579623037903,
+        "averageStake": 1.1706390248407055,
+        "doubleCount": 443484,
+        "doubleFrequency": 0.1706390248407055,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
         "deals": 2598960,
         "holdCounts": [
           11644,
-          104056,
-          613476,
-          1005120,
-          711040,
-          153624
+          99144,
+          563268,
+          978400,
+          820324,
+          126180
         ],
         "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
       }
@@ -946,30 +678,30 @@
         "lowJ": 1,
         "lowT": 2,
         "low9": 3,
-        "low8": 5,
-        "low7": 6,
-        "wheel": 21
+        "low8": 6,
+        "low7": 7,
+        "wheel": 8
       },
-      "name": "Broad low awards",
-      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 5 / 6 / 21.",
-      "rationale": "Increase 7- and 8-high awards and use a smaller wheel prize than the balanced double table.",
+      "name": "Consecutive finish",
+      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 6 / 7 / 8.",
+      "rationale": "One-point steps in each half of the table, separated by a three-point increase.",
       "result": {
-        "rtp": 0.9902494367206613,
-        "netEV": -0.011736332256737647,
-        "expectedReturn": 1.1919205150975887,
-        "averageStake": 1.2036568473543263,
-        "doubleCount": 529296,
-        "doubleFrequency": 0.20365684735432635,
-        "doubleTieCount": 4068,
-        "doubleTieFrequency": 0.0015652414812078678,
+        "rtp": 0.9938571054531407,
+        "netEV": -0.007197295252277747,
+        "expectedReturn": 1.1644482860571692,
+        "averageStake": 1.1716455813094468,
+        "doubleCount": 446100,
+        "doubleFrequency": 0.17164558130944685,
+        "doubleTieCount": 4032,
+        "doubleTieFrequency": 0.0015513897866839042,
         "deals": 2598960,
         "holdCounts": [
           11644,
-          113916,
-          573608,
-          1003800,
-          745200,
-          150792
+          116092,
+          558832,
+          981428,
+          781300,
+          149664
         ],
         "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
       }
@@ -980,32 +712,302 @@
       "doubleOnDraw": true,
       "pays": {
         "lowJ": 1,
+        "lowT": 2,
+        "low9": 3,
+        "low8": 5,
+        "low7": 10,
+        "wheel": 10
+      },
+      "name": "Ten-point ceiling",
+      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 5 / 10 / 10.",
+      "rationale": "Simple lower awards and a shared ten-point prize for 7-high and the wheel.",
+      "result": {
+        "rtp": 0.9886897466022008,
+        "netEV": -0.013434803397719297,
+        "expectedReturn": 1.1744080260417489,
+        "averageStake": 1.187842829439468,
+        "doubleCount": 488196,
+        "doubleFrequency": 0.1878428294394681,
+        "doubleTieCount": 3072,
+        "doubleTieFrequency": 0.0011820112660448794,
+        "deals": 2598960,
+        "holdCounts": [
+          11644,
+          113512,
+          561484,
+          987744,
+          778716,
+          145860
+        ],
+        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+      }
+    },
+    {
+      "id": "badeucey",
+      "key": "badeucey",
+      "doubleOnDraw": false,
+      "pays": {
+        "qualify": 1,
+        "lowT": 0,
+        "low9": 3,
+        "low8": 6,
+        "low7": 9,
+        "wheel": 12,
+        "badT": 0,
+        "bad9": 3,
+        "bad8": 6,
+        "bad7": 9,
+        "bad6": 12,
+        "bad5": 15
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "name": "Three-point steps",
+      "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 3 / 6 / 9 / 12. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 3 / 6 / 9 / 12 / 15.",
+      "rationale": "High-card hand + 4-card badugi to qualify. Both halves rise in equal three-point steps.",
+      "result": {
+        "rtp": 0.9993262705366092,
+        "netEV": -0.0006737294633908375,
+        "deals": 2598960,
+        "holdCounts": [
+          23860,
+          334160,
+          1149792,
+          688692,
+          262896,
+          139560
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "badeucey",
+      "key": "badeucey-tens",
+      "doubleOnDraw": false,
+      "pays": {
+        "qualify": 1,
         "lowT": 1,
         "low9": 2,
         "low8": 3,
-        "low7": 5,
-        "wheel": 67
+        "low7": 4,
+        "wheel": 5,
+        "badT": 1,
+        "bad9": 3,
+        "bad8": 6,
+        "bad7": 9,
+        "bad6": 12,
+        "bad5": 12
       },
-      "name": "Wheel prize",
-      "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 1 / 2 / 3 / 5 / 67.",
-      "rationale": "Smaller T-, 9- and 8-high awards fund a larger wheel prize.",
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "name": "Paying tens",
+      "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 4 / 5. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 3 / 6 / 9 / 12 / 12.",
+      "rationale": "High-card hand + 4-card badugi to qualify. Low points rise one at a time; badugi points rise mostly in threes and finish at twelve.",
       "result": {
-        "rtp": 0.9886634933825784,
-        "netEV": -0.013434320414692946,
-        "expectedReturn": 1.1716150839624426,
-        "averageStake": 1.1850494043771356,
-        "doubleCount": 480936,
-        "doubleFrequency": 0.18504940437713546,
-        "doubleTieCount": 0,
-        "doubleTieFrequency": 0,
+        "rtp": 0.9958652286435516,
+        "netEV": -0.004134771356448352,
         "deals": 2598960,
         "holdCounts": [
-          14300,
-          167448,
-          847980,
-          967628,
-          459656,
-          141948
+          19744,
+          308336,
+          972144,
+          812736,
+          319536,
+          166464
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "badeucey",
+      "key": "badeucey-three",
+      "doubleOnDraw": false,
+      "pays": {
+        "qualify": 1,
+        "lowT": 0,
+        "low9": 1,
+        "low8": 2,
+        "low7": 3,
+        "wheel": 4,
+        "badT": 0,
+        "bad9": 1,
+        "bad8": 2,
+        "bad7": 3,
+        "bad6": 4,
+        "bad5": 5
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 3,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "name": "One-point steps",
+      "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 2 / 3 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 2 / 3 / 4 / 5.",
+      "rationale": "High-card hand + 3-card badugi to qualify. Both halves rise in equal one-point steps. Badugi points still require four cards.",
+      "result": {
+        "rtp": 0.9963947241602413,
+        "netEV": -0.0036052758397586704,
+        "deals": 2598960,
+        "holdCounts": [
+          844,
+          85776,
+          318224,
+          556356,
+          895536,
+          742224
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "badeucey",
+      "key": "badeucey-double",
+      "doubleOnDraw": true,
+      "pays": {
+        "qualify": 1,
+        "lowT": 0,
+        "low9": 2,
+        "low8": 4,
+        "low7": 6,
+        "wheel": 8,
+        "badT": 0,
+        "bad9": 2,
+        "bad8": 4,
+        "bad7": 8,
+        "bad6": 12,
+        "bad5": 16
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "name": "Two- and four-point steps",
+      "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 2 / 4 / 6 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 2 / 4 / 8 / 12 / 16.",
+      "rationale": "High-card hand + 4-card badugi to qualify. Low points rise in twos; badugi points start in twos and finish in fours.",
+      "result": {
+        "rtp": 0.9963344958601832,
+        "netEV": -0.00448515676467276,
+        "expectedReturn": 1.2191273651671768,
+        "averageStake": 1.2236125219318497,
+        "doubleCount": 581160,
+        "doubleFrequency": 0.22361252193184966,
+        "doubleTieCount": 288,
+        "doubleTieFrequency": 0.00011081355619170745,
+        "deals": 2598960,
+        "holdCounts": [
+          6064,
+          292880,
+          1090740,
+          724596,
+          319176,
+          165504
+        ],
+        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+      }
+    },
+    {
+      "id": "badeucey",
+      "key": "badeucey-double-tens",
+      "doubleOnDraw": true,
+      "pays": {
+        "qualify": 1,
+        "lowT": 1,
+        "low9": 2,
+        "low8": 4,
+        "low7": 6,
+        "wheel": 10,
+        "badT": 1,
+        "bad9": 2,
+        "bad8": 4,
+        "bad7": 6,
+        "bad6": 8,
+        "bad5": 10
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "name": "Paying tens",
+      "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 10. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 2 / 4 / 6 / 8 / 10.",
+      "rationale": "High-card hand + 4-card badugi to qualify. Mostly two-point steps, with both halves capped at ten.",
+      "result": {
+        "rtp": 0.9843139923960335,
+        "netEV": -0.019375601681761556,
+        "expectedReturn": 1.2158400230296613,
+        "averageStake": 1.235215624711423,
+        "doubleCount": 611316,
+        "doubleFrequency": 0.23521562471142304,
+        "doubleTieCount": 26352,
+        "doubleTieFrequency": 0.010139440391541231,
+        "deals": 2598960,
+        "holdCounts": [
+          3484,
+          187692,
+          979724,
+          926940,
+          343368,
+          157752
+        ],
+        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+      }
+    },
+    {
+      "id": "badeucey",
+      "key": "badeucey-double-three",
+      "doubleOnDraw": true,
+      "pays": {
+        "qualify": 1,
+        "lowT": 0,
+        "low9": 1,
+        "low8": 1,
+        "low7": 2,
+        "wheel": 4,
+        "badT": 0,
+        "bad9": 1,
+        "bad8": 1,
+        "bad7": 2,
+        "bad6": 4,
+        "bad5": 6
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 3,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "name": "Three-card qualifier",
+      "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 1 / 2 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 1 / 2 / 4 / 6.",
+      "rationale": "High-card hand + 3-card badugi to qualify. Shared lower tiers and two-point steps for the top awards. Badugi points still require four cards.",
+      "result": {
+        "rtp": 0.9918353232270842,
+        "netEV": -0.009580432780889048,
+        "expectedReturn": 1.1638196965015932,
+        "averageStake": 1.1734001292824823,
+        "doubleCount": 450660,
+        "doubleFrequency": 0.17340012928248222,
+        "doubleTieCount": 11904,
+        "doubleTieFrequency": 0.004580293655923908,
+        "deals": 2598960,
+        "holdCounts": [
+          184,
+          60992,
+          347304,
+          477024,
+          916320,
+          797136
         ],
         "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
       }
@@ -1039,38 +1041,6 @@
           1110552,
           719484,
           267120,
-          186480
-        ],
-        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
-      }
-    },
-    {
-      "name": "Recommended Badeucey with 7-dugi increased to 10",
-      "id": "badeucey",
-      "pays": {
-        "qualify": 1,
-        "wheel": 20,
-        "low7": 10,
-        "low8": 4,
-        "low9": 2,
-        "lowT": 0,
-        "bad5": 40,
-        "bad6": 20,
-        "bad7": 10,
-        "bad8": 4,
-        "bad9": 2,
-        "badT": 0
-      },
-      "result": {
-        "rtp": 1.0052473287884642,
-        "netEV": 0.005247328788464234,
-        "deals": 2598960,
-        "holdCounts": [
-          25516,
-          337040,
-          1099200,
-          714084,
-          236640,
           186480
         ],
         "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"

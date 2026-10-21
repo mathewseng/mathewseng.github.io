@@ -1,143 +1,19 @@
 [
   {
-    "id": "badeucey",
-    "key": "badeucey-tens",
+    "id": "low27",
+    "key": "low27",
     "doubleOnDraw": false,
     "pays": {
-      "qualify": 1,
-      "wheel": 8,
-      "low7": 4,
-      "low8": 2,
-      "low9": 1,
-      "lowT": 1,
-      "bad5": 155,
-      "bad6": 8,
-      "bad7": 4,
-      "bad8": 2,
-      "bad9": 1,
-      "badT": 1
+      "lowJ": 1,
+      "lowT": 2,
+      "low9": 4,
+      "low8": 6,
+      "low7": 8,
+      "wheel": 10
     },
-    "rules": {
-      "fiveCard": "high-card",
-      "minBadugi": 4,
-      "maxLowRank": 14,
-      "maxBadugiRank": 14
-    },
-    "name": "Paying tens",
-    "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 1 / 1 / 2 / 4 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 1 / 2 / 4 / 8 / 155.",
-    "rationale": "High-card hand + 4-card badugi to qualify. Pay both T-high tiers and use a larger 5-dugi top prize."
-  },
-  {
-    "id": "badeucey",
-    "key": "badeucey-three",
-    "doubleOnDraw": false,
-    "pays": {
-      "qualify": 1,
-      "wheel": 4,
-      "low7": 2,
-      "low8": 1,
-      "low9": 1,
-      "lowT": 0,
-      "bad5": 39,
-      "bad6": 4,
-      "bad7": 2,
-      "bad8": 1,
-      "bad9": 1,
-      "badT": 0
-    },
-    "rules": {
-      "fiveCard": "high-card",
-      "minBadugi": 3,
-      "maxLowRank": 14,
-      "maxBadugiRank": 14
-    },
-    "name": "Three-card qualifier",
-    "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 1 / 2 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 1 / 2 / 4 / 39.",
-    "rationale": "High-card hand + 3-card badugi to qualify. A three-card badugi can qualify; use smaller low and intermediate badugi awards. Badugi points still require four cards."
-  },
-  {
-    "id": "badeucey",
-    "key": "badeucey-double",
-    "doubleOnDraw": true,
-    "pays": {
-      "qualify": 1,
-      "wheel": 8,
-      "low7": 4,
-      "low8": 2,
-      "low9": 1,
-      "lowT": 0,
-      "bad5": 110,
-      "bad6": 8,
-      "bad7": 4,
-      "bad8": 2,
-      "bad9": 1,
-      "badT": 0
-    },
-    "rules": {
-      "fiveCard": "high-card",
-      "minBadugi": 4,
-      "maxLowRank": 14,
-      "maxBadugiRank": 14
-    },
-    "name": "Four-card doubles",
-    "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 2 / 4 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 2 / 4 / 8 / 110.",
-    "rationale": "High-card hand + 4-card badugi to qualify. Original low and intermediate badugi awards, with the 5-dugi prize tuned for doubling."
-  },
-  {
-    "id": "badeucey",
-    "key": "badeucey-double-tens",
-    "doubleOnDraw": true,
-    "pays": {
-      "qualify": 1,
-      "wheel": 8,
-      "low7": 4,
-      "low8": 2,
-      "low9": 1,
-      "lowT": 1,
-      "bad5": 83,
-      "bad6": 8,
-      "bad7": 4,
-      "bad8": 2,
-      "bad9": 1,
-      "badT": 1
-    },
-    "rules": {
-      "fiveCard": "high-card",
-      "minBadugi": 4,
-      "maxLowRank": 14,
-      "maxBadugiRank": 14
-    },
-    "name": "Paying tens",
-    "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 1 / 1 / 2 / 4 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 1 / 2 / 4 / 8 / 83.",
-    "rationale": "High-card hand + 4-card badugi to qualify. Pay both T-high tiers; the 5-dugi prize accounts for optional doubling."
-  },
-  {
-    "id": "badeucey",
-    "key": "badeucey-double-three",
-    "doubleOnDraw": true,
-    "pays": {
-      "qualify": 1,
-      "wheel": 4,
-      "low7": 2,
-      "low8": 1,
-      "low9": 1,
-      "lowT": 0,
-      "bad5": 5,
-      "bad6": 4,
-      "bad7": 2,
-      "bad8": 1,
-      "bad9": 1,
-      "badT": 0
-    },
-    "rules": {
-      "fiveCard": "high-card",
-      "minBadugi": 3,
-      "maxLowRank": 14,
-      "maxBadugiRank": 14
-    },
-    "name": "Three-card doubles",
-    "summary": "Push: 1. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 1 / 2 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 1 / 2 / 4 / 5.",
-    "rationale": "High-card hand + 3-card badugi to qualify. Three-card qualification and smaller point awards account for the added doubling option. Badugi points still require four cards."
+    "name": "Even steps",
+    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 8 / 10.",
+    "rationale": "Two-point steps from T-high through the wheel."
   },
   {
     "id": "low27",
@@ -149,43 +25,43 @@
       "low9": 4,
       "low8": 6,
       "low7": 8,
-      "wheel": 9
+      "wheel": 12
     },
-    "name": "Broad low awards",
-    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 8 / 9.",
-    "rationale": "Larger 7-, 8- and 9-high awards, with only a small step up for the wheel."
+    "name": "Wheel at twelve",
+    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 8 / 12.",
+    "rationale": "Two-point steps through 7-high, then a four-point wheel bonus."
   },
   {
     "id": "low27",
     "key": "low27-wheel",
     "doubleOnDraw": false,
     "pays": {
-      "wheel": 60,
-      "low7": 5,
-      "low8": 4,
-      "low9": 3,
+      "lowJ": 1,
       "lowT": 2,
-      "lowJ": 1
+      "low9": 4,
+      "low8": 5,
+      "low7": 10,
+      "wheel": 15
     },
-    "name": "Wheel prize",
-    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 4 / 5 / 60.",
-    "rationale": "Keep the original lower awards and concentrate the increase in the wheel."
+    "name": "Five-point finish",
+    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 5 / 10 / 15.",
+    "rationale": "The top three awards rise in even five-point steps."
   },
   {
     "id": "low27",
     "key": "low27-double",
     "doubleOnDraw": true,
     "pays": {
-      "wheel": 32,
-      "low7": 5,
-      "low8": 4,
-      "low9": 3,
+      "lowJ": 1,
       "lowT": 2,
-      "lowJ": 1
+      "low9": 4,
+      "low8": 4,
+      "low7": 6,
+      "wheel": 8
     },
-    "name": "Balanced doubles",
-    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 4 / 5 / 32.",
-    "rationale": "Keep the original lower awards; the wheel is tuned for the optional doubling rule."
+    "name": "Even steps",
+    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 4 / 6 / 8.",
+    "rationale": "Even awards from T-high onward, with 9-high and 8-high sharing a tier."
   },
   {
     "id": "low27",
@@ -195,13 +71,13 @@
       "lowJ": 1,
       "lowT": 2,
       "low9": 3,
-      "low8": 5,
-      "low7": 6,
-      "wheel": 21
+      "low8": 6,
+      "low7": 7,
+      "wheel": 8
     },
-    "name": "Broad low awards",
-    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 5 / 6 / 21.",
-    "rationale": "Increase 7- and 8-high awards and use a smaller wheel prize than the balanced double table."
+    "name": "Consecutive finish",
+    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 6 / 7 / 8.",
+    "rationale": "One-point steps in each half of the table, separated by a three-point increase."
   },
   {
     "id": "low27",
@@ -209,14 +85,182 @@
     "doubleOnDraw": true,
     "pays": {
       "lowJ": 1,
+      "lowT": 2,
+      "low9": 3,
+      "low8": 5,
+      "low7": 10,
+      "wheel": 10
+    },
+    "name": "Ten-point ceiling",
+    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 5 / 10 / 10.",
+    "rationale": "Simple lower awards and a shared ten-point prize for 7-high and the wheel."
+  },
+  {
+    "id": "badeucey",
+    "key": "badeucey",
+    "doubleOnDraw": false,
+    "pays": {
+      "qualify": 1,
+      "lowT": 0,
+      "low9": 3,
+      "low8": 6,
+      "low7": 9,
+      "wheel": 12,
+      "badT": 0,
+      "bad9": 3,
+      "bad8": 6,
+      "bad7": 9,
+      "bad6": 12,
+      "bad5": 15
+    },
+    "rules": {
+      "fiveCard": "high-card",
+      "minBadugi": 4,
+      "maxLowRank": 14,
+      "maxBadugiRank": 14
+    },
+    "name": "Three-point steps",
+    "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 3 / 6 / 9 / 12. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 3 / 6 / 9 / 12 / 15.",
+    "rationale": "High-card hand + 4-card badugi to qualify. Both halves rise in equal three-point steps."
+  },
+  {
+    "id": "badeucey",
+    "key": "badeucey-tens",
+    "doubleOnDraw": false,
+    "pays": {
+      "qualify": 1,
       "lowT": 1,
       "low9": 2,
       "low8": 3,
-      "low7": 5,
-      "wheel": 67
+      "low7": 4,
+      "wheel": 5,
+      "badT": 1,
+      "bad9": 3,
+      "bad8": 6,
+      "bad7": 9,
+      "bad6": 12,
+      "bad5": 12
     },
-    "name": "Wheel prize",
-    "summary": "Total returns (J / T / 9 / 8 / 7 / wheel): 1 / 1 / 2 / 3 / 5 / 67.",
-    "rationale": "Smaller T-, 9- and 8-high awards fund a larger wheel prize."
+    "rules": {
+      "fiveCard": "high-card",
+      "minBadugi": 4,
+      "maxLowRank": 14,
+      "maxBadugiRank": 14
+    },
+    "name": "Paying tens",
+    "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 1 / 2 / 3 / 4 / 5. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 3 / 6 / 9 / 12 / 12.",
+    "rationale": "High-card hand + 4-card badugi to qualify. Low points rise one at a time; badugi points rise mostly in threes and finish at twelve."
+  },
+  {
+    "id": "badeucey",
+    "key": "badeucey-three",
+    "doubleOnDraw": false,
+    "pays": {
+      "qualify": 1,
+      "lowT": 0,
+      "low9": 1,
+      "low8": 2,
+      "low7": 3,
+      "wheel": 4,
+      "badT": 0,
+      "bad9": 1,
+      "bad8": 2,
+      "bad7": 3,
+      "bad6": 4,
+      "bad5": 5
+    },
+    "rules": {
+      "fiveCard": "high-card",
+      "minBadugi": 3,
+      "maxLowRank": 14,
+      "maxBadugiRank": 14
+    },
+    "name": "One-point steps",
+    "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 2 / 3 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 2 / 3 / 4 / 5.",
+    "rationale": "High-card hand + 3-card badugi to qualify. Both halves rise in equal one-point steps. Badugi points still require four cards."
+  },
+  {
+    "id": "badeucey",
+    "key": "badeucey-double",
+    "doubleOnDraw": true,
+    "pays": {
+      "qualify": 1,
+      "lowT": 0,
+      "low9": 2,
+      "low8": 4,
+      "low7": 6,
+      "wheel": 8,
+      "badT": 0,
+      "bad9": 2,
+      "bad8": 4,
+      "bad7": 8,
+      "bad6": 12,
+      "bad5": 16
+    },
+    "rules": {
+      "fiveCard": "high-card",
+      "minBadugi": 4,
+      "maxLowRank": 14,
+      "maxBadugiRank": 14
+    },
+    "name": "Two- and four-point steps",
+    "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 2 / 4 / 6 / 8. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 2 / 4 / 8 / 12 / 16.",
+    "rationale": "High-card hand + 4-card badugi to qualify. Low points rise in twos; badugi points start in twos and finish in fours."
+  },
+  {
+    "id": "badeucey",
+    "key": "badeucey-double-tens",
+    "doubleOnDraw": true,
+    "pays": {
+      "qualify": 1,
+      "lowT": 1,
+      "low9": 2,
+      "low8": 4,
+      "low7": 6,
+      "wheel": 10,
+      "badT": 1,
+      "bad9": 2,
+      "bad8": 4,
+      "bad7": 6,
+      "bad6": 8,
+      "bad5": 10
+    },
+    "rules": {
+      "fiveCard": "high-card",
+      "minBadugi": 4,
+      "maxLowRank": 14,
+      "maxBadugiRank": 14
+    },
+    "name": "Paying tens",
+    "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 1 / 2 / 4 / 6 / 10. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 1 / 2 / 4 / 6 / 8 / 10.",
+    "rationale": "High-card hand + 4-card badugi to qualify. Mostly two-point steps, with both halves capped at ten."
+  },
+  {
+    "id": "badeucey",
+    "key": "badeucey-double-three",
+    "doubleOnDraw": true,
+    "pays": {
+      "qualify": 1,
+      "lowT": 0,
+      "low9": 1,
+      "low8": 1,
+      "low7": 2,
+      "wheel": 4,
+      "badT": 0,
+      "bad9": 1,
+      "bad8": 1,
+      "bad7": 2,
+      "bad6": 4,
+      "bad5": 6
+    },
+    "rules": {
+      "fiveCard": "high-card",
+      "minBadugi": 3,
+      "maxLowRank": 14,
+      "maxBadugiRank": 14
+    },
+    "name": "Three-card qualifier",
+    "summary": "Qualifying push. Low points (T / 9 / 8 / 7 / wheel): 0 / 1 / 1 / 2 / 4. Four-card badugi points (T / 9 / 8 / 7 / 6 / 5): 0 / 1 / 1 / 2 / 4 / 6.",
+    "rationale": "High-card hand + 3-card badugi to qualify. Shared lower tiers and two-point steps for the top awards. Badugi points still require four cards."
   }
 ]

@@ -6,7 +6,7 @@ Static app at `/poker/video-poker/`. Uses the shared shell, tokens and playing-c
 
 17 single-draw presets: Jacks or Better (9/6), Tens or Better (6/5), Bonus (8/5), Bonus Deluxe (9/6), Double Bonus (10/7), Double Double Bonus (9/6), Triple Double Bonus (9/7), Triple Bonus Plus (9/5), Super Double Bonus (9/5), White Hot Aces (9/5), All American (40/8/8/8), full-pay Deuces Wild, Not So Ugly Ducks, Bonus Deuces Wild (10/4/4), Joker Poker (kings or better, 7/5), 2–7 Low, and Badeucey.
 
-The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown. Integer category payouts, the optional double-on-draw rule, and Badeucey qualification rules persist in local storage; practice bankroll and in-progress hands are session-only.
+The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown. Integer category payouts, the optional double-on-draw rule, and Badeucey qualification rules persist in local storage; session PnL and in-progress hands reset on reload.
 
 2–7 payouts are interpreted as **total returns including the stake**, following ordinary video-poker convention. J-high therefore pushes. Aces are high; pairs, straights and flushes lose. A-2-3-4-5 is ace-high, not a straight. The wheel is 7-5-4-3-2. Awards within a half never stack.
 
@@ -18,9 +18,15 @@ Badeucey qualification can instead require 3 or 2 distinct ranks in different su
 
 Qualification and point awards are separate: five-card low points always require a genuine 2–7 high-card hand, and badugi points always require four cards. A three-card badugi may therefore qualify for the push and low points, but earns no badugi points. Apply changes before playing or solving. Applying a recommendation restores its original qualification rules as well as its payouts.
 
+## Session PnL
+
+The base bet is always 1. PnL starts at zero, subtracts 1 when dealing and another 1 when choosing 2×, then adds the full payout on settlement. Negative PnL never blocks play or triggers a refill. Changing games or applying settings preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. There is no Last return meter.
+
+A zero payout displays **You lose**; returning exactly the stake displays **Push**; a win displays **Won +N**, where N is the payout minus the entire stake (including 2× when used).
+
 ## Optional double on draw
 
-The payout lab offers a single-stake or optional double-on-draw variant for each custom game. The player sees five cards, chooses holds, and may pay one additional credit immediately before drawing to double the entire final payout. At least one card must be replaced: standing pat cannot double. Badeucey’s qualifying push returns both credits when doubled, and every awarded point doubles too. The double button is disabled when all cards are held or the extra credit is unavailable. Full-game analysis assumes a credit is available; per-hand play analysis respects the current bankroll and preserves that availability in the decision-review snapshot.
+The payout lab offers a single-stake or optional double-on-draw variant for each custom game. The player sees five cards, chooses holds, and may pay one additional credit immediately before drawing to double the entire final payout. At least one card must be replaced: standing pat cannot double. Badeucey’s qualifying push returns both credits when doubled, and every awarded point doubles too. The double button is disabled when all cards are held. Practice play has no bankroll limit, so every legal stake remains available in play and analysis.
 
 The solver compares **63 actions**: 32 single-stake holds and 31 doubled holds. If a hold’s one-credit expected gross return is `r`, its single-stake net EV is `r − 1` and its doubled net EV is `2r − 2`. The player maximizes net profit per initial deal, including when comparing a doubled draw with standing pat. A positive-EV double is not necessarily best if another hold pays more. A double improves on the same single-stake draw only when `r > 1`.
 
@@ -37,40 +43,16 @@ Per-hand rows retain `ev = netEV + 1` for compatibility and expose `netEV`, `gro
 
 ## Exact results
 
-All numbers below use optimal strategy recalculated for the corresponding paytable, every initial deal and every possible legal replacement. They are exhaustive numerical calculations, not simulations. RTP includes returned stake; net EV = RTP − 1 per credit bet.
+All numbers below use optimal strategy recalculated for the corresponding paytable, every initial deal and every possible legal replacement. They are exhaustive numerical calculations, not simulations. RTP includes returned stake. Without doubling, net EV per deal is RTP − 1; with optional 2×, it is (RTP − 1) × average stake.
 
-| Game | Original RTP | Original net EV | Recommended RTP | Recommended net EV |
-| --- | ---: | ---: | ---: | ---: |
-| 2–7 Low | 82.2244659992% | −0.1777553400 | 99.3738073684% | −0.0062619263 |
-| Badeucey | 62.8247933400% | −0.3717520666 | 98.8782635432% | −0.0112173646 |
-
-### Suggested 2–7 total returns
-
-| Category | Original | Suggested |
+| Game | Original RTP | Original net EV |
 | --- | ---: | ---: |
-| J-high | 1 | 1 |
-| T-high | 2 | 2 |
-| 9-high | 3 | 4 |
-| 8-high | 4 | 5 |
-| 7-high | 5 | 7 |
-| Wheel | 10 | 25 |
+| 2–7 Low | 82.2244659992% | −0.1777553400 |
+| Badeucey | 62.8247933400% | −0.3717520666 |
 
-This preserves the lowest two tiers while improving stronger lows and creating a larger top prize. House edge: 0.6262%. If the originally listed numbers were intended as **net winnings plus returned stake**, the original 2–7 game instead returns **121.3907945363%**; that alternative is explicitly analyzed in `analysis.json`. It is not the shipped default.
+The original Badeucey qualification requirements are restrictive: merely doubling all point awards gives 91.7011823013% RTP. The suggested options below redistribute awards across adjacent tiers with regular integer steps.
 
-### Suggested Badeucey points
-
-Keep the qualifying push at 1 credit and the original high-card / four-card qualification rules.
-
-| Low | Original | Suggested | Badugi | Original | Suggested |
-| --- | ---: | ---: | --- | ---: | ---: |
-| T-high | 0 | 0 | T-dugi | 0 | 0 |
-| 9-high | 1 | 2 | 9-dugi | 1 | 2 |
-| 8-high | 2 | 4 | 8-dugi | 2 | 4 |
-| 7-high | 4 | 10 | 7-dugi | 4 | 9 |
-| Wheel | 8 | 20 | 6-dugi | 8 | 20 |
-| | | | 5-dugi | 16 | 40 |
-
-The original's simultaneous qualification requirements are restrictive. Merely doubling all point awards produces 91.7011823013% RTP. The suggested table produces 98.8782635432%; increasing only its 7-dugi award from 9 to 10 pushes RTP to 100.5247328788%. These are practical integer candidates near a 99% target, not a uniquely optimal payout design. Larger top awards affect volatility; this analysis establishes mean return, not session-risk equivalence.
+If the original 2–7 numbers were interpreted as net winnings plus the returned stake, that alternative would return 121.3907945363%. It is recorded in `analysis.json`; the shipped default uses total returns.
 
 ### Qualification sensitivity
 
@@ -83,39 +65,39 @@ With the original point awards (including both T tiers at 0), perfect-play retur
 | Any hand | 4 | 84.3210858433% |
 | Any hand | 3 | 146.8655491537% |
 
-These results are recorded in `analysis.json`. The original recommendation applies only to its original qualification rules. Re-solve after any rule or payout change; the editor clears stale results when either changes.
+These results are recorded in `analysis.json`. Each recommendation applies only to its own qualification and stake rules. Re-solve after any rule or payout change; the editor clears stale results when either changes.
 
 ## Payout options
 
-There are three single-stake and three double-on-draw options per custom game. All use integer payouts and target approximately 99% total-stake RTP under optimal net-profit strategy. These are practical alternatives, not a proof of a unique optimum. The descriptions distinguish how the awards are allocated; no volatility or session-risk equivalence is claimed. Applying an option restores all of its rules as well as its paytable.
+Each custom game has three base-stake and three optional 2× tables. These favor tidy integers, repeated steps and gradual increases over matching a precise 99% target. The largest suggested award is 16 and no adjacent tier increases by more than 5. Every table is exhaustively re-optimized; these returns do not imply equal volatility. Applying an option restores its payouts, qualifiers and stake rule.
 
 ### 2–7 Low options
 
-Payout order is **J / T / 9 / 8 / 7 / wheel**, including the stake.
+Payout order: **J / T / 9 / 8 / 7 / wheel**, including the stake.
 
-| Stake rule | Option | Payouts | RTP | Net EV / deal | Double frequency |
+| Stake rule | Option | Payouts | RTP | Net EV / deal | Optimal 2× frequency |
 | --- | --- | --- | ---: | ---: | ---: |
-| Single | Balanced | 1 / 2 / 4 / 5 / 7 / 25 | 99.373807% | -0.006262 | — |
-| Single | Broad low awards | 1 / 2 / 4 / 6 / 8 / 9 | 99.035379% | -0.009646 | — |
-| Single | Wheel prize | 1 / 2 / 3 / 4 / 5 / 60 | 99.026237% | -0.009738 | — |
-| Optional 2× | Balanced doubles | 1 / 2 / 3 / 4 / 5 / 32 | 99.079366% | -0.011282 | 22.5426% |
-| Optional 2× | Broad low awards | 1 / 2 / 3 / 5 / 6 / 21 | 99.024944% | -0.011736 | 20.3657% |
-| Optional 2× | Wheel prize | 1 / 1 / 2 / 3 / 5 / 67 | 98.866349% | -0.013434 | 18.5049% |
+| Base stake | Even steps | 1 / 2 / 4 / 6 / 8 / 10 | 99.322157% | -0.006778 | — |
+| Base stake | Wheel at twelve | 1 / 2 / 4 / 6 / 8 / 12 | 99.907850% | -0.000922 | — |
+| Base stake | Five-point finish | 1 / 2 / 4 / 5 / 10 / 15 | 98.784965% | -0.012150 | — |
+| Optional 2× | Even steps | 1 / 2 / 4 / 4 / 6 / 8 | 99.668466% | -0.003881 | 17.0639% |
+| Optional 2× | Consecutive finish | 1 / 2 / 3 / 6 / 7 / 8 | 99.385711% | -0.007197 | 17.1646% |
+| Optional 2× | Ten-point ceiling | 1 / 2 / 3 / 5 / 10 / 10 | 98.868975% | -0.013435 | 18.7843% |
 
 ### Badeucey options
 
-Every option requires a five-card high-card hand and the listed minimum badugi size, with no rank caps. The qualifying return is **1**. Low-point order: **T / 9 / 8 / 7 / wheel**. Four-card badugi-point order: **T / 9 / 8 / 7 / 6 / 5**. A three-card badugi can qualify but never earns badugi points.
+Every option requires a five-card high-card hand and the listed minimum badugi size, with no rank caps. Qualifying pushes, then adds the best low and badugi awards. Low order: **T / 9 / 8 / 7 / wheel**. Badugi order: **T / 9 / 8 / 7 / 6 / 5**. Three-card badugis can qualify but never earn badugi points.
 
-| Stake rule | Option | Min. badugi | Low points | Badugi points | RTP | Net EV / deal | Double frequency |
+| Stake rule | Option | Min badugi | Low points | Badugi points | RTP | Net EV / deal | Optimal 2× frequency |
 | --- | --- | ---: | --- | --- | ---: | ---: | ---: |
-| Single | Balanced | 4 | 0 / 2 / 4 / 10 / 20 | 0 / 2 / 4 / 9 / 20 / 40 | 98.878264% | -0.011217 | — |
-| Single | Paying tens | 4 | 1 / 1 / 2 / 4 / 8 | 1 / 1 / 2 / 4 / 8 / 155 | 98.929433% | -0.010706 | — |
-| Single | Three-card qualifier | 3 | 0 / 1 / 1 / 2 / 4 | 0 / 1 / 1 / 2 / 4 / 39 | 99.078095% | -0.009219 | — |
-| Optional 2× | Four-card doubles | 4 | 0 / 1 / 2 / 4 / 8 | 0 / 1 / 2 / 4 / 8 / 110 | 99.006471% | -0.011164 | 12.3682% |
-| Optional 2× | Paying tens | 4 | 1 / 1 / 2 / 4 / 8 | 1 / 1 / 2 / 4 / 8 / 83 | 99.016623% | -0.011248 | 14.3790% |
-| Optional 2× | Three-card doubles | 3 | 0 / 1 / 1 / 2 / 4 | 0 / 1 / 1 / 2 / 4 / 5 | 98.977665% | -0.011996 | 17.3400% |
+| Base stake | Three-point steps | 4 | 0 / 3 / 6 / 9 / 12 | 0 / 3 / 6 / 9 / 12 / 15 | 99.932627% | -0.000674 | — |
+| Base stake | Paying tens | 4 | 1 / 2 / 3 / 4 / 5 | 1 / 3 / 6 / 9 / 12 / 12 | 99.586523% | -0.004135 | — |
+| Base stake | One-point steps | 3 | 0 / 1 / 2 / 3 / 4 | 0 / 1 / 2 / 3 / 4 / 5 | 99.639472% | -0.003605 | — |
+| Optional 2× | Two- and four-point steps | 4 | 0 / 2 / 4 / 6 / 8 | 0 / 2 / 4 / 8 / 12 / 16 | 99.633450% | -0.004485 | 22.3613% |
+| Optional 2× | Paying tens | 4 | 1 / 2 / 4 / 6 / 10 | 1 / 2 / 4 / 6 / 8 / 10 | 98.431399% | -0.019376 | 23.5216% |
+| Optional 2× | Three-card qualifier | 3 | 0 / 1 / 1 / 2 / 4 | 0 / 1 / 1 / 2 / 4 / 6 | 99.183532% | -0.009580 | 17.3400% |
 
-With original payouts, double on draw gives 2–7 Low **89.555692% RTP**, **−0.119773 net EV/deal**, and **14.6780%** strict doubling frequency; Badeucey gives **71.274365% RTP**, **−0.315068 net EV/deal**, and **9.6819%** strict doubling frequency. Extra tie frequencies are reported separately in `analysis.json`. Enabling doubling on the old balanced single-stake recommendations instead produces **111.355399%** and **118.935572%** RTP, respectively; use the dedicated double tables when targeting 99%.
+The original tables with optional 2× return 89.555692% and 71.274365% for 2–7 and Badeucey respectively. Optimal doubling frequency varies with payouts and qualifiers because each changes which draws are profitable. Each table reports its exact frequency, with equal-EV stake choices counted separately as ties.
 
 ## Solver derivation
 
@@ -148,7 +130,7 @@ SHELL_PAGES=/poker/video-poker/,/poker/,/ node scripts/shell-browser.cjs
 node scripts/run-tests.mjs
 ```
 
-`analysis.json` is deterministic and records engine/solver SHA-256 hashes, all preset payouts and returns, candidate tables, and sensitivity experiments. `payout-options.json` defines the additional integer options; the analysis generator recalculates their exact strategies rather than scaling an old return. The generator takes several minutes depending on hardware. Browser full-game calculations usually take a few seconds on a desktop and longer on mobile. Browser smoke screenshots are written under `/tmp/video-poker-*.png`.
+`analysis.json` is deterministic and records engine/solver SHA-256 hashes, all preset payouts and returns, candidate tables, and sensitivity experiments. `payout-options.json` defines all twelve suggested integer options; the analysis generator recalculates their exact strategies rather than scaling an old return. The generator takes several minutes depending on hardware. For payout-option edits only, `node poker/video-poker/scripts/analyze.cjs --recommendations-only` recalculates every option while reusing originals and sensitivity experiments only after verifying that the engine and solver hashes are unchanged. Browser full-game calculations usually take a few seconds on a desktop and longer on mobile. Browser smoke screenshots are written under `/tmp/video-poker-*.png`.
 
 Tests cover rank categories, wild cards, kicker boundaries, the lowball wheel, Badeucey qualification combinations, subset rank limits, T-high awards and the additive push, shuffled-deck invariants, direct draw enumeration independent of the subset algorithm, constant-pay normalization, published whole-game return benchmarks, and report reproducibility. Browser checks exercise every variant, exact worker replies, all holds, study/play separation, payout/rule edits, recommendation rule restoration, saved-paytable migration, double settlement and eligibility, net-EV decision review, option application, persistence, cancellation and responsive views.
 
