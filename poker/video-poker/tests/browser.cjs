@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
 const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../../scripts/quiet-browser.cjs'),{serveSite}=require('../../../scripts/site-pages.cjs');
 (async()=>{const server=await serveSite(path.resolve(process.argv[2]||'.')),browser=await launchQuietBrowser(chromium),errors=[];
 try{
+ await require('./game-switching.cjs')(browser,server.base);
  await require('./cribbage-browser.cjs')(browser,server.base);
  await require('./mobile-response.cjs')(browser,server.base);
  await require('./variant-selection.cjs')(browser,server.base);
@@ -20,7 +21,7 @@ try{
  await page.locator('#show-all').click();assert.equal(await page.locator('.strategy-row').count(),32);
  await page.waitForTimeout(350);await page.screenshot({path:'/tmp/video-poker-strategy.png',fullPage:true});
  // A study hand never pays out; Deal starts a random wager.
- await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'0');assert.ok(await page.locator('#variant').isDisabled());
+ await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'0');assert.ok(await page.locator('#variant').isEnabled());
  await page.locator('[data-card="0"]').click();assert.equal(await page.locator('.card-slot.held').count(),1);await page.keyboard.press('2');assert.equal(await page.locator('.card-slot.held').count(),2);await page.keyboard.press('2');
  const original=await page.locator('#hand button').evaluateAll(els=>els.map(e=>e.getAttribute('aria-label')));
  await page.locator('#deal').click();const drawn=await page.locator('#hand .playing-card').evaluateAll(els=>els.map(e=>e.getAttribute('aria-label')));

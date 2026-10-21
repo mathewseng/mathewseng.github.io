@@ -64,7 +64,7 @@ module.exports = async function checkDecisionReview(browser, base) {
     await page.waitForFunction(() => document.querySelectorAll('.strategy-row').length === 5, {}, { timeout: 30000 });
     assert.equal(await page.locator('#decision-summary').isHidden(), true);
     assert.equal(await page.locator('#strategy-title').textContent(), 'The best decision');
-    assert.equal(await page.locator('#variant').isDisabled(), true);
+    assert.equal(await page.locator('#variant').isEnabled(), true);
     assert.equal(workers, 1, 'stale review cancellation retains the same hand index');
     assert.deepEqual(errors, []);
     console.log('Decision review passed: automatic exact EV, original-deal snapshot, chosen alternative, cached optimal hold, responsive summary, and stale-review cancellation.');
