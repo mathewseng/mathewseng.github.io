@@ -381,6 +381,8 @@ const server = http.createServer((req, res) => {
             ]) {
               await page.goto(base + "/backgammon/" + route);
               await page.waitForTimeout(60);
+              if (route === "solver/" && w === 320)
+                await page.addStyleTag({content:"body,button,input,select{font-family:Verdana,sans-serif!important}"});
               await shot(`${route.replace("/", "") || "hub"}-${w}x${h}`);
               const layout = await page.evaluate(() => ({
                 width: document.documentElement.scrollWidth,

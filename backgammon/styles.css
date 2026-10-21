@@ -3521,6 +3521,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 @media (max-width: 359px) {
+  /* Four analysis presets need two rows with wider platform fonts. */
+  .solver-quick-analysis { flex-wrap: wrap; }
+  .solver-quick-analysis .btn { flex-basis: calc(50% - 3px); }
+
   .dice-choices {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
