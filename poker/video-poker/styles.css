@@ -281,16 +281,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .top-note { display: none; }
   .rules-columns { grid-template-columns: 1fr; gap: 0; }
   .machine { padding: 14px 14px 12px; }
-  /* The action stage sits at the bottom of the screen while the play view is open. */
-  .vp-app:has(#view-play:not([hidden])) { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
-  .machine-actions { position: fixed; inset: auto 0 0 0; z-index: 5; margin: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); gap: 8px; justify-content: stretch; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); box-shadow: var(--shadow-sheet); }
-  .machine-actions .btn { flex: 1 1 auto; font-size: var(--t-sm); padding: 10px 8px; white-space: nowrap; min-height: 48px; }
-  .machine-actions #solve-hand, .machine-actions #hold-best { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
-  .machine-actions #double-draw { color: var(--ink); }
-  .machine-actions .deal-button { flex: 1 0 100%; min-width: 0; gap: 10px; order: 1; justify-content: center; }
+  /* Actions stay in the cabinet under the cards: a two-row grid, nothing fixed, nothing overlapping. */
+  .machine-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+  .machine-actions .btn { font-size: var(--t-sm); padding: 10px 8px; white-space: nowrap; min-height: 48px; min-width: 0; }
+  .machine-actions #solve-hand, .machine-actions #hold-best { background: color-mix(in srgb, black 24%, transparent); border-color: var(--stage-line); color: var(--stage-ink); }
+  .machine-actions #double-draw { color: var(--stage-ink); }
+  .machine-actions .deal-button { grid-column: 1 / -1; position: relative; justify-content: center; gap: 10px; order: 1; }
   .machine-actions .deal-button > span { position: absolute; right: 14px; }
-  .machine-actions .deal-button { position: relative; }
-  .machine-actions #solve-hand, .machine-actions #hold-best, .machine-actions #double-draw { order: 0; flex: 1 1 30%; min-width: 0; padding-inline: 6px; }
+  .machine-actions:has(#double-draw:not([hidden])) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .shortcut-note { display: none; }
   #hold-instruction { margin-bottom: 0; }
 }
