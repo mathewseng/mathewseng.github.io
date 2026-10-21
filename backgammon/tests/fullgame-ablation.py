@@ -54,6 +54,32 @@ class Tests(unittest.TestCase):
         self.assertEqual(report['effectComparisons'],2)
         self.assertEqual(report['gapComparisons'],3)
         self.assertAlmostEqual(report['rows'][0]['effects']['cutoff']['familywise95']['criticalValue'],a.stats.critical(3,.05/2))
+    def test_cohort_effect_averages_blocks_before_estimating_uncertainty(self):
+        blocks = [[{'batch': i, 'value': {'equity': x}} for i,x in enumerate(xs)] for xs in [[-1,-2,-3,-4], [0,1,2,3]]]
+        effect = a.cohort_effect(blocks)
+        self.assertEqual(effect['difference'], -.5)
+        self.assertEqual(effect['standardError'], 0)
+        self.assertEqual(effect['positions'], 2)
+        self.assertEqual(effect['comparisons'], 3)
+        self.assertEqual(effect['direction'], 'toward-XG')
+        with self.assertRaisesRegex(ValueError, 'Unaligned'):
+            a.cohort_effect([blocks[0], blocks[1][:-1]])
+    def test_precision_retained_comparisons_preserve_pairing_and_separate_family(self):
+        inputs, records = fixture()
+        inputs['retainedComparisons'] = 3
+        report = a.summarize(inputs, records)
+        gaps = report['rows'][0]['policies']['full-strong']['retainedReferenceGaps']
+        self.assertEqual(len(gaps), 2)
+        for gap, expected in zip(gaps, [.01, .03]):
+            self.assertAlmostEqual(gap['difference'], expected)
+            self.assertLess(gap['standardError'], 1e-14)
+            self.assertEqual(gap['direction'], 'XG-ahead')
+            self.assertAlmostEqual(gap['familywise95']['criticalValue'], a.stats.critical(3, .05/3))
+    def test_large_sample_critical_values_match_independent_quadrature(self):
+        # mpmath 1.3.0: direct Student-t density integration/root finding at 45 digits,
+        # independent of the production incomplete-beta implementation.
+        for comparisons, expected in [(1,1.9622856196472682),(2,2.244707006352135),(3,2.397923956454708)]:
+            self.assertLess(abs(a.stats.critical(1023,.05/comparisons)-expected),1e-8)
     def test_pairing_cannot_be_lost(self):
         _,records=fixture();x=records[:4];y=copy.deepcopy(x);y[0]['seed']+=1
         with self.assertRaisesRegex(ValueError,'Unpaired'):a.difference_records(x,y)

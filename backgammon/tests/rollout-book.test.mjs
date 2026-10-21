@@ -46,3 +46,17 @@ test('the opening guide distinguishes sampled positions from its five-ply fallba
  assert.equal(tree.method,'tree');assert.equal(tree.plies,5);assert.equal(tree.trials,null);
  const reply=await guideData.reply(tree,0,'31');assert.equal(reply.method,'tree');assert.equal(reply.plies,5);
 });
+
+import {ROLLOUT_POLICIES,rolloutPolicyLabel} from '../engine/rollout-policy.mjs';
+test('full-game entries carry their own complete policy without changing neighboring short entries',()=>{
+ const {index,entry}=data();
+ const settings={...ROLLOUT_POLICIES.strong,policyId:'strong',plies:2,name:'Full-game opening rollout',policy:rolloutPolicyLabel('strong')};
+ const full={...entry,samples:1024,settings};
+ const result=rolloutBookResult(state,full,index,'auto');
+ assert.equal(result.settings.policyId,'strong');assert.equal(result.settings.truncationPlies,0);
+ assert.equal(result.settings.lateCheckerPlies,2);assert.equal(result.settings.trials,1024);
+ assert.equal(result.settings.name,'Full-game opening rollout');
+ assert.equal(rolloutBookResult(state,entry,index,'auto').settings.truncationPlies,5);
+ for(const change of [{truncationPlies:5},{lateCheckerPlies:1},{cubePlies:3},{policyId:'basic'},{id:'short-deep'}])
+  assert.throws(()=>rolloutBookResult(state,{...full,settings:{...settings,...change}},index,'auto'),/entry/);
+});

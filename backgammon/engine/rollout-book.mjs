@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import {assertState,boardKey,commitTurn,legalPaths,notation,positionKey,initialState} from '../core/rules.mjs';
 import {OpeningBook,bookBoardKey,bookContext,bookEligible} from './opening-book.mjs';
+import {ROLLOUT_POLICIES} from './rollout-policy.mjs';
 export const ROLLOUT_BOOK_ID='jacoby-short-deep-v1';
 export const ROLLOUT_BOOK_ENGINE='gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg7-native';
 const URL_INDEX=new URL('./opening-book-data/rollout/index.json',import.meta.url);
 const START=bookBoardKey(initialState({matchLength:0}));
 const mirror=p=>typeof p==='number'?23-p:p;
+function validStoredPolicy(settings){
+ if(!settings||!['short-deep','strong'].includes(settings.policyId)||settings.plies!==2||
+    !['policy','name'].every(k=>typeof settings[k]==='string')||
+    (settings.id!==undefined&&settings.id!==settings.policyId))return false;
+ const expected=ROLLOUT_POLICIES[settings.policyId];
+ return ['checkerPlies','cubePlies','truncationPlies','lateAfterPlies','lateCheckerPlies','lateCubePlies'].every(k=>settings[k]===expected[k]);
+}
 export function rolloutBookResult(state,entry,index,preset,submitted=null){
  assertState(state);
+ const settings=entry?.settings??index?.settings;
  if(index?.schema!==1||index.id!==ROLLOUT_BOOK_ID||index.engine!==ROLLOUT_BOOK_ENGINE||
-    !index.settings||index.settings.policyId!=='short-deep'||!['policy','name'].every(k=>typeof index.settings[k]==='string')||
-    Object.entries({plies:2,checkerPlies:2,cubePlies:2,truncationPlies:5,lateAfterPlies:2,lateCheckerPlies:1,lateCubePlies:2}).some(([k,v])=>index.settings[k]!==v)||
+    !validStoredPolicy(index.settings)||!validStoredPolicy(settings)||
     !bookContext(state)||state.phase!=='move'||!Array.isArray(entry?.rows)||entry.rows.length<1||entry.rows.length>2000||
     !Number.isInteger(entry.total)||entry.total<entry.rows.length||!Number.isInteger(entry.samples)||entry.samples<512||entry.samples>65536||entry.samples%32||
     !Array.isArray(entry.standardErrors)||entry.standardErrors.length!==entry.rows.length||
@@ -29,7 +37,7 @@ export function rolloutBookResult(state,entry,index,preset,submitted=null){
  }).sort((a,b)=>b.equity-a.equity);
  const actualKey=submitted?boardKey(commitTurn(state,submitted)):null,actual=actualKey?candidates.find(c=>c.key===actualKey):null;
  if(actualKey&&!actual)return null; // The fallback grades a complete comparison at its own method.
- return {engine:index.engine,settings:{...structuredClone(index.settings),requestedPreset:preset,cubeful:true,noise:0,trials:entry.samples,seed:entry.seed,varianceReduction:true,rotation:false},
+ return {engine:index.engine,settings:{...structuredClone(settings),requestedPreset:preset,cubeful:true,noise:0,trials:entry.samples,seed:entry.seed,varianceReduction:true,rotation:false},
   positionKey:positionKey(state),status:'complete',perspective:state.turn,units:'current-cube-points',type:'checker',method:'rollout',
   candidates,actual,error:actual?Math.max(0,candidates[0].equity-actual.equity):null,
   screening:entry.total>candidates.length?{plies:5,total:entry.total,finalists:candidates.length,policy:'Union of close three/four/five-ply candidates and the published XG leader.'}:null,

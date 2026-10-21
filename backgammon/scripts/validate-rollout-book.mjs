@@ -17,7 +17,7 @@ for(const r of reference.rows){
  const d=decisions.get(r.id),state=stateForBoard(d.board,[...d.roll].map(Number));
  const result=await book.lookup(state,{kind:'checker',preset:'auto'});if(!result)throw Error('Missing reference position '+r.id);
  const sampled=result.book.id===ROLLOUT_BOOK_ID,best=result.candidates[0],xg=result.candidates.find(c=>c.key===r.referenceBest.board),chosen=r.commonMoves.find(c=>c.board===best.key);
- rows.push({id:r.id,kind:r.kind,book:result.book.id,method:result.method||'tree',samples:sampled?result.settings.trials:null,
+ rows.push({id:r.id,kind:r.kind,book:result.book.id,method:result.method||'tree',policyId:sampled?result.settings.policyId:null,samples:sampled?result.settings.trials:null,
   agrees:best.key===r.referenceBest.board,move:best.notation,referenceMove:r.referenceBest.move,referenceSource:r.source,
   referenceBestDifference:xg?xg.equity-r.referenceBest.equity:null,selectedMoveReferenceLoss:chosen?r.referenceBest.equity-chosen.xgEquity:null});
  if(sampled){
@@ -36,7 +36,12 @@ const summaries=Object.fromEntries(['opening','reply'].map(kind=>{const subset=r
  referenceBestEV:{n:subset.filter(r=>r.referenceBestDifference!==null).length,meanAbsoluteDifference:mean(subset.filter(r=>r.referenceBestDifference!==null).map(r=>Math.abs(r.referenceBestDifference)))},
  meanSelectedMoveReferenceLoss:mean(subset.filter(r=>r.selectedMoveReferenceLoss!==null).map(r=>r.selectedMoveReferenceLoss)),fivePlyBaseline:reference.summaries[kind].depths['5']}];}));
 const indexFile=path.join(family,'engine/opening-book-data/rollout/index.json'),index=JSON.parse(fs.readFileSync(indexFile));
-const report={schema:1,recordedAt:new Date().toISOString(),id:ROLLOUT_BOOK_ID,indexSHA256:createHash('sha256').update(fs.readFileSync(indexFile)).digest('hex'),
+const storedPolicies={};
+for(const r of rows.filter(r=>r.method==='rollout')){
+ const p=storedPolicies[r.policyId]??={positions:0,minTrials:r.samples,maxTrials:r.samples};
+ p.positions++;p.minTrials=Math.min(p.minTrials,r.samples);p.maxTrials=Math.max(p.maxTrials,r.samples);
+}
+const report={schema:1,storedPolicies,fullgame:index.provenance.fullgamePrecision??index.provenance.fullgame??null,recordedAt:new Date().toISOString(),id:ROLLOUT_BOOK_ID,indexSHA256:createHash('sha256').update(fs.readFileSync(indexFile)).digest('hex'),
  coverage:{positions:rows.length,sampled:rows.filter(r=>r.method==='rollout').length,fivePlyFallback:rows.filter(r=>r.method==='tree').length,mirrored,graded,omitted},promotedCohorts:index.provenance.promotedCohorts,summaries,rows};
 if(report.coverage.sampled!==index.provenance.positions)throw Error('Published coverage mismatch');
 fs.writeFileSync(path.join(family,'docs/rollout-book-validation.json'),JSON.stringify(report,null,2)+'\n');
