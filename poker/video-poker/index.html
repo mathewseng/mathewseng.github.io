@@ -10,11 +10,12 @@
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-  <link rel="stylesheet" href="./styles.css?v=20261021-outcomes" />
+  <link rel="stylesheet" href="./styles.css?v=20261021-redesign" />
   <script src="../../shared/cards.js?v=20261016" defer></script>
   <script src="./cribbage.js?v=20261021-cribbage" defer></script>
   <script src="./engine.js?v=20261021-cribbage" defer></script>
-  <script src="./app.js?v=20261021-outcomes" defer></script>
+  <script src="./game-picker.js?v=20261021-redesign" defer></script>
+  <script src="./app.js?v=20261021-redesign" defer></script>
 </head>
 <body class="app-shell">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -23,8 +24,8 @@
   <span class="top-note">Practice play · Single draw</span>
 </header>
 <main id="main" tabindex="-1" class="vp-app">
-  <div class="page-head"><div><h1>Video Poker<span class="title-dot">.</span></h1><p>Find your game. Perfect your hold. Build your own paytable.</p></div><nav class="view-nav" aria-label="Workspace"><button class="active" data-view="play" aria-pressed="true">Play &amp; strategy</button><button data-view="lab" aria-pressed="false">Payout lab</button><button data-view="rules" aria-pressed="false">Rules</button></nav></div>
-  <div class="game-bar"><div class="variant-field"><label for="variant">Game</label><select id="variant"></select></div><div class="variant-meta"><strong id="variant-subtitle"></strong><span id="variant-family"></span></div><div class="return-summary"><span id="return-label">Perfect-play return</span><strong id="return-value">—</strong></div></div>
+  <div class="page-head"><div><h1>Video Poker<span class="title-dot">.</span></h1><p>Single-draw games. Exact strategy. Your rules.</p></div><nav class="view-nav" aria-label="Workspace"><button class="active" data-view="play" aria-pressed="true">Play &amp; strategy</button><button data-view="lab" aria-pressed="false">Payout lab</button><button data-view="rules" aria-pressed="false">Rules</button></nav></div>
+  <div class="game-bar"><div class="variant-field"><select id="variant" hidden aria-hidden="true" tabindex="-1"></select><button type="button" id="game-picker-open" class="game-picker-trigger" aria-haspopup="dialog" aria-controls="game-picker" aria-expanded="false"><span class="game-current"><small id="game-current-family">Classic</small><strong id="game-current-name">Jacks or Better</strong></span><span class="game-browse"><span>Browse games</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg></span></button></div><div class="variant-meta"><strong id="variant-subtitle"></strong><span id="variant-family"></span></div><div class="return-summary"><span id="return-label">Perfect-play return</span><strong id="return-value">—</strong></div></div>
   <section id="view-play" class="workspace" aria-label="Play and strategy">
     <div class="play-column">
       <section class="machine" aria-label="Video poker table">
@@ -52,5 +53,12 @@
   </section>
   <p id="global-status" class="global-status" role="status"></p>
 </main>
+<dialog id="game-picker" class="game-picker" aria-labelledby="game-picker-title">
+  <div class="game-picker-heading"><div><p class="eyebrow">Game library</p><h2 id="game-picker-title">Choose your game</h2></div><button type="button" id="game-picker-close" class="icon-button" aria-label="Close game selector"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+  <label class="game-search" for="game-search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="game-search" type="search" placeholder="Search games, rules, or card counts" aria-label="Search games" autocomplete="off" /></label>
+  <div id="game-filters" class="game-filters" role="group" aria-label="Game families"></div>
+  <div class="game-results-wrap"><div id="game-results"></div><p id="game-empty" hidden>No games match your search. Try another name or family.</p></div>
+  <div class="game-picker-footer"><span id="game-result-count" role="status"></span><span>↑ ↓ to browse · Enter to choose</span></div>
+</dialog>
 </body>
 </html>

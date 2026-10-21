@@ -25,6 +25,7 @@
   let holdTouch=null,lastHoldTouch=null;
   const families=['Custom variants','Cribbage',...new Set(selections.filter(x=>!['Custom variants','Cribbage'].includes(x.family)).map(x=>x.family))];
   $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}"${isCustom(x.id)?' disabled':''}>${x.name}</option>`).join('')}</optgroup>`).join('');
+  const gamePicker=VideoPokerGamePicker.create({selections,select:$('variant'),onSelect:selectVariant});
   function bestRecommendation(id,doubled,payout='return'){const metric=r=>E.byId[id].cribbage?r.result.netEV:r.result.rtp-1;return report?.recommendations.filter(r=>r.id===id&&!!r.doubleOnDraw===!!doubled&&(!E.byId[id].cribbage||r.rules.payout===payout)&&metric(r)<=0).sort((a,b)=>metric(b)-metric(a))[0];}
   function configFor(key){
     const {id,doubled,payout}=selections.find(x=>x.key===key),result=clone(E.byId[id]),p=saved[key],best=bestRecommendation(id,doubled,payout);
@@ -79,7 +80,7 @@
     document.querySelector('.shortcut-note').textContent=`Tap cards to hold · Keys 1–${handSize()} · Space to deal or draw`;
     document.querySelector('label[for=spot-hand]').textContent=`${handSize()} cards, separated by spaces`;
     $('spot-hand').placeholder=['7s','5h','4d','3c','2s','Ah','Jd'].slice(0,handSize()).join(' ');
-    $('variant').value=variantKey(v.id,v.doubleOnDraw,v.rules?.payout);
+    $('variant').value=variantKey(v.id,v.doubleOnDraw,v.rules?.payout);gamePicker.sync();
     $('variant-subtitle').textContent=isOriginal()?v.subtitle:badeucey?'Custom rules & payouts':'Custom paytable';$('variant-family').textContent=(v.cribbage?'Cribbage · '+settlementName(v.rules.payout):v.family)+' · '+v.deckSize+' cards'+(v.doubleOnDraw?' · Double on draw':'');
     $('paytable-unit').textContent=v.cribbage?'Points − fee':badeucey?'Push + points':'Return / 1 credit';
     let html='<table>';
@@ -235,8 +236,8 @@
       selectVariant(variantKey(rec.id,rec.doubleOnDraw,rec.rules?.payout));apply({...E.byId[rec.id].pays,...rec.pays},rec.rules||E.byId[rec.id].rules,!!rec.doubleOnDraw);liveResult=rec.result;renderMetrics();setView('lab');
     });renderControls();
   }
-  document.addEventListener('keydown',e=>{if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target.closest('input,select,textarea')||$('view-play').hidden)return;if(/^[1-7]$/.test(e.key)&&Number(e.key)<=handSize()){e.preventDefault();toggleHold(+e.key-1);}if(e.code==='Space'&&!e.target.closest('button,summary,a')){e.preventDefault();$('deal').click();}});
+  document.addEventListener('keydown',e=>{if($('game-picker').open||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target.closest('input,select,textarea')||$('view-play').hidden)return;if(/^[1-7]$/.test(e.key)&&Number(e.key)<=handSize()){e.preventDefault();toggleHold(+e.key-1);}if(e.code==='Space'&&!e.target.closest('button,summary,a')){e.preventDefault();$('deal').click();}});
   selectVariant('jacks');
   fetch('./outcome-analysis.json?v=20261021-outcomes').then(r=>{if(!r.ok)throw Error();return r.json();}).then(data=>{outcomeReport=data;renderOutcomes();}).catch(()=>{$('outcome-note').textContent='Saved payout frequencies could not load. Solve the game to calculate them locally.';});
-  Promise.all(['analysis.json','cribbage-analysis.json','cribbage-net-analysis.json'].map(file=>fetch('./'+file+'?v=20261021-cribbage-modes').then(r=>{if(!r.ok)throw Error();return r.json();}).catch(error=>{if(file==='analysis.json')throw error;return null;}))).then(([data,cribbage,net])=>{report=data;if(net)report.recommendations.push(...net.recommendations);if(cribbage){report.recommendations.push(...cribbage.recommendations);Object.assign(report.originals,cribbage.originals);Object.assign(report.doubleOriginals,cribbage.doubleOriginals);}for(const option of $('variant').options)option.disabled=false;renderMetrics();renderRecommendations();}).catch(()=>{for(const option of $('variant').options)option.disabled=false;$('recommendations').textContent='Saved analysis could not load. Custom games use original tables unless you have saved edits. Use “Solve full game” to calculate any paytable locally.';});
+  Promise.all(['analysis.json','cribbage-analysis.json','cribbage-net-analysis.json'].map(file=>fetch('./'+file+'?v=20261021-cribbage-modes').then(r=>{if(!r.ok)throw Error();return r.json();}).catch(error=>{if(file==='analysis.json')throw error;return null;}))).then(([data,cribbage,net])=>{report=data;if(net)report.recommendations.push(...net.recommendations);if(cribbage){report.recommendations.push(...cribbage.recommendations);Object.assign(report.originals,cribbage.originals);Object.assign(report.doubleOriginals,cribbage.doubleOriginals);}for(const option of $('variant').options)option.disabled=false;gamePicker.sync();renderMetrics();renderRecommendations();}).catch(()=>{for(const option of $('variant').options)option.disabled=false;gamePicker.sync();$('recommendations').textContent='Saved analysis could not load. Custom games use original tables unless you have saved edits. Use “Solve full game” to calculate any paytable locally.';});
 })();

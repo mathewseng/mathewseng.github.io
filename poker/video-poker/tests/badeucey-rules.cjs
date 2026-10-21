@@ -1,3 +1,4 @@
+const chooseGame=require('./choose-game.cjs');
 const assert = require('node:assert/strict');
 const E = require('../engine.js');
 const S = require('../solver.js');
@@ -14,7 +15,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
     await page.goto(base + '/poker/video-poker/');
     assert.equal(await page.locator('#variant optgroup').first().getAttribute('label'), 'Custom variants');
     assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'low27-double', 'badeucey', 'badeucey-double']);
-    await page.locator('#variant').selectOption('badeucey');
+    await chooseGame(page,'badeucey');
     await lab();await page.locator('#reset-pays').click();await play();
     await page.waitForFunction(() => document.getElementById('return-value').textContent === '62.8248%');
     assert.equal(await page.locator('#paytable .group-label').count(), 3);
@@ -32,7 +33,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
     await page.waitForFunction(() => document.getElementById('solve-status').textContent.startsWith('Complete'), {}, { timeout: 60000 });
     assert.equal(await page.locator('#lab-rtp').textContent(), '105.9994%');
     await page.reload();
-    await page.locator('#variant').selectOption('badeucey');
+    await chooseGame(page,'badeucey');
     await lab();
     assert.equal(await page.locator('#rule-min-badugi').inputValue(), '3');
     assert.equal(await page.locator('#lab-rtp').textContent(), 'Not solved');
@@ -92,7 +93,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
       localStorage.setItem('video-poker-paytables-v1', JSON.stringify({ badeucey: pays }));
     });
     await page.reload();
-    await page.locator('#variant').selectOption('badeucey');
+    await chooseGame(page,'badeucey');
     await lab();
     assert.equal(await page.locator('#pay-low9').inputValue(), '3');
     assert.equal(await page.locator('#pay-lowT').inputValue(), '0');

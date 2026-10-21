@@ -1,3 +1,4 @@
+const chooseGame=require('./choose-game.cjs');
 const assert=require('node:assert/strict'),E=require('../engine.js'),S=require('../cribbage-solver.js'),report={recommendations:[...require('../cribbage-analysis.json').recommendations,...require('../cribbage-net-analysis.json').recommendations]};
 const evText=r=>(r.estimated?'≈ ':'')+(r.netEV>0?'+':'')+Number(r.netEV.toFixed(6)).toLocaleString('en-US',{maximumFractionDigits:6});
 module.exports=async function checkCribbage(browser,base){
@@ -10,7 +11,7 @@ module.exports=async function checkCribbage(browser,base){
   await page.evaluate(()=>{const first=[36,12,13,14,16,17,22];VideoPoker.shuffledDeck=()=>first.concat(Array.from({length:52},(_,i)=>i).filter(c=>!first.includes(c)));});
   let total=0;
   for(const n of [4,5,6,7])for(const payout of ['return','net'])for(const doubled of [false,true]){
-   const key='cribbage'+n+(payout==='net'?'-net':'')+(doubled?'-double':'');await page.locator('#variant').selectOption(key);
+   const key='cribbage'+n+(payout==='net'?'-net':'')+(doubled?'-double':'');await chooseGame(page,key);
    const recommended=report.recommendations.filter(r=>r.id==='cribbage'+n&&r.rules.payout===payout&&r.doubleOnDraw===doubled&&r.result.netEV<=0).sort((a,b)=>b.result.netEV-a.result.netEV)[0];
    assert.equal(await page.locator('#return-label').textContent(),'EV / hand');
    assert.equal(await page.locator('#return-value').textContent(),evText(recommended.result));
@@ -54,26 +55,26 @@ module.exports=async function checkCribbage(browser,base){
   await page.locator(`[data-recommend="${positive.key}"]`).tap();
   assert.equal(await page.locator('#return-value').textContent(),evText(positive.result));
   assert.match(await page.locator('#return-value').textContent(),/^\+/);
-  await page.locator('#variant').selectOption('jacks');
+  await chooseGame(page,'jacks');
   assert.equal(await page.locator('#return-label').textContent(),'Perfect-play return');
   assert.equal(await page.locator('#return-value').textContent(),'99.5439%');
   assert.equal(await page.locator('.analysis-panel h2').first().textContent(),'Exact return');
   assert.equal(await page.locator('#best-pays').textContent(),'Best RTP table');
   // Editable fee and scoring rules persist independently across stake modes.
-  await page.locator('#variant').selectOption('cribbage4');await page.locator('[data-view=lab]').tap();
+  await chooseGame(page,'cribbage4');await page.locator('[data-view=lab]').tap();
   await page.locator('#pay-fee').fill('99');await page.locator('#pay-fee').press('ArrowUp');assert.equal(await page.locator('#pay-fee').inputValue(),'100');
   await page.locator('#rule-cribbage-payout').selectOption('net');await page.locator('#rule-cribbage-cap').selectOption('5');await page.locator('#pay-form button[type=submit]').tap();
   assert.equal(await page.locator('#lab-rtp').textContent(),'Not solved');
-  await page.reload();await page.waitForFunction(()=>!document.querySelector('option[value=cribbage4]').disabled);await page.locator('#variant').selectOption('cribbage4-net');
+  await page.reload();await page.waitForFunction(()=>!document.querySelector('option[value=cribbage4]').disabled);await chooseGame(page,'cribbage4-net');
   assert.equal(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'net');assert.equal(await page.locator('#rule-cribbage-cap').inputValue(),'5');
   await page.evaluate(()=>{const first=[36,12,13,14];VideoPoker.shuffledDeck=()=>first.concat(Array.from({length:52},(_,i)=>i).filter(c=>!first.includes(c)));});
   await page.locator('#deal').tap();assert.equal(await page.locator('#pnl').textContent(),'0');for(let i=0;i<4;i++)await page.locator(`[data-card="${i}"]`).tap();await page.locator('#deal').tap();
   const net=E.evaluate([36,12,13,14],{...E.byId.cribbage4,pays:{fee:100},rules:{payout:'net',scoreCap:5}}).payout-1;
   assert.equal(Number(await page.locator('#pnl').textContent()),net);assert.equal(Number(await page.locator('.history-entry').first().getAttribute('data-net')),net);assert.equal(await page.locator('#hand-status').textContent(),'You lose '+(-net));
-  await page.locator('#variant').selectOption('cribbage4');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'return');
-  await page.locator('#variant').selectOption('cribbage4-net-double');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'net');
-  await page.locator('#variant').selectOption('cribbage4-double');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'return');
-  await page.locator('#variant').selectOption('cribbage7');await page.locator('[data-view=lab]').tap();assert.match(await page.locator('#lab-result').textContent(),/sampled.*EV is estimated/);assert.match(await page.locator('#solve-all').textContent(),/Estimate/);
+  await chooseGame(page,'cribbage4');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'return');
+  await chooseGame(page,'cribbage4-net-double');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'net');
+  await chooseGame(page,'cribbage4-double');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'return');
+  await chooseGame(page,'cribbage7');await page.locator('[data-view=lab]').tap();assert.match(await page.locator('#lab-result').textContent(),/sampled.*EV is estimated/);assert.match(await page.locator('#solve-all').textContent(),/Estimate/);
   await page.locator('#solve-all').tap();await page.locator('#cancel-solve').tap();assert.match(await page.locator('#solve-status').textContent(),/canceled/);
   assert.deepEqual(errors,[]);console.log('Cribbage browser checks passed: sixteen games, 4–7 cards, all exact decisions, 2× eligibility, mobile taps, settlement, history, fee/rule persistence and estimated-return labels.');
  }finally{await page.close();}

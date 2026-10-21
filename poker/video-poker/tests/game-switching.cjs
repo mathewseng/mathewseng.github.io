@@ -1,3 +1,4 @@
+const chooseGame=require('./choose-game.cjs');
 const assert=require('node:assert/strict');
 module.exports=async function checkGameSwitching(browser,base){
  const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),errors=[];
@@ -19,7 +20,7 @@ module.exports=async function checkGameSwitching(browser,base){
   const keys=await page.locator('#variant option').evaluateAll(es=>es.map(e=>e.value));
   for(const key of keys){
    assert.ok(await page.locator('#variant').isEnabled(),`selector stays enabled before ${key}`);
-   await page.locator('#variant').selectOption(key);
+   await chooseGame(page,key);
    assert.equal(await page.locator('#variant').inputValue(),key);
    assert.equal(await page.locator('#hand button').count(),0,'switch clears the unfinished deal');
    assert.equal(await page.locator('.strategy-row').count(),0);
@@ -31,7 +32,7 @@ module.exports=async function checkGameSwitching(browser,base){
    await page.locator('#solve-hand').tap();
    assert.ok(await page.locator('#variant').isEnabled(),`solving ${key} must not lock switching`);
   }
-  await page.locator('#variant').selectOption('jacks');
+  await chooseGame(page,'jacks');
   assert.match(await page.locator('#global-status').textContent(),/Unfinished hand canceled/);
   assert.ok(await page.evaluate(()=>switchWorkers.every(w=>w.terminated)));
   // Even a callback already queued by an abandoned calculation must be ignored.
