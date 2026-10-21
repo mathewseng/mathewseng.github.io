@@ -3,21 +3,26 @@
   'use strict';
   const E=VideoPoker,$=id=>document.getElementById(id),fmt=(n,d=3)=>Number(n.toFixed(d)).toLocaleString('en-US',{maximumFractionDigits:d}),pct=n=>(n*100).toFixed(4)+'%';
   const clone=v=>JSON.parse(JSON.stringify(v));
-  const storedKey='video-poker-paytables-v1';let saved={};try{saved=JSON.parse(localStorage.getItem(storedKey)||'{}');if(!saved||typeof saved!=='object')saved={};}catch{}
-  const rulesKey='video-poker-rules-v1';let savedRules={};try{savedRules=JSON.parse(localStorage.getItem(rulesKey)||'{}');if(!savedRules||typeof savedRules!=='object')savedRules={};}catch{}
-  const drawRulesKey='video-poker-draw-rules-v1';let savedDrawRules={};try{savedDrawRules=JSON.parse(localStorage.getItem(drawRulesKey)||'{}');if(!savedDrawRules||typeof savedDrawRules!=='object')savedDrawRules={};}catch{}
   const isCustom=id=>['low27','badeucey'].includes(id);
+  const variantKey=(id,doubled=false)=>id+(isCustom(id)&&doubled?'-double':'');
+  const selections=E.variants.flatMap(v=>isCustom(v.id)?[false,true].map(doubled=>({key:variantKey(v.id,doubled),id:v.id,doubled,name:v.name+(doubled?' · 2× on draw':''),family:v.family})):[{key:v.id,id:v.id,doubled:false,name:v.name,family:v.family}]);
+  function readSaved(key){try{const value=JSON.parse(localStorage.getItem(key)||'null');return value&&typeof value==='object'&&!Array.isArray(value)?value:null;}catch{return null;}}
+  const storedKey='video-poker-paytables-v2',rulesKey='video-poker-rules-v2';
+  // Preserve old edits in the mode they belonged to; the other mode starts with original settings.
+  const legacyModes=readSaved('video-poker-draw-rules-v1')||{};
+  function loadSettings(key,legacyKey){const current=readSaved(key);if(current)return current;const migrated={};for(const [id,value]of Object.entries(readSaved(legacyKey)||{}))migrated[variantKey(id,legacyModes[id]===true)]=value;return migrated;}
+  let saved=loadSettings(storedKey,'video-poker-paytables-v1'),savedRules=loadSettings(rulesKey,'video-poker-rules-v1');
   let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,pnl=0,hands=0,rows=null,strategyHand=[],review=null,showAll=false,worker=null,request=0,busy=false,report=null,liveResult=null;
   const families=['Custom variants',...new Set(E.variants.filter(x=>x.family!=='Custom variants').map(x=>x.family))];
-  $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${E.variants.filter(x=>x.family===f).map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</optgroup>`).join('');
-  function configFor(id){
-    const result=clone(E.byId[id]),p=saved[id];
+  $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}">${x.name}</option>`).join('')}</optgroup>`).join('');
+  function configFor(key){
+    const {id,doubled}=selections.find(x=>x.key===key),result=clone(E.byId[id]),p=saved[key];
     if(p){
       const merged=Object.fromEntries(Object.keys(result.pays).map(k=>[k,p[k]??result.pays[k]]));
       if(Object.values(merged).every(n=>Number.isInteger(n)&&n>=0&&n<=1000000)&&(id!=='badeucey'||merged.qualify===1))result.pays=merged;
     }
-    if(id==='badeucey')try{result.rules=E.normalizeBadeuceyRules(savedRules[id]);}catch{}
-    if(isCustom(id))result.doubleOnDraw=savedDrawRules[id]===true;
+    if(id==='badeucey')try{result.rules=E.normalizeBadeuceyRules(savedRules[key]);}catch{}
+    if(isCustom(id))result.doubleOnDraw=doubled;
     return result;
   }
   function isBasePaytable(){return Object.keys(E.byId[v.id].pays).every(k=>v.pays[k]===E.byId[v.id].pays[k])&&(v.id!=='badeucey'||Object.keys(E.BADEUCEY_RULES).every(k=>v.rules[k]===E.BADEUCEY_RULES[k]));}
@@ -56,7 +61,7 @@
   }
   function renderConfig(){
     const badeucey=v.id==='badeucey';
-    $('variant').querySelector(`option[value="${v.id}"]`).textContent=E.byId[v.id].name+(v.doubleOnDraw?' · Double on draw':'');
+    $('variant').value=variantKey(v.id,v.doubleOnDraw);
     $('variant-subtitle').textContent=isOriginal()?v.subtitle:badeucey?'Custom rules & payouts':'Custom paytable';$('variant-family').textContent=v.family+' · '+v.deckSize+' cards'+(v.doubleOnDraw?' · Double on draw':'');
     $('paytable-unit').textContent=badeucey?'Push + points':'Return / 1 credit';
     let html='<table>';
@@ -137,10 +142,10 @@
   $('solve-hand').onclick=()=>run('hand');$('solve-all').onclick=()=>run('all');$('cancel-solve').onclick=()=>{cancel();$('solve-status').textContent='Calculation canceled.';$('strategy-status').textContent=rows?'Previous solution retained.':'Calculation canceled. You can try again.';};
   $('hold-best').onclick=()=>{if(rows){mask=rows[0].mask;renderHand();renderStrategy();if(v.doubleOnDraw)announce(rows[0].doubled?'Best hold selected. Use Double & draw for the optimal stake.':'Best hold selected. Use Draw cards at the single stake.');}};
   $('spot-form').onsubmit=e=>{e.preventDefault();if(phase==='draw')return;try{const h=E.parseHand($('spot-hand').value,v.deckSize);cancel();hand=h;deck=[];mask=0;phase='study';clearStrategy();renderHand();$('hand-status').textContent='Study a specific hand';announce('');run('hand');}catch(error){announce(error.message);}};
-  function persist(){try{saved[v.id]=v.pays;localStorage.setItem(storedKey,JSON.stringify(saved));if(isCustom(v.id)){savedDrawRules[v.id]=!!v.doubleOnDraw;localStorage.setItem(drawRulesKey,JSON.stringify(savedDrawRules));}if(v.id==='badeucey'){savedRules[v.id]=v.rules;localStorage.setItem(rulesKey,JSON.stringify(savedRules));}return true;}catch{return false;}}
+  function persist(){try{const key=variantKey(v.id,v.doubleOnDraw);saved[key]=v.pays;if(v.id==='badeucey')savedRules[key]=v.rules;localStorage.setItem(storedKey,JSON.stringify(saved));localStorage.setItem(rulesKey,JSON.stringify(savedRules));return true;}catch{return false;}}
   function apply(pays,rules=v.rules,doubleOnDraw=!!v.doubleOnDraw){if(phase==='draw'){announce('Finish the current draw before changing the game.');return;}cancel();v={...v,pays,doubleOnDraw:isCustom(v.id)&&doubleOnDraw,...(v.id==='badeucey'?{rules:E.normalizeBadeuceyRules(rules)}:{})};liveResult=null;clearStrategy();phase='idle';hand=[];mask=0;const kept=persist();renderConfig();renderHand();$('hand-status').textContent='Five cards. One decision.';announce(kept?'Settings applied and saved in this browser.':'Settings applied for this session; browser storage is unavailable.');}
   $('pay-form').onsubmit=e=>{e.preventDefault();const pays={};for(const input of $('pay-editor').querySelectorAll('input')){if(input.value.trim()===''){announce('Enter a payout for every category.');return;}const n=Number(input.value);if(!Number.isInteger(n)||n<0||n>1000000){announce('Payouts must be whole numbers between 0 and 1,000,000.');return;}pays[input.dataset.key]=n;}const rules=v.id==='badeucey'?{fiveCard:$('rule-five-card').value,minBadugi:Number($('rule-min-badugi').value),maxLowRank:Number($('rule-low-rank').value),maxBadugiRank:Number($('rule-badugi-rank').value)}:undefined;apply(pays,rules,$('rule-double')?.value==='true');};
-  $('reset-pays').onclick=()=>apply({...E.byId[v.id].pays},E.byId[v.id].rules,false);
+  $('reset-pays').onclick=()=>apply({...E.byId[v.id].pays},E.byId[v.id].rules,!!v.doubleOnDraw);
   $('pay-form').oninput=()=>{renderControls();$('edit-status').textContent='Unapplied changes. Apply settings to use them in play and the solver.';};
   function renderRecommendations(){
     if(!report)return;
@@ -148,7 +153,7 @@
     document.querySelectorAll('[data-recommend]').forEach(b=>b.onclick=()=>{
       if(phase==='draw')return;
       const rec=report.recommendations.find(r=>(r.key||r.id)===b.dataset.recommend);
-      selectVariant(rec.id);apply({...E.byId[rec.id].pays,...rec.pays},rec.rules||E.byId[rec.id].rules,!!rec.doubleOnDraw);liveResult=rec.result;renderMetrics();setView('lab');
+      selectVariant(variantKey(rec.id,rec.doubleOnDraw));apply({...E.byId[rec.id].pays,...rec.pays},rec.rules||E.byId[rec.id].rules,!!rec.doubleOnDraw);liveResult=rec.result;renderMetrics();setView('lab');
     });renderControls();
   }
   document.addEventListener('keydown',e=>{if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target.closest('input,select,textarea')||$('view-play').hidden)return;if(/^[1-5]$/.test(e.key)){e.preventDefault();toggleHold(+e.key-1);}if(e.code==='Space'&&!e.target.closest('button,summary,a')){e.preventDefault();$('deal').click();}});

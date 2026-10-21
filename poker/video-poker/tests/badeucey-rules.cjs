@@ -13,7 +13,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
   try {
     await page.goto(base + '/poker/video-poker/');
     assert.equal(await page.locator('#variant optgroup').first().getAttribute('label'), 'Custom variants');
-    assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'badeucey']);
+    assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'low27-double', 'badeucey', 'badeucey-double']);
     await page.locator('#variant').selectOption('badeucey');
     await page.waitForFunction(() => document.getElementById('return-value').textContent === '62.8248%');
     assert.equal(await page.locator('#paytable .group-label').count(), 3);
@@ -87,6 +87,7 @@ module.exports = async function checkBadeuceyRules(browser, base) {
       const pays = { ...VideoPoker.byId.badeucey.pays, low9: 3 };
       delete pays.lowT;
       delete pays.badT;
+      localStorage.removeItem('video-poker-paytables-v2');
       localStorage.setItem('video-poker-paytables-v1', JSON.stringify({ badeucey: pays }));
     });
     await page.reload();

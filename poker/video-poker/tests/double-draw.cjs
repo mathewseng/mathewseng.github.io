@@ -8,7 +8,7 @@ module.exports=async function checkDoubleDraw(browser,base){
   await page.locator('#rule-double').selectOption('true');await page.locator('#pay-form button[type="submit"]').click();
   await page.waitForFunction(()=>document.querySelector('#double-frequency')?.textContent==='14.6780%');
   assert.match(await page.locator('#lab-result').textContent(),/initial deal/);
-  await page.reload();await page.locator('#variant').selectOption('low27');await lab();assert.equal(await page.locator('#rule-double').inputValue(),'true');
+  await page.reload();await page.locator('#variant').selectOption('low27-double');await lab();assert.equal(await page.locator('#rule-double').inputValue(),'true');
   await play();await page.evaluate(cards=>{VideoPoker.shuffledDeck=()=>[...cards,...Array.from({length:52},(_,i)=>i).filter(c=>!cards.includes(c))];},initial);
   await page.locator('#deal').click();assert.equal(await page.locator('#pnl').textContent(),'-1');
   for(let i=0;i<5;i++)await page.locator(`[data-card="${i}"]`).click();
@@ -35,7 +35,7 @@ module.exports=async function checkDoubleDraw(browser,base){
   for(const rec of report.recommendations){
    const button=page.locator(`[data-recommend="${rec.key||rec.id}"]`);
    await button.evaluate(el=>el.closest('details').open=true);await button.click();
-   assert.equal(await page.locator('#variant').inputValue(),rec.id);
+   assert.equal(await page.locator('#variant').inputValue(),rec.id+(rec.doubleOnDraw?'-double':''));
    assert.equal(await page.locator('#rule-double').inputValue(),String(!!rec.doubleOnDraw));
    assert.equal(await page.locator('#lab-rtp').textContent(),(rec.result.rtp*100).toFixed(4)+'%');
    for(const [key,value]of Object.entries(rec.pays))assert.equal(await page.locator('#pay-'+key).inputValue(),String(value));
@@ -45,7 +45,7 @@ module.exports=async function checkDoubleDraw(browser,base){
   const last=report.recommendations.at(-1);assert.equal(await page.locator('#lab-rtp').textContent(),(last.result.rtp*100).toFixed(4)+'%');
   assert.equal(await page.locator('#double-frequency').textContent(),(last.result.doubleFrequency*100).toFixed(4)+'%');
   await page.screenshot({path:'/tmp/video-poker-double-lab.png',fullPage:true});
-  await page.locator('#reset-pays').click();assert.equal(await page.locator('#rule-double').inputValue(),'false');assert.ok(await page.locator('#double-metrics').isHidden());
+  await page.locator('#reset-pays').click();assert.equal(await page.locator('#rule-double').inputValue(),'true');assert.ok(await page.locator('#double-metrics').isVisible());
   // A doubled Badeucey qualifying push returns both stakes, with no points added.
   await page.locator('#variant').selectOption('badeucey');await page.locator('#reset-pays').click();
   await page.locator('#rule-double').selectOption('true');await page.locator('#pay-form button[type="submit"]').click();
@@ -63,7 +63,7 @@ module.exports=async function checkDoubleDraw(browser,base){
   // Negative PnL never blocks the next wager or resets the session. Solver replies are unnecessary here.
   await page.locator('#variant').selectOption('low27');await lab();await page.locator('#rule-double').selectOption('true');
   for(const input of await page.locator('#pay-editor input').all())await input.fill('0');
-  await page.locator('#pay-form button[type="submit"]').click();await page.reload();await page.locator('#variant').selectOption('low27');
+  await page.locator('#pay-form button[type="submit"]').click();await page.reload();await page.locator('#variant').selectOption('low27-double');
   await page.evaluate(()=>{
    window.Worker=class{postMessage(){}terminate(){}};
    const deal=document.getElementById('deal'),double=document.getElementById('double-draw');
