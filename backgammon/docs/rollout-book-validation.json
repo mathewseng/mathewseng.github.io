@@ -1,16 +1,155 @@
 {
   "schema": 1,
   "storedPolicies": {
+    "strong": {
+      "positions": 15,
+      "minTrials": 4096,
+      "maxTrials": 32768
+    },
     "short-deep": {
-      "positions": 66,
+      "positions": 51,
       "minTrials": 512,
       "maxTrials": 512
     }
   },
-  "fullgame": null,
-  "recordedAt": "2026-10-21T04:32:42.579Z",
-  "id": "jacoby-short-deep-v1",
-  "indexSHA256": "0f0c68cfa4083ae5c6d2f17ffcc0c7b9b272f87bdc329a68add2eb92c054b33b",
+  "fullgame": {
+    "experimentSignature": "8e036c17121e162d517acb9568fb6c97694d9738109f0c79b9122644b2de4c85",
+    "comparisonSHA256": "6dad37738fda3efd2b178fb225dd61e6d2703f46441112d59741321dfb085c53",
+    "planSHA256": "e421876983948fcc9eb7ed61da205cffe66b9827b34b36d830e328b64227157f",
+    "nativeBuild": {
+      "ablationPatchSHA256": "95c0cdabf24884df7a1d6f602ee8b38d95e60cc5343240929b4a0508400b671f",
+      "archive": "gnubg-core-955555c-bg6.tar.gz",
+      "archiveSHA256": "bf6aac810e16ef6b3980a93fb7975c51367bb89658d0d6344dda6890501c6ba4",
+      "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+      "flags": "-O3 -ffp-contract=off -Isrc -Isrc/lib -Wno-unused-parameter -DBG_NATIVE_NEON -DBG_ABLATION",
+      "architecture": "arm64",
+      "neon": true,
+      "binarySHA256": "6f42770f62d7f752da2e836bbb8eb9452f1acd4fe274d69a131b1a0118973877",
+      "inputs": {
+        "build-rollout-native.mjs": "8306363250a712571bb7006faea8718c931d5d17dedc5afe7b8197f37b539115",
+        "rollout-native.c": "4c4799fd9f16b7bee5f69fd6bf32cca96b8064d1f4be068c3bac8b1cb341d2b8",
+        "deep-book-neon.h": "c1b6d5b05fab41bb28f235ff5f12e6f1dbb27b04691ae0f9a90706ae435f3153"
+      },
+      "orderPatchSHA256": "3d84d68e7dafbdc40bd3b009ffe7931653a6efefc8b66ec6068e0747019090ad",
+      "bridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+      "builtAt": "2026-10-20T23:11:40.881Z"
+    },
+    "positions": 15,
+    "candidates": 45,
+    "promotedIds": [
+      "opening-21",
+      "reply-20b4473214d470ab-63",
+      "reply-fd57f8a8e221b7f8-51",
+      "reply-d2855ee31ab665f9-54",
+      "reply-7985255600f3563f-44",
+      "reply-7985255600f3563f-51",
+      "reply-7e3b13415b18a2e9-63",
+      "reply-373d2637d6cfda5b-44",
+      "reply-b5499d9c6482f1a7-61",
+      "reply-cf59cb9355405192-51",
+      "reply-cf59cb9355405192-52",
+      "reply-b8e5c0a16f0875b5-44",
+      "reply-d8b0ad29eebeddb9-33",
+      "reply-ea77bd807985fd53-21",
+      "reply-2fda09c519d84905-32"
+    ],
+    "trialsPerMove": {
+      "replies": 4096,
+      "opening21": 32768
+    },
+    "policyId": "strong",
+    "cohortAccepted": true,
+    "openingSeparatelyQualified": true,
+    "criteria": {
+      "cohort": [
+        "Complete all 13440 planned records, all 45 retained moves, and provenance checks.",
+        "Full/strong must reduce mean absolute fixed-pair gap difference from XG versus the fresh Short baseline.",
+        "Full/strong must have at least as many fixed-pair mean preferences for XG as the fresh Short baseline.",
+        "At least one predeclared cohort-average cutoff or checker effect must shift toward XG under the new two-comparison simultaneous interval.",
+        "If accepted, promote all 15 positions and every retained move together at the same Full/strong policy. Replace the complete four-move opening entry with the separate 32768-trial precision study regardless of its winning move. No selective reply promotion."
+      ],
+      "opening": [
+        "If the cohort fails its new criteria, opening 21 may qualify separately using only its independent 32768-trial study.",
+        "All three paired Full/strong XG-versus-other-retained-move intervals must have positive lower bounds under their three-comparison simultaneous family.",
+        "Full/strong must reduce absolute split-minus-slot gap difference from XG versus its fresh Short baseline.",
+        "At least one cutoff or checker effect must shift toward XG under its two-comparison simultaneous interval.",
+        "If accepted separately, replace all four opening alternatives together and preserve all reply entries."
+      ]
+    },
+    "baseline": {
+      "positions": 15,
+      "meanGap": 0.006115847088541666,
+      "meanAbsoluteGapError": 0.011822513755208323,
+      "pairMeanFavorsXG": 0,
+      "classifications": {
+        "persistent": 12,
+        "reversed": 0,
+        "unresolved": 3
+      }
+    },
+    "fullStrong": {
+      "positions": 15,
+      "meanGap": -0.0024187311406250003,
+      "meanAbsoluteGapError": 0.007826688515624998,
+      "pairMeanFavorsXG": 9,
+      "classifications": {
+        "persistent": 0,
+        "reversed": 0,
+        "unresolved": 15
+      }
+    },
+    "effects": {
+      "cutoff": {
+        "positions": 15,
+        "comparisons": 2,
+        "difference": -0.004868232317708332,
+        "standardError": 0.0019404814703741782,
+        "batches": 128,
+        "interval95": {
+          "halfWidth": 0.003839862640305693,
+          "lower": -0.008708094958014025,
+          "upper": -0.001028369677402639,
+          "criticalValue": 1.9788195347030353
+        },
+        "familywise95": {
+          "halfWidth": 0.004401569724576846,
+          "lower": -0.009269802042285178,
+          "upper": -0.00046666259313148627,
+          "criticalValue": 2.26828742854633
+        },
+        "direction": "toward-XG"
+      },
+      "checker": {
+        "positions": 15,
+        "comparisons": 2,
+        "difference": -0.0036663459114583347,
+        "standardError": 0.002386045192641569,
+        "batches": 128,
+        "interval95": {
+          "halfWidth": 0.0047215528378834045,
+          "lower": -0.00838789874934174,
+          "upper": 0.0010552069264250698,
+          "criticalValue": 1.9788195347030353
+        },
+        "familywise95": {
+          "halfWidth": 0.005412236314412277,
+          "lower": -0.009078582225870612,
+          "upper": 0.0017458904029539427,
+          "criticalValue": 2.26828742854633
+        },
+        "direction": "unresolved"
+      }
+    },
+    "openingPrecision": {
+      "signature": "a245f1e1407aae068041347e40e838ac5ef75a8a347e72e442241ea6270311a8",
+      "trials": 32768,
+      "candidates": 4,
+      "comparisonSHA256": "13e639bd1f53d70390be11b903c3502e3105dc2823c3e2a591bcd8e3a307e755"
+    }
+  },
+  "recordedAt": "2026-10-21T10:20:37.838Z",
+  "id": "jacoby-rollout-v2",
+  "indexSHA256": "38e413f78ed63454648d060f24d3965c5dede7f3efb20b0a65191f3a969a7cdb",
   "coverage": {
     "positions": 666,
     "sampled": 66,
@@ -27,12 +166,12 @@
   "summaries": {
     "opening": {
       "positions": 15,
-      "bestMoveAgreement": 14,
+      "bestMoveAgreement": 15,
       "referenceBestEV": {
         "n": 15,
-        "meanAbsoluteDifference": 0.005739680583333335
+        "meanAbsoluteDifference": 0.005404567871744794
       },
-      "meanSelectedMoveReferenceLoss": 0.0005266666666666667,
+      "meanSelectedMoveReferenceLoss": 0,
       "fivePlyBaseline": {
         "commonCandidateEV": {
           "n": 79,
@@ -55,12 +194,12 @@
     },
     "reply": {
       "positions": 651,
-      "bestMoveAgreement": 628,
+      "bestMoveAgreement": 636,
       "referenceBestEV": {
         "n": 651,
-        "meanAbsoluteDifference": 0.011745682970430112
+        "meanAbsoluteDifference": 0.011717516750792054
       },
-      "meanSelectedMoveReferenceLoss": 0.00016221198156681998,
+      "meanSelectedMoveReferenceLoss": 0.00009815668202764958,
       "fivePlyBaseline": {
         "commonCandidateEV": {
           "n": 1415,
@@ -86,21 +225,21 @@
     {
       "id": "opening-21",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/11 24/23",
+      "policyId": "strong",
+      "samples": 32768,
+      "agrees": true,
+      "move": "13/11 6/5",
       "referenceMove": "13/11 6/5",
       "referenceSource": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
-      "referenceBestDifference": -0.007307271875,
-      "selectedMoveReferenceLoss": 0.0079
+      "referenceBestDifference": 0.0022805812011718746,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "opening-31",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -114,7 +253,7 @@
     {
       "id": "opening-32",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -128,7 +267,7 @@
     {
       "id": "opening-41",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -142,7 +281,7 @@
     {
       "id": "opening-42",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -156,7 +295,7 @@
     {
       "id": "opening-43",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -170,7 +309,7 @@
     {
       "id": "opening-51",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -184,7 +323,7 @@
     {
       "id": "opening-52",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -198,7 +337,7 @@
     {
       "id": "opening-53",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -212,7 +351,7 @@
     {
       "id": "opening-54",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -226,7 +365,7 @@
     {
       "id": "opening-61",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -240,7 +379,7 @@
     {
       "id": "opening-62",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -254,7 +393,7 @@
     {
       "id": "opening-63",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -268,7 +407,7 @@
     {
       "id": "opening-64",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -282,7 +421,7 @@
     {
       "id": "opening-65",
       "kind": "opening",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -296,7 +435,7 @@
     {
       "id": "reply-20b4473214d470ab-11",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -408,7 +547,7 @@
     {
       "id": "reply-20b4473214d470ab-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -478,7 +617,7 @@
     {
       "id": "reply-20b4473214d470ab-54",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -534,16 +673,16 @@
     {
       "id": "reply-20b4473214d470ab-63",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "24/18 18/15",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "24/18 13/10",
       "referenceMove": "24/18 13/10",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_21S.html",
-      "referenceBestDifference": 0.004760821875000015,
-      "selectedMoveReferenceLoss": 0.0020999999999999908
+      "referenceBestDifference": 0.0030148885156250083,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-20b4473214d470ab-64",
@@ -884,7 +1023,7 @@
     {
       "id": "reply-cf614959393ab83c-11",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -1066,7 +1205,7 @@
     {
       "id": "reply-cf614959393ab83c-54",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -1612,15 +1751,15 @@
     {
       "id": "reply-fd57f8a8e221b7f8-51",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
+      "policyId": "strong",
+      "samples": 4096,
       "agrees": false,
       "move": "13/8 24/23",
       "referenceMove": "13/8 6/5",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_32D.html",
-      "referenceBestDifference": 0.0013732499999999648,
+      "referenceBestDifference": -0.010654965781249998,
       "selectedMoveReferenceLoss": 0.002700000000000008
     },
     {
@@ -1794,7 +1933,7 @@
     {
       "id": "reply-3c939ba0e6cb78ba-22",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -2116,7 +2255,7 @@
     {
       "id": "reply-03cfec29f61bf4c0-32",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -2522,7 +2661,7 @@
     {
       "id": "reply-d2855ee31ab665f9-53",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -2536,16 +2675,16 @@
     {
       "id": "reply-d2855ee31ab665f9-54",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/8 24/20",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "6/1 24/20",
       "referenceMove": "24/20 6/1*",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_41S.html",
-      "referenceBestDifference": 0.0023385750000000094,
-      "selectedMoveReferenceLoss": 0.0006999999999999784
+      "referenceBestDifference": 0.004806604375000023,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-d2855ee31ab665f9-55",
@@ -2662,7 +2801,7 @@
     {
       "id": "reply-7985255600f3563f-21",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -2718,7 +2857,7 @@
     {
       "id": "reply-7985255600f3563f-33",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -2774,30 +2913,30 @@
     {
       "id": "reply-7985255600f3563f-44",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
+      "policyId": "strong",
+      "samples": 4096,
       "agrees": false,
       "move": "8/4 8/4 24/20 20/16",
       "referenceMove": "24/20* 20/16* 13/9(2)",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_41$.html",
-      "referenceBestDifference": 0.028401633750000044,
+      "referenceBestDifference": -0.017539916249999954,
       "selectedMoveReferenceLoss": 0.011299999999999977
     },
     {
       "id": "reply-7985255600f3563f-51",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/8 24/23",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "13/8 6/5",
       "referenceMove": "13/8 6/5",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_41$.html",
-      "referenceBestDifference": 0.00326884999999999,
-      "selectedMoveReferenceLoss": 0.010799999999999976
+      "referenceBestDifference": 0.004250494375000025,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-7985255600f3563f-52",
@@ -3054,7 +3193,7 @@
     {
       "id": "reply-7e3b13415b18a2e9-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -3180,16 +3319,16 @@
     {
       "id": "reply-7e3b13415b18a2e9-63",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "24/18 18/15",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "24/18 13/10",
       "referenceMove": "24/18 13/10",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_42P.html",
-      "referenceBestDifference": 0.0036257499999999276,
-      "selectedMoveReferenceLoss": 0.0020000000000000018
+      "referenceBestDifference": 0.0063673370312499755,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-7e3b13415b18a2e9-64",
@@ -3334,7 +3473,7 @@
     {
       "id": "reply-373d2637d6cfda5b-42",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -3362,16 +3501,16 @@
     {
       "id": "reply-373d2637d6cfda5b-44",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/9 13/9 24/20 20/16",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "13/9 13/9 24/20 24/20",
       "referenceMove": "24/20(2) 13/9(2)",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_43D.html",
-      "referenceBestDifference": -0.013633893124999963,
-      "selectedMoveReferenceLoss": 0.009099999999999997
+      "referenceBestDifference": 0.006198668671875018,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-373d2637d6cfda5b-51",
@@ -3642,7 +3781,7 @@
     {
       "id": "reply-759e35f72e5da952-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -4034,16 +4173,16 @@
     {
       "id": "reply-b5499d9c6482f1a7-61",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/7 8/7",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "24/18 6/5",
       "referenceMove": "24/18 6/5*",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_43S.html",
-      "referenceBestDifference": -0.007119909374999983,
-      "selectedMoveReferenceLoss": 0.004400000000000015
+      "referenceBestDifference": 0.004350861250000004,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-b5499d9c6482f1a7-62",
@@ -4090,7 +4229,7 @@
     {
       "id": "reply-b5499d9c6482f1a7-65",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -4468,7 +4607,7 @@
     {
       "id": "reply-53592fea55288d3f-32",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -4524,7 +4663,7 @@
     {
       "id": "reply-53592fea55288d3f-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -4594,7 +4733,7 @@
     {
       "id": "reply-53592fea55288d3f-54",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -4762,7 +4901,7 @@
     {
       "id": "reply-cf59cb9355405192-32",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -4846,29 +4985,29 @@
     {
       "id": "reply-cf59cb9355405192-51",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/8 24/23",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "13/8 6/5",
       "referenceMove": "13/8 6/5",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_51$.html",
-      "referenceBestDifference": 0.0028184481249999838,
-      "selectedMoveReferenceLoss": 0.006599999999999995
+      "referenceBestDifference": 0.003629393281250004,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-cf59cb9355405192-52",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
+      "policyId": "strong",
+      "samples": 4096,
       "agrees": false,
       "move": "13/8 24/22",
       "referenceMove": "13/8 6/4",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_51$.html",
-      "referenceBestDifference": 0.009976073750000009,
+      "referenceBestDifference": -0.0011396836718750025,
       "selectedMoveReferenceLoss": 0.00020000000000000573
     },
     {
@@ -4888,7 +5027,7 @@
     {
       "id": "reply-cf59cb9355405192-54",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -5224,7 +5363,7 @@
     {
       "id": "reply-92f08d68d1b9d287-62",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -5616,7 +5755,7 @@
     {
       "id": "reply-cca0a35abee56431-22",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -6330,7 +6469,7 @@
     {
       "id": "reply-b67c3c3af5f058f2-52",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -6582,7 +6721,7 @@
     {
       "id": "reply-664275defd9877ca-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -6876,7 +7015,7 @@
     {
       "id": "reply-5f467e58011af044-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -6946,7 +7085,7 @@
     {
       "id": "reply-5f467e58011af044-54",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -7044,7 +7183,7 @@
     {
       "id": "reply-5f467e58011af044-66",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -7100,7 +7239,7 @@
     {
       "id": "reply-bbc14a28a3af3d74-31",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -7478,16 +7617,16 @@
     {
       "id": "reply-b8e5c0a16f0875b5-44",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
-      "agrees": false,
-      "move": "13/9 9/5 13/9 9/5",
+      "policyId": "strong",
+      "samples": 4096,
+      "agrees": true,
+      "move": "13/9 13/9 24/20 24/20",
       "referenceMove": "24/20(2) 13/9*(2)",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_62R.html",
-      "referenceBestDifference": -0.018445166874999974,
-      "selectedMoveReferenceLoss": 0.008399999999999963
+      "referenceBestDifference": -0.0058632438281249755,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-b8e5c0a16f0875b5-51",
@@ -7702,7 +7841,7 @@
     {
       "id": "reply-c10f9e2eebe137d0-32",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -7842,7 +7981,7 @@
     {
       "id": "reply-c10f9e2eebe137d0-55",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -7968,7 +8107,7 @@
     {
       "id": "reply-d8b0ad29eebeddb9-22",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -8010,15 +8149,15 @@
     {
       "id": "reply-d8b0ad29eebeddb9-33",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
+      "policyId": "strong",
+      "samples": 4096,
       "agrees": false,
       "move": "6/3 6/3 8/5 8/5",
       "referenceMove": "24/21(2) 13/10(2)",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_64P.html",
-      "referenceBestDifference": -0.0015778743750000102,
+      "referenceBestDifference": -0.002901850468749967,
       "selectedMoveReferenceLoss": 0.00489999999999996
     },
     {
@@ -8248,15 +8387,15 @@
     {
       "id": "reply-ea77bd807985fd53-21",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
+      "policyId": "strong",
+      "samples": 4096,
       "agrees": false,
       "move": "24/22 8/7",
       "referenceMove": "13/11 8/7*",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_64S.html",
-      "referenceBestDifference": -0.0032291287499999766,
+      "referenceBestDifference": -0.0019629728124999912,
       "selectedMoveReferenceLoss": 0.003599999999999992
     },
     {
@@ -8276,7 +8415,7 @@
     {
       "id": "reply-ea77bd807985fd53-31",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -8318,7 +8457,7 @@
     {
       "id": "reply-ea77bd807985fd53-41",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -8360,7 +8499,7 @@
     {
       "id": "reply-ea77bd807985fd53-44",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -8640,7 +8779,7 @@
     {
       "id": "reply-be7ad69954328162-43",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -8668,7 +8807,7 @@
     {
       "id": "reply-be7ad69954328162-51",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -8780,7 +8919,7 @@
     {
       "id": "reply-be7ad69954328162-64",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,
@@ -9172,16 +9311,16 @@
     {
       "id": "reply-2fda09c519d84905-32",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
-      "policyId": "short-deep",
-      "samples": 512,
+      "policyId": "strong",
+      "samples": 4096,
       "agrees": false,
-      "move": "13/10 13/11",
+      "move": "24/21 13/11",
       "referenceMove": "13/10 6/4",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_62$.html",
-      "referenceBestDifference": -0.006191999374999979,
-      "selectedMoveReferenceLoss": 0.010899999999999993
+      "referenceBestDifference": -0.015744285078125003,
+      "selectedMoveReferenceLoss": 0.013299999999999979
     },
     {
       "id": "reply-2fda09c519d84905-33",
@@ -9354,7 +9493,7 @@
     {
       "id": "reply-2fda09c519d84905-63",
       "kind": "reply",
-      "book": "jacoby-short-deep-v1",
+      "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "short-deep",
       "samples": 512,

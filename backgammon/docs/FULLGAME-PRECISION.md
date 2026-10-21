@@ -57,7 +57,36 @@ Full/strong prefers **13/11 6/5 (slot)** over **13/11 24/23 (split)**, matching 
 
 Both controlled opening effects shift toward slot under their separate two-comparison family: removing the cutoff changes the gap by −0.00656 [−0.01266, −0.00045], and maintaining 2-ply checker play changes it by a further −0.00929 [−0.01746, −0.00113]. Thus both the truncated endpoint and late checker policy contributed to the opening disagreement under these settings. This does not isolate neural weights or prove that every full-game equity equals XG's value.
 
-The opening independently satisfies its recorded publication rule. The cohort is still collecting its fixed sample; its results determine whether all 15 positions qualify together or only the opening qualifies. No partial cohort equities have been inspected, and its sample size and acceptance rule remain unchanged.
+The opening independently satisfies its recorded publication rule. Its complete four-move comparison replaces the lower-precision opening entry in the accepted cohort update below.
+
+## Completed cohort and book update
+
+All 13,440 planned cohort records completed: 4,096 trials per move/policy, 430,080 trials in total. No partial cohort equities were inspected, and no samples were pooled with previous studies.
+
+| Policy | Mean absolute fixed-pair gap difference from XG | Pair means favor XG |
+| --- | --- | --- |
+| Short | 0.01182 | 0 / 15 |
+| Full/matched | 0.00858 | 8 / 15 |
+| Full/strong | 0.00783 | 9 / 15 |
+
+Full/strong reduces the sampled mean absolute gap difference by **33.8%** versus the fresh Short baseline. Removing the cutoff shifts the cohort-average gap by −0.00487, with simultaneous 95% interval [−0.00927, −0.00047], independently replicating the earlier average cutoff effect. The average additional checker effect is −0.00367 [−0.00908, +0.00175], unresolved. These are the recorded two-comparison cohort intervals.
+
+The complete cohort meets all its publication criteria. `jacoby-rollout-v2` therefore updates all 15 positions and all 45 retained moves to Full/strong together, using the independent 32,768-trial comparison for all four opening moves and 4,096-trial comparisons for the 14 replies. The remaining 51 rollout entries are preserved byte-for-byte. The published lookup validation covers 666 matched positions, including mirrored boards, grading and unlisted-move fallbacks. Best-move agreement rises to 15/15 openings and 636/651 replies; this is descriptive agreement with the historical reference, not a claim that every choice is resolved.
+
+Eight of the 14 updated reply choices now match XG. Six still have different sampled leaders:
+
+| After opening | Reply | Full/strong sampled leader | Published XG leader |
+| --- | --- | --- | --- |
+| 32D | 51 | 13/8 24/23 | 13/8 6/5 |
+| 41$ | 44 | 8/4 8/4 24/20 20/16 | 13/9 13/9 24/20 20/16 |
+| 51$ | 52 | 13/8 24/22 | 13/8 6/4 |
+| 64P | 33 | 6/3 6/3 8/5 8/5 | 13/10 13/10 24/21 24/21 |
+| 64S | 21 | 24/22 8/7 | 13/11 8/7 |
+| 62$ | 32 | 24/21 13/11 | 13/10 6/4 |
+
+Every individual full-game fixed-pair gap in this 4,096-trial cohort remains unresolved under the 45-gap simultaneous family; every per-position cutoff/checker effect remains unresolved under the 30-effect family. Thus the cohort supports an average improvement, not 14 individually proven corrections. In the final row above, a third retained move leads, so the fixed-pair interval does not test that third move against XG. The separately completed opening experiment does resolve its retained-move comparisons.
+
+The practical correction removes the five-turn endpoint and the late reduction to 1-ply checker play for the requested entries. The experiments identify both effects at opening 2–1 and an average cutoff effect across the cohort. They do not isolate a neural-weight defect, prove the six residual reply differences are only noise, or establish a benefit from deeper cube decisions. The earlier Cube3 result remains unresolved.
 
 ## Reproduction
 

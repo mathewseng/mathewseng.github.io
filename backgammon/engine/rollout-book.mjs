@@ -2,7 +2,7 @@
 import {assertState,boardKey,commitTurn,legalPaths,notation,positionKey,initialState} from '../core/rules.mjs';
 import {OpeningBook,bookBoardKey,bookContext,bookEligible} from './opening-book.mjs';
 import {ROLLOUT_POLICIES} from './rollout-policy.mjs';
-export const ROLLOUT_BOOK_ID='jacoby-short-deep-v1';
+export const ROLLOUT_BOOK_ID='jacoby-rollout-v2';
 export const ROLLOUT_BOOK_ENGINE='gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg7-native';
 const URL_INDEX=new URL('./opening-book-data/rollout/index.json',import.meta.url);
 const START=bookBoardKey(initialState({matchLength:0}));

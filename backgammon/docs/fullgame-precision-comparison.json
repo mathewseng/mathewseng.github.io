@@ -1,0 +1,3758 @@
+{
+  "schema": 1,
+  "cohortEffects": {
+    "cutoff": {
+      "positions": 15,
+      "comparisons": 2,
+      "difference": -0.004868232317708332,
+      "standardError": 0.0019404814703741782,
+      "batches": 128,
+      "interval95": {
+        "halfWidth": 0.003839862640305693,
+        "lower": -0.008708094958014025,
+        "upper": -0.001028369677402639,
+        "criticalValue": 1.9788195347030353
+      },
+      "familywise95": {
+        "halfWidth": 0.004401569724576846,
+        "lower": -0.009269802042285178,
+        "upper": -0.00046666259313148627,
+        "criticalValue": 2.26828742854633
+      },
+      "direction": "toward-XG"
+    },
+    "checker": {
+      "positions": 15,
+      "comparisons": 2,
+      "difference": -0.0036663459114583347,
+      "standardError": 0.002386045192641569,
+      "batches": 128,
+      "interval95": {
+        "halfWidth": 0.0047215528378834045,
+        "lower": -0.00838789874934174,
+        "upper": 0.0010552069264250698,
+        "criticalValue": 1.9788195347030353
+      },
+      "familywise95": {
+        "halfWidth": 0.005412236314412277,
+        "lower": -0.009078582225870612,
+        "upper": 0.0017458904029539427,
+        "criticalValue": 2.26828742854633
+      },
+      "direction": "unresolved"
+    }
+  },
+  "signature": "8e036c17121e162d517acb9568fb6c97694d9738109f0c79b9122644b2de4c85",
+  "complete": true,
+  "recordedAt": "2026-10-21T10:19:50.646259+00:00",
+  "trialsPerMovePolicy": 4096,
+  "effectComparisons": 30,
+  "gapComparisons": 45,
+  "records": 13440,
+  "totalTrials": 430080,
+  "method": "Fixed independent 4096-trial precision replication of all 15 original persistent disagreements after the first full-game study failed its promotion criteria. Short and Full/matched evaluate both disputed moves; Full/strong evaluates all retained alternatives. 128 blocks of 32 trials; shared dice within position, disjoint seeds across positions and all previous experiments. No pooling or optional stopping. Separate simultaneous 95% Student-t families: 30 cutoff/checker effects, 45 policy-position gaps, and two equally weighted cohort-average effects. Cube3 is not repeated: the previous study did not establish its benefit. Same GNUbg build, normal filters, Jacoby on, beavers off, variance reduction, no rotation and eligible bearoff termination.",
+  "policies": [
+    {
+      "id": "short",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 5,
+      "lateAfterPlies": 2,
+      "lateCheckerPlies": 1,
+      "lateCubePlies": 2,
+      "endpointPlies": 2
+    },
+    {
+      "id": "full-matched",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 2,
+      "lateCheckerPlies": 1,
+      "lateCubePlies": 2,
+      "endpointPlies": 2
+    },
+    {
+      "id": "full-strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCheckerPlies": 2,
+      "lateCubePlies": 2,
+      "endpointPlies": 2
+    }
+  ],
+  "summaries": {
+    "short": {
+      "positions": 15,
+      "meanGap": 0.006115847088541666,
+      "meanAbsoluteGapError": 0.011822513755208323,
+      "pairMeanFavorsXG": 0,
+      "classifications": {
+        "persistent": 12,
+        "reversed": 0,
+        "unresolved": 3
+      }
+    },
+    "full-matched": {
+      "positions": 15,
+      "meanGap": 0.0012476147708333349,
+      "meanAbsoluteGapError": 0.008579882624999991,
+      "pairMeanFavorsXG": 8,
+      "classifications": {
+        "persistent": 0,
+        "reversed": 0,
+        "unresolved": 15
+      }
+    },
+    "full-strong": {
+      "positions": 15,
+      "meanGap": -0.0024187311406250003,
+      "meanAbsoluteGapError": 0.007826688515624998,
+      "pairMeanFavorsXG": 9,
+      "classifications": {
+        "persistent": 0,
+        "reversed": 0,
+        "unresolved": 15
+      }
+    }
+  },
+  "effectSummary": {
+    "cutoff": {
+      "meanShift": -0.004868232317708332,
+      "toward-XG": 0,
+      "away-from-XG": 0,
+      "unresolved": 15
+    },
+    "checker": {
+      "meanShift": -0.0036663459114583347,
+      "toward-XG": 0,
+      "away-from-XG": 0,
+      "unresolved": 15
+    }
+  },
+  "rows": [
+    {
+      "id": "opening-21",
+      "kind": "opening",
+      "roll": "21",
+      "source": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
+      "previousMove": "13/11 24/23",
+      "xgMove": "13/11 6/5",
+      "referenceGap": -0.0079,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.0027309367968750002,
+            "standardError": 0.0008972814556420813,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0017755580725513256,
+              "lower": 0.0009553787243236746,
+              "upper": 0.004506494869426326,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0029942417150066354,
+              "lower": -0.0002633049181316352,
+              "upper": 0.005725178511881635,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/11 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.004609247890625,
+              "standardError": 0.000631164122877537,
+              "cubeless": 0.00240357328125,
+              "probabilities": [
+                0.4982663025,
+                0.1387195475,
+                0.005732619296875,
+                0.133412894296875,
+                0.00516823234375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/11 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.00187831109375,
+              "standardError": 0.0007379928517962799,
+              "cubeless": -0.00434432984375,
+              "probabilities": [
+                0.500475414609375,
+                0.14129931828125,
+                0.0057421028125,
+                0.143748601328125,
+                0.008587837109375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "bestMove": "13/11 24/23",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.007006194921875,
+            "standardError": 0.007826750322536385,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.01548772643147828,
+              "lower": -0.02249392135335328,
+              "upper": 0.00848153150960328,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.02611798356170218,
+              "lower": -0.03312417848357718,
+              "upper": 0.01911178863982718,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/11 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.0012281314843749999,
+              "standardError": 0.005279102882577701,
+              "cubeless": 0.0019738950000000003,
+              "probabilities": [
+                0.499251585,
+                0.14280929015625,
+                0.006349238984375,
+                0.139268771328125,
+                0.006395332421875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/11 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.00823432640625,
+              "standardError": 0.005858278874017124,
+              "cubeless": 0.0008324003125000002,
+              "probabilities": [
+                0.503384078359375,
+                0.146244166328125,
+                0.006978433671875,
+                0.149558585546875,
+                0.009593415625
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "bestMove": "13/11 6/5",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.011244025937499999,
+            "standardError": 0.006663975010652056,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.013186803929851157,
+              "lower": -0.024430829867351157,
+              "upper": 0.0019427779923511575,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.022237784854672725,
+              "lower": -0.033481810792172724,
+              "upper": 0.010993758917172726,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/11 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.006563722421875,
+              "standardError": 0.004912676152424291,
+              "cubeless": 0.0056541390625,
+              "probabilities": [
+                0.499462206015625,
+                0.14284673546874999,
+                0.006254370078125,
+                0.13634825375,
+                0.006023085390625
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/11 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.017807748359375,
+              "standardError": 0.005680045615475646,
+              "cubeless": 0.004027479453125,
+              "probabilities": [
+                0.50459726390625,
+                0.142829201796875,
+                0.006091881015625,
+                0.14510572765625,
+                0.008940582578125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+              "move": "24/22 22/21",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.034552358671875,
+              "standardError": 0.004936805095360179,
+              "cubeless": -0.02345965046875,
+              "probabilities": [
+                0.49155907640625,
+                0.130789427109375,
+                0.00670411328125,
+                0.138390783125,
+                0.0056938090625
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/11 11/10",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.04839019921875,
+              "standardError": 0.004933378131594049,
+              "cubeless": -0.028256544296875,
+              "probabilities": [
+                0.4885542584375,
+                0.140293113515625,
+                0.006376786953125,
+                0.1444042865625,
+                0.007631687265625
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "bestMove": "13/11 6/5",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.00973713171875,
+          "standardError": 0.00783371868755499,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.015501515568302038,
+            "lower": -0.025238647287052038,
+            "upper": 0.005764383849552038,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.025167258552997354,
+            "lower": -0.034904390271747354,
+            "upper": 0.015430126834247354,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.004237831015625,
+          "standardError": 0.010161110634145192,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.020107004217125253,
+            "lower": -0.024344835232750252,
+            "upper": 0.015869173201500254,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.03264443219302771,
+            "lower": -0.03688226320865271,
+            "upper": 0.028406601177402714,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-20b4473214d470ab-63",
+      "kind": "reply",
+      "roll": "63",
+      "source": "https://www.extremegammon.com/OB/Replies_to_21S.html",
+      "previousMove": "24/18 18/15",
+      "xgMove": "24/18 13/10",
+      "referenceGap": -0.0020999999999999908,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.001247035390625,
+            "standardError": 0.0009311166779037392,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.001842511871323713,
+              "lower": -0.000595476480698713,
+              "upper": 0.0030895472619487134,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.003107150360666631,
+              "lower": -0.001860114970041631,
+              "upper": 0.004354185751291631,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,0,0,-4,5,-1,1,0,-3,0,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/18 18/15",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.115986468984375,
+              "standardError": 0.0007097759239118633,
+              "cubeless": -0.086985894609375,
+              "probabilities": [
+                0.477758342265625,
+                0.113416500390625,
+                0.004877621484375,
+                0.15499313671875,
+                0.00580351671875
+              ]
+            },
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,1,0,-4,4,-1,0,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/18 13/10",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.117233504375,
+              "standardError": 0.0006801557524130737,
+              "cubeless": -0.08384327015625,
+              "probabilities": [
+                0.475344690625,
+                0.122706835546875,
+                0.0056849471875,
+                0.155928715,
+                0.006995642890625
+              ]
+            }
+          ],
+          "bestBoard": "-1,-1,0,0,0,5,0,3,0,0,0,-4,5,-1,1,0,-3,0,-5,0,0,0,0,1,0,0,0,0",
+          "bestMove": "24/18 18/15",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.008119797890625,
+            "standardError": 0.006379348182919716,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.012623578803033846,
+              "lower": -0.020743376693658847,
+              "upper": 0.004503780912408845,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.021287980848976065,
+              "lower": -0.029407778739601063,
+              "upper": 0.013168182958351064,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,0,0,-4,5,-1,1,0,-3,0,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/18 18/15",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.1232894184375,
+              "standardError": 0.005011769068298506,
+              "cubeless": -0.08931338875,
+              "probabilities": [
+                0.47743371140625,
+                0.1178150321875,
+                0.0055671409375,
+                0.1609218959375,
+                0.006651420703125
+              ]
+            },
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,1,0,-4,4,-1,0,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/18 13/10",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.115169620546875,
+              "standardError": 0.0052468530194237865,
+              "cubeless": -0.0834439703125,
+              "probabilities": [
+                0.476025640703125,
+                0.127551000859375,
+                0.006655324921875,
+                0.16178626859375,
+                0.007919539140625
+              ]
+            }
+          ],
+          "bestBoard": "-1,-1,0,0,0,5,0,3,0,1,0,-4,4,-1,0,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+          "bestMove": "24/18 13/10",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.009103307890625,
+            "standardError": 0.007575308145614186,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014990167739936376,
+              "lower": -0.024093475630561377,
+              "upper": 0.005886859849311376,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.025278917234945453,
+              "lower": -0.03438222512557045,
+              "upper": 0.016175609344320455,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,0,0,-4,5,-1,1,0,-3,0,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/18 18/15",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.127788419375,
+              "standardError": 0.004995272583895418,
+              "cubeless": -0.089331794921875,
+              "probabilities": [
+                0.475810655703125,
+                0.115964552421875,
+                0.005496051171875,
+                0.15650052640625,
+                0.00592793125
+              ]
+            },
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,1,0,-4,4,-1,0,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/18 13/10",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.118685111484375,
+              "standardError": 0.005193415174783132,
+              "cubeless": -0.0836859190625,
+              "probabilities": [
+                0.47583366796875,
+                0.125116464453125,
+                0.006160906796875,
+                0.1594431190625,
+                0.007222993828125
+              ]
+            },
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,0,0,-4,5,-1,0,0,-3,1,-5,0,1,0,0,0,0,0,0,0",
+              "move": "24/18 24/21",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.15482092109375,
+              "standardError": 0.005026275291559307,
+              "cubeless": -0.110012263203125,
+              "probabilities": [
+                0.47065447015625,
+                0.11372882249999999,
+                0.006017661328125,
+                0.164700842421875,
+                0.0064189575
+              ]
+            }
+          ],
+          "bestBoard": "-1,-1,0,0,0,5,0,3,0,1,0,-4,4,-1,0,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+          "bestMove": "24/18 13/10",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.00936683328125,
+          "standardError": 0.006315506327448343,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.012497247292295406,
+            "lower": -0.021864080573545407,
+            "upper": 0.0031304140110454057,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02028972279646562,
+            "lower": -0.02965655607771562,
+            "upper": 0.010922889515215618,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.000983510000000001,
+          "standardError": 0.008743093646277802,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.017301004500992506,
+            "lower": -0.018284514500992506,
+            "upper": 0.016317494500992506,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.028088792452875176,
+            "lower": -0.029072302452875176,
+            "upper": 0.027105282452875176,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-fd57f8a8e221b7f8-51",
+      "kind": "reply",
+      "roll": "51",
+      "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+      "previousMove": "13/8 24/23",
+      "xgMove": "13/8 6/5",
+      "referenceGap": -0.002700000000000008,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.009091864140625,
+            "standardError": 0.001011482228467421,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.002001540792696291,
+              "lower": 0.007090323347928708,
+              "upper": 0.01109340493332129,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0033753314118119006,
+              "lower": 0.005716532728813098,
+              "upper": 0.0124671955524369,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.175837764296875,
+              "standardError": 0.0007332899676887967,
+              "cubeless": -0.123688964609375,
+              "probabilities": [
+                0.460774681875,
+                0.1257076084375,
+                0.006386174375,
+                0.17049085359375,
+                0.006841239296875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.1849296284375,
+              "standardError": 0.0007728594816569906,
+              "cubeless": -0.130936003828125,
+              "probabilities": [
+                0.461113393671875,
+                0.126808767734375,
+                0.006502064453125,
+                0.17561695828124999,
+                0.010856717265625
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "bestMove": "13/8 24/23",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.012353865312500002,
+            "standardError": 0.008788287580398643,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.017390435140680907,
+              "lower": -0.005036569828180905,
+              "upper": 0.02974430045318091,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.029326647855297816,
+              "lower": -0.016972782542797812,
+              "upper": 0.04168051316779782,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.180752263515625,
+              "standardError": 0.005200290414789126,
+              "cubeless": -0.124863651953125,
+              "probabilities": [
+                0.461434373671875,
+                0.1289337075,
+                0.00733513453125,
+                0.176231321796875,
+                0.007769911953125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.193106128828125,
+              "standardError": 0.007288183313309963,
+              "cubeless": -0.130457903125,
+              "probabilities": [
+                0.461761999296875,
+                0.13141305875,
+                0.0067171846875,
+                0.1807566990625,
+                0.01135650296875
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "bestMove": "13/8 24/23",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": 0.005925077031249999,
+            "standardError": 0.007366368215029617,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014576713323716135,
+              "lower": -0.008651636292466135,
+              "upper": 0.020501790354966135,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.024581681543565624,
+              "lower": -0.018656604512315624,
+              "upper": 0.030506758574815624,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.18852988875,
+              "standardError": 0.005253466578269438,
+              "cubeless": -0.127044770625,
+              "probabilities": [
+                0.4600695859375,
+                0.128328273046875,
+                0.006806035390625,
+                0.174852036796875,
+                0.007466203125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.19445496578125,
+              "standardError": 0.005438378440931234,
+              "cubeless": -0.13331455796875,
+              "probabilities": [
+                0.460551376484375,
+                0.128485569765625,
+                0.0066424475,
+                0.1787914746875,
+                0.010749560546875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/23 23/18",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.202968630390625,
+              "standardError": 0.005325453278728319,
+              "cubeless": -0.145457022890625,
+              "probabilities": [
+                0.457959443828125,
+                0.116247187265625,
+                0.00573583953125,
+                0.176611529609375,
+                0.00680391484375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,1,3,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 8/7",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.216244040390625,
+              "standardError": 0.005615984461693804,
+              "cubeless": -0.146144561171875,
+              "probabilities": [
+                0.450136045390625,
+                0.12824755484375,
+                0.006447510390625,
+                0.17090210015625,
+                0.0101971428125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "bestMove": "13/8 24/23",
+          "agrees": false
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": 0.003262001171875002,
+          "standardError": 0.008687973267042345,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.017191931217801142,
+            "lower": -0.01392993004592614,
+            "upper": 0.020453932389676143,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02791170812152666,
+            "lower": -0.02464970694965166,
+            "upper": 0.03117370929340166,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.006428788281250002,
+          "standardError": 0.010836009120846367,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.021442506526551053,
+            "lower": -0.027871294807801053,
+            "upper": 0.01501371824530105,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.03481266740663307,
+            "lower": -0.04124145568788307,
+            "upper": 0.028383879125383073,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-d2855ee31ab665f9-54",
+      "kind": "reply",
+      "roll": "54",
+      "source": "https://www.extremegammon.com/OB/Replies_to_41S.html",
+      "previousMove": "13/8 24/20",
+      "xgMove": "6/1 24/20",
+      "referenceGap": -0.0006999999999999784,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.003952653906249999,
+            "standardError": 0.0010647542001257144,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0021069564108658688,
+              "lower": 0.0018456974953841303,
+              "upper": 0.006059610317115868,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0035531007825895136,
+              "lower": 0.00039955312366048547,
+              "upper": 0.007505754688839513,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-1,-1,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-5,1,0,0,0,1,0,0,0,0",
+              "move": "13/8 24/20",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.1370476571875,
+              "standardError": 0.000732404573269746,
+              "cubeless": -0.09561765296875,
+              "probabilities": [
+                0.470942819765625,
+                0.118375389140625,
+                0.005269452890625,
+                0.1550448871875,
+                0.006103077265625
+              ]
+            },
+            {
+              "board": "1,-1,0,0,0,4,0,3,0,0,0,-4,5,0,0,-1,-3,0,-5,1,0,0,0,1,0,1,0,0",
+              "move": "6/1 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.14100031109375,
+              "standardError": 0.0007979559009539156,
+              "cubeless": -0.096044361015625,
+              "probabilities": [
+                0.46981821875,
+                0.120809333671875,
+                0.004705851484375,
+                0.15350445078125,
+                0.007691440859375
+              ]
+            }
+          ],
+          "bestBoard": "-1,-1,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-5,1,0,0,0,1,0,0,0,0",
+          "bestMove": "13/8 24/20",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.007565760390625,
+            "standardError": 0.007167567497370086,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014183322580098473,
+              "lower": -0.006617562189473473,
+              "upper": 0.021749082970723473,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.023918280558237706,
+              "lower": -0.016352520167612707,
+              "upper": 0.03148404094886271,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,-1,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-5,1,0,0,0,1,0,0,0,0",
+              "move": "13/8 24/20",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.134979028359375,
+              "standardError": 0.005044688023461288,
+              "cubeless": -0.094485427109375,
+              "probabilities": [
+                0.47074233796875,
+                0.123644180234375,
+                0.00597358859375,
+                0.15911662625,
+                0.006453546953125
+              ]
+            },
+            {
+              "board": "1,-1,0,0,0,4,0,3,0,0,0,-4,5,0,0,-1,-3,0,-5,1,0,0,0,1,0,1,0,0",
+              "move": "6/1 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.14254478875,
+              "standardError": 0.005114058183110758,
+              "cubeless": -0.098964864765625,
+              "probabilities": [
+                0.468461524375,
+                0.12591981828125,
+                0.00506505765625,
+                0.15848038140625,
+                0.00817738140625
+              ]
+            }
+          ],
+          "bestBoard": "-1,-1,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-5,1,0,0,0,1,0,0,0,0",
+          "bestMove": "13/8 24/20",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.0048701996875,
+            "standardError": 0.007079090606845149,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014008242780757947,
+              "lower": -0.01887844246825795,
+              "upper": 0.009138043093257947,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.023623031843625335,
+              "lower": -0.028493231531125335,
+              "upper": 0.018752832156125335,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,-1,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-5,1,0,0,0,1,0,0,0,0",
+              "move": "13/8 24/20",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.1428635953125,
+              "standardError": 0.005224203701983623,
+              "cubeless": -0.09795025640625,
+              "probabilities": [
+                0.470525202109375,
+                0.120056206796875,
+                0.00566468328125,
+                0.158452947734375,
+                0.0062801509375
+              ]
+            },
+            {
+              "board": "1,-1,0,0,0,4,0,3,0,0,0,-4,5,0,0,-1,-3,0,-5,1,0,0,0,1,0,1,0,0",
+              "move": "6/1 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.137993395625,
+              "standardError": 0.00528587679638742,
+              "cubeless": -0.0975303084375,
+              "probabilities": [
+                0.46829498109375,
+                0.12448505679687501,
+                0.00472719546875,
+                0.155689154140625,
+                0.00762884046875
+              ]
+            },
+            {
+              "board": "-1,-1,0,0,0,5,0,3,0,0,0,-4,5,0,1,-1,-3,0,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/20 20/15",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.148777846328125,
+              "standardError": 0.004891611825172985,
+              "cubeless": -0.111981595625,
+              "probabilities": [
+                0.47101041828125,
+                0.111107196015625,
+                0.005397580546875,
+                0.16394036234375,
+                0.006498071953125
+              ]
+            },
+            {
+              "board": "-1,-1,0,0,0,5,0,4,1,0,0,-4,3,0,0,-1,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 13/9",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.16855460765625,
+              "standardError": 0.005329284648721989,
+              "cubeless": -0.10962483953125,
+              "probabilities": [
+                0.46023095,
+                0.13551183796875,
+                0.006341757890625,
+                0.16304541765625,
+                0.008888479296875
+              ]
+            }
+          ],
+          "bestBoard": "1,-1,0,0,0,4,0,3,0,0,0,-4,5,0,0,-1,-3,0,-5,1,0,0,0,1,0,1,0,0",
+          "bestMove": "6/1 24/20",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": 0.0036131064843750007,
+          "standardError": 0.007036177439014799,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.013923325365959258,
+            "lower": -0.010310218881584256,
+            "upper": 0.01753643185033426,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02260501096545269,
+            "lower": -0.01899190448107769,
+            "upper": 0.026218117449827688,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.012435960078124999,
+          "standardError": 0.008995954238076734,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.0178013699796008,
+            "lower": -0.0302373300577258,
+            "upper": 0.005365409901475802,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.028901153496906216,
+            "lower": -0.04133711357503121,
+            "upper": 0.016465193418781218,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "kind": "reply",
+      "roll": "44",
+      "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+      "previousMove": "8/4 8/4 24/20 20/16",
+      "xgMove": "13/9 13/9 24/20 20/16",
+      "referenceGap": -0.011299999999999977,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.021186189687499992,
+            "standardError": 0.0012078602979644802,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0023901375528043423,
+              "lower": 0.01879605213469565,
+              "upper": 0.023576327240304333,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.004030647983778498,
+              "lower": 0.017155541703721494,
+              "upper": 0.02521683767127849,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "8/4 8/4 24/20 20/16",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.658210976171875,
+              "standardError": 0.0009667816440565069,
+              "cubeless": 0.446419356171875,
+              "probabilities": [
+                0.60903075796875,
+                0.277681393984375,
+                0.036369963828125,
+                0.082150726796875,
+                0.003542656796875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.637024786484375,
+              "standardError": 0.0010656755674601942,
+              "cubeless": 0.4376687496875,
+              "probabilities": [
+                0.617893485703125,
+                0.255030709765625,
+                0.028394547109375,
+                0.078367124765625,
+                0.003176248203125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "bestMove": "8/4 8/4 24/20 20/16",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.010488319531250002,
+            "standardError": 0.009827959739410095,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.01944775871861965,
+              "lower": -0.008959439187369647,
+              "upper": 0.02993607824986965,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0327960494893876,
+              "lower": -0.0223077299581376,
+              "upper": 0.043284369020637606,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "8/4 8/4 24/20 20/16",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.623859880859375,
+              "standardError": 0.0071563548265150025,
+              "cubeless": 0.44417069265625,
+              "probabilities": [
+                0.6078426625,
+                0.281275710234375,
+                0.036237650546875,
+                0.0850587065625,
+                0.0040037109375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.613371561328125,
+              "standardError": 0.007607418071213516,
+              "cubeless": 0.4419077653125,
+              "probabilities": [
+                0.619159706015625,
+                0.2597360259375,
+                0.02732503796875,
+                0.07993769390625,
+                0.00355555859375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "bestMove": "8/4 8/4 24/20 20/16",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": 0.02213565296875,
+            "standardError": 0.00992196927464883,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.019633786623398413,
+              "lower": 0.002501866345351586,
+              "upper": 0.04176943959214841,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.03310976072263579,
+              "lower": -0.010974107753885794,
+              "upper": 0.05524541369138579,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "8/4 8/4 24/20 20/16",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.61639573671875,
+              "standardError": 0.006998247630780362,
+              "cubeless": 0.44191209640625,
+              "probabilities": [
+                0.6106341953125,
+                0.27416480249999997,
+                0.032672246796875,
+                0.082601315625,
+                0.003620699453125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.5942600837500001,
+              "standardError": 0.007500656232558669,
+              "cubeless": 0.4354133084375,
+              "probabilities": [
+                0.619359847578125,
+                0.252721698515625,
+                0.02521781328125,
+                0.07777194640625,
+                0.00348429359375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "bestMove": "8/4 8/4 24/20 20/16",
+          "agrees": false
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.010697870156249992,
+          "standardError": 0.009762897226000974,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.019319011746108804,
+            "lower": -0.030016881902358794,
+            "upper": 0.008621141589858812,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.031365098558293406,
+            "lower": -0.042062968714543396,
+            "upper": 0.020667228402043415,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": 0.011647333437499999,
+          "standardError": 0.013326905179769321,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.0263715403068626,
+            "lower": -0.014724206869362601,
+            "upper": 0.0380188737443626,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.042815128005983784,
+            "lower": -0.031167794568483786,
+            "upper": 0.05446246144348378,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-51",
+      "kind": "reply",
+      "roll": "51",
+      "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+      "previousMove": "13/8 24/23",
+      "xgMove": "13/8 6/5",
+      "referenceGap": -0.010799999999999976,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.00681617578125,
+            "standardError": 0.000987118760030171,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.00195332988541954,
+              "lower": 0.00486284589583046,
+              "upper": 0.00876950566666954,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0032940301511446336,
+              "lower": 0.0035221456301053667,
+              "upper": 0.010110205932394634,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.272237840703125,
+              "standardError": 0.0007666547200263146,
+              "cubeless": -0.18747900125,
+              "probabilities": [
+                0.436688686328125,
+                0.114819999765625,
+                0.005212509453125,
+                0.17368365703125,
+                0.007205324453125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.279054016484375,
+              "standardError": 0.0007354742778418165,
+              "cubeless": -0.188520899765625,
+              "probabilities": [
+                0.437375096953125,
+                0.12060061203125,
+                0.0058410703125,
+                0.17894857218750002,
+                0.010764317421875
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,1,1,0,0,0,0",
+          "bestMove": "13/8 24/23",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.00115060578125,
+            "standardError": 0.00814685035581232,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.016121146630383793,
+              "lower": -0.017271752411633794,
+              "upper": 0.014970540849133794,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.027186162187910336,
+              "lower": -0.028336767969160338,
+              "upper": 0.026035556406660335,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.283464248671875,
+              "standardError": 0.005140097253484792,
+              "cubeless": -0.19230452375,
+              "probabilities": [
+                0.434481874765625,
+                0.11810132296875,
+                0.005931571640625,
+                0.177012989140625,
+                0.008310545
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.282313642890625,
+              "standardError": 0.005308195846584018,
+              "cubeless": -0.189228056484375,
+              "probabilities": [
+                0.43717242046875,
+                0.123932278828125,
+                0.0063392040625,
+                0.18327856046875,
+                0.01059031546875
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/8 6/5",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.00827105109375,
+            "standardError": 0.0072361227849480425,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014318981122364918,
+              "lower": -0.02259003221611492,
+              "upper": 0.006047930028614918,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.024147050584141457,
+              "lower": -0.032418101677891456,
+              "upper": 0.01587599949039146,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.28962055671875,
+              "standardError": 0.005129927707242171,
+              "cubeless": -0.1953234290625,
+              "probabilities": [
+                0.433590401328125,
+                0.116738035625,
+                0.005420571484375,
+                0.17705085671875,
+                0.0076119753125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.281349505625,
+              "standardError": 0.0056343637005749885,
+              "cubeless": -0.18885590124999999,
+              "probabilities": [
+                0.437165045703125,
+                0.122999938828125,
+                0.0062039353125,
+                0.181942366796875,
+                0.010485178125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/8 6/5",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.0079667815625,
+          "standardError": 0.008017520172709243,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.015865225537632702,
+            "lower": -0.023832007100132703,
+            "upper": 0.007898443975132702,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02575775454650944,
+            "lower": -0.03372453610900944,
+            "upper": 0.01779097298400944,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.0071204453125,
+          "standardError": 0.009988249963530371,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.019764944145330778,
+            "lower": -0.02688538945783078,
+            "upper": 0.012644498832830777,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.03208908557355834,
+            "lower": -0.039209530886058344,
+            "upper": 0.024968640261058342,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-7e3b13415b18a2e9-63",
+      "kind": "reply",
+      "roll": "63",
+      "source": "https://www.extremegammon.com/OB/Replies_to_42P.html",
+      "previousMove": "24/18 18/15",
+      "xgMove": "24/18 13/10",
+      "referenceGap": -0.0020000000000000018,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.0008416735156250008,
+            "standardError": 0.0010537381949343038,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.002085157724598715,
+              "lower": -0.0012434842089737142,
+              "upper": 0.002926831240223716,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.003516340207555398,
+              "lower": -0.002674666691930397,
+              "upper": 0.004358013723180398,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,1,0,-2,0,-4,0,-2,0,0,1,0,0,0,0",
+              "move": "24/18 18/15",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.311562333515625,
+              "standardError": 0.000729246098793397,
+              "cubeless": -0.22006466296875,
+              "probabilities": [
+                0.43576528453125,
+                0.096883575,
+                0.00384310984375,
+                0.18527543703125,
+                0.007046524453125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-2,1,-4,0,-2,0,0,1,0,0,0,0",
+              "move": "24/18 13/10",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.31240400703125,
+              "standardError": 0.000772119963842911,
+              "cubeless": -0.21735354578125,
+              "probabilities": [
+                0.43633294390625,
+                0.11095297703125,
+                0.00559314390625,
+                0.196623072734375,
+                0.00994237625
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,1,0,-2,0,-4,0,-2,0,0,1,0,0,0,0",
+          "bestMove": "24/18 18/15",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.008172211015624995,
+            "standardError": 0.007484060519355973,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014809605154601344,
+              "lower": -0.02298181617022634,
+              "upper": 0.006637394138976349,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.024974422533511814,
+              "lower": -0.03314663354913681,
+              "upper": 0.01680221151788682,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,1,0,-2,0,-4,0,-2,0,0,1,0,0,0,0",
+              "move": "24/18 18/15",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.31509087546875,
+              "standardError": 0.004666556144185196,
+              "cubeless": -0.22317712812499998,
+              "probabilities": [
+                0.434661247265625,
+                0.0999434671875,
+                0.00481469296875,
+                0.18952861421875,
+                0.007684620390625
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-2,1,-4,0,-2,0,0,1,0,0,0,0",
+              "move": "24/18 13/10",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.306918664453125,
+              "standardError": 0.005182343215473842,
+              "cubeless": -0.21724580062499999,
+              "probabilities": [
+                0.43739366953125,
+                0.114218228984375,
+                0.00616659453125,
+                0.201680304453125,
+                0.010717190234375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-2,1,-4,0,-2,0,0,1,0,0,0,0",
+          "bestMove": "24/18 13/10",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.004505891406250002,
+            "standardError": 0.007151065724375375,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014150668549339303,
+              "lower": -0.018656559955589305,
+              "upper": 0.009644777143089301,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.023863213893523257,
+              "lower": -0.02836910529977326,
+              "upper": 0.019357322487273253,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,1,0,-2,0,-4,0,-2,0,0,1,0,0,0,0",
+              "move": "24/18 18/15",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.315738554375,
+              "standardError": 0.005046002679562698,
+              "cubeless": -0.2233148790625,
+              "probabilities": [
+                0.43367938578125,
+                0.09787926796875,
+                0.00459658859375,
+                0.1859528928125,
+                0.00717733046875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-2,1,-4,0,-2,0,0,1,0,0,0,0",
+              "move": "24/18 13/10",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.31123266296875,
+              "standardError": 0.005346783457874067,
+              "cubeless": -0.220352191328125,
+              "probabilities": [
+                0.435719764375,
+                0.1126490275,
+                0.0062156325,
+                0.20070497578125,
+                0.009946673359375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-2,1,-4,0,-2,0,0,1,0,0,0,0",
+          "bestMove": "24/18 13/10",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.009013884531249997,
+          "standardError": 0.007428928008095801,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.01470050786432248,
+            "lower": -0.02371439239557248,
+            "upper": 0.005686623333072483,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.023866794227417578,
+            "lower": -0.03288067875866758,
+            "upper": 0.014852909696167581,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": 0.0036663196093749935,
+          "standardError": 0.00937274430155506,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.018546969517693707,
+            "lower": -0.014880649908318715,
+            "upper": 0.0222132891270687,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.03011166070631419,
+            "lower": -0.026445341096939197,
+            "upper": 0.03377798031568918,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-373d2637d6cfda5b-44",
+      "kind": "reply",
+      "roll": "44",
+      "source": "https://www.extremegammon.com/OB/Replies_to_43D.html",
+      "previousMove": "13/9 13/9 24/20 20/16",
+      "xgMove": "13/9 13/9 24/20 24/20",
+      "referenceGap": -0.009099999999999997,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.008901553281250002,
+            "standardError": 0.001239412362295342,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0024525733940624584,
+              "lower": 0.0064489798871875436,
+              "upper": 0.011354126675312461,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.004135937697078584,
+              "lower": 0.004765615584171418,
+              "upper": 0.013037490978328587,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,1,-3,0,-5,0,0,0,0,1,0,1,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.411883570859375,
+              "standardError": 0.000856830994724751,
+              "cubeless": 0.27928215265625,
+              "probabilities": [
+                0.593681568125,
+                0.18782298578125,
+                0.01446299421875,
+                0.105970901796875,
+                0.004396105234375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,-1,-3,0,-5,2,0,0,0,0,0,0,0,0",
+              "move": "13/9 13/9 24/20 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.402982017578125,
+              "standardError": 0.0007990148691561286,
+              "cubeless": 0.27176285734375,
+              "probabilities": [
+                0.590486242421875,
+                0.16043064101562501,
+                0.006222378984375,
+                0.073773800625,
+                0.002088831796875
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,1,-3,0,-5,0,0,0,0,1,0,1,0,0",
+          "bestMove": "13/9 13/9 24/20 20/16",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.0015851862499999955,
+            "standardError": 0.007109910349135748,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014069229488857096,
+              "lower": -0.01565441573885709,
+              "upper": 0.012484043238857101,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.02372587778726097,
+              "lower": -0.025311064037260966,
+              "upper": 0.022140691537260976,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,1,-3,0,-5,0,0,0,0,1,0,1,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.4150724040625,
+              "standardError": 0.005536355092585112,
+              "cubeless": 0.283256526328125,
+              "probabilities": [
+                0.593398478671875,
+                0.195061218671875,
+                0.015429318046875,
+                0.109255980859375,
+                0.004778334453125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,-1,-3,0,-5,2,0,0,0,0,0,0,0,0",
+              "move": "13/9 13/9 24/20 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.4166575903125,
+              "standardError": 0.004555808177093355,
+              "cubeless": 0.2821673159375,
+              "probabilities": [
+                0.59376928546875,
+                0.165429547890625,
+                0.00665878296875,
+                0.074538014375,
+                0.0029479240625
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,-1,-3,0,-5,2,0,0,0,0,0,0,0,0",
+          "bestMove": "13/9 13/9 24/20 24/20",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.0071789263281250015,
+            "standardError": 0.007240443440071348,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.01432753091912563,
+              "lower": -0.02150645724725063,
+              "upper": 0.007148604591000628,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.024161468675282214,
+              "lower": -0.03134039500340721,
+              "upper": 0.016982542347157212,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,1,-3,0,-5,0,0,0,0,1,0,1,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.41491974234375,
+              "standardError": 0.00623203678219988,
+              "cubeless": 0.2807367740625,
+              "probabilities": [
+                0.594965535390625,
+                0.18738254421875,
+                0.012998395078125,
+                0.1051219675,
+                0.0044697284375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,-1,-3,0,-5,2,0,0,0,0,0,0,0,0",
+              "move": "13/9 13/9 24/20 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.422098668671875,
+              "standardError": 0.004635483165584413,
+              "cubeless": 0.281928217734375,
+              "probabilities": [
+                0.594197746015625,
+                0.16365293609375,
+                0.00623262109375,
+                0.07350082140625,
+                0.002845948125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,0,-1,2,-3,0,-5,0,0,0,0,0,0,1,0,0",
+              "move": "24/20 20/16 24/20 20/16",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": 0.409393017421875,
+              "standardError": 0.007833249093892082,
+              "cubeless": 0.260576842421875,
+              "probabilities": [
+                0.601907956796875,
+                0.153186638984375,
+                0.00962969109375,
+                0.10246363375,
+                0.003598407578125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,2,0,0,-3,3,0,-1,-1,-3,0,-5,2,0,0,0,0,0,0,0,0",
+          "bestMove": "13/9 13/9 24/20 24/20",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.010486739531249997,
+          "standardError": 0.007096197557723795,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.014042094349335817,
+            "lower": -0.024528833880585812,
+            "upper": 0.0035553548180858197,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.022797836608825693,
+            "lower": -0.03328457614007569,
+            "upper": 0.012311097077575696,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.005593740078125005,
+          "standardError": 0.008786096221978172,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.017386098837830943,
+            "lower": -0.02297983891595595,
+            "upper": 0.011792358759705936,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.028226946117087724,
+            "lower": -0.03382068619521273,
+            "upper": 0.022633206038962718,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-b5499d9c6482f1a7-61",
+      "kind": "reply",
+      "roll": "61",
+      "source": "https://www.extremegammon.com/OB/Replies_to_43S.html",
+      "previousMove": "13/7 8/7",
+      "xgMove": "24/18 6/5",
+      "referenceGap": -0.004400000000000015,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.00639916953125,
+            "standardError": 0.0009699346868343924,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0019193257056939665,
+              "lower": 0.004479843825556034,
+              "upper": 0.008318495236943967,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0032366866403955924,
+              "lower": 0.003162482890854408,
+              "upper": 0.009635856171645592,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,-1,5,2,2,0,0,0,-4,4,0,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/7 8/7",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.1446976065625,
+              "standardError": 0.0007588384621036957,
+              "cubeless": -0.101700711640625,
+              "probabilities": [
+                0.465612971640625,
+                0.114498402109375,
+                0.00418076578125,
+                0.14515026421875,
+                0.0064555084375
+              ]
+            },
+            {
+              "board": "-1,0,0,0,1,4,0,3,0,0,0,-4,5,0,-1,0,-3,1,-5,0,0,0,0,1,0,1,0,0",
+              "move": "24/18 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.15109677609375,
+              "standardError": 0.0008016419475885253,
+              "cubeless": -0.112400646875,
+              "probabilities": [
+                0.472144678046875,
+                0.11468580578125,
+                0.005506790703125,
+                0.16804006,
+                0.00884255453125
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,-1,5,2,2,0,0,0,-4,4,0,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "bestMove": "13/7 8/7",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.005291315703125,
+            "standardError": 0.007206741451927451,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014260840766628155,
+              "lower": -0.008969525063503157,
+              "upper": 0.019552156469753154,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.024049004633877387,
+              "lower": -0.018757688930752386,
+              "upper": 0.029340320337002387,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,-1,5,2,2,0,0,0,-4,4,0,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/7 8/7",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.144095133515625,
+              "standardError": 0.005447505025995354,
+              "cubeless": -0.0996413140625,
+              "probabilities": [
+                0.4669776515625,
+                0.11743619109375,
+                0.0051105759375,
+                0.148703569609375,
+                0.007434315390625
+              ]
+            },
+            {
+              "board": "-1,0,0,0,1,4,0,3,0,0,0,-4,5,0,-1,0,-3,1,-5,0,0,0,0,1,0,1,0,0",
+              "move": "24/18 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.14938644921875,
+              "standardError": 0.005548372081637606,
+              "cubeless": -0.109428162890625,
+              "probabilities": [
+                0.473083363359375,
+                0.119681141328125,
+                0.006346413828125,
+                0.172707131640625,
+                0.008868858984375
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,-1,5,2,2,0,0,0,-4,4,0,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "bestMove": "13/7 8/7",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.007951708906249999,
+            "standardError": 0.006438227042222016,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.012740089440002269,
+              "lower": -0.020691798346252267,
+              "upper": 0.00478838053375227,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.021484460488164416,
+              "lower": -0.029436169394414416,
+              "upper": 0.013532751581914417,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,-1,5,2,2,0,0,0,-4,4,0,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/7 8/7",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.15130084765625,
+              "standardError": 0.004937269637310288,
+              "cubeless": -0.100833912734375,
+              "probabilities": [
+                0.46568710515625,
+                0.115655943984375,
+                0.004873066484375,
+                0.145720012421875,
+                0.006998140546875
+              ]
+            },
+            {
+              "board": "-1,0,0,0,1,4,0,3,0,0,0,-4,5,0,-1,0,-3,1,-5,0,0,0,0,1,0,1,0,0",
+              "move": "24/18 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.14334913875,
+              "standardError": 0.005399329250413553,
+              "cubeless": -0.1089237903125,
+              "probabilities": [
+                0.47271579390625,
+                0.11849859,
+                0.0060011190625,
+                0.1698187578125,
+                0.009040948359375
+              ]
+            },
+            {
+              "board": "-1,0,0,0,1,4,1,3,0,0,0,-4,4,0,-1,0,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/7 6/5",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.155021743046875,
+              "standardError": 0.006580892079790373,
+              "cubeless": -0.1119697040625,
+              "probabilities": [
+                0.46770457984375,
+                0.126619140390625,
+                0.006660179140625,
+                0.168355660703125,
+                0.012285759765625
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,1,4,0,3,0,0,0,-4,5,0,-1,0,-3,1,-5,0,0,0,0,1,0,1,0,0",
+          "bestMove": "24/18 6/5",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.0011078538281250007,
+          "standardError": 0.007259494872268229,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.014365230265320888,
+            "lower": -0.015473084093445888,
+            "upper": 0.013257376437195888,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.023322459192309426,
+            "lower": -0.024430313020434427,
+            "upper": 0.022214605364184424,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.013243024609375,
+          "standardError": 0.008809428754055788,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.017432269708100214,
+            "lower": -0.03067529431747521,
+            "upper": 0.004189245098725215,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.028301906157256942,
+            "lower": -0.04154493076663194,
+            "upper": 0.015058881547881943,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-cf59cb9355405192-51",
+      "kind": "reply",
+      "roll": "51",
+      "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+      "previousMove": "13/8 24/23",
+      "xgMove": "13/8 6/5",
+      "referenceGap": -0.006599999999999995,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.003941685312499999,
+            "standardError": 0.0008920276514289042,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0017651617421427855,
+              "lower": 0.002176523570357214,
+              "upper": 0.005706847054642784,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.002976709691315902,
+              "lower": 0.0009649756211840975,
+              "upper": 0.0069183950038159015,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.23505693203125,
+              "standardError": 0.0006719548626568431,
+              "cubeless": -0.16101923140625,
+              "probabilities": [
+                0.445278834453125,
+                0.114360064765625,
+                0.00449035828125,
+                0.164075778671875,
+                0.006351405390625
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.23899861734375,
+              "standardError": 0.0007294473115070804,
+              "cubeless": -0.16179425203125,
+              "probabilities": [
+                0.44573524953125,
+                0.118284414375,
+                0.004759201640625,
+                0.16680647203125,
+                0.009501755234375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,1,1,0,0,0,0",
+          "bestMove": "13/8 24/23",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.005046602578124999,
+            "standardError": 0.006035504964223729,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.01194317512500306,
+              "lower": -0.01698977770312806,
+              "upper": 0.006896572546878061,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.020140570855859755,
+              "lower": -0.025187173433984755,
+              "upper": 0.015093968277734755,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.240987642109375,
+              "standardError": 0.0048551442776946065,
+              "cubeless": -0.160835574921875,
+              "probabilities": [
+                0.44522934484375,
+                0.118739446015625,
+                0.005304267734375,
+                0.167917192421875,
+                0.007412092734375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.23594103953125,
+              "standardError": 0.004913538686896815,
+              "cubeless": -0.15768948546875,
+              "probabilities": [
+                0.447661556640625,
+                0.1228966628125,
+                0.005702766171875,
+                0.17121365171875,
+                0.010394193828125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/8 6/5",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.010630431484375001,
+            "standardError": 0.006911694312922254,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.01367699572430643,
+              "lower": -0.024307427208681433,
+              "upper": 0.0030465642399314288,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.023064427892713665,
+              "lower": -0.033694859377088666,
+              "upper": 0.012433996408338664,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.248401038203125,
+              "standardError": 0.004806496054074031,
+              "cubeless": -0.163697629296875,
+              "probabilities": [
+                0.443146120078125,
+                0.118465947109375,
+                0.00515951078125,
+                0.16699720234375,
+                0.006610565078125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.23777060671875,
+              "standardError": 0.005451010543389953,
+              "cubeless": -0.159053708515625,
+              "probabilities": [
+                0.4462595965625,
+                0.120611926171875,
+                0.00541523484375,
+                0.168192765859375,
+                0.00940718625
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,1,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/8 6/5",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.008988287890624998,
+          "standardError": 0.006050479766716206,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.011972807556703493,
+            "lower": -0.020961095447328493,
+            "upper": 0.002984519666078494,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.019438276345120156,
+            "lower": -0.028426564235745154,
+            "upper": 0.010449988454495157,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.005583828906250001,
+          "standardError": 0.008559112824430903,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.016936939656711142,
+            "lower": -0.022520768562961143,
+            "upper": 0.01135311075046114,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02749772030733467,
+            "lower": -0.03308154921358467,
+            "upper": 0.02191389140108467,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-cf59cb9355405192-52",
+      "kind": "reply",
+      "roll": "52",
+      "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+      "previousMove": "13/8 24/22",
+      "xgMove": "13/8 6/4",
+      "referenceGap": -0.00020000000000000573,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.007052099687499999,
+            "standardError": 0.0008842158789074121,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0017497036540766006,
+              "lower": 0.005302396033423399,
+              "upper": 0.008801803341576599,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.002950641688901591,
+              "lower": 0.004101457998598408,
+              "upper": 0.01000274137640159,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+              "move": "13/8 24/22",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.21905425109375,
+              "standardError": 0.0006870734226925236,
+              "cubeless": -0.15214978359375,
+              "probabilities": [
+                0.449029795078125,
+                0.1141185128125,
+                0.004640183203125,
+                0.162908651953125,
+                0.0060593753125
+              ]
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/4",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.22610635078125,
+              "standardError": 0.0007221564587082957,
+              "cubeless": -0.1539228209375,
+              "probabilities": [
+                0.446682681640625,
+                0.12248358390625,
+                0.0052886390625,
+                0.166245246484375,
+                0.008815255859375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+          "bestMove": "13/8 24/22",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.015823634296875,
+            "standardError": 0.006961098408675217,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.013774757514076731,
+              "lower": 0.0020488767827982687,
+              "upper": 0.02959839181095173,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.023229290103411918,
+              "lower": -0.007405655806536918,
+              "upper": 0.03905292440028692,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+              "move": "13/8 24/22",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.220334318828125,
+              "standardError": 0.004855974467526045,
+              "cubeless": -0.151693055234375,
+              "probabilities": [
+                0.449669099375,
+                0.117092556484375,
+                0.00524541390625,
+                0.1666279465625,
+                0.00678181296875
+              ]
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/4",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.236157953125,
+              "standardError": 0.005617707360419505,
+              "cubeless": -0.15371905328125,
+              "probabilities": [
+                0.447218045703125,
+                0.12513520265625,
+                0.006076343984375,
+                0.169550981953125,
+                0.00980787359375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+          "bestMove": "13/8 24/22",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": 0.013849359609375,
+            "standardError": 0.007169708912024928,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014187560053249374,
+              "lower": -0.00033820044387437333,
+              "upper": 0.028036919662624372,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.02392542649115356,
+              "lower": -0.010076066881778558,
+              "upper": 0.03777478610052856,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+              "move": "13/8 24/22",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.2216903240625,
+              "standardError": 0.004693053416387483,
+              "cubeless": -0.151492503125,
+              "probabilities": [
+                0.44899783625,
+                0.11805291546875,
+                0.0049427596875,
+                0.16580131484375,
+                0.0066401528125
+              ]
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/4",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.235539683671875,
+              "standardError": 0.005432213261434544,
+              "cubeless": -0.154581588359375,
+              "probabilities": [
+                0.44603005984375,
+                0.123557354375,
+                0.005704214921875,
+                0.16702688921875,
+                0.0088799359375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,1,-4,3,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 13/11",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.236631805625,
+              "standardError": 0.005549626991064513,
+              "cubeless": -0.161146343203125,
+              "probabilities": [
+                0.444261055859375,
+                0.12704280984375,
+                0.005846367890625,
+                0.17282956671875,
+                0.00969742609375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+          "bestMove": "13/8 24/22",
+          "agrees": false
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": 0.008771534609375003,
+          "standardError": 0.00695059840990007,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.013753979911386114,
+            "lower": -0.004982445302011111,
+            "upper": 0.022525514520761118,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.022330072633052974,
+            "lower": -0.013558538023677971,
+            "upper": 0.031101607242427977,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.0019742746875000003,
+          "standardError": 0.00825014355894988,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.016325545238554444,
+            "lower": -0.018299819926054443,
+            "upper": 0.014351270551054444,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.0265050998547208,
+            "lower": -0.028479374542220798,
+            "upper": 0.0245308251672208,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-b8e5c0a16f0875b5-44",
+      "kind": "reply",
+      "roll": "44",
+      "source": "https://www.extremegammon.com/OB/Replies_to_62R.html",
+      "previousMove": "13/9 9/5 13/9 9/5",
+      "xgMove": "13/9 13/9 24/20 24/20",
+      "referenceGap": -0.008399999999999963,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.006906393046874999,
+            "standardError": 0.00100833981850852,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0019953225304835728,
+              "lower": 0.004911070516391426,
+              "upper": 0.008901715577358572,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0033648451425087418,
+              "lower": 0.003541547904366257,
+              "upper": 0.01027123818938374,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,2,5,0,3,0,0,0,-5,3,0,0,0,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/9 9/5 13/9 9/5",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.51313128203125,
+              "standardError": 0.0007739884925547795,
+              "cubeless": 0.346583149296875,
+              "probabilities": [
+                0.606712540546875,
+                0.21837001015625,
+                0.010747285625,
+                0.092357153125,
+                0.00360215359375
+              ]
+            },
+            {
+              "board": "-1,0,0,0,0,5,0,3,2,0,0,-5,3,0,0,0,-3,0,-5,2,0,0,0,0,0,1,0,0",
+              "move": "13/9 13/9 24/20 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.506224888984375,
+              "standardError": 0.0007732251482492166,
+              "cubeless": 0.338967825546875,
+              "probabilities": [
+                0.61793158765625,
+                0.16384505015625,
+                0.00611047078125,
+                0.0651184709375,
+                0.0017324659375
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,2,5,0,3,0,0,0,-5,3,0,0,0,-3,0,-5,0,0,0,0,2,0,1,0,0",
+          "bestMove": "13/9 9/5 13/9 9/5",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.006381393906249991,
+            "standardError": 0.007064325530882793,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.013979025360012262,
+              "lower": -0.020360419266262253,
+              "upper": 0.007597631453762271,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.023573760563032457,
+              "lower": -0.029955154469282447,
+              "upper": 0.017192366656782466,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,2,5,0,3,0,0,0,-5,3,0,0,0,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/9 9/5 13/9 9/5",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.50943329796875,
+              "standardError": 0.005354961935687718,
+              "cubeless": 0.3524902759375,
+              "probabilities": [
+                0.607581406875,
+                0.224645567109375,
+                0.010701221171875,
+                0.093856131953125,
+                0.004169533046875
+              ]
+            },
+            {
+              "board": "-1,0,0,0,0,5,0,3,2,0,0,-5,3,0,0,0,-3,0,-5,2,0,0,0,0,0,1,0,0",
+              "move": "13/9 13/9 24/20 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.515814691875,
+              "standardError": 0.0045874971387670676,
+              "cubeless": 0.34620122671875,
+              "probabilities": [
+                0.620113610390625,
+                0.168683337890625,
+                0.006433458046875,
+                0.0666541190625,
+                0.002471291640625
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,0,5,0,3,2,0,0,-5,3,0,0,0,-3,0,-5,2,0,0,0,0,0,1,0,0",
+          "bestMove": "13/9 13/9 24/20 24/20",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": -0.017835082109375,
+            "standardError": 0.006391070291482529,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.01264677474044585,
+              "lower": -0.03048185684982085,
+              "upper": -0.005188307368929151,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.021327097701582243,
+              "lower": -0.039162179810957244,
+              "upper": 0.0034920155922072427,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,2,5,0,3,0,0,0,-5,3,0,0,0,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/9 9/5 13/9 9/5",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.5035016740625,
+              "standardError": 0.005064020113539406,
+              "cubeless": 0.350928246953125,
+              "probabilities": [
+                0.608084716328125,
+                0.22164376734375,
+                0.0103277125,
+                0.092772832734375,
+                0.00446377421875
+              ]
+            },
+            {
+              "board": "-1,0,0,0,0,5,0,3,2,0,0,-5,3,0,0,0,-3,0,-5,2,0,0,0,0,0,1,0,0",
+              "move": "13/9 13/9 24/20 24/20",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.521336756171875,
+              "standardError": 0.00472341546651417,
+              "cubeless": 0.3500402203125,
+              "probabilities": [
+                0.6220516496875,
+                0.166819594375,
+                0.006142244765625,
+                0.06440491671875,
+                0.002620035546875
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,0,5,0,3,2,0,0,-5,3,0,0,0,-3,0,-5,2,0,0,0,0,0,1,0,0",
+          "bestMove": "13/9 13/9 24/20 24/20",
+          "agrees": true
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.013287786953124991,
+          "standardError": 0.006877766789325445,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.013609859277848966,
+            "lower": -0.02689764623097396,
+            "upper": 0.0003220723247239748,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02209608768938282,
+            "lower": -0.03538387464250781,
+            "upper": 0.008808300736257827,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.011453688203125008,
+          "standardError": 0.007909750686659603,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.015651969173392767,
+            "lower": -0.027105657376517774,
+            "upper": 0.004198280970267759,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.025411525299875427,
+            "lower": -0.036865213503000434,
+            "upper": 0.01395783709675042,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-d8b0ad29eebeddb9-33",
+      "kind": "reply",
+      "roll": "33",
+      "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+      "previousMove": "6/3 6/3 8/5 8/5",
+      "xgMove": "13/10 13/10 24/21 24/21",
+      "referenceGap": -0.00489999999999996,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.0035106657812500027,
+            "standardError": 0.0009035542555671606,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0017879708115803561,
+              "lower": 0.0017226949696696465,
+              "upper": 0.005298636592830358,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0030151741427164253,
+              "lower": 0.0004954916385335774,
+              "upper": 0.006525839923966428,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 8/5 8/5",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.27334057546875,
+              "standardError": 0.0008238480633658679,
+              "cubeless": 0.184613925390625,
+              "probabilities": [
+                0.5573485278125,
+                0.19846658046875,
+                0.009577575625,
+                0.131430423515625,
+                0.0066969409375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "13/10 13/10 24/21 24/21",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.2698299096875,
+              "standardError": 0.0007367689737959139,
+              "cubeless": 0.184811540078125,
+              "probabilities": [
+                0.558791043984375,
+                0.158295403828125,
+                0.0059872109375,
+                0.094582246328125,
+                0.00247090453125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+          "bestMove": "6/3 6/3 8/5 8/5",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": -0.0048185564062500005,
+            "standardError": 0.006542287807000743,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.012946006914142551,
+              "lower": -0.01776456332039255,
+              "upper": 0.00812745050789255,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.02183171282558511,
+              "lower": -0.02665026923183511,
+              "upper": 0.01701315641933511,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 8/5 8/5",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.264652627890625,
+              "standardError": 0.005233121048996412,
+              "cubeless": 0.18629242953125,
+              "probabilities": [
+                0.55875408859375,
+                0.20276706171875,
+                0.0108010403125,
+                0.136306391640625,
+                0.008477513671875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "13/10 13/10 24/21 24/21",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.269471184296875,
+              "standardError": 0.004445136123953993,
+              "cubeless": 0.18762531,
+              "probabilities": [
+                0.560484210078125,
+                0.162566838671875,
+                0.006553110859375,
+                0.09864007703125,
+                0.003774684921875
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+          "bestMove": "13/10 13/10 24/21 24/21",
+          "agrees": true
+        },
+        "full-strong": {
+          "gap": {
+            "difference": 0.0013232180468750005,
+            "standardError": 0.006829159275467757,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.013513673779894025,
+              "lower": -0.012190455733019023,
+              "upper": 0.014836891826769026,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.022789007231178816,
+              "lower": -0.021465789184303814,
+              "upper": 0.024112225278053817,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 8/5 8/5",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": 0.272321367578125,
+              "standardError": 0.005404881313539572,
+              "cubeless": 0.18873107671875,
+              "probabilities": [
+                0.560393698046875,
+                0.2002574115625,
+                0.010239020859375,
+                0.134820968125,
+                0.00773887046875
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "13/10 13/10 24/21 24/21",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": 0.27099814953125,
+              "standardError": 0.0050236435199017245,
+              "cubeless": 0.1897915225,
+              "probabilities": [
+                0.56133694703125,
+                0.159988133984375,
+                0.006595370078125,
+                0.095852216171875,
+                0.003613663046875
+              ]
+            },
+            {
+              "board": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "6/3 6/3 24/21 24/21",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": 0.25783313265625,
+              "standardError": 0.004711938533348167,
+              "cubeless": 0.173872724296875,
+              "probabilities": [
+                0.556494876171875,
+                0.15436302875,
+                0.00655032,
+                0.096540439296875,
+                0.003504201328125
+              ]
+            },
+            {
+              "board": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "8/5 8/5 24/21 24/21",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": 0.2412857490625,
+              "standardError": 0.0048786795334713005,
+              "cubeless": 0.171544053046875,
+              "probabilities": [
+                0.5502747190625,
+                0.16885352453125,
+                0.006682601796875,
+                0.10069987890625,
+                0.003850514375
+              ]
+            },
+            {
+              "board": "-2,0,2,0,0,3,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 13/10 13/10",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": 0.22916213125,
+              "standardError": 0.004914487215729895,
+              "cubeless": 0.15896599265625,
+              "probabilities": [
+                0.554384762265625,
+                0.184943761875,
+                0.009634424375,
+                0.137255135859375,
+                0.007126587578125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+          "bestMove": "6/3 6/3 8/5 8/5",
+          "agrees": false
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -0.008329222187500004,
+          "standardError": 0.006537619608324495,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.012936769391410117,
+            "lower": -0.02126599157891012,
+            "upper": 0.004607547203910113,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02100330246288192,
+            "lower": -0.02933252465038192,
+            "upper": 0.012674080275381914,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": 0.006141774453125001,
+          "standardError": 0.008598284137533892,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.017014452616279305,
+            "lower": -0.010872678163154303,
+            "upper": 0.023156227069404307,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02762356533752314,
+            "lower": -0.02148179088439814,
+            "upper": 0.03376533979064814,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-ea77bd807985fd53-21",
+      "kind": "reply",
+      "roll": "21",
+      "source": "https://www.extremegammon.com/OB/Replies_to_64S.html",
+      "previousMove": "24/22 8/7",
+      "xgMove": "13/11 8/7",
+      "referenceGap": -0.003599999999999992,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.005348764921875,
+            "standardError": 0.0008325888327512544,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0016475430466237806,
+              "lower": 0.003701221875251219,
+              "upper": 0.0069963079684987805,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.002778361459268714,
+              "lower": 0.002570403462606286,
+              "upper": 0.008127126381143714,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+              "move": "24/22 8/7",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.12438730265625,
+              "standardError": 0.0006668748400150675,
+              "cubeless": -0.09254563046875,
+              "probabilities": [
+                0.46976657203125,
+                0.12276016953125,
+                0.0052781571875,
+                0.152948313984375,
+                0.007168679765625
+              ]
+            },
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/11 8/7",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.129736067578125,
+              "standardError": 0.0007761203589557044,
+              "cubeless": -0.0962291728125,
+              "probabilities": [
+                0.471240658671875,
+                0.130094698828125,
+                0.005989972265625,
+                0.163996138125,
+                0.010799004609375
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+          "bestMove": "24/22 8/7",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.005259299453125001,
+            "standardError": 0.00826008693193385,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.016345221379255963,
+              "lower": -0.011085921926130962,
+              "upper": 0.021604520832380965,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.027564034345810874,
+              "lower": -0.022304734892685873,
+              "upper": 0.03282333379893587,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+              "move": "24/22 8/7",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.130044157890625,
+              "standardError": 0.005217815864251847,
+              "cubeless": -0.090160467265625,
+              "probabilities": [
+                0.471014604453125,
+                0.128719365546875,
+                0.005874202734375,
+                0.158819388203125,
+                0.00796376703125
+              ]
+            },
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/11 8/7",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.13530345734375,
+              "standardError": 0.0058604297865101065,
+              "cubeless": -0.094965593515625,
+              "probabilities": [
+                0.473111427265625,
+                0.134075532890625,
+                0.006930448671875,
+                0.17015380109375,
+                0.0120637815625
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+          "bestMove": "24/22 8/7",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": 0.001869914374999999,
+            "standardError": 0.006867467597437298,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.013589479035749046,
+              "lower": -0.011719564660749048,
+              "upper": 0.015459393410749044,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.022916842677851483,
+              "lower": -0.021046928302851483,
+              "upper": 0.024786757052851483,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+              "move": "24/22 8/7",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.1297930584375,
+              "standardError": 0.005304356929273059,
+              "cubeless": -0.089455504140625,
+              "probabilities": [
+                0.470525656953125,
+                0.126017136796875,
+                0.006129718984375,
+                0.155183992890625,
+                0.007394728671875
+              ]
+            },
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/11 8/7",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.1316629728125,
+              "standardError": 0.005407346185281223,
+              "cubeless": -0.09386502828125,
+              "probabilities": [
+                0.472762174296875,
+                0.132127303125,
+                0.006250463515625,
+                0.166916343203125,
+                0.0108111909375
+              ]
+            }
+          ],
+          "bestBoard": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+          "bestMove": "24/22 8/7",
+          "agrees": false
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": -8.946546874999872e-05,
+          "standardError": 0.008158466343254662,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.016144132573249564,
+            "lower": -0.016233598041999562,
+            "upper": 0.016054667104499567,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.026210569979083845,
+            "lower": -0.026300035447833842,
+            "upper": 0.026121104510333847,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.003389385078125002,
+          "standardError": 0.011092207203278763,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.02194947629682174,
+            "lower": -0.02533886137494674,
+            "upper": 0.01856009121869674,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.035635750751660714,
+            "lower": -0.039025135829785715,
+            "upper": 0.03224636567353571,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    },
+    {
+      "id": "reply-2fda09c519d84905-32",
+      "kind": "reply",
+      "roll": "32",
+      "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+      "previousMove": "13/10 13/11",
+      "xgMove": "13/10 6/4",
+      "referenceGap": -0.010899999999999993,
+      "policies": {
+        "short": {
+          "gap": {
+            "difference": 0.0038108455468749995,
+            "standardError": 0.0010159681714522462,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.0020104176643062272,
+              "lower": 0.0018004278825687722,
+              "upper": 0.005821263211181227,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.0033903010710329235,
+              "lower": 0.00042054447584207594,
+              "upper": 0.007201146617907923,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 13/11",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.20801906210937499,
+              "standardError": 0.0007551762606381758,
+              "cubeless": -0.1439035978125,
+              "probabilities": [
+                0.452308304375,
+                0.13205172976562501,
+                0.005920228046875,
+                0.175239524765625,
+                0.011252789140625
+              ]
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 6/4",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.21182990765625,
+              "standardError": 0.0007683520914020773,
+              "cubeless": -0.147101487109375,
+              "probabilities": [
+                0.455754030546875,
+                0.127199785546875,
+                0.005579604140625,
+                0.178417298515625,
+                0.0129715753125
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/10 13/11",
+          "agrees": false
+        },
+        "full-matched": {
+          "gap": {
+            "difference": 0.004212575624999999,
+            "standardError": 0.007104398302791331,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.014058322143874575,
+              "lower": -0.009845746518874576,
+              "upper": 0.018270897768874576,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.02370748400569363,
+              "lower": -0.01949490838069363,
+              "upper": 0.02792005963069363,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 13/11",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.211276781640625,
+              "standardError": 0.005170330032397625,
+              "cubeless": -0.144063633046875,
+              "probabilities": [
+                0.454057700703125,
+                0.13514441015625,
+                0.006227151875,
+                0.181160209453125,
+                0.012390530859375
+              ]
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 6/4",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.215489357265625,
+              "standardError": 0.005764718804380181,
+              "cubeless": -0.145602072578125,
+              "probabilities": [
+                0.456993118125,
+                0.13226691515625,
+                0.00638723859375,
+                0.18403520515625,
+                0.014151913359375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/10 13/11",
+          "agrees": false
+        },
+        "full-strong": {
+          "gap": {
+            "difference": 0.00020643570312500043,
+            "standardError": 0.00783681387213102,
+            "batches": 128,
+            "interval95": {
+              "halfWidth": 0.015507640380004597,
+              "lower": -0.015301204676879596,
+              "upper": 0.015714076083129597,
+              "criticalValue": 1.9788195347030353
+            },
+            "familywise95": {
+              "halfWidth": 0.026151565778082357,
+              "lower": -0.025945130074957357,
+              "upper": 0.026358001481207358,
+              "criticalValue": 3.337015042692485
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 13/11",
+              "role": "previous-choice",
+              "samples": 4096,
+              "equity": -0.218337849375,
+              "standardError": 0.005053471598255015,
+              "cubeless": -0.14623460578125,
+              "probabilities": [
+                0.4530131665625,
+                0.134624390859375,
+                0.00640110171875,
+                0.181254843984375,
+                0.012031672265625
+              ]
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 6/4",
+              "role": "xg-choice",
+              "samples": 4096,
+              "equity": -0.218544285078125,
+              "standardError": 0.005888456347747253,
+              "cubeless": -0.147346964609375,
+              "probabilities": [
+                0.45639591109375,
+                0.13000627203125,
+                0.005951455625,
+                0.18337065640625,
+                0.012712821484375
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,1,0,1,0,0,0,0",
+              "move": "13/10 24/22",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.223872533828125,
+              "standardError": 0.005448101094496606,
+              "cubeless": -0.15226673140625,
+              "probabilities": [
+                0.452017616875,
+                0.120453802109375,
+                0.005867782265625,
+                0.174513053125,
+                0.008116801640625
+              ]
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+              "move": "24/21 13/11",
+              "role": "other-retained",
+              "samples": 4096,
+              "equity": -0.21441552,
+              "standardError": 0.005715877298922743,
+              "cubeless": -0.149092548515625,
+              "probabilities": [
+                0.45497072359375,
+                0.116523879765625,
+                0.005341506484375,
+                0.172626326640625,
+                0.0082762809375
+              ]
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+          "bestMove": "24/21 13/11",
+          "agrees": false
+        }
+      },
+      "effects": {
+        "cutoff": {
+          "before": "short",
+          "after": "full-matched",
+          "difference": 0.0004017300781249996,
+          "standardError": 0.007023584020404158,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.01389840526320383,
+            "lower": -0.01349667518507883,
+            "upper": 0.014300135341328828,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02256455229762439,
+            "lower": -0.02216282221949939,
+            "upper": 0.022966282375749388,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        },
+        "checker": {
+          "before": "full-matched",
+          "after": "full-strong",
+          "difference": -0.004006139921874999,
+          "standardError": 0.00894306831330564,
+          "batches": 128,
+          "interval95": {
+            "halfWidth": 0.017696718278552927,
+            "lower": -0.021702858200427926,
+            "upper": 0.013690578356677929,
+            "criticalValue": 1.9788195347030353
+          },
+          "familywise95": {
+            "halfWidth": 0.02873124776048464,
+            "lower": -0.032737387682359634,
+            "upper": 0.02472510783860964,
+            "criticalValue": 3.2126834721521504
+          },
+          "direction": "unresolved"
+        }
+      }
+    }
+  ],
+  "inputSHA256": "456973550196744eb2f4dac83fb542831da682e46ad9fcf0376e44698715749e",
+  "rawSHA256": "f5b36a762c609bd40c62d98ebd0d7b5b44488f5c7ca60623ab9660274df8b800",
+  "build": {
+    "ablationPatchSHA256": "95c0cdabf24884df7a1d6f602ee8b38d95e60cc5343240929b4a0508400b671f",
+    "archive": "gnubg-core-955555c-bg6.tar.gz",
+    "archiveSHA256": "bf6aac810e16ef6b3980a93fb7975c51367bb89658d0d6344dda6890501c6ba4",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+    "flags": "-O3 -ffp-contract=off -Isrc -Isrc/lib -Wno-unused-parameter -DBG_NATIVE_NEON -DBG_ABLATION",
+    "architecture": "arm64",
+    "neon": true,
+    "binarySHA256": "6f42770f62d7f752da2e836bbb8eb9452f1acd4fe274d69a131b1a0118973877",
+    "inputs": {
+      "build-rollout-native.mjs": "8306363250a712571bb7006faea8718c931d5d17dedc5afe7b8197f37b539115",
+      "rollout-native.c": "4c4799fd9f16b7bee5f69fd6bf32cca96b8064d1f4be068c3bac8b1cb341d2b8",
+      "deep-book-neon.h": "c1b6d5b05fab41bb28f235ff5f12e6f1dbb27b04691ae0f9a90706ae435f3153"
+    },
+    "orderPatchSHA256": "3d84d68e7dafbdc40bd3b009ffe7931653a6efefc8b66ec6068e0747019090ad",
+    "bridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+    "builtAt": "2026-10-20T23:11:40.881Z"
+  },
+  "sourceSHA256": "350c3d8c669c4ced17b6a7bef57012b6f0e1567ea7512b89ec96a7f5e946636c"
+}

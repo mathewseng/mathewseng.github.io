@@ -9,21 +9,26 @@ export async function renderFullgamePrecision(target,{json,table,link,measured,d
   const effects={cutoff:'Remove the five-turn cutoff',checker:'Strengthen late checker play'},directions={'toward-XG':'Shift toward XG','away-from-XG':'Shift away from XG',unresolved:'Unresolved shift'};
   const opening=confirmation.rows[0],strong=opening.policies['full-strong'],retained=strong.retainedReferenceGaps;
   if(retained?.length!==3||strong.candidates.length!==4)throw Error('Opening alternatives are incomplete.');
+  const openingResolved=retained.every(g=>g.familywise95.lower>0);
+  const openingCauses=Object.entries(opening.effects).filter(([,e])=>e.familywise95.upper<0).map(([id])=>id==='cutoff'?'removing the five-turn cutoff':'maintaining 2-ply checker play');
   const base=report.summaries.short,next=report.summaries['full-strong'];
+  const replies=report.rows.filter(r=>r.kind==='reply'),replyMatches=replies.filter(r=>r.policies['full-strong'].agrees).length;
   const cohortAccepted=next.meanAbsoluteGapError<base.meanAbsoluteGapError&&next.pairMeanFavorsXG>=base.pairMeanFavorsXG&&Object.values(report.cohortEffects).some(e=>e.familywise95.upper<0);
   const openingAccepted=retained.every(g=>g.familywise95.lower>0)&&Math.abs(strong.gap.difference-opening.referenceGap)<Math.abs(opening.policies.short.gap.difference-opening.referenceGap)&&Object.values(opening.effects).some(e=>e.familywise95.upper<0);
   const adopted=book.fullgame?.experimentSignature===report.signature;
   const outcome=adopted?`The published book adopted Full/strong for ${book.fullgame.positions} positions and ${book.fullgame.candidates} retained moves. Opening 2–1 uses all four 32,768-trial estimates; ${book.fullgame.positions-1} reply entries were updated with 4,096 trials. This cohort update does not imply every individual preference is resolved.`:
    cohortAccepted||openingAccepted?'The study meets a recorded publication rule, but the published-book validation in this snapshot does not yet show its adoption.':'Neither recorded publication rule qualifies. The book retains its earlier estimates; these data do not justify claiming an accuracy fix.';
   let selected='cutoff';const detail=el('div',{});
-  const draw=()=>detail.replaceChildren(table(['Position','Previous choice / XG choice','Gap before','Gap after','Change in gap','Simultaneous 95% interval','Effect'],report.rows.map(r=>{
+  const draw=()=>detail.replaceChildren(table(['Position','Previous choice / XG choice','Gap before','Gap after','Change in gap','Simultaneous 95% interval','Effect','Full/strong sampled leader'],report.rows.map(r=>{
    const e=r.effects[selected],name=r.kind==='opening'?`Opening ${r.roll}`:`${new URL(r.source).pathname.split('/').at(-1).replace('Replies_to_','After ').replace('.html','')} · ${r.roll}`;
-   return [link(name,r.source),`${r.previousMove} / ${r.xgMove}`,number(r.policies[e.before].gap.difference),number(r.policies[e.after].gap.difference),number(e.difference),interval(e),directions[e.direction]];
+   return [link(name,r.source),`${r.previousMove} / ${r.xgMove}`,number(r.policies[e.before].gap.difference),number(r.policies[e.after].gap.difference),number(e.difference),interval(e),directions[e.direction],r.policies['full-strong'].bestMove];
   }),'Precision cohort effects · negative changes shift the fixed-pair preference toward XG'));
   target.append(
    measured('Pinned GNUbg · independent precision studies',report.recordedAt),
    el('p',{},`${report.totalTrials.toLocaleString()} fresh trials across the original 15 positions, plus ${confirmation.totalTrials.toLocaleString()} independent opening-21 trials. The previous experiment failed its acceptance criteria and remains unchanged. These studies use new fixed samples and exclude every earlier seed; their results are not pooled with earlier estimates.`),
    el('p',{'data-publication-result':true},outcome),
+   el('p',{},`Full/strong lowers the sampled mean absolute fixed-pair gap difference from XG by ${(100*(1-next.meanAbsoluteGapError/base.meanAbsoluteGapError)).toFixed(1)}%. ${replyMatches} of the ${replies.length} reply choices now match XG; ${replies.length-replyMatches} retain different sampled leaders. Individual reply preferences remain uncertain. The final column below shows every retained-set leader, including third-move alternatives that are not tested by the fixed-pair intervals.`),
+   el('p',{},openingResolved?`Opening 2–1 resolves in favor of ${opening.xgMove} under Full/strong: it leads all three other retained moves under the planned simultaneous intervals. ${openingCauses.length?`The controlled opening effects support ${openingCauses.join(' and ')} as contributors to the change.`:'The separate cutoff and checker effects remain unresolved.'}`:'The independent opening comparison does not resolve the XG move against every retained alternative.'),
    table(['Policy','XG leads the fixed pair','Clear preference against XG','Clear preference for XG','Unresolved pairs','Mean absolute gap difference from XG'],Object.entries(names).map(([id,label])=>{
     const s=report.summaries[id];return [label,`${s.pairMeanFavorsXG} / 15`,s.classifications.persistent,s.classifications.reversed,s.classifications.unresolved,s.meanAbsoluteGapError.toFixed(5)];
    }),'Same 15 selected disagreements · 4,096 trials per move/policy · gap intervals form a 45-comparison family'),
