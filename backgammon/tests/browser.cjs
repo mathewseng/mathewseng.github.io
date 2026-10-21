@@ -596,6 +596,12 @@ const server = http.createServer((req, res) => {
         (report.rolloutDiagnostic ||= []).push(
           await run("rollout-diagnostic", browser, base, out, browserName),
         );
+        (report.fullgameAblation ||= []).push(
+          await run("fullgame-ablation", browser, base, out, browserName),
+        );
+        (report.fullgamePrecision ||= []).push(
+          await run("fullgame-precision", browser, base, out, browserName),
+        );
         (report.deepOpeningBook ||= []).push(
           await run("deep-opening-book", browser, base, out, browserName),
         );

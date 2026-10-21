@@ -24,13 +24,13 @@ module.exports=async function(browser,base,out,name){
     const fallback=await client.analyze(states[0],{preset:'auto',submitted:missing.steps});
     if(fallback.method==='rollout'||fallback.settings.plies!==5||!fallback.actual||fallback.candidates.length!==r.legalTurns(states[0]).length)throw Error('Unlisted opening must get one full five-ply comparison');
     if(Math.abs(fallback.error-(fallback.candidates[0].equity-fallback.actual.equity))>1e-9)throw Error('Mixed-method fallback loss');
-    return {id:index.id,positions:states.length,samples:index.provenance.positions,states:[states[0],states.at(-1)],solverURL:shareURL(states[0])};
+    return {id:index.id,positions:states.length,samples:index.provenance.positions,states:[states[0],states.at(-1)],solverURL:shareURL(states[0]),solverPolicy:hint.settings.name};
    }finally{client.destroy();}
   });
   assert.equal(measured.positions,measured.samples);
   for(const width of [1366,390]){
    await page.setViewportSize({width,height:900});await page.goto(measured.solverURL);
-   await page.waitForFunction(()=>document.querySelector('#analyze')?.textContent==='Analyze'&&document.body.textContent.includes('Short/deep opening rollout'));
+   await page.waitForFunction(policy=>document.querySelector('#analyze')?.textContent==='Analyze'&&document.body.textContent.includes(policy),measured.solverPolicy);
    if(width<600)await page.locator('#panel-toggle').click();
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(out,`${name}-rollout-book-solver-${width}.png`),fullPage:true});

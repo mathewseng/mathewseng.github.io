@@ -3,6 +3,7 @@ import { el, button, select, field } from "../ui/shell.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
 import { startUpdates } from "../ui/updates.mjs";
 import { EngineClient } from "../engine/client.mjs";
+import { renderFullgamePrecision } from "./fullgame-precision.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -307,6 +308,7 @@ if ($('rollout-accuracy-content')) try {
   const [report,book]=await Promise.all([json('../data/rollout-policy-comparison.json'),json('../data/rollout-book-validation.json')]);
   if(!report.complete)throw Error('The rollout comparison is incomplete.');
   let cohort='opening';
+  const storedPolicySummary=Object.entries(book.storedPolicies??{'short-deep':{positions:book.coverage.sampled}}).map(([id,p])=>`${p.positions} ${id==='strong'?'full-game Strong':'Short/deep'}`).join(', ');
   const target=el('div',{}),detail=el('div',{}),policies=report.policies;
   const number=v=>Number.isFinite(v)?v.toFixed(5):'—';
   const draw=()=>{
@@ -326,7 +328,7 @@ if ($('rollout-accuracy-content')) try {
     field('Rollout comparison positions',select([['opening','All 15 openings'],['reply-disagreement','39 reply disagreements'],['reply-control','12 agreeing reply controls'],['all','All 66 decisions']],cohort,v=>{cohort=v;draw();})),target,
     el('p',{},'Basic simulates complete games with 0/0 checker/cube policies. Short/deep uses 2/2 for two simulated turns, then 1/2, and a two-ply endpoint after five turns. This independently implemented short-rollout method uses GNUbg’s evaluator and ply numbering.'),
     el('p',{},'*Clear leads and leader-gap intervals are unadjusted exploratory 95% comparisons across independent common-seed batches. They exclude model bias, screened-out alternatives and XG reference uncertainty. The largest interval is for a candidate’s EV, not its gap to another move. More agreement with XG does not prove exact play.'),
-    el('p',{},`The app uses these stored Short/deep estimates for ${book.coverage.sampled} decisions and retains five-ply estimates for the other ${book.coverage.fivePlyFallback} matched reference positions. Across the complete overlap, XG best-move agreement is ${book.summaries.opening.bestMoveAgreement}/${book.summaries.opening.positions} openings and ${book.summaries.reply.bestMoveAgreement}/${book.summaries.reply.positions} replies. Whole cohorts qualify only when they have no fewer matching choices and a smaller mean EV gap than their five-ply baseline. Unlisted moves receive a complete fallback comparison; rollout scores are not mixed with tree scores when grading.`),
+    el('p',{},`The tables above preserve the original Basic/Short-deep experiment. The current app uses stored rollout estimates for ${book.coverage.sampled} decisions (${storedPolicySummary}) and five-ply estimates for the other ${book.coverage.fivePlyFallback} matched reference positions. Current XG best-move agreement is ${book.summaries.opening.bestMoveAgreement}/${book.summaries.opening.positions} openings and ${book.summaries.reply.bestMoveAgreement}/${book.summaries.reply.positions} replies. The initial Short/deep cohorts qualified against their five-ply baseline; the full-game follow-up has separately recorded acceptance criteria. Unlisted moves receive a complete fallback comparison; rollout scores are not mixed with tree scores when grading.`),
     el('p',{},'XG’s published book mixes rollouts and XGRoller++ evaluations, with beavers enabled. Our simulations disable beavers. This deliberately selected cohort is not an independent test of general playing strength.'),
     el('p',{},link('See the independent 4,096-trial confirmation of the remaining disagreements.','#rollout-diagnostic')),detail,
     downloads(link('Published-book validation','../docs/rollout-book-validation.json'),link('Full comparison and uncertainty','../docs/rollout-policy-comparison.json'),link('Candidate plan and build provenance','../docs/rollout-policy-inputs.json'),link('Raw independent batches (gzip)','../docs/rollout-policy-batches.jsonl.gz'),link('Original plan and scope change','../docs/rollout-policy-plan-amendment.json'),link('Native/browser implementation checks','../docs/rollout-policy-validation.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-POLICIES.md'),link('XG’s rollout description','https://www.extremegammon.com/support.aspx')),
@@ -353,12 +355,53 @@ if ($('rollout-diagnostic-content')) try {
     el('p',{},`Opening 2–1: ${opening.previousMove} versus ${opening.xgMove}. The fresh difference is ${number(opening.gap.difference)}, with simultaneous 95% interval ${interval(opening.gap)}: ${names[opening.gap.classification].toLowerCase()}.`),
     el('p',{},'Each pair uses shared dice in 128 independent batches of 32 trials. Every trial seed is fresh relative to the earlier experiment. The two moves and 4,096-trial stopping point were fixed before this run; the previous 512 trials are excluded. Intervals use paired batch means with a Student-t approximation and Bonferroni correction across 24 positions.'),
     el('p',{},'A persistent preference is evidence against sampling noise as the sole cause within this pipeline. It does not isolate the neural evaluator: checker choices, cube decisions, move filtering and the five-turn truncation endpoint can create systematic differences. Both engines are estimates. All 24 reference pairs use published XG rollouts with 3-ply, 4-ply or XG Roller continuation policies. Their reported marginal error bars often overlap, and their shared-dice covariance is unavailable.'),
-    el('p',{},'Unresolved means these samples cannot determine the direction confidently; it does not prove the moves are equal or that all disagreement is noise. A reversed result supports sampling instability in the original ranking. The published opening guide retains its original full candidate comparisons: this diagnostic tests only two fixed moves per position.'),
+    el('p',{},link('See the controlled full-game cutoff, checker and cube tests.','#fullgame-ablation')),
+    el('p',{},'Unresolved means these samples cannot determine the direction confidently; it does not prove the moves are equal or that all disagreement is noise. A reversed result supports sampling instability in the original ranking. This two-move diagnostic did not replace the opening guide’s full candidate comparisons; the subsequent full-game experiment evaluates the retained alternatives.'),
     field('Disagreement conclusion',select([['all','All 24 positions'],...Object.entries(names).map(([k,v])=>[k,`${v} (${counts[k]})`])],filter,v=>{filter=v;draw();})),target,
     el('p',{},'*XG gap uses the same sign convention. “Overlapping error bars” compares the two reported marginal intervals; this is not a paired significance test. XG enables beavers while these GNUbg rollouts disable them. Ordinary 95% intervals, previous 512-trial gaps and three-/four-/five-ply gaps are available in the full result download.'),
     downloads(link('Full paired results','../docs/rollout-diagnostic-comparison.json'),link('Fixed pairs, seeds and policy','../docs/rollout-diagnostic-inputs.json'),link('Raw fresh batches (gzip)','../docs/rollout-diagnostic-batches.jsonl.gz'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/ROLLOUT-DIAGNOSTIC.md')),
   );draw();
 } catch(e) { failed($('rollout-diagnostic-content'),e); }
+if ($('fullgame-ablation-content')) try {
+  const [report,confirmation]=await Promise.all([json('../data/fullgame-ablation-comparison.json'),json('../data/opening-fullgame-confirmation-comparison.json')]);
+  if(!confirmation.complete||confirmation.records!==1024||confirmation.trialsPerMovePolicy!==4096)throw Error('The opening confirmation is incomplete.');
+  if(!report.complete||report.rows.length!==15||report.records!==4320)throw Error('The full-game experiment is incomplete.');
+  const number=v=>`${v>=0?'+':''}${v.toFixed(5)}`;
+  const interval=g=>`[${number(g.familywise95.lower)}, ${number(g.familywise95.upper)}]`;
+  const names={'short':'Five-turn baseline','full-matched':'Full game · same players','full-strong':'Full game · stronger checker','full-cube3':'Full game · deeper cube'};
+  const effects={cutoff:'Remove the five-turn cutoff',checker:'Strengthen late checker play',cube:'Deepen cube decisions'};
+  const directions={'toward-XG':'Shift toward XG','away-from-XG':'Shift away from XG',unresolved:'Unresolved shift'};
+  let selected='cutoff';const target=el('div',{});
+  const draw=()=>target.replaceChildren(table(
+    ['Position','Previous choice / XG choice','Gap before','Gap after','Change in gap','Simultaneous 95% interval','Effect'],
+    report.rows.map(r=>{const e=r.effects[selected];return [
+      link(r.kind==='opening'?`Opening ${r.roll}`:`${new URL(r.source).pathname.split('/').at(-1).replace('Replies_to_','After ').replace('.html','')} · ${r.roll}`,r.source),
+      `${r.previousMove} / ${r.xgMove}`,number(r.policies[e.before].gap.difference),number(r.policies[e.after].gap.difference),number(e.difference),interval(e),directions[e.direction],
+    ];}),'Paired effects · move gaps are previous choice minus XG choice · negative changes shift toward XG'));
+  const opening=report.rows.find(r=>r.kind==='opening'),confirmed=confirmation.rows[0];
+  $('fullgame-ablation-content').append(
+    measured('Pinned GNUbg · controlled native rollouts',report.recordedAt),
+    el('p',{},'This original study did not meet its recorded book-update criteria: Full/strong had a larger sampled mean gap error than Short, and no individual effect cleared the planned threshold. Wider full-game intervals do not establish that the disagreements were fixed.'),
+    el('p',{},link('See the independently seeded precision follow-up.','#fullgame-precision')),
+    el('p',{},`${report.totalTrials.toLocaleString()} trials across four policies. Each disputed move receives ${report.trialsPerMovePolicy.toLocaleString()} fresh trials per policy; the stronger-checker run also evaluates every previously retained alternative. Dice are shared across moves and policies. Samples from the preceding experiments are excluded.`),
+    table(['Policy','XG leads the fixed pair','Clear preference against XG','Clear preference for XG','Unresolved pairs','Mean absolute gap difference from XG'],
+      Object.entries(names).map(([id,label])=>{const s=report.summaries[id];return [label,`${s.pairMeanFavorsXG} / 15`,s.classifications.persistent,s.classifications.reversed,s.classifications.unresolved,s.meanAbsoluteGapError.toFixed(5)];}),
+      'Selected disagreements only · preference counts use simultaneous intervals across 60 policy–position gaps'),
+    el('p',{},`Secondary averages across the fixed 15-position cohort: ${Object.entries(report.cohortEffects).map(([id,e])=>`${effects[id]}: ${number(e.difference)} ${interval(e)}`).join('; ')}. These three intervals form a separate simultaneous 95% family using 32 aggregate block means. This diagnostic was specified after the independent opening result revealed high variance, before inspecting the primary equities; it does not change the original promotion criteria or establish the effect at every position.`),
+    el('p',{},`Primary 1,024-trial opening 2–1 comparison, split minus slot: ${Object.entries(names).map(([id,name])=>`${name}: ${number(opening.policies[id].gap.difference)} ${interval(opening.policies[id].gap)}`).join('; ')}. Published XG gap: ${number(opening.referenceGap)}.`),
+    el('p',{},'A separate opening 2–1 confirmation was fixed before inspecting these equities: 4,096 fresh trials per move/policy, 32,768 additional trials in total. Its seeds are disjoint from the whole primary experiment. It tests the cutoff and checker effects again and evaluates all four retained moves under Full/strong, without pooling the two experiments.'),
+    table(['Opening 2–1 policy','Split equity','Slot equity','Split minus slot','Simultaneous 95% interval'],Object.entries(confirmed.policies).map(([id,p])=>[
+      names[id],number(p.candidates.find(c=>c.role==='previous-choice').equity),number(p.candidates.find(c=>c.role==='xg-choice').equity),number(p.gap.difference),interval(p.gap),
+    ]),'Independent 4,096-trial opening confirmation · simultaneous intervals across its three policy gaps'),
+    el('p',{},`Independent opening effects: removing the cutoff changes the gap by ${number(confirmed.effects.cutoff.difference)} ${interval(confirmed.effects.cutoff)}; stronger late checker play changes it by ${number(confirmed.effects.checker.difference)} ${interval(confirmed.effects.checker)}. These intervals form a separate two-comparison family. The Full/strong leader among all four retained moves is ${confirmed.policies['full-strong'].bestMove}.`),
+    el('p',{},'The first comparison removes only the cutoff: checker play remains 2-ply for two turns, then 1-ply, with 2-ply cube decisions. The second keeps 2-ply checker play throughout. The third changes cube decisions from 2-ply to 3-ply. Full games end at a cube pass, game completion or an eligible bearoff database endpoint. Normal move filters and variance reduction remain enabled.'),
+    field('Full-game effect',select(Object.entries(effects),selected,v=>{selected=v;draw();})),target,
+    el('p',{},'Effect intervals preserve paired covariance across both moves and policies. They use 32 independent batch means and a Student-t approximation, with simultaneous 95% coverage across the 45 planned effects. Policy-gap intervals use a separate 60-comparison family. An unresolved shift does not prove the policies equivalent. A shift toward XG does not by itself establish the correct move.'),
+    el('p',{},'Removing the cutoff tests the endpoint equity estimate under unchanged simulated players. That estimate combines neural probabilities with cube valuation, so cutoff and evaluator error are not mutually exclusive explanations. Residual disagreement can still reflect checker/cube choices, filtering, reference uncertainty or rules; it does not isolate neural weights. These are comparisons with published historical XG rollouts, not fresh XG engine runs. XG enables beavers; these GNUbg simulations disable them.'),
+    downloads(link('Independent opening confirmation','../docs/opening-fullgame-confirmation-comparison.json'),link('Opening confirmation plan','../docs/opening-fullgame-confirmation-inputs.json'),link('Opening confirmation batches (gzip)','../docs/opening-fullgame-confirmation-batches.jsonl.gz'),link('Full results and intervals','../docs/fullgame-ablation-comparison.json'),link('Fixed plan and seeds','../docs/fullgame-ablation-inputs.json'),link('Raw full-game batches (gzip)','../docs/fullgame-ablation-batches.jsonl.gz'),link('Native implementation checks','../docs/fullgame-native-validation.json'),link('Second-host parity checks','../docs/fullgame-remote-validation.json'),link('Runtime weights and database checks','../docs/fullgame-runtime-validation.json'),link('Secondary cohort plan','../docs/fullgame-cohort-analysis-plan.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/FULLGAME-ABLATION.md')),
+  );draw();
+} catch(e) { failed($('fullgame-ablation-content'),e); }
+if ($('fullgame-precision-content')) await renderFullgamePrecision($('fullgame-precision-content'), {json,table,link,measured,downloads,failed});
 $("method-content").append(
   el(
     "dl",
