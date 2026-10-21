@@ -43,6 +43,6 @@ module.exports=async function checkGameSwitching(browser,base){
   assert.equal(await page.locator('#history-list').textContent(),history);
   assert.ok(await page.locator('#variant').isEnabled());
   assert.deepEqual(errors,[]);
-  console.log('Game switching passed: all 27 choices remain available during hands and solves; cancellation preserves PnL/history and rejects stale callbacks.');
+  console.log('Game switching passed: all 35 choices remain available during hands and solves; cancellation preserves PnL/history and rejects stale callbacks.');
  }finally{await page.close();}
 };

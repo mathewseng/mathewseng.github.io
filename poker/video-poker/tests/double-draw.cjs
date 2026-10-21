@@ -35,7 +35,7 @@ module.exports=async function checkDoubleDraw(browser,base){
   await page.setViewportSize({width:375,height:812});await page.waitForTimeout(350);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'/tmp/video-poker-double-review-mobile.png',fullPage:true});await page.setViewportSize({width:1440,height:900});
   // Each published option applies the matching payouts, qualifiers, stake rule and result.
   const report=require('../analysis.json');await lab();
-  assert.equal(await page.locator('[data-recommend]').count(),36);
+  assert.equal(await page.locator('[data-recommend]').count(),60);
   for(const rec of report.recommendations){
    const button=page.locator(`[data-recommend="${rec.key||rec.id}"]`);
    await button.evaluate(el=>el.closest('details').open=true);await button.click();

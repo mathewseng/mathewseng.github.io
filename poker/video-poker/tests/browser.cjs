@@ -5,6 +5,7 @@ const {chromium}=require('playwright'),{launchQuietBrowser}=require('../../../sc
 try{
  await require('./game-switching.cjs')(browser,server.base);
  await require('./cribbage-browser.cjs')(browser,server.base);
+ await require('./outcomes-browser.cjs')(browser,server.base);
  await require('./mobile-response.cjs')(browser,server.base);
  await require('./variant-selection.cjs')(browser,server.base);
  await require('./decision-review.cjs')(browser,server.base);
@@ -12,7 +13,7 @@ try{
  await require('./double-draw.cjs')(browser,server.base);
  const page=await browser.newPage({viewport:{width:1440,height:900}});page.on('pageerror',e=>errors.push(e.message));
  await page.goto(server.base+'/poker/video-poker/');await page.waitForFunction(()=>document.getElementById('return-value').textContent==='99.5439%');
- assert.equal(await page.locator('#variant option').count(),27);
+ assert.equal(await page.locator('#variant option').count(),35);
  await page.screenshot({path:'/tmp/video-poker-desktop.png',fullPage:true});
  await page.locator('#variant').selectOption('badeucey');await page.locator('[data-view="lab"]').click();await page.locator('#reset-pays').click();await page.locator('[data-view="play"]').click();await page.locator('.spot-editor summary').click();await page.locator('#spot-hand').fill('7s 5h 4d 3c 2s');await page.locator('#spot-form button').click();
  await page.waitForFunction(()=>document.querySelectorAll('.strategy-row').length===5,{},{timeout:30000});
@@ -37,5 +38,5 @@ try{
  for(const id of await page.locator('#variant option').evaluateAll(es=>es.map(e=>e.value))){await page.locator('#variant').selectOption(id);await page.locator('#deal').click();await page.locator('#solve-hand').click();await page.waitForFunction(()=>document.querySelectorAll('.strategy-row').length===5,{},{timeout:30000});await page.locator('#hold-best').click();await page.locator('#deal').click();assert.ok(Number.isFinite(Number((await page.locator('#pnl').textContent()).replaceAll(',',''))),id);}
  await page.waitForTimeout(350);
  for(const viewport of [{width:375,height:812},{width:844,height:390},{width:1280,height:720},{width:1440,height:900}]){await page.setViewportSize(viewport);for(const view of ['play','lab','rules']){await page.locator(`[data-view="${view}"]`).click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${view} overflow ${viewport.width}`);if(viewport.width===375)await page.screenshot({path:`/tmp/video-poker-mobile-${view}.png`,fullPage:true});}}
- assert.deepEqual(errors,[]);console.log('Video poker browser checks passed: 27 games, exact worker, all holds, draw exclusions, recommendations, edits, persistence, cancel, mobile and desktop.');
+ assert.deepEqual(errors,[]);console.log('Video poker browser checks passed: 35 games, exact worker, all holds, draw exclusions, recommendations, edits, persistence, cancel, mobile and desktop.');
 }finally{await browser.close();await server.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

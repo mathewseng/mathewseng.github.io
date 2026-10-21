@@ -43,15 +43,15 @@ Per-hand rows retain `ev = netEV + 1` for compatibility and expose `netEV`, `gro
 
 ## Cribbage
 
-Eight menu entries pair hand sizes 4, 5, 6 and 7 with base stake or optional 2× on draw. Each has an independently saved integer fee and scoring settings. All final cards score; there is no starter, crib or pegging.
+The Cribbage dropdown section has sixteen entries: hand sizes 4, 5, 6 and 7, Capped loss or Points − fee settlement, and base stake or optional 2× on draw. Each has an independently saved integer fee and scoring settings. All final cards score; there is no starter, crib or pegging.
 
 The default scoring extends the cribbage row in `ofc/fantasyland-core.js`: each fifteen is 2; each pair is 2; each copy of the longest run of at least three cards scores its full length; a flush of at least four cards scores its length; each jack sharing its suit with another card scores 1. Aces are low and worth 1 toward fifteens; faces count 10. Six- and seven-card runs/flushes receive their full length by default. The editor also provides the literal OFC cap of 5 (its existing run-window algorithm), and an alternative settlement convention.
 
-Default **total return = max(0, cribbage points − fee)**, including the stake. A score equal to the fee loses the bet; fee + 1 pushes; fee + 2 wins +1. At 2×, both the return and stake double. The fee is subtracted once from the total score before applying the stake multiplier. The optional **net PnL = points − fee** convention permits negative results beyond the initial unit; the engine represents its total return as `1 + points − fee`, and settlement then subtracts the stake normally.
+Default **total return = max(0, cribbage points − fee)**, including the stake. A score equal to the fee loses the bet; fee + 1 pushes; fee + 2 wins +1. At 2×, both the return and stake double. The fee is subtracted once from the total score before applying the stake multiplier. The separate **Points − fee** games use **net PnL = points − fee** and permit negative results beyond the initial unit; the engine represents its total return as `1 + points − fee`, and settlement then subtracts the stake normally.
 
-Fee presets include the selected fee and its adjacent integers. Each mode defaults to the closest non-positive net EV, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all eight games to approach zero EV closely. The lab exposes the adjacent positive-EV option as well as more conservative options. Sampled EVs are explicitly marked as estimates; a sampled default is not a certified negative-EV game.
+Fee presets include the selected fee and its adjacent integers. Each mode defaults to the closest non-positive net EV, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all sixteen games to approach zero EV closely. The lab exposes the adjacent positive-EV option as well as more conservative options. Sampled EVs are explicitly marked as estimates; a sampled default is not a certified negative-EV game.
 
-Default fees and net EV per initial hand (six/seven-card figures are estimates):
+Capped-loss default fees and net EV per initial hand (six/seven-card figures are estimates):
 
 | Cards | Fee | Net EV | Fee with 2× | Net EV with 2× | Optimal 2× frequency |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -59,6 +59,15 @@ Default fees and net EV per initial hand (six/seven-card figures are estimates):
 | 5 | 10 | -0.078150 | 11 | -0.204481 | 15.55% |
 | 6 | 18 | ≈ -0.110085 | 19 | ≈ -0.122593 | ≈ 16.86% |
 | 7 | 31 | ≈ -0.098731 | 32 | ≈ -0.036815 | ≈ 16.55% |
+
+Points-minus-fee defaults:
+
+| Cards | Fee | Net EV | Fee with 2× | Net EV with 2× | Optimal 2× frequency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4 | 5 | -0.576731 | 5 | -0.334995 | 19.98% |
+| 5 | 9 | -0.817686 | 9 | -0.387098 | 27.20% |
+| 6 | 14 | ≈ -0.198664 | 15 | ≈ -0.576039 | ≈ 26.10% |
+| 7 | 23 | ≈ -0.621636 | 24 | ≈ -0.610485 | ≈ 27.10% |
 
 ### Cribbage analysis
 
@@ -176,3 +185,15 @@ Tests cover rank categories, wild cards, kicker boundaries, the lowball wheel, B
 ## References
 
 Paytables and independent return benchmarks: [Wizard of Odds summary](https://wizardofodds.com/games/video-poker/summary/), [All American](https://wizardofodds.com/games/video-poker/tables/all-american/), [full-pay Deuces Wild](https://wizardofodds.com/games/video-poker/tables/deuces-wild/), and [Joker Poker](https://wizardofodds.com/games/video-poker/tables/joker-poker-kings-or-better/). Custom-game results are original calculations in this repository.
+
+### Points-minus-fee games and payout frequencies
+
+Points − fee games can lose the entire fee, or twice the fee at 2×. Their integer fees are optimized separately, with three adjacent options for each game in `cribbage-net-analysis.json`. Four/five-card results exhaust every starting hand. Six/seven-card results use the same seeded sample sizes as capped-loss games. Legacy saved net-settlement edits migrate into the new entries; all sixteen entries retain independent settings.
+
+Reproduce net fee choices with `node poker/video-poker/scripts/analyze-cribbage-net.cjs`. The native analyzer computes expected rank points, flushes and suited jacks independently and is checked against the exact JS draw solver. Linear settlement makes the fee a constant for a given stake: each deal only needs its best expected score with any hold and with a non-pat hold to optimize every integer fee.
+
+The payout lab shows optimal-play win/push/loss rates, PnL standard deviation, and a bar/table for each net payout with its probability and reciprocal frequency. Charts measure completed-hand net PnL, after the entire stake, and aggregate identical net amounts across stakes and hand categories. Badeucey awards are combined before grouping. These are policy frequencies, not the distribution of random final hands or the player's session history. On EV ties the policy prefers 1×, then more held cards, then the first mask; other optimal tie choices can produce different payout frequencies at the same EV.
+
+`outcomes.js` counts four/five-card distributions exactly: for each initial hand's optimal hold it adds inclusion–exclusion coefficients to final-hand subsets, then weights each final hand once. This avoids enumerating every initial-hand/draw pair. Six/seven-card charts average exact conditional score distributions over reproducibly sampled initial hands; the whole-game chart is estimated, including rare payout frequencies. Counts shown as “1 in” are long-run frequencies, not guarantees or waiting times. Edited settings clear stale charts; Solve full game / Estimate game recalculates them in the worker.
+
+Reproduce the 35 default charts with `node poker/video-poker/scripts/analyze-outcomes.cjs`. `outcome-analysis.json` records configurations, seeds, sample sizes and source hashes. Histogram means are checked against independently computed game EVs. Tests also compare distributions to direct draw enumeration on small decks, validate conditional cribbage score histograms, and compare native linear score EVs to the JS solver for every hold.

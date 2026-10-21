@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),report=require('../analysis.json');
 module.exports=async function checkVariantSelection(browser,base){
  const page=await browser.newPage();
- const ready=()=>page.waitForFunction(()=>!document.querySelector('#variant option[value="low27"]')?.disabled&&document.querySelectorAll('[data-recommend]').length===36);
+ const ready=()=>page.waitForFunction(()=>!document.querySelector('#variant option[value="low27"]')?.disabled&&document.querySelectorAll('[data-recommend]').length===60);
  try{
   await page.goto(base+'/poker/video-poker/');await ready();await page.locator('[data-view="lab"]').click();
   const defaults=[['low27','low27-flat'],['low27-double','low27-double'],['badeucey','badeucey'],['badeucey-double','badeucey-double']];

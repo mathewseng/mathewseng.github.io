@@ -153,3 +153,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 @media(min-width:901px) {
   .machine.complete .hand[data-size="6"],.machine.complete .hand[data-size="7"] { --card-width:clamp(48px,5.8vw,80px); }
 }
+/* Payout frequencies use a common linear bar scale; exact values expose rare hits. */
+.payout-frequency { margin-top: 20px; }
+.payout-frequency h2 { margin-top: 0; }
+.outcome-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 16px 0; }
+.outcome-summary span,.outcome-summary strong { display: block; }
+.outcome-summary span { font-size: 12px; color: var(--muted); }
+.outcome-summary strong { font-variant-numeric: tabular-nums; }
+.outcome-chart { max-height: 360px; overflow: auto; }
+.outcome-chart table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.outcome-chart th,.outcome-chart td { padding: 8px 6px; text-align: right; }
+.outcome-chart th:first-child { text-align: left; }
+.outcome-chart td:nth-child(2) { position: relative; min-width: 110px; }
+.outcome-chart td span { position: relative; }
+.outcome-chart .frequency-bar { position: absolute; inset: 5px auto 5px 0; width: var(--frequency); background: var(--accent); opacity: .15; border-radius: 3px; }
