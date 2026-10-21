@@ -20,7 +20,7 @@ Qualification and point awards are separate: five-card low points always require
 
 ## Session PnL
 
-The base bet is always 1. PnL starts at zero and stays unchanged during a hand. Settlement adds the payout minus the full stake: 1 normally or 2 when choosing 2×. Negative PnL never blocks play or triggers a refill. Changing games or applying settings preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. There is no Last return meter.
+The base bet is always 1. PnL starts at zero and stays unchanged during a hand. Settlement adds the payout minus the full stake: 1 normally or 2 when choosing 2×. Negative PnL never blocks play or triggers a refill. Changing games or applying settings preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. The meters show PnL and hands played, with no base-bet or Last return display. Hand history lists every completed hand newest first, with its game, 2× marker when used, and net win/loss or push. The summary counts wins, losses and pushes. History persists across game and settings changes for the session and resets on reload, together with PnL.
 
 A zero payout displays **You lose**; returning exactly the stake displays **Push**; a win displays **Won +N**, where N is the payout minus the entire stake (including 2× when used).
 

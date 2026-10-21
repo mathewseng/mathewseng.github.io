@@ -10,10 +10,10 @@
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-  <link rel="stylesheet" href="./styles.css?v=20261020-5" />
+  <link rel="stylesheet" href="./styles.css?v=20261021" />
   <script src="../../shared/cards.js?v=20261016" defer></script>
   <script src="./engine.js?v=20261020-5" defer></script>
-  <script src="./app.js?v=20261021-3" defer></script>
+  <script src="./app.js?v=20261021-4" defer></script>
 </head>
 <body class="app-shell">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -27,10 +27,11 @@
   <section id="view-play" class="workspace" aria-label="Play and strategy">
     <div class="play-column">
       <section class="machine" aria-label="Video poker table">
-        <div class="meters"><div><span>PnL</span><strong id="pnl">0</strong></div><div><span>Base bet</span><strong id="bet">1</strong></div><div><span>Hands</span><strong id="hands-played">0</strong></div></div>
+        <div class="meters"><div><span>PnL</span><strong id="pnl">0</strong></div><div><span>Hands</span><strong id="hands-played">0</strong></div></div>
         <div class="table-center"><p id="hand-status" role="status">Five cards. One decision.</p><div class="hand" id="hand" aria-label="Your cards"></div><p id="hold-instruction">Deal a hand to begin.</p></div>
         <div class="machine-actions"><button class="btn btn--ghost" id="solve-hand">Solve hand</button><button class="btn btn--ghost" id="hold-best" disabled>Hold best</button><button class="btn btn--ghost" id="double-draw" hidden>Double &amp; draw</button><button class="btn btn--primary deal-button" id="deal">Deal hand <span aria-hidden="true">→</span></button></div>
         <p class="shortcut-note">Tap cards to hold · Keys 1–5 · Space to deal or draw</p>
+        <section class="hand-history" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">Hand history</h2><span id="history-summary">0 won · 0 lost · 0 pushed</span></div><p id="history-empty">Completed hands appear here.</p><ol id="history-list" aria-label="Completed hands, newest first" tabindex="0" hidden></ol></section>
       </section>
       <section class="strategy" aria-labelledby="strategy-title"><div class="section-heading"><h2 id="strategy-title">The best decision</h2><button class="text-button" id="show-all" hidden>Show all 32 holds</button></div><p id="strategy-status" role="status">Solve a hand to compare the exact return of every hold.</p><div id="decision-summary" class="decision-summary" hidden></div><div id="strategy-results"></div>
       <details class="spot-editor"><summary>Analyze a specific hand</summary><form id="spot-form"><label for="spot-hand">Five cards, separated by spaces</label><div class="input-action"><input id="spot-hand" placeholder="7s 5h 4d 3c 2s" autocomplete="off" spellcheck="false" /><button class="btn btn--ghost" type="submit">Analyze</button></div><p>Ranks 2–9, T, J, Q, K, A · Suits s, h, d, c · Joker: JK</p></form></details></section>

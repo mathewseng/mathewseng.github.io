@@ -13,6 +13,7 @@
   function loadSettings(key,legacyKey){const current=readSaved(key);if(current)return current;const migrated={};for(const [id,value]of Object.entries(readSaved(legacyKey)||{}))migrated[variantKey(id,legacyModes[id]===true)]=value;return migrated;}
   let saved=loadSettings(storedKey,'video-poker-paytables-v1'),savedRules=loadSettings(rulesKey,'video-poker-rules-v1');
   let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,pnl=0,hands=0,rows=null,strategyHand=[],review=null,showAll=false,worker=null,request=0,busy=false,report=null,liveResult=null;
+  const historyTotals={win:0,loss:0,push:0};
   const families=['Custom variants',...new Set(E.variants.filter(x=>x.family!=='Custom variants').map(x=>x.family))];
   $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}"${isCustom(x.id)?' disabled':''}>${x.name}</option>`).join('')}</optgroup>`).join('');
   function bestRecommendation(id,doubled){return report?.recommendations.filter(r=>r.id===id&&!!r.doubleOnDraw===!!doubled&&r.result.rtp<=1).sort((a,b)=>b.result.rtp-a.result.rtp)[0];}
@@ -98,11 +99,18 @@
   function toggleHold(i){if(!['draw','study'].includes(phase))return;mask^=1<<i;renderHand();renderStrategy();}
   $('hand').onclick=e=>{const b=e.target.closest('[data-card]');if(b)toggleHold(+b.dataset.card);};
   function random(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}
+  function recordHand(profit,doubled){
+    const outcome=profit>0?'win':profit<0?'loss':'push';historyTotals[outcome]++;
+    const entry=document.createElement('li');entry.className='history-entry '+outcome;entry.dataset.net=profit;entry.dataset.hand=hands;
+    entry.innerHTML=`<span>#${hands} · ${E.byId[v.id].name}${doubled?' · 2×':''}</span><strong>${profit>0?'Won +'+fmt(profit):profit<0?'Lost −'+fmt(-profit):'Push'}</strong>`;
+    $('history-list').prepend(entry);$('history-list').hidden=false;$('history-list').scrollLeft=0;$('history-empty').hidden=true;
+    $('history-summary').textContent=`${historyTotals.win} won · ${historyTotals.loss} lost · ${historyTotals.push} pushed`;
+  }
   function completeDraw(doubled=false){
     if(phase!=='draw'||(doubled&&(!v.doubleOnDraw||mask===31)))return;
     cancel();announce('');const stake=doubled?2:1;
     review={hand:[...hand],mask,doubled};strategyHand=[...hand];$('strategy-title').textContent='Decision review';
-    hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned-stake;hands++;phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned===0?'You lose':returned===stake?'Push':'Won +'+fmt(returned-stake);
+    hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned-stake;hands++;recordHand(returned-stake,doubled);phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned===0?'You lose':returned===stake?'Push':'Won +'+fmt(returned-stake);
     document.querySelectorAll('[data-pay]').forEach(el=>el.classList.toggle('paying',result.keys.includes(el.dataset.pay)));if(rows)renderStrategy();else run('hand');
   }
   $('double-draw').onclick=()=>completeDraw(true);
