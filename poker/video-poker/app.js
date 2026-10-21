@@ -129,9 +129,9 @@
   function renderStakeControl(){const active=phase==='draw';$('double-draw').hidden=!v.doubleOnDraw||!active;$('double-draw').disabled=!active||mask===allHeld();$('double-draw').title=mask===allHeld()?'Release at least one card to double.':'Add 1 credit, double the final return, and draw.';}
   function renderControls(){const active=phase==='draw';$('deal').disabled=false;$('deal').innerHTML=active?'Draw cards <span aria-hidden="true">→</span>':'Deal hand <span aria-hidden="true">→</span>';$('solve-hand').disabled=busy||hand.length!==handSize();$('solve-hand').textContent=phase==='complete'?'Review decision':'Solve hand';$('hold-best').disabled=busy||!rows||!['draw','study'].includes(phase);$('spot-hand').disabled=active;$('spot-form').querySelector('button').disabled=active;$('pay-form').querySelector('button[type=submit]').disabled=active;$('reset-pays').disabled=active;$('best-pays').hidden=!isCustom(v.id);$('best-pays').disabled=active||!bestRecommendation(v.id,v.doubleOnDraw,v.rules?.payout);for(const select of document.querySelectorAll('#pay-editor select'))select.disabled=active||(select.id==='rule-badugi-rank'&&$('rule-min-badugi')?.value==='0');
     renderStakeControl();
-    document.querySelectorAll('[data-recommend]').forEach(b=>b.disabled=active);$('pnl').textContent=(pnl>0?'+':'')+fmt(pnl);$('hands-played').textContent=hands;
+    document.querySelectorAll('[data-recommend]').forEach(b=>b.disabled=active);$('pnl').textContent=(pnl>0?'+':'')+fmt(pnl);$('pnl').dataset.sign=pnl>0?'pos':pnl<0?'neg':'zero';$('hands-played').textContent=hands;
   }
-  function renderHand(animate=false){holdTouch=null;const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.toggle('dealt',animate);$('hand').innerHTML=Array.from({length:handSize()},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');
+  function renderHand(animate=false){holdTouch=null;if(phase!=='complete')delete $('hand-status').dataset.outcome;const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.toggle('dealt',animate);$('hand').innerHTML=Array.from({length:handSize()},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');
     $('hold-instruction').textContent=phase==='draw'?(v.doubleOnDraw?'Draw at 1×, or add 1 credit and double. Release at least one card to double.':'Select your holds, then draw once.'):phase==='study'?'Study hand · no credit wagered. Deal starts a random hand.':phase==='complete'?'Hand complete. Deal again when you’re ready.':'Deal a hand to begin.';renderControls();
   }
   function updateHolds(){
@@ -177,7 +177,7 @@
     if(phase!=='draw'||(doubled&&(!v.doubleOnDraw||mask===allHeld())))return;
     cancel(true);announce('');const stake=doubled?2:1;
     review={hand:[...hand],mask,doubled};strategyHand=[...hand];$('strategy-title').textContent='Decision review';
-    hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned-stake;hands++;recordHand(returned-stake,doubled);phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned<stake?'You lose'+(v.cribbage&&v.rules.payout==='net'?' '+fmt(stake-returned):''):returned===stake?'Push':'Won +'+fmt(returned-stake);
+    hand=E.draw(hand,mask,deck);const result=E.evaluate(hand,v);const returned=stake*result.payout;pnl+=returned-stake;hands++;recordHand(returned-stake,doubled);phase='complete';mask=0;renderHand(true);$('hand-status').textContent=returned<stake?'You lose'+(v.cribbage&&v.rules.payout==='net'?' '+fmt(stake-returned):''):returned===stake?'Push':'Won +'+fmt(returned-stake);$('hand-status').dataset.outcome=returned<stake?'lose':returned===stake?'push':'win';
     if(v.cribbage)$('hold-instruction').textContent=`${result.label} · fifteens ${result.breakdown.fifteens}, pairs ${result.breakdown.pairs}, runs ${result.breakdown.runs}, flush ${result.breakdown.flush}, suited jacks ${result.breakdown.nobs}`;
     document.querySelectorAll('[data-pay]').forEach(el=>el.classList.toggle('paying',result.keys.includes(el.dataset.pay)));if(rows)renderStrategy();else run('hand');
   }
@@ -205,9 +205,10 @@
     if(selectionOnly&&!review)return;
     const visible=showAll?[...rows]:rows.slice(0,5);
     if(review&&!showAll&&!visible.includes(selected))visible.push(selected);
+    const worst=Math.min(...visible.map(r=>r.ev)),span=Math.max(best.ev-worst,1e-9);
     $('strategy-results').innerHTML=visible.map(r=>{
-      const optimal=Math.abs(r.ev-best.ev)<1e-10,chosen=!!review&&r===selected;
-      return `<div class="strategy-row${optimal?' best':''}${chosen?' chosen':''}" data-mask="${r.mask}" data-doubled="${r.doubled}"><span class="choice"><span class="rank">${rows.indexOf(r)+1}</span><span>${decisionLabel(r)}${chosen?'<small class="decision-marker">Your decision</small>':''}</span></span><span class="ev">${formatEV(r)}<small>${optimal?(usesNetEV()?'best net EV':'best return'):'−'+fmt(best.ev-r.ev,6)}</small></span></div>`;
+      const optimal=Math.abs(r.ev-best.ev)<1e-10,chosen=!!review&&r===selected,share=Math.round(100*Math.max(0,1-(best.ev-r.ev)/span));
+      return `<div class="strategy-row${optimal?' best':''}${chosen?' chosen':''}" data-mask="${r.mask}" data-doubled="${r.doubled}" style="--share:${share}%"><span class="choice"><span class="rank">${rows.indexOf(r)+1}</span><span>${decisionLabel(r)}${chosen?'<small class="decision-marker">Your decision</small>':''}</span></span><span class="ev">${formatEV(r)}<small>${optimal?(usesNetEV()?'best net EV':'best return'):'−'+fmt(best.ev-r.ev,6)}</small></span></div>`;
     }).join('');
     $('show-all').hidden=false;$('show-all').textContent=showAll?'Show top 5':usesNetEV()?`Show all ${rows.length} decisions`:`Show all ${rows.length} holds`;renderControls();
   }
