@@ -49,20 +49,20 @@ The default scoring extends the cribbage row in `ofc/fantasyland-core.js`: each 
 
 Default **total return = max(0, cribbage points − fee)**, including the stake. A score equal to the fee loses the bet; fee + 1 pushes; fee + 2 wins +1. At 2×, both the return and stake double. The fee is subtracted once from the total score before applying the stake multiplier. The optional **net PnL = points − fee** convention permits negative results beyond the initial unit; the engine represents its total return as `1 + points − fee`, and settlement then subtracts the stake normally.
 
-Fee presets include the selected fee and its adjacent integers. Each mode defaults to the highest computed return at or below 100%, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all eight games to approach 100% closely. The lab exposes the adjacent option above 100% as well as more conservative options. Sampling uncertainty is shown explicitly and may cross 100%; a sampled default is not a certified house edge.
+Fee presets include the selected fee and its adjacent integers. Each mode defaults to the closest non-positive net EV, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all eight games to approach zero EV closely. The lab exposes the adjacent positive-EV option as well as more conservative options. Sampled EVs are explicitly marked as estimates; a sampled default is not a certified negative-EV game.
 
-Default fees and returns (six/seven-card figures are estimates):
+Default fees and net EV per initial hand (six/seven-card figures are estimates):
 
-| Cards | Fee | RTP | Fee with 2× | RTP with 2× | Optimal 2× frequency |
+| Cards | Fee | Net EV | Fee with 2× | Net EV with 2× | Optimal 2× frequency |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 4 | 5 | 82.97% | 5 | 95.36% | 14.88% |
-| 5 | 10 | 92.18% | 11 | 82.30% | 15.55% |
-| 6 | 18 | ≈ 88.99% | 19 | ≈ 89.51% | ≈ 16.86% |
-| 7 | 31 | ≈ 90.13% | 32 | ≈ 96.84% | ≈ 16.55% |
+| 4 | 5 | -0.170328 | 5 | -0.053323 | 14.88% |
+| 5 | 10 | -0.078150 | 11 | -0.204481 | 15.55% |
+| 6 | 18 | ≈ -0.110085 | 19 | ≈ -0.122593 | ≈ 16.86% |
+| 7 | 31 | ≈ -0.098731 | 32 | ≈ -0.036815 | ≈ 16.55% |
 
 ### Cribbage analysis
 
-Every individual hold and stake choice has an **exact conditional draw EV**, including the payout floor and discarded-card exclusion. There are 16/32/64/128 holds for 4/5/6/7 cards, or 31/63/127/255 decisions with 2× enabled. The UI uses net PnL EV for all cribbage games.
+Every individual hold and stake choice has an **exact conditional draw EV**, including the payout floor and discarded-card exclusion. There are 16/32/64/128 holds for 4/5/6/7 cards, or 31/63/127/255 decisions with 2× enabled. The game summary, payout lab, fee options and decision review all show signed net PnL EV per initial hand for cribbage. This includes the fee and the entire stake, including 2× when chosen. Sampled game EVs carry an ≈ marker and sample count; exact hold EVs do not. Other poker variants continue showing game RTP. Stored analysis retains RTP and its ratio-estimator uncertainty for reproducibility; these percentage intervals are not displayed as net-EV intervals.
 
 `cribbage-solver.js` enumerates rank multiplicities, then analytically counts suit assignments. Inclusion–exclusion on isolated-jack events gives the suited-jack distribution. Suit-count generating functions give the flush corrections; with at most seven cards, two four-card flushes cannot coexist. The resulting joint distribution preserves nonlinear interactions with `max(0, points − fee)`. The browser uses this compact solver for all cribbage hand reviews and never allocates a 133-million-hand index. Computation stays in the worker, leaving hold taps responsive; six/seven-card hands wrap on narrow screens.
 

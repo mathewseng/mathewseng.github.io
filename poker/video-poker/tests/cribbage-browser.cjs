@@ -1,4 +1,5 @@
-const assert=require('node:assert/strict'),E=require('../engine.js'),S=require('../cribbage-solver.js');
+const assert=require('node:assert/strict'),E=require('../engine.js'),S=require('../cribbage-solver.js'),report=require('../cribbage-analysis.json');
+const evText=r=>(r.estimated?'≈ ':'')+(r.netEV>0?'+':'')+Number(r.netEV.toFixed(6)).toLocaleString('en-US',{maximumFractionDigits:6});
 module.exports=async function checkCribbage(browser,base){
  const page=await browser.newPage({viewport:{width:375,height:812},isMobile:true,hasTouch:true}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -9,6 +10,13 @@ module.exports=async function checkCribbage(browser,base){
   let total=0;
   for(const n of [4,5,6,7])for(const doubled of [false,true]){
    const key='cribbage'+n+(doubled?'-double':'');await page.locator('#variant').selectOption(key);
+   const recommended=report.recommendations.filter(r=>r.id==='cribbage'+n&&r.doubleOnDraw===doubled&&r.result.netEV<=0).sort((a,b)=>b.result.netEV-a.result.netEV)[0];
+   assert.equal(await page.locator('#return-label').textContent(),'EV / hand');
+   assert.equal(await page.locator('#return-value').textContent(),evText(recommended.result));
+   assert.equal(await page.locator('#lab-rtp').textContent(),evText(recommended.result));
+   assert.match(await page.locator('.analysis-panel h2').textContent(),/net EV/);
+   assert.doesNotMatch(await page.locator('.analysis-panel').textContent(),/RTP|Expected return/);
+   assert.equal(await page.locator('#best-pays').textContent(),'Recommended fee');
    assert.equal(await page.locator('#hand .playing-card').count(),n);
    for(const box of await page.locator('#hand .playing-card').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,width:r.width,right:r.right};})))assert.ok(box.width>=44&&box.x>=0&&box.right<=375);
    assert.equal(await page.locator('#pay-fee').getAttribute('step'),'1');
@@ -35,6 +43,21 @@ module.exports=async function checkCribbage(browser,base){
    if(n===7&&doubled){await page.locator('#show-all').tap();await page.screenshot({path:'/tmp/video-poker-cribbage-mobile.png',fullPage:true});}
   }
   assert.equal(await page.locator('.history-entry').count(),8);
+  await page.locator('[data-view=lab]').tap();
+  for(const rec of report.recommendations){
+   const option=page.locator('.recommendation').filter({has:page.locator(`[data-recommend="${rec.key}"]`)});
+   assert.equal(await option.locator('.return-comparison').textContent(),evText(rec.result)+' EV / hand');
+   assert.doesNotMatch(await option.textContent(),/RTP|100%/);
+  }
+  const positive=report.recommendations.find(r=>r.id==='cribbage4'&&!r.doubleOnDraw&&r.result.netEV>0);
+  await page.locator(`[data-recommend="${positive.key}"]`).tap();
+  assert.equal(await page.locator('#return-value').textContent(),evText(positive.result));
+  assert.match(await page.locator('#return-value').textContent(),/^\+/);
+  await page.locator('#variant').selectOption('jacks');
+  assert.equal(await page.locator('#return-label').textContent(),'Perfect-play return');
+  assert.equal(await page.locator('#return-value').textContent(),'99.5439%');
+  assert.equal(await page.locator('.analysis-panel h2').textContent(),'Exact return');
+  assert.equal(await page.locator('#best-pays').textContent(),'Best RTP table');
   // Editable fee and scoring rules persist independently across stake modes.
   await page.locator('#variant').selectOption('cribbage4');await page.locator('[data-view=lab]').tap();
   await page.locator('#pay-fee').fill('99');await page.locator('#pay-fee').press('ArrowUp');assert.equal(await page.locator('#pay-fee').inputValue(),'100');
@@ -47,7 +70,7 @@ module.exports=async function checkCribbage(browser,base){
   const net=E.evaluate([36,12,13,14],{...E.byId.cribbage4,pays:{fee:100},rules:{payout:'net',scoreCap:5}}).payout-1;
   assert.equal(Number(await page.locator('#pnl').textContent()),net);assert.equal(Number(await page.locator('.history-entry').first().getAttribute('data-net')),net);assert.equal(await page.locator('#hand-status').textContent(),'You lose '+(-net));
   await page.locator('#variant').selectOption('cribbage4-double');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'return');
-  await page.locator('#variant').selectOption('cribbage7');await page.locator('[data-view=lab]').tap();assert.match(await page.locator('#lab-result').textContent(),/sampled.*95% RTP interval/);assert.match(await page.locator('#solve-all').textContent(),/Estimate/);
+  await page.locator('#variant').selectOption('cribbage7');await page.locator('[data-view=lab]').tap();assert.match(await page.locator('#lab-result').textContent(),/sampled.*EV is estimated/);assert.match(await page.locator('#solve-all').textContent(),/Estimate/);
   await page.locator('#solve-all').tap();await page.locator('#cancel-solve').tap();assert.match(await page.locator('#solve-status').textContent(),/canceled/);
   assert.deepEqual(errors,[]);console.log('Cribbage browser checks passed: eight games, 4–7 cards, all exact decisions, 2× eligibility, mobile taps, settlement, history, fee/rule persistence and estimated-return labels.');
  }finally{await page.close();}
