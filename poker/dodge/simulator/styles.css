@@ -482,9 +482,7 @@
   margin-top: 3px;
   color: var(--surface-3);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -514,10 +512,8 @@
 
 .opt-verdict-label {
   color: var(--good);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .opt-verdict > b {
@@ -538,10 +534,8 @@
 .opt-section-title {
   padding-top: 4px;
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .opt-summary {
@@ -589,9 +583,7 @@
   background: var(--surface-3);
   color: var(--ink);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .opt-tag.best {

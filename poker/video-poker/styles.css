@@ -10,13 +10,11 @@ body { background: var(--page); font-family: var(--font-sans); --accent: var(--f
 /* Blank card backs on the stage: no monogram, a plain inset frame. */
 .hand .playing-card.back::after { content: ""; }
 .topbar { padding-inline: 32px; flex-shrink: 0; }
-.top-note { font-size: var(--t-xs); color: var(--muted); margin-left: auto; }
 .vp-app { max-width: 1480px; width: 100%; margin: 0 auto; padding: 18px 32px 18px; display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 16px; }
 
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .page-head h1 { font-size: clamp(28px, 2.6vw, 36px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin: 0; }
 .title-dot { color: var(--accent); }
-.page-head p { color: var(--muted); margin: 6px 0 0; font-size: var(--t-md); }
 
 /* Workspace switcher: the kit's segmented pill look on the page's aria-pressed buttons. */
 .view-nav { display: flex; gap: 4px; padding: 4px; background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-pill); }
@@ -30,7 +28,7 @@ body { background: var(--page); font-family: var(--font-sans); --accent: var(--f
 .game-picker-trigger { display: flex; align-items: center; justify-content: space-between; gap: 20px; width: 100%; min-height: 64px; padding: 10px 14px 10px 16px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: linear-gradient(170deg, var(--surface-2), var(--surface) 70%); color: var(--ink); text-align: left; cursor: pointer; font: inherit; box-shadow: var(--shadow-tile); transition: border-color var(--d-fast) var(--ease), background var(--d-fast) var(--ease); }
 .game-picker-trigger:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--line-strong)); }
 .game-current { display: grid; gap: 3px; min-width: 0; }
-.game-current small { color: var(--muted); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.game-current small { color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
 .game-current strong { font-size: 17px; font-weight: 700; line-height: 1.25; text-wrap: balance; }
 .game-browse { display: flex; align-items: center; gap: 10px; color: var(--accent); flex-shrink: 0; font-size: var(--t-xs); font-weight: 600; }
 .game-browse svg { width: 22px; height: 22px; }
@@ -65,7 +63,7 @@ select { width: 260px; }
 .meters { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--stage-line); }
 .meters div { display: grid; gap: 2px; }
 .meters div:last-child { text-align: right; }
-.meters span { font-size: var(--t-xs); color: var(--stage-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+.meters span { font-size: var(--t-sm); color: var(--stage-muted); font-weight: 600; }
 .meters strong { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 #pnl[data-sign="pos"] { color: var(--good); text-shadow: 0 0 18px color-mix(in oklab, var(--good) 45%, transparent); }
 #pnl[data-sign="neg"] { color: var(--bad); }
@@ -83,7 +81,7 @@ select { width: 260px; }
 .card-slot > .playing-card { box-shadow: 0 10px 24px -10px color-mix(in srgb, black 70%, transparent); }
 .card-slot > button.playing-card:hover { transform: translateY(-3px); }
 .card-slot.held > .playing-card { transform: translateY(-8px); }
-.card-slot .hold-label { display: inline-flex; align-items: center; justify-content: center; min-width: 54px; min-height: 22px; padding: 2px 10px; border-radius: var(--r-pill); font-size: var(--t-xs); font-weight: 800; letter-spacing: 0.1em; color: var(--stage-muted); border: 1px solid var(--stage-line); transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease); }
+.card-slot .hold-label { display: inline-flex; align-items: center; justify-content: center; min-width: 54px; min-height: 22px; padding: 2px 10px; border-radius: var(--r-pill); font-size: var(--t-xs); font-weight: 600; color: var(--stage-muted); border: 1px solid var(--stage-line); transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease); }
 .card-slot.held .hold-label { color: var(--on-accent); background: var(--accent); border-color: var(--accent); box-shadow: 0 0 16px color-mix(in oklab, var(--accent) 40%, transparent); }
 .hand:not(:has([data-card])) .hold-label { visibility: hidden; }
 .hand.dealt .card-slot { animation: deal-in 280ms var(--ease) both; animation-delay: calc(var(--i) * 40ms); }
@@ -106,7 +104,7 @@ select { width: 260px; }
 /* Hand history as a chip strip under the marquee. */
 .hand-history { min-width: 0; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--stage-line); }
 .hand-history .section-heading { flex-wrap: wrap; gap: 4px 12px; }
-.hand-history h2 { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--stage-muted); font-weight: 700; margin: 0; }
+.hand-history h2 { font-size: var(--t-sm); color: var(--stage-muted); font-weight: 600; margin: 0; }
 .hand-history .section-heading > span { color: var(--stage-muted); }
 #history-empty { font-size: var(--t-xs); color: var(--stage-muted); margin: 8px 0 0; }
 #history-list { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 4px; margin: 0; list-style: none; scrollbar-width: thin; }
@@ -131,7 +129,7 @@ h2 { font-size: var(--t-lg); margin: 0 0 12px; letter-spacing: -0.01em; font-wei
 .paytable tbody tr:first-child:not(.group-label) th { color: var(--ink); font-weight: 600; }
 .paytable tr.paying { background: var(--good-soft); color: var(--good); box-shadow: inset 3px 0 var(--good); }
 .paytable tr.paying th { color: var(--good); font-weight: 700; }
-.paytable tr.group-label th { padding-top: 16px; font-weight: 700; color: var(--muted); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.08em; }
+.paytable tr.group-label th { padding-top: 16px; font-weight: 600; color: var(--muted); font-size: var(--t-sm); }
 .paytable p, .editor-panel > p, .recommendations > p, .method p, .analysis-panel > p { color: var(--muted); font-size: var(--t-sm); line-height: 1.6; }
 .text-button { color: var(--accent); border: 0; background: none; font: inherit; font-size: var(--t-sm); font-weight: 600; min-height: 44px; padding: 6px 0; cursor: pointer; text-align: left; }
 .text-button:hover { text-decoration: underline; }
@@ -264,7 +262,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .topbar { padding-inline: 16px; }
   .vp-app { padding: 14px 16px 24px; gap: 14px; }
   .page-head { flex-direction: column; align-items: stretch; gap: 12px; }
-  .page-head p { margin-top: 4px; }
   .view-nav { width: 100%; }
   .view-nav button { flex: 1; padding-inline: 8px; }
   .workspace { grid-template-columns: 1fr; gap: 14px; }
@@ -272,7 +269,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .hand { --card-width: clamp(46px, 14vw, 100px); gap: 10px; }
   .lab-workspace { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .editor-panel { position: static; max-height: none; overflow: visible; }
-  .top-note { display: none; }
   .rules-columns { grid-template-columns: 1fr; gap: 0; }
   .machine { padding: 14px 14px 12px; }
   /* Actions stay in the cabinet under the cards: a two-row grid, nothing fixed, nothing overlapping. */
@@ -317,8 +313,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-picker[open] { display: flex; flex-direction: column; animation: picker-in 160ms var(--ease); }
 .game-picker::backdrop { background: color-mix(in oklab, var(--page) 78%, transparent); }
 .game-picker-heading { display: flex; flex-shrink: 0; justify-content: space-between; gap: 20px; padding: 22px 24px 18px; align-items: center; }
-.game-picker-heading h2 { font-size: 26px; letter-spacing: -0.02em; font-weight: 700; margin: 4px 0 0; }
-.eyebrow { font-size: var(--t-xs); color: var(--muted); margin: 0; }
+.game-picker-heading h2 { font-size: 26px; letter-spacing: -0.02em; font-weight: 700; margin: 0; }
 .icon-button { display: grid; place-items: center; min-height: 44px; min-width: 44px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink); border-radius: 50%; cursor: pointer; }
 .icon-button:hover { background: var(--surface-2); }
 .game-search { display: flex; flex-shrink: 0; align-items: center; gap: 10px; margin: 0 24px; padding: 0 14px; background: var(--page); border: 1px solid var(--control-border); border-radius: var(--r-sm); color: var(--muted); }
@@ -332,7 +327,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-filters button:hover { background: var(--surface-3); color: var(--ink); }
 .game-results-wrap { overflow-y: auto; overscroll-behavior: contain; padding: 0 24px 24px; min-height: 0; flex: 1 1 auto; }
 #game-results section + section { margin-top: 22px; }
-#game-results h3 { font-size: var(--t-xs); font-weight: 700; color: var(--muted); margin: 12px 0; text-transform: uppercase; letter-spacing: 0.08em; }
+#game-results h3 { font-size: var(--t-sm); font-weight: 600; color: var(--muted); margin: 12px 0; }
 .game-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .game-choice { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 84px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: color-mix(in oklab, var(--page) 40%, transparent); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color var(--d-fast) var(--ease), background var(--d-fast) var(--ease); }
 .game-choice:hover { border-color: var(--control-border); background: var(--surface-2); }

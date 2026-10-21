@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-    <link rel="stylesheet" href="../table.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="../table.css?v=20261021-less" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body>
@@ -48,9 +48,7 @@
         <section id="lobby" class="lobby-view view" aria-labelledby="gameTitle">
           <div class="tool-head">
             <div>
-              <p class="eyebrow">Poker · Seeded sprint</p>
               <h1 id="gameTitle">Poker Rush</h1>
-              <p class="lede">Discard and draw as fast as you can. Any straight or better scores, clears from your hand and refills from the deck.</p>
             </div>
             <div class="stat-strip rush-records" id="records" aria-label="Your records">
               <div class="stat"><span class="stat-label">Best score</span><strong class="stat-value" id="bestScoreValue">–</strong></div>
@@ -60,19 +58,16 @@
 
           <div class="rush-tiles" aria-label="Start a game">
             <button id="dailyButton" class="rush-tile rush-tile--featured" type="button">
-              <span class="rush-tile-kicker">Play</span>
               <span class="rush-tile-title">Daily</span>
               <span class="rush-tile-text" id="dailyTileText">One seed for everyone today. Same deck, same draws; beat your best.</span>
               <span class="rush-tile-foot"><span class="badge badge--plain" id="dailySeedBadge">Seed</span><span class="badge badge--good" id="dailyPlayedBadge" hidden>Played today</span><span class="rush-tile-go" aria-hidden="true"><svg class="icon"><use href="../../shared/icons.svg#i-arrow-right" /></svg></span></span>
             </button>
             <button id="randomButton" class="rush-tile" type="button">
-              <span class="rush-tile-kicker">Play</span>
               <span class="rush-tile-title">Random</span>
               <span class="rush-tile-text">A fresh seed every time. The seed shows in the header so you can share it.</span>
               <span class="rush-tile-foot"><span class="rush-tile-go" aria-hidden="true"><svg class="icon"><use href="../../shared/icons.svg#i-arrow-right" /></svg></span></span>
             </button>
             <button id="multiplayerButton" class="rush-tile" type="button">
-              <span class="rush-tile-kicker">Race</span>
               <span class="rush-tile-title">Multiplayer</span>
               <span class="rush-tile-text">Two players, one deck, one clock. Share a room code; no sign-up.</span>
               <span class="rush-tile-foot"><span class="rush-tile-go" aria-hidden="true"><svg class="icon"><use href="../../shared/icons.svg#i-arrow-right" /></svg></span></span>
@@ -90,9 +85,8 @@
         <section id="roomView" class="room-view view" aria-labelledby="roomTitle" hidden>
           <div class="tool-head">
             <div>
-              <p class="eyebrow">Poker Rush · Room</p>
               <h1 id="roomTitle" tabindex="-1">Waiting for a player</h1>
-              <p class="lede" id="roomLede">Share the code or the invite link. Start the race once your opponent is in.</p>
+              <p class="live-note" id="roomLede"></p>
             </div>
             <div class="lobby-code">
               <span class="lobby-code-pill"><span>Room</span><strong id="inviteCode">------</strong><button class="btn btn--ghost btn--icon" id="copyCodeButton" type="button" aria-label="Copy room code" title="Copy room code"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-copy" /></svg></button></span>
@@ -127,7 +121,7 @@
         <section id="gameView" class="game-view view" aria-label="Poker Rush table" hidden>
           <header class="tool-head game-header">
             <div>
-              <p class="eyebrow eyebrow--plain game-kicker"><span id="seedBadge"></span><span class="crumb-sep" aria-hidden="true">·</span><span id="modeBadge"></span></p>
+              <p class="live-note game-kicker"><span id="seedBadge"></span><span class="crumb-sep" aria-hidden="true">·</span><span id="modeBadge"></span></p>
               <div class="header-actions">
                 <button id="matrixToggleButton" class="btn btn--sm" type="button" aria-pressed="false" aria-controls="matrixPanel"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-cards" /></svg>Matrix</button>
                 <button id="newDailyButton" class="btn btn--sm" type="button">Daily</button>
@@ -193,7 +187,7 @@
     <dialog id="instructionsDialog" class="dialog dialog--sheet" aria-labelledby="instructionsTitle">
       <form method="dialog">
         <div class="dialog-head">
-          <div><p class="eyebrow eyebrow--plain">How to play</p><h2 id="instructionsTitle">Poker Rush</h2></div>
+          <h2 id="instructionsTitle">Poker Rush</h2>
           <button class="btn btn--ghost btn--icon" value="close" aria-label="Close" type="submit"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
         </div>
         <div class="dialog-body rush-copy">
@@ -206,14 +200,13 @@
             <li>Royal flush: 10 points</li>
           </ul>
           <p>Daily games use your local date as the seed (YYYYMMDD). Random games show their seed in the header. Multiplayer races two players on one shared deck and clock.</p>
-          <p class="field-hint">Poker Rush is part of <a href="/poker/">the Poker family</a>; the source is on <a href="https://github.com/mathewseng/mathewseng.github.io" rel="noopener">GitHub</a>.</p>
         </div>
       </form>
     </dialog>
 
     <dialog id="optionsDialog" class="dialog dialog--sheet" aria-labelledby="optionsTitle">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain">Setup</p><h2 id="optionsTitle">Options</h2></div>
+        <h2 id="optionsTitle">Options</h2>
         <button class="btn btn--ghost btn--icon" id="optionsCloseButton" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
       </div>
       <div class="dialog-body">
@@ -274,7 +267,7 @@
 
     <dialog id="multiplayerDialog" class="dialog dialog--sheet" aria-labelledby="multiplayerTitle">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain">Multiplayer</p><h2 id="multiplayerTitle">Race a friend</h2></div>
+        <h2 id="multiplayerTitle">Race a friend</h2>
         <button class="btn btn--ghost btn--icon" id="multiplayerCloseButton" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
       </div>
       <div class="dialog-body multiplayer-body">
@@ -290,7 +283,6 @@
         <div class="field" id="joinFields" hidden>
           <label for="joinInviteCode">Room code</label>
           <input id="joinInviteCode" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234" />
-          <span class="field-hint">Six letters and digits from the host's invite.</span>
         </div>
         <p class="field-hint" id="multiplayerHint">Both players draw from the same shuffled deck on one clock. Discards go back into the deck at random.</p>
       </div>
@@ -301,7 +293,7 @@
 
     <dialog id="gameOver" class="dialog dialog--sheet game-over" aria-labelledby="gameOverTitle">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain" id="gameOverKicker">Game over</p><h2 id="gameOverTitle">Time expired</h2></div>
+        <div><p class="live-note" id="gameOverKicker">Game over</p><h2 id="gameOverTitle">Time expired</h2></div>
       </div>
       <div class="dialog-body">
         <p id="gameOverSummary" class="game-over-summary"></p>

@@ -49,16 +49,8 @@
   padding: 28px 0 16px;
 }
 
-.docs-head .eyebrow {
-  margin-bottom: 10px;
-}
-
 .docs-head h1 {
   font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.25rem);
-}
-
-.docs-head .lede {
-  font-size: var(--t-lg);
 }
 
 .docs-release {
@@ -128,12 +120,6 @@
 .docs-section strong {
   color: var(--ink);
   font-weight: 600;
-}
-
-.docs-section .guide-lead {
-  margin-bottom: 8px;
-  font-size: var(--t-lg);
-  font-weight: 500;
 }
 
 .docs-body kbd:not(.keycap) {
@@ -227,10 +213,8 @@
 .docs-flow-caption {
   margin-bottom: 12px;
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .click-flow {
@@ -423,10 +407,8 @@
   z-index: 1;
   background: var(--surface-3);
   color: var(--muted);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 @media (min-width: 701px) {
@@ -656,7 +638,7 @@
 /* ---------- Breakpoints ---------- */
 
 /* The kit collapses the tool head on short desktop windows for app shells;
-   a document keeps its title and lede. */
+   a document keeps its title. */
 @media (min-width: 881px) and (max-height: 820px) {
   .docs-head {
     align-items: flex-end;
@@ -665,10 +647,6 @@
 
   .docs-head h1 {
     font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.25rem);
-  }
-
-  .docs-head .lede {
-    display: block;
   }
 }
 
@@ -697,10 +675,8 @@
     display: block;
     margin: 0 0 6px 14px;
     color: var(--muted);
-    font-size: var(--t-xs);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: var(--t-sm);
+    font-weight: 600;
   }
 
   .docs-toc--sticky a {
@@ -797,10 +773,8 @@
     display: block;
     margin-bottom: 2px;
     color: var(--muted);
-    font-size: var(--t-xs);
+    font-size: var(--t-sm);
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .case-table tbody tr:target {
@@ -858,11 +832,6 @@
   }
 
   .docs-section h3 {
-    font-size: var(--t-md);
-  }
-
-  .docs-section .guide-lead,
-  .docs-head .lede {
     font-size: var(--t-md);
   }
 }

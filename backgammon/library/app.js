@@ -58,7 +58,7 @@ async function boot() {
 await startUpdates();
 resumedAfterUpdate();
 const pageProgress = readPageProgress();
-shell("library", "Library", "Saved in this browser. Yours to keep.");
+shell("library", "Library");
 let items = [],
   selected = null,
   query = "",
@@ -307,7 +307,7 @@ function inspector() {
     exportGroup = section("export", "Export"),
     dangerGroup = section("danger", "Danger zone");
   p.append(
-    el("p", { class: "eyebrow eyebrow--plain library-selected-kind" }, KIND_NAMES[item.kind] || item.kind),
+    el("p", { class: "library-selected-kind" }, KIND_NAMES[item.kind] || item.kind),
     el("h2", { class: "library-selected-title" }, item.title),
     openGroup,
     editGroup,

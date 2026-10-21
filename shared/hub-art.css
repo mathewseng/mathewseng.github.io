@@ -222,8 +222,6 @@
   color: var(--muted);
   font-size: var(--t-xs);
   font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .art-ofc-row .playing-card {

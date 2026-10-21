@@ -201,12 +201,12 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader
-        eyebrow={
+        title="Dashboard"
+        description={
           latest?.date
             ? `${longDate.format(noonOf(latest.date))} · Latest log`
             : "Undated training history"
         }
-        title="Dashboard"
         actions={
           <>
             <ButtonLink to="/suggested" className="hidden lg:inline-flex">
@@ -233,7 +233,9 @@ export default function Dashboard() {
               ) : null}
             </div>
             <div className="mt-6 max-w-xl">
-              <p className="eyebrow-accent">Suggested next session</p>
+              <p className="text-xs font-semibold text-[var(--muted)]">
+                Suggested next session
+              </p>
               <h2 className="mt-3 text-2xl font-extrabold tracking-[-0.03em] sm:text-3xl">
                 {suggestion.title}
               </h2>
@@ -254,12 +256,12 @@ export default function Dashboard() {
                   <p className="text-2xl font-extrabold">
                     {suggestion.desiredDurationMinutes}
                   </p>
-                  <p className="eyebrow">minutes</p>
+                  <p className="text-xs font-semibold text-[var(--muted)]">Minutes</p>
                 </div>
                 <div className="h-9 w-px bg-[var(--line-strong)]" aria-hidden="true" />
                 <div>
                   <p className="text-2xl font-extrabold">{suggestion.exercises.length}</p>
-                  <p className="eyebrow">exercises</p>
+                  <p className="text-xs font-semibold text-[var(--muted)]">Exercises</p>
                 </div>
                 {planned.length ? (
                   <>
@@ -271,7 +273,9 @@ export default function Dashboard() {
                       <p className="text-2xl font-extrabold">
                         {rirLow}–{rirHigh}
                       </p>
-                      <p className="eyebrow">target RIR</p>
+                      <p className="text-xs font-semibold text-[var(--muted)]">
+                        Target RIR
+                      </p>
                     </div>
                   </>
                 ) : null}

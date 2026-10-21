@@ -330,10 +330,8 @@ main[data-view="complete"] .trainer-game {
 
 .trainer-grade-label {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .trainer-grade-summary {
@@ -593,10 +591,6 @@ main[data-view="complete"] .trainer-game {
     padding: 6px 0 8px;
   }
 
-  .trainer-head .eyebrow {
-    display: none;
-  }
-
   .trainer-status {
     grid-auto-columns: minmax(0, 1fr);
     width: 100%;
@@ -730,10 +724,6 @@ main[data-view="complete"] .trainer-game {
 @media (min-width: 881px) and (max-height: 820px) {
   .trainer-head {
     padding: 4px 0 6px;
-  }
-
-  .trainer-head .eyebrow {
-    display: none;
   }
 
   .trainer-head > div:first-child {

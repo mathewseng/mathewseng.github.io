@@ -743,7 +743,7 @@
 
     const heading = document.createElement("header");
     heading.className = "repeat-detail-heading";
-    heading.innerHTML = `<div><p class="eyebrow eyebrow--plain">Selected hand</p><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} sampled hands</span>`;
+    heading.innerHTML = `<div><h3>${scenario.cards} cards / ${scenario.jokers} joker${scenario.jokers === 1 ? "" : "s"}</h3></div><span>${formatInteger(result.samples)} sampled hands</span>`;
 
     const groups = document.createElement("div");
     groups.className = "repeat-detail-groups";

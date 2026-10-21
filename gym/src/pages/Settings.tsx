@@ -133,7 +133,6 @@ export default function Settings() {
   return (
     <>
       <PageHeader
-        eyebrow="Data vault"
         title="Data & settings"
         description="New entries live in this browser. Export them before changing devices, clearing storage, or relying on them long-term."
       />

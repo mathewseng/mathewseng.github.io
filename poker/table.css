@@ -49,9 +49,7 @@
 .felt-label {
   color: var(--stage-muted);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 /* Pot, street and the community boards in the felt centre. */
@@ -76,10 +74,6 @@
   border-radius: var(--r-pill);
   background: color-mix(in srgb, black 24%, transparent);
   font-variant-numeric: tabular-nums;
-}
-
-.felt-pot .felt-label {
-  letter-spacing: 0.08em;
 }
 
 .felt-pot strong {
@@ -121,9 +115,7 @@
 .board-line > span:first-child {
   color: var(--stage-muted);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-weight: 600;
   text-align: right;
 }
 
@@ -176,8 +168,6 @@
   color: var(--ink);
   font-size: var(--t-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .seat-name {
@@ -289,8 +279,7 @@
   background: var(--surface-3);
   color: var(--muted);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -520,10 +509,8 @@
 
 .lobby-code-pill > span:first-child {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 500;
 }
 
 .lobby-code-pill strong,
@@ -618,7 +605,14 @@
   line-height: var(--lh-heading);
 }
 
-.action-stage-status .eyebrow {
+/* Live status lines JS writes into (hand counter, street, race result). */
+.live-note {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
+.action-stage-status .live-note {
   flex-basis: 100%;
 }
 
@@ -1050,10 +1044,8 @@
 .log-entry.hand-start strong {
   display: block;
   color: var(--accent);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .log-entry.action {
@@ -1071,10 +1063,8 @@
 
 .log-entry.showdown strong {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .log-entry.result.win {
@@ -1798,19 +1788,8 @@
   }
 }
 
-/* Short desktop windows: no lede. */
-@media (min-width: 881px) and (max-height: 820px) {
-  .table-app .tool-head .lede {
-    display: none;
-  }
-}
-
 /* Phones. */
 @media (max-width: 640px) {
-  .table-app .tool-head .lede {
-    display: none;
-  }
-
   .table-app .game-header {
     flex-wrap: wrap;
   }

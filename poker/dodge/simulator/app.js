@@ -626,7 +626,7 @@ function renderSim() {
 
 function renderCubePanel(status, alive) {
   $("cube-value").textContent = String(sim.cube.value);
-  $("cube-owner").textContent = sim.cube.owner === "center" ? "centered" : `${seatLabel(sim.cube.owner)} owns`;
+  $("cube-owner").textContent = sim.cube.owner === "center" ? "Centered" : `${seatLabel(sim.cube.owner)} owns`;
   const actions = $("cube-actions");
   const cubeButtons = [];
   const table = $("cube-table");
@@ -1098,7 +1098,7 @@ function trRender() {
   $("score-you").textContent = String(tr.score.you);
   $("score-bot").textContent = String(tr.score.bot);
   $("tr-cube-value").textContent = String(cube.value);
-  $("tr-cube-owner").textContent = cube.owner === "center" ? "centered" : `${trName(cube.owner)} own${cube.owner === YOU ? "" : "s"}`;
+  $("tr-cube-owner").textContent = cube.owner === "center" ? "Centered" : `${trName(cube.owner)} own${cube.owner === YOU ? "" : "s"}`;
   $("tr-back").disabled = !trUserMoment() || !tr.timeline.length || (live ? tr.timeline.length < 2 : tr.review === 0);
   $("tr-forward").disabled = live;
   $("tr-live").hidden = live;
@@ -1601,7 +1601,7 @@ function renderOnline() {
   $("on-cube-panel").hidden = !cubeOn;
   if (cubeOn) {
     $("on-cube-value").textContent = String(g.cube.value);
-    $("on-cube-owner").textContent = g.cube.owner === "center" ? "centered" : `${names[g.cube.owner]} owns`;
+    $("on-cube-owner").textContent = g.cube.owner === "center" ? "Centered" : `${names[g.cube.owner]} owns`;
     const table = $("on-cube-table");
     table.replaceChildren();
     if (status.over || count < 2) {

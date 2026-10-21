@@ -591,12 +591,10 @@ body:has(> .ofc-shell) {
 .rules-article > section > h4 {
   margin: 0;
   padding-top: 3px;
-  color: var(--accent);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
   line-height: var(--lh-body);
-  text-transform: uppercase;
 }
 
 .rule-section > div {
@@ -640,8 +638,6 @@ body:has(> .ofc-shell) {
   color: var(--ink);
   font-size: var(--t-sm);
   font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
 }
 
 .royalty-group ul,

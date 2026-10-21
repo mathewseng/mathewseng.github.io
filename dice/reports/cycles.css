@@ -301,8 +301,6 @@
   color: var(--muted);
   font-size: var(--t-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .cycle-odds tbody th {

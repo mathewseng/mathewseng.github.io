@@ -529,7 +529,7 @@ function ExerciseEditor({
 function EditNotFound({ id, seedTitle }: { id: string; seedTitle?: string }) {
   return (
     <>
-      <PageHeader eyebrow="Edit local entry" title="Workout not found" />
+      <PageHeader title="Workout not found" />
       <Surface>
         <EmptyState
           icon={FileQuestion}
@@ -858,7 +858,6 @@ function WorkoutEditor({
   return (
     <>
       <PageHeader
-        eyebrow={existing ? "Edit local entry" : "Logging"}
         title={existing ? "Update workout" : "Log a workout"}
         description="Every readiness signal is numeric from 0–6. Set-state toggles describe what happened; they are not recovery context."
         actions={

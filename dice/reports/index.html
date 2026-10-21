@@ -15,10 +15,10 @@
     />
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
-    <link rel="stylesheet" href="./matchups.css?v=20261016" />
-    <link rel="stylesheet" href="./matchup-play.css?v=20261016" />
-    <link rel="stylesheet" href="./cycles.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
+    <link rel="stylesheet" href="./matchups.css?v=20261021-less" />
+    <link rel="stylesheet" href="./matchup-play.css?v=20261021-less" />
+    <link rel="stylesheet" href="./cycles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script src="../../shared/tabs.js?v=20261016"></script>
     <script src="../../shared/sheet.js?v=20261016"></script>
@@ -49,7 +49,6 @@
 
       <div class="tool-head">
         <div>
-          <p class="eyebrow eyebrow--plain">Dice · Exact probability</p>
           <h1>Fair Dice Payout Explorer</h1>
         </div>
       </div>
@@ -88,7 +87,6 @@
           <div class="results-panel panel" aria-labelledby="results-title">
             <div class="panel-head section-head">
               <div>
-                <p class="eyebrow eyebrow--plain">Zero-EV integer payouts</p>
                 <h2 id="results-title" tabindex="-1">Payout schedules</h2>
               </div>
               <div class="panel-actions">
@@ -157,7 +155,7 @@
               </button>
             </div>
             <div class="inspector-heading">
-              <p class="eyebrow eyebrow--plain">Schedule inspector</p>
+              <h2>Schedule inspector</h2>
               <span class="badge badge--good exact-tag">Exact arithmetic</span>
             </div>
             <button class="btn btn--primary inspector-play" id="play-inspected" type="button" disabled>Play this schedule</button>
@@ -174,7 +172,6 @@
           <div class="play-table panel" aria-label="Dice table">
             <div class="play-top">
               <div>
-                <p class="eyebrow eyebrow--plain">Play · net units</p>
                 <h2 id="play-title">Choose a schedule</h2>
                 <p id="play-subtitle" class="hint"></p>
               </div>
@@ -220,7 +217,7 @@
           <aside class="paytable-panel panel" aria-label="Active payout schedule">
             <div class="paytable-heading">
               <div>
-                <p class="eyebrow eyebrow--plain">Your payouts</p>
+                <h2>Your payouts</h2>
                 <label for="play-schedule" title="Arrow keys select the previous or next schedule">Schedule · ↑↓ / ←→</label>
               </div>
               <button class="btn btn--ghost btn--sm" id="choose-schedule" type="button">Browse schedules</button>
@@ -363,7 +360,6 @@
     <dialog id="method-dialog" class="dialog dialog--sheet dialog--wide" aria-labelledby="method-title">
       <div class="dialog-head">
         <div>
-          <p class="eyebrow eyebrow--plain">Method</p>
           <h2 id="method-title">How the math works</h2>
         </div>
         <button data-close="method-dialog" class="btn btn--ghost btn--icon close-button" type="button" aria-label="Close method">
@@ -434,7 +430,6 @@
     <dialog id="checker-dialog" class="dialog dialog--sheet" aria-labelledby="checker-title">
       <div class="dialog-head">
         <div>
-          <p class="eyebrow eyebrow--plain">Test your own</p>
           <h2 id="checker-title">Custom payout checker</h2>
         </div>
         <button id="close-checker" class="btn btn--ghost btn--icon close-button" type="button" aria-label="Close custom payout checker">

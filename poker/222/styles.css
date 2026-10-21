@@ -353,7 +353,6 @@ code {
 }
 
 .metric .stat-label {
-  letter-spacing: 0.03em;
   white-space: normal;
 }
 
@@ -624,10 +623,8 @@ code {
   margin-top: 3px;
   color: var(--surface-3);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 600;
   text-align: center;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 

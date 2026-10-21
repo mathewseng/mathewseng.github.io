@@ -36,29 +36,14 @@ html.is-ready .shell > .topbar {
   transition: opacity 0.6s var(--ease);
 }
 
-html.is-ready .hero .eyebrow,
-html.is-ready .hero h1,
-html.is-ready .hero .lede,
-html.is-ready .hero .facts {
+html.is-ready .hero h1 {
   transition:
     opacity 0.8s var(--ease) var(--reveal-delay, 0s),
     transform 0.8s var(--ease) var(--reveal-delay, 0s);
 }
 
-html.is-ready .hero .eyebrow {
-  --reveal-delay: 0.05s;
-}
-
 html.is-ready .hero h1 {
-  --reveal-delay: 0.1s;
-}
-
-html.is-ready .hero .lede {
-  --reveal-delay: 0.18s;
-}
-
-html.is-ready .hero .facts {
-  --reveal-delay: 0.26s;
+  --reveal-delay: 0.05s;
 }
 
 @starting-style {
@@ -66,10 +51,7 @@ html.is-ready .hero .facts {
     opacity: 0;
   }
 
-  html.is-ready .hero .eyebrow,
-  html.is-ready .hero h1,
-  html.is-ready .hero .lede,
-  html.is-ready .hero .facts {
+  html.is-ready .hero h1 {
     opacity: 0;
     transform: translateY(14px);
   }
@@ -86,7 +68,6 @@ html.is-ready .hero .facts {
 }
 
 .hero h1 {
-  margin-top: 8px;
   padding-bottom: 0.06em;
   font-size: var(--t-hero);
   font-weight: 800;
@@ -99,40 +80,6 @@ html.is-ready .hero .facts {
   view-transition-name: hub-title;
 }
 
-.lede {
-  max-width: 34rem;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 0.98rem;
-  line-height: 1.55;
-}
-
-.facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.facts li {
-  padding: 5px 11px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  background: var(--glass);
-  backdrop-filter: blur(10px);
-  color: var(--muted);
-  font-size: var(--t-sm);
-  font-weight: 600;
-}
-
-.facts b {
-  margin-right: 3px;
-  color: var(--ink);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---------- Groups and tiles ---------- */
 
@@ -151,11 +98,9 @@ html.is-ready .hero .facts {
 }
 
 .group-head h2 {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  color: var(--ink);
+  font-size: var(--t-md);
+  font-weight: 600;
 }
 
 .group-head span {
@@ -626,14 +571,6 @@ html.is-ready .hero .facts {
     font-size: clamp(1.8rem, 3.6vw, 2.6rem);
   }
 
-  .lede {
-    margin-top: 6px;
-    font-size: 0.9rem;
-  }
-
-  .facts {
-    margin-top: 8px;
-  }
 
   .group {
     margin-top: 10px;
@@ -694,22 +631,7 @@ html.is-ready .hero .facts {
     font-size: clamp(1.6rem, 7.6vw, 2.1rem);
   }
 
-  .lede {
-    grid-column: 1 / -1;
-    margin-top: 4px;
-    font-size: 0.9rem;
-    line-height: 1.45;
-  }
 
-  .facts {
-    grid-column: 1 / -1;
-    margin-top: 8px;
-  }
-
-  .facts li {
-    padding: 4px 9px;
-    font-size: var(--t-xs);
-  }
 
   .group {
     margin-top: 10px;

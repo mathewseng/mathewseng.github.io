@@ -135,7 +135,6 @@ export default function Exercises() {
   return (
     <>
       <PageHeader
-        eyebrow="Exercises"
         title="Exercise progress"
         description="Machines and free weights stay separate, only comparable sets count, and the best known set for each movement is shown."
       />

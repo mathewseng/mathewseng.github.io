@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../../shared/cards.css?v=20261016" />
     <link rel="stylesheet" href="../../tools.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body class="app-shell">
@@ -44,12 +44,7 @@
     <main id="main" tabindex="-1" class="app">
       <div class="tool-head">
         <div>
-          <p class="eyebrow">Poker · Simulator</p>
           <h1>Dodge simulator</h1>
-          <p class="lede">
-            Deal two to four seats with live equity and bust odds, train doubling-cube decisions against the solver, or open a
-            peer-to-peer table.
-          </p>
         </div>
       </div>
       <div class="tabs" role="tablist" aria-label="Views" id="view-tabs">
@@ -154,7 +149,7 @@
               <div class="cube-head">
                 <div class="cube-face" id="cube-face">
                   <span class="cube-value" id="cube-value">1</span>
-                  <span class="cube-owner" id="cube-owner">centered</span>
+                  <span class="cube-owner" id="cube-owner">Centered</span>
                 </div>
                 <div class="cube-text">
                   <h2 id="cube-title">Cube decision</h2>
@@ -173,7 +168,6 @@
                 <p class="muted" id="deck-help"></p>
               </div>
               <div class="deck-grid deck-matrix" id="deck-grid"></div>
-              <p class="phone-only mobile-hint">Swipe the deck to reach lower ranks.</p>
               <p class="telemetry">
                 <span>Games simulated <b id="sum-games">—</b></span>
                 <span id="sum-compute-wrap">Compute <b id="sum-compute">—</b></span>
@@ -226,7 +220,7 @@
               <div class="score"><span class="stat-label">You</span><b id="score-you">0</b></div>
               <div class="cube-face small" id="tr-cube-face">
                 <span class="cube-value" id="tr-cube-value">1</span>
-                <span class="cube-owner" id="tr-cube-owner">centered</span>
+                <span class="cube-owner" id="tr-cube-owner">Centered</span>
               </div>
               <div class="score"><span class="stat-label">Bot</span><b id="score-bot">0</b></div>
             </div>
@@ -262,10 +256,6 @@
             <div class="panel-head">
               <div>
                 <h2>Play online</h2>
-                <p>
-                  Peer-to-peer rooms for two to four players. The host's browser runs the table; everyone sees every card, live
-                  equity, and bust odds. Share the room code or the invite link.
-                </p>
               </div>
             </div>
             <div class="panel-body">
@@ -286,6 +276,7 @@
                   <label class="check"><input type="checkbox" id="on-cube" /><span>Doubling cube (2 seats)</span></label>
                   <label class="check"><input type="checkbox" id="on-ace-high" checked /><span>Ace high for first draw</span></label>
                   <button id="on-create" class="btn btn--primary" type="button">Create room</button>
+                  <p class="field-hint">The host's browser runs the table.</p>
                 </div>
                 <div class="online-form panel panel--quiet">
                   <h3>Join a room</h3>
@@ -340,7 +331,7 @@
                 <div class="cube-head">
                   <div class="cube-face">
                     <span class="cube-value" id="on-cube-value">1</span>
-                    <span class="cube-owner" id="on-cube-owner">centered</span>
+                    <span class="cube-owner" id="on-cube-owner">Centered</span>
                   </div>
                   <div class="cube-text">
                     <h2 id="on-cube-title">Cube</h2>
@@ -432,10 +423,6 @@
             one card can end the game.
           </li>
         </ul>
-        <p class="field-hint">
-          <a href="../">Dodge reports</a> ·
-          <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/poker/dodge/simulator" target="_blank" rel="noopener">Source on GitHub ↗</a>
-        </p>
       </div>
     </dialog>
 

@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
     <link rel="stylesheet" href="../tools.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body class="app-shell">
@@ -49,9 +49,7 @@
     <main id="main" tabindex="-1" class="app">
       <div class="tool-head">
         <div>
-          <p class="eyebrow">Poker · Reports</p>
           <h1>Dodge reports</h1>
-          <p class="lede">Start with four cards. Keep drawing. Dodge a straight or better.</p>
         </div>
         <button class="btn btn--primary export-button" id="export-button" type="button" disabled>
           <span class="phone-sr">Export CSV</span>
@@ -143,11 +141,7 @@
               >
             </div>
             <p id="population-label"></p>
-            <p class="scope-note desk-only">
-              Draws are <strong>additional cards, including the bust card</strong>.
-              <span class="wide-only">Charts and aggregates follow your filters.</span>
-              <span id="scope-weight"></span>
-            </p>
+            <p class="scope-note desk-only" id="scope-weight"></p>
           </div>
           <div id="numeric-rules" class="numeric-rules"></div>
           <button class="btn btn--primary phone-only filter-apply" id="filter-apply" type="button">Show matching hands</button>
@@ -294,7 +288,6 @@
               </div>
               <div class="panel-body">
                 <div class="heatmap-wrap"><div id="rank-heatmap" class="rank-heatmap"></div></div>
-                <p class="phone-only mobile-hint">Swipe to compare all ranks. Tap a cell to filter.</p>
                 <div class="heatmap-key"><span>Shorter life</span><i></i><span>Longer life</span></div>
               </div>
             </article>
@@ -359,7 +352,7 @@
                 <div id="payout-summary" class="payout-summary stat-strip"></div>
                 <p class="in-panel-note">
                   Multipliers are <strong>total returns including the stake</strong>; a bust returns zero. Payout = (1 − edge) ÷
-                  win probability. Uses the filtered population.
+                  win probability.
                 </p>
                 <div id="payout-chart" class="chart"></div>
                 <div id="payout-table" class="small-table"></div>
@@ -386,12 +379,11 @@
                 <div id="live-stats" class="live-stats"></div>
                 <p class="in-panel-note">
                   Or choose a remaining card below. Outlined cards bust; muted cards are already held. Newly drawn cards are
-                  underlined above. Cards stay rank-first.
+                  underlined above.
                 </p>
                 <div class="outs-wrap">
                   <div id="outs-grid" class="outs-grid" aria-label="Remaining deck and bust outs"></div>
                 </div>
-                <p class="phone-only mobile-hint">Swipe the deck to reach lower ranks.</p>
                 <div id="outs-legend" class="legend"></div>
               </div>
             </article>

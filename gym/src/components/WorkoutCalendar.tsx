@@ -210,8 +210,7 @@ export default function WorkoutCalendar({
       <Surface className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
           <div>
-            <p className="eyebrow">Calendar</p>
-            <h2 id={headingId} className="mt-1 text-xl font-bold tracking-[-0.02em]">
+            <h2 id={headingId} className="text-xl font-bold tracking-[-0.02em]">
               {monthFormatter.format(visibleMonth)}
             </h2>
           </div>
@@ -245,7 +244,7 @@ export default function WorkoutCalendar({
               <div
                 key={day}
                 role="columnheader"
-                className="py-2 text-center text-xs font-bold uppercase tracking-wider text-[var(--muted)]"
+                className="py-2 text-center text-xs font-semibold text-[var(--muted)]"
               >
                 <abbr title={day} className="no-underline">
                   <span className="sm:hidden" aria-hidden="true">
@@ -370,12 +369,11 @@ export default function WorkoutCalendar({
       {!compact ? (
         <section aria-labelledby={panelHeadingId} className="self-start">
           <Surface className="p-4 sm:p-5">
-            <p className="eyebrow">Selected day</p>
             <h3
               ref={panelHeadingRef}
               id={panelHeadingId}
               tabIndex={-1}
-              className="mt-1 rounded-sm text-lg font-bold tracking-[-0.02em]"
+              className="rounded-sm text-lg font-bold tracking-[-0.02em]"
             >
               {detailFormatter.format(selectedDateObject)}
             </h3>
