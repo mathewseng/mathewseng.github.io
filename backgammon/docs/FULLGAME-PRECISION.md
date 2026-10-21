@@ -43,6 +43,22 @@ If the cohort fails, opening 21 can qualify separately only if all three Full/st
 
 The rules are targeted engineering acceptance tests. A cohort-level update does not imply that each individual move preference is resolved. All sampling errors and screening limitations remain visible.
 
+## Completed opening result
+
+The independent opening study completed all 8,192 planned records: 32,768 trials per move/policy, 262,144 trials in total. Raw-record hashes, seed exclusions, candidate coverage and the paired statistics pass their validation checks.
+
+| Policy | Split minus slot | Simultaneous 95% interval |
+| --- | --- | --- |
+| Short | +0.00389 | [+0.00316, +0.00462] |
+| Full/matched | −0.00266 | [−0.00920, +0.00387] |
+| Full/strong | −0.01196 | [−0.01868, −0.00524] |
+
+Full/strong prefers **13/11 6/5 (slot)** over **13/11 24/23 (split)**, matching XG's published direction. XG's split-minus-slot gap is −0.00790. The absolute gap difference from that reference falls from 0.01179 under Short to 0.00406 under Full/strong. All three paired Full/strong contrasts favor the XG move over the other retained alternatives with positive simultaneous lower bounds.
+
+Both controlled opening effects shift toward slot under their separate two-comparison family: removing the cutoff changes the gap by −0.00656 [−0.01266, −0.00045], and maintaining 2-ply checker play changes it by a further −0.00929 [−0.01746, −0.00113]. Thus both the truncated endpoint and late checker policy contributed to the opening disagreement under these settings. This does not isolate neural weights or prove that every full-game equity equals XG's value.
+
+The opening independently satisfies its recorded publication rule. The cohort is still collecting its fixed sample; its results determine whether all 15 positions qualify together or only the opening qualifies. No partial cohort equities have been inspected, and its sample size and acceptance rule remain unchanged.
+
 ## Reproduction
 
 Use the same pinned native build as the original ablation. Both hosts' executable parity and runtime weight/database hashes are recorded in the original validation artifacts. From the repository root with Node 22 and Python 3:
