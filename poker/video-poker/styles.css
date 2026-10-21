@@ -44,8 +44,8 @@ select, input { min-height: 44px; border: 1px solid var(--control-border); backg
 select { width: 260px; }
 
 /* ---------- Play workspace ---------- */
-.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; flex: 1; min-height: 0; }
-.play-column { min-width: 0; display: flex; flex-direction: column; min-height: 0; gap: 18px; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+.play-column { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
 
 /* The cabinet: a felt stage with an inset rail. */
 .machine {
@@ -123,7 +123,7 @@ select { width: 260px; }
 h2 { font-size: var(--t-lg); margin: 0 0 12px; letter-spacing: -0.01em; font-weight: 700; }
 .section-heading h2 { margin: 0; }
 .section-heading > span { font-size: var(--t-xs); color: var(--muted); }
-.paytable { min-height: 0; overflow: auto; padding: 18px 18px 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: linear-gradient(170deg, var(--surface-2), var(--surface) 60%); box-shadow: var(--shadow-tile); }
+.paytable { padding: 18px 18px 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: linear-gradient(170deg, var(--surface-2), var(--surface) 60%); box-shadow: var(--shadow-tile); }
 .paytable table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: var(--t-sm); }
 .paytable th { text-align: left; font-weight: 500; padding: 8px 10px; color: var(--muted); }
 .paytable td { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; padding: 8px 10px; }
@@ -137,7 +137,7 @@ h2 { font-size: var(--t-lg); margin: 0 0 12px; letter-spacing: -0.01em; font-wei
 .text-button:hover { text-decoration: underline; }
 
 /* ---------- Strategy ledger ---------- */
-.strategy { min-height: 0; overflow: auto; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.strategy { padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 #strategy-status { color: var(--muted); font-size: var(--t-sm); margin: 10px 0; line-height: 1.5; }
 .strategy-row { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; gap: 12px; font-size: var(--t-sm); border-bottom: 1px solid var(--line-opaque); min-height: 44px; overflow: hidden; }
 .strategy-row::before { content: ""; position: absolute; inset: 4px auto 4px 0; width: var(--share, 0%); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: color-mix(in oklab, var(--accent) 9%, transparent); pointer-events: none; }
@@ -166,9 +166,8 @@ summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-size: var(--t
 .input-action input { flex: 1; min-width: 0; }
 
 /* ---------- Payout lab ---------- */
-.lab-workspace { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; flex: 1; min-height: 0; }
-.editor-panel, .analysis-column { overflow: auto; min-height: 0; }
-.editor-panel { padding: 20px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); align-self: start; max-height: 100%; }
+.lab-workspace { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; align-items: start; }
+.editor-panel { padding: 20px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 .pay-input { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .pay-input label { font-size: var(--t-sm); }
 .pay-input input { width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
@@ -229,7 +228,7 @@ progress { width: 100%; accent-color: var(--accent); margin-top: 18px; height: 8
 .outcome-chart tr.loss th { color: var(--bad); }
 
 /* ---------- Rules ---------- */
-.rules-view { overflow: auto; min-height: 0; flex: 1; max-width: 1100px; }
+.rules-view { max-width: 1100px; }
 .rules-view > p { max-width: 800px; }
 .rules-view p { font-size: var(--t-md); color: var(--muted); line-height: 1.7; }
 .rules-view strong { color: var(--ink); }
@@ -244,15 +243,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 
 /* ---------- Desktop app shell ---------- */
 @media (min-width: 901px) {
-  body.app-shell { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
-  .play-column { overflow: auto; }
-  .machine { position: sticky; top: 0; z-index: 2; }
-  .strategy { flex-shrink: 0; overflow: visible; }
+  /* The page scrolls as one document; the pay glass and the lab editor ride along as sticky sidebars. */
+  .paytable, .editor-panel { position: sticky; top: 16px; max-height: calc(100dvh - 32px); overflow: auto; }
   .machine.complete .hand { --card-width: clamp(72px, 6.4vw, 100px); }
   .machine.complete .shortcut-note { display: none; }
   .machine.complete .hand[data-size="6"], .machine.complete .hand[data-size="7"] { --card-width: clamp(48px, 5.8vw, 80px); }
 }
-@media (min-width: 901px) and (max-height: 800px) { .machine { padding-top: 12px; } .hand { --card-width: 80px; } .table-center { padding-top: 12px; } #hand-status { margin-bottom: 10px; } }
 .hand[data-size="6"], .hand[data-size="7"] { --card-width: clamp(48px, 5.8vw, 92px); gap: 8px; }
 
 /* ---------- Tablets ---------- */
@@ -272,12 +268,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .view-nav { width: 100%; }
   .view-nav button { flex: 1; padding-inline: 8px; }
   .workspace { grid-template-columns: 1fr; gap: 14px; }
-  .paytable { overflow: visible; }
-  .strategy { overflow: visible; }
+  .paytable { position: static; max-height: none; overflow: visible; }
   .hand { --card-width: clamp(46px, 14vw, 100px); gap: 10px; }
   .lab-workspace { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .editor-panel, .analysis-column { overflow: visible; max-height: none; }
-  .rules-view { overflow: visible; }
+  .editor-panel { position: static; max-height: none; overflow: visible; }
   .top-note { display: none; }
   .rules-columns { grid-template-columns: 1fr; gap: 0; }
   .machine { padding: 14px 14px 12px; }
