@@ -1,0 +1,68 @@
+--- a/src/bridge.c
++++ b/src/bridge.c
+@@ -65,14 +65,14 @@
+  * Quasi-random rotation and early stopping are disabled so pooled standard
+  * errors have ordinary IID-trial semantics. Variance reduction remains on.
+  */
+-static void rollout_settings(const matchstate *state, int trials, unsigned int seed, int checker, int cube, int short_rollout) {
++static void rollout_settings(const matchstate *state, int trials, unsigned int seed, int checker, int cube, int truncate, int late, int lateChecker, int lateCube, int endpoint) {
+     rcRollout.nTrials=trials; rcRollout.nGamesDone=0; rcRollout.nSkip=0;
+     rcRollout.nSeed=seed; rcRollout.rngRollout=RNG_ISAAC;
+     rcRollout.fCubeful=state->fCubeUse;
+     rcRollout.fVarRedn=TRUE; rcRollout.fRotate=FALSE;
+-    rcRollout.fInitial=FALSE; rcRollout.fDoTruncate=short_rollout;
+-    rcRollout.nTruncate=short_rollout ? 5 : 0; rcRollout.nLate=2;
+-    rcRollout.fLateEvals=short_rollout; rcRollout.fStopOnSTD=FALSE;
++    rcRollout.fInitial=FALSE; rcRollout.fDoTruncate=truncate>0;
++    rcRollout.nTruncate=truncate; rcRollout.nLate=late;
++    rcRollout.fLateEvals=late>0; rcRollout.fStopOnSTD=FALSE;
+     rcRollout.fStopOnJsd=FALSE; rcRollout.fStopMoveOnJsd=FALSE;
+     rcRollout.fTruncBearoff2=TRUE; rcRollout.fTruncBearoffOS=TRUE;
+     evalcontext ec={state->fCubeUse,0,TRUE,TRUE,0.0f};
+@@ -82,13 +82,14 @@
+         rcRollout.aecChequer[i].nPlies=checker;
+         rcRollout.aecCubeLate[i]=rcRollout.aecCube[i];
+         rcRollout.aecChequerLate[i]=rcRollout.aecChequer[i];
+-        if(short_rollout)rcRollout.aecChequerLate[i].nPlies=1;
++        rcRollout.aecChequerLate[i].nPlies=lateChecker;
++        rcRollout.aecCubeLate[i].nPlies=lateCube;
+         /* Reset filters on every batch; never inherit another caller's policy. */
+         const movefilter filters[MAX_FILTER_PLIES][MAX_FILTER_PLIES]=MOVEFILTER_NORMAL;
+         memcpy(rcRollout.aaamfChequer[i],filters,sizeof(filters));
+         memcpy(rcRollout.aaamfLate[i],filters,sizeof(filters));
+     }
+-    if(short_rollout)ec.nPlies=2;
++    ec.nPlies=endpoint;
+     rcRollout.aecCubeTrunc=rcRollout.aecChequerTrunc=ec;
+     fInterrupt=0;
+ }
+@@ -98,13 +99,13 @@
+     float eqse=cubeful ? (ci->nMatchTo ? fabsf(mwc2eq(se[6],ci)-mwc2eq(0,ci)) : se[6]) : se[5];
+     sbAppendf(b,",\"standardError\":%.8f,\"mwcStandardError\":%.8f",eqse,ci->nMatchTo ? (cubeful ? se[6] : fabsf(eq2mwc(se[5],ci)-eq2mwc(0,ci))) : 0);
+ }
+-const char *bg_rollout_config(const char *original,const char *after,int trials,int seed,int checker,int cube,int short_rollout) {
++const char *bg_rollout_ex(const char *original,const char *after,int trials,int seed,int checker,int cube,int truncate,int late,int lateChecker,int lateCube,int endpoint) {
+     matchstate state,post; cubeinfo ci; StringBuffer b;
+-    if(short_rollout<0||short_rollout>1||(short_rollout&&(checker!=2||cube!=2))||checker<0||checker>2||cube<0||cube>2||trials<2||trials>256||parseXgid(&state,original)<0||!CheckPosition(state.anBoard))return failure();
++    if(truncate<0||truncate>100||late<0||late>100||lateChecker<0||lateChecker>3||lateCube<0||lateCube>3||endpoint<0||endpoint>3||checker<0||checker>3||cube<0||cube>3||trials<2||trials>256||parseXgid(&state,original)<0||!CheckPosition(state.anBoard))return failure();
+     if(getCubeInfoFromMatchStateWithBeavers(&ci,&state,0)<0)return failure();
+-    rollout_settings(&state,trials,(unsigned int)seed,checker,cube,short_rollout);
++    rollout_settings(&state,trials,(unsigned int)seed,checker,cube,truncate,late,lateChecker,lateCube,endpoint);
+     sbInit(&b); sbAppendf(&b,"{\"samples\":%d,\"checkerPlies\":%d,\"cubePlies\":%d,",trials,checker,cube);
+-    sbAppendf(&b,"\"truncationPlies\":%d,\"lateAfterPlies\":%d,\"lateCheckerPlies\":%d,\"lateCubePlies\":%d,",short_rollout?5:0,short_rollout?2:0,short_rollout?1:checker,cube);
++    sbAppendf(&b,"\"truncationPlies\":%d,\"lateAfterPlies\":%d,\"lateCheckerPlies\":%d,\"lateCubePlies\":%d,",truncate,late,lateChecker,lateCube);
+     if(after && *after) {
+         move m; memset(&m,0,sizeof(m));
+         if(parseXgid(&post,after)<0||!CheckPosition(post.anBoard)||post.fMove!=state.fMove)return failure();
+@@ -127,6 +128,11 @@
+     sbAppend(&b,"}");return sbFinalize(&b);
+ }
+ 
++const char *bg_rollout_config(const char *original,const char *after,int trials,int seed,int checker,int cube,int short_rollout) {
++    if(short_rollout<0||short_rollout>1||(short_rollout&&(checker!=2||cube!=2))||checker<0||checker>2||cube<0||cube>2)return failure();
++    return bg_rollout_ex(original,after,trials,seed,checker,cube,short_rollout?5:0,short_rollout?2:0,short_rollout?1:checker,cube,short_rollout?2:0);
++}
++
+ const char *bg_rollout_policy(const char *original,const char *after,int trials,int seed,int checker,int cube) {
+     return bg_rollout_config(original,after,trials,seed,checker,cube,0);
+ }

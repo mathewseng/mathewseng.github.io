@@ -29,5 +29,11 @@
     "Publish all 15 positions as one cohort, including every previously retained alternative at the same 1024-trial Full/strong policy. Do not selectively promote positions based on new winners.",
     "Preserve ordinary sampling errors and explain that this targeted cohort does not validate general playing strength. If criteria fail, do not label this candidate policy a validated fix; investigate the failed comparison."
   ],
-  "scope": "The deeper-cube arm compares two fixed moves and is diagnostic only until all other retained candidates have also been evaluated at that policy."
+  "scope": "The deeper-cube arm compares two fixed moves and is diagnostic only until all other retained candidates have also been evaluated at that policy.",
+  "openingPrecisionAmendment": {
+    "recordedAt": "2026-10-21T01:40:02.399796+00:00",
+    "confirmationSignature": "292a201dbea6a15727fd976a733253b86cf0e2d0446c6797c7f65e690b4e392b",
+    "status": "Clarifies the already committed independent opening-confirmation plan before inspecting any experiment equities. Primary acceptance criteria remain unchanged.",
+    "rule": "After the complete primary cohort qualifies, replace all four opening-21 retained candidates together with the independent 4096-trial Full/strong results, regardless of the winning move. All fourteen reply entries retain 1024 trials per candidate."
+  }
 }

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-21T00:04:47.368398+00:00",
+  "reason": "ENOSPC while saving optional progress status; both processes exited. All complete raw batch lines parsed successfully.",
+  "recovery": "Preserve all recorded batches, remove this task's disposable assembled _site, retry partial checkpoint writes safely, pause dispatch below 512 MiB free, and resume remaining jobs with lower concurrency. Fixed plans, seeds, policies and sample counts are unchanged.",
+  "runs": [
+    {
+      "checkpoint": "fullgame-ablation-v1",
+      "completedBatches": 405,
+      "prefixBytes": 246006,
+      "prefixSHA256": "9714068824addedf65e9b76c64320fd87c8bf18f4acbd8f0573eabe66f2436d7",
+      "resumeWorkers": 6
+    },
+    {
+      "checkpoint": "opening-fullgame-confirmation-v1",
+      "completedBatches": 28,
+      "prefixBytes": 16174,
+      "prefixSHA256": "ee8e95088503ca7771b4c1e86911e3ed775bdd1d46fd92bd66aa5417d1c7bc92",
+      "resumeWorkers": 1
+    }
+  ]
+}

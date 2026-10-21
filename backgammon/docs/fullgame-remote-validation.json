@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-21T01:24:52.816040+00:00",
+  "host": "mattgpt",
+  "binarySHA256": "6f42770f62d7f752da2e836bbb8eb9452f1acd4fe274d69a131b1a0118973877",
+  "cases": 16,
+  "trialsPerCase": 2,
+  "seed": 987654321,
+  "exactJSONParity": true,
+  "remoteArchitecture": "arm64",
+  "remoteOS": "27.0",
+  "results": [
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+      "policy": "short",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -0.00726825,
+        "cubeless": 0.02475072,
+        "probabilities": [
+          0.49677274,
+          0.15432976,
+          0.00627853,
+          0.12430497,
+          0.00509803
+        ],
+        "mwc": null,
+        "standardError": 0.04402602,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+      "policy": "full-matched",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -0.07776698,
+        "cubeless": -0.01962528,
+        "probabilities": [
+          0.48109439,
+          0.15552948,
+          0.0053352,
+          0.13747257,
+          0.00520624
+        ],
+        "mwc": null,
+        "standardError": 0.14403293,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+      "policy": "full-strong",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.06146181,
+        "cubeless": 0.03037176,
+        "probabilities": [
+          0.49534497,
+          0.19143775,
+          0.01445226,
+          0.15498614,
+          0.01122177
+        ],
+        "mwc": null,
+        "standardError": 0.17988765,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+      "policy": "full-cube3",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 3,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 3,
+        "equity": 0.06146097,
+        "cubeless": 0.03037119,
+        "probabilities": [
+          0.49534482,
+          0.19143751,
+          0.01445227,
+          0.15498625,
+          0.01122179
+        ],
+        "mwc": null,
+        "standardError": 0.17988801,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "policy": "short",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": -0.01920633,
+        "cubeless": -0.0108241,
+        "probabilities": [
+          0.49809295,
+          0.1435799,
+          0.00602603,
+          0.14712666,
+          0.00948899
+        ],
+        "mwc": null,
+        "standardError": 0.01206227,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "policy": "full-matched",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.07788563,
+        "cubeless": 0.02262354,
+        "probabilities": [
+          0.51385748,
+          0.12349878,
+          0.0,
+          0.09957665,
+          0.01130567
+        ],
+        "mwc": null,
+        "standardError": 0.30538464,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "policy": "full-strong",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.09076548,
+        "cubeless": -0.02836671,
+        "probabilities": [
+          0.50046325,
+          0.09596658,
+          0.0,
+          0.10185514,
+          0.00404321
+        ],
+        "mwc": null,
+        "standardError": 0.32816124,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "opening-21",
+      "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "policy": "full-cube3",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 3,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 3,
+        "equity": 0.21533906,
+        "cubeless": 0.02796891,
+        "probabilities": [
+          0.51637781,
+          0.12144727,
+          0.0,
+          0.10389617,
+          0.00403669
+        ],
+        "mwc": null,
+        "standardError": 0.20358765,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "short",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.61792219,
+        "cubeless": 0.43556219,
+        "probabilities": [
+          0.60016918,
+          0.27181172,
+          0.04133395,
+          0.07512331,
+          0.00279851
+        ],
+        "mwc": null,
+        "standardError": 0.05198121,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "full-matched",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.62046361,
+        "cubeless": 0.45344019,
+        "probabilities": [
+          0.61527264,
+          0.28636536,
+          0.03935982,
+          0.10016098,
+          0.00266913
+        ],
+        "mwc": null,
+        "standardError": 0.0016644,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "full-strong",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -0.40112054,
+        "cubeless": 0.0086794,
+        "probabilities": [
+          0.49083871,
+          0.15528522,
+          0.0,
+          0.08207145,
+          0.00613356
+        ],
+        "mwc": null,
+        "standardError": 1.14961636,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "full-cube3",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 3,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 3,
+        "equity": -0.49465907,
+        "cubeless": -0.00188628,
+        "probabilities": [
+          0.46799734,
+          0.11869441,
+          0.0,
+          0.01664468,
+          0.0
+        ],
+        "mwc": null,
+        "standardError": 1.05607855,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "short",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 5,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.5984208,
+        "cubeless": 0.4226234,
+        "probabilities": [
+          0.61102718,
+          0.25147188,
+          0.02851336,
+          0.07679677,
+          0.00261951
+        ],
+        "mwc": null,
+        "standardError": 0.0239293,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "full-matched",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 2,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 2,
+        "equity": 0.50243068,
+        "cubeless": 0.4930616,
+        "probabilities": [
+          0.6070329,
+          0.27943346,
+          0.09745019,
+          0.09695178,
+          0.00093746
+        ],
+        "mwc": null,
+        "standardError": 0.71280217,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "full-strong",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.68666577,
+        "cubeless": 0.51340014,
+        "probabilities": [
+          0.60436064,
+          0.33749092,
+          0.00952374,
+          0.04146153,
+          0.00087495
+        ],
+        "mwc": null,
+        "standardError": 0.27037787,
+        "mwcStandardError": 0.0
+      }
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "policy": "full-cube3",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 3,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 3,
+        "equity": 0.72396791,
+        "cubeless": 0.52514565,
+        "probabilities": [
+          0.6102336,
+          0.33749041,
+          0.00952372,
+          0.04146152,
+          0.00087495
+        ],
+        "mwc": null,
+        "standardError": 0.23306692,
+        "mwcStandardError": 0.0
+      }
+    }
+  ]
+}

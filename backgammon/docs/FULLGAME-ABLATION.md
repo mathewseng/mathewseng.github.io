@@ -17,7 +17,7 @@ Full-game means play continues to a cube pass, game completion, or an eligible b
 
 ## Fixed samples and analysis
 
-Each of the 30 disputed moves receives 1,024 fresh trials under each policy. The stronger-checker policy additionally evaluates all 15 other previously retained moves, so it can support a coherent comparison of the complete retained candidate set. Total: **138,240 trials**, in **4,320 independent batches of 32**. The count was fixed before examining any new equity estimates; timing pilots and implementation parity samples are excluded. There is no significance-driven stopping and no pooling with earlier experiments.
+Each of the 30 disputed moves receives 1,024 fresh trials under each policy. The stronger-checker policy additionally evaluates all 15 other previously retained moves, so it can support a coherent comparison of the complete retained candidate set. Total: **138,240 trials**, in **4,320 batch records of 32 trials**, with 32 independent dice blocks per position shared across its moves and policies. The count was fixed before examining any new equity estimates; timing pilots and implementation parity samples are excluded. There is no significance-driven stopping and no pooling with earlier experiments.
 
 Candidates and policies for a position share the same per-trial dice seeds. Different positions have disjoint seeds, and every actual seed is checked against both preceding experiments and the timing/parity checks. GNUbg seeds trial `i` with `(batch seed + 256*i) mod 2^32`; the experiment uses a 65,536 increment between batches.
 
@@ -68,3 +68,17 @@ python3 backgammon/scripts/summarize-fullgame-ablation.py --opening-confirmation
 ```
 
 The default checkpoint directory is `test-results/opening-fullgame-confirmation-v1`. The primary native executable is reused. This supplement was chosen for greater precision on the explicitly requested opening, before viewing the primary run's equity results; it is not a significance-driven extension of a revealed result.
+
+## Storage interruption and recovery
+
+A disk-full (`ENOSPC`) error interrupted both processes while they saved optional progress files. The raw logs contained 405 complete primary batches and 28 complete opening-confirmation batches, all valid JSON with complete final newlines. Their byte lengths and SHA-256 hashes are preserved in `fullgame-storage-recovery.json`. Recovery kept those records and resumed the remaining planned jobs initially with six primary workers and one confirmation worker. After free space recovered to about 8 GiB, the primary run drained its active batches and resumed with eight workers; the confirmation kept one. The disposable assembled site was removed to recover space; no source or unrelated user files were removed.
+
+Checkpoint writes now repair a partial JSONL append before retrying after a storage failure. A pending completed batch stays in memory until it can be saved, and new simulations pause when less than 512 MiB is free. Optional progress-file failures no longer crash the experiment. Tests simulate a disk-full partial write interleaved with another completed batch, verify neither record is lost or duplicated, and check that unrelated I/O errors are still reported. This recovery changes scheduling and storage handling only; the fixed seeds, policies, trial counts and analysis plans remain unchanged.
+
+## Second-host implementation check
+
+After the local Mac resumed from a closed-lid sleep, a second connected ARM64 Mac became available. The exact native build was copied to a task-specific temporary directory, and its executable SHA-256 was checked before dispatch. Sixteen seeded cases (two positions, two moves each, all four policies) returned exactly the same complete JSON locally and remotely. These two-trial parity cases use an excluded seed and do not contribute to either experiment. See `fullgame-remote-validation.json`.
+
+The resumed primary pool initially used eight local and six remote workers; after a clean batch drain it increased to eleven local and eight remote workers. The opening confirmation uses one local and two remote workers. Scheduling does not alter job identities, seeds, or analysis. The local dispatcher stores all results in the original checkpoints; new records identify their execution host. If a remote connection fails, its unfinished batch is requeued unchanged and the helper retires. Idle-sleep prevention is active during computation, but closing the dispatcher's laptop lid can suspend further dispatch. Elapsed batch times can include sleep and connection delays, so they are not controlled CPU benchmarks.
+
+The optional `BG_ROLLOUT_REMOTE_WORKERS` setting enables the configured `mattgpt` helper only after checking the executable hash and the recorded parity check. Local-only reproduction remains the default.
