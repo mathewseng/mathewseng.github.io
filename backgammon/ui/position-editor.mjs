@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { clone, playerName } from '../core/rules.mjs';
-import { editorOwner, editorCount, editorTargets, transferChecker } from '../core/position-editor.mjs';
+import { editorOwner, editorCount, editorTargets, transferChecker, editChecker } from '../core/position-editor.mjs';
 import { settings } from '../core/storage.mjs';
 import { el, button } from './shell.mjs';
 
@@ -10,23 +10,23 @@ export class PositionEditor {
     this.board = board;
     this.onChange = onChange;
     this.selected = null;
+    this.color = 0;
     this.past = [];
     this.future = [];
-    this.supplies = [0, 1].map(player => button('', () => this.tap(`off${player}`), 'editor-supply', {
+    this.supplies = [0, 1].map(player => button('', () => this.chooseColor(player), 'editor-supply', {
       'data-editor-supply': player, 'aria-label': `Place ${playerName(player)} checkers`,
     }));
-    this.tray = button('To tray', () => this.place(`off${editorOwner(this.state, this.selected)}`), '', {id:'editor-to-tray'});
     this.undo = button('Undo', () => this.restore(false), '', {id:'editor-undo'});
     this.redo = button('Redo', () => this.restore(true), '', {id:'editor-redo'});
-    this.help = el('span', {class:'editor-help', role:'status'}, 'Pick a checker, then tap its destination. Or drag.');
+    this.help = el('span', {class:'editor-help', role:'status'}, 'Tap a checker to remove · tap a point to add · drag to move.');
     this.node = el('section', {class:'position-editor', hidden:true, 'aria-label':'Checker editor'},
       el('div', {class:'editor-supplies'}, ...this.supplies),
-      el('div', {class:'editor-actions'}, this.tray, this.undo, this.redo), this.help);
+      el('div', {class:'editor-actions'}, this.undo, this.redo), this.help);
     this.normal = {};
     for (const name of ['onPoint','onDragStart','onDrop','onCancel','onBackground','onDieTap','onCube']) this.normal[name] = board[name];
     board.onDieTap = (...args) => this.active ? this.onDice?.(args[2]) : this.normal.onDieTap?.(...args);
     board.onCube = () => this.active ? this.onContext?.() : this.normal.onCube?.();
-    board.onPoint = (point, options) => this.active ? this.tap(point) : this.normal.onPoint?.(point, options);
+    board.onPoint = (point, options) => this.active ? this.tap(point, options) : this.normal.onPoint?.(point, options);
     board.onDragStart = point => {
       if (!this.active) return this.normal.onDragStart?.(point);
       if (!editorCount(this.state, point)) return false;
@@ -50,7 +50,6 @@ export class PositionEditor {
     document.addEventListener('keydown', e => {
       if (!this.active || document.querySelector('dialog[open]') || e.target.closest('input,textarea,select,[contenteditable]')) return;
       if (e.key.toLowerCase() === 'z') { e.preventDefault(); this.restore(e.shiftKey); }
-      if (['Backspace', 'Delete'].includes(e.key) && this.selected !== null) { e.preventDefault(); this.tray.click(); }
     });
   }
   sync(state, active) {
@@ -61,19 +60,32 @@ export class PositionEditor {
   }
   clear() { this.selected = null; this.dragging = false; this.render(); }
   reset() { this.past = []; this.future = []; this.selected = null; }
-  tap(point) {
-    if (point === this.selected) return this.clear();
-    if (this.selected !== null && editorTargets(this.state, this.selected).includes(point)) return this.place(point);
-    this.selected = editorCount(this.state, point) ? point : null;
-    this.render();
+  chooseColor(player) { this.color = player; this.clear(); }
+  commit(next) {
+    if (!next || JSON.stringify(next) === JSON.stringify(this.state)) return;
+    this.past.push(clone(this.state)); this.past = this.past.slice(-100); this.future = [];
+    this.selected = null;
+    this.onChange(next);
+  }
+  tap(point, options = {}) {
+    if (String(point).startsWith('off')) return this.chooseColor(editorOwner(this.state, point));
+    // Enter acts like a checker tap on an occupied point; Shift+Enter adds.
+    const remove = options.checkerTap ?? (!options.quick && !!editorCount(this.state, point));
+    const before = this.state, owner = remove ? editorOwner(before, point) : this.color;
+    const next = editChecker(before, point, this.color, remove);
+    if (!next) return;
+    this.color = owner;
+    this.commit(next);
+    this.board.animateEdit(before, next, normalized(remove ? point : `off${owner}`),
+      normalized(remove ? `off${owner}` : point), owner);
   }
   place(point, drop = false) {
     const from = this.selected, before = this.state, owner = editorOwner(before, from);
     const next = transferChecker(before, from, point);
-    this.selected = !drop && String(from).startsWith('off') && next && editorCount(next, from) ? from : null;
+    this.selected = null;
     if (next) {
-      this.past.push(clone(before)); this.past = this.past.slice(-100); this.future = [];
-      this.onChange(next);
+      this.color = owner;
+      this.commit(next);
       this.board.animateEdit(before, next, normalized(from), normalized(point), owner);
     } else {
       this.render();
@@ -83,6 +95,7 @@ export class PositionEditor {
   restore(redo) {
     const stack = redo ? this.future : this.past;
     if (!stack.length) return;
+    this.board.endDrag(); this.dragging = false;
     (redo ? this.past : this.future).push(clone(this.state)); this.selected = null;
     this.onChange(stack.pop());
   }
@@ -102,16 +115,17 @@ export class PositionEditor {
     for (const g of this.board.svg.querySelectorAll('[data-point]')) {
       const point = this.board.decode(g.dataset.point);
       g.classList.toggle('editor-target', this.dragging && targets.includes(point));
-      g.setAttribute('aria-label', `${g.getAttribute('aria-label').split(', movable')[0]}${targets.includes(point) ? ', place selected checker here' : ''}`);
+      g.setAttribute('aria-label', `${g.getAttribute('aria-label').split(', movable')[0]}, ${editorCount(s,point) ? 'tap checker to remove, drag to move; ' : ''}tap point to place ${playerName(this.color)}`);
     }
     this.supplies.forEach((b, p) => {
-      b.disabled = !s.off[p]; b.setAttribute('aria-pressed', String(this.selected === `off${p}`));
+      b.setAttribute('aria-pressed', String(this.color === p));
+      b.title = `${playerName(p)} · ${s.off[p]} checkers available to place`;
       b.replaceChildren(el('span',{class:`checker-dot${p?' teal':''}`, 'aria-hidden':true}),
         el('span',{},playerName(p)), el('span',{class:'editor-supply-count'},s.off[p]));
     });
-    this.tray.disabled = this.selected === null || String(this.selected).startsWith('off');
     this.undo.disabled = !this.past.length; this.redo.disabled = !this.future.length;
-    this.help.textContent = this.selected === null ? 'Pick a checker, then tap its destination. Or drag.'
-      : String(this.selected).startsWith('off') ? 'Tap points to place checkers.' : 'Tap a destination. Tap the checker again to cancel.';
+    this.help.textContent = this.dragging ? 'Release to place · return to the start to cancel.'
+      : 'Tap a checker to remove · tap a point to add · drag to move.';
+
   }
 }

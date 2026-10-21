@@ -880,9 +880,9 @@ export class Board {
       const down = this.coordinates(p.x, p.y);
       this.dragLift = this.dragFace.animate([
         { transform: `translate(${x - down.x}px, ${y - down.y}px) scale(1)` },
-        { transform: `translateY(${p.touch ? -24 / this.svg.getScreenCTM().a : 0}px) scale(1.1)` },
+        { transform: `translateY(${p.touch ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(1.1)` },
       ], { duration:160, easing:"cubic-bezier(.2,.75,.3,1)", fill:"forwards" });
-    } else this.dragFace.style.transform = `translateY(${p.touch && !reducedMotion() ? -24 / this.svg.getScreenCTM().a : 0}px) scale(${reducedMotion() ? 1 : 1.1})`;
+    } else this.dragFace.style.transform = `translateY(${p.touch && !reducedMotion() ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(${reducedMotion() ? 1 : 1.1})`;
   }
   followDrag(clientX, clientY) {
     const p = this.pointer;

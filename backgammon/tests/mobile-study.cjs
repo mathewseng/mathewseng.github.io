@@ -63,7 +63,6 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     await page.locator("#edit-position").tap();
     assert.ok(await page.locator(".study-strip").isHidden(),"editing hides stale analysis");
     await page.locator('#board [data-point="7"] .checker > circle').first().tap();
-    await page.locator("#editor-to-tray").tap();
     const removed = await saved();
     assert.equal(removed.state.off[0],source.state.off[0] + 1);
     // Tap the nested label: selection redraws it during the click, which must
@@ -72,7 +71,8 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     assert.equal(await page.locator('[data-editor-supply="0"]').getAttribute('aria-pressed'),'true');
     await page.locator('#board [data-point="7"] .point-number-hit').tap();
     assert.equal((await saved()).state.off[0],0);
-    await page.getByRole("button",{name:"Dice & rules",exact:true}).tap();
+    await page.locator("#editor-tools summary").tap();
+    await page.locator("#editor-context").tap();
     await page.getByRole("dialog").waitFor();
     await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).tap();
     await shot("editor");
