@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-21T04:08:43.682350+00:00",
+  "status": "Fixed before collecting any new precision-study samples; follows a completed but inconclusive full-game study.",
+  "cohortSignature": "8e036c17121e162d517acb9568fb6c97694d9738109f0c79b9122644b2de4c85",
+  "openingSignature": "a245f1e1407aae068041347e40e838ac5ef75a8a347e72e442241ea6270311a8",
+  "previousStudySHA256": "d3405fd3818b0dfd9b6c4f095dd962abc72f68865f99b83a0877bfff5933645b",
+  "previousOpeningSHA256": "96d88272abd9816ff17997c7a8a2272f8418075da4fd03c10f644326e22104dc",
+  "cohortCriteria": [
+    "Complete all 13440 planned records, all 45 retained moves, and provenance checks.",
+    "Full/strong must reduce mean absolute fixed-pair gap difference from XG versus the fresh Short baseline.",
+    "Full/strong must have at least as many fixed-pair mean preferences for XG as the fresh Short baseline.",
+    "At least one predeclared cohort-average cutoff or checker effect must shift toward XG under the new two-comparison simultaneous interval.",
+    "If accepted, promote all 15 positions and every retained move together at the same Full/strong policy. Replace the complete four-move opening entry with the separate 32768-trial precision study regardless of its winning move. No selective reply promotion."
+  ],
+  "openingOnlyCriteria": [
+    "If the cohort fails its new criteria, opening 21 may qualify separately using only its independent 32768-trial study.",
+    "All three paired Full/strong XG-versus-other-retained-move intervals must have positive lower bounds under their three-comparison simultaneous family.",
+    "Full/strong must reduce absolute split-minus-slot gap difference from XG versus its fresh Short baseline.",
+    "At least one cutoff or checker effect must shift toward XG under its two-comparison simultaneous interval.",
+    "If accepted separately, replace all four opening alternatives together and preserve all reply entries."
+  ],
+  "limits": "The previous experiment and its failed promotion criteria remain unchanged. New samples are independent and never pooled with earlier studies. These selected-position engineering criteria do not prove general playing strength. Separate confidence families do not jointly provide a single 95% guarantee. If neither rule qualifies, do not publish an unsupported accuracy fix."
+}
