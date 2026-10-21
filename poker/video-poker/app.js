@@ -14,6 +14,7 @@
   let saved=loadSettings(storedKey,'video-poker-paytables-v1'),savedRules=loadSettings(rulesKey,'video-poker-rules-v1');
   let v=clone(E.byId.jacks),phase='idle',hand=[],deck=[],mask=0,pnl=0,hands=0,rows=null,strategyHand=[],review=null,showAll=false,worker=null,workerKind=null,request=0,busy=false,report=null,liveResult=null;
   const historyTotals={win:0,loss:0,push:0};
+  let holdTouch=null,lastHoldTouch=null;
   const families=['Custom variants',...new Set(E.variants.filter(x=>x.family!=='Custom variants').map(x=>x.family))];
   $('variant').innerHTML=families.map(f=>`<optgroup label="${f}">${selections.filter(x=>x.family===f).map(x=>`<option value="${x.key}"${isCustom(x.id)?' disabled':''}>${x.name}</option>`).join('')}</optgroup>`).join('');
   function bestRecommendation(id,doubled){return report?.recommendations.filter(r=>r.id===id&&!!r.doubleOnDraw===!!doubled&&r.result.rtp<=1).sort((a,b)=>b.result.rtp-a.result.rtp)[0];}
@@ -94,7 +95,7 @@
     renderStakeControl();
     document.querySelectorAll('[data-recommend]').forEach(b=>b.disabled=active);$('pnl').textContent=(pnl>0?'+':'')+fmt(pnl);$('hands-played').textContent=hands;
   }
-  function renderHand(animate=false){const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.toggle('dealt',animate);$('hand').innerHTML=Array.from({length:5},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');
+  function renderHand(animate=false){holdTouch=null;const canHold=['draw','study'].includes(phase);document.querySelector('.machine').classList.toggle('complete',phase==='complete');$('hand').classList.toggle('dealt',animate);$('hand').innerHTML=Array.from({length:5},(_,i)=>`<div class="card-slot${mask&(1<<i)?' held':''}" style="--i:${i}">${PlayingCards.html(hand.length?E.cardText(hand[i]):'BACK',{tag:canHold?'button':'span',interactive:canHold,pressed:canHold?!!(mask&(1<<i)):undefined,selected:!!(mask&(1<<i)),attrs:canHold?{'data-card':i}:{},title:canHold?'Hold or release card '+(i+1):undefined})}<span class="hold-label">${mask&(1<<i)?'HELD':canHold?'HOLD':' '}</span></div>`).join('');
     $('hold-instruction').textContent=phase==='draw'?(v.doubleOnDraw?'Draw at 1×, or add 1 credit and double. Release at least one card to double.':'Select your holds, then draw once.'):phase==='study'?'Study hand · no credit wagered. Deal starts a random hand.':phase==='complete'?'Hand complete. Deal again when you’re ready.':'Deal a hand to begin.';renderControls();
   }
   function updateHolds(){
@@ -102,7 +103,32 @@
     renderStakeControl();
   }
   function toggleHold(i){if(!['draw','study'].includes(phase))return;mask^=1<<i;updateHolds();renderStrategy(true);}
-  $('hand').onclick=e=>{const b=e.target.closest('[data-card]');if(b)toggleHold(+b.dataset.card);};
+  function cancelTouchHold(){
+    if(!holdTouch)return;
+    const touch=holdTouch;holdTouch=null;
+    if(touch.hand!==hand||!['draw','study'].includes(phase))return;
+    mask=touch.held?mask|(1<<touch.index):mask&~(1<<touch.index);updateHolds();renderStrategy(true);
+  }
+  // Touch acts on contact; native scrolling stays enabled and cancels the provisional hold.
+  $('hand').addEventListener('pointerdown',e=>{
+    const card=e.target.closest('[data-card]');
+    if(e.pointerType==='mouse'){lastHoldTouch=null;return;}
+    if(!card||!e.isPrimary||e.button!==0||!['draw','study'].includes(phase))return;
+    cancelTouchHold();const index=Number(card.dataset.card);
+    holdTouch={id:e.pointerId,index,held:!!(mask&(1<<index)),x:e.clientX,y:e.clientY,hand};
+    lastHoldTouch={card,id:e.pointerId,at:performance.now()};toggleHold(index);
+  });
+  document.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'&&!e.isPrimary)cancelTouchHold();},{passive:true});
+  document.addEventListener('pointermove',e=>{if(holdTouch&&e.pointerId===holdTouch.id&&Math.hypot(e.clientX-holdTouch.x,e.clientY-holdTouch.y)>10)cancelTouchHold();},{passive:true});
+  document.addEventListener('pointercancel',e=>{if(holdTouch&&e.pointerId===holdTouch.id)cancelTouchHold();},{passive:true});
+  document.addEventListener('pointerup',e=>{if(lastHoldTouch?.id===e.pointerId)lastHoldTouch.at=performance.now();if(holdTouch&&e.pointerId===holdTouch.id)holdTouch=null;},{passive:true});
+  $('hand').onclick=e=>{
+    const card=e.target.closest('[data-card]');if(!card)return;
+    // detail=0 preserves keyboard and assistive activation. WebKit can label the
+    // touch compatibility click as mouse; a real mouse pointerdown clears this guard.
+    if(e.detail!==0&&(e.pointerType==='touch'||e.pointerType==='pen'||(lastHoldTouch?.card===card&&performance.now()-lastHoldTouch.at<1000))){e.preventDefault();return;}
+    toggleHold(Number(card.dataset.card));
+  };
   function random(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}
   function recordHand(profit,doubled){
     const outcome=profit>0?'win':profit<0?'loss':'push';historyTotals[outcome]++;
