@@ -1,8 +1,8 @@
 {
   "version": 2,
   "optionsSha256": "b01ce47db6107143d6be1c612416a1cf52dcfa8dc3c4902a5779aaabe8a0f24f",
-  "engineSha256": "d2ded05a123b7aef3695b151fedd81a125622472953d91a44086efeec98c4836",
-  "solverSha256": "bab3bec9ce48e235426bda93a98628c1045faeb90c9de5dd3559ba676d599f8e",
+  "engineSha256": "5cccedefd6f5eb9ca2d18622b64ab12f94cda74b3ae09eea83ecd36301af621f",
+  "solverSha256": "d6a791b9bee89c6414ddaca3cb59a65b1fdcc00c7a9c21d703d448bd31be2531",
   "rules": {
     "draws": 1,
     "lowAces": "high",
@@ -499,7 +499,7 @@
         776140,
         176004
       ],
-      "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+      "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
     },
     "badeucey": {
       "pays": {
@@ -540,7 +540,7 @@
         309048,
         205752
       ],
-      "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+      "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
     }
   },
   "recommendations": [
@@ -667,7 +667,7 @@
           820324,
           126180
         ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
       }
     },
     {
@@ -703,7 +703,7 @@
           781300,
           149664
         ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
       }
     },
     {
@@ -739,7 +739,7 @@
           778716,
           145860
         ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
       }
     },
     {
@@ -913,7 +913,7 @@
           319176,
           165504
         ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
       }
     },
     {
@@ -961,7 +961,7 @@
           343368,
           157752
         ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
       }
     },
     {
@@ -1009,7 +1009,7 @@
           916320,
           797136
         ],
-        "method": "Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties"
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
       }
     }
   ],

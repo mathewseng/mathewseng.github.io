@@ -14,7 +14,7 @@ if(recommendationsOnly){
  report.originals=previous.originals;report.doubleOriginals=previous.doubleOriginals;
  report.experiments=previous.experiments.filter(x=>!x.name.startsWith('Recommended Badeucey'));
 }else{
- for(const v of E.variants){report.originals[v.id]={pays:v.pays,...(v.rules?{rules:v.rules}:{}),...S.solveAll(v)};console.log(v.name,(report.originals[v.id].rtp*100).toFixed(6)+'%');}
+ for(const v of E.variants.filter(v=>!v.cribbage)){report.originals[v.id]={pays:v.pays,...(v.rules?{rules:v.rules}:{}),...S.solveAll(v)};console.log(v.name,(report.originals[v.id].rtp*100).toFixed(6)+'%');}
  for(const id of ['low27','badeucey']){const v={...E.byId[id],doubleOnDraw:true};report.doubleOriginals[id]={pays:v.pays,...(v.rules?{rules:v.rules}:{}),doubleOnDraw:true,...S.solveAll(v)};console.log('Original double',id,report.doubleOriginals[id].rtp);}
 }
 const candidates=require('../payout-options.json');

@@ -13,8 +13,9 @@ module.exports = async function checkBadeuceyRules(browser, base) {
   try {
     await page.goto(base + '/poker/video-poker/');
     assert.equal(await page.locator('#variant optgroup').first().getAttribute('label'), 'Custom variants');
-    assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'low27-double', 'badeucey', 'badeucey-double']);
+    assert.deepEqual(await page.locator('#variant optgroup').first().locator('option').evaluateAll(es => es.map(e => e.value)), ['low27', 'low27-double', 'badeucey', 'badeucey-double', ...[4,5,6,7].flatMap(n=>['cribbage'+n,'cribbage'+n+'-double'])]);
     await page.locator('#variant').selectOption('badeucey');
+    await lab();await page.locator('#reset-pays').click();await play();
     await page.waitForFunction(() => document.getElementById('return-value').textContent === '62.8248%');
     assert.equal(await page.locator('#paytable .group-label').count(), 3);
     await lab();
