@@ -1,0 +1,54 @@
+const assert=require('node:assert/strict'),E=require('../engine.js'),S=require('../cribbage-solver.js');
+module.exports=async function checkCribbage(browser,base){
+ const page=await browser.newPage({viewport:{width:375,height:812},isMobile:true,hasTouch:true}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.goto(base+'/poker/video-poker/');await page.waitForFunction(()=>!document.querySelector('option[value=cribbage7-double]').disabled);
+  assert.equal(await page.locator('#variant optgroup').first().locator('option').count(),12);
+  await page.evaluate(()=>{const first=[36,12,13,14,16,17,22];VideoPoker.shuffledDeck=()=>first.concat(Array.from({length:52},(_,i)=>i).filter(c=>!first.includes(c)));});
+  let total=0;
+  for(const n of [4,5,6,7])for(const doubled of [false,true]){
+   const key='cribbage'+n+(doubled?'-double':'');await page.locator('#variant').selectOption(key);
+   assert.equal(await page.locator('#hand .playing-card').count(),n);
+   for(const box of await page.locator('#hand .playing-card').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,width:r.width,right:r.right};})))assert.ok(box.width>=44&&box.x>=0&&box.right<=375);
+   assert.equal(await page.locator('#pay-fee').getAttribute('step'),'1');
+   const fee=Number(await page.locator('#pay-fee').inputValue()),variant={...E.byId['cribbage'+n],pays:{fee},doubleOnDraw:doubled};
+   await page.locator('#deal').tap();assert.equal(Number((await page.locator('#pnl').textContent()).replaceAll(',','')),total);
+   const h=[36,12,13,14,16,17,22].slice(0,n),best=S.solveHand(h,variant);
+   await page.locator('#solve-hand').tap();await page.waitForFunction(()=>document.querySelectorAll('.strategy-row').length>=5,null,{timeout:30000});
+   await page.locator('#show-all').tap();assert.equal(await page.locator('.strategy-row').count(),doubled?2**(n+1)-1:2**n);
+   const first=page.locator('.strategy-row').first();assert.equal(Number(await first.getAttribute('data-mask')),best[0].mask);assert.equal(await first.getAttribute('data-doubled'),String(best[0].doubled));
+   // All cards are reachable and tap exactly once. Pat may never use 2×.
+   for(let i=0;i<n;i++)await page.locator(`[data-card="${i}"]`).tap();
+   assert.equal(await page.locator('.card-slot.held').count(),n);if(doubled)assert.ok(await page.locator('#double-draw').isDisabled());
+   await page.locator(`[data-card="${n-1}"]`).tap();assert.equal(await page.locator('.card-slot.held').count(),n-1);
+   assert.equal(Number((await page.locator('#pnl').textContent()).replaceAll(',','')),total);
+   const mask=(1<<(n-1))-1,chosen=best.find(r=>r.mask===mask&&r.doubled===doubled);
+   const deck=[36,12,13,14,16,17,22].concat(Array.from({length:52},(_,i)=>i).filter(c=>![36,12,13,14,16,17,22].includes(c)));
+   const final=E.draw(h,mask,deck.slice(n)),profit=(E.evaluate(final,variant).payout-1)*(doubled?2:1);total+=profit;
+   await page.locator(doubled?'#double-draw':'#deal').tap();
+   await page.waitForSelector('#decision-ev');assert.ok(Math.abs(Number(await page.locator('#decision-ev').getAttribute('data-ev'))-chosen.netEV)<1e-9);
+   assert.equal(Number((await page.locator('#pnl').textContent()).replaceAll(',','')),total);
+   assert.equal(Number(await page.locator('.history-entry').first().getAttribute('data-net')),profit);
+   assert.match(await page.locator('#hold-instruction').textContent(),/cribbage points/);
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+   if(n===7&&doubled){await page.locator('#show-all').tap();await page.screenshot({path:'/tmp/video-poker-cribbage-mobile.png',fullPage:true});}
+  }
+  assert.equal(await page.locator('.history-entry').count(),8);
+  // Editable fee and scoring rules persist independently across stake modes.
+  await page.locator('#variant').selectOption('cribbage4');await page.locator('[data-view=lab]').tap();
+  await page.locator('#pay-fee').fill('99');await page.locator('#pay-fee').press('ArrowUp');assert.equal(await page.locator('#pay-fee').inputValue(),'100');
+  await page.locator('#rule-cribbage-payout').selectOption('net');await page.locator('#rule-cribbage-cap').selectOption('5');await page.locator('#pay-form button[type=submit]').tap();
+  assert.equal(await page.locator('#lab-rtp').textContent(),'Not solved');
+  await page.reload();await page.waitForFunction(()=>!document.querySelector('option[value=cribbage4]').disabled);await page.locator('#variant').selectOption('cribbage4');
+  assert.equal(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'net');assert.equal(await page.locator('#rule-cribbage-cap').inputValue(),'5');
+  await page.evaluate(()=>{const first=[36,12,13,14];VideoPoker.shuffledDeck=()=>first.concat(Array.from({length:52},(_,i)=>i).filter(c=>!first.includes(c)));});
+  await page.locator('#deal').tap();assert.equal(await page.locator('#pnl').textContent(),'0');for(let i=0;i<4;i++)await page.locator(`[data-card="${i}"]`).tap();await page.locator('#deal').tap();
+  const net=E.evaluate([36,12,13,14],{...E.byId.cribbage4,pays:{fee:100},rules:{payout:'net',scoreCap:5}}).payout-1;
+  assert.equal(Number(await page.locator('#pnl').textContent()),net);assert.equal(Number(await page.locator('.history-entry').first().getAttribute('data-net')),net);assert.equal(await page.locator('#hand-status').textContent(),'You lose '+(-net));
+  await page.locator('#variant').selectOption('cribbage4-double');assert.notEqual(await page.locator('#pay-fee').inputValue(),'100');assert.equal(await page.locator('#rule-cribbage-payout').inputValue(),'return');
+  await page.locator('#variant').selectOption('cribbage7');await page.locator('[data-view=lab]').tap();assert.match(await page.locator('#lab-result').textContent(),/sampled.*95% RTP interval/);assert.match(await page.locator('#solve-all').textContent(),/Estimate/);
+  await page.locator('#solve-all').tap();await page.locator('#cancel-solve').tap();assert.match(await page.locator('#solve-status').textContent(),/canceled/);
+  assert.deepEqual(errors,[]);console.log('Cribbage browser checks passed: eight games, 4–7 cards, all exact decisions, 2× eligibility, mobile taps, settlement, history, fee/rule persistence and estimated-return labels.');
+ }finally{await page.close();}
+};

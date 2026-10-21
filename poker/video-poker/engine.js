@@ -1,7 +1,8 @@
 /* Shared by play, the browser worker, and the reproducible exhaustive analysis. */
 (function (root) {
   'use strict';
-  const labels = { faceQuads:'Four Js–Ks', deucesAce:'Four deuces + ace', fiveAces:'Five aces', fiveLow:'Five 3s–5s', royal:'Royal flush', straightFlush:'Straight flush', quads:'Four of a kind', fullHouse:'Full house', flush:'Flush', straight:'Straight', trips:'Three of a kind', twoPair:'Two pair', highPair:'Jacks or better', aces:'Four aces', lowQuads:'Four 2s–4s', acesKicker:'Four aces + 2–4', lowKicker:'Four 2s–4s + A–4', fiveKind:'Five of a kind', wildRoyal:'Wild royal flush', deuces:'Four deuces', lowJ:'J-high', lowT:'T-high', low9:'9-high', low8:'8-high', low7:'7-high', wheel:'Wheel · 7-5-4-3-2', qualify:'Qualifying push', badT:'T-high badugi', bad9:'9-high badugi', bad8:'8-high badugi', bad7:'7-high badugi', bad6:'6-high badugi', bad5:'5-high badugi' };
+  const Cribbage=typeof module!=='undefined'?require('./cribbage.js'):root.VideoPokerCribbage;
+  const labels = {fee:'Entry fee · points', faceQuads:'Four Js–Ks', deucesAce:'Four deuces + ace', fiveAces:'Five aces', fiveLow:'Five 3s–5s', royal:'Royal flush', straightFlush:'Straight flush', quads:'Four of a kind', fullHouse:'Full house', flush:'Flush', straight:'Straight', trips:'Three of a kind', twoPair:'Two pair', highPair:'Jacks or better', aces:'Four aces', lowQuads:'Four 2s–4s', acesKicker:'Four aces + 2–4', lowKicker:'Four 2s–4s + A–4', fiveKind:'Five of a kind', wildRoyal:'Wild royal flush', deuces:'Four deuces', lowJ:'J-high', lowT:'T-high', low9:'9-high', low8:'8-high', low7:'7-high', wheel:'Wheel · 7-5-4-3-2', qualify:'Qualifying push', badT:'T-high badugi', bad9:'9-high badugi', bad8:'8-high badugi', bad7:'7-high badugi', bad6:'6-high badugi', bad5:'5-high badugi' };
   const BADEUCEY_RULES = {fiveCard:'high-card',minBadugi:4,maxLowRank:14,maxBadugiRank:14};
   function normalizeBadeuceyRules(r={}) {
     const rules={...BADEUCEY_RULES,...r};
@@ -30,19 +31,20 @@
     {id:'low27',name:'2–7 Low',family:'Custom variants',deckSize:52,pays:{wheel:10,low7:5,low8:4,low9:3,lowT:2,lowJ:1},subtitle:'Original paytable'},
     {id:'badeucey',name:'Badeucey',family:'Custom variants',deckSize:52,rules:{...BADEUCEY_RULES},pays:{qualify:1,wheel:8,low7:4,low8:2,low9:1,lowT:0,bad5:16,bad6:8,bad7:4,bad8:2,bad9:1,badT:0},subtitle:'Push + low + badugi points'}
   ];
+  for(const handSize of [4,5,6,7])variants.push({id:'cribbage'+handSize,name:`Cribbage · ${handSize} cards`,family:'Custom variants',deckSize:52,handSize,cribbage:true,pays:{fee:{4:5,5:10,6:18,7:30}[handSize]},rules:{payout:'return',scoreCap:7},subtitle:'Cribbage points − fee'});
   const byId=Object.fromEntries(variants.map(v=>[v.id,v]));
   const rank=c=>2+Math.floor(c/4), suit=c=>c%4;
   const cardText=c=>c===52?'JK':'23456789TJQKA'[Math.floor(c/4)]+'shdc'[c%4];
-  function parseHand(text,deckSize=52) {
+  function parseHand(text,deckSize=52,handSize=5) {
     const cards=text.trim().split(/[\s,]+/).map(t=>{
       if (/^(jk|joker)$/i.test(t)) return 52;
       const m=t.match(/^(10|[2-9tjqka])([shdc])$/i);
-      if(!m) throw new Error('Use five cards like 7s 5h 4d 3c 2s. Use JK for the joker.');
+      if(!m) throw new Error(`Use ${handSize} cards like 7s 5h 4d 3c. Use JK for the joker.`);
       return '23456789TJQKA'.indexOf(m[1].toUpperCase().replace('10','T'))*4+'shdc'.indexOf(m[2].toLowerCase());
     });
-    validateHand(cards,deckSize);return cards;
+    validateHand(cards,deckSize,handSize);return cards;
   }
-  function validateHand(h,n=52){if(h.length!==5||new Set(h).size!==5||h.some(c=>!Number.isInteger(c)||c<0||c>=n)) throw new Error('Choose five different cards from this variant’s deck.');}
+  function validateHand(h,n=52,handSize=5){if(h.length!==handSize||new Set(h).size!==handSize||h.some(c=>!Number.isInteger(c)||c<0||c>=n)) throw new Error(`Choose ${handSize} different cards from this variant’s deck.`);}
   function facts(h,wild) {
     const counts=new Uint8Array(15);let bits=0,sm=0,w=0,high=0;
     for(const c of h){const r=rank(c);if((wild==='deuces'&&r===2)||(wild==='joker'&&c===52)){w++;continue;} counts[r]++;bits|=1<<r;sm|=1<<suit(c);if(r>high)high=r;}
@@ -118,6 +120,7 @@
   }
   function evaluate(h,v) {
     if(typeof v==='string')v=byId[v];
+    if(v.cribbage){const breakdown=Cribbage.score(h,v.rules.scoreCap),points=breakdown.total,net=v.rules.payout==='net',payout=net?1+points-v.pays.fee:Math.max(0,points-v.pays.fee);return {payout,points,breakdown,label:`${points} cribbage points − ${v.pays.fee} fee`,keys:[]};}
     if(v.id==='badeucey')return evaluateBadeucey(h,v);
     if(v.id==='low27'){
       const p=lowParts(h);if(!p)return {payout:0,label:'Does not qualify',keys:[]};
@@ -127,7 +130,7 @@
     return {payout:v.pays[key]||0,label:key==='highPair'?(v.pairMin===10?'Tens or better':v.pairMin===13?'Kings or better':labels[key]):(labels[key]||'No paying hand'),keys:key?[key]:[]};
   }
   function shuffledDeck(n=52,random=Math.random){const a=Array.from({length:n},(_,i)=>i);for(let i=n-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-  function draw(hand,mask,deck){validateHand(hand,deck.length+5);if(!Number.isInteger(mask)||mask<0||mask>31)throw Error('Invalid hold');let i=0;return hand.map((c,j)=>mask&(1<<j)?c:deck[i++]);}
+  function draw(hand,mask,deck){validateHand(hand,deck.length+hand.length,hand.length);if(!Number.isInteger(mask)||mask<0||mask>=(1<<hand.length))throw Error('Invalid hold');let i=0;return hand.map((c,j)=>mask&(1<<j)?c:deck[i++]);}
   const api={variants,byId,labels,BADEUCEY_RULES,normalizeBadeuceyRules,badugiHigh,rank,suit,cardText,parseHand,validateHand,evaluate,lowParts,shuffledDeck,draw};
   if(typeof module!=='undefined')module.exports=api;else root.VideoPoker=api;
 })(typeof self!=='undefined'?self:globalThis);

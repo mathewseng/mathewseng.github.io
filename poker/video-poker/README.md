@@ -4,9 +4,9 @@ Static app at `/poker/video-poker/`. Uses the shared shell, tokens and playing-c
 
 ## Scope and rules
 
-19 menu choices from 17 single-draw paytable presets: Jacks or Better (9/6), Tens or Better (6/5), Bonus (8/5), Bonus Deluxe (9/6), Double Bonus (10/7), Double Double Bonus (9/6), Triple Double Bonus (9/7), Triple Bonus Plus (9/5), Super Double Bonus (9/5), White Hot Aces (9/5), All American (40/8/8/8), full-pay Deuces Wild, Not So Ugly Ducks, Bonus Deuces Wild (10/4/4), Joker Poker (kings or better, 7/5), 2–7 Low, and Badeucey.
+27 menu choices from 21 single-draw scoring/paytable presets: Jacks or Better (9/6), Tens or Better (6/5), Bonus (8/5), Bonus Deluxe (9/6), Double Bonus (10/7), Double Double Bonus (9/6), Triple Double Bonus (9/7), Triple Bonus Plus (9/5), Super Double Bonus (9/5), White Hot Aces (9/5), All American (40/8/8/8), full-pay Deuces Wild, Not So Ugly Ducks, Bonus Deuces Wild (10/4/4), Joker Poker (kings or better, 7/5), 2–7 Low, Badeucey, and Cribbage with 4, 5, 6 or 7 cards.
 
-The scope is conventional five-card, single-draw games. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown with four entries: 2–7 Low, 2–7 Low · 2× on draw, Badeucey, and Badeucey · 2× on draw. Each stake mode keeps independent payouts and qualification settings. Existing saved settings migrate to their previous stake mode; the other mode starts with the best suggested table below 100% RTP. Original resets only the selected mode. Best RTP table applies the highest-return suggestion at or below 100% for that mode, including its qualification rules. New custom configurations use that suggestion automatically; saved edits are preserved. Integer category payouts and Badeucey qualification rules persist separately for each menu choice in local storage; session PnL and in-progress hands reset on reload.
+The scope is conventional five-card poker and four- through seven-card cribbage, all with one draw. Multi-stage games (Ultimate X, Super Times Pay, etc.), side bets and progressive jackpots are not modeled. Max-coin royal payouts are normalized to one practice credit; there is no variable coin-count penalty. The joker game has 53 cards; all others have 52. No discarded card can return. The Custom variants group appears first in the variant dropdown with twelve entries: 2–7 Low, Badeucey, and Cribbage with 4, 5, 6 or 7 cards, each with and without optional 2× on draw. Each stake mode keeps independent payouts and qualification settings. Existing saved settings migrate to their previous stake mode; the other mode starts with the best suggested table below 100% RTP. Original resets only the selected mode. Best RTP table applies the highest-return suggestion at or below 100% for that mode, including its qualification rules. New custom configurations use that suggestion automatically; saved edits are preserved. Integer category payouts and Badeucey qualification rules persist separately for each menu choice in local storage; session PnL and in-progress hands reset on reload.
 
 2–7 payouts are interpreted as **total returns including the stake**, following ordinary video-poker convention. J-high therefore pushes. Aces are high; pairs, straights and flushes lose. A-2-3-4-5 is ace-high, not a straight. The wheel is 7-5-4-3-2. Awards within a half never stack.
 
@@ -26,9 +26,9 @@ A zero payout displays **You lose**; returning exactly the stake displays **Push
 
 ## Optional double on draw
 
-The payout lab offers a single-stake or optional double-on-draw variant for each custom game. The player sees five cards, chooses holds, and may pay one additional credit immediately before drawing to double the entire final payout. At least one card must be replaced: standing pat cannot double. Badeucey’s qualifying push returns both credits when doubled, and every awarded point doubles too. The double button is disabled when all cards are held. Practice play has no bankroll limit, so every legal stake remains available in play and analysis.
+The payout lab offers a single-stake or optional double-on-draw variant for each custom game. The player sees the full initial hand, chooses holds, and may pay one additional credit immediately before drawing to double the entire final payout. At least one card must be replaced: standing pat cannot double. Badeucey’s qualifying push returns both credits when doubled, and every awarded point doubles too. The double button is disabled when all cards are held. Practice play has no bankroll limit, so every legal stake remains available in play and analysis.
 
-The solver compares **63 actions**: 32 single-stake holds and 31 doubled holds. If a hold’s one-credit expected gross return is `r`, its single-stake net EV is `r − 1` and its doubled net EV is `2r − 2`. The player maximizes net profit per initial deal, including when comparing a doubled draw with standing pat. A positive-EV double is not necessarily best if another hold pays more. A double improves on the same single-stake draw only when `r > 1`.
+For five-card games, the solver compares **63 actions**: 32 single-stake holds and 31 doubled holds. If a hold’s one-credit expected gross return is `r`, its single-stake net EV is `r − 1` and its doubled net EV is `2r − 2`. The player maximizes net profit per initial deal, including when comparing a doubled draw with standing pat. A positive-EV double is not necessarily best if another hold pays more. A double improves on the same single-stake draw only when `r > 1`.
 
 For double-on-draw analysis:
 
@@ -40,6 +40,45 @@ For double-on-draw analysis:
 - `rtp = expectedReturn / averageStake`, so it uses **all money wagered**, not just the initial stake. Maximizing net EV and maximizing an RTP ratio are different objectives; this solver optimizes net EV.
 
 Per-hand rows retain `ev = netEV + 1` for compatibility and expose `netEV`, `grossEV`, `stake`, and `doubled` explicitly. The double-on-draw UI displays net EV. Ordinary games keep their original gross-return display. Post-draw review identifies both the committed hold and its stake; doubling is never inferred from the final cards.
+
+## Cribbage
+
+Eight menu entries pair hand sizes 4, 5, 6 and 7 with base stake or optional 2× on draw. Each has an independently saved integer fee and scoring settings. All final cards score; there is no starter, crib or pegging.
+
+The default scoring extends the cribbage row in `ofc/fantasyland-core.js`: each fifteen is 2; each pair is 2; each copy of the longest run of at least three cards scores its full length; a flush of at least four cards scores its length; each jack sharing its suit with another card scores 1. Aces are low and worth 1 toward fifteens; faces count 10. Six- and seven-card runs/flushes receive their full length by default. The editor also provides the literal OFC cap of 5 (its existing run-window algorithm), and an alternative settlement convention.
+
+Default **total return = max(0, cribbage points − fee)**, including the stake. A score equal to the fee loses the bet; fee + 1 pushes; fee + 2 wins +1. At 2×, both the return and stake double. The fee is subtracted once from the total score before applying the stake multiplier. The optional **net PnL = points − fee** convention permits negative results beyond the initial unit; the engine represents its total return as `1 + points − fee`, and settlement then subtracts the stake normally.
+
+Fee presets include the selected fee and its adjacent integers. Each mode defaults to the highest computed return at or below 100%, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all eight games to approach 100% closely. The lab exposes the adjacent option above 100% as well as more conservative options. Sampling uncertainty is shown explicitly and may cross 100%; a sampled default is not a certified house edge.
+
+Default fees and returns (six/seven-card figures are estimates):
+
+| Cards | Fee | RTP | Fee with 2× | RTP with 2× | Optimal 2× frequency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4 | 5 | 82.97% | 5 | 95.36% | 14.88% |
+| 5 | 10 | 92.18% | 11 | 82.30% | 15.55% |
+| 6 | 18 | ≈ 88.99% | 19 | ≈ 89.51% | ≈ 16.86% |
+| 7 | 31 | ≈ 90.13% | 32 | ≈ 96.84% | ≈ 16.55% |
+
+### Cribbage analysis
+
+Every individual hold and stake choice has an **exact conditional draw EV**, including the payout floor and discarded-card exclusion. There are 16/32/64/128 holds for 4/5/6/7 cards, or 31/63/127/255 decisions with 2× enabled. The UI uses net PnL EV for all cribbage games.
+
+`cribbage-solver.js` enumerates rank multiplicities, then analytically counts suit assignments. Inclusion–exclusion on isolated-jack events gives the suited-jack distribution. Suit-count generating functions give the flush corrections; with at most seven cards, two four-card flushes cannot coexist. The resulting joint distribution preserves nonlinear interactions with `max(0, points − fee)`. The browser uses this compact solver for all cribbage hand reviews and never allocates a 133-million-hand index. Computation stays in the worker, leaving hold taps responsive; six/seven-card hands wrap on narrow screens.
+
+Whole-game RTP for 4/5 cards is **exhaustive**, using the generalized subset-sum solver over 270,725/2,598,960 initial hands. Whole-game RTP for 6/7 cards is **estimated** from 8,192/4,096 deterministic uniformly shuffled initial deals, respectively. Every sampled deal uses exact EVs for all decisions and selects its optimal net-profit strategy. These are sampled starting hands, not simulated final outcomes or approximate per-hand strategies. Approximate 95% RTP intervals use the ratio-estimator standard error for net profit divided by stake, preserving their covariance. The doubling frequency is an estimate over the same deals; exact ties prefer base stake. Edited 6/7-card rules can be estimated in the browser from 128 deals, with cancel and progress controls.
+
+`cribbage-analysis.json` records fee options, full-game estimates/exact returns, original configurations, sampling seeds and source hashes. Reproduce it with:
+
+```sh
+node poker/video-poker/scripts/analyze-cribbage.cjs
+```
+
+The offline analysis requires a C++17 compiler for its fast equivalent rank/suit distribution solver; browser play requires no compiler or native runtime. Tests compare it against the JavaScript solver, compare four/five-card scoring to OFC, independently enumerate direct draws, and compare the subset solver against the rank/suit solver. The original five-card poker analysis remains separate:
+
+```sh
+node poker/video-poker/scripts/analyze.cjs
+```
 
 ## Exact results
 
@@ -69,7 +108,7 @@ These results are recorded in `analysis.json`. Each recommendation applies only 
 
 ## Payout options
 
-Each custom game has three base-stake and three optional 2× tables. The defaults are Wheel at twelve (2–7), Even steps (2–7 with 2×), Three-point steps (Badeucey), and Two- and four-point steps (Badeucey with 2×), chosen for the highest RTP below 100% within each mode. These favor tidy integers, repeated steps and gradual increases over matching a precise 99% target. The largest suggested award is 16 and no adjacent tier increases by more than 5. Every table is exhaustively re-optimized; these returns do not imply equal volatility. Applying an option restores its payouts, qualifiers and stake rule.
+2–7 Low and Badeucey each have three base-stake and three optional 2× tables. The defaults are Wheel at twelve (2–7), Even steps (2–7 with 2×), Three-point steps (Badeucey), and Two- and four-point steps (Badeucey with 2×), chosen for the highest RTP below 100% within each mode. These favor tidy integers, repeated steps and gradual increases over matching a precise 99% target. The largest suggested award is 16 and no adjacent tier increases by more than 5. Every table is exhaustively re-optimized; these returns do not imply equal volatility. Applying an option restores its payouts, qualifiers and stake rule.
 
 ### 2–7 Low options
 

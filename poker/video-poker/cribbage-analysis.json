@@ -1,0 +1,965 @@
+{
+  "version": 1,
+  "rules": {
+    "payout": "max(0, points - fee), including stake",
+    "scoreCap": 7,
+    "draws": 1,
+    "starter": false
+  },
+  "sampling": {
+    "6": {
+      "deals": 8192,
+      "seed": 920731,
+      "lo": 14,
+      "hi": 24
+    },
+    "7": {
+      "deals": 4096,
+      "seed": 739021,
+      "lo": 20,
+      "hi": 35
+    }
+  },
+  "hashes": {
+    "engine.js": "5cccedefd6f5eb9ca2d18622b64ab12f94cda74b3ae09eea83ecd36301af621f",
+    "solver.js": "d6a791b9bee89c6414ddaca3cb59a65b1fdcc00c7a9c21d703d448bd31be2531",
+    "cribbage.js": "3f77fb33d3fbc72a2c4703c642cdcd3beaf2ed17726507364cccc0ecde4ea14a",
+    "cribbage-solver.js": "16d051f98aa0f77ade1edec9febe931f5f344de6d74dc68010ec3bbbaf85bc8b",
+    "scripts/cribbage-analyze.cpp": "9608cb97eb13f561910bad9b5f98813edc99195f78ea7207f1b88490f7d3887c",
+    "scripts/analyze-cribbage.cjs": "920089d31f0898141282af325674931294ff1a39fe6e86e1d4c4b7d5826906f1"
+  },
+  "originals": {
+    "cribbage4": {
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "rtp": 0.8296720160679846,
+      "netEV": -0.17032798393201543,
+      "deals": 270725,
+      "holdCounts": [
+        4168,
+        30480,
+        144552,
+        77310,
+        14215
+      ],
+      "method": "Exhaustive: every initial hand, all 16 holds, every legal draw"
+    },
+    "cribbage5": {
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "rtp": 0.9218496547973086,
+      "netEV": -0.07815034520269137,
+      "deals": 2598960,
+      "holdCounts": [
+        3552,
+        127776,
+        938828,
+        1104852,
+        360284,
+        63668
+      ],
+      "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+    },
+    "cribbage6": {
+      "pays": {
+        "fee": 18
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "rtp": 0.889914738343753,
+      "netEV": -0.110085261656247,
+      "expectedReturn": 0.889914738343753,
+      "averageStake": 1,
+      "deals": 8192,
+      "doubleCount": 0,
+      "doubleFrequency": 0,
+      "doubleTieCount": 0,
+      "doubleTieFrequency": 0,
+      "rtpSE": 0.01137255887262641,
+      "estimated": true,
+      "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+      "seed": 920731
+    },
+    "cribbage7": {
+      "pays": {
+        "fee": 30
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "rtp": 1.057207663470992,
+      "netEV": 0.05720766347099224,
+      "expectedReturn": 1.057207663470992,
+      "averageStake": 1,
+      "deals": 4096,
+      "doubleCount": 0,
+      "doubleFrequency": 0,
+      "doubleTieCount": 0,
+      "doubleTieFrequency": 0,
+      "rtpSE": 0.02094646900356543,
+      "estimated": true,
+      "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+      "seed": 739021
+    }
+  },
+  "doubleOriginals": {
+    "cribbage4": {
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "rtp": 0.9535840734292063,
+      "netEV": -0.05332332282043495,
+      "expectedReturn": 1.0954918955746153,
+      "averageStake": 1.1488152183950504,
+      "doubleCount": 40288,
+      "doubleFrequency": 0.14881521839505032,
+      "doubleTieCount": 1612,
+      "doubleTieFrequency": 0.00595438175270108,
+      "deals": 270725,
+      "holdCounts": [
+        4168,
+        30480,
+        144552,
+        79562,
+        11963
+      ],
+      "method": "Exhaustive: every initial hand, 16 base-stake and 15 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+    },
+    "cribbage5": {
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "rtp": 1.1025489160080613,
+      "netEV": 0.12735816518217868,
+      "expectedReturn": 1.3692841663518773,
+      "averageStake": 1.2419260011696986,
+      "doubleCount": 628756,
+      "doubleFrequency": 0.24192600116969865,
+      "doubleTieCount": 2500,
+      "doubleTieFrequency": 0.0009619232308307939,
+      "deals": 2598960,
+      "holdCounts": [
+        3552,
+        127776,
+        938828,
+        1106304,
+        384240,
+        38260
+      ],
+      "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+    },
+    "cribbage6": {
+      "pays": {
+        "fee": 18
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "rtp": 1.094926129850145,
+      "netEV": 0.1181130421829257,
+      "expectedReturn": 1.362375737495426,
+      "averageStake": 1.2442626953125,
+      "deals": 8192,
+      "doubleCount": 2001,
+      "doubleFrequency": 0.2442626953125,
+      "doubleTieCount": 3,
+      "doubleTieFrequency": 0.0003662109375,
+      "rtpSE": 0.01508341828131256,
+      "estimated": true,
+      "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+      "seed": 920731
+    },
+    "cribbage7": {
+      "pays": {
+        "fee": 30
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "rtp": 1.318513129910954,
+      "netEV": 0.4146269552454125,
+      "expectedReturn": 1.716384767745412,
+      "averageStake": 1.3017578125,
+      "deals": 4096,
+      "doubleCount": 1236,
+      "doubleFrequency": 0.3017578125,
+      "doubleTieCount": 0,
+      "doubleTieFrequency": 0,
+      "rtpSE": 0.02784128215370813,
+      "estimated": true,
+      "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+      "seed": 739021
+    }
+  },
+  "recommendations": [
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-fee4",
+      "doubleOnDraw": false,
+      "name": "Fee 4",
+      "pays": {
+        "fee": 4
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 4).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 1.2528022510220909,
+        "netEV": 0.25280225102209086,
+        "deals": 270725,
+        "holdCounts": [
+          6132,
+          30464,
+          141832,
+          76370,
+          15927
+        ],
+        "method": "Exhaustive: every initial hand, all 16 holds, every legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-fee5",
+      "doubleOnDraw": false,
+      "name": "Fee 5",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 5).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.8296720160679846,
+        "netEV": -0.17032798393201543,
+        "deals": 270725,
+        "holdCounts": [
+          4168,
+          30480,
+          144552,
+          77310,
+          14215
+        ],
+        "method": "Exhaustive: every initial hand, all 16 holds, every legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-fee6",
+      "doubleOnDraw": false,
+      "name": "Fee 6",
+      "pays": {
+        "fee": 6
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 6).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.5231814275841982,
+        "netEV": -0.47681857241580183,
+        "deals": 270725,
+        "holdCounts": [
+          3548,
+          29608,
+          149790,
+          79298,
+          8481
+        ],
+        "method": "Exhaustive: every initial hand, all 16 holds, every legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-2x-fee4",
+      "doubleOnDraw": true,
+      "name": "Fee 4",
+      "pays": {
+        "fee": 4
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 4).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 1.3982514614640542,
+        "netEV": 0.5545216720147106,
+        "expectedReturn": 1.9469124744895467,
+        "averageStake": 1.3923908024748362,
+        "doubleCount": 106230,
+        "doubleFrequency": 0.3923908024748361,
+        "doubleTieCount": 840,
+        "doubleTieFrequency": 0.0031027795733678085,
+        "deals": 270725,
+        "holdCounts": [
+          6132,
+          30464,
+          141900,
+          80278,
+          11951
+        ],
+        "method": "Exhaustive: every initial hand, 16 base-stake and 15 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-2x-fee5",
+      "doubleOnDraw": true,
+      "name": "Fee 5",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 5).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.9535840734292063,
+        "netEV": -0.05332332282043495,
+        "expectedReturn": 1.0954918955746153,
+        "averageStake": 1.1488152183950504,
+        "doubleCount": 40288,
+        "doubleFrequency": 0.14881521839505032,
+        "doubleTieCount": 1612,
+        "doubleTieFrequency": 0.00595438175270108,
+        "deals": 270725,
+        "holdCounts": [
+          4168,
+          30480,
+          144552,
+          79562,
+          11963
+        ],
+        "method": "Exhaustive: every initial hand, 16 base-stake and 15 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-2x-fee6",
+      "doubleOnDraw": true,
+      "name": "Fee 6",
+      "pays": {
+        "fee": 6
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 6).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.594777941609473,
+        "netEV": -0.43982814940535386,
+        "expectedReturn": 0.6455721645663887,
+        "averageStake": 1.0854003139717425,
+        "doubleCount": 23120,
+        "doubleFrequency": 0.08540031397174254,
+        "doubleTieCount": 24,
+        "doubleTieFrequency": 0.00008865084495336596,
+        "deals": 270725,
+        "holdCounts": [
+          3548,
+          29608,
+          149790,
+          79754,
+          8025
+        ],
+        "method": "Exhaustive: every initial hand, 16 base-stake and 15 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-fee9",
+      "doubleOnDraw": false,
+      "name": "Fee 9",
+      "pays": {
+        "fee": 9
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 9).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 1.2437390830797692,
+        "netEV": 0.24373908307976921,
+        "deals": 2598960,
+        "holdCounts": [
+          6812,
+          118512,
+          906940,
+          1111416,
+          378384,
+          76896
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-fee10",
+      "doubleOnDraw": false,
+      "name": "Fee 10",
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 10).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.9218496547973086,
+        "netEV": -0.07815034520269137,
+        "deals": 2598960,
+        "holdCounts": [
+          3552,
+          127776,
+          938828,
+          1104852,
+          360284,
+          63668
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-fee11",
+      "doubleOnDraw": false,
+      "name": "Fee 11",
+      "pays": {
+        "fee": 11
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 11).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.683164239663088,
+        "netEV": -0.31683576033691196,
+        "deals": 2598960,
+        "holdCounts": [
+          3076,
+          119780,
+          969084,
+          1124600,
+          333816,
+          48604
+        ],
+        "method": "Exhaustive: every initial hand, all 32 holds, every legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-2x-fee10",
+      "doubleOnDraw": true,
+      "name": "Fee 10",
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 10).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 1.1025489160080613,
+        "netEV": 0.12735816518217868,
+        "expectedReturn": 1.3692841663518773,
+        "averageStake": 1.2419260011696986,
+        "doubleCount": 628756,
+        "doubleFrequency": 0.24192600116969865,
+        "doubleTieCount": 2500,
+        "doubleTieFrequency": 0.0009619232308307939,
+        "deals": 2598960,
+        "holdCounts": [
+          3552,
+          127776,
+          938828,
+          1106304,
+          384240,
+          38260
+        ],
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-2x-fee11",
+      "doubleOnDraw": true,
+      "name": "Fee 11",
+      "pays": {
+        "fee": 11
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 11).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.8230305830465429,
+        "netEV": -0.20448092442973198,
+        "expectedReturn": 0.950978182289879,
+        "averageStake": 1.155459106719611,
+        "doubleCount": 404032,
+        "doubleFrequency": 0.1554591067196109,
+        "doubleTieCount": 8672,
+        "doubleTieFrequency": 0.003336719303105858,
+        "deals": 2598960,
+        "holdCounts": [
+          3076,
+          119780,
+          969084,
+          1124720,
+          346728,
+          35572
+        ],
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-2x-fee12",
+      "doubleOnDraw": true,
+      "name": "Fee 12",
+      "pays": {
+        "fee": 12
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 12).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return.",
+      "result": {
+        "rtp": 0.5688816320142482,
+        "netEV": -0.4693552907424158,
+        "expectedReturn": 0.619337109294522,
+        "averageStake": 1.0886924000369378,
+        "doubleCount": 230508,
+        "doubleFrequency": 0.08869240003693785,
+        "doubleTieCount": 3432,
+        "doubleTieFrequency": 0.0013205282112845138,
+        "deals": 2598960,
+        "holdCounts": [
+          1880,
+          106088,
+          1034688,
+          1108176,
+          322928,
+          25200
+        ],
+        "method": "Exhaustive: every initial hand, 32 base-stake and 31 2× decisions, every legal draw; maximize net profit, prefer base stake on ties"
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-fee17",
+      "doubleOnDraw": false,
+      "name": "Fee 17",
+      "pays": {
+        "fee": 17
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 17).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 1.116341464724675,
+        "netEV": 0.1163414647246752,
+        "expectedReturn": 1.116341464724675,
+        "averageStake": 1,
+        "deals": 8192,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.01304311926510037,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-fee18",
+      "doubleOnDraw": false,
+      "name": "Fee 18",
+      "pays": {
+        "fee": 18
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 18).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.889914738343753,
+        "netEV": -0.110085261656247,
+        "expectedReturn": 0.889914738343753,
+        "averageStake": 1,
+        "deals": 8192,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.01137255887262641,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-fee19",
+      "doubleOnDraw": false,
+      "name": "Fee 19",
+      "pays": {
+        "fee": 19
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 19).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.7232357298278843,
+        "netEV": -0.2767642701721157,
+        "expectedReturn": 0.7232357298278843,
+        "averageStake": 1,
+        "deals": 8192,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.00988213350978562,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-2x-fee18",
+      "doubleOnDraw": true,
+      "name": "Fee 18",
+      "pays": {
+        "fee": 18
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 18).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 1.094926129850145,
+        "netEV": 0.1181130421829257,
+        "expectedReturn": 1.362375737495426,
+        "averageStake": 1.2442626953125,
+        "deals": 8192,
+        "doubleCount": 2001,
+        "doubleFrequency": 0.2442626953125,
+        "doubleTieCount": 3,
+        "doubleTieFrequency": 0.0003662109375,
+        "rtpSE": 0.01508341828131256,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-2x-fee19",
+      "doubleOnDraw": true,
+      "name": "Fee 19",
+      "pays": {
+        "fee": 19
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 19).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.8950923628141594,
+        "netEV": -0.1225928724096744,
+        "expectedReturn": 1.045986229152826,
+        "averageStake": 1.1685791015625,
+        "deals": 8192,
+        "doubleCount": 1381,
+        "doubleFrequency": 0.1685791015625,
+        "doubleTieCount": 9,
+        "doubleTieFrequency": 0.0010986328125,
+        "rtpSE": 0.01392913636617318,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-2x-fee20",
+      "doubleOnDraw": true,
+      "name": "Fee 20",
+      "pays": {
+        "fee": 20
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 20).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.702030606173107,
+        "netEV": -0.3290684943788942,
+        "expectedReturn": 0.7753016228086058,
+        "averageStake": 1.1043701171875,
+        "deals": 8192,
+        "doubleCount": 855,
+        "doubleFrequency": 0.1043701171875,
+        "doubleTieCount": 8,
+        "doubleTieFrequency": 0.0009765625,
+        "rtpSE": 0.01258095855697848,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-fee30",
+      "doubleOnDraw": false,
+      "name": "Fee 30",
+      "pays": {
+        "fee": 30
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 30).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 1.057207663470992,
+        "netEV": 0.05720766347099224,
+        "expectedReturn": 1.057207663470992,
+        "averageStake": 1,
+        "deals": 4096,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.02094646900356543,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-fee31",
+      "doubleOnDraw": false,
+      "name": "Fee 31",
+      "pays": {
+        "fee": 31
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 31).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.9012689236993612,
+        "netEV": -0.09873107630063882,
+        "expectedReturn": 0.9012689236993612,
+        "averageStake": 1,
+        "deals": 4096,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.01886697769166016,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-fee32",
+      "doubleOnDraw": false,
+      "name": "Fee 32",
+      "pays": {
+        "fee": 32
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 32).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.7564940628246034,
+        "netEV": -0.2435059371753966,
+        "expectedReturn": 0.7564940628246034,
+        "averageStake": 1,
+        "deals": 4096,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.01688145889167507,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-2x-fee31",
+      "doubleOnDraw": true,
+      "name": "Fee 31",
+      "pays": {
+        "fee": 31
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 31).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 1.14217187538654,
+        "netEV": 0.1746256604174034,
+        "expectedReturn": 1.402897144792403,
+        "averageStake": 1.228271484375,
+        "deals": 4096,
+        "doubleCount": 935,
+        "doubleFrequency": 0.228271484375,
+        "doubleTieCount": 2,
+        "doubleTieFrequency": 0.00048828125,
+        "rtpSE": 0.02654493052378044,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-2x-fee32",
+      "doubleOnDraw": true,
+      "name": "Fee 32",
+      "pays": {
+        "fee": 32
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 32).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.9684131727817261,
+        "netEV": -0.03681531082520495,
+        "expectedReturn": 1.128712032924795,
+        "averageStake": 1.16552734375,
+        "deals": 4096,
+        "doubleCount": 678,
+        "doubleFrequency": 0.16552734375,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.02503321145188095,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-2x-fee33",
+      "doubleOnDraw": true,
+      "name": "Fee 33",
+      "pays": {
+        "fee": 33
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "summary": "Return = max(0, cribbage points − 33).",
+      "rationale": "Whole-point fees preserve the scoring. Compare adjacent fees to see their effect on return. The closest sampled return below 100% is the default; sampling uncertainty may cross 100%.",
+      "result": {
+        "rtp": 0.8297337957150652,
+        "netEV": -0.1956232317785408,
+        "expectedReturn": 0.9533025494714592,
+        "averageStake": 1.14892578125,
+        "deals": 4096,
+        "doubleCount": 610,
+        "doubleFrequency": 0.14892578125,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "rtpSE": 0.02280622864120325,
+        "estimated": true,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    }
+  ]
+}
