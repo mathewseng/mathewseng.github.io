@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-21T03:57:23.131064+00:00",
+  "experimentSignature": "30e18e771837e22996a11f618cd502401739aa6b6fcde38520c9d4c98a37bcd1",
+  "status": "Specified after the independent 4096-trial opening result revealed high full-game variance, before inspecting any primary-experiment equity estimates.",
+  "question": "Does removing the cutoff, strengthening late checker play, or deepening cube decisions shift the average fixed-pair gap across this preselected 15-position cohort?",
+  "method": "For each of the 32 seed-block indices, average each paired difference of move gaps equally across the 15 positions. Different positions have disjoint trial seeds. Use the 32 independent aggregate block means with Student-t intervals (31 degrees of freedom). The three cohort effects form a separate Bonferroni simultaneous 95% family. No pooling with the opening confirmation or prior studies.",
+  "comparisons": 3,
+  "positions": 15,
+  "usage": "Secondary cohort diagnostic only. Does not change the primary 45-effect/60-gap families, trial counts, candidates, or predeclared book-promotion criteria. A cohort effect does not establish the effect or preferred move at every position."
+}
