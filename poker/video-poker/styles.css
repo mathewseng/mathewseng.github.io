@@ -115,3 +115,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .rule-input { display:grid; gap:7px; margin:0 0 14px; font-size:13px; }
 .rule-input select { width:100%; min-width:0; font-size:13px; }
 #qualification-rules p { color:var(--muted); font-size:12px; line-height:1.6; margin:4px 0 0; }
+
+#draw-rules p { color:var(--muted); font-size:12px; line-height:1.6; }
+.machine-actions { flex-wrap:wrap; }
+.double-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:20px; }
+.double-metrics > div { display:grid; gap:6px; }
+.double-metrics span { color:var(--muted); font-size:12px; }
+.double-metrics strong { font-size:20px; font-variant-numeric:tabular-nums; }
+.double-metrics p { grid-column:1/-1; margin:0; font-size:12px; line-height:1.6; color:var(--muted); }
+.option-family > h3 { font-size:18px; margin:24px 0 6px; }
+.option-mode > summary { color:var(--muted); }
+.recommendation h4 { font-size:15px; margin:0 0 8px; }
+@media(max-width:500px) { .double-metrics { grid-template-columns:1fr; gap:12px; } .double-metrics > div { grid-template-columns:1fr auto; align-items:center; } }

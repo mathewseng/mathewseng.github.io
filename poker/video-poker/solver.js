@@ -16,13 +16,42 @@
     progress(1);return {sums,offsets,n};
   }
   function values(h,table){const sorted=[...h].sort((a,b)=>a-b),ix=new Int32Array(32),a=new Float64Array(32);indices(sorted,ix);for(let m=0;m<32;m++)a[m]=table.sums[table.offsets[size[m]]+ix[m]];invert(a);return a;}
-  function solveHand(h,v,table){E.validateHand(h,v.deckSize);table=table||build(v);const sorted=[...h].sort((a,b)=>a-b),a=values(h,table);
-    return Array.from(a,(sum,m)=>{let mask=0;for(let i=0;i<5;i++)if(m&(1<<i))mask|=1<<h.indexOf(sorted[i]);const outcomes=C[v.deckSize-5][5-size[m]];return {mask,ev:sum/outcomes,outcomes,held:size[m]};}).sort((a,b)=>b.ev-a.ev||b.held-a.held||a.mask-b.mask);
+  // `ev` is return less any added stake, so ev - 1 is profit per initial deal.
+  // This preserves the ordinary one-credit return while comparing different stakes fairly.
+  function solveHand(h,v,table){
+    E.validateHand(h,v.deckSize);table=table||build(v);
+    const sorted=[...h].sort((a,b)=>a-b),a=values(h,table),rows=[];
+    for(let m=0;m<32;m++){
+      let mask=0;for(let i=0;i<5;i++)if(m&(1<<i))mask|=1<<h.indexOf(sorted[i]);
+      const outcomes=C[v.deckSize-5][5-size[m]],baseEV=a[m]/outcomes;
+      for(const stake of v.doubleOnDraw&&m!==31?[1,2]:[1]){
+        const grossEV=stake*baseEV,netEV=grossEV-stake;
+        rows.push({mask,ev:baseEV*stake-(stake-1),netEV,grossEV,stake,doubled:stake===2,outcomes,held:size[m]});
+      }
+    }
+    return rows.sort((a,b)=>Math.abs(a.ev-b.ev)>1e-12?b.ev-a.ev:a.stake-b.stake||b.held-a.held||a.mask-b.mask);
   }
   function solveAll(v,table,progress=()=>{}){
-    table=table||build(v);const ix=new Int32Array(32),a=new Float64Array(32),n=v.deckSize,holdCounts=[0,0,0,0,0,0];let total=0,compensation=0;
-    eachHand(n,(h,i)=>{indices(h,ix);for(let m=0;m<32;m++)a[m]=table.sums[table.offsets[size[m]]+ix[m]];invert(a);let best=-1,held=0;for(let m=0;m<32;m++){const ev=a[m]/C[n-5][5-size[m]];if(ev>best+1e-12||(Math.abs(ev-best)<1e-12&&size[m]>held)){best=ev;held=size[m];}}holdCounts[held]++;const y=best-compensation,t=total+y;compensation=(t-total)-y;total=t;if(i%100000===0)progress(i/C[n][5]);});
-    progress(1);return {rtp:total/C[n][5],netEV:total/C[n][5]-1,deals:C[n][5],holdCounts,method:'Exhaustive: every initial hand, all 32 holds, every legal draw'};
+    table=table||build(v);const ix=new Int32Array(32),a=new Float64Array(32),n=v.deckSize,holdCounts=[0,0,0,0,0,0];
+    let total=0,compensation=0,doubleCount=0,doubleTieCount=0;
+    eachHand(n,(h,i)=>{
+      indices(h,ix);for(let m=0;m<32;m++)a[m]=table.sums[table.offsets[size[m]]+ix[m]];invert(a);
+      let single=-Infinity,double=-Infinity,singleHeld=0,doubleHeld=0;
+      for(let m=0;m<32;m++){
+        const ev=a[m]/C[n-5][5-size[m]];
+        if(ev>single+1e-12||(Math.abs(ev-single)<1e-12&&size[m]>singleHeld)){single=ev;singleHeld=size[m];}
+        if(v.doubleOnDraw&&m!==31){const doubled=2*ev-1;if(doubled>double+1e-12||(Math.abs(doubled-double)<1e-12&&size[m]>doubleHeld)){double=doubled;doubleHeld=size[m];}}
+      }
+      const useDouble=double>single+1e-12,best=useDouble?double:single;
+      if(useDouble)doubleCount++;else if(v.doubleOnDraw&&Math.abs(double-single)<1e-12)doubleTieCount++;
+      holdCounts[useDouble?doubleHeld:singleHeld]++;
+      const y=best-compensation,t=total+y;compensation=(t-total)-y;total=t;
+      if(i%100000===0)progress(i/C[n][5]);
+    });
+    progress(1);const deals=C[n][5],netEV=total/deals-1;
+    if(!v.doubleOnDraw)return {rtp:total/deals,netEV,deals,holdCounts,method:'Exhaustive: every initial hand, all 32 holds, every legal draw'};
+    const doubleFrequency=doubleCount/deals,averageStake=1+doubleFrequency,expectedReturn=netEV+averageStake;
+    return {rtp:expectedReturn/averageStake,netEV,expectedReturn,averageStake,doubleCount,doubleFrequency,doubleTieCount,doubleTieFrequency:doubleTieCount/deals,deals,holdCounts,method:'Exhaustive: every initial hand, 32 single-stake and 31 double-stake decisions, every legal draw; maximize net profit, prefer single stake on ties'};
   }
   const api={C,size,eachHand,layout,indices,invert,build,solveHand,solveAll};if(typeof module!=='undefined')module.exports=api;else root.VideoPokerSolver=api;
 })(typeof self!=='undefined'?self:globalThis);
